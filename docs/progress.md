@@ -36,18 +36,18 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 **Left out, and the task that brings it**
 - Docker Compose, the database, real `db:migrate`: task 0.2. Real `db:seed`: task 0.14.
 - next-intl and the language choice: task 0.5. A `start` script: task 0.15.
-- Any shadcn component: the first task that needs one. It then installs `radix-ui`, which is a new dependency to ask for.
+- Any shadcn component: the first task that needs one. Its plan lists `@base-ui/react` as a new dependency and its build installs it: `shadcn add` does not (the dry run of a button lists only `cn`).
 
 **Open for the owner**
-- Whether `npm run dev` should be reachable from other devices on the network: before task 0.6.
+- Nothing.
 
 **What the next sessions must know**
 - seed: placeholder until 0.14. `npm run db:seed` only prints `NOT BUILT YET` and ends without an error; every `/finish-task` report from 0.2 to 0.13 writes "seed: placeholder until 0.14" where it would show the seed run. `db:migrate` is the same until 0.2.
 - Next.js 16.4 ships its own guides in `node_modules/next/dist/docs/`. Read the guide there before using a Next.js feature; it differs from older versions.
 - The page texts are read by a plain import of `uz.json`. Task 0.5 replaces that import in `src/app/layout.tsx` and `src/app/page.tsx`. A new text goes into all three message files.
-- shadcn: add a component with `npx shadcn@latest add <name>` and never run `init` again. `init -d` silently chose another style, wrote a font, a dark block and a button. After an `add`, check `git status` for anything beyond the component.
-- `cn()` is imported from `@/components/utils`. There is no `src/lib/`.
-- `npm run lint` also checks formatting; `npm run format` fixes it. `docs/`, `.claude/` and `CLAUDE.md` are never formatted.
+- shadcn (style `base-vega`: Base UI, the Vega look): add a component with `npx shadcn@latest add <name>` and never run `init` again; `init` writes a font, a dark block and `src/lib/`. After an `add`, check `git status` for anything beyond the component. `cn()` is imported from `@/components/utils`; there is no `src/lib/`.
+- The plan of task 2.1 asks the owner about a lint rule that stops `src/domain/` importing from outside its folder (report of 0.1, point 7; the review said yes in principle).
+- `npm run lint` also checks formatting; `npm run format` fixes it. `docs/`, `.claude/` and `CLAUDE.md` are never formatted. `npm run dev` answers on this machine only (`127.0.0.1`); never open it to the network.
 - Trap: `next dev` writes an `AGENTS.md` when it sees an AI agent. `agentRules: false` in `next.config.ts` stops it; do not remove that line.
 - Trap: the Playwright browser download broke twice on a weak connection. `npx playwright install chromium --only-shell` fetches only the missing part.
 
