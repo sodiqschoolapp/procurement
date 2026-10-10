@@ -31,15 +31,15 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 **Built**
 - Next.js 16.4 App Router project, TypeScript 6.0 strict, Tailwind CSS 4, ESLint 9, Prettier, shadcn/ui set up with no component yet.
 - The folder layout of `CLAUDE.md`; nine npm scripts (the eight of the task and `format`); `.env.example` with no name yet.
-- A start page at `/` with two texts from `src/i18n/messages/`; one Vitest test and one Playwright test.
+- A start page at `/` with two texts from `src/i18n/messages/`; one Vitest test file (4 tests) and one Playwright test.
 
 **Left out, and the task that brings it**
 - Docker Compose, the database, real `db:migrate`: task 0.2. Real `db:seed`: task 0.14.
 - next-intl and the language choice: task 0.5. A `start` script: task 0.15.
-- Any shadcn component: the first task that needs one. Its plan lists `@base-ui/react` as a new dependency and its build installs it: `shadcn add` does not (the dry run of a button lists only `cn`).
+- Any shadcn component: the first task that needs one. Its plan lists `@base-ui/react` as a new dependency and its build installs it: `shadcn add` does not (the dry run of a button lists only `cn`). The Vega button is 36 px high by default; rule 13 of `11-screens-and-ux.md` asks for 44 px touch targets, so that task sets the size.
 
 **Open for the owner**
-- Nothing.
+- Docker Desktop was not on the machine on 10.10.2026; it must be installed and running before task 0.2.
 
 **What the next sessions must know**
 - seed: placeholder until 0.14. `npm run db:seed` only prints `NOT BUILT YET` and ends without an error; every `/finish-task` report from 0.2 to 0.13 writes "seed: placeholder until 0.14" where it would show the seed run. `db:migrate` is the same until 0.2.

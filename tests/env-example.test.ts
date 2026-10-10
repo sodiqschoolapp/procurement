@@ -7,13 +7,14 @@ import { describe, expect, it } from "vitest";
 // "Secrets live in provider dashboards and the local `.env` only."
 
 const NAME_ONLY = /^[A-Z][A-Z0-9_]*=$/;
-// A value hidden in a comment, such as "# SAMPLE_KEY=abc", is still a value in the repository.
-const VALUE_IN_COMMENT = /[A-Z][A-Z0-9_]*=\S/;
 
+// A value hidden in a comment, such as "# SAMPLE_KEY=abc", is still a value in the repository.
+// A comment is free text and no pattern can know every value, so the rule is the simplest one:
+// a comment holds no "=" at all.
 function isAllowedLine(line: string): boolean {
   const text = line.trim();
   if (text === "") return true;
-  if (text.startsWith("#")) return !VALUE_IN_COMMENT.test(text);
+  if (text.startsWith("#")) return !text.includes("=");
   return NAME_ONLY.test(text);
 }
 
@@ -21,7 +22,6 @@ describe(".env.example holds names only (build-plan 0.1; CLAUDE.md, secrets conv
   it("accepts an empty line, a comment and a name without a value", () => {
     expect(isAllowedLine("")).toBe(true);
     expect(isAllowedLine("# a comment")).toBe(true);
-    expect(isAllowedLine("# SAMPLE_KEY= is typed in the local .env")).toBe(true);
     expect(isAllowedLine("DATABASE_URL=")).toBe(true);
   });
 
@@ -37,6 +37,8 @@ describe(".env.example holds names only (build-plan 0.1; CLAUDE.md, secrets conv
     expect(isAllowedLine("#SAMPLE_KEY=abc")).toBe(false);
     expect(isAllowedLine("# export SAMPLE_KEY=abc")).toBe(false);
     expect(isAllowedLine("# for example SAMPLE_KEY=abc")).toBe(false);
+    expect(isAllowedLine("# SAMPLE_KEY= abc")).toBe(false);
+    expect(isAllowedLine("# sample_key = abc")).toBe(false);
   });
 
   it("has no line with a value in the committed file", () => {
