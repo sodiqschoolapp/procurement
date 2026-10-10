@@ -31,7 +31,7 @@ The whole project as ordered tasks. One task is one Claude Code session and one 
 
 Nothing a user can use yet. These tasks build the places where the rules live: the test helpers, the constraint style, the permission guard, the action wrapper. No product task starts before 0.15 is ticked.
 
-- [ ] **0.1 Repository skeleton**
+- [x] **0.1 Repository skeleton**
   - **Read:** `13-technology.md` (Stack); `01-summary.md` (Quality bar); `16-build-order.md` (phase 0 row); `17-later-ideas.md` (whole file: what must not be built); `sources.md` (versions checked).
   - **Build:** A Next.js 16 App Router project in TypeScript strict mode with ESLint, Prettier, Tailwind CSS and shadcn/ui; the folder layout from `CLAUDE.md`; the npm scripts `dev`, `build`, `lint`, `typecheck`, `test`, `test:e2e`, `db:migrate`, `db:seed`; `.env.example` with names only; Vitest and Playwright with one sample test each; `README.md` filled in (what the project is, how to run it).
   - **Done when:** `npm run dev` shows a start page; `npm run lint`, `npm run typecheck` and `npm test` pass on a clean clone.
