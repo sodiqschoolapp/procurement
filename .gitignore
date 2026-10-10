@@ -1,0 +1,37 @@
+# dependencies and builds
+node_modules/
+.next/
+out/
+dist/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+
+# secrets: never committed. .env.example holds names only.
+.env
+.env.*
+!.env.example
+
+# tests
+playwright-report/
+test-results/
+blob-report/
+
+# Claude Code scratch files and personal settings
+.claude/tmp/
+.claude/settings.local.json
+
+# real data from the school never enters the repository
+/data/
+/imports/
+*.xlsx
+!tests/fixtures/**/*.xlsx
+!public/templates/**/*.xlsx
+
+# machine files
+*.log
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
