@@ -5,7 +5,7 @@ export default function StartPage() {
     <main className="flex min-h-dvh items-center justify-center p-6">
       <div className="max-w-md text-center">
         <h1 className="text-2xl font-semibold text-balance">{messages.start.title}</h1>
-        <p className="text-muted-foreground mt-3">{messages.start.notice}</p>
+        <p className="mt-3 text-muted-foreground">{messages.start.notice}</p>
       </div>
     </main>
   );
