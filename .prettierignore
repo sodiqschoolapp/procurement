@@ -1,0 +1,18 @@
+# The spec, the working method and the project rules are never touched by a formatter.
+docs/
+.claude/
+CLAUDE.md
+
+# SQL migrations are never edited after merge.
+drizzle/
+
+# Generated
+package-lock.json
+next-env.d.ts
+.next/
+out/
+dist/
+coverage/
+playwright-report/
+test-results/
+blob-report/
