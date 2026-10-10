@@ -56,7 +56,8 @@ docs/               spec, build plan, progress, decisions
 ```
 docker compose up -d        PostgreSQL and MinIO
 npm run dev                 the app on localhost
-npm run lint                ESLint
+npm run lint                ESLint and the Prettier check
+npm run format              Prettier rewrites the files
 npm run typecheck           tsc
 npm test                    unit and database tests
 npm run test:e2e            Playwright
