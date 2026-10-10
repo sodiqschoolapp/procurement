@@ -6,7 +6,7 @@
     "node": ">=24"
   },
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --hostname 127.0.0.1",
     "build": "next build",
     "lint": "eslint . --max-warnings 0 && prettier --check .",
     "format": "prettier --write .",

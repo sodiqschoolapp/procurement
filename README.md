@@ -34,17 +34,17 @@ There is no `.env` file to fill in yet. `.env.example` lists the names of the va
 
 ## Commands
 
-| Command              | What it does                                                                  |
-| -------------------- | ----------------------------------------------------------------------------- |
-| `npm run dev`        | The app on `http://localhost:3000`, reloading as files change.                |
-| `npm run build`      | The production build.                                                         |
-| `npm run lint`       | ESLint with no warnings allowed, then the Prettier format check.              |
-| `npm run format`     | Prettier rewrites the files. Run it when the format check fails.              |
-| `npm run typecheck`  | Generates the Next.js types, then runs the TypeScript compiler.               |
-| `npm test`           | Unit tests with Vitest. Database tests join in task 0.2.                      |
-| `npm run test:e2e`   | Playwright in a real browser at 375 px and 1440 px. It starts the app itself. |
-| `npm run db:migrate` | **Not built yet.** It only prints a notice; task 0.2 brings the migrations.   |
-| `npm run db:seed`    | **Not built yet.** It only prints a notice; task 0.14 brings the demo data.   |
+| Command              | What it does                                                                          |
+| -------------------- | ------------------------------------------------------------------------------------- |
+| `npm run dev`        | The app on `http://localhost:3000`, for this machine only, reloading as files change. |
+| `npm run build`      | The production build.                                                                 |
+| `npm run lint`       | ESLint with no warnings allowed, then the Prettier format check.                      |
+| `npm run format`     | Prettier rewrites the files. Run it when the format check fails.                      |
+| `npm run typecheck`  | Generates the Next.js types, then runs the TypeScript compiler.                       |
+| `npm test`           | Unit tests with Vitest. Database tests join in task 0.2.                              |
+| `npm run test:e2e`   | Playwright in a real browser at 375 px and 1440 px. It starts the app itself.         |
+| `npm run db:migrate` | **Not built yet.** It only prints a notice; task 0.2 brings the migrations.           |
+| `npm run db:seed`    | **Not built yet.** It only prints a notice; task 0.14 brings the demo data.           |
 
 Before the first `npm run test:e2e` on a machine, download the test browser once:
 
