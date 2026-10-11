@@ -20,6 +20,10 @@ export default defineConfig({
         test: {
           name: "unit",
           environment: "node",
+          // A unit test never reaches a database. With no address, the client refuses to load,
+          // so a database test that was named `*.test.ts` by mistake fails instead of writing
+          // to the developer's own database.
+          env: { DATABASE_URL: "" },
           include: ["src/**/*.test.{ts,tsx}", "tests/**/*.test.ts"],
           exclude: ["node_modules/**", "tests/e2e/**", ...DATABASE_TESTS],
         },

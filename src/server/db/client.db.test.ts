@@ -5,10 +5,21 @@ import { db } from "@/server/db/client";
 
 describe("the database client", () => {
   // developer-rules.md rule 10 ("Timestamps are stored in UTC").
-  it("speaks UTC on every connection", async () => {
-    const shown = await db.execute<{ TimeZone: string }>(sql`show timezone`);
+  // `source` says who set the value: "client" is this connection's own option, so the test
+  // does not pass by the luck of a server whose default is UTC too. Twelve queries at the same
+  // moment make the pool open all of its ten connections.
+  it("sets UTC itself on every connection of the pool", async () => {
+    const atOnce = Array.from({ length: 12 }, () =>
+      db.execute<{ pid: number; setting: string; source: string }>(
+        sql`select pg_backend_pid() as pid, setting, source, pg_sleep(0.2) from pg_settings where name = 'TimeZone'`,
+      ),
+    );
+    const rows = (await Promise.all(atOnce)).flatMap((result) => result.rows);
 
-    expect(shown.rows).toEqual([{ TimeZone: "UTC" }]);
+    expect(new Set(rows.map((row) => row.pid)).size).toBe(10);
+    expect(new Set(rows.map((row) => `${row.setting} by ${row.source}`))).toEqual(
+      new Set(["UTC by client"]),
+    );
   });
 
   // developer-rules.md rule 6 ("JavaScript floating-point numbers never touch money").

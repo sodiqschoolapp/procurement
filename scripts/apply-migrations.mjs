@@ -15,21 +15,49 @@ const BOOKKEEPING_SCHEMA = "drizzle";
 const BOOKKEEPING_TABLE = "__drizzle_migrations";
 
 /**
+ * Where an address leads: host, port and database name, as the driver itself reads them.
+ * The driver's reading is used, not our own, because an address can name its host in more than
+ * one place and the line a person reads must name the server that is really reached.
+ * @param {string} connectionString
+ * @returns {{ host: string, port: number, database: string }}
+ */
+export function databaseTarget(connectionString) {
+  // The errors of `new URL` and of the driver can repeat the whole text, password included.
+  // This one does not.
+  const invalid = new Error("DATABASE_URL is not a valid database address.");
+  if (!URL.canParse(connectionString)) throw invalid;
+  try {
+    const { host, port, database } = new pg.Client({ connectionString });
+    return { host, port, database: database ?? "" };
+  } catch {
+    throw invalid;
+  }
+}
+
+/**
  * Host, port and database name of an address, for a line a person reads.
  * The user and the password are never part of it, and neither is the address itself.
  * @param {string} connectionString
  * @returns {string}
  */
 export function describeDatabase(connectionString) {
-  let url;
-  try {
-    url = new URL(connectionString);
-  } catch {
-    // The error of `new URL` repeats the whole text, password included. This one does not.
-    throw new Error("DATABASE_URL is not a valid database address.");
-  }
-  const database = decodeURIComponent(url.pathname.replace(/^\//, ""));
-  return `database "${database}" at ${url.hostname}:${url.port || "5432"}`;
+  const { host, port, database } = databaseTarget(connectionString);
+  return `database "${database}" at ${host}:${port}`;
+}
+
+/**
+ * What went wrong, for the one line `db:migrate` prints when it fails.
+ * @param {unknown} error
+ * @returns {string}
+ */
+export function failureReason(error) {
+  // A refused connection arrives as a group of errors with an empty message of its own.
+  const first = error instanceof AggregateError ? error.errors[0] : error;
+  if (!(first instanceof Error)) return String(first);
+  // Drizzle wraps a failed statement: its own message holds the SQL text, and PostgreSQL's
+  // reason is the cause. Both are needed to find the line of the migration.
+  if (first.cause instanceof Error) return `${first.cause.message}\n${first.message}`;
+  return first.message;
 }
 
 /**

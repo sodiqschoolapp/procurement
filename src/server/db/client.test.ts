@@ -10,18 +10,26 @@ describe("the database client without DATABASE_URL (build-plan 0.2; CLAUDE.md, s
     vi.resetModules();
   });
 
-  it("fails at import with an error that names the variable and holds no address", async () => {
-    vi.stubEnv("DATABASE_URL", "");
-    vi.resetModules();
+  // The import below loads the driver and Drizzle from disk inside the test. That takes 2.7 s
+  // on a warm machine, too close to Vitest's 5 s for a cold one (a run right after `npm ci`).
+  it(
+    "fails at import with an error that names the variable and holds no address",
+    {
+      timeout: 30_000,
+    },
+    async () => {
+      vi.stubEnv("DATABASE_URL", "");
+      vi.resetModules();
 
-    const failure = await import("@/server/db/client").then(
-      () => undefined,
-      (error: unknown) => error,
-    );
+      const failure = await import("@/server/db/client").then(
+        () => undefined,
+        (error: unknown) => error,
+      );
 
-    expect(failure).toBeInstanceOf(Error);
-    const message = (failure as Error).message;
-    expect(message).toContain("DATABASE_URL");
-    expect(message).not.toMatch(/postgres(ql)?:\/\//);
-  });
+      expect(failure).toBeInstanceOf(Error);
+      const message = (failure as Error).message;
+      expect(message).toContain("DATABASE_URL");
+      expect(message).not.toMatch(/postgres(ql)?:\/\//);
+    },
+  );
 });

@@ -1,6 +1,6 @@
 // npm run db:migrate: applies the SQL migrations of drizzle/ to the database in DATABASE_URL.
 // It prints where it works and what it applied, and never the address or a password.
-import { applyMigrations, describeDatabase } from "./apply-migrations.mjs";
+import { applyMigrations, describeDatabase, failureReason } from "./apply-migrations.mjs";
 
 const connectionString = process.env.DATABASE_URL;
 
@@ -18,8 +18,6 @@ try {
     for (const name of applied) console.log(`applied ${name}`);
   }
 } catch (error) {
-  // A refused connection arrives as a group of errors with an empty message of its own.
-  const first = error instanceof AggregateError ? error.errors[0] : error;
-  console.error(`db:migrate failed: ${first instanceof Error ? first.message : String(first)}`);
+  console.error(`db:migrate failed: ${failureReason(error)}`);
   process.exit(1);
 }

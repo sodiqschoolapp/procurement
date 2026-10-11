@@ -6,6 +6,7 @@ import { db } from "@/server/db/client";
 
 import {
   TEST_DATABASE_PREFIX,
+  assertServerAnswers,
   createTestDatabase,
   dropTestDatabase,
   testDatabaseExists,
@@ -30,7 +31,18 @@ async function countSettings(url: string): Promise<number> {
 }
 
 describe("the test-database helper (build-plan 0.2)", () => {
-  it("gives a test file its own database, with every table empty", async () => {
+  // A server that answers and refuses is passed on in its own words: "does not answer" would
+  // send the reader to Docker for a fault that is somewhere else.
+  it("passes on what the server itself says when it answers and refuses", async () => {
+    const asNobody = new URL(serverUrl);
+    asNobody.username = "invented_nobody";
+
+    await expect(assertServerAnswers(asNobody.toString())).rejects.toThrow(
+      'role "invented_nobody" does not exist',
+    );
+  });
+
+  it("starts this test file in a test database that has every table and no row", async () => {
     const current = await db.execute<{ name: string }>(sql`select current_database() as name`);
     expect(current.rows[0]?.name.startsWith(TEST_DATABASE_PREFIX)).toBe(true);
 
