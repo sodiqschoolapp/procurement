@@ -51,4 +51,31 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - Trap: `next dev` writes an `AGENTS.md` when it sees an AI agent. `agentRules: false` in `next.config.ts` stops it; do not remove that line.
 - Trap: the Playwright browser download broke twice on a weak connection. `npx playwright install chromium --only-shell` fetches only the missing part.
 
-The next task is 0.2.
+## 0.2 Database and migrations (11.10.2026, pull request #2)
+
+**Built**
+- `docker-compose.yml`: PostgreSQL 17 on `127.0.0.1:5433`, no password (D18 moved the storage service to 0.12). Drizzle, the migration `0000_settings`, `npm run db:migrate`, the client `src/server/db/client.ts`.
+- The test-database helper in `tests/helpers/`, Vitest projects `unit` and `db`, 47 tests. The constraint style: `docs/decisions.md`, 0.2.
+
+**Left out, and the task that brings it**
+- The storage service: 0.12. CI: 0.3. The clock, invented users: 0.4. The settings keys and their accessor: 1.1.
+
+**Open for the owner**
+- Before task 0.12, one `/spec-change` on `main` for two points. (1) What replaces MinIO on the developer's computer; reports of September 2026 say the last community image, frozen at 07.09.2025, can still be pulled from `quay.io/minio/minio`, and only a real `docker pull` tells. (2) The sentence "Every table also has `id` (UUID) and `created_at` unless a different key is shown" in `14-data-model.md` says in plain words that a table with its own key has `created_at` and no `id`.
+
+**What the next sessions must know**
+- A database test is a file named `*.db.test.ts` that imports `db` from `@/server/db/client`; the file gets its own database, dropped at its end. More databases: `inject("databaseServerUrl")` with `createTestDatabase()` and `dropTestDatabase()` of `tests/helpers/test-database.ts`. A constraint test reads the refusal with `refusalOf()` of `tests/helpers/database-error.ts`; Drizzle wraps the driver's error, PostgreSQL's code is in `error.cause`.
+- Never name a database test `*.test.ts`: the `unit` project has an empty `DATABASE_URL` and the client refuses to load there.
+- `created_at` has no database default; every insert passes it. Until the clock of 0.4, a test passes a fixed invented moment.
+- A migration: `npx drizzle-kit generate --name <name>`, read it, commit it. Never `drizzle-kit push`.
+- For 0.3: the database tests and the helper work only on a server with `cluster_name=procurement-compose`, so CI starts PostgreSQL with `docker compose up -d --wait` or gives its service the same name; the `trust` setting needs no value in the workflow. Proposed for that plan: a check that `npx drizzle-kit generate` finds nothing new to write, so schema files and migrations agree.
+- For 0.4: emptying tables between two tests of one file is not built and no task names it; proposed for that plan. Two test runs at the same moment on one machine drop each other's databases.
+- For 0.7: a key of several columns is given the name `<table>_pkey` in the schema (style 10). Nothing stops a page from importing `db`; that plan proposes the fence (a lint rule, or `server-only`, which is a new dependency).
+- For 0.11 and 2.3: `notifications.type` and `orf_events.type` have no bracketed list in `14-data-model.md`, while "types are enums"; each plan asks which values.
+- For 1.1: Drizzle writes a JavaScript `null` into `jsonb` as SQL NULL, so `settings.value NOT NULL` refuses it. JSON `null` can be written only as raw SQL and reads back as `null` too. How an unset setting is stored is that plan's question.
+- For 0.15: the local image should be the managed database's major version. The client sets UTC through the connection option `options`; whether a connection pooler in front of the managed database passes it on was not tried.
+- Trap: on the owner's machine port 5432 belongs to another project's PostgreSQL. Ours is 5433; never point `DATABASE_URL` at 5432.
+- Trap: the first unit-test run after `npm ci` is slow; a test that imports the client inside its body needs a longer timeout (`src/server/db/client.test.ts`).
+- seed: placeholder until 0.14.
+
+The next task is 0.3.

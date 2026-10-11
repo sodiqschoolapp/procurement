@@ -36,7 +36,7 @@ Nothing a user can use yet. These tasks build the places where the rules live: t
   - **Build:** A Next.js 16 App Router project in TypeScript strict mode with ESLint, Prettier, Tailwind CSS and shadcn/ui; the folder layout from `CLAUDE.md`; the npm scripts `dev`, `build`, `lint`, `typecheck`, `test`, `test:e2e`, `db:migrate`, `db:seed`; `.env.example` with names only; Vitest and Playwright with one sample test each; `README.md` filled in (what the project is, how to run it).
   - **Done when:** `npm run dev` shows a start page; `npm run lint`, `npm run typecheck` and `npm test` pass on a clean clone.
 
-- [ ] **0.2 Database and migrations**
+- [x] **0.2 Database and migrations**
   - **Read:** `13-technology.md` (Database; Database access); `edge-cases/developer-rules.md` (rules 5, 6, 10, 11); `14-data-model.md` (first paragraph; System: settings).
   - **Build:** `docker-compose.yml` with PostgreSQL 17; Drizzle ORM with SQL migrations in `drizzle/`; `npm run db:migrate`; the database client; the test-database helper (a real PostgreSQL, clean state for every test file); the constraint style written once in `docs/decisions.md` (UUID ids, `created_at`, PostgreSQL enums, `bigint` money, `numeric(14,3)` quantities, UTC timestamps); the first migration creates the `settings` table.
   - **Done when:** `docker compose up -d` then `npm run db:migrate` works on an empty database; a database test writes and reads a settings row; the helper leaves no rows behind.
