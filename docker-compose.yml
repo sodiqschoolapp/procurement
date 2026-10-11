@@ -1,0 +1,33 @@
+# The services the app needs on a developer's computer. Start them with: docker compose up -d
+# The file storage service joins in task 0.12 (docs/decisions.md, D18).
+name: procurement
+
+services:
+  postgres:
+    # PostgreSQL 17, the newest 17.x on each `docker compose pull` (13-technology.md, Database).
+    image: postgres:17
+    # The cluster name tells this server apart from any other PostgreSQL on the same machine.
+    # A database test reads it back, so the tests can only pass against this service.
+    command: ["postgres", "-c", "cluster_name=procurement-compose"]
+    environment:
+      POSTGRES_DB: procurement
+      POSTGRES_USER: procurement
+      # No password, on purpose. It is safe here and nowhere else: the port below answers on
+      # 127.0.0.1 only, and the data is invented. The real database on DigitalOcean always has
+      # a password, and it lives in the provider dashboard, never in this repository.
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      # This machine only. Never publish it wider: with no password, anyone who can reach the
+      # port can read and change everything. 5433 on the outside, because 5432 is often taken
+      # by another PostgreSQL on a developer's computer.
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready --username=procurement --dbname=procurement"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+volumes:
+  postgres-data:
