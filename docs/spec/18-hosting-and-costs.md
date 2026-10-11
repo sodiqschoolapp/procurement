@@ -3,7 +3,7 @@
 > Part of the School Procurement & Warehouse Platform spec, baseline of 10 October 2026 (document revision 123).
 > Index and reading order: `docs/spec/00-index.md`. Read-only: this folder changes only through `/spec-change`.
 
-Running the app costs about $25 a month for hosting. While the app is being built, a test copy adds $17 a month. The address is a sub-address of the school's own domain, so it costs nothing. Everything else is free or already yours. Prices were checked on 10 October 2026.
+Running the app costs about $25 a month for hosting once it is live. While the app is being built, only a test copy runs, for $17 a month. The address is a sub-address of the school's own domain, so it costs nothing. Everything else is free or already yours. Prices were checked on 10 October 2026.
 
 The app and the database are on DigitalOcean, in its Frankfurt data centre, and the files are on Cloudflare R2. Both are well-known providers, and nobody has to look after a server: updates, HTTPS and database backups are handled for you. The app is always on, so the first click of the day is as fast as the rest.
 
@@ -19,7 +19,7 @@ The app and the database are on DigitalOcean, in its Frankfurt data centre, and 
 | 8 | Error and uptime alerts, for example Sentry and UptimeRobot | Tell you when something breaks before a user calls. | Free plans are enough to start | Optional |
 | 9 | Next.js, PostgreSQL and every library in section 13 | The building blocks. | Free, open source | Yes |
 
-- **Total, required:** $25 per month, about $300 per year. While the test copy runs, from task 0.15 until go-live, it is $42 per month; the build plan relies on the test copy until then.
+- **Total, required:** $25 per month once the app is live, about $300 per year. While the app is being built, from task 0.15, only the test copy runs: $17 per month. Both run together, $42 per month, only for the short time between setting up the real app (task 9.4) and switching the test copy off after go-live.
 - **Why this size.** 1 GiB for the app and 1 GiB for the database is sized for 20 to 30 users, with room to spare for making PDFs and handling photos.
 - **Paying.** DigitalOcean takes Visa, Mastercard and PayPal. The card must allow international online payments. Cloudflare needs its own free account.
 - **Growing.** If the app ever feels slow or restarts, move the container to 2 GiB in the DigitalOcean control panel. That costs $25 instead of $10 and needs no rebuilding.
