@@ -148,7 +148,7 @@ Three sizes, four kinds, one shape. Every button is a fill with no border.
 
 - Fields and selects: 40 high (44 at phone width, 48 on sign-in), white fill, 1 px `--input` border, corner 8; focus is the 2 px ring. An error is a 2 px `--destructive` border and one line under the field in `--destructive`.
 - A select draws a filled "expand more" icon on the right, never a text caret.
-- A segmented control (two to four choices) is a `--accent` track with 4 px padding; the chosen item is white with navy text, the others muted text, 32 high (40 at phone width).
+- A segmented control (two to four choices) is a `--accent` track with 4 px padding; the chosen item is white with navy text, the others muted text, 32 high (44 at phone width, so the track is 52).
 - Checkboxes use the navy accent colour.
 
 ## Icons
@@ -199,6 +199,7 @@ Text 4.5 : 1 and controls 3 : 1 in both themes (checked by the app's contrast te
 This section belongs to `sodiqschoolapp/procurement` only.
 
 - **Files.** Tokens in `src/app/globals.css`; the contrast test is `tests/contrast.test.ts` (task 0.10 creates it); the shadcn/ui button is `src/components/ui/button.tsx`; the logo files are in `public/brand/`; PDFs are drawn by @react-pdf/renderer with the Golos Text files.
+- **Sign-in.** No "Forgot your password?" link: the Head renews passwords (`02-assumptions.md`, A8).
 - **Top bar.** The branch switcher with "All my branches" for a person with several branches (`11-screens-and-ux.md`, rule 1); the search field (rule 9); at the right the bell.
 - **Menu icons.** Home `home`, Requests `receipt_long`, Warehouse and Stock `inventory`, Money `payments`, Analytics `bar_chart`, Reports `description`, Admin `tune`, Notifications `notifications`, Profile `person`.
 - **Phone tab bar.** The role's menu in the spec's order (`11-screens-and-ux.md`, Interface per role); a role with more than five items shows the first four and "More".
