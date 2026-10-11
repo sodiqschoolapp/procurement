@@ -38,7 +38,7 @@ Nothing a user can use yet. These tasks build the places where the rules live: t
 
 - [ ] **0.2 Database and migrations**
   - **Read:** `13-technology.md` (Database; Database access); `edge-cases/developer-rules.md` (rules 5, 6, 10, 11); `14-data-model.md` (first paragraph; System: settings).
-  - **Build:** `docker-compose.yml` with PostgreSQL 17 and MinIO; Drizzle ORM with SQL migrations in `drizzle/`; `npm run db:migrate`; the database client; the test-database helper (a real PostgreSQL, clean state for every test file); the constraint style written once in `docs/decisions.md` (UUID ids, `created_at`, PostgreSQL enums, `bigint` money, `numeric(14,3)` quantities, UTC timestamps); the first migration creates the `settings` table.
+  - **Build:** `docker-compose.yml` with PostgreSQL 17; Drizzle ORM with SQL migrations in `drizzle/`; `npm run db:migrate`; the database client; the test-database helper (a real PostgreSQL, clean state for every test file); the constraint style written once in `docs/decisions.md` (UUID ids, `created_at`, PostgreSQL enums, `bigint` money, `numeric(14,3)` quantities, UTC timestamps); the first migration creates the `settings` table.
   - **Done when:** `docker compose up -d` then `npm run db:migrate` works on an empty database; a database test writes and reads a settings row; the helper leaves no rows behind.
 
 - [ ] **0.3 CI**
@@ -88,7 +88,7 @@ Nothing a user can use yet. These tasks build the places where the rules live: t
 
 - [ ] **0.12 File storage**
   - **Read:** `13-technology.md` (Files); `04-catalogs.md` (Rules: 6); `07-purchasing.md` (Purchase record: Receipt); `edge-cases/developer-rules.md` (rule 13); `14-data-model.md` (files); `edge-cases/system.md` ("A phone photo is very large").
-  - **Build:** The `files` table; an S3 client for MinIO locally and R2 in the cloud; a private bucket; the upload route: JPG, PNG, WebP or HEIC up to 10 MB, PDF where a task allows it, checked by content and not by name; sharp makes the 160 px and 1200 px versions; the browser shrinks a large photo before upload; a download route that refuses a signed-out visitor and calls `authorize()` for the record the file belongs to; each later task that attaches files adds its check.
+  - **Build:** The storage service in `docker-compose.yml` (moved from 0.2); the `files` table; an S3 client for MinIO locally and R2 in the cloud; a private bucket; the upload route: JPG, PNG, WebP or HEIC up to 10 MB, PDF where a task allows it, checked by content and not by name; sharp makes the 160 px and 1200 px versions; the browser shrinks a large photo before upload; a download route that refuses a signed-out visitor and calls `authorize()` for the record the file belongs to; each later task that attaches files adds its check.
   - **Done when:** Tests: a text file renamed `.jpg` is refused; an 11 MB file is refused; one upload produces both sizes; a signed-out request for a file address is refused.
 
 - [ ] **0.13 Scheduler**
