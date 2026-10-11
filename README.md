@@ -60,6 +60,10 @@ PostgreSQL is published on port 5433 of this machine, not on the usual 5432, whi
 
 `.env.example` lists the names of the variables, never a value; each task adds the names its code reads. `.env` itself is ignored by git.
 
+## In a Claude Code cloud session
+
+Nothing is done by hand there. A hook of `.claude/settings.json` runs `scripts/cloud-session-start.sh`, which does the steps of "Run it" on the cloud machine: the local `.env`, `docker compose up -d`, `npm ci` and `npm run db:migrate`. On a laptop the hook ends at once. `docs/cloud-loop.md` describes the one-time set-up of the cloud environment.
+
 ## Commands
 
 | Command              | What it does                                                                          |
