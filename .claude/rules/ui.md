@@ -8,7 +8,7 @@ paths:
 
 # Screens and texts
 
-Read first, under `docs/spec/`: `11-screens-and-ux.md` (the whole file); `10-notifications-analytics-reports.md` (Home page per role).
+Read first, under `docs/spec/`: `11-screens-and-ux.md` (the whole file); `10-notifications-analytics-reports.md` (Home page per role). Then `docs/design-system.md` before building or changing any screen or PDF: its tokens, sizes and parts, and its list "What we never do" (D23).
 
 - No text in a screen: every label is a key in `uz.json`, `ru.json` and `en.json`, added in the same task.
 - Money, dates, time and quantities go through the shared formatters: `1 250 000 so'm`, `08.10.2026`, 24-hour Tashkent time.

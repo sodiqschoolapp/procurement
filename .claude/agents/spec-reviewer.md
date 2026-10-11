@@ -35,7 +35,8 @@ Then check:
 - every Done-when part has a test or a hand step that can really be done today;
 - every new text exists in `uz`, `ru` and `en`;
 - names in tests and seeds are invented; no secret appears anywhere;
-- no file under `docs/spec/` is changed; no dependency was added without approval.
+- no file under `docs/spec/` is changed; no dependency was added without approval;
+- a changed screen or PDF follows `docs/design-system.md`: no colour outside its tokens, no button size or kind it does not list, no icon from another set, and none of its list "What we never do" (D23).
 
 ## What you report
 
