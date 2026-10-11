@@ -77,8 +77,8 @@ Nothing a user can use yet. These tasks build the places where the rules live: t
   - **Done when:** Database tests: a change and its audit row commit together and roll back together; before and after hold the old and the new values.
 
 - [ ] **0.10 App shell and menu per role**
-  - **Read:** `11-screens-and-ux.md` (Screens; Interface per role; Rules for a smooth feel: 1, 4, 5, 11, 12, 13, 15); `10-notifications-analytics-reports.md` (Home page per role); `edge-cases/00-definitions.md` (People and places).
-  - **Build:** The layout with a sidebar on desktop and a bottom tab bar on phones; the menu per role from one config, with pages a role cannot use absent; the branch switcher with "All my branches"; `/profile` with the language choice; skeleton placeholders, the empty-state component, toasts, the confirm dialog and the status-label component; light theme, Inter, one accent colour; a guard that asks before leaving a form with unsaved changes; an empty home page per role.
+  - **Read:** `11-screens-and-ux.md` (Screens; Interface per role; Rules for a smooth feel: 1, 4, 5, 11, 12, 13, 15); `10-notifications-analytics-reports.md` (Home page per role); `edge-cases/00-definitions.md` (People and places); `docs/design-system.md` (all of it); `docs/decisions.md` (D23, D25).
+  - **Build:** The layout with a sidebar on desktop and a bottom tab bar on phones; the menu per role from one config, with pages a role cannot use absent; the branch switcher with "All my branches"; `/profile` with the language choice; skeleton placeholders, the empty-state component, toasts, the confirm dialog and the status-label component; the design system of `docs/design-system.md`: its tokens for the light and dark themes in `src/app/globals.css` with a contrast test of every pair (`tests/contrast.test.ts`), Golos Text and Bitter from the app's own files, Material Symbols Rounded icons, the button sizes and kinds, fields and the segmented control, the navy menu with the on-dark logo and the bottom tab bar on phones, the theme switch on `/profile`, the sign-in page and the empty-state component as brand moments, and the logo and icons of `public/brand/`; a guard that asks before leaving a form with unsaved changes; an empty home page per role.
   - **Done when:** Playwright at 375 px and 1440 px: each of the four roles sees exactly its menu items in the spec's order; the Principal has no Admin and no Money; changing the language on `/profile` changes the menu at once.
 
 - [ ] **0.11 Notifications**
@@ -113,8 +113,8 @@ Everything the Head sets up before the first request can be written.
 
 - [ ] **1.1 Settings**
   - **Read:** `14-data-model.md` (System: settings; Notes for the build: settings keys); `11-screens-and-ux.md` (Screens: Settings; Rules for a smooth feel: 15); `08-money-and-settlement.md` (Overspend guard); `10-notifications-analytics-reports.md` (Analytics page per role: 1).
-  - **Build:** A typed settings accessor with the keys and defaults the spec lists: `default_payment_type` (Cash), `price_hint_percent` (20), `overspend_guard_percent` (10; 0 and off), `reminder_hours` (24), `escalation_hours` (48), `receipt_required_for_cash` (false), `school_name`, `logo_file_id`, `accent_color`, `school_year_start` (no default); the `/settings` screen for the Head; every change audited.
-  - **Done when:** Database tests: the defaults come back on an empty table; only the Head can write; a change writes an audit row. By hand: set the school name and logo and see them in the shell.
+  - **Build:** A typed settings accessor with the keys and defaults the spec lists: `default_payment_type` (Cash), `price_hint_percent` (20), `overspend_guard_percent` (10; 0 and off), `reminder_hours` (24), `escalation_hours` (48), `receipt_required_for_cash` (false), `school_name`, `school_year_start` (no default); the `/settings` screen for the Head; every change audited.
+  - **Done when:** Database tests: the defaults come back on an empty table; only the Head can write; a change writes an audit row. By hand: set the school name and see it in the shell.
 
 - [ ] **1.2 Branches**
   - **Read:** `04-catalogs.md` (Catalogs table: Branches; Rules: 2, 3, 9); `14-data-model.md` (branches).
@@ -533,7 +533,7 @@ The scheduled work, and a pass over every screen.
 
 - [ ] **8.3 Accessibility pass**
   - **Read:** `11-screens-and-ux.md` (Rules for a smooth feel: 13); `01-summary.md` (Quality bar); `15-quality-and-acceptance.md` (Done-check for every phase).
-  - **Build:** Every screen checked for keyboard use, WCAG AA contrast and 44 px touch targets at 375 px and 1440 px, and fixed.
+  - **Build:** Every screen checked for keyboard use and WCAG AA contrast at 375 px and 1440 px, and for 44 px touch targets at 375 px, and fixed.
   - **Done when:** An automated accessibility check runs in Playwright on every screen with no serious finding; S1 passes with the keyboard only.
 
 - [ ] **8.4 Translation pass**

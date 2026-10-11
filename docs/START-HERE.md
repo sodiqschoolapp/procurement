@@ -80,7 +80,7 @@ What real people must decide or hand over before each phase. Collect it early; a
 | Before | Prepare |
 | --- | --- |
 | Task 0.15 | DigitalOcean and Cloudflare accounts; someone who can add the DNS records. |
-| Phase 1 | The list of branches with a 2 to 4 letter code each. The users: full name, phone, role and branches of each. School name, logo and one colour. The first day of the school year. Departments of each branch with the responsible person. The answer to open question 18. |
+| Phase 1 | The list of branches with a 2 to 4 letter code each. The users: full name, phone, role and branches of each. School name. The first day of the school year. Departments of each branch with the responsible person. The answer to open question 18. |
 | Phase 1, for the import | The catalog as Excel: products and services, subtypes, measures, categories, brands and suppliers, extra cost types, current prices. A photo for the items where it helps. |
 | Phase 2 | A filled paper order request, to compare with the PDF. Answers to open questions 5 and 6. |
 | Phase 3 | Answers to open questions 3 and 8. A Manager to try buying on a phone. |
