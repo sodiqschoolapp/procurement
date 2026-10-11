@@ -10,20 +10,25 @@ One task, one session, one pull request. Only the owner merges; this skill never
 Never ask for a secret in chat and never write one into a file.
 
 All GitHub calls use `gh api`. Quote every `gh` argument, so the same line works in PowerShell and in bash. Branch names are written without quotes.
-Write long texts to a file under `.claude/tmp/` (ignored by git) and pass it with `-F "body=@<file>"`.
+`{owner}/{repo}` is `sodiqschoolapp/procurement`; write it out if `gh` cannot work it out by itself. In a cloud session GitHub's GraphQL is blocked, so `gh pr ...` and `gh issue ...` fail there: use the `gh api` lines of this skill.
+Write long texts to a file under `.claude/tmp/` (ignored by git) and pass it with `-F "body=@<file>"`. If that folder cannot be written, use a folder outside the repository.
 
 ## Which mode
 
 Run `git status --porcelain` and `git branch --show-current`.
 
-- On `main` with a clean tree: go to **Start a task**.
-- On a `task/...` branch: go to **After the review**.
-- A dirty tree on `main`: stop and say what is uncommitted. Do not stash, do not discard.
+- A dirty tree: stop and say what is uncommitted. Do not stash, do not discard.
+- On a `task/...` branch: look up its pull request, open or not: `gh api "repos/{owner}/{repo}/pulls?head={owner}:<branch>&state=all"`.
+  - It is open: go to **After the review**.
+  - It is merged: that task is over. Go to **Start a task**.
+  - It is closed without a merge, or there is none: stop and say so.
+- On any other branch with a clean tree (`main`, or the branch a cloud session starts on): go to **Start a task**.
 
 ## Start a task
 
-1. **Sync.** `git switch main`, then `git pull --ff-only`. If it cannot fast-forward, stop.
+1. **Sync.** `git switch main`, then `git pull --ff-only`. If it cannot fast-forward, stop. In a cloud session (`CLAUDE_CODE_REMOTE` is `true`) the packages and the database are already prepared by the session-start hook; if its output has a line that starts with `!!`, stop and report it (`docs/cloud-loop.md`).
 2. **Pick.** The task is `$ARGUMENTS` if given, else the first `- [ ]` line in `docs/build-plan.md`. If any task above it is unticked, stop and say so.
+   Then run `git ls-remote --heads origin "task/<id>-*"`. If it lists a branch, the task is already started: `git fetch origin "<branch>:<branch>"`, `git switch <branch>`, and go to **Which mode** again. Never make a second branch for a task.
 3. **Read**, in this order:
    - `docs/progress.md`: the last three entries, and every "what the next sessions must know".
    - `docs/decisions.md`: the Standing decisions table.

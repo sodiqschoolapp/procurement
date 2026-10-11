@@ -7,6 +7,7 @@ description: Finish the task on the current task branch - run all checks and bot
 
 Run on a `task/...` branch after the build. Only the owner merges; this skill never merges.
 Never ask for a secret in chat and never write one into a file.
+`{owner}/{repo}` is `sodiqschoolapp/procurement`; write it out if `gh` cannot work it out by itself. If `.claude/tmp/` cannot be written, use a folder outside the repository.
 
 ## If a review of the finished work already exists
 
@@ -36,12 +37,17 @@ Read the comments (`gh api "repos/{owner}/{repo}/issues/<number>/comments" --pag
    git commit -m "<id> <title>"
    git push origin task/<id>-<name>
    ```
-7. **Mark the pull request ready.** GitHub's REST API has no call for this, so this one step uses `gh api graphql`. Take `node_id` from the pull request.
+7. **Mark the pull request ready.** GitHub's REST API has no call for this, so on the laptop this one step uses `gh api graphql`. Take `node_id` from the pull request.
    ```
    gh api "repos/{owner}/{repo}/pulls/<number>"
    gh api graphql -f 'query=mutation($id:ID!){markPullRequestReadyForReview(input:{pullRequestId:$id}){pullRequest{isDraft}}}' -f "id=<node_id>"
    gh api "repos/{owner}/{repo}/issues/<number>/labels" -X POST -f "labels[]=needs-review"
    ```
+   In a cloud session GraphQL is blocked and the second line fails. Use this in its place:
+   ```
+   gh api "repos/{owner}/{repo}/pulls/<number>/ccr/ready_for_review" -X POST
+   ```
+   Then read the pull request again and check that `draft` is `false`. If it is still a draft, say so in the report and in the last line; do not go on as if it were ready.
 8. **Post the report** as a comment (`.claude/tmp/report.md`):
    ```
    gh api "repos/{owner}/{repo}/issues/<number>/comments" -X POST -F "body=@.claude/tmp/report.md"
