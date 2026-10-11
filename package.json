@@ -13,14 +13,16 @@
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "db:migrate": "node scripts/not-built-yet.mjs db:migrate 0.2",
+    "db:migrate": "node --env-file-if-exists=.env scripts/db-migrate.mjs",
     "db:seed": "node scripts/not-built-yet.mjs db:seed 0.14"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",
     "cn": "^0.4.0",
+    "drizzle-orm": "^0.45.4",
     "lucide-react": "^1.55.0",
     "next": "^16.4.0",
+    "pg": "^8.23.1",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"
   },
@@ -28,8 +30,10 @@
     "@playwright/test": "^1.64.0",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/node": "^24.19.2",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
+    "drizzle-kit": "^0.31.11",
     "eslint": "^9.39.5",
     "eslint-config-next": "^16.4.0",
     "eslint-config-prettier": "^10.1.8",
