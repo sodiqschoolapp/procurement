@@ -61,7 +61,7 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - The storage service: 0.12. CI: 0.3. The clock, invented users: 0.4. The settings keys and their accessor: 1.1.
 
 **Open for the owner**
-- Before task 0.12, one `/spec-change` on `main` for two points. (1) What replaces MinIO on the developer's computer; reports of September 2026 say the last community image, frozen at 07.09.2025, can still be pulled from `quay.io/minio/minio`, and only a real `docker pull` tells. (2) The sentence "Every table also has `id` (UUID) and `created_at` unless a different key is shown" in `14-data-model.md` says in plain words that a table with its own key has `created_at` and no `id`.
+- Before task 0.12, one `/spec-change` on `main` for one point: what replaces MinIO on the developer's computer; reports of September 2026 say the last community image, frozen at 07.09.2025, can still be pulled from `quay.io/minio/minio`, and only a real `docker pull` tells. Done on 12.10.2026 by `/spec-change`: `14-data-model.md` now says in plain words that every table has `created_at` and a table with its own key has no `id`.
 
 **What the next sessions must know**
 - A database test is a file named `*.db.test.ts` that imports `db` from `@/server/db/client`; the file gets its own database, dropped at its end. More databases: `inject("databaseServerUrl")` with `createTestDatabase()` and `dropTestDatabase()` of `tests/helpers/test-database.ts`. A constraint test reads the refusal with `refusalOf()` of `tests/helpers/database-error.ts`; Drizzle wraps the driver's error, PostgreSQL's code is in `error.cause`.

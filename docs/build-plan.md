@@ -572,6 +572,6 @@ Proof that it works, then the real environment and the real data.
   - **Done when:** The Head confirms the counts of products, users and stock lines on production.
 
 - [ ] **9.6 Restore drill**
-  - **Read:** `13-technology.md` (Running it); `16-build-order.md` (phase 8 row); `18-hosting-and-costs.md` (table row 2).
-  - **Build:** A written restore procedure in `docs/`, and one real run of it on the test copy.
-  - **Done when:** The test copy's database is restored to yesterday and the four seed users can sign in.
+  - **Read:** `13-technology.md` (Running it); `16-build-order.md` (phase 8 row); `18-hosting-and-costs.md` (table rows 2 and 7; Total).
+  - **Build:** A written restore procedure in `docs/`, and one real run of it on the test copy. A page in `docs/` with the steps by which the owner switches the test copy off after go-live and on again when the app is changed later.
+  - **Done when:** The test copy's database is restored to yesterday and the four seed users can sign in. The owner has the steps to switch the test copy off and on.

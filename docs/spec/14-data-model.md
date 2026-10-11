@@ -3,7 +3,7 @@
 > Part of the School Procurement & Warehouse Platform spec, baseline of 10 October 2026 (document revision 123).
 > Index and reading order: `docs/spec/00-index.md`. Read-only: this folder changes only through `/spec-change`.
 
-The database has 34 tables in five groups, plus the session tables the login library creates. The users table is the login library's user table with the extra columns shown. Every table also has `id` (UUID) and `created_at` unless a different key is shown. Values in square brackets are enums.
+The database has 34 tables in five groups, plus the session tables the login library creates. The users table is the login library's user table with the extra columns shown. Every table has `created_at`. Every table also has `id` (UUID) unless a different key is shown: a table with its own key has no `id`. Values in square brackets are enums.
 
 ## Organisation and catalogs
 
