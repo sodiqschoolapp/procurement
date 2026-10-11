@@ -57,7 +57,17 @@ Expected:
 - No line of the hook's output starts with `!!`.
 - Lint and typecheck pass; `npm test` passes every unit and database test; `npm run test:e2e` passes at both widths.
 
-Nothing is automated before this trial is green.
+Nothing is automated before this trial is green. It was green on 12.10.2026: every point above, 47 tests, both browser tests.
+
+### 3. One task by hand in the cloud
+
+Before any routine exists, one task is built in a cloud session with the owner passing the messages on, as on the laptop. It shows that a cloud session can push a branch, open a pull request and mark it ready.
+
+1. Start a session at claude.ai/code on this repository with the `procurement` environment and send `/next-task`. It plans, opens a draft pull request and stops.
+2. Paste its last message to the reviewer chat. When the `[review]` comment is on the pull request, send `/next-task` again in the same session; it builds. Then send `/finish-task`.
+3. Paste its last message to the reviewer chat again. At `[review] ready to merge`, merge.
+
+The session can be closed and opened again: `/next-task` in a new session finds the task's branch and goes on from it.
 
 ## Rules that keep it working
 
@@ -69,3 +79,5 @@ Nothing is automated before this trial is green.
 ## What was learned
 
 - 12.10.2026: the cloud machine has Docker, but its service is not running. Started by hand (`dockerd`), it runs containers and publishes a port on `127.0.0.1`. Tried on a cloud machine before the scripts were written. The image download could not be tried there (that session's network list had no Docker Hub); the trial shows it.
+- 12.10.2026, the trial: the image download works with the default network list. `node` is 24 from `/opt/node24`; `npm` is the machine's own (10.9), running under Node 24. A new session downloads the Playwright browser again (about 120 MiB, a few seconds), because the machine's own copy is for another Playwright version and the kept disk does not hold ours; a session that is resumed has it.
+- GitHub's GraphQL is blocked in a cloud session, so `gh pr ...` fails there. The skills use `gh api`; marking a pull request ready has its own address for cloud sessions (`.claude/skills/finish-task`).

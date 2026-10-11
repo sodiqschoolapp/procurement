@@ -8,7 +8,8 @@ argument-hint: "<what must change and why, in the owner's words>"
 
 `docs/spec/` is the source of truth. It changes only here, only when the owner asked for it, and only the owner merges.
 
-Run this in its own session, on `main`, with a clean tree. Never while a task branch is checked out. If `git branch --show-current` is not `main` or `git status --porcelain` is not empty: stop and say so.
+Run this in its own session, on `main`, with a clean tree. Never while a task branch is checked out. A cloud session starts on a branch of its own: run `git switch main` first. If `git branch --show-current` is then not `main`, or `git status --porcelain` is not empty: stop and say so.
+`{owner}/{repo}` is `sodiqschoolapp/procurement`; write it out if `gh` cannot work it out by itself.
 
 ## Steps
 
