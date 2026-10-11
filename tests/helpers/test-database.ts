@@ -50,7 +50,9 @@ async function onServer<T>(serverUrl: string, work: (client: Client) => Promise<
 export async function assertServerAnswers(serverUrl: string): Promise<void> {
   try {
     await onServer(serverUrl, (client) => client.query("select 1"));
-  } catch {
+  } catch (error) {
+    // A server that answers and refuses (a wrong user, a missing database) says so itself.
+    if (error instanceof Error && "severity" in error) throw error;
     const url = new URL(serverUrl);
     throw new Error(
       `PostgreSQL does not answer at ${url.hostname}:${url.port || "5432"}. ` +
