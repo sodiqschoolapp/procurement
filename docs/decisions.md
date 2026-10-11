@@ -27,6 +27,10 @@ Two kinds of entries live here.
 | D16 | 10.10.2026 | The owner's machine is Windows 11. Tools are checked and installed in step "Once" of `docs/START-HERE.md`. The GitHub repository is private and is `sodiqschoolapp/procurement`. | Owner's answers. |
 | D17 | 10.10.2026 | Only the owner merges pull requests. No skill, agent or session merges or pushes to `main`. | The working method of the starter pack. |
 | D18 | 11.10.2026 | The local storage service moves from task 0.2 to task 0.12. Task 0.2 puts PostgreSQL only into `docker-compose.yml`. Before task 0.12, `/spec-change` names what replaces MinIO on the developer's computer. | MinIO's public images were removed from Docker Hub in September 2026 and the project `minio/minio` is archived (25.04.2026, "no longer maintained"). Nothing before 0.12 uses file storage. Owner: "yes" on 11.10.2026 (review of the plan of 0.2, answer 2). |
+| D19 | 12.10.2026 | The build loop is to run without the owner in the middle, as in the owner's other project: builder sessions in the cloud, an automatic reviewer, the next task starting by itself. It is brought in one step at a time through `process/` pull requests that the owner merges, each step proved before the next (`docs/cloud-loop.md`). | Owner's decision. A task waited far longer for a message to be passed on than it took to build. |
+| D20 | 12.10.2026 | "Decide and flag" will replace "the builder asks, it never guesses": where the spec is silent the builder takes the most reasonable reading, writes it down with the reason and goes on; the owner confirms or changes each such decision afterwards, and a changed one becomes a fix task. No extra stop for rules about money, stock or the approval order. **Not in force yet:** it takes effect with the process change that rewrites `CLAUDE.md` and the skills together; until that is merged, `CLAUDE.md` as it stands is followed. | Owner's decision, "exactly as in sodiq-platform". |
+| D21 | 12.10.2026 | The review routine will merge task pull requests (`task/` branches only, at the commit it reviewed, with green CI). The owner merges spec changes and process changes only. **Not in force yet:** it replaces D17 with the same process change as D20; until then only the owner merges. | Owner's decision. |
+| D22 | 12.10.2026 | The test copy comes right after the loop works, not at task 0.15: every merge to `main` deploys to `ombor-test.sodiqschool.uz`, and the owner hand-tests there. The part of task 0.15 that sets it up moves forward in `docs/build-plan.md` through a process change, and `/spec-change` corrects the cost note of `18-hosting-and-costs.md` (the test copy runs from then until go-live). **Not done yet.** | Owner's decision. With the loop, the hand test moves after the merge and needs a place online. |
 
 ## Task sections
 
@@ -107,3 +111,18 @@ The tables the login library creates itself in task 0.6 are the one place this s
 - The helper creates and drops only names that match `procurement_test_[a-z0-9_]{1,40}`, checked before a command is sent. It connects to the server's own `postgres` database to do so, and never to the database of `DATABASE_URL`.
 - Database tests of a schema file or the client sit beside the code (`src/server/db/**/*.db.test.ts`); tests of the migrations and the helper sit in `tests/`.
 - `npm audit`: the production tree has no finding. `drizzle-kit` 0.31.11, a development tool, brings 4 moderate findings through the `esbuild` 0.18 inside `@esbuild-kit`, about esbuild's own development server, which nothing here starts. Not forced with `overrides`; it goes when drizzle-kit drops that package.
+
+## Process changes
+
+Changes to the working method itself. Each is a `process/` pull request that the owner merges.
+
+### Cloud sessions (12.10.2026)
+
+- A cloud session uses the PostgreSQL service of `docker-compose.yml`, like the laptop. The cloud machine has Docker with its service stopped; `scripts/cloud-session-start.sh` starts it and runs `docker compose up -d --wait`. Chosen over installing a second PostgreSQL on the cloud machine: the image, the port, the missing password and the server name the test helper asks for stay written in one file, and the tests meet the same server on the laptop, in the cloud and in CI.
+- Two scripts, as the cloud environment has two moments. `scripts/cloud-setup.sh` is pasted into the environment and prepares the machine once (Node 24, the `postgres:17` image); what it leaves on disk is kept for about a week. `scripts/cloud-session-start.sh` is the `SessionStart` hook and prepares the clone at every start and resume. Both never abort: a failed step prints a line starting with `!!`.
+- The hook does nothing on a laptop: it works only when `CLAUDE_CODE_REMOTE` is `true`.
+- The hook writes the cloud session's `.env` with the local database address of `README.md`. That address holds no secret. `.env.example` keeps names only.
+- `npm ci` is skipped on a resume when `package-lock.json` has not changed (a stamp file inside `node_modules`).
+- The cloud machine carries a browser for another Playwright version, so the hook asks Playwright for the one of `package-lock.json` (`chromium --only-shell`). For that the environment allows two download hosts beyond the default list.
+- Node 24 comes from the npm package `node`, with nodejs.org as the fallback, and the environment's `PATH` puts `/opt/node24/bin` first: the machine's own Node is 22.
+- A variable `PROCUREMENT_REVIEW_ONLY=1` makes the hook install the packages and nothing else. It is for the review routine's environment, which reads code and needs no database.
