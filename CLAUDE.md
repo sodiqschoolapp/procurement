@@ -34,7 +34,7 @@ Each has a test or a database constraint. Sources are files in `docs/spec/`.
 
 From `docs/spec/13-technology.md`. Do not add or swap a library without asking.
 
-Next.js 16 (App Router, Server Components to read, Server Actions to write; no REST API) · TypeScript strict · PostgreSQL 17 · Drizzle ORM with SQL migrations · Better Auth with the username plugin · Tailwind CSS, shadcn/ui, lucide, TanStack Table · React Hook Form with Zod · next-intl · Cloudflare R2 (MinIO locally) with sharp · ExcelJS · @react-pdf/renderer · Recharts · decimal.js · Vitest and Playwright · Docker, DigitalOcean App Platform in Frankfurt. Package manager: npm.
+Next.js 16 (App Router, Server Components to read, Server Actions to write; no REST API) · TypeScript strict · PostgreSQL 17 · Drizzle ORM with SQL migrations · Better Auth with the username plugin · Tailwind CSS, shadcn/ui, Material Symbols Rounded, TanStack Table · Golos Text and Bitter · React Hook Form with Zod · next-intl · Cloudflare R2 (MinIO locally) with sharp · ExcelJS · @react-pdf/renderer · Recharts · decimal.js · Vitest and Playwright · Docker, DigitalOcean App Platform in Frankfurt. Package manager: npm.
 
 ## Repository layout
 

@@ -59,8 +59,8 @@ A page a role cannot use is not shown greyed out; it is simply absent from the m
 8. **Lists.** 25 rows per page, loaded from the server. Filters and sorting stay in the address, so a link reopens the same view.
 9. **Search.** Ctrl+K or Cmd+K opens a search for request numbers, products and suppliers.
 10. **Formats.** Money as `1 250 000 so'm`. Dates as `08.10.2026`. Time in 24 hours, Tashkent. Quantities without trailing zeros.
-11. **Colours.** Status labels look the same everywhere. Green, orange and red are kept for the three labels and for alerts.
+11. **Colours.** Status labels look the same everywhere. Green, amber and red are kept for the three labels and for alerts; the brand orange marks only the action to take and is never a status colour.
 12. **Empty screens.** An empty list explains what belongs there and offers the button to create it.
-13. **Access for everyone.** Everything works with the keyboard, text contrast meets WCAG AA, and touch targets are at least 44 px.
+13. **Access for everyone.** Everything works with the keyboard, text contrast meets WCAG AA, and touch targets are at least 44 px on phones.
 14. **Languages.** Every label comes from translation files for Uzbek, Russian and English. No text is written directly in a screen.
-15. **Look.** Light theme, plenty of white space, one accent colour, rounded cards, the Inter font. The school's logo and accent colour are set in Settings.
+15. **Look.** The Sodiq School design system, the same as the academic platform's: `docs/design-system.md`, with the school's brand colours (navy and orange), the Golos Text font and the school's logo built in. Light and dark themes; the theme follows the device until the user chooses one.

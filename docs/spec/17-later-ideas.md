@@ -3,7 +3,7 @@
 > Part of the School Procurement & Warehouse Platform spec, baseline of 10 October 2026 (document revision 123).
 > Index and reading order: `docs/spec/00-index.md`. Read-only: this folder changes only through `/spec-change`.
 
-These eleven features are common in procurement systems and are left out of version 1 on purpose, to keep the first build small and solid. The data model above does not block any of them.
+These twelve features are common in procurement systems and are left out of version 1 on purpose, to keep the first build small and solid. The data model above does not block any of them.
 
 | Idea | What it adds |
 | --- | --- |
@@ -18,3 +18,4 @@ These eleven features are common in procurement systems and are left out of vers
 | Accounting export | A file or direct link for the school's accounting software. |
 | Supplier files | Contracts and invoices stored per supplier, with a simple rating. |
 | Second currency | Prices in US dollars for imported items, with the rate saved on the day of purchase. |
+| One sign-in with the academic platform | After both apps are live, a member of staff signs in once and uses both; the Head's user list links to the platform's staff. |

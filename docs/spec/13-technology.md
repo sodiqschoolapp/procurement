@@ -13,7 +13,8 @@ The stack is one TypeScript codebase on Next.js and PostgreSQL, chosen because C
 | Database | PostgreSQL 17 or newer | Transactions, row locks and constraints protect money and stock. |
 | Database access | Drizzle ORM with SQL migrations | Typed queries and direct control over locks. |
 | Login | Better Auth with its username plugin: username and password, sessions in the database, public sign-up off. The plugin still stores an email, so the app fills in a placeholder. A session ends 24 hours after sign-in, and several devices can be signed in at once. Users have no change-password screen; the Head renews a password on the user's page, typed or generated, and a renewal ends that user's sessions at once. There are no password rules | Accounts are created only by the Head. |
-| Components | Tailwind CSS, shadcn/ui, lucide icons, TanStack Table | A consistent look and good keyboard behaviour. |
+| Components | Tailwind CSS, shadcn/ui, Material Symbols Rounded icons (filled), TanStack Table | A consistent look and good keyboard behaviour. The icons match the school's brand book. |
+| Fonts | Golos Text, and Bitter for the sign-in and empty pages, served from the app's own files | The same fonts as the academic platform; Golos Text covers Uzbek Latin and Cyrillic and is used in the PDFs too. |
 | Forms and checks | React Hook Form with Zod | The same check runs in the browser and on the server. |
 | Reads and writes | Server Components for reading, Server Actions for writing | Fewer moving parts. TanStack Query only where live refresh is needed. |
 | Languages | next-intl with `uz`, `ru`, `en` files |  |
