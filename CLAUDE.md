@@ -111,7 +111,7 @@ Two brakes are failures, not decisions, and stay: three review rounds without ag
 
 - a reading of a money, stock or approval-order rule: a formula or a rounding in `src/domain/`, a status move, the permission matrix, the branch wall (the rules that are never broken stay unbroken);
 - an open question of `docs/spec/open-questions.md` that "Decided ahead" in `docs/decisions.md` does not answer;
-- a test or constraint deleted or weakened: only when a requirement or a decision changed, never to make failing code pass, with the reason named; a merged migration is still never edited;
+- a test or constraint deleted or weakened, or a column or table dropped: only when a requirement or a decision changed, never to make failing code pass, with the reason named; a merged migration is still never edited;
 - a new dependency: free licence, maintained, no audit finding, all three checked by the reviewer;
 - a spec contradiction, or a spec text that should change, with the proposed `/spec-change` wording;
 - a task split into a, b, c.

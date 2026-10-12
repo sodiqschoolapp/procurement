@@ -15,7 +15,7 @@ A task id, and either a plan (a file or the text) or a diff (`git diff origin/ma
 1. The task in `docs/build-plan.md`: its Read, Build and Done-when lines.
 2. Every spec file on the Read line, the named headings in full.
 3. `docs/spec/edge-cases/00-definitions.md`, `docs/spec/edge-cases/developer-rules.md`, `docs/spec/open-questions.md`.
-4. The Standing decisions in `docs/decisions.md` and the rules in `CLAUDE.md`.
+4. The Standing decisions and the "Decided ahead" entries for this task in `docs/decisions.md`, and the rules in `CLAUDE.md`. Two lines of the spec are replaced by decisions D20 and D26 until the owner's `/spec-change` rewrites them: rule 15 of `edge-cases/developer-rules.md` ("Ask, do not guess") and the sentence "Nobody decides one alone" at the top of `open-questions.md`. A question the spec leaves open is decided and flagged, not asked; do not report that as a finding.
 
 ## How you check
 
@@ -33,7 +33,7 @@ Then check:
 - nothing from `docs/spec/17-later-ideas.md` is built;
 - every item under "Decided without the owner" fills a real silence of the spec and contradicts no written rule and no "Decided ahead" answer in `docs/decisions.md`; a rule the spec gives is not replaced by a reading; an item of a Look first kind (`CLAUDE.md`, "Stop and wait for the owner") carries the mark **Look first** and comes first;
 - no business rule is built or planned that is neither in the spec nor under "Decided without the owner";
-- every Done-when part has a test or a hand step that can really be done today;
+- every Done-when part has a test or a hand step that can really be done today, or is a step of the owner named under "Decided ahead" or "Needs the owner";
 - every new text exists in `uz`, `ru` and `en`;
 - names in tests and seeds are invented; no secret appears anywhere;
 - no file under `docs/spec/` is changed; a new dependency is named under "Decided without the owner" as **Look first**;

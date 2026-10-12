@@ -12,8 +12,8 @@ Nothing is pasted for a normal task (`docs/cloud-loop.md`). These are for the mo
 | A pull request got no review | claude.ai/code/routines, the review routine | **Run now** |
 | Confirm or change a decision | issue #9, under the task's comment | `1 confirmed` or `2 change: <what instead>` |
 | A session stopped and does not go on | the session at claude.ai/code | `Read the review on the pull request and proceed.` |
-| A review is wrong | a comment on the pull request | `[review] changes needed` or `[review] approved`, then what you want, numbered |
-| A `needs-owner` pull request is settled | the pull request | remove the label `needs-owner` |
+| A review is wrong, or a `needs-owner` pull request needs your word | a comment on the pull request | `[review] approved at <sha>` or `[review] changes needed at <sha>`, then what you want, numbered. Copy the sha from the first line of the reviewer's last comment |
+| A `needs-owner` pull request is settled | the pull request | after your merge or your `[review]` comment, remove the label `needs-owner` |
 | Build one task by hand | a cloud session with the `procurement` environment | `/next-task`, or `/next-task 2.7` |
 | Review one pull request by hand | a cloud session | `/review-pr <number>` |
 | Correct the direction of a session | the session | `Stop. That is not in the plan. Go back to the approved plan; put this idea in the report.` |

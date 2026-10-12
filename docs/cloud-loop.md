@@ -65,7 +65,7 @@ The database of a cloud session is the PostgreSQL service of `docker-compose.yml
 
 ## One-time set-up
 
-Sections 1 and 2 are done (12.10.2026). Sections 3 to 6 are the owner's, once, after the pull request that brought this file is merged. Section 7 follows task 0.3.
+Done on 12.10.2026: the first environment of section 1, and section 2. The owner's, once, after the pull request that brought this file is merged: the second environment of section 1, sections 3 to 6, the first half of section 7, and section 8. The second half of section 7 follows task 0.3.
 
 ### 1. The two cloud environments
 
@@ -224,8 +224,9 @@ from step 12 of .claude/skills/next-task/SKILL.md for a draft or from step 9 of
 skill says; nothing else is started in this run.
 Then the first unticked task of docs/build-plan.md: when a task/ branch for it
 exists on origin without an open pull request and its last commit is more than two
-hours old (fetch the branch first), either it holds nothing but empty commits (git
-diff --quiet origin/main...origin/<branch>): delete it (gh api
+hours old (fetch it first: git fetch origin "<branch>:refs/remotes/origin/<branch>"),
+either it holds nothing but empty commits (git diff --quiet
+origin/main...origin/<branch>): delete it (gh api
 "repos/sodiqschoolapp/procurement/git/refs/heads/<branch>" -X DELETE) and go on
 below, so that the task can start in this run; or it holds work: open one issue
 titled "Loop stopped: <branch>" whose body starts with "@abbosc" and names the
@@ -268,9 +269,9 @@ The four repository secrets (GitHub: the repository, Settings → Secrets and va
 
 Until the four secrets exist, the job `review` fails on every pull request with "The secrets … must both be set". That is a red mark on the pull request and nothing more.
 
-### 7. Required checks, once task 0.3 is merged
+### 7. The ruleset of `main`
 
-Task 0.3 brings CI with the two jobs `checks` and `e2e`. Its own pull request is merged by the owner, by hand, because no gate exists before it. Then the owner makes green checks a condition of every merge. GitHub: the repository, Settings → Rules → Rulesets → **New ruleset** → **New branch ruleset**:
+In two moments. **Now**, before the loop starts: the ruleset below without its last row, so that nothing reaches `main` except through a pull request. **Once task 0.3 is merged**: the last row. Task 0.3 brings CI with the two jobs `checks` and `e2e`; its own pull request is merged by the owner, by hand, because no gate exists before it. GitHub: the repository, Settings → Rules → Rulesets → **New ruleset** → **New branch ruleset** (later: open `protect-main` and edit it):
 
 | Field | Value |
 | --- | --- |
@@ -281,13 +282,13 @@ Task 0.3 brings CI with the two jobs `checks` and `e2e`. Its own pull request is
 | Restrict deletions | on |
 | Block force pushes | on |
 | Require a pull request before merging | on, with 0 required approvals |
-| Require status checks to pass | on; **Add checks**: `checks` and `e2e` (they can be found once they have run, so after task 0.3's pull request). Leave "Require branches to be up to date before merging" off |
+| Require status checks to pass | after task 0.3: on; **Add checks**: `checks` and `e2e` (they can be found once they have run). Leave "Require branches to be up to date before merging" off |
 
-Everything else stays off. From then on nothing reaches `main` without a pull request with both checks green: not the reviewer's merge, not the owner's.
+Everything else stays off. With the last row, nothing reaches `main` without a pull request with both checks green: not the reviewer's merge, not the owner's.
 
 ### 8. Starting the loop
 
-With sections 3 to 6 done, press **Run now** on the start routine. It starts the first unticked task. From then on a merge starts the next one.
+With sections 3 to 6 and the first half of section 7 done, press **Run now** on the start routine. It starts the first unticked task. From then on a merge starts the next one.
 
 ## What the owner does once a day
 
@@ -297,7 +298,7 @@ With sections 3 to 6 done, press **Run now** on the start routine. It starts the
 4. **`needs-owner`.** Any pull request or issue with that label, or an `@abbosc` notification: the comment says what is needed.
 5. Answer the decided-ahead questions when the owner's reviewer chat brings them, while the phase before runs. Nothing waits for them: where no answer came, the loop decides and flags.
 
-The owner's reviewer chat fills issue #10 (cycle time per task) after each merge.
+Once a week, read two review threads end to end, so that the loop never runs unread. The owner's reviewer chat fills issue #10 (cycle time per task) after each merge.
 
 The one gate, before task 9.4, is lifted after a go-live review of every Look first decision with the owner's reviewer chat: the owner deletes the gate line in `docs/build-plan.md` (a pull request), and the next run of the start routine goes on.
 
@@ -306,12 +307,12 @@ The one gate, before task 9.4, is lifted after a go-live review of every Look fi
 - **No routine run after an event** (a pull request opened or pushed, a `[review]`, a merge): look at the run of `routines.yml` under the Actions tab of the repository. A red run names the HTTP status (401: the token was revoked or regenerated, update its secret; a missing secret is named); a green run prints the address of the session it started, and that session tells the rest. A skipped job means the event did not match. Either way the routine's next hourly run picks the pull request up.
 - **Two or more `[review]` verdicts at the same sha**: two reviewer runs met. Rounds are counted by distinct sha, so nothing needs doing. If it happens again, check that each routine has only its API trigger and its schedule.
 - **A session that stopped and does not continue**: open it at claude.ai/code and send "read the review on the pull request and proceed". An expired session is restored with its conversation when opened.
-- **A pull request with the label `needs-owner`** (the comment that set it starts with or ends its first line with `@abbosc`): the reviewer stopped after three rounds, the builder after three red CI runs, a merge was refused, a task pull request touched the loop's own rules, a task needs a step only the owner can do, or it is the first CI (section 7). The start routine starts nothing while it is open. The owner reads the comment, does or decides what it asks (a `[review] …` of their own, an answer, the merge), removes the label, and the loop goes on.
+- **A pull request with the label `needs-owner`** (the comment that set it starts with or ends its first line with `@abbosc`): the reviewer stopped after three rounds, the builder after three red CI runs, a merge was refused, a task pull request touched the loop's own rules, a task needs a step only the owner can do, or it is the first CI (section 7). The start routine starts nothing while it is open. The owner reads the comment and does what it asks. A merge by hand ends it. Anything else ends with a verdict of the owner's own on the pull request, because a plain answer wakes nobody: `[review] approved at <sha>` or `[review] changes needed at <sha>` with what is wanted, the sha copied from the first line of the reviewer's last comment. Then the owner removes the label, and the loop goes on.
 - **A task that stalled after a review** is resumed by the start routine, which posts "Resumed by the start routine." and continues; nothing to do.
 - **The comment "@abbosc No review for three hours"**: the review routine may not be running. Open it at claude.ai/code/routines, read its last runs and press **Run now**.
 - **An issue "Loop stopped: <branch>"**: a session died between the push of a branch and its pull request, and the branch holds work. Open the pull request by hand, or delete the branch; close the issue, and the loop goes on.
 - **An issue "Loop stopped: cloud session not ready"**: the session-start hook failed (its output is in the issue). Usually the environment: its network list, its `PATH` line, or a setup script that no longer equals `scripts/cloud-setup.sh`. Fix it, send the trial of section 2, close the issue.
-- **A review that is wrong**: reply on the pull request with `[review] …` yourself; the builder follows the newest `[review]`.
+- **A review that is wrong**: reply on the pull request with a verdict of your own, `[review] approved at <sha>` or `[review] changes needed at <sha>`, the sha copied from the first line of the comment you answer. The builder follows the newest `[review]`, and with the sha in it the reviewer does not review the same commit again.
 - **A routine run with a green status and no comment**: open the run and read why; the usual causes are a blocked network request, a pull request that already had a newer review, or a `[review]` at the same head sha that another run posted first.
 
 ## Rules that keep a cloud session working

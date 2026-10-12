@@ -13,4 +13,4 @@ Read first, under `docs/spec/`: `14-data-model.md` (the whole file); `edge-cases
 - Money is `bigint`; quantities are `numeric(14,3)`; timestamps are `timestamptz` in UTC.
 - No table gets a delete path except drafts that were never submitted. Stock movements, money entries and events get no update path either.
 - Each constraint has a database test that tries the forbidden write directly.
-- Dropping a column or a table needs the owner's yes first.
+- Dropping a column or a table is a **Look first** decision: only when a requirement or a decision changed, with the reason named, and as a new migration.

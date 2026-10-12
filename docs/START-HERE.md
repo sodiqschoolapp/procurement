@@ -51,7 +51,7 @@ git push -u origin main
 
 **4. The loop**
 
-From 12 October 2026 the tasks are built without you in the middle (`docs/cloud-loop.md`). Its one-time set-up is yours: the two cloud environments, the two routines, their API triggers and the four repository secrets (sections 1 to 6 there), and, after task 0.3, the required checks (section 7).
+From 12 October 2026 the tasks are built without you in the middle (`docs/cloud-loop.md`). Its one-time set-up is yours and is listed there: the second cloud environment (section 1), the two routines with their API triggers (sections 3 and 5), the four repository secrets (section 6), the ruleset of `main` (section 7, finished after task 0.3), and the first **Run now** (section 8).
 
 ## How a task is built now
 
@@ -75,7 +75,7 @@ Bring a changed decision, a wrong text or something that looks wrong to the revi
 - Real names, phones, prices and stock lists of the school never go into the repository, a test or a chat. Examples use invented data.
 - You merge spec changes and process changes. The review routine merges task pull requests, only with green checks. You may merge a task by hand at any time.
 - The spec changes only with `/spec-change`, in its own session.
-- The loop stops by itself for four things only: a secret, an account or money, production, and a task that would change the loop's own rules. Everything else it decides and shows you on issue #9.
+- The loop waits for you in these cases only: a secret, an account or money; production; a task that would change the loop's own rules; the builder and the reviewer not agreeing in three rounds, or the checks staying red three times; and the merge of task 0.3, once. Everything else it decides and shows you on issue #9.
 - If the loop seems stuck, `docs/cloud-loop.md`, "When something goes wrong", says where to look.
 - Do not change the order of the tasks by hand. A fix task goes first among the open tasks; the reviewer chat places it.
 
