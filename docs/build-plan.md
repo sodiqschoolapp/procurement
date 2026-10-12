@@ -1,21 +1,23 @@
 # Build plan
 
-The whole project as ordered tasks. One task is one Claude Code session and one pull request. Work top to bottom; a task may start only when every task above it is ticked.
+The whole project as ordered tasks. One task is one Claude Code session and one pull request. Work top to bottom, in the order of this file; a task may start only when every task above it is ticked. The loop of `docs/cloud-loop.md` builds them: the start routine takes the first unticked task.
 
 ## How to read a task
 
 - **Read**: the spec files to read first, with the headings that matter, all under `docs/spec/`. Every task also reads `edge-cases/00-definitions.md` and `open-questions.md`. A task with a migration also reads `edge-cases/developer-rules.md` and `14-data-model.md`.
 - **Build**: what exists when the task is finished. Nothing outside it is built.
 - **Done when**: a test, or a thing the owner can try by hand. A scenario named S1 to S18 is in `15-quality-and-acceptance.md`.
-- A task that turns out too large is split into a, b, c in this file, in the plan step, before any code.
-- A task that names an open question cannot be built until the owner has answered it.
+- A task that turns out too large is split by the builder into a, b, c in this file, in the task's own pull request; the first part is planned and built, and the split is flagged **Look first** on issue #9. Nothing waits for a confirmation.
+- A task that names an open question uses the owner's answer under "Decided ahead" in `docs/decisions.md`. Where no answer came, the builder takes the most reasonable reading and flags it **Look first** (D20, D26). The owner's reviewer prepares each phase's questions while the phase before it runs.
+- A fix task `<id>b` (for example `1.3b`) is added by the owner when a decision made without the owner is changed on issue #9 and code must change. It is placed first among the open tasks, so the start routine takes it next; its Read line names the decision it changes.
+- One owner gate stands before task 9.4, where the live system, real data and secrets start: a quoted line that begins with the words "Owner gate." in bold. The start routine starts nothing after it until the owner deletes that line.
 - Tick a task only in `/finish-task`.
 
 ## Phases
 
 | Phase | Tasks | What works afterwards |
 | --- | --- | --- |
-| 0. Foundations | 15 | Nothing a user can use yet. |
+| 0. Foundations | 16 | Nothing a user can use yet. |
 | 1. Catalogs and admin | 13 | Everything the Head sets up before the first request can be written. |
 | 2. Requests to approval | 15 | From an empty draft to a fully approved request, with its number, its history and its PDF. |
 | 3. Purchasing | 9 | The Manager records what was really bought. |
@@ -25,7 +27,7 @@ The whole project as ordered tasks. One task is one Claude Code session and one 
 | 7. Transfers and counts | 4 | Stock moving between branches, and stock checked against the shelf. |
 | 8. Jobs and polish | 4 | The scheduled work, and a pass over every screen. |
 | 9. Before go-live | 6 | Proof that it works, then the real environment and the real data. |
-| **Total** | **100** | |
+| **Total** | **101** | |
 
 ## Phase 0: Foundations
 
@@ -42,9 +44,14 @@ Nothing a user can use yet. These tasks build the places where the rules live: t
   - **Done when:** `docker compose up -d` then `npm run db:migrate` works on an empty database; a database test writes and reads a settings row; the helper leaves no rows behind.
 
 - [ ] **0.3 CI**
-  - **Read:** `15-quality-and-acceptance.md` (Test layers; Done-check for every phase); `edge-cases/developer-rules.md` (rule 14).
-  - **Build:** A GitHub Actions workflow on every pull request and on `main`: install, lint, typecheck, unit tests, database tests against a PostgreSQL service, the Playwright smoke test, and migrate on an empty database. The seed step is switched on in 0.14 and the translation check in 0.5.
-  - **Done when:** The pull request of this task shows every check green. The plan links one run where a deliberately failing test turned the check red; that test is gone from the final diff.
+  - **Read:** `15-quality-and-acceptance.md` (Test layers; Done-check for every phase); `edge-cases/developer-rules.md` (rule 14); `docs/decisions.md` (Decided ahead: task 0.3); `docs/cloud-loop.md` (The loop; section 7).
+  - **Build:** A GitHub Actions workflow, `.github/workflows/ci.yml`, on every pull request and on `main`, with two jobs named `checks` and `e2e`: install, the audit of the production dependencies, lint, typecheck, unit tests, database tests against the PostgreSQL of `docker-compose.yml`, migrate on an empty database, the check that the schema files and the migrations agree, the check that no merged migration was edited, and the Playwright smoke test. The two guards against a migration skipped in silence: a test that the time stamps of the migration journal ascend, and the count check in `scripts/apply-migrations.mjs`. The seed step is switched on in 0.14 and the translation check in 0.5.
+  - **Done when:** The pull request of this task shows both checks green. The plan links one run where a deliberately failing test turned the check red; that test is gone from the final diff. The owner merges this pull request by hand, then makes the two checks required (`docs/cloud-loop.md`, section 7).
+
+- [ ] **0.16 Test copy: the app online at the test address**
+  - **Read:** `18-hosting-and-costs.md` (whole file); `13-technology.md` (Running it); `02-assumptions.md` (A12); `sources.md` (hosting pages); `docs/decisions.md` (D22; Decided ahead: task 0.16).
+  - **Build:** Moved forward from 0.15 (D22). A Dockerfile for the app; a health route that answers only when the database answers and names the commit it runs; the DigitalOcean App Platform spec for the test copy, kept in the repository (1 GiB container, development database, Frankfurt, a new version on every push to `main`, migrations run before the new version starts, the address `ombor-test.sodiqschool.uz`); a CI step that builds the image, starts it against the CI database and calls the health route; `docs/deploy.md`: the owner's steps in the DigitalOcean and DNS dashboards, one by one, and every environment variable by name with the place where the owner types it. No secret enters the repository, a pull request or a chat.
+  - **Done when:** CI builds the image and the health route answers there. After the owner's steps of `docs/deploy.md`: a merged pull request reaches `https://ombor-test.sodiqschool.uz` without manual steps, and the start page opens there.
 
 - [ ] **0.4 Clock, ids and test helpers**
   - **Read:** `edge-cases/developer-rules.md` (rules 8, 10); `15-quality-and-acceptance.md` (Test layers); `edge-cases/requests-and-approval.md` ("The year changes").
@@ -101,10 +108,10 @@ Nothing a user can use yet. These tasks build the places where the rules live: t
   - **Build:** `npm run db:seed`: 2 branches with invented names (one has the code `CHL`), one user per role with invented names, passwords read from the local `.env`; safe to run twice; CI runs migrate and seed on an empty database. Later tasks extend the seed.
   - **Done when:** The CI step is green. By hand: sign in as each of the four seed users and see a different empty home page.
 
-- [ ] **0.15 Test environment and deploy pipeline**
-  - **Read:** `18-hosting-and-costs.md` (whole file); `13-technology.md` (Running it); `02-assumptions.md` (A12); `sources.md` (hosting pages).
-  - **Build:** A Dockerfile; the DigitalOcean App Platform spec for the test copy (1 GiB container, development database, Frankfurt); migrations run at deploy; a health route; the R2 bucket of the test copy; the address `ombor-test.sodiqschool.uz`; a page in `docs/` that lists every environment variable by name and says where the owner types it. The owner types every secret in the provider dashboards; no secret enters the repository or the chat.
-  - **Done when:** A merged pull request reaches the test environment without manual steps, and the four seed users can sign in at the test address.
+- [ ] **0.15 Test copy: file storage and seed users**
+  - **Read:** `18-hosting-and-costs.md` (whole file); `13-technology.md` (Files; Running it); `02-assumptions.md` (A12); `docs/deploy.md`; `docs/decisions.md` (D22).
+  - **Build:** What the test copy of 0.16 still lacks, now that file storage (0.12) and the seed (0.14) exist: the R2 bucket of the test copy and its variables, and the seed users on the test copy; `docs/deploy.md` gains the owner's steps for both and the new variable names. The owner types every secret in the provider dashboards; no secret enters the repository or the chat.
+  - **Done when:** After the owner's steps: the four seed users can sign in at the test address, and a photo uploaded there is shown again.
 
 
 ## Phase 1: Catalogs and admin
@@ -560,6 +567,8 @@ Proof that it works, then the real environment and the real data.
   - **Read:** `18-hosting-and-costs.md` (table row 8).
   - **Build:** If the owner wants it: error alerts and an uptime check on free plans, as section 18 names them.
   - **Done when:** A forced error on the test copy reaches the owner as an alert.
+
+> **Owner gate.** The start routine stops here until the owner, after the go-live review of every Look first decision with the owner's reviewer, deletes this line. From here on the live system, real data and secrets start.
 
 - [ ] **9.4 Production**
   - **Read:** `18-hosting-and-costs.md` (whole file); `13-technology.md` (Running it); `open-questions.md` (question 10).

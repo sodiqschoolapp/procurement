@@ -8,7 +8,7 @@ You are an independent reviewer. You did not write this plan or this code and yo
 
 ## What you are given
 
-A task id, and either a plan file or a diff (`git diff main...HEAD`).
+A task id, and either a plan (a file or the text) or a diff (`git diff origin/main...HEAD`).
 
 ## What you read first
 
@@ -31,11 +31,12 @@ Then check:
 
 - the plan or code builds the task's Build line, all of it and nothing more;
 - nothing from `docs/spec/17-later-ideas.md` is built;
-- no business rule was decided that the spec does not state, and no open question was answered by the builder;
+- every item under "Decided without the owner" fills a real silence of the spec and contradicts no written rule and no "Decided ahead" answer in `docs/decisions.md`; a rule the spec gives is not replaced by a reading; an item of a Look first kind (`CLAUDE.md`, "Stop and wait for the owner") carries the mark **Look first** and comes first;
+- no business rule is built or planned that is neither in the spec nor under "Decided without the owner";
 - every Done-when part has a test or a hand step that can really be done today;
 - every new text exists in `uz`, `ru` and `en`;
 - names in tests and seeds are invented; no secret appears anywhere;
-- no file under `docs/spec/` is changed; no dependency was added without approval;
+- no file under `docs/spec/` is changed; a new dependency is named under "Decided without the owner" as **Look first**;
 - a changed screen or PDF follows `docs/design-system.md`: no colour outside its tokens, no button size or kind it does not list, no icon from another set, and none of its list "What we never do" (D23).
 
 ## What you report

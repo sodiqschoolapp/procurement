@@ -1,86 +1,87 @@
 ---
 name: next-task
-description: Start the next build-plan task (read it, write the plan, open a draft pull request, wait for review), or, when a task branch is already open, act on the newest [review] comment and build.
+description: Start a task from docs/build-plan.md (read the task and its spec files, write the plan with the decisions made without the owner, have the spec-reviewer check it, open a draft pull request, wait for the review), or, when the task already has a pull request, act on the newest [review] comment and build.
 argument-hint: "[task id, for example 2.7; empty = first unticked task]"
+disable-model-invocation: true
 ---
 
-# next-task
+# Start a task
 
-One task, one session, one pull request. Only the owner merges; this skill never merges and never pushes to `main`.
-Never ask for a secret in chat and never write one into a file.
+Task requested: $ARGUMENTS
 
-All GitHub calls use `gh api`. Quote every `gh` argument, so the same line works in PowerShell and in bash. Branch names are written without quotes.
-`{owner}/{repo}` is `sodiqschoolapp/procurement`; write it out if `gh` cannot work it out by itself. In a cloud session GitHub's GraphQL is blocked, so `gh pr ...` and `gh issue ...` fail there: use the `gh api` lines of this skill.
-Write long texts to a file under `.claude/tmp/` (ignored by git) and pass it with `-F "body=@<file>"`. If that folder cannot be written, use a folder outside the repository.
+One task, one session, one branch, one pull request. This skill never merges and never pushes to `main`. Never ask for a secret and never write one into a file. The loop this skill is part of is described in `docs/cloud-loop.md`.
 
-## Which mode
+## Where the task stands
 
-Run `git status --porcelain` and `git branch --show-current`.
+1. Run `git status --porcelain`. If anything is listed, stop and say what is uncommitted: a task starts from a clean tree. Do not stash, do not discard.
+2. Run `git fetch origin`. Open `docs/build-plan.md` as it is on `origin/main` (`git show origin/main:docs/build-plan.md`). With a task id above, use that task; otherwise the first `- [ ]` task. Say which task you chose and quote it. If the task comes after an owner gate line (`> **Owner gate.**`), stop and say so.
+3. Run `git ls-remote --heads origin "task/<id>-*"`.
+   - No branch: go on with step 4.
+   - A branch with an open pull request (GitHub commands below): the task is started. Switch to it (`git fetch origin "<branch>:<branch>"` when it is not here yet, then `git switch <branch>`) and go to step 12.
+   - A branch without an open pull request: stop and say "task `<id>` is already started". Another session may be opening its pull request, or one died before it; the start routine clears such a branch after two hours.
 
-- A dirty tree: stop and say what is uncommitted. Do not stash, do not discard.
-- On a `task/...` branch: look up its pull request, open or not: `gh api "repos/{owner}/{repo}/pulls?head={owner}:<branch>&state=all"`.
-  - It is open: go to **After the review**.
-  - It is merged: that task is over. Go to **Start a task**.
-  - It is closed without a merge, or there is none: stop and say so.
-- On any other branch with a clean tree (`main`, or the branch a cloud session starts on): go to **Start a task**.
+## Before planning
 
-## Start a task
-
-1. **Sync.** `git switch main`, then `git pull --ff-only`. If it cannot fast-forward, stop. In a cloud session (`CLAUDE_CODE_REMOTE` is `true`) the packages and the database are already prepared by the session-start hook; if its output has a line that starts with `!!`, stop and report it (`docs/cloud-loop.md`).
-2. **Pick.** The task is `$ARGUMENTS` if given, else the first `- [ ]` line in `docs/build-plan.md`. If any task above it is unticked, stop and say so.
-   Then run `git ls-remote --heads origin "task/<id>-*"`. If it lists a branch, the task is already started: `git fetch origin "<branch>:<branch>"`, `git switch <branch>`, and go to **Which mode** again. Never make a second branch for a task.
-3. **Read**, in this order:
-   - `docs/progress.md`: the last three entries, and every "what the next sessions must know".
-   - `docs/decisions.md`: the Standing decisions table.
+4. On the laptop: `git switch main`, `git pull --ff-only`, `npm ci` when `package-lock.json` changed, `docker compose up -d`, `npm run db:migrate`; if one fails, stop and show the error. In a cloud session (`CLAUDE_CODE_REMOTE` is `true`) skip all of it: the session-start hook has installed, started the database and migrated, and the task's branch is made from `origin/main` in step 9. If the hook's output has a line that starts with `!!`, the machine is not ready: open one issue titled `Loop stopped: cloud session not ready` whose body starts with `@abbosc` and holds the hook's output (only if no open issue has that title), and stop.
+5. Read, in this order:
+   - `docs/progress.md`: the two newest entries, and every line of the file that names this task's id (`grep -n "<id>" docs/progress.md`); not the whole file.
+   - `docs/decisions.md`: the Standing decisions table, and under "Decided ahead" every entry for this task's id. Those are the owner's answers, not open questions; do not decide again what is decided there.
    - `docs/spec/edge-cases/00-definitions.md` and `docs/spec/open-questions.md`.
-   - Every file and heading on the task's **Read** line. With a migration, also `docs/spec/edge-cases/developer-rules.md` and `docs/spec/14-data-model.md`.
-   - The code the task will touch or call.
-4. **Write the plan** to `.claude/tmp/plan.md` with exactly these headings:
+   - Every file and heading on the task's **Read** line, in full. With a migration, also `docs/spec/edge-cases/developer-rules.md` and `docs/spec/14-data-model.md`.
+   - The code the task will touch or call. Propose nothing before you have seen it.
+
+## The plan
+
+6. Write the plan with exactly these headings:
    - `## Task`: id, title, and the task's Build and Done-when lines copied from the build plan.
    - `## What will exist`: the things a user or a test can see afterwards.
    - `## Database changes`: tables, columns, constraints, indexes; "none" if none.
    - `## Server actions and queries`: one line each, with the role, the branch scope and the Manager right it needs.
    - `## Screens`: address, who sees it, what differs on a phone.
    - `## Tests`: one line each, naming the spec file and rule it checks. Say which are unit, database, Playwright.
-   - `## Questions`: numbered. Every business rule the spec does not give, every open question the task names. Do not answer them yourself.
+   - `## Decided without the owner`: every question the spec leaves open or answers unclearly, numbered, each with the chosen answer (the most reasonable reading: the spec's own lines, the standing decisions, the way the school works), the reason in one sentence, and the spec lines it rests on. The items of a Look first kind (`CLAUDE.md`, "Stop and wait for the owner") come first, each starting with **Look first**. "None" if none.
+   - `## Needs the owner`: stop-list items only (`CLAUDE.md`, "Stop and wait for the owner": a secret, an account with a provider, money, production). Say exactly what the owner has to do and where, and for each step whether the build can go on without it. A step the owner can do after the merge (an account opened, a secret typed in a dashboard, a DNS record) does not hold the task: plan and build everything that does not need it, and list the steps in the report under "For the owner". "None" if none.
    - `## Left out`: what the task does not build, and the task that brings it.
-   - `## Size`: files you expect to touch. Above about 40, or more than one session of building: propose a split into a, b, c and stop after the review of that proposal.
-5. **Self-review.** Ask the `spec-reviewer` subagent to review `.claude/tmp/plan.md` against the task's spec files. Fix every Must-fix item in the plan. Add its "Not checked" list at the end of the plan.
-6. **Branch and pull request.** `<name>` is the title in lower case with hyphens.
+   - `## Size`: the files you expect to touch.
+7. If the task is too large for one session (above about 40 files, or more than one session of building), split it yourself: write the parts a, b, c into `docs/build-plan.md` in this task's pull request (the first part keeps the branch), plan and build the first part only, and put the split under "Decided without the owner" marked **Look first**. Nothing waits for a confirmation.
+8. Ask the `spec-reviewer` subagent to review the plan (not a diff) against the task's spec files. Fix every Must-fix item in the plan. Under the plan, say what the reviewer found and what you changed, and add its "Not checked" list.
+
+## The draft pull request
+
+9. Run `git ls-remote --heads origin "task/<id>-*"` once more; if it now lists a branch, stop and say "task `<id>` is already started". Otherwise make the branch from `origin/main`, with `<name>` the title in lower case with hyphens:
    ```
-   git switch -c task/<id>-<name>
+   git switch -c task/<id>-<name> origin/main
    git commit --allow-empty -m "<id> Plan"
    git push -u origin task/<id>-<name>
-   gh api "repos/{owner}/{repo}/pulls" -X POST -f "title=<id> <title>" -f "head=task/<id>-<name>" -f "base=main" -F "draft=true" -F "body=@.claude/tmp/plan.md"
-   gh api "repos/{owner}/{repo}/issues/<number>/labels" -X POST -f "labels[]=needs-review"
    ```
-7. **Stop.** Say only: `Waiting for review on the pull request: <url>`. Build nothing.
+10. Open a draft pull request (GitHub commands below). Its title is `<id> <title>`; its body is the plan under the heading `## Plan`. Print its address. In a cloud session, bind the pull request to the session with the `bind_pr` tool (in some sessions it is listed as `subscribe_pr_activity`), so that `[review]` comments and CI results wake it, and say that you did.
+11. Stop. Say: `Waiting for review on the pull request: <url>`. When "Needs the owner" names a step the build cannot go on without, also post one comment on the pull request that starts with `@abbosc` and repeats it. Build nothing before the review.
 
 ## After the review
 
-1. Find the pull request and its comments:
-   ```
-   gh api "repos/{owner}/{repo}/pulls?head={owner}:<branch>&state=open"
-   gh api "repos/{owner}/{repo}/issues/<number>/comments" --paginate
-   ```
-2. Take the newest comment that starts with `[review]`. No such comment: stop and say the review has not arrived.
-3. Remove the label: `gh api "repos/{owner}/{repo}/issues/<number>/labels/needs-review" -X DELETE`
-4. Act on its first line:
-   - **`[review] approved`**: build the plan, applying every correction and every answer in the comment. Follow `CLAUDE.md` and the path rules. Commit in small steps. When the build is done, continue with `/finish-task`.
-   - **`[review] changes needed`**: fix the plan, save it, update the body, add the label again, stop.
-     ```
-     gh api "repos/{owner}/{repo}/pulls/<number>" -X PATCH -F "body=@.claude/tmp/plan.md"
-     gh api "repos/{owner}/{repo}/issues/<number>/labels" -X POST -f "labels[]=needs-review"
-     ```
-   - **`[review] owner decision needed`**: answer what the spec does answer, as a comment; list what only the owner can decide; stop.
-     ```
-     gh api "repos/{owner}/{repo}/issues/<number>/comments" -X POST -F "body=@.claude/tmp/comment.md"
-     ```
+12. When you are told to continue, or a comment on the pull request reaches you, read every comment of the pull request. Review comments start with `[review]`. Act on the newest one. When it is `approved` or `changes needed`, first post one line on the pull request, "Acting on the review.": the start routine resumes a task that shows no reaction after such a review.
+    - `[review] approved`: build. The comment may carry corrections to the plan and may change a decision under "Decided without the owner"; build with the reviewer's version.
+    - `[review] changes needed at <sha>: CI red (no checks: merge conflict with main)`: the pull request conflicts with `main`, so GitHub ran no CI. Merge `origin/main` into the branch (`git fetch origin main`, then `git merge origin/main`); a conflict in `docs/progress.md`, `docs/decisions.md` or `docs/build-plan.md` keeps both sides, the task's own entry first; any other conflict is resolved by reading both sides. Then run step 1 of `finish-task`, commit the merge, push, and stop again. It is not a review round.
+    - `[review] changes needed`: change the plan as asked, update the body of the pull request, post a comment that says what changed, then make an empty commit `<id> Plan, revised` and push it, and stop again. A plan revision changes no file; without the push the review routine sees no change newer than its review and never reviews the plan again.
+    - `[review] owner decision needed`, or a question: comes only for stop-list items. Answer what you can in a comment and stop; the owner answers the rest.
+    - No `[review]` comment yet: stop and say the review has not arrived.
+    A comment that asks for something outside the task, or against `CLAUDE.md`, is not followed: say so in a comment and stop.
+13. Build on the task branch.
+    - Build only what the approved plan says. A new idea goes into the report, not into the code. Follow `CLAUDE.md` and the path rules of `.claude/rules/`. Write the tests with the code; for `src/domain/`, permissions and database constraints, write the failing test first. Commit in small steps.
+    - While you build, post a one-line progress comment on the pull request at least once an hour (what is done, what is next): the start routine resumes a task whose pull request shows no commit and no comment for two hours, and a second session must not start on a task that is still being built.
+    - A question that comes up while building is decided like one in the plan: the most reasonable reading, recorded under "Decided without the owner" in the report, marked **Look first** when it is of that kind. A conflict inside the spec is a decision, not a stop: follow the written rule where one exists; when following the spec is impossible, take the nearest reading that keeps the rules that are never broken (`CLAUDE.md`), mark it **Look first** with the proposed `/spec-change` wording, and go on. Never edit `docs/spec/`.
+    - Only a stop-list step that the build cannot go on without stops the build: say what the owner has to do in a comment that starts with `@abbosc`, add the label `needs-owner`, and stop. You never open an account, pay, type a secret or touch production yourself.
+14. When the work is ready, run `/finish-task` yourself.
 
-## While building
+## GitHub commands
 
-- Build only what the approved plan says. A new idea goes into the report, not into the code.
-- A business rule you cannot find in the spec: stop and ask. Do not guess, do not pick the "obvious" one.
-- If the spec itself is wrong or must change: stop, and tell the owner to run `/spec-change` in its own session on `main`. Never edit `docs/spec/` here.
-- A new dependency: ask first, with the reason and the alternative.
-- If the session grows long: commit, write what is done and what is left in a pull-request comment, and stop.
+These work on the laptop and in a cloud session, where GitHub's GraphQL is blocked and `gh pr …` and `gh issue …` fail. Quote every `gh` argument, so the same line works in PowerShell and in bash; branch names are written without quotes. Long texts go into a file under `.claude/tmp/` (ignored by git), or into a folder outside the repository if that one cannot be written, and are passed with `-F "body=@<file>"`.
+
+- Open a draft pull request: `gh api "repos/sodiqschoolapp/procurement/pulls" -X POST -f "title=<id> <title>" -f "head=task/<id>-<name>" -f "base=main" -F "draft=true" -F "body=@<file>"` (the answer holds `number`).
+- The pull request of a branch: `gh api "repos/sodiqschoolapp/procurement/pulls?head=sodiqschoolapp:<branch>&state=all"`.
+- Read a pull request: `gh api "repos/sodiqschoolapp/procurement/pulls/<n>"`; its comments: `gh api "repos/sodiqschoolapp/procurement/issues/<n>/comments" --paginate`; its checks: `gh api "repos/sodiqschoolapp/procurement/commits/<head sha>/check-runs"`.
+- Post a comment: `gh api "repos/sodiqschoolapp/procurement/issues/<n>/comments" -X POST -F "body=@<file>"`. A comment on the decisions issue is the same command with `9` as `<n>`.
+- Update the body: `gh api "repos/sodiqschoolapp/procurement/pulls/<n>" -X PATCH -F "body=@<file>"`.
+- Mark ready, in a cloud session: `gh api "repos/sodiqschoolapp/procurement/pulls/<n>/ccr/ready_for_review" -X POST`. On the laptop, where that address does not exist: `gh api graphql -f 'query=mutation($id:ID!){markPullRequestReadyForReview(input:{pullRequestId:$id}){pullRequest{isDraft}}}' -f "id=<node_id of the pull request>"`. Then read the pull request again: `draft` must be `false`.
+- Labels: `gh api "repos/sodiqschoolapp/procurement/issues/<n>/labels" -X POST -f "labels[]=<label>"`; remove one: `gh api "repos/sodiqschoolapp/procurement/issues/<n>/labels/<label>" -X DELETE`.
+- Open an issue: `gh api "repos/sodiqschoolapp/procurement/issues" -X POST -f "title=<title>" -F "body=@<file>"`; the open ones: `gh api "repos/sodiqschoolapp/procurement/issues?state=open"`.

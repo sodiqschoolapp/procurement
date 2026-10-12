@@ -1,6 +1,6 @@
 # Progress
 
-The memory between sessions. `/finish-task` adds one entry per task, newest at the bottom. `/next-task` reads the last three entries and every "what the next sessions must know".
+The memory between sessions. `/finish-task` adds one entry per task, newest at the bottom. `/next-task` reads the two newest entries and every line that names its task, so a note for one later task starts with `For <id>:`.
 
 ## Format of an entry
 
@@ -46,7 +46,7 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - Next.js 16.4 ships its own guides in `node_modules/next/dist/docs/`. Read the guide there before using a Next.js feature; it differs from older versions.
 - The page texts are read by a plain import of `uz.json`. Task 0.5 replaces that import in `src/app/layout.tsx` and `src/app/page.tsx`. A new text goes into all three message files.
 - shadcn (style `base-vega`: Base UI, the Vega look): add a component with `npx shadcn@latest add <name>` and never run `init` again; `init` writes a font, a dark block and `src/lib/`. After an `add`, check `git status` for anything beyond the component. `cn()` is imported from `@/components/utils`; there is no `src/lib/`.
-- The plan of task 2.1 asks the owner about a lint rule that stops `src/domain/` importing from outside its folder (report of 0.1, point 7; the review said yes in principle).
+- For 2.1: add a lint rule that stops `src/domain/` importing from outside its folder (report of 0.1, point 7; the review said yes).
 - `npm run lint` also checks formatting; `npm run format` fixes it. `docs/`, `.claude/` and `CLAUDE.md` are never formatted. `npm run dev` answers on this machine only (`127.0.0.1`); never open it to the network.
 - Trap: `next dev` writes an `AGENTS.md` when it sees an AI agent. `agentRules: false` in `next.config.ts` stops it; do not remove that line.
 - Trap: the Playwright browser download broke twice on a weak connection. `npx playwright install chromium --only-shell` fetches only the missing part.
@@ -73,9 +73,19 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - For 0.7: a key of several columns is given the name `<table>_pkey` in the schema (style 10). Nothing stops a page from importing `db`; that plan proposes the fence (a lint rule, or `server-only`, which is a new dependency).
 - For 0.11 and 2.3: `notifications.type` and `orf_events.type` have no bracketed list in `14-data-model.md`, while "types are enums"; each plan asks which values.
 - For 1.1: Drizzle writes a JavaScript `null` into `jsonb` as SQL NULL, so `settings.value NOT NULL` refuses it. JSON `null` can be written only as raw SQL and reads back as `null` too. How an unset setting is stored is that plan's question.
-- For 0.15: the local image should be the managed database's major version. The client sets UTC through the connection option `options`; whether a connection pooler in front of the managed database passes it on was not tried.
+- For 0.16 (moved forward from 0.15): the local image should be the managed database's major version. The client sets UTC through the connection option `options`; whether a connection pooler in front of the managed database passes it on was not tried.
 - Trap: on the owner's machine port 5432 belongs to another project's PostgreSQL. Ours is 5433; never point `DATABASE_URL` at 5432.
 - Trap: the first unit-test run after `npm ci` is slow; a test that imports the client inside its body needs a longer timeout (`src/server/db/client.test.ts`).
 - seed: placeholder until 0.14.
+
+## Process: the loop runs without the owner (12.10.2026)
+
+**What the next sessions must know**
+- `CLAUDE.md` changed: where the spec is silent you decide, write it under "Decided without the owner" and go on; only the stop list stops a task; the weightiest decisions are marked **Look first** (D20, D26).
+- The three skills changed: `/next-task`, `/finish-task`, `/review-pr`. Read the skill, not your memory of it. The loop is in `docs/cloud-loop.md`.
+- `/finish-task` runs the format, lint, typecheck and `npx vitest run --changed origin/main`; CI runs everything once task 0.3 is merged.
+- A note for one later task starts with `For <id>:`; `/next-task` reads the two newest entries and every line that names its task.
+- For 0.3: the owner's answers are in `docs/decisions.md`, "Decided ahead: task 0.3"; the owner merges that pull request by hand.
+- For 0.16: the task after 0.3 is 0.16, the test copy, moved forward from 0.15 (D22); "Decided ahead: task 0.16".
 
 The next task is 0.3.
