@@ -3,5 +3,8 @@
     "title": "Maktab xaridlari va ombor platformasi",
     "notice": "Loyiha o'rnatildi. Hozircha bu yerda hech narsadan foydalanib bo'lmaydi.",
     "version": "Versiya"
+  },
+  "format": {
+    "currency": "so'm"
   }
 }

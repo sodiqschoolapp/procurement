@@ -80,6 +80,13 @@ export function businessYear(moment: Date): number {
   return wallClockInTashkent(moment).year;
 }
 
+/** The wall-clock time in Tashkent, 24 hours, written `HH:mm` (11-screens-and-ux.md rule 10). */
+export function businessTime(moment: Date): string {
+  refuseInvalid(moment);
+  const { hour, minute } = wallClockInTashkent(moment);
+  return `${pad(hour, 2)}:${pad(minute, 2)}`;
+}
+
 /** The UTC moment a business date begins: 00:00 in Tashkent. For "from day … to day" filters. */
 export function businessDayStart(date: BusinessDate): Date {
   const match = BUSINESS_DATE_PATTERN.exec(date);

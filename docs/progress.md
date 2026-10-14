@@ -151,4 +151,23 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - `dropTestDatabase` waits up to 5 s for a closed pool's connections to leave before `with (force)`: `pool.end()` resolves early, and a terminated connection (57P01) failed CI as an unhandled error.
 - Not caught by the lint rule: `new globalThis.Date()`, `Date["now"]`, a raw `sql\`now()\``; reviewers look for them.
 
-The next task is 0.5.
+## 0.5 Languages and formats (14.10.2026, pull request #15)
+
+**Built**
+- next-intl 4 without routing: `src/i18n/request.ts` picks the language with `chooseLocale()` (`src/i18n/locale.ts`): user, cookie `locale`, else `uz`. The layout and start page read texts through `getTranslations`; `<html lang>` follows the language.
+- `src/i18n/format.ts`: `formatMoney(bigint, unit)`, `formatDate`, `formatTime`, `formatQuantity(text, locale)`, `bindFormatters()`; `useFormatters()` and `getFormatters()` bind them to the request. `businessTime()` in `src/domain/business-date.ts`.
+- `npm run i18n:check` (`scripts/check-translations.mjs`), a step of the job `checks`. The red run that proved it: actions run 38518216269.
+- ESLint: `react/jsx-no-literals` and `LITERAL_TEXT_PROP_SELECTORS` for screens; `tests/no-literal-text.test.ts`.
+
+**Left out, and the task that brings it**
+- `users.locale`, the sign-in language select that writes the cookie: 0.6. A language switch for a signed-in user: the app shell of phase 1.
+
+**What the next sessions must know**
+- A screen shows money, dates, times and quantities only through `useFormatters()` (components) or `getFormatters()` (async server code, PDF, export); never import `get-formatters.ts` into a client component.
+- `next-intl.d.ts` types the keys from `uz.json`: a missing key is a typecheck error, a key missing in `ru`/`en` fails `i18n:check`.
+- For 0.6: pass the user's `locale` into `chooseLocale()` in `src/i18n/request.ts`, read from the server session only, never from a cookie or browser input (permission review of 0.5). The sign-in select writes the cookie `LOCALE_COOKIE`.
+- `NextIntlClientProvider` sends the whole message file to the browser; once a file holds texts only some roles may see, pass namespaces selectively (permission review of 0.5).
+- Install packages with npm 11 (`npx npm@11 install …` in a cloud session, whose `npm` is 10): npm 10 rewrites the lock file's `libc` fields.
+- Every new screen block of `eslint.config.mjs` that sets `no-restricted-syntax` spreads both `FORBIDDEN_TIME_SELECTORS` and `LITERAL_TEXT_PROP_SELECTORS`.
+
+The next task is 0.6.
