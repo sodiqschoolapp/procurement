@@ -91,6 +91,29 @@ export const E2E_LANGUAGE_USERS = {
 } as const satisfies Record<string, E2eUser>;
 
 // A fixed invented moment: the rows' time does not matter to any browser test.
+/**
+ * One Head per project for the notifications test (plan of 0.11, review of the plan, Must fix 2):
+ * the projects run in parallel, and one person's count would be changed by the other's run.
+ */
+export const E2E_NOTIFICATION_USERS = {
+  "phone-375": {
+    fullName: "Malika Sinovova",
+    username: "e2e_notify_phone",
+    phone: "+998 90 000 99 07",
+    role: "HEAD",
+    password: PASSWORD,
+    branches: [],
+  },
+  "desktop-1440": {
+    fullName: "Sardor Sinovov",
+    username: "e2e_notify_desktop",
+    phone: "+998 90 000 99 08",
+    role: "HEAD",
+    password: PASSWORD,
+    branches: [],
+  },
+} as const satisfies Record<string, E2eUser>;
+
 const CREATED_AT = new Date("2026-10-01T00:00:00Z");
 
 /** The same server, the e2e database. */
@@ -181,7 +204,11 @@ export default async function globalSetup(): Promise<void> {
       );
       branchIds.set(branch.code, rows[0]!.id);
     }
-    for (const user of [...Object.values(E2E_ROLES), ...Object.values(E2E_LANGUAGE_USERS)]) {
+    for (const user of [
+      ...Object.values(E2E_ROLES),
+      ...Object.values(E2E_LANGUAGE_USERS),
+      ...Object.values(E2E_NOTIFICATION_USERS),
+    ]) {
       await insertUserIfMissing(client, user, branchIds);
     }
     // Every run starts in Uzbek, whatever an earlier run chose (A2: Uzbek is the default).
