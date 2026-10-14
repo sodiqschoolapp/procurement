@@ -2,34 +2,25 @@
 
 Short lines to paste. Replace what is in `<...>`.
 
-## In Claude Code (the builder)
+## The loop runs by itself
 
-| Moment | Paste |
-| --- | --- |
-| Start the next task | `/next-task` |
-| Start a named task | `/next-task 2.7` |
-| The review has arrived | `/next-task` (on the task branch it reads the newest `[review]` comment and acts on it) |
-| The build is done | `/finish-task` |
-| The review of the finished work asked for changes | `/finish-task` |
-| Correct the direction | `Stop. That is not in the plan. Go back to the approved plan; put this idea under "For the owner" in the report.` |
-| It guessed a rule | `Stop. Where in docs/spec/ is that rule? If it is not there, undo it and write it as a question on the pull request.` |
-| A bug | `Bug: <what I did, what I saw, what I expected>. First write a test that fails for this reason and show it failing. Then fix it. Do not change any other behaviour.` |
-| A long session | `Commit what works. Write on the pull request what is done, what is left and what you would do next. Then stop.` |
-| It wants a new library | `Not yet. Tell me what it is for, what it costs us, and how we would do it without it.` |
-| A check fails | `Do not change or skip the check. Show me the failure and find the cause.` |
-| The spec seems wrong | `Do not edit docs/spec/. Write the problem and your proposed wording as a comment on the pull request and stop.` |
-| End of a phase | `/spec-check <module>` |
+Nothing is pasted for a normal task (`docs/cloud-loop.md`). These are for the moments when you step in.
 
-## In the reviewer chat
+| Moment | Where | Paste or do |
+| --- | --- | --- |
+| Start the loop, or wake it | claude.ai/code/routines, the start routine | **Run now** |
+| A pull request got no review | claude.ai/code/routines, the review routine | **Run now** |
+| Confirm or change a decision | issue #9, under the task's comment | `1 confirmed` or `2 change: <what instead>` |
+| A session stopped and does not go on | the session at claude.ai/code | `Read the review on the pull request and proceed.` |
+| A review is wrong, or a `needs-owner` pull request needs your word | a comment on the pull request | `[review] approved at <sha>` or `[review] changes needed at <sha>`, then what you want, numbered. Copy the sha from the first line of the reviewer's last comment |
+| A `needs-owner` pull request is settled | the pull request | after your merge or your `[review]` comment, remove the label `needs-owner` |
+| Build one task by hand | a cloud session with the `procurement` environment | `/next-task`, or `/next-task 2.7` |
+| Review one pull request by hand | a cloud session | `/review-pr <number>` |
+| Correct the direction of a session | the session | `Stop. That is not in the plan. Go back to the approved plan; put this idea in the report.` |
+| A bug | the reviewer chat | `Bug: <what I did, what I saw, what I expected>.` It becomes a fix task whose first step is a test that fails for this reason. |
+| End of a phase | a cloud session | `/spec-check <module>` |
 
-| Moment | Paste |
-| --- | --- |
-| A plan is waiting | `Review the plan on pull request <number> of sodiqschoolapp/procurement against the spec. Answer its numbered questions from the spec where you can. Reply with one comment that starts with [review] approved, [review] changes needed or [review] owner decision needed.` |
-| Finished work is waiting | `Review pull request <number> as finished work. Check it rule by rule against the spec and against CLAUDE.md "Rules that are never broken". Reply with one comment that starts with [review] ready to merge or [review] changes needed, with numbered findings: file, line, spec file and heading, what is wrong.` |
-| Approve with a correction | `[review] approved` then the corrections and the answers, numbered. |
-| The reviewer runs in Claude Code | `/review-pr <number>` |
-
-## In a separate session on `main`
+## In a session of its own
 
 | Moment | Paste |
 | --- | --- |

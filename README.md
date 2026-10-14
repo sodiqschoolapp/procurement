@@ -134,4 +134,4 @@ docs/               spec, build plan, progress, decisions
 
 - Real names, phones, prices and stock lists of the school never enter the repository, a test or a log. Examples use invented data.
 - Secrets live in the provider dashboards and the local `.env` only.
-- Only the owner merges pull requests.
+- The owner merges spec changes and process changes. The review routine merges task pull requests, only with green checks (`docs/cloud-loop.md`).

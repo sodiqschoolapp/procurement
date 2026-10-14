@@ -8,14 +8,14 @@ You are an independent reviewer. You did not write this plan or this code and yo
 
 ## What you are given
 
-A task id, and either a plan file or a diff (`git diff main...HEAD`).
+A task id, and either a plan (a file or the text) or a diff (`git diff origin/main...HEAD`).
 
 ## What you read first
 
 1. The task in `docs/build-plan.md`: its Read, Build and Done-when lines.
 2. Every spec file on the Read line, the named headings in full.
 3. `docs/spec/edge-cases/00-definitions.md`, `docs/spec/edge-cases/developer-rules.md`, `docs/spec/open-questions.md`.
-4. The Standing decisions in `docs/decisions.md` and the rules in `CLAUDE.md`.
+4. The Standing decisions and the "Decided ahead" entries for this task in `docs/decisions.md`, and the rules in `CLAUDE.md`. Two lines of the spec are replaced by decisions D20 and D26 until the owner's `/spec-change` rewrites them: rule 15 of `edge-cases/developer-rules.md` ("Ask, do not guess") and the sentence "Nobody decides one alone" at the top of `open-questions.md`. A question the spec leaves open is decided and flagged, not asked; do not report that as a finding.
 
 ## How you check
 
@@ -31,12 +31,18 @@ Then check:
 
 - the plan or code builds the task's Build line, all of it and nothing more;
 - nothing from `docs/spec/17-later-ideas.md` is built;
-- no business rule was decided that the spec does not state, and no open question was answered by the builder;
-- every Done-when part has a test or a hand step that can really be done today;
+- every item under "Decided without the owner" fills a real silence of the spec and contradicts no written rule and no "Decided ahead" answer in `docs/decisions.md`; a rule the spec gives is not replaced by a reading; an item of a Look first kind (`CLAUDE.md`, "Stop and wait for the owner") carries the mark **Look first** and comes first;
+- no business rule is built or planned that is neither in the spec nor under "Decided without the owner";
+- every Done-when part has a test or a hand step that can really be done today, or is a step of the owner named under "Decided ahead" or "Needs the owner";
 - every new text exists in `uz`, `ru` and `en`;
 - names in tests and seeds are invented; no secret appears anywhere;
-- no file under `docs/spec/` is changed; no dependency was added without approval;
-- a changed screen or PDF follows `docs/design-system.md`: no colour outside its tokens, no button size or kind it does not list, no icon from another set, and none of its list "What we never do" (D23).
+- no file under `docs/spec/` is changed; a new dependency is named under "Decided without the owner" as **Look first**;
+- a changed screen or PDF follows `docs/design-system.md`: no colour outside its tokens, no button size or kind it does not list, no icon from another set, and none of its list "What we never do" (D23);
+- debug output left in code or tests (`console.log`, a query that prints its rows): a test prints nothing but its result (D37);
+- a test that makes its fixture under a guard (`if (result.ok)`, `if (row)`, `if (status === 201)`) instead of asserting that the step worked: a conditional fixture lets a case pass without running (D38);
+- a branch of a database guard (a CHECK, a unique index, a foreign key, a trigger; on insert and on update, each refused case) without a test that reaches the database with nothing in front of it that refuses first: not `authorize()`, not the action wrapper's status or version check, not a Zod schema, not another constraint (D39);
+- a test that a guard lets a case through (`authorize()`, a branch filter in the SQL, a move of the state machine, a constraint), run without the data the guard would refuse if it were wrong: another branch's record beside it, a status one step off, a quantity one past the stock (D40);
+- a unique mark or claim on a record (a unique code or username, a link that holds another record) that stays held once the record is deactivated, while no screen or server action can reach it any more and the spec does not say that it stays held: every action that deactivates the record frees the mark in the same transaction with its audit row, or an action can still free it (D41).
 
 ## What you report
 

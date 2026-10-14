@@ -1,6 +1,6 @@
 // The one place that applies the SQL migrations of drizzle/ to a database.
 // `npm run db:migrate` and the test-database helper both call it, so a test database is built
-// exactly as a real one is. Plain .mjs: task 0.15 runs it at deploy with production packages only.
+// exactly as a real one is. Plain .mjs: task 0.16 runs it at deploy with production packages only.
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 

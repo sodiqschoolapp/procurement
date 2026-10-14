@@ -7,7 +7,7 @@ The owner's one-page guide. Everything else in the pack is for Claude Code to re
 **1. Accounts**
 
 - GitHub (free plan is enough).
-- DigitalOcean, with a card that allows international online payments. Needed at task 0.15.
+- DigitalOcean, with a card that allows international online payments. Needed for the test copy, right after task 0.16 is merged.
 - Cloudflare (free), for R2 file storage. Needed at task 0.15.
 - Access to the DNS of `sodiqschool.uz`, to add `ombor-test` and later `ombor`.
 
@@ -49,37 +49,44 @@ git branch -M main
 git push -u origin main
 ```
 
-**4. Before the first task**
+**4. The loop**
 
-- Read `docs/spec/open-questions.md`. Nothing in it blocks phase 0. The first answer needed is question 18, at task 1.8.
-- Open the reviewer: a second Claude chat that can read the repository's pull requests. Give it `CLAUDE.md` and tell it its job with the first line of "In the reviewer chat" in `docs/prompts.md`.
+From 12 October 2026 the tasks are built without you in the middle (`docs/cloud-loop.md`). Its one-time set-up is yours and is listed there: the second cloud environment (section 1), the two routines with their API triggers (sections 3 and 5), the four repository secrets (section 6), the ruleset of `main` (section 7, finished after task 0.3), and the first **Run now** (section 8).
 
-## For every task
+## How a task is built now
 
-1. In the project folder, start Claude Code and type `/next-task`. It writes a plan, opens a draft pull request and stops.
-2. The reviewer reads the plan and posts a comment starting with `[review]`. Answer the questions only you can answer, on the pull request.
-3. Type `/next-task` again. On `[review] approved` it builds. When it is done, type `/finish-task`.
-4. The reviewer reads the finished work and posts `[review] ready to merge` or `[review] changes needed`. For changes, type `/finish-task` again.
-5. Do the hand test from the report. If it is right, merge the pull request yourself. After task 0.15, check the test copy as well.
+1. The start routine starts the first unticked task of `docs/build-plan.md` in a cloud session. The session plans it and opens a draft pull request.
+2. The review routine reviews the plan and posts a comment that starts with `[review]`. Where the spec is silent, the builder has decided and written down why; the reviewer confirms or changes each decision.
+3. The builder builds, runs `/finish-task`, and marks the pull request ready. The review routine waits for the checks, reviews the code, and merges at `[review] ready to merge`.
+4. The merge starts the next task.
+
+## What you do, once a day
+
+1. Read issue #9, the items marked **Look first** first, and answer under each task's comment: `1 confirmed`, `2 change: <what instead>`.
+2. Read the "Texts to read" comment of each merged pull request: the new Uzbek and Russian texts.
+3. Look at what was merged, by the report's "What to look at": at `ombor-test.sodiqschool.uz` once it exists, before that on your computer after `git pull`.
+4. Do what any `@abbosc` notification or `needs-owner` label asks.
+
+Bring a changed decision, a wrong text or something that looks wrong to the reviewer chat: it writes the fix task.
 
 ## Always
 
-- One Claude Code session at a time in this folder. One task per session.
-- Only you merge. Never ask Claude Code to merge, and never merge with a red check.
-- Never type a password, key or token into a chat. Secrets go into the provider dashboards and your local `.env` file only.
+- Never type a password, key or token into a chat or a session. Secrets go into the provider dashboards, GitHub's repository secrets and your local `.env` file only.
 - Real names, phones, prices and stock lists of the school never go into the repository, a test or a chat. Examples use invented data.
-- The spec changes only with `/spec-change`, in its own session on `main`, never while a task is open.
-- If Claude Code decides a rule on its own, stop it and ask where the spec says so.
-- If a task feels too big, ask for a split before any code is written.
-- Do not skip a task or change the order. Later tasks lean on earlier ones.
+- You merge spec changes and process changes. The review routine merges task pull requests, only with green checks. You may merge a task by hand at any time.
+- The spec changes only with `/spec-change`, in its own session.
+- The loop waits for you in these cases only: a secret, an account or money; production; a task that would change the loop's own rules; the builder and the reviewer not agreeing in three rounds, or the checks staying red three times; and the merge of task 0.3, once. Everything else it decides and shows you on issue #9.
+- If the loop seems stuck, `docs/cloud-loop.md`, "When something goes wrong", says where to look.
+- Do not change the order of the tasks by hand. A fix task goes first among the open tasks; the reviewer chat places it.
 
 ## To prepare from the school
 
-What real people must decide or hand over before each phase. Collect it early; a missing answer stops the task that needs it.
+What real people must decide or hand over before each phase. Collect it early. A missing answer no longer stops a task: the loop takes the most reasonable reading and shows it to you on issue #9, marked **Look first**; a wrong one costs a fix task. A missing account or secret still stops the step that needs it.
 
 | Before | Prepare |
 | --- | --- |
-| Task 0.15 | DigitalOcean and Cloudflare accounts; someone who can add the DNS records. |
+| Task 0.16 | The DigitalOcean account and its payment; someone who can add the DNS record for `ombor-test`. The steps are in `docs/deploy.md` once the task is merged. |
+| Task 0.15 | The Cloudflare account, for the test copy's file storage. |
 | Phase 1 | The list of branches with a 2 to 4 letter code each. The users: full name, phone, role and branches of each. School name. The first day of the school year. Departments of each branch with the responsible person. The answer to open question 18. |
 | Phase 1, for the import | The catalog as Excel: products and services, subtypes, measures, categories, brands and suppliers, extra cost types, current prices. A photo for the items where it helps. |
 | Phase 2 | A filled paper order request, to compare with the PDF. Answers to open questions 5 and 6. |
@@ -96,9 +103,11 @@ What real people must decide or hand over before each phase. Collect it early; a
 | --- | --- |
 | `CLAUDE.md` | The rules Claude Code reads at the start of every session. |
 | `docs/spec/` | The spec. Read-only. Start at `00-index.md`. |
-| `docs/build-plan.md` | The 100 tasks in order, with a checkbox each. |
+| `docs/build-plan.md` | The 101 tasks in order, with a checkbox each. |
 | `docs/progress.md` | What each finished task left for the next. |
 | `docs/decisions.md` | Your standing decisions, and each task's technical choices. |
 | `docs/spec-changes.md` | The log of every change to the spec. |
 | `docs/prompts.md` | Lines to paste for the usual moments. |
+| `docs/cloud-loop.md` | The loop: the cloud sessions, the two routines, the bridge, and what to do when something goes wrong. |
+| Issue #9, issue #10 | The decisions made without you, to confirm or change; the time each task took. |
 | `.claude/` | Skills, reviewer agents, path rules and permissions for Claude Code. |
