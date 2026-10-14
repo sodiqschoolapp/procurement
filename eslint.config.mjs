@@ -46,6 +46,25 @@ export const LITERAL_TEXT_PROP_SELECTORS = [
   `JSXAttribute[name.name=${TEXT_PROPS}] > JSXExpressionContainer > TemplateLiteral`,
 ].map((selector) => ({ selector, message: `A text prop ${WRITE_IT_IN_THE_MESSAGES}` }));
 
+// developer-rules.md rule 4: every query calls authorize(). A page or a shared part reads data
+// through src/features/<area>/queries, never through the database client or the schema itself
+// (plan of 0.7, the fence progress 0.2 asked for). Static and dynamic imports are both caught;
+// tests/database-import-fence.test.ts lints samples.
+const THROUGH_THE_QUERIES =
+  "reads the database from a screen. Read through src/features/<area>/queries, which call authorize() (developer-rules.md rule 4).";
+const DATABASE_MODULE = "/server.db.(client|schema)/";
+
+export const DATABASE_IMPORT_SELECTORS = [
+  {
+    selector: `ImportDeclaration[source.value=${DATABASE_MODULE}]`,
+    message: `This import ${THROUGH_THE_QUERIES}`,
+  },
+  {
+    selector: `ImportExpression[source.value=${DATABASE_MODULE}]`,
+    message: `This import() ${THROUGH_THE_QUERIES}`,
+  },
+];
+
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
@@ -90,7 +109,17 @@ const eslintConfig = defineConfig([
         "error",
         ...FORBIDDEN_TIME_SELECTORS,
         ...LITERAL_TEXT_PROP_SELECTORS,
+        ...DATABASE_IMPORT_SELECTORS,
       ],
+    },
+  },
+  {
+    // The fence for the .ts files of screens: routes, server actions, helpers. `/health` is the
+    // one open route that reads the database itself (0.16).
+    files: ["src/app/**/*.ts", "src/components/**/*.ts"],
+    ignores: ["**/*.test.ts", "src/app/health/route.ts"],
+    rules: {
+      "no-restricted-syntax": ["error", ...FORBIDDEN_TIME_SELECTORS, ...DATABASE_IMPORT_SELECTORS],
     },
   },
   {

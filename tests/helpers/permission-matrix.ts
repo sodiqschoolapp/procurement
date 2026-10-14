@@ -3,7 +3,12 @@ import { describe, expect, it } from "vitest";
 import { type Permission, ROLES, type Role } from "@/domain/permissions";
 import { AuthorizationError } from "@/server/authorize";
 
-import { EXPECTED_MATRIX, type Answer, type Place, expectedAnswer } from "../permission-matrix-expected";
+import {
+  EXPECTED_MATRIX,
+  type Answer,
+  type Place,
+  expectedAnswer,
+} from "../permission-matrix-expected";
 import { insertBranch, setManagerRight } from "./branches";
 import { type InsertedUser, insertUser } from "./users";
 

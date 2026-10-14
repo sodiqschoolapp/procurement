@@ -67,15 +67,11 @@ describe("decide() (03 rule 1; Permission matrix)", () => {
     expect(decide("request.approve_step1", actor("FINANCE"), { branchId: OTHER })).toBe(
       "not_found",
     );
-    expect(decide("request.approve_step1", actor("FINANCE"), { branchId: OWN })).toBe(
-      "forbidden",
-    );
+    expect(decide("request.approve_step1", actor("FINANCE"), { branchId: OWN })).toBe("forbidden");
   });
 
   it("refuses the Head at step 2 in any branch: the matrix says No", () => {
-    expect(decide("request.approve_step2", actor("HEAD"), { branchId: OTHER })).toBe(
-      "forbidden",
-    );
+    expect(decide("request.approve_step2", actor("HEAD"), { branchId: OTHER })).toBe("forbidden");
   });
 
   it("lets a Manager act on own requests only, and refuses a colleague's request of the same branch", () => {

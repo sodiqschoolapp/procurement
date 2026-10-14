@@ -41,11 +41,7 @@ async function branch(): Promise<string> {
 }
 
 /** A user with plain SQL. A Principal must get its row in the same transaction (the trigger). */
-async function plainUser(
-  role: string,
-  isActive = true,
-  executor: Executor = db,
-): Promise<string> {
+async function plainUser(role: string, isActive = true, executor: Executor = db): Promise<string> {
   const count = next();
   const found = await executor.execute<{ id: string }>(sql`
     insert into users (full_name, username, email, phone, role, is_active, created_at, updated_at)
@@ -142,11 +138,12 @@ describe("user_branches: one active Principal per branch (14-data-model.md)", ()
     const old = await principalOf(chl);
     await db.execute(sql`update users set is_active = false where id = ${old}`);
     await principalOf(chl);
-    expect(await refusalOf(db.execute(sql`update users set is_active = true where id = ${old}`)))
-      .toMatchObject({
-        code: "23505",
-        constraint: "user_branches_active_principal_branch_id_key",
-      });
+    expect(
+      await refusalOf(db.execute(sql`update users set is_active = true where id = ${old}`)),
+    ).toMatchObject({
+      code: "23505",
+      constraint: "user_branches_active_principal_branch_id_key",
+    });
   });
 
   it("keeps one active Principal per branch, not per school: Principals of two branches are both active", async () => {
@@ -169,8 +166,9 @@ describe("user_branches: no rows for the Head (14-data-model.md)", () => {
   it("refuses making a Manager with a branch the Head", async () => {
     const manager = await plainUser("MANAGER");
     await link(manager, await branch(), "MANAGER");
-    expect(await refusalOf(db.execute(sql`update users set role = 'HEAD' where id = ${manager}`)))
-      .toMatchObject({ code: "23514", constraint: "user_branches_user_role_check" });
+    expect(
+      await refusalOf(db.execute(sql`update users set role = 'HEAD' where id = ${manager}`)),
+    ).toMatchObject({ code: "23514", constraint: "user_branches_user_role_check" });
   });
 });
 
