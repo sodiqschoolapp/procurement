@@ -52,5 +52,25 @@
       "tooLarge": "Juda katta",
       "notAllowed": "Bu qiymatga ruxsat yo'q"
     }
+  },
+  "audit": {
+    "title": "O'zgarishlar tarixi",
+    "empty": "Hozircha o'zgarish yo'q",
+    "when": "Qachon",
+    "who": "Kim",
+    "what": "Nima",
+    "before": "Avval",
+    "after": "Keyin",
+    "changed": "O'zgartirildi",
+    "otherField": "Boshqa maydon",
+    "noValue": "(bo'sh)",
+    "unknownValue": "(noma'lum qiymat)",
+    "yes": "Ha",
+    "no": "Yo'q",
+    "actions": {
+      "user": {
+        "create": "Hisob yaratildi"
+      }
+    }
   }
 }
