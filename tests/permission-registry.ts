@@ -18,7 +18,10 @@ export const SERVER_ACTIONS: Record<string, Entry> = {
 };
 
 /** Exports of `src/features/<area>/queries/`, as `<file>#<export>`. */
-export const QUERIES: Record<string, Permission> = {};
+export const QUERIES: Record<string, Permission> = {
+  // The change history of one record: Head only (plan of 0.9, decision 3, Look first).
+  "src/features/audit/queries/change-history.ts#listChangeHistory": "catalog.manage",
+};
 
 /**
  * Pages, layouts and routes open to a signed-out visitor (progress 0.16 and 0.6). Every other
