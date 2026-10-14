@@ -35,6 +35,10 @@ export function s3ClientOf(config) {
     region: config.region,
     // Addresses as <endpoint>/<bucket>/<key>: SeaweedFS needs it, and R2 accepts it.
     forcePathStyle: true,
+    // Checksums only where S3 itself requires one (plan of 0.15, decision 7): the SDK otherwise adds
+    // its own CRC32 to every upload, which S3-compatible stores have refused at times.
+    requestChecksumCalculation: "WHEN_REQUIRED",
+    responseChecksumValidation: "WHEN_REQUIRED",
     credentials: { accessKeyId: config.accessKeyId, secretAccessKey: config.secretAccessKey },
   });
 }

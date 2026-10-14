@@ -536,6 +536,28 @@ Choices made during the build:
 - No production guard (permission review, Should fix 1, not done): the plan leaves hosted databases to 0.15, which needs the seed users on the test copy; the image does not ship the seed script.
 - `scripts/not-built-yet.mjs` removed: no script uses it.
 
+### 0.15 Test copy: file storage and seed users (14.10.2026)
+
+The plan's decisions as the plan review of 14.10.2026 confirmed them (corrections 1 to 4 applied), and those of the build. The Look first items come first.
+
+1. **Look first.** The demo users reach the test copy through the container start: `scripts/start.sh` seeds after the migration when `SEED_DEMO_DATA` is exactly `yes`; a failed seed is logged as `db:seed failed: …` and the app starts. The owner never holds the database address (Decided ahead 0.16, item 2), and the seed keeps what is there.
+2. **Look first.** Reading of the Done-when "a photo uploaded there is shown again": no screen has a photo field yet, so the storage check (a sharp-made 160 px JPEG written to and read back from R2) run by the owner in the console proves R2, its token and sharp in the image; the first task with a photo field asks for a photo on the test copy. Proposed `/spec-change` of build-plan 0.15 Done-when: "… and the storage check in the console prints `storage ok`; a photo is uploaded on the test copy by the first task with a photo field."
+3. **Look first.** The hosted-database guard of the seed: refused unless `SEED_DEMO_DATA` is exactly `yes`; a `?host=` elsewhere, an empty host or an unreadable address is not local; the refusal names the variable, never the address. Closes the 0.14 permission review's Should fix 1. 9.4 must not set it in production.
+4. **Look first.** New direct dependency `pg-connection-string` ^2.14.1 (MIT, the `node-postgres` project, already installed as `pg`'s own parser at 2.14.1; `npm audit --omit=dev --audit-level=high` passes, the four moderate findings are the existing ones of `drizzle-kit`).
+5. **Look first.** The three CI steps of the plan (the seed in the image, no seed without the switch, a failed seed does not stop the app) are not in this task: a change under `.github/` is an owner decision when the Build line does not ask for it (plan review, correction 1). Replaced by `tests/image-files.test.ts` and `tests/start-script.test.ts`; the step texts are in the report of pull request #29 for the owner to add by hand.
+6. `S3_REGION=auto` and `S3_BUCKET=ombor-test-files` are plain values in `.do/app.yaml`; `S3_ENDPOINT` and both keys are typed and encrypted by the owner.
+7. The R2 token is "Object Read & Write" for the one bucket; the bucket is private, without an `r2.dev` address or a custom domain.
+8. `s3ClientOf` sets `requestChecksumCalculation` and `responseChecksumValidation` to `WHEN_REQUIRED`; the 0.12 file tests pass with it against SeaweedFS. The R2 side is proved by the owner's console check.
+9. The check's object stays under `checks/`; nothing is deleted. `forcePathStyle` stays. The bucket's location hint is Eastern Europe.
+10. `docs/deploy.md` is written from memory of the dashboards; each step names what the owner should see and to post on issue #9 when it differs.
+
+Choices made during the build:
+
+- The storage check prints `storage failed: S3_… is not set.` without the local `.env` hint, as it runs on the test copy (spec review, Should fix 2); its missing-object test goes through the check's own read (Should fix 1).
+- A connection the seed cannot open is reported by its error kind only; the error object names the host and the port (permission review, Should fix 3).
+- Not done, with the reason in the report: a second guard independent of configuration (permission review, Should fix 1). A check on other active users would stop the seed on the test copy as soon as the owner adds an invented user, and later tasks extend the seed; the production spec belongs to 9.4, whose test must assert it has no `SEED_DEMO_DATA` (progress, "For 9.4"). A tunnel to `127.0.0.1` passing the guard (Should fix 2) is written in `.env.example`.
+- The image was built locally and run: a fresh database got the seven seed lines and `storage ok`; a restart printed `kept`; without passwords it printed `db:seed failed: …` and `/health` answered 200.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

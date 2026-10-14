@@ -357,4 +357,25 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - For 0.15: the seed has no production guard (permission review, Should fix 1); decide it there, as the test copy needs the seed users.
 - Tests that count rows run on their own database: `withFreshDatabase` in `tests/seed.db.test.ts`.
 
-The next task is 0.15.
+
+## 0.15 Test copy: file storage and seed users (14.10.2026, pull request #29)
+
+**Built**
+- `scripts/start.sh` seeds after the migration when `SEED_DEMO_DATA` is exactly `yes`; a failed seed prints `db:seed failed: …` and the app starts. `.do/app.yaml` sets it, with `S3_REGION=auto` and `S3_BUCKET=ombor-test-files`.
+- The seed guard `seedTargetAllowed()` (`scripts/seed.mjs`, host read with `pg-connection-string`): a database not on `127.0.0.1`, `localhost` or `::1` needs `SEED_DEMO_DATA=yes`. An unreachable database is named by its error kind, never its host.
+- `scripts/storage-check.mjs` (`npm run storage:check`): a 160 px JPEG made by sharp, written under `checks/`, read back and compared; prints `storage ok`. In the image, with the seed files (`tests/image-files.test.ts` checks the copies).
+- `s3ClientOf` sends checksums only when required. `docs/deploy.md` steps 6 to 8: R2 bucket and token, the spec update, the eight typed values, the seed lines, the console check.
+
+**Left out, and the task that brings it**
+- A photo uploaded through a screen on the test copy: the first task with a photo field (1.x). Production's spec and variables: 9.4. The CI steps for the seed in the image: the owner, by hand (report, Look first).
+
+**Open for the owner**
+- `docs/deploy.md` steps 6 to 8 (Cloudflare account and R2, the token, the spec update, the eight typed values, four sign-ins, the console check).
+
+**What the next sessions must know**
+- For 9.4: the production app spec must not carry `SEED_DEMO_DATA`; add a test that it does not (permission review of 0.15, Should fix 1). A tunnel to a hosted database on `127.0.0.1` passes the guard.
+- For 1.x: the first task with a photo field asks the owner in its report to upload a photo on the test copy and see it shown.
+- A new script the container runs: add its files to the run stage of `Dockerfile`; `tests/image-files.test.ts` follows imports from `ENTRY_POINTS`, so add the script there.
+- `.do/app.yaml` changes need the owner to apply it again and type the dashboard values again (`docs/deploy.md`, step 7).
+
+The next task is 1.1.
