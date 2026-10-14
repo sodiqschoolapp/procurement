@@ -176,7 +176,13 @@ describe("the change-history list (04-catalogs.md rule 9)", () => {
   it("shows a value that does not fit a settings kind as unknown, never raw", () => {
     const text = textOf(
       render(
-        [{ ...EDIT, before: null, after: { guard: "on", start: { month: 13, day: 1 }, hours: 1.5 } }],
+        [
+          {
+            ...EDIT,
+            before: null,
+            after: { guard: "on", start: { month: 13, day: 1 }, hours: 1.5 },
+          },
+        ],
         {
           guard: { label: "audit.who", kind: "percentOrOff" },
           start: { label: "audit.what", kind: "monthDay" },

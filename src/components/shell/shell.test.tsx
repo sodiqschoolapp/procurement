@@ -42,22 +42,34 @@ describe("the sidebar (Interface per role; design system, Layout shell)", () => 
   };
   for (const [role, labels] of Object.entries(cases)) {
     it(`${role}: exactly its items, each named for the rail`, () => {
-      expect(linkLabels(wrap(<Sidebar role={role as Role} fullName="Sinov Sinovov" />))).toEqual(
-        labels,
-      );
+      expect(
+        linkLabels(
+          wrap(<Sidebar role={role as Role} fullName="Sinov Sinovov" schoolName={null} />),
+        ),
+      ).toEqual(labels);
     });
   }
 
   it("marks the active item as the current page, and only that one", () => {
     pathname.current = "/warehouse/documents";
-    const html = wrap(<Sidebar role="HEAD" fullName="Sinov Sinovov" />);
+    const html = wrap(<Sidebar role="HEAD" fullName="Sinov Sinovov" schoolName={null} />);
     pathname.current = "/";
     expect(html.match(/aria-current="page"/g)).toHaveLength(1);
     expect(html).toMatch(/aria-label="Warehouse"[^>]*aria-current="page"/);
   });
 
+  // build-plan 1.1, Done when: "set the school name and see it in the shell" (plan, decision 13).
+  it("shows the school name under the logo once set, and nothing before", () => {
+    const named = wrap(
+      <Sidebar role="MANAGER" fullName="Sinov Sinovov" schoolName="Invented School" />,
+    );
+    expect(named).toMatch(/<p[^>]*title="Invented School"[^>]*>Invented School<\/p>/);
+    const unnamed = wrap(<Sidebar role="MANAGER" fullName="Sinov Sinovov" schoolName={null} />);
+    expect(unnamed).not.toContain("Invented School");
+  });
+
   it("has the collapse button and the sign-out button, both named", () => {
-    const html = wrap(<Sidebar role="FINANCE" fullName="Sinov Sinovov" />);
+    const html = wrap(<Sidebar role="FINANCE" fullName="Sinov Sinovov" schoolName={null} />);
     expect(html).toContain('aria-label="Collapse the menu"');
     expect(html).toContain('aria-expanded="true"');
     expect(html).toContain('aria-label="Sign out"');

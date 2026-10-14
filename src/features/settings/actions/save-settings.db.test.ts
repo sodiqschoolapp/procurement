@@ -20,7 +20,10 @@ import { saveSettings } from "./save-settings";
 // the audit log); plan of 1.1, decisions 7, 8 and 15, review correction 3.
 
 async function storedRows() {
-  return db.select({ key: settings.key, value: settings.value }).from(settings).orderBy(settings.key);
+  return db
+    .select({ key: settings.key, value: settings.value })
+    .from(settings)
+    .orderBy(settings.key);
 }
 
 async function auditRowsBy(actorId: string) {
@@ -62,7 +65,10 @@ describe("saveSettings (build-plan 1.1)", () => {
     async (role) => {
       const user = await insertUser(role);
       expect(
-        await runAction(saveSettings, user.id, { price_hint_percent: 30, receipt_required_for_cash: true }),
+        await runAction(saveSettings, user.id, {
+          price_hint_percent: 30,
+          receipt_required_for_cash: true,
+        }),
       ).toMatchObject({ ok: false, error: { code: "forbidden" } });
       expect(await storedRows()).toEqual([]);
       expect(await auditRowsBy(user.id)).toEqual([]);
@@ -112,13 +118,18 @@ describe("saveSettings (build-plan 1.1)", () => {
   it("the same values again, and a default sent on an empty table, write nothing (decisions 7, 15)", async () => {
     const head = await insertUser("HEAD");
     expect(
-      await runAction(saveSettings, head.id, { price_hint_percent: 20, default_payment_type: "CASH" }),
+      await runAction(saveSettings, head.id, {
+        price_hint_percent: 20,
+        default_payment_type: "CASH",
+      }),
     ).toMatchObject({ ok: true, data: { changed: [] } });
     expect(await storedRows()).toEqual([]);
     expect(await auditRowsBy(head.id)).toEqual([]);
 
     await runAction(saveSettings, head.id, { school_name: "Invented School" });
-    expect(await runAction(saveSettings, head.id, { school_name: "Invented School" })).toMatchObject({
+    expect(
+      await runAction(saveSettings, head.id, { school_name: "Invented School" }),
+    ).toMatchObject({
       ok: true,
       data: { changed: [] },
     });

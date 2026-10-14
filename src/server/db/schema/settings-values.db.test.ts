@@ -101,7 +101,10 @@ function update(key: string, value: unknown) {
 }
 
 async function storedValue(key: string) {
-  const rows = await db.select({ value: settings.value }).from(settings).where(eq(settings.key, key));
+  const rows = await db
+    .select({ value: settings.value })
+    .from(settings)
+    .where(eq(settings.key, key));
   return rows.map((row) => row.value);
 }
 

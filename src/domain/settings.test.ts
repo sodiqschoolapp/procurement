@@ -136,7 +136,11 @@ describe("settingsFrom (build-plan 1.1: the defaults come back on an empty table
         { key: "school_name", value: "Invented School" },
         { key: "invented_key", value: 5 },
       ]),
-    ).toEqual({ ...SETTING_DEFAULTS, overspend_guard_percent: "off", school_name: "Invented School" });
+    ).toEqual({
+      ...SETTING_DEFAULTS,
+      overspend_guard_percent: "off",
+      school_name: "Invented School",
+    });
   });
 
   it("a stored value of the wrong shape throws, never guesses (CLAUDE.md, what matters most 1)", () => {
@@ -160,9 +164,9 @@ describe("changedSettings (plan of 1.1, decision 7)", () => {
   });
 
   it("the default sent on an empty table changes nothing", () => {
-    expect(changedSettings(SETTING_DEFAULTS, { ...SETTING_DEFAULTS, school_name: undefined })).toEqual(
-      [],
-    );
+    expect(
+      changedSettings(SETTING_DEFAULTS, { ...SETTING_DEFAULTS, school_name: undefined }),
+    ).toEqual([]);
   });
 
   it("0 and off are different values of the guard (08, Overspend guard)", () => {

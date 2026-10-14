@@ -260,7 +260,6 @@
     "schoolYearStartHint": "Until it is set, Analytics has no \"This school year\" period.",
     "day": "Day",
     "month": "Month",
-    "notSet": "Not set",
     "defaultPaymentType": "Default payment type",
     "priceHintPercent": "Price hint, %",
     "priceHintPercentHint": "A price that differs from the catalog price by more than this shows a hint.",

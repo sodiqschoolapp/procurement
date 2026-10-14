@@ -93,7 +93,8 @@ function shown(value: AuditJson | null, kind: HistoryValueKind, t: Translate, f:
     if (kind === "hours" && isWholeNumber(value)) return t("audit.hours", { value });
     if (kind === "monthDay") {
       const monthDay = monthDayOf(value);
-      if (monthDay) return t(`audit.monthDay.${monthDay.month}` as MessageKey, { day: monthDay.day });
+      if (monthDay)
+        return t(`audit.monthDay.${monthDay.month}` as MessageKey, { day: monthDay.day });
     }
     if (typeof kind === "object" && typeof value === "string") {
       return textOr(t, `${kind.enum}.${value}`, "audit.unknownValue");
