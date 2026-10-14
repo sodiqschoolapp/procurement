@@ -615,6 +615,36 @@ Choices made during the build:
 - The text of `errors.field.taken` names no entity ("Already used"), so later catalogs reuse it (diff review, Should fix 1).
 - `BRANCHES_PAGE_SIZE` lives in `src/domain/branches.ts`: the permission registry counts every export of a query file as a query.
 
+### 1.3 Users (14.10.2026)
+
+The plan's decisions as the plan review of 14.10.2026 confirmed them (corrections 1 to 3 applied), and those of the build. The Look first items come first.
+
+1. **Look first.** The role of an account is not edited after creation; a role change is a new account. It narrows the Build line "edit the other fields". Proposed `/spec-change` of `04-catalogs.md`, Catalogs table, Users, Notes: "See section 3. The role is set when the account is made; a change of role is a new account."
+2. **Look first.** The Head cannot renew their own password; another Head does. A single Head who forgets theirs has no way back in today (`user:first-head` refuses once a Head exists). Proposed `/spec-change` of `02-assumptions.md` A8: "…and can renew any other user's password at any time; nobody, the Head included, changes their own."
+3. **Look first.** Replacing a Principal is the `replacePrincipal` choice on create, on activate and on a Principal's branch change: the old Principal is deactivated and signed out first, then the new one is added or activated, in one transaction, with a confirm dialog. Without it a second active Principal is refused (`errors.field.principalTaken`).
+4. **Look first.** The last active Head is held by the action and by the deferred trigger `users_keep_one_active_head`; both take the advisory lock `users_active_head` before counting, so two concurrent deactivations cannot both pass.
+5. **Look first.** A deactivated user keeps their branches; their own requests are not moved and nothing is blocked (2.x moves requests).
+6. **Look first** (design-system departure, D23, as decisions 1.2 item 4). Pages `/users/new` and `/users/[id]` instead of the side panel.
+7. **Look first.** The Head cannot deactivate their own account (it narrows the Head's row of the permission matrix).
+8. **Look first** (review correction 1). Removing a branch from a user deletes its `user_branches` row; the `branches` field of the `user.update` audit row keeps the change; a Principal's old row goes before the new one. Proposed `/spec-change` of `14-data-model.md`, user_branches: "A row is an assignment: removing a branch from a user deletes it, and the audit log keeps the change."
+9. `BRANCH_ROLE_VACANT` goes to every active Head, the acting Head included (`notify` with `userId: null`, a deliberate exception to decisions 0.11 item 5), only when a change vacates a place of an active branch.
+10. The vacancy warning is a panel at the top of `/users`; the home page gets it with the home contents (2.x).
+11. A generated password is made in the browser by `generatePassword(bytes)` (12 characters of 32 lower-case letters and digits without 0, o, 1, l; 60 bits); the server never makes or returns a password.
+12. Usernames as 0.6 decided; a changed username is checked as taken under the advisory lock `users` too, the own row left out (review correction 2). Full name trimmed and collapsed, at most 120 code points; phone 7 to 30 of digits, spaces and `+ ( ) -`, in the domain and the form only.
+13. Audit: entity `users`; `branches` as the sorted codes joined by ", "; `user.renew_password` with `before` and `after` both `{}`.
+14. No version column on `users`; only changed fields are written, under the row lock.
+15. The branch picker lists active branches plus the inactive ones the user holds.
+16. `/users` is 25 a page, active first, no search.
+17. New field error keys `principalTaken`, `branchCount`, `branchInactive`.
+
+Choices made during the build:
+
+- The replaced Principal's `user.deactivate` row is written in the write step, so a repeated create returns the same result as the first (`repeat.find` reads the user).
+- The plan's refusal key `errors.user.lastHead` became a hint on the page: the wrapper carries one message per code, and an acting Head never reaches the action's last-Head check alone (deactivating oneself is `forbidden`); only a race does, as `wrong_status`.
+- `USERNAME_PATTERN` stays in `src/server/auth/password-user.mjs`, which the container copies; the actions import it from there.
+- Passwords are shown in Golos Text, not a monospace font (diff review, Should fix 2).
+- Checkboxes and radios use `accent-foreground` (navy; the foreground in the dark theme).
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

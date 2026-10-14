@@ -419,4 +419,24 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - For 2.7: lock `code` in `updateBranch` once the branch has a request.
 - Browser tests: codes and names are new on every run (branches are never deleted); a toast and a history row can share words, use `.first()`.
 
-The next task is 1.3.
+## 1.3 Users (14.10.2026, pull request #33)
+
+**Built**
+- Migration `0009_users`: `users.client_key` (unique) and the deferred trigger `users_keep_one_active_head` (takes the advisory lock `users_active_head`, then counts).
+- `src/domain/users.ts` (name, phone, branch count per role, `changedUserFields`, `vacatedPlaces`), `src/domain/passwords.ts` (`generatePassword(bytes)`).
+- `createUser`, `updateUser`, `setUserActive`, `renewUserPassword` (`src/features/users/actions/users.ts`); `listUsers`, `getUser`, `listBranchVacancies`, `listBranchChoices` (`queries/users.ts`); `staffedPlaces` (`vacancies.ts`). Audit actions `user.update`, `user.deactivate`, `user.activate`, `user.renew_password`; `BRANCH_ROLE_VACANT` is sent.
+- `/users` (vacancy warning), `/users/new`, `/users/[id]` (form, Renew password, Deactivate/Activate, history); `AdminNav` gains Users.
+
+**Left out, and the task that brings it**
+- Manager rights switches: 1.4. Moving a deactivated Manager's requests: 2.x. Reminders: 8.1. The vacancy warning on the home page: home contents (2.x). A way back in for a single Head who forgot the password: no task (report).
+
+**What the next sessions must know**
+- Every user write takes, in order: the advisory lock `users_active_head`, the advisory lock `users`, the touched branch rows `FOR UPDATE` in id order, then the user row (`lockUser`). A new action on users (1.4) does the same.
+- A user's branches change by deleting and inserting `user_branches` rows (Look first); the old rows go first.
+- Deactivation and renewal delete the user's `sessions` rows; the Head can do neither to themselves.
+- A vacancy notice is sent with `notify({ tx, userId: null }, …)` so the acting Head is told too (decisions 1.3).
+- For 1.4: the switches go on `/users/[id]` (a Manager's page) and use `catalog.manage`'s neighbour `manager_rights.switch`; take the same locks.
+- For 2.x: a Head-made request and moving a deactivated Manager's requests read `users.is_active`; a deactivated user keeps their `user_branches` rows.
+- Tests: a file's database is its own, so a test may deactivate the other Heads with SQL to make "the last Head"; two Heads deactivating each other at once end with `wrong_status` or `forbidden`, depending on timing.
+
+The next task is 1.4.
