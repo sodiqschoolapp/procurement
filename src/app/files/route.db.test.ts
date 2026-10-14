@@ -12,6 +12,7 @@ import { s3ClientOf, storageConfigOf } from "../../../scripts/ensure-bucket.mjs"
 import {
   TEN_MB,
   downloadRequest,
+  heicDeclaringHugePicture,
   heicPhoto,
   jpegWithExif,
   pdfOfSize,
@@ -147,6 +148,16 @@ describe("what the upload refuses (developer-rules.md rule 13; 04-catalogs.md ru
     const { user, cookie } = await signedIn();
     const response = await POST(
       uploadRequest(pngDeclaringHugePicture(), { name: "a.png", cookie }),
+    );
+    expect(response.status).toBe(422);
+    expect(await response.json()).toMatchObject({ ok: false, error: { code: "not_an_image" } });
+    expect(await rowsOf(user.id)).toEqual([]);
+  });
+
+  it("a HEIC whose header declares 400 million pixels is refused before it is decoded (review correction 3)", async () => {
+    const { user, cookie } = await signedIn();
+    const response = await POST(
+      uploadRequest(heicDeclaringHugePicture(), { name: "a.heic", cookie }),
     );
     expect(response.status).toBe(422);
     expect(await response.json()).toMatchObject({ ok: false, error: { code: "not_an_image" } });

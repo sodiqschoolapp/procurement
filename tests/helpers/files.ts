@@ -39,6 +39,19 @@ export function heicPhoto(): Uint8Array {
   return readFileSync(join(import.meta.dirname, "files", "photo-1600x1200.heic"));
 }
 
+/**
+ * The HEIC above with its `ispe` box (the picture's declared size) set to 20 000 × 20 000: a
+ * decompression bomb of about a kilobyte, refused before it is decoded (spec review, Should fix 2).
+ */
+export function heicDeclaringHugePicture(): Uint8Array {
+  const bytes = Buffer.from(heicPhoto());
+  const box = bytes.indexOf("ispe");
+  if (box < 0) throw new Error("The HEIC sample has no ispe box.");
+  bytes.writeUInt32BE(20_000, box + 8);
+  bytes.writeUInt32BE(20_000, box + 12);
+  return bytes;
+}
+
 /** A PDF of exactly `size` bytes: its first bytes, then padding (stored as it is). */
 export function pdfOfSize(size: number): Uint8Array {
   const bytes = new Uint8Array(size).fill(0x20);

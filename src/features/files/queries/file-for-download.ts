@@ -18,6 +18,13 @@ export async function fileForDownload(
   fileId: string,
   owners: readonly FileOwner[] = FILE_OWNERS,
 ): Promise<DownloadableFile> {
+  // Before anything is read (developer-rules.md rule 4; permission review of 0.12, Should fix 5).
+  try {
+    await authorize(userId, "file.upload");
+  } catch (error) {
+    if (error instanceof AuthorizationError) throw new AuthorizationError("not_found");
+    throw error;
+  }
   // Loaded here, not at the top: `next build` has no DATABASE_URL (progress 0.6).
   const { db } = await import("@/server/db/client");
   const [file] = await db

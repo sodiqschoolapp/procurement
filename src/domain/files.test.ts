@@ -15,7 +15,9 @@ describe("the type of a file is read from its content (developer-rules.md rule 1
     expect(sniffMime(bytes(0x89, "PNG", 0x0d, 0x0a, 0x1a, 0x0a, 0))).toBe("image/png");
     expect(sniffMime(bytes("RIFF", 0, 0, 0, 0, "WEBPVP8 "))).toBe("image/webp");
     expect(sniffMime(bytes(0, 0, 0, 0x1c, "ftypheic", 0, 0, 0, 0))).toBe("image/heic");
-    expect(sniffMime(bytes(0, 0, 0, 0x1c, "ftypmif1", 0, 0, 0, 0))).toBe("image/heic");
+    for (const brand of ["heic", "heix", "hevc", "hevx", "mif1", "msf1"]) {
+      expect(sniffMime(bytes(0, 0, 0, 0x1c, `ftyp${brand}`, 0, 0, 0, 0)), brand).toBe("image/heic");
+    }
     expect(sniffMime(bytes("%PDF-1.7\n"))).toBe("application/pdf");
   });
 

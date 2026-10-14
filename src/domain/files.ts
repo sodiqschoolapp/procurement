@@ -45,7 +45,9 @@ export type DownloadSize = (typeof DOWNLOAD_SIZES)[number];
  */
 export const MAX_INPUT_PIXELS = 268_402_689;
 
-// The major brands of a HEIC file, as heic-decode reads them (the `ftyp` box at byte 4).
+// The major brands of a HEIC file, exactly those heic-decode accepts (the `ftyp` box at byte 4):
+// a file of another brand (`heim`, `heis`) could not be decoded, so it is refused as a type
+// (spec review of 0.12, Should fix 1).
 const HEIC_BRANDS = new Set(["heic", "heix", "hevc", "hevx", "mif1", "msf1"]);
 
 function ascii(bytes: Uint8Array, start: number, end: number): string {
