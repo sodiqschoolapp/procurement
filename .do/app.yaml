@@ -38,7 +38,7 @@ services:
       failure_threshold: 6
     envs:
       - key: NODE_ENV
-        scope: RUN_AND_BUILD_TIME
+        scope: RUN_TIME
         value: production
       - key: DATABASE_URL
         scope: RUN_TIME

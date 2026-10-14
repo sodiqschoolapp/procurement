@@ -13,4 +13,9 @@ test-results
 docs
 *.md
 Dockerfile
+# Real school files never enter a build, not even on the owner's machine (as in .gitignore).
+data
+imports
+**/*.xlsx
+!public/templates/**/*.xlsx
 .dockerignore

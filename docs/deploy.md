@@ -14,7 +14,7 @@ No secret is typed anywhere in these steps. The database address and its certifi
 | The database | A development database, PostgreSQL 17, component `db` of the same app | `.do/app.yaml` |
 | The address | `ombor-test.sodiqschool.uz`, a CNAME in the DNS of `sodiqschool.uz` | Step 4 below |
 
-When a new version starts, the container first applies the database migrations (`scripts/start.sh`), then starts the app. DigitalOcean sends visitors to the new version only after `/health` answers. If the migration fails, the new container stops, the deploy is marked failed, and the old version keeps running.
+When a new version starts, the container first applies the database migrations (`scripts/start.sh`), then starts the app. DigitalOcean sends visitors to the new version only after `/health` answers. If the migration fails, the new container stops and the deploy is marked failed; the old version should keep running (DigitalOcean's documented behaviour as remembered by the session that wrote this, not read: check it the first time a deploy fails).
 
 ## The owner's steps
 

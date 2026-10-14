@@ -194,10 +194,14 @@ jobs:
           docker run --detach --name app-broken --network host \
             --env DATABASE_URL=postgres://procurement@127.0.0.1:5433/procurement_missing --env PORT=8081 \
             procurement-app:ci
-          status=$(timeout 120 docker wait app-broken)
+          status=$(timeout 120 docker wait app-broken || true)
           docker logs app-broken
-          if [ "$status" = 0 ]; then
-            echo "::error::The container ended without an error although its migration failed."
+          if [ -z "$status" ] || [ "$status" = 0 ]; then
+            echo "::error::The container did not end with an error within 120 seconds although its migration failed (status: '$status')."
+            exit 1
+          fi
+          if ! docker logs app-broken 2>&1 | grep --quiet '^db:migrate failed: '; then
+            echo "::error::The container did not stop at the migration."
             exit 1
           fi
           if curl --silent --fail http://127.0.0.1:8081/health; then

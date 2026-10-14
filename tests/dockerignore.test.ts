@@ -15,4 +15,12 @@ describe(".dockerignore keeps the local .env out of the image (build-plan 0.16; 
     expect(entries).toContain(".env.*");
     expect(entries.some((entry) => entry.startsWith("!.env"))).toBe(false);
   });
+
+  it("keeps the real-data folders and spreadsheets of .gitignore out too (CLAUDE.md, invented data only)", () => {
+    const entries = readFileSync(".dockerignore", "utf8")
+      .split(/\r?\n/)
+      .map((line) => line.trim());
+
+    expect(entries).toEqual(expect.arrayContaining(["data", "imports", "**/*.xlsx"]));
+  });
 });
