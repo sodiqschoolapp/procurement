@@ -39,6 +39,9 @@ describe("npm run dev:notify (plan of 0.11, decision 11)", () => {
   });
 
   it("gives the first active Head one notification linking Home; an older inactive Head gets none", async () => {
+    setClock("2026-10-14T07:59:00Z");
+    // An older active person of another role is not "the first Head" (spec review of 0.11; D40).
+    const olderManager = await insertUser("MANAGER");
     setClock("2026-10-14T08:00:00Z");
     const inactive = await insertUser("HEAD", { isActive: false });
     setClock("2026-10-14T08:01:00Z");
@@ -53,7 +56,7 @@ describe("npm run dev:notify (plan of 0.11, decision 11)", () => {
     expect(rows).toMatchObject([
       { type: "BRANCH_ROLE_VACANT", params: { branch: "DEMO", role: "PRINCIPAL" }, link: "/" },
     ]);
-    for (const other of [inactive, later]) {
+    for (const other of [olderManager, inactive, later]) {
       expect(
         await db.select().from(notifications).where(eq(notifications.userId, other.id)),
       ).toEqual([]);

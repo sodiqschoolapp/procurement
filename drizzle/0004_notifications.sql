@@ -8,7 +8,7 @@ CREATE TABLE "notifications" (
 	"read_at" timestamp with time zone,
 	"created_at" timestamp with time zone NOT NULL,
 	CONSTRAINT "notifications_params_check" CHECK (jsonb_typeof("notifications"."params") = 'object'),
-	CONSTRAINT "notifications_link_check" CHECK ("notifications"."link" ~ '^/([^/\\]|$)' AND "notifications"."link" !~ '[[:space:][:cntrl:]]'),
+	CONSTRAINT "notifications_link_check" CHECK ("notifications"."link" ~ '^/([^/\\]|$)' AND "notifications"."link" ~ '^[!-~]+$'),
 	CONSTRAINT "notifications_read_at_check" CHECK ("notifications"."read_at" IS NULL OR "notifications"."read_at" >= "notifications"."created_at")
 );
 --> statement-breakpoint

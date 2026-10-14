@@ -58,6 +58,7 @@ export async function notifyFirstHead(client) {
     await insertNotifications((text, values) => client.query(text, values), {
       userIds: [head.id],
       actorId: null,
+      branchId: null,
       type: "BRANCH_ROLE_VACANT",
       params: { branch: "DEMO", role: "PRINCIPAL" },
       link: "/",

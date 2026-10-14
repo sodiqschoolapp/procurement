@@ -7,6 +7,7 @@ import { now } from "@/server/clock";
 import { db } from "@/server/db/client";
 import { notifications } from "@/server/db/schema";
 
+import { insertBranch } from "../../tests/helpers/branches";
 import { setClock } from "../../tests/helpers/clock";
 import { insertUser } from "../../tests/helpers/users";
 import { notify } from "./notify";
@@ -31,7 +32,14 @@ function languageWithNotify(to: () => readonly string[], fail = false) {
     async notify({ tx, userId }) {
       await notify(
         { tx, userId },
-        { to: to(), type: "BRANCH_ROLE_VACANT", params: PARAMS, link: "/", at: now() },
+        {
+          to: to(),
+          type: "BRANCH_ROLE_VACANT",
+          params: PARAMS,
+          branchId: null,
+          link: "/",
+          at: now(),
+        },
       );
       if (fail) throw new Error("invented failure after notify");
     },
@@ -47,7 +55,7 @@ async function rowsFor(userIds: readonly string[]) {
 
 describe("notify() inside the action's transaction (developer-rules.md rule 3)", () => {
   it("a rolled-back action leaves no notification (build-plan 0.11, Done when)", async () => {
-    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const errorLog = vi.spyOn(console, "error").mockImplementation(() => undefined);
     const actor = await insertUser("MANAGER");
     const head = await insertUser("HEAD");
 
@@ -58,6 +66,8 @@ describe("notify() inside the action's transaction (developer-rules.md rule 3)",
     );
 
     expect(result).toMatchObject({ ok: false, error: { code: "unexpected" } });
+    // The failure is the invented one, thrown after notify() wrote its row (spec review of 0.11).
+    expect(errorLog).toHaveBeenCalledWith(expect.stringMatching(/invented failure after notify/));
     expect(await rowsFor([head.id])).toEqual([]);
   });
 
@@ -115,6 +125,7 @@ describe("notify() inside the action's transaction (developer-rules.md rule 3)",
           to: [first.id, second.id],
           type: "BRANCH_ROLE_VACANT",
           params: PARAMS,
+          branchId: null,
           link: "/",
           at: now(),
         },
@@ -125,11 +136,47 @@ describe("notify() inside the action's transaction (developer-rules.md rule 3)",
     expect((await rowsFor([first.id, second.id])).length).toBe(2);
   });
 
+  it("an event of a branch reaches a Head and that branch's people, never another branch's (permission review of 0.11; 03 rule 1)", async () => {
+    const own = await insertBranch();
+    const other = await insertBranch();
+    const head = await insertUser("HEAD");
+    const ownFinance = await insertUser("FINANCE", { branches: [own.id] });
+    const otherFinance = await insertUser("FINANCE", { branches: [other.id] });
+    const bothFinance = await insertUser("FINANCE", { branches: [own.id, other.id] });
+
+    const written = await db.transaction((tx) =>
+      notify(
+        { tx, userId: null },
+        {
+          to: [head.id, ownFinance.id, otherFinance.id, bothFinance.id],
+          type: "BRANCH_ROLE_VACANT",
+          params: PARAMS,
+          branchId: own.id,
+          link: "/",
+          at: now(),
+        },
+      ),
+    );
+
+    expect(written).toBe(3);
+    const rows = await rowsFor([head.id, ownFinance.id, otherFinance.id, bothFinance.id]);
+    expect(rows.map((row) => row.userId).sort()).toEqual(
+      [head.id, ownFinance.id, bothFinance.id].sort(),
+    );
+  });
+
   it("no recipient writes nothing", async () => {
     const written = await db.transaction((tx) =>
       notify(
         { tx, userId: null },
-        { to: [], type: "BRANCH_ROLE_VACANT", params: PARAMS, link: "/", at: now() },
+        {
+          to: [],
+          type: "BRANCH_ROLE_VACANT",
+          params: PARAMS,
+          branchId: null,
+          link: "/",
+          at: now(),
+        },
       ),
     );
     expect(written).toBe(0);
@@ -143,7 +190,14 @@ describe("notify() inside the action's transaction (developer-rules.md rule 3)",
         db.transaction((tx) =>
           notify(
             { tx, userId: null },
-            { to: [head.id], type: "BRANCH_ROLE_VACANT", params: PARAMS, link, at: now() },
+            {
+              to: [head.id],
+              type: "BRANCH_ROLE_VACANT",
+              params: PARAMS,
+              branchId: null,
+              link,
+              at: now(),
+            },
           ),
         ),
       ).rejects.toThrow(/inside the app/);

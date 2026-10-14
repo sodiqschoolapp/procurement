@@ -2,6 +2,7 @@ import { and, count, desc, eq, isNull } from "drizzle-orm";
 import * as z from "zod";
 
 import {
+  NOTIFICATIONS_MAX_PAGE,
   NOTIFICATIONS_PAGE_SIZE,
   type NotificationParams,
   type NotificationType,
@@ -16,7 +17,9 @@ import { notifications } from "@/server/db/schema";
 // notification is shown as it was written, and its link's page checks access again (decision 4,
 // Look first). 25 a page, newest first (11-screens-and-ux.md rule 8).
 
-const listInput = z.object({ page: z.number().int().min(1).default(1) });
+const listInput = z.object({
+  page: z.number().int().min(1).max(NOTIFICATIONS_MAX_PAGE).default(1),
+});
 
 export type NotificationRow = {
   id: string;

@@ -1,5 +1,5 @@
 {
-  "id": "9d7f8754-4228-4287-bc1a-70abb2143aaa",
+  "id": "a4808a74-2c1e-47eb-a885-a96959a99e0b",
   "prevId": "2cd4c44b-a912-427d-ad61-2cdb5bd4cd87",
   "version": "7",
   "dialect": "postgresql",
@@ -558,7 +558,7 @@
         },
         "notifications_link_check": {
           "name": "notifications_link_check",
-          "value": "\"notifications\".\"link\" ~ '^/([^/\\\\]|$)' AND \"notifications\".\"link\" !~ '[[:space:][:cntrl:]]'"
+          "value": "\"notifications\".\"link\" ~ '^/([^/\\\\]|$)' AND \"notifications\".\"link\" ~ '^[!-~]+$'"
         },
         "notifications_read_at_check": {
           "name": "notifications_read_at_check",

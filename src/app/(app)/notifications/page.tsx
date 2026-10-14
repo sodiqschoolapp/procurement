@@ -1,5 +1,6 @@
 import { getTranslations } from "next-intl/server";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import * as z from "zod";
 
 import { EmptyState } from "@/components/empty-state";
@@ -8,7 +9,7 @@ import {
   countMyUnread,
   listMyNotifications,
 } from "@/features/notifications/queries/my-notifications";
-import type { SendableType } from "@/domain/notifications";
+import { NOTIFICATIONS_MAX_PAGE, type SendableType } from "@/domain/notifications";
 import { getFormatters } from "@/i18n/get-formatters";
 import { requireUser } from "@/server/auth/session";
 
@@ -19,7 +20,8 @@ import { MarkAllRead, NotificationList } from "./notification-list";
 // first, 25 a page with the page in the address (rule 8); the text of each comes from the
 // message files by its type (build-plan 0.11); time as `08.10.2026 14:05`, Tashkent (rule 10).
 
-const pageParam = z.coerce.number().int().min(1).catch(1);
+// A page number the list cannot have goes to page 1 (spec review of 0.11).
+const pageParam = z.coerce.number().int().min(1).max(NOTIFICATIONS_MAX_PAGE).catch(1);
 
 export default async function NotificationsPage({
   searchParams,
@@ -36,6 +38,8 @@ export default async function NotificationsPage({
     listMyNotifications(user.id, { page }),
     countMyUnread(user.id),
   ]);
+  // A page past the last one shows the first, never an empty panel (spec review of 0.11).
+  if (list.rows.length === 0 && page > 1) redirect("/notifications");
   const items = list.rows.map((row) => ({
     id: row.id,
     // notify() writes only a type with a text (decision 10), so every row has one.
@@ -57,7 +61,7 @@ export default async function NotificationsPage({
         </h1>
         {unread > 0 && <MarkAllRead />}
       </div>
-      {items.length === 0 && page === 1 ? (
+      {items.length === 0 ? (
         <EmptyState title={t("notifications.empty.title")} line={t("notifications.empty.line")} />
       ) : (
         <NotificationList items={items} />

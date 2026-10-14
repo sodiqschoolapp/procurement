@@ -18,6 +18,11 @@ export type Notification<Type extends SendableType> = {
   to: readonly string[];
   type: Type;
   params: NotificationParamsOf[Type];
+  /**
+   * The branch the event is about; only a Head or a person of that branch gets a row. `null` for
+   * an event of no branch, told to Heads or to the person it names (permission review of 0.11).
+   */
+  branchId: string | null;
   /** An address inside the app, such as `/requests/<id>`. */
   link: string;
   /** From the injected clock (CLAUDE.md rule 10); no database default. */
@@ -29,7 +34,8 @@ export type Notification<Type extends SendableType> = {
  * `userId` is who acted: the wrapper's user, left out of the recipients, since nobody is told of
  * their own act; `null` for a job with no acting user, such as the reminders of 8.1 (plan of 0.11,
  * decision 5; review of the plan, correction 1). A recipient named twice gets one row, an inactive
- * one none.
+ * one none,
+ * and a recipient outside the event's branch none.
  */
 export async function notify<Type extends SendableType>(
   context: { tx: Executor; userId: string | null },
@@ -42,6 +48,7 @@ export async function notify<Type extends SendableType>(
   return insertNotifications((text, values) => tx.execute(bound(text, values)), {
     userIds: notification.to,
     actorId: userId,
+    branchId: notification.branchId,
     type: notification.type,
     params: notification.params,
     link: notification.link,

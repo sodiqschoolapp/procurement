@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { NOTIFICATIONS_PAGE_SIZE } from "@/domain/notifications";
+import { NOTIFICATIONS_MAX_PAGE, NOTIFICATIONS_PAGE_SIZE } from "@/domain/notifications";
 
 import { setClock } from "../../../../tests/helpers/clock";
 import { insertNotification } from "../../../../tests/helpers/notifications";
@@ -54,7 +54,7 @@ describe("listMyNotifications", () => {
 
   it("refuses a page that is not a positive integer (developer-rules.md rule 13)", async () => {
     const finance = await insertUser("FINANCE");
-    for (const page of [0, -1, 1.5]) {
+    for (const page of [0, -1, 1.5, NOTIFICATIONS_MAX_PAGE + 1, 1e18]) {
       await expect(listMyNotifications(finance.id, { page })).rejects.toThrow();
     }
   });

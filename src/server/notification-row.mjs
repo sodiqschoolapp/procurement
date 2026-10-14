@@ -5,6 +5,9 @@
 //
 // One statement for every recipient (developer-rules.md rule 12: no query in a loop): one row per
 // active user among `userIds`, each named once, the actor left out (plan of 0.11, decision 5).
+// When the event is about a branch, only a Head or a person of that branch is told: a recipient
+// list worked out wrongly by a later task cannot carry a branch's request number or amount to
+// another branch (permission review of 0.11, Should fix 1; 03-roles-and-permissions.md rule 1).
 
 export const INSERT_NOTIFICATIONS = `insert into notifications
      (user_id, type, params, link, created_at)
@@ -12,12 +15,17 @@ export const INSERT_NOTIFICATIONS = `insert into notifications
    from users u
    where u.id in (select jsonb_array_elements_text($1::jsonb)::uuid)
      and u.is_active
-     and ($6::uuid is null or u.id <> $6::uuid)`;
+     and ($6::uuid is null or u.id <> $6::uuid)
+     and ($7::uuid is null
+          or u.role = 'HEAD'
+          or exists (select 1 from user_branches ub
+                     where ub.user_id = u.id and ub.branch_id = $7::uuid))`;
 
 /**
  * @typedef {{
  *   userIds: readonly string[],
  *   actorId: string | null,
+ *   branchId: string | null,
  *   type: string,
  *   params: { readonly [key: string]: string | number },
  *   link: string,
@@ -44,6 +52,7 @@ export async function insertNotifications(query, rows) {
     rows.link,
     rows.at,
     rows.actorId,
+    rows.branchId,
   ]);
   return result.rowCount ?? 0;
 }

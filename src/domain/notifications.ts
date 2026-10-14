@@ -69,16 +69,19 @@ export type NotificationParams = { readonly [key: string]: NotificationParamValu
 
 /**
  * An address inside the app: `/` and a path, never `//host`, `/\host` or an address with a host,
- * and no white space or control character, which a browser strips (`/<TAB>/host` becomes
- * `//host`). The database CHECK notifications_link_check says the same (plan of 0.11, review of
+ * and printable ASCII only: no white space or control character, which a browser strips
+ * (`/<TAB>/host` becomes `//host`); anything else in an address is percent-encoded. The database CHECK notifications_link_check says the same (plan of 0.11, review of
  * the plan, Should fix 6); the screen asks this again before it follows a link.
  */
 export function isInternalLink(link: string): boolean {
-  return /^\/([^/\\]|$)/.test(link) && !/[\s\p{Cc}]/u.test(link);
+  return /^\/([^/\\]|$)/.test(link) && /^[!-~]+$/.test(link);
 }
 
 /** 25 rows a page (11-screens-and-ux.md rule 8). */
 export const NOTIFICATIONS_PAGE_SIZE = 25;
+
+/** The highest page asked for: far past any list, and the offset stays an exact integer. */
+export const NOTIFICATIONS_MAX_PAGE = 10_000;
 
 /** The bell's number: up to 99, then "99+" (plan of 0.11, Screens). */
 export function unreadCountLabel(count: number): string | null {

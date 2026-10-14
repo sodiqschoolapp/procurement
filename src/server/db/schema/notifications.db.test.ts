@@ -68,6 +68,9 @@ describe("notifications table (14-data-model.md, System: user_id, type, params, 
     "/\r/x.example",
     "/ /x.example",
     "/a\u007fb",
+    "/a\u00a0b",
+    "/a\u2028b",
+    "/ünicode",
   ])("refuses the link %j: notifications_link_check (Should fix 6)", async (link) => {
     const user = await insertUser("MANAGER");
     const refusal = await refusalOf(
@@ -107,6 +110,19 @@ describe("notifications table (14-data-model.md, System: user_id, type, params, 
       }),
     );
     expect(refusal).toMatchObject({ code: "23514", constraint: "notifications_read_at_check" });
+  });
+
+  it("refuses marking read at a moment before created_at: notifications_read_at_check on update (D39)", async () => {
+    const row = await insertOne();
+    // The trigger lets read_at go from NULL to a value; only the CHECK refuses this one.
+    const refusal = await refusalOf(
+      db
+        .update(notifications)
+        .set({ readAt: new Date("2026-10-14T08:59:59Z") })
+        .where(eq(notifications.id, row.id)),
+    );
+    expect(refusal).toMatchObject({ code: "23514", constraint: "notifications_read_at_check" });
+    expect((await rowOf(row.id))?.readAt).toBeNull();
   });
 
   it("refuses a type that is not one of the enum (14-data-model.md: types are enums)", async () => {

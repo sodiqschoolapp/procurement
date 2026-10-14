@@ -22,6 +22,9 @@ describe("isInternalLink (plan of 0.11, Should fix 6)", () => {
     "/\r/x.example",
     "/ /x.example",
     "/a\u007fb",
+    "/a\u00a0b",
+    "/a\u2028b",
+    "/ünicode",
     "javascript:alert(1)",
   ])("refuses %j", (link) => {
     expect(isInternalLink(link)).toBe(false);
