@@ -238,7 +238,8 @@
     "page": "Page {page}",
     "pages": "Pages of notifications",
     "types": {
-      "BRANCH_ROLE_VACANT": "Branch {branch} has no active {role, select, HEAD {Procurement Head} MANAGER {Manager} PRINCIPAL {Principal} FINANCE {Finance user} other {user}}."
+      "BRANCH_ROLE_VACANT": "Branch {branch} has no active {role, select, HEAD {Procurement Head} MANAGER {Manager} PRINCIPAL {Principal} FINANCE {Finance user} other {user}}.",
+      "MANAGER_RIGHT_SWITCHED": "The Procurement Head switched {state, select, on {on} other {off}} your right: {right, select, CREATE_REQUESTS {Create and submit requests} RECORD_PURCHASES {Record purchases} CANCEL_PURCHASES {Cancel purchase records} CLOSE_ALONE {Close exact-match requests alone} ISSUE_STOCK {Issue stock to departments} RETURN_REVERSE {Take returns and reverse documents} TRANSFER_STOCK {Send transfers to other branches} WRITE_OFF_COUNT {Ask for write-offs and run stock counts} SET_MINIMUMS {Set minimum stock levels} other {?}}."
     }
   },
   "months": {
@@ -397,5 +398,35 @@
     "replaceTitle": "Replace {name} as Principal?",
     "replaceResult": "{name} is deactivated and signed out on every device, and waiting requests pass to the new Principal.",
     "replaceConfirm": "Replace"
+  },
+  "managerRights": {
+    "title": "Rights",
+    "intro": "All rights are on by default. A right switched off applies in all of this Manager's branches.",
+    "inactive": "Activate the user to change rights.",
+    "whenOff": "When off: {text}",
+    "switchedOn": "Right switched on",
+    "switchedOff": "Right switched off",
+    "names": {
+      "CREATE_REQUESTS": "Create and submit requests",
+      "RECORD_PURCHASES": "Record purchases",
+      "CANCEL_PURCHASES": "Cancel purchase records",
+      "CLOSE_ALONE": "Close exact-match requests alone",
+      "ISSUE_STOCK": "Issue stock to departments",
+      "RETURN_REVERSE": "Take returns and reverse documents",
+      "TRANSFER_STOCK": "Send transfers to other branches",
+      "WRITE_OFF_COUNT": "Ask for write-offs and run stock counts",
+      "SET_MINIMUMS": "Set minimum stock levels"
+    },
+    "off": {
+      "CREATE_REQUESTS": "The Manager can only view requests.",
+      "RECORD_PURCHASES": "The Procurement Head records them, or moves the request to another Manager.",
+      "CANCEL_PURCHASES": "Only the Procurement Head can cancel a record.",
+      "CLOSE_ALONE": "Every request of this Manager goes to Finance for closing, even when all labels are green.",
+      "ISSUE_STOCK": "The Manager can view stock but not give items out.",
+      "RETURN_REVERSE": "Only the Procurement Head can do these.",
+      "TRANSFER_STOCK": "Only the Procurement Head can send transfers.",
+      "WRITE_OFF_COUNT": "Only the Procurement Head can start them.",
+      "SET_MINIMUMS": "Only the Procurement Head sets them."
+    }
   }
 }

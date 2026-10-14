@@ -2,7 +2,7 @@ import { createTranslator } from "next-intl";
 import { describe, expect, it } from "vitest";
 
 import { NOTIFICATION_PARAMS, type SendableType } from "@/domain/notifications";
-import { ROLES } from "@/domain/permissions";
+import { MANAGER_RIGHTS, ROLES } from "@/domain/permissions";
 import { LOCALES } from "@/i18n/locale";
 
 import en from "../src/i18n/messages/en.json";
@@ -20,6 +20,13 @@ const MESSAGES = { uz, ru, en } as const;
 /** Invented values for the params of each sendable type. */
 const SAMPLE: { [Type in SendableType]: Record<string, string | number> } = {
   BRANCH_ROLE_VACANT: { branch: "DEMO", role: "PRINCIPAL" },
+  MANAGER_RIGHT_SWITCHED: { right: "RECORD_PURCHASES", state: "on" },
+};
+
+/** The free text of a sample that the text must show as it is; null for a type of codes only. */
+const SHOWN: { [Type in SendableType]: string | null } = {
+  BRANCH_ROLE_VACANT: "DEMO",
+  MANAGER_RIGHT_SWITCHED: null,
 };
 
 describe("notification texts by type (build-plan 0.11; rule 14)", () => {
@@ -38,7 +45,8 @@ describe("notification texts by type (build-plan 0.11; rule 14)", () => {
 
         expect(errors).toEqual([]);
         expect(text).not.toMatch(/[{}]/);
-        expect(text).toContain("DEMO");
+        const shown = SHOWN[type];
+        if (shown !== null) expect(text).toContain(shown);
         // A text that ignores a param would pass without it: each one changes the text.
         for (const param of NOTIFICATION_PARAMS[type]) {
           const without = { ...SAMPLE[type], [param]: "ZZZ" };
@@ -54,6 +62,20 @@ describe("notification texts by type (build-plan 0.11; rule 14)", () => {
       );
       expect(new Set(texts).size).toBe(ROLES.length);
       for (const [index, role] of ROLES.entries()) expect(texts[index]).not.toContain(role);
+    });
+
+    it(`${locale}: MANAGER_RIGHT_SWITCHED names each right by a word and says on or off (03, Manager rights; plan of 1.4)`, () => {
+      const t = createTranslator({ locale, messages: MESSAGES[locale] });
+      const texts = MANAGER_RIGHTS.flatMap((right) =>
+        (["on", "off"] as const).map((state) =>
+          t("notifications.types.MANAGER_RIGHT_SWITCHED", { right, state }),
+        ),
+      );
+      expect(new Set(texts).size).toBe(MANAGER_RIGHTS.length * 2);
+      for (const text of texts) {
+        for (const right of MANAGER_RIGHTS) expect(text).not.toContain(right);
+        expect(text).not.toContain("?");
+      }
     });
   }
 });

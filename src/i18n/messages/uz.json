@@ -238,7 +238,8 @@
     "page": "{page}-sahifa",
     "pages": "Bildirishnoma sahifalari",
     "types": {
-      "BRANCH_ROLE_VACANT": "{branch} filialida faol {role, select, HEAD {xaridlar rahbari} MANAGER {menejer} PRINCIPAL {direktor} FINANCE {moliya xodimi} other {foydalanuvchi}} yoʻq."
+      "BRANCH_ROLE_VACANT": "{branch} filialida faol {role, select, HEAD {xaridlar rahbari} MANAGER {menejer} PRINCIPAL {direktor} FINANCE {moliya xodimi} other {foydalanuvchi}} yoʻq.",
+      "MANAGER_RIGHT_SWITCHED": "Xaridlar rahbari sizning huquqingizni {state, select, on {yoqdi} other {oʻchirdi}}: {right, select, CREATE_REQUESTS {Buyurtmalar yaratish va yuborish} RECORD_PURCHASES {Xaridlarni yozish} CANCEL_PURCHASES {Xarid yozuvlarini bekor qilish} CLOSE_ALONE {Farqsiz buyurtmalarni oʻzi yopish} ISSUE_STOCK {Boʻlimlarga tovar berish} RETURN_REVERSE {Qaytarishlarni qabul qilish va hujjatlarni bekor qilish} TRANSFER_STOCK {Boshqa filiallarga koʻchirish yuborish} WRITE_OFF_COUNT {Hisobdan chiqarishni soʻrash va inventarizatsiya oʻtkazish} SET_MINIMUMS {Minimal qoldiqlarni belgilash} other {?}}."
     }
   },
   "months": {
@@ -397,5 +398,35 @@
     "replaceTitle": "{name}ni direktor sifatida almashtirasizmi?",
     "replaceResult": "{name} o'chiriladi va barcha qurilmalarda tizimdan chiqariladi, kutilayotgan buyurtmalar yangi direktorga o'tadi.",
     "replaceConfirm": "Almashtirish"
+  },
+  "managerRights": {
+    "title": "Huquqlar",
+    "intro": "Barcha huquqlar odatda yoqilgan. Oʻchirilgan huquq bu menejerning barcha filiallarida amal qiladi.",
+    "inactive": "Huquqlarni oʻzgartirish uchun foydalanuvchini faollashtiring.",
+    "whenOff": "Oʻchirilganda: {text}",
+    "switchedOn": "Huquq yoqildi",
+    "switchedOff": "Huquq oʻchirildi",
+    "names": {
+      "CREATE_REQUESTS": "Buyurtmalar yaratish va yuborish",
+      "RECORD_PURCHASES": "Xaridlarni yozish",
+      "CANCEL_PURCHASES": "Xarid yozuvlarini bekor qilish",
+      "CLOSE_ALONE": "Farqsiz buyurtmalarni oʻzi yopish",
+      "ISSUE_STOCK": "Boʻlimlarga tovar berish",
+      "RETURN_REVERSE": "Qaytarishlarni qabul qilish va hujjatlarni bekor qilish",
+      "TRANSFER_STOCK": "Boshqa filiallarga koʻchirish yuborish",
+      "WRITE_OFF_COUNT": "Hisobdan chiqarishni soʻrash va inventarizatsiya oʻtkazish",
+      "SET_MINIMUMS": "Minimal qoldiqlarni belgilash"
+    },
+    "off": {
+      "CREATE_REQUESTS": "Menejer buyurtmalarni faqat koʻra oladi.",
+      "RECORD_PURCHASES": "Xaridlarni xaridlar rahbari yozadi yoki buyurtmani boshqa menejerga oʻtkazadi.",
+      "CANCEL_PURCHASES": "Yozuvni faqat xaridlar rahbari bekor qila oladi.",
+      "CLOSE_ALONE": "Bu menejerning har bir buyurtmasi, barcha belgilar yashil boʻlsa ham, yopish uchun moliyaga boradi.",
+      "ISSUE_STOCK": "Menejer qoldiqlarni koʻradi, lekin tovar bera olmaydi.",
+      "RETURN_REVERSE": "Buni faqat xaridlar rahbari qila oladi.",
+      "TRANSFER_STOCK": "Koʻchirishni faqat xaridlar rahbari yuboradi.",
+      "WRITE_OFF_COUNT": "Ularni faqat xaridlar rahbari boshlay oladi.",
+      "SET_MINIMUMS": "Ularni faqat xaridlar rahbari belgilaydi."
+    }
   }
 }

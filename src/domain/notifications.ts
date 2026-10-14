@@ -1,4 +1,4 @@
-import type { Role } from "./permissions";
+import type { ManagerRight, Role } from "./permissions";
 
 // What a notification is (10-notifications-analytics-reports.md, Notifications; 14-data-model.md,
 // System: `notifications user_id, type, params JSONB, link, read_at`). Pure: src/server/notify.ts
@@ -52,6 +52,8 @@ export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 export type NotificationParamsOf = {
   /** "Branch has no active user for a role": the branch's code and the role's code. */
   BRANCH_ROLE_VACANT: { branch: string; role: Role };
+  /** "A Manager's right is switched on or off": the right's code, and "on" or "off". */
+  MANAGER_RIGHT_SWITCHED: { right: ManagerRight; state: "on" | "off" };
 };
 
 /** A type notify() accepts: one with params and a text (decision 10). */
@@ -62,6 +64,7 @@ export const NOTIFICATION_PARAMS: {
   [Type in SendableType]: readonly (keyof NotificationParamsOf[Type])[];
 } = {
   BRANCH_ROLE_VACANT: ["branch", "role"],
+  MANAGER_RIGHT_SWITCHED: ["right", "state"],
 };
 
 export type NotificationParamValue = string | number;

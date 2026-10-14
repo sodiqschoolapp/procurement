@@ -34,6 +34,8 @@ export const SERVER_ACTIONS: Record<string, Entry> = {
   "src/app/(app)/users/actions.ts#updateUserAction": "catalog.manage",
   "src/app/(app)/users/actions.ts#setUserActiveAction": "catalog.manage",
   "src/app/(app)/users/actions.ts#renewUserPasswordAction": "catalog.manage",
+  // "Switch a Manager's rights on or off" (03; plan of 1.4).
+  "src/app/(app)/users/actions.ts#switchManagerRightAction": "manager_rights.switch",
 };
 
 /** Exports of `src/features/<area>/queries/`, as `<file>#<export>`. */
@@ -49,6 +51,7 @@ export const QUERIES: Record<string, Permission> = {
   // The Head's users, the vacancy warning and the form's branches (plan of 1.3).
   "src/features/users/queries/users.ts#listUsers": "catalog.manage",
   "src/features/users/queries/users.ts#getUser": "catalog.manage",
+  "src/features/users/queries/users.ts#getManagerRights": "manager_rights.switch",
   "src/features/users/queries/users.ts#listBranchVacancies": "catalog.manage",
   "src/features/users/queries/users.ts#listBranchChoices": "catalog.manage",
   // The bell and /notifications (plan of 0.11, decision 2, Look first).
