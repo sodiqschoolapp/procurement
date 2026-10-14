@@ -140,8 +140,7 @@
     },
     "collapse": "Collapse the menu",
     "expand": "Expand the menu",
-    "profile": "Profile",
-    "notifications": "Notifications"
+    "profile": "Profile"
   },
   "branch": {
     "label": "Branch",
