@@ -1,7 +1,6 @@
-import { type SQL, sql } from "drizzle-orm";
-
 import { type AuditAction, type AuditRecord, auditValue } from "@/domain/audit";
 import type { Executor } from "@/server/authorize";
+import { bound } from "@/server/bound-sql";
 
 import { insertAuditRow } from "./audit-row.mjs";
 
@@ -23,16 +22,6 @@ export type AuditEntry = {
   /** From the injected clock (CLAUDE.md rule 10); no database default. */
   at: Date;
 };
-
-/** `$1 … $n` of a statement as bound parameters of Drizzle's `sql`. */
-function bound(text: string, values: readonly unknown[]): SQL {
-  const parts = text.split(/\$(\d+)/);
-  return sql.join(
-    parts.map((part, index) =>
-      index % 2 === 0 ? sql.raw(part) : sql`${values[Number(part) - 1]}`,
-    ),
-  );
-}
 
 /**
  * Writes one audit row with the action's transaction. The actor is the user the wrapper

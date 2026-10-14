@@ -1,6 +1,7 @@
 import { eq, sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 
+import { NOTIFICATION_TYPES } from "@/domain/notifications";
 import { db } from "@/server/db/client";
 import { notifications } from "@/server/db/schema";
 
@@ -192,5 +193,16 @@ describe("notifications_guard (plan of 0.11, decision 3, Look first; CLAUDE.md r
       expect(refusal).toMatchObject({ code: "23514", constraint: "notifications_guard" });
       expect(await rowOf(row.id)).toMatchObject({ link: "/", readAt: null, createdAt: CREATED });
     }
+  });
+});
+
+describe("notification_type (plan of 0.11, decision 1, Look first)", () => {
+  it("holds exactly NOTIFICATION_TYPES of src/domain/notifications.ts, in its order", async () => {
+    const found = await db.execute<{ value: string }>(sql`
+      select e.enumlabel as value from pg_enum e
+      join pg_type t on t.oid = e.enumtypid
+      where t.typname = 'notification_type'
+      order by e.enumsortorder`);
+    expect(found.rows.map((row) => row.value)).toEqual([...NOTIFICATION_TYPES]);
   });
 });
