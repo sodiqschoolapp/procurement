@@ -210,3 +210,22 @@ describe("the change-history list (04-catalogs.md rule 9)", () => {
     }
   });
 });
+
+describe("a hidden field (plan of 1.6, decision 7)", () => {
+  it("is not shown; the field beside it is", () => {
+    const entry: ChangeHistoryEntry = {
+      ...EDIT,
+      action: "department.create",
+      before: null,
+      after: { branchId: "00000000-0000-4000-8000-0000000000aa", branch: "CHL" },
+    };
+    const text = textOf(
+      render([entry], {
+        branchId: { label: "catalog.fields.branch", kind: "text", hidden: true },
+        branch: { label: "catalog.fields.branch", kind: "text" },
+      }),
+    );
+    expect(text).toContain("CHL");
+    expect(text).not.toContain("00000000-0000-4000-8000-0000000000aa");
+  });
+});

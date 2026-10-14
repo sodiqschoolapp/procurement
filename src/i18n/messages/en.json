@@ -117,6 +117,12 @@
         "update": "Company changed",
         "deactivate": "Company deactivated",
         "activate": "Company activated"
+      },
+      "department": {
+        "create": "Department added",
+        "update": "Department changed",
+        "deactivate": "Department deactivated",
+        "activate": "Department activated"
       }
     },
     "fields": {
@@ -555,6 +561,10 @@
         "emptyText": "Add the units of a branch, such as the kitchen, the library or a classroom."
       }
     },
-    "chooseBranch": "Choose…"
+    "chooseBranch": "Choose…",
+    "branchOption": "{code} · {name}",
+    "branchLine": "Branch: {code} · {name}",
+    "allBranches": "All branches. Choose one in the branch switcher on top.",
+    "oneBranch": "Branch {code} · {name}, as chosen in the branch switcher on top."
   }
 }
