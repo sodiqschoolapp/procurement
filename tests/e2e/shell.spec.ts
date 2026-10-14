@@ -204,3 +204,16 @@ test("signed out, / goes to the sign-in page (plan of 0.10b)", async ({ page }) 
   await expect(page).toHaveURL(/\/login(\?|$)/);
   await expect(page.getByRole("heading", { level: 1, name: uz.login.title })).toBeVisible();
 });
+
+test("a session that ended while its cookie stayed returns to the same page after sign-in (edge-cases/system.md)", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await context.addCookies([
+    { name: "procurement.session_token", value: "invented.ended", url: baseURL ?? "" },
+  ]);
+  await page.goto("/profile?tab=x");
+
+  await expect(page).toHaveURL(/\/login\?next=%2Fprofile%3Ftab%3Dx$/);
+});

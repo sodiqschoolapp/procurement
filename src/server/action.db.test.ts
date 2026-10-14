@@ -824,6 +824,35 @@ describe("the global form (plan of 0.10b, decision 4; review of the plan, correc
     expect(await rows()).toMatchObject([{ ownerId: principal.id, title: "Sinov" }]);
   });
 
+  it("a global permission the role does not have is forbidden: no lock, nothing written (03 matrix)", async () => {
+    const branch = await insertBranch();
+    const manager = await insertUser("MANAGER", { branches: [branch.id] });
+    const order: string[] = [];
+    const headOnly = defineAction({ ...globalSample(order), permission: "catalog.manage" });
+
+    const result = await runAction(headOnly, manager.id, { branchId: branch.id, title: "Sinov" });
+    expect(result).toMatchObject({ ok: false, error: { code: "forbidden" } });
+    expect(order).toEqual(["target"]);
+    expect(await rows()).toEqual([]);
+  });
+
+  it("a fresh { scope: 'global' } from the steps counts as global, not as a branch target", async () => {
+    const branch = await insertBranch();
+    const finance = await insertUser("FINANCE", { branches: [branch.id] });
+    const order: string[] = [];
+    const sample = globalSample(order);
+    const fresh = defineAction({
+      ...sample,
+      async target() {
+        order.push("target");
+        return { scope: "global" as const };
+      },
+    });
+
+    expectOk(await runAction(fresh, finance.id, { branchId: branch.id, title: "Sinov" }));
+    expect(order).toEqual(["target", "lock", "write"]);
+  });
+
   const mistakes = [
     {
       name: "GLOBAL_TARGET with a branch permission",
@@ -838,6 +867,18 @@ describe("the global form (plan of 0.10b, decision 4; review of the plan, correc
           async target({ input }: { input: z.output<typeof globalInput> }) {
             order.push("target");
             return { branchId: input.branchId };
+          },
+        }),
+    },
+    {
+      name: "a branch permission with a target that names no branch",
+      action: (order: string[]) =>
+        defineAction({
+          ...globalSample(order),
+          permission: "request.create",
+          async target() {
+            order.push("target");
+            return { ownerId: "00000000-0000-4000-8000-000000000001" } as never;
           },
         }),
     },

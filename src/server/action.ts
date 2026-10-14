@@ -47,8 +47,9 @@ export const GLOBAL_TARGET = Object.freeze({ scope: "global" } as const);
 /** A branch and owner, or GLOBAL_TARGET for an action of a global permission. */
 export type ActionTarget = Target | typeof GLOBAL_TARGET;
 
+/** By shape, not by reference: a fresh `{ scope: "global" }` from a step is global too. */
 function isGlobal(target: ActionTarget): target is typeof GLOBAL_TARGET {
-  return target === GLOBAL_TARGET;
+  return "scope" in target && target.scope === "global";
 }
 
 /** What `lock` returns: the locked record's branch and owner, its version, and the rows. */
@@ -111,7 +112,7 @@ class ActionDefinitionError extends Error {
 }
 
 function sameTarget(a: ActionTarget, b: ActionTarget): boolean {
-  if (isGlobal(a) || isGlobal(b)) return a === b;
+  if (isGlobal(a) || isGlobal(b)) return isGlobal(a) && isGlobal(b);
   return a.branchId === b.branchId && (a.ownerId ?? null) === (b.ownerId ?? null);
 }
 
@@ -161,6 +162,10 @@ export async function runAction<Schema extends z.ZodType, Rows, Result>(
       const target = await definition.target(step);
       if (!target) throw new Refusal("not_found");
       const global = isGlobal(target);
+      // A branch target always names its branch: without one, the wall has nothing to check.
+      if (!global && typeof (target as Partial<Target>).branchId !== "string") {
+        throw new ActionDefinitionError(`${definition.name}: a branch target without a branch.`);
+      }
       if (global !== (PERMISSIONS[definition.permission].scope === "global")) {
         throw new ActionDefinitionError(
           `${definition.name}: the target does not fit the scope of ${definition.permission}.`,

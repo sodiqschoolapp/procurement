@@ -426,6 +426,10 @@ Choices made during the build:
 - The sidebar and the theme choice read `<html>` through `useSyncExternalStore` (`subscribeToRoot()` in `src/components/theme.ts`), not an effect that sets state (ESLint).
 - The e2e setup runs `scripts/db-migrate.mjs` in its own process: Playwright loads the setup as CommonJS, which cannot import a module that reads `import.meta`.
 - A branch is shown as `{code} — {name}` through the key `branch.option` (no text in a screen).
+- The wrapper recognises a global target by its shape (`scope: "global"`), and refuses as a definition error a branch target without a `branchId` (permission review).
+- Choosing the language one already has writes nothing: no update and no audit row, so no `users` row changes without its audit row (spec review).
+- The proxy hands the asked-for path to the signed-in layout in the request header `x-return-path`, so a session that ended while its cookie stayed returns to the same page after sign-in (spec review).
+- Sign-out is the client component `SignOutButton` with `useFormStatus`, so both sign-out buttons show their loading state (spec review, Must fix).
 
 ## Process changes
 

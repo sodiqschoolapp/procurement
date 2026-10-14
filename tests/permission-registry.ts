@@ -17,6 +17,8 @@ export const SERVER_ACTIONS: Record<string, Entry> = {
   "src/app/login/actions.ts#chooseLanguageAction": "OPEN",
   // One's own language and branch view (plan of 0.10b, decisions 1 and 3, Look first).
   "src/app/(app)/profile/actions.ts#chooseOwnLanguageAction": "profile.edit",
+  // "all" asks profile.edit; a branch id asks data.view on that branch, proved by the matrix
+  // test "chooseBranch with a branch" (permission review of 0.10b, Must fix 1).
   "src/app/(app)/branch-actions.ts#chooseBranchAction": "profile.edit",
 };
 

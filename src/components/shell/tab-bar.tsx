@@ -17,7 +17,7 @@ import { type MenuItem, isActive, menuFor, tabBarSplit } from "./menu";
 // is a Base UI menu above the bar; its items are links (plan of 0.10b, decision 15).
 
 const TAB =
-  "flex min-h-14 min-w-11 flex-1 flex-col items-center justify-center gap-0.5 rounded-lg px-0 text-[11px] leading-4 tracking-tight font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sidebar-ring";
+  "flex min-h-14 min-w-11 flex-1 flex-col items-center justify-center gap-0.5 rounded-lg px-0 text-xs leading-4 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sidebar-ring";
 
 function tabClass(active: boolean): string {
   return cn(
@@ -74,7 +74,7 @@ export function TabBar({ role }: { role: Role }) {
                           render={<Link href={item.href} />}
                           aria-current={active ? "page" : undefined}
                           className={cn(
-                            "flex min-h-11 items-center gap-3 rounded-sm px-3 text-sm font-semibold outline-none data-highlighted:bg-accent",
+                            "flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-semibold outline-none data-highlighted:bg-accent",
                             active &&
                               "bg-primary text-primary-foreground data-highlighted:bg-primary-hover",
                           )}

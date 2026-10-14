@@ -6,7 +6,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSyncExternalStore } from "react";
 
-import { signOutAction } from "@/app/login/actions";
 import { Icon } from "@/components/icon";
 import { applySidebar, subscribeToRoot } from "@/components/theme";
 import { cn } from "@/components/utils";
@@ -14,6 +13,7 @@ import type { Role } from "@/domain/permissions";
 
 import { isActive, menuFor } from "./menu";
 import { Avatar } from "./person";
+import { SignOutButton } from "./sign-out-button";
 
 // The menu from 640 px on (docs/design-system.md, Layout shell): navy in both themes, 240 wide,
 // the on-dark one-line logo, the role's items (icon and word, 40 high, corner 8, the active one
@@ -73,7 +73,7 @@ export function Sidebar({ role, fullName }: { role: Role; fullName: string }) {
                   title={label}
                   aria-current={active ? "page" : undefined}
                   className={cn(
-                    "flex h-10 items-center gap-3 rounded-lg px-3 text-sm leading-5 font-semibold rail:justify-center rail:px-0",
+                    "flex h-10 items-center gap-3 rounded-lg px-3 text-sm leading-5 rail:justify-center rail:px-0",
                     FOCUS,
                     active ? "bg-sidebar-primary text-sidebar-primary-foreground" : QUIET,
                   )}
@@ -120,16 +120,10 @@ export function Sidebar({ role, fullName }: { role: Role; fullName: string }) {
               <span className="truncate text-xs leading-4">{t(`roles.${role}`)}</span>
             </span>
           </Link>
-          <form action={signOutAction}>
-            <button
-              type="submit"
-              aria-label={t("session.signOut")}
-              title={t("session.signOut")}
-              className={cn("flex size-10 items-center justify-center rounded-lg", FOCUS, QUIET)}
-            >
-              <Icon name="logout" />
-            </button>
-          </form>
+          <SignOutButton
+            kind="icon"
+            className={cn("flex size-10 items-center justify-center rounded-lg", FOCUS, QUIET)}
+          />
         </div>
       </div>
     </aside>

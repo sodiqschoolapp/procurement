@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 
-import { loginPathFor } from "@/server/auth/return-path";
+import { RETURN_PATH_HEADER, loginPathFor } from "@/server/auth/return-path";
 import { SESSION_COOKIE_NAMES } from "@/server/auth/session-cookie";
 
 // Next.js 16's proxy (the former middleware). A request without a session cookie to a page of
@@ -14,7 +14,12 @@ const OPEN_PATHS = new Set(["/login", "/health"]);
 export function proxy(request: NextRequest): NextResponse {
   const { pathname, search } = request.nextUrl;
   if (OPEN_PATHS.has(pathname)) return NextResponse.next();
-  if (SESSION_COOKIE_NAMES.some((name) => request.cookies.has(name))) return NextResponse.next();
+  if (SESSION_COOKIE_NAMES.some((name) => request.cookies.has(name))) {
+    // The layout of the signed-in pages reads the path from here when the session has ended.
+    const headers = new Headers(request.headers);
+    headers.set(RETURN_PATH_HEADER, `${pathname}${search}`);
+    return NextResponse.next({ request: { headers } });
+  }
   return NextResponse.redirect(new URL(loginPathFor(`${pathname}${search}`), request.url));
 }
 

@@ -28,7 +28,10 @@ export const chooseOwnLanguage = defineAction({
       .for("update");
     return row ? { target: GLOBAL_TARGET, rows: row } : null;
   },
-  async write({ tx, input, userId }) {
+  async write({ tx, input, userId, locked }) {
+    // The same language again changes nothing: no write, so no row changes without its audit
+    // row (developer-rules.md rule 13).
+    if (locked?.rows.locale === input.locale) return { locale: input.locale };
     await tx
       .update(users)
       .set({ locale: input.locale, updatedAt: now() })

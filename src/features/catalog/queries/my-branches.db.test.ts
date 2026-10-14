@@ -53,8 +53,10 @@ describe("listMyBranches (11 rule 1; developer-rules rule 4)", () => {
     );
   });
 
-  it("a Principal sees its one branch", async () => {
+  it("a Principal sees its one branch, with another Principal's branch beside it (D40)", async () => {
     const principal = await insertUser("PRINCIPAL");
+    const other = await insertUser("PRINCIPAL");
+    expect(other.branchIds[0]).not.toBe(principal.branchIds[0]);
 
     expect((await listMyBranches(principal.id)).map((branch) => branch.id)).toEqual(
       principal.branchIds,
@@ -158,7 +160,28 @@ describe("currentBranchChoice (11 rule 1; 03 rule 1)", () => {
 
 describePermissionMatrix("listMyBranches", {
   permission: "profile.edit",
-  run: ({ user }) => listMyBranches(user.id),
+  async run({ user, branchId, ownBranchId }) {
+    const ids = (await listMyBranches(user.id)).map((branch) => branch.id);
+    // What comes back: the Head every branch, everyone else their own only (03 rule 1).
+    if (user.role === "HEAD") expect(ids).toEqual(expect.arrayContaining([branchId, ownBranchId]));
+    else expect(ids).toEqual([ownBranchId]);
+  },
+});
+
+// A branch id asks data.view on that branch (03, "See requests, stock and reports"): another
+// branch is Not found (review of 0.10b, permission review, Must fix 1).
+describePermissionMatrix("chooseBranch with a branch", {
+  permission: "data.view",
+  async run({ user, branchId }) {
+    const result = await chooseBranch(user.id, { branch: branchId });
+    if (result.ok) {
+      expect(result.data.cookie).toBe(branchCookieValue(user.id, branchId));
+      return;
+    }
+    const { code } = result.error;
+    if (code === "not_found" || code === "forbidden") throw new AuthorizationError(code);
+    throw new Error(`Unexpected answer: ${code}`);
+  },
 });
 
 describePermissionMatrix("chooseBranch with All my branches", {
@@ -174,5 +197,10 @@ describePermissionMatrix("chooseBranch with All my branches", {
 
 describePermissionMatrix("currentBranchChoice", {
   permission: "profile.edit",
-  run: ({ user }) => currentBranchChoice(user.id, undefined),
+  async run({ user, branchId, ownBranchId }) {
+    const chosen = await currentBranchChoice(user.id, branchCookieValue(user.id, branchId));
+    // A cookie naming a branch the person does not see reads as All my branches (03 rule 1).
+    const sees = user.role === "HEAD" || branchId === ownBranchId;
+    expect(chosen).toBe(sees ? branchId : null);
+  },
 });

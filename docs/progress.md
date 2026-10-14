@@ -287,6 +287,7 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - An action of a global permission returns `GLOBAL_TARGET` from `target` and `lock`; a branch target there is a definition error. A global create with `repeat` is refused until a task decides how its repeat is matched.
 - Action definitions that touch the database live under `src/features/<area>/actions/`; the `"use server"` file in `src/app/` only wraps them.
 - E2E people: `E2E_ROLES` and `E2E_BRANCHES` of `tests/e2e/global-setup.ts`; a test that changes a person's settings uses its own person (the language test has one per project).
+- Page titles are `text-[28px] leading-[34px] font-bold tracking-[-0.01em]`; the shell sets the page padding (32, 16 on a phone).
 - Trap: a click on a Base UI trigger before hydration opens nothing; the shell test retries the "More" click with `toPass()`.
 
 The next task is 0.11.

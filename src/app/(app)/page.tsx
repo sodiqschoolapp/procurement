@@ -13,7 +13,7 @@ export default async function HomePage() {
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-6">
-      <h1 className="text-2xl leading-8 font-bold">{t("title")}</h1>
+      <h1 className="text-[28px] leading-[34px] font-bold tracking-[-0.01em]">{t("title")}</h1>
       <EmptyState title={t(`empty.${user.role}.title`)} line={t(`empty.${user.role}.line`)} />
     </div>
   );

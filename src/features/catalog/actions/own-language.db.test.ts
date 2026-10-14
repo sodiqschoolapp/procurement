@@ -58,13 +58,16 @@ describe("chooseOwnLanguage (A2; plan of 0.10b)", () => {
     expect(await auditRowsOf(other.id)).toEqual([]);
   });
 
-  it("the same language again writes no audit row", async () => {
+  it("the same language again writes nothing: no audit row and the row unchanged (rule 13)", async () => {
+    setClock("2026-10-14T09:00:00Z");
     const head = await insertUser("HEAD");
+    setClock("2026-10-14T11:00:00Z");
 
     expect(await runAction(chooseOwnLanguage, head.id, { locale: "uz" })).toMatchObject({
       ok: true,
     });
     expect(await auditRowsOf(head.id)).toEqual([]);
+    expect((await localeOf(head.id))?.updatedAt).toEqual(new Date("2026-10-14T09:00:00Z"));
   });
 
   it("a value that is not one of the three languages changes nothing (rule 13: Zod first)", async () => {
