@@ -290,4 +290,22 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - Page titles are `text-[28px] leading-[34px] font-bold tracking-[-0.01em]`; the shell sets the page padding (32, 16 on a phone).
 - Trap: a click on a Base UI trigger before hydration opens nothing; the shell test retries the "More" click with `toPass()`.
 
-The next task is 0.11.
+## 0.11 Notifications (14.10.2026, pull request #24)
+
+**Built**
+- Migration `0004_notifications`: enum `notification_type` (27 values), `notifications` with link, params and read_at CHECKs, two indexes, the hand-written trigger `notifications_guard` (no DELETE or TRUNCATE; UPDATE only `read_at` NULL → moment).
+- `notify({ tx, userId | null }, { to, type, params, branchId, link, at })` in `src/server/notify.ts`, one statement in `src/server/notification-row.mjs`; `src/domain/notifications.ts` (types, params per type, `isInternalLink()`, page size); permission `notification.own`.
+- `openNotification`, `markAllNotificationsRead`, `listMyNotifications`, `countMyUnread` in `src/features/notifications/`; the bell in the top bar; `/notifications`; `npm run dev:notify`.
+
+**Left out, and the task that brings it**
+- Sending each type and its text and params: 1.3, 1.4, 2.x, 3.x, 5.x, 8.1. The role groups of the table ("Finance users of the branch"): the first task that sends to each.
+
+**What the next sessions must know**
+- In an action's `notify` step: `await notify({ tx, userId }, { to, type, params, branchId, link, at: now() })`. `branchId` is the record's branch (`null` only for an event of no branch): a recipient outside it gets no row; the actor, repeats and inactive users get none.
+- A new type that is sent: add its params to `NotificationParamsOf` and `NOTIFICATION_PARAMS`, and `notifications.types.<TYPE>` in uz, ru, en (`tests/notification-texts.test.ts` checks every param changes the text). Params are strings or numbers (an ICU argument; a flag is a word for a `select`); money a string of whole so'm. Any request number or amount in params is a Look first of that task (decision 4).
+- A job (8.1) calls `notify()` with `userId: null`.
+- `notifications` rows cannot be deleted, also in tests: count the person's own rows. The e2e test marks its Head's older rows read first.
+- An action whose success changes the bell revalidates the layout in its `"use server"` wrapper (`revalidatePath("/", "layout")`); `router.push()` and `router.refresh()` at once can leave the address behind the page.
+- A link is printable ASCII only (CHECK and `isInternalLink()`): PostgreSQL and JavaScript call different Unicode characters "space".
+
+The next task is 0.12.
