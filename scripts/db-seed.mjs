@@ -26,11 +26,22 @@ try {
   process.exit(1);
 }
 
-const client = new pg.Client({
-  ...connectionOptions(connectionString, process.env.DATABASE_CA_CERT),
-  options: "-c timezone=UTC",
-});
-await client.connect();
+let client;
+try {
+  client = new pg.Client({
+    ...connectionOptions(connectionString, process.env.DATABASE_CA_CERT),
+    options: "-c timezone=UTC",
+  });
+  await client.connect();
+} catch (error) {
+  // The error of a failed connection names the host and port; on the test copy this line goes to
+  // the runtime log, so only its kind is printed (permission review of 0.15, Should fix 3).
+  const kind = error?.code ?? (error instanceof Error ? error.name : "Error");
+  console.error(
+    `Refused: the database of DATABASE_URL could not be reached (${kind}). Nothing was written.`,
+  );
+  process.exit(1);
+}
 try {
   // A plain .mjs script cannot load the TypeScript clock of src/server/clock.ts (decisions 0.2:
   // no tsx), so the moment is read here once; CLAUDE.md rule 10 is kept by passing it in.

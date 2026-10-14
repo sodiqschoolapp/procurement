@@ -75,4 +75,27 @@ describe("the seed writes to a hosted database only on the test copy (build-plan
     expect(run.stderr).not.toContain("db.example.invalid");
     expect(run.stderr).not.toContain("invented-pw");
   });
+
+  it("with the switch, a database it cannot reach is named by the kind of error only, never its host (permission review of 0.15)", () => {
+    const run = spawnSync(process.execPath, ["scripts/db-seed.mjs"], {
+      env: {
+        NODE_ENV: "test",
+        PATH: process.env.PATH,
+        DATABASE_URL:
+          "postgres://invented_user:invented-pw@db.example.invalid:25060/demo?connect_timeout=5",
+        SEED_DEMO_DATA: "yes",
+        ...PASSWORDS,
+      },
+      encoding: "utf8",
+      timeout: 30_000,
+    });
+
+    expect(run.status).toBe(1);
+    expect(run.stdout).toBe("");
+    expect(run.stderr.trim()).toMatch(
+      /^Refused: the database of DATABASE_URL could not be reached \([A-Za-z_]+\)\. Nothing was written\.$/,
+    );
+    expect(run.stderr).not.toContain("db.example.invalid");
+    expect(run.stderr).not.toContain("invented-pw");
+  });
 });
