@@ -1,4 +1,5 @@
 import { APIError } from "better-auth/api";
+import { hashPassword } from "better-auth/crypto";
 import { and, eq, gt, sql } from "drizzle-orm";
 
 import { minutesUntil, signInOpensAt, signInWindowStart } from "@/domain/sign-in-limit";
@@ -83,8 +84,14 @@ export async function signIn(input: unknown): Promise<SignInResult> {
         .select({ id: users.id, isActive: users.isActive })
         .from(users)
         .where(eq(users.username, username));
-      // An inactive user's password is not checked; the refusal is the same as a wrong one.
-      token = user?.isActive ? await passwordSession(typed, password) : null;
+      if (user?.isActive) {
+        token = await passwordSession(typed, password);
+      } else {
+        // An unknown or inactive username: the password is hashed all the same, so the time of
+        // the answer does not tell which usernames exist or are switched off (plan, decision 6;
+        // permission review of 0.6). The refusal is the same as a wrong password.
+        await hashPassword(password);
+      }
 
       await tx
         .insert(loginAttempts)
