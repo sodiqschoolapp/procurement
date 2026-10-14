@@ -8,6 +8,8 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import pg from "pg";
 
+import { connectionOptions } from "../src/server/db/connection-options.mjs";
+
 export const MIGRATIONS_FOLDER = fileURLToPath(new URL("../drizzle", import.meta.url));
 
 // Drizzle's own bookkeeping: one row per applied migration. It is not one of the spec's tables.
@@ -95,7 +97,8 @@ async function readBookkeeping(client) {
  * @returns {Promise<string[]>} the names of the migrations it applied; empty when there was nothing to apply
  */
 export async function applyMigrations(connectionString, migrationsFolder = MIGRATIONS_FOLDER) {
-  const client = new pg.Client({ connectionString });
+  // On DigitalOcean, the server's certificate is checked against DATABASE_CA_CERT (0.16).
+  const client = new pg.Client(connectionOptions(connectionString, process.env.DATABASE_CA_CERT));
   await client.connect();
   try {
     // Drizzle's migrator applies the files but does not say which. The names are worked out

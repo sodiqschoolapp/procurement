@@ -1,6 +1,7 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 
+import { connectionOptions } from "./connection-options.mjs";
 import * as schema from "./schema";
 
 // The one database client of the app. Server code imports `db` from here and from nowhere else.
@@ -14,9 +15,10 @@ if (!connectionString) {
   );
 }
 
-function createPool(): Pool {
+function createPool(address: string): Pool {
   return new Pool({
-    connectionString,
+    // On DigitalOcean, the server's certificate is checked against DATABASE_CA_CERT (0.16).
+    ...connectionOptions(address, process.env.DATABASE_CA_CERT),
     max: 10,
     // Every connection speaks UTC, whatever the server's default is
     // (developer-rules.md rule 10: "Timestamps are stored in UTC").
@@ -28,7 +30,7 @@ function createPool(): Pool {
 // and the old connections would stay open until PostgreSQL has none left.
 const keptAcrossReloads = globalThis as typeof globalThis & { procurementDatabasePool?: Pool };
 
-const pool = keptAcrossReloads.procurementDatabasePool ?? createPool();
+const pool = keptAcrossReloads.procurementDatabasePool ?? createPool(connectionString);
 
 if (process.env.NODE_ENV === "development") {
   keptAcrossReloads.procurementDatabasePool = pool;
