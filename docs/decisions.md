@@ -689,6 +689,8 @@ Choices made during the build:
 - The page actions take the catalog's address segment with the fields and run that catalog's own action; an unknown segment is `invalid_input`.
 - `tests/e2e/settings.spec.ts` follows Admin to `/catalog`, then to Settings: decision 11 of 1.1 ("Admin opens /settings until /catalog exists") ended with this task.
 - The phone browser test saves with Enter after a refusal: the error toast covers Save until it fades.
+- `countActiveCatalogEntries` is one statement with a scalar subselect per catalog (diff review, Should fix 1); `/catalog/<kind>/new` uses it as its permission check.
+- The three page actions have their own matrix tests through the dispatch (permission review, Should fix 1).
 
 ## Process changes
 

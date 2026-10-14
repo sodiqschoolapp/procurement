@@ -21,10 +21,7 @@ export default async function CatalogsPage() {
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-6">
       <AdminNav current="catalog" />
-      <div className="flex flex-col gap-1">
-        <h1 className="text-[28px] leading-[34px] font-bold tracking-[-0.01em]">{t("title")}</h1>
-        <p className="text-[15px] leading-[22px] text-muted-foreground">{t("intro")}</p>
-      </div>
+      <h1 className="text-[28px] leading-[34px] font-bold tracking-[-0.01em]">{t("title")}</h1>
       <ul className="flex flex-col overflow-hidden rounded-xl bg-card text-card-foreground">
         {CATALOG_KINDS.map((kind) => (
           <li key={kind} className="border-t first:border-t-0">

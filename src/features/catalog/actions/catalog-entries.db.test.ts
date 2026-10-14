@@ -188,6 +188,10 @@ describe.each(CATALOG_CASES)("$kind (build-plan 1.5)", (catalog) => {
     expect(
       await runAction(catalog.update, head.id, { id: own.id, name: ` DAFTAR ${k} ` }),
     ).toMatchObject(TAKEN("name"));
+    await create(catalog, head.id, `Бумага ${k} u`);
+    expect(
+      await runAction(catalog.update, head.id, { id: own.id, name: `БУМАГА ${k} U ` }),
+    ).toMatchObject(TAKEN("name"));
     const renamed = expectOk(
       (await runAction(catalog.update, head.id, {
         id: own.id,

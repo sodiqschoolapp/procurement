@@ -100,6 +100,11 @@ describe.each(TABLES)(
         code: "23505",
         constraint: `${table}_name_key`,
       });
+      await insert(table, { name: `Бумага ${table} u` });
+      expect(await refusalOf(update(table, other, "name", `БУМАГА  ${table} U `))).toMatchObject({
+        code: "23505",
+        constraint: `${table}_name_key`,
+      });
       await update(table, other, "name", `Qalam ${table}`);
       expect(await nameOf(table, other)).toBe(`Qalam ${table}`);
     });

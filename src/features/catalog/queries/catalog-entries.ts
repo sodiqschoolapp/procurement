@@ -178,16 +178,20 @@ export async function countActiveCatalogEntries(
 ): Promise<Record<CatalogKind, number>> {
   await authorize(userId, "catalog.manage");
   const { db } = await import("@/server/db/client");
-  const counted = await Promise.all(
-    CATALOG_KINDS.map(async (kind) => {
-      const source = SOURCES[kind];
-      const [row] = await db
-        .select({ active: count() })
-        .from(source.table)
-        .where(eq(source.isActive, true));
-      return [kind, row?.active ?? 0] as const;
-    }),
+  // One statement, one scalar subselect per catalog (developer-rules.md rule 12: no query in a
+  // loop; diff review of 1.5, Should fix 1).
+  const counts = CATALOG_KINDS.map((kind) => {
+    const source = SOURCES[kind];
+    return sql`(select count(*)::int from ${source.table} where ${source.isActive})`;
+  });
+  const found = await db.execute<Record<string, number>>(
+    sql`select ${sql.join(
+      counts.map((count, index) => sql`${count} as ${sql.identifier(`c${index}`)}`),
+      sql`, `,
+    )}`,
   );
+  const row = found.rows[0]!;
+  const counted = CATALOG_KINDS.map((kind, index) => [kind, Number(row[`c${index}`])] as const);
   return Object.fromEntries(counted) as Record<CatalogKind, number>;
 }
 

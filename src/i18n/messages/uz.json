@@ -457,7 +457,6 @@
   },
   "catalog": {
     "title": "Kataloglar",
-    "intro": "Hamma tanlaydigan roʻyxatlar. Yozuvlarni faqat siz qoʻshasiz va oʻzgartirasiz.",
     "activeCount": "Faol: {count}",
     "back": "Barcha kataloglar",
     "summary": "Faol: {active}, faol emas: {inactive}",
@@ -485,7 +484,6 @@
     "deactivated": "Faolsizlantirildi",
     "activated": "Faollashtirildi",
     "history": "Oʻzgarishlar tarixi",
-    "fact": "{state}",
     "fields": {
       "name": "Nomi",
       "shortName": "Qisqa nomi",

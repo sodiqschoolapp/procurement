@@ -457,7 +457,6 @@
   },
   "catalog": {
     "title": "Catalogs",
-    "intro": "The lists everyone picks from. Only you add and change entries.",
     "activeCount": "{count} active",
     "back": "All catalogs",
     "summary": "{active} active, {inactive} inactive",
@@ -485,7 +484,6 @@
     "deactivated": "Deactivated",
     "activated": "Activated",
     "history": "Change history",
-    "fact": "{state}",
     "fields": {
       "name": "Name",
       "shortName": "Short name",
