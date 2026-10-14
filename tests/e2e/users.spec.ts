@@ -162,6 +162,13 @@ test("the Head switches a Manager's right off and the Manager gets a bell notice
   await expect(page.getByText(uz.managerRights.switchedOff).first()).toBeVisible();
   await expect(purchases).not.toBeChecked();
   await expect(page.getByText(uz.audit.actions.user.switch_right).first()).toBeVisible();
+  // The history names the right, Yes → No (plan of 1.4, decision 6; diff review, Should fix 1).
+  const history = page.locator("section", {
+    has: page.getByRole("heading", { name: uz.users.history, level: 2 }),
+  });
+  await expect(history).toContainText(uz.managerRights.names.RECORD_PURCHASES);
+  await expect(history).toContainText(uz.audit.yes);
+  await expect(history).toContainText(uz.audit.no);
 
   // The Manager's bell (10 Notifications: "A Manager's right is switched on or off → That Manager").
   const manager = await newPage(browser, page);

@@ -645,6 +645,25 @@ Choices made during the build:
 - Passwords are shown in Golos Text, not a monospace font (diff review, Should fix 2).
 - Checkboxes and radios use `accent-foreground` (navy; the foreground in the dark theme).
 
+### 1.4 Manager rights (14.10.2026)
+
+The plan's decisions as the plan review of 14.10.2026 confirmed them (correction 1 applied), and those of the build. The Look first items come first.
+
+1. **Look first.** Rights are switched for a MANAGER only; any other role is refused (`invalid_input`). No database guard: a row of another role grants nothing, as `decide()` reads rights for Managers only. A role is never edited after creation (decisions 1.3 item 1), so switched-off rows cannot return through a role change (permission review, Should fix 1).
+2. **Look first.** An inactive Manager's rights cannot be switched (`wrong_status`; shown disabled), so every change can be notified (`notify` skips inactive users, decisions 0.11 item 5). Proposed `/spec-change` of 03, Manager rights, third bullet: "… and the Manager is notified. The rights of an inactive Manager cannot be switched; activate the user first."
+3. One switch is one action, one audit row and one notice, saved on flip with no confirm dialog.
+4. The same switch twice is `wrong_status` and writes nothing, as `setUserActive`.
+5. The notice links to `/` with no branch (A13); params `{ right, state }`.
+6. Audit `user.switch_right`, entity `users`, `before`/`after` `{ CODE: boolean }`; the history shows the right's name, Yes → No.
+7. The section "Rights" sits under the user form; each hint is 03's "When it is off" text.
+8. Buttons of later actions are hidden by their own tasks through `decide()`.
+9. `lockUser` is exported and taken by the new action (the locks of progress 1.3).
+
+Choices made during the build:
+
+- The checkboxes flip at once with `useOptimistic` inside a transition, until the refreshed page brings the saved state; all are disabled while one saves.
+- `tests/notification-texts.test.ts` gains a `SHOWN` table (the free text a sample must show, `null` for a type of codes only), replacing the fixed "DEMO" check, and a test that each right is named by a word in each language.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

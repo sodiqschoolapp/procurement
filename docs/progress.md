@@ -439,4 +439,21 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - For 2.x: a Head-made request and moving a deactivated Manager's requests read `users.is_active`; a deactivated user keeps their `user_branches` rows.
 - Tests: a file's database is its own, so a test may deactivate the other Heads with SQL to make "the last Head"; two Heads deactivating each other at once end with `wrong_status` or `forbidden`, depending on timing.
 
-The next task is 1.4.
+## 1.4 Manager rights (14.10.2026, pull request #34)
+
+**Built**
+- `switchManagerRight` (`src/features/users/actions/manager-rights.ts`; `manager_rights.switch`, Head only): one right per call, upsert in place, audit `user.switch_right` (`{ CODE: boolean }`), notice `MANAGER_RIGHT_SWITCHED` (`{ right, state: "on" | "off" }`, link `/`, no branch) to the Manager.
+- `getManagerRights` (`queries/users.ts`): the nine in the order of 03, a missing row on; `null` for a non-Manager.
+- The "Rights" section on a Manager's `/users/[id]`: nine navy checkboxes with the "when off" hint, flipped at once (`useOptimistic`); disabled for an inactive Manager.
+- `describePermissionMatrix`: the "right off" case is a Manager of two branches, refused in both, the Head allowed in both (A13).
+
+**Left out, and the task that brings it**
+- Hiding each action's buttons when a right is off, and `CLOSE_ALONE` sending closing to Finance: the task of each action (2.x to 5.x). A page showing a Manager their own rights: no task (report).
+
+**What the next sessions must know**
+- A button of a right-guarded action asks `decide()` with the actor `authorize()` returns; the server refuses anyway.
+- The same switch twice and an inactive Manager are `wrong_status`; a non-Manager is `invalid_input`.
+- `lockUser` is exported from `users.ts`; a new user action takes it.
+- A notification type of codes only gets `null` in `SHOWN` of `tests/notification-texts.test.ts`.
+
+The next task is 1.5.
