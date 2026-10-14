@@ -82,7 +82,8 @@
         "update": "Hisob o'zgartirildi",
         "deactivate": "Hisob o'chirildi",
         "activate": "Hisob yoqildi",
-        "renew_password": "Parol yangilandi"
+        "renew_password": "Parol yangilandi",
+        "switch_right": "Huquq oʻzgartirildi"
       },
       "branch": {
         "create": "Filial yaratildi",

@@ -82,7 +82,8 @@
         "update": "Account changed",
         "deactivate": "Account deactivated",
         "activate": "Account activated",
-        "renew_password": "Password renewed"
+        "renew_password": "Password renewed",
+        "switch_right": "Right switched"
       },
       "branch": {
         "create": "Branch created",

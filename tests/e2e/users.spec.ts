@@ -121,3 +121,56 @@ test("the user form asks before leaving with unsaved changes", async ({ page }) 
   await expect(page).toHaveURL(/\/users\/new$/);
   await expect(page.getByLabel(uz.users.fullName)).toHaveValue("Yozilgan ism");
 });
+
+// Build-plan 1.4, Done when (by hand, automated): "switch one off and the Manager gets a bell
+// notice". 03, "Manager rights the Head can switch"; 10 Notifications. The Manager is made here,
+// so no other spec sees a right switched off (review of the plan of 1.4, correction 1).
+test("the Head switches a Manager's right off and the Manager gets a bell notice (03; 10)", async ({
+  page,
+  browser,
+}) => {
+  await signIn(page, E2E_ROLES.HEAD);
+  await page.goto("/users/new");
+  const create = page.getByRole("button", { name: uz.users.create });
+  await expect(create).toBeEnabled();
+  const username = `e2e_${randomUUID().slice(0, 8)}`;
+  const [branch] = E2E_BRANCHES;
+  await page.getByLabel(uz.users.fullName).fill("Huquq Sinovchi");
+  await page.getByLabel(uz.users.username, { exact: true }).fill(username);
+  await page.getByLabel(uz.users.phone).fill("+998 90 000 77 02");
+  await page.getByLabel(`${branch.code} · ${branch.name}`).check();
+  await page.getByRole("button", { name: uz.users.generate, exact: true }).click();
+  const password = await page.getByLabel(uz.users.password).inputValue();
+  await create.click();
+  await expect(page.getByTestId("shown-password")).toHaveText(password);
+  await page.getByRole("link", { name: uz.users.openUser }).click();
+  await expect(page).toHaveURL(/\/users\/[0-9a-f-]{36}$/);
+
+  // All nine on by default (03).
+  const rights = page.locator("section", {
+    has: page.getByRole("heading", { name: uz.managerRights.title, level: 2 }),
+  });
+  await expect(rights).toBeVisible();
+  const purchases = rights.getByRole("checkbox", { name: uz.managerRights.names.RECORD_PURCHASES });
+  await expect(rights.getByRole("checkbox", { checked: true })).toHaveCount(9);
+  await expect(purchases).toBeEnabled();
+  const box = await page.locator("label[for='right-RECORD_PURCHASES']").boundingBox();
+  expect(box!.height).toBeGreaterThanOrEqual(44);
+  await noSideScroll(page);
+
+  await purchases.uncheck();
+  await expect(page.getByText(uz.managerRights.switchedOff).first()).toBeVisible();
+  await expect(purchases).not.toBeChecked();
+  await expect(page.getByText(uz.audit.actions.user.switch_right).first()).toBeVisible();
+
+  // The Manager's bell (10 Notifications: "A Manager's right is switched on or off → That Manager").
+  const manager = await newPage(browser, page);
+  await signIn(manager, { username, password });
+  await expect(manager.getByTestId("bell")).toHaveText("1");
+  await manager.goto("/notifications");
+  await expect(manager.getByTestId("notification").first()).toContainText(
+    uz.managerRights.names.RECORD_PURCHASES,
+  );
+  await noSideScroll(manager);
+  await manager.context().close();
+});

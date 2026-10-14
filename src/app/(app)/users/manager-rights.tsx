@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { useState, useSyncExternalStore } from "react";
+import { useOptimistic, useSyncExternalStore, useTransition } from "react";
 
 import { toast } from "@/components/toast";
 import { useAction } from "@/components/use-action";
@@ -29,7 +29,13 @@ export function ManagerRights({
   const tAll = useTranslations();
   const router = useRouter();
   const action = useAction(switchManagerRightAction);
-  const [busy, setBusy] = useState<ManagerRight | null>(null);
+  const [pending, startTransition] = useTransition();
+  // The flip shows at once and stays until the refreshed page brings the saved state.
+  const [shown, showFlip] = useOptimistic(
+    rights,
+    (state, flip: { right: ManagerRight; enabled: boolean }) =>
+      state.map((each) => (each.right === flip.right ? flip : each)),
+  );
   // A click before hydration would do nothing (progress 1.1, "A form").
   const hydrated = useSyncExternalStore(
     noSubscription,
@@ -37,14 +43,15 @@ export function ManagerRights({
     () => false,
   );
 
-  async function flip(right: ManagerRight, enabled: boolean) {
-    setBusy(right);
-    const result = await action.run({ id: user.id, right, enabled });
-    setBusy(null);
-    if (!result) return;
-    if (!result.ok) toast.error(tAll(result.error.messageKey));
-    else toast.success(t(enabled ? "switchedOn" : "switchedOff"));
-    router.refresh();
+  function flip(right: ManagerRight, enabled: boolean) {
+    startTransition(async () => {
+      showFlip({ right, enabled });
+      const result = await action.run({ id: user.id, right, enabled });
+      if (!result) return;
+      if (!result.ok) toast.error(tAll(result.error.messageKey));
+      else toast.success(t(enabled ? "switchedOn" : "switchedOff"));
+      router.refresh();
+    });
   }
 
   return (
@@ -54,7 +61,7 @@ export function ManagerRights({
         {t(user.isActive ? "intro" : "inactive")}
       </p>
       <ul className="flex flex-col divide-y divide-border">
-        {rights.map(({ right, enabled }) => {
+        {shown.map(({ right, enabled }) => {
           const id = `right-${right}`;
           return (
             <li key={right}>
@@ -72,8 +79,8 @@ export function ManagerRights({
                   id={id}
                   type="checkbox"
                   checked={enabled}
-                  disabled={!hydrated || !user.isActive || busy !== null}
-                  onChange={(event) => void flip(right, event.target.checked)}
+                  disabled={!hydrated || !user.isActive || pending}
+                  onChange={(event) => flip(right, event.target.checked)}
                   className="mt-0.5 size-5 shrink-0 accent-foreground"
                 />
               </label>
