@@ -5,7 +5,12 @@ import { refuseSecretFields } from "./audit-secrets.mjs";
 // the row, and the change-history component shows what changedFields() returns.
 
 /** The actions that write an audit row; each later task adds its own (plan of 0.9, decision 5). */
-export const AUDIT_ACTIONS = ["user.create", "user.change_language", "branch.create"] as const;
+export const AUDIT_ACTIONS = [
+  "user.create",
+  "user.change_language",
+  "branch.create",
+  "settings.change",
+] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 
 export type AuditJson =

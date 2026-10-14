@@ -13,7 +13,7 @@ export type AuditEntry = {
   action: AuditAction;
   /** The table name: `users`, `settings`. */
   entity: string;
-  /** The row's id, or a settings key. */
+  /** The row's id; `settings` for a change of the settings (plan of 1.1, decision 8). */
   entityId: string;
   /** The changed fields before; `null` for a create. */
   before: AuditRecord | null;

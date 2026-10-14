@@ -101,7 +101,8 @@ export const settings = pgTable(
 // audit_log: "actor_id, action, entity, entity_id, before JSONB, after JSONB" (14-data-model.md,
 // System; developer-rules.md rule 13). Task 0.9. One log serves every audited table, so
 // `entity_id` names a row of the table in `entity` and has no foreign key (plan of 0.9, decision
-// 1, Look first); it is text because a settings row is named by its key. `action` and `entity`
+// 1, Look first); it is text, as one log serves tables keyed by uuid and the settings, whose
+// changes are one record named `settings` (plan of 1.1, decision 8). `action` and `entity`
 // are names each later task adds, so they are text with a format CHECK, not enums (decision 5).
 // Append-only: the trigger audit_log_append_only of migration 0003, written by hand, refuses
 // UPDATE, DELETE and TRUNCATE (decision 2, Look first).
