@@ -62,10 +62,11 @@ export function failureReason(error) {
 
 /**
  * The names drizzle-kit gave the migrations, in order, with the time stamp of each.
+ * @param {string} migrationsFolder
  * @returns {{ tag: string, when: number }[]}
  */
-function readJournal() {
-  const journal = JSON.parse(readFileSync(`${MIGRATIONS_FOLDER}/meta/_journal.json`, "utf8"));
+function readJournal(migrationsFolder) {
+  const journal = JSON.parse(readFileSync(`${migrationsFolder}/meta/_journal.json`, "utf8"));
   return journal.entries;
 }
 
@@ -90,22 +91,24 @@ async function readBookkeeping(client) {
 /**
  * Applies every migration the database does not have yet, in one transaction.
  * @param {string} connectionString
+ * @param {string} [migrationsFolder] drizzle/ itself; only a test hands it another folder
  * @returns {Promise<string[]>} the names of the migrations it applied; empty when there was nothing to apply
  */
-export async function applyMigrations(connectionString) {
+export async function applyMigrations(connectionString, migrationsFolder = MIGRATIONS_FOLDER) {
   const client = new pg.Client({ connectionString });
   await client.connect();
   try {
     // Drizzle's migrator applies the files but does not say which. The names are worked out
     // here with the comparison the migrator makes itself: a migration is applied when its time
     // stamp is later than the newest one in the bookkeeping table.
+    const journal = readJournal(migrationsFolder);
     const before = await readBookkeeping(client);
-    const pending = readJournal()
+    const pending = journal
       .filter((entry) => before.newest === null || before.newest < entry.when)
       .map((entry) => entry.tag);
 
     await migrate(drizzle(client), {
-      migrationsFolder: MIGRATIONS_FOLDER,
+      migrationsFolder,
       migrationsSchema: BOOKKEEPING_SCHEMA,
       migrationsTable: BOOKKEEPING_TABLE,
     });
@@ -118,6 +121,25 @@ export async function applyMigrations(connectionString) {
         `Migrations were applied, but the report does not match Drizzle's bookkeeping: ` +
           `expected ${pending.length} new, found ${after.count - before.count}. ` +
           `Check scripts/apply-migrations.mjs against the installed drizzle-orm.`,
+      );
+    }
+
+    // The migrator skips in silence a migration whose time stamp is older than the newest one
+    // already applied, and the check above, which uses the same comparison, cannot see it.
+    // Every journal entry has its row, or the database does not match the code
+    // (docs/decisions.md, "Decided ahead: task 0.3", item 6).
+    if (after.count < journal.length) {
+      throw new Error(
+        `Drizzle's bookkeeping holds ${after.count} migrations, but the journal has ` +
+          `${journal.length}: a migration was skipped. Its time stamp in ` +
+          `drizzle/meta/_journal.json is likely older than one already applied.`,
+      );
+    }
+    if (after.count > journal.length) {
+      throw new Error(
+        `Drizzle's bookkeeping holds ${after.count} migrations, but the journal has ` +
+          `${journal.length}: the database is ahead of the code. It was migrated by a newer ` +
+          `version of drizzle/.`,
       );
     }
     return pending;
