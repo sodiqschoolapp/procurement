@@ -35,6 +35,7 @@
     "next": "^16.4.0",
     "next-intl": "^4.14.9",
     "pg": "^8.23.1",
+    "pg-connection-string": "^2.14.1",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "react-hook-form": "^7.90.0",
