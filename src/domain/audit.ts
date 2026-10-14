@@ -8,6 +8,10 @@ import { refuseSecretFields } from "./audit-secrets.mjs";
 export const AUDIT_ACTIONS = [
   "user.create",
   "user.change_language",
+  "user.update",
+  "user.deactivate",
+  "user.activate",
+  "user.renew_password",
   "branch.create",
   "branch.update",
   "branch.deactivate",

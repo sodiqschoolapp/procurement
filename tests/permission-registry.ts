@@ -29,6 +29,11 @@ export const SERVER_ACTIONS: Record<string, Entry> = {
   "src/app/(app)/branches/actions.ts#createBranchAction": "catalog.manage",
   "src/app/(app)/branches/actions.ts#updateBranchAction": "catalog.manage",
   "src/app/(app)/branches/actions.ts#setBranchActiveAction": "catalog.manage",
+  // The Head's users (plan of 1.3).
+  "src/app/(app)/users/actions.ts#createUserAction": "catalog.manage",
+  "src/app/(app)/users/actions.ts#updateUserAction": "catalog.manage",
+  "src/app/(app)/users/actions.ts#setUserActiveAction": "catalog.manage",
+  "src/app/(app)/users/actions.ts#renewUserPasswordAction": "catalog.manage",
 };
 
 /** Exports of `src/features/<area>/queries/`, as `<file>#<export>`. */
@@ -41,6 +46,11 @@ export const QUERIES: Record<string, Permission> = {
   // The Head's branch list and one branch (plan of 1.2).
   "src/features/catalog/queries/branches.ts#listBranches": "catalog.manage",
   "src/features/catalog/queries/branches.ts#getBranch": "catalog.manage",
+  // The Head's users, the vacancy warning and the form's branches (plan of 1.3).
+  "src/features/users/queries/users.ts#listUsers": "catalog.manage",
+  "src/features/users/queries/users.ts#getUser": "catalog.manage",
+  "src/features/users/queries/users.ts#listBranchVacancies": "catalog.manage",
+  "src/features/users/queries/users.ts#listBranchChoices": "catalog.manage",
   // The bell and /notifications (plan of 0.11, decision 2, Look first).
   "src/features/notifications/queries/my-notifications.ts#listMyNotifications": "notification.own",
   "src/features/notifications/queries/my-notifications.ts#countMyUnread": "notification.own",

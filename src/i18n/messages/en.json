@@ -50,7 +50,10 @@
       "tooSmall": "Too small",
       "tooLarge": "Too large",
       "notAllowed": "This value is not allowed",
-      "taken": "Already used"
+      "taken": "Already used",
+      "principalTaken": "This branch already has an active Principal. Tick \"Replace\" to hand it over.",
+      "branchCount": "A Head has no branches, a Principal exactly one, a Manager or Finance user one or more",
+      "branchInactive": "This branch is inactive and cannot be added"
     },
     "file": {
       "tooLarge": "The file is larger than 10 MB. Choose a smaller file or take the photo again.",
@@ -75,7 +78,11 @@
     "actions": {
       "user": {
         "create": "Account created",
-        "change_language": "Language changed"
+        "change_language": "Language changed",
+        "update": "Account changed",
+        "deactivate": "Account deactivated",
+        "activate": "Account activated",
+        "renew_password": "Password renewed"
       },
       "branch": {
         "create": "Branch created",
@@ -287,7 +294,8 @@
   "admin": {
     "label": "Admin pages",
     "branches": "Branches",
-    "settings": "Settings"
+    "settings": "Settings",
+    "users": "Users"
   },
   "pager": {
     "label": "Pages",
@@ -324,5 +332,70 @@
     "history": "Change history",
     "isActive": "Active",
     "fact": "{code} · {state}"
+  },
+  "users": {
+    "title": "Users",
+    "new": "New user",
+    "newTitle": "New user",
+    "summary": "{active} active, {inactive} inactive",
+    "fullName": "Full name",
+    "username": "Username",
+    "usernameHint": "3 to 30 lower-case Latin letters, digits, _ or . (no spaces). Used to sign in.",
+    "phone": "Phone",
+    "role": "Role",
+    "roleFixed": "The role is set when the account is made. For another role, make a new account.",
+    "language": "Language",
+    "branches": "Branches",
+    "branch": "Branch",
+    "headBranches": "A Procurement Head works in every branch.",
+    "noBranches": "No active branch yet. Add one under Branches first.",
+    "inactiveBranch": "{name} (inactive)",
+    "password": "Password",
+    "passwordHint": "Type a password or generate one. There are no password rules.",
+    "generate": "Generate",
+    "replace": "Replace {name} as Principal of this branch: they are deactivated and signed out, and waiting requests pass to the new Principal.",
+    "status": "Status",
+    "active": "Active",
+    "inactive": "Inactive",
+    "fact": "{role} · {state}",
+    "emptyTitle": "No users yet",
+    "emptyText": "Each person who works with orders or the warehouse gets an account with one role.",
+    "save": "Save",
+    "create": "Create user",
+    "created": "User created",
+    "saved": "User saved",
+    "nothingChanged": "Nothing changed",
+    "shownTitle": "Password of {username}",
+    "shownText": "Give this password to the person now. It is shown only here and only until you leave this page.",
+    "copy": "Copy",
+    "copied": "Password copied",
+    "openUser": "Open the user",
+    "createAnother": "Create another user",
+    "renewTitle": "Renew password",
+    "renewText": "The old password stops working at once and the person is signed out on every device.",
+    "renew": "Renew password",
+    "renewConfirmTitle": "Renew the password of {name}?",
+    "renewConfirmResult": "The old password stops working and {name} is signed out on every device.",
+    "renewed": "Password renewed",
+    "renewOwn": "You cannot renew your own password. Another Procurement Head can.",
+    "deactivate": "Deactivate",
+    "activate": "Activate",
+    "deactivateTitle": "Deactivate {name}?",
+    "deactivateResult": "They are signed out on every device and cannot sign in. Their records stay, and you can activate the account again.",
+    "activateTitle": "Activate {name}?",
+    "activateResult": "They can sign in again with their password.",
+    "activateReplaceTitle": "Activate {name} and replace {other}?",
+    "activateReplaceResult": "{other} is deactivated and signed out, and waiting requests pass to {name}.",
+    "deactivated": "User deactivated",
+    "activated": "User activated",
+    "lastHead": "This is the only active Procurement Head, so the account cannot be deactivated.",
+    "ownAccount": "You cannot deactivate your own account.",
+    "history": "Change history",
+    "vacancyTitle": "Branches missing people",
+    "vacancy": "{branch}: no active {roles}",
+    "isActive": "Active",
+    "replaceTitle": "Replace {name} as Principal?",
+    "replaceResult": "{name} is deactivated and signed out on every device, and waiting requests pass to the new Principal.",
+    "replaceConfirm": "Replace"
   }
 }

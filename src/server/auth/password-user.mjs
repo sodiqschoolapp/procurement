@@ -18,7 +18,7 @@ export function placeholderEmail(userId) {
  * Inserts one user and its password account. Runs every statement through `query`, so the caller
  * decides the connection and the transaction.
  * @param {(text: string, values: unknown[]) => Promise<unknown>} query
- * @param {{ fullName: string, username: string, phone: string, role: string, locale?: string, isActive?: boolean }} user
+ * @param {{ fullName: string, username: string, phone: string, role: string, locale?: string, isActive?: boolean, clientKey?: string | null }} user
  * @param {string} password any text that is not empty (A8: no password rules)
  * @param {Date} moment the time of the write, from the caller's clock (CLAUDE.md rule 10)
  * @returns {Promise<{ id: string, username: string }>}
@@ -34,8 +34,8 @@ export async function insertPasswordUser(query, user, password, moment) {
   const id = randomUUID();
   await query(
     `insert into users (id, full_name, username, display_username, email, phone, role, locale,
-       is_active, created_at, updated_at)
-     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $10)`,
+       is_active, client_key, created_at, updated_at)
+     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $11, $10, $10)`,
     [
       id,
       user.fullName.trim(),
@@ -47,6 +47,7 @@ export async function insertPasswordUser(query, user, password, moment) {
       user.locale ?? "uz",
       user.isActive ?? true,
       moment,
+      user.clientKey ?? null,
     ],
   );
   await query(

@@ -50,7 +50,10 @@
       "tooSmall": "Juda kichik",
       "tooLarge": "Juda katta",
       "notAllowed": "Bu qiymatga ruxsat yo'q",
-      "taken": "Allaqachon band"
+      "taken": "Allaqachon band",
+      "principalTaken": "Bu filialda faol direktor bor. Filialni topshirish uchun «Almashtirish»ni belgilang.",
+      "branchCount": "Rahbarda filial bo'lmaydi, direktorda bitta, menejer va moliyachida bitta yoki ko'proq",
+      "branchInactive": "Bu filial faol emas, uni qo'shib bo'lmaydi"
     },
     "file": {
       "tooLarge": "Fayl 10 MB dan katta. Kichikroq fayl tanlang yoki suratni qaytadan oling.",
@@ -75,7 +78,11 @@
     "actions": {
       "user": {
         "create": "Hisob yaratildi",
-        "change_language": "Til oʻzgartirildi"
+        "change_language": "Til oʻzgartirildi",
+        "update": "Hisob o'zgartirildi",
+        "deactivate": "Hisob o'chirildi",
+        "activate": "Hisob yoqildi",
+        "renew_password": "Parol yangilandi"
       },
       "branch": {
         "create": "Filial yaratildi",
@@ -287,7 +294,8 @@
   "admin": {
     "label": "Boshqaruv sahifalari",
     "branches": "Filiallar",
-    "settings": "Sozlamalar"
+    "settings": "Sozlamalar",
+    "users": "Foydalanuvchilar"
   },
   "pager": {
     "label": "Sahifalar",
@@ -324,5 +332,70 @@
     "history": "Oʻzgarishlar tarixi",
     "isActive": "Faol",
     "fact": "{code} · {state}"
+  },
+  "users": {
+    "title": "Foydalanuvchilar",
+    "new": "Yangi foydalanuvchi",
+    "newTitle": "Yangi foydalanuvchi",
+    "summary": "{active} faol, {inactive} nofaol",
+    "fullName": "To'liq ism",
+    "username": "Login",
+    "usernameHint": "3 dan 30 tagacha kichik lotin harflari, raqamlar, _ yoki . (bo'sh joysiz). Kirish uchun.",
+    "phone": "Telefon",
+    "role": "Rol",
+    "roleFixed": "Rol hisob yaratilganda belgilanadi. Boshqa rol uchun yangi hisob yarating.",
+    "language": "Til",
+    "branches": "Filiallar",
+    "branch": "Filial",
+    "headBranches": "Xarid rahbari barcha filiallarda ishlaydi.",
+    "noBranches": "Hali faol filial yo'q. Avval «Filiallar» bo'limida filial qo'shing.",
+    "inactiveBranch": "{name} (nofaol)",
+    "password": "Parol",
+    "passwordHint": "Parolni yozing yoki yarating. Parolga talablar yo'q.",
+    "generate": "Yaratish",
+    "replace": "{name}ni bu filial direktori sifatida almashtirish: hisobi o'chiriladi, barcha seanslari tugaydi, kutilayotgan buyurtmalar yangi direktorga o'tadi.",
+    "status": "Holat",
+    "active": "Faol",
+    "inactive": "Nofaol",
+    "fact": "{role} · {state}",
+    "emptyTitle": "Hali foydalanuvchilar yo'q",
+    "emptyText": "Buyurtmalar yoki ombor bilan ishlaydigan har bir kishi bitta rolli hisob oladi.",
+    "save": "Saqlash",
+    "create": "Foydalanuvchi yaratish",
+    "created": "Foydalanuvchi yaratildi",
+    "saved": "Foydalanuvchi saqlandi",
+    "nothingChanged": "Hech narsa o'zgarmadi",
+    "shownTitle": "{username} paroli",
+    "shownText": "Bu parolni hozir topshiring. U faqat shu yerda va shu sahifadan chiqquningizcha ko'rinadi.",
+    "copy": "Nusxalash",
+    "copied": "Parol nusxalandi",
+    "openUser": "Foydalanuvchini ochish",
+    "createAnother": "Yana foydalanuvchi yaratish",
+    "renewTitle": "Parolni yangilash",
+    "renewText": "Eski parol darhol ishlamay qoladi va foydalanuvchi barcha qurilmalarda tizimdan chiqariladi.",
+    "renew": "Parolni yangilash",
+    "renewConfirmTitle": "{name} parolini yangilaysizmi?",
+    "renewConfirmResult": "Eski parol ishlamay qoladi va {name} barcha qurilmalarda tizimdan chiqariladi.",
+    "renewed": "Parol yangilandi",
+    "renewOwn": "O'z parolingizni yangilay olmaysiz. Buni boshqa xarid rahbari qila oladi.",
+    "deactivate": "O'chirish",
+    "activate": "Yoqish",
+    "deactivateTitle": "{name}ni o'chirasizmi?",
+    "deactivateResult": "Barcha seanslari tugaydi va tizimga kira olmaydi. Yozuvlari saqlanadi, hisobni yana yoqish mumkin.",
+    "activateTitle": "{name}ni yoqasizmi?",
+    "activateResult": "U o'z paroli bilan yana kira oladi.",
+    "activateReplaceTitle": "{name}ni yoqib, {other}ni almashtirasizmi?",
+    "activateReplaceResult": "{other} o'chiriladi va tizimdan chiqariladi, kutilayotgan buyurtmalar {name}ga o'tadi.",
+    "deactivated": "Foydalanuvchi o'chirildi",
+    "activated": "Foydalanuvchi yoqildi",
+    "lastHead": "Bu yagona faol xarid rahbari, shuning uchun hisobni o'chirib bo'lmaydi.",
+    "ownAccount": "O'z hisobingizni o'chira olmaysiz.",
+    "history": "O'zgarishlar tarixi",
+    "vacancyTitle": "Odam yetishmayotgan filiallar",
+    "vacancy": "{branch}: faol {roles} yo'q",
+    "isActive": "Faol",
+    "replaceTitle": "{name}ni direktor sifatida almashtirasizmi?",
+    "replaceResult": "{name} o'chiriladi va barcha qurilmalarda tizimdan chiqariladi, kutilayotgan buyurtmalar yangi direktorga o'tadi.",
+    "replaceConfirm": "Almashtirish"
   }
 }
