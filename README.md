@@ -106,6 +106,17 @@ Before the first `npm run test:e2e` on a machine, download the test browser once
 npx playwright install chromium
 ```
 
+`npm run db:migrate` refuses to finish when Drizzle's bookkeeping does not hold one row per entry of `drizzle/meta/_journal.json`: a migration whose time stamp is older than one already applied would otherwise be skipped in silence. A database migrated by a newer branch is refused the same way.
+
+## CI
+
+`.github/workflows/ci.yml` runs on every pull request and on every push to `main`, with two jobs. Their names, `checks` and `e2e`, are what the reviewer reads and what `main` requires; they are never renamed.
+
+- **`checks`**: `npm ci`, `npm audit --omit=dev --audit-level=high`, PostgreSQL from `docker-compose.yml`, lint, typecheck, `npm run db:migrate` on the empty database (every migration applied) and once more (nothing to apply), `npm test`, `npx drizzle-kit generate` writing nothing (the schema files and the migrations agree), and a check that no `.sql` file under `drizzle/` that was already on `main` was modified, deleted or renamed.
+- **`e2e`**: PostgreSQL, `npm run db:migrate`, the Playwright browser, `npm run test:e2e`. A failed run keeps its traces as the artifact `playwright-traces` for 14 days.
+
+The same on this machine, with `docker compose up -d` running: `npm run lint`, `npm run typecheck`, `npm test`, `npx drizzle-kit generate` (then `git status` shows nothing new) and `npm run test:e2e`.
+
 ## Where things are
 
 ```
