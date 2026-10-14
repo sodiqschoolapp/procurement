@@ -1,6 +1,7 @@
+import { describe, expect, it } from "vitest";
+
 import { newClientKey } from "@/components/client-key";
 import { CATALOG_PAGE_SIZE } from "@/domain/catalogs";
-import { describe, expect, it } from "vitest";
 
 import {
   insertCategory,
