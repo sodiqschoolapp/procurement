@@ -12,6 +12,7 @@ import { listCatalogEntries } from "@/features/catalog/queries/catalog-entries";
 import { requireUser } from "@/server/auth/session";
 
 import { readOrNotFound } from "../../branches/read-or-not-found";
+import { PageLinks } from "../page-links";
 import { kindOrNotFound } from "./kind";
 
 // /catalog/<kind> (build-plan 1.5: "list with search"; 11-screens-and-ux.md rules 8 and 12): one
@@ -165,36 +166,5 @@ export default async function CatalogListPage({
 
       {pages > 1 && <PageLinks page={page} pages={pages} href={href} />}
     </div>
-  );
-}
-
-async function PageLinks({
-  page,
-  pages,
-  href,
-}: {
-  page: number;
-  pages: number;
-  href: (page: number) => string;
-}) {
-  const t = await getTranslations("pager");
-  return (
-    <nav aria-label={t("label")} className="flex items-center justify-between gap-3">
-      {page > 1 ? (
-        <Link href={href(page - 1)} className={buttonVariants({ variant: "secondary" })}>
-          {t("previous")}
-        </Link>
-      ) : (
-        <span />
-      )}
-      <span className="text-sm text-muted-foreground">{t("pageOf", { page, pages })}</span>
-      {page < pages ? (
-        <Link href={href(page + 1)} className={buttonVariants({ variant: "secondary" })}>
-          {t("next")}
-        </Link>
-      ) : (
-        <span />
-      )}
-    </nav>
   );
 }

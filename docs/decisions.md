@@ -692,6 +692,30 @@ Choices made during the build:
 - `countActiveCatalogEntries` is one statement with a scalar subselect per catalog (diff review, Should fix 1); `/catalog/<kind>/new` uses it as its permission check.
 - The three page actions have their own matrix tests through the dispatch (permission review, Should fix 1).
 
+### 1.6 Departments (15.10.2026)
+
+The plan's decisions as the plan review of 14.10.2026 confirmed them (corrections 1 and 2 applied), and those of the build. The Look first items come first.
+
+1. **Look first** (branch wall). A department's branch is chosen once, at creation, and never changes; the update input has no branch, and one sent is ignored. The first task that points a branch record at a department also holds this in the database (plan review, decision 1).
+2. **Look first** (design-system departure, D23, as decisions 1.2 item 4 and 1.5 item 3). New and edit are pages, not the side panel.
+3. A department cannot be added to an inactive branch (`invalid_input`, `branchId: errors.field.branchInactive`) or an unknown one (`branchId: errors.field.notAllowed`), the keys of `createUser` (plan review, correction 1); the branch row is locked `FOR SHARE` before the insert. Departments of a branch deactivated later stay as they are.
+4. The responsible person's name and phone are optional; the users' name and phone rules when filled; empty is stored as null; a blank value is refused by the database.
+5. The name follows the catalog name rule of 1.5, unique inside the branch only, held while inactive and freed by a rename (D41).
+6. `client_key` nullable and unique; a repeat finds its maker through the `department.create` audit row.
+7. Audit entity `departments`, actions `department.create|update|deactivate|activate`; the create row's `after` holds `branchId` and the branch's code as `branch`, as it was then.
+8. The list orders active first, then by branch name, then by name; search matches the name, responsible name or phone.
+9. Static routes `/catalog/departments` beside `[catalog]`; not in `CATALOG_KINDS`.
+10. The list shows the top bar's branch view ("All" shows every branch); no second branch chooser.
+
+Choices made during the build:
+
+- `defineCatalogActions()` gained an optional `within` parent instead of a second write path (plan, "Server actions and queries"); its `kind` is an `EntryKind` read from `CATALOG_ENTRIES`, the four of 1.5 plus `DEPARTMENTS`.
+- The shared `CatalogForm` and `CatalogActiveButton` serve departments with the department page actions, instead of a separate `department-form.tsx` (the plan's Size named one): one form, as build-plan 1.5 asks. The branch select shows on a new department only.
+- `HistoryField` has an optional `hidden` flag: the create row keeps `branchId` for the record and the history shows only the code (decision 7). It has its own unit test.
+- `PageLinks` moved from `[catalog]/page.tsx` to `src/app/(app)/catalog/page-links.tsx` so the department list reuses it.
+- New texts `catalog.chooseBranch`, `branchOption`, `branchLine`, `allBranches`, `oneBranch`, the department fields, hints, `kinds.departments` and `audit.actions.department` in uz, ru and en; the Uzbek ones use ʻ and ʼ as the file does.
+- The Excel import of departments is task 1.10 (plan review, correction 2).
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

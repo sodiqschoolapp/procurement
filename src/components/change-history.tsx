@@ -37,8 +37,12 @@ export type HistoryValueKind =
   | "monthDay"
   | { enum: Namespace };
 
-/** One entry per field of the record: its label and the kind of its value. */
-export type HistoryField = { label: MessageKey; kind: HistoryValueKind };
+/**
+ * One entry per field of the record: its label and the kind of its value. `hidden`: kept in the
+ * row for the record, not shown, as a department's branch id beside its code (plan of 1.6,
+ * decision 7).
+ */
+export type HistoryField = { label: MessageKey; kind: HistoryValueKind; hidden?: true };
 
 export type ChangeHistoryEntry = {
   id: string;
@@ -141,29 +145,31 @@ export function ChangeHistory({
               {textOr(t, `audit.actions.${entry.action}`, "audit.changed")}
             </p>
             <dl className="flex flex-col gap-1 text-sm">
-              {changedFields(entry.before, entry.after).map((change) => {
-                const field = fields[change.field];
-                const kind = field?.kind ?? "text";
-                return (
-                  <div key={change.field} className="flex flex-wrap gap-x-2">
-                    <dt className="text-muted-foreground">
-                      {t(field?.label ?? "audit.otherField")}
-                    </dt>
-                    <dd className="flex flex-wrap gap-x-2">
-                      {change.before !== null && (
-                        <del className="text-muted-foreground">
-                          <span className="sr-only">{t("audit.before")} </span>
-                          {shown(change.before, kind, t, f)}
-                        </del>
-                      )}
-                      <ins className="no-underline">
-                        <span className="sr-only">{t("audit.after")} </span>
-                        {shown(change.after, kind, t, f)}
-                      </ins>
-                    </dd>
-                  </div>
-                );
-              })}
+              {changedFields(entry.before, entry.after)
+                .filter((change) => !fields[change.field]?.hidden)
+                .map((change) => {
+                  const field = fields[change.field];
+                  const kind = field?.kind ?? "text";
+                  return (
+                    <div key={change.field} className="flex flex-wrap gap-x-2">
+                      <dt className="text-muted-foreground">
+                        {t(field?.label ?? "audit.otherField")}
+                      </dt>
+                      <dd className="flex flex-wrap gap-x-2">
+                        {change.before !== null && (
+                          <del className="text-muted-foreground">
+                            <span className="sr-only">{t("audit.before")} </span>
+                            {shown(change.before, kind, t, f)}
+                          </del>
+                        )}
+                        <ins className="no-underline">
+                          <span className="sr-only">{t("audit.after")} </span>
+                          {shown(change.after, kind, t, f)}
+                        </ins>
+                      </dd>
+                    </div>
+                  );
+                })}
             </dl>
           </div>
         </li>

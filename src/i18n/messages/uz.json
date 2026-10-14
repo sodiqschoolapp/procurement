@@ -117,6 +117,12 @@
         "update": "Kompaniya oʻzgartirildi",
         "deactivate": "Kompaniya faolsizlantirildi",
         "activate": "Kompaniya faollashtirildi"
+      },
+      "department": {
+        "create": "Boʻlim qoʻshildi",
+        "update": "Boʻlim oʻzgartirildi",
+        "deactivate": "Boʻlim faolsizlantirildi",
+        "activate": "Boʻlim faollashtirildi"
       }
     },
     "fields": {
@@ -492,14 +498,20 @@
       "taxId": "STIR",
       "phone": "Telefon",
       "note": "Izoh",
-      "isActive": "Faol"
+      "isActive": "Faol",
+      "responsibleName": "Masʼul shaxs",
+      "responsiblePhone": "Masʼul shaxs telefoni",
+      "branch": "Filial"
     },
     "hints": {
       "shortName": "Miqdor yonida yoziladi, masalan kg yoki dona.",
       "allowDecimal": "Miqdor 2,5 boʻlishi mumkin boʻlsa belgilang, kg kabi; dona uchun belgilamang.",
       "taxId": "Ixtiyoriy. Kompaniya uchun 9 raqam, jismoniy shaxs uchun 14 raqam.",
       "phone": "Ixtiyoriy.",
-      "note": "Ixtiyoriy."
+      "note": "Ixtiyoriy.",
+      "responsibleName": "Ixtiyoriy. Oddiy matn, ilova foydalanuvchisi emas.",
+      "responsiblePhone": "Ixtiyoriy.",
+      "branch": "Bir marta tanlanadi: boʻlim oʻz filialida qoladi."
     },
     "companyKind": {
       "choose": "Tanlang…",
@@ -539,7 +551,20 @@
         "description": "Arizalardagi brendlar va xaridlardagi yetkazib beruvchilar uchun bitta roʻyxat.",
         "emptyTitle": "Hali kompaniyalar yoʻq",
         "emptyText": "Soʻraladigan brendlarni va xarid qilinadigan yetkazib beruvchilarni qoʻshing."
+      },
+      "departments": {
+        "title": "Boʻlimlar",
+        "new": "Yangi boʻlim",
+        "newTitle": "Yangi boʻlim",
+        "description": "Har bir filialning narsa oladigan boʻlinmalari va ularning masʼul shaxslari.",
+        "emptyTitle": "Hali boʻlimlar yoʻq",
+        "emptyText": "Filial boʻlinmalarini qoʻshing: oshxona, kutubxona, sinf xonasi."
       }
-    }
+    },
+    "chooseBranch": "Tanlang…",
+    "branchOption": "{code} · {name}",
+    "branchLine": "Filial: {code} · {name}",
+    "allBranches": "Barcha filiallar. Yuqoridagi filial tanlagichdan bittasini tanlang.",
+    "oneBranch": "{code} · {name} filiali, yuqoridagi tanlagichda tanlangan."
   }
 }

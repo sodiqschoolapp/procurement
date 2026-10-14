@@ -78,6 +78,13 @@
       "when": 1792013769840,
       "tag": "0010_catalogs",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1792016668271,
+      "tag": "0011_departments",
+      "breakpoints": true
     }
   ]
 }

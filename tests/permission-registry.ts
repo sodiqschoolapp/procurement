@@ -40,6 +40,10 @@ export const SERVER_ACTIONS: Record<string, Entry> = {
   "src/app/(app)/catalog/actions.ts#createCatalogEntryAction": "catalog.manage",
   "src/app/(app)/catalog/actions.ts#updateCatalogEntryAction": "catalog.manage",
   "src/app/(app)/catalog/actions.ts#setCatalogEntryActiveAction": "catalog.manage",
+  // The Head's departments (plan of 1.6).
+  "src/app/(app)/catalog/departments/actions.ts#createDepartmentAction": "catalog.manage",
+  "src/app/(app)/catalog/departments/actions.ts#updateDepartmentAction": "catalog.manage",
+  "src/app/(app)/catalog/departments/actions.ts#setDepartmentActiveAction": "catalog.manage",
 };
 
 /** Exports of `src/features/<area>/queries/`, as `<file>#<export>`. */
@@ -58,6 +62,9 @@ export const QUERIES: Record<string, Permission> = {
   "src/features/catalog/queries/catalog-entries.ts#getCatalogEntry": "catalog.manage",
   "src/features/catalog/queries/catalog-entries.ts#countActiveCatalogEntries": "catalog.manage",
   "src/features/catalog/queries/catalog-entries.ts#listCatalogChoices": "catalog.pick",
+  // Departments: the Head's list and one department (plan of 1.6).
+  "src/features/catalog/queries/departments.ts#listDepartments": "catalog.manage",
+  "src/features/catalog/queries/departments.ts#getDepartment": "catalog.manage",
   // The Head's users, the vacancy warning and the form's branches (plan of 1.3).
   "src/features/users/queries/users.ts#listUsers": "catalog.manage",
   "src/features/users/queries/users.ts#getUser": "catalog.manage",
