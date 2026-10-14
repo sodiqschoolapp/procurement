@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  bigint,
   boolean,
   check,
   index,
@@ -13,7 +14,9 @@ import {
 } from "drizzle-orm/pg-core";
 
 import { COMPANY_KINDS } from "@/domain/catalogs";
+import { PRODUCT_TYPES } from "@/domain/products";
 
+import { files } from "./files";
 import { branches } from "./organisation";
 
 // Four catalogs of the "Organisation and catalogs" group of docs/spec/14-data-model.md: units
@@ -170,5 +173,61 @@ export const departments = pgTable(
       sql`lower(regexp_replace(btrim(${table.name}), '\\s+', ' ', 'g'))`,
     ),
     index("departments_is_active_idx").on(table.isActive),
+  ],
+);
+
+/** GOODS or SERVICE (14-data-model.md, products.type; A7). */
+export const productType = pgEnum("product_type", PRODUCT_TYPES);
+
+// Products and services (14-data-model.md, products; 04-catalogs.md, Catalogs table; A7). Task
+// 1.7. The name is unique across products and services together, with the expression of the
+// catalogs above (04 rule 3; plan of 1.7, decision 9). A new item is GOODS unless SERVICE is chosen
+// (decision 8). Category and measure are required; photo, default company, reference price and
+// description are optional (decision 6). The reference price is whole so'm in bigint, more than 0
+// (05-order-request-form.md, Line field 10; developer-rules.md rule 6); it is set at creation and
+// changes only through a new price with a note (1.9; decision 2, Look first). A file is held by
+// one record only (src/server/files/owners.ts), so the photo is unique. `has_variants` comes with
+// product_variants in 1.8.
+export const products = pgTable(
+  "products",
+  {
+    id: id(),
+    name: text("name").notNull(),
+    type: productType("type").notNull().default("GOODS"),
+    categoryId: uuid("category_id")
+      .notNull()
+      .references(() => categories.id),
+    unitId: uuid("unit_id")
+      .notNull()
+      .references(() => units.id),
+    photoFileId: uuid("photo_file_id").references(() => files.id),
+    defaultCompanyId: uuid("default_company_id").references(() => companies.id),
+    referencePrice: bigint("reference_price", { mode: "bigint" }),
+    description: text("description"),
+    isActive: boolean("is_active").notNull().default(true),
+    clientKey: uuid("client_key"),
+    createdAt: moment("created_at").notNull(),
+  },
+  (table) => [
+    unique("products_client_key_key").on(table.clientKey),
+    unique("products_photo_file_id_key").on(table.photoFileId),
+    check("products_name_check", sql`btrim(${table.name}) <> ''`),
+    check(
+      "products_description_check",
+      sql`${table.description} IS NULL OR btrim(${table.description}) <> ''`,
+    ),
+    check(
+      "products_reference_price_check",
+      sql`${table.referencePrice} IS NULL OR ${table.referencePrice} > 0`,
+    ),
+    uniqueIndex("products_name_key").using(
+      "btree",
+      sql`lower(regexp_replace(btrim(${table.name}), '\\s+', ' ', 'g'))`,
+    ),
+    index("products_category_id_idx").on(table.categoryId),
+    index("products_unit_id_idx").on(table.unitId),
+    index("products_default_company_id_idx").on(table.defaultCompanyId),
+    index("products_is_active_idx").on(table.isActive),
+    index("products_type_idx").on(table.type),
   ],
 );
