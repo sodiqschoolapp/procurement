@@ -393,6 +393,9 @@
     "history": "O'zgarishlar tarixi",
     "vacancyTitle": "Odam yetishmayotgan filiallar",
     "vacancy": "{branch}: faol {roles} yo'q",
-    "isActive": "Faol"
+    "isActive": "Faol",
+    "replaceTitle": "{name}ni direktor sifatida almashtirasizmi?",
+    "replaceResult": "{name} o'chiriladi va barcha qurilmalarda tizimdan chiqariladi, kutilayotgan buyurtmalar yangi direktorga o'tadi.",
+    "replaceConfirm": "Almashtirish"
   }
 }

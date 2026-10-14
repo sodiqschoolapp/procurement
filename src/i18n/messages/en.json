@@ -393,6 +393,9 @@
     "history": "Change history",
     "vacancyTitle": "Branches missing people",
     "vacancy": "{branch}: no active {roles}",
-    "isActive": "Active"
+    "isActive": "Active",
+    "replaceTitle": "Replace {name} as Principal?",
+    "replaceResult": "{name} is deactivated and signed out on every device, and waiting requests pass to the new Principal.",
+    "replaceConfirm": "Replace"
   }
 }

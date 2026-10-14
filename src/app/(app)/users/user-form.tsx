@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { useForm, useWatch } from "react-hook-form";
 
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { toast } from "@/components/toast";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
@@ -117,7 +118,23 @@ export function UserForm({ user, choices }: Props) {
     else if (next === "PRINCIPAL") chooseBranches(branchIds.slice(0, 1));
   }
 
+  // Replacing a Principal deactivates and signs out another person: the confirm dialog states it
+  // first (11 rule 6; review of 1.3, Should fix 3).
+  const [confirming, setConfirming] = useState<Values | null>(null);
+  const replacing = (current: Values) =>
+    needsReplace &&
+    current.replacePrincipal &&
+    (user === null || !sameSet(current.branchIds, loaded.branchIds));
+
   const onSubmit = handleSubmit(async (current) => {
+    if (replacing(current)) {
+      setConfirming(current);
+      return;
+    }
+    await send(current);
+  });
+
+  async function send(current: Values) {
     if (!user) {
       const result = await create.run({
         ...current,
@@ -150,7 +167,14 @@ export function UserForm({ user, choices }: Props) {
     toast.success(t(result.data.changed.length > 0 ? "users.saved" : "users.nothingChanged"));
     reset(current);
     router.refresh();
-  });
+  }
+
+  async function confirmReplace() {
+    const current = confirming;
+    if (!current) return;
+    await send(current);
+    setConfirming(null);
+  }
 
   if (shown) {
     return (
@@ -310,7 +334,7 @@ export function UserForm({ user, choices }: Props) {
                 autoCapitalize="none"
                 spellCheck={false}
                 maxLength={4096}
-                className="font-mono sm:max-w-80"
+                className="sm:max-w-80"
               />
               <Button
                 type="button"
@@ -328,6 +352,20 @@ export function UserForm({ user, choices }: Props) {
         </div>
       )}
 
+      <ConfirmDialog
+        open={confirming !== null}
+        onOpenChange={(open) => {
+          if (!open) setConfirming(null);
+        }}
+        pending={action.pending}
+        onConfirm={confirmReplace}
+        text={{
+          title: t("users.replaceTitle", { name: chosen?.principal?.fullName ?? "" }),
+          result: t("users.replaceResult", { name: chosen?.principal?.fullName ?? "" }),
+          confirm: t("users.replaceConfirm"),
+          danger: true,
+        }}
+      />
       <Button
         type="submit"
         pending={action.pending}

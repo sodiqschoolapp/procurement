@@ -84,7 +84,7 @@ export function RenewPassword({
               autoCapitalize="none"
               spellCheck={false}
               maxLength={4096}
-              className="font-mono sm:max-w-80"
+              className="sm:max-w-80"
             />
             <Button
               type="button"

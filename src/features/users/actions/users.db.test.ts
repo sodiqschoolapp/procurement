@@ -446,8 +446,11 @@ describe("setUserActive (04 rule 2; A8; 03 rule 4)", () => {
       (outcome) => (outcome as PromiseFulfilledResult<ActionResult<unknown>>).value,
     );
     expect(answers.filter((answer) => answer.ok)).toHaveLength(1);
-    // The second runs after the first's commit: its actor is no longer an active Head.
-    expect(answers.find((answer) => !answer.ok)).toMatchObject({ ok: false });
+    // The second runs its lock step after the first's commit (the shared lock). When both passed
+    // authorize() before that, the action's last-Head check refuses it (wrong_status); when the
+    // first had already committed, authorize() refuses the now inactive actor (forbidden).
+    const refused = answers.find((answer) => !answer.ok) as { ok: false; error: { code: string } };
+    expect(["wrong_status", "forbidden"]).toContain(refused.error.code);
     expect([await isActive(first.id), await isActive(second.id)].sort()).toEqual([false, true]);
     const [{ count }] = (
       await db.execute<{ count: number }>(

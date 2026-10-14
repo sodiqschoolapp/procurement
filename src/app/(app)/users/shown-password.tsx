@@ -31,7 +31,7 @@ export function ShownPassword({ username, password }: { username: string; passwo
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <output
           data-testid="shown-password"
-          className="rounded-md bg-muted px-3 py-2 font-mono text-[17px] leading-6 break-all select-all"
+          className="rounded-md bg-muted px-3 py-2 text-[17px] leading-6 break-all select-all"
         >
           {password}
         </output>

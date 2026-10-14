@@ -111,6 +111,15 @@ describe("users_client_key_key (developer-rules.md rule 8)", () => {
         db.execute(sql`update users set client_key = ${key} where id = ${second.id}`),
       ),
     ).toMatchObject({ code: "23505", constraint: "users_client_key_key" });
+    // A plain INSERT of a new user with the same key (D39: insert and update).
+    expect(
+      await refusalOf(
+        db.execute(sql`
+          insert into users (full_name, username, email, phone, role, client_key, created_at, updated_at)
+          values ('Invented Person', 'invented_key_twice', 'invented_key_twice@users.invalid',
+                  '+998 90 000 00 00', 'MANAGER', ${key}, now(), now())`),
+      ),
+    ).toMatchObject({ code: "23505", constraint: "users_client_key_key" });
     const empty = await db.execute<{ count: number }>(
       sql`select count(*)::int as count from users where client_key is null and id in (${second.id}, ${third.id})`,
     );
