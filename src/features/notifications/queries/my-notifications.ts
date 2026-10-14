@@ -1,7 +1,11 @@
 import { and, count, desc, eq, isNull } from "drizzle-orm";
 import * as z from "zod";
 
-import type { NotificationParams, NotificationType } from "@/domain/notifications";
+import {
+  NOTIFICATIONS_PAGE_SIZE,
+  type NotificationParams,
+  type NotificationType,
+} from "@/domain/notifications";
 import { authorize } from "@/server/authorize";
 import { notifications } from "@/server/db/schema";
 
@@ -11,8 +15,6 @@ import { notifications } from "@/server/db/schema";
 // SQL filters by the user, so nobody reads another person's notifications. No branch filter: a
 // notification is shown as it was written, and its link's page checks access again (decision 4,
 // Look first). 25 a page, newest first (11-screens-and-ux.md rule 8).
-
-export const NOTIFICATIONS_PAGE_SIZE = 25;
 
 const listInput = z.object({ page: z.number().int().min(1).default(1) });
 

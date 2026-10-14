@@ -19,7 +19,7 @@ export const INSERT_NOTIFICATIONS = `insert into notifications
  *   userIds: readonly string[],
  *   actorId: string | null,
  *   type: string,
- *   params: { readonly [key: string]: string | number | boolean },
+ *   params: { readonly [key: string]: string | number },
  *   link: string,
  *   at: Date,
  * }} NotificationRows

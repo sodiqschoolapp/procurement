@@ -20,6 +20,9 @@ export const SERVER_ACTIONS: Record<string, Entry> = {
   // "all" asks profile.edit; a branch id asks data.view on that branch, proved by the matrix
   // test "chooseBranch with a branch" (permission review of 0.10b, Must fix 1).
   "src/app/(app)/branch-actions.ts#chooseBranchAction": "profile.edit",
+  // One's own notifications (plan of 0.11, decision 2, Look first).
+  "src/app/(app)/notifications/actions.ts#openNotificationAction": "notification.own",
+  "src/app/(app)/notifications/actions.ts#markAllNotificationsReadAction": "notification.own",
 };
 
 /** Exports of `src/features/<area>/queries/`, as `<file>#<export>`. */
@@ -29,6 +32,9 @@ export const QUERIES: Record<string, Permission> = {
   // The branches of the top bar's branch view (plan of 0.10b).
   "src/features/catalog/queries/my-branches.ts#listMyBranches": "profile.edit",
   "src/features/catalog/queries/my-branches.ts#currentBranchChoice": "profile.edit",
+  // The bell and /notifications (plan of 0.11, decision 2, Look first).
+  "src/features/notifications/queries/my-notifications.ts#listMyNotifications": "notification.own",
+  "src/features/notifications/queries/my-notifications.ts#countMyUnread": "notification.own",
 };
 
 /**

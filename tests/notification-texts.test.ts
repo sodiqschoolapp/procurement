@@ -18,7 +18,7 @@ import uz from "../src/i18n/messages/uz.json";
 const MESSAGES = { uz, ru, en } as const;
 
 /** Invented values for the params of each sendable type. */
-const SAMPLE: { [Type in SendableType]: Record<string, string | number | boolean> } = {
+const SAMPLE: { [Type in SendableType]: Record<string, string | number> } = {
   BRANCH_ROLE_VACANT: { branch: "DEMO", role: "PRINCIPAL" },
 };
 

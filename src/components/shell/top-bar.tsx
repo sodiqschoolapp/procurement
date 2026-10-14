@@ -6,15 +6,18 @@ import { Suspense } from "react";
 import { Skeleton } from "@/components/skeleton";
 import { BRANCH_COOKIE } from "@/features/catalog/branch-cookie";
 import { currentBranchChoice, listMyBranches } from "@/features/catalog/queries/my-branches";
+import { countMyUnread } from "@/features/notifications/queries/my-notifications";
 
+import { Bell } from "./bell";
 import { BranchSelect } from "./branch-select";
 import { Avatar } from "./person";
 
 // The top bar (docs/design-system.md, Layout shell; This app: "The branch switcher with 'All my
 // branches' for a person with several branches; the search field; at the right the bell"):
-// white (dark: --topbar), 64 high, a bottom border. Search (6.10) and the bell (0.11) keep their
-// places empty until their tasks: no control that does nothing (plan of 0.10b, decision 9). At
-// phone width the avatar links to /profile, where sign-out is.
+// white (dark: --topbar), 64 high, a bottom border. Search (6.10) keeps its place empty until its
+// task: no control that does nothing (plan of 0.10b, decision 9). The bell (0.11) stays at phone
+// width too: /notifications is in no role's menu (plan of 0.11, decision 7). At phone width the
+// avatar links to /profile, where sign-out is.
 
 /** One branch: its name as text; several: the select; none: nothing (plan, decision 6). */
 async function BranchContext({ userId }: { userId: string }) {
@@ -33,6 +36,11 @@ async function BranchContext({ userId }: { userId: string }) {
   return <BranchSelect branches={branches} current={current} />;
 }
 
+/** The bell with the unread count, read inside a Suspense so no page waits for it (rule 5). */
+async function BellCount({ userId }: { userId: string }) {
+  return <Bell count={await countMyUnread(userId)} />;
+}
+
 export async function TopBar({ userId, fullName }: { userId: string; fullName: string }) {
   const t = await getTranslations();
   return (
@@ -49,6 +57,15 @@ export async function TopBar({ userId, fullName }: { userId: string; fullName: s
         </Suspense>
       </div>
       <div className="flex shrink-0 items-center gap-2">
+        <Suspense
+          fallback={
+            <span aria-busy="true" className="block">
+              <Skeleton className="size-11 bg-secondary sm:size-10" />
+            </span>
+          }
+        >
+          <BellCount userId={userId} />
+        </Suspense>
         <Link
           href="/profile"
           aria-label={t("shell.profile")}

@@ -41,6 +41,8 @@ export const ICONS = [
   "person",
   // The phone tab bar's "More" (plan of 0.10b).
   "more_horiz",
+  // "Mark all as read" on /notifications (plan of 0.11).
+  "done_all",
   // The pending button; the request statuses and the colour labels.
   "progress_activity",
   "schedule",

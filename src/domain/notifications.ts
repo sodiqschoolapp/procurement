@@ -46,7 +46,7 @@ export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
  * The params of each type that has a text in the message files (`notifications.types.<TYPE>`).
  * The task that first sends a type adds it here with its text, and names any amount or request
  * number in it as a Look first of its own (plan of 0.11, decisions 4 and 10). A value is a JSON
- * string, number or boolean; money is a string of whole so'm, formatted when shown (decision 9;
+ * string or number (an ICU argument; a flag is a word for a `select`); money is a string of whole so'm, formatted when shown (decision 9;
  * CLAUDE.md rule 6).
  */
 export type NotificationParamsOf = {
@@ -64,7 +64,7 @@ export const NOTIFICATION_PARAMS: {
   BRANCH_ROLE_VACANT: ["branch", "role"],
 };
 
-export type NotificationParamValue = string | number | boolean;
+export type NotificationParamValue = string | number;
 export type NotificationParams = { readonly [key: string]: NotificationParamValue };
 
 /**
@@ -76,6 +76,9 @@ export type NotificationParams = { readonly [key: string]: NotificationParamValu
 export function isInternalLink(link: string): boolean {
   return /^\/([^/\\]|$)/.test(link) && !/[\s\p{Cc}]/u.test(link);
 }
+
+/** 25 rows a page (11-screens-and-ux.md rule 8). */
+export const NOTIFICATIONS_PAGE_SIZE = 25;
 
 /** The bell's number: up to 99, then "99+" (plan of 0.11, Screens). */
 export function unreadCountLabel(count: number): string | null {

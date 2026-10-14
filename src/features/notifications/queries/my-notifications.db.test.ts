@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 
+import { NOTIFICATIONS_PAGE_SIZE } from "@/domain/notifications";
+
 import { setClock } from "../../../../tests/helpers/clock";
 import { insertNotification } from "../../../../tests/helpers/notifications";
 import { describePermissionMatrix } from "../../../../tests/helpers/permission-matrix";
 import { insertUser } from "../../../../tests/helpers/users";
-import { NOTIFICATIONS_PAGE_SIZE, countMyUnread, listMyNotifications } from "./my-notifications";
+import { countMyUnread, listMyNotifications } from "./my-notifications";
 
 // 10-notifications-analytics-reports.md, Notifications ("an in-app bell with an unread count");
 // 11-screens-and-ux.md rule 8 (25 rows a page); plan of 0.11, decision 2 (Look first: the
