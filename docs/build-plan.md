@@ -11,6 +11,7 @@ The whole project as ordered tasks. One task is one Claude Code session and one 
 - A task that names an open question uses the owner's answer under "Decided ahead" in `docs/decisions.md`. Where no answer came, the builder takes the most reasonable reading and flags it **Look first** (D20, D26). The owner's reviewer prepares each phase's questions while the phase before it runs.
 - A fix task `<id>b` (for example `1.3b`) is added by the owner when a decision made without the owner is changed on issue #9 and code must change. It is placed first among the open tasks, so the start routine takes it next; its Read line names the decision it changes.
 - One owner gate stands before task 9.4, where the live system, real data and secrets start: a quoted line that begins with the words "Owner gate." in bold. The start routine starts nothing after it until the owner deletes that line.
+- A second, temporary owner gate stands before task 2.1 (D42): the owner is redesigning requests as items in a branch order list, and Phases 2 to 4 are rewritten by a `/spec-change` before they are built. The owner deletes it with that change.
 - Tick a task only in `/finish-task`.
 
 ## Phases
@@ -192,6 +193,8 @@ Everything the Head sets up before the first request can be written.
 ## Phase 2: Requests to approval
 
 From an empty draft to a fully approved request, with its number, its history and its PDF.
+
+> **Owner gate.** The start routine stops here until the owner deletes this line. Requests are being redesigned as items in a branch order list (D42); the `/spec-change` that rewrites Phases 2 to 4 deletes this line.
 
 - [ ] **2.1 Domain: request totals**
   - **Read:** `05-order-request-form.md` (Line: fields 9 to 14 and the footer); `08-money-and-settlement.md` (Numbers the system calculates: Planned total; first paragraph on rounding); `edge-cases/developer-rules.md` (rules 1, 6); `13-technology.md` (Numbers).
