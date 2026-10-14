@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { type ReactNode, useEffect } from "react";
+import { type ReactNode, useEffect, useSyncExternalStore } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 
 import { toast } from "@/components/toast";
@@ -39,6 +39,8 @@ type FormValues = {
 
 const MONTHS = Array.from({ length: 12 }, (_, index) => index + 1);
 const DAYS = Array.from({ length: 31 }, (_, index) => index + 1);
+
+const noSubscription = () => () => undefined;
 
 /** The last percent the guard had, shown in its field when the guard is off. */
 const FALLBACK_GUARD_PERCENT = "10";
@@ -124,6 +126,13 @@ export function SettingsForm({ values }: { values: SettingValues }) {
   const loaded = formValuesOf(values);
   const form = useForm<FormValues>({ defaultValues: loaded });
   const { register, control, handleSubmit, reset, formState } = form;
+  // Before hydration a click would submit the plain HTML form and reload the page, losing what
+  // was typed: Save is enabled once the form runs in the browser (11 rule 7).
+  const hydrated = useSyncExternalStore(
+    noSubscription,
+    () => true,
+    () => false,
+  );
 
   // A new page from the server (after a save) becomes the form's starting point.
   const loadedKey = JSON.stringify(loaded);
@@ -334,7 +343,12 @@ export function SettingsForm({ values }: { values: SettingValues }) {
         <Hint id="escalation_hours-hint">{t("settings.escalationHoursHint")}</Hint>
       </Group>
 
-      <Button type="submit" pending={action.pending} className="w-full sm:w-auto sm:self-start">
+      <Button
+        type="submit"
+        pending={action.pending}
+        disabled={!hydrated}
+        className="w-full sm:w-auto sm:self-start"
+      >
         {t("settings.save")}
       </Button>
     </form>
