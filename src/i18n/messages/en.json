@@ -31,5 +31,26 @@
     "uz": "O'zbekcha",
     "ru": "Русский",
     "en": "English"
+  },
+  "errors": {
+    "invalidInput": "Some fields are filled in wrongly. Correct the marked fields and save again.",
+    "signedOut": "Your session has ended. Sign in again, then repeat the action.",
+    "notFound": "Not found. It may have been removed, or it belongs to a branch you do not work in.",
+    "forbidden": "You are not allowed to do this. Ask the Procurement Head if you need it.",
+    "staleVersion": "Someone changed this while you had it open. Reload the page to see the new version, then try again.",
+    "wrongStatus": "This cannot be done at the current status. Reload the page to see where it stands now.",
+    "conflict": "This was moved to another branch or person while you were working. Reload the page and check before trying again.",
+    "unexpected": "Something went wrong and nothing was saved. Try again; if it happens again, tell the Procurement Head.",
+    "network": "The connection was lost. Reload the page to see whether your change was saved.",
+    "field": {
+      "required": "Fill in this field",
+      "tooLong": "Too long",
+      "tooShort": "Too short",
+      "wrongFormat": "Wrong format",
+      "notANumber": "Type a number",
+      "tooSmall": "Too small",
+      "tooLarge": "Too large",
+      "notAllowed": "This value is not allowed"
+    }
   }
 }
