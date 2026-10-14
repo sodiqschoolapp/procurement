@@ -1,10 +1,10 @@
 import { and, asc, count, desc, eq, inArray, or, sql } from "drizzle-orm";
 import * as z from "zod";
 
-import type { Role } from "@/domain/permissions";
+import { MANAGER_RIGHTS, type ManagerRight, type Role } from "@/domain/permissions";
 import { STAFFED_ROLES, type StaffedRole, USERS_PAGE_SIZE } from "@/domain/users";
 import { authorize } from "@/server/authorize";
-import { branches, userBranches, users } from "@/server/db/schema";
+import { branches, managerRights, userBranches, users } from "@/server/db/schema";
 
 import { staffedPlaces } from "../vacancies";
 
@@ -135,6 +135,30 @@ export async function getUser(userId: string, id: string): Promise<UserDetail | 
     branches: held.get(row.id) ?? [],
     lastActiveHead: row.role === "HEAD" && row.isActive && (heads?.count ?? 0) <= 1,
   };
+}
+
+export type ManagerRightState = { right: ManagerRight; enabled: boolean };
+
+/**
+ * The nine rights of a Manager, in the order of 03 ("Manager rights the Head can switch"); a
+ * right with no row is on (14-data-model.md, manager_rights: "no row means enabled"). `null` for
+ * an unknown id or a user who is not a Manager (plan of 1.4, Look first 1).
+ */
+export async function getManagerRights(
+  userId: string,
+  id: string,
+): Promise<ManagerRightState[] | null> {
+  await authorize(userId, "manager_rights.switch");
+  if (!z.uuid().safeParse(id).success) return null;
+  const db = await database();
+  const [user] = await db.select({ role: users.role }).from(users).where(eq(users.id, id));
+  if (user?.role !== "MANAGER") return null;
+  const rows = await db
+    .select({ right: managerRights.right, enabled: managerRights.enabled })
+    .from(managerRights)
+    .where(eq(managerRights.userId, id));
+  const saved = new Map(rows.map((row) => [row.right, row.enabled]));
+  return MANAGER_RIGHTS.map((right) => ({ right, enabled: saved.get(right) ?? true }));
 }
 
 export type BranchVacancy = { id: string; code: string; name: string; roles: StaffedRole[] };

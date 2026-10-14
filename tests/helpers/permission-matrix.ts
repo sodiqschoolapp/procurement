@@ -60,7 +60,8 @@ async function setUp(role: Role, place: Place): Promise<MatrixCase> {
 
 /**
  * Writes one database test per role × own branch × other branch, and for a permission guarded by
- * a Manager right one more: the Manager with that right switched off, in the own branch. For an
+ * a Manager right one more: the Manager of two branches with that right switched off, refused in
+ * both (A13; build-plan 1.4). For an
  * "own requests" permission one more: the Manager on a colleague's request of the own branch.
  * `run` acts as `user` on `branchId`; for an "own requests" permission it acts on a request the
  * user owns.
@@ -85,13 +86,24 @@ export function describePermissionMatrix(
 
     const right = entry.right;
     if (right) {
-      it(`MANAGER with ${right} switched off: forbidden; HEAD still allowed`, async () => {
-        const each = await setUp("MANAGER", "own");
-        await setManagerRight(each.user.id, right, false);
-        expect(await answerOf(() => run(each))).toBe("forbidden");
+      // A13: "The switches … apply to a Manager in all of their branches" (build-plan 1.4).
+      it(`MANAGER with ${right} switched off: forbidden in each own branch; HEAD still allowed`, async () => {
+        const first = await insertBranch();
+        const second = await insertBranch();
+        const user = await insertUser("MANAGER", { branches: [first.id, second.id] });
+        await setManagerRight(user.id, right, false);
+        const cases = [first, second].map((branch) => ({
+          user,
+          branchId: branch.id,
+          ownBranchId: branch.id,
+          ownerId: user.id,
+        }));
+        for (const each of cases) expect(await answerOf(() => run(each))).toBe("forbidden");
 
         const head = await insertUser("HEAD");
-        expect(await answerOf(() => run({ ...each, user: head }))).toBe("allow");
+        for (const each of cases) {
+          expect(await answerOf(() => run({ ...each, user: head }))).toBe("allow");
+        }
       });
     }
 

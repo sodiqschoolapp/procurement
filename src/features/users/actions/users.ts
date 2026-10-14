@@ -264,7 +264,7 @@ async function readUser(tx: Executor, id: string): Promise<SavedUser | null> {
  * The lock step of every action on an existing user: the advisory locks, the rows of the user's
  * branches and of `more` (the branches the input names), then the user's row.
  */
-async function lockUser(
+export async function lockUser(
   tx: Executor,
   id: string,
   more: readonly string[] = [],

@@ -12,6 +12,7 @@ export const AUDIT_ACTIONS = [
   "user.deactivate",
   "user.activate",
   "user.renew_password",
+  "user.switch_right",
   "branch.create",
   "branch.update",
   "branch.deactivate",

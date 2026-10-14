@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import { switchManagerRight } from "@/features/users/actions/manager-rights";
 import {
   createUser,
   renewUserPassword,
@@ -18,6 +19,7 @@ const create = serverAction(createUser);
 const update = serverAction(updateUser);
 const setActive = serverAction(setUserActive);
 const renew = serverAction(renewUserPassword);
+const switchRight = serverAction(switchManagerRight);
 
 /** Creates a user; the same client key twice gives the first one (developer-rules.md rule 8). */
 export async function createUserAction(input: unknown) {
@@ -43,6 +45,13 @@ export async function setUserActiveAction(input: unknown) {
 /** Renews another user's password and signs them out everywhere (A8). */
 export async function renewUserPasswordAction(input: unknown) {
   const result = await renew(input);
+  if (result.ok) revalidatePath("/", "layout");
+  return result;
+}
+
+/** Switches one of a Manager's nine rights on or off (03, "Manager rights the Head can switch"). */
+export async function switchManagerRightAction(input: unknown) {
+  const result = await switchRight(input);
   if (result.ok) revalidatePath("/", "layout");
   return result;
 }
