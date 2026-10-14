@@ -50,7 +50,7 @@
       "tooSmall": "Too small",
       "tooLarge": "Too large",
       "notAllowed": "This value is not allowed",
-      "taken": "Already used by another branch"
+      "taken": "Already used"
     },
     "file": {
       "tooLarge": "The file is larger than 10 MB. Choose a smaller file or take the photo again.",

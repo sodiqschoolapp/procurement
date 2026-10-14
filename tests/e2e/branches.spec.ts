@@ -29,9 +29,13 @@ async function noSideScroll(page: Page): Promise<void> {
   expect(sizes.content).toBeLessThanOrEqual(sizes.screen);
 }
 
-/** Four capital letters, new on every run (04, Branches: 2 to 4 Latin capital letters). */
+/**
+ * Four capital letters, new on every run (04, Branches: 2 to 4 Latin capital letters). It starts
+ * with "A", so on a database that keeps earlier runs' branches it sorts onto the list's first page
+ * (25 a page, ordered by code).
+ */
 function inventedCode(): string {
-  return Array.from({ length: 4 }, () => String.fromCharCode(65 + randomInt(26))).join("");
+  return `A${Array.from({ length: 3 }, () => String.fromCharCode(65 + randomInt(26))).join("")}`;
 }
 
 for (const role of ["MANAGER", "PRINCIPAL", "FINANCE"] as const) {
@@ -96,7 +100,8 @@ test("the Head creates, renames and deactivates a branch, and sees the history (
 
   await page.getByLabel(uz.branches.code).fill(code);
   await save.click();
-  await expect(page.getByText(uz.branches.created)).toBeVisible();
+  // The toast and the history row can carry the same words: the first is enough.
+  await expect(page.getByText(uz.branches.created).first()).toBeVisible();
   await expect(page).toHaveURL(/\/branches\/[0-9a-f-]{36}$/);
   const address = page.url();
 
@@ -104,7 +109,8 @@ test("the Head creates, renames and deactivates a branch, and sees the history (
   await expect(page.getByRole("button", { name: uz.branches.save })).toBeEnabled();
   await page.getByLabel(uz.branches.name).fill(`Sinov filiali ${suffix} yangi`);
   await page.getByRole("button", { name: uz.branches.save }).click();
-  await expect(page.getByText(uz.branches.saved)).toBeVisible();
+  // The toast and the history row can carry the same words: the first is enough.
+  await expect(page.getByText(uz.branches.saved).first()).toBeVisible();
   await expect(
     page.getByRole("heading", { name: `Sinov filiali ${suffix} yangi`, level: 1 }),
   ).toBeVisible();
@@ -115,7 +121,8 @@ test("the Head creates, renames and deactivates a branch, and sees the history (
   const dialog = page.getByRole("alertdialog");
   await expect(dialog).toContainText(uz.branches.deactivateResult);
   await dialog.getByRole("button", { name: uz.branches.deactivate }).click();
-  await expect(page.getByText(uz.branches.deactivated)).toBeVisible();
+  // The toast and the history row can carry the same words: the first is enough.
+  await expect(page.getByText(uz.branches.deactivated).first()).toBeVisible();
   await expect(page.getByRole("button", { name: uz.branches.activate })).toBeVisible();
   await expect(page.getByText(uz.audit.actions.branch.deactivate).first()).toBeVisible();
   await noSideScroll(page);
