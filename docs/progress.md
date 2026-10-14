@@ -475,4 +475,22 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - For 1.9: Prices makes five Admin pages; `AdminNav` needs another element than the segmented control.
 - Browser tests: after a refusal the error toast covers Save at phone width until it fades; submit with Enter.
 
-The next task is 1.6.
+## 1.6 Departments (15.10.2026, pull request #36)
+
+**Built**
+- Migration `0011_departments`: `departments` (FK `branch_id`, unique `(branch_id, normalised name)`, blank CHECKs, nullable unique `client_key`, `is_active` index).
+- `defineCatalogActions()` takes an optional `within` parent (`key`, `column`, `check`, `shown`): names are unique inside it; create reads it from the input, update from the locked row. `CATALOG_ENTRIES` (`src/domain/catalogs.ts`) = the four of 1.5 plus `DEPARTMENTS`.
+- `createDepartment`, `updateDepartment`, `setDepartmentActive` (`actions/departments.ts`); audit `department.*`, the create row holds `branchId` and `branch` (code). Queries `listDepartments` (top-bar branch view, search), `getDepartment`; `countActiveCatalogEntries` counts departments.
+- `/catalog/departments`, `/new`, `/[id]` on the shared `CatalogForm` and `CatalogActiveButton`; `/catalog` has a Departments row. `HistoryField.hidden` hides a field kept in the row.
+
+**Left out, and the task that brings it**
+- A department picker (branch-scoped): the first task that picks a department (2.x after D42, or 5.4). Excel import: 1.10. Seed departments: 1.13.
+
+**What the next sessions must know**
+- For 1.8: subtypes are unique inside a product: pass `within: { key: "productId", ... }` to `defineCatalogActions()`, as departments do with the branch.
+- For the first task that points a branch record at a department: hold the branch wall in the database too (plan review of 1.6, decision 1), for example a foreign key on `(department_id, branch_id)` against a unique `(id, branch_id)` of `departments`.
+- A department picker must filter by branch inside the SQL (`branchFilter()`), unlike the Head's list.
+- `PageLinks` lives in `src/app/(app)/catalog/page-links.tsx`.
+- Browser tests: the top bar's branch switcher is also labelled "Filial"; scope a form's branch field with `page.locator("form")`. After Deactivate, wait for the dialog to be hidden: its button reads "Activate" while it closes.
+
+The next task is 1.7.

@@ -149,7 +149,7 @@ Everything the Head sets up before the first request can be written.
   - **Build:** Four catalog screens under `/catalog/...` built on one shared catalog component: list with search, add, edit, deactivate; names unique ignoring capital letters and extra spaces; inactive entries leave the pickers and stay in old records; change history.
   - **Done when:** Tests: " Paper " and "paper" clash; a deactivated entry is absent from the picker query and present in the list; only the Head can write.
 
-- [ ] **1.6 Departments**
+- [x] **1.6 Departments**
   - **Read:** `04-catalogs.md` (Catalogs table: Departments; Rules: 3); `02-assumptions.md` (A6); `14-data-model.md` (departments).
   - **Build:** Departments per branch with the responsible person's name and phone as plain text; the name is unique inside a branch; deactivate; change history.
   - **Done when:** Tests: the same name in two branches is allowed; twice in one branch is refused.
