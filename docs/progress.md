@@ -212,4 +212,24 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - For 2.x: request edit, submit, cancel and take back ask `request.edit` (own requests), not `request.create`.
 - Screens never import `src/server/db/*`, `pg` or `drizzle-orm/node-postgres`; data comes through `src/features/<area>/queries`.
 
-The next task is 0.8.
+## 0.8 Server-action foundations (14.10.2026, pull request #18)
+
+**Built**
+- `src/server/action.ts`: `defineAction()`, `runAction(definition, userId, input)`, `serverAction(definition)`, `ActionError`, `describeForLog()`. Order: Zod, then in one transaction `target` → `authorize()` → `repeat` (advisory lock + `find`) → `lock` (branch and owner compared: `conflict`) → version → `check` → `write` → version raised by the wrapper → `history` → `notify`.
+- `src/server/action-result.ts` (`ActionResult`, codes, `errors.*` keys; client-safe), `src/server/action-input.ts` (Zod issue → `errors.field.*`), texts in uz, ru, en.
+- `src/components/action-runner.ts` (`callWithRetry`, `createActionRunner`), `src/components/use-action.ts` (`useAction`).
+- ESLint `OWN_TRANSACTION_SELECTORS`: no `.transaction(` in `src/app`, `src/features`, `src/components`.
+
+**Left out, and the task that brings it**
+- `audit()`: 0.9. `notify()`: 0.11. Request events and the state machine: 2.x. Toasts and the confirm dialog: 0.10. The `client_key` of `orfs`: 2.2.
+
+**What the next sessions must know**
+- An action file: `"use server"` with `export const x = serverAction(definition)`; `next build` accepts it (checked in 0.8). List it in `tests/permission-registry.ts` with the definition's own `permission`; nothing checks the two match yet, so the reviewer compares them (permission review of 0.8).
+- `target` reads branch and owner from the database (a create: the input's branch). Every action but a create has `lock`, returning `{ target, version?, rows }`; with a version it names `versionOf`, and the Zod schema requires `version: z.number().int().min(1)`. The action never raises the version itself.
+- A create's schema requires `clientKey` (`isClientKey`), and `repeat.find` reads the table's `client_key UNIQUE` column and returns `{ result, userId, branchId }` equal to what `write` returned.
+- A refusal inside a step: `throw new ActionError("wrong_status")`. Never log an error yourself: `describeForLog()` (`.claude/rules/server-actions.md`).
+- A `bigint` in the result reaches the browser exactly (`tests/server-action-bigint.test.ts`).
+- Tests: the sample action of `src/server/action.db.test.ts` shows each step; `serverAction(def, async () => user)` runs without a request.
+- For 0.9 and 0.11: `audit()` and `notify()` take the transaction (`WriteContext.tx`) and are called from the `history` and `notify` steps.
+
+The next task is 0.9.
