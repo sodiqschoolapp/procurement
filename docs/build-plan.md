@@ -98,7 +98,7 @@ Nothing a user can use yet. These tasks build the places where the rules live: t
   - **Build:** The `notifications` table; a `notify()` helper that writes type, params and link inside the caller's transaction; the bell with its unread count; the `/notifications` list; mark as read; texts come from the translation files by type.
   - **Done when:** Database test: a rolled-back action leaves no notification. By hand: a development-only script gives the first Head one notification; the bell shows 1, opening it follows the link and the count falls to 0.
 
-- [ ] **0.12 File storage**
+- [x] **0.12 File storage**
   - **Read:** `13-technology.md` (Files); `04-catalogs.md` (Rules: 6); `07-purchasing.md` (Purchase record: Receipt); `edge-cases/developer-rules.md` (rule 13); `14-data-model.md` (files); `edge-cases/system.md` ("A phone photo is very large").
   - **Build:** The storage service in `docker-compose.yml` (moved from 0.2); the `files` table; an S3 client for MinIO locally and R2 in the cloud; a private bucket; the upload route: JPG, PNG, WebP or HEIC up to 10 MB, PDF where a task allows it, checked by content and not by name; sharp makes the 160 px and 1200 px versions; the browser shrinks a large photo before upload; a download route that refuses a signed-out visitor and calls `authorize()` for the record the file belongs to; each later task that attaches files adds its check.
   - **Done when:** Tests: a text file renamed `.jpg` is refused; an 11 MB file is refused; one upload produces both sizes; a signed-out request for a file address is refused.
