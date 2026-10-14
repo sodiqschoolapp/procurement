@@ -432,6 +432,34 @@ Choices made during the build:
 - The Build and Done-when lines of 0.10b grew on `main` during the build (design system of 14.10.2026): the small button and the small icon button are 44 high at phone width (32 and 32×32 from `sm` on), with the unit test; the rail's current item is its icon on the orange fill, checked in the browser.
 - Sign-out is the client component `SignOutButton` with `useFormStatus`, so both sign-out buttons show their loading state (spec review, Must fix).
 
+### 0.11 Notifications (14.10.2026)
+
+The plan's decisions as the plan review of 14.10.2026 confirmed them (corrections 1 and 2 applied), and those of the build. The Look first items come first.
+
+1. **Look first.** `notification_type` holds one value per event of `10`, Notifications, now: `REQUEST_SUBMITTED`, `REQUEST_HEAD_APPROVED`, `REQUEST_PRINCIPAL_APPROVED`, `REQUEST_FINANCE_APPROVED`, `REQUEST_SENT_BACK`, `REQUEST_REJECTED`, `CASH_GIVEN`, `CASH_RETURNED`, `CASH_PAID_BACK`, `REQUEST_SENT_TO_SETTLEMENT`, `OVERSPEND_ABOVE_GUARD`, `OVERSPEND_ACKNOWLEDGED`, `REQUEST_CLOSED`, `REQUEST_REOPENED`, `REQUEST_WAITING_24H`, `REQUEST_WAITING_48H`, `NEEDED_BY_NEAR`, `PRODUCT_SUGGESTED`, `PRODUCT_SUGGESTION_DECIDED`, `STOCK_CHANGE_ASKED`, `STOCK_CHANGE_DECIDED`, `TRANSFER_SENT`, `MINIMUM_STOCK_REACHED`, `BRANCH_ROLE_VACANT`, `PURCHASE_CANCELLED`, `PRICE_DIFFERS`, `MANAGER_RIGHT_SWITCHED`. A later value is a new migration (`ALTER TYPE … ADD VALUE`). Open question 17 stays with 8.2.
+2. **Look first.** New permission `notification.own` (global, all four roles `yes`): one's own notifications, read and marked read; the SQL filters by the signed-in user. Proposed `/spec-change` of `03-roles-and-permissions.md`, Permission matrix, new last row: "See one's own notifications and mark them read | Yes | Yes | Yes | Yes".
+3. **Look first.** `notifications` rows are never deleted and change once, `read_at` from NULL to a moment: the trigger `notifications_guard` (CLAUDE.md rule 11). No "unread again".
+4. **Look first.** A notification shows as written, also after the reader loses the branch it names; its link's page checks again. The table has no `branch_id` (`14` has none). Any later type whose params hold a request number or an amount must either filter old rows when read or bring a nullable `branch_id` with `branchFilter()` on the list (permission review, Should fix 2).
+5. `notify()` leaves out the actor, repeats and inactive users; with `userId: null` (a job) nobody is left out (correction 1).
+6. The bell's count is read on the server and refreshed by `router.refresh()` on focus and every 60 seconds while the tab is visible, held while an unsaved-changes guard is dirty.
+7. The bell stays in the top bar at phone width.
+8. Opening a notification is the action `openNotification` (marks read, returns the link); "Mark all as read" is included and asks no confirmation.
+9. `params` is a JSON object of strings and numbers; money a string of whole so'm. Changed in the build from "strings, numbers and booleans": next-intl takes no boolean argument, so a flag (such as "submitted again") is a word for an ICU `select`.
+10. Each type's text and params come with the task that first sends it; `notify()` accepts only such a type. This task has `BRANCH_ROLE_VACANT` (`branch`, `role` through an ICU `select`).
+11. `npm run dev:notify` gives the first active Head one `BRANCH_ROLE_VACANT` (branch `DEMO`, link `/`), with the database's `now()` (correction 2); it refuses production, any database but local port 5433, and no active Head.
+12. The area is `src/features/notifications/`.
+
+Choices made during the build:
+
+- `notify()` takes the event's `branchId`; when it is not null, only a Head or a person of that branch gets a row, in the same statement (permission review, Should fix 1). A wrongly worked-out recipient list of a later task cannot carry a branch's data to another branch.
+- A link is printable ASCII only (`'^[!-~]+$'` and the same in `isInternalLink()`), not "no space or control character": PostgreSQL's `[[:space:]]` and JavaScript's `\s` disagree on U+00A0 (found while checking the spec review's question).
+- The recipients go into the one INSERT as a JSON array: Drizzle's `sql` spreads a JavaScript array into a list.
+- `bound()` of `src/server/audit.ts` moved to `src/server/bound-sql.ts`, shared with `notify()`.
+- The page is capped at 10 000 and a page past the end goes to page 1 (spec review).
+- The two actions revalidate the layout in their `"use server"` wrappers and the screen only navigates: `router.push()` with `router.refresh()` at once left the address on `/notifications` while the page showed the link's page (one phone run of the browser test).
+- The unsaved-changes guard counts the dirty guards on the page (`hasUnsavedChanges()`), which the bell reads.
+- `NOTIFICATIONS_PAGE_SIZE` lives in `src/domain/notifications.ts`: the registry test reads every export of a queries file as a query.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

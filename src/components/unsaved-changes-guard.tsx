@@ -22,6 +22,15 @@ type Pending = { kind: "link"; href: string } | { kind: "back" };
 
 const GUARD_STATE = "unsavedChangesGuard";
 
+// How many guards on the page are dirty now. The bell holds its refresh while one is (plan of
+// 0.11, Screens: "held while an unsaved-changes guard is dirty").
+let dirtyGuards = 0;
+
+/** True while a form on the page has changes that are not saved. */
+export function hasUnsavedChanges(): boolean {
+  return dirtyGuards > 0;
+}
+
 export function UnsavedChangesGuard({ dirty }: { dirty: boolean }) {
   const t = useTranslations("unsavedChanges");
   const router = useRouter();
@@ -40,6 +49,7 @@ export function UnsavedChangesGuard({ dirty }: { dirty: boolean }) {
       return;
     }
     leaving.current = false;
+    dirtyGuards += 1;
 
     function onBeforeUnload(event: BeforeUnloadEvent) {
       if (leaving.current) return;
@@ -89,6 +99,7 @@ export function UnsavedChangesGuard({ dirty }: { dirty: boolean }) {
     window.addEventListener("click", onClick, true);
     window.addEventListener("popstate", onPopState);
     return () => {
+      dirtyGuards -= 1;
       window.removeEventListener("beforeunload", onBeforeUnload);
       window.removeEventListener("click", onClick, true);
       window.removeEventListener("popstate", onPopState);

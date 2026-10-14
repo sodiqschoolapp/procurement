@@ -1,5 +1,7 @@
 import { sql } from "drizzle-orm";
-import { check, index, jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { check, index, jsonb, pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+
+import { NOTIFICATION_TYPES } from "@/domain/notifications";
 
 import { users } from "./users";
 
@@ -61,5 +63,52 @@ export const auditLog = pgTable(
       table.id.desc(),
     ),
     index("audit_log_actor_id_idx").on(table.actorId),
+  ],
+);
+
+// notifications: "user_id, type, params JSONB, link, read_at" (14-data-model.md, System;
+// 10-notifications-analytics-reports.md, Notifications). Task 0.11. `type` is an enum with one
+// value per event of the spec's table (plan of 0.11, decision 1, Look first); its list lives in
+// src/domain/notifications.ts and a unit test keeps the two equal. `link` is an address inside the
+// app: the CHECK refuses another host, and allows printable ASCII only, so no white space or
+// control character that a browser strips into another host (review of the plan, Should fix 6;
+// PostgreSQL and JavaScript name different Unicode characters "space", so neither list is used). Rows are never deleted and change only once,
+// `read_at` from NULL to a moment: the trigger notifications_guard of migration 0004, written by
+// hand (decision 3, Look first; CLAUDE.md rule 11).
+export const notificationType = pgEnum("notification_type", NOTIFICATION_TYPES);
+
+export const notifications = pgTable(
+  "notifications",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
+    type: notificationType("type").notNull(),
+    params: jsonb("params").notNull().default({}),
+    link: text("link").notNull(),
+    readAt: timestamp("read_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    check("notifications_params_check", sql`jsonb_typeof(${table.params}) = 'object'`),
+    check(
+      "notifications_link_check",
+      sql`${table.link} ~ '^/([^/\\\\]|$)' AND ${table.link} ~ '^[!-~]+$'`,
+    ),
+    check(
+      "notifications_read_at_check",
+      sql`${table.readAt} IS NULL OR ${table.readAt} >= ${table.createdAt}`,
+    ),
+    index("notifications_user_id_created_at_idx").on(
+      table.userId,
+      table.createdAt.desc(),
+      table.id.desc(),
+    ),
+    index("notifications_user_id_unread_idx")
+      .on(table.userId)
+      .where(sql`${table.readAt} IS NULL`),
   ],
 );

@@ -218,6 +218,13 @@ export const EXPECTED_MATRIX: Record<Permission, Expected> = {
     PRINCIPAL: "yes",
     FINANCE: "yes",
   },
+  "notification.own": {
+    row: "See one's own notifications and mark them read (not in 03: plan of 0.11, decision 2, Look first)",
+    HEAD: "yes",
+    MANAGER: "yes",
+    PRINCIPAL: "yes",
+    FINANCE: "yes",
+  },
 };
 
 export type Place = "own" | "other";

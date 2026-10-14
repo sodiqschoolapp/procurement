@@ -181,5 +181,25 @@
     "theme": "Theme",
     "username": "Username",
     "role": "Role"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "bell": "{count, plural, =0 {Notifications} one {Notifications, # unread} other {Notifications, # unread}}",
+    "unreadFact": "{count, plural, one {# unread} other {# unread}}",
+    "unread": "Unread",
+    "markAllRead": "Mark all as read",
+    "markedAllRead": "{count, plural, =0 {Nothing was unread} one {# notification marked as read} other {# notifications marked as read}}",
+    "notYours": "This notification is not yours or no longer exists. The list has been reloaded.",
+    "empty": {
+      "title": "No notifications yet",
+      "line": "When a request, money or stock needs you, you are told here."
+    },
+    "previous": "Newer",
+    "next": "Older",
+    "page": "Page {page}",
+    "pages": "Pages of notifications",
+    "types": {
+      "BRANCH_ROLE_VACANT": "Branch {branch} has no active {role, select, HEAD {Procurement Head} MANAGER {Manager} PRINCIPAL {Principal} FINANCE {Finance user} other {user}}."
+    }
   }
 }

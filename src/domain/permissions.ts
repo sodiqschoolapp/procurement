@@ -115,6 +115,13 @@ export const PERMISSIONS = {
     scope: "global",
     roles: { HEAD: "yes", MANAGER: "yes", PRINCIPAL: "yes", FINANCE: "yes" },
   },
+  // One's own notifications: read them and mark them read. Not a row of 03 (plan of 0.11,
+  // decision 2, Look first; 11-screens-and-ux.md, Screens: "Notifications, profile: All"). The
+  // SQL filters by the signed-in user, so no branch is named.
+  "notification.own": {
+    scope: "global",
+    roles: { HEAD: "yes", MANAGER: "yes", PRINCIPAL: "yes", FINANCE: "yes" },
+  },
 } as const satisfies Record<string, PermissionRule>;
 
 export type Permission = keyof typeof PERMISSIONS;
