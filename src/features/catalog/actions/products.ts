@@ -115,6 +115,11 @@ async function nameOf(
   return row?.name ?? null;
 }
 
+async function fileNameOf(tx: Executor, id: string) {
+  const [row] = await tx.select({ name: files.originalName }).from(files).where(eq(files.id, id));
+  return row?.name ?? null;
+}
+
 const catalog = defineCatalogActions<ProductFields>({
   kind: "products",
   name: "Product",
@@ -165,7 +170,8 @@ const catalog = defineCatalogActions<ProductFields>({
     }
     if (sent.photoFileId) await refuseFile(tx, userId, sent.photoFileId);
   },
-  // The names beside the ids, as they are now (decision 11); an absent reference adds nothing.
+  // The names beside the ids, as they are now (decision 11), and the photo's file name; an absent
+  // reference adds nothing.
   async shownRefs(tx, values) {
     const shown: Record<string, string | null> = {};
     if (values.categoryId) shown.category = await nameOf(tx, categories, values.categoryId);
@@ -174,6 +180,9 @@ const catalog = defineCatalogActions<ProductFields>({
       shown.defaultCompany = values.defaultCompanyId
         ? await nameOf(tx, companies, values.defaultCompanyId)
         : null;
+    }
+    if (values.photoFileId !== undefined) {
+      shown.photo = values.photoFileId ? await fileNameOf(tx, values.photoFileId) : null;
     }
     return shown;
   },

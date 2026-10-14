@@ -351,6 +351,13 @@ describe("products: the photo (04 rule 6; src/server/files/owners.ts; decision 1
     expect(await accessOf(db, second.id)).toEqual({ permission: "catalog.pick" });
     expectOk(await runAction(updateProduct, head.id, { id: product.id, photoFileId: "" }));
     expect((await rowOf(product.id)).photoFileId).toBeNull();
+    // The history shows the photo by its file name (decision 11).
+    const rows = await auditRowsOf(product.id);
+    expect(rows[1]).toMatchObject({
+      before: { photoFileId: first.id, photo: "rasm.jpg" },
+      after: { photoFileId: second.id, photo: "rasm.jpg" },
+    });
+    expect(rows[2]).toMatchObject({ after: { photoFileId: null, photo: null } });
   });
 });
 
@@ -406,6 +413,7 @@ describe("products: change history (04 rule 9; decision 11)", () => {
         referencePrice: null,
         description: "Oq",
         photoFileId: null,
+        photo: null,
         isActive: true,
       },
     });

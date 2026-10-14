@@ -6,6 +6,8 @@ import { PRODUCT_TYPES, type ProductType } from "@/domain/products";
 import { authorize } from "@/server/authorize";
 import { categories, companies, products, units } from "@/server/db/schema";
 
+import { productInUse } from "../actions/product-uses";
+
 // Products and services, read (build-plan 1.7; 04-catalogs.md rules 2 and 3). The Head's list,
 // one product and the choices of its form are under "Manage catalogs, users, branches, settings":
 // catalog.manage, Head only (03). No branch filter: a catalog is one list for the whole school.
@@ -44,6 +46,8 @@ export type ProductDetail = ProductRow & {
   defaultCompanyName: string | null;
   defaultCompanyActive: boolean | null;
   description: string | null;
+  /** Type and measure are locked (04 Catalogs table; plan of 1.7, decision 1). */
+  inUse: boolean;
 };
 
 export type Choice = { id: string; name: string; isActive: boolean };
@@ -142,7 +146,7 @@ export async function getProduct(userId: string, id: string): Promise<ProductDet
     .innerJoin(units, eq(units.id, products.unitId))
     .leftJoin(companies, eq(companies.id, products.defaultCompanyId))
     .where(eq(products.id, id));
-  return row ?? null;
+  return row ? { ...row, inUse: await productInUse(db, row.id) } : null;
 }
 
 /**

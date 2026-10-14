@@ -19,6 +19,7 @@ export function Segmented<Value extends string>({
   value,
   onValueChange,
   pending = false,
+  disabled = false,
   className,
 }: {
   /** The name of the whole group, read by screen readers; a text from the message files. */
@@ -31,6 +32,8 @@ export function Segmented<Value extends string>({
    * group is disabled and dimmed, and the chosen item shows the turning icon.
    */
   pending?: boolean;
+  /** The choice cannot change now, as a product's locked type (1.7): disabled and dimmed. */
+  disabled?: boolean;
   className?: string;
 }) {
   if (options.length < 2 || options.length > 4) {
@@ -40,10 +43,14 @@ export function Segmented<Value extends string>({
     <RadioGroup
       aria-label={label}
       value={value}
-      disabled={pending}
+      disabled={pending || disabled}
       aria-busy={pending || undefined}
       onValueChange={(chosen) => onValueChange(chosen as Value)}
-      className={cn("inline-flex rounded-lg bg-accent p-1", pending && "opacity-60", className)}
+      className={cn(
+        "inline-flex rounded-lg bg-accent p-1",
+        (pending || disabled) && "opacity-60",
+        className,
+      )}
     >
       {options.map((option) => (
         <Radio.Root
