@@ -72,5 +72,40 @@
         "create": "Account created"
       }
     }
+  },
+  "requestStatus": {
+    "DRAFT": "Draft",
+    "PENDING_HEAD": "Waiting for Head",
+    "PENDING_PRINCIPAL": "Waiting for Principal",
+    "PENDING_FINANCE": "Waiting for Finance",
+    "RETURNED": "Sent back for editing",
+    "PURCHASING": "Open",
+    "SETTLEMENT": "Waiting for settlement",
+    "CLOSED": "Closed",
+    "REJECTED": "Rejected",
+    "CANCELLED": "Cancelled"
+  },
+  "colourLabel": {
+    "number": {
+      "name": "Number",
+      "matches": "Matches",
+      "less": "Less",
+      "more": "More",
+      "inProgress": "In progress"
+    },
+    "price": {
+      "name": "Price",
+      "matches": "Matches",
+      "cheaper": "Cheaper",
+      "dearer": "Dearer",
+      "notBought": "Not bought yet"
+    },
+    "total": {
+      "name": "Total",
+      "even": "Even",
+      "left": "Left",
+      "over": "Over",
+      "inProgress": "In progress"
+    }
   }
 }

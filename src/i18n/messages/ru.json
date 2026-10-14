@@ -72,5 +72,40 @@
         "create": "Учётная запись создана"
       }
     }
+  },
+  "requestStatus": {
+    "DRAFT": "Черновик",
+    "PENDING_HEAD": "Ждёт руководителя",
+    "PENDING_PRINCIPAL": "Ждёт директора",
+    "PENDING_FINANCE": "Ждёт финансов",
+    "RETURNED": "Возвращена на доработку",
+    "PURCHASING": "Открыта",
+    "SETTLEMENT": "Ждёт расчёта",
+    "CLOSED": "Закрыта",
+    "REJECTED": "Отклонена",
+    "CANCELLED": "Отменена"
+  },
+  "colourLabel": {
+    "number": {
+      "name": "Количество",
+      "matches": "Совпадает",
+      "less": "Меньше",
+      "more": "Больше",
+      "inProgress": "В работе"
+    },
+    "price": {
+      "name": "Цена",
+      "matches": "Совпадает",
+      "cheaper": "Дешевле",
+      "dearer": "Дороже",
+      "notBought": "Ещё не куплено"
+    },
+    "total": {
+      "name": "Итог",
+      "even": "Сходится",
+      "left": "Остаток",
+      "over": "Перерасход",
+      "inProgress": "В работе"
+    }
   }
 }

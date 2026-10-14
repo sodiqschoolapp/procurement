@@ -72,5 +72,40 @@
         "create": "Hisob yaratildi"
       }
     }
+  },
+  "requestStatus": {
+    "DRAFT": "Qoralama",
+    "PENDING_HEAD": "Rahbarni kutmoqda",
+    "PENDING_PRINCIPAL": "Direktorni kutmoqda",
+    "PENDING_FINANCE": "Moliyani kutmoqda",
+    "RETURNED": "Tuzatishga qaytarildi",
+    "PURCHASING": "Ochiq",
+    "SETTLEMENT": "Hisob-kitobni kutmoqda",
+    "CLOSED": "Yopilgan",
+    "REJECTED": "Rad etilgan",
+    "CANCELLED": "Bekor qilingan"
+  },
+  "colourLabel": {
+    "number": {
+      "name": "Soni",
+      "matches": "Mos",
+      "less": "Kam",
+      "more": "Ko'p",
+      "inProgress": "Jarayonda"
+    },
+    "price": {
+      "name": "Narx",
+      "matches": "Mos",
+      "cheaper": "Arzonroq",
+      "dearer": "Qimmatroq",
+      "notBought": "Hali sotib olinmagan"
+    },
+    "total": {
+      "name": "Jami",
+      "even": "Teng",
+      "left": "Qoldiq",
+      "over": "Ortiqcha",
+      "inProgress": "Jarayonda"
+    }
   }
 }
