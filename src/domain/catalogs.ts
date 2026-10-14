@@ -88,3 +88,38 @@ export function changedCatalogFields<Fields extends Record<string, unknown>>(
 ): (keyof Fields & string)[] {
   return fields.filter((field) => sent[field] !== undefined && sent[field] !== current[field]);
 }
+
+/**
+ * How a field is typed and shown: a one-line text, a short text, a yes/no box, the company kind,
+ * or a long text. `optional`: may be left empty (stored as null).
+ */
+export type CatalogFieldType = "text" | "short" | "boolean" | "companyKind" | "long";
+export type CatalogField = { key: string; type: CatalogFieldType; optional?: boolean };
+
+/**
+ * The fields of each catalog, in the order of 04's Catalogs table, and its table: the audit
+ * entity is the table's name (plan of 1.5, decision 10). One description serves the shared actions,
+ * queries, form and list (build-plan 1.5: "one shared catalog component").
+ */
+export const CATALOGS = {
+  measures: {
+    entity: "units",
+    fields: [
+      { key: "name", type: "text" },
+      { key: "shortName", type: "short" },
+      { key: "allowDecimal", type: "boolean" },
+    ],
+  },
+  categories: { entity: "categories", fields: [{ key: "name", type: "text" }] },
+  "extra-costs": { entity: "extra_cost_types", fields: [{ key: "name", type: "text" }] },
+  companies: {
+    entity: "companies",
+    fields: [
+      { key: "name", type: "text" },
+      { key: "kind", type: "companyKind" },
+      { key: "taxId", type: "short", optional: true },
+      { key: "phone", type: "short", optional: true },
+      { key: "note", type: "long", optional: true },
+    ],
+  },
+} as const satisfies Record<CatalogKind, { entity: string; fields: readonly CatalogField[] }>;
