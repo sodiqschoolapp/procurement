@@ -66,6 +66,18 @@ export const DATABASE_IMPORT_SELECTORS = [
   },
 ];
 
+// developer-rules.md rule 3, "Enforced by: The server-action wrapper. No action opens its own
+// transaction." Screens, routes and the actions and queries of src/features run their writes
+// through runAction() of src/server/action.ts (plan of 0.8, decision 11); sign-in keeps its own
+// in src/server/auth (decisions 0.6, item 3). tests/own-transaction.test.ts lints samples.
+export const OWN_TRANSACTION_SELECTORS = [
+  {
+    selector: "CallExpression[callee.property.name='transaction']",
+    message:
+      "opens a transaction of its own. Write through the action wrapper, runAction() of src/server/action.ts (developer-rules.md rule 3).",
+  },
+];
+
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
@@ -73,6 +85,15 @@ const eslintConfig = defineConfig([
   {
     rules: {
       "no-restricted-syntax": ["error", ...FORBIDDEN_TIME_SELECTORS],
+    },
+  },
+  {
+    // Routes and the actions and queries of an area. The screen blocks below set the rule again
+    // for their files and spread these selectors in too.
+    files: ["src/app/**/*.{ts,tsx}", "src/features/**/*.{ts,tsx}"],
+    ignores: ["**/*.test.ts", "**/*.test.tsx"],
+    rules: {
+      "no-restricted-syntax": ["error", ...FORBIDDEN_TIME_SELECTORS, ...OWN_TRANSACTION_SELECTORS],
     },
   },
   {
@@ -111,6 +132,7 @@ const eslintConfig = defineConfig([
         ...FORBIDDEN_TIME_SELECTORS,
         ...LITERAL_TEXT_PROP_SELECTORS,
         ...DATABASE_IMPORT_SELECTORS,
+        ...OWN_TRANSACTION_SELECTORS,
       ],
     },
   },
@@ -120,7 +142,12 @@ const eslintConfig = defineConfig([
     files: ["src/app/**/*.ts", "src/components/**/*.ts", "src/features/**/components/**/*.ts"],
     ignores: ["**/*.test.ts", "src/app/health/route.ts"],
     rules: {
-      "no-restricted-syntax": ["error", ...FORBIDDEN_TIME_SELECTORS, ...DATABASE_IMPORT_SELECTORS],
+      "no-restricted-syntax": [
+        "error",
+        ...FORBIDDEN_TIME_SELECTORS,
+        ...DATABASE_IMPORT_SELECTORS,
+        ...OWN_TRANSACTION_SELECTORS,
+      ],
     },
   },
   {

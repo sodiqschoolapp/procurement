@@ -312,6 +312,32 @@ Choices made during the build:
 - `MANAGER_RIGHTS` is one list in `src/domain/permissions.ts`; the enum of the schema is made from it.
 - `insertUser()` writes the user, the account and the branch rows on one client between BEGIN and COMMIT; a Principal with no branch given gets a new branch.
 
+### 0.8 Server-action foundations (14.10.2026)
+
+The plan's decisions as the plan review of 14.10.2026 confirmed them (corrections 1 to 4 applied), and those of the build. The Look first items come first.
+
+1. **Look first.** Order: an unlocked read of branch and owner (`target`), `authorize()`, the lock, the branch and owner compared under the lock (`conflict`), the version, the status. Rule 3 names permission first and permission needs the branch; "check status and version" is one step. A record missing at `target` or gone at `lock` is `not_found`.
+2. **Look first.** Same moment: `SELECT … FOR UPDATE` at READ COMMITTED; the second writer finds the new version and gets `stale_version` ("The first wins"). Who acted and when: 2.x.
+3. **Look first.** A repeated `client_key` is checked after `authorize()`: a user whose right was switched off between two tries gets `forbidden`, not the first result.
+4. **Look first.** Safe repeat reads the action's own `client_key UNIQUE` column (no results table), after `pg_advisory_xact_lock(hashtextextended(key, 0))`; a collision only makes two calls wait. The first result goes back only to the same user in the same branch, else `not_found`; the repeat runs no step after `find`.
+5. **Look first.** The wrapper raises the version by 1 itself (`versionOf`); a lock that returns a version without `versionOf` is `unexpected`. A versioned action's Zod schema requires `version` (review correction 3).
+6. **Look first.** The client helper tries a lost answer again only when the input carries a client key (three tries, same key); a move without a key is tried once and returns `network`; `run()` ignores calls while one is pending.
+7. History and notifications are steps whose place the wrapper fixes; their tables come with 0.9, 0.11 and 2.x.
+8. Errors are returned as `ActionResult`, not thrown.
+9. An unexpected error is logged by `describeForLog()`: the error's name, and for a database error only its PostgreSQL code and constraint. Changed in the build (both reviewers): Drizzle's `DrizzleQueryError` message holds every bound value, so "name and message" leaked the input.
+10. The sample action and its table exist only in `src/server/action.db.test.ts`.
+11. ESLint refuses `.transaction(` in `src/app`, `src/features` and `src/components`; sign-in keeps its own in `src/server/auth`.
+12. The first-result rule is tested over four cases (same user other branch, colleague, Head, Manager of another branch), not the full role grid.
+
+Choices made during the build:
+
+- Message keys are camelCase (`errors.staleVersion`, `errors.field.tooLong`) like the existing keys of the message files; the codes stay snake_case (`stale_version`) and `ERROR_MESSAGE_KEYS` maps them. The plan wrote `errors.<code>`.
+- `serverAction(definition, currentUser = getCurrentUser)`: tests pass the user, as review correction 4 asked; no mock of `next/headers`.
+- An action that has neither `repeat` nor `lock` is refused as a definition error (`unexpected`), so no edit skips the check under the lock (permission review).
+- `export const x = serverAction(def)` in a `"use server"` file passes `next build` (a throwaway route, removed). A `bigint` in `ActionResult.data` survives React's Flight serialisation exactly (`tests/server-action-bigint.test.ts`).
+- A deactivated user is not probed through `target`: `serverAction()` reads the user with `getCurrentUser()`, which refuses an inactive user (decisions 0.6, item 15), so such a call is `signed_out` before any step (answer to the permission review).
+- The `ActionError` class lives in `src/server/action.ts`, not `action-result.ts`: only server steps throw it.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.
