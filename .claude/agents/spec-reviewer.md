@@ -37,7 +37,12 @@ Then check:
 - every new text exists in `uz`, `ru` and `en`;
 - names in tests and seeds are invented; no secret appears anywhere;
 - no file under `docs/spec/` is changed; a new dependency is named under "Decided without the owner" as **Look first**;
-- a changed screen or PDF follows `docs/design-system.md`: no colour outside its tokens, no button size or kind it does not list, no icon from another set, and none of its list "What we never do" (D23).
+- a changed screen or PDF follows `docs/design-system.md`: no colour outside its tokens, no button size or kind it does not list, no icon from another set, and none of its list "What we never do" (D23);
+- debug output left in code or tests (`console.log`, a query that prints its rows): a test prints nothing but its result (D37);
+- a test that makes its fixture under a guard (`if (result.ok)`, `if (row)`, `if (status === 201)`) instead of asserting that the step worked: a conditional fixture lets a case pass without running (D38);
+- a branch of a database guard (a CHECK, a unique index, a foreign key, a trigger; on insert and on update, each refused case) without a test that reaches the database with nothing in front of it that refuses first: not `authorize()`, not the action wrapper's status or version check, not a Zod schema, not another constraint (D39);
+- a test that a guard lets a case through (`authorize()`, a branch filter in the SQL, a move of the state machine, a constraint), run without the data the guard would refuse if it were wrong: another branch's record beside it, a status one step off, a quantity one past the stock (D40);
+- a unique mark or claim on a record (a unique code or username, a link that holds another record) that stays held once the record is deactivated, while no screen or server action can reach it any more and the spec does not say that it stays held: every action that deactivates the record frees the mark in the same transaction with its audit row, or an action can still free it (D41).
 
 ## What you report
 

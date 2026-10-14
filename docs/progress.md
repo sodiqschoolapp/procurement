@@ -87,5 +87,6 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - A note for one later task starts with `For <id>:`; `/next-task` reads the two newest entries and every line that names its task.
 - For 0.3: the owner's answers are in `docs/decisions.md`, "Decided ahead: task 0.3"; the owner merges that pull request by hand.
 - For 0.16: the task after 0.3 is 0.16, the test copy, moved forward from 0.15 (D22); "Decided ahead: task 0.16".
+- 14.10.2026: the loop brought up to sodiq-platform of 14 October (D27 to D41): only a `[review]` by `abbosc` counts and a fork's pull request gets nothing; after every push the builder checks that CI started and calls the owner instead of pushing an empty commit; a failure outside the code is re-run once, and a head green after a re-run is reviewed again.
 
 The next task is 0.3.
