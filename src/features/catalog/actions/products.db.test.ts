@@ -328,6 +328,23 @@ describe("products: the photo (04 rule 6; src/server/files/owners.ts; decision 1
     }
   });
 
+  it("on update too: another user's upload, an unknown file and one another product holds are not allowed (permission review, Should fix 1)", async () => {
+    const head = await insertUser("HEAD");
+    const other = await insertUser("HEAD");
+    const held = await insertFileRow(head.id);
+    await create(head.id, { photoFileId: held.id });
+    const product = await create(head.id);
+    for (const fileId of [(await insertFileRow(other.id)).id, newClientKey(), held.id]) {
+      expect(
+        await runAction(updateProduct, head.id, { id: product.id, photoFileId: fileId }),
+      ).toMatchObject(refused({ photoFileId: "errors.field.notAllowed" }));
+    }
+    expect((await rowOf(product.id)).photoFileId).toBeNull();
+    // The Head's own unheld upload passes beside them (D40).
+    const own = await insertFileRow(head.id);
+    expectOk(await runAction(updateProduct, head.id, { id: product.id, photoFileId: own.id }));
+  });
+
   it("a PDF is not a photo", async () => {
     const head = await insertUser("HEAD");
     const pdf = await insertFileRow(head.id, "application/pdf");
