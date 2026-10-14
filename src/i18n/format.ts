@@ -1,0 +1,86 @@
+import {
+  businessDate,
+  businessDayStart,
+  businessTime,
+  type BusinessDate,
+} from "@/domain/business-date";
+
+import type { Locale } from "./locale";
+
+// The shared formats of every screen, PDF and export (11-screens-and-ux.md rule 10):
+// money as `1 250 000 so'm`, dates as `08.10.2026`, time in 24 hours in Tashkent, quantities
+// without trailing zeros. Pure functions: they show what they are given and never round
+// (developer-rules.md rule 6; decisions 0.5 item 5). No JavaScript float touches a value here:
+// money is a bigint and a quantity is the text a numeric(14,3) column returns.
+
+/** A no-break space: an amount is never split over two lines (decisions 0.5 item 3). */
+export const NBSP = " ";
+
+/** Groups a run of digits by three from the right: `1250000` → `1 250 000`. */
+function groupDigits(digits: string): string {
+  return digits.replace(/\B(?=(\d{3})+(?!\d))/g, NBSP);
+}
+
+/** Whole so'm (a bigint) with the unit word of the message files: `1 250 000 so'm`. */
+export function formatMoney(amount: bigint, unit: string): string {
+  if (typeof amount !== "bigint") {
+    throw new Error("Refused: money is whole so'm as a bigint, never a JavaScript number.");
+  }
+  const sign = amount < 0n ? "-" : "";
+  const digits = (amount < 0n ? -amount : amount).toString();
+  return `${sign}${groupDigits(digits)}${NBSP}${unit}`;
+}
+
+/** A moment (as its Tashkent business date) or a `YYYY-MM-DD` business date: `08.10.2026`. */
+export function formatDate(value: Date | BusinessDate): string {
+  let date: BusinessDate;
+  if (value instanceof Date) {
+    date = businessDate(value);
+  } else {
+    // Refuses a text that is not YYYY-MM-DD or a day that does not exist.
+    businessDayStart(value);
+    date = value;
+  }
+  const [year, month, day] = date.split("-");
+  return `${day}.${month}.${year}`;
+}
+
+/** The wall-clock time in Tashkent, 24 hours: `14:05`. */
+export function formatTime(moment: Date): string {
+  return businessTime(moment);
+}
+
+const QUANTITY_PATTERN = /^(-?)(\d+)(?:\.(\d+))?$/;
+
+/** A quantity without trailing zeros: `12.500` → `12,5` in uz and ru, `12.5` in en; `1 250`. */
+export function formatQuantity(value: string, locale: Locale): string {
+  const match = typeof value === "string" ? QUANTITY_PATTERN.exec(value) : null;
+  if (!match) {
+    throw new Error(`Refused: "${String(value)}" is not a quantity (digits, an optional point).`);
+  }
+  const [, minus = "", whole = "", fraction = ""] = match;
+  const wholeDigits = whole.replace(/^0+(?=\d)/, "");
+  const fractionDigits = fraction.replace(/0+$/, "");
+  const isZero = /^0$/.test(wholeDigits) && fractionDigits === "";
+  const sign = isZero ? "" : minus;
+  const separator = locale === "en" ? "." : ",";
+  const decimals = fractionDigits === "" ? "" : `${separator}${fractionDigits}`;
+  return `${sign}${groupDigits(wholeDigits)}${decimals}`;
+}
+
+export type Formatters = {
+  money: (amount: bigint) => string;
+  date: (value: Date | BusinessDate) => string;
+  time: (moment: Date) => string;
+  quantity: (value: string) => string;
+};
+
+/** The four formatters bound to a language and the translated unit word of money. */
+export function bindFormatters(locale: Locale, moneyUnit: string): Formatters {
+  return {
+    money: (amount) => formatMoney(amount, moneyUnit),
+    date: formatDate,
+    time: formatTime,
+    quantity: (value) => formatQuantity(value, locale),
+  };
+}

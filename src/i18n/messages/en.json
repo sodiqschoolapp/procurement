@@ -3,5 +3,8 @@
     "title": "School Procurement & Warehouse Platform",
     "notice": "The project is set up. Nothing can be used here yet.",
     "version": "Version"
+  },
+  "format": {
+    "currency": "so'm"
   }
 }
