@@ -34,13 +34,14 @@ export const FORBIDDEN_TIME_SELECTORS = [
 ];
 
 // 11-screens-and-ux.md rule 14: "No text is written directly in a screen." A string in one of
-// these props is a label a person reads, so it must come from the message files too.
+// these props is a label a person reads, so it must come from the message files too. An empty
+// string is no text: `alt=""` marks a decorative image (rule 13) and passes.
 const TEXT_PROPS = "/^(aria-label|title|placeholder|alt|label)$/";
 const WRITE_IT_IN_THE_MESSAGES =
   "is text written in a screen. Put it in uz.json, ru.json and en.json and read it with t() (11-screens-and-ux.md rule 14).";
 
 export const LITERAL_TEXT_PROP_SELECTORS = [
-  `JSXAttribute[name.name=${TEXT_PROPS}] > Literal`,
+  `JSXAttribute[name.name=${TEXT_PROPS}] > Literal[value=/./]`,
   `JSXAttribute[name.name=${TEXT_PROPS}] > JSXExpressionContainer > Literal[value=/./]`,
   `JSXAttribute[name.name=${TEXT_PROPS}] > JSXExpressionContainer > TemplateLiteral`,
 ].map((selector) => ({ selector, message: `A text prop ${WRITE_IT_IN_THE_MESSAGES}` }));

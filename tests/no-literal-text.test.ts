@@ -61,6 +61,13 @@ describe("no text written in a screen (11-screens-and-ux.md rule 14)", () => {
     }
   });
 
+  it('lets alt="" mark a decorative image (11-screens-and-ux.md rule 13)', async () => {
+    const jsx = '<img alt="" src="/brand/sodiq-mark.svg" />';
+    for (const place of SCREENS) {
+      expect(await textReports(component(jsx), place), place).toEqual([]);
+    }
+  });
+
   it("does not check a server file", async () => {
     const code = 'export const label = "Saqlash";\n';
     expect(await textReports(code, "src/server/sample.ts")).toEqual([]);
