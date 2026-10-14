@@ -394,6 +394,39 @@ Choices made during the build:
 - The guard takes its history entry off when the form becomes clean, so a later change guards again, and a Back between fragments of the page does not ask (spec review).
 - The dialog backdrop is navy at 50% (`--sidebar`) in both themes.
 
+### 0.10b App shell, menu per role and profile (14.10.2026)
+
+The plan's decisions as the plan review of 14.10.2026 confirmed them (corrections 1 to 6 applied), and those of the build. The Look first items come first.
+
+1. **Look first.** New permission `profile.edit` (global, all four roles `yes`) for one's own language, branch view and list of branches; `03` has no row for it. Proposed `/spec-change` of `03-roles-and-permissions.md`, Permission matrix, new last row: "Change one's own language and branch view | Yes | Yes | Yes | Yes".
+2. **Look first.** The language change writes the audit row `user.change_language` (entity `users`, before/after `locale`) in the same transaction; choosing the same language again writes none.
+3. **Look first.** `chooseBranchAction` writes the `branch` cookie only and calls `authorize()` outside the action wrapper; the cookie is checked again against the person's branches at every read. Proposed `/spec-change` of developer-rules rule 3: "…Choosing the branch view writes a cookie only and calls authorize() without the wrapper."
+4. **Look first.** The wrapper's global form: an action of a global permission returns `GLOBAL_TARGET` from `target` and `lock`, and `authorize()` is asked without a target. A global target with a branch permission, a branch target with a global permission, and `GLOBAL_TARGET` with `repeat` are definition errors that save nothing (correction 4); the first global create (1.x) decides how its repeat is matched.
+5. **Look first.** `tests/e2e/start-page.spec.ts` is replaced by `tests/e2e/login-language.spec.ts`: the start page went by the Build line, and its checks (three languages by default and from the cookie, the bad cookie, the title, no side scroll) now run on `/login` (correction 6).
+6. **Look first.** The sample action of `src/server/audit.db.test.ts` used `catalog.manage`, a global permission, with a branch target; decision 4 refuses that pairing, so the sample now uses `GLOBAL_TARGET`. What it checks about the audit row is unchanged.
+7. The branch choice is the cookie `branch` (httpOnly, SameSite Lax, Secure in production, one year), never a column. Its value names its user (`<user id>:<branch id or all>`), so the next person on the same device starts on "All my branches"; sign-out also clears it (corrections 2 and 3). Inactive branches stay in the switcher, marked "(inactive)" (0.7 item 9; correction 1).
+8. "Several branches" means the person sees more than one: a Head when two or more exist. One branch shows as text, none as nothing.
+9. Admin opens `/catalog` and is active on `/catalog/*`, `/users`, `/branches`, `/settings`; Warehouse and Stock open `/warehouse/stock`, active on `/warehouse/*`. Pages not built yet answer Next's "not found".
+10. Search (6.10) and the bell (0.11) keep empty places in the top bar; no dead control.
+11. Home's title is "My tasks", the menu word "Home"; the empty state names what will appear (from `10`, Home page per role) and has no button.
+12. The person block and the phone avatar link to `/profile`, which carries the sign-out button for phones.
+13. The rail is `localStorage` `sidebar` = `rail`, set as `<html data-sidebar="rail">` by the theme's inline script; CSS draws it through the `rail:` variant.
+14. The commit caption moves to `/login`; CI's container step reads it there; `/health` keeps the full commit; `docs/deploy.md` follows.
+15. The browser tests get their own database `procurement_e2e` on the same server, made, migrated and filled by `tests/e2e/global-setup.ts` with invented branches `EA`, `EB`, `EC` and one person per role (plus one Manager per project for the language test); the app runs on port 3100 against it. The dev database keeps no Head from the tests.
+16. "More" is a Base UI `Menu` above the tab bar; its items are links.
+17. Role words are the keys `roles.*`; every new text is in uz, ru and en; `start.*` and `session.signedInAs` are gone, the page title is `app.title`.
+18. Language and theme are segmented controls that save at once; no unsaved-changes guard.
+
+Choices made during the build:
+
+- The language action's definition lives in `src/features/catalog/actions/own-language.ts`: `tests/forbidden-time.test.ts` refuses a database import under `src/app/`.
+- `CurrentUser` carries `username`, so `/profile` reads nothing from the database itself.
+- The branch choice's input is `{ branch: "all" | <uuid> }`, so the shared `useAction()` hook fits.
+- The segmented control gained `pending` (disabled, dimmed, the turning icon on the chosen item); at phone width its words may take two lines.
+- The sidebar and the theme choice read `<html>` through `useSyncExternalStore` (`subscribeToRoot()` in `src/components/theme.ts`), not an effect that sets state (ESLint).
+- The e2e setup runs `scripts/db-migrate.mjs` in its own process: Playwright loads the setup as CommonJS, which cannot import a module that reads `import.meta`.
+- A branch is shown as `{code} — {name}` through the key `branch.option` (no text in a screen).
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.
