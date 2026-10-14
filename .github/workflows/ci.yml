@@ -144,6 +144,71 @@ jobs:
       - name: Playwright
         run: npm run test:e2e
 
+      # Build-plan 0.16: the image App Platform runs. It is built here as App Platform builds it,
+      # migrates a fresh database before the app starts, and answers on /health with this commit.
+      - name: Build the image
+        run: docker build --tag procurement-app:ci .
+
+      - name: Start the image against a fresh database and call the health route
+        env:
+          IMAGE_DATABASE_URL: postgres://procurement@127.0.0.1:5433/procurement_image
+          COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          docker compose exec -T postgres createdb --username=procurement procurement_image
+          docker run --detach --name app --network host \
+            --env DATABASE_URL="$IMAGE_DATABASE_URL" --env GIT_COMMIT="$COMMIT" --env PORT=8080 \
+            procurement-app:ci
+          code=000
+          for attempt in $(seq 1 60); do
+            code=$(curl --silent --output health.json --write-out '%{http_code}' http://127.0.0.1:8080/health || true)
+            [ "$code" = 200 ] && break
+            sleep 1
+          done
+          docker logs app
+          if [ "$code" != 200 ]; then
+            echo "::error::/health did not answer 200 within 60 seconds (last answer: $code)."
+            exit 1
+          fi
+          cat health.json; echo
+          node -e '
+            const body = require("./health.json");
+            const fail = (m) => { console.log(`::error::${m}`); process.exit(1); };
+            if (body.status !== "ok") fail(`/health status is ${body.status}`);
+            if (body.commit !== process.env.COMMIT) fail(`/health names commit ${body.commit}, not ${process.env.COMMIT}`);
+            if (body.timezone !== "UTC") fail(`the database session speaks ${body.timezone}, not UTC`);
+          '
+          # The migrations ran in the container before the app started: one line per journal entry.
+          expected=$(node -e 'const j = require("./drizzle/meta/_journal.json"); for (const e of j.entries) console.log(`applied ${e.tag}`)')
+          if [ "$(docker logs app 2>&1 | grep '^applied ')" != "$expected" ]; then
+            echo "::error::The container did not apply every migration of the journal before it started."
+            exit 1
+          fi
+          if ! curl --silent --fail http://127.0.0.1:8080/ | grep --quiet "${COMMIT:0:7}"; then
+            echo "::error::The start page does not show the commit ${COMMIT:0:7}."
+            exit 1
+          fi
+
+      # A failed migration ends the container, so a broken version never answers.
+      - name: The image does not start when its migration fails
+        run: |
+          docker run --detach --name app-broken --network host \
+            --env DATABASE_URL=postgres://procurement@127.0.0.1:5433/procurement_missing --env PORT=8081 \
+            procurement-app:ci
+          status=$(timeout 120 docker wait app-broken || true)
+          docker logs app-broken
+          if [ -z "$status" ] || [ "$status" = 0 ]; then
+            echo "::error::The container did not end with an error within 120 seconds although its migration failed (status: '$status')."
+            exit 1
+          fi
+          if ! docker logs app-broken 2>&1 | grep --quiet '^db:migrate failed: '; then
+            echo "::error::The container did not stop at the migration."
+            exit 1
+          fi
+          if curl --silent --fail http://127.0.0.1:8081/health; then
+            echo "::error::/health answered although the migration failed."
+            exit 1
+          fi
+
       - name: Keep the traces of a failed run
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

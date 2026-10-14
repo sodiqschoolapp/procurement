@@ -109,4 +109,26 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - For 0.16: the image build goes into `ci.yml` too; a new job is not required by `main` until the owner adds it.
 - Trap: a push to a pull request cancels the older run of that pull request; wait for a run to finish before pushing when its result is needed.
 
-The next task is 0.16.
+## 0.16 Test copy: the app online at the test address (14.10.2026, pull request #13)
+
+**Built**
+- `Dockerfile` (node 24 slim by digest, production `node_modules`, user `node`, port 8080), `.dockerignore`, `scripts/start.sh`: migrate, then `next start`; a failed migration ends the container.
+- `GET /health` (`src/app/health/route.ts`, `src/server/health.ts`): 200 with status, commit and the session time zone, 503 after 3 s or on any failure. `src/server/commit.ts` reads `GIT_COMMIT`; the start page shows "Versiya <sha>".
+- `connectionOptions()` in `src/server/db/connection-options.mjs`, used by the pool and `db:migrate`: with `DATABASE_CA_CERT` the certificate is verified and the address's `sslmode` removed.
+- `.do/app.yaml` (Frankfurt, 1 GiB fixed, dev database PG 17, deploy on push to `main`, `ombor-test.sodiqschool.uz`); `docs/deploy.md`; CI job `e2e` builds the image, runs it on a fresh database and calls `/health` and `/`.
+
+**Left out, and the task that brings it**
+- The test copy's file storage and seed users: task 0.15. Production and open question 10: task 9.4.
+
+**Open for the owner**
+- The five steps of `docs/deploy.md` (account and card, DigitalOcean's GitHub app, the app from `.do/app.yaml` at $17, the CNAME, the check). The DigitalOcean facts in `.do/app.yaml` are unconfirmed (the session could not read the docs).
+- A `/spec-change` for "from task 0.15" in `18-hosting-and-costs.md` (two places) and for the `/health` exception to rule 4 (with `CLAUDE.md` rule 4).
+
+**What the next sessions must know**
+- `next build` runs with no `DATABASE_URL`: a route that needs the database imports `@/server/db/client` inside its handler, or the page is dynamic and never imports it at build time.
+- In a cloud session `docker build` fails on npm's TLS behind the proxy; build with a scratch copy of the Dockerfile that adds `/root/.ccr/ca-bundle.crt` as `NODE_EXTRA_CA_CERTS` and `npm_config_cafile` (`--build-context ca=/root/.ccr`). Never commit that copy.
+- For 0.7: `/health` and the start page are the open entry points. The permission-matrix test lists the open routes explicitly and fails when an unlisted open route appears (permission review of 0.16).
+- For 0.15: the image copies only what `Dockerfile` names into the run stage; a new script the container runs must be added there. `public/templates/**/*.xlsx` is let through `.dockerignore`.
+- `/health` gives up after 3 s, but its query keeps running; a statement timeout on the pool is not set (permission review, outside its scope).
+
+The next task is 0.4.

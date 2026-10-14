@@ -60,6 +60,10 @@ PostgreSQL is published on port 5433 of this machine, not on the usual 5432, whi
 
 `.env.example` lists the names of the variables, never a value; each task adds the names its code reads. `.env` itself is ignored by git.
 
+## The test copy
+
+Every merge into `main` reaches the test copy at `https://ombor-test.sodiqschool.uz` by itself: DigitalOcean App Platform builds the `Dockerfile`, the container migrates its database and then starts the app, and `/health` names the commit that runs. `.do/app.yaml` describes it; `docs/deploy.md` has the owner's one-time steps.
+
 ## In a Claude Code cloud session
 
 Nothing is done by hand there. A hook of `.claude/settings.json` runs `scripts/cloud-session-start.sh`, which does the steps of "Run it" on the cloud machine: the local `.env`, `docker compose up -d`, `npm ci` and `npm run db:migrate`. On a laptop the hook ends at once. `docs/cloud-loop.md` describes the one-time set-up of the cloud environment.
@@ -113,7 +117,7 @@ npx playwright install chromium
 `.github/workflows/ci.yml` runs on every pull request and on every push to `main`, with two jobs. Their names, `checks` and `e2e`, are what the reviewer reads and what `main` requires; they are never renamed.
 
 - **`checks`**: `npm ci`, `npm audit --omit=dev --audit-level=high`, PostgreSQL from `docker-compose.yml`, lint, typecheck, `npm run db:migrate` on the empty database (every migration applied) and once more (nothing to apply), `npm test`, `npx drizzle-kit generate` writing nothing (the schema files and the migrations agree), and a check that no `.sql` file under `drizzle/` that was already on `main` was modified, deleted or renamed.
-- **`e2e`**: PostgreSQL, `npm run db:migrate`, the Playwright browser, `npm run test:e2e`. A failed run keeps its traces as the artifact `playwright-traces` for 14 days.
+- **`e2e`**: PostgreSQL, `npm run db:migrate`, the Playwright browser, `npm run test:e2e`. A failed run keeps its traces as the artifact `playwright-traces` for 14 days. Then the image of `Dockerfile` is built and started against a fresh database: it must apply every migration, answer `200` on `/health` with this commit and the time zone `UTC`, and show the commit on the start page; started against a database that does not exist, it must stop without answering.
 
 The same on this machine, with `docker compose up -d` running: `npm run lint`, `npm run typecheck`, `npm test`, `npx drizzle-kit generate` (then `git status` shows nothing new) and `npm run test:e2e`.
 
@@ -139,6 +143,9 @@ docs/               spec, build plan, progress, decisions
 | `docs/build-plan.md` | Every task in order, with a checkbox each.                 |
 | `docs/progress.md`   | What each finished task left for the next.                 |
 | `docs/decisions.md`  | Standing decisions, and each task's technical choices.     |
+| `docs/deploy.md`     | The test copy online: the owner's steps and the variables. |
+| `.do/app.yaml`       | The DigitalOcean App Platform spec of the test copy.       |
+| `Dockerfile`         | The app's image; it migrates the database, then starts.    |
 | `CLAUDE.md`          | The rules Claude Code reads at the start of every session. |
 
 ## Rules for anyone who touches the code
