@@ -33,7 +33,7 @@ const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 // file gives a different username, phone and branch code.
 let made = 0;
 
-/** An invented user of one role. Phones are +998 90 000 xx xx: a range given to nobody here. */
+/** An invented user of one role. Phones are +998 90 000 xx xx: made up, not taken from anyone. */
 export function inventedUser(
   role: InventedRole,
   overrides: Partial<InventedUser> = {},
