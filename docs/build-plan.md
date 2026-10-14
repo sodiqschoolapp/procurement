@@ -58,7 +58,7 @@ Nothing a user can use yet. These tasks build the places where the rules live: t
   - **Build:** One clock provider used everywhere (`now()`), with business-date helpers for `Asia/Tashkent`; the browser-side `client_key` generator; test helpers to set the clock, to make invented users and branches, and to run two actions at the same moment; a check that fails when `new Date()` or `Date.now()` is called outside the clock module.
   - **Done when:** Unit tests: 20:30 UTC on 31 December is 1 January as a Tashkent business date; a test sets the clock and reads it back; the forbidden-call check fails on a sample file and passes on the codebase.
 
-- [ ] **0.5 Languages and formats**
+- [x] **0.5 Languages and formats**
   - **Read:** `02-assumptions.md` (A2); `13-technology.md` (Languages); `11-screens-and-ux.md` (Rules for a smooth feel: 10, 14); `15-quality-and-acceptance.md` (Done-check for every phase).
   - **Build:** next-intl with `uz`, `ru` and `en` message files; the user's `locale` decides the language and Uzbek is the default; no language in the address; formatters for money (`1 250 000 so'm`), dates (`08.10.2026`), 24-hour Tashkent time and quantities without trailing zeros; a script that fails when a key is missing in any of the three files, run in CI; a lint rule against literal text in screens.
   - **Done when:** Unit tests of the four formatters; removing one key from `ru` turns CI red; the start page shows in all three languages.
