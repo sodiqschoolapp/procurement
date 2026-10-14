@@ -1,0 +1,106 @@
+import type { Permission } from "@/domain/permissions";
+
+// Every way in, listed (developer-rules.md rule 4: "Every server action and query calls the same
+// authorize() function"; plan of 0.7). tests/permission-registry.test.ts turns red when a server
+// action, a query or a page that skips the sign-in check is not listed here. A later task adds
+// its actions and queries with the permission they ask authorize() for, and a matrix test with
+// describePermissionMatrix() (tests/helpers/permission-matrix.ts).
+
+/** `OPEN`: runs before a user is known, or ends the caller's own session only. */
+type Entry = Permission | "OPEN";
+
+/** Exports of `"use server"` files, as `<file>#<export>`. */
+export const SERVER_ACTIONS: Record<string, Entry> = {
+  // Decisions 0.6, item 3 (Look first): no authorize(), outside the action wrapper.
+  "src/app/login/actions.ts#signInAction": "OPEN",
+  "src/app/login/actions.ts#signOutAction": "OPEN",
+  "src/app/login/actions.ts#chooseLanguageAction": "OPEN",
+};
+
+/** Exports of `src/features/<area>/queries/`, as `<file>#<export>`. */
+export const QUERIES: Record<string, Permission> = {};
+
+/**
+ * Pages, layouts and routes open to a signed-out visitor (progress 0.16 and 0.6). Every other
+ * `page`, `layout` and `route` file, and every special route file (`opengraph-image`, `sitemap`
+ * and the like), calls requireUser() or authorize() itself.
+ */
+export const OPEN_ROUTES: readonly string[] = [
+  // The public placeholder until 0.10 (decisions 0.6, item 14).
+  "src/app/page.tsx",
+  "src/app/login/page.tsx",
+  // The health check of the host (0.16).
+  "src/app/health/route.ts",
+  // The root layout reads the session for the language only and shows no data (0.5, 0.6).
+  "src/app/layout.tsx",
+];
+
+export type SourceFile = { path: string; text: string };
+
+/** The names a module exports: functions, constants and `export { a, b }`. */
+export function exportedNames(text: string): string[] {
+  const names = new Set<string>();
+  for (const match of text.matchAll(
+    /^export\s+(?:default\s+)?(?:async\s+)?(?:function\s*\*?|const|let)\s+([A-Za-z_$][\w$]*)/gm,
+  )) {
+    names.add(match[1]!);
+  }
+  for (const match of text.matchAll(/^export\s+default\s+([A-Za-z_$][\w$]*)\s*;?\s*$/gm)) {
+    if (!["async", "function", "class"].includes(match[1]!)) names.add("default");
+  }
+  for (const match of text.matchAll(/^export\s*\{([^}]*)\}/gm)) {
+    for (const part of match[1]!.split(",")) {
+      const name = part
+        .trim()
+        .split(/\s+as\s+/)
+        .pop();
+      if (name) names.add(name);
+    }
+  }
+  return [...names];
+}
+
+/** Whether a file starts with the `"use server"` directive (comments before it allowed). */
+export function isServerActionFile(text: string): boolean {
+  const code = text.replace(/^(\s*(\/\/[^\n]*\n|\/\*[\s\S]*?\*\/))*\s*/, "");
+  return /^["']use server["']/.test(code);
+}
+
+/** A `"use server"` inside a function: an inline action, which has no place in the registry. */
+export function hasInlineServerAction(text: string): boolean {
+  return /\{\s*(\/\/[^\n]*\n\s*)*["']use server["']/.test(text);
+}
+
+// Route files of the App Router that answer a request: pages, layouts, routes, and the special
+// files that render metadata (Next.js 16, file conventions).
+const ROUTE_FILE =
+  /^src\/app\/(.*\/)?(page|layout|route|template|default|opengraph-image|twitter-image|icon|apple-icon|sitemap|robots|manifest)\.tsx?$/;
+
+/** What is not listed: unlisted server actions and queries, and pages that are open by mistake. */
+export function unlisted(files: readonly SourceFile[]): string[] {
+  const missing: string[] = [];
+  for (const { path, text } of files) {
+    if (/\.test\.tsx?$/.test(path)) continue;
+    if (isServerActionFile(text)) {
+      for (const name of exportedNames(text)) {
+        if (!(`${path}#${name}` in SERVER_ACTIONS)) missing.push(`server action ${path}#${name}`);
+      }
+    }
+    if (/^src\/features\/[^/]+\/queries\//.test(path)) {
+      for (const name of exportedNames(text)) {
+        if (!(`${path}#${name}` in QUERIES)) missing.push(`query ${path}#${name}`);
+      }
+    }
+    if (hasInlineServerAction(text)) {
+      // Actions live in their own "use server" files, where this registry sees them.
+      missing.push(`inline server action ${path}`);
+    }
+    if (ROUTE_FILE.test(path)) {
+      // Comments do not count as a check.
+      const code = text.replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/g, "");
+      const checks = /\b(requireUser|authorize)\(/.test(code);
+      if (!checks && !OPEN_ROUTES.includes(path)) missing.push(`open route ${path}`);
+    }
+  }
+  return missing;
+}

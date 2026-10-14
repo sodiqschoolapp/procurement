@@ -283,6 +283,35 @@ Choices made during the build:
 - `session.ts` and `sign-in.ts` load the database client inside their functions, as `/health` does: the layout reads the session and `next build` runs with no `DATABASE_URL` (the CI image step failed on it); `no-database-at-import.test.ts` guards it.
 - Constraint style: foreign keys keep Drizzle's names (`sessions_user_id_users_id_fk`); the library's tables carry `updated_at`.
 
+### 0.7 Permissions and the branch wall (14.10.2026)
+
+The plan's decisions, as the plan review of 14.10.2026 confirmed them (corrections 1 to 4 applied), and those of the build. The Look first items come first.
+
+1. **Look first.** "At most one active PRINCIPAL per branch": "active" is the user's `is_active`. `user_branches` carries the copies `user_role` and `user_is_active`, held equal to the user's by the composite foreign key `user_branches_user_fk` (user_id, user_role, user_is_active) → `users(id, role, is_active)` `ON UPDATE CASCADE`, so the partial unique index `user_branches_active_principal_branch_id_key` can read them. **Amendment of constraint style 9:** an `ON UPDATE CASCADE` is allowed only on a foreign key whose columns are copies kept for a constraint; it cascades no delete, and every other relation still cascades nothing. A partial unique index cannot be deferred, so **replacing a Principal (1.3) deactivates the old one before it adds or activates the new one, inside its one transaction.** Proposed `/spec-change` of `14-data-model.md`, user_branches: "user_id, branch_id, user_role, user_is_active KEY (user_id, branch_id) -- the role and active flag copied from users by a foreign key, so the partial unique index can read them".
+2. **Look first.** "Exactly one row for PRINCIPAL" is held by the database: at most one by `user_branches_principal_user_id_key`, at least one by the deferred constraint trigger `user_branches_principal_has_one_branch` (on `users` insert and role update, on every write of `user_branches`), which raises `check_violation` naming itself as the constraint. A Manager or Finance user with no branch is allowed; "one or more" is the user form's (1.3).
+3. **Look first.** The matrix as data (`src/domain/permissions.ts`): one permission per row of `03`, split where Manager rights differ: `stock.issue`, `stock.return_reverse`, `stock.transfer`; `stock.ask_write_off` and `stock.start_count` (both `WRITE_OFF_COUNT`); `purchase.record`, `purchase.cancel`, `request.close_exact` on own requests; `stock.set_minimums`; `catalog.suggest` as a branch permission. Rights are checked for Managers only. Reversing documents other than issues waits for open question 19 (5.7).
+4. **Look first** (decided in the build, permission review). "Create, edit, submit, cancel a request" is split in two: `request.create` in own branches, and `request.edit` (edit, submit, cancel, take back) on own requests, the Head in any branch; both under `CREATE_REQUESTS`. Reason: `03` rule 7 (one owner) and `06` Allowed moves ("Submit: Owner or Head", "Take back: Owner", "Cancel: Owner or Head"); otherwise any Manager of the branch could submit a colleague's request.
+5. **Look first.** Export, PDF and print are branch permissions like "See requests": another branch's export answers `not_found`.
+6. **Look first.** The order in `decide()`: another branch `not_found` first, then role, Manager right and owner, each `forbidden`. The Head sees every branch.
+7. **Look first.** `authorize()` reads the actor from the database on every call (role, `is_active`, branches, rights switched off), in one query, inside the transaction it is given.
+8. **Look first.** `branchFilter()` is a subquery on `user_branches` inside the list's own SQL.
+9. **Look first.** Inactive branches are neither filtered out nor refused; 1.2 and 5.13 decide what they still allow.
+10. **Look first.** `signInAction`, `signOutAction`, `chooseLanguageAction` are listed as open (decisions 0.6, Look first item 3); the sign-in tests prove sign-out ends only the caller's session.
+11. `branches` comes with all its constraints now; `address` is NOT NULL; the code and the name stay held on an inactive branch (D41: the name is freed by renaming in 1.2).
+12. `manager_rights` has only the data model's columns; `enabled` is switched in place, the history being the audit row.
+13. The refusal is `AuthorizationError` with `kind`; message keys come with 0.8.
+14. The fence is an ESLint rule, not `server-only`.
+
+Choices made during the build:
+
+- `Target.branchId` and `Target.ownerId` are read from the record in the database, never from the browser's input; only a create action passes the branch the user chose (permission review; written on the type).
+- The matrix test generator (`tests/helpers/permission-matrix.ts`) takes its expected answers from the hand-written `tests/permission-matrix-expected.ts`, never from `PERMISSIONS`; for an own-requests permission it adds the case of a colleague's request (Manager `forbidden`, Head `allow`), and `run` builds the request with `ownerId`.
+- The registry (`tests/permission-registry.ts`) also checks layouts and the special route files, refuses an inline `"use server"`, and ignores a `requireUser(` written in a comment. The root layout is listed as open.
+- The fence covers `src/app`, `src/components` and `src/features/*/components` (`.ts` and `.tsx`), and catches every module of `src/server/db`, `pg` and `drizzle-orm/node-postgres`, static and `import()`; `/health` is the one exception.
+- The three-column foreign key is named `user_branches_user_fk`, not Drizzle's default: the default name passes PostgreSQL's 63 characters. The other foreign keys keep Drizzle's names.
+- `MANAGER_RIGHTS` is one list in `src/domain/permissions.ts`; the enum of the schema is made from it.
+- `insertUser()` writes the user, the account and the branch rows on one client between BEGIN and COMMIT; a Principal with no branch given gets a new branch.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

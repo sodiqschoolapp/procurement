@@ -1,0 +1,177 @@
+// The permission matrix of docs/spec/03-roles-and-permissions.md as data, and the one function
+// that reads it (developer-rules.md rule 4: one permission layer). Pure: authorize() in
+// src/server/authorize.ts reads the actor from the database and asks decide().
+//
+// Each row of the spec's table is one permission; a row that covers actions guarded by different
+// Manager rights is split, and the rights without a row of their own get one (plan of 0.7,
+// decision 3). A later task adds the permission its action needs here, and to the expected
+// table of tests/permission-matrix-expected.ts.
+
+export const ROLES = ["HEAD", "MANAGER", "PRINCIPAL", "FINANCE"] as const;
+export type Role = (typeof ROLES)[number];
+
+/** The nine switches (03-roles-and-permissions.md, "Manager rights the Head can switch"). */
+export const MANAGER_RIGHTS = [
+  "CREATE_REQUESTS",
+  "RECORD_PURCHASES",
+  "CANCEL_PURCHASES",
+  "CLOSE_ALONE",
+  "ISSUE_STOCK",
+  "RETURN_REVERSE",
+  "TRANSFER_STOCK",
+  "WRITE_OFF_COUNT",
+  "SET_MINIMUMS",
+] as const;
+export type ManagerRight = (typeof MANAGER_RIGHTS)[number];
+
+/**
+ * What a role may do with a permission.
+ * - `no`: never.
+ * - `yes`: a permission with no branch (catalogs, settings, prices, rights).
+ * - `all`: in every branch.
+ * - `own`: in the actor's own branches.
+ * - `owner`: in the actor's own branches, on requests the actor owns ("own requests").
+ */
+export type Grant = "no" | "yes" | "all" | "own" | "owner";
+
+type GlobalRule = {
+  scope: "global";
+  roles: Record<Role, "no" | "yes">;
+};
+
+type BranchRule = {
+  scope: "branch";
+  roles: Record<Role, "no" | "all" | "own" | "owner">;
+  /** The Manager right that guards it; checked for Managers only. */
+  right?: ManagerRight;
+};
+
+export type PermissionRule = GlobalRule | BranchRule;
+
+const HEAD_ONLY_GLOBAL = { HEAD: "yes", MANAGER: "no", PRINCIPAL: "no", FINANCE: "no" } as const;
+const HEAD_ONLY = { HEAD: "all", MANAGER: "no", PRINCIPAL: "no", FINANCE: "no" } as const;
+const HEAD_AND_MANAGER = { HEAD: "all", MANAGER: "own", PRINCIPAL: "no", FINANCE: "no" } as const;
+const HEAD_AND_OWNER = { HEAD: "all", MANAGER: "owner", PRINCIPAL: "no", FINANCE: "no" } as const;
+const FINANCE_ONLY = { HEAD: "no", MANAGER: "no", PRINCIPAL: "no", FINANCE: "own" } as const;
+const EVERY_ROLE = { HEAD: "all", MANAGER: "own", PRINCIPAL: "own", FINANCE: "own" } as const;
+
+export const PERMISSIONS = {
+  // "Manage catalogs, users, branches, settings"
+  "catalog.manage": { scope: "global", roles: HEAD_ONLY_GLOBAL },
+  // "Suggest a new product for the catalog": a branch permission, as catalog_suggestions has a
+  // branch_id (plan of 0.7, decision 3).
+  "catalog.suggest": { scope: "branch", roles: HEAD_AND_MANAGER },
+  // "Create, edit, submit, cancel a request", split by the one owner (03 rule 7; 06 Allowed
+  // moves: "Submit: Owner or Head", "Take back: Owner", "Cancel: Owner or Head"): creating is any
+  // own branch, the rest only on the Manager's own requests (permission review of 0.7).
+  "request.create": { scope: "branch", roles: HEAD_AND_MANAGER, right: "CREATE_REQUESTS" },
+  "request.edit": { scope: "branch", roles: HEAD_AND_OWNER, right: "CREATE_REQUESTS" },
+  // "Approve, send back or reject at step 1 / 2 / 3"
+  "request.approve_step1": { scope: "branch", roles: HEAD_ONLY },
+  "request.approve_step2": {
+    scope: "branch",
+    roles: { HEAD: "no", MANAGER: "no", PRINCIPAL: "own", FINANCE: "no" },
+  },
+  "request.approve_step3": { scope: "branch", roles: FINANCE_ONLY },
+  // "Record money given, returned, paid back"
+  "money.record": { scope: "branch", roles: FINANCE_ONLY },
+  // "Record purchases"
+  "purchase.record": { scope: "branch", roles: HEAD_AND_OWNER, right: "RECORD_PURCHASES" },
+  // CANCEL_PURCHASES: "Only the Head can cancel a record" when it is off.
+  "purchase.cancel": { scope: "branch", roles: HEAD_AND_OWNER, right: "CANCEL_PURCHASES" },
+  // "Close a request that matches exactly"
+  "request.close_exact": { scope: "branch", roles: HEAD_AND_OWNER, right: "CLOSE_ALONE" },
+  // "Settle and close a request with differences"
+  "request.settle": { scope: "branch", roles: FINANCE_ONLY },
+  // "Acknowledge a big overspend"
+  "request.acknowledge_overspend": { scope: "branch", roles: HEAD_ONLY },
+  // "Reopen a closed request"
+  "request.reopen": { scope: "branch", roles: HEAD_ONLY },
+  // "Issue, return, transfer stock", split by the three rights.
+  "stock.issue": { scope: "branch", roles: HEAD_AND_MANAGER, right: "ISSUE_STOCK" },
+  "stock.return_reverse": { scope: "branch", roles: HEAD_AND_MANAGER, right: "RETURN_REVERSE" },
+  "stock.transfer": { scope: "branch", roles: HEAD_AND_MANAGER, right: "TRANSFER_STOCK" },
+  // "Ask for a write-off or stock correction", and starting a count: WRITE_OFF_COUNT, "Ask for
+  // write-offs and run stock counts".
+  "stock.ask_write_off": { scope: "branch", roles: HEAD_AND_MANAGER, right: "WRITE_OFF_COUNT" },
+  "stock.start_count": { scope: "branch", roles: HEAD_AND_MANAGER, right: "WRITE_OFF_COUNT" },
+  // "Approve a write-off or stock correction"
+  "stock.approve_write_off": { scope: "branch", roles: HEAD_ONLY },
+  // SET_MINIMUMS; 04-catalogs.md rule 5: "The Head, or a Manager for their own branches".
+  "stock.set_minimums": { scope: "branch", roles: HEAD_AND_MANAGER, right: "SET_MINIMUMS" },
+  // "See requests, stock and reports"
+  "data.view": { scope: "branch", roles: EVERY_ROLE },
+  // "Export to Excel, download PDF, print": for what the role can see (plan of 0.7, decision 4).
+  "data.export": { scope: "branch", roles: EVERY_ROLE },
+  // "Enter stock directly, without a request"
+  "stock.enter_direct": { scope: "branch", roles: HEAD_ONLY },
+  // "Add a new price for a product": one price for the whole school (04-catalogs.md rule 4).
+  "price.add": { scope: "global", roles: HEAD_ONLY_GLOBAL },
+  // "Switch a Manager's rights on or off"
+  "manager_rights.switch": { scope: "global", roles: HEAD_ONLY_GLOBAL },
+} as const satisfies Record<string, PermissionRule>;
+
+export type Permission = keyof typeof PERMISSIONS;
+
+/** Who acts: read fresh from the database by authorize() (plan of 0.7, decision 6). */
+export type Actor = {
+  userId: string;
+  role: Role;
+  /** The branches of user_branches; empty for the Head, who sees every branch. */
+  branchIds: readonly string[];
+  /** The Manager rights switched off. No row means enabled. */
+  disabledRights: readonly ManagerRight[];
+};
+
+/**
+ * What the action is about: its branch, and for "own requests" the request's owner. Both are read
+ * from the record in the database, never taken from the browser's input: a branch id sent by the
+ * browser would let anyone choose the branch the wall checks (developer-rules.md rule 13; the
+ * permission review of 0.7). Only a create action, whose record does not exist yet, passes the
+ * branch the user chose, and the check then is exactly whether the user may use that branch.
+ */
+export type Target = { branchId: string; ownerId?: string };
+
+export type Decision = "allow" | "not_found" | "forbidden";
+
+/** Whether the actor sees a branch at all: the Head every branch, the others their own. */
+export function seesBranch(actor: Actor, branchId: string): boolean {
+  return actor.role === "HEAD" || actor.branchIds.includes(branchId);
+}
+
+/**
+ * The matrix answer. The order is fixed (plan of 0.7, decision 5): another branch is
+ * `not_found` first, so its address tells nothing (03 rule 1); then the role, the Manager right
+ * and the owner are each `forbidden`.
+ */
+export function decide(permission: Permission, actor: Actor, target?: Target): Decision {
+  const rule: PermissionRule = PERMISSIONS[permission];
+
+  if (rule.scope === "global") {
+    return rule.roles[actor.role] === "yes" ? "allow" : "forbidden";
+  }
+
+  if (!target) {
+    // A programming error, not a refusal: a branch permission is always asked about a branch.
+    throw new Error(`decide(): the permission ${permission} needs a branch.`);
+  }
+  if (!seesBranch(actor, target.branchId)) return "not_found";
+
+  const grant = rule.roles[actor.role];
+  if (grant === "no") return "forbidden";
+
+  // "Switches only take rights away", and only a Manager's (the Head can do everything a
+  // Manager can, in any branch).
+  if (actor.role === "MANAGER" && rule.right && actor.disabledRights.includes(rule.right)) {
+    return "forbidden";
+  }
+
+  if (grant === "owner") {
+    if (target.ownerId === undefined) {
+      throw new Error(`decide(): the permission ${permission} needs the request's owner.`);
+    }
+    if (target.ownerId !== actor.userId) return "forbidden";
+  }
+
+  return "allow";
+}

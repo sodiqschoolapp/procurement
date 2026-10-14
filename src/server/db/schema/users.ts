@@ -53,6 +53,8 @@ export const users = pgTable(
   (table) => [
     unique("users_username_key").on(table.username),
     unique("users_email_key").on(table.email),
+    // The target of the foreign key of user_branches, which copies role and is_active (task 0.7).
+    unique("users_id_role_is_active_key").on(table.id, table.role, table.isActive),
     check("users_full_name_check", sql`btrim(${table.fullName}) <> ''`),
     check(
       "users_username_check",

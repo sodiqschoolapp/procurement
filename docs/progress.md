@@ -192,4 +192,24 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - For 0.10: `/` becomes the home page per role; the CI container step that reads the commit from `/` moves with it.
 - For 0.9: the first-Head script gains its audit row.
 
-The next task is 0.7.
+## 0.7 Permissions and the branch wall (14.10.2026, pull request #17)
+
+**Built**
+- Migration `0002_permissions`: `branches`, `user_branches` (copied `user_role`, `user_is_active`; the deferred Principal trigger), `manager_rights`, enum `manager_right`.
+- `src/domain/permissions.ts`: `PERMISSIONS` and `decide()`; `src/server/authorize.ts`: `authorize()`, `branchFilter()`, `AuthorizationError`.
+- `tests/helpers/permission-matrix.ts` (`describePermissionMatrix`), `tests/permission-matrix-expected.ts`, `tests/permission-registry.ts`; the ESLint fence against screens reading the database.
+
+**Left out, and the task that brings it**
+- `/branches`: 1.2. Users with branches, replacing a Principal, the last Head, the "no active user" warning: 1.3. The switches: 1.4.
+- `03` rule 6 (Head step approved automatically): 2.7. Rule 7 (moving a request at cash balance 0): 4.10. Rule 2 "the first action wins": the locks of 0.8.
+- Drafts visible to the owner and the Head only: 2.4 (and the lists of 2.8).
+
+**What the next sessions must know**
+- Every action and query: `const actor = await authorize(user.id, "<permission>", { branchId, ownerId }, tx)`; a list adds `branchFilter(actor, table.branchId)` to its `where`. `branchId` and `ownerId` come from the record in the database, never from input (a create action excepted).
+- A new action or query goes into `tests/permission-registry.ts` and gets `describePermissionMatrix({ permission, run })`; a new permission goes into `PERMISSIONS` and `tests/permission-matrix-expected.ts`.
+- `insertUser(role, { branches: [id] })`, `insertBranch()`, `setManagerRight()`. A Principal needs its branch row in the same transaction as the user: the database refuses at commit otherwise. For 0.14 and 1.3: the seed and the user form write them together.
+- For 1.3: replace a Principal by deactivating the old one first, in the same transaction (decisions 0.7 item 1).
+- For 2.x: request edit, submit, cancel and take back ask `request.edit` (own requests), not `request.create`.
+- Screens never import `src/server/db/*`, `pg` or `drizzle-orm/node-postgres`; data comes through `src/features/<area>/queries`.
+
+The next task is 0.8.
