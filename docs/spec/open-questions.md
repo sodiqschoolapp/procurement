@@ -3,7 +3,7 @@
 > Part of the School Procurement & Warehouse Platform spec, baseline of 10 October 2026 (document revision 123).
 > Index and reading order: `docs/spec/00-index.md`. Read-only: this folder changes only through `/spec-change`.
 
-The spec is silent on these, or says them two ways. Nobody decides one alone: the task that meets a question lists it in its plan, the owner answers, and the answer enters the spec through `/spec-change`. Then the question is struck here, not deleted.
+The spec is silent on these, or says them two ways. The task that meets a question uses the owner's answer under "Decided ahead" in `docs/decisions.md` when there is one; otherwise it decides, marks the decision Look first on issue #9 and goes on. The owner's confirmed answer enters the spec through `/spec-change`, and the question is then struck here, not deleted.
 
 Each line names the first build-plan task that needs the answer.
 

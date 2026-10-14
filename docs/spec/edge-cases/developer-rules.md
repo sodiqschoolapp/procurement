@@ -23,7 +23,7 @@ Claude Code must follow these fifteen rules in every phase. They are what keeps 
 12. **Speed.** Every foreign key and filter column has an index. No query runs inside a loop. Lists use server paging. Images load as small versions first. Analytics read from summary tables refreshed every 5 minutes, never from raw rows on each click.
 13. **Security.** Login allows 5 tries per 15 minutes. Cookies are httpOnly, secure and sameSite. Uploads are checked by content, not by file name. Every input is checked on the server with Zod. Changes to catalogs, users and settings go to an audit log.
 14. **Demo data.** A seed script creates 2 branches, one user per role, 30 products and a few requests in different statuses, so every phase can be clicked through.
-15. **Ask, do not guess.** When this spec does not cover a business rule, Claude Code stops and asks. Technical choices it makes on its own go into `docs/decisions.md`.
+15. **Decide and flag.** When this spec does not cover a business rule, Claude Code does not stop and ask: it takes the most reasonable reading, writes it in the plan under "Decided without the owner" with the reason, the reviewer confirms or changes it on the pull request, and the owner confirms or changes it afterwards on issue #9. Only the stop list of `CLAUDE.md` stops a task. Technical choices it makes on its own go into `docs/decisions.md`.
 
 ## Where each rule is enforced
 
@@ -43,7 +43,7 @@ Claude Code must follow these fifteen rules in every phase. They are what keeps 
 | 12 Speed | Indexes in migrations; server paging; summary tables for analytics. | The speed task before go-live. |
 | 13 Security | The login module, the upload route, Zod on every input, the audit log. | Tests of the login limit, the upload check and the audit rows. |
 | 14 Demo data | The seed script. | CI runs the seed on an empty database. |
-| 15 Ask, do not guess | The plan of every task lists its questions. | The reviewer answers them on the pull request. |
+| 15 Decide and flag | The plan of every task lists its decisions. | The reviewer confirms or changes them on the pull request; the owner on issue #9. |
 
 ## Constraints the spec names
 
