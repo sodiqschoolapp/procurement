@@ -132,6 +132,63 @@ describe("the change-history list (04-catalogs.md rule 9)", () => {
     expect(text).toContain("What After 08.10.2026");
   });
 
+  // Plan of 1.1, review Must fix 3: the settings' kinds; the guard's "off" and a month and day
+  // never show raw (CLAUDE.md rule 13).
+  it.each([
+    ["en", "20%", "30%", "10%", "Off", "24 h", "12 h", "1 September"],
+    ["ru", "20%", "30%", "10%", "Выключено", "24 ч", "12 ч", "1 сентября"],
+    ["uz", "20%", "30%", "10%", "Oʻchirilgan", "24 soat", "12 soat", "1-sentabr"],
+  ] as const)(
+    "shows the settings' kinds in %s",
+    (locale, price0, price1, guard0, guard1, hours0, hours1, start1) => {
+      const words = MESSAGES[locale].settings;
+      const audit = MESSAGES[locale].audit;
+      const text = textOf(
+        render(
+          [
+            {
+              ...EDIT,
+              action: "settings.change",
+              before: { price: 20, guard: 10, hours: 24, start: null },
+              after: { price: 30, guard: "off", hours: 12, start: { month: 9, day: 1 } },
+            },
+          ],
+          {
+            price: { label: "settings.priceHintPercent", kind: "percent" },
+            guard: { label: "settings.overspendGuard", kind: "percentOrOff" },
+            hours: { label: "settings.reminderHours", kind: "hours" },
+            start: { label: "settings.schoolYearStart", kind: "monthDay" },
+          },
+          locale,
+        ),
+      );
+      const change = (label: string, before: string, after: string) =>
+        `${label} ${audit.before} ${before} ${audit.after} ${after}`;
+
+      expect(text).toContain(change(words.priceHintPercent, price0, price1));
+      expect(text).toContain(change(words.overspendGuard, guard0, guard1));
+      expect(text).toContain(change(words.reminderHours, hours0, hours1));
+      expect(text).toContain(`${words.schoolYearStart} ${audit.after} ${start1}`);
+      expect(text).not.toMatch(/\boff\b|month|unknown/);
+    },
+  );
+
+  it("shows a value that does not fit a settings kind as unknown, never raw", () => {
+    const text = textOf(
+      render(
+        [{ ...EDIT, before: null, after: { guard: "on", start: { month: 13, day: 1 }, hours: 1.5 } }],
+        {
+          guard: { label: "audit.who", kind: "percentOrOff" },
+          start: { label: "audit.what", kind: "monthDay" },
+          hours: { label: "audit.when", kind: "hours" },
+        },
+      ),
+    );
+    expect(text).toContain("Who After (unknown value)");
+    expect(text).toContain("What After (unknown value)");
+    expect(text).toContain("When After (unknown value)");
+  });
+
   it("shows one line when there is nothing yet", () => {
     expect(textOf(render([]))).toBe("No changes yet");
     expect(textOf(render([], {}, "ru"))).toBe("Изменений пока нет");

@@ -78,10 +78,30 @@
       },
       "branch": {
         "create": "Filial yaratildi"
+      },
+      "settings": {
+        "change": "Sozlamalar oʻzgartirildi"
       }
     },
     "fields": {
       "locale": "Til"
+    },
+    "percent": "{value}%",
+    "hours": "{value} soat",
+    "off": "Oʻchirilgan",
+    "monthDay": {
+      "1": "{day}-yanvar",
+      "2": "{day}-fevral",
+      "3": "{day}-mart",
+      "4": "{day}-aprel",
+      "5": "{day}-may",
+      "6": "{day}-iyun",
+      "7": "{day}-iyul",
+      "8": "{day}-avgust",
+      "9": "{day}-sentabr",
+      "10": "{day}-oktabr",
+      "11": "{day}-noyabr",
+      "12": "{day}-dekabr"
     }
   },
   "requestStatus": {
@@ -209,5 +229,56 @@
     "types": {
       "BRANCH_ROLE_VACANT": "{branch} filialida faol {role, select, HEAD {xaridlar rahbari} MANAGER {menejer} PRINCIPAL {direktor} FINANCE {moliya xodimi} other {foydalanuvchi}} yoʻq."
     }
+  },
+  "months": {
+    "1": "Yanvar",
+    "2": "Fevral",
+    "3": "Mart",
+    "4": "Aprel",
+    "5": "May",
+    "6": "Iyun",
+    "7": "Iyul",
+    "8": "Avgust",
+    "9": "Sentabr",
+    "10": "Oktabr",
+    "11": "Noyabr",
+    "12": "Dekabr"
+  },
+  "paymentTypes": {
+    "CASH": "Naqd pul",
+    "TRANSFER": "Bank oʻtkazmasi",
+    "CARD": "Korporativ karta"
+  },
+  "settings": {
+    "title": "Sozlamalar",
+    "school": "Maktab",
+    "requestsAndMoney": "Soʻrovlar va pul",
+    "reminders": "Eslatmalar",
+    "schoolName": "Maktab nomi",
+    "schoolNameHint": "Menyuda va chop etilgan soʻrovlarda koʻrsatiladi.",
+    "schoolYearStart": "Oʻquv yilining birinchi kuni",
+    "schoolYearStartHint": "U belgilanmaguncha, tahlilda «Shu oʻquv yili» davri yoʻq.",
+    "day": "Kun",
+    "month": "Oy",
+    "notSet": "Belgilanmagan",
+    "defaultPaymentType": "Standart toʻlov turi",
+    "priceHintPercent": "Narx ogohlantirishi, %",
+    "priceHintPercentHint": "Katalog narxidan shundan koʻproq farq qiladigan narx ogohlantirish koʻrsatadi.",
+    "overspendGuard": "Ortiqcha xarajat nazorati",
+    "overspendGuardHint": "Haqiqiy summa rejadagidan shundan koʻproq oshsa, moliya yopishidan oldin xaridlar rahbari buni tasdiqlashi kerak. 0 — har qanday ortiqcha xarajat.",
+    "guardOn": "Yoqilgan",
+    "guardOff": "Oʻchirilgan",
+    "overspendGuardPercent": "Ortiqcha xarajat nazorati, %",
+    "receiptRequiredForCash": "Naqd xaridlar uchun chek majburiy",
+    "yes": "Ha",
+    "no": "Yoʻq",
+    "reminderHours": "Eslatma, soatdan keyin",
+    "reminderHoursHint": "Shundan uzoq kutayotgan soʻrov tasdiqlovchilarga eslatiladi.",
+    "escalationHours": "Xaridlar rahbariga xabar, soatdan keyin",
+    "escalationHoursHint": "Shundan uzoq kutayotgan soʻrov haqida xaridlar rahbariga xabar beriladi.",
+    "save": "Saqlash",
+    "saved": "Sozlamalar saqlandi",
+    "nothingChanged": "Hech narsa oʻzgarmadi",
+    "history": "Oʻzgarishlar tarixi"
   }
 }

@@ -19,9 +19,23 @@ import { useFormatters } from "@/i18n/use-formatters";
 type MessageKey = MessageKeys<Messages, NestedKeyOf<Messages>>;
 type Namespace = NamespaceKeys<Messages, NestedKeyOf<Messages>>;
 
-/** How a field's value is shown; `enum` reads `<namespace>.<value>` from the message files. */
+/**
+ * How a field's value is shown; `enum` reads `<namespace>.<value>` from the message files.
+ * `percent`, `percentOrOff` (a percent or the stored `"off"`), `hours` and `monthDay` (a
+ * `{month, day}` object) are the settings' kinds (plan of 1.1, review Must fix 3).
+ */
 export type HistoryValueKind =
-  "text" | "money" | "quantity" | "date" | "moment" | "boolean" | { enum: Namespace };
+  | "text"
+  | "money"
+  | "quantity"
+  | "date"
+  | "moment"
+  | "boolean"
+  | "percent"
+  | "percentOrOff"
+  | "hours"
+  | "monthDay"
+  | { enum: Namespace };
 
 /** One entry per field of the record: its label and the kind of its value. */
 export type HistoryField = { label: MessageKey; kind: HistoryValueKind };
@@ -44,6 +58,19 @@ function textOr(t: Translate, key: string, fallback: MessageKey): string {
 
 const MONEY = /^-?\d+$/;
 
+const isWholeNumber = (value: AuditJson): value is number =>
+  typeof value === "number" && Number.isInteger(value);
+
+/** A `{month, day}` object of whole numbers, month 1 to 12; anything else is not one. */
+function monthDayOf(value: AuditJson): { month: number; day: number } | null {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
+  const { month, day } = value;
+  if (month === undefined || day === undefined || !isWholeNumber(month) || !isWholeNumber(day)) {
+    return null;
+  }
+  return month >= 1 && month <= 12 ? { month, day } : null;
+}
+
 function shown(value: AuditJson | null, kind: HistoryValueKind, t: Translate, f: Formatters) {
   if (value === null) return t("audit.noValue");
   try {
@@ -57,6 +84,16 @@ function shown(value: AuditJson | null, kind: HistoryValueKind, t: Translate, f:
     if (kind === "moment" && typeof value === "string") {
       const moment = new Date(value);
       return `${f.date(moment)} ${f.time(moment)}`;
+    }
+    if ((kind === "percent" || kind === "percentOrOff") && isWholeNumber(value)) {
+      return t("audit.percent", { value });
+    }
+    // The guard's stored word is never shown raw: its label (CLAUDE.md rule 13).
+    if (kind === "percentOrOff" && value === "off") return t("audit.off");
+    if (kind === "hours" && isWholeNumber(value)) return t("audit.hours", { value });
+    if (kind === "monthDay") {
+      const monthDay = monthDayOf(value);
+      if (monthDay) return t(`audit.monthDay.${monthDay.month}` as MessageKey, { day: monthDay.day });
     }
     if (typeof kind === "object" && typeof value === "string") {
       return textOr(t, `${kind.enum}.${value}`, "audit.unknownValue");
