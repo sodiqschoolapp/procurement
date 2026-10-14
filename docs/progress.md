@@ -378,4 +378,26 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - A new script the container runs: add its files to the run stage of `Dockerfile`; `tests/image-files.test.ts` follows imports from `ENTRY_POINTS`, so add the script there.
 - `.do/app.yaml` changes need the owner to apply it again and type the dashboard values again (`docs/deploy.md`, step 7).
 
-The next task is 1.1.
+## 1.1 Settings (14.10.2026, pull request #30)
+
+**Built**
+- `src/domain/settings.ts`: the eight keys, defaults, limits and value checks, `settingsFrom()`, `changedSettings()`; `src/domain/payment-types.ts` (`PAYMENT_TYPES`).
+- Migration `0007_settings_values`: one CHECK per known key on `settings.value`.
+- `readSettings(executor)` in `src/server/settings.ts`; `saveSettings` (Head, audit row `settings.change`); `getSettingsForHead`, `getSchoolName` in `src/features/settings/queries/`.
+- `/settings` with the change history; the school name under the logo in the sidebar; Admin opens `/settings`.
+- `<ChangeHistory>` kinds `percent`, `percentOrOff`, `hours`, `monthDay`.
+
+**Left out, and the task that brings it**
+- Using each value: price hint and default payment type 2.x; receipt rule 3.x; overspend guard 3.x/4.x; school year 6.x; reminders 8.1; school name in the PDF 7.x.
+- Admin back to `/catalog`, and moving between the Admin pages: 1.5 and 1.2.
+
+**What the next sessions must know**
+- Read a setting inside an action or query with `readSettings(tx)`; never from a page. A new key goes into `SETTING_DEFAULTS`, `SETTING_CHECKS`, a CHECK in a new migration, the form, and the history `FIELDS` of the page.
+- For 1.5: point the Admin item of `src/components/shell/menu.ts` back to `/catalog` (and its test in `menu.test.ts`).
+- For 2.x: the orf payment-type enum is built from `PAYMENT_TYPES`; the request's default is `readSettings(tx).default_payment_type`.
+- For 3.x/4.x: `overspend_guard_percent` is `number | "off"`; 0 means every overspend; the comparison belongs in `src/domain/`.
+- A form: Save `disabled` until hydrated (`useSyncExternalStore`), or a click before hydration submits the plain form; browser tests wait for Save to be enabled. In the dev server the Next.js indicator covers the phone's first tab.
+- Settings rows can be deleted in tests (`db.delete(settings)` in `beforeEach`); audit rows cannot.
+
+The next task is 1.2.
+

@@ -558,6 +558,36 @@ Choices made during the build:
 - Not done, with the reason in the report: a second guard independent of configuration (permission review, Should fix 1). A check on other active users would stop the seed on the test copy as soon as the owner adds an invented user, and later tasks extend the seed; the production spec belongs to 9.4, whose test must assert it has no `SEED_DEMO_DATA` (progress, "For 9.4"). A tunnel to `127.0.0.1` passing the guard (Should fix 2) is written in `.env.example`.
 - The image was built locally and run: a fresh database got the seven seed lines and `storage ok`; a restart printed `kept`; without passwords it printed `db:seed failed: …` and `/health` answered 200.
 
+### 1.1 Settings (14.10.2026)
+
+The plan's decisions as the plan review of 14.10.2026 confirmed them (corrections 1 to 3 applied), and those of the build. The Look first items come first.
+
+1. **Look first.** The overspend guard's "off" is the JSON string `"off"` in `overspend_guard_percent`; any whole percent 0 to 1000 is "on". The accessor returns `number | "off"`. With the worked example of `08` (5.8 % over): guard 10 asks nothing, guard 0 asks the Head, `"off"` never.
+2. **Look first.** Percents are whole: price hint 0 to 1000 (0: any difference shows the hint), overspend guard 0 to 1000; hours 1 to 720.
+3. **Look first.** Migration `0007_settings_values`: one CHECK per known key on `settings.value`, each a `CASE` that tests the JSON type before any cast, so it is never NULL and a wrong type is `23514`, never a cast error. Unknown keys stay allowed; the key list is the accessor's.
+4. **Look first.** `getSchoolName` asks `profile.edit` (all four roles) for the shell; every other setting is read by the Head only, through `catalog.manage`. `readSettings(executor)` in `src/server/settings.ts` checks no permission, like `audit()`: only an action or query that already called `authorize()` calls it.
+5. **Look first.** No order is enforced between reminder and escalation hours (`06` rule 8 gives the two numbers apart).
+6. An unset key has no row; a key once set is changed, never removed (no delete path, `CLAUDE.md` rule 11), so the school name and the school-year start cannot be emptied again.
+7. The form sends only the fields the Head changed; the action writes only the keys whose value differs from the value in force, under the advisory lock `hashtextextended('settings', 1)`. No version column.
+8. One audit row per save: `settings.change`, entity `settings`, entity id `settings`, `before`/`after` with the same changed keys; `before` is the value in force (the default, or `null` for the two keys with none). This changes the reasoning of 0.9 decision 1 ("a settings row is named by its text key"): the settings' changes are one record named `settings`; `entity_id` stays text, as before. The comments in `src/server/audit.ts` and `system.ts` say so.
+9. The first day of the school year is `{"month", "day"}`, exactly those two keys; 29 February is refused.
+10. The school name is trimmed, 1 to 120 characters counted by code point (as `char_length` counts).
+11. Admin opens `/settings` until `/catalog` exists; task 1.5 points it back. The active paths of 0.10b decision 9 are unchanged.
+12. A non-Head opening `/settings` gets Next's "not found".
+13. The school name shows under the logo in the sidebar, in `text-sidebar-foreground/70`, not in the rail and not at phone width.
+14. `PAYMENT_TYPES` (`CASH`, `TRANSFER`, `CARD`) live in `src/domain/payment-types.ts`; their words are `paymentTypes.*` from `05` field 12.
+15. `saveSettings` has no client key and no `repeat`: it changes values; a repeat writes nothing.
+
+Choices made during the build:
+
+- A stored value of the wrong shape makes `settingsFrom()` throw rather than fall back to the default: a money rule must not run on a guessed value. The CHECKs make it impossible short of a new migration.
+- `<ChangeHistory>` gained four kinds, `percent`, `percentOrOff`, `hours`, `monthDay`; the texts are `audit.percent`, `audit.off`, `audit.hours`, `audit.monthDay.<1-12>` (the month in the form a date takes in each language). The month names of the form are `months.<1-12>`.
+- React Hook Form keeps the form's state and which fields changed; the values are checked once, by the action's Zod schema, whose field errors show under the fields. No client-side copy of the checks (`CLAUDE.md` rule 1).
+- Save is disabled until the form runs in the browser: a click before hydration submitted the plain HTML form and reloaded the page (found by the Playwright test). The browser tests wait for Save to be enabled.
+- The school-year day list shows only the days of the chosen month.
+- The concurrent same-key test proves the advisory lock: without it the second save's `before` is the default again (spec review, Should fix 1; tried by removing the lock).
+- The Playwright test of the unsaved-changes guard clicks the Requests tab at phone width: in the dev server the Next.js indicator covers the first tab.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

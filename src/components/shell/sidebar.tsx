@@ -26,7 +26,16 @@ const FOCUS =
 const QUIET =
   "transition-colors duration-120 ease-out hover:bg-sidebar-accent hover:text-sidebar-accent-foreground";
 
-export function Sidebar({ role, fullName }: { role: Role; fullName: string }) {
+export function Sidebar({
+  role,
+  fullName,
+  schoolName,
+}: {
+  role: Role;
+  fullName: string;
+  /** The school name of the settings, or `null` until set (plan of 1.1, decision 13). */
+  schoolName: string | null;
+}) {
   const t = useTranslations();
   const pathname = usePathname();
   // Read from <html> in the browser; the server cannot know the browser's choice.
@@ -60,6 +69,14 @@ export function Sidebar({ role, fullName }: { role: Role; fullName: string }) {
           className="hidden h-8 w-auto rail:block"
         />
       </div>
+      {schoolName && (
+        <p
+          title={schoolName}
+          className="-mt-2 truncate px-5 pb-2 text-[13px] leading-5 text-sidebar-foreground/70 rail:hidden"
+        >
+          {schoolName}
+        </p>
+      )}
       <nav aria-label={t("shell.menuLabel")} className="flex-1 overflow-y-auto px-3 py-2">
         <ul className="flex flex-col gap-1">
           {menuFor(role).map((item) => {

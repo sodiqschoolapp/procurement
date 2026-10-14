@@ -23,6 +23,8 @@ export const SERVER_ACTIONS: Record<string, Entry> = {
   // One's own notifications (plan of 0.11, decision 2, Look first).
   "src/app/(app)/notifications/actions.ts#openNotificationAction": "notification.own",
   "src/app/(app)/notifications/actions.ts#markAllNotificationsReadAction": "notification.own",
+  // "Manage catalogs, users, branches, settings" (03; plan of 1.1).
+  "src/app/(app)/settings/actions.ts#saveSettingsAction": "catalog.manage",
 };
 
 /** Exports of `src/features/<area>/queries/`, as `<file>#<export>`. */
@@ -38,6 +40,10 @@ export const QUERIES: Record<string, Permission> = {
   // The download route's file: file.upload for a file no record holds; each owner a later task
   // adds to src/server/files/owners.ts names its own permission there (plan of 0.12, decision 5).
   "src/features/files/queries/file-for-download.ts#fileForDownload": "file.upload",
+  // The Head's settings form, and the school name of the shell for every role (plan of 1.1,
+  // decision 4, Look first).
+  "src/features/settings/queries/settings.ts#getSettingsForHead": "catalog.manage",
+  "src/features/settings/queries/settings.ts#getSchoolName": "profile.edit",
 };
 
 /**

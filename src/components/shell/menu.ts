@@ -32,10 +32,12 @@ const ITEMS: Record<MenuItemId, MenuItem> = {
   money: { id: "money", href: "/money", icon: "payments", activeOn: ["/money"] },
   analytics: { id: "analytics", href: "/analytics", icon: "bar_chart", activeOn: ["/analytics"] },
   reports: { id: "reports", href: "/reports", icon: "description", activeOn: ["/reports"] },
-  // "Admin groups catalogs, prices, users, branches and settings" (11, Interface per role).
+  // "Admin groups catalogs, prices, users, branches and settings" (11, Interface per role). It
+  // opens /settings, the first Admin page built, until /catalog exists; task 1.5 points it back
+  // (plan of 1.1, decision 11).
   admin: {
     id: "admin",
-    href: "/catalog",
+    href: "/settings",
     icon: "tune",
     activeOn: ["/catalog", "/users", "/branches", "/settings"],
   },

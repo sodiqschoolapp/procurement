@@ -78,10 +78,30 @@
       },
       "branch": {
         "create": "Branch created"
+      },
+      "settings": {
+        "change": "Settings changed"
       }
     },
     "fields": {
       "locale": "Language"
+    },
+    "percent": "{value}%",
+    "hours": "{value} h",
+    "off": "Off",
+    "monthDay": {
+      "1": "{day} January",
+      "2": "{day} February",
+      "3": "{day} March",
+      "4": "{day} April",
+      "5": "{day} May",
+      "6": "{day} June",
+      "7": "{day} July",
+      "8": "{day} August",
+      "9": "{day} September",
+      "10": "{day} October",
+      "11": "{day} November",
+      "12": "{day} December"
     }
   },
   "requestStatus": {
@@ -209,5 +229,55 @@
     "types": {
       "BRANCH_ROLE_VACANT": "Branch {branch} has no active {role, select, HEAD {Procurement Head} MANAGER {Manager} PRINCIPAL {Principal} FINANCE {Finance user} other {user}}."
     }
+  },
+  "months": {
+    "1": "January",
+    "2": "February",
+    "3": "March",
+    "4": "April",
+    "5": "May",
+    "6": "June",
+    "7": "July",
+    "8": "August",
+    "9": "September",
+    "10": "October",
+    "11": "November",
+    "12": "December"
+  },
+  "paymentTypes": {
+    "CASH": "Cash",
+    "TRANSFER": "Bank transfer",
+    "CARD": "Corporate card"
+  },
+  "settings": {
+    "title": "Settings",
+    "school": "School",
+    "requestsAndMoney": "Requests and money",
+    "reminders": "Reminders",
+    "schoolName": "School name",
+    "schoolNameHint": "Shown in the menu and on printed requests.",
+    "schoolYearStart": "First day of the school year",
+    "schoolYearStartHint": "Until it is set, Analytics has no \"This school year\" period.",
+    "day": "Day",
+    "month": "Month",
+    "defaultPaymentType": "Default payment type",
+    "priceHintPercent": "Price hint, %",
+    "priceHintPercentHint": "A price that differs from the catalog price by more than this shows a hint.",
+    "overspendGuard": "Overspend guard",
+    "overspendGuardHint": "When the actual total is above the planned total by more than this, the Procurement Head must acknowledge it before Finance can close. 0 means every overspend.",
+    "guardOn": "On",
+    "guardOff": "Off",
+    "overspendGuardPercent": "Overspend guard, %",
+    "receiptRequiredForCash": "Receipt required for cash purchases",
+    "yes": "Yes",
+    "no": "No",
+    "reminderHours": "Reminder after, hours",
+    "reminderHoursHint": "A request waiting longer than this reminds its approvers.",
+    "escalationHours": "Tell the Procurement Head after, hours",
+    "escalationHoursHint": "A request waiting longer than this is reported to the Procurement Head.",
+    "save": "Save",
+    "saved": "Settings saved",
+    "nothingChanged": "Nothing changed",
+    "history": "Change history"
   }
 }
