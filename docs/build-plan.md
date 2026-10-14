@@ -123,7 +123,7 @@ Nothing a user can use yet. These tasks build the places where the rules live: t
 
 Everything the Head sets up before the first request can be written.
 
-- [ ] **1.1 Settings**
+- [x] **1.1 Settings**
   - **Read:** `14-data-model.md` (System: settings; Notes for the build: settings keys); `11-screens-and-ux.md` (Screens: Settings; Rules for a smooth feel: 15); `08-money-and-settlement.md` (Overspend guard); `10-notifications-analytics-reports.md` (Analytics page per role: 1).
   - **Build:** A typed settings accessor with the keys and defaults the spec lists: `default_payment_type` (Cash), `price_hint_percent` (20), `overspend_guard_percent` (10; 0 and off), `reminder_hours` (24), `escalation_hours` (48), `receipt_required_for_cash` (false), `school_name`, `school_year_start` (no default); the `/settings` screen for the Head; every change audited.
   - **Done when:** Database tests: the defaults come back on an empty table; only the Head can write; a change writes an audit row. By hand: set the school name and see it in the shell.
