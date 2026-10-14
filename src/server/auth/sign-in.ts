@@ -4,7 +4,6 @@ import { and, eq, gt, sql } from "drizzle-orm";
 
 import { minutesUntil, signInOpensAt, signInWindowStart } from "@/domain/sign-in-limit";
 import { now } from "@/server/clock";
-import { db } from "@/server/db/client";
 import { loginAttempts, sessions, users } from "@/server/db/schema";
 
 import { getAuth } from "./auth";
@@ -23,6 +22,12 @@ export type SignInResult =
 
 // The first key of the two-key advisory lock: the sign-in tries of one username.
 const SIGN_IN_LOCK = 6;
+
+// Loaded when used, not at the top, as in src/app/health/route.ts: the start page imports the
+// sign-out action, and `next build` runs with no database address.
+async function database() {
+  return (await import("@/server/db/client")).db;
+}
 
 /** Asks the library whether the password is right; the session token when it is, else null. */
 async function passwordSession(username: string, password: string): Promise<string | null> {
@@ -55,6 +60,7 @@ export async function signIn(input: unknown): Promise<SignInResult> {
   }
   const { username: typed, password } = parsed.data;
   const username = typed.toLowerCase();
+  const db = await database();
 
   // The library writes the session on its own connection, outside this transaction.
   let token: string | null = null;
@@ -119,5 +125,6 @@ export async function signIn(input: unknown): Promise<SignInResult> {
 
 /** Ends one session: this device's only (plan of 0.6, Look first 3 and 4). */
 export async function signOut(sessionToken: string): Promise<void> {
+  const db = await database();
   await db.delete(sessions).where(eq(sessions.token, sessionToken));
 }

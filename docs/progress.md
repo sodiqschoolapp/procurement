@@ -185,6 +185,7 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 **What the next sessions must know**
 - Tests: `insertUser(role, { password, isActive })` and `signInAs(user)` in `tests/helpers/users.ts`; a session test fixes the clock, only our reader judges expiry.
 - Every page or action reads the user with `getCurrentUser()` / `requireUser(path)`; never the library's `getSession`. The library pool closes in `db-file-setup.ts`.
+- A module the layout or a page imports never imports `@/server/db/client` at the top: `next build` has no `DATABASE_URL`. Load it inside the function (`src/server/auth/session.ts`).
 - For 0.7: add `signInAction`, `signOutAction`, `chooseLanguageAction` to the permission matrix as open to everyone; test that `signOutAction` ends only the caller's session.
 - For 0.7 and every file or export route: the proxy lets through paths ending in an image or `.txt` extension and `/brand/`; such a route calls `requireUser()` / `authorize()` itself.
 - For 1.3: deactivating a user and renewing a password delete that user's `sessions` rows (A8), so a reactivated user's old devices are not signed in again.

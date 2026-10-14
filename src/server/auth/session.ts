@@ -4,7 +4,6 @@ import { redirect } from "next/navigation";
 import { cache } from "react";
 
 import { now } from "@/server/clock";
-import { db } from "@/server/db/client";
 import { sessions, users } from "@/server/db/schema";
 
 import { loginPathFor } from "./return-path";
@@ -43,6 +42,11 @@ export async function userOfCookieValue(value: string | undefined): Promise<Curr
   if (!secret) return null;
   const token = verifySignedToken(value, secret);
   if (!token) return null;
+
+  // Loaded here, not at the top, as in src/app/health/route.ts: the client refuses to load
+  // without DATABASE_URL, and `next build` renders the layout, which reads the session, with
+  // no database address.
+  const { db } = await import("@/server/db/client");
 
   const [found] = await db
     .select({
