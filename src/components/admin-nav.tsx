@@ -8,9 +8,10 @@ import { cn } from "@/components/utils";
 // segmented control of docs/design-system.md (two to four choices), but each choice is a link to
 // a page. Later Admin tasks add their page in the spec's order.
 
-export type AdminPage = "branches" | "settings";
+export type AdminPage = "users" | "branches" | "settings";
 
 const PAGES: readonly { id: AdminPage; href: string }[] = [
+  { id: "users", href: "/users" },
   { id: "branches", href: "/branches" },
   { id: "settings", href: "/settings" },
 ];

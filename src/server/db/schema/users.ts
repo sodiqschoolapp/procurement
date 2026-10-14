@@ -45,6 +45,9 @@ export const users = pgTable(
     role: userRole("role").notNull(),
     locale: locale("locale").notNull().default("uz"),
     isActive: boolean("is_active").notNull().default(true),
+    // The browser-made id of the Head's create (developer-rules.md rule 8; plan of 1.3, "Database
+    // changes"); none on a user made by the first-Head script, the seed or a test helper.
+    clientKey: uuid("client_key"),
     // Empty until the user signs in for the first time.
     lastLoginAt: moment("last_login_at"),
     createdAt: moment("created_at").notNull(),
@@ -53,6 +56,7 @@ export const users = pgTable(
   (table) => [
     unique("users_username_key").on(table.username),
     unique("users_email_key").on(table.email),
+    unique("users_client_key_key").on(table.clientKey),
     // The target of the foreign key of user_branches, which copies role and is_active (task 0.7).
     unique("users_id_role_is_active_key").on(table.id, table.role, table.isActive),
     check("users_full_name_check", sql`btrim(${table.fullName}) <> ''`),

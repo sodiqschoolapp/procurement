@@ -46,6 +46,11 @@ export const FIELD_ERROR_KINDS = [
   "notAllowed",
   // Held by another record: a branch's code or name (plan of 1.2, decision 7).
   "taken",
+  // A user's branches (plan of 1.3, decision 16): the branch has an active Principal, the count
+  // does not fit the role, a branch is inactive.
+  "principalTaken",
+  "branchCount",
+  "branchInactive",
 ] as const;
 export type FieldErrorKind = (typeof FIELD_ERROR_KINDS)[number];
 export type FieldMessageKey = `errors.field.${FieldErrorKind}`;
