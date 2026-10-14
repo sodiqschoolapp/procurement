@@ -338,6 +338,33 @@ Choices made during the build:
 - A deactivated user is not probed through `target`: `serverAction()` reads the user with `getCurrentUser()`, which refuses an inactive user (decisions 0.6, item 15), so such a call is `signed_out` before any step (answer to the permission review).
 - The `ActionError` class lives in `src/server/action.ts`, not `action-result.ts`: only server steps throw it.
 
+### 0.9 Audit log (14.10.2026)
+
+The plan's decisions as the plan review of 14.10.2026 confirmed them (corrections 1 to 4 applied), renumbered in order, and those of the build. The Look first items come first.
+
+1. **Look first.** `audit_log.entity_id` has no foreign key: one log serves every audited table, and a settings row is named by its text key. `actor_id` keeps its foreign key. Proposed `/spec-change` of `edge-cases/developer-rules.md`, "Constraints the spec names": "`audit_log.entity_id` names a row of the table in `entity`; it has no foreign key, as one log serves every audited table."
+2. **Look first.** `audit_log` is append-only: the trigger `audit_log_append_only` refuses UPDATE, DELETE and TRUNCATE with `check_violation`.
+3. **Look first.** Reading the history is Head only, through `catalog.manage`; no new permission.
+4. **Look first.** The first Head is the actor of its own `user.create` row, written in the same transaction as the user.
+5. `action` and `entity` are text with a format CHECK, not enums.
+6. `before` and `after` hold the changed fields as a JSON object; a create has `before` null; a `bigint` is stored as its decimal text, a moment as UTC ISO text.
+7. Secret field names (`password`, `passwordHash`, `hash`, `token`, `secret`, any case, with or without `_`/`-`, at any depth) are refused; the one list is `src/domain/audit-secrets.mjs` (review correction 1).
+8. `created_at` comes from the injected clock as a required argument, with no database default.
+9. The query lives in `src/features/audit/`, the component in `src/components/`.
+10. The caller gives each field a label key and a value kind; action labels sit under `audit.actions.<action>` with the fallbacks "Changed" and "Other field".
+11. No page shows the component in 0.9; the first is 1.1.
+12. History pages by 50, newest first, `created_at DESC, id DESC`.
+
+Choices made during the build:
+
+- **Look first** (permission review). `audit()` takes the actor from the wrapper (`audit({ tx, userId }, entry)`), never an `actorId` field the action builds, so no row is written in another user's name. Added to `.claude/rules/server-actions.md`.
+- `AUDIT_ACTIONS` in `src/domain/audit.ts` is the typed list of audit actions; a unit test checks that each has its label in uz, ru and en.
+- `audit()` runs the shared statement of `audit-row.mjs` through Drizzle by turning `$1 … $n` into bound parameters (`bound()` in `src/server/audit.ts`).
+- `changedFields()` orders fields by name; equal values compare by canonical JSON, whatever the key order.
+- The component shows a value it cannot format by its kind, or an object or array, as "(unknown value)", never as raw text (spec review). A field that had no value before shows the new value only.
+- `listChangeHistory` checks its input with Zod after `authorize()`, reads 51 rows to know whether a next page exists, and shows the actor's current full name (the spec does not say whether the name at the time is meant; the review may change it).
+- Tests of `audit_log` count their own rows, since rows cannot be removed between tests.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.
