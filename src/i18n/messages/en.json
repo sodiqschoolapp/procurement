@@ -52,5 +52,25 @@
       "tooLarge": "Too large",
       "notAllowed": "This value is not allowed"
     }
+  },
+  "audit": {
+    "title": "Change history",
+    "empty": "No changes yet",
+    "when": "When",
+    "who": "Who",
+    "what": "What",
+    "before": "Before",
+    "after": "After",
+    "changed": "Changed",
+    "otherField": "Other field",
+    "noValue": "(empty)",
+    "unknownValue": "(unknown value)",
+    "yes": "Yes",
+    "no": "No",
+    "actions": {
+      "user": {
+        "create": "Account created"
+      }
+    }
   }
 }

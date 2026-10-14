@@ -232,4 +232,22 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - Tests: the sample action of `src/server/action.db.test.ts` shows each step; `serverAction(def, async () => user)` runs without a request.
 - For 0.9 and 0.11: `audit()` and `notify()` take the transaction (`WriteContext.tx`) and are called from the `history` and `notify` steps.
 
-The next task is 0.9.
+## 0.9 Audit log (14.10.2026, pull request #19)
+
+**Built**
+- Migration `0003_audit_log`: `audit_log` with format CHECKs, `before`/`after` JSON objects, the actor foreign key, two indexes, and the hand-written trigger `audit_log_append_only` (refuses UPDATE, DELETE, TRUNCATE).
+- `src/server/audit.ts`: `audit({ tx, userId }, entry)`; `src/server/audit-row.mjs`: the one insert; `src/domain/audit-secrets.mjs`: the secret field names; `src/domain/audit.ts`: `AUDIT_ACTIONS`, `auditValue()`, `changedFields()`.
+- The first-Head script writes its `user.create` row in the same transaction (closes decision 20 of 0.6).
+- `listChangeHistory(userId, { entity, entityId, page })` in `src/features/audit/queries/` (Head only, 50 a page); `src/components/change-history.tsx` with texts in uz, ru, en.
+
+**Left out, and the task that brings it**
+- The audit rows of settings 1.1, branches 1.2, users 1.3, switches 1.4, catalogs 1.5 to 1.9, direct entries 5.8. The component on a page: 1.1. The seed's rows: 0.14.
+
+**What the next sessions must know**
+- In an action's `history` step: `await audit({ tx, userId }, { action, entity: "<table>", entityId, before, after, at: now() })`. The actor is always the wrapper's user. `before` and `after` hold the changed fields only; money as `bigint`, moments as `Date`, never a password, hash, token or secret field.
+- A new audit action goes into `AUDIT_ACTIONS` and gets `audit.actions.<area>.<verb>` in the three message files (the component test checks it).
+- A page shows the history with `listChangeHistory(user.id, …)` and `<ChangeHistory entries fields>`; `fields` maps each field to a label key and a kind (`text`, `money`, `quantity`, `date`, `moment`, `boolean`, `{ enum: namespace }`).
+- `audit_log` rows cannot be deleted, also in tests: a test counts its own rows, never the whole table.
+- For any task that opens the history to a role other than the Head: add `branchFilter()` on the audited record's branch first (comment in the query).
+
+The next task is 0.10.

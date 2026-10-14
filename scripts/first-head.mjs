@@ -1,5 +1,6 @@
 // The core of `npm run user:first-head` (build-plan 0.6: "a script that creates the first Head
 // with a password typed at the prompt"). The command line is scripts/create-first-head.mjs.
+import { insertAuditRow } from "../src/server/audit-row.mjs";
 import { insertPasswordUser } from "../src/server/auth/password-user.mjs";
 
 // The first key of the advisory lock that makes two runs at once take turns.
@@ -7,7 +8,9 @@ const FIRST_HEAD_LOCK = 61;
 
 /**
  * Creates the first Head in one transaction, or refuses when any HEAD user exists, active or
- * not (plan of 0.6, decision 17). No audit row yet: `audit_log` arrives with task 0.9.
+ * not (plan of 0.6, decision 17). The user and its `user.create` audit row are written together
+ * (developer-rules.md rule 13); the first Head is the actor of its own row, as no other user
+ * exists yet (plan of 0.9, decision 4).
  * @param {import("pg").ClientBase} client a connected client, not inside a transaction
  * @param {{ fullName: string, username: string, phone: string, password: string }} input
  * @param {Date} moment
@@ -30,6 +33,23 @@ export async function createFirstHead(client, input, moment) {
       input.password,
       moment,
     );
+    // A fixed list of fields, never the input as a whole: the password stays out (plan of 0.9).
+    await insertAuditRow((text, values) => client.query(text, values), {
+      actorId: created.id,
+      action: "user.create",
+      entity: "users",
+      entityId: created.id,
+      before: null,
+      after: {
+        fullName: input.fullName.trim(),
+        username: created.username,
+        phone: input.phone.trim(),
+        role: "HEAD",
+        locale: "uz",
+        isActive: true,
+      },
+      at: moment,
+    });
     await client.query("commit");
     return created;
   } catch (error) {

@@ -78,7 +78,7 @@ Nothing a user can use yet. These tasks build the places where the rules live: t
   - **Build:** The wrapper every write uses: the Zod input check first; then, inside one transaction, the fixed order of rule 3: check permission with `authorize()`, lock the rows, check status and version, write, add the history event, add notifications; safe repeats by `client_key`; typed errors that carry a plain-words message key; the client helper for loading, success and error states. There is no REST API.
   - **Done when:** Database tests with a sample action: a step that throws leaves nothing saved; the same `client_key` twice writes once and returns the first result; an old version is refused with its message; invalid input never reaches the handler.
 
-- [ ] **0.9 Audit log**
+- [x] **0.9 Audit log**
   - **Read:** `14-data-model.md` (System: audit_log); `edge-cases/developer-rules.md` (rule 13); `03-roles-and-permissions.md` (Manager rights: third bullet); `04-catalogs.md` (Rules: 9).
   - **Build:** The `audit_log` table; an `audit()` helper that writes actor, action, entity, before and after inside the caller's transaction; a reusable change-history component that lists the audit rows of one entity.
   - **Done when:** Database tests: a change and its audit row commit together and roll back together; before and after hold the old and the new values.
