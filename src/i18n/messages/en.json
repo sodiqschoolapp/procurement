@@ -12,7 +12,6 @@
     "username": "Username",
     "password": "Password",
     "submit": "Sign in",
-    "submitting": "Signing in…",
     "language": "Language",
     "errors": {
       "required": "Fill in this field",
@@ -21,7 +20,9 @@
       "limit": "Too many tries. Try again in {minutes, plural, one {# minute} other {# minutes}}.",
       "unavailable": "Signing in is not possible right now. Try again later.",
       "invalid": "Type your username and password"
-    }
+    },
+    "logo": "Sodiq School",
+    "slogan": "Education begins with upbringing"
   },
   "session": {
     "signedInAs": "Signed in as {name}",
@@ -116,5 +117,8 @@
     "title": "Leave without saving?",
     "result": "The changes you made on this page will be lost.",
     "leave": "Leave"
+  },
+  "theme": {
+    "dark": "Dark theme"
   }
 }

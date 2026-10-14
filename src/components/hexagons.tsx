@@ -69,16 +69,17 @@ export function HexagonCluster({ className }: { className?: string }) {
  * brand book's cover").
  */
 export function HexagonColumn({ className }: { className?: string }) {
-  const rows = 9;
+  // Enough rows for a tall screen; the column is cut at the bottom, never at the sides.
+  const rows = 40;
   const width = Math.ceil(2 * W + 8);
   const height = Math.ceil(rows * 1.5 * R + R);
   return (
     <svg
       viewBox={`0 0 ${width} ${height}`}
-      preserveAspectRatio="xMidYMid slice"
+      preserveAspectRatio="xMidYMin slice"
       aria-hidden="true"
       focusable="false"
-      className={cn("h-full", className)}
+      className={className}
     >
       {Array.from({ length: rows }, (_, row) => {
         const x = 4 + W / 2 + (row % 2 === 1 ? W / 2 : 0);

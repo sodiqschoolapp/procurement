@@ -12,7 +12,6 @@
     "username": "Foydalanuvchi nomi",
     "password": "Parol",
     "submit": "Kirish",
-    "submitting": "Kirilmoqda…",
     "language": "Til",
     "errors": {
       "required": "Bu maydonni to'ldiring",
@@ -21,7 +20,9 @@
       "limit": "Urinishlar juda ko'p. {minutes, plural, other {# daqiqadan}} keyin qayta urinib ko'ring.",
       "unavailable": "Hozir kirib bo'lmaydi. Keyinroq urinib ko'ring.",
       "invalid": "Foydalanuvchi nomi va parolni kiriting"
-    }
+    },
+    "logo": "Sodiq School",
+    "slogan": "Taʼlim tarbiyadan boshlanadi"
   },
   "session": {
     "signedInAs": "Siz {name} sifatida kirdingiz",
@@ -116,5 +117,8 @@
     "title": "Saqlamasdan chiqasizmi?",
     "result": "Bu sahifadagi o'zgarishlar yo'qoladi.",
     "leave": "Chiqish"
+  },
+  "theme": {
+    "dark": "Qorongʻi mavzu"
   }
 }
