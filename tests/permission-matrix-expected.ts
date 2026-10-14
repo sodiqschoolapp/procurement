@@ -33,9 +33,17 @@ export const EXPECTED_MATRIX: Record<Permission, Expected> = {
     FINANCE: "no",
   },
   "request.create": {
-    row: "Create, edit, submit, cancel a request",
+    row: "Create, edit, submit, cancel a request (create)",
     HEAD: "all",
     MANAGER: "own",
+    PRINCIPAL: "no",
+    FINANCE: "no",
+    right: "CREATE_REQUESTS",
+  },
+  "request.edit": {
+    row: "Create, edit, submit, cancel a request (edit, submit, cancel, take back: 03 rule 7, 06 Allowed moves)",
+    HEAD: "all",
+    MANAGER: "owner",
     PRINCIPAL: "no",
     FINANCE: "no",
     right: "CREATE_REQUESTS",

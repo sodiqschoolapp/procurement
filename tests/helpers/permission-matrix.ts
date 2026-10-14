@@ -24,6 +24,12 @@ export type MatrixCase = {
   branchId: string;
   /** The user's own branch, also when `branchId` is the other one. */
   ownBranchId: string;
+  /**
+   * Who owns the request an "own requests" action works on: `user` in the cases of the table, a
+   * colleague Manager of the own branch in the colleague case. `run` builds the request with
+   * this owner and lets the action read the owner from it.
+   */
+  ownerId: string;
 };
 
 /** Runs the action and reads its answer: no error is "allow", an AuthorizationError its kind. */
@@ -44,12 +50,18 @@ async function setUp(role: Role, place: Place): Promise<MatrixCase> {
   // does act (D40: the refused data is beside the allowed case).
   if (role !== "HEAD") await insertUser(role, { branches: [other.id] });
   const user = await insertUser(role, { branches: role === "HEAD" ? [] : [own.id] });
-  return { user, branchId: place === "own" ? own.id : other.id, ownBranchId: own.id };
+  return {
+    user,
+    branchId: place === "own" ? own.id : other.id,
+    ownBranchId: own.id,
+    ownerId: user.id,
+  };
 }
 
 /**
  * Writes one database test per role × own branch × other branch, and for a permission guarded by
- * a Manager right one more: the Manager with that right switched off, in the own branch.
+ * a Manager right one more: the Manager with that right switched off, in the own branch. For an
+ * "own requests" permission one more: the Manager on a colleague's request of the own branch.
  * `run` acts as `user` on `branchId`; for an "own requests" permission it acts on a request the
  * user owns.
  */
@@ -80,6 +92,18 @@ export function describePermissionMatrix(
 
         const head = await insertUser("HEAD");
         expect(await answerOf(() => run({ ...each, user: head }))).toBe("allow");
+      });
+    }
+
+    if (entry.MANAGER === "owner") {
+      it("MANAGER on a colleague's request of the own branch: forbidden; HEAD on it: allow", async () => {
+        const each = await setUp("MANAGER", "own");
+        const colleague = await insertUser("MANAGER", { branches: [each.ownBranchId] });
+        const onColleagues = { ...each, ownerId: colleague.id };
+        expect(await answerOf(() => run(onColleagues))).toBe("forbidden");
+
+        const head = await insertUser("HEAD");
+        expect(await answerOf(() => run({ ...onColleagues, user: head }))).toBe("allow");
       });
     }
   });

@@ -61,8 +61,11 @@ export const PERMISSIONS = {
   // "Suggest a new product for the catalog": a branch permission, as catalog_suggestions has a
   // branch_id (plan of 0.7, decision 3).
   "catalog.suggest": { scope: "branch", roles: HEAD_AND_MANAGER },
-  // "Create, edit, submit, cancel a request"
+  // "Create, edit, submit, cancel a request", split by the one owner (03 rule 7; 06 Allowed
+  // moves: "Submit: Owner or Head", "Take back: Owner", "Cancel: Owner or Head"): creating is any
+  // own branch, the rest only on the Manager's own requests (permission review of 0.7).
   "request.create": { scope: "branch", roles: HEAD_AND_MANAGER, right: "CREATE_REQUESTS" },
+  "request.edit": { scope: "branch", roles: HEAD_AND_OWNER, right: "CREATE_REQUESTS" },
   // "Approve, send back or reject at step 1 / 2 / 3"
   "request.approve_step1": { scope: "branch", roles: HEAD_ONLY },
   "request.approve_step2": {
@@ -120,7 +123,13 @@ export type Actor = {
   disabledRights: readonly ManagerRight[];
 };
 
-/** What the action is about: its branch, and for "own requests" the request's owner. */
+/**
+ * What the action is about: its branch, and for "own requests" the request's owner. Both are read
+ * from the record in the database, never taken from the browser's input: a branch id sent by the
+ * browser would let anyone choose the branch the wall checks (developer-rules.md rule 13; the
+ * permission review of 0.7). Only a create action, whose record does not exist yet, passes the
+ * branch the user chose, and the check then is exactly whether the user may use that branch.
+ */
 export type Target = { branchId: string; ownerId?: string };
 
 export type Decision = "allow" | "not_found" | "forbidden";

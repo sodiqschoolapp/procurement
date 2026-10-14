@@ -86,6 +86,31 @@ describe("the permission registry (developer-rules.md rule 4)", () => {
     ]);
   });
 
+  it("turns red for an inline server action, a layout or a special route file that checks nobody, and a check written only in a comment", () => {
+    const inline = {
+      path: "src/app/requests/page.tsx",
+      text: `export default async function Page() {\n  await requireUser("/requests");\n  async function save() {\n    "use server";\n  }\n}\n`,
+    };
+    const layout = { path: "src/app/requests/layout.tsx", text: "export default function L() {}" };
+    const image = { path: "src/app/opengraph-image.tsx", text: "export default function I() {}" };
+    const comment = {
+      path: "src/app/stock/page.tsx",
+      text: '// requireUser("/stock") comes later\nexport default function Page() {}',
+    };
+    expect(unlisted([inline, layout, image, comment])).toEqual([
+      "inline server action src/app/requests/page.tsx",
+      "open route src/app/requests/layout.tsx",
+      "open route src/app/opengraph-image.tsx",
+      "open route src/app/stock/page.tsx",
+    ]);
+  });
+
+  it("sees a default export of a name in a server action file", () => {
+    expect(exportedNames("const run = async () => {};\nexport default run;\n")).toEqual([
+      "default",
+    ]);
+  });
+
   it("reads the directive after comments, and not a string later in the file", () => {
     expect(isServerActionFile(`// note\n/* more */\n"use server";\n`)).toBe(true);
     expect(isServerActionFile(`import x from "y";\nconst a = "use server";\n`)).toBe(false);

@@ -1,4 +1,4 @@
-import { eq, sql } from "drizzle-orm";
+import { TransactionRollbackError, eq, sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 
 import { AuthorizationError, authorize, branchFilter } from "@/server/authorize";
@@ -42,8 +42,8 @@ describePermissionMatrix("authorize(), Finance's sample", {
 });
 describePermissionMatrix("authorize(), an own-requests sample", {
   permission: "purchase.record",
-  run: ({ user, branchId }) =>
-    authorize(user.id, "purchase.record", { branchId, ownerId: user.id }),
+  run: ({ user, branchId, ownerId }) =>
+    authorize(user.id, "purchase.record", { branchId, ownerId }),
 });
 describePermissionMatrix("authorize(), a permission with no branch", {
   permission: "catalog.manage",
@@ -151,16 +151,18 @@ describe("authorize() (03-roles-and-permissions.md)", () => {
   it("reads the actor inside the transaction it is given", async () => {
     const chl = await insertBranch();
     const manager = await insertUser("MANAGER", { branches: [chl.id] });
-    await db
-      .transaction(async (tx) => {
-        await tx.update(users).set({ role: "FINANCE" }).where(eq(users.id, manager.id));
-        const kind = await refusalKind(
-          authorize(manager.id, "request.create", { branchId: chl.id }, tx),
-        );
-        expect(kind).toBe("forbidden");
-        tx.rollback();
-      })
-      .catch(() => undefined);
+    let insideKind = "not read";
+    const rolledBack = db.transaction(async (tx) => {
+      await tx.update(users).set({ role: "FINANCE" }).where(eq(users.id, manager.id));
+      insideKind = await refusalKind(
+        authorize(manager.id, "request.create", { branchId: chl.id }, tx),
+      );
+      tx.rollback();
+    });
+    await expect(rolledBack).rejects.toBeInstanceOf(TransactionRollbackError);
+    // Inside, authorize() read the transaction's own change (asserted here, outside the
+    // transaction, so a failure is never swallowed with the rollback; D38).
+    expect(insideKind).toBe("forbidden");
     // Outside, the rolled-back change was never there.
     expect(await refusalKind(authorize(manager.id, "request.create", { branchId: chl.id }))).toBe(
       "allowed",

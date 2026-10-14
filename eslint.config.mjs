@@ -52,7 +52,8 @@ export const LITERAL_TEXT_PROP_SELECTORS = [
 // tests/database-import-fence.test.ts lints samples.
 const THROUGH_THE_QUERIES =
   "reads the database from a screen. Read through src/features/<area>/queries, which call authorize() (developer-rules.md rule 4).";
-const DATABASE_MODULE = "/server.db.(client|schema)/";
+// The client, the schema and every other module of src/server/db, and the driver itself.
+const DATABASE_MODULE = "/(server.db.|^pg$|^drizzle-orm.node-postgres)/";
 
 export const DATABASE_IMPORT_SELECTORS = [
   {
@@ -116,7 +117,7 @@ const eslintConfig = defineConfig([
   {
     // The fence for the .ts files of screens: routes, server actions, helpers. `/health` is the
     // one open route that reads the database itself (0.16).
-    files: ["src/app/**/*.ts", "src/components/**/*.ts"],
+    files: ["src/app/**/*.ts", "src/components/**/*.ts", "src/features/**/components/**/*.ts"],
     ignores: ["**/*.test.ts", "src/app/health/route.ts"],
     rules: {
       "no-restricted-syntax": ["error", ...FORBIDDEN_TIME_SELECTORS, ...DATABASE_IMPORT_SELECTORS],

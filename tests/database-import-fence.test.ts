@@ -24,6 +24,11 @@ const SAMPLES: Record<string, string> = {
   "a schema file": 'import { users } from "@/server/db/schema/users";\nexport const a = users;\n',
   "a relative import": 'import { db } from "../../server/db/client";\nexport const a = db;\n',
   "an import()": 'export const load = () => import("@/server/db/client");\n',
+  "another module of src/server/db":
+    'import { connectionOptions } from "@/server/db/connection-options.mjs";\nexport const a = connectionOptions;\n',
+  "the driver": 'import { Pool } from "pg";\nexport const a = Pool;\n',
+  "Drizzle's driver module":
+    'import { drizzle } from "drizzle-orm/node-postgres";\nexport const a = drizzle;\n',
 };
 
 const SCREENS = [
@@ -33,6 +38,7 @@ const SCREENS = [
   "src/components/sample.tsx",
   "src/components/sample.ts",
   "src/features/requests/components/sample.tsx",
+  "src/features/requests/components/sample.ts",
 ];
 
 describe("the database-import fence (developer-rules.md rule 4)", () => {

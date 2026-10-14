@@ -320,3 +320,89 @@ describe("manager_rights (14-data-model.md; 03-roles-and-permissions.md, Manager
     });
   });
 });
+
+describe("the same guards on update (D39: insert and update, each refused case)", () => {
+  it("refuses changing a branch's code to a bad or taken one, its name to a taken or blank one, its address to a blank one", async () => {
+    await branchWith({ code: "UPA", name: "Yunusobod filiali" });
+    const changed = await branch();
+    const update = (set: ReturnType<typeof sql>) =>
+      db.execute(sql`update branches set ${set} where id = ${changed}`);
+
+    expect(await refusalOf(update(sql`code = 'upb'`))).toMatchObject({
+      code: "23514",
+      constraint: "branches_code_check",
+    });
+    expect(await refusalOf(update(sql`code = 'UPA'`))).toMatchObject({
+      code: "23505",
+      constraint: "branches_code_key",
+    });
+    expect(await refusalOf(update(sql`name = 'YUNUSOBOD  filiali'`))).toMatchObject({
+      code: "23505",
+      constraint: "branches_name_key",
+    });
+    expect(await refusalOf(update(sql`name = ' '`))).toMatchObject({
+      code: "23514",
+      constraint: "branches_name_check",
+    });
+    expect(await refusalOf(update(sql`address = ''`))).toMatchObject({
+      code: "23514",
+      constraint: "branches_address_check",
+    });
+    // A good change goes through beside them (D40).
+    await update(sql`code = 'UPB', name = 'Yunusobod filiali 2'`);
+  });
+
+  it("refuses moving a row to an unknown branch", async () => {
+    const manager = await plainUser("MANAGER");
+    await link(manager, await branch(), "MANAGER");
+    expect(
+      await refusalOf(
+        db.execute(sql`update user_branches set branch_id = ${MISSING} where user_id = ${manager}`),
+      ),
+    ).toMatchObject({ code: "23503", constraint: "user_branches_branch_id_branches_id_fk" });
+  });
+
+  it("refuses moving a Principal's row into a branch that has an active Principal; takes a branch without one", async () => {
+    const chl = await branch();
+    await principalOf(chl);
+    const moved = await principalOf(await branch());
+    const move = (branchId: string) =>
+      db.execute(sql`update user_branches set branch_id = ${branchId} where user_id = ${moved}`);
+    expect(await refusalOf(move(chl))).toMatchObject({
+      code: "23505",
+      constraint: "user_branches_active_principal_branch_id_key",
+    });
+    await move(await branch());
+  });
+
+  it("refuses changing a row's role to HEAD directly", async () => {
+    const manager = await plainUser("MANAGER");
+    await link(manager, await branch(), "MANAGER");
+    expect(
+      await refusalOf(
+        db.execute(sql`update user_branches set user_role = 'HEAD' where user_id = ${manager}`),
+      ),
+    ).toMatchObject({ code: "23514", constraint: "user_branches_user_role_check" });
+  });
+
+  it("refuses changing a right onto one the Manager already has, and the user to an unknown one", async () => {
+    const manager = await plainUser("MANAGER");
+    for (const right of ["ISSUE_STOCK", "SET_MINIMUMS"]) {
+      await db.execute(sql`
+        insert into manager_rights (user_id, "right", enabled, created_at)
+        values (${manager}, ${right}::manager_right, false, ${AT})`);
+    }
+    expect(
+      await refusalOf(
+        db.execute(sql`
+          update manager_rights set "right" = 'ISSUE_STOCK'
+          where user_id = ${manager} and "right" = 'SET_MINIMUMS'`),
+      ),
+    ).toMatchObject({ code: "23505", constraint: "manager_rights_pkey" });
+    expect(
+      await refusalOf(
+        db.execute(sql`update manager_rights set user_id = ${MISSING} where user_id = ${manager}`),
+      ),
+    ).toMatchObject({ code: "23503", constraint: "manager_rights_user_id_users_id_fk" });
+  });
+});
