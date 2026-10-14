@@ -744,6 +744,7 @@ Choices made during the build:
 - The price is typed as text and read by `parseSom()` on the server: spaces, U+00A0 and U+202F between groups; at most 999 999 999 999 999.
 - `src/server/db/schema/files.db.test.ts`: since `products` points at `files`, a plain `truncate files` is refused (0A000) before the `files_guard` trigger; the test asserts that and reaches the guard with `truncate files cascade` (D39). No guard was weakened.
 - The page actions return only what the screen needs (the id, the changed fields, the active flag).
+- The lock's refusal is tested through `updateProduct` with `./product-uses` replaced by a set of used products (`product-lock.db.test.ts`; diff review, Should fix 1), because no real use exists before the tasks that write one.
 
 ## Process changes
 
