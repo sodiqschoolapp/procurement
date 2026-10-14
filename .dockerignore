@@ -1,0 +1,16 @@
+# What never enters the image. .env holds the developer's own values; the image gets its
+# variables from App Platform at run time (build-plan 0.16; CLAUDE.md, secrets convention).
+.env
+.env.*
+.git
+.github
+.claude
+.next
+node_modules
+coverage
+playwright-report
+test-results
+docs
+*.md
+Dockerfile
+.dockerignore
