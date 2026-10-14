@@ -203,10 +203,45 @@ describe("products: a foreign key on every relation (developer-rules rule 5)", (
     });
   });
 
-  it("nothing cascades: a category that a product uses cannot be deleted (CLAUDE.md rule 11)", async () => {
-    const product = await insertProduct();
+  it("nothing cascades: a category, measure or company a product uses cannot be deleted (CLAUDE.md rule 11)", async () => {
+    const company = await insertCompany();
+    const product = await insertProduct({ defaultCompanyId: company.id });
     expect(
       await refusalOf(db.execute(sql`delete from categories where id = ${product.categoryId}`)),
     ).toMatchObject({ code: "23503", constraint: "products_category_id_categories_id_fk" });
+    expect(
+      await refusalOf(db.execute(sql`delete from units where id = ${product.unitId}`)),
+    ).toMatchObject({ code: "23503", constraint: "products_unit_id_units_id_fk" });
+    expect(
+      await refusalOf(db.execute(sql`delete from companies where id = ${company.id}`)),
+    ).toMatchObject({ code: "23503", constraint: "products_default_company_id_companies_id_fk" });
+    // An unused company is deleted, so the refusals above are the foreign keys' (D40).
+    const unused = await insertCompany();
+    await db.execute(sql`delete from companies where id = ${unused.id}`);
+  });
+});
+
+describe("products: the client key is unique (developer-rules.md rule 8)", () => {
+  it("on INSERT and on UPDATE: a held key is refused; rows with no key pass beside it", async () => {
+    const key = randomUUID();
+    const categoryId = (await insertCategory()).id;
+    const unitId = (await insertUnit()).id;
+    const insertWithKey = (clientKey: string | null) =>
+      db.execute(sql`insert into products (name, category_id, unit_id, client_key, created_at)
+        values (${`Kalit ${randomUUID()}`}, ${categoryId}, ${unitId}, ${clientKey}, ${AT})
+        returning id`);
+    await insertWithKey(key);
+    expect(await refusalOf(insertWithKey(key))).toMatchObject({
+      code: "23505",
+      constraint: "products_client_key_key",
+    });
+    await insertWithKey(null);
+    await insertWithKey(null);
+    const other = await insert();
+    expect(await refusalOf(update(other, "client_key", key))).toMatchObject({
+      code: "23505",
+      constraint: "products_client_key_key",
+    });
+    await update(other, "client_key", randomUUID());
   });
 });
