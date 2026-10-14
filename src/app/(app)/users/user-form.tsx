@@ -271,7 +271,7 @@ export function UserForm({ user, choices }: Props) {
                     else if (event.target.checked) chooseBranches([...branchIds, choice.id]);
                     else chooseBranches(branchIds.filter((id) => id !== choice.id));
                   }}
-                  className="size-5 shrink-0 accent-primary dark:accent-foreground"
+                  className="size-5 shrink-0 accent-foreground"
                 />
                 {label}
               </label>
@@ -293,7 +293,7 @@ export function UserForm({ user, choices }: Props) {
             onChange={(event) =>
               setValue("replacePrincipal", event.target.checked, { shouldDirty: true })
             }
-            className="mt-0.5 size-5 shrink-0 accent-primary dark:accent-foreground"
+            className="mt-0.5 size-5 shrink-0 accent-foreground"
           />
           {t("users.replace", { name: chosen!.principal!.fullName })}
         </label>
