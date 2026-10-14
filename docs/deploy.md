@@ -59,7 +59,7 @@ When a new version starts, the container first applies the database migrations (
 
 ## The variables
 
-Every variable is in `.do/app.yaml`; the owner types none of them. Where to see them: the app → component `web` → Settings → Environment Variables. The values of `DATABASE_URL` and `DATABASE_CA_CERT` are filled in by DigitalOcean from the database; they are not shown in a chat or written anywhere.
+Every variable but one is in `.do/app.yaml`; the owner types only `BETTER_AUTH_SECRET` (below). Where to see them: the app → component `web` → Settings → Environment Variables. The values of `DATABASE_URL` and `DATABASE_CA_CERT` are filled in by DigitalOcean from the database; they are not shown in a chat or written anywhere.
 
 | Name | Value in `.do/app.yaml` | What it is |
 | --- | --- | --- |
@@ -68,6 +68,17 @@ Every variable is in `.do/app.yaml`; the owner types none of them. Where to see 
 | `GIT_COMMIT` | `${_self.COMMIT_HASH}` | The commit the app was built from, shown by `/health` and the start page. |
 | `NODE_ENV` | `production` | Runs Next.js as a production server. |
 | `PORT` | none: `8080` is set in `Dockerfile` | The port the app listens on, the same as `http_port` in `.do/app.yaml`. |
+| `BETTER_AUTH_SECRET` | none: typed in the dashboard only (task 0.6) | Signs the session cookie. A secret: never in the repository, a chat or an issue. |
+
+### `BETTER_AUTH_SECRET` (task 0.6)
+
+Without it the test copy answers on `/`, `/login` and `/health`, but every sign-in is refused and the log shows `Sign-in refused: BETTER_AUTH_SECRET is not set`. To set it:
+
+1. On your own computer, make a random value of at least 32 characters, for example with `openssl rand -base64 32`. Do not paste it anywhere else.
+2. The app → component `web` → Settings → Environment Variables → Edit → add `BETTER_AUTH_SECRET`, tick **Encrypt** (type Secret), paste the value, Save. DigitalOcean deploys again by itself.
+3. Changing it later signs everyone out once; nothing else is lost.
+
+It is not declared in `.do/app.yaml`, so no value and no empty placeholder sits in the repository (0.16, decision 14). If a deploy from `.do/app.yaml` ever removes it, type it again.
 
 ## When something is wrong
 

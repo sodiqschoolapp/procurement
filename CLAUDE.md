@@ -65,6 +65,7 @@ npx vitest run --changed origin/main      only the tests the change touches
 npm run test:e2e            Playwright
 npm run db:migrate          apply migrations
 npm run db:seed             invented demo data
+npm run user:first-head     the first Head of an empty database, password typed at the prompt
 ```
 
 ## How to work on a task

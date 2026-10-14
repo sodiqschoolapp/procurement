@@ -6,5 +6,30 @@
   },
   "format": {
     "currency": "so'm"
+  },
+  "login": {
+    "title": "Вход",
+    "username": "Имя пользователя",
+    "password": "Пароль",
+    "submit": "Войти",
+    "submitting": "Вход…",
+    "language": "Язык",
+    "errors": {
+      "required": "Заполните это поле",
+      "tooLong": "Слишком длинно",
+      "wrong": "Неверное имя пользователя или пароль",
+      "limit": "Слишком много попыток. Попробуйте снова через {minutes, plural, one {# минуту} few {# минуты} many {# минут} other {# минуты}}.",
+      "unavailable": "Сейчас войти нельзя. Попробуйте позже.",
+      "invalid": "Введите имя пользователя и пароль"
+    }
+  },
+  "session": {
+    "signedInAs": "Вы вошли как {name}",
+    "signOut": "Выйти"
+  },
+  "languages": {
+    "uz": "O'zbekcha",
+    "ru": "Русский",
+    "en": "English"
   }
 }

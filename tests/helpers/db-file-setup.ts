@@ -18,6 +18,12 @@ afterEach(() => {
 });
 
 afterAll(async () => {
+  // The login library has a pool of its own (src/server/auth/auth.ts), made on first use; it
+  // closes first. A file that never signed in does not load the library just to close it.
+  if ("procurementAuth" in globalThis) {
+    const { closeAuth } = await import("@/server/auth/auth");
+    await closeAuth();
+  }
   const { closeDatabase } = await import("@/server/db/client");
   await closeDatabase();
   await dropTestDatabase(serverUrl, database.name);
