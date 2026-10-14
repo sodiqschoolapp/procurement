@@ -151,6 +151,25 @@ test("the sidebar collapses to the rail, stays a rail after a reload, and is rea
     72,
   );
 
+  // In the rail the current item is its icon on the solid orange fill of an item, corner 8
+  // (design system, Layout shell, 14.10.2026; build-plan 0.10b, Done when).
+  const current = page.locator('aside a[aria-current="page"]');
+  await expect(current).toHaveAttribute("aria-label", uz.shell.menu.home);
+  await expect(current.locator("svg")).toBeVisible();
+  const fill = await current.evaluate((link) => {
+    const probe = document.createElement("span");
+    probe.style.background = "var(--sidebar-primary)";
+    document.body.append(probe);
+    const orange = getComputedStyle(probe).backgroundColor;
+    probe.remove();
+    const style = getComputedStyle(link);
+    return { background: style.backgroundColor, orange, radius: style.borderRadius };
+  });
+  expect(fill.background).toBe(fill.orange);
+  expect(fill.radius).toBe("8px");
+  // The icon alone: the word is kept for screen readers only, so the item is rail-wide.
+  expect((await current.boundingBox())!.width).toBeLessThanOrEqual(48);
+
   // Every rail item and the button carry their word and are reached with the keyboard.
   const reached = new Set<string>();
   for (let step = 0; step < 20; step += 1) {

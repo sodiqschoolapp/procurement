@@ -429,6 +429,7 @@ Choices made during the build:
 - The wrapper recognises a global target by its shape (`scope: "global"`), and refuses as a definition error a branch target without a `branchId` (permission review).
 - Choosing the language one already has writes nothing: no update and no audit row, so no `users` row changes without its audit row (spec review).
 - The proxy hands the asked-for path to the signed-in layout in the request header `x-return-path`, so a session that ended while its cookie stayed returns to the same page after sign-in (spec review).
+- The Build and Done-when lines of 0.10b grew on `main` during the build (design system of 14.10.2026): the small button and the small icon button are 44 high at phone width (32 and 32×32 from `sm` on), with the unit test; the rail's current item is its icon on the orange fill, checked in the browser.
 - Sign-out is the client component `SignOutButton` with `useFormStatus`, so both sign-out buttons show their loading state (spec review, Must fix).
 
 ## Process changes
