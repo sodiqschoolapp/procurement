@@ -94,7 +94,9 @@ export function changedCatalogFields<Fields extends Record<string, unknown>>(
  * or a long text. `optional`: may be left empty (stored as null).
  */
 export type CatalogFieldType = "text" | "short" | "boolean" | "companyKind" | "long";
-export type CatalogField = { key: string; type: CatalogFieldType; optional?: boolean };
+export type CatalogFieldKey =
+  "name" | "shortName" | "allowDecimal" | "kind" | "taxId" | "phone" | "note";
+export type CatalogField = { key: CatalogFieldKey; type: CatalogFieldType; optional?: boolean };
 
 /**
  * The fields of each catalog, in the order of 04's Catalogs table, and its table: the audit

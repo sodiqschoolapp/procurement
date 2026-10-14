@@ -93,6 +93,30 @@
       },
       "settings": {
         "change": "Settings changed"
+      },
+      "unit": {
+        "create": "Measure added",
+        "update": "Measure changed",
+        "deactivate": "Measure deactivated",
+        "activate": "Measure activated"
+      },
+      "category": {
+        "create": "Category added",
+        "update": "Category changed",
+        "deactivate": "Category deactivated",
+        "activate": "Category activated"
+      },
+      "extra_cost_type": {
+        "create": "Extra cost type added",
+        "update": "Extra cost type changed",
+        "deactivate": "Extra cost type deactivated",
+        "activate": "Extra cost type activated"
+      },
+      "company": {
+        "create": "Company added",
+        "update": "Company changed",
+        "deactivate": "Company deactivated",
+        "activate": "Company activated"
       }
     },
     "fields": {
@@ -295,6 +319,7 @@
   },
   "admin": {
     "label": "Admin pages",
+    "catalog": "Catalogs",
     "branches": "Branches",
     "settings": "Settings",
     "users": "Users"
@@ -428,6 +453,95 @@
       "TRANSFER_STOCK": "Only the Procurement Head can send transfers.",
       "WRITE_OFF_COUNT": "Only the Procurement Head can start them.",
       "SET_MINIMUMS": "Only the Procurement Head sets them."
+    }
+  },
+  "catalog": {
+    "title": "Catalogs",
+    "intro": "The lists everyone picks from. Only you add and change entries.",
+    "activeCount": "{count} active",
+    "back": "All catalogs",
+    "summary": "{active} active, {inactive} inactive",
+    "search": "Search",
+    "searchHint": "Part of a name",
+    "find": "Find",
+    "clear": "Clear",
+    "noResultsTitle": "Nothing found",
+    "noResultsText": "Try another word, or clear the search to see every entry.",
+    "status": "Status",
+    "active": "Active",
+    "inactive": "Inactive",
+    "yes": "Yes",
+    "no": "No",
+    "save": "Save",
+    "created": "Added to the catalog",
+    "saved": "Changes saved",
+    "nothingChanged": "Nothing changed",
+    "deactivate": "Deactivate",
+    "activate": "Activate",
+    "deactivateTitle": "Deactivate {name}?",
+    "deactivateResult": "It leaves the lists people pick from. Old records keep it, and you can activate it again.",
+    "activateTitle": "Activate {name}?",
+    "activateResult": "It comes back to the lists people pick from.",
+    "deactivated": "Deactivated",
+    "activated": "Activated",
+    "history": "Change history",
+    "fact": "{state}",
+    "fields": {
+      "name": "Name",
+      "shortName": "Short name",
+      "allowDecimal": "Allows decimals",
+      "kind": "Kind",
+      "taxId": "Tax ID",
+      "phone": "Phone",
+      "note": "Note",
+      "isActive": "Active"
+    },
+    "hints": {
+      "shortName": "Shown next to quantities, for example kg or pcs.",
+      "allowDecimal": "Tick it when a quantity can be 2.5, as for kg; leave it for pcs.",
+      "taxId": "Optional. 9 digits for a company, 14 for a person.",
+      "phone": "Optional.",
+      "note": "Optional."
+    },
+    "companyKind": {
+      "choose": "Choose…",
+      "BRAND": "Brand",
+      "SUPPLIER": "Supplier",
+      "BOTH": "Brand and supplier"
+    },
+    "kinds": {
+      "measures": {
+        "title": "Measures",
+        "new": "New measure",
+        "newTitle": "New measure",
+        "description": "Units of products, and whether they allow decimals.",
+        "emptyTitle": "No measures yet",
+        "emptyText": "Add the units products are counted in, such as kg, l or pcs."
+      },
+      "categories": {
+        "title": "Categories",
+        "new": "New category",
+        "newTitle": "New category",
+        "description": "Groups of products for search and reports.",
+        "emptyTitle": "No categories yet",
+        "emptyText": "Add groups such as stationery, cleaning or furniture."
+      },
+      "extra-costs": {
+        "title": "Extra cost types",
+        "new": "New extra cost type",
+        "newTitle": "New extra cost type",
+        "description": "Costs on top of the price, such as delivery or loading.",
+        "emptyTitle": "No extra cost types yet",
+        "emptyText": "Add costs such as delivery, loading or installation."
+      },
+      "companies": {
+        "title": "Companies and brands",
+        "new": "New company",
+        "newTitle": "New company or brand",
+        "description": "One list for the brands on requests and the suppliers on purchases.",
+        "emptyTitle": "No companies yet",
+        "emptyText": "Add the brands people ask for and the suppliers you buy from."
+      }
     }
   }
 }

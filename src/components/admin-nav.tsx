@@ -6,11 +6,13 @@ import { cn } from "@/components/utils";
 // Moving between the Admin pages (11-screens-and-ux.md, Interface per role: "Admin groups
 // catalogs, prices, users, branches and settings"; plan of 1.2, decision 12). It looks like the
 // segmented control of docs/design-system.md (two to four choices), but each choice is a link to
-// a page. Later Admin tasks add their page in the spec's order.
+// a page. Later Admin tasks add their page in the spec's order; with Prices (1.9) there are five,
+// and the row needs another element (plan of 1.5, decision 11).
 
-export type AdminPage = "users" | "branches" | "settings";
+export type AdminPage = "catalog" | "users" | "branches" | "settings";
 
 const PAGES: readonly { id: AdminPage; href: string }[] = [
+  { id: "catalog", href: "/catalog" },
   { id: "users", href: "/users" },
   { id: "branches", href: "/branches" },
   { id: "settings", href: "/settings" },

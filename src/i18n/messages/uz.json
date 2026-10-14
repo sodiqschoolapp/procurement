@@ -93,6 +93,30 @@
       },
       "settings": {
         "change": "Sozlamalar oʻzgartirildi"
+      },
+      "unit": {
+        "create": "Oʻlchov birligi qoʻshildi",
+        "update": "Oʻlchov birligi oʻzgartirildi",
+        "deactivate": "Oʻlchov birligi faolsizlantirildi",
+        "activate": "Oʻlchov birligi faollashtirildi"
+      },
+      "category": {
+        "create": "Toifa qoʻshildi",
+        "update": "Toifa oʻzgartirildi",
+        "deactivate": "Toifa faolsizlantirildi",
+        "activate": "Toifa faollashtirildi"
+      },
+      "extra_cost_type": {
+        "create": "Xarajat turi qoʻshildi",
+        "update": "Xarajat turi oʻzgartirildi",
+        "deactivate": "Xarajat turi faolsizlantirildi",
+        "activate": "Xarajat turi faollashtirildi"
+      },
+      "company": {
+        "create": "Kompaniya qoʻshildi",
+        "update": "Kompaniya oʻzgartirildi",
+        "deactivate": "Kompaniya faolsizlantirildi",
+        "activate": "Kompaniya faollashtirildi"
       }
     },
     "fields": {
@@ -295,6 +319,7 @@
   },
   "admin": {
     "label": "Boshqaruv sahifalari",
+    "catalog": "Kataloglar",
     "branches": "Filiallar",
     "settings": "Sozlamalar",
     "users": "Foydalanuvchilar"
@@ -428,6 +453,95 @@
       "TRANSFER_STOCK": "Koʻchirishni faqat xaridlar rahbari yuboradi.",
       "WRITE_OFF_COUNT": "Ularni faqat xaridlar rahbari boshlay oladi.",
       "SET_MINIMUMS": "Ularni faqat xaridlar rahbari belgilaydi."
+    }
+  },
+  "catalog": {
+    "title": "Kataloglar",
+    "intro": "Hamma tanlaydigan roʻyxatlar. Yozuvlarni faqat siz qoʻshasiz va oʻzgartirasiz.",
+    "activeCount": "Faol: {count}",
+    "back": "Barcha kataloglar",
+    "summary": "Faol: {active}, faol emas: {inactive}",
+    "search": "Qidiruv",
+    "searchHint": "Nomning bir qismi",
+    "find": "Topish",
+    "clear": "Tozalash",
+    "noResultsTitle": "Hech narsa topilmadi",
+    "noResultsText": "Boshqa soʻz bilan urinib koʻring yoki barcha yozuvlarni koʻrish uchun qidiruvni tozalang.",
+    "status": "Holati",
+    "active": "Faol",
+    "inactive": "Faol emas",
+    "yes": "Ha",
+    "no": "Yoʻq",
+    "save": "Saqlash",
+    "created": "Katalogga qoʻshildi",
+    "saved": "Oʻzgarishlar saqlandi",
+    "nothingChanged": "Hech narsa oʻzgarmadi",
+    "deactivate": "Faolsizlantirish",
+    "activate": "Faollashtirish",
+    "deactivateTitle": "{name} faolsizlantirilsinmi?",
+    "deactivateResult": "Yozuv tanlash roʻyxatlaridan chiqadi. Eski hujjatlarda qoladi va uni yana faollashtirish mumkin.",
+    "activateTitle": "{name} faollashtirilsinmi?",
+    "activateResult": "Yozuv tanlash roʻyxatlariga qaytadi.",
+    "deactivated": "Faolsizlantirildi",
+    "activated": "Faollashtirildi",
+    "history": "Oʻzgarishlar tarixi",
+    "fact": "{state}",
+    "fields": {
+      "name": "Nomi",
+      "shortName": "Qisqa nomi",
+      "allowDecimal": "Kasr son boʻlishi mumkin",
+      "kind": "Turi",
+      "taxId": "STIR",
+      "phone": "Telefon",
+      "note": "Izoh",
+      "isActive": "Faol"
+    },
+    "hints": {
+      "shortName": "Miqdor yonida yoziladi, masalan kg yoki dona.",
+      "allowDecimal": "Miqdor 2,5 boʻlishi mumkin boʻlsa belgilang, kg kabi; dona uchun belgilamang.",
+      "taxId": "Ixtiyoriy. Kompaniya uchun 9 raqam, jismoniy shaxs uchun 14 raqam.",
+      "phone": "Ixtiyoriy.",
+      "note": "Ixtiyoriy."
+    },
+    "companyKind": {
+      "choose": "Tanlang…",
+      "BRAND": "Brend",
+      "SUPPLIER": "Yetkazib beruvchi",
+      "BOTH": "Brend va yetkazib beruvchi"
+    },
+    "kinds": {
+      "measures": {
+        "title": "Oʻlchov birliklari",
+        "new": "Yangi oʻlchov birligi",
+        "newTitle": "Yangi oʻlchov birligi",
+        "description": "Mahsulot birliklari va ular kasr sonni qabul qiladimi.",
+        "emptyTitle": "Hali oʻlchov birliklari yoʻq",
+        "emptyText": "Mahsulotlar sanaladigan birliklarni qoʻshing: kg, l yoki dona."
+      },
+      "categories": {
+        "title": "Toifalar",
+        "new": "Yangi toifa",
+        "newTitle": "Yangi toifa",
+        "description": "Qidiruv va hisobotlar uchun mahsulot guruhlari.",
+        "emptyTitle": "Hali toifalar yoʻq",
+        "emptyText": "Kanselyariya, tozalash yoki mebel kabi guruhlarni qoʻshing."
+      },
+      "extra-costs": {
+        "title": "Qoʻshimcha xarajat turlari",
+        "new": "Yangi xarajat turi",
+        "newTitle": "Yangi qoʻshimcha xarajat turi",
+        "description": "Narxdan tashqari xarajatlar: yetkazib berish, yuklash.",
+        "emptyTitle": "Hali xarajat turlari yoʻq",
+        "emptyText": "Yetkazib berish, yuklash yoki oʻrnatish kabi xarajatlarni qoʻshing."
+      },
+      "companies": {
+        "title": "Kompaniyalar va brendlar",
+        "new": "Yangi kompaniya",
+        "newTitle": "Yangi kompaniya yoki brend",
+        "description": "Arizalardagi brendlar va xaridlardagi yetkazib beruvchilar uchun bitta roʻyxat.",
+        "emptyTitle": "Hali kompaniyalar yoʻq",
+        "emptyText": "Soʻraladigan brendlarni va xarid qilinadigan yetkazib beruvchilarni qoʻshing."
+      }
     }
   }
 }

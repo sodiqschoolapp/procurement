@@ -36,6 +36,10 @@ export const SERVER_ACTIONS: Record<string, Entry> = {
   "src/app/(app)/users/actions.ts#renewUserPasswordAction": "catalog.manage",
   // "Switch a Manager's rights on or off" (03; plan of 1.4).
   "src/app/(app)/users/actions.ts#switchManagerRightAction": "manager_rights.switch",
+  // The Head's measures, categories, extra cost types and companies (plan of 1.5).
+  "src/app/(app)/catalog/actions.ts#createCatalogEntryAction": "catalog.manage",
+  "src/app/(app)/catalog/actions.ts#updateCatalogEntryAction": "catalog.manage",
+  "src/app/(app)/catalog/actions.ts#setCatalogEntryActiveAction": "catalog.manage",
 };
 
 /** Exports of `src/features/<area>/queries/`, as `<file>#<export>`. */
@@ -48,6 +52,12 @@ export const QUERIES: Record<string, Permission> = {
   // The Head's branch list and one branch (plan of 1.2).
   "src/features/catalog/queries/branches.ts#listBranches": "catalog.manage",
   "src/features/catalog/queries/branches.ts#getBranch": "catalog.manage",
+  // The four small catalogs: the Head's list, one entry, the counts of /catalog (plan of 1.5,
+  // review correction 2), and the picker of every role (decision 2, Look first).
+  "src/features/catalog/queries/catalog-entries.ts#listCatalogEntries": "catalog.manage",
+  "src/features/catalog/queries/catalog-entries.ts#getCatalogEntry": "catalog.manage",
+  "src/features/catalog/queries/catalog-entries.ts#countActiveCatalogEntries": "catalog.manage",
+  "src/features/catalog/queries/catalog-entries.ts#listCatalogChoices": "catalog.pick",
   // The Head's users, the vacancy warning and the form's branches (plan of 1.3).
   "src/features/users/queries/users.ts#listUsers": "catalog.manage",
   "src/features/users/queries/users.ts#getUser": "catalog.manage",
