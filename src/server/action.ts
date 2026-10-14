@@ -2,7 +2,7 @@ import { sql } from "drizzle-orm";
 import type { AnyPgColumn, PgTable } from "drizzle-orm/pg-core";
 import type * as z from "zod";
 
-import type { Actor, Permission, Target } from "@/domain/permissions";
+import { type Actor, PERMISSIONS, type Permission, type Target } from "@/domain/permissions";
 import { type CurrentUser, getCurrentUser } from "@/server/auth/session";
 import { AuthorizationError, type Executor, authorize } from "@/server/authorize";
 import type { db as Database } from "@/server/db/client";
@@ -24,6 +24,12 @@ import { type ActionResult, type ServerErrorCode, failure } from "./action-resul
 //   write     the change; the wrapper raises the version   │
 //   history   the history event                            │
 //   notify    the notifications                            ┘
+//
+// An action of a global permission (one with no branch, such as profile.edit) names no branch:
+// its `target` and its `lock` return GLOBAL_TARGET, and authorize() is asked without a target
+// (plan of 0.10b, decision 4, Look first). A global target with a branch permission, a branch
+// target with a global permission, and a global target with `repeat` are mistakes in the action:
+// they save nothing (review of the plan of 0.10b, correction 4).
 
 type Transaction = Parameters<Parameters<typeof Database.transaction>[0]>[0];
 
@@ -35,9 +41,20 @@ export class ActionError extends Error {
   }
 }
 
+/** The target of an action of a global permission: no branch, no owner. */
+export const GLOBAL_TARGET = Object.freeze({ scope: "global" } as const);
+
+/** A branch and owner, or GLOBAL_TARGET for an action of a global permission. */
+export type ActionTarget = Target | typeof GLOBAL_TARGET;
+
+/** By shape, not by reference: a fresh `{ scope: "global" }` from a step is global too. */
+function isGlobal(target: ActionTarget): target is typeof GLOBAL_TARGET {
+  return "scope" in target && target.scope === "global";
+}
+
 /** What `lock` returns: the locked record's branch and owner, its version, and the rows. */
 export type Locked<Rows> = {
-  target: Target;
+  target: ActionTarget;
   /** For a record that carries a version (an ORF): its id and the version read under the lock. */
   version?: { id: string; current: number };
   rows: Rows;
@@ -61,7 +78,7 @@ export type ActionDefinition<Schema extends z.ZodType, Rows, Result> = {
    * The branch and owner authorize() checks, read from the database (from the input only for a
    * create: decisions 0.7). `null` when the record does not exist: "Not found".
    */
-  target(context: StepContext<z.output<Schema>>): Promise<Target | null>;
+  target(context: StepContext<z.output<Schema>>): Promise<ActionTarget | null>;
   /** A create action's safe repeat (developer-rules.md rule 8). */
   repeat?: {
     clientKey(input: z.output<Schema>): string;
@@ -94,7 +111,8 @@ class ActionDefinitionError extends Error {
   name = "ActionDefinitionError";
 }
 
-function sameTarget(a: Target, b: Target): boolean {
+function sameTarget(a: ActionTarget, b: ActionTarget): boolean {
+  if (isGlobal(a) || isGlobal(b)) return isGlobal(a) && isGlobal(b);
   return a.branchId === b.branchId && (a.ownerId ?? null) === (b.ownerId ?? null);
 }
 
@@ -143,7 +161,27 @@ export async function runAction<Schema extends z.ZodType, Rows, Result>(
 
       const target = await definition.target(step);
       if (!target) throw new Refusal("not_found");
-      const actor = await authorize(userId, definition.permission, target, tx);
+      const global = isGlobal(target);
+      // A branch target always names its branch: without one, the wall has nothing to check.
+      if (!global && typeof (target as Partial<Target>).branchId !== "string") {
+        throw new ActionDefinitionError(`${definition.name}: a branch target without a branch.`);
+      }
+      if (global !== (PERMISSIONS[definition.permission].scope === "global")) {
+        throw new ActionDefinitionError(
+          `${definition.name}: the target does not fit the scope of ${definition.permission}.`,
+        );
+      }
+      // A repeat is matched by the branch it was made for; a global create has none yet (the
+      // first task with one decides: review of the plan of 0.10b, correction 4).
+      if (global && definition.repeat) {
+        throw new ActionDefinitionError(`${definition.name}: a global target with repeat.`);
+      }
+      const actor = await authorize(
+        userId,
+        definition.permission,
+        isGlobal(target) ? undefined : target,
+        tx,
+      );
 
       // Every action but a create locks the rows it changes: without the lock there is no check
       // of branch, owner and version under it (permission review of 0.8).
@@ -151,7 +189,7 @@ export async function runAction<Schema extends z.ZodType, Rows, Result>(
         throw new ActionDefinitionError(`${definition.name} has neither repeat nor lock.`);
       }
 
-      if (definition.repeat) {
+      if (definition.repeat && !isGlobal(target)) {
         const clientKey = definition.repeat.clientKey(input);
         // Two calls with one key wait for each other here; the second then finds the first's row
         // (plan of 0.8, decision 4). A collision of two keys only makes them wait.

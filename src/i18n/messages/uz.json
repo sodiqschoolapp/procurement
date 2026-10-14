@@ -1,8 +1,6 @@
 {
-  "start": {
-    "title": "Maktab xaridlari va ombor platformasi",
-    "notice": "Loyiha o'rnatildi. Hozircha bu yerda hech narsadan foydalanib bo'lmaydi.",
-    "version": "Versiya"
+  "app": {
+    "title": "Maktab xaridlari va ombor platformasi"
   },
   "format": {
     "currency": "so'm"
@@ -22,10 +20,10 @@
       "invalid": "Foydalanuvchi nomi va parolni kiriting"
     },
     "logo": "Sodiq School",
-    "slogan": "Taʼlim tarbiyadan boshlanadi"
+    "slogan": "Taʼlim tarbiyadan boshlanadi",
+    "version": "Versiya"
   },
   "session": {
-    "signedInAs": "Siz {name} sifatida kirdingiz",
     "signOut": "Chiqish"
   },
   "languages": {
@@ -70,8 +68,12 @@
     "no": "Yo'q",
     "actions": {
       "user": {
-        "create": "Hisob yaratildi"
+        "create": "Hisob yaratildi",
+        "change_language": "Til oʻzgartirildi"
       }
+    },
+    "fields": {
+      "locale": "Til"
     }
   },
   "requestStatus": {
@@ -119,6 +121,65 @@
     "leave": "Chiqish"
   },
   "theme": {
-    "dark": "Qorongʻi mavzu"
+    "dark": "Qorongʻi mavzu",
+    "device": "Qurilmadagidek",
+    "light": "Yorugʻ mavzu"
+  },
+  "shell": {
+    "menuLabel": "Asosiy menyu",
+    "menu": {
+      "home": "Bosh sahifa",
+      "requests": "Buyurtmalar",
+      "warehouse": "Ombor",
+      "stock": "Qoldiqlar",
+      "money": "Pul",
+      "analytics": "Tahlil",
+      "reports": "Hisobotlar",
+      "admin": "Boshqaruv",
+      "more": "Yana"
+    },
+    "collapse": "Menyuni yigʻish",
+    "expand": "Menyuni yoyish",
+    "profile": "Profil"
+  },
+  "branch": {
+    "label": "Filial",
+    "all": "Barcha filiallarim",
+    "inactive": "(faol emas)",
+    "option": "{code} — {name}"
+  },
+  "roles": {
+    "HEAD": "Xaridlar rahbari",
+    "MANAGER": "Menejer",
+    "PRINCIPAL": "Direktor",
+    "FINANCE": "Moliya"
+  },
+  "home": {
+    "title": "Mening vazifalarim",
+    "empty": {
+      "MANAGER": {
+        "title": "Hozircha ish yoʻq",
+        "line": "Bu yerda sizga qaytarilgan buyurtmalar, qoralamalar, ochiq buyurtmalar, qoʻlingizdagi pul, kam qolgan tovarlar va yaqin muddatlar chiqadi."
+      },
+      "HEAD": {
+        "title": "Hozircha qaror kutilmaydi",
+        "line": "Bu yerda barcha filiallar boʻyicha tasdiqingizni kutayotgan buyurtmalar, ortiqcha xarajatlar, hisobdan chiqarishlar, tovar takliflari va toʻxtab qolgan buyurtmalar chiqadi."
+      },
+      "PRINCIPAL": {
+        "title": "Hozircha tasdiqlash kerak emas",
+        "line": "Bu yerda tasdiqingizni kutayotgan buyurtmalar hamda filialingiz buyurtmalari va xarajatlari chiqadi."
+      },
+      "FINANCE": {
+        "title": "Hozircha tasdiqlash kerak emas",
+        "line": "Bu yerda tasdiqingizni kutayotgan buyurtmalar, hisob-kitob kutayotgan buyurtmalar va menejerlardagi pul chiqadi."
+      }
+    }
+  },
+  "profile": {
+    "title": "Profil",
+    "language": "Til",
+    "theme": "Mavzu",
+    "username": "Foydalanuvchi nomi",
+    "role": "Rol"
   }
 }

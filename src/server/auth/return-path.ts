@@ -19,3 +19,10 @@ export function loginPathFor(path: string): string {
   const back = safeReturnPath(path);
   return back === "/" ? "/login" : `/login?next=${encodeURIComponent(back)}`;
 }
+
+/**
+ * The request header in which the proxy hands the asked-for path to the app's layout, so a
+ * session that ended while its cookie stayed still returns to the same page (spec review of
+ * 0.10b). Set by the proxy only; a browser's own value is overwritten there.
+ */
+export const RETURN_PATH_HEADER = "x-return-path";

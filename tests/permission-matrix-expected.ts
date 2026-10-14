@@ -211,6 +211,13 @@ export const EXPECTED_MATRIX: Record<Permission, Expected> = {
     PRINCIPAL: "no",
     FINANCE: "no",
   },
+  "profile.edit": {
+    row: "Change one's own language and branch view (not in 03: plan of 0.10b, decision 1, Look first)",
+    HEAD: "yes",
+    MANAGER: "yes",
+    PRINCIPAL: "yes",
+    FINANCE: "yes",
+  },
 };
 
 export type Place = "own" | "other";

@@ -39,6 +39,8 @@ export const ICONS = [
   "bar_chart",
   "description",
   "person",
+  // The phone tab bar's "More" (plan of 0.10b).
+  "more_horiz",
   // The pending button; the request statuses and the colour labels.
   "progress_activity",
   "schedule",

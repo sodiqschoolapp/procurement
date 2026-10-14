@@ -54,7 +54,7 @@ When a new version starts, the container first applies the database migrations (
    - `status` is `ok`: the app reaches its database.
    - `commit` is the full sha of the newest commit of `main` on GitHub. If it is `unknown`, the variable `GIT_COMMIT` is not bound; say so on issue #9.
    - `timezone` is `UTC` (`developer-rules.md` rule 10). Anything else: say so on issue #9.
-2. Open `https://ombor-test.sodiqschool.uz`. The start page opens and shows "Versiya" with the first seven characters of that commit.
+2. Open `https://ombor-test.sodiqschool.uz/login`. The sign-in page opens and shows "Versiya" with the first seven characters of that commit at the bottom of the form.
 3. After the next merge into `main`: the app's Activity shows a new deploy by itself, and `/health` then names the new commit.
 
 ## The variables
@@ -65,7 +65,7 @@ Every variable but one is in `.do/app.yaml`; the owner types only `BETTER_AUTH_S
 | --- | --- | --- |
 | `DATABASE_URL` | `${db.DATABASE_URL}` | The database's address, with its user and password. A secret: DigitalOcean binds it. |
 | `DATABASE_CA_CERT` | `${db.CA_CERT}` | The certificate the app checks the database against. Public, but bound too. |
-| `GIT_COMMIT` | `${_self.COMMIT_HASH}` | The commit the app was built from, shown by `/health` and the start page. |
+| `GIT_COMMIT` | `${_self.COMMIT_HASH}` | The commit the app was built from, shown by `/health` and the sign-in page. |
 | `NODE_ENV` | `production` | Runs Next.js as a production server. |
 | `PORT` | none: `8080` is set in `Dockerfile` | The port the app listens on, the same as `http_port` in `.do/app.yaml`. |
 | `BETTER_AUTH_SECRET` | none: typed in the dashboard only (task 0.6) | Signs the session cookie. A secret: never in the repository, a chat or an issue. |

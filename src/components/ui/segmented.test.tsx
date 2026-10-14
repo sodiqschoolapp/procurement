@@ -45,3 +45,21 @@ describe("the segmented control (design system, Fields and switches)", () => {
     expect(() => render(five, "a")).toThrow(/two to four/);
   });
 });
+
+describe("the segmented control while its choice is saved (11-screens rule 4)", () => {
+  it("is disabled and dimmed at once, and the chosen item shows the turning icon", () => {
+    const html = renderToStaticMarkup(
+      <Segmented label="Theme" options={THEMES} value="light" onValueChange={() => {}} pending />,
+    );
+    expect(html).toContain('aria-busy="true"');
+    expect(html).toContain("opacity-60");
+    expect(html.match(/animate-spin/g)).toHaveLength(1);
+    expect(html.match(/aria-disabled="true"|data-disabled/g)?.length).toBeGreaterThan(0);
+  });
+
+  it("is neither busy nor turning when nothing is saved", () => {
+    const html = render(THEMES);
+    expect(html).not.toContain("aria-busy");
+    expect(html).not.toContain("animate-spin");
+  });
+});

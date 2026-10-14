@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import * as z from "zod";
 
+import { BRANCH_COOKIE, branchCookieOptions } from "@/features/catalog/branch-cookie";
 import { LOCALES, LOCALE_COOKIE } from "@/i18n/locale";
 import { getCurrentUser } from "@/server/auth/session";
 import { SESSION_COOKIE_NAMES } from "@/server/auth/session-cookie";
@@ -43,6 +44,10 @@ export async function signOutAction(): Promise<void> {
       secure: name.startsWith("__Secure-"),
     });
   }
+  // The branch view is the person's own: the next person on this device starts on "All my
+  // branches" (review of the plan of 0.10b, correction 3).
+  if (store.has(BRANCH_COOKIE))
+    store.set(BRANCH_COOKIE, "", { ...branchCookieOptions(), maxAge: 0 });
   redirect("/login");
 }
 

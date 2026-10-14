@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { describe, expect, it } from "vitest";
 
 import { proxy } from "./proxy";
+import { RETURN_PATH_HEADER } from "./server/auth/return-path";
 import { SECURE_SESSION_COOKIE, SESSION_COOKIE } from "./server/auth/session-cookie";
 
 // edge-cases/system.md: a signed-out person who opens a page signs in and returns to it. The
@@ -29,7 +30,25 @@ describe("the proxy (edge-cases/system.md: back to the same page after sign-in)"
     expect(response.headers.get("x-middleware-next")).toBe("1");
   });
 
-  it.each(["/", "/login", "/health"])("leaves %s open without a cookie", (path) => {
+  it("hands the asked-for path to the layout, over any value the browser sent (spec review of 0.10b)", () => {
+    const sent = new NextRequest(new URL("/profile?tab=x", "http://localhost:3000"), {
+      headers: { cookie: `${SESSION_COOKIE}=invented.value`, [RETURN_PATH_HEADER]: "/elsewhere" },
+    });
+    const response = proxy(sent);
+
+    expect(response.headers.get(`x-middleware-request-${RETURN_PATH_HEADER}`)).toBe(
+      "/profile?tab=x",
+    );
+  });
+
+  it.each(["/login", "/health"])("leaves %s open without a cookie", (path) => {
     expect(proxy(request(path)).headers.get("location")).toBeNull();
+  });
+
+  it("sends / to /login: it is the home page of a signed-in person (plan of 0.10b)", () => {
+    const location = proxy(request("/")).headers.get("location");
+
+    expect(location).not.toBeNull();
+    expect(new URL(location!).pathname).toBe("/login");
   });
 });

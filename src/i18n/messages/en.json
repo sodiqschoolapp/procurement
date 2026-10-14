@@ -1,8 +1,6 @@
 {
-  "start": {
-    "title": "School Procurement & Warehouse Platform",
-    "notice": "The project is set up. Nothing can be used here yet.",
-    "version": "Version"
+  "app": {
+    "title": "School Procurement & Warehouse Platform"
   },
   "format": {
     "currency": "so'm"
@@ -22,10 +20,10 @@
       "invalid": "Type your username and password"
     },
     "logo": "Sodiq School",
-    "slogan": "Education begins with upbringing"
+    "slogan": "Education begins with upbringing",
+    "version": "Version"
   },
   "session": {
-    "signedInAs": "Signed in as {name}",
     "signOut": "Sign out"
   },
   "languages": {
@@ -70,8 +68,12 @@
     "no": "No",
     "actions": {
       "user": {
-        "create": "Account created"
+        "create": "Account created",
+        "change_language": "Language changed"
       }
+    },
+    "fields": {
+      "locale": "Language"
     }
   },
   "requestStatus": {
@@ -119,6 +121,65 @@
     "leave": "Leave"
   },
   "theme": {
-    "dark": "Dark theme"
+    "dark": "Dark theme",
+    "device": "Like my device",
+    "light": "Light theme"
+  },
+  "shell": {
+    "menuLabel": "Main menu",
+    "menu": {
+      "home": "Home",
+      "requests": "Requests",
+      "warehouse": "Warehouse",
+      "stock": "Stock",
+      "money": "Money",
+      "analytics": "Analytics",
+      "reports": "Reports",
+      "admin": "Admin",
+      "more": "More"
+    },
+    "collapse": "Collapse the menu",
+    "expand": "Expand the menu",
+    "profile": "Profile"
+  },
+  "branch": {
+    "label": "Branch",
+    "all": "All my branches",
+    "inactive": "(inactive)",
+    "option": "{code} — {name}"
+  },
+  "roles": {
+    "HEAD": "Procurement Head",
+    "MANAGER": "Manager",
+    "PRINCIPAL": "Principal",
+    "FINANCE": "Finance"
+  },
+  "home": {
+    "title": "My tasks",
+    "empty": {
+      "MANAGER": {
+        "title": "Nothing to do yet",
+        "line": "Requests sent back to you, your drafts, your open requests, the cash you hold, low stock and lines due soon will appear here."
+      },
+      "HEAD": {
+        "title": "Nothing to decide yet",
+        "line": "Requests waiting for your approval, overspends, write-offs, product suggestions and stuck requests across all branches will appear here."
+      },
+      "PRINCIPAL": {
+        "title": "Nothing to approve yet",
+        "line": "Requests waiting for your approval and your branch's requests and spending will appear here."
+      },
+      "FINANCE": {
+        "title": "Nothing to approve yet",
+        "line": "Requests waiting for your approval, requests waiting for settlement and money with managers will appear here."
+      }
+    }
+  },
+  "profile": {
+    "title": "Profile",
+    "language": "Language",
+    "theme": "Theme",
+    "username": "Username",
+    "role": "Role"
   }
 }

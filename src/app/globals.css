@@ -19,6 +19,11 @@
   }
 }
 
+/* The menu collapsed to the rail (docs/design-system.md, Layout shell: "It can collapse to a
+   72-wide rail"): <html data-sidebar="rail">, set before the first paint by the inline script of
+   src/components/theme.ts and by the collapse button (plan of 0.10b, decision 12). */
+@custom-variant rail (&:where([data-sidebar="rail"] *));
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

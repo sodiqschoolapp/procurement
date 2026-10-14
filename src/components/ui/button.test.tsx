@@ -24,11 +24,19 @@ describe("the shared button (design system, Buttons)", () => {
     ]);
   });
 
-  it("sizes: small 32, medium 40 and 44 at phone width, large 48", () => {
-    expect(BUTTON_SIZES.sm.split(" ")).toContain("h-8");
+  it("sizes: medium 40 and 44 at phone width, large 48, icon 40 and 44", () => {
     expect(BUTTON_SIZES.default.split(" ")).toEqual(expect.arrayContaining(["h-11", "sm:h-10"]));
     expect(BUTTON_SIZES.lg.split(" ")).toContain("h-12");
     expect(BUTTON_SIZES.icon.split(" ")).toEqual(expect.arrayContaining(["size-11", "sm:size-10"]));
+  });
+
+  it("a small button is 44 high at phone width and 32 from the sm width up (design system, Buttons, 14.10.2026; build-plan 0.10b)", () => {
+    expect(BUTTON_SIZES.sm.split(" ")).toEqual(expect.arrayContaining(["h-11", "sm:h-8"]));
+    expect(BUTTON_SIZES.sm.split(" ")).not.toContain("h-8");
+    expect(BUTTON_SIZES["icon-sm"].split(" ")).toEqual(
+      expect.arrayContaining(["size-11", "sm:size-8"]),
+    );
+    expect(BUTTON_SIZES["icon-sm"].split(" ")).not.toContain("size-8");
   });
 
   it("no kind draws a border (What we never do 6)", () => {

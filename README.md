@@ -7,7 +7,7 @@ One web app that replaces the paper order request form and the warehouse records
 
 About 20 to 30 users. The interface is in Uzbek, Russian and English.
 
-The project is being built task by task from `docs/build-plan.md`. So far the skeleton and the database set-up exist: the app opens on a start page and nothing can be used yet.
+The project is being built task by task from `docs/build-plan.md`. So far the skeleton, the database set-up, sign-in and the app shell exist: after sign-in each role sees its menu, an empty home page and its profile; nothing else can be used yet.
 
 ## What you need
 
@@ -70,17 +70,17 @@ Nothing is done by hand there. A hook of `.claude/settings.json` runs `scripts/c
 
 ## Commands
 
-| Command              | What it does                                                                          |
-| -------------------- | ------------------------------------------------------------------------------------- |
-| `npm run dev`        | The app on `http://localhost:3000`, for this machine only, reloading as files change. |
-| `npm run build`      | The production build.                                                                 |
-| `npm run lint`       | ESLint with no warnings allowed, then the Prettier format check.                      |
-| `npm run format`     | Prettier rewrites the files. Run it when the format check fails.                      |
-| `npm run typecheck`  | Generates the Next.js types, then runs the TypeScript compiler.                       |
-| `npm test`           | Unit tests and database tests with Vitest. PostgreSQL must be running.                |
-| `npm run test:e2e`   | Playwright in a real browser at 375 px and 1440 px. It starts the app itself.         |
-| `npm run db:migrate` | Applies the SQL migrations of `drizzle/` and prints the name of each one it applied.  |
-| `npm run db:seed`    | **Not built yet.** It only prints a notice; task 0.14 brings the demo data.           |
+| Command              | What it does                                                                                                                                                                              |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run dev`        | The app on `http://localhost:3000`, for this machine only, reloading as files change.                                                                                                     |
+| `npm run build`      | The production build.                                                                                                                                                                     |
+| `npm run lint`       | ESLint with no warnings allowed, then the Prettier format check.                                                                                                                          |
+| `npm run format`     | Prettier rewrites the files. Run it when the format check fails.                                                                                                                          |
+| `npm run typecheck`  | Generates the Next.js types, then runs the TypeScript compiler.                                                                                                                           |
+| `npm test`           | Unit tests and database tests with Vitest. PostgreSQL must be running.                                                                                                                    |
+| `npm run test:e2e`   | Playwright at 375 px and 1440 px. It starts the app itself on port 3100 against its own database, `procurement_e2e`, made and filled with invented people by `tests/e2e/global-setup.ts`. |
+| `npm run db:migrate` | Applies the SQL migrations of `drizzle/` and prints the name of each one it applied.                                                                                                      |
+| `npm run db:seed`    | **Not built yet.** It only prints a notice; task 0.14 brings the demo data.                                                                                                               |
 
 Only the unit tests, with nothing running:
 
@@ -117,7 +117,7 @@ npx playwright install chromium
 `.github/workflows/ci.yml` runs on every pull request and on every push to `main`, with two jobs. Their names, `checks` and `e2e`, are what the reviewer reads and what `main` requires; they are never renamed.
 
 - **`checks`**: `npm ci`, `npm audit --omit=dev --audit-level=high`, PostgreSQL from `docker-compose.yml`, lint, typecheck, `npm run db:migrate` on the empty database (every migration applied) and once more (nothing to apply), `npm test`, `npx drizzle-kit generate` writing nothing (the schema files and the migrations agree), and a check that no `.sql` file under `drizzle/` that was already on `main` was modified, deleted or renamed.
-- **`e2e`**: PostgreSQL, `npm run db:migrate`, the Playwright browser, `npm run test:e2e`. A failed run keeps its traces as the artifact `playwright-traces` for 14 days. Then the image of `Dockerfile` is built and started against a fresh database: it must apply every migration, answer `200` on `/health` with this commit and the time zone `UTC`, and show the commit on the start page; started against a database that does not exist, it must stop without answering.
+- **`e2e`**: PostgreSQL, `npm run db:migrate`, the Playwright browser, `npm run test:e2e`. A failed run keeps its traces as the artifact `playwright-traces` for 14 days. Then the image of `Dockerfile` is built and started against a fresh database: it must apply every migration, answer `200` on `/health` with this commit and the time zone `UTC`, and show the commit on the sign-in page; started against a database that does not exist, it must stop without answering.
 
 The same on this machine, with `docker compose up -d` running: `npm run lint`, `npm run typecheck`, `npm test`, `npx drizzle-kit generate` (then `git status` shows nothing new) and `npm run test:e2e`.
 

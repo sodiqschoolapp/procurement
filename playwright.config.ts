@@ -1,10 +1,15 @@
 import { defineConfig } from "@playwright/test";
 
-const baseURL = "http://localhost:3000";
+import { e2eDatabaseUrl, serverDatabaseUrl } from "./tests/e2e/global-setup";
+
+// The browser tests run the app on its own port against their own database, procurement_e2e
+// (plan of 0.10b, decision 14), so a dev server on the dev database is never reused by mistake.
+const PORT = 3100;
+const baseURL = `http://localhost:${PORT}`;
 
 export default defineConfig({
   testDir: "./tests/e2e",
-  // The invented user the sign-in tests use (task 0.6).
+  // The e2e database and its invented people (tasks 0.6 and 0.10b).
   globalSetup: "./tests/e2e/global-setup.ts",
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
@@ -21,8 +26,9 @@ export default defineConfig({
     { name: "desktop-1440", use: { viewport: { width: 1440, height: 900 } } },
   ],
   webServer: {
-    command: "npm run dev",
+    command: `npx next dev --hostname 127.0.0.1 --port ${PORT}`,
     url: baseURL,
+    env: { DATABASE_URL: e2eDatabaseUrl(serverDatabaseUrl()) },
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
   },

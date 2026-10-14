@@ -5,7 +5,7 @@ import { Icon, type IconName } from "@/components/icon";
 import { cn } from "@/components/utils";
 
 // docs/design-system.md, Buttons: three sizes, four kinds, one shape; every button is a fill
-// with no border ("What we never do" 6). Sizes `sm` 32, `default` 40 (44 at phone width), `lg`
+// with no border ("What we never do" 6). Sizes `sm` 32 and `default` 40 (both 44 at phone width), `lg`
 // 48 and the square `icon-sm`, `icon`, `icon-lg`; kinds `default` (primary), `secondary`, `ghost`
 // (quiet), `destructive` (danger, no fill until hover). No `xs`, `outline` or `link`. A link
 // styled as a button uses `buttonVariants()`.
@@ -19,10 +19,10 @@ export const BUTTON_KINDS = {
 } as const;
 
 export const BUTTON_SIZES = {
-  sm: "h-8 px-3 text-[13px] leading-4",
+  sm: "h-11 px-3 text-[13px] leading-4 sm:h-8",
   default: "h-11 px-4 text-sm leading-5 sm:h-10",
   lg: "h-12 px-5 text-base leading-6",
-  "icon-sm": "size-8",
+  "icon-sm": "size-11 sm:size-8",
   icon: "size-11 sm:size-10",
   "icon-lg": "size-12",
 } as const;

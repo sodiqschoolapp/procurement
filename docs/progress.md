@@ -271,4 +271,23 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - Bitter and Golos Text are named `Bitter Variable` and `Golos Text Variable` in CSS; Tailwind `font-slab` is Bitter, for brand moments only.
 - Trap: the browser reports token colours as `lab()`; an e2e colour check reads the pixel through a canvas (`tests/e2e/design-system.spec.ts`).
 
-The next task is 0.10b.
+## 0.10b App shell, menu per role and profile (14.10.2026, pull request #22)
+
+**Built**
+- `src/app/(app)/`: the layout (sidebar, top bar with the branch view, phone tab bar), `/` (empty home per role), `/profile` (language, theme, sign-out). The menu per role is `src/components/shell/menu.ts`.
+- Permission `profile.edit`; the wrapper's global form (`GLOBAL_TARGET`); `chooseOwnLanguage` (audit row `user.change_language`); `chooseBranch` and the `branch` cookie (`src/features/catalog/branch-*.ts`); `listMyBranches`, `currentBranchChoice`.
+- `/` is no longer open; the commit caption is on `/login`. Browser tests use their own database `procurement_e2e` on port 3100.
+
+**Left out, and the task that brings it**
+- The bell and `/notifications`: 0.11. Search: 6.10. Home contents: 2.x to 6.x. The pages the menu links to: their tasks. A styled full-page "not found": no task names it.
+
+**What the next sessions must know**
+- Every signed-in page goes under `src/app/(app)/`; the layout already calls `requireUser()`, the page calls it again with its own path.
+- A list reads its branch scope with `currentBranchChoice(user.id, (await cookies()).get(BRANCH_COOKIE)?.value)`: `null` is "All my branches"; the SQL still filters with `branchFilter()`.
+- An action of a global permission returns `GLOBAL_TARGET` from `target` and `lock`; a branch target there is a definition error. A global create with `repeat` is refused until a task decides how its repeat is matched.
+- Action definitions that touch the database live under `src/features/<area>/actions/`; the `"use server"` file in `src/app/` only wraps them.
+- E2E people: `E2E_ROLES` and `E2E_BRANCHES` of `tests/e2e/global-setup.ts`; a test that changes a person's settings uses its own person (the language test has one per project).
+- Page titles are `text-[28px] leading-[34px] font-bold tracking-[-0.01em]`; the shell sets the page padding (32, 16 on a phone).
+- Trap: a click on a Base UI trigger before hydration opens nothing; the shell test retries the "More" click with `toPass()`.
+
+The next task is 0.11.
