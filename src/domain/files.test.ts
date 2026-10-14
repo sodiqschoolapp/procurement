@@ -1,12 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  MAX_FILE_BYTES,
-  allowedFor,
-  shrinkTarget,
-  sniffMime,
-  storedName,
-} from "./files";
+import { MAX_FILE_BYTES, allowedFor, shrinkTarget, sniffMime, storedName } from "./files";
 
 const bytes = (...values: (number | string)[]): Uint8Array =>
   new Uint8Array(

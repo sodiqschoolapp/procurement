@@ -35,6 +35,9 @@ export const QUERIES: Record<string, Permission> = {
   // The bell and /notifications (plan of 0.11, decision 2, Look first).
   "src/features/notifications/queries/my-notifications.ts#listMyNotifications": "notification.own",
   "src/features/notifications/queries/my-notifications.ts#countMyUnread": "notification.own",
+  // The download route's file: file.upload for a file no record holds; each owner a later task
+  // adds to src/server/files/owners.ts names its own permission there (plan of 0.12, decision 5).
+  "src/features/files/queries/file-for-download.ts#fileForDownload": "file.upload",
 };
 
 /**

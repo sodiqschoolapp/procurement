@@ -7,7 +7,13 @@ import { CreateBucketCommand, HeadBucketCommand, S3Client } from "@aws-sdk/clien
 
 /** The five S3_* variables, each required. The message names a variable, never a value. */
 export function storageConfigOf(env) {
-  const names = ["S3_ENDPOINT", "S3_REGION", "S3_BUCKET", "S3_ACCESS_KEY_ID", "S3_SECRET_ACCESS_KEY"];
+  const names = [
+    "S3_ENDPOINT",
+    "S3_REGION",
+    "S3_BUCKET",
+    "S3_ACCESS_KEY_ID",
+    "S3_SECRET_ACCESS_KEY",
+  ];
   for (const name of names) {
     if (!env[name]) {
       throw new Error(`${name} is not set. Put it into the local .env file (README.md, "Run it").`);

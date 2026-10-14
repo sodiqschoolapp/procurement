@@ -41,8 +41,7 @@ export async function getObject(
     if (!found.Body) return null;
     return { body: found.Body.transformToWebStream(), length: found.ContentLength };
   } catch (error) {
-    const status = (error as { $metadata?: { httpStatusCode?: number } }).$metadata
-      ?.httpStatusCode;
+    const status = (error as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode;
     if (status === 404) return null;
     throw error;
   }

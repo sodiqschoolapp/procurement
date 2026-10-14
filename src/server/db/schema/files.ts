@@ -48,10 +48,7 @@ export const files = pgTable(
   (table) => [
     unique("files_storage_key_key").on(table.storageKey),
     unique("files_client_key_key").on(table.clientKey),
-    check(
-      "files_original_name_check",
-      sql`char_length(${table.originalName}) BETWEEN 1 AND 255`,
-    ),
+    check("files_original_name_check", sql`char_length(${table.originalName}) BETWEEN 1 AND 255`),
     check(
       "files_size_bytes_check",
       sql`${table.sizeBytes} > 0 AND ${table.sizeBytes} <= ${sql.raw(String(MAX_FILE_BYTES))}`,

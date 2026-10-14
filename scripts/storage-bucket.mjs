@@ -4,4 +4,6 @@ import { ensureBucket, storageConfigOf } from "./ensure-bucket.mjs";
 
 const config = storageConfigOf(process.env);
 const created = await ensureBucket(config);
-console.log(created ? `created the bucket ${config.bucket}` : `the bucket ${config.bucket} is there`);
+console.log(
+  created ? `created the bucket ${config.bucket}` : `the bucket ${config.bucket} is there`,
+);

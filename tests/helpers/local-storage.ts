@@ -15,12 +15,7 @@ export function testStorageEnv(
   bucket: string,
   env: NodeJS.ProcessEnv = process.env,
 ): Record<string, string> {
-  const names = [
-    "S3_ENDPOINT",
-    "S3_REGION",
-    "S3_ACCESS_KEY_ID",
-    "S3_SECRET_ACCESS_KEY",
-  ] as const;
+  const names = ["S3_ENDPOINT", "S3_REGION", "S3_ACCESS_KEY_ID", "S3_SECRET_ACCESS_KEY"] as const;
   const result: Record<string, string> = { S3_BUCKET: bucket };
   for (const name of names) result[name] = env[name] || LOCAL[name];
   return result;
