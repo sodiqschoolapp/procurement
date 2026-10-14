@@ -26,6 +26,7 @@ export default defineConfig({
           env: { DATABASE_URL: "" },
           include: ["src/**/*.test.{ts,tsx}", "tests/**/*.test.ts"],
           exclude: ["node_modules/**", "tests/e2e/**", ...DATABASE_TESTS],
+          setupFiles: ["./tests/helpers/unit-setup.ts"],
         },
       },
       {

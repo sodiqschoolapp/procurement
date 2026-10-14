@@ -131,4 +131,24 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - For 0.15: the image copies only what `Dockerfile` names into the run stage; a new script the container runs must be added there. `public/templates/**/*.xlsx` is let through `.dockerignore`.
 - `/health` gives up after 3 s, but its query keeps running; a statement timeout on the pool is not set (permission review, outside its scope).
 
-The next task is 0.4.
+## 0.4 Clock, ids and test helpers (14.10.2026, pull request #14)
+
+**Built**
+- `now()` and `today()` in `src/server/clock.ts`, the only file that reads the system time; `businessDate()`, `businessYear()`, `businessDayStart()` in `src/domain/business-date.ts` (Tashkent, `YYYY-MM-DD`).
+- `newClientKey()` and `isClientKey()` in `src/components/client-key.ts` (UUID v4).
+- Test helpers: `setClock`, `advanceClock`, `resetClock` (`tests/helpers/clock.ts`, reset after every test); `inventedUser`, `inventedBranch` (plain data); `runTogether` with `meet()`.
+- ESLint: `FORBIDDEN_TIME_SELECTORS` (`new Date()`, `Date.now`, `Date()`, `Temporal.Now`, `.defaultNow()`), and only tests may import `setTestClock`.
+
+**Left out, and the task that brings it**
+- `insertUser()`: 0.6. `insertBranch()`: 0.7. The `client_key` columns and the repeat behaviour: 0.8 and each table's task. A per-form key hook: the first create form.
+
+**What the next sessions must know**
+- Every insert passes `createdAt: now()`; a test fixes the moment with `setClock("…Z")` (a text without Z or offset is refused).
+- For 0.5: a block that sets `no-restricted-syntax` for screens must spread `FORBIDDEN_TIME_SELECTORS`; `tests/forbidden-time.test.ts` lints samples under `src/app` and `src/components` and turns red otherwise. The date formatter calls `businessDate()`.
+- For 0.6: the session test moves the clock with `advanceClock({ hours: 24, minutes: 1 })`; Better Auth reads its own time, so that plan decides how it gets `now()`.
+- For 0.8: a `client_key` column is `uuid UNIQUE`; NOT NULL follows decisions 0.2 item 8. The wrapper returns the first result of a repeated key only to the same user and branch, else "Not found", with a matrix test (permission review of 0.4).
+- Same-moment tests: `runTogether([a, b])`; each action calls `meet()` inside its transaction before it takes a lock, never after, or both wait for ever.
+- `dropTestDatabase` waits up to 5 s for a closed pool's connections to leave before `with (force)`: `pool.end()` resolves early, and a terminated connection (57P01) failed CI as an unhandled error.
+- Not caught by the lint rule: `new globalThis.Date()`, `Date["now"]`, a raw `sql\`now()\``; reviewers look for them.
+
+The next task is 0.5.

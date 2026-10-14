@@ -108,12 +108,30 @@ export async function createTestDatabase(
   return { name, url: addressOf(serverUrl, name) };
 }
 
-/** Drops one test database with everything in it. Any other name is refused before a command is sent. */
+// How long a drop waits for the connections of a closed pool to leave the server.
+const CLOSING_WAIT_MS = 5_000;
+const CLOSING_POLL_MS = 20;
+
+/**
+ * Drops one test database with everything in it. Any other name is refused before a command is sent.
+ * pg's pool.end() resolves before its connections have left the server, and `with (force)`
+ * would terminate them (57P01): their error then ends the run as an unhandled error although
+ * every test passed. So the drop first waits, up to 5 s, until no connection to the database is
+ * left; only one still open after that (a crashed run's leftover) is forced off.
+ */
 export async function dropTestDatabase(serverUrl: string, name: string): Promise<void> {
   refuseUnlessTestDatabase(name);
-  await onServer(serverUrl, (client) =>
-    client.query(`drop database if exists "${name}" with (force)`),
-  );
+  await onServer(serverUrl, async (client) => {
+    for (let waited = 0; waited < CLOSING_WAIT_MS; waited += CLOSING_POLL_MS) {
+      const open = await client.query<{ count: number }>(
+        "select count(*)::int as count from pg_stat_activity where datname = $1",
+        [name],
+      );
+      if ((open.rows[0]?.count ?? 0) === 0) break;
+      await new Promise((resolve) => setTimeout(resolve, CLOSING_POLL_MS));
+    }
+    await client.query(`drop database if exists "${name}" with (force)`);
+  });
 }
 
 export async function testDatabaseExists(serverUrl: string, name: string): Promise<boolean> {
