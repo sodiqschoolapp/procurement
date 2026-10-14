@@ -95,7 +95,15 @@ export function changedCatalogFields<Fields extends Record<string, unknown>>(
  */
 export type CatalogFieldType = "text" | "short" | "boolean" | "companyKind" | "long";
 export type CatalogFieldKey =
-  "name" | "shortName" | "allowDecimal" | "kind" | "taxId" | "phone" | "note";
+  | "name"
+  | "shortName"
+  | "allowDecimal"
+  | "kind"
+  | "taxId"
+  | "phone"
+  | "note"
+  | "responsibleName"
+  | "responsiblePhone";
 export type CatalogField = { key: CatalogFieldKey; type: CatalogFieldType; optional?: boolean };
 
 /**
@@ -125,3 +133,26 @@ export const CATALOGS = {
     ],
   },
 } as const satisfies Record<CatalogKind, { entity: string; fields: readonly CatalogField[] }>;
+
+/**
+ * Departments (04, Catalogs table: "Branch, name, responsible person (name and phone)"; build-plan
+ * 1.6). Not one of CATALOG_KINDS: its pages are static routes beside `[catalog]` (plan of 1.6,
+ * decision 9), and its branch is chosen once at creation, so it is not a field the form edits
+ * (decision 1). The responsible person is plain text, optional (decision 4).
+ */
+export const DEPARTMENTS = {
+  entity: "departments",
+  fields: [
+    { key: "name", type: "text" },
+    { key: "responsibleName", type: "text", optional: true },
+    { key: "responsiblePhone", type: "short", optional: true },
+  ],
+} as const satisfies { entity: string; fields: readonly CatalogField[] };
+
+/** Every catalog the shared actions and form serve: the four of 1.5 and departments. */
+export type EntryKind = CatalogKind | "departments";
+
+export const CATALOG_ENTRIES = { ...CATALOGS, departments: DEPARTMENTS } as const satisfies Record<
+  EntryKind,
+  { entity: string; fields: readonly CatalogField[] }
+>;

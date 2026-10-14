@@ -492,14 +492,20 @@
       "taxId": "Tax ID",
       "phone": "Phone",
       "note": "Note",
-      "isActive": "Active"
+      "isActive": "Active",
+      "responsibleName": "Responsible person",
+      "responsiblePhone": "Responsible person's phone",
+      "branch": "Branch"
     },
     "hints": {
       "shortName": "Shown next to quantities, for example kg or pcs.",
       "allowDecimal": "Tick it when a quantity can be 2.5, as for kg; leave it for pcs.",
       "taxId": "Optional. 9 digits for a company, 14 for a person.",
       "phone": "Optional.",
-      "note": "Optional."
+      "note": "Optional.",
+      "responsibleName": "Optional. Plain text, not an app user.",
+      "responsiblePhone": "Optional.",
+      "branch": "Chosen once: a department stays in its branch."
     },
     "companyKind": {
       "choose": "Choose…",
@@ -539,7 +545,16 @@
         "description": "One list for the brands on requests and the suppliers on purchases.",
         "emptyTitle": "No companies yet",
         "emptyText": "Add the brands people ask for and the suppliers you buy from."
+      },
+      "departments": {
+        "title": "Departments",
+        "new": "New department",
+        "newTitle": "New department",
+        "description": "The units of each branch that receive items, with their responsible person.",
+        "emptyTitle": "No departments yet",
+        "emptyText": "Add the units of a branch, such as the kitchen, the library or a classroom."
       }
-    }
+    },
+    "chooseBranch": "Choose…"
   }
 }

@@ -3,8 +3,8 @@ import type { AnyPgColumn, PgTable } from "drizzle-orm/pg-core";
 import * as z from "zod";
 
 import { isClientKey } from "@/components/client-key";
-import { type CatalogKind, CATALOGS, changedCatalogFields } from "@/domain/catalogs";
-import type { AuditAction } from "@/domain/audit";
+import { CATALOG_ENTRIES, changedCatalogFields, type EntryKind } from "@/domain/catalogs";
+import type { AuditAction, AuditRecord } from "@/domain/audit";
 import { GLOBAL_TARGET, ActionError, defineAction } from "@/server/action";
 import type { FieldMessageKey } from "@/server/action-result";
 import { audit } from "@/server/audit";
@@ -34,10 +34,29 @@ type CatalogTable = PgTable & {
   clientKey: AnyPgColumn;
 };
 
-type AuditPrefix = "unit" | "category" | "extra_cost_type" | "company";
+type AuditPrefix = "unit" | "category" | "extra_cost_type" | "company" | "department";
+
+/**
+ * The parent an entry belongs to and its names are unique inside: a department's branch (04 rule
+ * 3: "department names inside a branch"; plan of 1.6). It is set on create and never changed
+ * (decision 1): the update input has no such field, and the update's name check reads it from
+ * the locked row, never from the input (plan review of 1.6, Should fix 2).
+ */
+export type CatalogParent = {
+  /** The input field and the key of the saved entry, as `branchId`. */
+  key: string;
+  column: AnyPgColumn;
+  /**
+   * Locks and checks the parent a create names, inside the transaction, before the insert; throws
+   * an ActionError when it may not take a new entry.
+   */
+  check(tx: Executor, id: string): Promise<void>;
+  /** What the create's history row keeps of the parent besides its id, as the branch's code. */
+  shown(tx: Executor, id: string): Promise<AuditRecord>;
+};
 
 export type CatalogConfig<Fields extends Record<string, unknown>> = {
-  kind: CatalogKind;
+  kind: EntryKind;
   /** For the log: "Measure" makes createMeasure, updateMeasure, setMeasureActive. */
   name: string;
   table: CatalogTable;
@@ -48,6 +67,8 @@ export type CatalogConfig<Fields extends Record<string, unknown>> = {
   shape: { [Key in keyof Fields & string]: z.ZodType<Fields[Key]> };
   /** The fields that are unique ignoring capital letters and extra spaces (04 rule 3). */
   unique: readonly (keyof Fields & string)[];
+  /** The parent the unique fields are unique inside; none for a catalog of the whole school. */
+  within?: CatalogParent;
 };
 
 export type SavedEntry<Fields> = Fields & { id: string; isActive: boolean };
@@ -64,9 +85,9 @@ export function defineCatalogActions<Fields extends Record<string, unknown>>(
 ) {
   type Saved = SavedEntry<Fields>;
   type Key = keyof Fields & string;
-  const { table, prefix } = config;
-  const entity = CATALOGS[config.kind].entity;
-  const fields = CATALOGS[config.kind].fields.map((field) => field.key) as Key[];
+  const { table, prefix, within } = config;
+  const entity = CATALOG_ENTRIES[config.kind].entity;
+  const fields = CATALOG_ENTRIES[config.kind].fields.map((field) => field.key) as Key[];
   const action = (verb: string) => `${prefix}.${verb}` as AuditAction;
 
   // The table's advisory lock: seed 1, apart from the wrapper's client-key locks (seed 0), as the
@@ -75,6 +96,7 @@ export function defineCatalogActions<Fields extends Record<string, unknown>>(
 
   const columns = {
     id: table.id,
+    ...(within ? { [within.key]: within.column } : {}),
     ...(config.columns as Record<string, AnyPgColumn>),
     isActive: table.isActive,
   };
@@ -82,9 +104,15 @@ export function defineCatalogActions<Fields extends Record<string, unknown>>(
   /**
    * Refuses a name (or a short name) another entry holds, active or not (D41), as field errors,
    * before the unique indexes refuse it (decision 13 of the plan of 1.2, followed here). Runs under
-   * the table's lock, so two saves cannot both pass it.
+   * the table's lock, so two saves cannot both pass it. With a parent, only the entries of the same
+   * parent count (`parentId`, from the input on create and from the locked row on update).
    */
-  async function refuseTaken(tx: Executor, sent: Partial<Fields>, ownId: string | null) {
+  async function refuseTaken(
+    tx: Executor,
+    sent: Partial<Fields>,
+    ownId: string | null,
+    parentId: string | null,
+  ) {
     const asked = config.unique.filter((field) => typeof sent[field] === "string");
     if (asked.length === 0) return;
     const matches = Object.fromEntries(
@@ -100,6 +128,7 @@ export function defineCatalogActions<Fields extends Record<string, unknown>>(
         and(
           or(...asked.map((field) => matches[field]!)),
           ownId === null ? undefined : ne(table.id, ownId),
+          within ? eq(within.column, parentId) : undefined,
         ),
       );
     const taken: Record<string, FieldMessageKey> = {};
@@ -126,7 +155,11 @@ export function defineCatalogActions<Fields extends Record<string, unknown>>(
 
   const shape = config.shape as Record<string, z.ZodType>;
 
-  const createInput = z.object({ clientKey: z.string().refine(isClientKey), ...shape });
+  const createInput = z.object({
+    clientKey: z.string().refine(isClientKey),
+    ...(within ? { [within.key]: z.uuid() } : {}),
+    ...shape,
+  });
 
   const create = defineAction({
     name: `create${config.name}`,
@@ -160,14 +193,26 @@ export function defineCatalogActions<Fields extends Record<string, unknown>>(
     async write({ tx, input }): Promise<Saved> {
       await tx.execute(tableLock);
       const sent = pick(input as unknown as Partial<Fields>, fields);
-      await refuseTaken(tx, sent, null);
+      const parentId = within ? ((input as Record<string, unknown>)[within.key] as string) : null;
+      if (within) await within.check(tx, parentId!);
+      await refuseTaken(tx, sent, null, parentId);
       const [row] = await tx
         .insert(table)
-        .values({ ...sent, isActive: true, clientKey: input.clientKey, createdAt: now() } as never)
+        .values({
+          ...sent,
+          ...(within ? { [within.key]: parentId } : {}),
+          isActive: true,
+          clientKey: input.clientKey,
+          createdAt: now(),
+        } as never)
         .returning(columns);
       return row as Saved;
     },
     async history({ tx, userId }, entry) {
+      // The parent's id is a field of the entry; its code is read here, as it is now (decision 7).
+      const parent = within
+        ? await within.shown(tx, (entry as Record<string, unknown>)[within.key] as string)
+        : {};
       await audit(
         { tx, userId },
         {
@@ -175,7 +220,7 @@ export function defineCatalogActions<Fields extends Record<string, unknown>>(
           entity,
           entityId: entry.id,
           before: null,
-          after: shown(entry),
+          after: { ...parent, ...shown(entry) },
           at: now(),
         },
       );
@@ -206,7 +251,8 @@ export function defineCatalogActions<Fields extends Record<string, unknown>>(
       const changed = changedCatalogFields(fields, current, sent);
       if (changed.length === 0) return { entry: current, changed, before: {}, after: {} };
       const after = pick(sent, changed);
-      await refuseTaken(tx, after, current.id);
+      const parentId = within ? ((current as Record<string, unknown>)[within.key] as string) : null;
+      await refuseTaken(tx, after, current.id, parentId);
       const [row] = await tx
         .update(table)
         .set(after as never)

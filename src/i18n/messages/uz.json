@@ -492,14 +492,20 @@
       "taxId": "STIR",
       "phone": "Telefon",
       "note": "Izoh",
-      "isActive": "Faol"
+      "isActive": "Faol",
+      "responsibleName": "Mas'ul shaxs",
+      "responsiblePhone": "Mas'ul shaxs telefoni",
+      "branch": "Filial"
     },
     "hints": {
       "shortName": "Miqdor yonida yoziladi, masalan kg yoki dona.",
       "allowDecimal": "Miqdor 2,5 boʻlishi mumkin boʻlsa belgilang, kg kabi; dona uchun belgilamang.",
       "taxId": "Ixtiyoriy. Kompaniya uchun 9 raqam, jismoniy shaxs uchun 14 raqam.",
       "phone": "Ixtiyoriy.",
-      "note": "Ixtiyoriy."
+      "note": "Ixtiyoriy.",
+      "responsibleName": "Ixtiyoriy. Oddiy matn, ilova foydalanuvchisi emas.",
+      "responsiblePhone": "Ixtiyoriy.",
+      "branch": "Bir marta tanlanadi: bo'lim o'z filialida qoladi."
     },
     "companyKind": {
       "choose": "Tanlang…",
@@ -539,7 +545,16 @@
         "description": "Arizalardagi brendlar va xaridlardagi yetkazib beruvchilar uchun bitta roʻyxat.",
         "emptyTitle": "Hali kompaniyalar yoʻq",
         "emptyText": "Soʻraladigan brendlarni va xarid qilinadigan yetkazib beruvchilarni qoʻshing."
+      },
+      "departments": {
+        "title": "Bo'limlar",
+        "new": "Yangi bo'lim",
+        "newTitle": "Yangi bo'lim",
+        "description": "Har bir filialning narsa oladigan bo'linmalari va ularning mas'ul shaxslari.",
+        "emptyTitle": "Hali bo'limlar yo'q",
+        "emptyText": "Filial bo'linmalarini qo'shing: oshxona, kutubxona, sinf xonasi."
       }
-    }
+    },
+    "chooseBranch": "Tanlang…"
   }
 }
