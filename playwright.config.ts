@@ -1,6 +1,7 @@
 import { defineConfig } from "@playwright/test";
 
 import { e2eDatabaseUrl, serverDatabaseUrl } from "./tests/e2e/global-setup";
+import { E2E_BUCKET, testStorageEnv } from "./tests/helpers/local-storage";
 
 // The browser tests run the app on its own port against their own database, procurement_e2e
 // (plan of 0.10b, decision 14), so a dev server on the dev database is never reused by mistake.
@@ -28,7 +29,8 @@ export default defineConfig({
   webServer: {
     command: `npx next dev --hostname 127.0.0.1 --port ${PORT}`,
     url: baseURL,
-    env: { DATABASE_URL: e2eDatabaseUrl(serverDatabaseUrl()) },
+    // The storage of docker-compose.yml in the e2e bucket (plan of 0.12, review correction 1).
+    env: { DATABASE_URL: e2eDatabaseUrl(serverDatabaseUrl()), ...testStorageEnv(E2E_BUCKET) },
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
   },

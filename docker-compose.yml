@@ -1,5 +1,4 @@
 # The services the app needs on a developer's computer. Start them with: docker compose up -d
-# The file storage service joins in task 0.12 (docs/decisions.md, D18).
 name: procurement
 
 services:
@@ -29,5 +28,29 @@ services:
       timeout: 3s
       retries: 12
 
+  storage:
+    # The file storage of this machine: SeaweedFS speaking the S3 API, as Cloudflare R2 does in
+    # the cloud (13-technology.md, Files). It replaces MinIO, whose images are gone (D18; plan of
+    # 0.12, decision 1, Look first). Pinned: a new version is a decision, not a pull.
+    image: chrislusf/seaweedfs:4.48
+    command: ["server", "-dir=/data", "-s3", "-s3.port=8333", "-ip.bind=0.0.0.0"]
+    environment:
+      # Invented keys, public on purpose, like the passwordless PostgreSQL above: the port below
+      # answers on 127.0.0.1 only and the files are invented (plan of 0.12, decision 14). They
+      # open nothing anywhere else; R2's keys live in the provider dashboard only.
+      AWS_ACCESS_KEY_ID: procurement-local
+      AWS_SECRET_ACCESS_KEY: procurement-local-secret
+    ports:
+      # This machine only, as PostgreSQL's port.
+      - "127.0.0.1:8333:8333"
+    volumes:
+      - storage-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8333/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 24
+
 volumes:
   postgres-data:
+  storage-data:

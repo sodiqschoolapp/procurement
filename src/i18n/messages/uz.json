@@ -50,6 +50,11 @@
       "tooSmall": "Juda kichik",
       "tooLarge": "Juda katta",
       "notAllowed": "Bu qiymatga ruxsat yo'q"
+    },
+    "file": {
+      "tooLarge": "Fayl 10 MB dan katta. Kichikroq fayl tanlang yoki suratni qaytadan oling.",
+      "notAllowedType": "Bunday faylni qo'shib bo'lmaydi. JPG, PNG, WebP yoki HEIC surat, ruxsat berilgan joyda PDF tanlang.",
+      "notAnImage": "Surat ochilmayapti. U buzilgan bo'lishi mumkin: qaytadan oling yoki boshqasini tanlang."
     }
   },
   "audit": {

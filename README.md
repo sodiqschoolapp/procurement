@@ -29,19 +29,25 @@ The first time, in this order:
    npm ci
    ```
 
-2. Create a file named `.env` beside `.env.example` with this one line:
+2. Create a file named `.env` beside `.env.example` with these lines:
 
    ```
    DATABASE_URL=postgres://procurement@127.0.0.1:5433/procurement
+   S3_ENDPOINT=http://127.0.0.1:8333
+   S3_REGION=us-east-1
+   S3_BUCKET=procurement-files
+   S3_ACCESS_KEY_ID=procurement-local
+   S3_SECRET_ACCESS_KEY=procurement-local-secret
    ```
 
-   The address is written here in full because it holds no secret: the local database has no password, answers on this machine only and holds invented data. The real database always has a password, and its address is never written into a file of this repository.
+   The values are written here in full because they hold no secret: the local database has no password, the local file storage has the invented keys of `docker-compose.yml`, both answer on this machine only and hold invented data. The real database and the real file storage (Cloudflare R2) always have their own secrets, which are never written into a file of this repository.
 
-3. Start PostgreSQL and create the tables:
+3. Start PostgreSQL and the file storage (SeaweedFS), create the tables and the bucket:
 
    ```
    docker compose up -d
    npm run db:migrate
+   npm run storage:bucket
    ```
 
 4. Start the app:
@@ -54,7 +60,7 @@ Then open `http://localhost:3000`.
 
 After the first time: `docker compose up -d` when Docker Desktop was restarted, `npm run db:migrate` when new migrations arrived, and `npm run dev`.
 
-PostgreSQL is published on port 5433 of this machine, not on the usual 5432, which another PostgreSQL on the same computer often holds. `docker compose stop` stops it and keeps the data.
+PostgreSQL is published on port 5433 of this machine, not on the usual 5432, which another PostgreSQL on the same computer often holds. The file storage answers the S3 API on port 8333. `docker compose stop` stops both and keeps the data. The tests make their own buckets, `procurement-test` and `procurement-e2e`, and need no `S3_` line in `.env`.
 
 `npm ci` installs exactly the versions in `package-lock.json`. Use `npm install` only to add or change a package, and ask before you do (`CLAUDE.md`, "Ask before you do any of these").
 
@@ -81,6 +87,7 @@ Nothing is done by hand there. A hook of `.claude/settings.json` runs `scripts/c
 | `npm run test:e2e`   | Playwright at 375 px and 1440 px. It starts the app itself on port 3100 against its own database, `procurement_e2e`, made and filled with invented people by `tests/e2e/global-setup.ts`. |
 | `npm run db:migrate` | Applies the SQL migrations of `drizzle/` and prints the name of each one it applied.                                                                                                      |
 | `npm run db:seed`    | **Not built yet.** It only prints a notice; task 0.14 brings the demo data.                                                                                                               |
+| `npm run storage:bucket` | Creates the private bucket of `S3_BUCKET` on the file storage of `.env` when it is missing.                                                                                           |
 
 Only the unit tests, with nothing running:
 

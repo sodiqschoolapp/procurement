@@ -5,6 +5,7 @@ import pg from "pg";
 
 import { insertPasswordUser } from "../../src/server/auth/password-user.mjs";
 import { connectionOptions } from "../../src/server/db/connection-options.mjs";
+import { E2E_BUCKET, testStorageEnv } from "../helpers/local-storage";
 
 // The browser tests' own database, `procurement_e2e`, on the server of DATABASE_URL (plan of
 // 0.10b, decision 14): created when missing, migrated, and given invented branches and one
@@ -180,6 +181,13 @@ async function insertUserIfMissing(
 }
 
 export default async function globalSetup(): Promise<void> {
+  // The e2e server's own bucket on the storage of docker-compose.yml (plan of 0.12, review
+  // correction 1), by the same script as `npm run storage:bucket`, in its own process as below.
+  execFileSync(process.execPath, ["scripts/storage-bucket.mjs"], {
+    env: { ...process.env, ...testStorageEnv(E2E_BUCKET) },
+    stdio: "inherit",
+  });
+
   const serverUrl = serverDatabaseUrl();
   await createDatabaseIfMissing(serverUrl);
   const address = e2eDatabaseUrl(serverUrl);

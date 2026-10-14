@@ -27,9 +27,10 @@ import { type ActionResult, type ServerErrorCode, failure } from "./action-resul
 //
 // An action of a global permission (one with no branch, such as profile.edit) names no branch:
 // its `target` and its `lock` return GLOBAL_TARGET, and authorize() is asked without a target
-// (plan of 0.10b, decision 4, Look first). A global target with a branch permission, a branch
-// target with a global permission, and a global target with `repeat` are mistakes in the action:
-// they save nothing (review of the plan of 0.10b, correction 4).
+// (plan of 0.10b, decision 4, Look first). A global target with a branch permission and a branch
+// target with a global permission are mistakes in the action: they save nothing (review of the
+// plan of 0.10b, correction 4). A global create with `repeat` (a file upload) matches its first
+// result by its maker alone, as it has no branch (plan of 0.12, decision 6, Look first).
 
 type Transaction = Parameters<Parameters<typeof Database.transaction>[0]>[0];
 
@@ -60,8 +61,11 @@ export type Locked<Rows> = {
   rows: Rows;
 };
 
-/** What a repeated client_key finds: the first result, and who made it where. */
-export type FirstResult<Result> = { result: Result; userId: string; branchId: string };
+/**
+ * What a repeated client_key finds: the first result, and who made it where. `branchId` is
+ * `null` for a global create, which has no branch (plan of 0.12, decision 6).
+ */
+export type FirstResult<Result> = { result: Result; userId: string; branchId: string | null };
 
 export type StepContext<Input> = { tx: Transaction; input: Input; userId: string };
 export type WriteContext<Input, Rows> = StepContext<Input> & {
@@ -171,11 +175,6 @@ export async function runAction<Schema extends z.ZodType, Rows, Result>(
           `${definition.name}: the target does not fit the scope of ${definition.permission}.`,
         );
       }
-      // A repeat is matched by the branch it was made for; a global create has none yet (the
-      // first task with one decides: review of the plan of 0.10b, correction 4).
-      if (global && definition.repeat) {
-        throw new ActionDefinitionError(`${definition.name}: a global target with repeat.`);
-      }
       const actor = await authorize(
         userId,
         definition.permission,
@@ -189,7 +188,7 @@ export async function runAction<Schema extends z.ZodType, Rows, Result>(
         throw new ActionDefinitionError(`${definition.name} has neither repeat nor lock.`);
       }
 
-      if (definition.repeat && !isGlobal(target)) {
+      if (definition.repeat) {
         const clientKey = definition.repeat.clientKey(input);
         // Two calls with one key wait for each other here; the second then finds the first's row
         // (plan of 0.8, decision 4). A collision of two keys only makes them wait.
@@ -197,8 +196,10 @@ export async function runAction<Schema extends z.ZodType, Rows, Result>(
         const first = await definition.repeat.find(tx, clientKey);
         if (first) {
           // The first result goes back only to who made it, in the branch it was made for
-          // (progress 0.4, "For 0.8"). Nothing else runs.
-          if (first.userId !== userId || first.branchId !== target.branchId) {
+          // (progress 0.4, "For 0.8"); a global one, which has no branch, to its maker alone
+          // (plan of 0.12, decision 6, Look first). Nothing else runs.
+          const branchId = isGlobal(target) ? null : target.branchId;
+          if (first.userId !== userId || first.branchId !== branchId) {
             throw new Refusal("not_found");
           }
           return first.result;

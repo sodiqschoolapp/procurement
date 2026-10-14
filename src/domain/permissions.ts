@@ -122,6 +122,13 @@ export const PERMISSIONS = {
     scope: "global",
     roles: { HEAD: "yes", MANAGER: "yes", PRINCIPAL: "yes", FINANCE: "yes" },
   },
+  // Uploading a file, before it is attached to anything: not a row of 03 (plan of 0.12, decision
+  // 4, Look first). Every role attaches a file somewhere; the attaching action of each later task
+  // checks its own row. An upload shows nothing to anyone but its uploader (decision 5).
+  "file.upload": {
+    scope: "global",
+    roles: { HEAD: "yes", MANAGER: "yes", PRINCIPAL: "yes", FINANCE: "yes" },
+  },
 } as const satisfies Record<string, PermissionRule>;
 
 export type Permission = keyof typeof PERMISSIONS;

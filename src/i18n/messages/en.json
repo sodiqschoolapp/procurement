@@ -50,6 +50,11 @@
       "tooSmall": "Too small",
       "tooLarge": "Too large",
       "notAllowed": "This value is not allowed"
+    },
+    "file": {
+      "tooLarge": "The file is larger than 10 MB. Choose a smaller file or take the photo again.",
+      "notAllowedType": "This type of file cannot be added. Choose a JPG, PNG, WebP or HEIC photo, or a PDF where one is allowed.",
+      "notAnImage": "The photo cannot be opened. It may be damaged; take it again or choose another one."
     }
   },
   "audit": {
