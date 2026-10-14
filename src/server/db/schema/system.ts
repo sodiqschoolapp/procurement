@@ -1,7 +1,16 @@
-import { sql } from "drizzle-orm";
+import { type SQL, sql } from "drizzle-orm";
 import { check, index, jsonb, pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
 import { NOTIFICATION_TYPES } from "@/domain/notifications";
+import { PAYMENT_TYPES } from "@/domain/payment-types";
+import {
+  GUARD_OFF,
+  HOURS_MAX,
+  HOURS_MIN,
+  PERCENT_MAX,
+  PERCENT_MIN,
+  SCHOOL_NAME_MAX,
+} from "@/domain/settings";
 
 import { users } from "./users";
 
@@ -10,12 +19,84 @@ import { users } from "./users";
 
 // settings: `key KEY, value JSONB`. `key` is the key, so the table has no `id`; it still has
 // `created_at` (docs/decisions.md, 0.2, constraint style 2 and 3). The allowed keys and their
-// defaults are the typed accessor of task 1.1, not a database list.
-export const settings = pgTable("settings", {
-  key: text("key").primaryKey(),
-  value: jsonb("value").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
-});
+// defaults are the typed accessor of task 1.1 (src/domain/settings.ts), not a database list: an
+// unknown key is allowed and ignored. Each known key's value has its shape checked here (plan of
+// 1.1, decision 3, Look first; CLAUDE.md rule 5), with the limits of src/domain/settings.ts.
+// Every CHECK is a CASE that tests the JSON type before any cast, so it is never NULL (a NULL
+// CHECK passes) and a wrong type is a check violation, not a cast error (review of the plan,
+// Must fix 2).
+
+/** A number literal in a CHECK: DDL takes no bound parameter. */
+const n = (value: number) => sql.raw(String(value));
+
+/** The jsonb value as a whole number between min and max, or false; never NULL. */
+function wholeBetween(json: SQL, min: number, max: number): SQL {
+  return sql`CASE WHEN jsonb_typeof(${json}) IS DISTINCT FROM 'number' THEN false WHEN (${json})::numeric <> trunc((${json})::numeric) THEN false ELSE (${json})::numeric BETWEEN ${n(min)} AND ${n(max)} END`;
+}
+
+function forKey(key: string, rule: SQL): SQL {
+  return sql`key <> ${sql.raw(`'${key}'`)} OR (${rule})`;
+}
+
+const VALUE = sql.raw("value");
+
+export const settings = pgTable(
+  "settings",
+  {
+    key: text("key").primaryKey(),
+    value: jsonb("value").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+  },
+  () => [
+    check(
+      "settings_default_payment_type_check",
+      forKey(
+        "default_payment_type",
+        sql`${VALUE} IN (${sql.raw(PAYMENT_TYPES.map((type) => `'"${type}"'::jsonb`).join(", "))})`,
+      ),
+    ),
+    check(
+      "settings_price_hint_percent_check",
+      forKey("price_hint_percent", wholeBetween(VALUE, PERCENT_MIN, PERCENT_MAX)),
+    ),
+    check(
+      "settings_overspend_guard_percent_check",
+      forKey(
+        "overspend_guard_percent",
+        sql`CASE WHEN jsonb_typeof(${VALUE}) = 'string' THEN ${VALUE} = ${sql.raw(`'"${GUARD_OFF}"'::jsonb`)} ELSE ${wholeBetween(VALUE, PERCENT_MIN, PERCENT_MAX)} END`,
+      ),
+    ),
+    check(
+      "settings_reminder_hours_check",
+      forKey("reminder_hours", wholeBetween(VALUE, HOURS_MIN, HOURS_MAX)),
+    ),
+    check(
+      "settings_escalation_hours_check",
+      forKey("escalation_hours", wholeBetween(VALUE, HOURS_MIN, HOURS_MAX)),
+    ),
+    check(
+      "settings_receipt_required_for_cash_check",
+      forKey("receipt_required_for_cash", sql`jsonb_typeof(${VALUE}) = 'boolean'`),
+    ),
+    // Trimmed: no white space at either end; counted by code point (decision 10).
+    check(
+      "settings_school_name_check",
+      forKey(
+        "school_name",
+        sql`CASE WHEN jsonb_typeof(${VALUE}) IS DISTINCT FROM 'string' THEN false WHEN (${VALUE} #>> '{}') ~ '^[[:space:]]|[[:space:]]$' THEN false ELSE char_length(${VALUE} #>> '{}') BETWEEN 1 AND ${n(SCHOOL_NAME_MAX)} END`,
+      ),
+    ),
+    // Exactly `month` and `day`, whole, a day that exists in that month every year: February
+    // has 28 (decision 9).
+    check(
+      "settings_school_year_start_check",
+      forKey(
+        "school_year_start",
+        sql`CASE WHEN jsonb_typeof(${VALUE}) IS DISTINCT FROM 'object' THEN false WHEN ${VALUE} - 'month' - 'day' <> '{}'::jsonb THEN false WHEN NOT ${wholeBetween(sql`${VALUE} -> 'month'`, 1, 12)} THEN false WHEN NOT ${wholeBetween(sql`${VALUE} -> 'day'`, 1, 31)} THEN false ELSE (${VALUE} ->> 'day')::int <= CASE (${VALUE} ->> 'month')::int WHEN 2 THEN 28 WHEN 4 THEN 30 WHEN 6 THEN 30 WHEN 9 THEN 30 WHEN 11 THEN 30 ELSE 31 END END`,
+      ),
+    ),
+  ],
+);
 
 // audit_log: "actor_id, action, entity, entity_id, before JSONB, after JSONB" (14-data-model.md,
 // System; developer-rules.md rule 13). Task 0.9. One log serves every audited table, so

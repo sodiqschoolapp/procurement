@@ -50,6 +50,13 @@
       "when": 1791995315542,
       "tag": "0006_scheduled_jobs",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792002523177,
+      "tag": "0007_settings_values",
+      "breakpoints": true
     }
   ]
 }
