@@ -248,6 +248,41 @@ describe("npm run db:seed (build-plan 0.14; developer-rules.md rule 14)", () => 
     });
   });
 
+  it("creates seed_principal when CHL has only an inactive Principal (D40: the check reads active ones)", async () => {
+    await withFreshDatabase(async (connect) => {
+      const client = await connect();
+      await client.query("begin");
+      const branch = await client.query(
+        `insert into branches (name, code, address, is_active, created_at)
+         values ('Invented CHL', 'CHL', 'Invented street', true, $1) returning id`,
+        [MOMENT],
+      );
+      const user = await client.query(
+        `insert into users (id, full_name, username, display_username, email, phone, role, locale,
+           is_active, created_at, updated_at)
+         values (gen_random_uuid(), 'Invented Former', 'former_principal', 'former_principal',
+           'former-principal@users.invalid', '+998 90 000 97 04', 'PRINCIPAL', 'uz', false, $1, $1)
+         returning id`,
+        [MOMENT],
+      );
+      await client.query(
+        `insert into user_branches (user_id, branch_id, user_role, user_is_active, created_at)
+         values ($1, $2, 'PRINCIPAL', false, $3)`,
+        [user.rows[0].id, branch.rows[0].id, MOMENT],
+      );
+      await client.query("commit");
+
+      expect(await seed(client, ENV, MOMENT)).toContain("created user seed_principal");
+
+      const led = await client.query(
+        `select u.username from user_branches ub join users u on u.id = ub.user_id
+          where ub.branch_id = $1 and ub.user_role = 'PRINCIPAL' and ub.user_is_active`,
+        [branch.rows[0].id],
+      );
+      expect(led.rows).toEqual([{ username: "seed_principal" }]);
+    });
+  });
+
   it("writes one set of rows when two seeds run at the same moment", async () => {
     await withFreshDatabase(async (connect) => {
       const first = await connect();
