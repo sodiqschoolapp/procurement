@@ -14,7 +14,14 @@ function render(element: React.ReactElement): string {
 describe("the shared button (design system, Buttons)", () => {
   it("has exactly the four kinds and the six sizes", () => {
     expect(Object.keys(BUTTON_KINDS)).toEqual(["default", "secondary", "ghost", "destructive"]);
-    expect(Object.keys(BUTTON_SIZES)).toEqual(["sm", "default", "lg", "icon-sm", "icon", "icon-lg"]);
+    expect(Object.keys(BUTTON_SIZES)).toEqual([
+      "sm",
+      "default",
+      "lg",
+      "icon-sm",
+      "icon",
+      "icon-lg",
+    ]);
   });
 
   it("sizes: small 32, medium 40 and 44 at phone width, large 48", () => {

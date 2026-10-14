@@ -15,8 +15,7 @@ export const BUTTON_KINDS = {
   secondary:
     "bg-secondary text-secondary-foreground hover:bg-secondary-hover active:bg-secondary-hover",
   ghost: "bg-transparent text-foreground hover:bg-accent active:bg-accent",
-  destructive:
-    "bg-transparent text-destructive hover:bg-destructive-bg active:bg-destructive-bg",
+  destructive: "bg-transparent text-destructive hover:bg-destructive-bg active:bg-destructive-bg",
 } as const;
 
 export const BUTTON_SIZES = {

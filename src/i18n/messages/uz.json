@@ -107,5 +107,14 @@
       "over": "Ortiqcha",
       "inProgress": "Jarayonda"
     }
+  },
+  "common": {
+    "close": "Yopish",
+    "cancel": "Bekor qilish"
+  },
+  "unsavedChanges": {
+    "title": "Saqlamasdan chiqasizmi?",
+    "result": "Bu sahifadagi o'zgarishlar yo'qoladi.",
+    "leave": "Chiqish"
   }
 }

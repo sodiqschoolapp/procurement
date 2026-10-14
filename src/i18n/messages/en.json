@@ -107,5 +107,14 @@
       "over": "Over",
       "inProgress": "In progress"
     }
+  },
+  "common": {
+    "close": "Close",
+    "cancel": "Cancel"
+  },
+  "unsavedChanges": {
+    "title": "Leave without saving?",
+    "result": "The changes you made on this page will be lost.",
+    "leave": "Leave"
   }
 }
