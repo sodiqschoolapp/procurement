@@ -12,7 +12,7 @@ import { insertBranch } from "../../tests/helpers/branches";
 import { refusalOf } from "../../tests/helpers/database-error";
 import { setClock } from "../../tests/helpers/clock";
 import { type InsertedUser, insertUser } from "../../tests/helpers/users";
-import { defineAction, runAction } from "./action";
+import { GLOBAL_TARGET, defineAction, runAction } from "./action";
 import type { ActionResult } from "./action-result";
 import { audit } from "./audit";
 
@@ -63,12 +63,10 @@ function renameSample(hooks: Hooks = {}) {
     name: "renameSample",
     permission: "catalog.manage",
     input: renameInput,
-    async target({ tx, input }) {
-      const [row] = await tx
-        .select({ branchId: sampleAccounts.branchId })
-        .from(sampleAccounts)
-        .where(eq(sampleAccounts.id, input.id));
-      return row ?? null;
+    // catalog.manage is a global permission: the wrapper's global form (plan of 0.10b,
+    // decision 4), so the sample names no branch.
+    async target() {
+      return GLOBAL_TARGET;
     },
     async lock({ tx, input }) {
       const [row] = await tx
@@ -76,7 +74,7 @@ function renameSample(hooks: Hooks = {}) {
         .from(sampleAccounts)
         .where(eq(sampleAccounts.id, input.id))
         .for("update");
-      return row ? { target: { branchId: row.branchId }, rows: row } : null;
+      return row ? { target: GLOBAL_TARGET, rows: row } : null;
     },
     async write({ tx, input }) {
       await tx

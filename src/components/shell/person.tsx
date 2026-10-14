@@ -1,0 +1,28 @@
+import { cn } from "@/components/utils";
+
+// The person in the menu and the top bar (docs/design-system.md, Layout shell: "a round avatar
+// with initials on #1B2A63").
+
+/** The first letters of the first two words of a name, in capitals. */
+export function initialsOf(fullName: string): string {
+  return fullName
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((word) => word.charAt(0).toLocaleUpperCase())
+    .join("");
+}
+
+export function Avatar({ fullName, className }: { fullName: string; className?: string }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={cn(
+        "flex size-9 shrink-0 items-center justify-center rounded-full bg-sidebar-avatar text-[13px] font-semibold text-sidebar-accent-foreground",
+        className,
+      )}
+    >
+      {initialsOf(fullName)}
+    </span>
+  );
+}

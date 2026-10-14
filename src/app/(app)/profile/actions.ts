@@ -2,7 +2,7 @@
 
 import { serverAction } from "@/server/action";
 
-import { chooseOwnLanguage } from "./language";
+import { chooseOwnLanguage } from "@/features/catalog/actions/own-language";
 
 // The actions of /profile (plan of 0.10b, "Server actions and queries").
 

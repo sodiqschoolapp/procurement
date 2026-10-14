@@ -29,7 +29,14 @@ describe("the proxy (edge-cases/system.md: back to the same page after sign-in)"
     expect(response.headers.get("x-middleware-next")).toBe("1");
   });
 
-  it.each(["/", "/login", "/health"])("leaves %s open without a cookie", (path) => {
+  it.each(["/login", "/health"])("leaves %s open without a cookie", (path) => {
     expect(proxy(request(path)).headers.get("location")).toBeNull();
+  });
+
+  it("sends / to /login: it is the home page of a signed-in person (plan of 0.10b)", () => {
+    const location = proxy(request("/")).headers.get("location");
+
+    expect(location).not.toBeNull();
+    expect(new URL(location!).pathname).toBe("/login");
   });
 });

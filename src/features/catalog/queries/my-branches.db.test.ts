@@ -73,11 +73,11 @@ describe("chooseBranch (11 rule 1; 03 rule 1)", () => {
     const branch = await insertBranch();
     const finance = await insertUser("FINANCE", { branches: [branch.id] });
 
-    expect(await chooseBranch(finance.id, "all")).toEqual({
+    expect(await chooseBranch(finance.id, { branch: "all" })).toEqual({
       ok: true,
       data: { cookie: branchCookieValue(finance.id, "all") },
     });
-    expect(await chooseBranch(finance.id, branch.id)).toEqual({
+    expect(await chooseBranch(finance.id, { branch: branch.id })).toEqual({
       ok: true,
       data: { cookie: branchCookieValue(finance.id, branch.id) },
     });
@@ -88,7 +88,7 @@ describe("chooseBranch (11 rule 1; 03 rule 1)", () => {
     const other = await insertBranch();
     const manager = await insertUser("MANAGER", { branches: [own.id] });
 
-    expect(await chooseBranch(manager.id, other.id)).toMatchObject({
+    expect(await chooseBranch(manager.id, { branch: other.id })).toMatchObject({
       ok: false,
       error: { code: "not_found" },
     });
@@ -98,17 +98,24 @@ describe("chooseBranch (11 rule 1; 03 rule 1)", () => {
     const head = await insertUser("HEAD");
     const inactive = await insertBranch({ isActive: false });
 
-    expect(await chooseBranch(head.id, NO_BRANCH)).toMatchObject({
+    expect(await chooseBranch(head.id, { branch: NO_BRANCH })).toMatchObject({
       ok: false,
       error: { code: "not_found" },
     });
-    expect(await chooseBranch(head.id, inactive.id)).toMatchObject({ ok: true });
+    expect(await chooseBranch(head.id, { branch: inactive.id })).toMatchObject({ ok: true });
   });
 
   it("anything but 'all' or a branch id is invalid input", async () => {
     const head = await insertUser("HEAD");
 
-    for (const input of ["", "ALL", 5, null, { branchId: NO_BRANCH }]) {
+    for (const input of [
+      { branch: "" },
+      { branch: "ALL" },
+      { branch: 5 },
+      null,
+      "all",
+      { branchId: NO_BRANCH },
+    ]) {
       expect(await chooseBranch(head.id, input)).toMatchObject({
         ok: false,
         error: { code: "invalid_input" },
@@ -157,7 +164,7 @@ describePermissionMatrix("listMyBranches", {
 describePermissionMatrix("chooseBranch with All my branches", {
   permission: "profile.edit",
   async run({ user }) {
-    const result = await chooseBranch(user.id, "all");
+    const result = await chooseBranch(user.id, { branch: "all" });
     if (result.ok) return;
     const { code } = result.error;
     if (code === "not_found" || code === "forbidden") throw new AuthorizationError(code);

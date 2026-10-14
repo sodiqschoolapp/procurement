@@ -9,7 +9,7 @@ import { auditLog, users } from "@/server/db/schema";
 import { setClock } from "../../../../tests/helpers/clock";
 import { describePermissionMatrix } from "../../../../tests/helpers/permission-matrix";
 import { insertUser } from "../../../../tests/helpers/users";
-import { chooseOwnLanguage } from "./language";
+import { chooseOwnLanguage } from "./own-language";
 
 // 02-assumptions.md A2 ("Each user picks one" language); plan of 0.10b, decisions 1, 2 and 4
 // (Look first): profile.edit, an audit row in the same transaction (developer-rules.md rule 13),

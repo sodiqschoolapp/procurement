@@ -2,7 +2,14 @@ import { runInNewContext } from "node:vm";
 
 import { describe, expect, it } from "vitest";
 
-import { readTheme, THEME_KEY, THEME_SCRIPT, themeAttribute } from "./theme";
+import {
+  readSidebar,
+  readTheme,
+  SIDEBAR_KEY,
+  THEME_KEY,
+  THEME_SCRIPT,
+  themeAttribute,
+} from "./theme";
 
 // docs/design-system.md, Colour: the theme follows the device until the person chooses light or
 // dark; the choice is kept in the browser (11-screens-and-ux.md rule 15; plan of 0.10a,
@@ -43,5 +50,31 @@ describe("the theme choice (design system, Colour; 11-screens rule 15)", () => {
 
   it("the inline script leaves the device to decide when storage is blocked", () => {
     expect(scriptResult("dark", true)).toBeUndefined();
+  });
+});
+
+/** Runs the inline script against a stored sidebar choice and returns the data-sidebar it set. */
+function sidebarResult(stored: string | null): string | undefined {
+  const dataset: Record<string, string> = {};
+  runInNewContext(THEME_SCRIPT, {
+    localStorage: { getItem: (key: string) => (key === SIDEBAR_KEY ? stored : null) },
+    document: { documentElement: { dataset } },
+  });
+  return dataset.sidebar;
+}
+
+describe("the menu's rail choice (design system, Layout shell; plan of 0.10b, decision 12)", () => {
+  it("is the full menu unless exactly 'rail' is stored", () => {
+    for (const stored of [null, "", "full", "Rail", "blue"]) {
+      expect(readSidebar(stored), String(stored)).toBe("full");
+    }
+    expect(readSidebar("rail")).toBe("rail");
+  });
+
+  it("the inline script applies the same rule before the first paint", () => {
+    for (const stored of [null, "", "full", "rail", "Rail"]) {
+      const expected = readSidebar(stored) === "rail" ? "rail" : undefined;
+      expect(sidebarResult(stored), String(stored)).toBe(expected);
+    }
   });
 });

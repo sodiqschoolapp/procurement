@@ -1,10 +1,12 @@
 import { getLocale, getTranslations } from "next-intl/server";
 import Image from "next/image";
 import { redirect } from "next/navigation";
+import { connection } from "next/server";
 
 import { safeReturnPath } from "@/server/auth/return-path";
 import { getCurrentUser } from "@/server/auth/session";
 import { RETURN_PATH_MAX } from "@/server/auth/sign-in-input";
+import { shortCommit } from "@/server/commit";
 
 import { BrandPanel } from "./brand-panel";
 import { LanguageSelect } from "./language-select";
@@ -26,13 +28,17 @@ function returnPathOf(next: string | string[] | undefined): string | undefined {
 // theme), the language select and the theme button, a Bitter title, two fields 48 high and a
 // large primary button the full width of the form; on the right, from 640 px on, the navy panel.
 // No "Forgot your password?" link (A8: the Head renews passwords). A signed-in person who opens
-// it goes to the start page.
+// it goes to the home page. The version caption at the bottom of the form column names the
+// commit; CI's container step reads it here (plan of 0.10b, decision 13).
 export default async function LoginPage({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  // The commit is read when the page is asked for, not when it is built (0.16, plan decision 8).
+  await connection();
   if (await getCurrentUser()) redirect("/");
+  const commit = shortCommit();
   const { next } = await searchParams;
   const t = await getTranslations("login");
   const locale = await getLocale();
@@ -72,6 +78,11 @@ export default async function LoginPage({
             <LoginForm returnPath={returnPathOf(next)} />
           </div>
         </div>
+        {commit && (
+          <p className="text-xs text-muted-foreground tabular-nums">
+            {t("version")} {commit}
+          </p>
+        )}
       </div>
       <BrandPanel className="hidden w-[44%] max-w-[720px] sm:flex" />
     </main>

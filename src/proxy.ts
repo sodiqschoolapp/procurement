@@ -8,8 +8,8 @@ import { SESSION_COOKIE_NAMES } from "@/server/auth/session-cookie";
 // "After login the user returns to the same page"). Only the cookie's presence is read here; the
 // real check is requireUser() on the server, which reads the session itself.
 
-/** The paths open without signing in: the start page (until 0.10), sign-in and the health check. */
-const OPEN_PATHS = new Set(["/", "/login", "/health"]);
+/** The paths open without signing in: sign-in and the health check. `/` is the home page (0.10b). */
+const OPEN_PATHS = new Set(["/login", "/health"]);
 
 export function proxy(request: NextRequest): NextResponse {
   const { pathname, search } = request.nextUrl;

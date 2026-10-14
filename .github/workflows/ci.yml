@@ -187,8 +187,8 @@ jobs:
             echo "::error::The container did not apply every migration of the journal before it started."
             exit 1
           fi
-          if ! curl --silent --fail http://127.0.0.1:8080/ | grep --quiet "${COMMIT:0:7}"; then
-            echo "::error::The start page does not show the commit ${COMMIT:0:7}."
+          if ! curl --silent --fail http://127.0.0.1:8080/login | grep --quiet "${COMMIT:0:7}"; then
+            echo "::error::The sign-in page does not show the commit ${COMMIT:0:7}."
             exit 1
           fi
 

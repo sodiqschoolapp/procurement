@@ -913,6 +913,7 @@ describe("serverAction()", () => {
     const action = serverAction(createSample(), async () => ({
       id: manager.id,
       fullName: manager.fullName,
+      username: manager.username,
       role: "MANAGER",
       locale: "uz",
       sessionToken: "invented-token",

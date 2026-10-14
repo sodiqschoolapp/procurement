@@ -13,7 +13,7 @@ import "@fontsource-variable/bitter";
 import "./globals.css";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const t = await getTranslations("start");
+  const t = await getTranslations("app");
   return {
     title: t("title"),
     // The shield on white (docs/design-system.md, Logo): browser tab and home screen.

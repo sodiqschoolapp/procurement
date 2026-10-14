@@ -77,11 +77,12 @@ test("signing out returns to the sign-in page, and the deep link asks again (A8)
   await page.goto("/login");
   await signIn(page, E2E_USER.username, E2E_USER.password);
   await expect(page).toHaveURL(/\/$/);
-  await expect(
-    page.getByText(uz.session.signedInAs.replace("{name}", E2E_USER.fullName)),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: uz.home.title })).toBeVisible();
 
-  await page.getByRole("button", { name: uz.session.signOut }).click();
+  // The profile's sign-out button is there at both widths (plan of 0.10b, decision 11).
+  await page.goto("/profile");
+  await expect(page.getByRole("main").getByText(E2E_USER.fullName, { exact: true })).toBeVisible();
+  await page.getByRole("main").getByRole("button", { name: uz.session.signOut }).click();
 
   await expect(page).toHaveURL(/\/login$/);
   await page.goto("/requests");

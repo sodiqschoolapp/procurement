@@ -18,6 +18,7 @@ import { SESSION_COOKIE_NAMES, verifySignedToken } from "./session-cookie";
 export type CurrentUser = {
   id: string;
   fullName: string;
+  username: string;
   role: "HEAD" | "MANAGER" | "PRINCIPAL" | "FINANCE";
   locale: "uz" | "ru" | "en";
   /** The session token of this device, for sign-out. */
@@ -52,6 +53,7 @@ export async function userOfCookieValue(value: string | undefined): Promise<Curr
     .select({
       id: users.id,
       fullName: users.fullName,
+      username: users.username,
       role: users.role,
       locale: users.locale,
       sessionToken: sessions.token,
