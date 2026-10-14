@@ -61,9 +61,9 @@ describe("the active item (plan of 0.10b, decision 7)", () => {
     }
   });
 
-  // Plan of 1.1, decision 11: Admin opens /settings until /catalog exists (task 1.5).
-  it("Admin opens /settings", () => {
-    expect(head.admin!.href).toBe("/settings");
+  // Plan of 1.5, decision 11 (plan of 1.1, decision 11: /settings until /catalog existed).
+  it("Admin opens /catalog", () => {
+    expect(head.admin!.href).toBe("/catalog");
   });
 
   it("a path that only starts with the same letters is not active", () => {

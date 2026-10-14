@@ -664,6 +664,34 @@ Choices made during the build:
 - The checkboxes flip at once with `useOptimistic` inside a transition, until the refreshed page brings the saved state; all are disabled while one saves.
 - `tests/notification-texts.test.ts` gains a `SHOWN` table (the free text a sample must show, `null` for a type of codes only), replacing the fixed "DEMO" check, and a test that each right is named by a word in each language.
 
+### 1.5 Measures, categories, extra cost types, companies (14.10.2026)
+
+The plan's decisions as the plan review of 14.10.2026 confirmed them (corrections 1 to 4 applied), and those of the build. The Look first items come first.
+
+1. **Look first** (permission matrix). A new global permission `catalog.pick` for the picker query, all four roles: `04` says "everyone else picks from them" and `03` has no row for reading a catalog; catalogs hold no branch data. The picker lists active entries only; analytics and report filters (6.x, 7.x) read their own query with inactive entries too. Proposed `/spec-change` of `03`, Permission matrix, a new row: "Pick from the catalogs | Yes | Yes | Yes | Yes".
+2. **Look first** (stock: whole or decimal quantities). A measure's "Allows decimals" can be changed while no product uses the measure; once one does it locks, wired in 1.7. Proposed `/spec-change` of `04-catalogs.md`, Catalogs table, Measures, Notes: "\"kg\" allows decimals, \"pcs\" does not. \"Allows decimals\" locks once a product uses the measure."
+3. **Look first** (design-system departure, D23, as decisions 1.2 item 4). New and edit are pages (`/catalog/<kind>/new`, `/catalog/<kind>/[id]`), not the side panel.
+4. A measure's short name is unique like the name.
+5. A company's tax ID is optional, 9 or 14 digits, not unique; phone optional with the users' rule; note optional up to 1000 code points; formats in the domain and the form only, a blank value refused by the database; empty is stored as null.
+6. The company kind has no preset and can be changed later.
+7. `client_key uuid`, nullable and unique, on each table; a repeat finds its maker through the `<prefix>.create` audit row.
+8. No version column; only changed fields are written, under the row lock.
+9. Indexes on `is_active` of each table and `(is_active, kind)` of companies (`developer-rules.md` rule 12; plan review, correction 1, which replaced the plan's "no index").
+10. Audit entity is the table name; actions `unit.*`, `category.*`, `extra_cost_type.*`, `company.*`.
+11. `/catalog` lists the catalogs with their active counts from `countActiveCatalogEntries` (catalog.manage; correction 2); the Admin item opens it; `AdminNav` has four links, Catalogs first.
+12. One dynamic route `/catalog/[catalog]` with the segments `measures`, `categories`, `extra-costs`, `companies`; an unknown one is "not found".
+13. Search matches part of the name (and short name, tax ID, phone), any case, `%` and `_` literal; the list orders active first, then by name; the picker gives at most 50, active, by name.
+
+Choices made during the build:
+
+- The company kind is checked with a refine, not `z.enum`, so an unchosen kind reads "Fill in this field" and not "This value is not allowed".
+- The form and the Deactivate button live in `src/app/(app)/catalog/`, as the branch pages' do: `src/components/` does not import a page's server actions.
+- The page actions take the catalog's address segment with the fields and run that catalog's own action; an unknown segment is `invalid_input`.
+- `tests/e2e/settings.spec.ts` follows Admin to `/catalog`, then to Settings: decision 11 of 1.1 ("Admin opens /settings until /catalog exists") ended with this task.
+- The phone browser test saves with Enter after a refusal: the error toast covers Save until it fades.
+- `countActiveCatalogEntries` is one statement with a scalar subselect per catalog (diff review, Should fix 1); `/catalog/<kind>/new` uses it as its permission check.
+- The three page actions have their own matrix tests through the dispatch (permission review, Should fix 1).
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

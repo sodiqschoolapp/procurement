@@ -32,6 +32,13 @@ export const EXPECTED_MATRIX: Record<Permission, Expected> = {
     PRINCIPAL: "no",
     FINANCE: "no",
   },
+  "catalog.pick": {
+    row: "Pick from the catalogs (not a row of 03; plan of 1.5, decision 2, Look first)",
+    HEAD: "yes",
+    MANAGER: "yes",
+    PRINCIPAL: "yes",
+    FINANCE: "yes",
+  },
   "request.create": {
     row: "Create, edit, submit, cancel a request (create)",
     HEAD: "all",

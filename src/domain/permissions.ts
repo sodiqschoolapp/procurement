@@ -61,6 +61,15 @@ export const PERMISSIONS = {
   // "Suggest a new product for the catalog": a branch permission, as catalog_suggestions has a
   // branch_id (plan of 0.7, decision 3).
   "catalog.suggest": { scope: "branch", roles: HEAD_AND_MANAGER },
+  // Picking from the catalogs (measures, categories, extra cost types, companies; later products):
+  // not a row of 03, which says only "everyone else picks from them" (04). Every role: Managers
+  // pick on requests and purchases, Finance a supplier on money entries, the Principal filters
+  // analytics and reports. Catalogs hold no branch data, so no branch (plan of 1.5, decision 2,
+  // Look first). The picker lists active entries only.
+  "catalog.pick": {
+    scope: "global",
+    roles: { HEAD: "yes", MANAGER: "yes", PRINCIPAL: "yes", FINANCE: "yes" },
+  },
   // "Create, edit, submit, cancel a request", split by the one owner (03 rule 7; 06 Allowed
   // moves: "Submit: Owner or Head", "Take back: Owner", "Cancel: Owner or Head"): creating is any
   // own branch, the rest only on the Manager's own requests (permission review of 0.7).

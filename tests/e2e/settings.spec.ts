@@ -44,8 +44,14 @@ test("the Head sets the school name and sees it in the menu and the history (Don
   test.skip(info.project.name !== "desktop-1440", "the sidebar is hidden at phone width");
   await signIn(page, E2E_ROLES.HEAD);
 
-  // Admin opens /settings (decision 11).
+  // Admin opens /catalog (plan of 1.5, decision 11; until 1.5 it opened /settings, decision 11 of
+  // 1.1), and the Admin row leads on to Settings.
   await page.getByRole("link", { name: uz.shell.menu.admin }).click();
+  await expect(page).toHaveURL(/\/catalog$/);
+  await page
+    .getByRole("navigation", { name: uz.admin.label })
+    .getByRole("link", { name: uz.admin.settings })
+    .click();
   await expect(page).toHaveURL(/\/settings$/);
   await expect(page.getByRole("heading", { name: uz.settings.title, level: 1 })).toBeVisible();
   await expect(page.getByRole("button", { name: uz.settings.save })).toBeEnabled();
