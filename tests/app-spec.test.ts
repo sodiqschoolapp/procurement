@@ -52,14 +52,32 @@ describe("the App Platform spec of the test copy (build-plan 0.16; 18-hosting ro
     expect(valuesOf("http_port")).toEqual(["8080"]);
   });
 
-  it("holds no secret: every value is a DigitalOcean binding or production (Decided ahead 0.16, item 2)", () => {
+  it("holds no secret: every value is a DigitalOcean binding or a plain word (Decided ahead 0.16, item 2; build-plan 0.15)", () => {
     expect(valuesOf("value")).toEqual([
       "production",
       "${db.DATABASE_URL}",
       "${db.CA_CERT}",
       "${_self.COMMIT_HASH}",
+      '"yes"',
+      "auto",
+      "ombor-test-files",
     ]);
     expect(text).not.toMatch(/postgres(ql)?:\/\//);
     expect(text).not.toMatch(/BEGIN CERTIFICATE/);
+  });
+
+  it("seeds the demo users and names the R2 bucket, leaving every typed value to the dashboard (build-plan 0.15)", () => {
+    expect(valuesOf("key")).toEqual([
+      "NODE_ENV",
+      "DATABASE_URL",
+      "DATABASE_CA_CERT",
+      "GIT_COMMIT",
+      "SEED_DEMO_DATA",
+      "S3_REGION",
+      "S3_BUCKET",
+    ]);
+    expect(text).not.toMatch(
+      /PASSWORD|S3_ENDPOINT|S3_ACCESS_KEY_ID|S3_SECRET_ACCESS_KEY|BETTER_AUTH_SECRET/,
+    );
   });
 });
