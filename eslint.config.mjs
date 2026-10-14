@@ -105,6 +105,16 @@ const eslintConfig = defineConfig([
       "no-restricted-imports": [
         "error",
         {
+          // One icon set only: Material Symbols Rounded through src/components/icon.tsx. A later
+          // `shadcn add` writes lucide imports (components.json keeps "iconLibrary": "lucide");
+          // they are replaced, never installed (D25; design system "What we never do" 10).
+          paths: [
+            {
+              name: "lucide-react",
+              message:
+                "lucide is not installed (D25). Draw icons with <Icon> of src/components/icon.tsx.",
+            },
+          ],
           patterns: [
             {
               group: ["@/server/clock", "**/server/clock", "./clock"],

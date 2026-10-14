@@ -12,7 +12,6 @@
     "username": "Имя пользователя",
     "password": "Пароль",
     "submit": "Войти",
-    "submitting": "Вход…",
     "language": "Язык",
     "errors": {
       "required": "Заполните это поле",
@@ -21,7 +20,9 @@
       "limit": "Слишком много попыток. Попробуйте снова через {minutes, plural, one {# минуту} few {# минуты} many {# минут} other {# минуты}}.",
       "unavailable": "Сейчас войти нельзя. Попробуйте позже.",
       "invalid": "Введите имя пользователя и пароль"
-    }
+    },
+    "logo": "Sodiq School",
+    "slogan": "Образование начинается с воспитания"
   },
   "session": {
     "signedInAs": "Вы вошли как {name}",
@@ -72,5 +73,52 @@
         "create": "Учётная запись создана"
       }
     }
+  },
+  "requestStatus": {
+    "DRAFT": "Черновик",
+    "PENDING_HEAD": "Ждёт руководителя",
+    "PENDING_PRINCIPAL": "Ждёт директора",
+    "PENDING_FINANCE": "Ждёт финансов",
+    "RETURNED": "Возвращена на доработку",
+    "PURCHASING": "Открыта",
+    "SETTLEMENT": "Ждёт расчёта",
+    "CLOSED": "Закрыта",
+    "REJECTED": "Отклонена",
+    "CANCELLED": "Отменена"
+  },
+  "colourLabel": {
+    "number": {
+      "name": "Количество",
+      "matches": "Совпадает",
+      "less": "Меньше",
+      "more": "Больше",
+      "inProgress": "В работе"
+    },
+    "price": {
+      "name": "Цена",
+      "matches": "Совпадает",
+      "cheaper": "Дешевле",
+      "dearer": "Дороже",
+      "notBought": "Ещё не куплено"
+    },
+    "total": {
+      "name": "Итог",
+      "even": "Сходится",
+      "left": "Остаток",
+      "over": "Перерасход",
+      "inProgress": "В работе"
+    }
+  },
+  "common": {
+    "close": "Закрыть",
+    "cancel": "Отмена"
+  },
+  "unsavedChanges": {
+    "title": "Уйти без сохранения?",
+    "result": "Изменения на этой странице будут потеряны.",
+    "leave": "Уйти"
+  },
+  "theme": {
+    "dark": "Тёмная тема"
   }
 }

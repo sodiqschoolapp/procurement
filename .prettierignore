@@ -9,6 +9,7 @@ drizzle/
 # Generated
 package-lock.json
 next-env.d.ts
+src/components/icon-paths.ts
 .next/
 out/
 dist/

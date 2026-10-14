@@ -17,7 +17,7 @@ The whole project as ordered tasks. One task is one Claude Code session and one 
 
 | Phase | Tasks | What works afterwards |
 | --- | --- | --- |
-| 0. Foundations | 16 | Nothing a user can use yet. |
+| 0. Foundations | 17 | Nothing a user can use yet. |
 | 1. Catalogs and admin | 13 | Everything the Head sets up before the first request can be written. |
 | 2. Requests to approval | 15 | From an empty draft to a fully approved request, with its number, its history and its PDF. |
 | 3. Purchasing | 9 | The Manager records what was really bought. |
@@ -27,7 +27,7 @@ The whole project as ordered tasks. One task is one Claude Code session and one 
 | 7. Transfers and counts | 4 | Stock moving between branches, and stock checked against the shelf. |
 | 8. Jobs and polish | 4 | The scheduled work, and a pass over every screen. |
 | 9. Before go-live | 6 | Proof that it works, then the real environment and the real data. |
-| **Total** | **101** | |
+| **Total** | **102** | |
 
 ## Phase 0: Foundations
 
@@ -83,9 +83,14 @@ Nothing a user can use yet. These tasks build the places where the rules live: t
   - **Build:** The `audit_log` table; an `audit()` helper that writes actor, action, entity, before and after inside the caller's transaction; a reusable change-history component that lists the audit rows of one entity.
   - **Done when:** Database tests: a change and its audit row commit together and roll back together; before and after hold the old and the new values.
 
-- [ ] **0.10 App shell and menu per role**
+- [x] **0.10a Design system and shared parts** (split from 0.10 in pull request #20)
   - **Read:** `11-screens-and-ux.md` (Screens; Interface per role; Rules for a smooth feel: 1, 4, 5, 11, 12, 13, 15); `10-notifications-analytics-reports.md` (Home page per role); `edge-cases/00-definitions.md` (People and places); `docs/design-system.md` (all of it); `docs/decisions.md` (D23, D25).
-  - **Build:** The layout with a sidebar on desktop and a bottom tab bar on phones; the menu per role from one config, with pages a role cannot use absent; the branch switcher with "All my branches"; `/profile` with the language choice; skeleton placeholders, the empty-state component, toasts, the confirm dialog and the status-label component; the design system of `docs/design-system.md`: its tokens for the light and dark themes in `src/app/globals.css` with a contrast test of every pair (`tests/contrast.test.ts`), Golos Text and Bitter from the app's own files, Material Symbols Rounded icons, the button sizes and kinds, fields and the segmented control, the navy menu with the on-dark logo and the bottom tab bar on phones, the theme switch on `/profile`, the sign-in page and the empty-state component as brand moments, and the logo and icons of `public/brand/`; a guard that asks before leaving a form with unsaved changes; an empty home page per role.
+  - **Build:** the tokens of the light and dark themes in `src/app/globals.css` with `tests/contrast.test.ts`; the theme following the device, a chosen theme kept in the browser; Golos Text and Bitter from the app's own files; Material Symbols Rounded icons; the button sizes and kinds; fields, the select and the segmented control; the status-label component; skeleton placeholders; the empty-state component (brand moment); toasts; the confirm dialog; the unsaved-changes guard; the sign-in page as a brand moment with the theme button; the browser and home-screen icons of `public/brand/`.
+  - **Done when:** `tests/contrast.test.ts` passes for every pair of both themes; Playwright at 375 px and 1440 px: the sign-in page in its brand look (navy panel only on desktop), Bitter on its title and Golos Text on its fields, the theme following the device and the theme button's choice kept after a reload; Bitter draws every letter of "Oʻgʻil, Ўзбекистон, Қашқадарё, Ғулом, Ҳамид" (browser check); unit tests of the button (with its loading state), the fields, the segmented control, the status label, the empty state, the confirm dialog, the toasts and the generated icon file.
+
+- [ ] **0.10b App shell, menu per role and profile** (split from 0.10 in pull request #20)
+  - **Read:** `11-screens-and-ux.md` (Screens; Interface per role; Rules for a smooth feel: 1, 4, 5, 11, 12, 13, 15); `10-notifications-analytics-reports.md` (Home page per role); `edge-cases/00-definitions.md` (People and places); `docs/design-system.md` (all of it); `docs/decisions.md` (D23, D25).
+  - **Build:** the layout with the navy sidebar (on-dark logo, collapsible to the rail) on desktop and the bottom tab bar on phones; the top bar with the branch switcher ("All my branches") and the space for search and the bell; the menu per role from one config, with pages a role cannot use absent; `/profile` with the language choice and the theme switch; an empty home page per role at `/`; the CI container step that reads the commit from `/` moves with it.
   - **Done when:** Playwright at 375 px and 1440 px: each of the four roles sees exactly its menu items in the spec's order; the Principal has no Admin and no Money; changing the language on `/profile` changes the menu at once.
 
 - [ ] **0.11 Notifications**

@@ -250,4 +250,25 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - `audit_log` rows cannot be deleted, also in tests: a test counts its own rows, never the whole table.
 - For any task that opens the history to a role other than the Head: add `branchFilter()` on the audited record's branch first (comment in the query).
 
-The next task is 0.10.
+## 0.10a Design system and shared parts (14.10.2026, pull request #20)
+
+**Built**
+- Light and dark tokens in `src/app/globals.css` with `tests/contrast.test.ts`; the theme follows the device, a chosen theme is kept in `localStorage` (`src/components/theme.ts`, inline script in the root layout). Golos Text and Bitter from Fontsource.
+- `src/components/`: `icon.tsx` (+ `icon-paths.ts` from `npm run icons`), `ui/button.tsx` (`pending`), `ui/field.tsx`, `ui/input.tsx`, `ui/select.tsx`, `ui/segmented.tsx`, `status-label.tsx`, `skeleton.tsx`, `empty-state.tsx`, `hexagons.tsx`, `toast.ts` + `toaster.tsx`, `confirm-dialog.tsx`, `unsaved-changes-guard.tsx`. `src/domain/request-status.ts`.
+- `/login` as the brand moment; browser icons of `public/brand/` in the layout metadata.
+
+**Left out, and the task that brings it**
+- Shell, menu per role, branch switcher, `/profile` with language and theme switch, home pages, and `/` with the CI container step: 0.10b.
+
+**What the next sessions must know**
+- Every button is `<Button>` (`variant`, `size`, `icon`, `pending`); a link styled as a button uses `buttonVariants()`. Fields: `<Field id label error><Input /></Field>`; the control takes id and aria from the field.
+- Icons: add the name to `ICONS` in `scripts/icons.mjs`, run `npm run icons`, commit `icon-paths.ts`. Never import `lucide-react`; after `shadcn add`, replace its lucide imports with `<Icon>`.
+- Feedback: `toast.success(t(...))` / `toast.error(t(...))`; irreversible actions use `<ConfirmDialog>`; a form renders `<UnsavedChangesGuard dirty={...} />`.
+- Status and colour labels only through `RequestStatusLabel` and `ColourLabel`; the colour comes from `src/domain/` (phase 3), the label refuses a difference whose sign contradicts the colour.
+- For the first task with a form: the guard's browser wiring (link capture and the back button) has no e2e test yet; that task writes it (review of 0.10a, correction 8).
+- For 0.10b: a `<Skeleton>` is `--accent`, the canvas colour in the light theme; on the canvas, outside a white panel, give it `bg-secondary` (spec review of 0.10a).
+- For 0.10b: the theme switch on `/profile` calls `applyTheme()` of `src/components/theme.ts` with `device`, `light` or `dark`.
+- Bitter and Golos Text are named `Bitter Variable` and `Golos Text Variable` in CSS; Tailwind `font-slab` is Bitter, for brand moments only.
+- Trap: the browser reports token colours as `lab()`; an e2e colour check reads the pixel through a canvas (`tests/e2e/design-system.spec.ts`).
+
+The next task is 0.10b.

@@ -12,7 +12,6 @@
     "username": "Foydalanuvchi nomi",
     "password": "Parol",
     "submit": "Kirish",
-    "submitting": "Kirilmoqda…",
     "language": "Til",
     "errors": {
       "required": "Bu maydonni to'ldiring",
@@ -21,7 +20,9 @@
       "limit": "Urinishlar juda ko'p. {minutes, plural, other {# daqiqadan}} keyin qayta urinib ko'ring.",
       "unavailable": "Hozir kirib bo'lmaydi. Keyinroq urinib ko'ring.",
       "invalid": "Foydalanuvchi nomi va parolni kiriting"
-    }
+    },
+    "logo": "Sodiq School",
+    "slogan": "Taʼlim tarbiyadan boshlanadi"
   },
   "session": {
     "signedInAs": "Siz {name} sifatida kirdingiz",
@@ -72,5 +73,52 @@
         "create": "Hisob yaratildi"
       }
     }
+  },
+  "requestStatus": {
+    "DRAFT": "Qoralama",
+    "PENDING_HEAD": "Rahbarni kutmoqda",
+    "PENDING_PRINCIPAL": "Direktorni kutmoqda",
+    "PENDING_FINANCE": "Moliyani kutmoqda",
+    "RETURNED": "Tuzatishga qaytarildi",
+    "PURCHASING": "Ochiq",
+    "SETTLEMENT": "Hisob-kitobni kutmoqda",
+    "CLOSED": "Yopilgan",
+    "REJECTED": "Rad etilgan",
+    "CANCELLED": "Bekor qilingan"
+  },
+  "colourLabel": {
+    "number": {
+      "name": "Soni",
+      "matches": "Mos",
+      "less": "Kam",
+      "more": "Ko'p",
+      "inProgress": "Jarayonda"
+    },
+    "price": {
+      "name": "Narx",
+      "matches": "Mos",
+      "cheaper": "Arzonroq",
+      "dearer": "Qimmatroq",
+      "notBought": "Hali sotib olinmagan"
+    },
+    "total": {
+      "name": "Jami",
+      "even": "Teng",
+      "left": "Qoldiq",
+      "over": "Ortiqcha",
+      "inProgress": "Jarayonda"
+    }
+  },
+  "common": {
+    "close": "Yopish",
+    "cancel": "Bekor qilish"
+  },
+  "unsavedChanges": {
+    "title": "Saqlamasdan chiqasizmi?",
+    "result": "Bu sahifadagi o'zgarishlar yo'qoladi.",
+    "leave": "Chiqish"
+  },
+  "theme": {
+    "dark": "Qorongʻi mavzu"
   }
 }

@@ -365,6 +365,35 @@ Choices made during the build:
 - `listChangeHistory` checks its input with Zod after `authorize()`, reads 51 rows to know whether a next page exists, and shows the actor's current full name (the spec does not say whether the name at the time is meant; the review may change it).
 - Tests of `audit_log` count their own rows, since rows cannot be removed between tests.
 
+### 0.10a Design system and shared parts (14.10.2026)
+
+The plan's decisions as the plan review of 14.10.2026 confirmed them (corrections 1 to 8 applied), and those of the build. The Look first items come first.
+
+1. **Look first.** Task 0.10 is split into 0.10a (design system and shared parts) and 0.10b (shell, menu per role, branch switcher, `/profile`, home pages, the Done-when of 0.10); both keep 0.10's Read line.
+2. **Look first.** New dependencies: `@fontsource-variable/golos-text` and `@fontsource-variable/bitter` 5.3 (OFL-1.1), `@base-ui/react` 1.9 (MIT), `@material-symbols/svg-400` 0.48 (Apache-2.0, dev only); `lucide-react` removed and refused by ESLint. Installed by the owner's session (the cloud session's guard refused `npm install`).
+3. **Look first.** The words of the colour labels: Number Matches / Less / More, Price Matches / Cheaper / Dearer, Total Even / Left / Over; grey "In progress" (Number, Total) and "Not bought yet" (Price). The amount is shown without its sign; a difference whose sign contradicts the word is refused. "Orange" of `08` is drawn amber. Proposed `/spec-change` of `08-money-and-settlement.md`, "The three colours": rename the column "Orange" to "Amber", write "red beats amber, amber beats green", and every "orange" of "Worked example" becomes "amber".
+4. **Look first.** Request statuses use info or muted only: info for the four waiting statuses, Sent back and Open; muted for Draft, Closed, Rejected, Cancelled. The ten codes live in `src/domain/request-status.ts`.
+5. The theme follows the device; a chosen light or dark is kept in `localStorage` (`theme`) and set as `<html data-theme>` by an inline script before the first paint. The sign-in button toggles light and dark; the three-way choice is on `/profile` (0.10b).
+6. The dark tints are the colour at 16% over the card, composited in sRGB, rounded to whole channels, written as oklch; the contrast test recomputes them.
+7. New tokens `--topbar`, `--link`, `--sidebar-avatar`, `--today-muted`; corners 8 / 12 / 6 (`--radius`, `--radius-panel`, `--radius-label`); `--chart-*` untouched until 6.x.
+8. Bitter's letters are checked in the browser (CDP `getPlatformFontsForNode`): every letter of the sample is drawn by Bitter, so no language falls back to Golos Text bold.
+9. The unsaved-changes guard: the browser's own question on close or reload; link clicks caught on `window` in the capture phase and the back button through a guard history entry, both answered with the confirm dialog.
+10. Toasts: success 4 s, an error stays until closed and is announced at once.
+11. `/` keeps its placeholder role until 0.10b.
+12. `components.json` keeps `"iconLibrary": "lucide"`; ESLint refuses `lucide-react`.
+
+Choices made during the build:
+
+- **Look first.** A colour label in green shows its amount too ("Even 0 so'm", "Matches 0"): `08` says a label "carries an icon, a word and the amount". Price follows Total's sign rule: the difference is planned minus actual, above 0 is Cheaper.
+- A pending button keeps its width: the turning icon takes the place of the button's icon, or, on a button with words only, covers the words, which stay readable to screen readers. The sign-in button no longer changes its words to "Signing in…" (key removed).
+- The guard is the component `UnsavedChangesGuard` (`src/components/unsaved-changes-guard.tsx`), which renders its own dialog, instead of a hook file.
+- Material Symbols renamed `expand_more` to `keyboard_arrow_down`; `scripts/icons.mjs` reads that file under the design system's name. `src/components/icon-paths.ts` is generated and left out of Prettier.
+- The skeleton does not pulse: "nothing moves on its own" (design system, Motion).
+- Under `prefers-reduced-motion: reduce` every animation and transition takes 0 s, globally in `globals.css`.
+- The navy panel shows from 640 px on; the logo is the on-dark file in the dark theme; the hexagon column is white through the token `--sidebar-accent-foreground`, white in both themes (spec review).
+- The guard takes its history entry off when the form becomes clean, so a later change guards again, and a Back between fragments of the page does not ask (spec review).
+- The dialog backdrop is navy at 50% (`--sidebar`) in both themes.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

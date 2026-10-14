@@ -1,0 +1,88 @@
+// Writes src/components/icon-paths.ts: the SVG path of every Material Symbols Rounded icon the
+// app uses, filled, from the dev dependency @material-symbols/svg-400 (docs/design-system.md,
+// Icons: "drawn from SVG, never from a font ligature"; plan of 0.10a, decision 2). Run with
+// `npm run icons` after changing the list; src/components/icon-paths.test.ts fails while the
+// committed file differs from what this script writes.
+
+import { readFileSync, writeFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+
+/** Design system "Icons" (common actions) and "This app" (menu icons), then the app's own. */
+export const ICONS = [
+  // Common actions.
+  "search",
+  "notifications",
+  "download",
+  "print",
+  "add",
+  "edit",
+  "close",
+  "expand_more",
+  "chevron_left",
+  "chevron_right",
+  "arrow_back",
+  "check_circle",
+  "warning",
+  "error",
+  "info",
+  "inventory_2",
+  "logout",
+  "dark_mode",
+  "light_mode",
+  "language",
+  "tune",
+  // Menu icons of this app.
+  "home",
+  "receipt_long",
+  "inventory",
+  "payments",
+  "bar_chart",
+  "description",
+  "person",
+  // The pending button; the request statuses and the colour labels.
+  "progress_activity",
+  "schedule",
+  "undo",
+  "shopping_cart",
+  "block",
+  "cancel",
+];
+
+/**
+ * Names the package files under another name. Material Symbols renamed `expand_more` to
+ * `keyboard_arrow_down`; the glyph is the same, and the app keeps the design system's name.
+ */
+const FILE_NAMES = { expand_more: "keyboard_arrow_down" };
+
+const PACKAGE = new URL("../node_modules/@material-symbols/svg-400/rounded/", import.meta.url);
+const OUTPUT = new URL("../src/components/icon-paths.ts", import.meta.url);
+
+function pathOf(name) {
+  const file = `${FILE_NAMES[name] ?? name}-fill.svg`;
+  const svg = readFileSync(new URL(file, PACKAGE), "utf8");
+  if (!svg.includes('viewBox="0 -960 960 960"')) throw new Error(`${file}: unexpected viewBox`);
+  const paths = [...svg.matchAll(/<path d="([^"]+)"\/>/g)].map((match) => match[1]);
+  if (paths.length !== 1) throw new Error(`${file}: expected one path, found ${paths.length}`);
+  return paths[0];
+}
+
+/** The source of src/components/icon-paths.ts. */
+export function iconPathsSource() {
+  const lines = ICONS.map((name) => `  ${name}: ${JSON.stringify(pathOf(name))},`);
+  return [
+    "// Written by scripts/icons.mjs (`npm run icons`); do not edit by hand. Material Symbols",
+    "// Rounded, filled, weight 400 (Apache-2.0), viewBox 0 -960 960 960.",
+    "",
+    "export const ICON_PATHS = {",
+    ...lines,
+    "} as const;",
+    "",
+    "export type IconName = keyof typeof ICON_PATHS;",
+    "",
+  ].join("\n");
+}
+
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  writeFileSync(OUTPUT, iconPathsSource());
+  console.log(`Wrote ${ICONS.length} icons to src/components/icon-paths.ts`);
+}

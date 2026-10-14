@@ -2,6 +2,7 @@ import { getTranslations } from "next-intl/server";
 import { connection } from "next/server";
 
 import { signOutAction } from "@/app/login/actions";
+import { Button } from "@/components/ui/button";
 import { getCurrentUser } from "@/server/auth/session";
 import { shortCommit } from "@/server/commit";
 
@@ -22,12 +23,9 @@ export default async function StartPage() {
         {user && (
           <form action={signOutAction} className="mt-6 flex flex-col items-center gap-3">
             <p>{t("session.signedInAs", { name: user.fullName })}</p>
-            <button
-              type="submit"
-              className="h-11 rounded-lg bg-secondary px-4 text-sm font-semibold text-secondary-foreground hover:bg-secondary/80 sm:h-10"
-            >
+            <Button type="submit" variant="secondary" icon="logout">
               {t("session.signOut")}
-            </button>
+            </Button>
           </form>
         )}
         {commit && (

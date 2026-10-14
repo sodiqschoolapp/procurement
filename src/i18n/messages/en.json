@@ -12,7 +12,6 @@
     "username": "Username",
     "password": "Password",
     "submit": "Sign in",
-    "submitting": "Signing in…",
     "language": "Language",
     "errors": {
       "required": "Fill in this field",
@@ -21,7 +20,9 @@
       "limit": "Too many tries. Try again in {minutes, plural, one {# minute} other {# minutes}}.",
       "unavailable": "Signing in is not possible right now. Try again later.",
       "invalid": "Type your username and password"
-    }
+    },
+    "logo": "Sodiq School",
+    "slogan": "Education begins with upbringing"
   },
   "session": {
     "signedInAs": "Signed in as {name}",
@@ -72,5 +73,52 @@
         "create": "Account created"
       }
     }
+  },
+  "requestStatus": {
+    "DRAFT": "Draft",
+    "PENDING_HEAD": "Waiting for Head",
+    "PENDING_PRINCIPAL": "Waiting for Principal",
+    "PENDING_FINANCE": "Waiting for Finance",
+    "RETURNED": "Sent back for editing",
+    "PURCHASING": "Open",
+    "SETTLEMENT": "Waiting for settlement",
+    "CLOSED": "Closed",
+    "REJECTED": "Rejected",
+    "CANCELLED": "Cancelled"
+  },
+  "colourLabel": {
+    "number": {
+      "name": "Number",
+      "matches": "Matches",
+      "less": "Less",
+      "more": "More",
+      "inProgress": "In progress"
+    },
+    "price": {
+      "name": "Price",
+      "matches": "Matches",
+      "cheaper": "Cheaper",
+      "dearer": "Dearer",
+      "notBought": "Not bought yet"
+    },
+    "total": {
+      "name": "Total",
+      "even": "Even",
+      "left": "Left",
+      "over": "Over",
+      "inProgress": "In progress"
+    }
+  },
+  "common": {
+    "close": "Close",
+    "cancel": "Cancel"
+  },
+  "unsavedChanges": {
+    "title": "Leave without saving?",
+    "result": "The changes you made on this page will be lost.",
+    "leave": "Leave"
+  },
+  "theme": {
+    "dark": "Dark theme"
   }
 }
