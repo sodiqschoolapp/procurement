@@ -109,6 +109,12 @@ export const PERMISSIONS = {
   "price.add": { scope: "global", roles: HEAD_ONLY_GLOBAL },
   // "Switch a Manager's rights on or off"
   "manager_rights.switch": { scope: "global", roles: HEAD_ONLY_GLOBAL },
+  // One's own language and branch view, and the list of one's branches: not a row of 03 (plan of
+  // 0.10b, decision 1, Look first; 11-screens-and-ux.md, Screens: "Notifications, profile: All").
+  "profile.edit": {
+    scope: "global",
+    roles: { HEAD: "yes", MANAGER: "yes", PRINCIPAL: "yes", FINANCE: "yes" },
+  },
 } as const satisfies Record<string, PermissionRule>;
 
 export type Permission = keyof typeof PERMISSIONS;

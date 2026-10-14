@@ -14,6 +14,7 @@ import { type InsertedUser, insertUser } from "../../tests/helpers/users";
 import {
   type ActionDefinition,
   ActionError,
+  GLOBAL_TARGET,
   defineAction,
   runAction,
   serverAction,
@@ -768,6 +769,104 @@ describe("the definition itself", () => {
     expect(order).toEqual(["target"]);
     expect(await rows()).toMatchObject([{ title: "Sinov", version: 1 }]);
   });
+});
+
+const globalInput = z.object({ branchId: z.uuid(), title: z.string().min(1).max(50) });
+
+/**
+ * An action of the global permission profile.edit (plan of 0.10b, decision 4): no branch is
+ * checked, the user's own row is the lock. It writes a sample record so a test can see the write.
+ */
+function globalSample(order: string[] = []) {
+  return defineAction({
+    name: "globalSample",
+    permission: "profile.edit",
+    input: globalInput,
+    async target() {
+      order.push("target");
+      return GLOBAL_TARGET;
+    },
+    async lock({ tx, userId }) {
+      order.push("lock");
+      const [row] = await tx
+        .select({ id: sql<string>`id` })
+        .from(sql`users`)
+        .where(sql`id = ${userId}`)
+        .for("update");
+      return row ? { target: GLOBAL_TARGET, rows: row } : null;
+    },
+    async write({ tx, input, userId }) {
+      order.push("write");
+      await tx.insert(sampleRecords).values({
+        branchId: input.branchId,
+        ownerId: userId,
+        clientKey: newClientKey(),
+        status: "open",
+        version: 1,
+        title: input.title,
+        createdAt: now(),
+      });
+      return { title: input.title };
+    },
+  });
+}
+
+describe("the global form (plan of 0.10b, decision 4; review of the plan, correction 4)", () => {
+  it("an action of a global permission runs without a branch, under the lock of its own row", async () => {
+    const branch = await insertBranch();
+    const principal = await insertUser("PRINCIPAL");
+    const order: string[] = [];
+
+    expectOk(
+      await runAction(globalSample(order), principal.id, { branchId: branch.id, title: "Sinov" }),
+    );
+    expect(order).toEqual(["target", "lock", "write"]);
+    expect(await rows()).toMatchObject([{ ownerId: principal.id, title: "Sinov" }]);
+  });
+
+  const mistakes = [
+    {
+      name: "GLOBAL_TARGET with a branch permission",
+      action: (order: string[]) =>
+        defineAction({ ...globalSample(order), permission: "request.create" }),
+    },
+    {
+      name: "a branch target with a global permission",
+      action: (order: string[]) =>
+        defineAction({
+          ...globalSample(order),
+          async target({ input }: { input: z.output<typeof globalInput> }) {
+            order.push("target");
+            return { branchId: input.branchId };
+          },
+        }),
+    },
+    {
+      name: "GLOBAL_TARGET with repeat",
+      action: (order: string[]) =>
+        defineAction({
+          ...globalSample(order),
+          repeat: { clientKey: () => newClientKey(), find: async () => null },
+        }),
+    },
+  ];
+
+  for (const { name, action } of mistakes) {
+    it(`${name} is a definition error: unexpected, nothing runs past target, nothing saved`, async () => {
+      vi.spyOn(console, "error").mockImplementation(() => undefined);
+      const branch = await insertBranch();
+      const head = await insertUser("HEAD");
+      const order: string[] = [];
+
+      const result = await runAction(action(order), head.id, {
+        branchId: branch.id,
+        title: "Sinov",
+      });
+      expect(result).toMatchObject({ ok: false, error: { code: "unexpected" } });
+      expect(order).toEqual(["target"]);
+      expect(await rows()).toEqual([]);
+    });
+  }
 });
 
 describe("own requests through the wrapper (03 permission matrix: request.edit, own requests)", () => {

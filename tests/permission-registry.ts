@@ -15,12 +15,18 @@ export const SERVER_ACTIONS: Record<string, Entry> = {
   "src/app/login/actions.ts#signInAction": "OPEN",
   "src/app/login/actions.ts#signOutAction": "OPEN",
   "src/app/login/actions.ts#chooseLanguageAction": "OPEN",
+  // One's own language and branch view (plan of 0.10b, decisions 1 and 3, Look first).
+  "src/app/(app)/profile/actions.ts#chooseOwnLanguageAction": "profile.edit",
+  "src/app/(app)/branch-actions.ts#chooseBranchAction": "profile.edit",
 };
 
 /** Exports of `src/features/<area>/queries/`, as `<file>#<export>`. */
 export const QUERIES: Record<string, Permission> = {
   // The change history of one record: Head only (plan of 0.9, decision 3, Look first).
   "src/features/audit/queries/change-history.ts#listChangeHistory": "catalog.manage",
+  // The branches of the top bar's branch view (plan of 0.10b).
+  "src/features/catalog/queries/my-branches.ts#listMyBranches": "profile.edit",
+  "src/features/catalog/queries/my-branches.ts#currentBranchChoice": "profile.edit",
 };
 
 /**
@@ -29,8 +35,6 @@ export const QUERIES: Record<string, Permission> = {
  * and the like), calls requireUser() or authorize() itself.
  */
 export const OPEN_ROUTES: readonly string[] = [
-  // The public placeholder until 0.10 (decisions 0.6, item 14).
-  "src/app/page.tsx",
   "src/app/login/page.tsx",
   // The health check of the host (0.16).
   "src/app/health/route.ts",
