@@ -491,6 +491,29 @@ Choices made during the build:
 - heic-decode's types are written in `src/server/files/heic-decode.d.ts` rather than adding `@types/heic-decode`.
 - The HEIC test picture (1600 × 1200, two coloured blocks) was made once with pillow-heif and is committed in `tests/helpers/files/`; sharp writes no HEIC.
 
+### 0.13 Scheduler (14.10.2026)
+
+The plan's decisions as the plan review of 14.10.2026 confirmed them (corrections 1 to 3 applied), and those of the build. The Look first items come first.
+
+1. **Look first.** A job runs as the system: no signed-in user, no `authorize()`, no `runAction`; its writes are in the transaction the scheduler opens in `src/server/jobs/`, and what it tells a person goes through `notify()` with `userId: null`, which keeps the branch wall per recipient. Proposed `/spec-change` of `edge-cases/developer-rules.md` rule 4: add "A scheduled job runs as the system, without a user; what it tells a person goes through the notification helper, which checks the person's branch."
+2. **Look first.** New table `scheduled_jobs`, not in `14-data-model.md`: the state of each job (state, updated in place; never deleted). Proposed `/spec-change` of `14`, System: add `scheduled_jobs  name KEY, schedule JSONB, last_tick, last_started_at, last_finished_at, last_failed_tick, last_failed_at`.
+3. The lock is the job's row taken with `FOR UPDATE SKIP LOCKED`; a job runs only for a tick later than both `last_tick` and `last_failed_tick`, so a clock behind another instance's never runs a tick again.
+4. A job's whole run is in a savepoint of the transaction that holds its lock; its writes and its record commit together. A failure rolls back to the savepoint and is recorded under the same lock (review correction 1).
+5. Ticks are counted from 00:00 Tashkent with `businessDayStart(businessDate())` (review correction 2); the minutes divide a day. Only `everyMinutes` now; times of day and weekdays with 8.2.
+6. A missed tick is not caught up.
+7. The scheduler wakes every 15 seconds.
+8. It starts in `src/instrumentation.ts`, once per server process, Node.js runtime only, not during `next build`, not with `SCHEDULER=off`; on by default.
+9. A failed run records `last_failed_tick` and `last_failed_at`, logs `Job <name> failed:` with `describeForLog()`, is not tried again in its tick; no notification.
+10. The heartbeat runs every minute and writes only its record.
+
+Choices made during the build:
+
+- Every time column comes from `now()` of the injected clock, `created_at` included (review correction 3).
+- The missing rows are made with `INSERT … ON CONFLICT DO NOTHING` in a short transaction before the lock transactions.
+- A round runs the jobs one after another; one job's failure, or a failure to write its record, does not stop the others.
+- `startScheduler` takes an optional `runRound` so a test counts rounds instead of waiting a fixed time; its timer is `unref()`ed.
+- `.env.example` names `SCHEDULER`.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

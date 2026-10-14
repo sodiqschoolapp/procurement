@@ -103,7 +103,7 @@ Nothing a user can use yet. These tasks build the places where the rules live: t
   - **Build:** The storage service in `docker-compose.yml` (moved from 0.2); the `files` table; an S3 client for MinIO locally and R2 in the cloud; a private bucket; the upload route: JPG, PNG, WebP or HEIC up to 10 MB, PDF where a task allows it, checked by content and not by name; sharp makes the 160 px and 1200 px versions; the browser shrinks a large photo before upload; a download route that refuses a signed-out visitor and calls `authorize()` for the record the file belongs to; each later task that attaches files adds its check.
   - **Done when:** Tests: a text file renamed `.jpg` is refused; an 11 MB file is refused; one upload produces both sizes; a signed-out request for a file address is refused.
 
-- [ ] **0.13 Scheduler**
+- [x] **0.13 Scheduler**
   - **Read:** `13-technology.md` (Scheduled jobs); `edge-cases/developer-rules.md` (rule 10).
   - **Build:** The scheduler inside the app; every job takes a database lock so it never runs twice at once; a job registry with name, schedule and last run; it uses the injected clock; one heartbeat job.
   - **Done when:** Database test: two scheduler instances started together run the heartbeat once per tick; the last run is recorded.
