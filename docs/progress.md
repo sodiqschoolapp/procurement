@@ -493,4 +493,24 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - `PageLinks` lives in `src/app/(app)/catalog/page-links.tsx`.
 - Browser tests: the top bar's branch switcher is also labelled "Filial"; scope a form's branch field with `page.locator("form")`. After Deactivate, wait for the dialog to be hidden: its button reads "Activate" while it closes.
 
-The next task is 1.7.
+## 1.7 Products and services (15.10.2026, pull request #37)
+
+**Built**
+- Migration `0012_products`: `products` (enum `product_type`, FKs to categories, units, files, companies; unique normalised name; unique `photo_file_id`; `reference_price` bigint CHECK > 0; blank CHECKs; nullable unique `client_key`).
+- `src/domain/products.ts` (types, default GOODS, `lockedChanges()`), `src/domain/money.ts` (`parseSom()`, `isSom()`, `MONEY_MAX`).
+- `createProduct`, `updateProduct`, `setProductActive` through `defineCatalogActions()`, which gained `guard`, `createOnly`, `createShape` and `shownRefs`; audit `product.*` with the names of category, measure, company and the photo's file name. `updateMeasure` locks `allowDecimal` once a product uses the measure.
+- `PRODUCT_USES` (`actions/product-uses.ts`, empty) and `productInUse()`; file owner `PRODUCT_PHOTOS` (catalog.pick).
+- Queries `listProducts`, `getProduct`, `listProductChoices`, `listCategoryFilter`; `/catalog/products`, `/new`, `/[id]`; `/catalog` has the row.
+
+**Left out, and the task that brings it**
+- Subtypes and the default subtype: 1.8. New price with a note, price history: 1.9. Excel import: 1.10. Seed products: 1.13. The request-line product picker: the request task after D42.
+
+**What the next sessions must know**
+- For 1.8: the default subtype takes the product's `reference_price`; after 1.8 a request line's suggestion reads only `product_variants.reference_price` (plan review of 1.7, decision 2). `products.photo_file_id` is unique; a subtype photo must also be refused when a product holds the file (`accessOf()`), and the subtype table adds its owner to `FILE_OWNERS`.
+- For 1.9: write or backfill a HEAD `price_history` row for every price set in 1.7; from the first change on, no screen, PDF or suggestion reads `products.reference_price` as the current price (plan review of 1.7, correction 2).
+- For every task that writes a row holding a quantity of a product's subtype (request lines, stock movements and balances of any source, the existing-stock import, stock minimums): add its check to `PRODUCT_USES` with a database test, and take the product row `FOR SHARE` before the insert (plan review of 1.7, correction 1).
+- A new reference to a catalog entry: lock it `FOR SHARE` and refuse `errors.field.inactive` / `notAllowed`, as `refuseInactive()` in `actions/products.ts`.
+- `tests/helpers/catalog.ts` inserts categories, measures, companies, file rows and products.
+- A plain `truncate files` is refused (0A000) since `products` points at `files`.
+
+The next task is 1.8.

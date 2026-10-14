@@ -53,7 +53,10 @@
       "taken": "Already used",
       "principalTaken": "This branch already has an active Principal. Tick \"Replace\" to hand it over.",
       "branchCount": "A Head has no branches, a Principal exactly one, a Manager or Finance user one or more",
-      "branchInactive": "This branch is inactive and cannot be added"
+      "branchInactive": "This branch is inactive and cannot be added",
+      "inactive": "This entry is inactive. Choose an active one.",
+      "notAPhoto": "Choose a photo: JPG, PNG, WebP or HEIC",
+      "locked": "Locked: the item is already used"
     },
     "file": {
       "tooLarge": "The file is larger than 10 MB. Choose a smaller file or take the photo again.",
@@ -123,6 +126,12 @@
         "update": "Department changed",
         "deactivate": "Department deactivated",
         "activate": "Department activated"
+      },
+      "product": {
+        "create": "Product added",
+        "update": "Product changed",
+        "deactivate": "Product deactivated",
+        "activate": "Product activated"
       }
     },
     "fields": {
@@ -501,7 +510,14 @@
       "isActive": "Active",
       "responsibleName": "Responsible person",
       "responsiblePhone": "Responsible person's phone",
-      "branch": "Branch"
+      "branch": "Branch",
+      "type": "Type",
+      "categoryId": "Category",
+      "unitId": "Measure",
+      "defaultCompanyId": "Default brand or company",
+      "referencePrice": "Reference price",
+      "description": "Description",
+      "photoFileId": "Photo"
     },
     "hints": {
       "shortName": "Shown next to quantities, for example kg or pcs.",
@@ -511,7 +527,14 @@
       "note": "Optional.",
       "responsibleName": "Optional. Plain text, not an app user.",
       "responsiblePhone": "Optional.",
-      "branch": "Chosen once: a department stays in its branch."
+      "branch": "Chosen once: a department stays in its branch.",
+      "type": "Product by default. A service, such as a repair, delivery or printing, never enters the warehouse.",
+      "defaultCompanyId": "Optional. Suggested as the brand or company of a request line.",
+      "referencePrice": "Optional. Whole so'm. Later it changes as a new price with a note.",
+      "referencePriceLater": "Changes as a new price with a note, kept in the price history.",
+      "description": "Optional.",
+      "photoFileId": "Optional. JPG, PNG, WebP or HEIC up to 10 MB.",
+      "locked": "Locked: the item is already used."
     },
     "companyKind": {
       "choose": "Choose…",
@@ -559,12 +582,39 @@
         "description": "The units of each branch that receive items, with their responsible person.",
         "emptyTitle": "No departments yet",
         "emptyText": "Add the units of a branch, such as the kitchen, the library or a classroom."
+      },
+      "products": {
+        "title": "Products and services",
+        "new": "New product or service",
+        "newTitle": "New product or service",
+        "description": "Everything the school buys, with its measure, photo and reference price.",
+        "emptyTitle": "No products yet",
+        "emptyText": "Add the items the school buys, such as paper, detergent or a repair service."
       }
     },
     "chooseBranch": "Choose…",
     "branchOption": "{code} · {name}",
     "branchLine": "Branch: {code} · {name}",
     "allBranches": "All branches. Choose one in the branch switcher on top.",
-    "oneBranch": "Branch {code} · {name}, as chosen in the branch switcher on top."
+    "oneBranch": "Branch {code} · {name}, as chosen in the branch switcher on top.",
+    "productType": {
+      "GOODS": "Product",
+      "SERVICE": "Service"
+    },
+    "allTypes": "All types",
+    "allCategories": "All categories",
+    "filterType": "Type",
+    "filterCategory": "Category",
+    "chooseCategory": "Choose a category",
+    "chooseUnit": "Choose a measure",
+    "noCompany": "None",
+    "inactiveOption": "{name} (inactive)",
+    "noPrice": "Not set",
+    "photoAdd": "Add a photo",
+    "photoReplace": "Replace photo",
+    "photoRemove": "Remove photo",
+    "photoUploading": "Uploading the photo…",
+    "noPhoto": "No photo",
+    "photoAlt": "Photo of {name}"
   }
 }

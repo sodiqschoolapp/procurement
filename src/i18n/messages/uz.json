@@ -53,7 +53,10 @@
       "taken": "Allaqachon band",
       "principalTaken": "Bu filialda faol direktor bor. Filialni topshirish uchun «Almashtirish»ni belgilang.",
       "branchCount": "Rahbarda filial bo'lmaydi, direktorda bitta, menejer va moliyachida bitta yoki ko'proq",
-      "branchInactive": "Bu filial faol emas, uni qo'shib bo'lmaydi"
+      "branchInactive": "Bu filial faol emas, uni qo'shib bo'lmaydi",
+      "inactive": "Bu yozuv faol emas. Faolini tanlang.",
+      "notAPhoto": "Rasm tanlang: JPG, PNG, WebP yoki HEIC",
+      "locked": "Qulflangan: mahsulot allaqachon ishlatilgan"
     },
     "file": {
       "tooLarge": "Fayl 10 MB dan katta. Kichikroq fayl tanlang yoki suratni qaytadan oling.",
@@ -123,6 +126,12 @@
         "update": "Boʻlim oʻzgartirildi",
         "deactivate": "Boʻlim faolsizlantirildi",
         "activate": "Boʻlim faollashtirildi"
+      },
+      "product": {
+        "create": "Mahsulot qoʻshildi",
+        "update": "Mahsulot oʻzgartirildi",
+        "deactivate": "Mahsulot faolsizlantirildi",
+        "activate": "Mahsulot faollashtirildi"
       }
     },
     "fields": {
@@ -501,7 +510,14 @@
       "isActive": "Faol",
       "responsibleName": "Masʼul shaxs",
       "responsiblePhone": "Masʼul shaxs telefoni",
-      "branch": "Filial"
+      "branch": "Filial",
+      "type": "Turi",
+      "categoryId": "Toifa",
+      "unitId": "Oʻlchov birligi",
+      "defaultCompanyId": "Asosiy brend yoki kompaniya",
+      "referencePrice": "Maʼlumotnoma narxi",
+      "description": "Tavsif",
+      "photoFileId": "Rasm"
     },
     "hints": {
       "shortName": "Miqdor yonida yoziladi, masalan kg yoki dona.",
@@ -511,7 +527,14 @@
       "note": "Ixtiyoriy.",
       "responsibleName": "Ixtiyoriy. Oddiy matn, ilova foydalanuvchisi emas.",
       "responsiblePhone": "Ixtiyoriy.",
-      "branch": "Bir marta tanlanadi: boʻlim oʻz filialida qoladi."
+      "branch": "Bir marta tanlanadi: boʻlim oʻz filialida qoladi.",
+      "type": "Odatda mahsulot. Xizmat, masalan taʼmir, yetkazib berish yoki chop etish, omborga kirmaydi.",
+      "defaultCompanyId": "Ixtiyoriy. Buyurtma qatorining brendi yoki kompaniyasi sifatida taklif qilinadi.",
+      "referencePrice": "Ixtiyoriy. Butun soʻm. Keyin izohli yangi narx sifatida oʻzgaradi.",
+      "referencePriceLater": "Izohli yangi narx sifatida oʻzgaradi va narxlar tarixida qoladi.",
+      "description": "Ixtiyoriy.",
+      "photoFileId": "Ixtiyoriy. JPG, PNG, WebP yoki HEIC, 10 MB gacha.",
+      "locked": "Qulflangan: mahsulot allaqachon ishlatilgan."
     },
     "companyKind": {
       "choose": "Tanlang…",
@@ -559,12 +582,39 @@
         "description": "Har bir filialning narsa oladigan boʻlinmalari va ularning masʼul shaxslari.",
         "emptyTitle": "Hali boʻlimlar yoʻq",
         "emptyText": "Filial boʻlinmalarini qoʻshing: oshxona, kutubxona, sinf xonasi."
+      },
+      "products": {
+        "title": "Mahsulotlar va xizmatlar",
+        "new": "Yangi mahsulot yoki xizmat",
+        "newTitle": "Yangi mahsulot yoki xizmat",
+        "description": "Maktab sotib oladigan hamma narsa: oʻlchov birligi, rasmi va maʼlumotnoma narxi bilan.",
+        "emptyTitle": "Hali mahsulotlar yoʻq",
+        "emptyText": "Maktab sotib oladigan narsalarni qoʻshing: qogʻoz, yuvish vositasi, taʼmir xizmati."
       }
     },
     "chooseBranch": "Tanlang…",
     "branchOption": "{code} · {name}",
     "branchLine": "Filial: {code} · {name}",
     "allBranches": "Barcha filiallar. Yuqoridagi filial tanlagichdan bittasini tanlang.",
-    "oneBranch": "{code} · {name} filiali, yuqoridagi tanlagichda tanlangan."
+    "oneBranch": "{code} · {name} filiali, yuqoridagi tanlagichda tanlangan.",
+    "productType": {
+      "GOODS": "Mahsulot",
+      "SERVICE": "Xizmat"
+    },
+    "allTypes": "Barcha turlar",
+    "allCategories": "Barcha toifalar",
+    "filterType": "Turi",
+    "filterCategory": "Toifa",
+    "chooseCategory": "Toifani tanlang",
+    "chooseUnit": "Oʻlchov birligini tanlang",
+    "noCompany": "Yoʻq",
+    "inactiveOption": "{name} (faol emas)",
+    "noPrice": "Belgilanmagan",
+    "photoAdd": "Rasm qoʻshish",
+    "photoReplace": "Rasmni almashtirish",
+    "photoRemove": "Rasmni olib tashlash",
+    "photoUploading": "Rasm yuklanmoqda…",
+    "noPhoto": "Rasm yoʻq",
+    "photoAlt": "Rasm: {name}"
   }
 }

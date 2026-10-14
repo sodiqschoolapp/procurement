@@ -11,7 +11,7 @@ import { readOrNotFound } from "../branches/read-or-not-found";
 
 // /catalog (11-screens-and-ux.md, Screens: "Catalogs, /catalog/..., Head"; plan of 1.5, decision
 // 11): the list of catalogs, each with its active entries counted by an authorized query (plan
-// review, correction 2). Departments (1.6) follow the four; 1.7 and 1.8 add theirs here.
+// review, correction 2). Departments (1.6) and products (1.7) follow the four.
 
 export default async function CatalogsPage() {
   const user = await requireUser("/catalog");
@@ -23,7 +23,7 @@ export default async function CatalogsPage() {
       <AdminNav current="catalog" />
       <h1 className="text-[28px] leading-[34px] font-bold tracking-[-0.01em]">{t("title")}</h1>
       <ul className="flex flex-col overflow-hidden rounded-xl bg-card text-card-foreground">
-        {[...CATALOG_KINDS, "departments" as const].map((kind) => (
+        {[...CATALOG_KINDS, "departments" as const, "products" as const].map((kind) => (
           <li key={kind} className="border-t first:border-t-0">
             <Link
               href={`/catalog/${kind}`}

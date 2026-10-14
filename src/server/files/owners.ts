@@ -1,5 +1,8 @@
+import { eq } from "drizzle-orm";
+
 import type { Permission, Target } from "@/domain/permissions";
 import type { Executor } from "@/server/authorize";
+import { products } from "@/server/db/schema";
 
 // Who may download a file: the record it belongs to decides (build plan 0.12: the download route
 // "calls authorize() for the record the file belongs to; each later task that attaches files adds
@@ -31,8 +34,23 @@ export type FileOwner = {
   find(executor: Executor, fileId: string): Promise<FileAccess | null>;
 };
 
-/** Empty in 0.12: no table points to `files` yet. */
-export const FILE_OWNERS: readonly FileOwner[] = [];
+/**
+ * A product's photo (task 1.7): seen by every role through catalog.pick, the product active or not
+ * (04-catalogs.md: "everyone else picks from them"; rule 2: inactive entries stay visible in old
+ * records; plan of 1.7, decision 5, Look first). A catalog holds no branch data.
+ */
+export const PRODUCT_PHOTOS: FileOwner = {
+  name: "products.photo_file_id",
+  async find(executor, fileId) {
+    const [row] = await executor
+      .select({ id: products.id })
+      .from(products)
+      .where(eq(products.photoFileId, fileId));
+    return row ? { permission: "catalog.pick" } : null;
+  },
+};
+
+export const FILE_OWNERS: readonly FileOwner[] = [PRODUCT_PHOTOS];
 
 /** The access of the first record that holds the file, or `null` for a file no record holds. */
 export async function accessOf(

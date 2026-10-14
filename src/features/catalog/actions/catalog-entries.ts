@@ -34,7 +34,7 @@ type CatalogTable = PgTable & {
   clientKey: AnyPgColumn;
 };
 
-type AuditPrefix = "unit" | "category" | "extra_cost_type" | "company" | "department";
+type AuditPrefix = "unit" | "category" | "extra_cost_type" | "company" | "department" | "product";
 
 /**
  * The parent an entry belongs to and its names are unique inside: a department's branch (04 rule
@@ -69,6 +69,27 @@ export type CatalogConfig<Fields extends Record<string, unknown>> = {
   unique: readonly (keyof Fields & string)[];
   /** The parent the unique fields are unique inside; none for a catalog of the whole school. */
   within?: CatalogParent;
+  /**
+   * The checks of one catalog beyond the name (plan of 1.7, review Should fix 1): run under the
+   * table's lock before the name check, with the actor and the fields the write would store (every field on
+   * create, `current` null; the changed ones on update, `current` the locked row). Throws an
+   * ActionError with field errors. Measures lock "Allows decimals" here, products their references,
+   * photo and the lock after first use.
+   */
+  guard?(
+    context: { tx: Executor; userId: string },
+    sent: Partial<Fields>,
+    current: SavedEntry<Fields> | null,
+  ): Promise<void>;
+  /** Fields set on create only and absent from the update input, as a product's price (1.7). */
+  createOnly?: readonly (keyof Fields & string)[];
+  /** A create check that differs from `shape`, as a type with its default (1.7, decision 8). */
+  createShape?: { [Key in keyof Fields & string]?: z.ZodType<Fields[Key]> };
+  /**
+   * What an audit row keeps beside the ids it holds, on create and on update: the names of a
+   * product's category, measure and company as they are at that moment (plan of 1.7, decision 11).
+   */
+  shownRefs?(tx: Executor, values: Partial<Fields>): Promise<AuditRecord>;
 };
 
 export type SavedEntry<Fields> = Fields & { id: string; isActive: boolean };
@@ -85,7 +106,8 @@ export function defineCatalogActions<Fields extends Record<string, unknown>>(
 ) {
   type Saved = SavedEntry<Fields>;
   type Key = keyof Fields & string;
-  const { table, prefix, within } = config;
+  const { table, prefix, within, guard, shownRefs } = config;
+  const createOnly = new Set<string>(config.createOnly ?? []);
   const entity = CATALOG_ENTRIES[config.kind].entity;
   const fields = CATALOG_ENTRIES[config.kind].fields.map((field) => field.key) as Key[];
   const action = (verb: string) => `${prefix}.${verb}` as AuditAction;
@@ -159,6 +181,7 @@ export function defineCatalogActions<Fields extends Record<string, unknown>>(
     clientKey: z.string().refine(isClientKey),
     ...(within ? { [within.key]: z.uuid() } : {}),
     ...shape,
+    ...(config.createShape as Record<string, z.ZodType> | undefined),
   });
 
   const create = defineAction({
@@ -190,11 +213,12 @@ export function defineCatalogActions<Fields extends Record<string, unknown>>(
         return { result: result as Saved, userId, branchId: null };
       },
     },
-    async write({ tx, input }): Promise<Saved> {
+    async write({ tx, input, userId }): Promise<Saved> {
       await tx.execute(tableLock);
       const sent = pick(input as unknown as Partial<Fields>, fields);
       const parentId = within ? ((input as Record<string, unknown>)[within.key] as string) : null;
       if (within) await within.check(tx, parentId!);
+      if (guard) await guard({ tx, userId }, sent, null);
       await refuseTaken(tx, sent, null, parentId);
       const [row] = await tx
         .insert(table)
@@ -220,17 +244,28 @@ export function defineCatalogActions<Fields extends Record<string, unknown>>(
           entity,
           entityId: entry.id,
           before: null,
-          after: { ...parent, ...shown(entry) },
+          after: {
+            ...parent,
+            ...shown(entry),
+            ...(shownRefs ? await shownRefs(tx, pick(entry, fields)) : {}),
+          },
           at: now(),
         },
       );
     },
   });
 
-  /** Only the fields the Head changed are sent (plan of 1.5, decision 8). */
+  /**
+   * Only the fields the Head changed are sent (plan of 1.5, decision 8). A create-only field is not
+   * part of it: one sent anyway is dropped by the parse (plan of 1.7, decision 2).
+   */
   const updateInput = z.object({
     id: z.uuid(),
-    ...Object.fromEntries(Object.entries(shape).map(([key, check]) => [key, check.optional()])),
+    ...Object.fromEntries(
+      Object.entries(shape)
+        .filter(([key]) => !createOnly.has(key))
+        .map(([key, check]) => [key, check.optional()]),
+    ),
   });
 
   const update = defineAction({
@@ -245,13 +280,14 @@ export function defineCatalogActions<Fields extends Record<string, unknown>>(
       return row ? { target: GLOBAL_TARGET, rows: row } : null;
     },
     // An inactive entry is edited too, so its name can be freed (D41).
-    async write({ tx, input, locked }): Promise<UpdatedEntry<Fields>> {
+    async write({ tx, input, locked, userId }): Promise<UpdatedEntry<Fields>> {
       const current = locked!.rows;
       const sent = pick(input as unknown as Partial<Fields>, fields);
       const changed = changedCatalogFields(fields, current, sent);
       if (changed.length === 0) return { entry: current, changed, before: {}, after: {} };
       const after = pick(sent, changed);
       const parentId = within ? ((current as Record<string, unknown>)[within.key] as string) : null;
+      if (guard) await guard({ tx, userId }, after, current);
       await refuseTaken(tx, after, current.id, parentId);
       const [row] = await tx
         .update(table)
@@ -269,8 +305,8 @@ export function defineCatalogActions<Fields extends Record<string, unknown>>(
           action: action("update"),
           entity,
           entityId: result.entry.id,
-          before: result.before,
-          after: result.after,
+          before: { ...result.before, ...(shownRefs ? await shownRefs(tx, result.before) : {}) },
+          after: { ...result.after, ...(shownRefs ? await shownRefs(tx, result.after) : {}) },
           at: now(),
         },
       );

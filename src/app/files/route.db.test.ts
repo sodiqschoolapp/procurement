@@ -20,7 +20,12 @@ import {
   pngDeclaringHugePicture,
   uploadRequest,
 } from "../../../tests/helpers/files";
+import { createProduct, setProductActive } from "@/features/catalog/actions/products";
+import { runAction } from "@/server/action";
+import type { ActionResult } from "@/server/action-result";
+
 import { insertBranch } from "../../../tests/helpers/branches";
+import { insertCategory, insertUnit } from "../../../tests/helpers/catalog";
 import { insertUser, signInAs } from "../../../tests/helpers/users";
 import { GET } from "./[id]/[size]/route";
 import { POST } from "./route";
@@ -66,6 +71,11 @@ async function download(id: string, size: string, cookie: { name: string; value:
   return GET(downloadRequest(`/files/${id}/${size}`, cookie), {
     params: Promise.resolve({ id, size }),
   });
+}
+
+function expectOk<T>(result: ActionResult<T>): T {
+  expect(result).toMatchObject({ ok: true });
+  return (result as { ok: true; data: T }).data;
 }
 
 async function imageOf(response: Response) {
@@ -279,6 +289,36 @@ describe("who may download (build plan 0.12; plan of 0.12, decision 5, Look firs
     }
     const madeUp = "00000000-0000-4000-8000-000000000001";
     expect((await download(madeUp, "small", makerCookie)).status).toBe(404);
+  });
+
+  it("a product's photo downloads for every role, the product active or not (plan of 1.7, decision 5, Look first)", async () => {
+    const head = await insertUser("HEAD");
+    const headCookie = await signInAs(head);
+    const id = await uploaded(
+      await POST(uploadRequest(await jpegWithExif(40, 30), { cookie: headCookie })),
+    );
+    const product = expectOk(
+      (await runAction(createProduct, head.id, {
+        clientKey: newClientKey(),
+        name: `Rasmli mahsulot ${newClientKey()}`,
+        categoryId: (await insertCategory()).id,
+        unitId: (await insertUnit()).id,
+        photoFileId: id,
+      })) as ActionResult<{ id: string }>,
+    );
+    const { id: branchId } = await insertBranch();
+    const readers = [
+      head,
+      await insertUser("MANAGER", { branches: [branchId] }),
+      await insertUser("PRINCIPAL", { branches: [branchId] }),
+      await insertUser("FINANCE", { branches: [branchId] }),
+    ];
+    for (const reader of readers) {
+      expect((await download(id, "small", await signInAs(reader))).status).toBe(200);
+    }
+    expectOk(await runAction(setProductActive, head.id, { id: product.id, active: false }));
+    const manager = readers[1]!;
+    expect((await download(id, "large", await signInAs(manager))).status).toBe(200);
   });
 
   it("an address that is no file id or no size is Not found", async () => {

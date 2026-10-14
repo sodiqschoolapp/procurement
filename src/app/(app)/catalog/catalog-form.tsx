@@ -55,6 +55,11 @@ const MAX_LENGTH: Record<CatalogField["type"], number> = {
   long: 1200,
   boolean: 0,
   companyKind: 0,
+  // Product fields (1.7) are drawn by the product form, never here.
+  productType: 0,
+  reference: 0,
+  money: 0,
+  photo: 0,
 };
 
 /** A branch a new department can be added to: the active ones (plan of 1.6, decision 3). */

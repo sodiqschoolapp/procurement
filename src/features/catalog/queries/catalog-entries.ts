@@ -11,7 +11,14 @@ import {
   companyKindsFor,
 } from "@/domain/catalogs";
 import { authorize } from "@/server/authorize";
-import { categories, companies, departments, extraCostTypes, units } from "@/server/db/schema";
+import {
+  categories,
+  companies,
+  departments,
+  extraCostTypes,
+  products,
+  units,
+} from "@/server/db/schema";
 
 // The four small catalogs, read (build-plan 1.5; 04-catalogs.md rules 2 and 3). The Head's list
 // and one entry are under "Manage catalogs, users, branches, settings": catalog.manage, Head only
@@ -174,11 +181,11 @@ export async function getCatalogEntry(
 
 /**
  * The active entries of each catalog, for the list of catalogs on /catalog (plan review of 1.5,
- * correction 2), departments included (plan of 1.6, "What will exist").
+ * correction 2), departments and products included (plans of 1.6 and 1.7, "What will exist").
  */
 export async function countActiveCatalogEntries(
   userId: string,
-): Promise<Record<CatalogKind | "departments", number>> {
+): Promise<Record<CatalogKind | "departments" | "products", number>> {
   await authorize(userId, "catalog.manage");
   const { db } = await import("@/server/db/client");
   // One statement, one scalar subselect per catalog (developer-rules.md rule 12: no query in a
@@ -188,6 +195,7 @@ export async function countActiveCatalogEntries(
     return sql`(select count(*)::int from ${source.table} where ${source.isActive})`;
   });
   counts.push(sql`(select count(*)::int from ${departments} where ${departments.isActive})`);
+  counts.push(sql`(select count(*)::int from ${products} where ${products.isActive})`);
   const found = await db.execute<Record<string, number>>(
     sql`select ${sql.join(
       counts.map((count, index) => sql`${count} as ${sql.identifier(`c${index}`)}`),
@@ -195,9 +203,9 @@ export async function countActiveCatalogEntries(
     )}`,
   );
   const row = found.rows[0]!;
-  const kinds = [...CATALOG_KINDS, "departments"] as const;
+  const kinds = [...CATALOG_KINDS, "departments", "products"] as const;
   const counted = kinds.map((kind, index) => [kind, Number(row[`c${index}`])] as const);
-  return Object.fromEntries(counted) as Record<CatalogKind | "departments", number>;
+  return Object.fromEntries(counted) as Record<CatalogKind | "departments" | "products", number>;
 }
 
 /**

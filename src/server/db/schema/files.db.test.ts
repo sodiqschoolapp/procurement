@@ -115,7 +115,10 @@ describe("files table (14-data-model.md: storage_key, original_name, mime, size_
       ),
     ).toMatchObject(guard);
     expect(await refusalOf(db.delete(files).where(eq(files.id, row.id)))).toMatchObject(guard);
-    expect(await refusalOf(db.execute(sql`truncate files`))).toMatchObject(guard);
+    // Since 1.7 a plain TRUNCATE is refused before the guard, because products.photo_file_id
+    // points at files (0A000); TRUNCATE … CASCADE passes that check and reaches the guard (D39).
+    expect(await refusalOf(db.execute(sql`truncate files`))).toMatchObject({ code: "0A000" });
+    expect(await refusalOf(db.execute(sql`truncate files cascade`))).toMatchObject(guard);
     const [still] = await db.select().from(files).where(eq(files.id, row.id));
     expect(still).toMatchObject({ originalName: "chek.jpg" });
   });

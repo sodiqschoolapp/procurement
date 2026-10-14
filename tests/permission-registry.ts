@@ -44,6 +44,10 @@ export const SERVER_ACTIONS: Record<string, Entry> = {
   "src/app/(app)/catalog/departments/actions.ts#createDepartmentAction": "catalog.manage",
   "src/app/(app)/catalog/departments/actions.ts#updateDepartmentAction": "catalog.manage",
   "src/app/(app)/catalog/departments/actions.ts#setDepartmentActiveAction": "catalog.manage",
+  // The Head's products and services (plan of 1.7).
+  "src/app/(app)/catalog/products/actions.ts#createProductAction": "catalog.manage",
+  "src/app/(app)/catalog/products/actions.ts#updateProductAction": "catalog.manage",
+  "src/app/(app)/catalog/products/actions.ts#setProductActiveAction": "catalog.manage",
 };
 
 /** Exports of `src/features/<area>/queries/`, as `<file>#<export>`. */
@@ -65,6 +69,11 @@ export const QUERIES: Record<string, Permission> = {
   // Departments: the Head's list and one department (plan of 1.6).
   "src/features/catalog/queries/departments.ts#listDepartments": "catalog.manage",
   "src/features/catalog/queries/departments.ts#getDepartment": "catalog.manage",
+  // Products: the Head's list, one product, the form's choices and the category filter (1.7).
+  "src/features/catalog/queries/products.ts#listProducts": "catalog.manage",
+  "src/features/catalog/queries/products.ts#getProduct": "catalog.manage",
+  "src/features/catalog/queries/products.ts#listProductChoices": "catalog.manage",
+  "src/features/catalog/queries/products.ts#listCategoryFilter": "catalog.manage",
   // The Head's users, the vacancy warning and the form's branches (plan of 1.3).
   "src/features/users/queries/users.ts#listUsers": "catalog.manage",
   "src/features/users/queries/users.ts#getUser": "catalog.manage",
