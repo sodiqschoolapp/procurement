@@ -54,6 +54,10 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      # 15-quality-and-acceptance.md, Done-check: no translation key is missing (task 0.5).
+      - name: Every translation key is in all three languages
+        run: npm run i18n:check
+
       - name: Typecheck
         run: npm run typecheck
 
