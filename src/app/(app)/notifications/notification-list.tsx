@@ -32,7 +32,6 @@ export function NotificationList({ items }: { items: readonly NotificationItem[]
     if (!result) return;
     if (result.ok && isInternalLink(result.data.link)) {
       router.push(result.data.link);
-      router.refresh();
       return;
     }
     setOpening(null);
@@ -85,7 +84,6 @@ export function NotificationList({ items }: { items: readonly NotificationItem[]
 /** "Mark all as read": it loses nothing, so it asks no confirmation (plan of 0.11, Screens). */
 export function MarkAllRead() {
   const t = useTranslations();
-  const router = useRouter();
   const action = useAction(markAllNotificationsReadAction);
 
   return (
@@ -98,7 +96,6 @@ export function MarkAllRead() {
         if (!result) return;
         if (result.ok) {
           toast.success(t("notifications.markedAllRead", { count: result.data.count }));
-          router.refresh();
           return;
         }
         toast.error(t(result.error.messageKey));
