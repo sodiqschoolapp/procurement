@@ -342,4 +342,19 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - Test a job with `runDueJobs([job])` and the fixed clock (`src/server/jobs/scheduler.db.test.ts`); a run holds the row, so a second instance gets `locked`, and a later round in the same tick gets `not_due`.
 - The scheduler runs in `npm run dev`, `next start`, CI's container and Playwright's servers; the heartbeat writes only its own row.
 
-The next task is 0.14.
+## 0.14 Seed data (14.10.2026, pull request #28)
+
+**Built**
+- `npm run db:seed` (`scripts/db-seed.mjs`, core `seed(client, env, moment)` in `scripts/seed.mjs`): branches CHL and YUN, users `seed_head`, `seed_manager` (CHL, YUN), `seed_principal` (CHL), `seed_finance` (CHL, YUN); passwords from `SEED_HEAD_PASSWORD`, `SEED_MANAGER_PASSWORD`, `SEED_PRINCIPAL_PASSWORD`, `SEED_FINANCE_PASSWORD`; one audit row each (`branch.create` new), the seed Head as actor.
+- Creates what is missing, keeps what is there; refuses a seed user of another role and a missing seed Principal when CHL has an active Principal. Takes the first-Head lock `(61, 0)`.
+- CI `checks`: "Seed the empty database, then once more" with random passwords, comparing the exact lines.
+
+**Left out, and the task that brings it**
+- 30 products and a few requests (rule 14): 1.5 to 1.9 and 2.x extend the seed. A Principal for YUN: open (decision 1). Seed users on the test copy and a guard for hosted databases: 0.15.
+
+**What the next sessions must know**
+- To extend the seed: add the rows to `seed()` in `scripts/seed.mjs`, in its one transaction, found by a unique key and kept when found, each with its audit row (actor: the seed Head); add a line `created …`/`kept …` and add it to the expected lines of the CI step and `tests/seed.db.test.ts`.
+- For 0.15: the seed has no production guard (permission review, Should fix 1); decide it there, as the test copy needs the seed users.
+- Tests that count rows run on their own database: `withFreshDatabase` in `tests/seed.db.test.ts`.
+
+The next task is 0.15.
