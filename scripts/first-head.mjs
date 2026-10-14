@@ -4,7 +4,7 @@ import { insertAuditRow } from "../src/server/audit-row.mjs";
 import { insertPasswordUser } from "../src/server/auth/password-user.mjs";
 
 // The first key of the advisory lock that makes two runs at once take turns.
-const FIRST_HEAD_LOCK = 61;
+export const FIRST_HEAD_LOCK = 61;
 
 /**
  * Creates the first Head in one transaction, or refuses when any HEAD user exists, active or

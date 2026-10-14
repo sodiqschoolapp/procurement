@@ -75,6 +75,9 @@
       "user": {
         "create": "Учётная запись создана",
         "change_language": "Язык изменён"
+      },
+      "branch": {
+        "create": "Филиал создан"
       }
     },
     "fields": {

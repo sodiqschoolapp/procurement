@@ -75,6 +75,9 @@
       "user": {
         "create": "Account created",
         "change_language": "Language changed"
+      },
+      "branch": {
+        "create": "Branch created"
       }
     },
     "fields": {

@@ -16,7 +16,7 @@
     "test": "vitest run",
     "test:e2e": "playwright test",
     "db:migrate": "node --env-file-if-exists=.env scripts/db-migrate.mjs",
-    "db:seed": "node scripts/not-built-yet.mjs db:seed 0.14",
+    "db:seed": "node --env-file-if-exists=.env scripts/db-seed.mjs",
     "storage:bucket": "node --env-file-if-exists=.env scripts/storage-bucket.mjs",
     "user:first-head": "node --env-file-if-exists=.env scripts/create-first-head.mjs",
     "dev:notify": "node --env-file-if-exists=.env scripts/dev-notify.mjs"
