@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { BUSINESS_TIME_ZONE, businessDate, businessDayStart, businessYear } from "./business-date";
+import {
+  BUSINESS_TIME_ZONE,
+  businessDate,
+  businessDayStart,
+  businessTime,
+  businessYear,
+} from "./business-date";
 
 // developer-rules.md rule 10: "Timestamps are stored in UTC. Business dates use the
 // Asia/Tashkent time zone." 00-definitions.md, "Business date".
@@ -64,5 +70,21 @@ describe("the UTC moment a business day starts (developer-rules.md rule 10)", ()
     for (const wrong of ["2027-02-29", "2026-13-01", "2026-04-31", "08.10.2026", "2026-1-1", ""]) {
       expect(() => businessDayStart(wrong)).toThrow(/not a business date/);
     }
+  });
+});
+
+// 11-screens-and-ux.md rule 10: "Time in 24 hours, Tashkent"; developer-rules.md rule 10.
+describe("business time: the wall clock in Tashkent (11-screens-and-ux.md rule 10)", () => {
+  it("reads 09:05 UTC as 14:05 in Tashkent", () => {
+    expect(businessTime(new Date("2026-10-08T09:05:00.000Z"))).toBe("14:05");
+  });
+
+  it("writes midnight as 00:00 and the evening in 24 hours", () => {
+    expect(businessTime(new Date("2026-12-31T19:00:00.000Z"))).toBe("00:00");
+    expect(businessTime(new Date("2026-10-08T17:59:59.999Z"))).toBe("22:59");
+  });
+
+  it("refuses an invalid moment instead of writing NaN into a time", () => {
+    expect(() => businessTime(new Date("x"))).toThrow(/not a valid moment/);
   });
 });
