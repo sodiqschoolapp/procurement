@@ -326,4 +326,20 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - Trap: a production build sets a `__Secure-` cookie, which a browser keeps over http only on `localhost`, not `127.0.0.1`.
 - Trap: sharp's prebuilt build reads only AVIF of the HEIF family; HEIC goes through heic-decode.
 
-The next task is 0.13.
+## 0.13 Scheduler (14.10.2026, pull request #27)
+
+**Built**
+- `src/domain/schedule.ts`: `tickOf({ everyMinutes }, moment)`, ticks counted from 00:00 Tashkent through `businessDayStart`; minutes divide 1440.
+- Migration `0006_scheduled_jobs`: one row per job (`last_tick`, `last_started_at`, `last_finished_at`, `last_failed_tick`, `last_failed_at`), five CHECKs.
+- `src/server/jobs/`: `Job` type, the registry `JOBS` with `heartbeat` (every minute, writes only its record), `runDueJobs` (row `FOR UPDATE SKIP LOCKED`, run in a savepoint, record under the lock), `startScheduler` (every 15 s). `src/instrumentation.ts` starts it once per process; `SCHEDULER=off` turns it off.
+
+**Left out, and the task that brings it**
+- Times of day and weekdays in a schedule, the nightly check, the weekly copy: 8.2. Reminders: 8.1. The analytics refresh: 6.x.
+
+**What the next sessions must know**
+- For 8.1, 8.2, 6.x: a job is `{ name, schedule, run({ tx, tick }) }` added to `JOBS` in `src/server/jobs/registry.ts`. It runs as the system (no user, no `authorize()`, no `runAction`); it writes through `tx` only, which is a savepoint: a throw saves nothing and the tick is not tried again. It tells people through `notify({ tx, userId: null }, …)`. `now()` is the moment, `tick` the tick it runs for.
+- For 8.2: a job that must not run inside one transaction (the weekly copy) needs its own shape; add time-of-day schedules to `src/domain/schedule.ts`.
+- Test a job with `runDueJobs([job])` and the fixed clock (`src/server/jobs/scheduler.db.test.ts`); a run holds the row, so a second instance gets `locked`, and a later round in the same tick gets `not_due`.
+- The scheduler runs in `npm run dev`, `next start`, CI's container and Playwright's servers; the heartbeat writes only its own row.
+
+The next task is 0.14.
