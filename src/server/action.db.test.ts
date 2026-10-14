@@ -363,6 +363,30 @@ describe("one transaction per action (developer-rules.md rule 3)", () => {
     });
     expect(await rows()).toMatchObject([{ title: "Sinov", version: 1 }]);
   });
+
+  it("a field refusal thrown by a step is invalid_input with its field keys, and rolls back (plan of 1.2, decision 7)", async () => {
+    const { manager, branchId } = await managerWithBranch();
+    const record = await created(manager, branchId);
+
+    const result = await runAction(
+      editSample({
+        async write() {
+          throw new ActionError("invalid_input", { title: "errors.field.taken" });
+        },
+      }),
+      manager.id,
+      { id: record.id, version: 1, title: "Yangi" },
+    );
+    expect(result).toEqual({
+      ok: false,
+      error: {
+        code: "invalid_input",
+        messageKey: "errors.invalidInput",
+        fields: { title: "errors.field.taken" },
+      },
+    });
+    expect(await rows()).toMatchObject([{ title: "Sinov", version: 1 }]);
+  });
 });
 
 describe("the input check comes first (developer-rules.md rule 13)", () => {

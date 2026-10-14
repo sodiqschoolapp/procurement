@@ -57,6 +57,13 @@
       "when": 1792002523177,
       "tag": "0007_settings_values",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792004852394,
+      "tag": "0008_branches_client_key",
+      "breakpoints": true
     }
   ]
 }

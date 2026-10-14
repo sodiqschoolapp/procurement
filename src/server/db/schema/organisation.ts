@@ -39,10 +39,14 @@ export const branches = pgTable(
     code: text("code").notNull(),
     address: text("address").notNull(),
     isActive: boolean("is_active").notNull().default(true),
+    // The browser-made id of the create (developer-rules.md rule 8); none on a branch made by the
+    // seed or before 1.2 (plan of 1.2, decision 5).
+    clientKey: uuid("client_key"),
     createdAt: moment("created_at").notNull(),
   },
   (table) => [
     unique("branches_code_key").on(table.code),
+    unique("branches_client_key_key").on(table.clientKey),
     check("branches_code_check", sql`${table.code} ~ '^[A-Z]{2,4}$'`),
     check("branches_name_check", sql`btrim(${table.name}) <> ''`),
     check("branches_address_check", sql`btrim(${table.address}) <> ''`),

@@ -9,6 +9,9 @@ export const AUDIT_ACTIONS = [
   "user.create",
   "user.change_language",
   "branch.create",
+  "branch.update",
+  "branch.deactivate",
+  "branch.activate",
   "settings.change",
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];

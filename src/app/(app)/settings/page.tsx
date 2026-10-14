@@ -1,6 +1,7 @@
 import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
 
+import { AdminNav } from "@/components/admin-nav";
 import { ChangeHistory, type HistoryField } from "@/components/change-history";
 import { listChangeHistory } from "@/features/audit/queries/change-history";
 import { getSettingsForHead } from "@/features/settings/queries/settings";
@@ -42,6 +43,7 @@ export default async function SettingsPage() {
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
+      <AdminNav current="settings" />
       <h1 className="text-[28px] leading-[34px] font-bold tracking-[-0.01em]">
         {t("settings.title")}
       </h1>
