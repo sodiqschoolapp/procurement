@@ -6,5 +6,30 @@
   },
   "format": {
     "currency": "so'm"
+  },
+  "login": {
+    "title": "Sign in",
+    "username": "Username",
+    "password": "Password",
+    "submit": "Sign in",
+    "submitting": "Signing in…",
+    "language": "Language",
+    "errors": {
+      "required": "Fill in this field",
+      "tooLong": "Too long",
+      "wrong": "Wrong username or password",
+      "limit": "Too many tries. Try again in {minutes, plural, one {# minute} other {# minutes}}.",
+      "unavailable": "Signing in is not possible right now. Try again later.",
+      "invalid": "Type your username and password"
+    }
+  },
+  "session": {
+    "signedInAs": "Signed in as {name}",
+    "signOut": "Sign out"
+  },
+  "languages": {
+    "uz": "O'zbekcha",
+    "ru": "Русский",
+    "en": "English"
   }
 }

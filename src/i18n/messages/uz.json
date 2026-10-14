@@ -6,5 +6,30 @@
   },
   "format": {
     "currency": "so'm"
+  },
+  "login": {
+    "title": "Tizimga kirish",
+    "username": "Foydalanuvchi nomi",
+    "password": "Parol",
+    "submit": "Kirish",
+    "submitting": "Kirilmoqda…",
+    "language": "Til",
+    "errors": {
+      "required": "Bu maydonni to'ldiring",
+      "tooLong": "Juda uzun",
+      "wrong": "Foydalanuvchi nomi yoki parol noto'g'ri",
+      "limit": "Urinishlar juda ko'p. {minutes, plural, other {# daqiqadan}} keyin qayta urinib ko'ring.",
+      "unavailable": "Hozir kirib bo'lmaydi. Keyinroq urinib ko'ring.",
+      "invalid": "Foydalanuvchi nomi va parolni kiriting"
+    }
+  },
+  "session": {
+    "signedInAs": "Siz {name} sifatida kirdingiz",
+    "signOut": "Chiqish"
+  },
+  "languages": {
+    "uz": "O'zbekcha",
+    "ru": "Русский",
+    "en": "English"
   }
 }
