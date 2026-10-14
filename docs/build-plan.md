@@ -113,7 +113,7 @@ Nothing a user can use yet. These tasks build the places where the rules live: t
   - **Build:** `npm run db:seed`: 2 branches with invented names (one has the code `CHL`), one user per role with invented names, passwords read from the local `.env`; safe to run twice; CI runs migrate and seed on an empty database. Later tasks extend the seed.
   - **Done when:** The CI step is green. By hand: sign in as each of the four seed users and see a different empty home page.
 
-- [ ] **0.15 Test copy: file storage and seed users**
+- [x] **0.15 Test copy: file storage and seed users**
   - **Read:** `18-hosting-and-costs.md` (whole file); `13-technology.md` (Files; Running it); `02-assumptions.md` (A12); `docs/deploy.md`; `docs/decisions.md` (D22).
   - **Build:** What the test copy of 0.16 still lacks, now that file storage (0.12) and the seed (0.14) exist: the R2 bucket of the test copy and its variables, and the seed users on the test copy; `docs/deploy.md` gains the owner's steps for both and the new variable names. The owner types every secret in the provider dashboards; no secret enters the repository or the chat.
   - **Done when:** After the owner's steps: the four seed users can sign in at the test address, and a photo uploaded there is shown again.
