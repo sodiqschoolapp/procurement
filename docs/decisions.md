@@ -716,6 +716,35 @@ Choices made during the build:
 - New texts `catalog.chooseBranch`, `branchOption`, `branchLine`, `allBranches`, `oneBranch`, the department fields, hints, `kinds.departments` and `audit.actions.department` in uz, ru and en; the Uzbek ones use ʻ and ʼ as the file does.
 - The Excel import of departments is task 1.10 (plan review, correction 2).
 
+### 1.7 Products and services (15.10.2026)
+
+The plan's decisions as the plan review of 14.10.2026 confirmed them (corrections 1 and 2 applied, decision 7 changed by the spec review of the plan), and those of the build. The Look first items come first.
+
+1. **Look first** (stock: type and measure lock). "First use" is any row that holds a quantity of one of the product's subtypes, whatever task writes it: request lines, stock movements and balances of every source (direct entry, the existing-stock import, issues, transfers, counts) and stock minimums (plan review, correction 1). The list `PRODUCT_USES` is empty in 1.7; the update asks it under the product's `FOR UPDATE` lock, and each later writer adds its check and takes the product row `FOR SHARE` before inserting.
+2. **Look first** (money: reference price). Set at creation (optional, whole so'm, more than 0) and read-only on the edit page; a sent price is dropped by the update's input check and writes nothing. It changes only as a new price with a note in 1.9 (04 rule 4). Obligations for 1.8 and 1.9 are in progress.md (plan review, correction 2).
+3. **Look first** (stock: whole or decimal quantities). A measure's "Allows decimals" locks once any product, active or not, points at it (decisions 1.5 item 2); the measure's name and short name still change. Product create and change of measure lock the unit `FOR SHARE`, the measure update holds it `FOR UPDATE`.
+4. **Look first** (design-system departure, D23, as 1.2 item 4, 1.5 item 3, 1.6 item 2). New and edit are pages, not the side panel.
+5. **Look first** (permission matrix). A product photo is seen by every role (`catalog.pick`), the product active or not (04: everyone picks from the catalogs; rule 2). No new permission.
+6. Required: name, type, category, measure. Optional: photo, default brand or company, reference price, description; empty is stored as null, a blank value is refused by the database.
+7. The default brand or company is any active company, of any kind (04: "brand or company"; 05 field 5; 07 Supplier). Changed from "brand or both" by the spec review of the plan.
+8. A new item is `GOODS` unless `SERVICE` is chosen, in the create input and as the database default; an edit that sends no type keeps it.
+9. Names are unique across products and services together, ignoring capital letters and extra spaces, held while inactive and freed by a rename (D41); 120 code points; description up to 1000.
+10. A photo is an image uploaded by the Head who attaches it and held by no record, checked with the `files` row locked `FOR UPDATE`; a PDF is `errors.field.notAPhoto`; another person's, an unknown or a held file is `errors.field.notAllowed`. A replaced or removed photo goes back to its uploader only.
+11. The audit rows keep the ids of category, measure, company and photo and, beside them, the names as they were then (`category`, `unit`, `defaultCompany`) and the photo's file name (`photo`); the history hides the ids.
+12. Search on the name; category and type filters in the address; the category filter lists inactive categories too.
+13. `client_key` nullable and unique; a repeat finds its maker through the `product.create` audit row. No version column.
+14. Static routes `/catalog/products`, `/new`, `/[id]`, and a form of their own (`product-form.tsx`).
+
+Choices made during the build:
+
+- `defineCatalogActions()` gained `guard`, `createOnly`, `createShape` and `shownRefs` (plan review, Should fix 1); measures use `guard` too.
+- The form's selects read `listProductChoices` (catalog.manage: every active category, measure and company, and the product's own inactive ones) and not `listCatalogChoices`, which caps at 50; the category filter reads `listCategoryFilter` (every category) and not the 25-a-page `listCatalogEntries`.
+- The list's type filter is a select beside the category select (docs/design-system.md, Lists: "filter selects"); the form's type is the segmented control. `Segmented` gained a `disabled` prop for a locked type.
+- New field error kinds `inactive`, `notAPhoto`, `locked` with texts in uz, ru and en.
+- The price is typed as text and read by `parseSom()` on the server: spaces, U+00A0 and U+202F between groups; at most 999 999 999 999 999.
+- `src/server/db/schema/files.db.test.ts`: since `products` points at `files`, a plain `truncate files` is refused (0A000) before the `files_guard` trigger; the test asserts that and reaches the guard with `truncate files cascade` (D39). No guard was weakened.
+- The page actions return only what the screen needs (the id, the changed fields, the active flag).
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

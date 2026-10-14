@@ -154,7 +154,7 @@ Everything the Head sets up before the first request can be written.
   - **Build:** Departments per branch with the responsible person's name and phone as plain text; the name is unique inside a branch; deactivate; change history.
   - **Done when:** Tests: the same name in two branches is allowed; twice in one branch is refused.
 
-- [ ] **1.7 Products and services**
+- [x] **1.7 Products and services**
   - **Read:** `04-catalogs.md` (Catalogs table: Products and services; Rules: 1, 2, 3, 6); `02-assumptions.md` (A7); `14-data-model.md` (products); `edge-cases/00-definitions.md` (Catalog).
   - **Build:** `/catalog/products`: name, type (product by default, or service), category, measure, photo, default brand or company, reference price, description, active; type and measure lock after first use (the lock is wired in 2.5 and 5.8); change history; the list has search, category and type filters and 25 rows per page.
   - **Done when:** Tests: a new item is a product unless service is chosen; a duplicate name is refused. By hand: add a product with a photo and see the small version in the list.
