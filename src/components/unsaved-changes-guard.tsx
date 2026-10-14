@@ -27,10 +27,18 @@ export function UnsavedChangesGuard({ dirty }: { dirty: boolean }) {
   const router = useRouter();
   const [pending, setPending] = useState<Pending | null>(null);
   const leaving = useRef(false);
-  const guarded = useRef(false);
+  // The address the guard entry was pushed at; null while no guard entry is on the history.
+  const guardedAt = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!dirty) return;
+    if (!dirty) {
+      // Saved or reset: take the guard entry off, so the next change pushes a fresh one.
+      const onGuard =
+        (window.history.state as Record<string, unknown> | null)?.[GUARD_STATE] === true;
+      if (guardedAt.current !== null && onGuard && !leaving.current) window.history.back();
+      guardedAt.current = null;
+      return;
+    }
     leaving.current = false;
 
     function onBeforeUnload(event: BeforeUnloadEvent) {
@@ -62,16 +70,20 @@ export function UnsavedChangesGuard({ dirty }: { dirty: boolean }) {
       setPending({ kind: "link", href: anchor.href });
     }
 
-    function onPopState() {
+    function onPopState(event: PopStateEvent) {
       if (leaving.current) return;
-      // Back from the guard entry to the form's own entry: put the guard back and ask.
+      // Landing on the guard entry itself (back from an in-page #fragment) or on another
+      // fragment of the page leaves nothing: only the form's own entry, at the guard's address
+      // without the guard's state, means Back is leaving the form.
+      const onGuard = (event.state as Record<string, unknown> | null)?.[GUARD_STATE] === true;
+      if (onGuard || window.location.href !== guardedAt.current) return;
       window.history.pushState({ [GUARD_STATE]: true }, "", window.location.href);
       setPending({ kind: "back" });
     }
 
-    if (!guarded.current) {
+    if (guardedAt.current === null) {
+      guardedAt.current = window.location.href;
       window.history.pushState({ [GUARD_STATE]: true }, "", window.location.href);
-      guarded.current = true;
     }
     window.addEventListener("beforeunload", onBeforeUnload);
     window.addEventListener("click", onClick, true);

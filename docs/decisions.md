@@ -390,7 +390,9 @@ Choices made during the build:
 - Material Symbols renamed `expand_more` to `keyboard_arrow_down`; `scripts/icons.mjs` reads that file under the design system's name. `src/components/icon-paths.ts` is generated and left out of Prettier.
 - The skeleton does not pulse: "nothing moves on its own" (design system, Motion).
 - Under `prefers-reduced-motion: reduce` every animation and transition takes 0 s, globally in `globals.css`.
-- The navy panel shows from 640 px on; the logo is the on-dark file in the dark theme.
+- The navy panel shows from 640 px on; the logo is the on-dark file in the dark theme; the hexagon column is white through the token `--sidebar-accent-foreground`, white in both themes (spec review).
+- The guard takes its history entry off when the form becomes clean, so a later change guards again, and a Back between fragments of the page does not ask (spec review).
+- The dialog backdrop is navy at 50% (`--sidebar`) in both themes.
 
 ## Process changes
 

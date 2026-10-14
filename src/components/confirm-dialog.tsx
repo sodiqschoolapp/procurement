@@ -85,7 +85,7 @@ export function ConfirmDialog({
       <AlertDialog.Portal>
         <AlertDialog.Backdrop
           className={cn(
-            "fixed inset-0 z-50 bg-foreground/40 transition-opacity duration-160 ease-out",
+            "fixed inset-0 z-50 bg-sidebar/50 transition-opacity duration-160 ease-out",
             "data-ending-style:opacity-0 data-starting-style:opacity-0",
           )}
         />

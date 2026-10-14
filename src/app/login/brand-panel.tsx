@@ -26,7 +26,7 @@ export async function BrandPanel({ className }: { className?: string }) {
           <span className="h-1 w-16 rounded-full bg-primary" />
         </div>
       </div>
-      <div className="relative w-24 shrink-0 bg-white lg:w-32">
+      <div className="relative w-24 shrink-0 bg-sidebar-accent-foreground lg:w-32">
         <HexagonColumn className="absolute inset-0 size-full" />
       </div>
     </aside>

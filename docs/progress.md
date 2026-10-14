@@ -266,6 +266,7 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - Feedback: `toast.success(t(...))` / `toast.error(t(...))`; irreversible actions use `<ConfirmDialog>`; a form renders `<UnsavedChangesGuard dirty={...} />`.
 - Status and colour labels only through `RequestStatusLabel` and `ColourLabel`; the colour comes from `src/domain/` (phase 3), the label refuses a difference whose sign contradicts the colour.
 - For the first task with a form: the guard's browser wiring (link capture and the back button) has no e2e test yet; that task writes it (review of 0.10a, correction 8).
+- For 0.10b: a `<Skeleton>` is `--accent`, the canvas colour in the light theme; on the canvas, outside a white panel, give it `bg-secondary` (spec review of 0.10a).
 - For 0.10b: the theme switch on `/profile` calls `applyTheme()` of `src/components/theme.ts` with `device`, `light` or `dark`.
 - Bitter and Golos Text are named `Bitter Variable` and `Golos Text Variable` in CSS; Tailwind `font-slab` is Bitter, for brand moments only.
 - Trap: the browser reports token colours as `lab()`; an e2e colour check reads the pixel through a canvas (`tests/e2e/design-system.spec.ts`).
