@@ -74,4 +74,20 @@ describe("the forbidden-time check (developer-rules.md rule 10)", () => {
     );
     expect(found).toEqual([]);
   });
+
+  // Permission review of 0.4: only tests may set the clock.
+  it("refuses an import of the test clock setter in app code, and allows it in tests", async () => {
+    const code = 'import { setTestClock } from "@/server/clock";\nsetTestClock(null);\n';
+    const reports = async (filePath: string) => {
+      const [result] = await eslint.lintText(code, { filePath });
+      return (result?.messages ?? []).filter(
+        (message) => message.ruleId === "no-restricted-imports",
+      );
+    };
+
+    expect(await reports("src/features/sample/actions/move.ts")).toHaveLength(1);
+    expect(await reports("src/server/sample.ts")).toHaveLength(1);
+    expect(await reports("src/server/sample.test.ts")).toEqual([]);
+    expect(await reports("tests/helpers/sample.ts")).toEqual([]);
+  });
 });

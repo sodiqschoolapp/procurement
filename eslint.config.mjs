@@ -43,6 +43,27 @@ const eslintConfig = defineConfig([
     },
   },
   {
+    // Only tests may fix or ask about the test clock: app code that imported the setter could
+    // move business dates on any server whose NODE_ENV is not "production" (permission review of 0.4).
+    files: ["src/**"],
+    ignores: ["**/*.test.ts", "**/*.test.tsx"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["@/server/clock", "**/server/clock", "./clock"],
+              importNames: ["setTestClock", "isTestClockSet"],
+              message:
+                "The test clock is for tests only (tests/helpers/clock.ts). App code reads now().",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     // The one clock: the only file that may read the system time.
     files: ["src/server/clock.ts"],
     rules: {
