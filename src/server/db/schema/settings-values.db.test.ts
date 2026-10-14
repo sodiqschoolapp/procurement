@@ -68,6 +68,7 @@ const CASES: Case[] = [
       { month: 1, day: 1 },
       { month: 2, day: 28 },
       { month: 12, day: 31 },
+      { month: 4, day: 30 },
     ],
     bad: [
       "09-01",
@@ -79,6 +80,7 @@ const CASES: Case[] = [
       { month: 13, day: 1 },
       { month: 9, day: 0 },
       { month: 4, day: 31 },
+      { month: 1, day: 32 },
       { month: 2, day: 29 },
       { month: 9.5, day: 1 },
       { month: 9, day: 1.5 },

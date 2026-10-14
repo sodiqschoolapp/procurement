@@ -98,6 +98,7 @@ describe("value checks (plan of 1.1, decisions 1, 2, 9, 10)", () => {
       { month: 9, day: 1 },
       { month: 2, day: 28 },
       { month: 12, day: 31 },
+      { month: 4, day: 30 },
       { month: 1, day: 31 },
     ]) {
       expect(isMonthDay(ok)).toBe(true);
@@ -111,6 +112,7 @@ describe("value checks (plan of 1.1, decisions 1, 2, 9, 10)", () => {
       { month: 13, day: 1 },
       { month: 9, day: 0 },
       { month: 4, day: 31 },
+      { month: 1, day: 32 },
       { month: 2, day: 29 },
       { month: 9.5, day: 1 },
       { month: 9, day: 1, year: 2026 },

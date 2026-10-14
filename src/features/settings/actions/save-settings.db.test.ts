@@ -76,8 +76,11 @@ describe("saveSettings (build-plan 1.1)", () => {
   );
 
   it("a change writes one audit row with the changed keys only, before = value in force (rule 13; correction 3)", async () => {
+    setClock("2026-10-14T10:00:00Z");
     const head = await insertUser("HEAD");
-    await runAction(saveSettings, head.id, { reminder_hours: 12 });
+    expect(await runAction(saveSettings, head.id, { reminder_hours: 12 })).toMatchObject({
+      ok: true,
+    });
     setClock("2026-10-14T11:00:00Z");
 
     const result = await runAction(saveSettings, head.id, {
@@ -138,7 +141,9 @@ describe("saveSettings (build-plan 1.1)", () => {
 
   it("trims the school name before it is checked and stored (decision 10)", async () => {
     const head = await insertUser("HEAD");
-    await runAction(saveSettings, head.id, { school_name: "  Invented School  " });
+    expect(
+      await runAction(saveSettings, head.id, { school_name: "  Invented School  " }),
+    ).toMatchObject({ ok: true });
     expect((await readSettings(db)).school_name).toBe("Invented School");
   });
 
@@ -180,6 +185,30 @@ describe("saveSettings (build-plan 1.1)", () => {
     expect(await storedRows()).toEqual([]);
     expect(await auditRowsBy(head.id)).toEqual([]);
     vi.restoreAllMocks();
+  });
+
+  it("two Heads saving the same key at once: each audit row's before is the value the other left (the settings lock)", async () => {
+    const first = await insertUser("HEAD");
+    const second = await insertUser("HEAD");
+
+    const results = await Promise.all([
+      runAction(saveSettings, first.id, { price_hint_percent: 30 }),
+      runAction(saveSettings, second.id, { price_hint_percent: 40 }),
+    ]);
+
+    expect(results).toMatchObject([{ ok: true }, { ok: true }]);
+    const rows = [...(await auditRowsBy(first.id)), ...(await auditRowsBy(second.id))];
+    expect(rows).toHaveLength(2);
+    const changes = rows.map((row) => ({
+      before: (row.before as { price_hint_percent: number }).price_hint_percent,
+      after: (row.after as { price_hint_percent: number }).price_hint_percent,
+    }));
+    // One saved over the default; the other saw the first one's value, never the default again.
+    const earlier = changes.find((change) => change.before === 20)!;
+    const later = changes.find((change) => change !== earlier)!;
+    expect(earlier).toBeDefined();
+    expect(later.before).toBe(earlier.after);
+    expect((await readSettings(db)).price_hint_percent).toBe(later.after);
   });
 
   it("two Heads saving different keys at once both land (decision 7, the settings lock)", async () => {
