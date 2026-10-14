@@ -170,4 +170,25 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - Install packages with npm 11 (`npx npm@11 install …` in a cloud session, whose `npm` is 10): npm 10 rewrites the lock file's `libc` fields.
 - Every new screen block of `eslint.config.mjs` that sets `no-restricted-syntax` spreads both `FORBIDDEN_TIME_SELECTORS` and `LITERAL_TEXT_PROP_SELECTORS`.
 
-The next task is 0.6.
+## 0.6 Sign-in and sessions (14.10.2026, pull request #16)
+
+**Built**
+- Migration `0001_sign_in`: `users`, `sessions`, `accounts`, `verifications`, `login_attempts`; enums `user_role`, `locale`.
+- `signIn()` / `signOut()` (`src/server/auth/sign-in.ts`), the reader `getCurrentUser()` / `requireUser()` (`session.ts`), the lazy library `getAuth()` (`auth.ts`), the limit in `src/domain/sign-in-limit.ts`, `/login`, sign-out on `/`, `src/proxy.ts`, `npm run user:first-head`.
+
+**Left out, and the task that brings it**
+- Renewing a password, signing a user out everywhere, creating and deactivating users: 1.3. The brand sign-in page, the menu with sign-out: 0.10.
+
+**Open for the owner**
+- `BETTER_AUTH_SECRET` in the DigitalOcean dashboard (docs/deploy.md); until then sign-in on the test copy is refused.
+
+**What the next sessions must know**
+- Tests: `insertUser(role, { password, isActive })` and `signInAs(user)` in `tests/helpers/users.ts`; a session test fixes the clock, only our reader judges expiry.
+- Every page or action reads the user with `getCurrentUser()` / `requireUser(path)`; never the library's `getSession`. The library pool closes in `db-file-setup.ts`.
+- For 0.7: add `signInAction`, `signOutAction`, `chooseLanguageAction` to the permission matrix as open to everyone; test that `signOutAction` ends only the caller's session.
+- For 0.7 and every file or export route: the proxy lets through paths ending in an image or `.txt` extension and `/brand/`; such a route calls `requireUser()` / `authorize()` itself.
+- For 1.3: deactivating a user and renewing a password delete that user's `sessions` rows (A8), so a reactivated user's old devices are not signed in again.
+- For 0.10: `/` becomes the home page per role; the CI container step that reads the commit from `/` moves with it.
+- For 0.9: the first-Head script gains its audit row.
+
+The next task is 0.7.
