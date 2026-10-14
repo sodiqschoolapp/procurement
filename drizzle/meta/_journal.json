@@ -71,6 +71,13 @@
       "when": 1792007253466,
       "tag": "0009_users",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1792013769840,
+      "tag": "0010_catalogs",
+      "breakpoints": true
     }
   ]
 }
