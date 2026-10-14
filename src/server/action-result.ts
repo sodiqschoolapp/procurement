@@ -51,6 +51,11 @@ export const FIELD_ERROR_KINDS = [
   "principalTaken",
   "branchCount",
   "branchInactive",
+  // A product's references and photo, and the lock after first use (plan of 1.7): the entry
+  // picked is inactive, the file is not a photo, the field is locked because the record is used.
+  "inactive",
+  "notAPhoto",
+  "locked",
 ] as const;
 export type FieldErrorKind = (typeof FIELD_ERROR_KINDS)[number];
 export type FieldMessageKey = `errors.field.${FieldErrorKind}`;

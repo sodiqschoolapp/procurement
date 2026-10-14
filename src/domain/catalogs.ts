@@ -91,9 +91,19 @@ export function changedCatalogFields<Fields extends Record<string, unknown>>(
 
 /**
  * How a field is typed and shown: a one-line text, a short text, a yes/no box, the company kind,
- * or a long text. `optional`: may be left empty (stored as null).
+ * a long text; for products (1.7) also the product type, a picked catalog entry, an amount of
+ * money and a photo. `optional`: may be left empty (stored as null).
  */
-export type CatalogFieldType = "text" | "short" | "boolean" | "companyKind" | "long";
+export type CatalogFieldType =
+  | "text"
+  | "short"
+  | "boolean"
+  | "companyKind"
+  | "long"
+  | "productType"
+  | "reference"
+  | "money"
+  | "photo";
 export type CatalogFieldKey =
   | "name"
   | "shortName"
@@ -103,7 +113,14 @@ export type CatalogFieldKey =
   | "phone"
   | "note"
   | "responsibleName"
-  | "responsiblePhone";
+  | "responsiblePhone"
+  | "type"
+  | "categoryId"
+  | "unitId"
+  | "defaultCompanyId"
+  | "referencePrice"
+  | "description"
+  | "photoFileId";
 export type CatalogField = { key: CatalogFieldKey; type: CatalogFieldType; optional?: boolean };
 
 /**
@@ -149,10 +166,31 @@ export const DEPARTMENTS = {
   ],
 } as const satisfies { entity: string; fields: readonly CatalogField[] };
 
-/** Every catalog the shared actions and form serve: the four of 1.5 and departments. */
-export type EntryKind = CatalogKind | "departments";
+/**
+ * Products and services (04, Catalogs table; build-plan 1.7), in the order of 04 with the photo
+ * last. Not one of CATALOG_KINDS: its pages are static routes with a form of their own (plan of
+ * 1.7, decision 14). Name, type, category and measure are required; the rest optional (decision
+ * 6). The reference price is set on create only (decision 2, Look first).
+ */
+export const PRODUCTS = {
+  entity: "products",
+  fields: [
+    { key: "name", type: "text" },
+    { key: "type", type: "productType" },
+    { key: "categoryId", type: "reference" },
+    { key: "unitId", type: "reference" },
+    { key: "defaultCompanyId", type: "reference", optional: true },
+    { key: "referencePrice", type: "money", optional: true },
+    { key: "description", type: "long", optional: true },
+    { key: "photoFileId", type: "photo", optional: true },
+  ],
+} as const satisfies { entity: string; fields: readonly CatalogField[] };
 
-export const CATALOG_ENTRIES = { ...CATALOGS, departments: DEPARTMENTS } as const satisfies Record<
-  EntryKind,
-  { entity: string; fields: readonly CatalogField[] }
->;
+/** Every catalog the shared actions serve: the four of 1.5, departments and products. */
+export type EntryKind = CatalogKind | "departments" | "products";
+
+export const CATALOG_ENTRIES = {
+  ...CATALOGS,
+  departments: DEPARTMENTS,
+  products: PRODUCTS,
+} as const satisfies Record<EntryKind, { entity: string; fields: readonly CatalogField[] }>;

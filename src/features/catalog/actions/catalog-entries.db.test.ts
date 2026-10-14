@@ -10,6 +10,7 @@ import { AuthorizationError } from "@/server/authorize";
 import { db } from "@/server/db/client";
 import { auditLog } from "@/server/db/schema";
 
+import { insertProduct } from "../../../../tests/helpers/catalog";
 import { setClock } from "../../../../tests/helpers/clock";
 import { describePermissionMatrix } from "../../../../tests/helpers/permission-matrix";
 import { runTogether } from "../../../../tests/helpers/together";
@@ -368,6 +369,8 @@ describe("measures: the short name and decimals (plan of 1.5, decisions 3 and 4)
   it("'Allows decimals' can be changed while no product uses the measure (decision 3)", async () => {
     const head = await insertUser("HEAD");
     const metre = await create(measures, head.id, "Metr", { shortName: "m", allowDecimal: false });
+    // A product of another measure beside it (D40): a lock that ignored the measure would refuse.
+    await insertProduct();
     const changed = expectOk(
       (await runAction(updateMeasure, head.id, {
         id: metre.id,
@@ -377,6 +380,30 @@ describe("measures: the short name and decimals (plan of 1.5, decisions 3 and 4)
       }>,
     );
     expect(changed.entry.allowDecimal).toBe(true);
+  });
+  it("'Allows decimals' locks once a product uses the measure, active or not (decisions 1.5 item 2; plan of 1.7, decision 3)", async () => {
+    const head = await insertUser("HEAD");
+    const gram = await create(measures, head.id, "Gramm", { shortName: "g", allowDecimal: true });
+    await insertProduct({ unitId: gram.id, isActive: false });
+    expect(
+      await runAction(updateMeasure, head.id, { id: gram.id, allowDecimal: false }),
+    ).toMatchObject({
+      ok: false,
+      error: { code: "invalid_input", fields: { allowDecimal: "errors.field.locked" } },
+    });
+    // Its name and short name still change, and an unchanged "Allows decimals" passes.
+    expectOk(
+      await runAction(updateMeasure, head.id, {
+        id: gram.id,
+        name: "Gramm (g)",
+        shortName: "gr",
+        allowDecimal: true,
+      }),
+    );
+    const rows = await db.execute<{ allow_decimal: boolean; short_name: string }>(
+      sql`select allow_decimal, short_name from units where id = ${gram.id}`,
+    );
+    expect(rows.rows[0]).toEqual({ allow_decimal: true, short_name: "gr" });
   });
 });
 
