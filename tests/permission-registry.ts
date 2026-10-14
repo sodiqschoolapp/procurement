@@ -25,6 +25,10 @@ export const SERVER_ACTIONS: Record<string, Entry> = {
   "src/app/(app)/notifications/actions.ts#markAllNotificationsReadAction": "notification.own",
   // "Manage catalogs, users, branches, settings" (03; plan of 1.1).
   "src/app/(app)/settings/actions.ts#saveSettingsAction": "catalog.manage",
+  // The Head's branches (plan of 1.2).
+  "src/app/(app)/branches/actions.ts#createBranchAction": "catalog.manage",
+  "src/app/(app)/branches/actions.ts#updateBranchAction": "catalog.manage",
+  "src/app/(app)/branches/actions.ts#setBranchActiveAction": "catalog.manage",
 };
 
 /** Exports of `src/features/<area>/queries/`, as `<file>#<export>`. */
@@ -34,6 +38,9 @@ export const QUERIES: Record<string, Permission> = {
   // The branches of the top bar's branch view (plan of 0.10b).
   "src/features/catalog/queries/my-branches.ts#listMyBranches": "profile.edit",
   "src/features/catalog/queries/my-branches.ts#currentBranchChoice": "profile.edit",
+  // The Head's branch list and one branch (plan of 1.2).
+  "src/features/catalog/queries/branches.ts#listBranches": "catalog.manage",
+  "src/features/catalog/queries/branches.ts#getBranch": "catalog.manage",
   // The bell and /notifications (plan of 0.11, decision 2, Look first).
   "src/features/notifications/queries/my-notifications.ts#listMyNotifications": "notification.own",
   "src/features/notifications/queries/my-notifications.ts#countMyUnread": "notification.own",

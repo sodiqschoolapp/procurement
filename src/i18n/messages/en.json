@@ -49,7 +49,8 @@
       "notANumber": "Type a number",
       "tooSmall": "Too small",
       "tooLarge": "Too large",
-      "notAllowed": "This value is not allowed"
+      "notAllowed": "This value is not allowed",
+      "taken": "Already used"
     },
     "file": {
       "tooLarge": "The file is larger than 10 MB. Choose a smaller file or take the photo again.",
@@ -77,7 +78,10 @@
         "change_language": "Language changed"
       },
       "branch": {
-        "create": "Branch created"
+        "create": "Branch created",
+        "update": "Branch changed",
+        "deactivate": "Branch deactivated",
+        "activate": "Branch activated"
       },
       "settings": {
         "change": "Settings changed"
@@ -279,5 +283,46 @@
     "saved": "Settings saved",
     "nothingChanged": "Nothing changed",
     "history": "Change history"
+  },
+  "admin": {
+    "label": "Admin pages",
+    "branches": "Branches",
+    "settings": "Settings"
+  },
+  "pager": {
+    "label": "Pages",
+    "previous": "Previous",
+    "next": "Next",
+    "pageOf": "Page {page} of {pages}"
+  },
+  "branches": {
+    "title": "Branches",
+    "new": "New branch",
+    "newTitle": "New branch",
+    "summary": "{active} active, {inactive} inactive",
+    "name": "Name",
+    "code": "Code",
+    "codeHint": "2 to 4 Latin capital letters, for example CHL. Used in order numbers.",
+    "address": "Address",
+    "status": "Status",
+    "active": "Active",
+    "inactive": "Inactive",
+    "emptyTitle": "No branches yet",
+    "emptyText": "Every school site is a branch, with a short code that order numbers carry.",
+    "save": "Save",
+    "created": "Branch created",
+    "saved": "Branch saved",
+    "nothingChanged": "Nothing changed",
+    "deactivate": "Deactivate",
+    "activate": "Activate",
+    "deactivateTitle": "Deactivate {name}?",
+    "deactivateResult": "The branch leaves the lists where new records are made. Its people, stock and old records stay, and you can activate it again.",
+    "activateTitle": "Activate {name}?",
+    "activateResult": "The branch comes back to the lists where new records are made.",
+    "deactivated": "Branch deactivated",
+    "activated": "Branch activated",
+    "history": "Change history",
+    "isActive": "Active",
+    "fact": "{code} · {state}"
   }
 }

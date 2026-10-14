@@ -399,5 +399,24 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - A form: Save `disabled` until hydrated (`useSyncExternalStore`), or a click before hydration submits the plain form; browser tests wait for Save to be enabled. In the dev server the Next.js indicator covers the phone's first tab.
 - Settings rows can be deleted in tests (`db.delete(settings)` in `beforeEach`); audit rows cannot.
 
-The next task is 1.2.
+## 1.2 Branches (14.10.2026, pull request #32)
 
+**Built**
+- `src/domain/branches.ts`: `isBranchCode`, `branchName`, `branchAddress`, limits, `changedBranchFields`, `BRANCHES_PAGE_SIZE`.
+- Migration `0008_branches_client_key`: `branches.client_key uuid`, unique, nullable.
+- `createBranch`, `updateBranch`, `setBranchActive` (`src/features/catalog/actions/branches.ts`); `listBranches`, `getBranch` (`queries/branches.ts`); audit actions `branch.update`, `branch.deactivate`, `branch.activate`.
+- `/branches`, `/branches/new`, `/branches/[id]` (form, Deactivate/Activate, change history); `AdminNav` (`src/components/admin-nav.tsx`) on `/branches` and `/settings`.
+- `ActionError("invalid_input", { field: key })` returns field errors from a step; field kind `taken`.
+
+**Left out, and the task that brings it**
+- Code lock after the first request: 2.7. Block on closing a branch: 5.13. Pickers of active branches only: 1.3 and 2.x. Admin item to `/catalog`: 1.5.
+
+**What the next sessions must know**
+- A taken name or code: check under an advisory lock with the unique index's own SQL expression, throw `ActionError("invalid_input", { name: "errors.field.taken" })`.
+- A global create's `repeat.find` with no maker column reads the maker from its own `<x>.create` audit row (review of the 1.2 plan, correction 1).
+- For 1.3: the user form's branch picker lists active branches only (decisions 1.2, item 3).
+- For 1.5 and later Admin pages: add the page to `PAGES` of `src/components/admin-nav.tsx`; over four pages it needs another element.
+- For 2.7: lock `code` in `updateBranch` once the branch has a request.
+- Browser tests: codes and names are new on every run (branches are never deleted); a toast and a history row can share words, use `.first()`.
+
+The next task is 1.3.

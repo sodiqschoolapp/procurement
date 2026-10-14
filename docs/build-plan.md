@@ -129,7 +129,7 @@ Everything the Head sets up before the first request can be written.
   - **Build:** A typed settings accessor with the keys and defaults the spec lists: `default_payment_type` (Cash), `price_hint_percent` (20), `overspend_guard_percent` (10; 0 and off), `reminder_hours` (24), `escalation_hours` (48), `receipt_required_for_cash` (false), `school_name`, `school_year_start` (no default); the `/settings` screen for the Head; every change audited.
   - **Done when:** Database tests: the defaults come back on an empty table; only the Head can write; a change writes an audit row. By hand: set the school name and see it in the shell.
 
-- [ ] **1.2 Branches**
+- [x] **1.2 Branches**
   - **Read:** `04-catalogs.md` (Catalogs table: Branches; Rules: 2, 3, 9); `14-data-model.md` (branches).
   - **Build:** `/branches` for the Head: name, code (2 to 4 Latin capital letters, unique), address, active; deactivate instead of delete; change history. The code lock after the first request is wired in 2.7; the block on closing a branch is 5.13.
   - **Done when:** Tests: a lower-case code and a 5-letter code are refused; a duplicate code is refused by the database; a Manager cannot open the screen.

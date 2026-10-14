@@ -44,6 +44,8 @@ export const FIELD_ERROR_KINDS = [
   "tooSmall",
   "tooLarge",
   "notAllowed",
+  // Held by another record: a branch's code or name (plan of 1.2, decision 7).
+  "taken",
 ] as const;
 export type FieldErrorKind = (typeof FIELD_ERROR_KINDS)[number];
 export type FieldMessageKey = `errors.field.${FieldErrorKind}`;

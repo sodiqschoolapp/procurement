@@ -589,6 +589,32 @@ Choices made during the build:
 - The concurrent same-key test proves the advisory lock: without it the second save's `before` is the default again (spec review, Should fix 1; tried by removing the lock).
 - The Playwright test of the unsaved-changes guard clicks the Requests tab at phone width: in the dev server the Next.js indicator covers the first tab.
 
+### 1.2 Branches (14.10.2026)
+
+The plan's decisions as the plan review of 14.10.2026 confirmed them (corrections 1 to 3 applied), and those of the build. The Look first items come first.
+
+1. **Look first.** No version column on `branches` (`14-data-model.md` gives none; rule 9 names the request). Two Heads saving at once each write only the fields they changed, under the row lock; both moves are in the history.
+2. **Look first.** Deactivating refuses nothing and moves nothing: users, stock and records stay. The block on closing is 5.13, the code lock 2.7; until 2.7 the code can be changed.
+3. **Look first.** The top-bar branch switcher keeps listing inactive branches (`04` rule 2: they "stay visible in old records"); pickers that create something list active branches only (1.3, 2.x).
+4. **Look first** (design-system departure, D23). Pages `/branches/new` and `/branches/[id]` instead of the side panel of "Lists": a handful of rows; the history and the unsaved-changes guard fit a page.
+5. `branches.client_key uuid`, nullable, unique `branches_client_key_key` (migration `0008`), for `developer-rules.md` rule 8; the seed's branches have none.
+6. A branch can be activated again, with its own audit row `branch.activate`; a repeat of the same move is `wrong_status`.
+7. A taken code or name is `invalid_input` with `fields: { code|name: "errors.field.taken" }`, checked under the advisory lock `hashtextextended('branches', 1)` with the unique index's SQL expression, the branch's own row excluded on update. `ActionError` takes a field map for this. The unique constraints stay the last defence.
+8. The code is never upper-cased by the server or the form.
+9. Names are stored trimmed with inner spaces collapsed, addresses trimmed; limits 120 and 300 code points in the domain and the form only.
+10. Audit rows: entity `branches`, the branch id; new actions `branch.update`, `branch.deactivate`, `branch.activate`.
+11. The list has 25 a page and no search or filter.
+12. A segmented control of links (Branches, Settings) on the Admin pages; the Admin menu item stays on `/settings` until 1.5.
+
+Choices made during the build:
+
+- `createBranch`'s repeat finds the maker as the actor of the branch's own `branch.create` audit row (plan review, correction 1); another Head with the same key gets `not_found`.
+- An update with nothing changed returns the branch, writes no audit row and touches no column (correction 3).
+- `getBranch` answers `null` for a text that is not a UUID, after `authorize()`, so `/branches/abc` is "not found".
+- Active/Inactive is plain words, not a status label (design system, What we never do 4); at phone width the table scrolls inside its panel.
+- The text of `errors.field.taken` names no entity ("Already used"), so later catalogs reuse it (diff review, Should fix 1).
+- `BRANCHES_PAGE_SIZE` lives in `src/domain/branches.ts`: the permission registry counts every export of a query file as a query.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

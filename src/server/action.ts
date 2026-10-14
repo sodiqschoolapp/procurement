@@ -8,7 +8,12 @@ import { AuthorizationError, type Executor, authorize } from "@/server/authorize
 import type { db as Database } from "@/server/db/client";
 
 import { fieldErrors } from "./action-input";
-import { type ActionResult, type ServerErrorCode, failure } from "./action-result";
+import {
+  type ActionResult,
+  type FieldMessageKey,
+  type ServerErrorCode,
+  failure,
+} from "./action-result";
 
 // The one wrapper every write uses (developer-rules.md rule 3, "One transaction per action";
 // CLAUDE.md rule 3; plan of 0.8). An action is a set of named steps; the wrapper calls them in
@@ -36,7 +41,14 @@ type Transaction = Parameters<Parameters<typeof Database.transaction>[0]>[0];
 
 /** A refusal thrown by a step, returned to the browser with its code. */
 export class ActionError extends Error {
-  constructor(readonly code: Exclude<ServerErrorCode, "invalid_input" | "signed_out">) {
+  /**
+   * `fields`: with `invalid_input`, the message key of each wrong field, found by a step and not
+   * by the Zod check, such as a code another branch holds (plan of 1.2, decision 7).
+   */
+  constructor(
+    readonly code: Exclude<ServerErrorCode, "signed_out">,
+    readonly fields?: Record<string, FieldMessageKey>,
+  ) {
     super(`Action refused: ${code}.`);
     this.name = "ActionError";
   }
@@ -233,7 +245,7 @@ export async function runAction<Schema extends z.ZodType, Rows, Result>(
     return { ok: true, data };
   } catch (error) {
     if (error instanceof Refusal) return failure(error.code);
-    if (error instanceof ActionError) return failure(error.code);
+    if (error instanceof ActionError) return failure(error.code, error.fields);
     if (error instanceof AuthorizationError) return failure(error.kind);
     console.error(`Action ${definition.name} failed: ${describeForLog(error)}`);
     return failure("unexpected");

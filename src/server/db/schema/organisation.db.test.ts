@@ -119,6 +119,33 @@ describe("branches (04-catalogs.md: Branches, rule 3)", () => {
   });
 });
 
+describe("branches.client_key (developer-rules.md rule 8; migration 0008, build-plan 1.2)", () => {
+  it("refuses a second branch with the same client key, on insert and on update; takes branches with none", async () => {
+    const key = "11111111-1111-4111-8111-111111111111";
+    const first = await branch();
+    await db.execute(sql`update branches set client_key = ${key} where id = ${first}`);
+    const count = next();
+    expect(
+      await refusalOf(
+        db.execute(sql`
+          insert into branches (name, code, address, client_key, created_at)
+          values (${`Sinov filiali ${count}`}, ${codeOf(count)}, 'Sinov ko''chasi 1', ${key}, ${AT})`),
+      ),
+    ).toMatchObject({ code: "23505", constraint: "branches_client_key_key" });
+    const second = await branch();
+    expect(
+      await refusalOf(
+        db.execute(sql`update branches set client_key = ${key} where id = ${second}`),
+      ),
+    ).toMatchObject({ code: "23505", constraint: "branches_client_key_key" });
+    // Two branches without a key, and another key, go through beside them (D40).
+    await branch();
+    await db.execute(
+      sql`update branches set client_key = '22222222-2222-4222-8222-222222222222' where id = ${second}`,
+    );
+  });
+});
+
 describe("user_branches: one active Principal per branch (14-data-model.md)", () => {
   it("refuses a second active Principal in one branch", async () => {
     const chl = await branch();
@@ -332,11 +359,20 @@ describe("the same guards on update (D39: insert and update, each refused case)"
       code: "23514",
       constraint: "branches_code_check",
     });
+    // A five-letter code (build-plan 1.2, Done when) on update too.
+    expect(await refusalOf(update(sql`code = 'UPBCD'`))).toMatchObject({
+      code: "23514",
+      constraint: "branches_code_check",
+    });
     expect(await refusalOf(update(sql`code = 'UPA'`))).toMatchObject({
       code: "23505",
       constraint: "branches_code_key",
     });
     expect(await refusalOf(update(sql`name = 'YUNUSOBOD  filiali'`))).toMatchObject({
+      code: "23505",
+      constraint: "branches_name_key",
+    });
+    expect(await refusalOf(update(sql`name = ' yunusobod Filiali '`))).toMatchObject({
       code: "23505",
       constraint: "branches_name_key",
     });
