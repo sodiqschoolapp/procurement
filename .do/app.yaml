@@ -1,0 +1,59 @@
+# The test copy on DigitalOcean App Platform (build-plan 0.16; 18-hosting-and-costs.md row 7;
+# docs/decisions.md D22 and "Decided ahead: task 0.16"). docs/deploy.md says how the owner creates
+# the app from this file. No value here is a secret: the database address and its certificate
+# are bound by DigitalOcean itself (`${db.…}`), so nobody types them and no file holds them.
+#
+# Unconfirmed from the session that wrote it (DigitalOcean's pages could not be read there):
+# the size slug, PostgreSQL 17 for a dev database, and the bindings CA_CERT and COMMIT_HASH.
+# The owner checks that the dashboard shows $17 a month before pressing Create (docs/deploy.md).
+name: ombor-test
+region: fra
+
+domains:
+  - domain: ombor-test.sodiqschool.uz
+    type: PRIMARY
+
+services:
+  - name: web
+    # A new version on every push to main, through DigitalOcean's own GitHub app
+    # (Decided ahead 0.16, item 3): no deploy key, no GitHub secret.
+    github:
+      repo: sodiqschoolapp/procurement
+      branch: main
+      deploy_on_push: true
+    dockerfile_path: Dockerfile
+    source_dir: /
+    http_port: 8080
+    # 1 GiB, shared CPU, the fixed kind: $10 a month (row 7). One container.
+    instance_size_slug: apps-s-1vcpu-1gb-fixed
+    instance_count: 1
+    # Traffic moves to a new version only after /health answers 200, which needs the migration
+    # to have run (scripts/start.sh) and the database to answer within 3 seconds.
+    health_check:
+      http_path: /health
+      initial_delay_seconds: 20
+      period_seconds: 10
+      timeout_seconds: 5
+      success_threshold: 1
+      failure_threshold: 6
+    envs:
+      - key: NODE_ENV
+        scope: RUN_AND_BUILD_TIME
+        value: production
+      - key: DATABASE_URL
+        scope: RUN_TIME
+        value: ${db.DATABASE_URL}
+      - key: DATABASE_CA_CERT
+        scope: RUN_TIME
+        value: ${db.CA_CERT}
+      - key: GIT_COMMIT
+        scope: RUN_TIME
+        value: ${_self.COMMIT_HASH}
+
+databases:
+  # The development database: $7 a month (row 7). PostgreSQL 17, the major version of the local
+  # image (docker-compose.yml).
+  - name: db
+    engine: PG
+    version: "17"
+    production: false
