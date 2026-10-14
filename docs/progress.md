@@ -89,4 +89,24 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - For 0.16: the task after 0.3 is 0.16, the test copy, moved forward from 0.15 (D22); "Decided ahead: task 0.16".
 - 14.10.2026: the loop brought up to sodiq-platform of 14 October (D27 to D41): only a `[review]` by `abbosc` counts and a fork's pull request gets nothing; after every push the builder checks that CI started and calls the owner instead of pushing an empty commit; a failure outside the code is re-run once, and a head green after a re-run is reviewed again.
 
-The next task is 0.3.
+## 0.3 CI (14.10.2026, pull request #12)
+
+**Built**
+- `.github/workflows/ci.yml`: jobs `checks` (install, production audit, lint, typecheck, migrate an empty database then once more, `npm test`, `drizzle-kit generate` writes nothing, no merged `.sql` edited) and `e2e` (migrate, Playwright shell, `npm run test:e2e`, traces kept 14 days on failure). PostgreSQL is the service of `docker-compose.yml`.
+- Guard 1: `tests/migration-journal.test.ts`. Guard 2: `applyMigrations` refuses when the bookkeeping rows differ from the journal entries (a skipped migration, or a database ahead of the code).
+
+**Left out, and the task that brings it**
+- The seed step: task 0.14. The translation check: task 0.5. The image build: task 0.16.
+
+**Open for the owner**
+- Merge #12 by hand, then add `checks` and `e2e` as required checks to the ruleset `protect-main` (`docs/cloud-loop.md`, section 7).
+
+**What the next sessions must know**
+- CI is now the gate: after every push, check that the run `checks` started on the head (D28).
+- Actions are pinned to a commit sha with the tag in a comment; checkout keeps no token (`persist-credentials: false`).
+- `applyMigrations(url, folder)` takes a migrations folder for tests only; `tests/migrations.db.test.ts` writes invented journals under the system temp folder.
+- For 0.5 and 0.14: add the translation check and the seed step to the job `checks` of `ci.yml`; the jobs are never renamed.
+- For 0.16: the image build goes into `ci.yml` too; a new job is not required by `main` until the owner adds it.
+- Trap: a push to a pull request cancels the older run of that pull request; wait for a run to finish before pushing when its result is needed.
+
+The next task is 0.16.
