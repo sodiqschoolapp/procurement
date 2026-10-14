@@ -144,7 +144,7 @@ Everything the Head sets up before the first request can be written.
   - **Build:** The nine switches on a Manager's user page, all on by default; every change audited and the Manager notified; the permission-matrix test gains the "right off" cases.
   - **Done when:** A database test for each of the nine codes: off means `authorize()` refuses that action for that Manager in every branch and still allows the Head. By hand: switch one off and the Manager gets a bell notice.
 
-- [ ] **1.5 Measures, categories, extra cost types, companies**
+- [x] **1.5 Measures, categories, extra cost types, companies**
   - **Read:** `04-catalogs.md` (Catalogs table: Measures, Categories, Extra cost types, Companies and brands; Rules: 2, 3, 9); `14-data-model.md` (units, categories, companies, extra_cost_types).
   - **Build:** Four catalog screens under `/catalog/...` built on one shared catalog component: list with search, add, edit, deactivate; names unique ignoring capital letters and extra spaces; inactive entries leave the pickers and stay in old records; change history.
   - **Done when:** Tests: " Paper " and "paper" clash; a deactivated entry is absent from the picker query and present in the list; only the Head can write.

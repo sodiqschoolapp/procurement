@@ -456,4 +456,23 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - `lockUser` is exported from `users.ts`; a new user action takes it.
 - A notification type of codes only gets `null` in `SHOWN` of `tests/notification-texts.test.ts`.
 
-The next task is 1.5.
+## 1.5 Measures, categories, extra cost types, companies (14.10.2026, pull request #35)
+
+**Built**
+- Migration `0010_catalogs`: `units`, `categories`, `extra_cost_types`, `companies` (enum `company_kind`), each with a unique normalised name (units also `short_name`), a nullable unique `client_key`, an `is_active` index (companies `(is_active, kind)`).
+- `src/domain/catalogs.ts`: `CATALOGS` (kind → entity and fields), `catalogName()`, limits, `isTaxId()`, `companyKindsFor()`.
+- `defineCatalogActions()` (`src/features/catalog/actions/catalog-entries.ts`) and twelve actions (`createMeasure` … `setCompanyActive`); audit `unit.*`, `category.*`, `extra_cost_type.*`, `company.*`.
+- Queries `listCatalogEntries`, `getCatalogEntry`, `countActiveCatalogEntries` (catalog.manage) and `listCatalogChoices` (new `catalog.pick`, every role; active only, at most 50).
+- `/catalog`, `/catalog/[catalog]` (search in the address), `/new`, `/[id]`; one form and one list for the four. Admin opens `/catalog`; `AdminNav` has Catalogs first.
+
+**Left out, and the task that brings it**
+- The lock on a measure's "Allows decimals" and on a product's measure: 1.7. Calling the picker from a screen: 1.7. Seed catalog rows: 1.13. Ctrl+K search of companies: its own task.
+
+**What the next sessions must know**
+- A new small catalog: a table with the same name index, client key and `is_active` index; an entry in `CATALOGS`, `SOURCES` of the queries, `ACTIONS` of `src/app/(app)/catalog/actions.ts`; a `defineCatalogActions()` file; audit actions and texts.
+- For 1.6 and 1.7: `/catalog/departments` and `/catalog/products` are static routes beside `[catalog]`; add a row to `/catalog`'s list (`CATALOG_KINDS` drives it today).
+- For 1.7: `updateMeasure` refuses a change of `allowDecimal` once a product points at the measure, with its test (plan review of 1.5, correction 3). Pickers call `listCatalogChoices`; an edit screen must still show a current value that is inactive (it is absent from the picker).
+- For 1.9: Prices makes five Admin pages; `AdminNav` needs another element than the segmented control.
+- Browser tests: after a refusal the error toast covers Save at phone width until it fades; submit with Enter.
+
+The next task is 1.6.
