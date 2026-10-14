@@ -1,6 +1,6 @@
 // Invented people and branches for tests (CLAUDE.md, Conventions: "Names, phones and ids in
-// tests, seeds and examples are invented"). Plain data only: the tables come with task 0.6
-// (users) and task 0.7 (branches), which add the helpers that insert these rows.
+// tests, seeds and examples are invented"). Plain data only: insertUser() (tests/helpers/users.ts)
+// and insertBranch() (tests/helpers/branches.ts) write these rows.
 
 export type InventedRole = "HEAD" | "MANAGER" | "PRINCIPAL" | "FINANCE";
 export type InventedLocale = "uz" | "ru" | "en";
