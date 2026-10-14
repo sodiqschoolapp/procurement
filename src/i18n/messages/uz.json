@@ -75,6 +75,9 @@
       "user": {
         "create": "Hisob yaratildi",
         "change_language": "Til oʻzgartirildi"
+      },
+      "branch": {
+        "create": "Filial yaratildi"
       }
     },
     "fields": {

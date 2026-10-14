@@ -80,6 +80,35 @@ jobs:
             exit 1
           fi
 
+      # Build-plan 0.14: "CI runs migrate and seed on an empty database". The four passwords are
+      # random, made in this step and never printed (review of the plan of 0.14, correction 1): the
+      # workflow holds no password. The first run must create every row and the second keep them.
+      - name: Seed the empty database, then once more
+        run: |
+          for name in SEED_HEAD_PASSWORD SEED_MANAGER_PASSWORD SEED_PRINCIPAL_PASSWORD SEED_FINANCE_PASSWORD; do
+            export "$name=$(openssl rand -hex 16)"
+          done
+          expected='created branch CHL
+          created branch YUN
+          created user seed_head
+          created user seed_manager
+          created user seed_principal
+          created user seed_finance
+          seed done'
+          first=$(npm run --silent db:seed)
+          echo "$first"
+          if [ "$first" != "$expected" ]; then
+            echo "::error::The first db:seed must create every branch and user of the seed:"
+            echo "$expected"
+            exit 1
+          fi
+          second=$(npm run --silent db:seed)
+          echo "$second"
+          if [ "$second" != "$(echo "$expected" | sed 's/^created /kept /')" ]; then
+            echo "::error::The second db:seed must create nothing and keep every row."
+            exit 1
+          fi
+
       - name: Unit and database tests
         run: npm test
 

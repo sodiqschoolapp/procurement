@@ -514,6 +514,28 @@ Choices made during the build:
 - `startScheduler` takes an optional `runRound` so a test counts rounds instead of waiting a fixed time; its timer is `unref()`ed.
 - `.env.example` names `SCHEDULER`.
 
+### 0.14 Seed data (14.10.2026)
+
+The plan's decisions as the plan review of 14.10.2026 confirmed or changed them (corrections 1 to 4 applied). The Look first item comes first.
+
+1. **Look first.** Four seed users; the Principal has CHL only and YUN has no Principal. The build line counts four users; `00-definitions.md` says "exactly one Principal per branch". The reviewer reads the definition as how the school runs, as `03` rule 5 expects a branch without a Principal for a while. A YUN request stops at the Principal step until a Principal is added. Proposed `/spec-change`, if the owner wants five: `developer-rules.md` rule 14 "… 2 branches, one user per role and a Principal for each branch, 30 products …", and build-plan 0.14 Done-when "each of the five seed users"; or no change.
+2. The Manager and Finance have both branches, so the branch choice and the branch wall can be clicked through.
+3. Four password variables, one per user: one leaked value opens one role only (the test copy, 0.15).
+4. Safe to run twice: create what is missing, keep what is there (found by code or username, never changed, no password reset, nothing deactivated). Refused, writing nothing: a found seed user of another role; a missing seed Principal when CHL has an active Principal.
+5. Changed by the review: CI's seed passwords are random values made in the step (`openssl rand -hex 16`), never printed; the workflow holds no password text.
+6. Audit rows for the seed with the seed Head as actor (of its own row too); new audit action `branch.create`; `user.create` lists the first Head's fields plus `branchIds`.
+7. Rule 14's 30 products and requests are left to the catalog and request tasks.
+8. The moment is read once in `scripts/db-seed.mjs` behind the eslint exception of `scripts/create-first-head.mjs` and passed in.
+9. No Playwright test uses the seed; the e2e database keeps its own people.
+
+Choices made during the build:
+
+- `FIRST_HEAD_LOCK` is exported from `scripts/first-head.mjs` and nothing else there changed (review correction 3). The seed Head is written first, so every audit row has an actor (correction 4).
+- The pre-check for an active Principal of CHL runs before any write, so the refusal names the branch instead of the database's unique-index error.
+- Branch names "Chilonzor (demo)" and "Yunusobod (demo)", addresses "Namuna ko'chasi 1/2": invented, district names only.
+- No production guard (permission review, Should fix 1, not done): the plan leaves hosted databases to 0.15, which needs the seed users on the test copy; the image does not ship the seed script.
+- `scripts/not-built-yet.mjs` removed: no script uses it.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

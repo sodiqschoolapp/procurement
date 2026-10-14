@@ -108,7 +108,7 @@ Nothing a user can use yet. These tasks build the places where the rules live: t
   - **Build:** The scheduler inside the app; every job takes a database lock so it never runs twice at once; a job registry with name, schedule and last run; it uses the injected clock; one heartbeat job.
   - **Done when:** Database test: two scheduler instances started together run the heartbeat once per tick; the last run is recorded.
 
-- [ ] **0.14 Seed data**
+- [x] **0.14 Seed data**
   - **Read:** `edge-cases/developer-rules.md` (rule 14); `15-quality-and-acceptance.md` (Done-check for every phase); `16-build-order.md` (phase 0 row).
   - **Build:** `npm run db:seed`: 2 branches with invented names (one has the code `CHL`), one user per role with invented names, passwords read from the local `.env`; safe to run twice; CI runs migrate and seed on an empty database. Later tasks extend the seed.
   - **Done when:** The CI step is green. By hand: sign in as each of the four seed users and see a different empty home page.
