@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { setClock } from "../../../tests/helpers/clock";
 import { insertUser, signInAs } from "../../../tests/helpers/users";
+import { closeAuth } from "./auth";
 import { userOfCookieValue, userOfCookies } from "./session";
 import { SECURE_SESSION_COOKIE, SESSION_COOKIE, signToken } from "./session-cookie";
 import { signIn } from "./sign-in";
@@ -40,10 +41,13 @@ describe("the session secret in production (review correction 1; rule 13)", () =
   it("refuses sign-in without starting the library", async () => {
     setClock("2031-03-10T04:00:00Z");
     const head = await insertUser("HEAD");
+    // An earlier test of this file may have made the instance; start without one.
+    await closeAuth();
 
     const result = await asProductionWithoutSecret(() =>
       signIn({ username: head.username, password: head.password }),
     );
+    expect("procurementAuth" in globalThis).toBe(false);
 
     expect(result).toEqual({ ok: false, reason: "unavailable" });
   });

@@ -24,7 +24,7 @@ export default async function StartPage() {
             <p>{t("session.signedInAs", { name: user.fullName })}</p>
             <button
               type="submit"
-              className="h-11 rounded-lg border border-input px-4 font-medium hover:bg-accent"
+              className="h-11 rounded-lg bg-secondary px-4 text-sm font-semibold text-secondary-foreground hover:bg-secondary/80 sm:h-10"
             >
               {t("session.signOut")}
             </button>

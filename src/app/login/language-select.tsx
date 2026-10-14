@@ -30,7 +30,7 @@ export function LanguageSelect({ current }: { current: Locale }) {
             router.refresh();
           });
         }}
-        className="h-11 rounded-lg border border-input bg-background px-2 text-sm"
+        className="h-12 rounded-lg border border-input bg-background px-3 text-sm"
       >
         {LOCALES.map((locale) => (
           <option key={locale} value={locale}>

@@ -236,6 +236,8 @@ describe("the limit of 5 tries per 15 minutes (developer-rules.md rule 13)", () 
       await signIn({ username: other.username, password: "invented-wrong" });
       if (i < 4) await signIn({ username: manager.username, password: "invented-wrong" });
     }
+    expect(await attemptsOf(manager.username)).toHaveLength(4);
+    expect((await attemptsOf(manager.username)).every((attempt) => !attempt.succeeded)).toBe(true);
 
     expect((await signIn({ username: manager.username, password: manager.password })).ok).toBe(
       true,

@@ -7,13 +7,14 @@ import { connectionOptions } from "../../src/server/db/connection-options.mjs";
 
 // The invented user the browser tests sign in with (build-plan 0.6, Done when: "open a deep
 // link signed out, sign in, land on that page"). Written into the local database once, only if
-// missing; no real person (CLAUDE.md, Conventions).
+// missing; no real person (CLAUDE.md, Conventions). A Manager, not a Head, so `npm run
+// user:first-head` still works on the same database (spec review of 0.6).
 
 export const E2E_USER = {
   fullName: "Kamola Sinovova",
-  username: "e2e_head",
+  username: "e2e_manager",
   phone: "+998 90 000 99 01",
-  role: "HEAD",
+  role: "MANAGER",
   password: "invented-e2e-password",
 } as const;
 

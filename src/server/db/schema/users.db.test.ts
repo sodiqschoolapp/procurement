@@ -91,11 +91,83 @@ describe("users constraints (14-data-model.md: users; developer-rules.md rule 5)
     ["the username to upper case", sql`username = 'Invented_Changed'`, "users_username_check"],
     ["the full name to empty", sql`full_name = ''`, "users_full_name_check"],
     ["the phone to empty", sql`phone = ' '`, "users_phone_check"],
+    ["the username to empty", sql`username = ''`, "users_username_check"],
   ])("refuses an update of %s", async (_what, change, constraint) => {
     const id = await plainUser();
     expect(
       await refusalOf(db.execute(sql`update users set ${change} where id = ${id}`)),
     ).toMatchObject({ code: "23514", constraint });
+  });
+});
+
+describe("unique keys and foreign keys on update (D39; developer-rules.md rule 5)", () => {
+  it("refuses a username or an email changed to another user's", async () => {
+    const first = await plainUser();
+    const second = await plainUser();
+    const taken = await db.execute<{ username: string; email: string }>(
+      sql`select username, email from users where id = ${first}`,
+    );
+    const { username, email } = taken.rows[0]!;
+
+    expect(
+      await refusalOf(
+        db.execute(sql`update users set username = ${username} where id = ${second}`),
+      ),
+    ).toMatchObject({ code: "23505", constraint: "users_username_key" });
+    expect(
+      await refusalOf(db.execute(sql`update users set email = ${email} where id = ${second}`)),
+    ).toMatchObject({ code: "23505", constraint: "users_email_key" });
+  });
+
+  it("refuses a session token changed to another session's, and a session moved to a missing user", async () => {
+    const id = await plainUser();
+    await sessionFor(id, "invented_token_u1");
+    await sessionFor(id, "invented_token_u2");
+
+    expect(
+      await refusalOf(
+        db.execute(
+          sql`update sessions set token = 'invented_token_u1' where token = 'invented_token_u2'`,
+        ),
+      ),
+    ).toMatchObject({ code: "23505", constraint: "sessions_token_key" });
+    expect(
+      await refusalOf(
+        db.execute(
+          sql`update sessions set user_id = ${MISSING_USER} where token = 'invented_token_u2'`,
+        ),
+      ),
+    ).toMatchObject({ code: "23503", constraint: "sessions_user_id_users_id_fk" });
+  });
+
+  it("refuses an account changed onto a taken key, or moved to a missing user", async () => {
+    const first = await plainUser();
+    const second = await plainUser();
+    await accountFor(first, "invented_account_u1");
+    await accountFor(second, "invented_account_u2");
+    await accountFor(second, "invented_account_u3", "invented_provider");
+
+    expect(
+      await refusalOf(
+        db.execute(
+          sql`update accounts set account_id = 'invented_account_u1' where account_id = 'invented_account_u2'`,
+        ),
+      ),
+    ).toMatchObject({ code: "23505", constraint: "accounts_provider_id_account_id_key" });
+    expect(
+      await refusalOf(
+        db.execute(
+          sql`update accounts set provider_id = 'credential' where account_id = 'invented_account_u3'`,
+        ),
+      ),
+    ).toMatchObject({ code: "23505", constraint: "accounts_user_id_provider_id_key" });
+    expect(
+      await refusalOf(
+        db.execute(
+          sql`update accounts set user_id = ${MISSING_USER} where account_id = 'invented_account_u1'`,
+        ),
+      ),
+    ).toMatchObject({ code: "23503", constraint: "accounts_user_id_users_id_fk" });
   });
 });
 

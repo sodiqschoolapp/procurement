@@ -79,7 +79,7 @@ export function LoginForm({ returnPath }: { returnPath?: string }) {
       <button
         type="submit"
         disabled={pending}
-        className="h-12 w-full rounded-lg bg-primary font-medium text-primary-foreground disabled:opacity-60"
+        className="h-12 w-full rounded-lg bg-primary px-5 text-base font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
       >
         {pending ? t("submitting") : t("submit")}
       </button>
