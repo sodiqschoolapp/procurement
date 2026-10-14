@@ -68,7 +68,10 @@ export type ActionDefinition<Schema extends z.ZodType, Rows, Result> = {
     /** Reads the action's own `client_key UNIQUE` column. */
     find(tx: Transaction, clientKey: string): Promise<FirstResult<Result> | null>;
   };
-  /** Locks the rows the action changes. `null` when the record is gone: "Not found". */
+  /**
+   * Locks the rows the action changes. `null` when the record is gone: "Not found". Required for
+   * every action without `repeat` (a create).
+   */
   lock?(context: StepContext<z.output<Schema>>): Promise<Locked<Rows> | null>;
   /** Where the version lives; required when `lock` returns a version. */
   versionOf?: { table: PgTable; id: AnyPgColumn; version: AnyPgColumn };
@@ -142,6 +145,12 @@ export async function runAction<Schema extends z.ZodType, Rows, Result>(
       if (!target) throw new Refusal("not_found");
       const actor = await authorize(userId, definition.permission, target, tx);
 
+      // Every action but a create locks the rows it changes: without the lock there is no check
+      // of branch, owner and version under it (permission review of 0.8).
+      if (!definition.repeat && !definition.lock) {
+        throw new ActionDefinitionError(`${definition.name} has neither repeat nor lock.`);
+      }
+
       if (definition.repeat) {
         const clientKey = definition.repeat.clientKey(input);
         // Two calls with one key wait for each other here; the second then finds the first's row
@@ -187,12 +196,46 @@ export async function runAction<Schema extends z.ZodType, Rows, Result>(
     if (error instanceof Refusal) return failure(error.code);
     if (error instanceof ActionError) return failure(error.code);
     if (error instanceof AuthorizationError) return failure(error.kind);
-    // Name and message only: never the input, never a PostgreSQL `detail`, which holds the
-    // values of a refused row (plan of 0.8, decision 7).
-    const { name, message } = error instanceof Error ? error : { name: "Error", message: "" };
-    console.error(`Action ${definition.name} failed: ${name}: ${message}`);
+    console.error(`Action ${definition.name} failed: ${describeForLog(error)}`);
     return failure("unexpected");
   }
+}
+
+type DatabaseFailure = { code: string; constraint?: unknown };
+
+function databaseFailureOf(error: unknown): DatabaseFailure | null {
+  for (let current = error, depth = 0; current && depth < 5; depth += 1) {
+    if (typeof current !== "object") return null;
+    if (
+      "code" in current &&
+      typeof current.code === "string" &&
+      /^[0-9A-Z]{5}$/.test(current.code)
+    ) {
+      return current as DatabaseFailure;
+    }
+    current = "cause" in current ? current.cause : undefined;
+  }
+  return null;
+}
+
+/**
+ * What the log may hold of an error (plan of 0.8, decision 7; CLAUDE.md conventions: no
+ * personal data in a log). A database error gives its name, its PostgreSQL code and constraint
+ * only: Drizzle's message carries every bound value of the statement, and PostgreSQL's own
+ * message and `detail` can quote a value. Any other error gives its name and message.
+ */
+export function describeForLog(error: unknown): string {
+  const name = error instanceof Error ? error.name : typeof error;
+  const database = databaseFailureOf(error);
+  if (database) {
+    const constraint =
+      typeof database.constraint === "string" ? ` constraint ${database.constraint}` : "";
+    return `${name}: PostgreSQL ${database.code}${constraint}`;
+  }
+  if (error instanceof Error && !/^Failed query:/.test(error.message)) {
+    return `${name}: ${error.message}`;
+  }
+  return name;
 }
 
 /**

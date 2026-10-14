@@ -318,6 +318,34 @@ describe("one transaction per action (developer-rules.md rule 3)", () => {
     expect(JSON.stringify(logged.mock.calls)).not.toContain("Maxfiy nom");
   });
 
+  it("a refused SQL statement is logged without its values (CLAUDE.md conventions; plan, decision 7)", async () => {
+    const logged = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const { manager, branchId } = await managerWithBranch();
+    const taken = await created(manager, branchId);
+    const [row] = await db.select().from(sampleRecords);
+    const clientKey = newClientKey();
+
+    const result = await runAction(
+      createSample({
+        write: async () => {
+          // A second row with a taken client_key: the database refuses it, and Drizzle's error
+          // message would carry every bound value of the statement.
+          await db.insert(sampleRecords).values({ ...row!, id: undefined, title: "Maxfiy nom" });
+        },
+      }),
+      manager.id,
+      { clientKey, branchId, title: "Maxfiy nom" },
+    );
+    expect(result).toMatchObject({ ok: false, error: { code: "unexpected" } });
+    expect(logged).toHaveBeenCalledTimes(1);
+    const text = String(logged.mock.calls[0]);
+    expect(text).toContain("23505");
+    expect(text).toContain("sample_records_client_key_key");
+    for (const value of ["Maxfiy nom", row!.clientKey, clientKey, manager.id, branchId, taken.id]) {
+      expect(text).not.toContain(value);
+    }
+  });
+
   it("a refusal thrown by a step is returned with its code and rolls back", async () => {
     const { manager, branchId } = await managerWithBranch();
     const record = await created(manager, branchId);
@@ -500,7 +528,7 @@ describe("safe repeats by client_key (developer-rules.md rule 8)", () => {
           ok: false,
           error: { code: "not_found", messageKey: "errors.notFound" },
         });
-        expect(order).not.toContain("write");
+        expect(order).toEqual(["target", "repeat"]);
         // The first record stays beside the refusal (D40).
         expect(await rows()).toMatchObject([{ id: setUp.first.id, title: "Birinchi" }]);
       });
@@ -720,6 +748,46 @@ describe("the permission layer inside the wrapper (developer-rules.md rule 4)", 
     });
     expect(switchedOff).toMatchObject({ ok: false, error: { code: "forbidden" } });
     expect(await rows()).toEqual([]);
+  });
+});
+
+describe("the definition itself", () => {
+  it("an action that is neither a create (repeat) nor locks its rows is a mistake: unexpected, nothing runs past authorize()", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const { manager, branchId } = await managerWithBranch();
+    const record = await created(manager, branchId);
+    const order: string[] = [];
+    const unlocked = defineAction({ ...editSample({ order }), lock: undefined });
+
+    const result = await runAction(unlocked, manager.id, {
+      id: record.id,
+      version: 1,
+      title: "Yangi",
+    });
+    expect(result).toMatchObject({ ok: false, error: { code: "unexpected" } });
+    expect(order).toEqual(["target"]);
+    expect(await rows()).toMatchObject([{ title: "Sinov", version: 1 }]);
+  });
+});
+
+describe("own requests through the wrapper (03 permission matrix: request.edit, own requests)", () => {
+  it("a colleague Manager of the same branch is forbidden, reaches no lock and writes nothing", async () => {
+    const { manager, branchId } = await managerWithBranch();
+    const colleague = await insertUser("MANAGER", { branches: [branchId] });
+    const record = await created(manager, branchId);
+    const order: string[] = [];
+
+    const result = await runAction(editSample({ order }), colleague.id, {
+      id: record.id,
+      version: 1,
+      title: "Yangi",
+    });
+    expect(result).toEqual({
+      ok: false,
+      error: { code: "forbidden", messageKey: "errors.forbidden" },
+    });
+    expect(order).toEqual(["target"]);
+    expect(await rows()).toMatchObject([{ title: "Sinov", version: 1 }]);
   });
 });
 
