@@ -99,11 +99,13 @@ test("a value out of range is refused with a line under its field, and nothing i
   await expect(page.getByLabel(uz.settings.escalationHours)).toHaveValue(before);
 });
 
-test("a Manager opening /settings gets not found (decision 12)", async ({ page }) => {
-  await signIn(page, E2E_ROLES.MANAGER);
-  const response = await page.goto("/settings");
-  expect(response?.status()).toBe(404);
-});
+for (const role of ["MANAGER", "PRINCIPAL", "FINANCE"] as const) {
+  test(`${role} opening /settings gets not found (decision 12)`, async ({ page }) => {
+    await signIn(page, E2E_ROLES[role]);
+    const response = await page.goto("/settings");
+    expect(response?.status()).toBe(404);
+  });
+}
 
 test("leaving with unsaved changes asks first: by a menu link and by the back button (rule 6)", async ({
   page,
