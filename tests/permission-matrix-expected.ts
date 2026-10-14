@@ -225,6 +225,13 @@ export const EXPECTED_MATRIX: Record<Permission, Expected> = {
     PRINCIPAL: "yes",
     FINANCE: "yes",
   },
+  "file.upload": {
+    row: "Upload a file before it is attached to anything (not in 03: plan of 0.12, decision 4, Look first)",
+    HEAD: "yes",
+    MANAGER: "yes",
+    PRINCIPAL: "yes",
+    FINANCE: "yes",
+  },
 };
 
 export type Place = "own" | "other";

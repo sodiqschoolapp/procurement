@@ -308,4 +308,22 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - An action whose success changes the bell revalidates the layout in its `"use server"` wrapper (`revalidatePath("/", "layout")`); `router.push()` and `router.refresh()` at once can leave the address behind the page.
 - A link is printable ASCII only (CHECK and `isInternalLink()`): PostgreSQL and JavaScript call different Unicode characters "space".
 
-The next task is 0.12.
+## 0.12 File storage (14.10.2026, pull request #25)
+
+**Built**
+- `docker-compose.yml` service `storage`: SeaweedFS 4.48 (S3 API) on `127.0.0.1:8333`, invented keys; `npm run storage:bucket`. Migration `0005_files` with the trigger `files_guard` (no UPDATE, DELETE, TRUNCATE).
+- `src/server/storage.ts` (client on first use), `src/server/files/process.ts` (160/1200 px JPEG, HEIC through heic-decode, pixel limit before decoding), `src/domain/files.ts` (sniffer, limits, shrink target).
+- `POST /files` and `GET /files/<id>/<small|large|original>`, outside the proxy (401 for a signed-out visitor); permission `file.upload`; `uploadFile`, `fileForDownload`; `src/components/files/upload.ts` (browser shrink and upload).
+- The wrapper takes a global create with `repeat` (matched by its maker).
+
+**Left out, and the task that brings it**
+- Attaching files and each record's download check: 1.x (catalog photos, suggestions), 3.x (receipts), 4.x (money documents). The photo field and its Playwright test of the browser shrink: the first task with one. The test copy's R2 bucket: 0.15.
+
+**What the next sessions must know**
+- For 1.x, 3.x, 4.x: an attaching action takes only a file the caller uploaded and no record holds, checked under its lock; adds a unique constraint on its file column; adds an owner to `FILE_OWNERS` (`src/server/files/owners.ts`) returning the permission and target that see the record now (a Draft: `request.edit` with its owner), with a database test. Read the contract at the top of that file.
+- Upload from a screen: `uploadFile(file, purpose, clientKey)` of `src/components/files/upload.ts`; `purpose` `photo` or `document` (PDF allowed); the attaching action checks the type fits its field. Show a file with `/files/<id>/small` or `/large`.
+- Tests: `tests/helpers/files.ts` makes invented pictures; the tests' buckets are `procurement-test` and `procurement-e2e`, their S3_* values from `tests/helpers/local-storage.ts`. The local `.env` needs the S3_* lines of README.md for `npm run dev`.
+- Trap: a production build sets a `__Secure-` cookie, which a browser keeps over http only on `localhost`, not `127.0.0.1`.
+- Trap: sharp's prebuilt build reads only AVIF of the HEIF family; HEIC goes through heic-decode.
+
+The next task is 0.13.

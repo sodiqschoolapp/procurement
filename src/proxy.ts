@@ -24,8 +24,11 @@ export function proxy(request: NextRequest): NextResponse {
 }
 
 export const config = {
-  // Every path except Next.js's own files and the files of public/.
+  // Every path except Next.js's own files, the files of public/, and the upload and download
+  // routes of /files: they answer a signed-out visitor with 401 themselves, as a redirect is no
+  // answer for an image or an upload, and an upload body must not pass the proxy's 10 MB body
+  // buffer (plan of 0.12, decision 7, Look first).
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|brand/|.*\\.(?:svg|png|jpg|jpeg|webp|ico|txt|webmanifest)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|brand/|files(?:/|$)|.*\\.(?:svg|png|jpg|jpeg|webp|ico|txt|webmanifest)$).*)",
   ],
 };

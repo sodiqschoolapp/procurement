@@ -460,6 +460,37 @@ Choices made during the build:
 - The unsaved-changes guard counts the dirty guards on the page (`hasUnsavedChanges()`), which the bell reads.
 - `NOTIFICATIONS_PAGE_SIZE` lives in `src/domain/notifications.ts`: the registry test reads every export of a queries file as a query.
 
+### 0.12 File storage (14.10.2026)
+
+The plan's decisions as the plan review of 14.10.2026 confirmed them (corrections 1 to 4 applied), and those of the build. The Look first items come first.
+
+1. **Look first.** SeaweedFS (`chrislusf/seaweedfs:4.48`, Apache-2.0) replaces MinIO on the developer's computer and in CI: MinIO's images are gone from Docker Hub, `quay.io/minio/minio` answers 403 from a cloud session, and the project is archived. The app speaks S3 only, so R2 in the cloud is unchanged. Proposed `/spec-change`: `13-technology.md`, row Files, "MinIO on the developer's computer" → "SeaweedFS (S3 API) on the developer's computer", and row Running it, "Docker Compose with MinIO" → "Docker Compose with SeaweedFS"; the owner also changes `CLAUDE.md`'s stack line ("Cloudflare R2 (MinIO locally)" → "Cloudflare R2 (SeaweedFS locally)"), the 0.12 Build line, and closes D18 naming SeaweedFS.
+2. **Look first.** New dependency `@aws-sdk/client-s3` (Apache-2.0): the S3 client for SeaweedFS and R2.
+3. **Look first.** New dependency `heic-decode` (ISC) with `libheif-js` (LGPL-3.0, used unmodified): sharp's prebuilt build reads only AVIF of the HEIF family. `sharp` becomes a direct dependency (on the stack line).
+4. **Look first.** Permission `file.upload`: global, all four roles. Not a row of `03`; an upload shows nothing to anyone, and each attaching action checks its own row. The Principal holds it too: the download route's gate asks it of every reader, and a Principal will see files attached to the requests of the branch (permission review, Should fix 4, kept with this reason). Proposed `/spec-change` of `03`, Permission matrix, new row: "Upload a file before it is attached | Yes | Yes | Yes | Yes".
+5. **Look first.** A file no record holds goes to its uploader only; every refusal is 404. A record that holds a file decides through its owner in `src/server/files/owners.ts`, under the contract written there (a record's current visibility, one holder per file, attach only one's own unheld upload; permission review, Should fix 1 to 3).
+6. **Look first.** The action wrapper takes a global create with `repeat`: its first result goes back to its maker alone (`branchId: null`). The wrapper test that called this a definition error is replaced by two tests (maker gets the first result; another user gets Not found), because the decision changed.
+7. **Look first.** `/files` and `/files/…` are outside the proxy: the routes answer a signed-out visitor with 401, and an upload does not pass the proxy's 10 MB body buffer.
+8. The original of a photo is not kept; the 160 px and 1200 px versions are JPEG (react-pdf draws JPEG and PNG only); a PDF is kept as it is. `mime` and `size_bytes` are those of the upload.
+9. `client_key` is a column of `files`; the repeat is checked inside the wrapper only, so a repeat redoes the image work.
+10. The upload is a Route Handler that writes the row through `runAction`.
+11. 10 MB is 10 485 760 bytes, for photos and PDFs alike.
+12. The browser redraws a photo above 2 MB or 2400 px to at most 2400 px, JPEG 0.85.
+13. The bucket is made by `npm run storage:bucket` and the test setups, never at run time; `ci.yml` is unchanged (correction 1).
+14. The local storage keys are invented and public, on `127.0.0.1` only.
+15. Objects are written first, then the row; objects of a refused row stay, reachable by no address.
+
+Choices made during the build:
+
+- A picture is refused as `not_an_image` when it declares more than 268 402 689 pixels, read from its header before any decoding (correction 3): sharp's `metadata()`, and heic-decode's `all()` for a HEIC (it reads the size without decoding; checked: about 1 MB for a file declaring 20 000 × 20 000).
+- The HEIC brands are exactly those heic-decode accepts (`heic`, `heix`, `hevc`, `hevx`, `mif1`, `msf1`); the plan also named `heim` and `heis`, which heic-decode would not decode (spec review, Should fix 1).
+- A transparent PNG or WebP turns white in its JPEG versions.
+- The browser's file name is trimmed and cut to 255 characters (by characters, not UTF-16 units); an empty one becomes `file`.
+- `fileForDownload` calls `authorize()` before it reads the row (permission review, Should fix 5).
+- The tests' buckets are `procurement-test` (Vitest) and `procurement-e2e` (Playwright); their S3_* values come from `tests/helpers/local-storage.ts` when the environment has none.
+- heic-decode's types are written in `src/server/files/heic-decode.d.ts` rather than adding `@types/heic-decode`.
+- The HEIC test picture (1600 × 1200, two coloured blocks) was made once with pillow-heif and is committed in `tests/helpers/files/`; sharp writes no HEIC.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

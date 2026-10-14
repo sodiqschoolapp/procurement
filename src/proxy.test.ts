@@ -1,7 +1,8 @@
+import { unstable_doesMiddlewareMatch } from "next/experimental/testing/server";
 import { NextRequest } from "next/server";
 import { describe, expect, it } from "vitest";
 
-import { proxy } from "./proxy";
+import { config, proxy } from "./proxy";
 import { RETURN_PATH_HEADER } from "./server/auth/return-path";
 import { SECURE_SESSION_COOKIE, SESSION_COOKIE } from "./server/auth/session-cookie";
 
@@ -50,5 +51,21 @@ describe("the proxy (edge-cases/system.md: back to the same page after sign-in)"
 
     expect(location).not.toBeNull();
     expect(new URL(location!).pathname).toBe("/login");
+  });
+});
+
+describe("the proxy's matcher (plan of 0.12, decision 7, Look first)", () => {
+  const matches = (path: string) =>
+    unstable_doesMiddlewareMatch({ config, url: `http://localhost:3000${path}` });
+
+  it("leaves the upload and download routes of /files to themselves", () => {
+    expect(matches("/files")).toBe(false);
+    expect(matches("/files/00000000-0000-4000-8000-000000000001/large")).toBe(false);
+  });
+
+  it("still covers the pages, also one whose name starts with files", () => {
+    expect(matches("/requests")).toBe(true);
+    expect(matches("/filesystem")).toBe(true);
+    expect(matches("/")).toBe(true);
   });
 });

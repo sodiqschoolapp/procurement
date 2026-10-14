@@ -882,14 +882,6 @@ describe("the global form (plan of 0.10b, decision 4; review of the plan, correc
           },
         }),
     },
-    {
-      name: "GLOBAL_TARGET with repeat",
-      action: (order: string[]) =>
-        defineAction({
-          ...globalSample(order),
-          repeat: { clientKey: () => newClientKey(), find: async () => null },
-        }),
-    },
   ];
 
   for (const { name, action } of mistakes) {
@@ -908,6 +900,99 @@ describe("the global form (plan of 0.10b, decision 4; review of the plan, correc
       expect(await rows()).toEqual([]);
     });
   }
+});
+
+const globalCreateInput = globalInput.extend({ clientKey: z.string().refine(isClientKey) });
+
+/**
+ * A global create with a safe repeat, as the file upload of 0.12 (plan of 0.12, decision 6,
+ * Look first): the first result is found by its client key and has no branch.
+ */
+function globalCreate(order: string[] = []) {
+  return defineAction({
+    name: "globalCreate",
+    permission: "profile.edit",
+    input: globalCreateInput,
+    async target() {
+      order.push("target");
+      return GLOBAL_TARGET;
+    },
+    repeat: {
+      clientKey: (input) => input.clientKey,
+      async find(tx, clientKey) {
+        order.push("repeat");
+        const [row] = await tx
+          .select()
+          .from(sampleRecords)
+          .where(eq(sampleRecords.clientKey, clientKey));
+        return row
+          ? { result: { id: row.id, title: row.title }, userId: row.ownerId, branchId: null }
+          : null;
+      },
+    },
+    async write({ tx, input, userId }) {
+      order.push("write");
+      const [row] = await tx
+        .insert(sampleRecords)
+        .values({
+          branchId: input.branchId,
+          ownerId: userId,
+          clientKey: input.clientKey,
+          status: "open",
+          version: 1,
+          title: input.title,
+          createdAt: now(),
+        })
+        .returning({ id: sampleRecords.id, title: sampleRecords.title });
+      return row!;
+    },
+  });
+}
+
+describe("a global create with repeat (developer-rules.md rule 8; plan of 0.12, decision 6, Look first)", () => {
+  // Replaces the test that called a global target with repeat a definition error: the wrapper's
+  // comment left it to the first task with one, and 0.12's upload is that task.
+  it("the same client_key twice from its maker writes once and returns the first result", async () => {
+    const branch = await insertBranch();
+    const finance = await insertUser("FINANCE", { branches: [branch.id] });
+    const clientKey = newClientKey();
+
+    const first = await runAction(globalCreate(), finance.id, {
+      clientKey,
+      branchId: branch.id,
+      title: "Birinchi",
+    });
+    expectOk(first);
+    const order: string[] = [];
+    const second = await runAction(globalCreate(order), finance.id, {
+      clientKey,
+      branchId: branch.id,
+      title: "Ikkinchi",
+    });
+    expect(second).toEqual(first);
+    expect(order).toEqual(["target", "repeat"]);
+    expect(await rows()).toMatchObject([{ ownerId: finance.id, title: "Birinchi" }]);
+  });
+
+  it("the same client_key from another user is Not found and writes nothing", async () => {
+    const branch = await insertBranch();
+    const maker = await insertUser("MANAGER", { branches: [branch.id] });
+    const other = await insertUser("MANAGER", { branches: [branch.id] });
+    const clientKey = newClientKey();
+    expectOk(
+      await runAction(globalCreate(), maker.id, { clientKey, branchId: branch.id, title: "Sinov" }),
+    );
+
+    const order: string[] = [];
+    const result = await runAction(globalCreate(order), other.id, {
+      clientKey,
+      branchId: branch.id,
+      title: "Boshqa",
+    });
+    expect(result).toMatchObject({ ok: false, error: { code: "not_found" } });
+    expect(order).toEqual(["target", "repeat"]);
+    expect(await rows()).toMatchObject([{ ownerId: maker.id, title: "Sinov" }]);
+  });
 });
 
 describe("own requests through the wrapper (03 permission matrix: request.edit, own requests)", () => {
