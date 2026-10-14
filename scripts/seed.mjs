@@ -2,6 +2,8 @@
 // creates 2 branches, one user per role, …, so every phase can be clicked through"). The command
 // line is scripts/db-seed.mjs. Every name, phone and address here is invented (CLAUDE.md,
 // Conventions). Later tasks extend the seed with their own rows.
+import { parse } from "pg-connection-string";
+
 import { insertAuditRow } from "../src/server/audit-row.mjs";
 import { insertPasswordUser } from "../src/server/auth/password-user.mjs";
 import { FIRST_HEAD_LOCK } from "./first-head.mjs";
@@ -54,6 +56,41 @@ export const SEED_USERS = [
     branches: ["CHL", "YUN"],
   },
 ];
+
+/** The hosts of this machine: the local database and CI's (build-plan 0.15). */
+const LOCAL_HOSTS = new Set(["127.0.0.1", "localhost", "::1"]);
+
+/** The one value of `SEED_DEMO_DATA` that lets the seed write to a hosted database. */
+export const SEED_DEMO_DATA_ON = "yes";
+
+/**
+ * Whether the seed may write to the database of `connectionString` (build-plan 0.15; the 0.14
+ * permission review, Should fix 1; plan of 0.15, decision 3, Look first). A database on this
+ * machine is allowed; any other only with `SEED_DEMO_DATA` exactly `yes`, which the test copy
+ * sets and production never does, so demo users of known roles never reach the live system.
+ * The host is read with the parser `pg` itself uses, so a `?host=` elsewhere counts, and an
+ * address with no host (which `pg` would send to `PGHOST`) is not local.
+ * @param {string} connectionString
+ * @param {Record<string, string | undefined>} env
+ * @returns {{ allowed: true } | { allowed: false, reason: string }} the reason names the
+ *   variable, never the address
+ */
+export function seedTargetAllowed(connectionString, env) {
+  let host = "";
+  try {
+    host = parse(connectionString).host ?? "";
+  } catch {
+    host = "";
+  }
+  if (LOCAL_HOSTS.has(host)) return { allowed: true };
+  if (env.SEED_DEMO_DATA === SEED_DEMO_DATA_ON) return { allowed: true };
+  return {
+    allowed: false,
+    reason:
+      "Refused: the database of DATABASE_URL is not on this machine, and SEED_DEMO_DATA is not yes. " +
+      "The demo users are written to a hosted database only on the test copy (docs/deploy.md). Nothing was written.",
+  };
+}
 
 /**
  * The four passwords from `env`, or a refusal that names every missing or empty variable and
