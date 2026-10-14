@@ -15,11 +15,11 @@ The app and the database are on DigitalOcean, in its Frankfurt data centre, and 
 | 4 | Domain name | `ombor.sodiqschool.uz` for the app and `ombor-test.sodiqschool.uz` for the test copy, as sub-addresses of the school's own domain. | Free | Yes |
 | 5 | Claude plan with Claude Code | Builds and later changes the app. | You already have it | Yes |
 | 6 | GitHub account | Keeps the code and its history. DigitalOcean reads new versions from it. | Free plan | Yes |
-| 7 | Test copy of the app: a second 1 GiB container and a development database | New versions are tried here before staff see them. | $10 + $7 per month, only while it runs | Yes, from task 0.15 until go-live: the build plan deploys every merged task here. It is switched off after go-live and can be switched on again for a period when the app is changed later. |
+| 7 | Test copy of the app: a second 1 GiB container and a development database | New versions are tried here before staff see them. | $10 + $7 per month, only while it runs | Yes, from task 0.16 until go-live: the build plan deploys every merged task here. It is switched off after go-live and can be switched on again for a period when the app is changed later. |
 | 8 | Error and uptime alerts, for example Sentry and UptimeRobot | Tell you when something breaks before a user calls. | Free plans are enough to start | Optional |
 | 9 | Next.js, PostgreSQL and every library in section 13 | The building blocks. | Free, open source | Yes |
 
-- **Total, required:** $25 per month once the app is live, about $300 per year. While the app is being built, from task 0.15, only the test copy runs: $17 per month. Both run together, $42 per month, only for the short time between setting up the real app (task 9.4) and switching the test copy off after go-live.
+- **Total, required:** $25 per month once the app is live, about $300 per year. While the app is being built, from task 0.16, only the test copy runs: $17 per month. Both run together, $42 per month, only for the short time between setting up the real app (task 9.4) and switching the test copy off after go-live.
 - **Why this size.** 1 GiB for the app and 1 GiB for the database is sized for 20 to 30 users, with room to spare for making PDFs and handling photos.
 - **Paying.** DigitalOcean takes Visa, Mastercard and PayPal. The card must allow international online payments. Cloudflare needs its own free account.
 - **Growing.** If the app ever feels slow or restarts, move the container to 2 GiB in the DigitalOcean control panel. That costs $25 instead of $10 and needs no rebuilding.
