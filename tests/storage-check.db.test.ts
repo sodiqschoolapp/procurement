@@ -2,7 +2,7 @@ import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { describe, expect, it } from "vitest";
 
 import { s3ClientOf, storageConfigOf } from "../scripts/ensure-bucket.mjs";
-import { storageCheck } from "../scripts/storage-check.mjs";
+import { readObject, storageCheck } from "../scripts/storage-check.mjs";
 import { TEST_BUCKET, testStorageEnv } from "./helpers/local-storage";
 
 // build-plan 0.15 ("a photo uploaded there is shown again"); 13-technology.md, Files (S3 storage,
@@ -26,21 +26,9 @@ describe("the storage check (build-plan 0.15; 13-technology.md, Files)", () => {
   });
 
   it("says when the picture is not found when read back (a key never written)", async () => {
+    // The check's own read reaches SeaweedFS, for a key that was never written.
     const line = await storageCheck(ENV, new Date("2031-04-02T05:01:00Z"), {
-      read: async (client, bucket, key) => {
-        const { GetObjectCommand } = await import("@aws-sdk/client-s3");
-        try {
-          await client.send(new GetObjectCommand({ Bucket: bucket, Key: `${key}.never-written` }));
-          return new Uint8Array();
-        } catch (error) {
-          if (
-            (error as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode === 404
-          ) {
-            return null;
-          }
-          throw error;
-        }
-      },
+      read: (client, bucket, key) => readObject(client, bucket, `${key}.never-written`),
     });
 
     expect(line).toBe("storage failed: the picture written was not found when read back.");
@@ -73,9 +61,7 @@ describe("the storage check (build-plan 0.15; 13-technology.md, Files)", () => {
     delete rest.S3_SECRET_ACCESS_KEY;
     const line = await storageCheck(rest, MOMENT);
 
-    expect(line).toBe(
-      'storage failed: S3_SECRET_ACCESS_KEY is not set. Put it into the local .env file (README.md, "Run it").',
-    );
+    expect(line).toBe("storage failed: S3_SECRET_ACCESS_KEY is not set.");
     holdsNoValue(line);
   });
 

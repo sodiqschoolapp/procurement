@@ -17,7 +17,7 @@ import { s3ClientOf, storageConfigOf } from "./ensure-bucket.mjs";
 export const CHECK_WIDTH = 160;
 
 /** The bytes of an object, or null when it is not there. */
-async function readObject(client, bucket, key) {
+export async function readObject(client, bucket, key) {
   try {
     const found = await client.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
     if (!found.Body) return null;
@@ -63,8 +63,11 @@ export async function storageCheck(env, moment, options = {}) {
   try {
     config = storageConfigOf(env);
   } catch (error) {
-    // storageConfigOf names the variable only.
-    return `storage failed: ${error instanceof Error ? error.message : String(error)}`;
+    // storageConfigOf names the variable only; its hint about the local .env is left out, as the
+    // owner runs this on the test copy, where docs/deploy.md says where the variable is typed.
+    const message = error instanceof Error ? error.message : String(error);
+    const missing = /^(S3_[A-Z_]+) is not set\./.exec(message);
+    return `storage failed: ${missing ? `${missing[1]} is not set.` : message}`;
   }
   const read = options.read ?? readObject;
   const client = s3ClientOf(config);
