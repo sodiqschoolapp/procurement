@@ -61,8 +61,9 @@ function shown(value: AuditJson | null, kind: HistoryValueKind, t: Translate, f:
     if (typeof kind === "object" && typeof value === "string") {
       return textOr(t, `${kind.enum}.${value}`, "audit.unknownValue");
     }
-    if (kind === "text") {
-      return typeof value === "string" ? value : JSON.stringify(value);
+    // An object or array is never shown as its JSON (review of 0.9).
+    if (kind === "text" && (typeof value === "string" || typeof value === "number")) {
+      return String(value);
     }
   } catch {
     // A value the formatter refuses is shown as unknown, never as its raw text.

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import * as z from "zod";
 
 import { audit } from "@/server/audit";
 import { db } from "@/server/db/client";
@@ -15,15 +16,17 @@ import { listChangeHistory } from "./change-history";
 const ENTITY_ID = "00000000-0000-4000-8000-0000000000e1";
 
 async function write(actor: InsertedUser, entity: string, entityId: string, name: string) {
-  await audit(db, {
-    actorId: actor.id,
-    action: "user.create",
-    entity,
-    entityId,
-    before: null,
-    after: { name },
-    at: advanceClock({ minutes: 1 }),
-  });
+  await audit(
+    { tx: db, userId: actor.id },
+    {
+      action: "user.create",
+      entity,
+      entityId,
+      before: null,
+      after: { name },
+      at: advanceClock({ minutes: 1 }),
+    },
+  );
 }
 
 describe("listChangeHistory (04-catalogs.md rule 9)", () => {
@@ -69,16 +72,18 @@ describe("listChangeHistory (04-catalogs.md rule 9)", () => {
     const head = await insertUser("HEAD");
     const entityId = "settings_key_paged";
     for (let index = 0; index < 53; index += 1) {
-      await audit(db, {
-        actorId: head.id,
-        action: "user.create",
-        entity: "settings",
-        entityId,
-        before: null,
-        after: { index },
-        // Ten rows share each moment, so the order also rests on the id.
-        at: new Date(Date.UTC(2031, 3, 1, 4, Math.floor(index / 10))),
-      });
+      await audit(
+        { tx: db, userId: head.id },
+        {
+          action: "user.create",
+          entity: "settings",
+          entityId,
+          before: null,
+          after: { index },
+          // Ten rows share each moment, so the order also rests on the id.
+          at: new Date(Date.UTC(2031, 3, 1, 4, Math.floor(index / 10))),
+        },
+      );
     }
 
     const first = await listChangeHistory(head.id, { entity: "settings", entityId });
@@ -103,11 +108,13 @@ describe("listChangeHistory (04-catalogs.md rule 9)", () => {
 
     await expect(
       listChangeHistory(head.id, { entity: "users; drop table users", entityId: ENTITY_ID }),
-    ).rejects.toThrow();
-    await expect(listChangeHistory(head.id, { entity: "users", entityId: " " })).rejects.toThrow();
+    ).rejects.toBeInstanceOf(z.ZodError);
+    await expect(
+      listChangeHistory(head.id, { entity: "users", entityId: " " }),
+    ).rejects.toBeInstanceOf(z.ZodError);
     await expect(
       listChangeHistory(head.id, { entity: "users", entityId: ENTITY_ID, page: 0 }),
-    ).rejects.toThrow();
+    ).rejects.toBeInstanceOf(z.ZodError);
   });
 });
 

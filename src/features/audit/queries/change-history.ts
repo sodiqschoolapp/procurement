@@ -9,6 +9,10 @@ import { auditLog, users } from "@/server/db/schema";
 // build-plan 0.9). Head only, through "Manage catalogs, users, branches, settings": every page
 // that shows it is the Head's (plan of 0.9, decision 3, Look first). Filtered on both `entity`
 // and `entity_id` in the SQL, newest first, 50 a page (developer-rules.md rule 12).
+// It has no branch filter, because the Head sees every branch. Before a permission another role
+// holds is given to it, it needs branchFilter() on the audited record's branch: otherwise a
+// branch's history would show to another branch (developer-rules.md rule 4; permission review
+// of 0.9).
 
 const CHANGE_HISTORY_PAGE_SIZE = 50;
 

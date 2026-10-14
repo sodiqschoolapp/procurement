@@ -9,6 +9,7 @@ import { db } from "@/server/db/client";
 import { auditLog } from "@/server/db/schema";
 
 import { insertBranch } from "../../tests/helpers/branches";
+import { refusalOf } from "../../tests/helpers/database-error";
 import { setClock } from "../../tests/helpers/clock";
 import { type InsertedUser, insertUser } from "../../tests/helpers/users";
 import { defineAction, runAction } from "./action";
@@ -47,7 +48,7 @@ afterEach(() => {
 const RENAME = "sample.rename" as AuditAction;
 
 type Hooks = {
-  /** Replaces the audit entry's actor: an actor that does not exist reaches the foreign key. */
+  /** Replaces the wrapper's user given to audit(): one that does not exist reaches the foreign key. */
   actorId?: string;
   /** Extra fields of `after`: a secret field is refused by audit(). */
   extraAfter?: Record<string, unknown>;
@@ -86,15 +87,17 @@ function renameSample(hooks: Hooks = {}) {
     },
     async history({ tx, input, userId, locked }) {
       const old = locked!.rows;
-      await audit(tx, {
-        actorId: hooks.actorId ?? userId,
-        action: RENAME,
-        entity: "sample_accounts",
-        entityId: input.id,
-        before: { name: old.name, limitAmount: old.limitAmount },
-        after: { name: input.name, limitAmount: input.limitAmount, ...hooks.extraAfter },
-        at: now(),
-      });
+      await audit(
+        { tx, userId: hooks.actorId ?? userId },
+        {
+          action: RENAME,
+          entity: "sample_accounts",
+          entityId: input.id,
+          before: { name: old.name, limitAmount: old.limitAmount },
+          after: { name: input.name, limitAmount: input.limitAmount, ...hooks.extraAfter },
+          at: now(),
+        },
+      );
     },
     async notify() {
       await hooks.notify?.();
@@ -226,29 +229,36 @@ describe("audit(): what the row holds (build-plan 0.9; developer-rules.md rules 
     const account = await sampleAccount();
 
     await db.transaction((tx) =>
-      audit(tx, {
-        actorId: head.id,
-        action: "user.create",
-        entity: "sample_accounts",
-        entityId: account.id,
-        before: null,
-        after: { name: account.name },
-        at,
-      }),
+      audit(
+        { tx, userId: head.id },
+        {
+          action: "user.create",
+          entity: "sample_accounts",
+          entityId: account.id,
+          before: null,
+          after: { name: account.name },
+          at,
+        },
+      ),
     );
     const write = db.transaction((tx) =>
-      audit(tx, {
-        actorId: head.id,
-        action: "user.create",
-        entity: "sample_accounts",
-        entityId: account.id,
-        before: null,
-        after: null,
-        at,
-      }),
+      audit(
+        { tx, userId: head.id },
+        {
+          action: "user.create",
+          entity: "sample_accounts",
+          entityId: account.id,
+          before: null,
+          after: null,
+          at,
+        },
+      ),
     );
 
-    await expect(write).rejects.toThrow();
+    expect(await refusalOf(write)).toMatchObject({
+      code: "23514",
+      constraint: "audit_log_before_or_after_check",
+    });
     expect(await auditRowsOf(account.id)).toMatchObject([
       { before: null, after: { name: "Invented Account" }, createdAt: at },
     ]);

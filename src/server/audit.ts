@@ -11,7 +11,6 @@ import { insertAuditRow } from "./audit-row.mjs";
 // transaction and checks no permission: the action did (plan of 0.9).
 
 export type AuditEntry = {
-  actorId: string;
   action: AuditAction;
   /** The table name: `users`, `settings`. */
   entity: string;
@@ -35,10 +34,20 @@ function bound(text: string, values: readonly unknown[]): SQL {
   );
 }
 
-/** Writes one audit row with the executor it is given: the action's transaction. */
-export async function audit(tx: Executor, entry: AuditEntry): Promise<void> {
+/**
+ * Writes one audit row with the action's transaction. The actor is the user the wrapper
+ * authorized (`WriteContext.userId`), never a field the action builds: no row is written in
+ * another person's name (03-roles-and-permissions.md, Manager rights: "with the Head's name";
+ * permission review of 0.9).
+ */
+export async function audit(
+  context: { tx: Executor; userId: string },
+  entry: AuditEntry,
+): Promise<void> {
+  const { tx, userId } = context;
   await insertAuditRow((text, values) => tx.execute(bound(text, values)), {
     ...entry,
+    actorId: userId,
     before: entry.before === null ? null : auditValue(entry.before),
     after: entry.after === null ? null : auditValue(entry.after),
   });

@@ -17,3 +17,4 @@ Read first, under `docs/spec/`: `edge-cases/developer-rules.md` rules 3, 4, 8, 9
 - Each new action is added to the permission-matrix test in the same task.
 - A log never holds a database error's message: Drizzle's carries every bound value of the statement, and PostgreSQL's can quote one. Log through `describeForLog()` of `src/server/action.ts` (name, PostgreSQL code and constraint only). (Review of 0.8.)
 - An action that is not a create has a `lock` step: the check of branch, owner and version runs under the lock. Each action's `target` reads branch and owner from the database, never from the input (a create excepted).
+- `audit()` takes the actor from the wrapper: `audit({ tx, userId }, entry)` with the step's `WriteContext`, never an actor id the action builds. (Review of 0.9.)

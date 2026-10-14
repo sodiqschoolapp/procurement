@@ -97,7 +97,7 @@ describe("the change-history list (04-catalogs.md rule 9)", () => {
             ...EDIT,
             action: "branch.rename",
             before: null,
-            after: { mysteryField: "plain", locale: "xx", limit: "12.5" },
+            after: { mysteryField: "plain", locale: "xx", limit: "12.5", nested: { amount: "5" } },
           },
         ],
         FIELDS,
@@ -110,6 +110,8 @@ describe("the change-history list (04-catalogs.md rule 9)", () => {
     expect(text).toContain("Change history After (unknown value)");
     expect(text).toContain("What After (unknown value)");
     expect(text).not.toContain("branch.rename");
+    expect(text).toContain("Other field After (unknown value)");
+    expect(text).not.toContain("amount");
   });
 
   it("shows a moment and a date by their kind, and an empty value as such", () => {
