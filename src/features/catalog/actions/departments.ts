@@ -67,3 +67,8 @@ const catalog = defineCatalogActions<DepartmentFields>({
 export const createDepartment = catalog.create;
 export const updateDepartment = catalog.update;
 export const setDepartmentActive = catalog.setActive;
+
+/** The create's write and history steps, and the table's lock, for an Excel import (plan of 1.10). */
+export const insertDepartment = catalog.insert;
+export const recordDepartmentCreate = catalog.recordCreate;
+export const lockDepartments = catalog.lockTable;

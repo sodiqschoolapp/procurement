@@ -110,7 +110,7 @@ const columns = {
   isActive: productVariants.isActive,
 };
 
-type Created = {
+export type Created = {
   entry: SavedSubtype;
   /** The default row's fields before it was made real; null for a new row. */
   fromDefault: { name: string; referencePrice: bigint | null } | null;
@@ -154,121 +154,153 @@ export const createSubtype = defineAction({
     },
   },
   async write({ tx, input, userId }): Promise<Created> {
-    // The table's lock first, as every subtype write (refuseTaken relies on it; plan review,
-    // Should fix 1), then the product FOR UPDATE, and only then is has_variants read, so two
-    // first subtypes of one product cannot both turn the default real.
-    await catalog.lockTable(tx);
-    const [product] = await tx
-      .select({ isActive: products.isActive, hasVariants: products.hasVariants })
-      .from(products)
-      .where(eq(products.id, input.productId))
-      .for("update");
-    if (!product) throw new ActionError("invalid_input", { productId: "errors.field.notAllowed" });
-    if (!product.isActive) {
-      throw new ActionError("invalid_input", { productId: "errors.field.inactive" });
-    }
-    if (input.photoFileId) await refusePhoto(tx, userId, input.photoFileId);
+    return addSubtype(tx, userId, input, input.clientKey);
+  },
+  async history({ tx, userId }, created) {
+    await recordSubtypeCreate(tx, userId, created);
+  },
+});
 
-    if (product.hasVariants) {
-      await catalog.refuseTaken(tx, { name: input.name }, null, input.productId);
-      const [entry] = await tx
-        .insert(productVariants)
-        .values({
-          productId: input.productId,
-          name: input.name,
-          photoFileId: input.photoFileId,
-          referencePrice: input.referencePrice,
-          clientKey: input.clientKey,
-          createdAt: now(),
-        })
-        .returning(columns);
-      if (entry!.referencePrice !== null) {
-        await recordHeadPrice(tx, {
-          variantId: entry!.id,
-          price: entry!.referencePrice,
-          setBy: userId,
-        });
-      }
-      return { entry: entry!, fromDefault: null };
-    }
+/** What a new subtype is made from: its product and the fields of the create's input. */
+type SubtypeInput = {
+  productId: string;
+  name: string;
+  referencePrice: bigint | null;
+  photoFileId: string | null;
+};
 
-    const [held] = await tx
-      .select({
-        id: productVariants.id,
-        name: productVariants.name,
-        price: productVariants.referencePrice,
-      })
-      .from(productVariants)
-      .where(
-        and(eq(productVariants.productId, input.productId), eq(productVariants.isDefault, true)),
-      )
-      .for("update");
-    if (firstSubtypePriceRefused(held!.price, input.referencePrice)) {
-      throw new ActionError("invalid_input", { referencePrice: LOCKED });
-    }
-    // The default row itself is left out, so "Default" is a valid first name (decision 6).
-    await catalog.refuseTaken(tx, { name: input.name }, held!.id, input.productId);
+/**
+ * The body of createSubtype's write step, shared with an Excel import (plan of 1.10; progress 1.8,
+ * "For 1.10"): the first subtype of a product turns its default real, the others are new rows. An
+ * import passes `clientKey` null (spec review of the plan of 1.10, Should fix 1).
+ */
+export async function addSubtype(
+  tx: Executor,
+  userId: string,
+  input: SubtypeInput,
+  clientKey: string | null,
+): Promise<Created> {
+  // The table's lock first, as every subtype write (refuseTaken relies on it; plan review,
+  // Should fix 1), then the product FOR UPDATE, and only then is has_variants read, so two
+  // first subtypes of one product cannot both turn the default real.
+  await catalog.lockTable(tx);
+  const [product] = await tx
+    .select({ isActive: products.isActive, hasVariants: products.hasVariants })
+    .from(products)
+    .where(eq(products.id, input.productId))
+    .for("update");
+  if (!product) throw new ActionError("invalid_input", { productId: "errors.field.notAllowed" });
+  if (!product.isActive) {
+    throw new ActionError("invalid_input", { productId: "errors.field.inactive" });
+  }
+  if (input.photoFileId) await refusePhoto(tx, userId, input.photoFileId);
+
+  if (product.hasVariants) {
+    await catalog.refuseTaken(tx, { name: input.name }, null, input.productId);
     const [entry] = await tx
-      .update(productVariants)
-      .set({
+      .insert(productVariants)
+      .values({
+        productId: input.productId,
         name: input.name,
         photoFileId: input.photoFileId,
-        referencePrice: firstSubtypePrice(held!.price, input.referencePrice),
-        isDefault: false,
-        clientKey: input.clientKey,
+        referencePrice: input.referencePrice,
+        clientKey,
+        createdAt: now(),
       })
-      .where(eq(productVariants.id, held!.id))
       .returning(columns);
-    await tx.update(products).set({ hasVariants: true }).where(eq(products.id, input.productId));
-    // A price the default held keeps its row, which points at the same id; a price taken now is
-    // the Head setting one (plan of 1.9, decision 1, Look first).
-    if (held!.price === null && entry!.referencePrice !== null) {
+    if (entry!.referencePrice !== null) {
       await recordHeadPrice(tx, {
         variantId: entry!.id,
         price: entry!.referencePrice,
         setBy: userId,
       });
     }
-    return { entry: entry!, fromDefault: { name: held!.name, referencePrice: held!.price } };
-  },
-  async history({ tx, userId }, { entry, fromDefault }) {
-    const parent = await productShown(tx, entry.productId);
-    const photo = entry.photoFileId ? await fileNameOf(tx, entry.photoFileId) : null;
+    return { entry: entry!, fromDefault: null };
+  }
+
+  const [held] = await tx
+    .select({
+      id: productVariants.id,
+      name: productVariants.name,
+      price: productVariants.referencePrice,
+    })
+    .from(productVariants)
+    .where(and(eq(productVariants.productId, input.productId), eq(productVariants.isDefault, true)))
+    .for("update");
+  if (firstSubtypePriceRefused(held!.price, input.referencePrice)) {
+    throw new ActionError("invalid_input", { referencePrice: LOCKED });
+  }
+  // The default row itself is left out, so "Default" is a valid first name (decision 6).
+  await catalog.refuseTaken(tx, { name: input.name }, held!.id, input.productId);
+  const [entry] = await tx
+    .update(productVariants)
+    .set({
+      name: input.name,
+      photoFileId: input.photoFileId,
+      referencePrice: firstSubtypePrice(held!.price, input.referencePrice),
+      isDefault: false,
+      clientKey,
+    })
+    .where(eq(productVariants.id, held!.id))
+    .returning(columns);
+  await tx.update(products).set({ hasVariants: true }).where(eq(products.id, input.productId));
+  // A price the default held keeps its row, which points at the same id; a price taken now is
+  // the Head setting one (plan of 1.9, decision 1, Look first).
+  if (held!.price === null && entry!.referencePrice !== null) {
+    await recordHeadPrice(tx, {
+      variantId: entry!.id,
+      price: entry!.referencePrice,
+      setBy: userId,
+    });
+  }
+  return { entry: entry!, fromDefault: { name: held!.name, referencePrice: held!.price } };
+}
+
+/** The body of createSubtype's history step: its `subtype.create` row, and the product's change. */
+export async function recordSubtypeCreate(
+  tx: Executor,
+  userId: string,
+  { entry, fromDefault }: Created,
+): Promise<void> {
+  const parent = await productShown(tx, entry.productId);
+  const photo = entry.photoFileId ? await fileNameOf(tx, entry.photoFileId) : null;
+  await audit(
+    { tx, userId },
+    {
+      action: "subtype.create",
+      entity: SUBTYPES.entity,
+      entityId: entry.id,
+      // The default made real shows what it was (plan review, Should fix 9; 04 rule 9).
+      before: fromDefault ? { ...parent, ...fromDefault } : null,
+      after: {
+        ...parent,
+        name: entry.name,
+        referencePrice: entry.referencePrice,
+        photoFileId: entry.photoFileId,
+        photo,
+        isActive: entry.isActive,
+        ...(fromDefault ? { fromDefault: true } : {}),
+      },
+      at: now(),
+    },
+  );
+  if (fromDefault) {
     await audit(
       { tx, userId },
       {
-        action: "subtype.create",
-        entity: SUBTYPES.entity,
-        entityId: entry.id,
-        // The default made real shows what it was (plan review, Should fix 9; 04 rule 9).
-        before: fromDefault ? { ...parent, ...fromDefault } : null,
-        after: {
-          ...parent,
-          name: entry.name,
-          referencePrice: entry.referencePrice,
-          photoFileId: entry.photoFileId,
-          photo,
-          isActive: entry.isActive,
-          ...(fromDefault ? { fromDefault: true } : {}),
-        },
+        action: "product.update",
+        entity: "products",
+        entityId: entry.productId,
+        before: { hasVariants: false },
+        after: { hasVariants: true },
         at: now(),
       },
     );
-    if (fromDefault) {
-      await audit(
-        { tx, userId },
-        {
-          action: "product.update",
-          entity: "products",
-          entityId: entry.productId,
-          before: { hasVariants: false },
-          after: { hasVariants: true },
-          at: now(),
-        },
-      );
-    }
-  },
-});
+  }
+}
 
 export const updateSubtype = catalog.update;
 export const setSubtypeActive = catalog.setActive;
+
+/** The table's lock, for an Excel import (plan of 1.10). */
+export const lockSubtypes = catalog.lockTable;
