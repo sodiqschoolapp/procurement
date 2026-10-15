@@ -636,4 +636,20 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - A setting holding money is a JSON text in the row and a bigint in force; convert only through `settingsFrom()` and `storedSettingValue()`.
 - Internal codes keep "request": permission keys `request.*`, `CREATE_REQUESTS`, `RequestStatus`, `requestStatus.*`, `REQUEST_*` (D43).
 
-The next task is 2.2.
+## 2.2 Domain: order totals (15.10.2026, pull request #46)
+
+**Built**
+- `src/domain/order-totals.ts`: `OrderPlan` (`quantity` text of numeric(14,3), `price` and `extras` bigint, `paymentType`), `orderGoods`, `orderExtras`, `orderTotal`, `ordersTotals` (goods, extras, grand, `byPaymentType` with all three codes), `priceHintPercent(typed, reference, threshold)` → `bigint | null`.
+- decimal.js 10.6.0 through a private clone (precision 64, `ROUND_HALF_UP`); message `orders.priceHint` in three languages.
+- ESLint fence: `src/domain/**` (tests excluded) imports nothing through `..` or `@/`; `ICON_IMPORT_PATHS`, `TEST_CLOCK_IMPORT_PATTERNS`, `DOMAIN_IMPORT_PATTERNS` in `eslint.config.mjs`.
+
+**Left out, and the task that brings it**
+- The totals under the list, group row totals, the hint on screen: 2.5 and the list tasks. Actual totals, difference, colours: phases 3 and 4.
+
+**What the next sessions must know**
+- Every planned money number calls `order-totals.ts`; a set is summed with `ordersTotals()`, never by rounding a summed quantity × price (08).
+- The functions throw `RangeError` on an incomplete or invalid plan; for 2.5: pass only drafts that have quantity and price to `ordersTotals()`, and decide on the screen what a draft without a price shows.
+- For 2.5: the hint compares with the subtype's reference price only (never the last purchase price), with the setting `price_hint_percent`; pass the bigint to `t("orders.priceHint", { percent })` as it is (cast to the message's number type), never through `Number()`.
+- A later block that sets `no-restricted-imports` spreads `ICON_IMPORT_PATHS` and `TEST_CLOCK_IMPORT_PATTERNS` in (flat config replaces the options).
+
+The next task is 2.3.

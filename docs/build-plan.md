@@ -198,7 +198,7 @@ From a draft on the branch's order list to fully approved orders, ticked and act
   - **Build:** The menu word "Requests" becomes "Orders" in the three languages and the address `/requests` becomes `/orders`; the request notification types keep their internal names and carry a count, so each text says how many orders it covers ("15 orders submitted"); the setting `overspend_guard_min_amount` (100 000 so'm) on the Settings page beside the percent; every other built text that says "request" for this flow follows, and the feature folder `src/features/requests` becomes `src/features/orders`.
   - **Done when:** Tests: each role's menu shows Orders at `/orders`; a notification of type submitted with a count of 15 reads "15" in each language; the new setting saves with an audit row and refuses a negative amount.
 
-- [ ] **2.2 Domain: order totals**
+- [x] **2.2 Domain: order totals**
   - **Read:** `05-order-request-form.md` (Order: fields 10 to 16, and the totals under the list); `08-money-and-settlement.md` (Numbers the system calculates: Planned total; the paragraph on rounding); `edge-cases/developer-rules.md` (rules 1, 6); `13-technology.md` (Numbers).
   - **Build:** Pure functions in `src/domain/`: an order's total, the goods, extra-cost and grand totals of a set of orders, the split by payment type, and the price-hint percent. decimal.js inside, whole so'm out, rounding half up.
   - **Done when:** Unit tests that name the spec rule each checks, including 100 × 5 000 + 20 000 = 520 000, a 3-decimal quantity that rounds half up, the totals of three orders of different payment types, and "+35% vs catalog price".
