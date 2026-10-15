@@ -159,7 +159,7 @@ Everything the Head sets up before the first request can be written.
   - **Build:** `/catalog/products`: name, type (product by default, or service), category, measure, photo, default brand or company, reference price, description, active; type and measure lock after first use (the lock is wired in 2.5 and 5.8); change history; the list has search, category and type filters and 25 rows per page.
   - **Done when:** Tests: a new item is a product unless service is chosen; a duplicate name is refused. By hand: add a product with a photo and see the small version in the list.
 
-- [ ] **1.8 Subtypes**
+- [x] **1.8 Subtypes**
   - **Read:** `04-catalogs.md` (Catalogs table: Subtypes; Rules: 1, 3); `14-data-model.md` (product_variants); `open-questions.md` (question 18).
   - **Build:** Subtypes inside a product: name, own photo, own reference price, active; the hidden "default" subtype of a product without subtypes; adding real subtypes to such a product, as answered in open question 18; change history; names unique inside a product.
   - **Done when:** Database tests: every product has at least one subtype at all times; a product without subtypes shows none on screen and has one row. By hand: the spec's phase 1 check, add a product with subtypes and a photo.

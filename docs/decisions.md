@@ -746,6 +746,31 @@ Choices made during the build:
 - The page actions return only what the screen needs (the id, the changed fields, the active flag).
 - The lock's refusal is tested through `updateProduct` with `./product-uses` replaced by a set of used products (`product-lock.db.test.ts`; diff review, Should fix 1), because no real use exists before the tasks that write one.
 
+### 1.8 Subtypes (15.10.2026)
+
+The plan's decisions as the plan review of 15.10.2026 confirmed them (corrections 1 to 4 applied), and those of the build. The Look first items come first.
+
+1. **Look first** (open question 18; stock and money). The first real subtype the Head adds to a product without subtypes is its hidden default row made real: same id, so every line, stock row and price that pointed at the default stays with it; `has_variants` turns true; later subtypes are new rows. Proposed `/spec-change` wording for 04 rule 1: "When the Head adds the first real subtype, the hidden default one becomes it: it keeps its lines, stock and price."
+2. **Look first** (money). A subtype's reference price is optional, whole so'm, more than 0, set on create only; it changes through a new price with a note (1.9). On the first subtype a price the default holds stays and a sent one is refused (`errors.field.locked`); with none held the sent one is taken. The default of a new product takes the product's price.
+3. **Look first** (stock). A product with subtypes keeps at least one active subtype and never goes back to a hidden default. The default row is never reached by `updateSubtype` or `setSubtypeActive` ("not found").
+4. **Look first** (money). A subtype without its own price has none: no fallback to the product's or another subtype's. A product with subtypes shows "set per subtype" in place of a price, and its list row the count of subtypes. Proposed `/spec-change` wording for the 04 Catalogs table, Subtypes row: "Product, name, own photo (optional; without one the product's photo is shown), own reference price (optional; without one the subtype has no reference price), active".
+5. An inactive product takes no new subtype (`errors.field.inactive`); its subtypes can still be renamed (D41).
+6. The hidden row is named `default` (04 rule 1). Names are unique inside the product with the catalogs' expression; the default itself is left out of the check on the conversion, so "Default" is a valid first name.
+7. The database holds the rule: a deferred constraint trigger checked at commit, and a guard refusing every delete, a move to another product and a real subtype turned default.
+8. A subtype's photo follows the product photo's contract (`refusePhoto()`); without one the product's photo is shown; seen through catalog.pick.
+9. Audit entity `product_variants`; every row keeps `productId` and the product's name (in `before` and `after` alike on update and activate, so the history does not list them). The conversion's `subtype.create` row has the default's name and price as `before` and `fromDefault: true`; the product gets a `product.update` row `{ hasVariants: false → true }`. A product's create writes no row for its default.
+10. `last_purchase_price` and `last_purchase_at` exist now and stay empty until purchases (3.x).
+11. New and edit are pages (as decisions 1.7 item 4).
+12. Subtypes are added one at a time after the product exists.
+
+Choices made during the build:
+
+- `createSubtype` is written with `defineAction()`: the conversion is an update, not an insert. It takes the table's advisory lock through `lockTable()` and the name check through `refuseTaken()`, both returned by `defineCatalogActions()`; the factory's own `create` for subtypes is never exported. `defineCatalogActions()` gained `afterInsert`, `lockable`, `checkActive` and `within.onEveryRow`.
+- The last-active check counts the other active subtypes under the table's advisory lock, which every subtype write takes, so two deactivations cannot both pass.
+- The backfill test copies `drizzle/` to a temporary folder, cuts the journal at `0012`, migrates an empty test database with `applyMigrations(url, folder)` (the optional folder argument that already existed; plan review, correction 2), writes a product, then applies the full folder.
+- The last active subtype's page shows the reason in place of the Deactivate button; the server refuses it anyway (`wrong_status`).
+- Existing raw product inserts in `products.db.test.ts` write their default row in the same statement (`withDefault()`); no case was removed or weakened.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.
