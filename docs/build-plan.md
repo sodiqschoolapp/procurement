@@ -203,7 +203,7 @@ From a draft on the branch's order list to fully approved orders, ticked and act
   - **Build:** Pure functions in `src/domain/`: an order's total, the goods, extra-cost and grand totals of a set of orders, the split by payment type, and the price-hint percent. decimal.js inside, whole so'm out, rounding half up.
   - **Done when:** Unit tests that name the spec rule each checks, including 100 × 5 000 + 20 000 = 520 000, a 3-decimal quantity that rounds half up, the totals of three orders of different payment types, and "+35% vs catalog price".
 
-- [ ] **2.3 Domain: the state machine**
+- [x] **2.3 Domain: the state machine**
   - **Read:** `06-approval-workflow.md` (Statuses; Allowed moves; Rules: 1 to 8); `edge-cases/developer-rules.md` (rule 2); `03-roles-and-permissions.md` (Rules: 6, 8); `open-questions.md` (questions 5, 6).
   - **Build:** One file that lists every status move of one order, who may make it and what it needs; `allowedActions()` for one order and for a set of ticked orders (only the actions allowed on every one of them); `assertMove()` for the server.
   - **Done when:** Unit tests: every row of the allowed-moves table passes; every other combination of from, to and role is refused (generated); for a set of orders in two different statuses only their common actions are offered.

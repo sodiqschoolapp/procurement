@@ -107,6 +107,13 @@ export const EXPECTED_MATRIX: Record<Permission, Expected> = {
     FINANCE: "no",
     right: "CLOSE_ALONE",
   },
+  "request.send_to_settlement": {
+    row: "Send an order to settlement (not in 03: 06 Allowed moves; plan of 2.3, decision 4, Look first)",
+    HEAD: "all",
+    MANAGER: "owner",
+    PRINCIPAL: "no",
+    FINANCE: "no",
+  },
   "request.settle": {
     row: "Settle and close a request with differences",
     HEAD: "no",
