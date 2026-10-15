@@ -9,7 +9,7 @@ The app is finished only when the 20 scenarios below pass as automated tests, on
 
 | Layer | Tool | What it covers |
 | --- | --- | --- |
-| Unit | Vitest | Every function in `src/domain/`: totals, rounding, the three colours, cash count, the cash split, the fee split, average cost, every allowed and forbidden status move. |
+| Unit | Vitest | Every function in `src/domain/`: totals, rounding, the three colours, cash count, the prefilled cash rows, the fee split, average cost, every allowed and forbidden status move. |
 | Database | Vitest with a real PostgreSQL | Every server action, on one order and on many ticked orders. The full permission matrix: each action × each role × own branch and other branch. Actions run two at a time to prove the locks work. |
 | Full flow | Playwright | The scenarios below, clicked through in a real browser as each role, at phone and desktop width. |
 
@@ -39,7 +39,7 @@ All use branch code CHL and the plan from section 8 unless stated: one order of 
 | S16 | Right switched off. The Head switches off the right to close alone for a Manager, who then finishes an exact match. | The Manager has no Close button. The order goes to Finance, who closes it. |
 | S17 | Download. A user filters the order list to one week and downloads Excel and PDF while an order waits for the Principal. | The files list exactly the filtered orders; the Head's name and time are in the order's row and Principal and Finance are empty; the totals equal the screen. |
 | S18 | New price. The Head changes the notebook price from 5 000 to 6 500. | A new draft suggests 6 500. An older draft keeps 5 000 and shows -23% vs catalog price. The price history lists both. |
-| S19 | One row per product. The Manager submits 10 Tata pens, then 10 more, then (after the Head approved the first 20) 10 more. | The Head first sees one row "Tata pens, 20"; after approving it, the Principal sees 20; once the Head approves the last 10, the Principal sees one row "Tata pens, 30" holding two orders. Approving that row moves both orders; each keeps its own number and history. Adding 10 to a draft of the same pens for the same department raises that draft to 20 instead of making a second one. |
+| S19 | One row per product. The Manager submits 10 Tata pens, then 10 more, then (after the Head approved the first 20) 10 more. | The Head first sees one row "Tata pens, 20"; after approving it, the Principal sees 20; once the Head approves the last 10, the Principal sees one row "Tata pens, 30" holding three orders. Approving that row moves all three; each keeps its own number and history. Adding 10 to a draft of the same pens for the same department raises that draft to 20 instead of making a second one. |
 | S20 | Many orders, one action. Finance approves the three orders of the worked example in section 8 and gives 650 000; buying follows the example; a fourth ticked order was approved by another Finance user a moment earlier. | The first approval is refused whole and names the fourth order; approved again without it, the 650 000 is split 520 000, 100 000 and 30 000; 0144 is closed by the Manager; one settlement action receives 50 000 and pays 30 000, the screen shows the net 20 000, and both orders close. |
 
 ## Done-check for every phase

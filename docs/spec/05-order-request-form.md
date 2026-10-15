@@ -33,9 +33,10 @@ Under the list, the totals of the ticked orders: goods, extra costs, grand total
 ## Drafts
 
 1. The Manager adds draft orders to the branch's list at any time. A draft is visible to its owner and the Head only.
-2. **Same thing twice in drafts.** When the Manager adds a draft whose branch, subtype and department equal one of the Manager's own drafts, no second draft is made: the existing draft's quantity rises by the new quantity, and its other fields stay. The Manager sees "Added to your draft: now 20".
+2. **Same thing twice in drafts.** When the Manager adds a draft whose branch, subtype and department equal one of the Manager's own drafts that was never submitted (it has no number), no second draft is made: the existing draft's quantity rises by the new quantity, and its other fields stay. The Manager sees "Added to your draft: now 20".
 3. **Autosave.** A draft saves itself after each change and shows "Saved". The owner can delete a draft that was never submitted.
 4. **Submit.** The Manager ticks drafts and presses "Submit"; each ticked order goes to the Head (to the Principal when the Head is the creator) with its own number.
+5. **Sent back and taken back orders** stand in the drafts grid with their number and the label "Sent back" or "Taken back", and are edited and submitted again there. They never merge with a draft (point 2).
 
 ## Order number
 
@@ -45,7 +46,7 @@ The format is branch code, two-digit year, four-digit counter: `CHL-26-0142`. Ea
 2. The counter runs per branch per calendar year in Tashkent time and starts at 0001. After 9999 it simply grows to five digits.
 3. A number never changes and is never reused. Rejected and cancelled orders keep theirs.
 4. An order sent back and submitted again keeps its number and shows "rev 2", "rev 3" beside it.
-5. The numbers are created inside the submit transaction with a lock on the counter row, in the order the orders were ticked. Two people submitting at the same instant cannot get the same number.
+5. The numbers are created inside the submit transaction with a lock on the counter row, in the order the drafts were created. Two people submitting at the same instant cannot get the same number.
 
 ## Checks at submit
 
@@ -63,6 +64,7 @@ Every list shows one row per product subtype and status in a branch, for example
 3. **Acting on a group row acts on every order in it,** all or nothing (`06-approval-workflow.md`, rule 8). Any single order can still be ticked and acted on alone.
 4. **Each order keeps its own** number, approvals, history, purchases and money. A group row is a way of showing and ticking orders, not a record of its own. Example: 20 Tata pens wait for the Principal; 10 more are submitted and wait for the Head; once the Head approves them, the Principal sees one row "Tata pens, 30" holding both orders.
 5. The Manager's own view counts every stage: "Tata pens: 30 requested".
+6. Wherever orders are taken "oldest first", two orders submitted at the same moment are taken by the lower order number first.
 
 ## Ticking and filters
 

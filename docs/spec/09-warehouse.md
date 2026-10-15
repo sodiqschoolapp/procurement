@@ -57,7 +57,7 @@ This is the function you described, extended so one document can hold several it
 ## Other documents
 
 - **Return from a department.** Pick the department, items and quantities; stock goes up. Returning more than that department ever received shows a warning and needs a comment.
-- **Transfer.** The sender picks the other branch and the items; stock leaves the sender at once and the transfer shows "In transit". The receiving Manager enters what really arrived. Any shortage becomes a write-off request "Lost in transfer" on the sending branch for the Head to decide.
+- **Transfer.** The sender picks the other branch and the items; stock leaves the sender at once and the transfer shows "In transit". The transfer gets a number like `TRF-CHL-26-0007` and a PDF transfer note naming who sent the items and who received them, as typed, with no signature lines. The receiving Manager enters what really arrived. Any shortage becomes a write-off request "Lost in transfer" on the sending branch for the Head to decide.
 - **Write-off.** The Manager picks items, quantities and a reason from a fixed list plus a comment. Stock changes only after the Head approves.
 - **Stock count.** The Manager starts a count for a branch or a category and types the counted quantities. The system shows the differences, and the Head approves them as corrections. If an item moved between the start of the count and the approval, the system asks the Manager to count that item again.
 

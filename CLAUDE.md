@@ -42,7 +42,7 @@ Next.js 16 (App Router, Server Components to read, Server Actions to write; no R
 src/app/            routes and screens
 src/domain/         pure business rules and the state machine; no imports from outside this folder
 src/server/         db (schema, client), auth, authorize, action wrapper, clock, jobs, storage
-src/features/<area> actions/, queries/ and components/ of one area (catalog, requests, purchasing, money, warehouse, analytics)
+src/features/<area> actions/, queries/ and components/ of one area (catalog, orders, purchasing, money, warehouse, analytics)
 src/components/     shared interface parts; ui/ holds shadcn components
 src/i18n/           messages/uz.json, ru.json, en.json and the formatters
 drizzle/            SQL migrations, never edited after merge

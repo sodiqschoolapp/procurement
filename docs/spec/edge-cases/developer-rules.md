@@ -36,7 +36,7 @@ Claude Code must follow these fifteen rules in every phase. They are what keeps 
 | 5 Database as last defence | Constraints in SQL migrations. | Database tests that try the forbidden write directly. |
 | 6 Exact numbers | Column types in migrations; decimal.js inside `src/domain/`. | Unit tests of rounding; the worked example in section 8. |
 | 7 History is append-only | No update or delete path in the code for stock movements, money actions and rows, and order events. | Database tests. See open question 3 about the cancel fields. |
-| 8 Safe repeats | The server-action wrapper and the UNIQUE `client_key` columns of `order_actions`, `purchase_trips`, `money_actions` and `stock_documents`. | Database tests: the same id twice returns the first result. |
+| 8 Safe repeats | The server-action wrapper and the UNIQUE `client_key` of `order_actions`, `purchase_trips` and `stock_documents`, and (`client_key`, `manager_id`) of `money_actions`. | Database tests: the same id twice returns the first result. |
 | 9 Version check | The server-action wrapper and `orders.version`. | Database tests: an old version is refused, alone and among ticked orders. |
 | 10 Time | One clock provider, injected. Business dates use `Asia/Tashkent`. | Tests set the clock; a test crosses midnight and the year end. |
 | 11 No hard deletes | No delete action exists except for drafts never submitted. | Database tests. |
@@ -58,9 +58,9 @@ All are in `14-data-model.md` unless another file is shown.
 | Catalog names unique inside their catalog, ignoring capital letters and extra spaces; subtype names inside a product; department names inside a branch | `04-catalogs.md` rule 3 |
 | `number_counters` KEY (scope, branch_id, year) | |
 | `orders.number` UNIQUE, empty while Draft | |
-| One draft per owner, branch, subtype and department (partial unique index on `orders`) | `05-order-request-form.md` (Drafts) |
+| One never-submitted draft (number empty) per owner, branch, subtype and department (partial unique index on `orders`) | `05-order-request-form.md` (Drafts) |
 | Statuses, payment types, progress, kinds and types are enums | |
-| `order_actions.client_key`, `purchase_trips.client_key`, `money_actions.client_key`, `stock_documents.client_key` UNIQUE | |
+| `order_actions.client_key`, `purchase_trips.client_key`, `stock_documents.client_key` UNIQUE; `money_actions` UNIQUE (`client_key`, `manager_id`) | |
 | `money_rows.amount` CHECK (amount > 0); `order_extras.amount` and `purchase_extras.amount` CHECK (amount > 0) | |
 | `stock_balances.qty` CHECK (qty >= 0); KEY (branch_id, variant_id) | |
 | `stock_minimums` KEY (branch_id, variant_id) | |

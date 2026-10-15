@@ -61,7 +61,7 @@ Each move applies to one order. An action on ticked orders makes the same move o
 | Open | Send to settlement | Owner or Head | Waiting for settlement | The order's buying is finished (section 7) |
 | Waiting for settlement | Send back for correction | Finance | Open | Reason |
 | Waiting for settlement | Close | Finance | Closed | Section 8 rules |
-| Closed | Reopen | Head | Open | Reason |
+| Closed | Reopen | Head | Open | Reason. Settlement confirmations and the overspend acknowledgment are cleared (section 8) |
 
 Any move not in this table is impossible, in the screen and on the server.
 

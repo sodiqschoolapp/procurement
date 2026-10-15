@@ -6,7 +6,7 @@ The whole project as ordered tasks. One task is one Claude Code session and one 
 
 - **Read**: the spec files to read first, with the headings that matter, all under `docs/spec/`. Every task also reads `edge-cases/00-definitions.md` and `open-questions.md`. A task with a migration also reads `edge-cases/developer-rules.md` and `14-data-model.md`.
 - **Build**: what exists when the task is finished. Nothing outside it is built.
-- **Done when**: a test, or a thing the owner can try by hand. A scenario named S1 to S18 is in `15-quality-and-acceptance.md`.
+- **Done when**: a test, or a thing the owner can try by hand. A scenario named S1 to S20 is in `15-quality-and-acceptance.md`.
 - A task that turns out too large is split by the builder into a, b, c in this file, in the task's own pull request; the first part is planned and built, and the split is flagged **Look first** on issue #9. Nothing waits for a confirmation.
 - A task that names an open question uses the owner's answer under "Decided ahead" in `docs/decisions.md`. Where no answer came, the builder takes the most reasonable reading and flags it **Look first** (D20, D26). The owner's reviewer prepares each phase's questions while the phase before it runs.
 - A fix task `<id>b` (for example `1.3b`) is added by the owner when a decision made without the owner is changed on issue #9 and code must change. It is placed first among the open tasks, so the start routine takes it next; its Read line names the decision it changes.
@@ -195,7 +195,7 @@ From a draft on the branch's order list to fully approved orders, ticked and act
 
 - [ ] **2.1 Orders: names and the built parts**
   - **Read:** `11-screens-and-ux.md` (Screens; Interface per role); `10-notifications-analytics-reports.md` (Notifications: the paragraph on grouping); `08-money-and-settlement.md` (Overspend guard); `14-data-model.md` (Notes for the build: settings keys); `05-order-request-form.md` (first paragraph).
-  - **Build:** The menu word "Requests" becomes "Orders" in the three languages and the address `/requests` becomes `/orders`; the request notification types keep their internal names and carry a count, so each text says how many orders it covers ("15 orders submitted"); the setting `overspend_guard_min_amount` (100 000 so'm) on the Settings page beside the percent; every other built text that says "request" for this flow follows.
+  - **Build:** The menu word "Requests" becomes "Orders" in the three languages and the address `/requests` becomes `/orders`; the request notification types keep their internal names and carry a count, so each text says how many orders it covers ("15 orders submitted"); the setting `overspend_guard_min_amount` (100 000 so'm) on the Settings page beside the percent; every other built text that says "request" for this flow follows, and the feature folder `src/features/requests` becomes `src/features/orders`.
   - **Done when:** Tests: each role's menu shows Orders at `/orders`; a notification of type submitted with a count of 15 reads "15" in each language; the new setting saves with an audit row and refuses a negative amount.
 
 - [ ] **2.2 Domain: order totals**
@@ -210,8 +210,8 @@ From a draft on the branch's order list to fully approved orders, ticked and act
 
 - [ ] **2.4 Orders schema and many orders in one action**
   - **Read:** `14-data-model.md` (Orders; Notes for the build); `edge-cases/developer-rules.md` (rules 3, 5, 6, 8, 9; Constraints the spec names); `05-order-request-form.md` (Order number; Drafts: 2); `06-approval-workflow.md` (Rules: 7, 8).
-  - **Build:** Migrations for `number_counters`, `orders`, `order_extras`, `order_revisions`, `order_actions` and `order_events` with enums, checks, foreign keys and indexes; the partial unique index of one draft per owner, branch, subtype and department; `orders.version`; the empty `stock_balances` table, so the "In stock" column has its source. The action wrapper learns to take many orders: it locks them in one fixed order, checks the status and version of each, writes one `order_actions` row and one event per order, and saves all or nothing; at most 200 orders.
-  - **Done when:** Database tests try each forbidden write directly: a duplicate number, an unknown status, an extra cost of 0, a negative stock quantity, a second draft for the same owner, subtype and department. An action on three orders where one has an old version saves nothing; the same `client_key` twice returns the first result.
+  - **Build:** Migrations for `number_counters`, `orders`, `order_extras`, `order_revisions`, `order_actions` and `order_events` with enums, checks, foreign keys and indexes; the partial unique index of one never-submitted draft (number empty) per owner, branch, subtype and department; `orders.version`; the empty `stock_balances` table, so the "In stock" column has its source. The action wrapper learns to take many orders: it locks them in one fixed order, checks the status and version of each, writes one `order_actions` row and one event per order, and saves all or nothing; at most 200 orders.
+  - **Done when:** Database tests try each forbidden write directly: a duplicate number, an unknown status, an extra cost of 0, a negative stock quantity, a second never-submitted draft for the same owner, subtype and department; an order taken back to Draft beside such a draft is allowed. An action on three orders where one has an old version saves nothing; the same `client_key` twice returns the first result.
 
 - [ ] **2.5 Drafts**
   - **Read:** `05-order-request-form.md` (Order: all fields; Drafts; Ticking and filters: Price hint); `04-catalogs.md` (Rules: 4); `02-assumptions.md` (A7); `06-approval-workflow.md` (Statuses: Draft); `11-screens-and-ux.md` (Screens: Order list; Order list layout: 3); `edge-cases/developer-rules.md` (rule 11); `03-roles-and-permissions.md` (Manager rights: CREATE_REQUESTS); `edge-cases/requests-and-approval.md` ("The same item is needed by two departments"; "The same item for the same department is added again while a draft for it exists"); `edge-cases/warehouse.md` ("Half a piece is typed for an item counted in pieces").
@@ -280,8 +280,8 @@ The Manager records what was really bought, one order or one whole shop visit at
 
 - [ ] **3.2 Purchases schema and domain**
   - **Read:** `14-data-model.md` (Purchasing and money: purchase_trips, purchases, purchase_extras, trip_files); `08-money-and-settlement.md` (Numbers the system calculates); `07-purchasing.md` (Order progress; One trip, many orders: 2, 3); `edge-cases/developer-rules.md` (rules 1, 7); `open-questions.md` (question 3).
-  - **Build:** Migrations for the four tables, with the foreign keys from `stock_movements` and `price_history` to `purchases`; domain functions for actual quantity, actual goods, actual extra, actual total, difference and order progress; the split of a group row's quantity (oldest submit first, each up to what it lacks, the rest to the newest) and the split of a shared fee (by goods amount, rounded half up, the leftover so'm to the largest, all to the first when every goods amount is 0).
-  - **Done when:** Unit tests with the four cases of the worked example; cancelled records are left out of every sum; 30 pens split over orders lacking 20 and 10, and 35 over the same; a 20 001 fee over goods of 1, 1 and 1 so'm adds up to 20 001 exactly.
+  - **Build:** Migrations for the four tables, with the foreign keys from `stock_movements` and `price_history` to `purchases`; domain functions for actual quantity, actual goods, actual extra, actual total, difference and order progress; the split of a group row's quantity (oldest submit first, each up to what it lacks, the rest to the newest) and the split of a shared fee (by goods amount, rounded down, the missing so'm one at a time to the largest remainders, all to the lowest order number when every goods amount is 0).
+  - **Done when:** Unit tests with the four cases of the worked example; cancelled records are left out of every sum; 30 pens split over orders lacking 20 and 10, and 35 over the same; a 20 001 fee over goods of 1, 1 and 1 so'm, and a fee of 2 over four equal goods amounts, each add up to the fee exactly with no share below 0.
 
 - [ ] **3.3 Record a purchase**
   - **Read:** `07-purchasing.md` (Purchase record; What saving a record does); `02-assumptions.md` (A7); `04-catalogs.md` (Rules: 4); `03-roles-and-permissions.md` (Permission matrix: "Record purchases"; Manager rights: RECORD_PURCHASES); `edge-cases/purchasing-and-money.md` ("The item was free"; "Planned by card, paid in cash"; "Delivery for a bank-transfer item was paid in cash"; "No receipt photo"); `14-data-model.md` (Notes for the build: settings keys).
@@ -290,8 +290,8 @@ The Manager records what was really bought, one order or one whole shop visit at
 
 - [ ] **3.4 One trip, many orders**
   - **Read:** `07-purchasing.md` (One trip, many orders; What saving a record does); `edge-cases/requests-and-approval.md` ("A delivery fee covers a whole shop visit"); `15-quality-and-acceptance.md` (S19).
-  - **Build:** The Manager ticks Open orders or a group row and records the visit once: date, supplier, payment type and receipt files shared; quantity, price, subtype bought, extra costs and comment per order; on a group row one quantity and one price, split by 3.2's function and changeable before saving; a shared fee split by 3.2's function, shares changeable, their sum equal to the fee; one record per order, saved all or nothing.
-  - **Done when:** Database tests: a trip of three orders writes three records, one trip and the receipt once; one failing order saves nothing; changed shares that do not add up to the fee are refused. Playwright: 30 Tata pens recorded on a group row of 20 and 10 fill both orders.
+  - **Build:** The Manager ticks Open orders or a group row and records the visit once, for orders of one branch and one owner (on a group row of several owners, the recording Manager's own orders): date, supplier, payment type and receipt files shared; quantity, price, subtype bought, extra costs and comment per order; on a group row one quantity and one price, split by 3.2's function and changeable before saving; a shared fee split by 3.2's function, shares changeable, their sum equal to the fee; one record per order, saved all or nothing.
+  - **Done when:** Database tests: a trip of three orders writes three records, one trip and the receipt once; one failing order saves nothing; changed shares that do not add up to the fee are refused; a trip over orders of two owners is refused. Playwright: 30 Tata pens recorded on a group row of 20 and 10 fill both orders.
 
 - [ ] **3.5 Purchases tab and order progress**
   - **Read:** `07-purchasing.md` (Order progress; Finishing); `11-screens-and-ux.md` (Order page layout: 3); `15-quality-and-acceptance.md` (S4); `edge-cases/purchasing-and-money.md` ("The shop has only part of the quantity"; "The item cannot be found at all"; "More was bought than approved").
@@ -310,8 +310,8 @@ The Manager records what was really bought, one order or one whole shop visit at
 
 - [ ] **3.8 The three colours**
   - **Read:** `08-money-and-settlement.md` (The three colours; Worked example); `11-screens-and-ux.md` (Rules for a smooth feel: 11); `edge-cases/developer-rules.md` (rule 1).
-  - **Build:** A domain function that returns Number, Price and Total for an order and for a set of orders (grey while in progress; the worst colour wins; Total from the summed difference); the label component with icon, word and amount; the labels on orders, group rows and the ticked totals.
-  - **Done when:** Unit tests of the four worked-example cases and of "red beats orange, orange beats green" on a group row. By hand: the Cheaper case shows orange "Left 50 000".
+  - **Build:** A domain function that returns Number, Price and Total for an order and for a set of orders (grey while in progress; Price green only when every record's unit price is the planned one; the worst colour wins; Total from the summed difference); the label component with icon, word and amount; the labels on orders, group rows and the ticked totals.
+  - **Done when:** Unit tests of the four worked-example cases, of two records of 0.25 at the planned price 1 001 (Price green), and of "red beats orange, orange beats green" on a group row. By hand: the Cheaper case shows orange "Left 50 000".
 
 - [ ] **3.9 Buying on a phone**
   - **Read:** `11-screens-and-ux.md` (Rules for a smooth feel: 3; Interface per role: Manager); `07-purchasing.md` (Purchase record: Receipt).
@@ -330,17 +330,17 @@ Cash given, cash spent, the difference and the close, per order, with Finance wo
 
 - [ ] **4.1 Money schema and domain**
   - **Read:** `14-data-model.md` (Purchasing and money: money_actions, money_rows, order_settlements); `08-money-and-settlement.md` (Money ledger; Exact match; Overspend guard; Worked example); `edge-cases/developer-rules.md` (rules 1, 6, 7); `02-assumptions.md` (A10, A11).
-  - **Build:** Migrations for the three tables; domain functions for an order's cash count, a Manager's cash balance, the exact match of an order, the prefilled cash split (each order's planned cash) and the prefilled settlement rows (each order's count), the no-crossing check, the net of a settlement action, and the overspend guard with the percent and the amount.
+  - **Build:** Migrations for the three tables; domain functions for an order's cash count, a Manager's cash balance (held and owed apart), the exact match of an order, the prefilled cash split (each order's planned cash) and the prefilled settlement rows (each order's count), the no-crossing check, the net of a settlement action, and the overspend guard with the percent and the amount.
   - **Done when:** Unit tests: the four worked-example counts (0, +50 000, −30 000, +50 000); the three-order example (split 520 000, 100 000, 30 000; net 20 000); a return row above an order's count is refused; 550 000 on 520 000 is 5.8% and 30 000 so'm and under the guard; 80 000 over is under the guard at a 100 000 amount and above it at 50 000; Bank transfer, Card top-up and Card money returned never change a count.
 
 - [ ] **4.2 Finance approval with cash**
   - **Read:** `08-money-and-settlement.md` (When Finance approves; Money ledger: 1); `06-approval-workflow.md` (Allowed moves: Waiting for Finance row); `10-notifications-analytics-reports.md` (Notifications: "Cash given, cash returned, paid back").
-  - **Build:** The Finance approval dialog for ticked orders shows the planned totals per payment type and the table "Cash given to the Manager now", one row per order with planned cash, prefilled and changeable, one block per Manager; one cash action per Manager is written in the same transaction as the approval; rows of 0 write nothing.
+  - **Build:** The Finance approval dialog for ticked orders shows the planned totals per payment type and the table "Cash given to the Manager now", one row per order with planned cash, prefilled and changeable, one block per Manager; one cash action per Manager is written in the same transaction as the approval, all sharing the browser id with their own `manager_id`; rows of 0 write nothing.
   - **Done when:** Database tests: approving the three orders of the worked example with 650 000 creates one action with rows 520 000, 100 000 and 30 000 and sets all three Open; orders of two Managers make two actions; a failure rolls back the approval and the cash.
 
 - [ ] **4.3 Money tab and money actions**
   - **Read:** `08-money-and-settlement.md` (Money ledger); `03-roles-and-permissions.md` (Permission matrix: "Record money given, returned, paid back"); `11-screens-and-ux.md` (Order page layout: 3; Interface per role: Finance); `edge-cases/purchasing-and-money.md` ("The Manager bought before cash was given"; "Finance gives one amount for several orders"); `open-questions.md` (question 3).
-  - **Build:** The Money tab of the order page with its rows and count; Finance adds actions of the six kinds for ticked orders, with date, optional document number, optional file and comment, one row per order, prefilled where section 8 says; cancels a wrong action whole with a reason while none of its orders is Closed; the owner gets one grouped notification.
+  - **Build:** The Money tab of the order page with its rows and count; Finance adds actions of the six kinds for ticked orders, with date, optional document number, optional file and comment, one row per order, prefilled where section 8 says; cancels a wrong action whole with a reason while none of its orders is Closed (otherwise the Head reopens that order first); the owner gets one grouped notification.
   - **Done when:** Database tests: only Finance of the branch can add an action; an amount of 0 is refused by the database; a cancelled action leaves every count as it was before; an action whose rows cover orders of two Managers is refused.
 
 - [ ] **4.4 Close on an exact match**
@@ -365,12 +365,12 @@ Cash given, cash spent, the difference and the close, per order, with Finance wo
 
 - [ ] **4.8 Reopen**
   - **Read:** `06-approval-workflow.md` (Allowed moves: Closed row; Rules: 3); `03-roles-and-permissions.md` (Permission matrix: "Reopen a closed order"); `edge-cases/purchasing-and-money.md` ("An error is found after closing"; "Faulty goods go back to the supplier"); `10-notifications-analytics-reports.md` (Notifications: "Closed, reopened").
-  - **Build:** The Head reopens a Closed order with a reason; the status is Open; its counts are recalculated; earlier settlement confirmations are cleared; Finance settles it again; the owner, the Head and Finance are notified.
+  - **Build:** The Head reopens a Closed order with a reason; the status is Open; its counts are recalculated; earlier settlement confirmations and the overspend acknowledgment are cleared; Finance settles it again; the owner, the Head and Finance are notified.
   - **Done when:** Database test: reopen, cancel one record, and the order needs settlement again with the old confirmations gone.
 
 - [ ] **4.9 Money with managers**
   - **Read:** `08-money-and-settlement.md` (Money with managers; Money ledger: Manager's cash balance); `11-screens-and-ux.md` (Screens: Money with managers).
-  - **Build:** `/money` for Finance (own branches) and the Head: every Manager's cash balance across their orders that are not Closed, oldest first, with the date since when, opening the orders behind it. The seed gains Open orders with cash given and a Closed one.
+  - **Build:** `/money` for Finance (own branches) and the Head: every Manager's cash balance across their orders that are not Closed, held and owed shown apart, oldest first, with the date since when, opening the orders behind it. The seed gains Open orders with cash given and a Closed one.
   - **Done when:** Database test: Finance of one branch sees no balance of another. By hand: the seed shows one Manager holding money.
 
 - [ ] **4.10 Move orders to another Manager**

@@ -19,13 +19,13 @@ Each line names the first build-plan task that needs the answer.
 
 ## Orders
 
-5. **Take back and the order number.** The data model says `orders.number` is "empty while Draft". The allowed-moves table says an order taken back to Draft keeps its number. Which statement gives way? Needed by task 2.2.
-6. **An order created by the Head.** Rule 7 of section 3 says the owner is "the Manager who created it". When the Head creates an order and buys, is the Head the owner, and does the Head then hold the cash balance? Needed by task 2.2.
+5. **Take back and the order number.** The data model says `orders.number` is "empty while Draft". The allowed-moves table says an order taken back to Draft keeps its number. Which statement gives way? Needed by task 2.3.
+6. **An order created by the Head.** Rule 7 of section 3 says the owner is "the Manager who created it". When the Head creates an order and buys, is the Head the owner, and does the Head then hold the cash balance? Needed by task 2.3.
 7. **Reminders.** Orders waiting more than 24 hours "trigger a reminder", grouped once a day. Once per order, or again every day while it waits? The same for the 48-hour notice to the Head. Needed by task 8.1.
 
 ## Purchasing
 
-8. **"Recent purchases".** The Head is prompted when "recent purchases" differ from the reference price by more than 20%. How many purchases, or how many days, is "recent"? Needed by task 3.9.
+8. **"Recent purchases".** The Head is prompted when "recent purchases" differ from the reference price by more than 20%. How many purchases, or how many days, is "recent"? Needed by task 3.10.
 9. **Services and "Give straight to requester".** The tick creates a stock issue. Is it hidden for service orders? Needed by task 5.4.
 
 ## Release

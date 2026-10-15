@@ -49,7 +49,8 @@ orders               number UNIQUE (empty while Draft), revision, branch_id, own
                      progress [OPEN|DONE|DONE_SHORT|NOT_BOUGHT], finish_reason,
                      planned_total, actual_total, submitted_at, approved_at, closed_at,
                      created_by, updated_at
-                     -- one draft per owner, branch, subtype and department (partial unique index)
+                     -- one never-submitted draft (number empty) per owner, branch, subtype and
+                     -- department (partial unique index)
 order_extras         order_id, extra_cost_type_id, amount
 order_revisions      order_id, revision, snapshot JSONB      -- full copy at each submit
 order_actions        client_key UNIQUE, type, actor_id, reason, order_count
@@ -70,9 +71,10 @@ purchases            trip_id, order_id, purchased_on, variant_id, qty, unit_pric
                      cancelled_at, created_by
 purchase_extras      purchase_id, extra_cost_type_id, amount, payment_type [CASH|TRANSFER|CARD]
 trip_files           trip_id, file_id                        KEY (trip_id, file_id)
-money_actions        client_key UNIQUE, manager_id, occurred_on, supplier_id, document_no,
+money_actions        client_key, order_action_id, manager_id, occurred_on, supplier_id, document_no,
                      file_id, comment, is_cancelled, cancel_reason, cancelled_by,
                      cancelled_at, created_by
+                     UNIQUE (client_key, manager_id)          -- one browser id can save one action per Manager
 money_rows           money_action_id, order_id,
                      kind [CASH_GIVEN|CASH_RETURNED|PAID_BACK|BANK_TRANSFER|CARD_TOPUP|CARD_RETURNED],
                      amount CHECK (amount > 0)

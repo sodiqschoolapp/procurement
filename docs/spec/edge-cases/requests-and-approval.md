@@ -6,7 +6,7 @@
 From spec chapter 12, which says: "These 41 situations are the ones most likely to cause trouble; each has a fixed answer, and each becomes a test." This file holds 16 of them, and 2 more added with the order list on 15 October 2026.
 
 | Situation | What the system does |
-| --- | --- | --- |
+| --- | --- |
 | Two approvers click at the same moment | The first wins. The second sees who acted and when; when the second action covered more orders, nothing of it is saved and the list refreshes. |
 | Submit is clicked twice | One submit only. The button disables and the server ignores the repeat. |
 | One of many ticked orders changed a moment ago | Nothing is saved. The screen names the order that changed and refreshes; the user acts again. |

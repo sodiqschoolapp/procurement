@@ -27,11 +27,11 @@ A "Same as planned" button fills quantity, price and extra costs from the order 
 
 ## One trip, many orders
 
-The Manager ticks Open orders, or a group row, and records the visit once.
+The Manager ticks Open orders, or a group row, and records the visit once. A trip covers orders of one branch and one owner, because the cash it spends counts on the owner's orders; on a group row that holds orders of several owners, the trip takes the recording Manager's own orders of the row (the Head picks one owner).
 
 1. **Shared:** date bought, supplier, payment type used and the receipt files. **Per order:** quantity, price, subtype bought, extra costs, "Give straight to requester" and comment. Saving makes one purchase record per order; all of them point to the same trip and the same receipt files.
-2. **On a group row** the Manager types one quantity and one price. The quantity is split across the group's orders, oldest submit first, each up to what it still lacks (planned quantity − received quantity); anything above the group's total goes to the newest order. The Manager can change the split before saving.
-3. **A shared fee** (delivery for the whole trip) is typed once and split across the trip's orders by their goods amount in this trip, each share rounded half up to whole so'm; the so'm left over by rounding go to the order with the largest goods amount (the first of them when two are equal). When every goods amount is 0, the whole fee goes to the first order. The Manager can change the shares before saving; their sum must equal the fee. A share of 0 writes no extra-cost row.
+2. **On a group row** the Manager types one quantity and one price. The quantity is split across the group's orders, oldest submit first (at the same moment, the lower order number first), each up to what it still lacks (planned quantity − received quantity); anything above the group's total goes to the newest order. The Manager can change the split before saving.
+3. **A shared fee** (delivery for the whole trip) is typed once and split across the trip's orders by their goods amount in this trip, so that the shares always add up to the fee exactly: each share is first rounded down to whole so'm, then the so'm still missing go one at a time to the orders with the largest remainders (equal remainders: the larger goods amount first, then the lower order number). When every goods amount is 0, the whole fee goes to the order with the lowest number. The Manager can change the shares before saving; their sum must equal the fee and no share is below 0. A share of 0 writes no extra-cost row.
 4. A trip is saved all or nothing (section 13, rule 3).
 
 ## What saving a record does

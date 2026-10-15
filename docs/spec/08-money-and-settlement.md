@@ -25,7 +25,7 @@ Each order shows three labels; a group row and the totals of ticked orders show 
 | Label | Green | Orange | Red |
 | --- | --- | --- | --- |
 | Number | Actual quantity equals planned | Bought less | Bought more |
-| Price | Actual goods equals planned price × actual quantity | Paid less per unit | Paid more per unit |
+| Price | Every record's unit price equals the planned price | Otherwise, actual goods at or below round(planned price × actual quantity): paid less per unit | Otherwise, actual goods above it: paid more per unit |
 | Total | Difference is 0 | Difference above 0: money left | Difference below 0: overspent |
 
 - While an order's buying is still Open, Number and Total show grey "In progress". Price shows grey until something is bought.
@@ -38,7 +38,7 @@ An order matches exactly when Number and Price are green, actual extra costs equ
 
 ## Money ledger
 
-Finance records every movement of money as an **action**: one date, an optional document number, an optional file and a comment, split into **rows**, one per order. Each row has its order, its kind and an amount above 0. The action's total is the sum of its rows; nobody types a total that could disagree with them. Actions are never deleted; a wrong one is cancelled whole, with a reason, while none of its orders is Closed, and entered again.
+Finance records every movement of money as an **action**: one date, an optional document number, an optional file and a comment, split into **rows**, one per order. Each row has its order, its kind and an amount above 0. The action's total is the sum of its rows; nobody types a total that could disagree with them. Actions are never deleted; a wrong one is cancelled whole, with a reason, while none of its orders is Closed, and entered again. When one of its orders is already Closed, the Head reopens that order first.
 
 | Kind of row | Direction | Changes the order's cash count |
 | --- | --- | --- |
@@ -59,11 +59,11 @@ Finance records every movement of money as an **action**: one date, an optional 
 - Below 0: the Manager spent his own money and Finance pays him back.
 - The count must be 0 before the order can close.
 
-**Manager's cash balance** = the sum of the cash counts of that Manager's orders that are not Closed.
+**Manager's cash balance** is shown as two numbers, never netted: what the Manager holds (the sum of the positive counts of his orders that are not Closed) and what he is owed (the sum of the negative ones).
 
 ## When Finance approves
 
-The approval dialog shows the planned totals of the ticked orders per payment type, and a table "Cash given to the Manager now" with one row per order that has planned cash, prefilled with that order's planned cash total (cash goods plus cash extra costs). Finance can change any row or set it to 0, and give cash later; rows of 0 write nothing. The cash action is saved in the same transaction as the approval. Finance can add more actions at any time while the orders are Open. The Manager may buy before cash is given; the count then goes below 0 until Finance pays.
+The approval dialog shows the planned totals of the ticked orders per payment type, and a table "Cash given to the Manager now" with one row per order that has planned cash, prefilled with that order's planned cash: its planned total when its payment type is Cash, else 0. Finance can change any row or set it to 0, and give cash later; rows of 0 write nothing. The cash action is saved in the same transaction as the approval. Finance can add more actions at any time while the orders are Open. The Manager may buy before cash is given; the count then goes below 0 until Finance pays.
 
 ## Closing
 
@@ -72,7 +72,7 @@ The approval dialog shows the planned totals of the ticked orders per payment ty
 
 | Block | Shows, per order | Finance does |
 | --- | --- | --- |
-| Cash | Given, spent, returned, paid back, count | One settlement action: a Receive row for each order whose count is above 0 and a Pay row for each order below 0, prefilled with the count; partial amounts are allowed; the net is shown |
+| Cash | Given, spent, returned, paid back, count | One settlement action: a Receive row (kind Cash returned) for each order whose count is above 0 and a Pay row (kind Paid back) for each order below 0, prefilled with the count; partial amounts are allowed; the net is shown |
 | Bank transfer | Planned, transferred, value of goods received | Ticks "Confirmed" per order. If transferred and received differ, a note is required: the supplier owes goods or a refund |
 | Corporate card | Planned, actually charged | Ticks "Confirmed" per order. Leftover stays on the card, or Finance records a Card money returned row when the Manager sends it back |
 
@@ -104,8 +104,8 @@ Plan: 100 notebooks × 5 000 in cash, plus 20 000 delivery. Planned total 520 00
 | CHL-26-0143, 50 pens × 2 000 | 100 000 | 100 000 | 130 000 | −30 000 | Settlement: Pay 30 000. 30% over, but only 30 000 so'm: no Head step |
 | CHL-26-0144, 10 folders × 3 000 | 30 000 | 30 000 | 30 000 | 0 | Exact match: the Manager closes it alone |
 
-The Manager ticks 0142 and 0143 and sends them to settlement. Finance's one settlement action holds Receive 50 000 on 0142 and Pay 30 000 on 0143; the screen shows "the Manager hands Finance 20 000". Both counts reach 0, and Finance closes both orders.
+The Manager ticks 0142 and 0143 and sends them to settlement. Finance's one settlement action holds a Cash returned row of 50 000 on 0142 and a Paid back row of 30 000 on 0143; the screen shows "the Manager hands Finance 20 000". Both counts reach 0, and Finance closes both orders.
 
 ## Money with managers
 
-Finance and the Head have a page listing every Manager's cash balance, oldest first, with the date since when, and the orders behind it. It answers "who is holding school money right now, and since when".
+Finance and the Head have a page listing every Manager's cash balance (held and owed, apart), oldest first, with the date since when, and the orders behind it. It answers "who is holding school money right now, and since when".

@@ -61,8 +61,8 @@ Every term the spec defines, in the spec's own words, with the file that defines
 
 | Term | Meaning | Defined in |
 | --- | --- | --- |
-| Purchase record | What the Manager enters after really buying something: actual number, actual price, extra costs. One record belongs to one order; an order can have many. |
-| Trip | One shop visit recorded once for one or more orders: shared date, supplier, payment type and receipt; one purchase record per order; a shared fee split by goods amount. | `07-purchasing.md` | `01-summary.md`, `07-purchasing.md` |
+| Purchase record | What the Manager enters after really buying something: actual number, actual price, extra costs. One record belongs to one order; an order can have many. | `01-summary.md`, `07-purchasing.md` |
+| Trip | One shop visit recorded once for one or more orders of one owner in one branch: shared date, supplier, payment type and receipt; one purchase record per order; a shared fee split by goods amount. | `07-purchasing.md` |
 | Order progress | `OPEN` Open, `DONE` Done, `DONE_SHORT` Done short, `NOT_BOUGHT` Not bought. | `07-purchasing.md` |
 | Substitution | Buying another subtype of the same product. The order shows "Substituted" and the Manager cannot close alone. | `07-purchasing.md` |
 | Used | What a service order shows once its purchase record is saved, where a product order shows Received. | `07-purchasing.md` |
@@ -71,10 +71,10 @@ Every term the spec defines, in the spec's own words, with the file that defines
 | Difference | Planned total − actual total. Positive: money is left. Negative: more was spent. | `08-money-and-settlement.md` |
 | The three colours | Three labels per order and per group row: Number, Price, Total. Green, orange or red. While an order's buying is Open, Number and Total show grey "In progress"; Price is grey until something is bought. | `08-money-and-settlement.md` |
 | Exact match | For one order: Number and Price green, actual extra costs equal planned, no substitution, planned payment type, and its cash count 0. | `08-money-and-settlement.md` |
-| Money action | One Finance action: one date, document number, file and comment, split into rows, one per order, for one Manager. |
-| Money row | One order's part of a money action, of one kind: Cash given, Cash returned, Paid back, Bank transfer, Card top-up, Card money returned. | `08-money-and-settlement.md` | `08-money-and-settlement.md` |
+| Money action | One Finance action: one date, document number, file and comment, split into rows, one per order, for one Manager. | `08-money-and-settlement.md` |
+| Money row | One order's part of a money action, of one kind: Cash given, Cash returned, Paid back, Bank transfer, Card top-up, Card money returned. | `08-money-and-settlement.md` |
 | Cash count | Per order: cash given + paid back − cash returned − cash spent. Must be 0 before the order can close. | `08-money-and-settlement.md` |
-| Manager's cash balance | The sum of the cash counts of a Manager's orders that are not Closed. | `08-money-and-settlement.md` |
+| Manager's cash balance | What a Manager holds (the sum of the positive cash counts of his orders that are not Closed) and what he is owed (the sum of the negative ones), shown apart, never netted. | `08-money-and-settlement.md` |
 | Cash spent | Every purchase and extra cost with payment type Cash that is not cancelled. | `08-money-and-settlement.md` |
 | Settlement | The step where Finance and the Manager even out the money difference. | `01-summary.md`, `08-money-and-settlement.md` |
 | Overspend guard | An order more than 10% and more than 100 000 so'm (two settings) over its planned total: the Head must acknowledge before Finance can close. | `08-money-and-settlement.md`, `02-assumptions.md` A10 |

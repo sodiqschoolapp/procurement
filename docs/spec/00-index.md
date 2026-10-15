@@ -36,7 +36,7 @@ Where an edge-case file is more specific than a chapter file, the edge-case file
 | `edge-cases/00-definitions.md` | Every term the spec defines, with the file that defines it. Read for every task. |
 | `edge-cases/developer-rules.md` | The fifteen architecture rules and where each is enforced. Read for every task with a migration. |
 | `edge-cases/requests-and-approval.md` | 18 situations around drafts, submit, approval, users and branches. |
-| `edge-cases/purchasing-and-money.md` | 19 situations around buying, cancelling, cash and settlement. |
+| `edge-cases/purchasing-and-money.md` | 20 situations around buying, cancelling, cash and settlement. |
 | `edge-cases/warehouse.md` | 7 situations around stock, issues, transfers and direct entry. |
 | `edge-cases/system.md` | 2 situations: session end, large photos. |
 
