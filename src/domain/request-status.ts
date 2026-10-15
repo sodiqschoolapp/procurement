@@ -1,6 +1,6 @@
 // The ten request statuses of docs/spec/06-approval-workflow.md, "Statuses", as codes only, in
-// the spec's order. The state machine of phase 2 imports this list and adds the allowed moves,
-// so the codes live once (developer-rules.md rule 2; plan of 0.10a, decision 8). The words
+// the spec's order. The state machine, src/domain/order-moves.ts, adds the allowed moves to these
+// codes, so they live once (developer-rules.md rule 2; plan of 0.10a, decision 8). The words
 // shown for them are `requestStatus.<CODE>` in the three message files.
 
 export const REQUEST_STATUSES = [

@@ -90,6 +90,10 @@ export const PERMISSIONS = {
   "purchase.cancel": { scope: "branch", roles: HEAD_AND_OWNER, right: "CANCEL_PURCHASES" },
   // "Close a request that matches exactly"
   "request.close_exact": { scope: "branch", roles: HEAD_AND_OWNER, right: "CLOSE_ALONE" },
+  // "Send to settlement" (06 Allowed moves: "Open | Send to settlement | Owner or Head"): not a row
+  // of 03. No Manager right: CLOSE_ALONE off sends the Manager's orders here ("these orders go to
+  // settlement instead", 08 Closing 1), and no switch names it (plan of 2.3, decision 4, Look first).
+  "request.send_to_settlement": { scope: "branch", roles: HEAD_AND_OWNER },
   // "Settle and close a request with differences"
   "request.settle": { scope: "branch", roles: FINANCE_ONLY },
   // "Acknowledge a big overspend"
