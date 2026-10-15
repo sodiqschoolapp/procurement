@@ -771,6 +771,32 @@ Choices made during the build:
 - The last active subtype's page shows the reason in place of the Deactivate button; the server refuses it anyway (`wrong_status`).
 - Existing raw product inserts in `products.db.test.ts` write their default row in the same statement (`withDefault()`); no case was removed or weakened.
 
+### 1.9 Prices and price history (15.10.2026)
+
+The plan's decisions as the plan review of 15.10.2026 confirmed them (corrections 1 and 2 applied), and those of the build. The Look first items come first.
+
+1. **Look first** (money). Every price the Head sets is a HEAD row of `price_history`, the price typed at product or subtype creation too, with no note; a new price carries its note. The backfill gives every price of 1.7 and 1.8 its row, credited to the audit row that set it (a first subtype that kept the default's price: the product's `product.create`), else the oldest Head and the subtype's time.
+2. **Look first** (money). The database holds that a subtype's `reference_price` is the price of its newest HEAD row (by an identity `seq`, which never ties under a frozen clock): a deferred constraint trigger on `product_variants.reference_price` and on HEAD inserts into `price_history`. A set price never goes back to empty.
+3. **Look first** (append-only). `price_history` refuses UPDATE, DELETE and TRUNCATE, as `audit_log`.
+4. **Look first** (permission matrix). `addPrice` uses `price.add` (Head only, global); reading prices uses `catalog.manage`.
+5. **Look first** (money). A product without subtypes gets a new price on its hidden default; `addPrice` reaches the default row.
+6. **Look first** (design-system departure, D23). Five Admin pages: the segmented track stays and scrolls sideways inside itself at phone width.
+7. **Look first** (money). The same price again, and a price for an inactive subtype or product, are recorded with their note.
+8. The note of a new price is required, trimmed, 1 to 200 code points.
+9. `price_history` has a nullable unique `client_key`; a repeat returns the first row to its maker only.
+10. PURCHASE rows name a purchase and HEAD rows none (CHECK); the FK of `purchase_id` comes in 3.2.
+11. No version check on `addPrice`: the subtype row is locked `FOR UPDATE`; the later of two prices is current.
+12. The Prices list shows active and inactive subtypes, active first; the hidden default shows as its product alone.
+13. "Set on" is shown in Tashkent time through the formatters.
+
+Choices made during the build:
+
+- **Look first** (a test changed because a decision changed). `product-variants.db.test.ts`: the passing price writes now carry their HEAD row, and "an update of `reference_price` to empty passes" is gone, because decision 2 refuses it; `price-history.db.test.ts` (c) proves the refusal. The 0013 backfill test now migrates to 0013 only, since 0014's backfill needs a Head that database has none of; 0014's backfill has its own tests. `products.db.test.ts` and `tests/helpers/catalog.ts` write the HEAD row beside a price. No refusal was removed.
+- The Prices list and the history are tables that scroll inside their panel at phone width, as every catalog list since 1.5 (design-system.md, Phone width), not cards as the plan said: the same pattern on every Admin list (spec review of the diff, Should fix 2).
+- The product page's change history also lists its hidden default's `price.add` rows through the new `also` record of `listChangeHistory` (04 rule 9; plan review, Should fix 5).
+- The price page sits at `/prices/[variantId]` under Admin; the product and subtype pages link to it ("Price history") and keep the price read-only.
+- The Uzbek and Russian source names: HEAD is "Rahbar" / "Руководитель", PURCHASE "Xarid" / "Закупка".
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

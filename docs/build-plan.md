@@ -164,7 +164,7 @@ Everything the Head sets up before the first request can be written.
   - **Build:** Subtypes inside a product: name, own photo, own reference price, active; the hidden "default" subtype of a product without subtypes; adding real subtypes to such a product, as answered in open question 18; change history; names unique inside a product.
   - **Done when:** Database tests: every product has at least one subtype at all times; a product without subtypes shows none on screen and has one row. By hand: the spec's phase 1 check, add a product with subtypes and a photo.
 
-- [ ] **1.9 Prices and price history**
+- [x] **1.9 Prices and price history**
   - **Read:** `04-catalogs.md` (Rules: 4); `02-assumptions.md` (A14); `14-data-model.md` (price_history); `03-roles-and-permissions.md` (Permission matrix: "Add a new price for a product").
   - **Build:** The Head adds a new reference price for a subtype with a short note; `price_history` gets a row with source HEAD; a price-history view per subtype; under Admin, a Prices list of every subtype with its current price. The `purchase_id` column gets its foreign key in 3.2.
   - **Done when:** Database test: a new price keeps the old one in the history with who and when; only the Head can add one.

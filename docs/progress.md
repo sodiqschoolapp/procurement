@@ -531,4 +531,22 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - A row that holds a quantity points at `product_variants.id`; its task adds the check to `PRODUCT_USES` (progress 1.7).
 - Browser tests: after a click on a link to a new page, wait for its heading before filling a field: the old page's form has the same labels.
 
-The next task is 1.9.
+## 1.9 Prices and price history (15.10.2026, pull request #39)
+
+**Built**
+- Migration `0014_price_history`: enum `price_source`, `price_history` (FKs subtype and user; `price > 0`; blank-note CHECK; HEAD without and PURCHASE with `purchase_id`; unique `client_key`; identity `seq`), the append-only trigger, the deferred check `price_recorded` (a subtype's `reference_price` is its newest HEAD row's by `seq`; never back to empty) and the backfill of every 1.7 and 1.8 price.
+- `recordHeadPrice()` (`actions/price-rows.ts`), the one writer of a HEAD row; `createProduct`, `createSubtype` and `addPrice` call it. `afterInsert` of `defineCatalogActions()` now takes `{ tx, userId }`.
+- `addPrice` (`actions/prices.ts`, price.add, any subtype, the hidden default too), audit `price.add`; `src/domain/prices.ts` (sources, the note rule).
+- Queries `listPrices`, `getPriceHistory`; `getProduct` gives `defaultVariantId`; `listChangeHistory` takes `also`. Pages `/prices`, `/prices/[variantId]` with `PriceForm`; `PriceHistoryLink` on the product and subtype pages; `AdminNav` has five pages and scrolls sideways at phone width.
+
+**Left out, and the task that brings it**
+- PURCHASE rows, the FK of `purchase_id`, `last_purchase_price`: 3.2. The 20% prompt: 3.9. Excel import of prices: 1.11. Seed prices: 1.13. The price on a request line: the request task after D42.
+
+**What the next sessions must know**
+- For 1.11: each imported price goes through `recordHeadPrice()` with the `reference_price` update in one transaction, or `price_recorded` refuses the commit.
+- For 1.13: a seeded price needs its HEAD row and a Head as `set_by`.
+- For 3.2: a PURCHASE row names its `purchase_id` (CHECK); add the FK then. `getPriceHistory` needs `branchFilter()` on PURCHASE rows before another role reads it.
+- A raw-SQL price in a test needs its HEAD row in the same transaction: `priceSetter()` and the helpers of `tests/helpers/catalog.ts` do it.
+- `reference_price` is never set back to empty once set.
+
+The next task is 1.10.
