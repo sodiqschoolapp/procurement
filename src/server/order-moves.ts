@@ -1,0 +1,162 @@
+import { inArray, sql } from "drizzle-orm";
+import type * as z from "zod";
+
+import {
+  ORDER_MOVES,
+  type OrderAction,
+  type OrderState,
+  type PlannedMove,
+  assertMove,
+  checkMoves,
+  isMoveReason,
+  moveReason,
+  MOVE_REASON_MAX,
+} from "@/domain/order-moves";
+import type { Permission } from "@/domain/permissions";
+import type { RequestStatus } from "@/domain/request-status";
+import { orders } from "@/server/db/schema";
+
+import { ActionError } from "./action";
+import type { FieldMessageKey, OrderFailure } from "./action-result";
+import {
+  type LockedOrder,
+  type OrderEventExtra,
+  type OrdersActionDefinition,
+  type OrdersContext,
+  type OrdersInput,
+  type OrdersResult,
+  defineOrdersAction,
+} from "./order-action";
+
+// The status move of ticked orders, on the wrapper of order-action.ts (plan of 2.4): the server
+// asks the one state machine of src/domain/order-moves.ts again before it writes
+// (developer-rules.md rule 2). Every fact of OrderState is read from the locked order and its
+// owner, never from the input (rule 13; progress 2.3, "For 2.4"). The facts of phases 3 and 4 are
+// `false` until those phases build them. Submit's numbers and checks (2.7), the cash of Finance's
+// Approve (2.10, 4.2) and the per-order notes of a send-back (2.11) go in through `afterMove`.
+
+/** The input of a move: the orders, and a reason where the move needs one (06 rule 3). */
+export type MoveActionInput = OrdersInput & { reason?: string };
+
+/** The permission of the move row of a status, or `data.view` when there is none. */
+function permissionOf(status: RequestStatus, action: OrderAction): Permission {
+  // Without a row the wall still answers first (`not_found`), and the machine then says
+  // `wrong_status` (plan of 2.4, Server actions).
+  return (
+    ORDER_MOVES.find((move) => move.from === status && move.action === action)?.permission ??
+    "data.view"
+  );
+}
+
+/** The machine's view of one locked order. */
+export function orderState(order: LockedOrder): OrderState {
+  return {
+    id: order.id,
+    status: order.status,
+    branchId: order.branchId,
+    ownerId: order.ownerId,
+    createdByHead: order.createdByHead,
+    buyingFinished: order.progress !== "OPEN",
+    // 08 Exact match and close readiness: phases 3 and 4.
+    exactMatch: false,
+    ownerClosesAlone: order.ownerClosesAlone,
+    readyToClose: false,
+  };
+}
+
+/** Why a reason is refused, as the field error of `reason` (06 rule 3). */
+function reasonFields(reason: unknown): Record<string, FieldMessageKey> {
+  if (typeof reason !== "string" || reason.trim() === "")
+    return { reason: "errors.field.required" };
+  if (Array.from(moveReason(reason)).length > MOVE_REASON_MAX) {
+    return { reason: "errors.field.tooLong" };
+  }
+  return { reason: "errors.field.tooShort" };
+}
+
+/** The machine's answer for the visible orders, as the wrapper's per-order failures. */
+function checkOf<Input extends MoveActionInput>(
+  action: OrderAction,
+  context: OrdersContext<Input>,
+): readonly OrderFailure[] {
+  const check = checkMoves(context.actor, context.orders.map(orderState), action, {
+    reason: context.input.reason,
+  });
+  if (check.ok) return [];
+  const refusal = check.refusal;
+  if (refusal.kind === "reason") {
+    throw new ActionError("invalid_input", reasonFields(context.input.reason));
+  }
+  // `none`, `too_many` and `duplicate` are refused by the input schema first.
+  if (refusal.kind !== "orders") throw new ActionError("invalid_input");
+  return refusal.orders.map(({ orderId, reason }) => ({ orderId, code: reason }));
+}
+
+/** Writes each order's new status, and its revision where the move raises it. */
+async function writeMoves(
+  context: OrdersContext<MoveActionInput>,
+  moves: readonly PlannedMove[],
+): Promise<void> {
+  // One statement per target status and revision step, never one per order (rule 12).
+  const groups = new Map<string, { to: RequestStatus; revisionUp: boolean; ids: string[] }>();
+  for (const move of moves) {
+    const key = `${move.to}:${move.revisionUp}`;
+    const group = groups.get(key) ?? { to: move.to, revisionUp: move.revisionUp, ids: [] };
+    group.ids.push(move.orderId);
+    groups.set(key, group);
+  }
+  for (const group of groups.values()) {
+    await context.tx
+      .update(orders)
+      .set({
+        status: group.to,
+        ...(group.revisionUp ? { revision: sql`${orders.revision} + 1` } : {}),
+      })
+      .where(inArray(orders.id, group.ids));
+  }
+}
+
+/**
+ * An action that makes one status move on ticked orders. `afterMove` writes what a move adds
+ * (2.7: the numbers; 2.10: the payment type and cash; 2.11: the notes) in the same transaction,
+ * and may return each order's event extras; `headStepAuto` is logged in the Submit event's
+ * payload as `{ "headStepAuto": true }`, "Created by Head" (03 rule 6; review of the plan of 2.4,
+ * correction 5).
+ */
+export function orderMoveAction<Input extends MoveActionInput>(options: {
+  name: string;
+  action: OrderAction;
+  input: z.ZodType<Input>;
+  afterMove?(
+    context: OrdersContext<Input>,
+    moves: readonly PlannedMove[],
+  ): Promise<ReadonlyMap<string, OrderEventExtra> | void>;
+  notify?(context: OrdersContext<Input>, result: OrdersResult): Promise<void>;
+}): OrdersActionDefinition<Input> {
+  const { action } = options;
+  return defineOrdersAction<Input>({
+    name: options.name,
+    type: action,
+    input: options.input,
+    permission: (order) => permissionOf(order.status, action),
+    repeatPermission: (fromStatus) => permissionOf(fromStatus, action),
+    reason: (input) => (isMoveReason(input.reason) ? moveReason(input.reason) : null),
+    check: (context) => checkOf(action, context),
+    async write(context) {
+      const moves = assertMove(context.actor, context.orders.map(orderState), action, {
+        reason: context.input.reason,
+      });
+      await writeMoves(context, moves);
+      const extras = new Map<string, OrderEventExtra>();
+      for (const move of moves) {
+        if (move.headStepAuto) extras.set(move.orderId, { payload: { headStepAuto: true } });
+      }
+      const added = await options.afterMove?.(context, moves);
+      for (const [orderId, extra] of added ?? []) {
+        extras.set(orderId, { ...extras.get(orderId), ...extra });
+      }
+      return extras;
+    },
+    notify: options.notify,
+  });
+}

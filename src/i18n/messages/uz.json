@@ -39,6 +39,7 @@
     "staleVersion": "Sahifa ochiq turganda kimdir buni o'zgartirdi. Yangi holatini ko'rish uchun sahifani yangilang va qayta urinib ko'ring.",
     "wrongStatus": "Hozirgi holatda buni bajarib bo'lmaydi. Hozirgi holatini ko'rish uchun sahifani yangilang.",
     "conflict": "Siz ishlayotganingizda bu boshqa filial yoki xodimga o'tkazildi. Sahifani yangilang va qayta urinishdan oldin tekshiring.",
+    "notReady": "Belgilangan buyurtmalarning ba'zilari hali bu qadamga tayyor emas. Ajratilgan buyurtmalardan belgini olib, amalni qayta bajaring.",
     "unexpected": "Nimadir noto'g'ri ketdi, hech narsa saqlanmadi. Qayta urinib ko'ring; yana takrorlansa, xaridlar rahbariga xabar bering.",
     "network": "Aloqa uzildi. O'zgarishingiz saqlanganini bilish uchun sahifani yangilang.",
     "field": {

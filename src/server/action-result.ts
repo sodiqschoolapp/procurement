@@ -13,6 +13,9 @@ export const SERVER_ERROR_CODES = [
   "stale_version",
   "wrong_status",
   "conflict",
+  // Some ticked orders are not ready for the move: buying not finished, not an exact match, not
+  // ready to close (06-approval-workflow.md, Allowed moves "Needs"; plan of 2.4, decision 1).
+  "not_ready",
   "unexpected",
 ] as const;
 export type ServerErrorCode = (typeof SERVER_ERROR_CODES)[number];
@@ -29,6 +32,7 @@ export const ERROR_MESSAGE_KEYS = {
   stale_version: "errors.staleVersion",
   wrong_status: "errors.wrongStatus",
   conflict: "errors.conflict",
+  not_ready: "errors.notReady",
   unexpected: "errors.unexpected",
   network: "errors.network",
 } as const satisfies Record<ActionErrorCode, string>;
@@ -72,11 +76,30 @@ export const FIELD_ERROR_KINDS = [
 export type FieldErrorKind = (typeof FIELD_ERROR_KINDS)[number];
 export type FieldMessageKey = `errors.field.${FieldErrorKind}`;
 
+/** Why one ticked order refused an action on many orders, in the order they are checked. */
+export const ORDER_REFUSAL_CODES = [
+  "not_found",
+  "stale_version",
+  "wrong_status",
+  "forbidden",
+  "not_ready",
+] as const;
+export type OrderRefusalCode = (typeof ORDER_REFUSAL_CODES)[number];
+
+/** One failing order of an action on ticked orders (06-approval-workflow.md rule 8). */
+export type OrderFailure = { orderId: string; code: OrderRefusalCode };
+
 export type ActionFailure = {
   code: ActionErrorCode;
   messageKey: ErrorMessageKey;
   /** For `invalid_input`: the message key of each field that is wrong, by its path (`lines.0.qty`). */
   fields?: Record<string, FieldMessageKey>;
+  /**
+   * For an action on ticked orders: every order that failed and why, so the screen names them
+   * (06 rule 8; plan of 2.4, decision 1). The action's `code` is the first of these codes, in the
+   * order of ORDER_REFUSAL_CODES, that any order has.
+   */
+  orders?: readonly OrderFailure[];
 };
 
 export type ActionResult<T> = { ok: true; data: T } | { ok: false; error: ActionFailure };
@@ -84,9 +107,11 @@ export type ActionResult<T> = { ok: true; data: T } | { ok: false; error: Action
 export function failure(
   code: ActionErrorCode,
   fields?: Record<string, FieldMessageKey>,
+  orders?: readonly OrderFailure[],
 ): { ok: false; error: ActionFailure } {
   const error: ActionFailure = { code, messageKey: ERROR_MESSAGE_KEYS[code] };
   if (fields) error.fields = fields;
+  if (orders) error.orders = orders;
   return { ok: false, error };
 }
 

@@ -36,6 +36,7 @@ export const UPLOAD_STATUS = {
   conflict: 409,
   stale_version: 409,
   wrong_status: 409,
+  not_ready: 409,
   too_large: 413,
   not_an_allowed_type: 415,
   not_an_image: 422,
