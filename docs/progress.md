@@ -652,4 +652,20 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - For 2.5: the hint compares with the subtype's reference price only (never the last purchase price), with the setting `price_hint_percent`; pass the bigint to `t("orders.priceHint", { percent })` as it is (cast to the message's number type), never through `Number()`.
 - A later block that sets `no-restricted-imports` spreads `ICON_IMPORT_PATHS` and `TEST_CLOCK_IMPORT_PATTERNS` in (flat config replaces the options).
 
-The next task is 2.3.
+## 2.3 Domain: the state machine (15.10.2026, pull request #48)
+
+**Built**
+- `src/domain/order-moves.ts`: `ORDER_ACTIONS` (12 codes), `ORDER_MOVES` (the 21 entries of 06 Allowed moves), `OrderState`, `allowedActions(actor, orders)`, `checkMoves(actor, orders, action, { reason })`, `assertMove()` throwing `OrderMoveRefused`, `isMoveReason()`/`moveReason()` (5 to 500 code points), `ORDER_ACTION_MAX` 200.
+- Permission `request.send_to_settlement` (Head all, Manager own orders, no right).
+
+**Left out, and the task that brings it**
+- The writer of the moves, events and version: 2.4 onward. The facts `buyingFinished`, `exactMatch`, `ownerClosesAlone`, `readyToClose`: phases 3 and 4. Button labels: the task that shows each button.
+
+**What the next sessions must know**
+- Every status move calls `assertMove()` (server) or `allowedActions()` (screen); no other code compares statuses to decide a move.
+- For 2.4: `order_actions.type` and `order_events.type` take the `ORDER_ACTIONS` codes for the moves, plus the non-move events 2.4 decides. Raise `version` on every move, so decision 11 (one action across statuses) stays safe. Map `OrderMoveRefused`: `not_found` → `not_found`, `wrong_status` → `wrong_status`, `forbidden` → `forbidden`, `not_ready` and `reason` → `invalid_input` or a code of its own (2.4 decides); name every failing order.
+- For 2.4 and 2.7: a taken-back Draft keeps its number and revision; only `SUBMIT_AGAIN` raises the revision (`PlannedMove.revisionUp`). `headStepAuto` is logged as "Created by Head".
+- For phases 3 and 4: `ownerClosesAlone` is `true` when the owner is the Head or a Manager with `CLOSE_ALONE` on; a phase-2 caller passes `false` for the facts not built yet.
+- A Draft of another user is `not_found` for everyone but its owner and the Head.
+
+The next task is 2.4.

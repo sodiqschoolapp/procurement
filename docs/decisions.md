@@ -935,6 +935,32 @@ Choices made during the build:
 - The payment type check reuses `isPaymentType` of `src/domain/settings.ts` (spec review, Should fix 1; developer-rules rule 1).
 - decimal.js `^10.6.0`, the range style of the other dependencies; `npm audit --omit=dev --audit-level=high` passes, with no finding for decimal.js (the four moderate findings are drizzle-kit's, as on `main`).
 
+### 2.3 Domain: the state machine (15.10.2026)
+
+The plan's decisions as the plan review of 15.10.2026 confirmed them (corrections 1 to 3 applied). The Look first items come first.
+
+1. **Look first** (open question 5). Take back keeps the number; a taken-back order is `DRAFT` with its number, and its next Submit keeps the revision. Proposed `/spec-change` for `14-data-model.md`: "number UNIQUE (empty until the first submit; a taken-back Draft keeps it)".
+2. **Look first** (open question 6). The creator is the owner, the Head included; the Head then holds that order's cash count. Proposed `/spec-change` for 03 rule 7: "An order has one owner: the user who created it, a Manager or the Head."
+3. **Look first** (approval order). Submit again goes to `PENDING_HEAD` for every order, one the Head created included (06 Allowed moves; rule 4). The "Waiting for Principal" exception keys on the creator and stands on Draft → Submit only.
+4. **Look first** (permission matrix). `request.send_to_settlement`: Head all branches, Manager own orders, no Manager right; `CLOSE_ALONE` off sends orders there (08 Closing 1). Proposed `/spec-change` for the 03 matrix: add the row "Send an order to settlement | Yes, any branch | Yes, own orders | No | No".
+5. **Look first** (approval order). Take back and Submit again are the owner's only (the table's "Owner"), the Head included only as owner; Submit, Cancel, Close exact match, Send to settlement are "Owner or Head". Manager moves of an order need `CREATE_REQUESTS`. The way out for the Head is moving the order (03 rule 7). Proposed `/spec-change` for the rows Take back and Submit again: "Owner or Head".
+6. **Look first** (approval order). Close exact match is refused to anyone, the Head included, when the owner is a Manager whose `CLOSE_ALONE` is off (`ownerClosesAlone`); Send to settlement stays open.
+7. **Look first** (spec gap). A taken-back Draft with a number has no Cancel (the table lists none) and cannot be deleted. Proposed `/spec-change` for the Cancel row: "Draft with a number, any "Waiting for" step, Sent back | Cancel | Owner or Head | Cancelled | Reason".
+8. **Look first** (approval order). The screen offers Submit and Finance's Close without checking the submit checks or close readiness; the server refuses and names the orders (08 Closing 3; 05 Checks at submit).
+9. **Look first** (enums). The move codes are the twelve `ORDER_ACTIONS`; 2.4 adds the non-move event types.
+10. **Look first** (approval order). Refusal order per order: another branch or another user's Draft `not_found`, then `wrong_status`, then `forbidden`, then `not_ready`; every failing order is named and nothing moves.
+11. **Look first** (approval order). One action may move orders from different statuses when each has a row for it; each takes its own row's `to`.
+12. Close from Open and from settlement are two codes (`CLOSE_EXACT`, `CLOSE`); so are Send back and Send back for correction.
+13. Reasons: trimmed, 5 to 500 code points; Send back for correction needs one.
+14. No orders, more than 200 or the same order twice: nothing offered, the action refused.
+15. The machine reads no clock, database or version.
+16. File `order-moves.ts` beside `request-status.ts`; internal names keep "request" (D43).
+
+Choices made during the build:
+
+- The facts the screen cannot know before the action (Finance's close readiness) are checked by `checkMoves()` only; `allowedActions()` checks the rest of the same `judge()`, so the two never disagree on anything else.
+- The generated test runs 92 160 combinations (10 statuses × 12 actions × 6 role-and-right settings × 128 relations and facts) against a hand-written oracle, in about a second.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.
