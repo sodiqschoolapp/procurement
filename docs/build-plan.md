@@ -169,7 +169,7 @@ Everything the Head sets up before the first request can be written.
   - **Build:** The Head adds a new reference price for a subtype with a short note; `price_history` gets a row with source HEAD; a price-history view per subtype; under Admin, a Prices list of every subtype with its current price. The `purchase_id` column gets its foreign key in 3.2.
   - **Done when:** Database test: a new price keeps the old one in the history with who and when; only the Head can add one.
 
-- [ ] **1.10 Excel import: products, subtypes, departments**
+- [x] **1.10 Excel import: products, subtypes, departments**
   - **Read:** `04-catalogs.md` (Rules: 7); `13-technology.md` (Excel and PDF); `16-build-order.md` (phase 1 row).
   - **Build:** The import framework on ExcelJS: template download, upload, a preview with errors per row, saving only when every row is valid, in one transaction; imports for products with subtypes and for departments.
   - **Done when:** Tests: a file with one bad row saves nothing and names the row and the reason; a valid file of 30 products creates 30 products. By hand: the spec's phase 1 check, import 30 products from Excel.

@@ -549,4 +549,22 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - A raw-SQL price in a test needs its HEAD row in the same transaction: `priceSetter()` and the helpers of `tests/helpers/catalog.ts` do it.
 - `reference_price` is never set back to empty once set.
 
-The next task is 1.10.
+## 1.10 Excel import: products, subtypes, departments (15.10.2026, pull request #40)
+
+**Built**
+- ExcelJS 4.4.0 (`overrides` lifts its `uuid` to ^11.1.1; audit clean). `src/server/excel.ts`: `readSheet()` (content check, 900 KB, real unpacking under 20 MB by `checkZip()`), `writeTemplate()`.
+- `src/domain/imports.ts`: columns, limits, `cellText()`, `cellPrice()` (through `parseSom`), `headerMatches()`, `readProductRows()`, `readDepartmentRows()`. Titles and type words from the message files (`features/catalog/imports/titles.ts`).
+- Migration `0015_catalog_imports` (enum `import_kind`, the import's client key, who, file, rows). `checkProductImport()`/`checkDepartmentImport()` (one query per table, `FOR SHARE` on save).
+- `importProducts`, `importDepartments` (`actions/imports.ts`), query `previewImport`, page actions with `authorize()` before the file is read, route `GET /catalog/import/[kind]/template`, page `/catalog/import/[kind]`, Import buttons on both lists.
+- `defineCatalogActions()` returns `insert` and `recordCreate`; `addSubtype`/`recordSubtypeCreate` hold createSubtype's body; a fence test keeps them inside actions. A custom Zod issue may name its field kind (`params.fieldError`).
+
+**Left out, and the task that brings it**
+- Prices of existing subtypes from Excel: 1.11. Existing stock: phase 5 (direct entry). Seed catalogs: 1.13. Subtypes for an existing product by file, updates by file: no task (decision 6).
+
+**What the next sessions must know**
+- For 1.11: add `PRICES` to `import_kind`, a column set to `IMPORT_COLUMNS` with its titles in the three files, a reader in `src/domain/imports.ts`, a check in `imports/check.ts`, and an action like `importProducts` that writes each price through `recordHeadPrice()` with the `reference_price` update. The page, the route and the page actions take a new kind as they are.
+- An import's row error is the field `<row>:<column>`, the file's `file`; the form reads both back.
+- A test that builds an import sheet uses `tests/helpers/imports.ts`.
+- The page actions take a `FormData`; a server action's body limit is 1 MB, so the file limit stays under it.
+
+The next task is 1.11.

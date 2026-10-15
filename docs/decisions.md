@@ -797,6 +797,37 @@ Choices made during the build:
 - The price page sits at `/prices/[variantId]` under Admin; the product and subtype pages link to it ("Price history") and keep the price read-only.
 - The Uzbek and Russian source names: HEAD is "Rahbar" / "Руководитель", PURCHASE "Xarid" / "Закупка".
 
+### 1.10 Excel import: products, subtypes, departments (15.10.2026)
+
+The plan's decisions as the plan review of 15.10.2026 confirmed them (corrections 1 to 3 applied), and those of the build. The Look first items come first.
+
+1. **Look first** (money). A price cell is read through `parseSom()` only: a text as typed; a number cell only when `Number.isSafeInteger(n) && n > 0`, then `parseSom(String(n))`, so `MONEY_MAX` holds. A fraction, 0, a negative or a date is "Wrong format", never rounded.
+2. **Look first** (money). An imported price is the Head setting a price: a HEAD row with no note. A product with subtypes has `reference_price` null; its first subtype is the default made real with its row's price, the others new rows, each price its HEAD row.
+3. **Look first** (a dependency installed for the first time). ExcelJS 4.4.0, on the stack line (13, "Excel and PDF"); MIT. `"overrides": { "exceljs": { "uuid": "^11.1.1" } }` clears GHSA-w5hq-g745-h8pq (moderate, through `uuid@8`); ExcelJS's round-trip tests pass with it.
+4. **Look first** (design-system departure, D23). The import is a page of its own, `/catalog/import/<kind>`, not a dialog.
+5. **Look first** (narrows 04 rule 7). The import creates new products with their subtypes and new departments only; a taken name is a row error. Proposed `/spec-change` for 04 rule 7: "Excel import. New products with their subtypes, prices, departments and existing stock can be imported from an Excel template. Subtypes of a product already in the catalog are added on its page."
+6. **Look first** (bends developer-rules rule 12). Rows are checked with one query per table, then written one after another through the form's own write path in one transaction (about 8 statements per product row). Proposed `/spec-change` for rule 12: "No query runs inside a loop, except an Excel import, which writes each row through the form's own write path inside its one transaction."
+7. Nothing is kept between preview and save: the browser sends the file again, and the save checks every row again under its locks.
+8. References match by the unique indexes' comparison: category and company by name, measure by name or short name (a cell that fits two measures is "ambiguous"), branch by code. Unknown or inactive is a row error; the import creates no reference entry.
+9. Type: Product or Service in any language, or GOODS/SERVICE; empty is Product.
+10. A product's columns are filled on its first row; a later row leaves them empty or repeats them; a different value is an error naming the first row. Several rows of one product each need a subtype.
+11. The header must be the template's titles in uz, ru or en; columns are read by position.
+12. At most 500 data rows, 900 KB per file (under the 1 MB body limit of a server action), 20 MB unpacked by the declared and the real sizes; an entry that is encrypted or not stored/deflate is refused (plan review, correction 3).
+13. `catalog_imports` holds the import's client key and who imported which file; entries made by an import have no client key; each has its own `*.create` audit row.
+14. Photos are not imported. Empty rows are skipped; only the first sheet is read; a formula by its cached value; a whole number in a text column is its digits.
+15. The template is a route, 404 to anyone but the Head; the page actions call `authorize()` before the file is read (plan review, correction 1).
+16. A department name held by an active or inactive department of that branch is taken (plan review, correction 2).
+
+Choices made during the build:
+
+- The action's input check is a Zod `transform` that adds one issue per row error carrying `params.fieldError`; `fieldErrorKind()` of `src/server/action-input.ts` returns a named kind that is one of `FIELD_ERROR_KINDS` (tested) and keeps "Wrong format" otherwise. The plan said `superRefine`; the transform also gives the action the read rows. Eight new field kinds: unknown, ambiguous, duplicateInFile, differsInFile, notTemplate, fileTooLarge, tooManyRows, noRows.
+- The preview reads on `db` without a transaction, not in a read-only transaction as the plan said: the lint fence of rule 3 forbids a query opening one, and the preview writes nothing and is checked again at save (spec review of the diff, Should fix 5).
+- One client key is unique across kinds: a repeat finds the first import whatever kind is sent (spec review, nit 2).
+- `catalog_imports.row_count` is the file's data rows; the toast says "N rows imported", not "N products".
+- The file button is the page's own label over a hidden input: the browser's button writes its text in the browser's language (CLAUDE.md rule 13).
+- Matrix tests of `importProducts`, `importDepartments` and `previewImport` called directly, and a fence test that the shared write bodies are imported only by the catalog actions (permission review, Must fix 1 to 3, Should fix 1); a line in `.claude/rules/server-actions.md`.
+- The template route's matrix test reads its 404 as the refusal "forbidden" of a global permission.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.
