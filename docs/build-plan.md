@@ -179,7 +179,7 @@ Everything the Head sets up before the first request can be written.
   - **Build:** Loading new prices for many subtypes at once through the same framework; each new price is a `price_history` row.
   - **Done when:** Test: 3 prices in one file give 3 history rows and 3 current prices; one unknown product fails the whole file.
 
-- [ ] **1.12 Product suggestions**
+- [x] **1.12 Product suggestions**
   - **Read:** `04-catalogs.md` (Rules: 8); `14-data-model.md` (catalog_suggestions); `10-notifications-analytics-reports.md` (Notifications: "Product suggested"); `03-roles-and-permissions.md` (Permission matrix: "Suggest a new product for the catalog"); `edge-cases/requests-and-approval.md` ("The needed item is not in the catalog").
   - **Build:** A Manager sends a suggestion with name, measure as text, photo and note; the Head adds it to the catalog, edited if needed, or declines with a reason; each side is notified.
   - **Done when:** Database tests for both outcomes and their notifications; a Principal cannot suggest.
