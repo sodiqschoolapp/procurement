@@ -268,6 +268,29 @@ describe("names are unique inside a product (04 rule 3)", () => {
     );
   });
 
+  it("two first subtypes of one product at once: one turns the default real, the other is a new row (spec review, Should fix 2)", async () => {
+    const head = await insertUser("HEAD");
+    const product = await insertProduct({ referencePrice: 50_000n });
+    const outcomes = await runTogether(
+      ["Birinchi", "Ikkinchi"].map((name) => async (meet: () => Promise<void>) => {
+        const input = { clientKey: newClientKey(), productId: product.id, name };
+        await meet();
+        return runAction(createSubtype, head.id, input);
+      }),
+    );
+    const answers = outcomes.map((outcome) => {
+      expect(outcome.status).toBe("fulfilled");
+      return (outcome as PromiseFulfilledResult<ActionResult<Created>>).value;
+    });
+    expect(answers.every((answer) => answer.ok)).toBe(true);
+    const rows = await rowsOf(product.id);
+    expect(rows).toHaveLength(2);
+    expect(rows.filter((row) => row.isDefault)).toHaveLength(0);
+    expect(rows.filter((row) => row.id === product.defaultVariantId)).toHaveLength(1);
+    expect(rows.find((row) => row.id === product.defaultVariantId)!.referencePrice).toBe(50_000n);
+    expect((await productRow(product.id)).hasVariants).toBe(true);
+  });
+
   it("a rename racing a create with one name: a field error, never the index's 23505", async () => {
     const head = await insertUser("HEAD");
     const product = await insertProduct();

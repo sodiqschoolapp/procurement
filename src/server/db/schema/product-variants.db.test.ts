@@ -137,6 +137,26 @@ describe("product_variants: every product has at least one subtype at all times 
     await insertVariant({ productId });
   });
 
+  it("on INSERT: a default row into a product with subtypes is refused at commit (spec review, Should fix 1a)", async () => {
+    const { productId } = await productWithSubtypes();
+    expect(await refusalOf(insertVariant({ productId, isDefault: true }))).toMatchObject(SHAPE);
+    // A real row into it passes beside it (D40).
+    await insertVariant({ productId });
+  });
+
+  it("on INSERT: a product with only a real row and has_variants false is refused at commit (Should fix 1b)", async () => {
+    const categoryId = (await insertCategory()).id;
+    const unitId = (await insertUnit()).id;
+    const withRow = (name: string, isDefault: boolean) =>
+      db.execute(sql`with p as (insert into products (name, category_id, unit_id, created_at)
+          values (${name}, ${categoryId}, ${unitId}, ${AT}) returning id),
+        v as (insert into product_variants (product_id, name, is_default, created_at)
+          select id, 'A4', ${isDefault}, ${AT} from p)
+        select id from p`);
+    expect(await refusalOf(withRow(`Faqat haqiqiy ${randomUUID()}`, false))).toMatchObject(SHAPE);
+    await withRow(`Yashirin bilan ${randomUUID()}`, true);
+  });
+
   it("a second default for one product is refused by the partial unique index", async () => {
     const product = await insertProduct();
     expect(
