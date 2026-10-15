@@ -166,6 +166,16 @@ describe("orders: a submitted order is complete (05 Checks at submit; plan decis
     ).toMatchObject({ code: CHECK, constraint: "orders_urgent_reason_check" });
     await order({ status: "DRAFT", priority: "URGENT" });
     await order({ status: "PENDING_HEAD", priority: "URGENT", urgentReason: "Dars ertaga" });
+
+    // On update: an Urgent draft without a reason, numbered and complete, cannot leave DRAFT.
+    const draft = await order({ priority: "URGENT", number: inventedNumber() });
+    await setColumn("orders", draft.id, "submitted_at", AT);
+    expect(await refusalOf(setColumn("orders", draft.id, "status", "PENDING_HEAD"))).toMatchObject({
+      code: CHECK,
+      constraint: "orders_urgent_reason_check",
+    });
+    await setColumn("orders", draft.id, "urgent_reason", "Dars ertaga");
+    await setColumn("orders", draft.id, "status", "PENDING_HEAD");
   });
 });
 
@@ -463,14 +473,22 @@ describe("order_actions, order_events, order_revisions (06 rule 11; developer-ru
 
   const insertEvent = async (
     orderId: string,
-    row: { actionId?: string | null; toStatus?: string | null } = {},
+    row: {
+      actionId?: string | null;
+      fromStatus?: string | null;
+      toStatus?: string | null;
+      type?: string;
+      actorId?: string;
+    } = {},
   ) =>
     db.execute<{ id: string }>(sql`insert into order_events
         (order_id, action_id, type, from_status, to_status, actor_id, created_at)
       values (${orderId},
         ${row.actionId === undefined ? (await insertAction()).rows[0]!.id : row.actionId},
-        'APPROVE', 'PENDING_HEAD',
-        ${row.toStatus === undefined ? "PENDING_PRINCIPAL" : row.toStatus}, ${ownerId}, ${AT})
+        ${row.type ?? "APPROVE"},
+        ${row.fromStatus === undefined ? "PENDING_HEAD" : row.fromStatus},
+        ${row.toStatus === undefined ? "PENDING_PRINCIPAL" : row.toStatus},
+        ${row.actorId ?? ownerId}, ${AT})
       returning id`);
 
   it("the same client_key twice is refused (rule 8)", async () => {
@@ -504,6 +522,15 @@ describe("order_actions, order_events, order_revisions (06 rule 11; developer-ru
     await insertAction({ reason: "x".repeat(500) });
   });
 
+  it("an unknown actor is refused (developer-rules rule 5)", async () => {
+    expect(
+      await refusalOf(
+        db.execute(sql`insert into order_actions (client_key, type, actor_id, order_count, created_at)
+          values (${randomUUID()}, 'APPROVE', ${randomUUID()}, 1, ${AT})`),
+      ),
+    ).toMatchObject({ code: FOREIGN, constraint: "order_actions_actor_id_users_id_fk" });
+  });
+
   it("an unknown action type is refused", async () => {
     expect(await refusalOf(insertAction({ type: "PAINT" }))).toMatchObject({ code: BAD_ENUM });
   });
@@ -514,12 +541,28 @@ describe("order_actions, order_events, order_revisions (06 rule 11; developer-ru
       code: NOT_NULL,
       column: "action_id",
     });
-    expect(await refusalOf(insertEvent(submitted.id, { toStatus: null }))).toMatchObject({
-      code: NOT_NULL,
-      column: "to_status",
+    for (const column of ["from_status", "to_status"] as const) {
+      const empty = column === "from_status" ? { fromStatus: null } : { toStatus: null };
+      expect(await refusalOf(insertEvent(submitted.id, empty)), column).toMatchObject({
+        code: NOT_NULL,
+        column,
+      });
+    }
+    expect(await refusalOf(insertEvent(submitted.id, { type: "PAINT" }))).toMatchObject({
+      code: BAD_ENUM,
     });
+    // Each foreign key of order_events (developer-rules rule 5; D39).
     expect(await refusalOf(insertEvent(submitted.id, { actionId: randomUUID() }))).toMatchObject({
       code: FOREIGN,
+      constraint: "order_events_action_id_order_actions_id_fk",
+    });
+    expect(await refusalOf(insertEvent(randomUUID()))).toMatchObject({
+      code: FOREIGN,
+      constraint: "order_events_order_id_orders_id_fk",
+    });
+    expect(await refusalOf(insertEvent(submitted.id, { actorId: randomUUID() }))).toMatchObject({
+      code: FOREIGN,
+      constraint: "order_events_actor_id_users_id_fk",
     });
     await insertEvent(submitted.id);
   });
@@ -539,6 +582,12 @@ describe("order_actions, order_events, order_revisions (06 rule 11; developer-ru
       constraint: "order_revisions_revision_check",
     });
     await revision(2);
+    expect(
+      await refusalOf(
+        db.execute(sql`insert into order_revisions (order_id, revision, snapshot, created_at)
+          values (${randomUUID()}, 1, '{}'::jsonb, ${AT})`),
+      ),
+    ).toMatchObject({ code: FOREIGN, constraint: "order_revisions_order_id_orders_id_fk" });
   });
 
   it("UPDATE, DELETE and TRUNCATE of the history are refused (rule 7)", async () => {

@@ -1,7 +1,7 @@
 import { inArray, sql } from "drizzle-orm";
 import * as z from "zod";
 
-import { ORDER_ACTION_MAX, type OrderAction } from "@/domain/order-moves";
+import { ORDER_ACTION_MAX, type OrderAction, behindDraftWall } from "@/domain/order-moves";
 import type { Actor, Permission } from "@/domain/permissions";
 import type { RequestStatus } from "@/domain/request-status";
 import { type CurrentUser, getCurrentUser } from "@/server/auth/session";
@@ -217,11 +217,6 @@ async function lockOrders(tx: Transaction, ids: readonly string[]): Promise<Lock
     createdByHead: row.created_by_head,
     ownerClosesAlone: row.owner_closes_alone,
   }));
-}
-
-/** A draft is visible to its owner and the Head only (06 Statuses; 03 rule 1). */
-function behindDraftWall(actor: Actor, order: { status: RequestStatus; ownerId: string }): boolean {
-  return order.status === "DRAFT" && actor.role !== "HEAD" && actor.userId !== order.ownerId;
 }
 
 /**

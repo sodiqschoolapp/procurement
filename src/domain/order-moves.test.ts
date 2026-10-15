@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  behindDraftWall,
   ORDER_ACTIONS,
   ORDER_ACTION_MAX,
   ORDER_MOVES,
@@ -622,6 +623,27 @@ describe("assertMove() for the server (developer-rules.md rule 2)", () => {
     expect(thrown).toBeInstanceOf(OrderMoveRefused);
     expect(!refusal.ok && (thrown as OrderMoveRefused).refusal).toEqual(
       !refusal.ok && refusal.refusal,
+    );
+  });
+});
+
+describe("behindDraftWall(): a draft is visible to its owner and the Head only (06 Statuses)", () => {
+  const actor = (role: Role, userId = "u-1"): Actor => ({
+    userId,
+    role,
+    branchIds: role === "HEAD" ? [] : ["b-1"],
+    disabledRights: [],
+  });
+
+  it("hides another user's draft from every role but the Head; never a submitted order", () => {
+    const draft = { status: "DRAFT" as const, ownerId: "u-2" };
+    for (const role of ["MANAGER", "PRINCIPAL", "FINANCE"] as const) {
+      expect(behindDraftWall(actor(role), draft), role).toBe(true);
+    }
+    expect(behindDraftWall(actor("HEAD"), draft)).toBe(false);
+    expect(behindDraftWall(actor("MANAGER", "u-2"), draft)).toBe(false);
+    expect(behindDraftWall(actor("MANAGER"), { status: "PENDING_HEAD", ownerId: "u-2" })).toBe(
+      false,
     );
   });
 });

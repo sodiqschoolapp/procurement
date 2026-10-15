@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import { eq, inArray, sql } from "drizzle-orm";
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 import * as z from "zod";
 
 import type { OrderAction } from "@/domain/order-moves";
@@ -182,11 +182,15 @@ describe("one action on many orders, all or nothing (06 rule 8; developer-rules 
   it("a failing last step (notify) leaves nothing saved (rule 3)", async () => {
     const two = await placed(2);
     const input = ticked(two);
+    // The wrapper logs the unexpected error; the test keeps the log quiet (D37).
+    const logged = vi.spyOn(console, "error").mockImplementation(() => undefined);
     const failing = move("APPROVE", async () => {
       throw new Error("The bell is broken.");
     });
     const error = expectRefused(await runOrdersAction(failing, head.id, input));
     expect(error.code).toBe("unexpected");
+    expect(logged).toHaveBeenCalledTimes(1);
+    logged.mockRestore();
     const state = await stateOf(two);
     for (const order of two) expect(state.get(order.id)?.status).toBe("PENDING_HEAD");
     expect(await actionsWith(input.clientKey)).toHaveLength(0);
