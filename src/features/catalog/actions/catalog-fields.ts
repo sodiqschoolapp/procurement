@@ -2,6 +2,7 @@ import * as z from "zod";
 
 import { catalogName, isCatalogName, isShortName } from "@/domain/catalogs";
 import { parseSom } from "@/domain/money";
+import { isPriceNote, priceNote } from "@/domain/prices";
 
 // The Zod checks the four catalogs share (developer-rules.md rule 13: "Every input is checked on
 // the server with Zod"). Each returns the stored form; the rules are those of src/domain/.
@@ -48,3 +49,12 @@ export const priceField = z
   .nullish()
   .refine((value) => blank(value) || parseSom(value!) !== null)
   .transform((value) => (blank(value) ? null : parseSom(value!)));
+
+/** A new price (1.9): the same parser, required (04 rule 4: the Head adds the new price). */
+export const requiredPriceField = z
+  .string()
+  .refine((value) => parseSom(value) !== null)
+  .transform((value) => parseSom(value)!);
+
+/** The note of a new price: trimmed, 1 to 200 code points (04 rule 4; plan of 1.9, decision 8). */
+export const priceNoteField = z.string().transform(priceNote).refine(isPriceNote);

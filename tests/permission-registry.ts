@@ -53,6 +53,8 @@ export const SERVER_ACTIONS: Record<string, Entry> = {
   "src/app/(app)/catalog/products/[id]/subtypes/actions.ts#updateSubtypeAction": "catalog.manage",
   "src/app/(app)/catalog/products/[id]/subtypes/actions.ts#setSubtypeActiveAction":
     "catalog.manage",
+  // "Add a new price for a product": the Head only (03; plan of 1.9, decision 4, Look first).
+  "src/app/(app)/prices/actions.ts#addPriceAction": "price.add",
 };
 
 /** Exports of `src/features/<area>/queries/`, as `<file>#<export>`. */
@@ -82,6 +84,9 @@ export const QUERIES: Record<string, Permission> = {
   // Subtypes: a product's real subtypes and one subtype (1.8).
   "src/features/catalog/queries/subtypes.ts#listSubtypes": "catalog.manage",
   "src/features/catalog/queries/subtypes.ts#getSubtype": "catalog.manage",
+  // Prices: the Admin list and one subtype's price history (plan of 1.9, decision 4, Look first).
+  "src/features/catalog/queries/prices.ts#listPrices": "catalog.manage",
+  "src/features/catalog/queries/prices.ts#getPriceHistory": "catalog.manage",
   // The Head's users, the vacancy warning and the form's branches (plan of 1.3).
   "src/features/users/queries/users.ts#listUsers": "catalog.manage",
   "src/features/users/queries/users.ts#getUser": "catalog.manage",

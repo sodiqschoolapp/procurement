@@ -13,11 +13,13 @@ import { requireUser } from "@/server/auth/session";
 
 import { readOrNotFound } from "../../../../../branches/read-or-not-found";
 import { CatalogActiveButton } from "../../../../catalog-active-button";
+import { PriceHistoryLink } from "../../../../../prices/price-history-link";
 import { SubtypeForm } from "../../../subtype-form";
 
 // /catalog/products/[id]/subtypes/[subtypeId] (build-plan 1.8): the subtype's form, its reference
 // price as text (plan of 1.8, decision 2, Look first), Deactivate or Activate (04 rule 2), and its
-// change history (04 rule 9), where the photo shows by its file name and the ids stay hidden. The
+// change history (04 rule 9), where the photo shows by its file name and the ids stay hidden, and
+// a new price (1.9) by its price and note; a link opens its price page. The
 // last active subtype of a product shows why it cannot be deactivated (decision 3, Look first);
 // the server refuses it anyway. A default row, another product's subtype or an unknown id is "not
 // found", as is any role without "Manage catalogs …" (03 rule 1).
@@ -31,6 +33,7 @@ const FIELDS: Record<string, HistoryField> = {
   photo: { label: "catalog.fields.photoFileId", kind: "text" },
   isActive: { label: "catalog.fields.isActive", kind: "boolean" },
   fromDefault: { label: "catalog.fields.fromDefault", kind: "boolean" },
+  note: { label: "catalog.fields.note", kind: "text" },
 };
 
 export default async function SubtypePage({
@@ -87,6 +90,7 @@ export default async function SubtypePage({
         priceLocked
         productPhotoFileId={subtype.productPhotoFileId}
       />
+      <PriceHistoryLink variantId={subtype.id} />
       <section className="flex flex-col gap-4 rounded-xl bg-card p-6 text-card-foreground">
         <h2 className="text-[17px] leading-6 font-bold">{t("history")}</h2>
         <ChangeHistory entries={history.rows} fields={FIELDS} />

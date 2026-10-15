@@ -16,6 +16,7 @@ import {
   insertProduct,
   insertSubtypes,
   insertUnit,
+  priceSetter,
 } from "../../../../tests/helpers/catalog";
 import { refusalOf } from "../../../../tests/helpers/database-error";
 import { createTestDatabase, dropTestDatabase } from "../../../../tests/helpers/test-database";
@@ -222,27 +223,52 @@ describe("product_variants: names unique inside a product (04 rule 3)", () => {
 });
 
 describe("product_variants: money columns are whole so'm, more than 0 (developer-rules rule 6)", () => {
-  it.each(["reference_price", "last_purchase_price"])(
-    "on INSERT and on UPDATE: %s 0 and -1 are refused, 1 and empty pass",
-    async (column) => {
-      const { productId, first } = await productWithSubtypes();
-      const constraint = `product_variants_${column}_check`;
-      const key = column === "reference_price" ? "referencePrice" : "lastPurchasePrice";
-      for (const value of ["0", "-1"]) {
-        expect(await refusalOf(insertVariant({ productId, [key]: value }))).toMatchObject({
-          code: "23514",
-          constraint,
-        });
-        expect(await refusalOf(updateVariant(first, column, value))).toMatchObject({
-          code: "23514",
-          constraint,
-        });
-      }
-      await insertVariant({ productId, [key]: "1" });
-      await updateVariant(first, column, "5000");
-      await updateVariant(first, column, null);
-    },
-  );
+  it("on INSERT and on UPDATE: last_purchase_price 0 and -1 are refused, 1 and empty pass", async () => {
+    const { productId, first } = await productWithSubtypes();
+    const constraint = "product_variants_last_purchase_price_check";
+    for (const value of ["0", "-1"]) {
+      expect(await refusalOf(insertVariant({ productId, lastPurchasePrice: value }))).toMatchObject(
+        { code: "23514", constraint },
+      );
+      expect(await refusalOf(updateVariant(first, "last_purchase_price", value))).toMatchObject({
+        code: "23514",
+        constraint,
+      });
+    }
+    await insertVariant({ productId, lastPurchasePrice: "1" });
+    await updateVariant(first, "last_purchase_price", "5000");
+    await updateVariant(first, "last_purchase_price", null);
+  });
+
+  // Since 1.9 a reference price is written with its HEAD row of the price history and never goes
+  // back to empty (the deferred check `price_recorded` of migration 0014; plan of 1.9, decision 2,
+  // Look first): the passing writes carry their row, and empty passes on INSERT only. The update to
+  // empty is refused by price_recorded (price-history.db.test.ts).
+  it("on INSERT and on UPDATE: reference_price 0 and -1 are refused, 1 and empty pass", async () => {
+    const { productId, first } = await productWithSubtypes();
+    const setBy = await priceSetter();
+    const constraint = "product_variants_reference_price_check";
+    for (const value of ["0", "-1"]) {
+      expect(await refusalOf(insertVariant({ productId, referencePrice: value }))).toMatchObject({
+        code: "23514",
+        constraint,
+      });
+      expect(await refusalOf(updateVariant(first, "reference_price", value))).toMatchObject({
+        code: "23514",
+        constraint,
+      });
+    }
+    await db.execute(sql`with v as (insert into product_variants
+        (product_id, name, reference_price, created_at)
+        values (${productId}, ${`Turi ${randomUUID()}`}, 1, ${AT}) returning id)
+      insert into price_history (variant_id, price, source, set_by, created_at)
+        select id, 1, 'HEAD', ${setBy}, ${AT} from v`);
+    await db.execute(sql`with v as (update product_variants set reference_price = 5000
+        where id = ${first} returning id)
+      insert into price_history (variant_id, price, source, set_by, created_at)
+        select id, 5000, 'HEAD', ${setBy}, ${AT} from v`);
+    await insertVariant({ productId, referencePrice: null });
+  });
 });
 
 describe("product_variants: one holder per photo, foreign keys, client key", () => {
@@ -300,8 +326,15 @@ describe("migration 0013: products made before it get their default subtype (pla
       (entry: { tag: string }) => entry.tag === "0012_products",
     );
     expect(index).toBeGreaterThan(0);
-    journal.entries = journal.entries.slice(0, index + 1);
+    const entries = journal.entries;
+    journal.entries = entries.slice(0, index + 1);
     writeFileSync(journalPath, JSON.stringify(journal));
+    const upTo = mkdtempSync(join(tmpdir(), "migrations-0013-"));
+    cpSync(MIGRATIONS_FOLDER, upTo, { recursive: true });
+    writeFileSync(
+      join(upTo, "meta", "_journal.json"),
+      JSON.stringify({ ...journal, entries: entries.slice(0, index + 2) }),
+    );
 
     const database = await createTestDatabase(serverUrl, { fromTemplate: false });
     const client = new pg.Client({ connectionString: database.url });
@@ -322,7 +355,9 @@ describe("migration 0013: products made before it get their default subtype (pla
           values ('Qog''oz', $1, $2, 50000, $3) returning id`,
         [category.rows[0].id, unit.rows[0].id, AT],
       );
-      await applyMigrations(database.url);
+      // Up to 0013 only: 0014's backfill credits a price to a Head, and this database has none
+      // (its own test is in price-history.db.test.ts).
+      await applyMigrations(database.url, upTo);
       const rows = await client.query(
         `select name, is_default, reference_price from product_variants where product_id = $1`,
         [product.rows[0].id],
@@ -332,6 +367,7 @@ describe("migration 0013: products made before it get their default subtype (pla
       await client.end();
       await dropTestDatabase(serverUrl, database.name);
       rmSync(cut, { recursive: true, force: true });
+      rmSync(upTo, { recursive: true, force: true });
     }
   });
 });

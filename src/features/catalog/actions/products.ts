@@ -19,6 +19,7 @@ import { categories, companies, productVariants, products, units } from "@/serve
 import { defineCatalogActions } from "./catalog-entries";
 import { nameField, optionalId, optionalText, priceField } from "./catalog-fields";
 import { fileNameOf, refusePhoto } from "./photos";
+import { recordHeadPrice } from "./price-rows";
 import { productInUse } from "./product-uses";
 
 // Products and services (04-catalogs.md, Catalogs table: "Name, type (product or service; product
@@ -35,7 +36,8 @@ import { productInUse } from "./product-uses";
 //   through a new price with a note in 1.9.
 // - Type and measure lock once the product is in use (decision 1, Look first; product-uses.ts).
 // - A new product gets its hidden default subtype, holding its reference price, in the same
-//   transaction (04 rule 1; plan of 1.8, decision 2, Look first; the shape trigger of 0013).
+//   transaction (04 rule 1; plan of 1.8, decision 2, Look first; the shape trigger of 0013), and
+//   a price given gets its HEAD row of the price history (plan of 1.9, decision 1, Look first).
 
 export type ProductFields = {
   name: string;
@@ -109,14 +111,26 @@ const catalog = defineCatalogActions<ProductFields>({
   createShape: { type: typeField.default(DEFAULT_PRODUCT_TYPE) },
   createOnly: ["referencePrice"],
   unique: ["name"],
-  async afterInsert(tx, entry) {
-    await tx.insert(productVariants).values({
-      productId: entry.id,
-      name: DEFAULT_SUBTYPE_NAME,
-      isDefault: true,
-      referencePrice: entry.referencePrice,
-      createdAt: now(),
-    });
+  async afterInsert({ tx, userId }, entry) {
+    const [variant] = await tx
+      .insert(productVariants)
+      .values({
+        productId: entry.id,
+        name: DEFAULT_SUBTYPE_NAME,
+        isDefault: true,
+        referencePrice: entry.referencePrice,
+        createdAt: now(),
+      })
+      .returning({ id: productVariants.id });
+    // The price typed at creation is the Head setting a price: its HEAD row, with no note (plan
+    // of 1.9, decision 1, Look first).
+    if (entry.referencePrice !== null) {
+      await recordHeadPrice(tx, {
+        variantId: variant!.id,
+        price: entry.referencePrice,
+        setBy: userId,
+      });
+    }
   },
   async guard({ tx, userId }, sent, current) {
     if (current) {

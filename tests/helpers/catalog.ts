@@ -7,13 +7,49 @@ import type { FileMime } from "@/domain/files";
 import type { ProductType } from "@/domain/products";
 import { now } from "@/server/clock";
 import { db } from "@/server/db/client";
-import { categories, companies, files, productVariants, products, units } from "@/server/db/schema";
+import {
+  categories,
+  companies,
+  files,
+  priceHistory,
+  productVariants,
+  products,
+  units,
+} from "@/server/db/schema";
 
-// Catalog rows, files, products and subtypes in the database for tests (tasks 1.7, 1.8). Names are invented and
+import { insertUser } from "./users";
+
+// Catalog rows, files, products, subtypes and their prices in the database for tests (tasks 1.7
+// to 1.9). Names are invented and
 // unique to the row unless given; everything is written at the moment of the clock.
 
 let made = 0;
 const next = () => (made += 1);
+
+let setter: Promise<string> | null = null;
+
+/**
+ * The Head every price these helpers write is credited to: one per test file, made on first use.
+ * A price is kept with its HEAD row of the price history in the same transaction (the deferred
+ * check `price_recorded` of migration 0014; plan of 1.9, decision 2).
+ */
+export function priceSetter(): Promise<string> {
+  setter ??= insertUser("HEAD").then((user) => user.id);
+  return setter;
+}
+
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+async function recordPrice(tx: Tx, variantId: string, price: bigint | null | undefined) {
+  if (price === null || price === undefined) return;
+  await tx.insert(priceHistory).values({
+    variantId,
+    price,
+    source: "HEAD",
+    setBy: await priceSetter(),
+    createdAt: now(),
+  });
+}
 
 export async function insertCategory(options: { name?: string; isActive?: boolean } = {}) {
   const [row] = await db
@@ -95,6 +131,7 @@ export type ProductRow = {
 export async function insertProduct(row: ProductRow = {}) {
   const categoryId = row.categoryId ?? (await insertCategory()).id;
   const unitId = row.unitId ?? (await insertUnit()).id;
+  if (row.referencePrice != null) await priceSetter();
   return db.transaction(async (tx) => {
     const [inserted] = await tx
       .insert(products)
@@ -121,6 +158,7 @@ export async function insertProduct(row: ProductRow = {}) {
         createdAt: now(),
       })
       .returning({ id: productVariants.id });
+    await recordPrice(tx, variant!.id, row.referencePrice);
     return { ...inserted!, categoryId, unitId, defaultVariantId: variant!.id };
   });
 }
@@ -138,6 +176,7 @@ export async function insertSubtypes(
     isActive?: boolean;
   }[],
 ) {
+  if (rows.some((row) => row.referencePrice != null)) await priceSetter();
   return db.transaction(async (tx) => {
     const ids: string[] = [];
     const [product] = await tx
@@ -161,6 +200,7 @@ export async function insertSubtypes(
           })
           .where(and(eq(productVariants.productId, productId), eq(productVariants.isDefault, true)))
           .returning({ id: productVariants.id });
+        await recordPrice(tx, made!.id, row.referencePrice);
         await tx.update(products).set({ hasVariants: true }).where(eq(products.id, productId));
         ids.push(made!.id);
         convert = false;
@@ -174,6 +214,7 @@ export async function insertSubtypes(
             createdAt: now(),
           })
           .returning({ id: productVariants.id });
+        await recordPrice(tx, made!.id, row.referencePrice);
         ids.push(made!.id);
       }
     }

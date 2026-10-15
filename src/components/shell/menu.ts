@@ -38,7 +38,7 @@ const ITEMS: Record<MenuItemId, MenuItem> = {
     id: "admin",
     href: "/catalog",
     icon: "tune",
-    activeOn: ["/catalog", "/users", "/branches", "/settings"],
+    activeOn: ["/catalog", "/prices", "/users", "/branches", "/settings"],
   },
 };
 

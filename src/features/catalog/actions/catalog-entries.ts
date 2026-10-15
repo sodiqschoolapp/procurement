@@ -97,10 +97,11 @@ export type CatalogConfig<Fields extends Record<string, unknown>> = {
    */
   shownRefs?(tx: Executor, values: Partial<Fields>): Promise<AuditRecord>;
   /**
-   * Written after the insert, in the same transaction: a product's hidden default subtype (04 rule
-   * 1; plan of 1.8).
+   * Written after the insert, in the same transaction, with the actor: a product's hidden default
+   * subtype (04 rule 1; plan of 1.8) and the HEAD row of its price (plan of 1.9, decision 1; plan
+   * review of 1.9, Must fix 2).
    */
-  afterInsert?(tx: Executor, entry: SavedEntry<Fields>): Promise<void>;
+  afterInsert?(context: { tx: Executor; userId: string }, entry: SavedEntry<Fields>): Promise<void>;
   /**
    * The rows update and setActive may reach; any other is "not found": a subtype's actions never
    * reach a hidden default row (plan of 1.8, decision 3; plan review, Should fix 2).
@@ -261,7 +262,7 @@ export function defineCatalogActions<Fields extends Record<string, unknown>>(
           createdAt: now(),
         } as never)
         .returning(columns);
-      if (afterInsert) await afterInsert(tx, row as Saved);
+      if (afterInsert) await afterInsert({ tx, userId }, row as Saved);
       return row as Saved;
     },
     async history({ tx, userId }, entry) {
