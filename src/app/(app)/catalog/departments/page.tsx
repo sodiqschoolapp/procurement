@@ -72,14 +72,23 @@ export default async function DepartmentsPage({ searchParams }: { searchParams: 
             {branch ? t("oneBranch", { code: branch.code, name: branch.name }) : t("allBranches")}
           </p>
         </div>
-        {!empty && (
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+          {/* The Excel import (build-plan 1.10), also on an empty list, where it helps most. */}
           <Link
-            href="/catalog/departments/new"
-            className={buttonVariants({ className: "w-full sm:w-auto" })}
+            href="/catalog/import/departments"
+            className={buttonVariants({ variant: "secondary", className: "w-full sm:w-auto" })}
           >
-            {t("kinds.departments.new")}
+            {t("importButton")}
           </Link>
-        )}
+          {!empty && (
+            <Link
+              href="/catalog/departments/new"
+              className={buttonVariants({ className: "w-full sm:w-auto" })}
+            >
+              {t("kinds.departments.new")}
+            </Link>
+          )}
+        </div>
       </div>
 
       {empty ? (
