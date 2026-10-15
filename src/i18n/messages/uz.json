@@ -56,7 +56,15 @@
       "branchInactive": "Bu filial faol emas, uni qo'shib bo'lmaydi",
       "inactive": "Bu yozuv faol emas. Faolini tanlang.",
       "notAPhoto": "Rasm tanlang: JPG, PNG, WebP yoki HEIC",
-      "locked": "Qulflangan: mahsulot allaqachon ishlatilgan"
+      "locked": "Qulflangan: mahsulot allaqachon ishlatilgan",
+      "unknown": "Maʼlumotnomada bunday yozuv yoʻq",
+      "ambiguous": "Ikki xil yozuvga mos keladi",
+      "duplicateInFile": "Yuqoridagi qatorda allaqachon berilgan",
+      "differsInFile": "Mahsulotning birinchi qatoridan farq qiladi",
+      "notTemplate": "Bu import shabloni emas. Shablonni yuklab oling va toʻldiring.",
+      "fileTooLarge": "Fayl 900 KB dan katta.",
+      "tooManyRows": "Faylda 500 dan ortiq qator bor. Uni kichikroq fayllarga boʻling.",
+      "noRows": "Faylda import qilinadigan qator yoʻq."
     },
     "file": {
       "tooLarge": "Fayl 10 MB dan katta. Kichikroq fayl tanlang yoki suratni qaytadan oling.",
@@ -641,7 +649,8 @@
       "count": "{count, plural, other {# tur}}",
       "lastActive": "Oxirgi faol tur faol qoladi. Mahsulotdan foydalanishni toʻxtatish uchun mahsulotni faolsizlantiring.",
       "fact": "{price} · {state}"
-    }
+    },
+    "importButton": "Exceldan import"
   },
   "prices": {
     "title": "Narxlar",
@@ -673,6 +682,59 @@
     "sources": {
       "HEAD": "Rahbar",
       "PURCHASE": "Xarid"
+    }
+  },
+  "imports": {
+    "back": "Orqaga",
+    "title": {
+      "products": "Mahsulot va xizmatlarni import qilish",
+      "departments": "Boʻlimlarni import qilish"
+    },
+    "description": {
+      "products": "Bitta Excel faylidan koʻplab yangi mahsulot va xizmatlarni, ularning turlari va narxlari bilan qoʻshing.",
+      "departments": "Bitta Excel faylidan istalgan filialning koʻplab boʻlimlarini qoʻshing."
+    },
+    "templateHeading": "Shablon",
+    "templateText": {
+      "products": "Turlari yoʻq har bir mahsulot uchun bitta qator yoki har bir tur uchun mahsulot nomi takrorlangan bitta qator. Toifa, oʻlchov birligi va kompaniya maʼlumotnomada boʻlishi kerak.",
+      "departments": "Har bir boʻlim uchun bitta qator. Filial qisqa kodi bilan yoziladi, masalan TSH."
+    },
+    "download": "Shablonni yuklab olish",
+    "fileHeading": "Fayl",
+    "fileText": "Toʻldirilgan shablonni tanlang (.xlsx, 900 KB gacha, 500 qatorgacha).",
+    "chooseFile": "Faylni tanlash",
+    "reading": "Fayl oʻqilmoqda…",
+    "previewHeading": "Oldindan koʻrish",
+    "summary": "{rows} ta qator, {errors, plural, =0 {xato yoʻq} other {# ta xato}}",
+    "fixAndRetry": "Bu qatorlarni Excelda tuzating va faylni qayta tanlang. Barcha qatorlar toʻgʻri boʻlmaguncha hech narsa saqlanmaydi.",
+    "errorLine": "{row}-qator, {column}: {message}",
+    "fileError": "{message}",
+    "seeRow": "({row}-qatorga qarang)",
+    "row": "Qator",
+    "save": "Barcha qatorlarni saqlash",
+    "saving": "Saqlanmoqda…",
+    "saved": "{rows} ta qator import qilindi.",
+    "sheet": {
+      "products": "Mahsulotlar",
+      "departments": "Boʻlimlar"
+    },
+    "columns": {
+      "products": {
+        "name": "Mahsulot nomi",
+        "type": "Turi",
+        "category": "Toifa",
+        "measure": "Oʻlchov birligi",
+        "company": "Brend yoki kompaniya",
+        "description": "Tavsif",
+        "subtype": "Tur",
+        "price": "Maʼlumotnoma narxi"
+      },
+      "departments": {
+        "branch": "Filial kodi",
+        "name": "Nomi",
+        "responsibleName": "Masʼul shaxs",
+        "responsiblePhone": "Masʼul shaxs telefoni"
+      }
     }
   }
 }

@@ -1,6 +1,6 @@
 import type * as z from "zod";
 
-import type { FieldErrorKind, FieldMessageKey } from "./action-result";
+import { FIELD_ERROR_KINDS, type FieldErrorKind, type FieldMessageKey } from "./action-result";
 
 // The input check of the action wrapper (developer-rules.md rule 13: "Every input is checked on
 // the server with Zod"): what a Zod issue means for the person who typed it, as a message key of
@@ -38,8 +38,12 @@ export function fieldErrorKind(issue: z.core.$ZodIssue, input: unknown): FieldEr
       return issue.origin === "string" ? "tooLong" : "tooLarge";
     case "invalid_format":
       return empty ? "required" : "wrongFormat";
-    case "custom":
+    case "custom": {
+      // A check that knows its kind names it (an Excel import's row check, plan of 1.10).
+      const named: unknown = issue.params?.fieldError;
+      if ((FIELD_ERROR_KINDS as readonly unknown[]).includes(named)) return named as FieldErrorKind;
       return empty ? "required" : "wrongFormat";
+    }
     default:
       return "notAllowed";
   }
