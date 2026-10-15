@@ -9,7 +9,7 @@ The app is finished only when the 20 scenarios below pass as automated tests, on
 
 | Layer | Tool | What it covers |
 | --- | --- | --- |
-| Unit | Vitest | Every function in `src/domain/`: totals, rounding, the three colours, cash count, the prefilled cash rows, the fee split, average cost, every allowed and forbidden status move. |
+| Unit | Vitest | Every function in `src/domain/`: totals, rounding, the three colours, cash count, the prefilled cash rows, average cost, every allowed and forbidden status move. |
 | Database | Vitest with a real PostgreSQL | Every server action, on one order and on many ticked orders. The full permission matrix: each action × each role × own branch and other branch. Actions run two at a time to prove the locks work. |
 | Full flow | Playwright | The scenarios below, clicked through in a real browser as each role, at phone and desktop width. |
 

@@ -62,7 +62,7 @@ Every term the spec defines, in the spec's own words, with the file that defines
 | Term | Meaning | Defined in |
 | --- | --- | --- |
 | Purchase record | What the Manager enters after really buying something: actual number, actual price, extra costs. One record belongs to one order; an order can have many. | `01-summary.md`, `07-purchasing.md` |
-| Trip | One shop visit recorded once for one or more orders of one owner in one branch: shared date, supplier, payment type and receipt; one purchase record per order; a shared fee split by goods amount. | `07-purchasing.md` |
+| Trip | One shop visit recorded once for one or more orders of one owner in one branch: shared date, supplier, payment type and receipt; one purchase record per order. Delivery for the whole visit is its own service order. | `07-purchasing.md` |
 | Order progress | `OPEN` Open, `DONE` Done, `DONE_SHORT` Done short, `NOT_BOUGHT` Not bought. | `07-purchasing.md` |
 | Substitution | Buying another subtype of the same product. The order shows "Substituted" and the Manager cannot close alone. | `07-purchasing.md` |
 | Used | What a service order shows once its purchase record is saved, where a product order shows Received. | `07-purchasing.md` |
