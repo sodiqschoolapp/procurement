@@ -213,6 +213,7 @@ export function SuggestionForm({
       <div className="flex flex-col gap-1.5">
         <Field id="suggestion-note" label={t("fields.note")} error={send.fieldTexts.note}>
           <textarea
+            id="suggestion-note"
             {...register("note")}
             rows={4}
             maxLength={600}

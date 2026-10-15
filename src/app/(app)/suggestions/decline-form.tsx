@@ -43,6 +43,7 @@ export function DeclineForm({ suggestionId }: { suggestionId: string }) {
       <div className="flex flex-col gap-1.5">
         <Field id="suggestion-reason" label={t("fields.reason")} error={decline.fieldTexts.reason}>
           <textarea
+            id="suggestion-reason"
             value={reason}
             onChange={(event) => setReason(event.target.value)}
             rows={3}
