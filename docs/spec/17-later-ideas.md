@@ -8,9 +8,9 @@ These twelve features are common in procurement systems and are left out of vers
 | Idea | What it adds |
 | --- | --- |
 | Branch budgets | A monthly or yearly limit per branch and category. Approvers see how much is left before they approve. |
-| Department requests | Teachers and department heads ask the Manager for items inside the app, and the Manager turns those asks into a request. |
+| Department requests | Teachers and department heads ask the Manager for items inside the app, and the Manager turns those asks into orders. |
 | Price quotes | For purchases above a set amount, the Manager attaches two or three supplier offers and marks the chosen one. |
-| Request templates | A saved list for orders that repeat every month, such as cleaning supplies. |
+| Order templates | A saved list for orders that repeat every month, such as cleaning supplies. |
 | Fixed assets | Furniture, projectors and computers get an inventory number, a room and a responsible person. |
 | QR labels | Printed labels on shelves or items; the phone camera scans them during issue and stock count. |
 | Messenger notifications | Notices sent to a messenger such as Telegram, with buttons to approve or send back. Left out of this app on purpose. |

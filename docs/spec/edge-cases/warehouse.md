@@ -13,4 +13,4 @@ From spec chapter 12, which says: "These 41 situations are the ones most likely 
 | The school already has stock on launch day | The Head enters it directly, by form or Excel import, with the reason: stock we already had. |
 | An item goes straight from the shop to a classroom | "Give straight to requester" on the purchase record. |
 | A transfer arrives short | The shortage becomes a write-off request for the Head. |
-| A gift or donation arrives without a request | The Head records a direct entry with the reason: gift or donation. |
+| A gift or donation arrives without an order | The Head records a direct entry with the reason: gift or donation. |

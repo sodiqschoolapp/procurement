@@ -19,7 +19,7 @@ The stack is one TypeScript codebase on Next.js and PostgreSQL, chosen because C
 | Reads and writes | Server Components for reading, Server Actions for writing | Fewer moving parts. TanStack Query only where live refresh is needed. |
 | Languages | next-intl with `uz`, `ru`, `en` files |  |
 | Files | S3-compatible storage (Cloudflare R2; MinIO on the developer's computer), sharp for resizing | The bucket is private; files are served through a route that checks access. |
-| Excel and PDF | ExcelJS for import and export; @react-pdf/renderer for the formal PDF, with fonts for Uzbek and Russian built in |  |
+| Excel and PDF | ExcelJS for import and export; @react-pdf/renderer for the PDFs (the order list download, the issue note, the analytics report), with fonts for Uzbek and Russian built in |  |
 | Charts | Recharts |  |
 | Numbers | decimal.js for quantity × price; money stored as whole numbers | No floating-point errors. |
 | Tests | Vitest for unit and database tests, Playwright for full flows | See section 15. |

@@ -11,7 +11,6 @@ The whole project as ordered tasks. One task is one Claude Code session and one 
 - A task that names an open question uses the owner's answer under "Decided ahead" in `docs/decisions.md`. Where no answer came, the builder takes the most reasonable reading and flags it **Look first** (D20, D26). The owner's reviewer prepares each phase's questions while the phase before it runs.
 - A fix task `<id>b` (for example `1.3b`) is added by the owner when a decision made without the owner is changed on issue #9 and code must change. It is placed first among the open tasks, so the start routine takes it next; its Read line names the decision it changes.
 - One owner gate stands before task 9.4, where the live system, real data and secrets start: a quoted line that begins with the words "Owner gate." in bold. The start routine starts nothing after it until the owner deletes that line.
-- A second, temporary owner gate stands before task 2.1 (D42): the owner is redesigning requests as items in a branch order list, and Phases 2 to 4 are rewritten by a `/spec-change` before they are built. The owner deletes it with that change.
 - Tick a task only in `/finish-task`.
 
 ## Phases
@@ -19,16 +18,16 @@ The whole project as ordered tasks. One task is one Claude Code session and one 
 | Phase | Tasks | What works afterwards |
 | --- | --- | --- |
 | 0. Foundations | 17 | Nothing a user can use yet. |
-| 1. Catalogs and admin | 13 | Everything the Head sets up before the first request can be written. |
-| 2. Requests to approval | 15 | From an empty draft to a fully approved request, with its number, its history and its PDF. |
-| 3. Purchasing | 9 | The Manager records what was really bought. |
-| 4. Money and settlement | 11 | Cash given, cash spent, the difference, and the close. |
+| 1. Catalogs and admin | 13 | Everything the Head sets up before the first order can be written. |
+| 2. Orders to approval | 15 | From a draft on the order list to fully approved orders, with their numbers, their history and the download. |
+| 3. Purchasing | 10 | The Manager records what was really bought, one order or one whole shop visit at a time. |
+| 4. Money and settlement | 11 | Cash given, cash spent, the difference, and the close, per order. |
 | 5. Warehouse | 13 | Stock screens and every document that moves stock inside one branch. |
 | 6. Home, analytics, reports | 10 | What each role sees first, and the numbers behind the work. |
 | 7. Transfers and counts | 4 | Stock moving between branches, and stock checked against the shelf. |
 | 8. Jobs and polish | 4 | The scheduled work, and a pass over every screen. |
 | 9. Before go-live | 6 | Proof that it works, then the real environment and the real data. |
-| **Total** | **102** | |
+| **Total** | **103** | |
 
 ## Phase 0: Foundations
 
@@ -190,91 +189,89 @@ Everything the Head sets up before the first request can be written.
   - **Done when:** The seed runs on an empty database in CI. By hand on the test copy: the Head sees 30 products.
 
 
-## Phase 2: Requests to approval
+## Phase 2: Orders to approval
 
-From an empty draft to a fully approved request, with its number, its history and its PDF.
+From a draft on the branch's order list to fully approved orders, ticked and acted on many at once, with their numbers, their history and the download. Requests became orders on 15 October 2026 (`docs/spec-changes.md`).
 
-> **Owner gate.** The start routine stops here until the owner deletes this line. Requests are being redesigned as items in a branch order list (D42); the `/spec-change` that rewrites Phases 2 to 4 deletes this line.
+- [ ] **2.1 Orders: names and the built parts**
+  - **Read:** `11-screens-and-ux.md` (Screens; Interface per role); `10-notifications-analytics-reports.md` (Notifications: the paragraph on grouping); `08-money-and-settlement.md` (Overspend guard); `14-data-model.md` (Notes for the build: settings keys); `05-order-request-form.md` (first paragraph).
+  - **Build:** The menu word "Requests" becomes "Orders" in the three languages and the address `/requests` becomes `/orders`; the request notification types keep their internal names and carry a count, so each text says how many orders it covers ("15 orders submitted"); the setting `overspend_guard_min_amount` (100 000 so'm) on the Settings page beside the percent; every other built text that says "request" for this flow follows.
+  - **Done when:** Tests: each role's menu shows Orders at `/orders`; a notification of type submitted with a count of 15 reads "15" in each language; the new setting saves with an audit row and refuses a negative amount.
 
-- [ ] **2.1 Domain: request totals**
-  - **Read:** `05-order-request-form.md` (Line: fields 9 to 14 and the footer); `08-money-and-settlement.md` (Numbers the system calculates: Planned total; first paragraph on rounding); `edge-cases/developer-rules.md` (rules 1, 6); `13-technology.md` (Numbers).
-  - **Build:** Pure functions in `src/domain/`: line total, goods total, extra-cost total, grand total, the split by payment type, and the price-hint percent. decimal.js inside, whole so'm out, rounding half up.
-  - **Done when:** Unit tests that name the spec rule each checks, including 100 × 5 000 + 20 000 = 520 000, a 3-decimal quantity that rounds half up, and "+35% vs catalog price".
+- [ ] **2.2 Domain: order totals**
+  - **Read:** `05-order-request-form.md` (Order: fields 10 to 16, and the totals under the list); `08-money-and-settlement.md` (Numbers the system calculates: Planned total; the paragraph on rounding); `edge-cases/developer-rules.md` (rules 1, 6); `13-technology.md` (Numbers).
+  - **Build:** Pure functions in `src/domain/`: an order's total, the goods, extra-cost and grand totals of a set of orders, the split by payment type, and the price-hint percent. decimal.js inside, whole so'm out, rounding half up.
+  - **Done when:** Unit tests that name the spec rule each checks, including 100 × 5 000 + 20 000 = 520 000, a 3-decimal quantity that rounds half up, the totals of three orders of different payment types, and "+35% vs catalog price".
 
-- [ ] **2.2 Domain: the state machine**
-  - **Read:** `06-approval-workflow.md` (Statuses; Allowed moves; Rules: 1 to 7); `edge-cases/developer-rules.md` (rule 2); `03-roles-and-permissions.md` (Rules: 6); `open-questions.md` (questions 5, 6).
-  - **Build:** One file that lists every status move, who may make it and what it needs; `allowedActions()` for the screen and `assertMove()` for the server.
-  - **Done when:** Unit tests: every row of the allowed-moves table passes; every other combination of from, to and role is refused (generated).
+- [ ] **2.3 Domain: the state machine**
+  - **Read:** `06-approval-workflow.md` (Statuses; Allowed moves; Rules: 1 to 8); `edge-cases/developer-rules.md` (rule 2); `03-roles-and-permissions.md` (Rules: 6, 8); `open-questions.md` (questions 5, 6).
+  - **Build:** One file that lists every status move of one order, who may make it and what it needs; `allowedActions()` for one order and for a set of ticked orders (only the actions allowed on every one of them); `assertMove()` for the server.
+  - **Done when:** Unit tests: every row of the allowed-moves table passes; every other combination of from, to and role is refused (generated); for a set of orders in two different statuses only their common actions are offered.
 
-- [ ] **2.3 Requests schema**
-  - **Read:** `14-data-model.md` (Requests; Notes for the build); `edge-cases/developer-rules.md` (rules 5, 6, 9); `05-order-request-form.md` (Order number).
-  - **Build:** Migrations for `number_counters`, `orfs`, `orf_lines`, `orf_line_extras`, `orf_revisions`, `orf_events` and `orf_return_notes` with enums, checks, foreign keys and indexes; `orfs.version`; the empty `stock_balances` table, so the "In stock" column has its source.
-  - **Done when:** Database tests try each forbidden write directly: a duplicate number, an unknown status, an extra cost of 0, a negative stock quantity.
+- [ ] **2.4 Orders schema and many orders in one action**
+  - **Read:** `14-data-model.md` (Orders; Notes for the build); `edge-cases/developer-rules.md` (rules 3, 5, 6, 8, 9; Constraints the spec names); `05-order-request-form.md` (Order number; Drafts: 2); `06-approval-workflow.md` (Rules: 7, 8).
+  - **Build:** Migrations for `number_counters`, `orders`, `order_extras`, `order_revisions`, `order_actions` and `order_events` with enums, checks, foreign keys and indexes; the partial unique index of one draft per owner, branch, subtype and department; `orders.version`; the empty `stock_balances` table, so the "In stock" column has its source. The action wrapper learns to take many orders: it locks them in one fixed order, checks the status and version of each, writes one `order_actions` row and one event per order, and saves all or nothing; at most 200 orders.
+  - **Done when:** Database tests try each forbidden write directly: a duplicate number, an unknown status, an extra cost of 0, a negative stock quantity, a second draft for the same owner, subtype and department. An action on three orders where one has an old version saves nothing; the same `client_key` twice returns the first result.
 
-- [ ] **2.4 Draft: header and autosave**
-  - **Read:** `05-order-request-form.md` (Header; Helpers: Autosave); `06-approval-workflow.md` (Statuses: Draft); `11-screens-and-ux.md` (Screens: Request editor); `edge-cases/developer-rules.md` (rule 11); `03-roles-and-permissions.md` (Manager rights: CREATE_REQUESTS).
-  - **Build:** A draft is created at `/requests/new`; the header fields (branch prefilled for a Manager with one branch and locked once lines exist; date; created by; priority with a reason for Urgent; note up to 1000 characters); autosave after each change with "Saved"; the owner deletes a draft that was never submitted; a draft is visible to its owner and the Head only.
-  - **Done when:** Database tests: another Manager of the same branch cannot read the draft; Urgent without a reason is refused; a request that has a number cannot be deleted; a Manager with `CREATE_REQUESTS` off cannot create one.
+- [ ] **2.5 Drafts**
+  - **Read:** `05-order-request-form.md` (Order: all fields; Drafts; Ticking and filters: Price hint); `04-catalogs.md` (Rules: 4); `02-assumptions.md` (A7); `06-approval-workflow.md` (Statuses: Draft); `11-screens-and-ux.md` (Screens: Order list; Order list layout: 3); `edge-cases/developer-rules.md` (rule 11); `03-roles-and-permissions.md` (Manager rights: CREATE_REQUESTS); `edge-cases/requests-and-approval.md` ("The same item is needed by two departments"; "The same item for the same department is added again while a draft for it exists"); `edge-cases/warehouse.md` ("Half a piece is typed for an item counted in pieces").
+  - **Build:** The drafts grid on `/orders`: every field of the order table (product picker with photo, category, type and stock; subtype; in stock, a dash for services; photo and one extra reference photo; brand or company; requested by; needed by with "apply to all ticked"; measure; quantity with decimals as the measure allows; the price suggestion; extra-cost rows; payment type with the default from settings; priority with a reason for Urgent; comment up to 1000 characters; order total); the totals of the ticked drafts; the price-hint label; autosave with "Saved"; the same subtype for the same department raises the existing draft ("Added to your draft: now 20"); the owner deletes a draft that was never submitted; drafts are visible to their owner and the Head only. A product used in an order locks its type and measure.
+  - **Done when:** Tests: a quantity of 0.5 for an item counted in pieces is refused; the suggested price is the reference price when both prices exist; another Manager of the same branch cannot read a draft; Urgent without a reason is refused; a Manager with `CREATE_REQUESTS` off cannot add one; adding 10 to a draft of 10 for the same department leaves one draft of 20, for another department two drafts.
 
-- [ ] **2.5 Draft: lines**
-  - **Read:** `05-order-request-form.md` (Line: all 14 fields; Helpers: Price hint); `04-catalogs.md` (Rules: 4); `02-assumptions.md` (A7); `edge-cases/requests-and-approval.md` ("The same item is needed by two departments"; "A delivery fee covers the whole order"); `edge-cases/warehouse.md` ("Half a piece is typed for an item counted in pieces").
-  - **Build:** The lines grid on desktop: the product picker (search by name; shows photo, category, type and stock), subtype, in stock (a dash for services), photo, brand or company, requested by (department and optional person), needed by with "apply to all", measure, quantity (decimals follow the measure), the price suggestion (reference price, else last purchase price, else empty), extra-cost rows, payment type (default from settings), comment, line total; the footer totals from 2.1; the price-hint label; one extra reference photo per line. A product used on a line locks its type and measure.
-  - **Done when:** Tests: a quantity of 0.5 for an item counted in pieces is refused; the suggested price is the reference price when both prices exist. By hand: add five lines and read the footer split by payment type.
-
-- [ ] **2.6 Draft: keyboard and phone**
+- [ ] **2.6 Drafts: keyboard and phone**
   - **Read:** `11-screens-and-ux.md` (Rules for a smooth feel: 2, 7, 13).
-  - **Build:** Tab and Enter move between cells and Enter on the last row adds a row; the totals footer stays visible; on a phone each line is a card; what was typed survives a dropped connection and is retried.
-  - **Done when:** Playwright: a three-line draft is built with the keyboard only at 1440 px; the same draft shows as cards at 375 px.
+  - **Build:** Tab and Enter move between cells and Enter on the last row adds a draft; the totals of the ticked drafts stay visible; on a phone each draft is a card; what was typed survives a dropped connection and is retried.
+  - **Done when:** Playwright: three drafts are added with the keyboard only at 1440 px; the same drafts show as cards at 375 px.
 
-- [ ] **2.7 Submit and the order number**
-  - **Read:** `05-order-request-form.md` (Order number; Checks at submit); `06-approval-workflow.md` (Allowed moves: Draft row); `03-roles-and-permissions.md` (Rules: 6); `04-catalogs.md` (Catalogs table: Branches); `10-notifications-analytics-reports.md` (Notifications: "Request submitted or submitted again"); `15-quality-and-acceptance.md` (S14); `edge-cases/requests-and-approval.md` ("Submit is clicked twice"; "A product is deactivated while it sits in a draft"; "The year changes"); `open-questions.md` (question 6).
-  - **Build:** The submit action: every check, with errors on the exact cell and a short list on top; the number made inside the transaction with a lock on the counter row (per branch, per calendar year in Tashkent time, growing past 9999); `stock_at_submit` copied; a full snapshot in `orf_revisions`; the event; the notification to the Head; a request created by the Head goes to Waiting for Principal and is logged "Created by Head"; the branch code locks after the first request.
-  - **Done when:** Tests: S14; 201 lines refused; the same subtype for the same department twice refused; a past needed-by date refused; with the clock on 1 January the counter restarts at 0001; a double click submits once.
+- [ ] **2.7 Submit and the order numbers**
+  - **Read:** `05-order-request-form.md` (Order number; Checks at submit; Drafts: 4); `06-approval-workflow.md` (Allowed moves: Draft row; Rules: 8); `03-roles-and-permissions.md` (Rules: 6); `04-catalogs.md` (Catalogs table: Branches); `10-notifications-analytics-reports.md` (Notifications: "Orders submitted or submitted again"); `15-quality-and-acceptance.md` (S14); `edge-cases/requests-and-approval.md` ("Submit is clicked twice"; "A product is deactivated while it sits in a draft"; "The year changes"); `open-questions.md` (question 6).
+  - **Build:** Submit of ticked drafts: every check on every order, all or nothing, with errors on the exact cell of the exact order and a short list on top; one number per order made inside the transaction with a lock on the counter row, in the order the drafts were ticked (per branch, per calendar year in Tashkent time, growing past 9999); `stock_at_submit` copied; a snapshot in `order_revisions`; one event per order; one grouped notification to the Head; an order created by the Head goes to Waiting for Principal and is logged "Created by Head"; the branch code locks after the first order.
+  - **Done when:** Tests: S14; 201 ticked drafts refused; one draft with a past needed-by date among five stops all five; with the clock on 1 January the counter restarts at 0001; a double click submits once.
 
-- [ ] **2.8 Requests list**
-  - **Read:** `11-screens-and-ux.md` (Screens: Requests list; Rules for a smooth feel: 8); `06-approval-workflow.md` (Statuses); `05-order-request-form.md` (Header: Priority); `03-roles-and-permissions.md` (Permission matrix: "See requests, stock and reports").
-  - **Build:** `/requests`: 25 rows per page from the server; filters by status, branch, owner and date, and sorting, kept in the address; status labels; Urgent pinned on top for approvers; the branch filter is inside the SQL.
-  - **Done when:** Database test: each role sees only its branches' requests and nobody else's drafts. By hand: a filtered link reopens the same view.
+- [ ] **2.8 Order list: group rows, ticking and filters**
+  - **Read:** `05-order-request-form.md` (Group rows; Ticking and filters); `11-screens-and-ux.md` (Screens: Order list; Order list layout; Rules for a smooth feel: 6, 8); `06-approval-workflow.md` (Statuses); `03-roles-and-permissions.md` (Permission matrix: "See orders, stock and reports"; Rules: 8); `15-quality-and-acceptance.md` (S19).
+  - **Build:** `/orders`: one group row per branch, subtype and status with its total quantity, total amount, number of orders, earliest needed-by date, Urgent and price hint; opening a row shows its orders; tick boxes on rows and orders, "Select all on this filter" up to 200; the action bar with the count and totals of the ticked orders and only the actions allowed on all of them; 25 group rows per page from the server; every filter of section 5 and sorting kept in the address; Urgent pinned on top for approvers; the branch filter inside the SQL.
+  - **Done when:** Database tests: each role sees only its branches' orders and nobody else's drafts; three submitted orders of one subtype make one group row with their summed quantity. By hand: a filtered link reopens the same view.
 
-- [ ] **2.9 Request page**
-  - **Read:** `11-screens-and-ux.md` (Request page layout; Rules for a smooth feel: 6); `06-approval-workflow.md` (Rules: 10); `edge-cases/00-definitions.md` (Requests); `05-order-request-form.md` (Helpers: Price hint).
-  - **Build:** `/requests/[id]`: the top block, the stepper with the name and time of each finished step, the tabs Items and History (Purchases and Money arrive in 3.4 and 4.3), the price hint on each line for the owner and every approver, the action bar that reads the state machine (its buttons are wired in 2.10 and 2.11), and the line that says who the request is waiting for.
-  - **Done when:** Playwright: on a submitted request the stepper stands at Head, History shows the submit with name and time, and a Finance user sees the waiting line.
+- [ ] **2.9 Order page**
+  - **Read:** `11-screens-and-ux.md` (Order page layout; Rules for a smooth feel: 6); `06-approval-workflow.md` (Rules: 11); `edge-cases/00-definitions.md` (Orders); `05-order-request-form.md` (Ticking and filters: Price hint).
+  - **Build:** `/orders/[id]`: the top block, the stepper with the name and time of each finished step, the tabs Details and History (Purchases and Money arrive in 3.5 and 4.3), the price hint for the owner and every approver, the action bar that reads the state machine, the line that says who the order is waiting for, and in History "with 14 other orders" when a move was made in one action.
+  - **Done when:** Playwright: on a submitted order the stepper stands at Head, History shows the submit with name and time, and a Finance user sees the waiting line.
 
 - [ ] **2.10 Approvals**
-  - **Read:** `06-approval-workflow.md` (Allowed moves: the three Approve rows; Rules: 1, 7, 9); `03-roles-and-permissions.md` (Rules: 2, 3); `10-notifications-analytics-reports.md` (Notifications: "Head approved"; "Principal approved"; "Finance approved"); `15-quality-and-acceptance.md` (S8); `edge-cases/requests-and-approval.md` ("Two approvers click at the same moment"; "Stock changes between submit and approval"; "The branch's Principal changes while requests wait").
-  - **Build:** Approve at the Head, Principal and Finance steps; each move checks the status inside the transaction; the slower user sees "Already approved by ... at ..."; each line shows stock at submit and stock now; Finance may change a line's payment type while approving; the next step is notified. The cash field of the Finance dialog arrives in 4.2. When a branch's Principal is replaced, waiting requests pass to the new Principal and past approvals keep the old name.
-  - **Done when:** Tests: the first half of S8 (two Head users approve together: one success, one clear message); a Principal of another branch is refused; after Finance approves the status is Open. A request waiting for a replaced Principal is approved by the new one, and History keeps the old name on past steps.
+  - **Read:** `06-approval-workflow.md` (Allowed moves: the three Approve rows; Rules: 1, 7, 8, 10); `03-roles-and-permissions.md` (Rules: 2, 3, 8); `10-notifications-analytics-reports.md` (Notifications: "Head approved"; "Principal approved"; "Finance approved"); `15-quality-and-acceptance.md` (S8, S19); `edge-cases/requests-and-approval.md` ("Two approvers click at the same moment"; "One of many ticked orders changed a moment ago"; "Stock changes between submit and approval"; "The branch's Principal changes while orders wait").
+  - **Build:** Approve ticked orders or group rows at the Head, Principal and Finance steps, all or nothing: one changed order refuses the action, names it and refreshes; the slower user sees "Already approved by ... at ..."; each order shows stock at submit and stock now; Finance may change an order's payment type while approving; one grouped notification to the next step. The cash table of the Finance dialog arrives in 4.2. When a branch's Principal is replaced, waiting orders pass to the new Principal and past approvals keep the old name.
+  - **Done when:** Tests: the first half of S8 (two Head users approve the same ticked orders together: one success, one clear message, nothing half-saved); S19 up to the Principal; a Principal of another branch is refused, also when one such order hides among ticked orders of their own branch; after Finance approves the status is Open.
 
 - [ ] **2.11 Send back, reject, cancel, take back**
-  - **Read:** `06-approval-workflow.md` (Allowed moves; Rules: 2, 3, 4); `02-assumptions.md` (A4); `10-notifications-analytics-reports.md` (Notifications: "Sent back, rejected"); `14-data-model.md` (orf_return_notes); `open-questions.md` (question 5).
-  - **Build:** Send back with a reason and optional notes on ticked lines; the returned request is editable by its owner; submitting again raises the revision and returns to the Head; earlier approvals stay in History and no longer count; reject with a reason; cancel by the owner or the Head from any Waiting step or from Sent back; take back before the Head decides; every reason has at least 5 characters; the owner and the Head are notified of a send-back and of a reject.
-  - **Done when:** Tests: a 4-character reason is refused; a re-submitted request is at Waiting for Head with revision 2 and the same number; a rejected request refuses every write. Playwright: the owner of a submitted request sees Take back and no Approve; the Head sees Approve, Send back and Reject.
+  - **Read:** `06-approval-workflow.md` (Allowed moves; Rules: 2, 3, 4, 8); `02-assumptions.md` (A4); `10-notifications-analytics-reports.md` (Notifications: "Sent back, rejected"); `14-data-model.md` (order_events); `open-questions.md` (question 5).
+  - **Build:** On ticked orders, with one reason of at least 5 characters for the action: send back, with an optional note per order; the returned orders are editable by their owner; submitting again raises each order's revision and returns it to the Head; earlier approvals stay in History and no longer count; reject; cancel by the owner or the Head from any Waiting step or from Sent back; take back before the Head decides; the owner and the Head get one grouped notification for a send-back or a reject.
+  - **Done when:** Tests: a 4-character reason is refused; a re-submitted order is at Waiting for Head with revision 2 and the same number; a rejected order refuses every write. Playwright: the owner of a submitted order sees Take back and no Approve; the Head sees Approve, Send back and Reject.
 
 - [ ] **2.12 What changed**
-  - **Read:** `06-approval-workflow.md` (Rules: 5); `14-data-model.md` (orf_revisions); `15-quality-and-acceptance.md` (S5).
-  - **Build:** On a re-submitted request the approvers see added, removed and changed lines highlighted, with old and new values side by side, computed from the revision snapshots by a domain function.
+  - **Read:** `06-approval-workflow.md` (Rules: 5); `14-data-model.md` (order_revisions); `15-quality-and-acceptance.md` (S5).
+  - **Build:** On a re-submitted order the approvers see its changed fields highlighted, with old and new values side by side, computed from the revision snapshots by a domain function.
   - **Done when:** S5 as a Playwright test: the Head sees "100 → 80" highlighted, the same number and "rev 2".
 
 - [ ] **2.13 Copy as new and stale drafts**
-  - **Read:** `05-order-request-form.md` (Helpers: Copy as new); `15-quality-and-acceptance.md` (S6, S18); `edge-cases/requests-and-approval.md` ("The catalog price changes after the draft was written"; "A product is deactivated while it sits in a draft"; "The needed-by date passes while the request waits").
-  - **Build:** Any request, a rejected one included, is copied into a new draft; a draft keeps its typed price when the catalog price changes and shows the new suggestion as a hint; a line with a deactivated entry is marked; a waiting line past its needed-by date shows "Overdue" and nothing is blocked.
+  - **Read:** `05-order-request-form.md` (Ticking and filters: Copy as new); `15-quality-and-acceptance.md` (S6, S18); `edge-cases/requests-and-approval.md` ("The catalog price changes after the draft was written"; "A product is deactivated while it sits in a draft"; "The needed-by date passes while the order waits").
+  - **Build:** Any order, a rejected one included, and several ticked orders at once, are copied into new drafts (the draft merge of section 5 applies); a draft keeps its typed price when the catalog price changes and shows the new suggestion as a hint; a draft with a deactivated entry is marked; a waiting order past its needed-by date shows "Overdue" and nothing is blocked.
   - **Done when:** S6 and S18 as tests.
 
-- [ ] **2.14 Formal PDF**
-  - **Read:** `05-order-request-form.md` (Formal PDF: whole section); `13-technology.md` (Excel and PDF); `15-quality-and-acceptance.md` (S17); `11-screens-and-ux.md` (Request page layout: 4).
-  - **Build:** "Download PDF" at every status with @react-pdf/renderer: A4 landscape, fonts for Uzbek and Russian built in, the top block, the lines table, the totals, the approval block with "Waiting" for steps not reached, order number, page count and downloader on every page, the QR code, the grey word on Draft, Rejected and Cancelled, the file name `CHL-26-0142_rev2.pdf`, the language of the downloader, no product photos. Every number comes from the domain functions. The browser's Print button on the request page still gives a quick copy. The actual columns arrive in 4.11.
-  - **Done when:** S17 as a test that reads the text of the PDF; a product name in Cyrillic is readable in the file. By hand: print one.
+- [ ] **2.14 Download: Excel and PDF**
+  - **Read:** `05-order-request-form.md` (Download); `13-technology.md` (Excel and PDF); `15-quality-and-acceptance.md` (S17).
+  - **Build:** The filtered order list downloads as Excel (ExcelJS) and as a plain PDF (@react-pdf/renderer, A4 landscape, fonts for Uzbek and Russian built in, the filters used and who downloaded it and when on every page, no signature lines), one row per order with the planned columns and who approved each step and when, in the language of the downloader, no product photos. Every number comes from the domain functions. The actual columns arrive in 4.11.
+  - **Done when:** S17 as a test that reads the Excel file and the text of the PDF; a product name in Cyrillic is readable in the PDF.
 
-- [ ] **2.15 Requests: branch wall and matrix**
-  - **Read:** `03-roles-and-permissions.md` (Permission matrix; Rules: 1); `15-quality-and-acceptance.md` (Test layers: Database; S7).
-  - **Build:** Every request action and query is in the permission-matrix test; S7 is a Playwright test; whatever the matrix finds is fixed. The seed gains a few requests in different approval statuses.
-  - **Done when:** The matrix covers each request action × each role × own branch and other branch and is green; S7 is green for requests; its stock and report parts are added in 5.2 and 6.8.
+- [ ] **2.15 Orders: branch wall and matrix**
+  - **Read:** `03-roles-and-permissions.md` (Permission matrix; Rules: 1, 8); `15-quality-and-acceptance.md` (Test layers: Database; S7).
+  - **Build:** Every order action and query is in the permission-matrix test, for one order and for ticked orders that mix branches; S7 is a Playwright test; whatever the matrix finds is fixed. The seed gains a few orders in different approval statuses, two of them in one group row.
+  - **Done when:** The matrix covers each order action × each role × own branch and other branch, alone and mixed, and is green; S7 is green for orders; its stock and report parts are added in 5.2 and 6.8.
 
 
 ## Phase 3: Purchasing
 
-The Manager records what was really bought. Products enter stock at once; services count as used.
+The Manager records what was really bought, one order or one whole shop visit at a time. Products enter stock at once; services count as used.
 
 - [ ] **3.1 Stock ledger**
   - **Read:** `09-warehouse.md` (first paragraph; Movement types; Stock value); `14-data-model.md` (Warehouse: stock_balances, stock_movements; Notes for the build: first bullet); `edge-cases/developer-rules.md` (rules 5, 7).
@@ -282,41 +279,46 @@ The Manager records what was really bought. Products enter stock at once; servic
   - **Done when:** Unit tests of the average formula on a receipt and of the reset at 0. Database tests: a movement that would go below zero is refused by the code and by the CHECK; two movements at the same moment both land with the right `balance_after`.
 
 - [ ] **3.2 Purchases schema and domain**
-  - **Read:** `14-data-model.md` (Purchasing and money: purchases, purchase_extras, purchase_files); `08-money-and-settlement.md` (Numbers the system calculates); `07-purchasing.md` (Line progress); `edge-cases/developer-rules.md` (rules 1, 7); `open-questions.md` (question 3).
-  - **Build:** Migrations for the three tables, with the foreign keys from `stock_movements` and `price_history` to `purchases`; domain functions for actual quantity, actual goods, actual extra, actual total, difference and line progress.
-  - **Done when:** Unit tests with the four cases of the worked example; cancelled records are left out of every sum.
+  - **Read:** `14-data-model.md` (Purchasing and money: purchase_trips, purchases, purchase_extras, trip_files); `08-money-and-settlement.md` (Numbers the system calculates); `07-purchasing.md` (Order progress; One trip, many orders: 2, 3); `edge-cases/developer-rules.md` (rules 1, 7); `open-questions.md` (question 3).
+  - **Build:** Migrations for the four tables, with the foreign keys from `stock_movements` and `price_history` to `purchases`; domain functions for actual quantity, actual goods, actual extra, actual total, difference and order progress; the split of a group row's quantity (oldest submit first, each up to what it lacks, the rest to the newest) and the split of a shared fee (by goods amount, rounded half up, the leftover so'm to the largest, all to the first when every goods amount is 0).
+  - **Done when:** Unit tests with the four cases of the worked example; cancelled records are left out of every sum; 30 pens split over orders lacking 20 and 10, and 35 over the same; a 20 001 fee over goods of 1, 1 and 1 so'm adds up to 20 001 exactly.
 
 - [ ] **3.3 Record a purchase**
   - **Read:** `07-purchasing.md` (Purchase record; What saving a record does); `02-assumptions.md` (A7); `04-catalogs.md` (Rules: 4); `03-roles-and-permissions.md` (Permission matrix: "Record purchases"; Manager rights: RECORD_PURCHASES); `edge-cases/purchasing-and-money.md` ("The item was free"; "Planned by card, paid in cash"; "Delivery for a bank-transfer item was paid in cash"; "No receipt photo"); `14-data-model.md` (Notes for the build: settings keys).
-  - **Build:** The purchase form with every field and rule of the table; "Same as planned"; saving in one transaction: the record, the stock receipt for a product, the last purchase price and a `price_history` row with source PURCHASE, the line progress, the cached `actual_total`, the history event; a service changes no stock and its line shows Used. When `receipt_required_for_cash` is on, a cash purchase needs a receipt. "Give straight to requester" arrives in 5.4.
-  - **Done when:** Database tests: a product purchase raises stock by its quantity; a service purchase raises nothing; a price of 0 without a comment is refused; a date before the Finance approval is refused; a failing last step leaves no record and no stock. With `receipt_required_for_cash` on, a cash purchase without a receipt is refused.
+  - **Build:** The purchase form for one Open order (a trip of one) with every field and rule of the table; "Same as planned"; saving in one transaction: the trip, the record, the stock receipt for a product, the last purchase price and a `price_history` row with source PURCHASE, the order's progress, its cached `actual_total`, the history event; a service changes no stock and shows Used. When `receipt_required_for_cash` is on, a cash purchase needs a receipt. "Give straight to requester" arrives in 5.4.
+  - **Done when:** Database tests: a product purchase raises stock by its quantity; a service purchase raises nothing; a price of 0 without a comment is refused; a date before the order's Finance approval is refused; a failing last step leaves no record and no stock. With `receipt_required_for_cash` on, a cash purchase without a receipt is refused.
 
-- [ ] **3.4 Purchases tab and line progress**
-  - **Read:** `07-purchasing.md` (Line progress; Finishing); `11-screens-and-ux.md` (Request page layout: 3); `15-quality-and-acceptance.md` (S4); `edge-cases/purchasing-and-money.md` ("The shop has only part of the quantity"; "The item cannot be found at all"; "More was bought than approved").
-  - **Build:** The Purchases tab; the four progress states; "Finish line" and "Not bought" with reasons; reopening a finished line while the request is Open; buying more than planned needs a comment.
-  - **Done when:** S4 without the issue: 60 notebooks, then 40; stock 60, then 100; the request stays Open until the second record.
+- [ ] **3.4 One trip, many orders**
+  - **Read:** `07-purchasing.md` (One trip, many orders; What saving a record does); `edge-cases/requests-and-approval.md` ("A delivery fee covers a whole shop visit"); `15-quality-and-acceptance.md` (S19).
+  - **Build:** The Manager ticks Open orders or a group row and records the visit once: date, supplier, payment type and receipt files shared; quantity, price, subtype bought, extra costs and comment per order; on a group row one quantity and one price, split by 3.2's function and changeable before saving; a shared fee split by 3.2's function, shares changeable, their sum equal to the fee; one record per order, saved all or nothing.
+  - **Done when:** Database tests: a trip of three orders writes three records, one trip and the receipt once; one failing order saves nothing; changed shares that do not add up to the fee are refused. Playwright: 30 Tata pens recorded on a group row of 20 and 10 fill both orders.
 
-- [ ] **3.5 Substitution**
+- [ ] **3.5 Purchases tab and order progress**
+  - **Read:** `07-purchasing.md` (Order progress; Finishing); `11-screens-and-ux.md` (Order page layout: 3); `15-quality-and-acceptance.md` (S4); `edge-cases/purchasing-and-money.md` ("The shop has only part of the quantity"; "The item cannot be found at all"; "More was bought than approved").
+  - **Build:** The Purchases tab of the order page; the four progress states; "Finish order" and "Not bought" with one reason on ticked orders; reopening a finished order's buying while it is Open; buying more than planned needs a comment.
+  - **Done when:** S4 without the issue: 60 notebooks, then 40; stock 60, then 100; the order stays Open until the second record.
+
+- [ ] **3.6 Substitution**
   - **Read:** `07-purchasing.md` (Substitution); `15-quality-and-acceptance.md` (S10); `edge-cases/purchasing-and-money.md` ("A different colour or size was bought"; "A completely different product is needed").
-  - **Build:** The Manager picks the subtype really bought, inside the same product; stock rises for that subtype; the line shows "Substituted"; the closing rules of 4.4 read this.
+  - **Build:** The Manager picks the subtype really bought, inside the same product; stock rises for that subtype; the order shows "Substituted"; the closing rules of 4.4 read this.
   - **Done when:** Tests: a subtype of another product is refused; S10 up to the stock check (stock rises for black pens, not for blue).
 
-- [ ] **3.6 Cancel a purchase record**
+- [ ] **3.7 Cancel a purchase record or a trip**
   - **Read:** `07-purchasing.md` (Fixing a mistake); `09-warehouse.md` (Stock value: third bullet); `10-notifications-analytics-reports.md` (Notifications: "Purchase record cancelled"); `03-roles-and-permissions.md` (Manager rights: CANCEL_PURCHASES); `edge-cases/purchasing-and-money.md` ("A typo in a purchase record"; "A purchase record must be cancelled but the items were already issued"); `open-questions.md` (question 3).
-  - **Build:** Cancel with a reason while the request is Open; stock goes down by the same quantity and the average is recalculated; the cancel is blocked when stock would go below zero, and the message names the two ways out; cancelled records stay visible, crossed out; the Head is notified; the request header counts the cancelled records.
-  - **Done when:** Database tests: a cancel lowers stock; a cancel after stock was lowered by a test movement is blocked and nothing changes; a Manager with `CANCEL_PURCHASES` off is refused.
+  - **Build:** Cancel a record with a reason while its order is Open, and "Cancel trip" for every record of one trip, all or nothing; stock goes down by the same quantity and the average is recalculated; the cancel is blocked when stock would go below zero, and the message names the two ways out; cancelled records stay visible, crossed out; the Head is notified; the order shows how many of its records were cancelled.
+  - **Done when:** Database tests: a cancel lowers stock; a cancel after stock was lowered by a test movement is blocked and nothing changes; "Cancel trip" with one blocked record cancels none; a Manager with `CANCEL_PURCHASES` off is refused.
 
-- [ ] **3.7 The three colours**
+- [ ] **3.8 The three colours**
   - **Read:** `08-money-and-settlement.md` (The three colours; Worked example); `11-screens-and-ux.md` (Rules for a smooth feel: 11); `edge-cases/developer-rules.md` (rule 1).
-  - **Build:** A domain function that returns Number, Price and Total for a line and for a request (grey while in progress; the worst colour wins); the label component with icon, word and amount; the labels on the lines and in the request header.
-  - **Done when:** Unit tests of the four worked-example cases and of "red beats orange, orange beats green". By hand: the Cheaper case shows orange "Left 50 000".
+  - **Build:** A domain function that returns Number, Price and Total for an order and for a set of orders (grey while in progress; the worst colour wins; Total from the summed difference); the label component with icon, word and amount; the labels on orders, group rows and the ticked totals.
+  - **Done when:** Unit tests of the four worked-example cases and of "red beats orange, orange beats green" on a group row. By hand: the Cheaper case shows orange "Left 50 000".
 
-- [ ] **3.8 Buying on a phone**
+- [ ] **3.9 Buying on a phone**
   - **Read:** `11-screens-and-ux.md` (Rules for a smooth feel: 3; Interface per role: Manager); `07-purchasing.md` (Purchase record: Receipt).
-  - **Build:** The phone layout of the purchase form: one line at a time, large buttons, "Same as planned", and the camera opens directly for the receipt.
+  - **Build:** The phone layout of the purchase form: one order or group row at a time, large buttons, "Same as planned", and the camera opens directly for the receipt.
   - **Done when:** Playwright at 375 px records a purchase with a receipt file.
 
-- [ ] **3.9 Price prompt for the Head**
+- [ ] **3.10 Price prompt for the Head**
   - **Read:** `04-catalogs.md` (Rules: 4); `10-notifications-analytics-reports.md` (Notifications: "Recent purchases differ from the reference price by more than 20%"); `open-questions.md` (question 8).
   - **Build:** When recent purchases differ from the reference price by more than 20%, the Head gets a notification and a prompt that updates the price in one click.
   - **Done when:** A database test written from the answer to open question 8; the one-click update writes a `price_history` row with source HEAD.
@@ -324,62 +326,62 @@ The Manager records what was really bought. Products enter stock at once; servic
 
 ## Phase 4: Money and settlement
 
-Cash given, cash spent, the difference, and the close. After this phase a request runs from draft to Closed.
+Cash given, cash spent, the difference and the close, per order, with Finance working on many ticked orders at once. After this phase an order runs from draft to Closed.
 
 - [ ] **4.1 Money schema and domain**
-  - **Read:** `14-data-model.md` (Purchasing and money: money_entries, orf_settlements); `08-money-and-settlement.md` (Money ledger; Exact match; Overspend guard; Worked example); `edge-cases/developer-rules.md` (rules 1, 6, 7); `02-assumptions.md` (A10, A11).
-  - **Build:** Migrations for both tables; domain functions for the Manager's cash balance, for the exact match of a line and of a request, and for the overspend percent and whether the guard applies.
-  - **Done when:** Unit tests: the four worked-example balances (0, +50 000, −30 000, +50 000); 550 000 on 520 000 is 5.8% and under the guard; Bank transfer, Card top-up and Card money returned never change the balance.
+  - **Read:** `14-data-model.md` (Purchasing and money: money_actions, money_rows, order_settlements); `08-money-and-settlement.md` (Money ledger; Exact match; Overspend guard; Worked example); `edge-cases/developer-rules.md` (rules 1, 6, 7); `02-assumptions.md` (A10, A11).
+  - **Build:** Migrations for the three tables; domain functions for an order's cash count, a Manager's cash balance, the exact match of an order, the prefilled cash split (each order's planned cash) and the prefilled settlement rows (each order's count), the no-crossing check, the net of a settlement action, and the overspend guard with the percent and the amount.
+  - **Done when:** Unit tests: the four worked-example counts (0, +50 000, −30 000, +50 000); the three-order example (split 520 000, 100 000, 30 000; net 20 000); a return row above an order's count is refused; 550 000 on 520 000 is 5.8% and 30 000 so'm and under the guard; 80 000 over is under the guard at a 100 000 amount and above it at 50 000; Bank transfer, Card top-up and Card money returned never change a count.
 
 - [ ] **4.2 Finance approval with cash**
-  - **Read:** `08-money-and-settlement.md` (When Finance approves); `06-approval-workflow.md` (Allowed moves: Waiting for Finance row); `10-notifications-analytics-reports.md` (Notifications: "Cash given, cash returned, paid back").
-  - **Build:** The Finance approval dialog shows the planned totals per payment type and the field "Cash given to the Manager now", prefilled with the planned cash total; the entry is written in the same transaction as the approval; 0 writes no entry.
-  - **Done when:** Database tests: an approval with 520 000 creates one Cash given entry and the status Open; a failure rolls back both.
+  - **Read:** `08-money-and-settlement.md` (When Finance approves; Money ledger: 1); `06-approval-workflow.md` (Allowed moves: Waiting for Finance row); `10-notifications-analytics-reports.md` (Notifications: "Cash given, cash returned, paid back").
+  - **Build:** The Finance approval dialog for ticked orders shows the planned totals per payment type and the table "Cash given to the Manager now", one row per order with planned cash, prefilled and changeable, one block per Manager; one cash action per Manager is written in the same transaction as the approval; rows of 0 write nothing.
+  - **Done when:** Database tests: approving the three orders of the worked example with 650 000 creates one action with rows 520 000, 100 000 and 30 000 and sets all three Open; orders of two Managers make two actions; a failure rolls back the approval and the cash.
 
-- [ ] **4.3 Money tab**
-  - **Read:** `08-money-and-settlement.md` (Money ledger); `03-roles-and-permissions.md` (Permission matrix: "Record money given, returned, paid back"); `11-screens-and-ux.md` (Request page layout: 3; Interface per role: Finance); `edge-cases/purchasing-and-money.md` ("The Manager bought before cash was given"); `open-questions.md` (question 3).
-  - **Build:** The Money tab: Finance adds entries of the six kinds with amount, date, optional document number, optional file and comment, and cancels a wrong one with a reason while the request is not Closed; the balance and its meaning are shown; the owner is notified.
-  - **Done when:** Database tests: only Finance of the branch can add an entry; an amount of 0 is refused by the database; a cancelled entry leaves the balance as it was before.
+- [ ] **4.3 Money tab and money actions**
+  - **Read:** `08-money-and-settlement.md` (Money ledger); `03-roles-and-permissions.md` (Permission matrix: "Record money given, returned, paid back"); `11-screens-and-ux.md` (Order page layout: 3; Interface per role: Finance); `edge-cases/purchasing-and-money.md` ("The Manager bought before cash was given"; "Finance gives one amount for several orders"); `open-questions.md` (question 3).
+  - **Build:** The Money tab of the order page with its rows and count; Finance adds actions of the six kinds for ticked orders, with date, optional document number, optional file and comment, one row per order, prefilled where section 8 says; cancels a wrong action whole with a reason while none of its orders is Closed; the owner gets one grouped notification.
+  - **Done when:** Database tests: only Finance of the branch can add an action; an amount of 0 is refused by the database; a cancelled action leaves every count as it was before; an action whose rows cover orders of two Managers is refused.
 
-- [ ] **4.4 Finish and close on an exact match**
-  - **Read:** `07-purchasing.md` (Finishing); `08-money-and-settlement.md` (Closing: 1; Exact match); `06-approval-workflow.md` (Allowed moves: the two rows that start from Open); `03-roles-and-permissions.md` (Manager rights: CLOSE_ALONE; Permission matrix: "Close a request that matches exactly"); `15-quality-and-acceptance.md` (S1, S10, S16).
-  - **Build:** "Finish purchasing" turns on when every line is Done, Done short or Not bought and shows the summary of differences; on an exact match the Manager sees "Close request" with the confirmation text; with `CLOSE_ALONE` off, or with a substitution, the request goes to Finance; Finance and the Head are notified.
-  - **Done when:** S1 as a test; S16 and S10 as tests up to the point where the request goes to Finance.
+- [ ] **4.4 Close on an exact match**
+  - **Read:** `07-purchasing.md` (Finishing); `08-money-and-settlement.md` (Closing: 1; Exact match); `06-approval-workflow.md` (Allowed moves: the two rows that start from Open); `03-roles-and-permissions.md` (Manager rights: CLOSE_ALONE; Permission matrix: "Close an order that matches exactly"); `15-quality-and-acceptance.md` (S1, S10, S16).
+  - **Build:** The Manager ticks finished orders and sees the summary of their differences; for exact matches "Close" with the confirmation text; with `CLOSE_ALONE` off, or with a substitution, the order goes to settlement; Finance and the Head get one grouped notification.
+  - **Done when:** S1 as a test; S16 and S10 as tests up to the point where the order goes to Finance; ticking an exact match and an order with a difference offers "Close" for neither.
 
 - [ ] **4.5 Settlement screen**
-  - **Read:** `08-money-and-settlement.md` (Closing: 2 with its table, 4, and the last paragraph); `06-approval-workflow.md` (Allowed moves: "Send to settlement" row; "Send back for correction" row); `02-assumptions.md` (A11); `10-notifications-analytics-reports.md` (Notifications: "Sent to settlement"); `edge-cases/purchasing-and-money.md` ("Cash was given but nothing was bought"; "No receipt photo"; "Finance finds an error during settlement").
-  - **Build:** The Manager's "Send to settlement" for a request with any difference, with a notification to the Finance users of the branch; the Finance screen with a block for each payment type used: Cash (Receive from Manager or Pay Manager, prefilled, partial amounts allowed), Bank transfer (Confirmed; a note is required when transferred and received differ), Corporate card (Confirmed; a Card money returned entry when the Manager sends money back); the count of cancelled purchase records with a link to each; the "No receipt" label; Finance sends the request back to Open with a reason.
-  - **Done when:** Database tests: lines whose differences cancel out still go to Finance; a transfer mismatch without a note cannot be confirmed.
+  - **Read:** `08-money-and-settlement.md` (Money ledger: 1 to 3; Closing: 2 with its table, 4, and the last paragraph); `06-approval-workflow.md` (Allowed moves: "Send to settlement" row; "Send back for correction" row); `02-assumptions.md` (A11); `10-notifications-analytics-reports.md` (Notifications: "Sent to settlement"); `edge-cases/purchasing-and-money.md` ("Cash was given but nothing was bought"; "No receipt photo"; "Finance finds an error during settlement"; "One order holds money and another of the same Manager is owed"; "The ticked orders in settlement belong to two Managers").
+  - **Build:** The Manager's "Send to settlement" for ticked finished orders, with one grouped notification to the Finance users of the branch; the Finance screen for ticked orders in settlement, a block per Manager and inside it per payment type: Cash (one settlement action with Receive and Pay rows prefilled with each count, partial amounts allowed, the net shown, no row crossing its order), Bank transfer (Confirmed per order; a note when transferred and received differ), Corporate card (Confirmed per order; a Card money returned row); the count of cancelled purchase records per order with a link to each; the "No receipt" label; Finance sends an order back to Open with a reason.
+  - **Done when:** Database tests: the two-order settlement of the worked example records one action and leaves both counts at 0; a Pay row above what the order is owed is refused; a transfer mismatch without a note cannot be confirmed.
 
 - [ ] **4.6 Finance closes**
-  - **Read:** `08-money-and-settlement.md` (Closing: 3); `15-quality-and-acceptance.md` (S2, S3, S9, S13); `10-notifications-analytics-reports.md` (Notifications: "Closed, reopened"); `03-roles-and-permissions.md` (Permission matrix: "Settle and close a request with differences"); `06-approval-workflow.md` (Allowed moves: Waiting for settlement, Close row).
-  - **Build:** "Close request" for Finance turns on when the cash balance is 0, every block is confirmed and any required Head acknowledgment is given; the owner, the Head and Finance are notified.
-  - **Done when:** S2, S3, S9 and S13 as tests, and the endings of S10 and S16.
+  - **Read:** `08-money-and-settlement.md` (Closing: 3); `15-quality-and-acceptance.md` (S2, S3, S9, S13, S20); `10-notifications-analytics-reports.md` (Notifications: "Closed, reopened"); `03-roles-and-permissions.md` (Permission matrix: "Settle and close an order with differences"); `06-approval-workflow.md` (Allowed moves: Waiting for settlement, Close row).
+  - **Build:** "Close" for Finance on ticked orders: it works when every ticked order has a count of 0, every block confirmed and any required Head acknowledgment; otherwise nothing closes and the screen names the orders that are not ready; one grouped notification to the owners, the Head and Finance.
+  - **Done when:** S2, S3, S9, S13 and S20 as tests, and the endings of S10 and S16.
 
 - [ ] **4.7 Overspend guard**
   - **Read:** `08-money-and-settlement.md` (Overspend guard); `02-assumptions.md` (A10); `10-notifications-analytics-reports.md` (Notifications: "Overspend above the guard"; "Overspend acknowledged"); `15-quality-and-acceptance.md` (S12).
-  - **Build:** Above the setting, the Head is notified and must click "Acknowledge overspend" with a comment before Finance can close; 0 means every overspend needs the Head; off means none does; Finance is notified when the Head acknowledges.
-  - **Done when:** S12 as a test; with the guard off the same request closes without the Head.
+  - **Build:** An order above both the percent and the amount setting notifies the Head, who must click "Acknowledge overspend" with a comment, for one order or several ticked ones, before Finance can close; a 0 in either setting leaves only the other; both 0 means every overspend; off means none; Finance is notified when the Head acknowledges.
+  - **Done when:** S12 as a test; with the guard off the same order closes without the Head.
 
 - [ ] **4.8 Reopen**
-  - **Read:** `06-approval-workflow.md` (Allowed moves: Closed row; Rules: 3); `03-roles-and-permissions.md` (Permission matrix: "Reopen a closed request"); `edge-cases/purchasing-and-money.md` ("An error is found after closing"; "Faulty goods go back to the supplier"); `10-notifications-analytics-reports.md` (Notifications: "Closed, reopened").
-  - **Build:** The Head reopens a Closed request with a reason; the status is Open; balances are recalculated; earlier settlement confirmations are cleared; Finance settles again; the owner, the Head and Finance are notified.
-  - **Done when:** Database test: reopen, cancel one record, and the request needs settlement again with the old confirmations gone.
+  - **Read:** `06-approval-workflow.md` (Allowed moves: Closed row; Rules: 3); `03-roles-and-permissions.md` (Permission matrix: "Reopen a closed order"); `edge-cases/purchasing-and-money.md` ("An error is found after closing"; "Faulty goods go back to the supplier"); `10-notifications-analytics-reports.md` (Notifications: "Closed, reopened").
+  - **Build:** The Head reopens a Closed order with a reason; the status is Open; its counts are recalculated; earlier settlement confirmations are cleared; Finance settles it again; the owner, the Head and Finance are notified.
+  - **Done when:** Database test: reopen, cancel one record, and the order needs settlement again with the old confirmations gone.
 
 - [ ] **4.9 Money with managers**
-  - **Read:** `08-money-and-settlement.md` (Money with managers); `11-screens-and-ux.md` (Screens: Money with managers).
-  - **Build:** `/money` for Finance (own branches) and the Head: every Manager's open cash balance across all requests, oldest first, with the date since when. The seed gains an Open request with cash given and a Closed one.
+  - **Read:** `08-money-and-settlement.md` (Money with managers; Money ledger: Manager's cash balance); `11-screens-and-ux.md` (Screens: Money with managers).
+  - **Build:** `/money` for Finance (own branches) and the Head: every Manager's cash balance across their orders that are not Closed, oldest first, with the date since when, opening the orders behind it. The seed gains Open orders with cash given and a Closed one.
   - **Done when:** Database test: Finance of one branch sees no balance of another. By hand: the seed shows one Manager holding money.
 
-- [ ] **4.10 Move a request to another Manager**
-  - **Read:** `03-roles-and-permissions.md` (Rules: 7); `edge-cases/requests-and-approval.md` ("A Manager with cash in hand leaves the branch"; "A user is deactivated with work waiting").
-  - **Build:** The Head moves a request to another Manager of the same branch, only when the owner's cash balance on it is 0; the move is written to the request's History.
-  - **Done when:** Database tests: blocked at a balance of 50 000; allowed at 0; a Manager of another branch cannot be chosen.
+- [ ] **4.10 Move orders to another Manager**
+  - **Read:** `03-roles-and-permissions.md` (Rules: 7; Permission matrix: "Move orders to another Manager"); `edge-cases/requests-and-approval.md` ("A Manager with cash in hand leaves the branch"; "A user is deactivated with work waiting").
+  - **Build:** The Head moves ticked orders to another Manager of the same branch, only orders whose cash count is 0, all or nothing; the move is written to each order's History.
+  - **Done when:** Database tests: blocked when one of three ticked orders has a count of 50 000, and none moves; allowed at 0; a Manager of another branch cannot be chosen.
 
-- [ ] **4.11 Formal PDF: actual columns**
-  - **Read:** `05-order-request-form.md` (Formal PDF: Actual columns; Totals).
-  - **Build:** From status Open onward the PDF adds actual quantity, actual price, actual extra costs, actual total and difference, and the totals block adds planned total, actual total and difference.
-  - **Done when:** A test reads the PDF of the Cheaper case and finds 470 000 and 50 000.
+- [ ] **4.11 Download: actual columns**
+  - **Read:** `05-order-request-form.md` (Download: 1).
+  - **Build:** From status Open onward the Excel and PDF rows add actual quantity, actual price, actual extra costs, actual total and difference.
+  - **Done when:** A test reads the downloads of the Cheaper case and finds 470 000 and 50 000.
 
 
 ## Phase 5: Warehouse
@@ -387,18 +389,18 @@ Cash given, cash spent, the difference, and the close. After this phase a reques
 Stock screens and every document that moves stock inside one branch.
 
 - [ ] **5.1 Stock documents schema**
-  - **Read:** `14-data-model.md` (Warehouse: stock_documents, stock_document_lines; Requests: number_counters); `09-warehouse.md` (Movement types); `edge-cases/developer-rules.md` (rules 5, 7).
+  - **Read:** `14-data-model.md` (Warehouse: stock_documents, stock_document_lines; Orders: number_counters); `09-warehouse.md` (Movement types); `edge-cases/developer-rules.md` (rules 5, 7).
   - **Build:** Migrations for both tables, with the foreign key from `stock_movements` to document lines; numbering for ISS, RET, TRF, WOF, CNT and ENT through `number_counters`; the document posting helper on top of `postMovement()`; the reverse helper.
   - **Done when:** Database tests: two documents posted at the same moment get different numbers; a reverse writes the opposite movement and marks the original Reversed.
 
 - [ ] **5.2 Stock on hand**
-  - **Read:** `09-warehouse.md` (Stock screens: Stock on hand); `11-screens-and-ux.md` (Screens: Stock on hand; Rules for a smooth feel: 8); `03-roles-and-permissions.md` (Permission matrix: "See requests, stock and reports"); `15-quality-and-acceptance.md` (S7).
+  - **Read:** `09-warehouse.md` (Stock screens: Stock on hand); `11-screens-and-ux.md` (Screens: Stock on hand; Rules for a smooth feel: 8); `03-roles-and-permissions.md` (Permission matrix: "See orders, stock and reports"); `15-quality-and-acceptance.md` (S7).
   - **Build:** `/warehouse/stock`: product, subtype, photo, quantity, measure, value; search and category filter (the minimum column and the "Low stock only" switch arrive in 5.10); services are never listed; the branch wall.
   - **Done when:** Database test: a Principal sees only their branch's stock. By hand: the stock from phase 3 purchases is listed. The stock part of S7 is green.
 
 - [ ] **5.3 Item card**
   - **Read:** `09-warehouse.md` (Stock screens: Item card); `11-screens-and-ux.md` (Screens: Item card).
-  - **Build:** `/warehouse/items/[id]`: every movement of one subtype in one branch, newest first, with the running balance and a link to the source document or request.
+  - **Build:** `/warehouse/items/[id]`: every movement of one subtype in one branch, newest first, with the running balance and a link to the source document or order.
   - **Done when:** A database test checks the order and the running balance. By hand: the card of a purchased item lists the receipt with a working link.
 
 - [ ] **5.4 Issue to a department**
@@ -407,9 +409,9 @@ Stock screens and every document that moves stock inside one branch.
   - **Done when:** S4 in full, S11 and the second half of S8 as tests.
 
 - [ ] **5.5 Issue note PDF**
-  - **Read:** `09-warehouse.md` (Issue to a department: 2); `05-order-request-form.md` (Formal PDF: 5); `16-build-order.md` (phase 5 row).
-  - **Build:** The issue note in the formal style with "Given by" and "Received by" signature lines.
-  - **Done when:** A test reads the number and both signature labels from the file. By hand: the spec's phase 5 check, download an issue note.
+  - **Read:** `09-warehouse.md` (Issue to a department: 2); `05-order-request-form.md` (Download: 2, 3); `16-build-order.md` (phase 5 row).
+  - **Build:** The issue note as a PDF in the style of the order list download: number, date, department, items, who gave them and who received them as typed; no signature lines.
+  - **Done when:** A test reads the number and both names from the file and finds no signature line. By hand: the spec's phase 5 check, download an issue note.
 
 - [ ] **5.6 Return from a department**
   - **Read:** `09-warehouse.md` (Other documents: Return from a department; Movement types: Return row); `open-questions.md` (question 11).
@@ -422,7 +424,7 @@ Stock screens and every document that moves stock inside one branch.
   - **Done when:** Database tests: reversing an issue brings the stock back and marks the issue Reversed; a reverse that would push stock below zero is refused; a Manager with `RETURN_REVERSE` off is refused.
 
 - [ ] **5.8 Direct entry by the Head**
-  - **Read:** `09-warehouse.md` (Direct entry by the Head); `03-roles-and-permissions.md` (Permission matrix: "Enter stock directly, without a request"); `15-quality-and-acceptance.md` (S15); `edge-cases/warehouse.md` ("The school already has stock on launch day"; "A gift or donation arrives without a request"); `open-questions.md` (question 12).
+  - **Read:** `09-warehouse.md` (Direct entry by the Head); `03-roles-and-permissions.md` (Permission matrix: "Enter stock directly, without an order"); `15-quality-and-acceptance.md` (S15); `edge-cases/warehouse.md` ("The school already has stock on launch day"; "A gift or donation arrives without an order"); `open-questions.md` (question 12).
   - **Build:** The direct-entry form: branch, date, reason (stock we already had; gift or donation; other, with a comment), lines with product, subtype, quantity and a cost prefilled from the reference price; the number `ENT-CHL-26-0004`; an audit row; the item card marks the movement "Direct entry". A product's first direct entry locks its type and measure.
   - **Done when:** S15 as a test.
 
@@ -439,7 +441,7 @@ Stock screens and every document that moves stock inside one branch.
 - [ ] **5.11 Write-off**
   - **Read:** `09-warehouse.md` (Movement types: Write-off row; Other documents: Write-off); `03-roles-and-permissions.md` (Permission matrix: the two write-off rows; Manager rights: WRITE_OFF_COUNT); `10-notifications-analytics-reports.md` (Notifications: "Write-off or correction asked"); `edge-cases/purchasing-and-money.md` ("Faulty goods go back to the supplier"); `open-questions.md` (question 13).
   - **Build:** The Manager asks for a write-off with items, quantities, a reason from the fixed list and a comment; stock changes only when the Head approves; the Head approves or refuses; the decision goes back to the Manager.
-  - **Done when:** Database tests: stock is unchanged while the request waits; approval lowers it; a refusal changes nothing.
+  - **Done when:** Database tests: stock is unchanged while the write-off waits; approval lowers it; a refusal changes nothing.
 
 - [ ] **5.12 Warehouse documents list**
   - **Read:** `09-warehouse.md` (Stock screens: Documents); `11-screens-and-ux.md` (Screens: Warehouse documents; New issue, return, transfer, write-off).
@@ -448,7 +450,7 @@ Stock screens and every document that moves stock inside one branch.
 
 - [ ] **5.13 Closing a branch**
   - **Read:** `04-catalogs.md` (Rules: 2); `edge-cases/requests-and-approval.md` ("The Head wants to close a branch").
-  - **Build:** Deactivating a branch is blocked while it has unfinished requests or stock above 0, and the message says which.
+  - **Build:** Deactivating a branch is blocked while it has unfinished orders or stock above 0, and the message says which.
   - **Done when:** Database tests for both blocks and for the free case.
 
 
@@ -458,13 +460,13 @@ What each role sees first, and the numbers behind the work.
 
 - [ ] **6.1 Home: Manager and Principal**
   - **Read:** `10-notifications-analytics-reports.md` (Home page per role); `11-screens-and-ux.md` (Interface per role: Manager, Principal).
-  - **Build:** The Manager's home: three large buttons (New request, Record purchase, Issue from stock), then sent back to me, my drafts, my open requests with progress bars, cash I hold, low stock, lines due soon. The Principal's home: waiting requests as large cards with total, urgent label and price hints; approve, send back or reject in two taps on a phone; then the branch's requests by status and its spending this month.
-  - **Done when:** Playwright at 375 px: the Principal approves a request from the home page in two taps.
+  - **Build:** The Manager's home: three large buttons (New order, Record purchase, Issue from stock), then sent back to me, my drafts, my open orders with progress, cash I hold, low stock, orders due soon, as counts and group rows linking to the filtered order list. The Principal's home: waiting group rows as large cards with total, urgent label and price hints; tick all and approve, send back or reject in two taps on a phone; then the branch's orders by status and its spending this month.
+  - **Done when:** Playwright at 375 px: the Principal approves a group row of two orders from the home page in two taps.
 
 - [ ] **6.2 Home: Head and Finance**
   - **Read:** `10-notifications-analytics-reports.md` (Home page per role); `11-screens-and-ux.md` (Interface per role: Head, Finance).
-  - **Build:** The Head's home in the spec's order: waiting for my approval; overspends to acknowledge; write-offs to approve (corrections join in 7.4); product suggestions; requests stuck over 48 hours; counts by status per branch; spending this month per branch. The Finance home: approvals and settlements with the exact amount to give or receive, each opening on the request's Money tab; money with managers.
-  - **Done when:** By hand with the seed: each list holds the right items, and a Finance item opens on the Money tab. A database test checks each list against the seed.
+  - **Build:** The Head's home in the spec's order: waiting for my approval; overspends to acknowledge; write-offs to approve (corrections join in 7.4); product suggestions; orders stuck over 48 hours; counts by status per branch; spending this month per branch. The Finance home: approvals and settlements with the exact amount to give or receive, each opening the order list filtered to those orders; money with managers.
+  - **Done when:** By hand with the seed: each list holds the right orders, and a Finance entry opens the filtered order list ready to tick. A database test checks each list against the seed.
 
 - [ ] **6.3 Analytics foundations**
   - **Read:** `10-notifications-analytics-reports.md` (Analytics page per role: the five numbered points); `13-technology.md` (Scheduled jobs; Charts); `edge-cases/developer-rules.md` (rule 12); `14-data-model.md` (Notes for the build: third bullet); `open-questions.md` (question 14).
@@ -474,7 +476,7 @@ What each role sees first, and the numbers behind the work.
 - [ ] **6.4 Analytics: Head**
   - **Read:** `10-notifications-analytics-reports.md` (Analytics page per role: Head, all branches); `16-build-order.md` (phase 6 row).
   - **Build:** The six blocks: Spending, Plan vs actual, Prices, Approval speed, Managers, Warehouse.
-  - **Done when:** A test checks one number of each block against the seed. By hand: the spec's phase 6 check, click a bar and see the requests behind it.
+  - **Done when:** A test checks one number of each block against the seed. By hand: the spec's phase 6 check, click a bar and see the orders behind it.
 
 - [ ] **6.5 Analytics: Principal and Manager**
   - **Read:** `10-notifications-analytics-reports.md` (Analytics page per role: Principal, own branch; Manager, own branches; the "Runs out in" sentence); `open-questions.md` (question 15).
@@ -487,13 +489,13 @@ What each role sees first, and the numbers behind the work.
   - **Done when:** A test checks the age bands with the clock set. By hand: read the page on the seed.
 
 - [ ] **6.7 Analytics as a PDF**
-  - **Read:** `10-notifications-analytics-reports.md` (Analytics page per role: 4); `05-order-request-form.md` (Formal PDF: first paragraph); `open-questions.md` (question 16).
-  - **Build:** The whole analytics page downloads as a formal PDF report, built as answered in open question 16.
+  - **Read:** `10-notifications-analytics-reports.md` (Analytics page per role: 4); `05-order-request-form.md` (Download: 2, 3); `open-questions.md` (question 16).
+  - **Build:** The whole analytics page downloads as a PDF report without signature lines, built as answered in open question 16.
   - **Done when:** A test reads the period and one total from the file.
 
-- [ ] **6.8 Reports: requests and spending**
+- [ ] **6.8 Reports: orders and spending**
   - **Read:** `10-notifications-analytics-reports.md` (Reports: first four rows); `11-screens-and-ux.md` (Screens: Reports); `03-roles-and-permissions.md` (Permission matrix: "Export to Excel, download PDF, print"); `15-quality-and-acceptance.md` (S7).
-  - **Build:** `/reports` with Request register, Purchase register, Planned vs actual and Spending; filters by branch, date range and category; Excel export with real numbers and dates.
+  - **Build:** `/reports` with Order register, Purchase register, Planned vs actual and Spending; filters by branch, date range and category; Excel export with real numbers and dates.
   - **Done when:** A database test for the branch wall on each report. By hand: export the spending report and sum a column in Excel. The reports part of S7 is green.
 
 - [ ] **6.9 Reports: prices, stock and money**
@@ -503,8 +505,8 @@ What each role sees first, and the numbers behind the work.
 
 - [ ] **6.10 Search**
   - **Read:** `11-screens-and-ux.md` (Rules for a smooth feel: 9).
-  - **Build:** Ctrl+K or Cmd+K opens a search for request numbers, products and suppliers, limited to what the user may see.
-  - **Done when:** Database test: a request number of another branch gives no result. By hand: find a request by its number.
+  - **Build:** Ctrl+K or Cmd+K opens a search for order numbers, products and suppliers, limited to what the user may see.
+  - **Done when:** Database test: an order number of another branch gives no result. By hand: find an order by its number.
 
 
 ## Phase 7: Transfers and counts
@@ -512,8 +514,8 @@ What each role sees first, and the numbers behind the work.
 Stock moving between branches, and stock checked against the shelf.
 
 - [ ] **7.1 Transfer: send**
-  - **Read:** `09-warehouse.md` (Movement types: Transfer row; Other documents: Transfer); `03-roles-and-permissions.md` (Manager rights: TRANSFER_STOCK); `10-notifications-analytics-reports.md` (Notifications: "Transfer sent"); `05-order-request-form.md` (Formal PDF: 5).
-  - **Build:** The sender picks the other branch and the items; stock leaves the sender at once; the transfer shows "In transit"; the Managers of the receiving branch are notified; the transfer note as a formal PDF.
+  - **Read:** `09-warehouse.md` (Movement types: Transfer row; Other documents: Transfer); `03-roles-and-permissions.md` (Manager rights: TRANSFER_STOCK); `10-notifications-analytics-reports.md` (Notifications: "Transfer sent"); `05-order-request-form.md` (Download: 2, 3).
+  - **Build:** The sender picks the other branch and the items; stock leaves the sender at once; the transfer shows "In transit"; the Managers of the receiving branch are notified; the transfer note as a PDF without signature lines.
   - **Done when:** Database test: the sender's stock falls at once and the receiver's does not change yet.
 
 - [ ] **7.2 Transfer: receive**
@@ -537,8 +539,8 @@ Stock moving between branches, and stock checked against the shelf.
 The scheduled work, and a pass over every screen.
 
 - [ ] **8.1 Reminders and escalation**
-  - **Read:** `06-approval-workflow.md` (Rules: 8); `10-notifications-analytics-reports.md` (Notifications: "Waiting more than 24 hours"; "Waiting more than 48 hours"; "Needed-by date is 2 days away and the line is not finished"); `14-data-model.md` (Notes for the build: settings keys); `16-build-order.md` (phase 8 row); `open-questions.md` (question 7).
-  - **Build:** Scheduled jobs: a request waiting longer than `reminder_hours` reminds the approvers of its step; longer than `escalation_hours` tells the Head; a line not finished 2 days before its needed-by date tells the owner.
+  - **Read:** `06-approval-workflow.md` (Rules: 8); `10-notifications-analytics-reports.md` (Notifications: "Orders waiting more than 24 hours"; "Orders waiting more than 48 hours"; "Needed-by date is 2 days away and the order's buying is not finished"); `14-data-model.md` (Notes for the build: settings keys); `16-build-order.md` (phase 8 row); `open-questions.md` (question 7).
+  - **Build:** Scheduled jobs: orders waiting longer than `reminder_hours` remind the approvers of their step, grouped in one notification a day per approver; longer than `escalation_hours` tell the Head, grouped the same way; an order whose buying is not finished 2 days before its needed-by date tells the owner.
   - **Done when:** Database tests with the clock: at 24 hours and 1 minute the approvers have a reminder (the spec's phase 8 check); at 48 hours and 1 minute the Head has one.
 
 - [ ] **8.2 Nightly check and weekly copy**
@@ -563,12 +565,12 @@ Proof that it works, then the real environment and the real data.
 
 - [ ] **9.1 Acceptance run**
   - **Read:** `15-quality-and-acceptance.md` (whole file); `16-build-order.md` (whole file).
-  - **Build:** Every scenario S1 to S18 as a Playwright test at phone and desktop width; a scenario covered so far only by database tests gets its browser test.
+  - **Build:** Every scenario S1 to S20 as a Playwright test at phone and desktop width; a scenario covered so far only by database tests gets its browser test.
   - **Done when:** All 18 are green in CI at both widths.
 
 - [ ] **9.2 Speed**
   - **Read:** `01-summary.md` (Quality bar: Fast); `edge-cases/developer-rules.md` (rule 12); `11-screens-and-ux.md` (Rules for a smooth feel: 5, 8).
-  - **Build:** A script fills a database with several years of invented requests, purchases and movements; every page is measured; missing indexes and queries inside loops are fixed.
+  - **Build:** A script fills a database with several years of invented orders, purchases and movements; every page is measured; missing indexes and queries inside loops are fixed.
   - **Done when:** A table in `docs/` shows every page under 1 second on the test copy with that volume.
 
 - [ ] **9.3 Monitoring**

@@ -22,12 +22,12 @@ Each has a test or a database constraint. Sources are files in `docs/spec/`.
 4. Every server action and every query calls `authorize()`; lists filter by branch inside the SQL. Hiding a button protects nothing. (rule 4; `03-roles-and-permissions.md`)
 5. The database is the last defence: stock CHECK ≥ 0, unique numbers, enums, amount CHECKs, a foreign key on every relation. (rule 5; `14-data-model.md`)
 6. Money is whole so'm in `bigint`, quantities are `numeric(14,3)`, rounding is half up, and no JavaScript float touches money. (rule 6; `08-money-and-settlement.md`)
-7. Stock movements, money entries and request events are append-only. A correction is a new row. (rule 7)
+7. Stock movements, money actions and rows, and order events are append-only. A correction is a new row. (rule 7)
 8. Every create action carries a browser-made id; the same id twice returns the first result. Bad internet must not buy things twice. (rule 8)
-9. A request has a version; a write with an old version is refused. (rule 9)
+9. An order has a version; a write with an old version is refused, and an action on ticked orders is all or nothing. (rule 9; `06-approval-workflow.md` rule 8)
 10. Timestamps are UTC; business dates are `Asia/Tashkent`; time comes from the injected clock, never from `new Date()`. (rule 10)
 11. Nothing with data is deleted, only deactivated. The one exception is a draft that was never submitted. (rule 11; `04-catalogs.md` rule 2)
-12. The planned lines of an Open request never change. (`06-approval-workflow.md` rule 6)
+12. The plan of an Open order never changes. (`06-approval-workflow.md` rule 6)
 13. No text is written in a screen. Every label comes from the `uz`, `ru` and `en` files. (`11-screens-and-ux.md` rule 14)
 
 ## Stack

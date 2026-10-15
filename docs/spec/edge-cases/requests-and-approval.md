@@ -3,23 +3,25 @@
 > Part of the School Procurement & Warehouse Platform spec, baseline of 10 October 2026 (document revision 123).
 > Index and reading order: `docs/spec/00-index.md`. Read-only: this folder changes only through `/spec-change`.
 
-From spec chapter 12, which says: "These 41 situations are the ones most likely to cause trouble; each has a fixed answer, and each becomes a test." This file holds 16 of them.
+From spec chapter 12, which says: "These 41 situations are the ones most likely to cause trouble; each has a fixed answer, and each becomes a test." This file holds 16 of them, and 2 more added with the order list on 15 October 2026.
 
 | Situation | What the system does |
-| --- | --- |
-| Two approvers click at the same moment | The first wins. The second sees who acted and when. |
+| --- | --- | --- |
+| Two approvers click at the same moment | The first wins. The second sees who acted and when; when the second action covered more orders, nothing of it is saved and the list refreshes. |
 | Submit is clicked twice | One submit only. The button disables and the server ignores the repeat. |
+| One of many ticked orders changed a moment ago | Nothing is saved. The screen names the order that changed and refreshes; the user acts again. |
 | The needed item is not in the catalog | The Manager sends a product suggestion to the Head. |
-| A product is deactivated while it sits in a draft | Submit is blocked and the line is marked. |
+| A product is deactivated while it sits in a draft | Submit is blocked and the draft is marked. |
 | The catalog price changes after the draft was written | The draft keeps the typed price; a hint shows the new suggestion. |
 | Stock changes between submit and approval | Approvers see both numbers: at submit and now. |
-| The needed-by date passes while the request waits | The line shows "Overdue". Nothing is blocked. |
-| The same item is needed by two departments | Two lines. The same item for the same department twice is blocked. |
-| A delivery fee covers the whole order | Add a service line "Delivery" from the catalog. |
+| The needed-by date passes while the order waits | The order shows "Overdue". Nothing is blocked. |
+| The same item is needed by two departments | Two orders, one per department. Lists show them in one group row. |
+| The same item for the same department is added again while a draft for it exists | The draft's quantity rises; no second draft. Once submitted, a new order is made and lists show both in one group row. |
+| A delivery fee covers a whole shop visit | Recorded once on the trip and split across its orders (section 7). |
 | An approver is on holiday | Reminders, then a notice to the Head. The Head adds a second Finance user, or hands the branch to an acting Principal. |
-| A user is deactivated with work waiting | Approval tasks stay with the role. The Head moves that user's own requests to another Manager. |
-| A Manager with cash in hand leaves the branch | The request cannot change owner until the cash balance is 0. |
-| The Head wants to close a branch | Blocked while it has unfinished requests or stock above 0. |
+| A user is deactivated with work waiting | Approval tasks stay with the role. The Head moves that user's own orders to another Manager. |
+| A Manager with cash in hand leaves the branch | An order cannot change owner until its cash count is 0. |
+| The Head wants to close a branch | Blocked while it has unfinished orders or stock above 0. |
 | The year changes | The counter restarts at 0001 with the new year in the number. |
-| A Manager's right is switched off in the middle of a task | The buttons disappear at once and saved work stays. The Head finishes it or moves the request to another Manager. |
-| The branch's Principal changes while requests wait | Waiting requests pass to the new Principal. Past approvals keep the old name. |
+| A Manager's right is switched off in the middle of a task | The buttons disappear at once and saved work stays. The Head finishes it or moves the orders to another Manager. |
+| The branch's Principal changes while orders wait | Waiting orders pass to the new Principal. Past approvals keep the old name. |

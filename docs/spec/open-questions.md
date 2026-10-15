@@ -14,19 +14,19 @@ Each line names the first build-plan task that needs the answer.
 
 ## Records and repository
 
-3. **Append-only and the cancel fields.** Architecture rule 7 says money entries are never updated. The data model gives `money_entries` and `purchases` the columns `is_cancelled`, `cancel_reason`, and section 8 says a wrong entry "is cancelled with a reason". Is cancelling a change to those fields only, or a new row? Needed by task 3.2.
+3. **Append-only and the cancel fields.** Architecture rule 7 says money actions are never updated. The data model gives `money_actions` and `purchases` the columns `is_cancelled`, `cancel_reason`, and section 8 says a wrong action "is cancelled whole, with a reason". Is cancelling a change to those fields only, or a new row? Needed by task 3.2.
 4. **Licence.** The spec names no licence and the owner answered "maybe". No `LICENSE` file exists until this is answered. Needed by nothing; ask before the repository is ever made public.
 
-## Requests
+## Orders
 
-5. **Take back and the order number.** The data model says `orfs.number` is "empty while Draft". The allowed-moves table says a request taken back to Draft keeps its number. Which statement gives way? Needed by task 2.2.
-6. **A request created by the Head.** Rule 7 of section 3 says the owner is "the Manager who created it". When the Head creates a request and buys, is the Head the owner, and does the Head then hold the cash balance? Needed by task 2.2.
-7. **Reminders.** A request waiting more than 24 hours "triggers a reminder". Once, or again every 24 hours while it waits? The same for the 48-hour notice to the Head. Needed by task 8.1.
+5. **Take back and the order number.** The data model says `orders.number` is "empty while Draft". The allowed-moves table says an order taken back to Draft keeps its number. Which statement gives way? Needed by task 2.2.
+6. **An order created by the Head.** Rule 7 of section 3 says the owner is "the Manager who created it". When the Head creates an order and buys, is the Head the owner, and does the Head then hold the cash balance? Needed by task 2.2.
+7. **Reminders.** Orders waiting more than 24 hours "trigger a reminder", grouped once a day. Once per order, or again every day while it waits? The same for the 48-hour notice to the Head. Needed by task 8.1.
 
 ## Purchasing
 
 8. **"Recent purchases".** The Head is prompted when "recent purchases" differ from the reference price by more than 20%. How many purchases, or how many days, is "recent"? Needed by task 3.9.
-9. **Services and "Give straight to requester".** The tick creates a stock issue. Is it hidden for service lines? Needed by task 5.4.
+9. **Services and "Give straight to requester".** The tick creates a stock issue. Is it hidden for service orders? Needed by task 5.4.
 
 ## Release
 
@@ -42,7 +42,7 @@ Each line names the first build-plan task that needs the answer.
 
 14. **"This quarter".** A calendar quarter, or a quarter of the school year? Needed by task 6.3.
 15. **Suggested order quantity.** The Manager's Stock planning block shows a "suggested order quantity". The spec gives no formula. Needed by task 6.5.
-16. **Analytics page as a PDF.** "The whole page downloads as a formal PDF report." The spec describes the request PDF in detail but not this one. Needed by task 6.7.
+16. **Analytics page as a PDF.** "The whole page downloads as a PDF report, without signature lines." The spec describes the order list PDF but not this one. Needed by task 6.7.
 
 ## System
 
@@ -50,7 +50,7 @@ Each line names the first build-plan task that needs the answer.
 
 ## Catalog
 
-18. **Adding subtypes to a product that had none.** A product without subtypes has one hidden subtype called "default". When the Head later adds real subtypes to it, what happens to the default one, and to the lines, stock and price that point to it? Needed by task 1.8.
+18. **Adding subtypes to a product that had none.** A product without subtypes has one hidden subtype called "default". When the Head later adds real subtypes to it, what happens to the default one, and to the orders, stock and price that point to it? Needed by task 1.8.
 
 ## Warehouse documents
 
