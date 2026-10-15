@@ -41,6 +41,10 @@ export const AUDIT_ACTIONS = [
   "product.update",
   "product.deactivate",
   "product.activate",
+  "subtype.create",
+  "subtype.update",
+  "subtype.deactivate",
+  "subtype.activate",
   "settings.change",
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];

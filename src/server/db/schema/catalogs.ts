@@ -186,8 +186,8 @@ export const productType = pgEnum("product_type", PRODUCT_TYPES);
 // description are optional (decision 6). The reference price is whole so'm in bigint, more than 0
 // (05-order-request-form.md, Line field 10; developer-rules.md rule 6); it is set at creation and
 // changes only through a new price with a note (1.9; decision 2, Look first). A file is held by
-// one record only (src/server/files/owners.ts), so the photo is unique. `has_variants` comes with
-// product_variants in 1.8.
+// one record only (src/server/files/owners.ts), so the photo is unique. `has_variants` (1.8) says
+// whether the product has real subtypes; with false its one subtype is the hidden default.
 export const products = pgTable(
   "products",
   {
@@ -204,6 +204,7 @@ export const products = pgTable(
     defaultCompanyId: uuid("default_company_id").references(() => companies.id),
     referencePrice: bigint("reference_price", { mode: "bigint" }),
     description: text("description"),
+    hasVariants: boolean("has_variants").notNull().default(false),
     isActive: boolean("is_active").notNull().default(true),
     clientKey: uuid("client_key"),
     createdAt: moment("created_at").notNull(),
@@ -229,5 +230,56 @@ export const products = pgTable(
     index("products_default_company_id_idx").on(table.defaultCompanyId),
     index("products_is_active_idx").on(table.isActive),
     index("products_type_idx").on(table.type),
+  ],
+);
+
+// Subtypes (14-data-model.md, product_variants; 04-catalogs.md, Catalogs table: Subtypes; rules 1
+// and 3). Task 1.8. Every product has at least one row: a product without subtypes has one hidden
+// row, `is_default`, named "default" (04 rule 1). Names are unique inside the product with the
+// expression of the catalogs above (04 rule 3). The first real subtype of a product is its default
+// row made real, same id (plan of 1.8, decision 1, Look first). The reference price is whole so'm,
+// optional, more than 0, with no fallback to the product's (decisions 2 and 4, Look first). The
+// last purchase columns are written by purchases (3.x; decision 10). Migration 0013 adds by hand
+// what Drizzle cannot express: the deferred shape trigger (at least one row; `has_variants` agrees
+// with the rows), the delete guard and the update guard on `product_id` and `is_default`.
+export const productVariants = pgTable(
+  "product_variants",
+  {
+    id: id(),
+    productId: uuid("product_id")
+      .notNull()
+      .references(() => products.id),
+    name: text("name").notNull(),
+    isDefault: boolean("is_default").notNull().default(false),
+    photoFileId: uuid("photo_file_id").references(() => files.id),
+    referencePrice: bigint("reference_price", { mode: "bigint" }),
+    lastPurchasePrice: bigint("last_purchase_price", { mode: "bigint" }),
+    lastPurchaseAt: moment("last_purchase_at"),
+    isActive: boolean("is_active").notNull().default(true),
+    clientKey: uuid("client_key"),
+    createdAt: moment("created_at").notNull(),
+  },
+  (table) => [
+    unique("product_variants_client_key_key").on(table.clientKey),
+    unique("product_variants_photo_file_id_key").on(table.photoFileId),
+    check("product_variants_name_check", sql`btrim(${table.name}) <> ''`),
+    check(
+      "product_variants_reference_price_check",
+      sql`${table.referencePrice} IS NULL OR ${table.referencePrice} > 0`,
+    ),
+    check(
+      "product_variants_last_purchase_price_check",
+      sql`${table.lastPurchasePrice} IS NULL OR ${table.lastPurchasePrice} > 0`,
+    ),
+    uniqueIndex("product_variants_product_name_key").using(
+      "btree",
+      table.productId,
+      sql`lower(regexp_replace(btrim(${table.name}), '\\s+', ' ', 'g'))`,
+    ),
+    uniqueIndex("product_variants_default_key")
+      .on(table.productId)
+      .where(sql`${table.isDefault}`),
+    index("product_variants_product_id_idx").on(table.productId),
+    index("product_variants_is_active_idx").on(table.isActive),
   ],
 );

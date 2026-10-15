@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import { NOTE_MAX } from "./catalogs";
 import {
+  DEFAULT_SUBTYPE_NAME,
+  firstSubtypePrice,
+  firstSubtypePriceRefused,
   DEFAULT_PRODUCT_TYPE,
   MEASURE_LOCKED_AFTER_USE,
   PRODUCT_LOCKED_AFTER_USE,
@@ -53,5 +56,26 @@ describe("lock after first use (04 Catalogs table: type and measure lock)", () =
       "allowDecimal",
     ]);
     expect(lockedChanges(MEASURE_LOCKED_AFTER_USE, ["name", "shortName"], true)).toEqual([]);
+  });
+});
+
+describe("the first real subtype's price (04 rules 1 and 4; plan of 1.8, decisions 1 and 2, Look first)", () => {
+  it("the hidden subtype is called default (04 rule 1)", () => {
+    expect(DEFAULT_SUBTYPE_NAME).toBe("default");
+  });
+
+  it("default at 50 000 and A4 sent at 60 000: refused, A4 keeps 50 000 (the review's example)", () => {
+    expect(firstSubtypePriceRefused(50_000n, 60_000n)).toBe(true);
+    expect(firstSubtypePrice(50_000n, null)).toBe(50_000n);
+  });
+
+  it("default empty and A4 sent at 60 000: accepted, A4 is at 60 000", () => {
+    expect(firstSubtypePriceRefused(null, 60_000n)).toBe(false);
+    expect(firstSubtypePrice(null, 60_000n)).toBe(60_000n);
+  });
+
+  it("nothing held and nothing sent: no price, no refusal (decision 4: no fallback)", () => {
+    expect(firstSubtypePriceRefused(null, null)).toBe(false);
+    expect(firstSubtypePrice(null, null)).toBeNull();
   });
 });

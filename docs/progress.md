@@ -513,4 +513,22 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - `tests/helpers/catalog.ts` inserts categories, measures, companies, file rows and products.
 - A plain `truncate files` is refused (0A000) since `products` points at `files`.
 
-The next task is 1.8.
+## 1.8 Subtypes (15.10.2026, pull request #38)
+
+**Built**
+- Migration `0013_product_variants`: `product_variants` (FKs product, file; unique `(product_id, normalised name)`; one default per product; price CHECKs; nullable unique `client_key`), `products.has_variants`, a backfilled default row for every product, the deferred trigger `product_variants_shape` (at least one row; `has_variants` agrees with the rows) and the guard `product_variants_guard` (no delete, no move to another product, never back to the default).
+- `createProduct` writes the hidden default subtype with its price (`afterInsert`). `createSubtype` (hand-written: the first subtype is the default row made real, same id), `updateSubtype`, `setSubtypeActive` (`lockable`, `checkActive`); audit `subtype.*` with `productId` and `product`; the conversion also writes `product.update` `{ hasVariants }`.
+- `src/domain/products.ts`: `DEFAULT_SUBTYPE_NAME`, `firstSubtypePriceRefused()`, `firstSubtypePrice()`. `optionalId` and `priceField` moved to `catalog-fields.ts`; `refusePhoto()` and `fileNameOf()` to `actions/photos.ts`; file owner `SUBTYPE_PHOTOS`.
+- Queries `listSubtypes`, `getSubtype`; `listProducts` and `getProduct` read the default subtype's price and give `hasVariants` and `subtypeCount`. The product page's Subtypes section, `/catalog/products/[id]/subtypes/new` and `/[subtypeId]`.
+
+**Left out, and the task that brings it**
+- A new price with a note, price history: 1.9. Excel import of subtypes: 1.10. Seed subtypes: 1.13. The subtype picker: the request task after D42 and phase 5.
+
+**What the next sessions must know**
+- For 1.9: the HEAD `price_history` backfill covers every price set in 1.7 and every subtype price set in 1.8 (on create, and on the first subtype when the default held none). Prices live on `product_variants.reference_price`; `products.reference_price` is the value typed at creation only.
+- For 1.10: an imported product with subtypes is written as `createSubtype` does: the first subtype turns the default real (same id, `is_default` false, `has_variants` true in the same transaction), the others are new rows.
+- A raw-SQL product insert in a test needs its default row in the same transaction (`withDefault()` in `products.db.test.ts`; `insertProduct()` and `insertSubtypes()` in `tests/helpers/catalog.ts`).
+- A row that holds a quantity points at `product_variants.id`; its task adds the check to `PRODUCT_USES` (progress 1.7).
+- Browser tests: after a click on a link to a new page, wait for its heading before filling a field: the old page's form has the same labels.
+
+The next task is 1.9.

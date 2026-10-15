@@ -1,13 +1,15 @@
 import { randomUUID } from "node:crypto";
 
+import { and, eq } from "drizzle-orm";
+
 import type { CompanyKind } from "@/domain/catalogs";
 import type { FileMime } from "@/domain/files";
 import type { ProductType } from "@/domain/products";
 import { now } from "@/server/clock";
 import { db } from "@/server/db/client";
-import { categories, companies, files, products, units } from "@/server/db/schema";
+import { categories, companies, files, productVariants, products, units } from "@/server/db/schema";
 
-// Catalog rows, files and products in the database for tests (task 1.7). Names are invented and
+// Catalog rows, files, products and subtypes in the database for tests (tasks 1.7, 1.8). Names are invented and
 // unique to the row unless given; everything is written at the moment of the clock.
 
 let made = 0;
@@ -86,24 +88,95 @@ export type ProductRow = {
   isActive?: boolean;
 };
 
-/** A product with its own category and measure unless given. */
+/**
+ * A product with its own category and measure unless given, and its hidden default subtype with
+ * its price in the same transaction (04-catalogs.md rule 1; the shape trigger of migration 0013).
+ */
 export async function insertProduct(row: ProductRow = {}) {
   const categoryId = row.categoryId ?? (await insertCategory()).id;
   const unitId = row.unitId ?? (await insertUnit()).id;
-  const [inserted] = await db
-    .insert(products)
-    .values({
-      name: row.name ?? `Mahsulot ${randomUUID().slice(0, 8)} ${next()}`,
-      type: row.type ?? "GOODS",
-      categoryId,
-      unitId,
-      photoFileId: row.photoFileId ?? null,
-      defaultCompanyId: row.defaultCompanyId ?? null,
-      referencePrice: row.referencePrice ?? null,
-      description: row.description ?? null,
-      isActive: row.isActive ?? true,
-      createdAt: now(),
-    })
-    .returning({ id: products.id, name: products.name });
-  return { ...inserted!, categoryId, unitId };
+  return db.transaction(async (tx) => {
+    const [inserted] = await tx
+      .insert(products)
+      .values({
+        name: row.name ?? `Mahsulot ${randomUUID().slice(0, 8)} ${next()}`,
+        type: row.type ?? "GOODS",
+        categoryId,
+        unitId,
+        photoFileId: row.photoFileId ?? null,
+        defaultCompanyId: row.defaultCompanyId ?? null,
+        referencePrice: row.referencePrice ?? null,
+        description: row.description ?? null,
+        isActive: row.isActive ?? true,
+        createdAt: now(),
+      })
+      .returning({ id: products.id, name: products.name });
+    const [variant] = await tx
+      .insert(productVariants)
+      .values({
+        productId: inserted!.id,
+        name: "default",
+        isDefault: true,
+        referencePrice: row.referencePrice ?? null,
+        createdAt: now(),
+      })
+      .returning({ id: productVariants.id });
+    return { ...inserted!, categoryId, unitId, defaultVariantId: variant!.id };
+  });
+}
+
+/**
+ * Real subtypes of a product in one transaction: the first one is the default row made real
+ * (plan of 1.8, decision 1), the rest new rows; `has_variants` turns true.
+ */
+export async function insertSubtypes(
+  productId: string,
+  rows: {
+    name?: string;
+    referencePrice?: bigint | null;
+    photoFileId?: string | null;
+    isActive?: boolean;
+  }[],
+) {
+  return db.transaction(async (tx) => {
+    const ids: string[] = [];
+    const [product] = await tx
+      .select({ hasVariants: products.hasVariants })
+      .from(products)
+      .where(eq(products.id, productId));
+    let convert = !product!.hasVariants;
+    for (const row of rows) {
+      const values = {
+        name: row.name ?? `Turi ${randomUUID().slice(0, 8)} ${next()}`,
+        photoFileId: row.photoFileId ?? null,
+        isActive: row.isActive ?? true,
+      };
+      if (convert) {
+        const [made] = await tx
+          .update(productVariants)
+          .set({
+            ...values,
+            isDefault: false,
+            ...(row.referencePrice !== undefined ? { referencePrice: row.referencePrice } : {}),
+          })
+          .where(and(eq(productVariants.productId, productId), eq(productVariants.isDefault, true)))
+          .returning({ id: productVariants.id });
+        await tx.update(products).set({ hasVariants: true }).where(eq(products.id, productId));
+        ids.push(made!.id);
+        convert = false;
+      } else {
+        const [made] = await tx
+          .insert(productVariants)
+          .values({
+            ...values,
+            productId,
+            referencePrice: row.referencePrice ?? null,
+            createdAt: now(),
+          })
+          .returning({ id: productVariants.id });
+        ids.push(made!.id);
+      }
+    }
+    return ids;
+  });
 }

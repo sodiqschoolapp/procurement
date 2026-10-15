@@ -1,6 +1,7 @@
 import * as z from "zod";
 
 import { catalogName, isCatalogName, isShortName } from "@/domain/catalogs";
+import { parseSom } from "@/domain/money";
 
 // The Zod checks the four catalogs share (developer-rules.md rule 13: "Every input is checked on
 // the server with Zod"). Each returns the stored form; the rules are those of src/domain/.
@@ -28,3 +29,22 @@ export function optionalText(
     })
     .refine((value) => value === null || isValid(value));
 }
+
+/** An optional id: an empty text or none is null. */
+export const optionalId = z
+  .union([z.literal(""), z.uuid()])
+  .nullish()
+  .transform((value) => (value ? value : null));
+
+const blank = (value: string | null | undefined) => value == null || value.trim() === "";
+
+/**
+ * Whole so'm as the Head typed it ("1 250 000"; the browser cannot send a bigint), read by the one
+ * parser of src/domain/money.ts; empty is null (plan of 1.7, decision 6), anything else "Wrong
+ * format". A product's and a subtype's reference price (1.7, 1.8).
+ */
+export const priceField = z
+  .string()
+  .nullish()
+  .refine((value) => blank(value) || parseSom(value!) !== null)
+  .transform((value) => (blank(value) ? null : parseSom(value!)));

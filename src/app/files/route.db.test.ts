@@ -21,11 +21,12 @@ import {
   uploadRequest,
 } from "../../../tests/helpers/files";
 import { createProduct, setProductActive } from "@/features/catalog/actions/products";
+import { createSubtype } from "@/features/catalog/actions/subtypes";
 import { runAction } from "@/server/action";
 import type { ActionResult } from "@/server/action-result";
 
 import { insertBranch } from "../../../tests/helpers/branches";
-import { insertCategory, insertUnit } from "../../../tests/helpers/catalog";
+import { insertCategory, insertProduct, insertUnit } from "../../../tests/helpers/catalog";
 import { insertUser, signInAs } from "../../../tests/helpers/users";
 import { GET } from "./[id]/[size]/route";
 import { POST } from "./route";
@@ -319,6 +320,32 @@ describe("who may download (build plan 0.12; plan of 0.12, decision 5, Look firs
     expectOk(await runAction(setProductActive, head.id, { id: product.id, active: false }));
     const manager = readers[1]!;
     expect((await download(id, "large", await signInAs(manager))).status).toBe(200);
+  });
+
+  it("a subtype's own photo downloads for every role through the real file owners (plan of 1.8, decision 8; permission review, Should fix 1)", async () => {
+    const head = await insertUser("HEAD");
+    const headCookie = await signInAs(head);
+    const id = await uploaded(
+      await POST(uploadRequest(await jpegWithExif(40, 30), { cookie: headCookie })),
+    );
+    const product = await insertProduct();
+    expectOk(
+      (await runAction(createSubtype, head.id, {
+        clientKey: newClientKey(),
+        productId: product.id,
+        name: "A4",
+        photoFileId: id,
+      })) as ActionResult<unknown>,
+    );
+    const { id: branchId } = await insertBranch();
+    for (const reader of [
+      head,
+      await insertUser("MANAGER", { branches: [branchId] }),
+      await insertUser("PRINCIPAL", { branches: [branchId] }),
+      await insertUser("FINANCE", { branches: [branchId] }),
+    ]) {
+      expect((await download(id, "small", await signInAs(reader))).status).toBe(200);
+    }
   });
 
   it("an address that is no file id or no size is Not found", async () => {

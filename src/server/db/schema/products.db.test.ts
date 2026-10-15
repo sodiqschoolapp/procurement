@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { sql } from "drizzle-orm";
+import { type SQL, sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 
 import { db } from "@/server/db/client";
@@ -34,22 +34,37 @@ type Row = {
   description?: string | null;
 };
 
+/**
+ * A product insert of plain SQL (ending `returning id, reference_price`) with its hidden default
+ * subtype in the same statement, so the deferred shape trigger of migration 0013 passes at commit
+ * (04-catalogs.md rule 1; plan review of 1.8, Should fix 6). A refused product insert still fails
+ * on its own guard first: the subtype insert reads its returned row.
+ */
+function withDefault(insertProduct: SQL) {
+  return sql`with p as (${insertProduct}),
+    v as (insert into product_variants (product_id, name, is_default, reference_price, created_at)
+      select id, 'default', true, reference_price, ${AT} from p)
+    select id from p`;
+}
+
 /** One product with plain SQL; the type is left to the database's default unless given. */
 async function insert(row: Row = {}): Promise<string> {
   const categoryId = row.categoryId ?? (await insertCategory()).id;
   const unitId = row.unitId ?? (await insertUnit()).id;
   const name = row.name ?? `Mahsulot ${randomUUID()}`;
   const found = await db.execute<{ id: string }>(
-    row.type === undefined
-      ? sql`insert into products (name, category_id, unit_id, photo_file_id, default_company_id,
+    withDefault(
+      row.type === undefined
+        ? sql`insert into products (name, category_id, unit_id, photo_file_id, default_company_id,
               reference_price, description, created_at)
             values (${name}, ${categoryId}, ${unitId}, ${row.photoFileId ?? null},
               ${row.defaultCompanyId ?? null}, ${row.referencePrice ?? null},
               ${row.description ?? null}, ${AT})
-            returning id`
-      : sql`insert into products (name, type, category_id, unit_id, created_at)
+            returning id, reference_price`
+        : sql`insert into products (name, type, category_id, unit_id, created_at)
             values (${name}, ${row.type}, ${categoryId}, ${unitId}, ${AT})
-            returning id`,
+            returning id, reference_price`,
+    ),
   );
   return found.rows[0]!.id;
 }
@@ -227,9 +242,11 @@ describe("products: the client key is unique (developer-rules.md rule 8)", () =>
     const categoryId = (await insertCategory()).id;
     const unitId = (await insertUnit()).id;
     const insertWithKey = (clientKey: string | null) =>
-      db.execute(sql`insert into products (name, category_id, unit_id, client_key, created_at)
-        values (${`Kalit ${randomUUID()}`}, ${categoryId}, ${unitId}, ${clientKey}, ${AT})
-        returning id`);
+      db.execute(
+        withDefault(sql`insert into products (name, category_id, unit_id, client_key, created_at)
+          values (${`Kalit ${randomUUID()}`}, ${categoryId}, ${unitId}, ${clientKey}, ${AT})
+          returning id, reference_price`),
+      );
     await insertWithKey(key);
     expect(await refusalOf(insertWithKey(key))).toMatchObject({
       code: "23505",

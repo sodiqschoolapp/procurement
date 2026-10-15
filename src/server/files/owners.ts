@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 
 import type { Permission, Target } from "@/domain/permissions";
 import type { Executor } from "@/server/authorize";
-import { products } from "@/server/db/schema";
+import { productVariants, products } from "@/server/db/schema";
 
 // Who may download a file: the record it belongs to decides (build plan 0.12: the download route
 // "calls authorize() for the record the file belongs to; each later task that attaches files adds
@@ -50,7 +50,22 @@ export const PRODUCT_PHOTOS: FileOwner = {
   },
 };
 
-export const FILE_OWNERS: readonly FileOwner[] = [PRODUCT_PHOTOS];
+/**
+ * A subtype's own photo (task 1.8): seen by every role through catalog.pick, as a product's photo
+ * (plan of 1.8, decision 8; progress 1.7, "For 1.8"). A catalog holds no branch data.
+ */
+export const SUBTYPE_PHOTOS: FileOwner = {
+  name: "product_variants.photo_file_id",
+  async find(executor, fileId) {
+    const [row] = await executor
+      .select({ id: productVariants.id })
+      .from(productVariants)
+      .where(eq(productVariants.photoFileId, fileId));
+    return row ? { permission: "catalog.pick" } : null;
+  },
+};
+
+export const FILE_OWNERS: readonly FileOwner[] = [PRODUCT_PHOTOS, SUBTYPE_PHOTOS];
 
 /** The access of the first record that holds the file, or `null` for a file no record holds. */
 export async function accessOf(
