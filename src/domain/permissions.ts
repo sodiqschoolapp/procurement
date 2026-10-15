@@ -227,3 +227,16 @@ export function decideList(permission: Permission, actor: Actor): "allow" | "for
   }
   return "allow";
 }
+
+/**
+ * Whether a role may use a global permission: for a screen that shows a button only when it works
+ * (11-screens-and-ux.md, "only the buttons that work right now"). The server asks authorize()
+ * again; this protects nothing.
+ */
+export function roleMay(permission: Permission, role: Role): boolean {
+  const rule: PermissionRule = PERMISSIONS[permission];
+  if (rule.scope !== "global") {
+    throw new Error(`roleMay(): the permission ${permission} needs a branch.`);
+  }
+  return rule.roles[role] === "yes";
+}

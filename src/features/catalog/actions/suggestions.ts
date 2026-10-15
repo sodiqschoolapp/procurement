@@ -267,8 +267,8 @@ export const addSuggestedProduct = defineAction({
   },
   async write({ tx, input, userId, locked }): Promise<AddedSuggestion> {
     const suggestion = locked!.rows;
-    const { suggestionId: _suggestionId, clientKey, ...fields } = input;
-    const product = await insertProduct(tx, userId, fields, clientKey, {
+    // insert() keeps only the product's own fields of the input.
+    const product = await insertProduct(tx, userId, input, input.clientKey, {
       acceptedPhotoId: suggestion.photoFileId,
     });
     await tx

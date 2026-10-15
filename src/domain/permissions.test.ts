@@ -10,6 +10,7 @@ import {
   type Role,
   decide,
   decideList,
+  roleMay,
 } from "./permissions";
 
 // 03-roles-and-permissions.md (Rules 1; Manager rights; Permission matrix); developer-rules.md
@@ -137,5 +138,18 @@ describe("decideList(): a list of a branch permission (developer-rules.md rule 4
 
   it("is never asked about a permission of own requests", () => {
     expect(() => decideList("request.edit", actor("MANAGER"))).toThrow();
+  });
+});
+
+describe("roleMay(): a button shown only when it works (11-screens-and-ux.md)", () => {
+  it("answers a global permission by role, as the matrix does", () => {
+    expect(roleMay("catalog.manage", "HEAD")).toBe(true);
+    for (const role of ["MANAGER", "PRINCIPAL", "FINANCE"] as const) {
+      expect(roleMay("catalog.manage", role)).toBe(false);
+    }
+  });
+
+  it("is never asked about a branch permission", () => {
+    expect(() => roleMay("catalog.suggest", "HEAD")).toThrow();
   });
 });

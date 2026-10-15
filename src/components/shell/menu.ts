@@ -38,7 +38,9 @@ const ITEMS: Record<MenuItemId, MenuItem> = {
     id: "admin",
     href: "/catalog",
     icon: "tune",
-    activeOn: ["/catalog", "/prices", "/users", "/branches", "/settings"],
+    // The product suggestions belong to the catalog (plan of 1.12, decision 4); a Manager has no
+    // Admin item, so nothing is marked there for a Manager.
+    activeOn: ["/catalog", "/prices", "/users", "/branches", "/settings", "/suggestions"],
   },
 };
 
