@@ -1,4 +1,4 @@
-import { and, eq, ne, or, sql } from "drizzle-orm";
+import { type SQL, and, eq, ne, or, sql } from "drizzle-orm";
 import type { AnyPgColumn, PgTable } from "drizzle-orm/pg-core";
 import * as z from "zod";
 
@@ -34,7 +34,8 @@ type CatalogTable = PgTable & {
   clientKey: AnyPgColumn;
 };
 
-type AuditPrefix = "unit" | "category" | "extra_cost_type" | "company" | "department" | "product";
+type AuditPrefix =
+  "unit" | "category" | "extra_cost_type" | "company" | "department" | "product" | "subtype";
 
 /**
  * The parent an entry belongs to and its names are unique inside: a department's branch (04 rule
@@ -53,6 +54,11 @@ export type CatalogParent = {
   check(tx: Executor, id: string): Promise<void>;
   /** What the create's history row keeps of the parent besides its id, as the branch's code. */
   shown(tx: Executor, id: string): Promise<AuditRecord>;
+  /**
+   * Whether the update and activate rows keep it too, in `before` and `after` alike (unchanged,
+   * so the history does not list it): a subtype's product (plan of 1.8, decision 9).
+   */
+  onEveryRow?: boolean;
 };
 
 export type CatalogConfig<Fields extends Record<string, unknown>> = {
@@ -90,6 +96,21 @@ export type CatalogConfig<Fields extends Record<string, unknown>> = {
    * product's category, measure and company as they are at that moment (plan of 1.7, decision 11).
    */
   shownRefs?(tx: Executor, values: Partial<Fields>): Promise<AuditRecord>;
+  /**
+   * Written after the insert, in the same transaction: a product's hidden default subtype (04 rule
+   * 1; plan of 1.8).
+   */
+  afterInsert?(tx: Executor, entry: SavedEntry<Fields>): Promise<void>;
+  /**
+   * The rows update and setActive may reach; any other is "not found": a subtype's actions never
+   * reach a hidden default row (plan of 1.8, decision 3; plan review, Should fix 2).
+   */
+  lockable?: SQL;
+  /**
+   * The check of a deactivation or an activation beyond "not the same twice", under the table's
+   * lock: a product keeps one active subtype (plan of 1.8, decision 3, Look first).
+   */
+  checkActive?(tx: Executor, entry: SavedEntry<Fields>, active: boolean): Promise<void>;
 };
 
 export type SavedEntry<Fields> = Fields & { id: string; isActive: boolean };
@@ -106,7 +127,7 @@ export function defineCatalogActions<Fields extends Record<string, unknown>>(
 ) {
   type Saved = SavedEntry<Fields>;
   type Key = keyof Fields & string;
-  const { table, prefix, within, guard, shownRefs } = config;
+  const { table, prefix, within, guard, shownRefs, afterInsert, lockable, checkActive } = config;
   const createOnly = new Set<string>(config.createOnly ?? []);
   const entity = CATALOG_ENTRIES[config.kind].entity;
   const fields = CATALOG_ENTRIES[config.kind].fields.map((field) => field.key) as Key[];
@@ -162,8 +183,18 @@ export function defineCatalogActions<Fields extends Record<string, unknown>>(
 
   async function lockEntry(tx: Executor, id: string): Promise<Saved | null> {
     await tx.execute(tableLock);
-    const [row] = await tx.select(columns).from(table).where(eq(table.id, id)).for("update");
+    const [row] = await tx
+      .select(columns)
+      .from(table)
+      .where(and(eq(table.id, id), lockable))
+      .for("update");
     return (row as Saved | undefined) ?? null;
+  }
+
+  /** The parent kept on an update or activate row, when `within.onEveryRow` (plan of 1.8). */
+  async function parentOf(tx: Executor, entry: Saved): Promise<AuditRecord> {
+    if (!within?.onEveryRow) return {};
+    return within.shown(tx, (entry as Record<string, unknown>)[within.key] as string);
   }
 
   function pick(values: Partial<Fields>, keys: readonly Key[]): Partial<Fields> {
@@ -230,6 +261,7 @@ export function defineCatalogActions<Fields extends Record<string, unknown>>(
           createdAt: now(),
         } as never)
         .returning(columns);
+      if (afterInsert) await afterInsert(tx, row as Saved);
       return row as Saved;
     },
     async history({ tx, userId }, entry) {
@@ -299,14 +331,23 @@ export function defineCatalogActions<Fields extends Record<string, unknown>>(
     async history({ tx, userId }, result) {
       // No change, no row (04 rule 9 shows changes, not saves).
       if (result.changed.length === 0) return;
+      const parent = await parentOf(tx, result.entry);
       await audit(
         { tx, userId },
         {
           action: action("update"),
           entity,
           entityId: result.entry.id,
-          before: { ...result.before, ...(shownRefs ? await shownRefs(tx, result.before) : {}) },
-          after: { ...result.after, ...(shownRefs ? await shownRefs(tx, result.after) : {}) },
+          before: {
+            ...parent,
+            ...result.before,
+            ...(shownRefs ? await shownRefs(tx, result.before) : {}),
+          },
+          after: {
+            ...parent,
+            ...result.after,
+            ...(shownRefs ? await shownRefs(tx, result.after) : {}),
+          },
           at: now(),
         },
       );
@@ -326,8 +367,9 @@ export function defineCatalogActions<Fields extends Record<string, unknown>>(
     },
     // Deactivating moves nothing: old records keep the entry, the pickers drop it (04 rule 2). A
     // second click of the same is refused.
-    check({ input, locked }) {
+    async check({ tx, input, locked }) {
       if (locked!.rows.isActive === input.active) throw new ActionError("wrong_status");
+      if (checkActive) await checkActive(tx, locked!.rows, input.active);
     },
     async write({ tx, input }): Promise<Saved> {
       const [row] = await tx
@@ -338,19 +380,25 @@ export function defineCatalogActions<Fields extends Record<string, unknown>>(
       return row as Saved;
     },
     async history({ tx, userId }, entry) {
+      const parent = await parentOf(tx, entry);
       await audit(
         { tx, userId },
         {
           action: action(entry.isActive ? "activate" : "deactivate"),
           entity,
           entityId: entry.id,
-          before: { isActive: !entry.isActive },
-          after: { isActive: entry.isActive },
+          before: { ...parent, isActive: !entry.isActive },
+          after: { ...parent, isActive: entry.isActive },
           at: now(),
         },
       );
     },
   });
 
-  return { create, update, setActive };
+  /** The table's lock, for a hand-written write of the same table (createSubtype, 1.8). */
+  async function lockTable(tx: Executor) {
+    await tx.execute(tableLock);
+  }
+
+  return { create, update, setActive, lockTable, refuseTaken };
 }

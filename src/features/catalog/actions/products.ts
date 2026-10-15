@@ -1,10 +1,9 @@
 import { eq } from "drizzle-orm";
 import * as z from "zod";
 
-import { IMAGE_MIMES } from "@/domain/files";
-import { parseSom } from "@/domain/money";
 import {
   DEFAULT_PRODUCT_TYPE,
+  DEFAULT_SUBTYPE_NAME,
   PRODUCT_LOCKED_AFTER_USE,
   type ProductType,
   isDescription,
@@ -14,11 +13,12 @@ import {
 import { ActionError } from "@/server/action";
 import type { FieldMessageKey } from "@/server/action-result";
 import type { Executor } from "@/server/authorize";
-import { categories, companies, files, products, units } from "@/server/db/schema";
-import { accessOf } from "@/server/files/owners";
+import { now } from "@/server/clock";
+import { categories, companies, productVariants, products, units } from "@/server/db/schema";
 
 import { defineCatalogActions } from "./catalog-entries";
-import { nameField, optionalText } from "./catalog-fields";
+import { nameField, optionalId, optionalText, priceField } from "./catalog-fields";
+import { fileNameOf, refusePhoto } from "./photos";
 import { productInUse } from "./product-uses";
 
 // Products and services (04-catalogs.md, Catalogs table: "Name, type (product or service; product
@@ -34,6 +34,8 @@ import { productInUse } from "./product-uses";
 // - The reference price is whole so'm, set on create only (decision 2, Look first): it changes
 //   through a new price with a note in 1.9.
 // - Type and measure lock once the product is in use (decision 1, Look first; product-uses.ts).
+// - A new product gets its hidden default subtype, holding its reference price, in the same
+//   transaction (04 rule 1; plan of 1.8, decision 2, Look first; the shape trigger of 0013).
 
 export type ProductFields = {
   name: string;
@@ -50,24 +52,6 @@ const typeField = z
   .string()
   .refine(isProductType)
   .transform((value) => value as ProductType);
-
-/** An optional id: an empty text or none is null. */
-const optionalId = z
-  .union([z.literal(""), z.uuid()])
-  .nullish()
-  .transform((value) => (value ? value : null));
-
-const blank = (value: string | null | undefined) => value == null || value.trim() === "";
-
-/**
- * Whole so'm as the Head typed it ("1 250 000"; the browser cannot send a bigint), read by the one
- * parser of src/domain/money.ts; empty is null (decision 6), anything else "Wrong format".
- */
-const priceField = z
-  .string()
-  .nullish()
-  .refine((value) => blank(value) || parseSom(value!) !== null)
-  .transform((value) => (blank(value) ? null : parseSom(value!)));
 
 const LOCKED: FieldMessageKey = "errors.field.locked";
 
@@ -87,36 +71,12 @@ async function refuseInactive(
   if (!row.isActive) throw new ActionError("invalid_input", { [field]: "errors.field.inactive" });
 }
 
-/**
- * A photo is an image uploaded by the actor that no record holds yet (owners.ts contract). The
- * file row is locked FOR UPDATE, so two products attaching the same file cannot both pass. An
- * unknown file, another person's, or one already held is "not allowed", alike.
- */
-async function refuseFile(tx: Executor, userId: string, fileId: string) {
-  const [file] = await tx
-    .select({ uploadedBy: files.uploadedBy, mime: files.mime })
-    .from(files)
-    .where(eq(files.id, fileId))
-    .for("update");
-  if (!file || file.uploadedBy !== userId || (await accessOf(tx, fileId)) !== null) {
-    throw new ActionError("invalid_input", { photoFileId: "errors.field.notAllowed" });
-  }
-  if (!(IMAGE_MIMES as readonly string[]).includes(file.mime)) {
-    throw new ActionError("invalid_input", { photoFileId: "errors.field.notAPhoto" });
-  }
-}
-
 async function nameOf(
   tx: Executor,
   table: typeof categories | typeof units | typeof companies,
   id: string,
 ) {
   const [row] = await tx.select({ name: table.name }).from(table).where(eq(table.id, id));
-  return row?.name ?? null;
-}
-
-async function fileNameOf(tx: Executor, id: string) {
-  const [row] = await tx.select({ name: files.originalName }).from(files).where(eq(files.id, id));
   return row?.name ?? null;
 }
 
@@ -149,6 +109,15 @@ const catalog = defineCatalogActions<ProductFields>({
   createShape: { type: typeField.default(DEFAULT_PRODUCT_TYPE) },
   createOnly: ["referencePrice"],
   unique: ["name"],
+  async afterInsert(tx, entry) {
+    await tx.insert(productVariants).values({
+      productId: entry.id,
+      name: DEFAULT_SUBTYPE_NAME,
+      isDefault: true,
+      referencePrice: entry.referencePrice,
+      createdAt: now(),
+    });
+  },
   async guard({ tx, userId }, sent, current) {
     if (current) {
       const locked = lockedChanges(
@@ -168,7 +137,7 @@ const catalog = defineCatalogActions<ProductFields>({
     if (sent.defaultCompanyId) {
       await refuseInactive(tx, "defaultCompanyId", companies, sent.defaultCompanyId);
     }
-    if (sent.photoFileId) await refuseFile(tx, userId, sent.photoFileId);
+    if (sent.photoFileId) await refusePhoto(tx, userId, sent.photoFileId);
   },
   // The names beside the ids, as they are now (decision 11), and the photo's file name; an absent
   // reference adds nothing.

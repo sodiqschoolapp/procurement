@@ -186,11 +186,27 @@ export const PRODUCTS = {
   ],
 } as const satisfies { entity: string; fields: readonly CatalogField[] };
 
-/** Every catalog the shared actions serve: the four of 1.5, departments and products. */
-export type EntryKind = CatalogKind | "departments" | "products";
+/**
+ * Subtypes of a product (04, Catalogs table: "Product, name, own photo (optional), own reference
+ * price (optional), active"; build-plan 1.8). The product is chosen once, on create, and is not a
+ * field the form edits. The reference price is set on create only (plan of 1.8, decision 2, Look
+ * first); without one the subtype has none (decision 4, Look first).
+ */
+export const SUBTYPES = {
+  entity: "product_variants",
+  fields: [
+    { key: "name", type: "text" },
+    { key: "referencePrice", type: "money", optional: true },
+    { key: "photoFileId", type: "photo", optional: true },
+  ],
+} as const satisfies { entity: string; fields: readonly CatalogField[] };
+
+/** Every catalog the shared actions serve: the four of 1.5, departments, products, subtypes. */
+export type EntryKind = CatalogKind | "departments" | "products" | "subtypes";
 
 export const CATALOG_ENTRIES = {
   ...CATALOGS,
   departments: DEPARTMENTS,
   products: PRODUCTS,
+  subtypes: SUBTYPES,
 } as const satisfies Record<EntryKind, { entity: string; fields: readonly CatalogField[] }>;

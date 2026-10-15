@@ -42,3 +42,24 @@ export function lockedChanges<Field extends string>(
   if (!inUse) return [];
   return locked.filter((field) => changed.includes(field));
 }
+
+/**
+ * The name of a product's hidden subtype (04-catalogs.md rule 1: "A product without subtypes gets
+ * one hidden subtype called 'default'"). No screen shows it.
+ */
+export const DEFAULT_SUBTYPE_NAME = "default";
+
+/**
+ * Whether the price sent with a product's first real subtype must be refused: the first subtype is
+ * the hidden default made real (plan of 1.8, decision 1, Look first), and a price it already holds
+ * changes only as a new price with a note (04 rule 4; decision 2, Look first). With none held, the
+ * sent price is the subtype's first; with none sent, the held one stays.
+ */
+export function firstSubtypePriceRefused(held: bigint | null, sent: bigint | null): boolean {
+  return held !== null && sent !== null;
+}
+
+/** The price the first real subtype keeps: the one held, else the one sent (decision 2). */
+export function firstSubtypePrice(held: bigint | null, sent: bigint | null): bigint | null {
+  return held ?? sent;
+}
