@@ -388,7 +388,10 @@ describe("Owner only: Take back and Submit again (06 Allowed moves; decision 5)"
       refusal: { kind: "orders", orders: [{ orderId: pending.id, reason: "forbidden" }] },
     });
     const returned = order("RETURNED", { ownerId: COLLEAGUE });
-    expect(checkMoves(actor("HEAD"), [returned], "SUBMIT_AGAIN").ok).toBe(false);
+    expect(asExpected(checkMoves(actor("HEAD"), [returned], "SUBMIT_AGAIN"))).toEqual({
+      ok: false,
+      reason: "forbidden",
+    });
     expect(checkMoves(actor("MANAGER"), [order("PENDING_HEAD")], "TAKE_BACK").ok).toBe(true);
   });
 
@@ -470,7 +473,10 @@ describe("Reasons (06 rule 3; decision 13)", () => {
       ok: false,
       refusal: { kind: "reason" },
     });
-    expect(checkMoves(actor(role), target, action).ok).toBe(false);
+    expect(checkMoves(actor(role), target, action)).toEqual({
+      ok: false,
+      refusal: { kind: "reason" },
+    });
     expect(checkMoves(actor(role), target, action, { reason: " Late. " }).ok).toBe(true);
   });
 
