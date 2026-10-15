@@ -17,10 +17,10 @@ CREATE TABLE "catalog_suggestions" (
 	CONSTRAINT "catalog_suggestions_client_key_key" UNIQUE("client_key"),
 	CONSTRAINT "catalog_suggestions_photo_file_id_key" UNIQUE("photo_file_id"),
 	CONSTRAINT "catalog_suggestions_product_id_key" UNIQUE("product_id"),
-	CONSTRAINT "catalog_suggestions_name_check" CHECK (btrim("catalog_suggestions"."name") <> ''),
-	CONSTRAINT "catalog_suggestions_unit_text_check" CHECK (btrim("catalog_suggestions"."unit_text") <> ''),
-	CONSTRAINT "catalog_suggestions_note_check" CHECK ("catalog_suggestions"."note" IS NULL OR btrim("catalog_suggestions"."note") <> ''),
-	CONSTRAINT "catalog_suggestions_decision_note_check" CHECK ("catalog_suggestions"."decision_note" IS NULL OR btrim("catalog_suggestions"."decision_note") <> ''),
+	CONSTRAINT "catalog_suggestions_name_check" CHECK (btrim("catalog_suggestions"."name") <> '' AND char_length("catalog_suggestions"."name") <= 120),
+	CONSTRAINT "catalog_suggestions_unit_text_check" CHECK (btrim("catalog_suggestions"."unit_text") <> '' AND char_length("catalog_suggestions"."unit_text") <= 30),
+	CONSTRAINT "catalog_suggestions_note_check" CHECK ("catalog_suggestions"."note" IS NULL OR (btrim("catalog_suggestions"."note") <> '' AND char_length("catalog_suggestions"."note") <= 500)),
+	CONSTRAINT "catalog_suggestions_decision_note_check" CHECK ("catalog_suggestions"."decision_note" IS NULL OR (btrim("catalog_suggestions"."decision_note") <> '' AND char_length("catalog_suggestions"."decision_note") <= 500)),
 	CONSTRAINT "catalog_suggestions_decision_check" CHECK (CASE "catalog_suggestions"."status"
         WHEN 'PENDING' THEN "catalog_suggestions"."decided_by" IS NULL AND "catalog_suggestions"."decided_at" IS NULL
           AND "catalog_suggestions"."decision_note" IS NULL AND "catalog_suggestions"."product_id" IS NULL

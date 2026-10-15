@@ -50,15 +50,23 @@ export const catalogSuggestions = pgTable(
     unique("catalog_suggestions_client_key_key").on(table.clientKey),
     unique("catalog_suggestions_photo_file_id_key").on(table.photoFileId),
     unique("catalog_suggestions_product_id_key").on(table.productId),
-    check("catalog_suggestions_name_check", sql`btrim(${table.name}) <> ''`),
-    check("catalog_suggestions_unit_text_check", sql`btrim(${table.unitText}) <> ''`),
+    // Not blank, and within the limits of src/domain/ (catalog name 120, measure text 30, note and
+    // reason 500; plan of 1.12, decision 5).
+    check(
+      "catalog_suggestions_name_check",
+      sql`btrim(${table.name}) <> '' AND char_length(${table.name}) <= 120`,
+    ),
+    check(
+      "catalog_suggestions_unit_text_check",
+      sql`btrim(${table.unitText}) <> '' AND char_length(${table.unitText}) <= 30`,
+    ),
     check(
       "catalog_suggestions_note_check",
-      sql`${table.note} IS NULL OR btrim(${table.note}) <> ''`,
+      sql`${table.note} IS NULL OR (btrim(${table.note}) <> '' AND char_length(${table.note}) <= 500)`,
     ),
     check(
       "catalog_suggestions_decision_note_check",
-      sql`${table.decisionNote} IS NULL OR btrim(${table.decisionNote}) <> ''`,
+      sql`${table.decisionNote} IS NULL OR (btrim(${table.decisionNote}) <> '' AND char_length(${table.decisionNote}) <= 500)`,
     ),
     // PENDING: nothing decided. ADDED: who, when and the product. DECLINED: who, when and the
     // reason, no product (04 rule 8; plan of 1.12, "Database changes").

@@ -87,6 +87,36 @@ describe("catalog_suggestions: the fields (14-data-model.md; 04 rule 8)", () => 
     await insertSuggestion({ ...who, note: "Laboratoriya uchun" });
   });
 
+  it("refuses a name over 120, a measure text over 30, a note over 500; at the limit they pass (decision 5)", async () => {
+    const who = await people();
+    expect(await refusalOf(insertSuggestion({ ...who, name: "n".repeat(121) }))).toMatchObject(
+      check("catalog_suggestions_name_check"),
+    );
+    expect(await refusalOf(insertSuggestion({ ...who, unitText: "u".repeat(31) }))).toMatchObject(
+      check("catalog_suggestions_unit_text_check"),
+    );
+    expect(await refusalOf(insertSuggestion({ ...who, note: "ё".repeat(501) }))).toMatchObject(
+      check("catalog_suggestions_note_check"),
+    );
+    expect(
+      await refusalOf(
+        insertSuggestion({
+          ...who,
+          status: "DECLINED",
+          decidedBy: who.headId,
+          decidedAt: AT,
+          decisionNote: "r".repeat(501),
+        }),
+      ),
+    ).toMatchObject(check("catalog_suggestions_decision_note_check"));
+    await insertSuggestion({
+      ...who,
+      name: `${randomUUID()}${"n".repeat(84)}`,
+      unitText: "u".repeat(30),
+      note: "ё".repeat(500),
+    });
+  });
+
   it("refuses a status outside the enum", async () => {
     const who = await people();
     expect(await refusalOf(insertSuggestion({ ...who, status: "OPEN" }))).toMatchObject({
@@ -212,6 +242,31 @@ describe("catalog_suggestions: the decision columns follow the status (plan of 1
           where id = ${one.id}`),
       ),
     ).toMatchObject(DECISION);
+    // A blank or too long reason on the move to DECLINED (spec review of 1.12, Must fix 1).
+    for (const reason of ["  ", "r".repeat(501)]) {
+      expect(
+        await refusalOf(
+          db.execute(sql`update catalog_suggestions
+            set status = 'DECLINED', decided_by = ${one.headId}, decided_at = ${AT},
+              decision_note = ${reason}
+            where id = ${one.id}`),
+        ),
+      ).toMatchObject(check("catalog_suggestions_decision_note_check"));
+    }
+    // DECLINED with a product, ADDED without who or when.
+    const product = await insertProduct();
+    for (const set of [
+      sql`status = 'DECLINED', decided_by = ${one.headId}, decided_at = ${AT},
+        decision_note = 'Yo''q', product_id = ${product.id}`,
+      sql`status = 'ADDED', decided_at = ${AT}, product_id = ${product.id}`,
+      sql`status = 'ADDED', decided_by = ${one.headId}, product_id = ${product.id}`,
+    ]) {
+      expect(
+        await refusalOf(
+          db.execute(sql`update catalog_suggestions set ${set} where id = ${one.id}`),
+        ),
+      ).toMatchObject(DECISION);
+    }
     // The full decision passes beside them (D40).
     await db.execute(sql`update catalog_suggestions
       set status = 'DECLINED', decided_by = ${one.headId}, decided_at = ${AT},
@@ -265,6 +320,7 @@ describe("catalog_suggestions: decided once, never deleted (plan of 1.12, decisi
   it("refuses a decision that also changes what was sent", async () => {
     const sentFixed = check("catalog_suggestions_sent_fixed");
     for (const change of [
+      sql`id = ${randomUUID()}`,
       sql`name = 'Boshqa nom'`,
       sql`unit_text = 'quti'`,
       sql`note = 'Yangi izoh'`,
@@ -310,6 +366,33 @@ describe("catalog_suggestions: decided once, never deleted (plan of 1.12, decisi
           where id = ${by.id}`),
       ),
     ).toMatchObject(sentFixed);
+  });
+
+  it("on update: a product another suggestion holds, an unknown product or decider are refused (spec review of 1.12, Should fix 1)", async () => {
+    const held = await pending();
+    const product = await insertProduct();
+    await db.execute(sql`update catalog_suggestions
+      set status = 'ADDED', decided_by = ${held.headId}, decided_at = ${AT}, product_id = ${product.id}
+      where id = ${held.id}`);
+    const one = await pending();
+    const add = (decidedBy: string, productId: string) =>
+      db.execute(sql`update catalog_suggestions
+        set status = 'ADDED', decided_by = ${decidedBy}, decided_at = ${AT}, product_id = ${productId}
+        where id = ${one.id}`);
+    expect(await refusalOf(add(one.headId, product.id))).toMatchObject({
+      code: "23505",
+      constraint: "catalog_suggestions_product_id_key",
+    });
+    expect(await refusalOf(add(one.headId, randomUUID()))).toMatchObject({
+      code: "23503",
+      constraint: "catalog_suggestions_product_id_products_id_fk",
+    });
+    const other = await insertProduct();
+    expect(await refusalOf(add(randomUUID(), other.id))).toMatchObject({
+      code: "23503",
+      constraint: "catalog_suggestions_decided_by_users_id_fk",
+    });
+    await add(one.headId, other.id);
   });
 
   it("lets PENDING move once to ADDED with its product (the accepted move beside the refusals, D40)", async () => {

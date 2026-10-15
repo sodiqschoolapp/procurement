@@ -1,5 +1,5 @@
 {
-  "id": "cd325df1-af49-4f8b-a398-5b97be05ced2",
+  "id": "2686796d-ad06-43e0-ab55-ce069cc8de98",
   "prevId": "4008fd77-c5df-44ec-b63d-f7a82b5b8600",
   "version": "7",
   "dialect": "postgresql",
@@ -2095,19 +2095,19 @@
       "checkConstraints": {
         "catalog_suggestions_name_check": {
           "name": "catalog_suggestions_name_check",
-          "value": "btrim(\"catalog_suggestions\".\"name\") <> ''"
+          "value": "btrim(\"catalog_suggestions\".\"name\") <> '' AND char_length(\"catalog_suggestions\".\"name\") <= 120"
         },
         "catalog_suggestions_unit_text_check": {
           "name": "catalog_suggestions_unit_text_check",
-          "value": "btrim(\"catalog_suggestions\".\"unit_text\") <> ''"
+          "value": "btrim(\"catalog_suggestions\".\"unit_text\") <> '' AND char_length(\"catalog_suggestions\".\"unit_text\") <= 30"
         },
         "catalog_suggestions_note_check": {
           "name": "catalog_suggestions_note_check",
-          "value": "\"catalog_suggestions\".\"note\" IS NULL OR btrim(\"catalog_suggestions\".\"note\") <> ''"
+          "value": "\"catalog_suggestions\".\"note\" IS NULL OR (btrim(\"catalog_suggestions\".\"note\") <> '' AND char_length(\"catalog_suggestions\".\"note\") <= 500)"
         },
         "catalog_suggestions_decision_note_check": {
           "name": "catalog_suggestions_decision_note_check",
-          "value": "\"catalog_suggestions\".\"decision_note\" IS NULL OR btrim(\"catalog_suggestions\".\"decision_note\") <> ''"
+          "value": "\"catalog_suggestions\".\"decision_note\" IS NULL OR (btrim(\"catalog_suggestions\".\"decision_note\") <> '' AND char_length(\"catalog_suggestions\".\"decision_note\") <= 500)"
         },
         "catalog_suggestions_decision_check": {
           "name": "catalog_suggestions_decision_check",
