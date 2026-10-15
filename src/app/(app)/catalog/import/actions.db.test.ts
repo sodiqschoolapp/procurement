@@ -210,10 +210,13 @@ describe("the import page actions (plan of 1.10; plan review, correction 1)", ()
 });
 
 describe("the prices import page actions (plan of 1.11, decision 4)", () => {
-  it("a Manager's prices file is refused before it is read; the Head's sets the price", async () => {
+  it("a Manager's, Principal's or Finance user's prices file is refused before it is read; the Head's sets the price", async () => {
     const { file, variantId } = await pricesFile();
-    signedIn(await insertUser("MANAGER"));
-    expect((await saveImportAction(formOf(file, "prices"))).ok).toBe(false);
+    for (const role of ["MANAGER", "PRINCIPAL", "FINANCE"] as const) {
+      signedIn(await insertUser(role));
+      expect((await previewImportAction(formOf(file, "prices"))).ok).toBe(false);
+      expect((await saveImportAction(formOf(file, "prices"))).ok).toBe(false);
+    }
     expect(reader.calls).toBe(0);
     signedIn(await insertUser("HEAD"));
     expect(await saveImportAction(formOf(file, "prices"))).toMatchObject({

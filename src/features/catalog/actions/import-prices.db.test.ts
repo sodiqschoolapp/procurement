@@ -98,15 +98,16 @@ describe("importPrices: all rows or none (04 rules 4 and 7; build-plan 1.11, Don
       [b1, 21_000n, "Sentabr narxi"],
       [b2, 31_000n, "Yangi yetkazuvchi"],
     ] as const) {
-      const [newest, older] = await historyOf(variantId);
-      expect(newest).toMatchObject({
+      // Exactly one new row on the one set before (spec review of the diff, Should fix 1).
+      const rows = await historyOf(variantId);
+      expect(rows).toHaveLength(2);
+      expect(rows[0]).toMatchObject({
         price,
         note,
         source: "HEAD",
         setBy: head.id,
         clientKey: null,
       });
-      expect(older).toBeDefined();
     }
     expect(await historyOf(b3)).toHaveLength(1);
 

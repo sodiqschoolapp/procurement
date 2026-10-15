@@ -7,7 +7,7 @@ import uz from "../../src/i18n/messages/uz.json" with { type: "json" };
 import { E2E_ROLES } from "./global-setup";
 
 // Build-plan 1.10, Done when, by hand: "the spec's phase 1 check, import 30 products from Excel"
-// (16-build-order.md, phase 1); build-plan 1.11, the import of new prices. 04-catalogs.md rule 7: a template, a preview with errors per row,
+// (16-build-order.md, phase 1). Build-plan 1.11: the import of new prices. 04-catalogs.md rule 7: a template, a preview with errors per row,
 // nothing saved unless every row is valid. 11-screens-and-ux.md rule 13 (375 px and 1440 px). Both
 // projects share one database, so every name is new on every run. Names are invented.
 
@@ -79,7 +79,7 @@ async function choose(page: Page, buffer: Buffer): Promise<void> {
 }
 
 for (const role of ["MANAGER", "PRINCIPAL", "FINANCE"] as const) {
-  test(`${role} opening the import pages gets not found (03, "Manage catalogs …")`, async ({
+  test(`${role} opening the import pages gets not found (03, "Manage catalogs …", "Add a new price …")`, async ({
     page,
   }) => {
     await signIn(page, E2E_ROLES[role]);
@@ -225,6 +225,7 @@ test("the Head imports 3 new prices from Excel: an unknown product saves nothing
   await expect(page.getByText(errorLine)).toBeHidden();
   await expect(save).toBeEnabled();
   await save.click();
+  await expect(page.getByText(ti.saved.replace("{rows}", "3"))).toBeVisible();
   await expect(page).toHaveURL(/\/prices$/);
   await page.getByLabel(uz.prices.search).fill(sized);
   await page.getByLabel(uz.prices.search).press("Enter");

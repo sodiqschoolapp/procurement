@@ -302,6 +302,7 @@ describe("readPriceRows (04 rules 4 and 7; plan of 1.11, decisions 2, 6 and 7)",
         ["E", null, "ko'p", "x"],
         ["F", null, other, "x"],
         ["G", null, 100, "x"],
+        ["H", null, (MONEY_MAX + 1n).toString(), "x"],
       ]),
     );
     expect(errors).toEqual([
@@ -311,6 +312,7 @@ describe("readPriceRows (04 rules 4 and 7; plan of 1.11, decisions 2, 6 and 7)",
       { row: 5, column: "price", kind: "wrongFormat" },
       { row: 6, column: "price", kind: "wrongFormat" },
       { row: 7, column: "price", kind: "wrongFormat" },
+      { row: 9, column: "price", kind: "wrongFormat" },
     ]);
     expect(prices.map((price) => price.product)).toEqual(["G"]);
   });
