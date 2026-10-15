@@ -20,6 +20,8 @@ import { PageLinks } from "../page-links";
 // by name; the toolbar has the search and the category and type filters, kept in the address with
 // the page (plan of 1.7, decision 12). Each row shows the 160 px photo (04 rule 6). At phone width
 // the table scrolls inside its panel, as the lists of 1.5 and 1.6 (plan review, Should fix 9).
+// From 1.8 the price is the hidden default subtype's; a product with subtypes shows how many it has
+// (plan of 1.8, "What will exist").
 
 const pageParam = z.coerce.number().int().min(1).catch(1);
 const searchParam = z.string().trim().max(200).catch("");
@@ -217,7 +219,11 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
                         {row.unitShortName}
                       </td>
                       <td className="px-4 py-3 text-right whitespace-nowrap tabular-nums">
-                        {row.referencePrice === null ? "" : format.money(row.referencePrice)}
+                        {row.hasVariants
+                          ? t("subtypes.count", { count: row.subtypeCount })
+                          : row.referencePrice === null
+                            ? ""
+                            : format.money(row.referencePrice)}
                       </td>
                       <td className="px-4 py-3">{row.isActive ? t("active") : t("inactive")}</td>
                     </tr>

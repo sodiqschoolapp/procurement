@@ -13,11 +13,12 @@ import type { EntryKind } from "@/domain/catalogs";
 import { setCatalogEntryActiveAction } from "./actions";
 import { setDepartmentActiveAction } from "./departments/actions";
 import { setProductActiveAction } from "./products/actions";
+import { setSubtypeActiveAction } from "./products/[id]/subtypes/actions";
 
 // Deactivate or Activate a catalog entry (04-catalogs.md rule 2: "Entries are deactivated
 // instead"), behind the confirm dialog that states the result (11 rule 6). Deactivate is the
-// quiet danger action of docs/design-system.md, "Lists". Departments (1.6) and products (1.7) run
-// their own action.
+// quiet danger action of docs/design-system.md, "Lists". Departments (1.6), products (1.7) and
+// subtypes (1.8) run their own action.
 
 export function CatalogActiveButton({
   kind,
@@ -29,13 +30,15 @@ export function CatalogActiveButton({
   const t = useTranslations("catalog");
   const tAll = useTranslations();
   const router = useRouter();
-  const own = kind === "departments" || kind === "products";
+  const own = kind === "departments" || kind === "products" || kind === "subtypes";
   const action = useAction(
     kind === "departments"
       ? setDepartmentActiveAction
       : kind === "products"
         ? setProductActiveAction
-        : setCatalogEntryActiveAction,
+        : kind === "subtypes"
+          ? setSubtypeActiveAction
+          : setCatalogEntryActiveAction,
   );
   const [open, setOpen] = useState(false);
   const deactivating = entry.isActive;
