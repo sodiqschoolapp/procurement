@@ -10,6 +10,7 @@ import {
   importErrorKey,
   productTypeOf,
   readDepartmentRows,
+  readPriceRows,
   readProductRows,
 } from "./imports";
 import { MONEY_MAX } from "./money";
@@ -267,6 +268,125 @@ describe("readDepartmentRows (04 Catalogs table and rule 3; decisions 1.6 item 4
       { row: 2, column: "name", kind: "required" },
       { row: 2, column: "responsiblePhone", kind: "wrongFormat" },
       { row: 3, column: "name", kind: "wrongFormat" },
+    ]);
+  });
+});
+
+describe("readPriceRows (04 rules 4 and 7; plan of 1.11, decisions 2, 6 and 7)", () => {
+  const other: ImportCell = { kind: "other" };
+
+  it("reads product, subtype, new price and note; an empty subtype is the hidden default", () => {
+    const { prices, errors } = readPriceRows(
+      sheetOf([
+        ["  Daftar   A4 ", "Katta", 12000, " Sentabr narxi "],
+        ["Ruchka", null, "1 500", "Yangi yetkazuvchi"],
+        ["Qog'oz", "", 30000, 2026],
+      ]),
+    );
+    expect(errors).toEqual([]);
+    expect(prices).toEqual([
+      { row: 2, product: "Daftar A4", subtype: "Katta", price: 12000n, note: "Sentabr narxi" },
+      { row: 3, product: "Ruchka", subtype: null, price: 1500n, note: "Yangi yetkazuvchi" },
+      // A whole number in the note is its digits (plan of 1.10, decision 14).
+      { row: 4, product: "Qog'oz", subtype: null, price: 30000n, note: "2026" },
+    ]);
+  });
+
+  it("a price that is missing, 0, negative, a fraction or not a sum is that row's error (rule 6)", () => {
+    const { prices, errors } = readPriceRows(
+      sheetOf([
+        ["A", null, null, "x"],
+        ["B", null, 0, "x"],
+        ["C", null, -5, "x"],
+        ["D", null, 10.5, "x"],
+        ["E", null, "ko'p", "x"],
+        ["F", null, other, "x"],
+        ["G", null, 100, "x"],
+      ]),
+    );
+    expect(errors).toEqual([
+      { row: 2, column: "price", kind: "required" },
+      { row: 3, column: "price", kind: "wrongFormat" },
+      { row: 4, column: "price", kind: "wrongFormat" },
+      { row: 5, column: "price", kind: "wrongFormat" },
+      { row: 6, column: "price", kind: "wrongFormat" },
+      { row: 7, column: "price", kind: "wrongFormat" },
+    ]);
+    expect(prices.map((price) => price.product)).toEqual(["G"]);
+  });
+
+  it("a note is required, 1 to 200 code points; a date is wrong (04 rule 4; 1.9 decision 8)", () => {
+    const { errors } = readPriceRows(
+      sheetOf([
+        ["A", null, 100, null],
+        ["B", null, 100, "   "],
+        ["C", null, 100, "ж".repeat(201)],
+        ["D", null, 100, other],
+        ["E", null, 100, "ж".repeat(200)],
+      ]),
+    );
+    expect(errors).toEqual([
+      { row: 2, column: "note", kind: "required" },
+      { row: 3, column: "note", kind: "required" },
+      { row: 4, column: "note", kind: "tooLong" },
+      { row: 5, column: "note", kind: "wrongFormat" },
+    ]);
+  });
+
+  it("an empty or long product name and a long subtype name are errors (04 rule 3)", () => {
+    const { errors } = readPriceRows(
+      sheetOf([
+        [null, "Katta", 100, "x"],
+        ["a".repeat(121), null, 100, "x"],
+        ["A", "b".repeat(121), 100, "x"],
+      ]),
+    );
+    expect(errors).toEqual([
+      { row: 2, column: "name", kind: "required" },
+      { row: 3, column: "name", kind: "tooLong" },
+      { row: 4, column: "subtype", kind: "tooLong" },
+    ]);
+  });
+
+  it("the same product and subtype twice names the first row; the same product without subtype too", () => {
+    const { prices, errors } = readPriceRows(
+      sheetOf([
+        ["Daftar", "Katta", 100, "x"],
+        ["Ruchka", null, 100, "x"],
+        ["daftar ", " KATTA", 200, "x"],
+        ["RUCHKA", "", 200, "x"],
+        // A product named with and without a subtype: both read, the database decides (decision 6).
+        ["Daftar", null, 300, "x"],
+      ]),
+    );
+    expect(errors).toEqual([
+      { row: 4, column: "subtype", kind: "duplicateInFile", firstRow: 2 },
+      { row: 5, column: "name", kind: "duplicateInFile", firstRow: 3 },
+    ]);
+    expect(prices.map((price) => price.row)).toEqual([2, 3, 6]);
+  });
+
+  it("names every row whose product and subtype were read, a wrong price or note too, for the preview", () => {
+    const { named } = readPriceRows(
+      sheetOf([
+        ["Daftar", "Katta", 0, null],
+        [null, null, 100, "x"],
+        ["Ruchka", null, 100, "x"],
+      ]),
+    );
+    expect(named).toEqual([
+      { row: 2, product: "Daftar", subtype: "Katta" },
+      { row: 4, product: "Ruchka", subtype: null },
+    ]);
+  });
+
+  it("an empty file and a file over the row limit are one file error", () => {
+    expect(readPriceRows(sheetOf([[null, null, null, null]])).errors).toEqual([
+      { row: 0, column: "file", kind: "noRows" },
+    ]);
+    const many = Array.from({ length: IMPORT_ROWS_MAX + 1 }, (_, at) => [`P${at}`, null, 100, "x"]);
+    expect(readPriceRows(sheetOf(many)).errors).toEqual([
+      { row: 0, column: "file", kind: "tooManyRows" },
     ]);
   });
 });

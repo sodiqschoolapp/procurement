@@ -37,6 +37,10 @@ describe("catalog_imports (plan of 1.10, Database changes)", () => {
     await insertImport({ kind: "DEPARTMENTS", rowCount: 1 });
   });
 
+  it("a PRICES row is written after migration 0016 committed (plan of 1.11; correction 2)", async () => {
+    await insertImport({ kind: "PRICES", rowCount: 3 });
+  });
+
   it("a kind outside the enum is refused", async () => {
     expect(await refusalOf(insertImport({ kind: "PRICES_LATER" }))).toMatchObject({
       code: "22P02",

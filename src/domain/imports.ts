@@ -459,22 +459,28 @@ const PRICE_AT = Object.fromEntries(
   IMPORT_COLUMNS.prices.map((column, at) => [column, at]),
 ) as Record<(typeof IMPORT_COLUMNS.prices)[number], number>;
 
+/** The subtype a row names, as typed: what the database check needs of a price row. */
+export type PriceRowName = Pick<ImportedPrice, "row" | "product" | "subtype">;
+
 /**
  * The new prices of a sheet (04 rules 4 and 7; plan of 1.11, decisions 1, 2 and 6). Each row: the
  * product's name, the subtype's name or nothing, the new price (required, read by parseSom() as in
  * 1.10 decision 1), and the note the Head gives a new price by hand (required, 1 to 200 code
  * points; 1.9 decision 8). The same product and subtype twice is an error naming the first row; the
  * database refuses two rows that land on one subtype as well, whatever this fold says (plan review
- * of 1.11, Should fix 1).
+ * of 1.11, Should fix 1). `named`: every row whose product and subtype could be read, also one
+ * with a wrong price or note, so the preview checks its names in the database as well.
  */
 export function readPriceRows(sheet: ImportSheet): {
   prices: ImportedPrice[];
+  named: PriceRowName[];
   errors: ImportError[];
 } {
   const { rows, error } = dataRows(sheet);
-  if (error) return { prices: [], errors: [error] };
+  if (error) return { prices: [], named: [], errors: [error] };
   const read = reader();
   const prices: ImportedPrice[] = [];
+  const named: PriceRowName[] = [];
   const seen = new Map<string, number>();
   for (const row of rows) {
     const before = read.errors.length;
@@ -505,13 +511,14 @@ export function readPriceRows(sheet: ImportSheet): {
         });
       } else {
         seen.set(key, row.row);
+        named.push({ row: row.row, product, subtype: subtype === "" ? null : subtype });
       }
     }
     if (read.errors.length > before || product === null || subtype === null) continue;
     if (price === null || price === "wrong" || note === null) continue;
     prices.push({ row: row.row, product, subtype: subtype === "" ? null : subtype, price, note });
   }
-  return { prices, errors: sorted(read.errors, IMPORT_COLUMNS.prices) };
+  return { prices, named, errors: sorted(read.errors, IMPORT_COLUMNS.prices) };
 }
 
 /** Errors in the order of the sheet: by row, then by column. */

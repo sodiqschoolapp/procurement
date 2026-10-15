@@ -7,7 +7,7 @@ import uz from "../../src/i18n/messages/uz.json" with { type: "json" };
 import { E2E_ROLES } from "./global-setup";
 
 // Build-plan 1.10, Done when, by hand: "the spec's phase 1 check, import 30 products from Excel"
-// (16-build-order.md, phase 1). 04-catalogs.md rule 7: a template, a preview with errors per row,
+// (16-build-order.md, phase 1); build-plan 1.11, the import of new prices. 04-catalogs.md rule 7: a template, a preview with errors per row,
 // nothing saved unless every row is valid. 11-screens-and-ux.md rule 13 (375 px and 1440 px). Both
 // projects share one database, so every name is new on every run. Names are invented.
 
@@ -44,20 +44,28 @@ async function saveNew(page: Page, pattern: RegExp): Promise<void> {
 }
 
 /** The template filled in: the Uzbek titles, then the rows. */
-async function workbook(rows: (string | number | null)[][]): Promise<Buffer> {
+async function workbook(
+  rows: (string | number | null)[][],
+  kind: "products" | "prices" = "products",
+): Promise<Buffer> {
   const book = new ExcelJS.Workbook();
-  const sheet = book.addWorksheet(ti.sheet.products);
-  const columns = ti.columns.products;
-  sheet.addRow([
-    columns.name,
-    columns.type,
-    columns.category,
-    columns.measure,
-    columns.company,
-    columns.description,
-    columns.subtype,
-    columns.price,
-  ]);
+  const sheet = book.addWorksheet(ti.sheet[kind]);
+  if (kind === "products") {
+    const columns = ti.columns.products;
+    sheet.addRow([
+      columns.name,
+      columns.type,
+      columns.category,
+      columns.measure,
+      columns.company,
+      columns.description,
+      columns.subtype,
+      columns.price,
+    ]);
+  } else {
+    const columns = ti.columns.prices;
+    sheet.addRow([columns.name, columns.subtype, columns.price, columns.note]);
+  }
   for (const row of rows) sheet.addRow(row);
   return Buffer.from(await book.xlsx.writeBuffer());
 }
@@ -75,12 +83,18 @@ for (const role of ["MANAGER", "PRINCIPAL", "FINANCE"] as const) {
     page,
   }) => {
     await signIn(page, E2E_ROLES[role]);
-    for (const address of ["/catalog/import/products", "/catalog/import/departments"]) {
+    for (const address of [
+      "/catalog/import/products",
+      "/catalog/import/departments",
+      "/catalog/import/prices",
+    ]) {
       const response = await page.goto(address);
       expect(response?.status(), address).toBe(404);
     }
-    const template = await page.request.get("/catalog/import/products/template");
-    expect(template.status()).toBe(404);
+    for (const kind of ["products", "prices"]) {
+      const template = await page.request.get(`/catalog/import/${kind}/template`);
+      expect(template.status(), kind).toBe(404);
+    }
   });
 }
 
@@ -144,5 +158,77 @@ test("the Head imports 30 products from Excel: a bad row saves nothing, the fixe
   await page.getByLabel(t.search).press("Enter");
   await expect(page.getByRole("link", { name: names[0]!, exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: names[9]!, exact: true })).toBeVisible();
+  await noSideScroll(page);
+});
+
+test("the Head imports 3 new prices from Excel: an unknown product saves nothing, the fixed file saves all (1.11, Done when)", async ({
+  page,
+}) => {
+  test.slow();
+  const suffix = randomUUID().slice(0, 8);
+  const category = `Xoʻjalik ${suffix}`;
+  const measure = `Quti ${suffix}`;
+  const plain = `Sovun ${suffix}`;
+  const sized = `Salfetka ${suffix}`;
+  await signIn(page, E2E_ROLES.HEAD);
+
+  await openNew(page, "/catalog/categories/new", t.kinds.categories.newTitle);
+  await page.getByLabel(t.fields.name).fill(category);
+  await saveNew(page, /\/catalog\/categories\/[0-9a-f-]{36}$/);
+  await openNew(page, "/catalog/measures/new", t.kinds.measures.newTitle);
+  await page.getByLabel(t.fields.name, { exact: true }).fill(measure);
+  await page.getByLabel(t.fields.shortName).fill(`q${suffix}`);
+  await saveNew(page, /\/catalog\/measures\/[0-9a-f-]{36}$/);
+
+  // Two products to price: one without subtypes, one with two (through the products import).
+  await page.goto("/catalog/import/products");
+  await expect(page.getByRole("heading", { name: ti.title.products, level: 1 })).toBeVisible();
+  await choose(
+    page,
+    await workbook([
+      [plain, "", category, measure, null, null, null, 4000],
+      [sized, "", category, measure, null, null, "Katta", 9000],
+      [sized, null, null, null, null, null, "Kichik", 7000],
+    ]),
+  );
+  const save = page.getByRole("button", { name: ti.save });
+  await expect(save).toBeEnabled();
+  await save.click();
+  await expect(page).toHaveURL(/\/catalog\/products$/);
+
+  // From the Prices list to the prices import.
+  await page.goto("/prices");
+  await page.getByRole("link", { name: uz.prices.importButton }).click();
+  await expect(page).toHaveURL(/\/catalog\/import\/prices$/);
+  await expect(page.getByRole("heading", { name: ti.title.prices, level: 1 })).toBeVisible();
+  const downloading = page.waitForEvent("download");
+  await page.getByRole("link", { name: ti.download }).click();
+  expect((await downloading).suggestedFilename()).toBe("prices-template.xlsx");
+
+  const good = [
+    [plain, null, 4500, "Oktabr narxi"],
+    [sized, "Katta", 9500, "Oktabr narxi"],
+    [sized, "Kichik", 7500, "Oktabr narxi"],
+  ];
+  // One unknown product: its row is named and nothing can be saved.
+  await choose(page, await workbook([...good, [`Yoʻq ${suffix}`, null, 100, "x"]], "prices"));
+  const errorLine = ti.errorLine
+    .replace("{row}", "5")
+    .replace("{column}", ti.columns.prices.name)
+    .replace("{message}", uz.errors.field.unknown);
+  await expect(page.getByText(errorLine)).toBeVisible();
+  await expect(save).toBeDisabled();
+  await noSideScroll(page);
+
+  // The fixed file saves the 3 prices and returns to the Prices list, which shows them.
+  await choose(page, await workbook(good, "prices"));
+  await expect(page.getByText(errorLine)).toBeHidden();
+  await expect(save).toBeEnabled();
+  await save.click();
+  await expect(page).toHaveURL(/\/prices$/);
+  await page.getByLabel(uz.prices.search).fill(sized);
+  await page.getByLabel(uz.prices.search).press("Enter");
+  await expect(page.getByText(/9\s?500/)).toBeVisible();
+  await expect(page.getByText(/7\s?500/)).toBeVisible();
   await noSideScroll(page);
 });

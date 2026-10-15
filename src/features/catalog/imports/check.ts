@@ -3,8 +3,8 @@ import { type SQL, sql } from "drizzle-orm";
 import type {
   ImportError,
   ImportedDepartment,
-  ImportedPrice,
   ImportedProduct,
+  PriceRowName,
 } from "@/domain/imports";
 import type { Executor } from "@/server/authorize";
 
@@ -221,7 +221,7 @@ export type PriceTarget = {
  */
 export async function checkPriceImport(
   tx: Executor,
-  prices: readonly ImportedPrice[],
+  prices: readonly PriceRowName[],
   options: { lock: boolean },
 ): Promise<{ errors: ImportError[]; targets: PriceTarget[] }> {
   if (prices.length === 0) return { errors: [], targets: [] };

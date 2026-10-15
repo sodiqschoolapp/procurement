@@ -7,7 +7,7 @@ import { describe, expect, it } from "vitest";
 // function"); permission review of 1.10, Should fix 1. The write bodies the catalog actions share
 // with the Excel import carry no permission check of their own: they run only inside an action of
 // the wrapper, which asked authorize() first. This test lets them be imported only where such an
-// action uses them: their own files, the import actions of 1.10, and tests.
+// action uses them: their own files, the import actions of 1.10 and 1.11, and tests.
 
 const ROOT = join(import.meta.dirname, "..");
 
@@ -21,6 +21,10 @@ const SHARED = [
   "addSubtype",
   "recordSubtypeCreate",
   "lockSubtypes",
+  // A price's write and audit bodies (plan of 1.11, decision 1).
+  "recordHeadPrice",
+  "setHeadPrice",
+  "recordPriceAdd",
 ];
 
 const ALLOWED = new Set([
@@ -28,6 +32,8 @@ const ALLOWED = new Set([
   "src/features/catalog/actions/departments.ts",
   "src/features/catalog/actions/subtypes.ts",
   "src/features/catalog/actions/imports.ts",
+  "src/features/catalog/actions/prices.ts",
+  "src/features/catalog/actions/price-rows.ts",
 ]);
 
 /** The files of src/ that import one of the shared write bodies by name. */

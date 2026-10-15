@@ -71,7 +71,7 @@ export async function previewImport(
     if (read.errors.some((error) => error.column === "file")) {
       return { kind, rows: [], errors: read.errors };
     }
-    const checked = await checkPriceImport(db, read.prices, { lock: false });
+    const checked = await checkPriceImport(db, read.named, { lock: false });
     return { kind, rows, errors: ordered([...read.errors, ...checked.errors], kind) };
   }
   const read = readDepartmentRows(sheet);
