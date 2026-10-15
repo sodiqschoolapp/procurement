@@ -273,7 +273,7 @@ describe("names are unique inside a product (04 rule 3)", () => {
     const product = await insertProduct();
     await add(head.id, product.id);
     const other = await add(head.id, product.id, { name: "Eski" });
-    const outcomes = await runTogether([
+    const outcomes = await runTogether<ActionResult<unknown>>([
       async (meet: () => Promise<void>) => {
         const input = { clientKey: newClientKey(), productId: product.id, name: "Oq" };
         await meet();

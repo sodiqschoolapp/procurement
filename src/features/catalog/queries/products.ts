@@ -4,7 +4,7 @@ import * as z from "zod";
 import { CATALOG_PAGE_SIZE } from "@/domain/catalogs";
 import { PRODUCT_TYPES, type ProductType } from "@/domain/products";
 import { authorize } from "@/server/authorize";
-import { categories, companies, products, units } from "@/server/db/schema";
+import { categories, companies, productVariants, products, units } from "@/server/db/schema";
 
 import { productInUse } from "../actions/product-uses";
 
@@ -24,7 +24,14 @@ export type ProductRow = {
   unitName: string;
   unitShortName: string;
   photoFileId: string | null;
+  /**
+   * The hidden default subtype's price for a product without subtypes; null for one with
+   * subtypes, whose prices are per subtype (plan of 1.8, decisions 2 and 4, Look first).
+   */
   referencePrice: bigint | null;
+  hasVariants: boolean;
+  /** How many real subtypes, active or not; 0 for a product without subtypes. */
+  subtypeCount: number;
   isActive: boolean;
 };
 
@@ -72,9 +79,20 @@ const columns = {
   unitName: units.name,
   unitShortName: units.shortName,
   photoFileId: products.photoFileId,
-  referencePrice: products.referencePrice,
+  referencePrice: productVariants.referencePrice,
+  hasVariants: products.hasVariants,
+  subtypeCount: sql<number>`(select count(*)::int from ${productVariants} as real_variants
+    where real_variants.product_id = ${products.id} and not real_variants.is_default)`.mapWith(
+    Number,
+  ),
   isActive: products.isActive,
 };
+
+/** The hidden default subtype, whose price is the product's while it has no subtypes (1.8). */
+const defaultVariant = and(
+  eq(productVariants.productId, products.id),
+  eq(productVariants.isDefault, true),
+);
 
 /** `%`, `_` and `\` typed by a person are matched as themselves (as 1.5, decision 13). */
 function containing(text: string): string {
@@ -119,6 +137,7 @@ export async function listProducts(
     .from(products)
     .innerJoin(categories, eq(categories.id, products.categoryId))
     .innerJoin(units, eq(units.id, products.unitId))
+    .leftJoin(productVariants, defaultVariant)
     .where(where)
     .orderBy(desc(products.isActive), asc(products.name), asc(products.id))
     .limit(CATALOG_PAGE_SIZE)
@@ -145,6 +164,7 @@ export async function getProduct(userId: string, id: string): Promise<ProductDet
     .innerJoin(categories, eq(categories.id, products.categoryId))
     .innerJoin(units, eq(units.id, products.unitId))
     .leftJoin(companies, eq(companies.id, products.defaultCompanyId))
+    .leftJoin(productVariants, defaultVariant)
     .where(eq(products.id, id));
   return row ? { ...row, inUse: await productInUse(db, row.id) } : null;
 }
