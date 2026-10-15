@@ -13,6 +13,7 @@ import { auditLog, productVariants, products } from "@/server/db/schema";
 import { defineCatalogActions } from "./catalog-entries";
 import { nameField, optionalId, priceField } from "./catalog-fields";
 import { fileNameOf, refusePhoto } from "./photos";
+import { recordHeadPrice } from "./price-rows";
 
 // Subtypes (04-catalogs.md, Catalogs table: "Product, name, own photo (optional), own reference
 // price (optional), active"; rules 1 and 3; open question 18; build-plan 1.8). Table
@@ -23,7 +24,8 @@ import { fileNameOf, refusePhoto } from "./photos";
 //   it; `has_variants` turns true (plan of 1.8, decision 1, Look first). The rest are new rows.
 // - The reference price is set on create only; on the first subtype a price the default already
 //   holds stays, and a sent one is refused (decision 2, Look first). Without one a subtype has no
-//   price (decision 4, Look first).
+//   price (decision 4, Look first). A price set here gets its HEAD row of the price history; later
+//   prices come through addPrice (plan of 1.9, decision 1, Look first).
 // - Names are unique inside the product (04 rule 3); a product with subtypes keeps one active
 //   (decision 3, Look first); an inactive product takes no new subtype (decision 5).
 // - The default row is never reached by update or setActive: "not found" (decision 3).
@@ -180,6 +182,13 @@ export const createSubtype = defineAction({
           createdAt: now(),
         })
         .returning(columns);
+      if (entry!.referencePrice !== null) {
+        await recordHeadPrice(tx, {
+          variantId: entry!.id,
+          price: entry!.referencePrice,
+          setBy: userId,
+        });
+      }
       return { entry: entry!, fromDefault: null };
     }
 
@@ -211,6 +220,15 @@ export const createSubtype = defineAction({
       .where(eq(productVariants.id, held!.id))
       .returning(columns);
     await tx.update(products).set({ hasVariants: true }).where(eq(products.id, input.productId));
+    // A price the default held keeps its row, which points at the same id; a price taken now is
+    // the Head setting one (plan of 1.9, decision 1, Look first).
+    if (held!.price === null && entry!.referencePrice !== null) {
+      await recordHeadPrice(tx, {
+        variantId: entry!.id,
+        price: entry!.referencePrice,
+        setBy: userId,
+      });
+    }
     return { entry: entry!, fromDefault: { name: held!.name, referencePrice: held!.price } };
   },
   async history({ tx, userId }, { entry, fromDefault }) {

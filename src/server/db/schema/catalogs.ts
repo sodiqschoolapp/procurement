@@ -14,10 +14,12 @@ import {
 } from "drizzle-orm/pg-core";
 
 import { COMPANY_KINDS } from "@/domain/catalogs";
+import { PRICE_SOURCES } from "@/domain/prices";
 import { PRODUCT_TYPES } from "@/domain/products";
 
 import { files } from "./files";
 import { branches } from "./organisation";
+import { users } from "./users";
 
 // Four catalogs of the "Organisation and catalogs" group of docs/spec/14-data-model.md: units
 // (measures), categories, extra_cost_types, companies. Task 1.5. Names are unique "ignoring
@@ -281,5 +283,50 @@ export const productVariants = pgTable(
       .where(sql`${table.isDefault}`),
     index("product_variants_product_id_idx").on(table.productId),
     index("product_variants_is_active_idx").on(table.isActive),
+  ],
+);
+
+/** HEAD or PURCHASE (14-data-model.md, price_history.source). */
+export const priceSource = pgEnum("price_source", PRICE_SOURCES);
+
+// Price history (14-data-model.md, price_history: "one row each time the Head sets a price or a
+// purchase is recorded"; 04-catalogs.md rule 4). Task 1.9. A HEAD row for every price the Head
+// sets, the price typed at creation included, with no note then (plan of 1.9, decision 1, Look
+// first); a new price carries its short note. PURCHASE rows and the foreign key of `purchase_id`
+// come with 3.2 (build-plan 1.9); a PURCHASE row names its purchase and a HEAD row none (decision
+// 10). `seq` orders the rows without a tie (the clock is frozen in tests, and two writes can share
+// a moment; plan review of 1.9, Must fix 1). Migration 0014 adds by hand what Drizzle cannot
+// express: the append-only trigger (decision 3, Look first), the deferred check that a subtype's
+// reference price is the price of its newest HEAD row (decision 2, Look first), and the backfill.
+export const priceHistory = pgTable(
+  "price_history",
+  {
+    id: id(),
+    seq: bigint("seq", { mode: "bigint" }).generatedAlwaysAsIdentity().notNull(),
+    variantId: uuid("variant_id")
+      .notNull()
+      .references(() => productVariants.id),
+    price: bigint("price", { mode: "bigint" }).notNull(),
+    source: priceSource("source").notNull(),
+    note: text("note"),
+    setBy: uuid("set_by")
+      .notNull()
+      .references(() => users.id),
+    purchaseId: uuid("purchase_id"),
+    clientKey: uuid("client_key"),
+    createdAt: moment("created_at").notNull(),
+  },
+  (table) => [
+    unique("price_history_seq_key").on(table.seq),
+    unique("price_history_client_key_key").on(table.clientKey),
+    check("price_history_price_check", sql`${table.price} > 0`),
+    check("price_history_note_check", sql`${table.note} IS NULL OR btrim(${table.note}) <> ''`),
+    check(
+      "price_history_purchase_check",
+      sql`(${table.source} = 'HEAD') = (${table.purchaseId} IS NULL)`,
+    ),
+    index("price_history_variant_id_seq_idx").on(table.variantId, table.seq.desc()),
+    index("price_history_set_by_idx").on(table.setBy),
+    index("price_history_purchase_id_idx").on(table.purchaseId),
   ],
 );

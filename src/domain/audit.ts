@@ -45,6 +45,7 @@ export const AUDIT_ACTIONS = [
   "subtype.update",
   "subtype.deactivate",
   "subtype.activate",
+  "price.add",
   "settings.change",
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
