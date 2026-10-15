@@ -1,6 +1,11 @@
 import { type SQL, sql } from "drizzle-orm";
 
-import type { ImportError, ImportedDepartment, ImportedProduct } from "@/domain/imports";
+import type {
+  ImportError,
+  ImportedDepartment,
+  ImportedPrice,
+  ImportedProduct,
+} from "@/domain/imports";
 import type { Executor } from "@/server/authorize";
 
 // What only the database knows about the rows of an import (04-catalogs.md rules 2, 3, 7; plan of
@@ -192,4 +197,103 @@ export async function checkDepartmentImport(
     if (branchId) branchIds.push(branchId);
   }
   return { errors, branchIds: errors.length === 0 ? branchIds : [] };
+}
+
+/** The subtype a price row lands on, with what its `price.add` audit row needs (correction 3). */
+export type PriceTarget = {
+  variantId: string;
+  productId: string;
+  product: string;
+  referencePrice: bigint | null;
+};
+
+/**
+ * Checks the new prices of an import (04 rules 1, 3, 4 and 7; plan of 1.11, decisions 6 and 7):
+ * each row's product by its name, and its subtype inside that product: a named cell only among the
+ * real subtypes (`is_default` false), so a real subtype called "Default" is found and the hidden
+ * row never is by its name; an empty cell only the hidden default, which a product has only while
+ * it has no real subtypes. Every condition that picks the subtype is on the `product_variants` row,
+ * the one locked and read again after a lock wait, so a default made real during the wait is seen
+ * (plan review, Should fix 4). With `lock`, the subtypes are held FOR UPDATE in the order of their
+ * ids, as addPrice holds its one row, so two imports cannot deadlock. Two rows that land on one
+ * subtype are refused, the second naming the first (Should fix 1). Returns the errors, and, when
+ * there is none, each price's subtype in their order.
+ */
+export async function checkPriceImport(
+  tx: Executor,
+  prices: readonly ImportedPrice[],
+  options: { lock: boolean },
+): Promise<{ errors: ImportError[]; targets: PriceTarget[] }> {
+  if (prices.length === 0) return { errors: [], targets: [] };
+  const v = sql.raw("t.v");
+  const known = new Set<string>();
+  const productRows = await tx.execute<{ typed: string }>(
+    sql`select t.v as typed from unnest(${textArray(prices.map((price) => price.product))}) as t(v)
+      where exists (select 1 from products p where ${compared(sql.raw("p.name"))} = ${compared(v)})`,
+  );
+  for (const row of productRows.rows) known.add(row.typed);
+
+  const found = await tx.execute<{
+    line: number;
+    variant_id: string;
+    product_id: string;
+    product: string;
+    reference_price: string | null;
+  }>(
+    sql`select t.line, pv.id as variant_id, pv.product_id, p.name as product,
+        pv.reference_price::text as reference_price
+      from unnest(
+          ${sql`array[${sql.join(
+            prices.map((price) => sql`${price.row}`),
+            sql`, `,
+          )}]::int[]`},
+          ${textArray(prices.map((price) => price.product))},
+          ${textArray(prices.map((price) => price.subtype ?? ""))}
+        ) as t(line, product, subtype)
+        join products p on ${compared(sql.raw("p.name"))} = ${compared(sql.raw("t.product"))}
+        join product_variants pv on pv.product_id = p.id and (
+          (t.subtype = '' and pv.is_default)
+          or (t.subtype <> '' and not pv.is_default
+            and ${compared(sql.raw("pv.name"))} = ${compared(sql.raw("t.subtype"))}))
+      order by pv.id${options.lock ? sql.raw(" for update of pv") : sql``}`,
+  );
+  const byLine = new Map<number, PriceTarget>();
+  for (const row of found.rows) {
+    byLine.set(Number(row.line), {
+      variantId: row.variant_id,
+      productId: row.product_id,
+      product: row.product,
+      referencePrice: row.reference_price === null ? null : BigInt(row.reference_price),
+    });
+  }
+
+  const errors: ImportError[] = [];
+  const targets: PriceTarget[] = [];
+  const firstRowOf = new Map<string, number>();
+  for (const price of prices) {
+    const row = price.row;
+    const column = price.subtype === null ? "name" : "subtype";
+    if (!known.has(price.product)) {
+      errors.push({ row, column: "name", kind: "unknown" });
+      continue;
+    }
+    const target = byLine.get(row);
+    if (!target) {
+      // An empty cell of a product that has subtypes, or a name none of its subtypes has.
+      errors.push({
+        row,
+        column: "subtype",
+        kind: price.subtype === null ? "required" : "unknown",
+      });
+      continue;
+    }
+    const earlier = firstRowOf.get(target.variantId);
+    if (earlier !== undefined) {
+      errors.push({ row, column, kind: "duplicateInFile", firstRow: earlier });
+      continue;
+    }
+    firstRowOf.set(target.variantId, row);
+    targets.push(target);
+  }
+  return { errors, targets: errors.length === 0 ? targets : [] };
 }

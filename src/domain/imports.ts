@@ -1,5 +1,7 @@
 import { catalogName, isCatalogName } from "./catalogs";
 import { parseSom } from "./money";
+import type { Permission } from "./permissions";
+import { isPriceNote, priceNote } from "./prices";
 import { DEFAULT_PRODUCT_TYPE, PRODUCT_TYPES, type ProductType, isDescription } from "./products";
 import { fullName, isFullName, isPhone, phone } from "./users";
 
@@ -19,18 +21,29 @@ import { fullName, isFullName, isPhone, phone } from "./users";
 // - The column titles and the type words come from the message files, passed in by the server;
 //   none is written here (CLAUDE.md rule 13).
 
-/** What can be imported in this task (1.11 adds prices; phase 5 existing stock). */
-export const IMPORT_KINDS = ["products", "departments"] as const;
+/** What can be imported (phase 5 adds existing stock). */
+export const IMPORT_KINDS = ["products", "departments", "prices"] as const;
 export type ImportKind = (typeof IMPORT_KINDS)[number];
 
 export function isImportKind(value: unknown): value is ImportKind {
   return typeof value === "string" && (IMPORT_KINDS as readonly string[]).includes(value);
 }
 
-/** The columns of each template, in order (plan of 1.10, "What will exist"). */
+/**
+ * The permission of each kind, checked by its page, template, preview and save alike: a new price
+ * is "Add a new price for a product" (03 Permission matrix; plan of 1.11, decision 4, Look first).
+ */
+export const IMPORT_PERMISSIONS = {
+  products: "catalog.manage",
+  departments: "catalog.manage",
+  prices: "price.add",
+} as const satisfies Record<ImportKind, Permission>;
+
+/** The columns of each template, in order (plans of 1.10 and 1.11, "What will exist"). */
 export const IMPORT_COLUMNS = {
   products: ["name", "type", "category", "measure", "company", "description", "subtype", "price"],
   departments: ["branch", "name", "responsibleName", "responsiblePhone"],
+  prices: ["name", "subtype", "price", "note"],
 } as const satisfies Record<ImportKind, readonly string[]>;
 
 export type ImportColumn = (typeof IMPORT_COLUMNS)[ImportKind][number];
@@ -427,6 +440,78 @@ export function readDepartmentRows(sheet: ImportSheet): {
     });
   }
   return { departments, errors: sorted(read.errors, IMPORT_COLUMNS.departments) };
+}
+
+/**
+ * A new price of one subtype (04 rule 4; plan of 1.11): the product and subtype as typed, matched
+ * in the database (src/features/catalog/imports/check.ts); `subtype` null is the hidden default of
+ * a product without subtypes (decision 6).
+ */
+export type ImportedPrice = {
+  row: number;
+  product: string;
+  subtype: string | null;
+  price: bigint;
+  note: string;
+};
+
+const PRICE_AT = Object.fromEntries(
+  IMPORT_COLUMNS.prices.map((column, at) => [column, at]),
+) as Record<(typeof IMPORT_COLUMNS.prices)[number], number>;
+
+/**
+ * The new prices of a sheet (04 rules 4 and 7; plan of 1.11, decisions 1, 2 and 6). Each row: the
+ * product's name, the subtype's name or nothing, the new price (required, read by parseSom() as in
+ * 1.10 decision 1), and the note the Head gives a new price by hand (required, 1 to 200 code
+ * points; 1.9 decision 8). The same product and subtype twice is an error naming the first row; the
+ * database refuses two rows that land on one subtype as well, whatever this fold says (plan review
+ * of 1.11, Should fix 1).
+ */
+export function readPriceRows(sheet: ImportSheet): {
+  prices: ImportedPrice[];
+  errors: ImportError[];
+} {
+  const { rows, error } = dataRows(sheet);
+  if (error) return { prices: [], errors: [error] };
+  const read = reader();
+  const prices: ImportedPrice[] = [];
+  const seen = new Map<string, number>();
+  for (const row of rows) {
+    const before = read.errors.length;
+    const product = readName(read, row, PRICE_AT.name, "name");
+    const subtypeText = read.text(row, PRICE_AT.subtype, "subtype");
+    const subtype = subtypeText === null ? null : catalogName(subtypeText);
+    if (subtype !== null && subtype !== "" && !isCatalogName(subtype)) {
+      read.errors.push({ row: row.row, column: "subtype", kind: "tooLong" });
+    }
+    const price = cellPrice(row.cells[PRICE_AT.price]);
+    if (price === null) read.errors.push({ row: row.row, column: "price", kind: "required" });
+    if (price === "wrong") read.errors.push({ row: row.row, column: "price", kind: "wrongFormat" });
+    const noteText = read.text(row, PRICE_AT.note, "note");
+    const note = noteText === null ? null : priceNote(noteText);
+    if (note === "") read.errors.push({ row: row.row, column: "note", kind: "required" });
+    else if (note !== null && !isPriceNote(note)) {
+      read.errors.push({ row: row.row, column: "note", kind: "tooLong" });
+    }
+    if (product !== null && subtype !== null) {
+      const key = `${folded(product)}\u0000${folded(subtype)}`;
+      const earlier = seen.get(key);
+      if (earlier !== undefined) {
+        read.errors.push({
+          row: row.row,
+          column: subtype === "" ? "name" : "subtype",
+          kind: "duplicateInFile",
+          firstRow: earlier,
+        });
+      } else {
+        seen.set(key, row.row);
+      }
+    }
+    if (read.errors.length > before || product === null || subtype === null) continue;
+    if (price === null || price === "wrong" || note === null) continue;
+    prices.push({ row: row.row, product, subtype: subtype === "" ? null : subtype, price, note });
+  }
+  return { prices, errors: sorted(read.errors, IMPORT_COLUMNS.prices) };
 }
 
 /** Errors in the order of the sheet: by row, then by column. */

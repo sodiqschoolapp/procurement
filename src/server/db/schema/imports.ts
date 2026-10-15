@@ -18,8 +18,8 @@ import { users } from "./users";
 // (developer-rules.md rule 8), and who imported which file (plan of 1.10, decision 13). Each entry
 // an import creates keeps its own `*.create` audit row; the entries themselves have no client key.
 
-/** What was imported (1.11 adds PRICES; phase 5 existing stock). */
-export const importKind = pgEnum("import_kind", ["PRODUCTS", "DEPARTMENTS"]);
+/** What was imported (phase 5 adds existing stock). */
+export const importKind = pgEnum("import_kind", ["PRODUCTS", "DEPARTMENTS", "PRICES"]);
 
 export const catalogImports = pgTable(
   "catalog_imports",

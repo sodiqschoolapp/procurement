@@ -4,12 +4,15 @@ import * as z from "zod";
 import { isClientKey } from "@/components/client-key";
 import {
   type ImportError,
+  type ImportKind,
   type ImportSheet,
   type ImportedDepartment,
+  type ImportedPrice,
   type ImportedProduct,
   headerMatches,
   importErrorKey,
   readDepartmentRows,
+  readPriceRows,
   readProductRows,
 } from "@/domain/imports";
 import { ActionError, GLOBAL_TARGET, type FirstResult, defineAction } from "@/server/action";
@@ -18,16 +21,18 @@ import type { Executor } from "@/server/authorize";
 import { now } from "@/server/clock";
 import { catalogImports } from "@/server/db/schema";
 
-import { checkDepartmentImport, checkProductImport } from "../imports/check";
+import { checkDepartmentImport, checkPriceImport, checkProductImport } from "../imports/check";
 import { PRODUCT_TYPE_WORDS, everyImportTitles } from "../imports/titles";
 import { insertDepartment, lockDepartments, recordDepartmentCreate } from "./departments";
+import { recordPriceAdd, setHeadPrice } from "./price-rows";
 import { insertProduct, lockProducts, recordProductCreate } from "./products";
 import { type Created, addSubtype, lockSubtypes, recordSubtypeCreate } from "./subtypes";
 
-// The Excel import of products with their subtypes, and of departments (04-catalogs.md rule 7:
+// The Excel import of products with their subtypes and of departments (04-catalogs.md rule 7:
 // "saves nothing unless every row is valid"; build-plan 1.10: "saving only when every row is valid,
-// in one transaction"). Under catalog.manage (Head only, global; 03 Permission matrix, "Manage
-// catalogs, users, branches, settings").
+// in one transaction"), under catalog.manage (Head only, global; 03 Permission matrix, "Manage
+// catalogs, users, branches, settings"); and of new prices (build-plan 1.11), under price.add (see
+// importPrices below).
 //
 // - The input is the sheet as src/server/excel.ts read it; its check runs the whole domain row
 //   check again (field rules, grouping, consistency of a product's rows, duplicates in the file,
@@ -81,7 +86,7 @@ function addErrors(context: Context, errors: readonly ImportError[], input: unkn
 
 /** The domain's row check of one kind, as the action's input check. */
 function importInput<Entry>(
-  kind: "products" | "departments",
+  kind: ImportKind,
   read: (sheet: ImportSheet) => { entries: Entry[]; errors: ImportError[] },
 ) {
   return baseInput.transform((input, context) => {
@@ -273,5 +278,77 @@ export const importDepartments = defineAction({
   },
   async history({ tx, userId }, { written }) {
     for (const department of written) await recordDepartmentCreate(tx, userId, department);
+  },
+});
+
+/** A new price written, with what its audit row needs (review of the plan of 1.11, correction 3). */
+type WrittenPrice = {
+  variantId: string;
+  productId: string;
+  product: string;
+  before: bigint | null;
+  price: bigint;
+  note: string;
+};
+
+// New prices of many subtypes at once (04-catalogs.md rule 4: "New prices for many products can be
+// loaded at once from Excel"; build-plan 1.11). Under price.add, the matrix row "Add a new price for
+// a product" (Head only, global; plan of 1.11, decision 4, Look first). Each row is a price added by
+// hand: the subtype's `reference_price`, its HEAD row with the row's note and the Head as `set_by`,
+// and the `price.add` audit row, through the same setHeadPrice() and recordPriceAdd() as addPrice
+// (decision 1, Look first). The same price again, and an inactive product or subtype, are recorded
+// as by hand (decision 3). Every subtype is resolved and locked FOR UPDATE, in the order of its id,
+// by one query (check.ts; decision 5); a row it cannot resolve is that row's field error, never a
+// bare refusal (review of the plan, correction 1), and any error saves nothing (04 rule 7).
+export const importPrices = defineAction({
+  name: "importPrices",
+  permission: "price.add",
+  input: importInput("prices", (sheet) => {
+    const { prices, errors } = readPriceRows(sheet);
+    return { entries: prices as ImportedPrice[], errors };
+  }),
+  async target() {
+    return GLOBAL_TARGET;
+  },
+  repeat: {
+    clientKey: (input) => input.clientKey,
+    find: findImport<WrittenPrice>(),
+  },
+  async write({ tx, input, userId }): Promise<Written<WrittenPrice>> {
+    const { errors, targets } = await checkPriceImport(tx, input.entries, { lock: true });
+    if (errors.length > 0) throw refused(errors);
+    const written: WrittenPrice[] = [];
+    for (const [at, entry] of input.entries.entries()) {
+      const target = targets[at]!;
+      await setHeadPrice(tx, userId, {
+        variantId: target.variantId,
+        price: entry.price,
+        note: entry.note,
+        clientKey: null,
+      });
+      written.push({
+        variantId: target.variantId,
+        productId: target.productId,
+        product: target.product,
+        before: target.referencePrice,
+        price: entry.price,
+        note: entry.note,
+      });
+    }
+    const [record] = await tx
+      .insert(catalogImports)
+      .values({
+        kind: "PRICES",
+        fileName: input.fileName,
+        rowCount: written.length,
+        createdBy: userId,
+        clientKey: input.clientKey,
+        createdAt: now(),
+      })
+      .returning({ id: catalogImports.id });
+    return { importId: record!.id, rows: written.length, written };
+  },
+  async history({ tx, userId }, { written }) {
+    for (const price of written) await recordPriceAdd(tx, userId, price);
   },
 });

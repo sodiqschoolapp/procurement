@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import {
   IMPORT_FILE_MAX_BYTES,
+  IMPORT_PERMISSIONS,
   type ImportKind,
   type ImportSheet,
   isImportKind,
@@ -11,6 +12,7 @@ import {
 import {
   type SavedImport,
   importDepartments,
+  importPrices,
   importProducts,
 } from "@/features/catalog/actions/imports";
 import { type ImportPreview, previewImport } from "@/features/catalog/queries/imports";
@@ -21,9 +23,10 @@ import { AuthorizationError, authorize } from "@/server/authorize";
 import { ImportFileError, readSheet } from "@/server/excel";
 
 // The actions of /catalog/import/<kind> (plan of 1.10, "Server actions and queries"): a form with
-// `kind`, `file` and, for the save, `clientKey`. The permission is checked before a byte of the
-// file is read, so nobody but the Head makes the server unpack a file (plan review of 1.10,
-// correction 1; developer-rules.md rules 4 and 13). Then the file is read by its content
+// `kind`, `file` and, for the save, `clientKey`. The kind is read first, then its own permission
+// (IMPORT_PERMISSIONS; plan of 1.11, decision 4), before a byte of the file is read, so nobody but
+// the Head makes the server unpack a file (plan review of 1.10, correction 1; developer-rules.md
+// rules 4 and 13). Then the file is read by its content
 // (src/server/excel.ts) and the preview query or the import action runs; the action checks every
 // row again in its transaction (decision 5).
 
@@ -33,16 +36,16 @@ type Upload = { kind: ImportKind; fileName: string; sheet: ImportSheet; userId: 
 async function upload(form: FormData): Promise<Upload | { refusal: ActionResult<never> }> {
   const user = await getCurrentUser();
   if (!user) return { refusal: failure("signed_out") };
+  const kind = form.get("kind");
+  if (!isImportKind(kind))
+    return { refusal: failure("invalid_input", { kind: "errors.field.notAllowed" }) };
   try {
-    await authorize(user.id, "catalog.manage");
+    await authorize(user.id, IMPORT_PERMISSIONS[kind]);
   } catch (error) {
     if (error instanceof AuthorizationError) return { refusal: failure(error.kind) };
     throw error;
   }
-  const kind = form.get("kind");
   const file = form.get("file");
-  if (!isImportKind(kind))
-    return { refusal: failure("invalid_input", { kind: "errors.field.notAllowed" }) };
   if (!(file instanceof File) || file.size === 0) {
     return { refusal: failure("invalid_input", { file: "errors.field.required" }) };
   }
@@ -80,8 +83,12 @@ export async function saveImportAction(form: FormData): Promise<ActionResult<Sav
   const result =
     read.kind === "products"
       ? await runAction(importProducts, read.userId, input)
-      : await runAction(importDepartments, read.userId, input);
+      : read.kind === "departments"
+        ? await runAction(importDepartments, read.userId, input)
+        : await runAction(importPrices, read.userId, input);
   if (!result.ok) return result;
+  // Products and prices show on both: a new product on the Prices list, a new price on its page.
   revalidatePath("/catalog", "layout");
+  revalidatePath("/prices", "layout");
   return { ok: true, data: { importId: result.data.importId, rows: result.data.rows } };
 }
