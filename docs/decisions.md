@@ -873,6 +873,27 @@ Choices made during the build:
 - The decline reason is typed on the page, then the confirm dialog asks (the plan said the dialog holds the reason; the shared dialog has no field).
 - The note and reason fields are plain textareas with their own ids: `Field` gives its id only to controls that read it.
 
+### 1.13 Seed: catalogs (15.10.2026)
+
+The plan's decisions as the plan review of 15.10.2026 confirmed or changed them (corrections 1 to 3 applied), and those of the build. The Look first items come first.
+
+1. **Look first** (price rule). A seed product with subtypes is written in its final shape: `has_variants` true, its real subtypes, no default row, `products.reference_price` null, and one `HEAD` row with no note per subtype; audit `product.create` (`referencePrice` null) and `subtype.create` with `before` null. The same state as the Excel import of 1.10 (decision 2), which passes a null price for such a product; the hand path keeps the product's price (review correction 3).
+2. **Look first** (price rule). Every seed subtype has a price; a product without real subtypes holds the same price on `products.reference_price` and its hidden default, as `createProduct` writes it. Prices are `BigInt` literals, sent to `pg` as such and written in the audit as `toString()` (as `auditValue`); no `Number()` touches one. Each `HEAD` row is credited to `seed_head` at the seed's moment, with no note.
+3. The catalogs are written with SQL in `scripts/seed-catalogs.mjs`, called by `seed()` inside its one transaction (the 0.14 handover). The audit `after` copies the create actions' fields; a test compares them with rows the real actions write.
+4. A row is found by its table's unique key (the normalised name; a measure by name or short name; a department by branch and name; a subtype by product and name). Found rows are never changed.
+5. A found product is kept whole: nothing is added to it; each subtype the seed lists that is found under it counts as kept (review correction 2).
+6. A new product that would point at an inactive measure, category or company, or a new department at an inactive branch, refuses the whole seed ("Nothing was written").
+7. The seed takes each catalog's advisory table lock (`hashtextextended(<entity>, 1)`) after the first-Head lock, in the order units, categories, extra cost types, companies, departments, products, subtypes.
+8. **A change to the 0.14 handover** ("add a line created …/kept … and add it to the expected lines of the CI step"): `db:seed` prints no catalog line and the CI step is unchanged (review correction 1: a change under `.github/` is the owner's). `seed()` now returns `{ lines, catalogs }`: the printed lines and the created and kept count per catalog. The per-catalog lines are proposed to the owner in the report of pull request #43.
+9. Names in Uzbek, generic goods; company names carry "(demo)"; tax IDs `30000000x`, phones in `+998 90 000 95 xx` and `96 xx`. No real brand.
+10. No photos, no `client_key`, no minimum stock, no Manager rights rows.
+11. Every seed value is in the form the create actions store; a test runs them through the domain validators.
+12. README and `docs/deploy.md` keep the quoted output and gain one sentence about the catalogs.
+
+Choices made during the build:
+
+- The catalogs live in their own file, `scripts/seed-catalogs.mjs`, which the Dockerfile's run stage now copies beside `seed.mjs` (`tests/image-files.test.ts` demands every file `db-seed.mjs` reaches).
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

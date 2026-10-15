@@ -47,7 +47,10 @@ try {
   // no tsx), so the moment is read here once; CLAUDE.md rule 10 is kept by passing it in.
   // eslint-disable-next-line no-restricted-syntax -- the one moment of this script (rule 10)
   const moment = new Date();
-  for (const line of await seed(client, process.env, moment)) console.log(line);
+  // The catalogs are written too, but print nothing: CI compares this output exactly (review of
+  // the plan of 1.13, correction 1).
+  const { lines } = await seed(client, process.env, moment);
+  for (const line of lines) console.log(line);
   console.log("seed done");
 } catch (error) {
   console.error(error instanceof Error ? error.message : String(error));

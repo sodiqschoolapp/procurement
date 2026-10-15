@@ -602,4 +602,19 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - A textarea inside `Field` needs its own `id`; only `Input` and `Select` read it from the field.
 - `insertProduct()` takes `{ acceptedPhotoId }` for the add of a suggestion only; nothing else passes it.
 
-The next task is 1.13.
+## 1.13 Seed: catalogs (15.10.2026, pull request #43)
+
+**Built**
+- `scripts/seed-catalogs.mjs`: `seedCatalogs()` and the data (`SEED_MEASURES` 5, `SEED_CATEGORIES` 6, `SEED_EXTRA_COST_TYPES` 3, `SEED_COMPANIES` 6, `SEED_DEPARTMENTS` 4 CHL + 3 YUN, `SEED_PRODUCTS` 30: 26 goods, 4 services, 6 with 16 real subtypes), each price with its HEAD row and every entry with its audit row, the seed Head as actor.
+- `seed()` returns `{ lines, catalogs }`; `db-seed.mjs` prints `lines` only, so CI's expected output is unchanged. The Dockerfile copies the new file.
+
+**Left out, and the task that brings it**
+- Demo requests in different statuses (rule 14): the request tasks after D42. The printed catalog lines and their CI step: the owner (report of #43).
+
+**What the next sessions must know**
+- To add seed catalog rows: extend the arrays of `seed-catalogs.mjs`; a new table needs its lock in `LOCKED_ENTITIES` (the order there), its audit row with the action's exact `after` fields, and a count in `SEED_CATALOGS` and the tests' `ALL_CREATED`.
+- Prices in the seed are `BigInt` literals; money in an audit row goes through `som()` (decimal text).
+- `seed()` no longer returns an array: read `.lines`.
+- For the request tasks: the seed's products, subtypes and departments exist after `npm run db:seed`; look them up by name, never by a fixed id.
+
+The next task is 2.1.
