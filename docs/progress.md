@@ -567,4 +567,21 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - A test that builds an import sheet uses `tests/helpers/imports.ts`.
 - The page actions take a `FormData`; a server action's body limit is 1 MB, so the file limit stays under it.
 
-The next task is 1.11.
+## 1.11 Excel import: prices (15.10.2026, pull request #41)
+
+**Built**
+- Migration `0016_import_prices`: `PRICES` added to `import_kind`, nothing else.
+- Kind `prices` on the 1.10 framework: columns product name, subtype, new price, note; `IMPORT_PERMISSIONS` (domain) gives each kind its permission, checked by page, template route, page actions and preview alike.
+- `readPriceRows()` (domain; `named` feeds the preview's database check), `checkPriceImport()` (one query, subtypes locked `FOR UPDATE` in id order, every condition on the `product_variants` row; two rows on one subtype refused).
+- `importPrices` under `price.add`; `setHeadPrice()` and `recordPriceAdd()` in `actions/price-rows.ts`, shared with `addPrice`, behind the write fence.
+- An **Import prices** button on `/prices`; the import page of prices leads back to Prices.
+
+**Left out, and the task that brings it**
+- A template pre-filled with every subtype and its price: no task (idea in the report). Existing stock by file: phase 5. Seed prices: 1.13.
+
+**What the next sessions must know**
+- A new import kind: add it to `IMPORT_KINDS`, `IMPORT_PERMISSIONS`, `IMPORT_COLUMNS`, the message files (`imports.*.<kind>`), the enum, the page's columns and back link, and `saveImportAction`'s dispatch.
+- A price with a note is set only through `setHeadPrice()` + `recordPriceAdd()`; the deferred `price_recorded` check refuses anything else at commit.
+- The unknown kind in tests is now `stock`.
+
+The next task is 1.12.

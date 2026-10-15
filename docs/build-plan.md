@@ -174,7 +174,7 @@ Everything the Head sets up before the first request can be written.
   - **Build:** The import framework on ExcelJS: template download, upload, a preview with errors per row, saving only when every row is valid, in one transaction; imports for products with subtypes and for departments.
   - **Done when:** Tests: a file with one bad row saves nothing and names the row and the reason; a valid file of 30 products creates 30 products. By hand: the spec's phase 1 check, import 30 products from Excel.
 
-- [ ] **1.11 Excel import: prices**
+- [x] **1.11 Excel import: prices**
   - **Read:** `04-catalogs.md` (Rules: 4, 7).
   - **Build:** Loading new prices for many subtypes at once through the same framework; each new price is a `price_history` row.
   - **Done when:** Test: 3 prices in one file give 3 history rows and 3 current prices; one unknown product fails the whole file.

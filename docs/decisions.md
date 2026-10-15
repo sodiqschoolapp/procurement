@@ -828,6 +828,27 @@ Choices made during the build:
 - Matrix tests of `importProducts`, `importDepartments` and `previewImport` called directly, and a fence test that the shared write bodies are imported only by the catalog actions (permission review, Must fix 1 to 3, Should fix 1); a line in `.claude/rules/server-actions.md`.
 - The template route's matrix test reads its 404 as the refusal "forbidden" of a global permission.
 
+### 1.11 Excel import: prices (15.10.2026)
+
+The plan's decisions as the plan review of 15.10.2026 confirmed them (corrections 1 to 3 applied), and those of the build. The Look first items come first.
+
+1. **Look first** (money). An imported price is a price added by hand: through `setHeadPrice()` and `recordPriceAdd()`, shared with `addPrice`: the new `reference_price`, one HEAD row with the row's note and the Head as `set_by`, one `price.add` audit row of the same shape.
+2. **Look first** (money). Each row needs a note, required, trimmed, 1 to 200 code points, as by hand (04 rule 4; 1.9 decision 8).
+3. **Look first** (money). The same price again, and a price for an inactive product or subtype, are recorded, as by hand (1.9 decision 7).
+4. **Look first** (permission matrix). The prices import, its page, preview and template use `price.add` ("Add a new price for a product"); products and departments keep `catalog.manage`. The import page now checks the kind's permission with `authorize()` instead of reading the catalog counts. Nobody gains or loses access: both are Head only.
+5. **Look first** (bends developer-rules rule 12, as 1.10 decision 6). One query resolves and locks every row's subtype (`FOR UPDATE`, in id order); each price is then written through the form's own path in the one transaction.
+6. A row names its subtype by product and subtype name (04 rule 3). A named cell matches only real subtypes, so a real "Default" is importable; an empty cell matches only the hidden default of a product without subtypes. Every condition is on the locked `product_variants` row.
+7. Every row error fails the file (04 rule 7), each a field error of its row, never a bare refusal (plan review, correction 1); two rows on one subtype are refused by the database too.
+8. The template has the titles only.
+9. One `catalog_imports` row of kind `PRICES` per import holds the client key; the history rows carry none.
+10. The page and its button live under Prices.
+
+Choices made during the build:
+
+- `readPriceRows()` also returns `named`, every row whose names could be read, so the preview checks the names of a row with a wrong price or note too.
+- The Import prices button shows on `/prices` when there is a subtype to price, to whoever can open `/prices` (today the Head only, as for the import); a screen does not decide a permission (permission review, nit 3, answered).
+- Two existing tests used `prices` as the unknown kind; they now use `stock`, because 1.11 made `prices` a kind. Nothing was weakened.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.
