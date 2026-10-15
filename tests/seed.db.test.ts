@@ -544,6 +544,10 @@ describe("npm run db:seed: the catalogs (build-plan 1.13; developer-rules.md rul
         `select b.code, d.name from departments d join branches b on b.id = d.branch_id
           order by b.code, d.name`,
       );
+      // Each department in the branch it names (permission review, Should fix 1).
+      expect(rows.rows.map((row) => [row.code, row.name]).sort()).toEqual(
+        SEED_DEPARTMENTS.map((department) => [department.branch, department.name]).sort(),
+      );
       expect(new Set(rows.rows.map((row) => row.code))).toEqual(new Set(["CHL", "YUN"]));
       expect(rows.rows.filter((row) => row.name === "Oshxona").map((row) => row.code)).toEqual([
         "CHL",
