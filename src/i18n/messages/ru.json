@@ -832,5 +832,8 @@
     "declined": "Предложение отклонено",
     "photoAlt": "Фото: {name}",
     "noPhoto": "Нет фото"
+  },
+  "orders": {
+    "priceHint": "{percent, number, ::sign-always}% к цене каталога"
   }
 }
