@@ -644,6 +644,12 @@ describe("npm run db:seed: the catalogs (build-plan 1.13; developer-rules.md rul
            values ('kanselyariya', true, $1) returning id`,
           [MOMENT],
         );
+        // A found active company is used by the new products that name it (spec review, Should fix 1).
+        const company = await fresh.query(
+          `insert into companies (name, kind, is_active, created_at)
+           values ('Sinov Toza (demo)', 'BRAND', true, $1) returning id`,
+          [MOMENT],
+        );
         // "Ruchka" typed in another case with extra spaces, with only its hidden default and its
         // own price; "Qalam" as the seed lists it but at another price.
         const products = await fresh.query(
@@ -674,7 +680,7 @@ describe("npm run db:seed: the catalogs (build-plan 1.13; developer-rules.md rul
           { catalog: "measures", created: 4, kept: 1 },
           { catalog: "categories", created: 5, kept: 1 },
           { catalog: "extra cost types", created: 3, kept: 0 },
-          { catalog: "companies", created: 6, kept: 0 },
+          { catalog: "companies", created: 5, kept: 1 },
           { catalog: "departments", created: 7, kept: 0 },
           { catalog: "products", created: 28, kept: 2 },
           // Ruchka's three are neither added nor found: 16 - 3.
@@ -696,6 +702,11 @@ describe("npm run db:seed: the catalogs (build-plan 1.13; developer-rules.md rul
         // A new product of the seed points at the found category.
         const daftar = await fresh.query("select category_id from products where name = 'Daftar'");
         expect(daftar.rows[0].category_id).toBe(category.rows[0].id);
+        const brand = await fresh.query(
+          "select name from products where default_company_id = $1 order by name",
+          [company.rows[0].id],
+        );
+        expect(brand.rows.map((row) => row.name)).toEqual(["Qo'lqop", "Suyuq sovun"]);
       }
     });
   });
