@@ -13,6 +13,10 @@ import { priceHistory, productVariants, products, users } from "@/server/db/sche
 // current price is `product_variants.reference_price`, which the deferred check `price_recorded`
 // of migration 0014 keeps equal to the newest HEAD row; "set on" and "set by" are that row's.
 // Inactive subtypes and products stay in the list, marked (decision 12; 04 rule 2).
+// From 3.2 the history also holds PURCHASE rows, which come from one branch's purchases. Before
+// getPriceHistory is given to a role other than the Head, or shown on a screen such a role can
+// reach, it needs branchFilter() on those rows: otherwise one branch's purchases would show to
+// another (developer-rules.md rule 4; permission review of 1.9).
 
 export type PriceRow = {
   variantId: string;

@@ -12,7 +12,7 @@ import { auditLog, users } from "@/server/db/schema";
 // It has no branch filter, because the Head sees every branch. Before a permission another role
 // holds is given to it, it needs branchFilter() on the audited record's branch: otherwise a
 // branch's history would show to another branch (developer-rules.md rule 4; permission review
-// of 0.9).
+// of 0.9). The same holds for the second record of `also` (1.9), which only a server page builds.
 
 const CHANGE_HISTORY_PAGE_SIZE = 50;
 
