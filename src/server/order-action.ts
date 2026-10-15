@@ -237,12 +237,16 @@ async function repeated<Input extends OrdersInput>(
 ): Promise<OrdersResult | null> {
   // Two calls with one key wait for each other here; the second finds the first's row.
   await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${clientKey}, 0))`);
-  const stored = await tx.execute<{ id: string; actor_id: string }>(
-    sql`select id, actor_id from order_actions where client_key = ${clientKey}`,
+  const stored = await tx.execute<{ id: string; actor_id: string; type: OrderAction }>(
+    sql`select id, actor_id, type from order_actions where client_key = ${clientKey}`,
   );
   const action = stored.rows[0];
   if (!action) return null;
-  if (action.actor_id !== userId) throw new OrdersRefusal("not_found");
+  // A key of another user, or of another action of the same user: the first result is not this
+  // action's, and its permission would be judged by the wrong move (permission review of 2.4).
+  if (action.actor_id !== userId || action.type !== definition.type) {
+    throw new OrdersRefusal("not_found");
+  }
 
   const events = await tx.execute<{
     order_id: string;

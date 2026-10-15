@@ -384,6 +384,16 @@ describe("the same client_key twice returns the first result (developer-rules ru
     );
   });
 
+  it("the same key of the same user through another action is not_found (permission review)", async () => {
+    const [one] = await placed(1);
+    const input = { ...ticked([one!]), reason: "Endi kerak emas" };
+    expectOk(await runOrdersAction(move("REJECT"), head.id, input));
+    expect(expectRefused(await runOrdersAction(move("CANCEL"), head.id, input)).code).toBe(
+      "not_found",
+    );
+    expect(await actionsWith(input.clientKey)).toHaveLength(1);
+  });
+
   it("a repeat after the Manager's right was switched off is forbidden (decisions 0.8 no. 3)", async () => {
     const owner = await insertUser("MANAGER", { branches: [branchId] });
     const [one] = await placed(1, { ownerId: owner.id });
