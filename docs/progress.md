@@ -664,6 +664,7 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 **What the next sessions must know**
 - Every status move calls `assertMove()` (server) or `allowedActions()` (screen); no other code compares statuses to decide a move.
 - For 2.4: `order_actions.type` and `order_events.type` take the `ORDER_ACTIONS` codes for the moves, plus the non-move events 2.4 decides. Raise `version` on every move, so decision 11 (one action across statuses) stays safe. Map `OrderMoveRefused`: `not_found` → `not_found`, `wrong_status` → `wrong_status`, `forbidden` → `forbidden`, `not_ready` and `reason` → `invalid_input` or a code of its own (2.4 decides); name every failing order.
+- For 2.4: read every field of `OrderState` (branch, owner, `createdByHead`, the owner's `CLOSE_ALONE`) from the locked order and its owner inside the transaction, never from the input (developer-rules rule 13), with a test that a forged one has no effect; add the actions to the database matrix test.
 - For 2.4 and 2.7: a taken-back Draft keeps its number and revision; only `SUBMIT_AGAIN` raises the revision (`PlannedMove.revisionUp`). `headStepAuto` is logged as "Created by Head".
 - For phases 3 and 4: `ownerClosesAlone` is `true` when the owner is the Head or a Manager with `CLOSE_ALONE` on; a phase-2 caller passes `false` for the facts not built yet.
 - A Draft of another user is `not_found` for everyone but its owner and the Head.
