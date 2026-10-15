@@ -38,7 +38,7 @@ COPY scripts/start.sh scripts/db-migrate.mjs scripts/apply-migrations.mjs ./scri
 COPY src/server/db/connection-options.mjs ./src/server/db/connection-options.mjs
 # The demo users of the test copy and the storage check (build-plan 0.15). tests/image-files.test.ts
 # checks that every file these import is copied here.
-COPY scripts/db-seed.mjs scripts/seed.mjs scripts/first-head.mjs scripts/storage-check.mjs scripts/ensure-bucket.mjs ./scripts/
+COPY scripts/db-seed.mjs scripts/seed.mjs scripts/seed-catalogs.mjs scripts/first-head.mjs scripts/storage-check.mjs scripts/ensure-bucket.mjs ./scripts/
 COPY src/server/audit-row.mjs ./src/server/audit-row.mjs
 COPY src/server/auth/password-user.mjs ./src/server/auth/password-user.mjs
 COPY src/domain/audit-secrets.mjs ./src/domain/audit-secrets.mjs

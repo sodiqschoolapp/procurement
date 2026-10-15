@@ -7,6 +7,7 @@ import { parse } from "pg-connection-string";
 import { insertAuditRow } from "../src/server/audit-row.mjs";
 import { insertPasswordUser } from "../src/server/auth/password-user.mjs";
 import { FIRST_HEAD_LOCK } from "./first-head.mjs";
+import { seedCatalogs } from "./seed-catalogs.mjs";
 
 /** The variable of the local .env that holds each seed user's password (plan of 0.14, decision 3). */
 export const SEED_PASSWORD_VARIABLES = /** @type {const} */ ({
@@ -120,7 +121,10 @@ export function seedPasswords(env) {
  * @param {import("pg").ClientBase} client a connected client, not inside a transaction
  * @param {Record<string, string | undefined>} env where the passwords are read
  * @param {Date} moment the time of the rows, from the caller (CLAUDE.md rule 10)
- * @returns {Promise<string[]>} one line per row, "created …" or "kept …"
+ * The catalogs follow (build-plan 1.13, scripts/seed-catalogs.mjs), in the same transaction; their
+ * outcome is returned, not printed (review of the plan of 1.13, correction 1).
+ * @returns {Promise<{ lines: string[], catalogs: { catalog: string, created: number, kept: number }[] }>}
+ *   `lines`: one per branch and user, "created …" or "kept …"; `catalogs`: the counts per catalog
  */
 export async function seed(client, env, moment) {
   const passwords = seedPasswords(env);
@@ -221,8 +225,13 @@ export async function seed(client, env, moment) {
       userLines.set(user.username, done.line);
     }
 
+    const catalogs = await seedCatalogs(query, { headId: head.id, branchIds, moment });
+
     await client.query("commit");
-    return [...branchLines, ...SEED_USERS.map((user) => userLines.get(user.username))];
+    return {
+      lines: [...branchLines, ...SEED_USERS.map((user) => userLines.get(user.username))],
+      catalogs,
+    };
   } catch (error) {
     await client.query("rollback");
     throw error;
