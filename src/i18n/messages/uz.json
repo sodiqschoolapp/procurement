@@ -682,22 +682,26 @@
     "sources": {
       "HEAD": "Rahbar",
       "PURCHASE": "Xarid"
-    }
+    },
+    "importButton": "Narxlarni import qilish"
   },
   "imports": {
     "back": "Orqaga",
     "title": {
       "products": "Mahsulot va xizmatlarni import qilish",
-      "departments": "Boʻlimlarni import qilish"
+      "departments": "Boʻlimlarni import qilish",
+      "prices": "Narxlarni import qilish"
     },
     "description": {
       "products": "Bitta Excel faylidan koʻplab yangi mahsulot va xizmatlarni, ularning turlari va narxlari bilan qoʻshing.",
-      "departments": "Bitta Excel faylidan istalgan filialning koʻplab boʻlimlarini qoʻshing."
+      "departments": "Bitta Excel faylidan istalgan filialning koʻplab boʻlimlarini qoʻshing.",
+      "prices": "Bitta Excel faylidan koʻplab turlarning yangi narxlarini birdaniga yuklang. Har bir yangi narx izohi bilan narxlar tarixida saqlanadi."
     },
     "templateHeading": "Shablon",
     "templateText": {
       "products": "Turlari yoʻq har bir mahsulot uchun bitta qator yoki har bir tur uchun mahsulot nomi takrorlangan bitta qator. Toifa, oʻlchov birligi va kompaniya maʼlumotnomada boʻlishi kerak.",
-      "departments": "Har bir boʻlim uchun bitta qator. Filial qisqa kodi bilan yoziladi, masalan TSH."
+      "departments": "Har bir boʻlim uchun bitta qator. Filial qisqa kodi bilan yoziladi, masalan TSH.",
+      "prices": "Har bir tur uchun bitta qator. Turlari yoʻq mahsulot uchun tur katagini boʻsh qoldiring. Mahsulot va tur maʼlumotnomada boʻlishi kerak; izohda narx nega oʻzgarishi yoziladi."
     },
     "download": "Shablonni yuklab olish",
     "fileHeading": "Fayl",
@@ -716,7 +720,8 @@
     "saved": "{rows} ta qator import qilindi.",
     "sheet": {
       "products": "Mahsulotlar",
-      "departments": "Boʻlimlar"
+      "departments": "Boʻlimlar",
+      "prices": "Narxlar"
     },
     "columns": {
       "products": {
@@ -734,6 +739,12 @@
         "name": "Nomi",
         "responsibleName": "Masʼul shaxs",
         "responsiblePhone": "Masʼul shaxs telefoni"
+      },
+      "prices": {
+        "name": "Mahsulot nomi",
+        "subtype": "Tur",
+        "price": "Yangi narx",
+        "note": "Izoh"
       }
     }
   }

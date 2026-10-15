@@ -50,14 +50,25 @@ export default async function PricesPage({ searchParams }: { searchParams: Promi
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-6">
       <AdminNav current="prices" />
-      <h1 className="flex flex-wrap items-baseline gap-x-3 text-[28px] leading-[34px] font-bold tracking-[-0.01em]">
-        {t("title")}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="flex flex-wrap items-baseline gap-x-3 text-[28px] leading-[34px] font-bold tracking-[-0.01em]">
+          {t("title")}
+          {!empty && (
+            <span className="text-[15px] leading-[22px] font-normal tracking-normal text-muted-foreground">
+              {t("summary", { count: list.found })}
+            </span>
+          )}
+        </h1>
+        {/* The Excel import of prices (build-plan 1.11), once there is a subtype to price. */}
         {!empty && (
-          <span className="text-[15px] leading-[22px] font-normal tracking-normal text-muted-foreground">
-            {t("summary", { count: list.found })}
-          </span>
+          <Link
+            href="/catalog/import/prices"
+            className={buttonVariants({ variant: "secondary", className: "w-full sm:w-auto" })}
+          >
+            {t("importButton")}
+          </Link>
         )}
-      </h1>
+      </div>
 
       {empty ? (
         <EmptyState title={t("emptyTitle")} line={t("emptyText")} />

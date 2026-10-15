@@ -9,9 +9,9 @@ import type { ActionResult } from "@/server/action-result";
 import type { CurrentUser } from "@/server/auth/session";
 import { AuthorizationError } from "@/server/authorize";
 import { db } from "@/server/db/client";
-import { branches, products } from "@/server/db/schema";
+import { branches, productVariants, products } from "@/server/db/schema";
 
-import { insertCategory, insertUnit } from "../../../../../tests/helpers/catalog";
+import { insertCategory, insertProduct, insertUnit } from "../../../../../tests/helpers/catalog";
 import { type Value, importSheet, productRow } from "../../../../../tests/helpers/imports";
 import { describePermissionMatrix } from "../../../../../tests/helpers/permission-matrix";
 import { type InsertedUser, insertUser } from "../../../../../tests/helpers/users";
@@ -125,6 +125,39 @@ describePermissionMatrix("saveImportAction, departments", {
   },
 });
 
+/** A prices file of one product without subtypes, as a Head fills the template (plan of 1.11). */
+async function pricesFile(): Promise<{ file: File; variantId: string }> {
+  const product = await insertProduct({ name: `Narx ${randomUUID().slice(0, 8)}` });
+  const book = new ExcelJS.Workbook();
+  const page = book.addWorksheet("Narxlar");
+  page.addRow(
+    importSheet("prices", [], "uz").header.map((cell) => (cell.kind === "text" ? cell.text : null)),
+  );
+  page.addRow([product.name, null, 15000, "Yangi narx"]);
+  const file = new File([new Uint8Array(await book.xlsx.writeBuffer())], "narxlar.xlsx");
+  return { file, variantId: product.defaultVariantId };
+}
+
+// The prices import under price.add (03 Permission matrix, "Add a new price for a product"; plan
+// of 1.11, decision 4, Look first).
+describePermissionMatrix("saveImportAction, prices", {
+  permission: "price.add",
+  async run({ user }) {
+    const { file } = await pricesFile();
+    signedIn(user);
+    asMatrixAnswer(await saveImportAction(formOf(file, "prices")));
+  },
+});
+
+describePermissionMatrix("previewImportAction, prices", {
+  permission: "price.add",
+  async run({ user }) {
+    const { file } = await pricesFile();
+    signedIn(user);
+    asMatrixAnswer(await previewImportAction(formOf(file, "prices")));
+  },
+});
+
 describe("the import page actions (plan of 1.10; plan review, correction 1)", () => {
   it("a Manager's, Principal's or Finance user's upload is refused before the file is read", async () => {
     const { file, name } = await validFile();
@@ -168,9 +201,32 @@ describe("the import page actions (plan of 1.10; plan review, correction 1)", ()
       ok: false,
       error: { code: "invalid_input", fields: { file: "errors.field.notTemplate" } },
     });
-    expect(await previewImportAction(formOf(file, "prices"))).toMatchObject({
+    // An unknown kind ("prices" was one until 1.11 made it a kind).
+    expect(await previewImportAction(formOf(file, "stock"))).toMatchObject({
       ok: false,
-      error: { code: "invalid_input" },
+      error: { code: "invalid_input", fields: { kind: "errors.field.notAllowed" } },
     });
+  });
+});
+
+describe("the prices import page actions (plan of 1.11, decision 4)", () => {
+  it("a Manager's, Principal's or Finance user's prices file is refused before it is read; the Head's sets the price", async () => {
+    const { file, variantId } = await pricesFile();
+    for (const role of ["MANAGER", "PRINCIPAL", "FINANCE"] as const) {
+      signedIn(await insertUser(role));
+      expect((await previewImportAction(formOf(file, "prices"))).ok).toBe(false);
+      expect((await saveImportAction(formOf(file, "prices"))).ok).toBe(false);
+    }
+    expect(reader.calls).toBe(0);
+    signedIn(await insertUser("HEAD"));
+    expect(await saveImportAction(formOf(file, "prices"))).toMatchObject({
+      ok: true,
+      data: { rows: 1 },
+    });
+    const [row] = await db
+      .select({ price: productVariants.referencePrice })
+      .from(productVariants)
+      .where(eq(productVariants.id, variantId));
+    expect(row!.price).toBe(15000n);
   });
 });

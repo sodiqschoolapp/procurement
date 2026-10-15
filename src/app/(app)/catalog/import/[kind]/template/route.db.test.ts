@@ -29,6 +29,17 @@ describePermissionMatrix("GET /catalog/import/[kind]/template", {
   },
 });
 
+// The prices template under price.add (03, "Add a new price for a product"; plan of 1.11,
+// decision 4, Look first).
+describePermissionMatrix("GET /catalog/import/prices/template", {
+  permission: "price.add",
+  async run({ user }) {
+    const response = await get("prices", await signInAs(user));
+    if (response.status === 404) throw new AuthorizationError("forbidden");
+    expect(response.status).toBe(200);
+  },
+});
+
 describe("the template (plan of 1.10, decisions 10 and 16)", () => {
   it("is a workbook with the titles in the Head's language and no rows", async () => {
     const head = await insertUser("HEAD");
@@ -40,9 +51,20 @@ describe("the template (plan of 1.10, decisions 10 and 16)", () => {
     expect(sheet.rows).toEqual([]);
   });
 
-  it("an unknown kind is 404; signed out is 401", async () => {
+  it("the prices template has its four titles (plan of 1.11)", async () => {
     const head = await insertUser("HEAD");
-    expect((await get("prices", await signInAs(head))).status).toBe(404);
+    const response = await get("prices", await signInAs(head));
+    expect(response.status).toBe(200);
+    const sheet = await readSheet(new Uint8Array(await response.arrayBuffer()));
+    expect(sheet.header).toHaveLength(4);
+    expect(sheet.rows).toEqual([]);
+  });
+
+  it("an unknown kind is 404, for a Manager too; signed out is 401", async () => {
+    const head = await insertUser("HEAD");
+    // "prices" was the unknown kind here until 1.11 made it one.
+    expect((await get("stock", await signInAs(head))).status).toBe(404);
+    expect((await get("stock", await signInAs(await insertUser("MANAGER")))).status).toBe(404);
     expect((await get("products")).status).toBe(401);
   });
 });

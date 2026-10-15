@@ -1,24 +1,27 @@
 import {
   IMPORT_COLUMNS,
+  IMPORT_PERMISSIONS,
   type ImportCell,
   type ImportError,
   type ImportKind,
   type ImportSheet,
   headerMatches,
   readDepartmentRows,
+  readPriceRows,
   readProductRows,
 } from "@/domain/imports";
 import { authorize } from "@/server/authorize";
 import { db } from "@/server/db/client";
 
-import { checkDepartmentImport, checkProductImport } from "../imports/check";
+import { checkDepartmentImport, checkPriceImport, checkProductImport } from "../imports/check";
 import { PRODUCT_TYPE_WORDS, everyImportTitles } from "../imports/titles";
 
 // The preview of an Excel import (04-catalogs.md rule 7: "The import shows a preview with errors
-// per row"; build-plan 1.10). Under catalog.manage (Head only; 03, "Manage catalogs …"). It reads
-// the rows with the same domain functions and checks them against the catalog with the same
-// queries as the save, without locks, and writes nothing. The save checks everything again (plan
-// of 1.10, decision 5): the preview is advice, the save the gate.
+// per row"; build-plans 1.10 and 1.11). Under the kind's permission: catalog.manage for products
+// and departments, price.add for prices (Head only; 03 Permission matrix; plan of 1.11, decision 4,
+// Look first). It reads the rows with the same domain functions and checks them against the
+// catalog with the same queries as the save, without locks, and writes nothing. The save checks
+// everything again (plan of 1.10, decision 5): the preview is advice, the save the gate.
 
 /** A row as the preview shows it: its number and each column's text as typed. */
 export type PreviewRow = { row: number; texts: string[] };
@@ -43,7 +46,7 @@ export async function previewImport(
   kind: ImportKind,
   sheet: ImportSheet,
 ): Promise<ImportPreview> {
-  await authorize(userId, "catalog.manage");
+  await authorize(userId, IMPORT_PERMISSIONS[kind]);
   const width = IMPORT_COLUMNS[kind].length;
   const rows = sheet.rows
     .map((row) => ({
@@ -61,6 +64,14 @@ export async function previewImport(
       return { kind, rows: [], errors: read.errors };
     }
     const checked = await checkProductImport(db, read.products, { lock: false });
+    return { kind, rows, errors: ordered([...read.errors, ...checked.errors], kind) };
+  }
+  if (kind === "prices") {
+    const read = readPriceRows(sheet);
+    if (read.errors.some((error) => error.column === "file")) {
+      return { kind, rows: [], errors: read.errors };
+    }
+    const checked = await checkPriceImport(db, read.named, { lock: false });
     return { kind, rows, errors: ordered([...read.errors, ...checked.errors], kind) };
   }
   const read = readDepartmentRows(sheet);

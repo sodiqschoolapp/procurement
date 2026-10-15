@@ -2,14 +2,11 @@ import { eq } from "drizzle-orm";
 import * as z from "zod";
 
 import { isClientKey } from "@/components/client-key";
-import { SUBTYPES } from "@/domain/catalogs";
 import { GLOBAL_TARGET, defineAction } from "@/server/action";
-import { audit } from "@/server/audit";
-import { now } from "@/server/clock";
 import { priceHistory, productVariants, products } from "@/server/db/schema";
 
 import { priceNoteField, requiredPriceField } from "./catalog-fields";
-import { recordHeadPrice } from "./price-rows";
+import { recordPriceAdd, setHeadPrice } from "./price-rows";
 
 // A new reference price (04-catalogs.md rule 4: "When a price changes, the Head adds the new price
 // with a short note, and older prices stay in the price history"; A14: one price per subtype for
@@ -79,14 +76,9 @@ export const addPrice = defineAction({
     return row ? { target: GLOBAL_TARGET, rows: row } : null;
   },
   async write({ tx, input, userId }): Promise<AddedPrice> {
-    await tx
-      .update(productVariants)
-      .set({ referencePrice: input.price })
-      .where(eq(productVariants.id, input.variantId));
-    const written = await recordHeadPrice(tx, {
+    const written = await setHeadPrice(tx, userId, {
       variantId: input.variantId,
       price: input.price,
-      setBy: userId,
       note: input.note,
       clientKey: input.clientKey,
     });
@@ -103,17 +95,13 @@ export const addPrice = defineAction({
       .select({ name: products.name })
       .from(products)
       .where(eq(products.id, current.productId));
-    const parent = { productId: current.productId, product: product?.name ?? null };
-    await audit(
-      { tx, userId },
-      {
-        action: "price.add",
-        entity: SUBTYPES.entity,
-        entityId: added.variantId,
-        before: { ...parent, referencePrice: current.referencePrice },
-        after: { ...parent, referencePrice: added.referencePrice, note: added.note },
-        at: now(),
-      },
-    );
+    await recordPriceAdd(tx, userId, {
+      variantId: added.variantId,
+      productId: current.productId,
+      product: product?.name ?? null,
+      before: current.referencePrice,
+      price: added.referencePrice,
+      note: added.note,
+    });
   },
 });
