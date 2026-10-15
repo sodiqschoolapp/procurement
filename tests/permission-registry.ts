@@ -59,6 +59,11 @@ export const SERVER_ACTIONS: Record<string, Entry> = {
   // before the file is read (plan review, correction 1).
   "src/app/(app)/catalog/import/actions.ts#previewImportAction": "catalog.manage",
   "src/app/(app)/catalog/import/actions.ts#saveImportAction": "catalog.manage",
+  // Product suggestions (plan of 1.12, decisions 1 and 2, Look first): suggesting is
+  // catalog.suggest on the branch; adding and declining are the Head's catalog.manage.
+  "src/app/(app)/suggestions/actions.ts#suggestProductAction": "catalog.suggest",
+  "src/app/(app)/suggestions/actions.ts#addSuggestedProductAction": "catalog.manage",
+  "src/app/(app)/suggestions/actions.ts#declineSuggestionAction": "catalog.manage",
 };
 
 /** Exports of `src/features/<area>/queries/`, as `<file>#<export>`. */
@@ -91,6 +96,11 @@ export const QUERIES: Record<string, Permission> = {
   // Prices: the Admin list and one subtype's price history (plan of 1.9, decision 4, Look first).
   "src/features/catalog/queries/prices.ts#listPrices": "catalog.manage",
   "src/features/catalog/queries/prices.ts#getPriceHistory": "catalog.manage",
+  // Product suggestions: the list and one suggestion under the branch wall, the Head's count of
+  // pending ones for /catalog (plan of 1.12, decision 1, Look first).
+  "src/features/catalog/queries/suggestions.ts#listSuggestions": "catalog.suggest",
+  "src/features/catalog/queries/suggestions.ts#getSuggestion": "catalog.suggest",
+  "src/features/catalog/queries/suggestions.ts#countPendingSuggestions": "catalog.manage",
   // The preview of an Excel import (plan of 1.10).
   "src/features/catalog/queries/imports.ts#previewImport": "catalog.manage",
   // The Head's users, the vacancy warning and the form's branches (plan of 1.3).

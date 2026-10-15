@@ -61,14 +61,18 @@ const columns = {
 
 /**
  * One page of suggestions: of the branch view's branch, or of every branch the person sees when
- * `branchId` is null; pending first, then newest. A page past the last gives the last.
+ * `branchId` is null; pending first, then newest. A page past the last gives the last. A branch
+ * view is authorized on that branch, so another branch is "Not found" (03 rule 1); the branch
+ * filter stays in the SQL either way.
  */
 export async function listSuggestions(
   userId: string,
   options: { page?: number; branchId?: string | null } = {},
 ): Promise<SuggestionPage> {
-  const actor = await authorizeList(userId, "catalog.suggest");
   const branchId = branchInput.parse(options.branchId ?? null);
+  const actor = branchId
+    ? await authorize(userId, "catalog.suggest", { branchId })
+    : await authorizeList(userId, "catalog.suggest");
   // Loaded here, not at the top: `next build` has no DATABASE_URL (progress 0.6).
   const { db } = await import("@/server/db/client");
   const where = and(
