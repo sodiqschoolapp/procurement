@@ -21,7 +21,7 @@ Movements are never edited or deleted. A wrong document is fixed with "Reverse",
 
 ## Direct entry by the Head
 
-The Head can put items into any branch's stock without a request. This is how everything the school already owns enters the system at the start. After that, stock normally comes in only through requests, and direct entry is kept for exceptions such as gifts.
+The Head can put items into any branch's stock without an order. This is how everything the school already owns enters the system at the start. After that, stock normally comes in only through orders, and direct entry is kept for exceptions such as gifts.
 
 | Field | Rule |
 | --- | --- |
@@ -51,25 +51,25 @@ This is the function you described, extended so one document can hold several it
 | Comment | Optional. |
 
 1. Quantity cannot be more than the stock. The server checks again under a lock at the moment of saving and names the item and the available amount if it fails.
-2. Each issue gets a number like `ISS-CHL-26-0031` and a formal PDF with "Given by" and "Received by" signature lines.
+2. Each issue gets a number like `ISS-CHL-26-0031` and a PDF issue note naming who gave the items and who received them, as typed. There are no signature lines (owner's decision of 15 October 2026).
 3. A posted issue can be reversed by its creator or the Head. The original is then marked "Reversed".
 
 ## Other documents
 
 - **Return from a department.** Pick the department, items and quantities; stock goes up. Returning more than that department ever received shows a warning and needs a comment.
-- **Transfer.** The sender picks the other branch and the items; stock leaves the sender at once and the transfer shows "In transit". The receiving Manager enters what really arrived. Any shortage becomes a write-off request "Lost in transfer" on the sending branch for the Head to decide.
+- **Transfer.** The sender picks the other branch and the items; stock leaves the sender at once and the transfer shows "In transit". The transfer gets a number like `TRF-CHL-26-0007` and a PDF transfer note naming who sent the items and who received them, as typed, with no signature lines. The receiving Manager enters what really arrived. Any shortage becomes a write-off request "Lost in transfer" on the sending branch for the Head to decide.
 - **Write-off.** The Manager picks items, quantities and a reason from a fixed list plus a comment. Stock changes only after the Head approves.
 - **Stock count.** The Manager starts a count for a branch or a category and types the counted quantities. The system shows the differences, and the Head approves them as corrections. If an item moved between the start of the count and the approval, the system asks the Manager to count that item again.
 
 ## Stock screens
 
 - **Stock on hand.** Product, subtype, photo, quantity, measure, minimum, value. Search, category filter, "Low stock only" switch.
-- **Item card.** Every movement of one subtype in one branch, newest first, with the running balance and a link to the source document or request.
+- **Item card.** Every movement of one subtype in one branch, newest first, with the running balance and a link to the source document or order.
 - **Documents.** All issues, returns, transfers, write-offs and counts, with filters by type, date and department.
 
 ## Low stock
 
-When a quantity falls to its minimum or below, the item gets a "Low" label and appears in the Manager's home list. One button adds it to a new or existing draft request for that branch. The minimum is not a general setting: it is typed per subtype per branch, on the item card or in the Stock on hand list. An item with no minimum never shows as low.
+When a quantity falls to its minimum or below, the item gets a "Low" label and appears in the Manager's home list. One button adds it as a draft order for that branch (or raises the Manager's existing draft for it, section 5). The minimum is not a general setting: it is typed per subtype per branch, on the item card or in the Stock on hand list. An item with no minimum never shows as low.
 
 ## Stock value
 

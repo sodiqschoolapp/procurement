@@ -3,7 +3,7 @@
 > Part of the School Procurement & Warehouse Platform spec, baseline of 10 October 2026 (document revision 123).
 > Index and reading order: `docs/spec/00-index.md`. Read-only: this folder changes only through `/spec-change`.
 
-The database has 34 tables in five groups, plus the session tables the login library creates. The users table is the login library's user table with the extra columns shown. Every table has `created_at`. Every table also has `id` (UUID) unless a different key is shown: a table with its own key has no `id`. Values in square brackets are enums.
+The database has 35 tables in five groups, plus the session tables the login library creates. The users table is the login library's user table with the extra columns shown. Every table has `created_at`. Every table also has `id` (UUID) unless a different key is shown: a table with its own key has no `id`. Values in square brackets are enums.
 
 ## Organisation and catalogs
 
@@ -34,41 +34,52 @@ catalog_suggestions  branch_id, suggested_by, name, unit_text, photo_file_id, no
 files                storage_key, original_name, mime, size_bytes, uploaded_by
 ```
 
-## Requests
+## Orders
 
 ```text
-number_counters      scope [ORF|ISS|RET|TRF|WOF|CNT|ENT], branch_id, year, last_value
+number_counters      scope [ORD|ISS|RET|TRF|WOF|CNT|ENT], branch_id, year, last_value
                      KEY (scope, branch_id, year)
-orfs                 number UNIQUE (empty while Draft), revision, branch_id, owner_id,
+orders               number UNIQUE (empty while Draft), revision, branch_id, owner_id,
                      status [DRAFT|PENDING_HEAD|PENDING_PRINCIPAL|PENDING_FINANCE|RETURNED|
                              PURCHASING|SETTLEMENT|CLOSED|REJECTED|CANCELLED],
-                     priority [NORMAL|URGENT], urgent_reason, note, version,
+                     priority [NORMAL|URGENT], urgent_reason, version,
+                     variant_id, company_id, department_id, requester_name, needed_by,
+                     planned_qty, planned_price, payment_type [CASH|TRANSFER|CARD], comment,
+                     reference_photo_file_id, stock_at_submit,
+                     progress [OPEN|DONE|DONE_SHORT|NOT_BOUGHT], finish_reason,
                      planned_total, actual_total, submitted_at, approved_at, closed_at,
                      created_by, updated_at
-orf_lines            orf_id, position, variant_id, company_id, department_id, requester_name,
-                     needed_by, planned_qty, planned_price,
-                     payment_type [CASH|TRANSFER|CARD], comment, reference_photo_file_id,
-                     stock_at_submit, progress [OPEN|DONE|DONE_SHORT|NOT_BOUGHT], finish_reason
-orf_line_extras      orf_line_id, extra_cost_type_id, amount
-orf_revisions        orf_id, revision, snapshot JSONB        -- full copy at each submit
-orf_events           orf_id, type, from_status, to_status, actor_id, comment, payload JSONB
-orf_return_notes     orf_event_id, orf_line_id, note         -- line notes on "send back"
+                     -- one never-submitted draft (number empty) per owner, branch, subtype and
+                     -- department (partial unique index)
+order_extras         order_id, extra_cost_type_id, amount
+order_revisions      order_id, revision, snapshot JSONB      -- full copy at each submit
+order_actions        client_key UNIQUE, type, actor_id, reason, order_count
+                     -- one user action on one or more ticked orders
+order_events         order_id, action_id, type, from_status, to_status, actor_id,
+                     comment, note, payload JSONB            -- note: the per-order note on "send back"
 ```
 
 ## Purchasing and money
 
 ```text
-purchases            orf_line_id, client_key UNIQUE, purchased_on, variant_id, qty, unit_price,
-                     payment_type [CASH|TRANSFER|CARD], supplier_id, comment,
+purchase_trips       client_key UNIQUE, branch_id, purchased_on, supplier_id,
+                     payment_type [CASH|TRANSFER|CARD], created_by
+                     -- one shop visit; holds one or more purchase records
+purchases            trip_id, order_id, variant_id, qty, unit_price, comment,
+                     -- date, supplier and payment type are the trip's, never copied
                      give_to_requester, is_cancelled, cancel_reason, cancelled_by,
                      cancelled_at, created_by
 purchase_extras      purchase_id, extra_cost_type_id, amount, payment_type [CASH|TRANSFER|CARD]
-purchase_files       purchase_id, file_id                    KEY (purchase_id, file_id)
-money_entries        orf_id, client_key UNIQUE,
+trip_files           trip_id, file_id                        KEY (trip_id, file_id)
+money_actions        client_key, order_action_id, manager_id, occurred_on, supplier_id, document_no,
+                     file_id, comment, is_cancelled, cancel_reason, cancelled_by,
+                     cancelled_at, created_by
+                     UNIQUE (client_key, manager_id)          -- one browser id can save one action per Manager
+                     -- order_action_id: the approval or settlement it was saved with; empty on the Money tab
+money_rows           money_action_id, order_id,
                      kind [CASH_GIVEN|CASH_RETURNED|PAID_BACK|BANK_TRANSFER|CARD_TOPUP|CARD_RETURNED],
-                     amount CHECK (amount > 0), occurred_on, manager_id, supplier_id,
-                     document_no, file_id, comment, is_cancelled, cancel_reason, created_by
-orf_settlements      orf_id KEY, transfer_confirmed_by, transfer_confirmed_at, transfer_note,
+                     amount CHECK (amount > 0)
+order_settlements    order_id KEY, transfer_confirmed_by, transfer_confirmed_at, transfer_note,
                      card_confirmed_by, card_confirmed_at,
                      overspend_ack_by, overspend_ack_at, overspend_ack_comment
 ```
@@ -102,6 +113,6 @@ sessions, accounts, verifications                            -- created by the l
 ## Notes for the build
 
 - `stock_balances` is a running total kept in step with `stock_movements` inside the same transaction. A nightly job recomputes it from the movements and reports any mismatch.
-- `orfs.planned_total` and `orfs.actual_total` are cached sums for fast lists. They are recalculated by the shared domain functions in the same transaction as any change.
+- `orders.planned_total` and `orders.actual_total` are cached values for fast lists. They are recalculated by the shared domain functions in the same transaction as any change.
 - `client_key` is the browser-made ID that makes repeated saves safe (rule 8 in section 13). A partial unique index allows only one active Principal per branch. The analytics summary tables are materialized views built from these tables and are not counted above. One more settings key, `school_year_start`, holds the first day of the school year as a month and day; it has no default.
-- Settings keys: `default_payment_type`, `price_hint_percent` (20), `overspend_guard_percent` (10), `reminder_hours` (24), `escalation_hours` (48), `receipt_required_for_cash` (false), `school_name`. The logo and the colours are part of the design system, not settings.
+- Settings keys: `default_payment_type`, `price_hint_percent` (20), `overspend_guard_percent` (10), `overspend_guard_min_amount` (100 000), `reminder_hours` (24), `escalation_hours` (48), `receipt_required_for_cash` (false), `school_name`. The logo and the colours are part of the design system, not settings.
