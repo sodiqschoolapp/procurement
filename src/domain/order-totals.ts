@@ -11,7 +11,7 @@
 import Decimal from "decimal.js";
 
 import { PAYMENT_TYPES, type PaymentType } from "./payment-types";
-import { isPercent } from "./settings";
+import { isPaymentType, isPercent } from "./settings";
 
 /**
  * Our own decimal.js: the global `Decimal` keeps 20 significant digits, which would cut an
@@ -89,7 +89,7 @@ export function ordersTotals(plans: readonly OrderPlan[]): OrdersTotals {
   let goods = 0n;
   let extras = 0n;
   for (const plan of plans) {
-    if (!PAYMENT_TYPES.includes(plan.paymentType)) {
+    if (!isPaymentType(plan.paymentType)) {
       throw new RangeError(`A payment type is "${String(plan.paymentType)}": not one of the three`);
     }
     const orderGoodsValue = orderGoods(plan);

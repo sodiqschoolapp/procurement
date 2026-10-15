@@ -13,7 +13,8 @@ import uz from "./messages/uz.json";
 
 function label(messages: typeof en, locale: Locale, percent: bigint): string {
   const t = createTranslator({ locale, messages, namespace: "orders" });
-  return t("priceHint", { percent: Number(percent) });
+  // The bigint goes in as it is: Intl.NumberFormat formats it exactly at any size.
+  return t("priceHint", { percent: percent as unknown as number });
 }
 
 describe("the price hint label (05 Price hint)", () => {
@@ -28,5 +29,10 @@ describe("the price hint label (05 Price hint)", () => {
     expect(label(uz, "uz", 35n)).toContain("+35%");
     expect(label(ru, "ru", 35n)).toContain("+35%");
     expect(label(en, "en", -35n)).toBe("-35% vs catalog price");
+  });
+
+  it("formats a percent beyond 2^53 exactly (no Number conversion)", () => {
+    const huge = priceHintPercent(999_999_999_999_999n, 1n, 20);
+    expect(label(en, "en", huge!)).toBe("+99,999,999,999,999,800% vs catalog price");
   });
 });
