@@ -96,7 +96,8 @@ function changesOf(form: FormValues, loaded: FormValues): Record<string, unknown
     values.guard === "off" ? GUARD_OFF : numberOf(values.guard_percent);
   if (guardOf(form) !== guardOf(loaded)) sent.overspend_guard_percent = guardOf(form);
   // Sent as typed: the server reads the so'm (CLAUDE.md rule 6; no number touches money here).
-  if (form.guard_amount !== loaded.guard_amount) {
+  // Only while the guard is on: the hidden field keeps its value (plan of 2.1, decision 2).
+  if (form.guard === "on" && form.guard_amount !== loaded.guard_amount) {
     sent.overspend_guard_min_amount = form.guard_amount;
   }
   if (form.receipt_required_for_cash !== loaded.receipt_required_for_cash) {

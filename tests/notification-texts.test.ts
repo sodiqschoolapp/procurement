@@ -91,15 +91,6 @@ describe("notification texts by type (build-plan 0.11; rule 14)", () => {
       expect(text).toContain("DEMO");
     });
 
-    it(`${locale}: an action on orders of two branches names both (plan of 2.1, decision 3)`, () => {
-      const t = createTranslator({ locale, messages: MESSAGES[locale] });
-      const text = t("notifications.types.REQUEST_HEAD_APPROVED", {
-        ...ORDER_ACTION,
-        branch: "DEMO, ALT",
-      });
-      expect(text).toContain("DEMO, ALT");
-    });
-
     it(`${locale}: the waiting texts take the hours from the setting, not a fixed 24 (decision 3)`, () => {
       const t = createTranslator({ locale, messages: MESSAGES[locale] });
       for (const type of ["REQUEST_WAITING_24H", "REQUEST_WAITING_48H"] as const) {

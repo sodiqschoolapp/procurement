@@ -46,15 +46,18 @@ export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 /**
  * The params of an order action's notification (10, Notifications: "One action sends one
  * notification to each person told, never one per order: 'Dilnoza submitted 15 orders in CHL'").
- * `actor`: the name of the user who acted; `count`: how many orders the action covered;
- * `branch`: the codes of their branches, joined by ", ", as one action may cover ticked orders
- * of several branches (plan of 2.1, decision 3).
+ * `actor`: the name of the user who acted; `count`: how many of the action's orders are in
+ * `branch`; `branch`: one branch's code. An action on ticked orders of several branches sends one
+ * notification per branch, each with that branch's id, code and count, so nobody learns another
+ * branch's orders (03 rule 1; permission review of 2.1, Must fix 1). orderActionNotices() splits.
  */
 export type OrderActionParams = { actor: string; count: number; branch: string };
 
 /**
  * The params of a waiting reminder (10: "9 orders have waited more than 24 hours"): `hours` is
  * the setting in force (`reminder_hours`, `escalation_hours`), never a fixed 24 (decision 3).
+ * `count` covers only the branches the recipient may see: a Principal's or a Finance user's own
+ * branches, every branch for the Head (03 rule 1; permission review of 2.1, Should fix 2).
  */
 export type OrdersWaitingParams = { count: number; hours: number };
 
@@ -136,4 +139,30 @@ export const NOTIFICATIONS_MAX_PAGE = 10_000;
 export function unreadCountLabel(count: number): string | null {
   if (count <= 0) return null;
   return count > 99 ? "99+" : String(count);
+}
+
+/** One order of an action, by its branch: what orderActionNotices() needs. */
+export type OrderInBranch = { branchId: string; branchCode: string };
+
+/**
+ * The notifications of one action on ticked orders: one per branch the orders are in, with that
+ * branch's id (notify()'s branch filter), its code and its count, in the order of the codes
+ * (03 rule 1; 10, Notifications; permission review of 2.1, Must fix 1, Look first).
+ */
+export function orderActionNotices(
+  actor: string,
+  orders: readonly OrderInBranch[],
+): { branchId: string; params: OrderActionParams }[] {
+  const byBranch = new Map<string, { code: string; count: number }>();
+  for (const { branchId, branchCode } of orders) {
+    const entry = byBranch.get(branchId) ?? { code: branchCode, count: 0 };
+    entry.count += 1;
+    byBranch.set(branchId, entry);
+  }
+  return [...byBranch.entries()]
+    .sort(([, a], [, b]) => a.code.localeCompare(b.code))
+    .map(([branchId, { code, count }]) => ({
+      branchId,
+      params: { actor, count, branch: code },
+    }));
 }

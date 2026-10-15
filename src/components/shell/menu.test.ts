@@ -32,6 +32,16 @@ describe("the menu per role (11, Interface per role)", () => {
     });
   }
 
+  for (const role of ROLES) {
+    it(`${role}: Orders opens /orders and is active under it (build-plan 2.1, Done when)`, () => {
+      const orders = menuFor(role).find((item) => item.id === "orders");
+      expect(orders?.href).toBe("/orders");
+      expect(isActive(orders!, "/orders")).toBe(true);
+      expect(isActive(orders!, "/orders/1")).toBe(true);
+      expect(isActive(orders!, "/requests")).toBe(false);
+    });
+  }
+
   it("the Principal has no Admin and no Money", () => {
     const ids = menuFor("PRINCIPAL").map((item) => item.id);
     expect(ids).not.toContain("admin");

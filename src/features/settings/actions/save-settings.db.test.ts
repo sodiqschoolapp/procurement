@@ -70,6 +70,8 @@ describe("saveSettings (build-plan 1.1)", () => {
         await runAction(saveSettings, user.id, {
           price_hint_percent: 30,
           receipt_required_for_cash: true,
+          // A valid amount too (build-plan 2.1; permission review of 2.1, Should fix 1).
+          overspend_guard_min_amount: "250 000",
         }),
       ).toMatchObject({ ok: false, error: { code: "forbidden" } });
       expect(await storedRows()).toEqual([]);
