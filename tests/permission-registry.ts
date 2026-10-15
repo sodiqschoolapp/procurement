@@ -48,6 +48,11 @@ export const SERVER_ACTIONS: Record<string, Entry> = {
   "src/app/(app)/catalog/products/actions.ts#createProductAction": "catalog.manage",
   "src/app/(app)/catalog/products/actions.ts#updateProductAction": "catalog.manage",
   "src/app/(app)/catalog/products/actions.ts#setProductActiveAction": "catalog.manage",
+  // The Head's subtypes of a product (plan of 1.8).
+  "src/app/(app)/catalog/products/[id]/subtypes/actions.ts#createSubtypeAction": "catalog.manage",
+  "src/app/(app)/catalog/products/[id]/subtypes/actions.ts#updateSubtypeAction": "catalog.manage",
+  "src/app/(app)/catalog/products/[id]/subtypes/actions.ts#setSubtypeActiveAction":
+    "catalog.manage",
 };
 
 /** Exports of `src/features/<area>/queries/`, as `<file>#<export>`. */
@@ -74,6 +79,9 @@ export const QUERIES: Record<string, Permission> = {
   "src/features/catalog/queries/products.ts#getProduct": "catalog.manage",
   "src/features/catalog/queries/products.ts#listProductChoices": "catalog.manage",
   "src/features/catalog/queries/products.ts#listCategoryFilter": "catalog.manage",
+  // Subtypes: a product's real subtypes and one subtype (1.8).
+  "src/features/catalog/queries/subtypes.ts#listSubtypes": "catalog.manage",
+  "src/features/catalog/queries/subtypes.ts#getSubtype": "catalog.manage",
   // The Head's users, the vacancy warning and the form's branches (plan of 1.3).
   "src/features/users/queries/users.ts#listUsers": "catalog.manage",
   "src/features/users/queries/users.ts#getUser": "catalog.manage",

@@ -134,9 +134,9 @@
         "activate": "Mahsulot faollashtirildi"
       },
       "subtype": {
-        "create": "Tur qo'shildi",
-        "update": "Tur o'zgartirildi",
-        "deactivate": "Tur nofaol qilindi",
+        "create": "Tur qoʻshildi",
+        "update": "Tur oʻzgartirildi",
+        "deactivate": "Tur faolsizlantirildi",
         "activate": "Tur faollashtirildi"
       }
     },
@@ -526,7 +526,7 @@
       "photoFileId": "Rasm",
       "productId": "Mahsulot",
       "hasVariants": "Turlari bor",
-      "fromDefault": "Mahsulotning o'z yozuvidan yaratilgan"
+      "fromDefault": "Mahsulotning oʻz yozuvidan yaratilgan"
     },
     "hints": {
       "shortName": "Miqdor yonida yoziladi, masalan kg yoki dona.",
@@ -544,8 +544,8 @@
       "description": "Ixtiyoriy.",
       "photoFileId": "Ixtiyoriy. JPG, PNG, WebP yoki HEIC, 10 MB gacha.",
       "locked": "Qulflangan: mahsulot allaqachon ishlatilgan.",
-      "subtypePrice": "Ixtiyoriy. Butun so'mda. Narxsiz turning ma'lumotnoma narxi bo'lmaydi. Keyin u izohli yangi narx sifatida o'zgaradi.",
-      "subtypePhoto": "Ixtiyoriy. Rasm bo'lmasa, mahsulot rasmi ko'rsatiladi. JPG, PNG, WebP yoki HEIC, 10 MB gacha."
+      "subtypePrice": "Ixtiyoriy. Butun soʻmda. Narxsiz turning maʼlumotnoma narxi boʻlmaydi. Keyin u izohli yangi narx sifatida oʻzgaradi.",
+      "subtypePhoto": "Ixtiyoriy. Rasm boʻlmasa, mahsulot rasmi koʻrsatiladi. JPG, PNG, WebP yoki HEIC, 10 MB gacha."
     },
     "companyKind": {
       "choose": "Tanlang…",
@@ -629,13 +629,13 @@
     "photoAlt": "Rasm: {name}",
     "subtypes": {
       "title": "Turlari",
-      "new": "Tur qo'shish",
+      "new": "Tur qoʻshish",
       "newTitle": "{product}: yangi tur",
-      "none": "Turlari yo'q. Mahsulot o'zicha tanlanadi.",
-      "firstNote": "Bu mahsulotning birinchi turi bo'ladi. Mahsulot uchun shu paytgacha yozilgan qoldiq, so'rov qatorlari va narx unda qoladi.",
-      "pricePerSubtype": "Har bir turda o'zi",
+      "none": "Turlari yoʻq. Mahsulot oʻzicha tanlanadi.",
+      "firstNote": "Bu mahsulotning birinchi turi boʻladi. Mahsulot uchun shu paytgacha yozilgan qoldiq, soʻrov qatorlari va narx unda qoladi.",
+      "pricePerSubtype": "Har bir turda oʻzi",
       "count": "{count, plural, other {# tur}}",
-      "lastActive": "Oxirgi faol tur faol qoladi. Mahsulotni ishlatishni to'xtatish uchun mahsulotni nofaol qiling.",
+      "lastActive": "Oxirgi faol tur faol qoladi. Mahsulotdan foydalanishni toʻxtatish uchun mahsulotni faolsizlantiring.",
       "fact": "{price} · {state}"
     }
   }
