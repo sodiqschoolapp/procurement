@@ -1,8 +1,8 @@
 import { desc, eq } from "drizzle-orm";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { newClientKey } from "@/components/client-key";
-import { runAction } from "@/server/action";
+import { defineAction, runAction } from "@/server/action";
 import type { ActionResult } from "@/server/action-result";
 import { AuthorizationError } from "@/server/authorize";
 import { db } from "@/server/db/client";
@@ -231,6 +231,32 @@ describe("what a new price must carry (04 rule 4; decision 8; developer-rules ru
     expect(
       await tryPrice(other.id, product.defaultVariantId, { clientKey, price: "80000" }),
     ).toMatchObject({ ok: false, error: { code: "not_found" } });
+  });
+
+  it("a step after the price, its row and the audit row that fails leaves none of them (rule 3)", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const head = await insertUser("HEAD");
+    const product = await insertProduct({ referencePrice: 50_000n });
+    const failing = defineAction({
+      ...addPrice,
+      async notify() {
+        throw new Error("invented failure");
+      },
+    });
+    expect(
+      await runAction(failing, head.id, {
+        clientKey: newClientKey(),
+        variantId: product.defaultVariantId,
+        price: "60000",
+        note: "Yangi narx",
+      }),
+    ).toMatchObject({ ok: false, error: { code: "unexpected" } });
+    expect(await priceOf(product.defaultVariantId)).toBe(50_000n);
+    expect(await historyOf(product.defaultVariantId)).toHaveLength(1);
+    expect(
+      await db.select().from(auditLog).where(eq(auditLog.entityId, product.defaultVariantId)),
+    ).toEqual([]);
+    vi.restoreAllMocks();
   });
 
   it("two prices at one frozen moment: both kept in order, the later current (decision 11)", async () => {
