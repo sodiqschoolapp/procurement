@@ -832,5 +832,8 @@
     "declined": "Taklif rad etildi",
     "photoAlt": "{name} rasmi",
     "noPhoto": "Rasm yoʻq"
+  },
+  "orders": {
+    "priceHint": "katalog narxidan {percent, number, ::sign-always}%"
   }
 }

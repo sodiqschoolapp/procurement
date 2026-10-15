@@ -913,6 +913,28 @@ Choices made during the build:
 - `parseSomOrZero()` and `isSomOrZero()` in `src/domain/money.ts` beside `parseSom()`, for an amount where 0 has a meaning.
 - The "no request word" test reads only the visible text of an ICU message (argument names and branch keys left out); "ariza" is matched at a word's start, so "inventarizatsiya" is not caught.
 
+### 2.2 Domain: order totals (15.10.2026)
+
+The plan's decisions as the plan review of 15.10.2026 confirmed them (corrections 1 to 3 applied), and those of the build. The Look first items come first.
+
+1. **Look first** (money rule). A set's goods are the sum of each order's round(quantity × price), never round(Σ quantity × price) (08, Numbers the system calculates, last paragraph).
+2. **Look first** (money rule). Half up on a signed percent is half away from zero (decimal.js `ROUND_HALF_UP`): +12.5 → +13, −12.5 → −13. Money products are never negative (08 rounding paragraph).
+3. **Look first** (money rule). The hint threshold is compared exactly before rounding: |typed − reference| × 100 > threshold × reference, in bigints; 20.02% over 20 shows "+20%" (05 Price hint).
+4. **Look first** (money rule). The hint compares against the reference price only; no reference price, no hint (05 Price hint, field 11; 00-definitions).
+5. **Look first** (money rule). The functions take only complete, valid plans and throw `RangeError` otherwise; the quantity passes `^[0-9]{1,11}(\.[0-9]{1,3})?$` and more than 0 before decimal.js reads it; price and extras more than 0. Whether a measure allows decimals, and what a draft without a price shows, are the form's (2.5).
+6. **Look first** (money rule). A real difference that rounds to 0% (threshold 0) shows as 1% with its sign, never "+0%"; no typed price gives no hint; the threshold must pass `isPercent`, else `RangeError`.
+7. **Look first** (money rule). No cap on totals: bigint is exact at any size; `MONEY_MAX` stays the form's limit.
+8. The quantity enters as text, money as bigint; they meet only inside decimal.js (CLAUDE.md rule 6).
+9. A private decimal.js clone, precision 64, `ROUND_HALF_UP`: the global's 20 digits would cut an 11 + 15 + 3 digit product.
+10. `orders.priceHint` with an ICU `sign-always` number in three languages (CLAUDE.md rule 13; D12): uz "katalog narxidan +35%", ru "+35% к цене каталога".
+11. The domain fence refuses every `..` segment (`(^|/)\.\.(/|$)`) and `@/`, not npm packages; test files are left out (review correction 1).
+
+Choices made during the build:
+
+- `priceHintPercent` returns a bigint, and the label takes it as it is: next-intl's number format prints a bigint exactly (a test formats a percent above 2^53). The message's TypeScript type says `number`, so a caller casts (spec review, Should fix 2).
+- The payment type check reuses `isPaymentType` of `src/domain/settings.ts` (spec review, Should fix 1; developer-rules rule 1).
+- decimal.js `^10.6.0`, the range style of the other dependencies; `npm audit --omit=dev --audit-level=high` passes, with no finding for decimal.js (the four moderate findings are drizzle-kit's, as on `main`).
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

@@ -832,5 +832,8 @@
     "declined": "Suggestion declined",
     "photoAlt": "Photo of {name}",
     "noPhoto": "No photo"
+  },
+  "orders": {
+    "priceHint": "{percent, number, ::sign-always}% vs catalog price"
   }
 }

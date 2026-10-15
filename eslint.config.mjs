@@ -78,6 +78,45 @@ export const OWN_TRANSACTION_SELECTORS = [
   },
 ];
 
+// The import limits of all app code, named so that a later block setting
+// `no-restricted-imports` for its files spreads them in: flat config replaces the rule's options.
+// One icon set only: Material Symbols Rounded through src/components/icon.tsx. A later
+// `shadcn add` writes lucide imports (components.json keeps "iconLibrary": "lucide"); they are
+// replaced, never installed (D25; design system "What we never do" 10).
+export const ICON_IMPORT_PATHS = [
+  {
+    name: "lucide-react",
+    message: "lucide is not installed (D25). Draw icons with <Icon> of src/components/icon.tsx.",
+  },
+];
+
+// Only tests may fix or ask about the test clock: app code that imported the setter could move
+// business dates on any server whose NODE_ENV is not "production" (permission review of 0.4).
+export const TEST_CLOCK_IMPORT_PATTERNS = [
+  {
+    group: ["@/server/clock", "**/server/clock", "./clock"],
+    importNames: ["setTestClock", "isTestClockSet"],
+    message: "The test clock is for tests only (tests/helpers/clock.ts). App code reads now().",
+  },
+];
+
+// CLAUDE.md, Repository layout: "src/domain/ pure business rules and the state machine; no
+// imports from outside this folder" (.claude/rules/domain.md; plan of 2.2, decision 11). The
+// folder has no subfolders, so any `..` segment leaves it; npm packages (decimal.js) stay open.
+// tests/domain-import-fence.test.ts lints samples.
+export const DOMAIN_IMPORT_PATTERNS = [
+  {
+    regex: "(^|/)\\.\\.(/|$)",
+    message:
+      "leaves src/domain/. Business rules import only from their own folder (CLAUDE.md, Repository layout).",
+  },
+  {
+    regex: "^@/",
+    message:
+      "leaves src/domain/. Business rules import only from their own folder (CLAUDE.md, Repository layout).",
+  },
+];
+
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
@@ -104,25 +143,21 @@ const eslintConfig = defineConfig([
     rules: {
       "no-restricted-imports": [
         "error",
+        { paths: ICON_IMPORT_PATHS, patterns: TEST_CLOCK_IMPORT_PATTERNS },
+      ],
+    },
+  },
+  {
+    // The domain fence. It sets `no-restricted-imports` again, so it spreads the two lists of the
+    // block above back in. Tests are left out: they read helpers under tests/.
+    files: ["src/domain/**"],
+    ignores: ["**/*.test.ts", "**/*.test.tsx"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
         {
-          // One icon set only: Material Symbols Rounded through src/components/icon.tsx. A later
-          // `shadcn add` writes lucide imports (components.json keeps "iconLibrary": "lucide");
-          // they are replaced, never installed (D25; design system "What we never do" 10).
-          paths: [
-            {
-              name: "lucide-react",
-              message:
-                "lucide is not installed (D25). Draw icons with <Icon> of src/components/icon.tsx.",
-            },
-          ],
-          patterns: [
-            {
-              group: ["@/server/clock", "**/server/clock", "./clock"],
-              importNames: ["setTestClock", "isTestClockSet"],
-              message:
-                "The test clock is for tests only (tests/helpers/clock.ts). App code reads now().",
-            },
-          ],
+          paths: ICON_IMPORT_PATHS,
+          patterns: [...TEST_CLOCK_IMPORT_PATTERNS, ...DOMAIN_IMPORT_PATTERNS],
         },
       ],
     },
