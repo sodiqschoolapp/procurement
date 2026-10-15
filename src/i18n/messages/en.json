@@ -231,7 +231,7 @@
     "menuLabel": "Main menu",
     "menu": {
       "home": "Home",
-      "requests": "Requests",
+      "orders": "Orders",
       "warehouse": "Warehouse",
       "stock": "Stock",
       "money": "Money",
@@ -261,19 +261,19 @@
     "empty": {
       "MANAGER": {
         "title": "Nothing to do yet",
-        "line": "Requests sent back to you, your drafts, your open requests, the cash you hold, low stock and lines due soon will appear here."
+        "line": "Orders sent back to you, your drafts, your open orders, the cash you hold, low stock and lines due soon will appear here."
       },
       "HEAD": {
         "title": "Nothing to decide yet",
-        "line": "Requests waiting for your approval, overspends, write-offs, product suggestions and stuck requests across all branches will appear here."
+        "line": "Orders waiting for your approval, overspends, write-offs, product suggestions and stuck orders across all branches will appear here."
       },
       "PRINCIPAL": {
         "title": "Nothing to approve yet",
-        "line": "Requests waiting for your approval and your branch's requests and spending will appear here."
+        "line": "Orders waiting for your approval and your branch's orders and spending will appear here."
       },
       "FINANCE": {
         "title": "Nothing to approve yet",
-        "line": "Requests waiting for your approval, requests waiting for settlement and money with managers will appear here."
+        "line": "Orders waiting for your approval, orders waiting for settlement and money with managers will appear here."
       }
     },
     "suggest": "Suggest a product"
@@ -295,15 +295,26 @@
     "notYours": "This notification is not yours or no longer exists. The list has been reloaded.",
     "empty": {
       "title": "No notifications yet",
-      "line": "When a request, money or stock needs you, you are told here."
+      "line": "When an order, money or stock needs you, you are told here."
     },
     "previous": "Newer",
     "next": "Older",
     "page": "Page {page}",
     "pages": "Pages of notifications",
     "types": {
+      "REQUEST_SUBMITTED": "{actor} submitted {count, plural, one {# order} other {# orders}} in {branch}.",
+      "REQUEST_HEAD_APPROVED": "The Procurement Head {actor} approved {count, plural, one {# order} other {# orders}} in {branch}.",
+      "REQUEST_PRINCIPAL_APPROVED": "The Principal {actor} approved {count, plural, one {# order} other {# orders}} in {branch}.",
+      "REQUEST_FINANCE_APPROVED": "Finance ({actor}) approved {count, plural, one {# order} other {# orders}} in {branch}.",
+      "REQUEST_SENT_BACK": "{actor} sent back {count, plural, one {# order} other {# orders}} in {branch} for editing.",
+      "REQUEST_REJECTED": "{actor} rejected {count, plural, one {# order} other {# orders}} in {branch}.",
+      "REQUEST_SENT_TO_SETTLEMENT": "{actor} sent {count, plural, one {# order} other {# orders}} in {branch} to settlement.",
+      "REQUEST_CLOSED": "{actor} closed {count, plural, one {# order} other {# orders}} in {branch}.",
+      "REQUEST_REOPENED": "{actor} reopened {count, plural, one {# order} other {# orders}} in {branch}.",
+      "REQUEST_WAITING_24H": "{count, plural, one {# order has} other {# orders have}} waited more than {hours, plural, one {# hour} other {# hours}} for your approval.",
+      "REQUEST_WAITING_48H": "{count, plural, one {# order has} other {# orders have}} waited more than {hours, plural, one {# hour} other {# hours}} for approval.",
       "BRANCH_ROLE_VACANT": "Branch {branch} has no active {role, select, HEAD {Procurement Head} MANAGER {Manager} PRINCIPAL {Principal} FINANCE {Finance user} other {user}}.",
-      "MANAGER_RIGHT_SWITCHED": "The Procurement Head switched {state, select, on {on} other {off}} your right: {right, select, CREATE_REQUESTS {Create and submit requests} RECORD_PURCHASES {Record purchases} CANCEL_PURCHASES {Cancel purchase records} CLOSE_ALONE {Close exact-match requests alone} ISSUE_STOCK {Issue stock to departments} RETURN_REVERSE {Take returns and reverse documents} TRANSFER_STOCK {Send transfers to other branches} WRITE_OFF_COUNT {Ask for write-offs and run stock counts} SET_MINIMUMS {Set minimum stock levels} other {?}}.",
+      "MANAGER_RIGHT_SWITCHED": "The Procurement Head switched {state, select, on {on} other {off}} your right: {right, select, CREATE_REQUESTS {Add and submit orders} RECORD_PURCHASES {Record purchases} CANCEL_PURCHASES {Cancel purchase records} CLOSE_ALONE {Close exact-match orders alone} ISSUE_STOCK {Issue stock to departments} RETURN_REVERSE {Take returns and reverse documents} TRANSFER_STOCK {Send transfers to other branches} WRITE_OFF_COUNT {Ask for write-offs and run stock counts} SET_MINIMUMS {Set minimum stock levels} other {?}}.",
       "PRODUCT_SUGGESTED": "New product suggestion from branch {branch}: {name}.",
       "PRODUCT_SUGGESTION_DECIDED": "Your suggestion “{name}” was {outcome, select, added {added to the catalog} other {declined}}."
     }
@@ -330,10 +341,10 @@
   "settings": {
     "title": "Settings",
     "school": "School",
-    "requestsAndMoney": "Requests and money",
+    "ordersAndMoney": "Orders and money",
     "reminders": "Reminders",
     "schoolName": "School name",
-    "schoolNameHint": "Shown in the menu and on printed requests.",
+    "schoolNameHint": "Shown in the menu.",
     "schoolYearStart": "First day of the school year",
     "schoolYearStartHint": "Until it is set, Analytics has no \"This school year\" period.",
     "day": "Day",
@@ -342,17 +353,18 @@
     "priceHintPercent": "Price hint, %",
     "priceHintPercentHint": "A price that differs from the catalog price by more than this shows a hint.",
     "overspendGuard": "Overspend guard",
-    "overspendGuardHint": "When the actual total is above the planned total by more than this, the Procurement Head must acknowledge it before Finance can close. 0 means every overspend.",
+    "overspendGuardHint": "When the actual total is above the planned total by more than the percent and by more than the amount, the Procurement Head must acknowledge it before Finance can close. With 0 that number does not count; with both at 0 every overspend needs the Procurement Head.",
     "guardOn": "On",
     "guardOff": "Off",
     "overspendGuardPercent": "Overspend guard, %",
+    "overspendGuardMinAmount": "Overspend guard, so'm",
     "receiptRequiredForCash": "Receipt required for cash purchases",
     "yes": "Yes",
     "no": "No",
     "reminderHours": "Reminder after, hours",
-    "reminderHoursHint": "A request waiting longer than this reminds its approvers.",
+    "reminderHoursHint": "An order waiting longer than this reminds its approvers.",
     "escalationHours": "Tell the Procurement Head after, hours",
-    "escalationHoursHint": "A request waiting longer than this is reported to the Procurement Head.",
+    "escalationHoursHint": "An order waiting longer than this is reported to the Procurement Head.",
     "save": "Save",
     "saved": "Settings saved",
     "nothingChanged": "Nothing changed",
@@ -422,7 +434,7 @@
     "password": "Password",
     "passwordHint": "Type a password or generate one. There are no password rules.",
     "generate": "Generate",
-    "replace": "Replace {name} as Principal of this branch: they are deactivated and signed out, and waiting requests pass to the new Principal.",
+    "replace": "Replace {name} as Principal of this branch: they are deactivated and signed out, and waiting orders pass to the new Principal.",
     "status": "Status",
     "active": "Active",
     "inactive": "Inactive",
@@ -454,7 +466,7 @@
     "activateTitle": "Activate {name}?",
     "activateResult": "They can sign in again with their password.",
     "activateReplaceTitle": "Activate {name} and replace {other}?",
-    "activateReplaceResult": "{other} is deactivated and signed out, and waiting requests pass to {name}.",
+    "activateReplaceResult": "{other} is deactivated and signed out, and waiting orders pass to {name}.",
     "deactivated": "User deactivated",
     "activated": "User activated",
     "lastHead": "This is the only active Procurement Head, so the account cannot be deactivated.",
@@ -464,7 +476,7 @@
     "vacancy": "{branch}: no active {roles}",
     "isActive": "Active",
     "replaceTitle": "Replace {name} as Principal?",
-    "replaceResult": "{name} is deactivated and signed out on every device, and waiting requests pass to the new Principal.",
+    "replaceResult": "{name} is deactivated and signed out on every device, and waiting orders pass to the new Principal.",
     "replaceConfirm": "Replace"
   },
   "managerRights": {
@@ -475,10 +487,10 @@
     "switchedOn": "Right switched on",
     "switchedOff": "Right switched off",
     "names": {
-      "CREATE_REQUESTS": "Create and submit requests",
+      "CREATE_REQUESTS": "Add and submit orders",
       "RECORD_PURCHASES": "Record purchases",
       "CANCEL_PURCHASES": "Cancel purchase records",
-      "CLOSE_ALONE": "Close exact-match requests alone",
+      "CLOSE_ALONE": "Close exact-match orders alone",
       "ISSUE_STOCK": "Issue stock to departments",
       "RETURN_REVERSE": "Take returns and reverse documents",
       "TRANSFER_STOCK": "Send transfers to other branches",
@@ -486,10 +498,10 @@
       "SET_MINIMUMS": "Set minimum stock levels"
     },
     "off": {
-      "CREATE_REQUESTS": "The Manager can only view requests.",
-      "RECORD_PURCHASES": "The Procurement Head records them, or moves the request to another Manager.",
+      "CREATE_REQUESTS": "The Manager can only view orders.",
+      "RECORD_PURCHASES": "The Procurement Head records them, or moves the order to another Manager.",
       "CANCEL_PURCHASES": "Only the Procurement Head can cancel a record.",
-      "CLOSE_ALONE": "Every request of this Manager goes to Finance for closing, even when all labels are green.",
+      "CLOSE_ALONE": "Every order of this Manager goes to Finance for closing, even when all labels are green.",
       "ISSUE_STOCK": "The Manager can view stock but not give items out.",
       "RETURN_REVERSE": "Only the Procurement Head can do these.",
       "TRANSFER_STOCK": "Only the Procurement Head can send transfers.",
@@ -559,7 +571,7 @@
       "responsiblePhone": "Optional.",
       "branch": "Chosen once: a department stays in its branch.",
       "type": "Product by default. A service, such as a repair, delivery or printing, never enters the warehouse.",
-      "defaultCompanyId": "Optional. Suggested as the brand or company of a request line.",
+      "defaultCompanyId": "Optional. Suggested as the brand or company of an order.",
       "referencePrice": "Optional. Whole so'm. Later it changes as a new price with a note.",
       "referencePriceLater": "Changes as a new price with a note, kept in the price history.",
       "description": "Optional.",
@@ -603,7 +615,7 @@
         "title": "Companies and brands",
         "new": "New company",
         "newTitle": "New company or brand",
-        "description": "One list for the brands on requests and the suppliers on purchases.",
+        "description": "One list for the brands on orders and the suppliers on purchases.",
         "emptyTitle": "No companies yet",
         "emptyText": "Add the brands people ask for and the suppliers you buy from."
       },
@@ -653,7 +665,7 @@
       "new": "Add subtype",
       "newTitle": "New subtype of {product}",
       "none": "No subtypes. The product is picked as it is.",
-      "firstNote": "This becomes the product's first subtype. The stock, request lines and price recorded for the product so far stay with it.",
+      "firstNote": "This becomes the product's first subtype. The stock, orders and price recorded for the product so far stay with it.",
       "pricePerSubtype": "Set per subtype",
       "count": "{count, plural, one {# subtype} other {# subtypes}}",
       "lastActive": "The last active subtype stays active. To stop using the item, deactivate the product.",

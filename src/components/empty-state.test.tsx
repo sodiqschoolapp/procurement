@@ -10,21 +10,21 @@ import { EmptyState } from "./empty-state";
 describe("the empty state (design system, Empty page; 11-screens rule 12)", () => {
   const html = renderToStaticMarkup(
     <EmptyState
-      title="No requests yet"
-      line="Requests you write appear here."
-      action={{ label: "New request", href: "/requests/new" }}
-      quietAction={{ label: "Show all branches", href: "/requests?branch=all" }}
+      title="No orders yet"
+      line="Orders you add appear here."
+      action={{ label: "New order", href: "/orders/new" }}
+      quietAction={{ label: "Show all branches", href: "/orders?branch=all" }}
     />,
   );
 
   it("the title is set in Bitter, then one line", () => {
-    expect(html).toMatch(/<h2 class="[^"]*font-slab[^"]*">No requests yet<\/h2>/);
+    expect(html).toMatch(/<h2 class="[^"]*font-slab[^"]*">No orders yet<\/h2>/);
     expect(html.match(/<p /g)).toHaveLength(1);
   });
 
   it("one primary action and one quiet action", () => {
     expect(html.match(/bg-primary /g)).toHaveLength(1);
-    expect(html).toContain('href="/requests/new"');
+    expect(html).toContain('href="/orders/new"');
     expect(html.match(/bg-transparent text-foreground/g)).toHaveLength(1);
   });
 

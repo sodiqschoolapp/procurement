@@ -29,12 +29,12 @@ describe("openNotification (build-plan 0.11: mark as read)", () => {
   it("marks the caller's notification read with the clock's time and returns its link", async () => {
     setClock("2026-10-14T09:00:00Z");
     const head = await insertUser("HEAD");
-    const mine = await insertNotification(head.id, { link: "/requests" });
+    const mine = await insertNotification(head.id, { link: "/orders" });
     setClock("2026-10-14T09:30:00Z");
 
     const result = await runAction(openNotification, head.id, { id: mine.id });
 
-    expect(result).toEqual({ ok: true, data: { link: "/requests" } });
+    expect(result).toEqual({ ok: true, data: { link: "/orders" } });
     expect(await readAtOf([mine.id])).toEqual({ [mine.id]: new Date("2026-10-14T09:30:00Z") });
   });
 

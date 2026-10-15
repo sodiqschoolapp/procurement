@@ -7,8 +7,8 @@ import { asksBeforeLeaving, type LinkClick } from "./unsaved-changes";
 
 const CLICK: LinkClick = {
   dirty: true,
-  current: "https://ombor-test.example/requests/new",
-  href: "/requests",
+  current: "https://ombor-test.example/orders/new",
+  href: "/orders",
   button: 0,
   ctrlKey: false,
   metaKey: false,
@@ -21,7 +21,7 @@ const CLICK: LinkClick = {
 describe("the unsaved-changes guard decides when to ask (11-screens rule 6)", () => {
   it("asks when a dirty form is left for another page", () => {
     expect(asksBeforeLeaving(CLICK)).toBe(true);
-    expect(asksBeforeLeaving({ ...CLICK, href: "/requests/new?step=2" })).toBe(true);
+    expect(asksBeforeLeaving({ ...CLICK, href: "/orders/new?step=2" })).toBe(true);
     expect(asksBeforeLeaving({ ...CLICK, href: "https://other.example/" })).toBe(true);
     expect(asksBeforeLeaving({ ...CLICK, target: "_self" })).toBe(true);
   });
@@ -31,7 +31,7 @@ describe("the unsaved-changes guard decides when to ask (11-screens rule 6)", ()
   });
 
   it("does not ask for a link to the same page, with or without a fragment", () => {
-    expect(asksBeforeLeaving({ ...CLICK, href: "/requests/new" })).toBe(false);
+    expect(asksBeforeLeaving({ ...CLICK, href: "/orders/new" })).toBe(false);
     expect(asksBeforeLeaving({ ...CLICK, href: "#lines" })).toBe(false);
   });
 

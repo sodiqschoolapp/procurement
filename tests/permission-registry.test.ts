@@ -54,52 +54,52 @@ describe("the permission registry (developer-rules.md rule 4)", () => {
 
   it("turns red for an unlisted server action", () => {
     const sample = {
-      path: "src/features/requests/actions/approve.ts",
+      path: "src/features/orders/actions/approve.ts",
       text: `// A sample.\n"use server";\n\nexport async function approveAction() {}\n`,
     };
     expect(unlisted([sample])).toEqual([
-      "server action src/features/requests/actions/approve.ts#approveAction",
+      "server action src/features/orders/actions/approve.ts#approveAction",
     ]);
   });
 
   it("turns red for an unlisted query", () => {
     const sample = {
-      path: "src/features/requests/queries/list.ts",
-      text: `export async function listRequests() {}\nexport const countRequests = () => 0;\n`,
+      path: "src/features/orders/queries/list.ts",
+      text: `export async function listOrders() {}\nexport const countOrders = () => 0;\n`,
     };
     expect(unlisted([sample])).toEqual([
-      "query src/features/requests/queries/list.ts#listRequests",
-      "query src/features/requests/queries/list.ts#countRequests",
+      "query src/features/orders/queries/list.ts#listOrders",
+      "query src/features/orders/queries/list.ts#countOrders",
     ]);
   });
 
   it("turns red for a page that checks nobody and is not an open route; passes one that calls requireUser()", () => {
-    const open = { path: "src/app/requests/page.tsx", text: "export default function Page() {}" };
+    const open = { path: "src/app/orders/page.tsx", text: "export default function Page() {}" };
     const checked = {
       path: "src/app/stock/page.tsx",
       text: 'export default async function Page() { await requireUser("/stock"); }',
     };
     const route = { path: "src/app/files/[id]/route.ts", text: "export async function GET() {}" };
     expect(unlisted([open, checked, route])).toEqual([
-      "open route src/app/requests/page.tsx",
+      "open route src/app/orders/page.tsx",
       "open route src/app/files/[id]/route.ts",
     ]);
   });
 
   it("turns red for an inline server action, a layout or a special route file that checks nobody, and a check written only in a comment", () => {
     const inline = {
-      path: "src/app/requests/page.tsx",
-      text: `export default async function Page() {\n  await requireUser("/requests");\n  async function save() {\n    "use server";\n  }\n}\n`,
+      path: "src/app/orders/page.tsx",
+      text: `export default async function Page() {\n  await requireUser("/orders");\n  async function save() {\n    "use server";\n  }\n}\n`,
     };
-    const layout = { path: "src/app/requests/layout.tsx", text: "export default function L() {}" };
+    const layout = { path: "src/app/orders/layout.tsx", text: "export default function L() {}" };
     const image = { path: "src/app/opengraph-image.tsx", text: "export default function I() {}" };
     const comment = {
       path: "src/app/stock/page.tsx",
       text: '// requireUser("/stock") comes later\nexport default function Page() {}',
     };
     expect(unlisted([inline, layout, image, comment])).toEqual([
-      "inline server action src/app/requests/page.tsx",
-      "open route src/app/requests/layout.tsx",
+      "inline server action src/app/orders/page.tsx",
+      "open route src/app/orders/layout.tsx",
       "open route src/app/opengraph-image.tsx",
       "open route src/app/stock/page.tsx",
     ]);

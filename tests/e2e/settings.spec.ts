@@ -105,6 +105,34 @@ test("a value out of range is refused with a line under its field, and nothing i
   await expect(page.getByLabel(uz.settings.escalationHours)).toHaveValue(before);
 });
 
+test("the Head sets the overspend guard amount beside the percent; a negative one is refused (build-plan 2.1)", async ({
+  page,
+}, info) => {
+  // The settings are one per school: only the desktop project changes this key.
+  test.skip(info.project.name !== "desktop-1440", "the phone project changes the reminder hours");
+  await signIn(page, E2E_ROLES.HEAD);
+  await openSettings(page);
+
+  const field = page.getByLabel(uz.settings.overspendGuardMinAmount);
+  await expect(page.getByLabel(uz.settings.overspendGuardPercent)).toBeVisible();
+  const before = await field.inputValue();
+  const amount = before === "250000" ? "150000" : "250000";
+  await field.fill(amount);
+  await page.getByRole("button", { name: uz.settings.save }).click();
+  await expect(page.getByText(uz.settings.saved)).toBeVisible();
+
+  await openSettings(page);
+  await expect(page.getByLabel(uz.settings.overspendGuardMinAmount)).toHaveValue(amount);
+
+  // 08, Overspend guard: whole so'm, 0 or more; "-5" is refused under its field, nothing saved.
+  await page.getByLabel(uz.settings.overspendGuardMinAmount).fill("-5");
+  await page.getByRole("button", { name: uz.settings.save }).click();
+  await expect(page.getByText(uz.errors.field.wrongFormat)).toBeVisible();
+  await openSettings(page);
+  await expect(page.getByLabel(uz.settings.overspendGuardMinAmount)).toHaveValue(amount);
+  await noSideScroll(page);
+});
+
 for (const role of ["MANAGER", "PRINCIPAL", "FINANCE"] as const) {
   test(`${role} opening /settings gets not found (decision 12)`, async ({ page }) => {
     await signIn(page, E2E_ROLES[role]);
@@ -120,10 +148,10 @@ test("leaving with unsaved changes asks first: by a menu link and by the back bu
   await openSettings(page);
   await page.getByLabel(uz.settings.priceHintPercent).fill("55");
 
-  // A menu link: the sidebar on a desktop, the tab bar on a phone (Requests: in the dev server
+  // A menu link: the sidebar on a desktop, the tab bar on a phone (Orders: in the dev server
   // the Next.js indicator covers the phone's first tab).
   const menu = page.locator(info.project.name === "phone-375" ? "nav:visible" : "aside");
-  await menu.getByRole("link", { name: uz.shell.menu.requests }).click();
+  await menu.getByRole("link", { name: uz.shell.menu.orders }).click();
   const dialog = page.getByRole("alertdialog");
   await expect(dialog).toContainText(uz.unsavedChanges.title);
   await dialog.getByRole("button", { name: uz.common.cancel }).click();

@@ -44,13 +44,41 @@ export const NOTIFICATION_TYPES = [
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
 /**
+ * The params of an order action's notification (10, Notifications: "One action sends one
+ * notification to each person told, never one per order: 'Dilnoza submitted 15 orders in CHL'").
+ * `actor`: the name of the user who acted; `count`: how many orders the action covered;
+ * `branch`: the codes of their branches, joined by ", ", as one action may cover ticked orders
+ * of several branches (plan of 2.1, decision 3).
+ */
+export type OrderActionParams = { actor: string; count: number; branch: string };
+
+/**
+ * The params of a waiting reminder (10: "9 orders have waited more than 24 hours"): `hours` is
+ * the setting in force (`reminder_hours`, `escalation_hours`), never a fixed 24 (decision 3).
+ */
+export type OrdersWaitingParams = { count: number; hours: number };
+
+/**
  * The params of each type that has a text in the message files (`notifications.types.<TYPE>`).
- * The task that first sends a type adds it here with its text, and names any amount or request
- * number in it as a Look first of its own (plan of 0.11, decisions 4 and 10). A value is a JSON
- * string or number (an ICU argument; a flag is a word for a `select`); money is a string of whole so'm, formatted when shown (decision 9;
- * CLAUDE.md rule 6).
+ * The task that first sends or first words a type adds it here with its text (the order types:
+ * build-plan 2.1, "carry a count"), and names any amount or order number in it as a Look first
+ * of its own (plan of 0.11, decisions 4 and 10). A value is a JSON string or number (an ICU
+ * argument; a flag is a word for a `select`); money is a string of whole so'm, formatted when
+ * shown (decision 9; CLAUDE.md rule 6).
  */
 export type NotificationParamsOf = {
+  /** "Orders submitted or submitted again" (decision 3: one type for both). */
+  REQUEST_SUBMITTED: OrderActionParams;
+  REQUEST_HEAD_APPROVED: OrderActionParams;
+  REQUEST_PRINCIPAL_APPROVED: OrderActionParams;
+  REQUEST_FINANCE_APPROVED: OrderActionParams;
+  REQUEST_SENT_BACK: OrderActionParams;
+  REQUEST_REJECTED: OrderActionParams;
+  REQUEST_SENT_TO_SETTLEMENT: OrderActionParams;
+  REQUEST_CLOSED: OrderActionParams;
+  REQUEST_REOPENED: OrderActionParams;
+  REQUEST_WAITING_24H: OrdersWaitingParams;
+  REQUEST_WAITING_48H: OrdersWaitingParams;
   /** "Branch has no active user for a role": the branch's code and the role's code. */
   BRANCH_ROLE_VACANT: { branch: string; role: Role };
   /** "A Manager's right is switched on or off": the right's code, and "on" or "off". */
@@ -68,6 +96,17 @@ export type SendableType = keyof NotificationParamsOf;
 export const NOTIFICATION_PARAMS: {
   [Type in SendableType]: readonly (keyof NotificationParamsOf[Type])[];
 } = {
+  REQUEST_SUBMITTED: ["actor", "count", "branch"],
+  REQUEST_HEAD_APPROVED: ["actor", "count", "branch"],
+  REQUEST_PRINCIPAL_APPROVED: ["actor", "count", "branch"],
+  REQUEST_FINANCE_APPROVED: ["actor", "count", "branch"],
+  REQUEST_SENT_BACK: ["actor", "count", "branch"],
+  REQUEST_REJECTED: ["actor", "count", "branch"],
+  REQUEST_SENT_TO_SETTLEMENT: ["actor", "count", "branch"],
+  REQUEST_CLOSED: ["actor", "count", "branch"],
+  REQUEST_REOPENED: ["actor", "count", "branch"],
+  REQUEST_WAITING_24H: ["count", "hours"],
+  REQUEST_WAITING_48H: ["count", "hours"],
   BRANCH_ROLE_VACANT: ["branch", "role"],
   MANAGER_RIGHT_SWITCHED: ["right", "state"],
   PRODUCT_SUGGESTED: ["name", "branch"],

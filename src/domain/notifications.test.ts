@@ -7,7 +7,7 @@ import { isInternalLink, unreadCountLabel } from "./notifications";
 // src/server/db/schema/notifications.db.test.ts); the bell's number (Screens).
 
 describe("isInternalLink (plan of 0.11, Should fix 6)", () => {
-  it.each(["/", "/requests/1", "/notifications?page=2", "/a/b"])("accepts %j", (link) => {
+  it.each(["/", "/orders/1", "/notifications?page=2", "/a/b"])("accepts %j", (link) => {
     expect(isInternalLink(link)).toBe(true);
   });
 

@@ -1,3 +1,5 @@
+import { sql } from "drizzle-orm";
+
 import { type SettingValues, settingsFrom } from "@/domain/settings";
 import type { Executor } from "@/server/authorize";
 import { settings } from "@/server/db/schema";
@@ -13,8 +15,24 @@ import { settings } from "@/server/db/schema";
 // decision 4, Look first; review of the plan, decision 4). A page never calls it: it reads the
 // settings through src/features/settings/queries/.
 
+/**
+ * The stored rows, each value read as its JSON text and parsed once here. Drizzle's jsonb column
+ * parses a JSON text a second time after the driver, so a stored `"100000"` would come back as
+ * the number 100000 and a school name of digits as a number (plan of 2.1, decision 1: the amount
+ * is a JSON text and must stay one). `for("update")` can follow, as in saveSettings.
+ */
+export function selectSettingRows(executor: Executor) {
+  return executor
+    .select({ key: settings.key, json: sql<string>`${settings.value}::text` })
+    .from(settings);
+}
+
+/** The rows of selectSettingRows() with each value parsed. */
+export function parsedSettingRows(rows: readonly { key: string; json: string }[]) {
+  return rows.map(({ key, json }) => ({ key, value: JSON.parse(json) as unknown }));
+}
+
 /** The values in force, read with the caller's transaction or client. */
 export async function readSettings(executor: Executor): Promise<SettingValues> {
-  const rows = await executor.select({ key: settings.key, value: settings.value }).from(settings);
-  return settingsFrom(rows);
+  return settingsFrom(parsedSettingRows(await selectSettingRows(executor)));
 }

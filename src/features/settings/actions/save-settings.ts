@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import * as z from "zod";
 
+import { parseSomOrZero } from "@/domain/money";
 import { PAYMENT_TYPES } from "@/domain/payment-types";
 import {
   GUARD_OFF,
@@ -14,11 +15,13 @@ import {
   isMonthDay,
   isSchoolName,
   settingsFrom,
+  storedSettingValue,
 } from "@/domain/settings";
 import { GLOBAL_TARGET, defineAction } from "@/server/action";
 import { audit } from "@/server/audit";
 import { now } from "@/server/clock";
 import { settings } from "@/server/db/schema";
+import { parsedSettingRows, selectSettingRows } from "@/server/settings";
 
 // The Head saves the settings on /settings (build-plan 1.1; 03-roles-and-permissions.md,
 // Permission matrix: "Manage catalogs, users, branches, settings", Head only). Through the
@@ -32,6 +35,11 @@ import { settings } from "@/server/db/schema";
 
 const percent = z.number().int().min(PERCENT_MIN).max(PERCENT_MAX);
 const hours = z.number().int().min(HOURS_MIN).max(HOURS_MAX);
+/** Whole so'm as typed, 0 allowed, read into a bigint (plan of 2.1, decisions 1 and 2). */
+const amount = z
+  .string()
+  .refine((text) => parseSomOrZero(text) !== null)
+  .transform((text) => parseSomOrZero(text)!);
 
 /** The limits are those of src/domain/settings.ts; nothing is written here a second time. */
 export const settingsInput = z
@@ -44,6 +52,7 @@ export const settingsInput = z
     default_payment_type: z.enum(PAYMENT_TYPES),
     price_hint_percent: percent,
     overspend_guard_percent: z.union([z.literal(GUARD_OFF), percent]),
+    overspend_guard_min_amount: amount,
     receipt_required_for_cash: z.boolean(),
     reminder_hours: hours,
     escalation_hours: hours,
@@ -53,17 +62,21 @@ export const settingsInput = z
 
 export type SettingsInput = z.input<typeof settingsInput>;
 
+/** Values as the settings row and the audit row hold them: the amount as decimal text. */
+type StoredSettings = { [Key in SettingKey]?: unknown };
+
 /** The settings advisory lock: seed 1, apart from the wrapper's client-key locks (seed 0). */
 const SETTINGS_LOCK = sql`select pg_advisory_xact_lock(hashtextextended('settings', 1))`;
 
 export type SavedSettings = {
   changed: SettingKey[];
-  before: Partial<SettingValues>;
-  after: Partial<SettingValues>;
+  before: StoredSettings;
+  after: StoredSettings;
 };
 
-function pick(values: Partial<SettingValues>, keys: readonly SettingKey[]): Partial<SettingValues> {
-  return Object.fromEntries(keys.map((key) => [key, values[key]])) as Partial<SettingValues>;
+/** The keys' values in their stored form (review of the plan of 2.1, Must fix 1). */
+function pick(values: Partial<SettingValues>, keys: readonly SettingKey[]): StoredSettings {
+  return Object.fromEntries(keys.map((key) => [key, storedSettingValue(key, values[key])]));
 }
 
 export const saveSettings = defineAction({
@@ -75,11 +88,8 @@ export const saveSettings = defineAction({
   },
   async lock({ tx }) {
     await tx.execute(SETTINGS_LOCK);
-    const rows = await tx
-      .select({ key: settings.key, value: settings.value })
-      .from(settings)
-      .for("update");
-    return { target: GLOBAL_TARGET, rows: settingsFrom(rows) };
+    const rows = await selectSettingRows(tx).for("update");
+    return { target: GLOBAL_TARGET, rows: settingsFrom(parsedSettingRows(rows)) };
   },
   async write({ tx, input, locked }): Promise<SavedSettings> {
     const current = locked!.rows;
@@ -87,10 +97,11 @@ export const saveSettings = defineAction({
     const changed = changedSettings(current, sent);
     const at = now();
     for (const key of changed) {
+      const value = storedSettingValue(key, sent[key]);
       await tx
         .insert(settings)
-        .values({ key, value: sent[key], createdAt: at })
-        .onConflictDoUpdate({ target: settings.key, set: { value: sent[key] } });
+        .values({ key, value, createdAt: at })
+        .onConflictDoUpdate({ target: settings.key, set: { value } });
     }
     return { changed, before: pick(current, changed), after: pick(sent, changed) };
   },

@@ -8,15 +8,15 @@ import { isActive, menuFor, tabBarSplit } from "./menu";
 // as the oracle; docs/design-system.md, This app (Menu icons; Phone tab bar).
 
 const SPEC_MENUS = {
-  MANAGER: ["home", "requests", "warehouse", "analytics", "reports"],
-  HEAD: ["home", "requests", "warehouse", "money", "analytics", "reports", "admin"],
-  PRINCIPAL: ["home", "requests", "stock", "analytics", "reports"],
-  FINANCE: ["home", "requests", "money", "stock", "analytics", "reports"],
+  MANAGER: ["home", "orders", "warehouse", "analytics", "reports"],
+  HEAD: ["home", "orders", "warehouse", "money", "analytics", "reports", "admin"],
+  PRINCIPAL: ["home", "orders", "stock", "analytics", "reports"],
+  FINANCE: ["home", "orders", "money", "stock", "analytics", "reports"],
 } as const;
 
 const SPEC_ICONS = {
   home: "home",
-  requests: "receipt_long",
+  orders: "receipt_long",
   warehouse: "inventory",
   stock: "inventory",
   money: "payments",
@@ -50,7 +50,7 @@ describe("the active item (plan of 0.10b, decision 7)", () => {
 
   it("Home only on /", () => {
     expect(isActive(head.home!, "/")).toBe(true);
-    expect(isActive(head.home!, "/requests")).toBe(false);
+    expect(isActive(head.home!, "/orders")).toBe(false);
   });
 
   // 11-screens-and-ux.md: "Admin groups catalogs, prices, users, branches and settings"; prices
@@ -80,7 +80,7 @@ describe("the active item (plan of 0.10b, decision 7)", () => {
   });
 
   it("a path that only starts with the same letters is not active", () => {
-    expect(isActive(head.requests!, "/requestsx")).toBe(false);
+    expect(isActive(head.orders!, "/ordersx")).toBe(false);
     expect(isActive(head.money!, "/moneyx/1")).toBe(false);
   });
 });
@@ -88,13 +88,13 @@ describe("the active item (plan of 0.10b, decision 7)", () => {
 describe("the phone tab bar (design system, This app: Phone tab bar)", () => {
   it("Head: the first four and More with Analytics, Reports, Admin", () => {
     const { shown, more } = tabBarSplit(menuFor("HEAD"));
-    expect(shown.map((item) => item.id)).toEqual(["home", "requests", "warehouse", "money"]);
+    expect(shown.map((item) => item.id)).toEqual(["home", "orders", "warehouse", "money"]);
     expect(more.map((item) => item.id)).toEqual(["analytics", "reports", "admin"]);
   });
 
   it("Finance: the first four and More with Analytics and Reports", () => {
     const { shown, more } = tabBarSplit(menuFor("FINANCE"));
-    expect(shown.map((item) => item.id)).toEqual(["home", "requests", "money", "stock"]);
+    expect(shown.map((item) => item.id)).toEqual(["home", "orders", "money", "stock"]);
     expect(more.map((item) => item.id)).toEqual(["analytics", "reports"]);
   });
 

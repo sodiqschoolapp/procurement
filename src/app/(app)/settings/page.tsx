@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { AdminNav } from "@/components/admin-nav";
 import { ChangeHistory, type HistoryField } from "@/components/change-history";
 import { listChangeHistory } from "@/features/audit/queries/change-history";
+import { storedSettingValue } from "@/domain/settings";
 import { getSettingsForHead } from "@/features/settings/queries/settings";
 import { requireUser } from "@/server/auth/session";
 import { AuthorizationError } from "@/server/authorize";
@@ -21,6 +22,7 @@ const FIELDS: Record<string, HistoryField> = {
   default_payment_type: { label: "settings.defaultPaymentType", kind: { enum: "paymentTypes" } },
   price_hint_percent: { label: "settings.priceHintPercent", kind: "percent" },
   overspend_guard_percent: { label: "settings.overspendGuard", kind: "percentOrOff" },
+  overspend_guard_min_amount: { label: "settings.overspendGuardMinAmount", kind: "money" },
   receipt_required_for_cash: { label: "settings.receiptRequiredForCash", kind: "boolean" },
   reminder_hours: { label: "settings.reminderHours", kind: "hours" },
   escalation_hours: { label: "settings.escalationHours", kind: "hours" },
@@ -47,7 +49,16 @@ export default async function SettingsPage() {
       <h1 className="text-[28px] leading-[34px] font-bold tracking-[-0.01em]">
         {t("settings.title")}
       </h1>
-      <SettingsForm values={values} />
+      <SettingsForm
+        values={{
+          ...values,
+          // Its decimal text: no bigint crosses to the browser (plan of 2.1).
+          overspend_guard_min_amount: storedSettingValue(
+            "overspend_guard_min_amount",
+            values.overspend_guard_min_amount,
+          ) as string,
+        }}
+      />
       <section className="flex flex-col gap-4 rounded-xl bg-card p-6 text-card-foreground">
         <h2 className="text-[17px] leading-6 font-bold">{t("settings.history")}</h2>
         <ChangeHistory entries={history.rows} fields={FIELDS} />

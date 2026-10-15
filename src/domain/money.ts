@@ -25,7 +25,24 @@ export function parseSom(text: string): bigint | null {
   return amount > 0n && amount <= MONEY_MAX ? amount : null;
 }
 
+/**
+ * A typed amount of whole so'm that may be 0, as `parseSom` reads it otherwise: "0" → 0n,
+ * "100 000" → 100000n. For a limit where 0 has a meaning, such as the overspend guard's amount
+ * (08-money-and-settlement.md, Overspend guard: "with the amount at 0 only the percent counts").
+ */
+export function parseSomOrZero(text: string): bigint | null {
+  const digits = text.trim().replace(SEPARATORS, "");
+  if (!/^[0-9]{1,15}$/.test(digits)) return null;
+  const amount = BigInt(digits);
+  return amount <= MONEY_MAX ? amount : null;
+}
+
 /** A stored amount of whole so'm: a bigint, more than 0, at most MONEY_MAX. */
 export function isSom(value: unknown): value is bigint {
   return typeof value === "bigint" && value > 0n && value <= MONEY_MAX;
+}
+
+/** An amount of whole so'm from 0 to MONEY_MAX: a bigint. */
+export function isSomOrZero(value: unknown): value is bigint {
+  return typeof value === "bigint" && value >= 0n && value <= MONEY_MAX;
 }

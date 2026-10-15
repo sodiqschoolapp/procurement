@@ -16,16 +16,16 @@ function request(path: string, cookie?: string): NextRequest {
 
 describe("the proxy (edge-cases/system.md: back to the same page after sign-in)", () => {
   it("sends a request without a session cookie to /login with the page it asked for", () => {
-    const response = proxy(request("/requests?tab=x"));
+    const response = proxy(request("/orders?tab=x"));
 
     expect(response.status).toBe(307);
     expect(response.headers.get("location")).toBe(
-      "http://localhost:3000/login?next=%2Frequests%3Ftab%3Dx",
+      "http://localhost:3000/login?next=%2Forders%3Ftab%3Dx",
     );
   });
 
   it.each([SESSION_COOKIE, SECURE_SESSION_COOKIE])("lets a request with %s through", (name) => {
-    const response = proxy(request("/requests?tab=x", name));
+    const response = proxy(request("/orders?tab=x", name));
 
     expect(response.headers.get("location")).toBeNull();
     expect(response.headers.get("x-middleware-next")).toBe("1");
@@ -64,7 +64,7 @@ describe("the proxy's matcher (plan of 0.12, decision 7, Look first)", () => {
   });
 
   it("still covers the pages, also one whose name starts with files", () => {
-    expect(matches("/requests")).toBe(true);
+    expect(matches("/orders")).toBe(true);
     expect(matches("/filesystem")).toBe(true);
     expect(matches("/")).toBe(true);
   });

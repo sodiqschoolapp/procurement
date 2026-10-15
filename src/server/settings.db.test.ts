@@ -22,6 +22,8 @@ describe("readSettings (build-plan 1.1)", () => {
       default_payment_type: "CASH",
       price_hint_percent: 20,
       overspend_guard_percent: 10,
+      // 14, Notes for the build; plan of 2.1, decision 1: a bigint of whole so'm.
+      overspend_guard_min_amount: 100_000n,
       reminder_hours: 24,
       escalation_hours: 48,
       receipt_required_for_cash: false,
@@ -45,6 +47,20 @@ describe("readSettings (build-plan 1.1)", () => {
       school_name: "Invented School",
       school_year_start: { month: 9, day: 2 },
     });
+  });
+
+  it("a stored amount text reads as a bigint (plan of 2.1, decision 1; review of the plan, Must fix 1)", async () => {
+    await db.execute(
+      sql`insert into settings (key, value, created_at) values ('overspend_guard_min_amount', '"250000"'::jsonb, ${MOMENT.toISOString()})`,
+    );
+    expect((await readSettings(db)).overspend_guard_min_amount).toBe(250_000n);
+  });
+
+  it("a school name of digits stays a text (the value is parsed once, src/server/settings.ts)", async () => {
+    await db.execute(
+      sql`insert into settings (key, value, created_at) values ('school_name', '"2026"'::jsonb, ${MOMENT.toISOString()})`,
+    );
+    expect((await readSettings(db)).school_name).toBe("2026");
   });
 
   it("an unknown key is ignored", async () => {

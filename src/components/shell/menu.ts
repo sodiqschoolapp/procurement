@@ -7,7 +7,7 @@ import type { Role } from "@/domain/permissions";
 // read this file; the server checks every page again (rule 4: hiding protects nothing).
 
 export type MenuItemId =
-  "home" | "requests" | "warehouse" | "stock" | "money" | "analytics" | "reports" | "admin";
+  "home" | "orders" | "warehouse" | "stock" | "money" | "analytics" | "reports" | "admin";
 
 export type MenuItem = {
   id: MenuItemId;
@@ -19,7 +19,7 @@ export type MenuItem = {
 
 const ITEMS: Record<MenuItemId, MenuItem> = {
   home: { id: "home", href: "/", icon: "home", activeOn: ["/"] },
-  requests: { id: "requests", href: "/requests", icon: "receipt_long", activeOn: ["/requests"] },
+  orders: { id: "orders", href: "/orders", icon: "receipt_long", activeOn: ["/orders"] },
   // Warehouse and Stock open Stock on hand (11, Screens) and are active on every warehouse page
   // (plan of 0.10b, decision 7).
   warehouse: {
@@ -45,10 +45,10 @@ const ITEMS: Record<MenuItemId, MenuItem> = {
 };
 
 const MENUS: Record<Role, readonly MenuItemId[]> = {
-  MANAGER: ["home", "requests", "warehouse", "analytics", "reports"],
-  HEAD: ["home", "requests", "warehouse", "money", "analytics", "reports", "admin"],
-  PRINCIPAL: ["home", "requests", "stock", "analytics", "reports"],
-  FINANCE: ["home", "requests", "money", "stock", "analytics", "reports"],
+  MANAGER: ["home", "orders", "warehouse", "analytics", "reports"],
+  HEAD: ["home", "orders", "warehouse", "money", "analytics", "reports", "admin"],
+  PRINCIPAL: ["home", "orders", "stock", "analytics", "reports"],
+  FINANCE: ["home", "orders", "money", "stock", "analytics", "reports"],
 };
 
 /** The role's menu, in the spec's order. */

@@ -1,3 +1,4 @@
+import { MONEY_MAX, isSomOrZero } from "./money";
 import { PAYMENT_TYPES, type PaymentType } from "./payment-types";
 
 // The settings of the school (14-data-model.md, System: `settings key KEY, value JSONB`, and
@@ -20,6 +21,14 @@ export const SCHOOL_NAME_MAX = 120;
 /** The overspend guard switched off (08-money-and-settlement.md, Overspend guard; decision 1). */
 export const GUARD_OFF = "off";
 
+/**
+ * The overspend guard's amount as it is stored: a JSON text of whole so'm, "0" to MONEY_MAX's 15
+ * digits, no leading zero (plan of 2.1, decision 1, Look first: a JSON number would be read by
+ * JavaScript as a float, CLAUDE.md rule 6). Migration 0018 holds the same pattern as a CHECK.
+ */
+export const STORED_AMOUNT = /^(0|[1-9][0-9]{0,14})$/;
+const STORED_AMOUNT_DIGITS = String(MONEY_MAX).length;
+
 /** The first day of the school year: a month and a day (14, Notes; D10; decision 9). */
 export type MonthDay = { month: number; day: number };
 
@@ -28,6 +37,11 @@ export type SettingValues = {
   price_hint_percent: number;
   /** A whole percent, or `"off"`: 0 means every overspend needs the Head (08). */
   overspend_guard_percent: number | typeof GUARD_OFF;
+  /**
+   * Whole so'm, 0 to MONEY_MAX: 0 means only the percent counts (08, Overspend guard). The one
+   * switch of the guard is `overspend_guard_percent = "off"` (plan of 2.1, decision 2, Look first).
+   */
+  overspend_guard_min_amount: bigint;
   reminder_hours: number;
   escalation_hours: number;
   receipt_required_for_cash: boolean;
@@ -39,13 +53,14 @@ export type SettingValues = {
 
 export type SettingKey = keyof SettingValues;
 
-/** The eight keys, in the order the screen shows them. */
+/** The nine keys, in the order the screen shows them. */
 export const SETTING_KEYS = [
   "school_name",
   "school_year_start",
   "default_payment_type",
   "price_hint_percent",
   "overspend_guard_percent",
+  "overspend_guard_min_amount",
   "receipt_required_for_cash",
   "reminder_hours",
   "escalation_hours",
@@ -59,6 +74,7 @@ export const SETTING_DEFAULTS: SettingValues = {
   default_payment_type: "CASH",
   price_hint_percent: 20,
   overspend_guard_percent: 10,
+  overspend_guard_min_amount: 100_000n,
   reminder_hours: 24,
   escalation_hours: 48,
   receipt_required_for_cash: false,
@@ -117,6 +133,7 @@ export const SETTING_CHECKS: { [Key in SettingKey]: (value: unknown) => boolean 
   default_payment_type: isPaymentType,
   price_hint_percent: isPercent,
   overspend_guard_percent: isGuard,
+  overspend_guard_min_amount: isSomOrZero,
   reminder_hours: isHours,
   escalation_hours: isHours,
   receipt_required_for_cash: (value) => typeof value === "boolean",
@@ -128,6 +145,32 @@ export function isSettingKey(key: string): key is SettingKey {
   return Object.hasOwn(SETTING_DEFAULTS, key);
 }
 
+/** Whether a stored value is the amount's stored form (the CHECK of migration 0018). */
+export function isStoredAmount(value: unknown): value is string {
+  return (
+    typeof value === "string" && value.length <= STORED_AMOUNT_DIGITS && STORED_AMOUNT.test(value)
+  );
+}
+
+/**
+ * A stored value as the value in force: the amount's text becomes a bigint; every other key is
+ * stored as it is used. A wrong shape is returned as it is, and settingsFrom() refuses it.
+ */
+function inForce(key: SettingKey, stored: unknown): unknown {
+  if (key === "overspend_guard_min_amount" && isStoredAmount(stored)) return BigInt(stored);
+  return stored;
+}
+
+/**
+ * A value in force as the settings row and the audit row hold it: the amount as decimal text,
+ * never a JSON number (decision 1, Look first); every other key as it is. The one way back from
+ * settingsFrom() (review of the plan, Must fix 1).
+ */
+export function storedSettingValue(key: SettingKey, value: unknown): unknown {
+  if (key === "overspend_guard_min_amount" && typeof value === "bigint") return value.toString();
+  return value;
+}
+
 /**
  * The values in force from the stored rows: a key with no row has its default, an unknown key
  * is ignored. A stored value of the wrong shape cannot exist (the CHECKs of migration 0007); if
@@ -137,10 +180,11 @@ export function settingsFrom(rows: readonly { key: string; value: unknown }[]): 
   const values: Record<string, unknown> = { ...SETTING_DEFAULTS };
   for (const { key, value } of rows) {
     if (!isSettingKey(key)) continue;
-    if (!SETTING_CHECKS[key](value)) {
+    const current = inForce(key, value);
+    if (!SETTING_CHECKS[key](current)) {
       throw new Error(`The stored value of the setting ${key} has the wrong shape.`);
     }
-    values[key] = value;
+    values[key] = current;
   }
   return values as SettingValues;
 }
