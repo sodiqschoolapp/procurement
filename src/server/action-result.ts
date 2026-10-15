@@ -66,6 +66,8 @@ export const FIELD_ERROR_KINDS = [
   "fileTooLarge",
   "tooManyRows",
   "noRows",
+  // A product suggestion whose name a product already holds (plan of 1.12, decision 7).
+  "inCatalog",
 ] as const;
 export type FieldErrorKind = (typeof FIELD_ERROR_KINDS)[number];
 export type FieldMessageKey = `errors.field.${FieldErrorKind}`;

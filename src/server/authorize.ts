@@ -8,6 +8,7 @@ import {
   type Role,
   type Target,
   decide,
+  decideList,
 } from "@/domain/permissions";
 import type { db as Database } from "@/server/db/client";
 
@@ -77,6 +78,23 @@ export async function authorize(
   if (!actor) throw new AuthorizationError("forbidden");
   const decision = decide(permission, actor, target);
   if (decision !== "allow") throw new AuthorizationError(decision);
+  return actor;
+}
+
+/**
+ * Checks that the user may list the records of a branch permission (decideList()) and returns the
+ * actor, whose branchFilter() the list must put into its own SQL. Throws AuthorizationError
+ * otherwise.
+ */
+export async function authorizeList(
+  userId: string,
+  permission: Permission,
+  executor?: Executor,
+): Promise<Actor> {
+  const runner = executor ?? (await import("@/server/db/client")).db;
+  const actor = await loadActor(userId, runner);
+  if (!actor) throw new AuthorizationError("forbidden");
+  if (decideList(permission, actor) !== "allow") throw new AuthorizationError("forbidden");
   return actor;
 }
 

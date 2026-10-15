@@ -5,5 +5,6 @@ export * from "./files";
 export * from "./imports";
 export * from "./jobs";
 export * from "./organisation";
+export * from "./suggestions";
 export * from "./system";
 export * from "./users";

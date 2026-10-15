@@ -20,6 +20,7 @@ import { cn } from "@/components/utils";
 import { IMAGE_MIMES } from "@/domain/files";
 import { DEFAULT_PRODUCT_TYPE, PRODUCT_TYPES, type ProductType } from "@/domain/products";
 
+import { addSuggestedProductAction } from "../../suggestions/actions";
 import { createProductAction, updateProductAction } from "./actions";
 
 // The form of a product or service (build-plan 1.7; 11-screens-and-ux.md rules 4, 6, 7 and 13).
@@ -29,7 +30,9 @@ import { createProductAction, updateProductAction } from "./actions";
 // field errors show under the fields; the form checks nothing a second time (CLAUDE.md rule 1).
 // The reference price is typed on a new item only and shown as text on an edit (decision 2). A
 // locked type or measure is shown disabled (decision 1). The photo is sent to /files first
-// (src/components/files/upload.ts) and its id saved with the form.
+// (src/components/files/upload.ts) and its id saved with the form. From a product suggestion
+// (1.12) the form starts with the suggestion's name and photo, shows the measure asked for above
+// the measure picker, and saves through the add, which also marks the suggestion added.
 
 const noSubscription = () => () => undefined;
 
@@ -68,12 +71,22 @@ export type ProductEntry = {
   inUse: boolean;
 };
 
+export type SuggestionStart = {
+  id: string;
+  name: string;
+  unitText: string;
+  photoFileId: string | null;
+};
+
 export function ProductForm({
   entry,
   choices,
   price,
+  suggestion,
 }: {
   entry: ProductEntry | null;
+  /** A new product made from a product suggestion (plan of 1.12); never with `entry`. */
+  suggestion?: SuggestionStart;
   choices: { categories: ProductChoice[]; units: ProductChoice[]; companies: ProductChoice[] };
   /** The reference price of an existing product, already formatted, or null when none is set. */
   price?: string | null;
@@ -83,16 +96,17 @@ export function ProductForm({
   const router = useRouter();
   const create = useAction(createProductAction, { create: true });
   const update = useAction(updateProductAction);
-  const action = entry ? update : create;
+  const add = useAction(addSuggestedProductAction, { create: true });
+  const action = entry ? update : suggestion ? add : create;
   const loaded: Values = {
-    name: entry?.name ?? "",
+    name: entry?.name ?? suggestion?.name ?? "",
     type: entry?.type ?? DEFAULT_PRODUCT_TYPE,
     categoryId: entry?.categoryId ?? "",
     unitId: entry?.unitId ?? "",
     defaultCompanyId: entry?.defaultCompanyId ?? "",
     referencePrice: "",
     description: entry?.description ?? "",
-    photoFileId: entry?.photoFileId ?? "",
+    photoFileId: entry?.photoFileId ?? suggestion?.photoFileId ?? "",
   };
   const { register, handleSubmit, reset, control, setValue, watch, formState } = useForm<Values>({
     defaultValues: loaded,
@@ -132,6 +146,18 @@ export function ProductForm({
   }
 
   const onSubmit = handleSubmit(async (current) => {
+    if (!entry && suggestion) {
+      const result = await add.run({ ...current, suggestionId: suggestion.id });
+      if (!result) return;
+      if (!result.ok) {
+        toast.error(tAll(result.error.messageKey));
+        return;
+      }
+      toast.success(tAll("suggestions.added"));
+      reset(current);
+      router.push(`/suggestions/${suggestion.id}`);
+      return;
+    }
     if (!entry) {
       const result = await create.run(current);
       if (!result) return;
@@ -220,6 +246,11 @@ export function ProductForm({
           </Select>
         </Field>
         <div className="flex flex-col gap-1.5">
+          {suggestion && (
+            <p className="text-sm leading-5 font-semibold text-muted-foreground">
+              {tAll("suggestions.askedMeasure", { unit: suggestion.unitText })}
+            </p>
+          )}
           <Field id="product-unitId" label={t("fields.unitId")} error={action.fieldTexts.unitId}>
             <Select {...register("unitId")} disabled={locked}>
               <option value="">{t("chooseUnit")}</option>

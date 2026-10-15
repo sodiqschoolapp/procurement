@@ -584,4 +584,22 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - A price with a note is set only through `setHeadPrice()` + `recordPriceAdd()`; the deferred `price_recorded` check refuses anything else at commit.
 - The unknown kind in tests is now `stock`.
 
-The next task is 1.12.
+## 1.12 Product suggestions (15.10.2026, pull request #42)
+
+**Built**
+- Migration `0017_catalog_suggestions`: enum `suggestion_status`, `catalog_suggestions` (FKs, unique photo, product and client key; blank and length CHECKs; the decision shape CHECK), the guard trigger (no delete; decided once; what was sent never changes).
+- `src/domain/suggestions.ts`; `suggestProduct`, `addSuggestedProduct`, `declineSuggestion` (`actions/suggestions.ts`), audit `suggestion.*`, notifications `PRODUCT_SUGGESTED` and `PRODUCT_SUGGESTION_DECIDED` with params and texts.
+- Queries `listSuggestions`, `getSuggestion`, `countPendingSuggestions`; file owner `SUGGESTION_PHOTOS`; `decideList()`/`authorizeList()` and `roleMay()` in the permission layer.
+- Pages `/suggestions`, `/new`, `/[id]`, `/[id]/add` (the product form of 1.7 with a `suggestion` prop); a row on `/catalog`; a link on the Manager's home.
+
+**Left out, and the task that brings it**
+- The Head's home list of suggestions: 6.2. The entry from the request editor's product search: the request task after D42. Adding a suggestion as a subtype of an existing product: no task.
+
+**What the next sessions must know**
+- A list of a branch permission that names no branch: `authorizeList()` and `branchFilter()` in the SQL; a branch view: `authorize()` on that branch (permission-matrix test through the view).
+- A screen shows a button of a global permission through `roleMay()`, never `role === …`.
+- For 6.1: keep the Manager's "Suggest a product" link beside the three large buttons. For 6.2: `countPendingSuggestions` and `listSuggestions` give the Head's list.
+- A textarea inside `Field` needs its own `id`; only `Input` and `Select` read it from the field.
+- `insertProduct()` takes `{ acceptedPhotoId }` for the add of a suggestion only; nothing else passes it.
+
+The next task is 1.13.

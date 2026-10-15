@@ -849,6 +849,30 @@ Choices made during the build:
 - The Import prices button shows on `/prices` when there is a subtype to price, to whoever can open `/prices` (today the Head only, as for the import); a screen does not decide a permission (permission review, nit 3, answered).
 - Two existing tests used `prices` as the unknown kind; they now use `stock`, because 1.11 made `prices` a kind. Nothing was weakened.
 
+### 1.12 Product suggestions (15.10.2026)
+
+The plan's decisions as the plan review of 15.10.2026 confirmed them (corrections 1 to 3 applied), and those of the build. The Look first items come first.
+
+1. **Look first** (permission matrix). Seeing suggestions is `catalog.suggest` on the branch: the Head every branch, a Manager the suggestions of their own branches (a colleague's too), Principal and Finance none; another branch's is "Not found". No Manager right guards it.
+2. **Look first** (permission matrix). Adding and declining are `catalog.manage`, the Head only (04 rule 8; 03 row 1).
+3. **Look first** (file access contract). The suggestion's photo passes to the new product: both rows hold the same file. `SUGGESTION_PHOTOS` answers `catalog.pick` while a product holds the file, else `catalog.suggest` on the suggestion's branch, so the order of `FILE_OWNERS` decides nothing. The product guard skips `refusePhoto()` only for `acceptedPhotoId`, read from the locked suggestion row, never from the input; `createProduct`, `updateProduct` and the import never set it.
+4. **Look first** (spec text). New screens beyond the 17 of `11-screens-and-ux.md`: `/suggestions`, `/suggestions/new`, `/suggestions/[id]`, `/suggestions/[id]/add`. The Manager reaches them from a link on the home page; the Head from a row on `/catalog` (Admin is marked there). Proposed `/spec-change`: add the row "Product suggestions | `/suggestions` | Manager, Head" to the Screens table of 11 and change "The app has 17 screens" to "The app has 18 screens".
+5. Fields: name (catalog name rule, required), measure as text (required, 1 to 30), photo (optional), note (optional, up to 500); the decline reason required, up to 500. The database checks the same limits.
+6. Columns beyond 14: `client_key` (rule 8) and `decided_at` (from the injected clock).
+7. A suggested name any product holds, active or inactive, is refused with the field error `errors.field.inCatalog` ("already in the catalog, perhaps inactive"), a new error kind instead of the plain `taken`, so the Manager reads why. Two pending suggestions of one name are allowed.
+8. Notifications: `PRODUCT_SUGGESTED` `{ name, branch }` (the branch's code) to every active Head but the actor; `PRODUCT_SUGGESTION_DECIDED` `{ name, outcome }` to the suggester; both carry the suggestion's branch.
+9. A suggestion is decided once: the row lock and the PENDING check (`wrong_status`), and the guard trigger (no delete; PENDING to ADDED or DECLINED only; what was sent never changes). No version column.
+10. The Head may suggest too, for any active branch.
+11. A suggestion for an inactive branch is refused (`errors.field.inactive`), the branch locked FOR SHARE, as a new department.
+
+Choices made during the build:
+
+- **Look first** (permission layer). `decideList()` (domain) and `authorizeList()` (server) answer a list of a branch permission that names no branch: allowed when the role has a grant in some branch and a Manager's guarding right is on; the list then filters with `branchFilter()` inside its SQL. A permission of "own requests" is refused by it. `listSuggestions` with a branch view asks `authorize()` on that branch instead, so another branch is "Not found".
+- `roleMay()` (domain) tells a screen whether a role may use a global permission, so the suggestion page shows Add and Decline without a `role === "HEAD"` in the screen.
+- The add's input is the create's own (`createProduct.input` with `suggestionId`), so the product's checks are the same; the client key is the new product's.
+- The decline reason is typed on the page, then the confirm dialog asks (the plan said the dialog holds the reason; the shared dialog has no field).
+- The note and reason fields are plain textareas with their own ids: `Field` gives its id only to controls that read it.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

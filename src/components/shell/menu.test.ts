@@ -66,6 +66,9 @@ describe("the active item (plan of 0.10b, decision 7)", () => {
       "/users",
       "/branches",
       "/settings",
+      // The product suggestions since 1.12 (plan of 1.12, decision 4).
+      "/suggestions",
+      "/suggestions/x/add",
     ]) {
       expect(isActive(head.admin!, path), path).toBe(true);
     }

@@ -80,10 +80,11 @@ export type CatalogConfig<Fields extends Record<string, unknown>> = {
    * table's lock before the name check, with the actor and the fields the write would store (every field on
    * create, `current` null; the changed ones on update, `current` the locked row). Throws an
    * ActionError with field errors. Measures lock "Allows decimals" here, products their references,
-   * photo and the lock after first use.
+   * photo and the lock after first use. `acceptedPhotoId` is set only by the add of a product
+   * suggestion (plan of 1.12, decision 3): the suggestion's own photo, read under its lock.
    */
   guard?(
-    context: { tx: Executor; userId: string },
+    context: { tx: Executor; userId: string; acceptedPhotoId?: string | null },
     sent: Partial<Fields>,
     current: SavedEntry<Fields> | null,
   ): Promise<void>;
@@ -212,19 +213,22 @@ export function defineCatalogActions<Fields extends Record<string, unknown>>(
    * actions and queries"): one write path, so an imported entry keeps every rule of one made by
    * hand. `input` holds the fields as the create's input check gives them, and the parent's id
    * under `within.key`. `clientKey` is the create's own; an import passes null, as only its
-   * `catalog_imports` row holds its key (spec review of the plan of 1.10, Should fix 1).
+   * `catalog_imports` row holds its key (spec review of the plan of 1.10, Should fix 1). The add of
+   * a product suggestion passes the suggestion's photo as `acceptedPhotoId` (plan of 1.12, decision
+   * 3, Look first); nothing else does.
    */
   async function insert(
     tx: Executor,
     userId: string,
     input: Record<string, unknown>,
     clientKey: string | null,
+    options: { acceptedPhotoId?: string | null } = {},
   ): Promise<Saved> {
     await tx.execute(tableLock);
     const sent = pick(input as Partial<Fields>, fields);
     const parentId = within ? (input[within.key] as string) : null;
     if (within) await within.check(tx, parentId!);
-    if (guard) await guard({ tx, userId }, sent, null);
+    if (guard) await guard({ tx, userId, acceptedPhotoId: options.acceptedPhotoId }, sent, null);
     await refuseTaken(tx, sent, null, parentId);
     const [row] = await tx
       .insert(table)

@@ -1,4 +1,5 @@
 import type { ManagerRight, Role } from "./permissions";
+import type { SuggestionOutcome } from "./suggestions";
 
 // What a notification is (10-notifications-analytics-reports.md, Notifications; 14-data-model.md,
 // System: `notifications user_id, type, params JSONB, link, read_at`). Pure: src/server/notify.ts
@@ -54,6 +55,10 @@ export type NotificationParamsOf = {
   BRANCH_ROLE_VACANT: { branch: string; role: Role };
   /** "A Manager's right is switched on or off": the right's code, and "on" or "off". */
   MANAGER_RIGHT_SWITCHED: { right: ManagerRight; state: "on" | "off" };
+  /** "Product suggested": the suggested name and the branch's code (plan of 1.12, decision 8). */
+  PRODUCT_SUGGESTED: { name: string; branch: string };
+  /** "The decision goes back to the Manager": the suggested name and the outcome (decision 8). */
+  PRODUCT_SUGGESTION_DECIDED: { name: string; outcome: SuggestionOutcome };
 };
 
 /** A type notify() accepts: one with params and a text (decision 10). */
@@ -65,6 +70,8 @@ export const NOTIFICATION_PARAMS: {
 } = {
   BRANCH_ROLE_VACANT: ["branch", "role"],
   MANAGER_RIGHT_SWITCHED: ["right", "state"],
+  PRODUCT_SUGGESTED: ["name", "branch"],
+  PRODUCT_SUGGESTION_DECIDED: ["name", "outcome"],
 };
 
 export type NotificationParamValue = string | number;

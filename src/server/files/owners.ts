@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 
 import type { Permission, Target } from "@/domain/permissions";
 import type { Executor } from "@/server/authorize";
-import { productVariants, products } from "@/server/db/schema";
+import { catalogSuggestions, productVariants, products } from "@/server/db/schema";
 
 // Who may download a file: the record it belongs to decides (build plan 0.12: the download route
 // "calls authorize() for the record the file belongs to; each later task that attaches files adds
@@ -65,7 +65,32 @@ export const SUBTYPE_PHOTOS: FileOwner = {
   },
 };
 
-export const FILE_OWNERS: readonly FileOwner[] = [PRODUCT_PHOTOS, SUBTYPE_PHOTOS];
+/**
+ * A product suggestion's photo (task 1.12): seen through catalog.suggest on the suggestion's
+ * branch, the Head and the Managers of that branch, whatever its status (plan of 1.12, decision 1,
+ * Look first). When the Head kept the photo at the add, the new product holds the same file: then
+ * it answers catalog.pick, exactly as PRODUCT_PHOTOS does, so the order of FILE_OWNERS still decides
+ * nothing (decision 3, Look first). Once that product's photo is dropped or replaced, the file is
+ * the suggestion's alone again and back behind its branch.
+ */
+export const SUGGESTION_PHOTOS: FileOwner = {
+  name: "catalog_suggestions.photo_file_id",
+  async find(executor, fileId) {
+    const [row] = await executor
+      .select({ branchId: catalogSuggestions.branchId })
+      .from(catalogSuggestions)
+      .where(eq(catalogSuggestions.photoFileId, fileId));
+    if (!row) return null;
+    if (await PRODUCT_PHOTOS.find(executor, fileId)) return { permission: "catalog.pick" };
+    return { permission: "catalog.suggest", target: { branchId: row.branchId } };
+  },
+};
+
+export const FILE_OWNERS: readonly FileOwner[] = [
+  PRODUCT_PHOTOS,
+  SUBTYPE_PHOTOS,
+  SUGGESTION_PHOTOS,
+];
 
 /** The access of the first record that holds the file, or `null` for a file no record holds. */
 export async function accessOf(

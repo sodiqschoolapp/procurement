@@ -204,3 +204,39 @@ export function decide(permission: Permission, actor: Actor, target?: Target): D
 
   return "allow";
 }
+
+/**
+ * The matrix answer for a list of a branch permission, which names no branch: whether the role
+ * may use the permission in any branch at all. The list then filters by branch inside its SQL
+ * with branchFilter() (developer-rules.md rule 4; plan of 1.12, decision 1, Look first): the Head
+ * every branch, everyone else their own. A Manager whose right is switched off is `forbidden`. A
+ * permission of "own requests" is not listed this way: its owner is a filter of its own.
+ */
+export function decideList(permission: Permission, actor: Actor): "allow" | "forbidden" {
+  const rule: PermissionRule = PERMISSIONS[permission];
+  if (rule.scope === "global") {
+    return rule.roles[actor.role] === "yes" ? "allow" : "forbidden";
+  }
+  const grant = rule.roles[actor.role];
+  if (grant === "owner") {
+    throw new Error(`decideList(): the permission ${permission} is listed by its owner.`);
+  }
+  if (grant === "no") return "forbidden";
+  if (actor.role === "MANAGER" && rule.right && actor.disabledRights.includes(rule.right)) {
+    return "forbidden";
+  }
+  return "allow";
+}
+
+/**
+ * Whether a role may use a global permission: for a screen that shows a button only when it works
+ * (11-screens-and-ux.md, "only the buttons that work right now"). The server asks authorize()
+ * again; this protects nothing.
+ */
+export function roleMay(permission: Permission, role: Role): boolean {
+  const rule: PermissionRule = PERMISSIONS[permission];
+  if (rule.scope !== "global") {
+    throw new Error(`roleMay(): the permission ${permission} needs a branch.`);
+  }
+  return rule.roles[role] === "yes";
+}
