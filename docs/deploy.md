@@ -102,6 +102,8 @@ Task 0.15 added `SEED_DEMO_DATA`, `S3_REGION` and `S3_BUCKET` to `.do/app.yaml`.
    seed done
    ```
 
+   In the same transaction it also writes the demo catalogs (measures, categories, extra cost types, companies, departments of both branches, and 30 products with their subtypes and prices); they print no line.
+
    On every later deploy the same lines say `kept` instead of `created`.
 3. Sign in at `https://ombor-test.sodiqschool.uz/login` as each of `seed_head`, `seed_manager`, `seed_principal` and `seed_finance` with its password. Each sees its own empty home page.
 4. The storage check: the app → component `web` → Console, and type `node scripts/storage-check.mjs`. It makes an invented picture, makes its small version with sharp, writes it to R2, reads it back, and prints `storage ok`. Anything else is one line `storage failed: …` (below). If the console says a variable `S3_…` is not set although step 8.1 has it, the console may not carry the component's variables: say so on issue #9.
