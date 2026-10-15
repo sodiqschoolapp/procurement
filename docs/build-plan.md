@@ -184,7 +184,7 @@ Everything the Head sets up before the first request can be written.
   - **Build:** A Manager sends a suggestion with name, measure as text, photo and note; the Head adds it to the catalog, edited if needed, or declines with a reason; each side is notified.
   - **Done when:** Database tests for both outcomes and their notifications; a Principal cannot suggest.
 
-- [ ] **1.13 Seed: catalogs**
+- [x] **1.13 Seed: catalogs**
   - **Read:** `edge-cases/developer-rules.md` (rule 14).
   - **Build:** The seed gains measures, categories, extra cost types, companies, departments for both branches, and 30 products with subtypes and prices. All names are invented.
   - **Done when:** The seed runs on an empty database in CI. By hand on the test copy: the Head sees 30 products.
