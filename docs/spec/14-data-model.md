@@ -65,8 +65,8 @@ order_events         order_id, action_id, type, from_status, to_status, actor_id
 purchase_trips       client_key UNIQUE, branch_id, purchased_on, supplier_id,
                      payment_type [CASH|TRANSFER|CARD], created_by
                      -- one shop visit; holds one or more purchase records
-purchases            trip_id, order_id, purchased_on, variant_id, qty, unit_price,
-                     payment_type [CASH|TRANSFER|CARD], supplier_id, comment,
+purchases            trip_id, order_id, variant_id, qty, unit_price, comment,
+                     -- date, supplier and payment type are the trip's, never copied
                      give_to_requester, is_cancelled, cancel_reason, cancelled_by,
                      cancelled_at, created_by
 purchase_extras      purchase_id, extra_cost_type_id, amount, payment_type [CASH|TRANSFER|CARD]
