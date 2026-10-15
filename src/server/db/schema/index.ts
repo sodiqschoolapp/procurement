@@ -2,6 +2,7 @@
 // drizzle-kit reads this file to write a migration, and the client reads it for typed queries.
 export * from "./catalogs";
 export * from "./files";
+export * from "./imports";
 export * from "./jobs";
 export * from "./organisation";
 export * from "./system";

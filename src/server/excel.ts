@@ -163,7 +163,7 @@ export async function readSheet(bytes: Uint8Array): Promise<ImportSheet> {
 export async function writeTemplate(
   sheetName: string,
   titles: readonly string[],
-): Promise<Uint8Array> {
+): Promise<Uint8Array<ArrayBuffer>> {
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet(sheetName.slice(0, 31), {
     views: [{ state: "frozen", ySplit: 1 }],
