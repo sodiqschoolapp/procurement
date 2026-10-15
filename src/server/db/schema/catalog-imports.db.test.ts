@@ -74,4 +74,32 @@ describe("catalog_imports (plan of 1.10, Database changes)", () => {
       constraint: "catalog_imports_created_by_users_id_fk",
     });
   });
+
+  it("an update is held to the same rules (D39: insert and update)", async () => {
+    const clientKey = randomUUID();
+    await insertImport({ clientKey });
+    const taken = randomUUID();
+    await insertImport({ clientKey: taken });
+    const update = (set: ReturnType<typeof sql>) =>
+      db.execute(sql`update catalog_imports set ${set} where client_key = ${clientKey}`);
+    expect(await refusalOf(update(sql`row_count = 0`))).toMatchObject({
+      code: "23514",
+      constraint: "catalog_imports_row_count_check",
+    });
+    const fileName = { code: "23514", constraint: "catalog_imports_file_name_check" };
+    expect(await refusalOf(update(sql`file_name = ' '`))).toMatchObject(fileName);
+    expect(await refusalOf(update(sql`file_name = ${`${"ʻ".repeat(251)}.xlsx`}`))).toMatchObject(
+      fileName,
+    );
+    expect(await refusalOf(update(sql`client_key = ${taken}`))).toMatchObject({
+      code: "23505",
+      constraint: "catalog_imports_client_key_key",
+    });
+    expect(await refusalOf(update(sql`created_by = ${randomUUID()}`))).toMatchObject({
+      code: "23503",
+      constraint: "catalog_imports_created_by_users_id_fk",
+    });
+    // Beside the refusals, an update within the rules passes.
+    await update(sql`file_name = 'boshqa.xlsx', row_count = 1`);
+  });
 });

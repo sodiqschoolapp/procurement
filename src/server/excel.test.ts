@@ -119,8 +119,11 @@ describe("checkZip: the real unpacked size (plan of 1.10, decision 11)", () => {
     expect(() => checkZip(zipOf(Buffer.alloc(1000, 0x41), { method: 0 }), limit)).not.toThrow();
   });
 
-  it("refuses a zip that declares more than the limit", () => {
-    expect(() => checkZip(zipOf(big), limit)).toThrow(ImportFileError);
+  it("refuses a zip that declares more than the limit, though it really unpacks within it", () => {
+    // Only the declared-size check can stop this file: its real content is 10 bytes.
+    expect(() => checkZip(zipOf(Buffer.alloc(10, 0x41), { declared: limit + 1 }), limit)).toThrow(
+      ImportFileError,
+    );
   });
 
   it("refuses a zip whose declared size lies: the real unpacking stops it", () => {

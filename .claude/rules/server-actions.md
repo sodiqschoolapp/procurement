@@ -18,3 +18,4 @@ Read first, under `docs/spec/`: `edge-cases/developer-rules.md` rules 3, 4, 8, 9
 - A log never holds a database error's message: Drizzle's carries every bound value of the statement, and PostgreSQL's can quote one. Log through `describeForLog()` of `src/server/action.ts` (name, PostgreSQL code and constraint only). (Review of 0.8.)
 - An action that is not a create has a `lock` step: the check of branch, owner and version runs under the lock. Each action's `target` reads branch and owner from the database, never from the input (a create excepted).
 - `audit()` takes the actor from the wrapper: `audit({ tx, userId }, entry)` with the step's `WriteContext`, never an actor id the action builds. (Review of 0.9.)
+- A page action that calls `authorize()` before it runs a feature action or query does not prove the feature's own check: each feature action and query has its own permission-matrix test, called directly. (Permission review of 1.10.)

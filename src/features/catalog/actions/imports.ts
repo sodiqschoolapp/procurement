@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import * as z from "zod";
 
 import { isClientKey } from "@/components/client-key";
@@ -114,7 +114,9 @@ export type SavedImport = { importId: string; rows: number };
 type Written<Entry> = SavedImport & { written: Entry[] };
 
 /** The first import of a client key, given back to its maker only (developer-rules.md rule 8). */
-function findImport<Entry>(kind: "PRODUCTS" | "DEPARTMENTS") {
+// The key is unique across kinds: the same key sent with the other kind finds this first result
+// too, rather than failing at the insert after every row was written (spec review, nit 2).
+function findImport<Entry>() {
   return async (tx: Executor, clientKey: string): Promise<FirstResult<Written<Entry>> | null> => {
     const [row] = await tx
       .select({
@@ -123,7 +125,7 @@ function findImport<Entry>(kind: "PRODUCTS" | "DEPARTMENTS") {
         userId: catalogImports.createdBy,
       })
       .from(catalogImports)
-      .where(and(eq(catalogImports.clientKey, clientKey), eq(catalogImports.kind, kind)));
+      .where(eq(catalogImports.clientKey, clientKey));
     if (!row) return null;
     return {
       result: { importId: row.id, rows: row.rows, written: [] },
@@ -152,7 +154,7 @@ export const importProducts = defineAction({
   },
   repeat: {
     clientKey: (input) => input.clientKey,
-    find: findImport<WrittenProduct>("PRODUCTS"),
+    find: findImport<WrittenProduct>(),
   },
   async write({ tx, input, userId }): Promise<Written<WrittenProduct>> {
     // The products' lock, then the subtypes', as every write of those tables takes them.
@@ -234,7 +236,7 @@ export const importDepartments = defineAction({
   },
   repeat: {
     clientKey: (input) => input.clientKey,
-    find: findImport<WrittenDepartment>("DEPARTMENTS"),
+    find: findImport<WrittenDepartment>(),
   },
   async write({ tx, input, userId }): Promise<Written<WrittenDepartment>> {
     await lockDepartments(tx);

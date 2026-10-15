@@ -464,8 +464,8 @@ describe("importDepartments (04 rule 3: names unique inside a branch; decisions 
     const other = await insertBranch();
     const closed = await insertBranch({ isActive: false });
     const name = `Oshxona ${tag()}`;
-    // The name is held in `open` by an inactive department, and in `other` too: the row of `other`
-    // is refused for that, and a new name in `open` passes the check (D40).
+    // The name is held in `open` and in `other` by inactive departments; beside the refused row, a
+    // new name in `open` (row 2) passes the check (D40).
     for (const branch of [open, other]) {
       await db.insert(departments).values({
         branchId: branch.id,
@@ -495,6 +495,10 @@ describe("importDepartments (04 rule 3: names unique inside a branch; decisions 
         },
       },
     });
+    // Exactly those three: row 2 is not refused.
+    expect(
+      Object.keys((result as { ok: false; error: { fields: object } }).error.fields),
+    ).toHaveLength(3);
     expect(await db.select().from(departments).where(eq(departments.name, fresh))).toEqual([]);
     // The same name in a branch where nobody holds it passes.
     const third = await insertBranch();

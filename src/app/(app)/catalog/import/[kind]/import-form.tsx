@@ -39,7 +39,8 @@ function formOf(kind: ImportKind, file: File, clientKey?: string): FormData {
 function errorsOf(fields: Record<string, string>): ImportError[] {
   return Object.entries(fields).map(([key, message]) => {
     const kind = message.replace("errors.field.", "") as ImportError["kind"];
-    if (key === "file") return { row: 0, column: "file", kind };
+    // A key without a row (the file, its name) is an error of the file as a whole.
+    if (!key.includes(":")) return { row: 0, column: "file", kind };
     const [row, column] = key.split(":");
     return { row: Number(row), column: column as ImportError["column"], kind };
   });
