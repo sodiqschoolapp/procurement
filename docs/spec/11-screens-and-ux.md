@@ -43,7 +43,7 @@ A page a role cannot use is not shown greyed out; it is simply absent from the m
 
 1. **Top:** the filters (section 5) and the buttons Download Excel and Download PDF.
 2. **Rows:** one group row per product subtype and status (section 5, Group rows), opening to its orders; a tick box on every group row and every order.
-3. **Drafts grid,** for the Manager and the Head: the Manager's draft orders, edited like a spreadsheet (rule 2).
+3. **Drafts grid,** for the Manager and the Head: the Manager's draft orders and the orders sent back or taken back to them, edited like a spreadsheet (rule 2).
 4. **Action bar,** fixed at the bottom when something is ticked: the count and totals of the ticked orders, and only the actions this user can take on all of them now.
 
 ## Order page layout

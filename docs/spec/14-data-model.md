@@ -75,6 +75,7 @@ money_actions        client_key, order_action_id, manager_id, occurred_on, suppl
                      file_id, comment, is_cancelled, cancel_reason, cancelled_by,
                      cancelled_at, created_by
                      UNIQUE (client_key, manager_id)          -- one browser id can save one action per Manager
+                     -- order_action_id: the approval or settlement it was saved with; empty on the Money tab
 money_rows           money_action_id, order_id,
                      kind [CASH_GIVEN|CASH_RETURNED|PAID_BACK|BANK_TRANSFER|CARD_TOPUP|CARD_RETURNED],
                      amount CHECK (amount > 0)

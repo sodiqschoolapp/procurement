@@ -330,7 +330,7 @@ Cash given, cash spent, the difference and the close, per order, with Finance wo
 
 - [ ] **4.1 Money schema and domain**
   - **Read:** `14-data-model.md` (Purchasing and money: money_actions, money_rows, order_settlements); `08-money-and-settlement.md` (Money ledger; Exact match; Overspend guard; Worked example); `edge-cases/developer-rules.md` (rules 1, 6, 7); `02-assumptions.md` (A10, A11).
-  - **Build:** Migrations for the three tables; domain functions for an order's cash count, a Manager's cash balance (held and owed apart), the exact match of an order, the prefilled cash split (each order's planned cash) and the prefilled settlement rows (each order's count), the no-crossing check, the net of a settlement action, and the overspend guard with the percent and the amount.
+  - **Build:** Migrations for the three tables; domain functions for an order's cash count, a Manager's cash balance (held and owed apart), the exact match of an order, the prefilled cash rows (each order's planned cash) and the prefilled settlement rows (each order's count), the no-crossing check, the net of a settlement action, and the overspend guard with the percent and the amount.
   - **Done when:** Unit tests: the four worked-example counts (0, +50 000, −30 000, +50 000); the three-order example (split 520 000, 100 000, 30 000; net 20 000); a return row above an order's count is refused; 550 000 on 520 000 is 5.8% and 30 000 so'm and under the guard; 80 000 over is under the guard at a 100 000 amount and above it at 50 000; Bank transfer, Card top-up and Card money returned never change a count.
 
 - [ ] **4.2 Finance approval with cash**

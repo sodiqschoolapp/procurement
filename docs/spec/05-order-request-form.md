@@ -61,7 +61,7 @@ Every list shows one row per product subtype and status in a branch, for example
 
 1. **What a group row shows:** product and subtype, the total quantity, the total planned amount, how many orders it holds, the earliest needed-by date, "Urgent" when any of its orders is urgent, and the price hint when any of them has one.
 2. **Opening a group row** shows its orders: number, department, quantity, price, payment type, needed-by date, owner, date submitted.
-3. **Acting on a group row acts on every order in it,** all or nothing (`06-approval-workflow.md`, rule 8). Any single order can still be ticked and acted on alone.
+3. **Acting on a group row acts on every order in it,** all or nothing (`06-approval-workflow.md`, rule 8), except a trip, which takes only the orders of one owner (`07-purchasing.md`). Any single order can still be ticked and acted on alone.
 4. **Each order keeps its own** number, approvals, history, purchases and money. A group row is a way of showing and ticking orders, not a record of its own. Example: 20 Tata pens wait for the Principal; 10 more are submitted and wait for the Head; once the Head approves them, the Principal sees one row "Tata pens, 30" holding both orders.
 5. The Manager's own view counts every stage: "Tata pens: 30 requested".
 6. Wherever orders are taken "oldest first", two orders submitted at the same moment are taken by the lower order number first.

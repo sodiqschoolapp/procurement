@@ -83,7 +83,7 @@ The settlement screen also shows how many purchase records were cancelled on eac
 
 ## Overspend guard
 
-When an order's actual total is above its planned total by more than 10% **and** by more than 100 000 so'm, the Head is notified and must click "Acknowledge overspend" with a comment before Finance can close it. Both numbers are settings. With the percent at 0 only the amount counts; with the amount at 0 only the percent counts; with both at 0 every overspend needs the Head; the guard can be switched off. The Head can acknowledge several ticked orders with one comment.
+When an order's actual total is above its planned total by more than 10% **and** by more than 100 000 so'm, the Head is notified and must click "Acknowledge overspend" with a comment before Finance can close it. Both numbers are settings. With the percent at 0 only the amount counts; with the amount at 0 only the percent counts; with both at 0 every overspend needs the Head; the guard can be switched off. The Head can acknowledge several ticked orders with one comment. A reopen by the Head clears the acknowledgment together with the settlement confirmations, so a reopened order is checked again.
 
 ## Worked example
 
