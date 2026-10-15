@@ -207,6 +207,62 @@ export function defineCatalogActions<Fields extends Record<string, unknown>>(
     return { ...pick(entry, fields), isActive: entry.isActive };
   }
 
+  /**
+   * The body of the create's write step, shared with an Excel import (plan of 1.10, "Server
+   * actions and queries"): one write path, so an imported entry keeps every rule of one made by
+   * hand. `input` holds the fields as the create's input check gives them, and the parent's id
+   * under `within.key`. `clientKey` is the create's own; an import passes null, as only its
+   * `catalog_imports` row holds its key (spec review of the plan of 1.10, Should fix 1).
+   */
+  async function insert(
+    tx: Executor,
+    userId: string,
+    input: Record<string, unknown>,
+    clientKey: string | null,
+  ): Promise<Saved> {
+    await tx.execute(tableLock);
+    const sent = pick(input as Partial<Fields>, fields);
+    const parentId = within ? (input[within.key] as string) : null;
+    if (within) await within.check(tx, parentId!);
+    if (guard) await guard({ tx, userId }, sent, null);
+    await refuseTaken(tx, sent, null, parentId);
+    const [row] = await tx
+      .insert(table)
+      .values({
+        ...sent,
+        ...(within ? { [within.key]: parentId } : {}),
+        isActive: true,
+        clientKey,
+        createdAt: now(),
+      } as never)
+      .returning(columns);
+    if (afterInsert) await afterInsert({ tx, userId }, row as Saved);
+    return row as Saved;
+  }
+
+  /** The body of the create's history step: the entry's `<prefix>.create` row (04 rule 9). */
+  async function recordCreate(tx: Executor, userId: string, entry: Saved): Promise<void> {
+    // The parent's id is a field of the entry; its code is read here, as it is now (decision 7).
+    const parent = within
+      ? await within.shown(tx, (entry as Record<string, unknown>)[within.key] as string)
+      : {};
+    await audit(
+      { tx, userId },
+      {
+        action: action("create"),
+        entity,
+        entityId: entry.id,
+        before: null,
+        after: {
+          ...parent,
+          ...shown(entry),
+          ...(shownRefs ? await shownRefs(tx, pick(entry, fields)) : {}),
+        },
+        at: now(),
+      },
+    );
+  }
+
   const shape = config.shape as Record<string, z.ZodType>;
 
   const createInput = z.object({
@@ -246,45 +302,10 @@ export function defineCatalogActions<Fields extends Record<string, unknown>>(
       },
     },
     async write({ tx, input, userId }): Promise<Saved> {
-      await tx.execute(tableLock);
-      const sent = pick(input as unknown as Partial<Fields>, fields);
-      const parentId = within ? ((input as Record<string, unknown>)[within.key] as string) : null;
-      if (within) await within.check(tx, parentId!);
-      if (guard) await guard({ tx, userId }, sent, null);
-      await refuseTaken(tx, sent, null, parentId);
-      const [row] = await tx
-        .insert(table)
-        .values({
-          ...sent,
-          ...(within ? { [within.key]: parentId } : {}),
-          isActive: true,
-          clientKey: input.clientKey,
-          createdAt: now(),
-        } as never)
-        .returning(columns);
-      if (afterInsert) await afterInsert({ tx, userId }, row as Saved);
-      return row as Saved;
+      return insert(tx, userId, input as unknown as Record<string, unknown>, input.clientKey);
     },
     async history({ tx, userId }, entry) {
-      // The parent's id is a field of the entry; its code is read here, as it is now (decision 7).
-      const parent = within
-        ? await within.shown(tx, (entry as Record<string, unknown>)[within.key] as string)
-        : {};
-      await audit(
-        { tx, userId },
-        {
-          action: action("create"),
-          entity,
-          entityId: entry.id,
-          before: null,
-          after: {
-            ...parent,
-            ...shown(entry),
-            ...(shownRefs ? await shownRefs(tx, pick(entry, fields)) : {}),
-          },
-          at: now(),
-        },
-      );
+      await recordCreate(tx, userId, entry);
     },
   });
 
@@ -401,5 +422,5 @@ export function defineCatalogActions<Fields extends Record<string, unknown>>(
     await tx.execute(tableLock);
   }
 
-  return { create, update, setActive, lockTable, refuseTaken };
+  return { create, update, setActive, lockTable, refuseTaken, insert, recordCreate };
 }

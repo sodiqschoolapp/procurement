@@ -109,4 +109,17 @@ describe("field errors of the input check (developer-rules.md rule 13)", () => {
       "lines.1.qty": "errors.field.notANumber",
     });
   });
+
+  it("a check that names its kind gives that kind; an unknown name stays a wrong format", () => {
+    const named = z.string().superRefine((value, context) => {
+      context.addIssue({ code: "custom", message: "", params: { fieldError: value } });
+    });
+    const wrong = (value: string) => {
+      const parsed = named.safeParse(value);
+      return fieldErrors((parsed as { error: z.ZodError }).error, value)[""];
+    };
+    // An Excel import's row check (plan of 1.10): "no such category" reads as itself.
+    expect(wrong("unknown")).toBe("errors.field.unknown");
+    expect(wrong("notAKind")).toBe("errors.field.wrongFormat");
+  });
 });

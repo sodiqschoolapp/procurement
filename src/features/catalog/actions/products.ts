@@ -174,3 +174,8 @@ const catalog = defineCatalogActions<ProductFields>({
 export const createProduct = catalog.create;
 export const updateProduct = catalog.update;
 export const setProductActive = catalog.setActive;
+
+/** The create's write and history steps, and the table's lock, for an Excel import (plan of 1.10). */
+export const insertProduct = catalog.insert;
+export const recordProductCreate = catalog.recordCreate;
+export const lockProducts = catalog.lockTable;

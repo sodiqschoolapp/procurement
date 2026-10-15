@@ -55,6 +55,10 @@ export const SERVER_ACTIONS: Record<string, Entry> = {
     "catalog.manage",
   // "Add a new price for a product": the Head only (03; plan of 1.9, decision 4, Look first).
   "src/app/(app)/prices/actions.ts#addPriceAction": "price.add",
+  // The Head's Excel import of products and departments (plan of 1.10): the permission is checked
+  // before the file is read (plan review, correction 1).
+  "src/app/(app)/catalog/import/actions.ts#previewImportAction": "catalog.manage",
+  "src/app/(app)/catalog/import/actions.ts#saveImportAction": "catalog.manage",
 };
 
 /** Exports of `src/features/<area>/queries/`, as `<file>#<export>`. */
@@ -87,6 +91,8 @@ export const QUERIES: Record<string, Permission> = {
   // Prices: the Admin list and one subtype's price history (plan of 1.9, decision 4, Look first).
   "src/features/catalog/queries/prices.ts#listPrices": "catalog.manage",
   "src/features/catalog/queries/prices.ts#getPriceHistory": "catalog.manage",
+  // The preview of an Excel import (plan of 1.10).
+  "src/features/catalog/queries/imports.ts#previewImport": "catalog.manage",
   // The Head's users, the vacancy warning and the form's branches (plan of 1.3).
   "src/features/users/queries/users.ts#listUsers": "catalog.manage",
   "src/features/users/queries/users.ts#getUser": "catalog.manage",

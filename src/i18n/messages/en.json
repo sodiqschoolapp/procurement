@@ -56,7 +56,15 @@
       "branchInactive": "This branch is inactive and cannot be added",
       "inactive": "This entry is inactive. Choose an active one.",
       "notAPhoto": "Choose a photo: JPG, PNG, WebP or HEIC",
-      "locked": "Locked: the item is already used"
+      "locked": "Locked: the item is already used",
+      "unknown": "No such entry in the catalog",
+      "ambiguous": "Matches two different entries",
+      "duplicateInFile": "Already given on an earlier row",
+      "differsInFile": "Differs from the product's first row",
+      "notTemplate": "This is not the import template. Download the template and fill it in.",
+      "fileTooLarge": "The file is larger than 900 KB.",
+      "tooManyRows": "The file has more than 500 rows. Split it into smaller files.",
+      "noRows": "The file has no rows to import."
     },
     "file": {
       "tooLarge": "The file is larger than 10 MB. Choose a smaller file or take the photo again.",
@@ -641,7 +649,8 @@
       "count": "{count, plural, one {# subtype} other {# subtypes}}",
       "lastActive": "The last active subtype stays active. To stop using the item, deactivate the product.",
       "fact": "{price} · {state}"
-    }
+    },
+    "importButton": "Import from Excel"
   },
   "prices": {
     "title": "Prices",
@@ -673,6 +682,59 @@
     "sources": {
       "HEAD": "Head",
       "PURCHASE": "Purchase"
+    }
+  },
+  "imports": {
+    "back": "Back",
+    "title": {
+      "products": "Import products and services",
+      "departments": "Import departments"
+    },
+    "description": {
+      "products": "Add many new products and services, with their subtypes and prices, from one Excel file.",
+      "departments": "Add many departments of any branch from one Excel file."
+    },
+    "templateHeading": "Template",
+    "templateText": {
+      "products": "One row per product without subtypes, or one row per subtype with the product's name repeated. Category, measure and company must already be in the catalog.",
+      "departments": "One row per department. The branch is its short code, such as TSH."
+    },
+    "download": "Download template",
+    "fileHeading": "File",
+    "fileText": "Choose the filled-in template (.xlsx, up to 900 KB, up to 500 rows).",
+    "chooseFile": "Choose file",
+    "reading": "Reading the file…",
+    "previewHeading": "Preview",
+    "summary": "{rows, plural, one {# row} other {# rows}}, {errors, plural, =0 {no errors} one {# error} other {# errors}}",
+    "fixAndRetry": "Correct these rows in Excel and choose the file again. Nothing is saved until every row is valid.",
+    "errorLine": "Row {row}, {column}: {message}",
+    "fileError": "{message}",
+    "seeRow": "(see row {row})",
+    "row": "Row",
+    "save": "Save all rows",
+    "saving": "Saving…",
+    "saved": "{rows, plural, one {# row imported} other {# rows imported}}.",
+    "sheet": {
+      "products": "Products",
+      "departments": "Departments"
+    },
+    "columns": {
+      "products": {
+        "name": "Product name",
+        "type": "Type",
+        "category": "Category",
+        "measure": "Measure",
+        "company": "Brand or company",
+        "description": "Description",
+        "subtype": "Subtype",
+        "price": "Reference price"
+      },
+      "departments": {
+        "branch": "Branch code",
+        "name": "Name",
+        "responsibleName": "Responsible person",
+        "responsiblePhone": "Responsible person's phone"
+      }
     }
   }
 }

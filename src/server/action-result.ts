@@ -56,6 +56,16 @@ export const FIELD_ERROR_KINDS = [
   "inactive",
   "notAPhoto",
   "locked",
+  // An Excel import (plan of 1.10): no such entry, a name that fits two, the same value twice in
+  // the file, a later row of a product that differs from its first, and the file's own errors.
+  "unknown",
+  "ambiguous",
+  "duplicateInFile",
+  "differsInFile",
+  "notTemplate",
+  "fileTooLarge",
+  "tooManyRows",
+  "noRows",
 ] as const;
 export type FieldErrorKind = (typeof FIELD_ERROR_KINDS)[number];
 export type FieldMessageKey = `errors.field.${FieldErrorKind}`;
