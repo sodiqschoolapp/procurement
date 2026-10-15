@@ -120,6 +120,13 @@
       "when": 1792032541801,
       "tag": "0016_import_prices",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1792035027566,
+      "tag": "0017_catalog_suggestions",
+      "breakpoints": true
     }
   ]
 }

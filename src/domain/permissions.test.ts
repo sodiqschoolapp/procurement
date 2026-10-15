@@ -9,6 +9,7 @@ import {
   ROLES,
   type Role,
   decide,
+  decideList,
 } from "./permissions";
 
 // 03-roles-and-permissions.md (Rules 1; Manager rights; Permission matrix); developer-rules.md
@@ -112,5 +113,29 @@ describe("decide() (03 rule 1; Permission matrix)", () => {
     expect(() => decide("purchase.record", actor("MANAGER"), { branchId: OWN })).toThrow(
       /needs the request's owner/,
     );
+  });
+});
+
+describe("decideList(): a list of a branch permission (developer-rules.md rule 4; plan of 1.12, decision 1)", () => {
+  it("lets every role with a grant list, and no role without one", () => {
+    expect(decideList("catalog.suggest", actor("HEAD"))).toBe("allow");
+    expect(decideList("catalog.suggest", actor("MANAGER"))).toBe("allow");
+    expect(decideList("catalog.suggest", actor("PRINCIPAL"))).toBe("forbidden");
+    expect(decideList("catalog.suggest", actor("FINANCE"))).toBe("forbidden");
+  });
+
+  it("refuses a Manager whose right guarding the permission is off (03, Manager rights)", () => {
+    const off = actor("MANAGER", { disabledRights: ["ISSUE_STOCK"] });
+    expect(decideList("stock.issue", off)).toBe("forbidden");
+    expect(decideList("stock.transfer", off)).toBe("allow");
+  });
+
+  it("answers a global permission as decide() does", () => {
+    expect(decideList("catalog.manage", actor("HEAD"))).toBe("allow");
+    expect(decideList("catalog.manage", actor("MANAGER"))).toBe("forbidden");
+  });
+
+  it("is never asked about a permission of own requests", () => {
+    expect(() => decideList("request.edit", actor("MANAGER"))).toThrow();
   });
 });

@@ -132,7 +132,7 @@ const catalog = defineCatalogActions<ProductFields>({
       });
     }
   },
-  async guard({ tx, userId }, sent, current) {
+  async guard({ tx, userId, acceptedPhotoId }, sent, current) {
     if (current) {
       const locked = lockedChanges(
         PRODUCT_LOCKED_AFTER_USE,
@@ -151,7 +151,12 @@ const catalog = defineCatalogActions<ProductFields>({
     if (sent.defaultCompanyId) {
       await refuseInactive(tx, "defaultCompanyId", companies, sent.defaultCompanyId);
     }
-    if (sent.photoFileId) await refusePhoto(tx, userId, sent.photoFileId);
+    // The suggestion's own photo, handed over by its add, skips the uploader check: the Manager
+    // uploaded it and the suggestion holds it (plan of 1.12, decision 3, Look first). The id
+    // comes from the locked suggestion row, never from the input; any other photo is checked.
+    if (sent.photoFileId && sent.photoFileId !== acceptedPhotoId) {
+      await refusePhoto(tx, userId, sent.photoFileId);
+    }
   },
   // The names beside the ids, as they are now (decision 11), and the photo's file name; an absent
   // reference adds nothing.
@@ -179,3 +184,19 @@ export const setProductActive = catalog.setActive;
 export const insertProduct = catalog.insert;
 export const recordProductCreate = catalog.recordCreate;
 export const lockProducts = catalog.lockTable;
+
+/**
+ * Refuses a name a product already holds, active or not, as the create's own check (04 rule 3;
+ * plan of 1.7, decision 9): for a product suggestion (plan of 1.12, decision 7).
+ */
+export async function refuseProductName(tx: Executor, name: string): Promise<void> {
+  await catalog.lockTable(tx);
+  try {
+    await catalog.refuseTaken(tx, { name }, null, null);
+  } catch (error) {
+    if (error instanceof ActionError) {
+      throw new ActionError("invalid_input", { name: "errors.field.inCatalog" });
+    }
+    throw error;
+  }
+}

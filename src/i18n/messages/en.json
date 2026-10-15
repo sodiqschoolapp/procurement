@@ -64,7 +64,8 @@
       "notTemplate": "This is not the import template. Download the template and fill it in.",
       "fileTooLarge": "The file is larger than 900 KB.",
       "tooManyRows": "The file has more than 500 rows. Split it into smaller files.",
-      "noRows": "The file has no rows to import."
+      "noRows": "The file has no rows to import.",
+      "inCatalog": "This item is already in the catalog, perhaps inactive. Ask the Procurement Head about it."
     },
     "file": {
       "tooLarge": "The file is larger than 10 MB. Choose a smaller file or take the photo again.",
@@ -149,6 +150,11 @@
       },
       "price": {
         "add": "New price"
+      },
+      "suggestion": {
+        "create": "Suggestion sent",
+        "add": "Suggestion added to the catalog",
+        "decline": "Suggestion declined"
       }
     },
     "fields": {
@@ -269,7 +275,8 @@
         "title": "Nothing to approve yet",
         "line": "Requests waiting for your approval, requests waiting for settlement and money with managers will appear here."
       }
-    }
+    },
+    "suggest": "Suggest a product"
   },
   "profile": {
     "title": "Profile",
@@ -296,7 +303,9 @@
     "pages": "Pages of notifications",
     "types": {
       "BRANCH_ROLE_VACANT": "Branch {branch} has no active {role, select, HEAD {Procurement Head} MANAGER {Manager} PRINCIPAL {Principal} FINANCE {Finance user} other {user}}.",
-      "MANAGER_RIGHT_SWITCHED": "The Procurement Head switched {state, select, on {on} other {off}} your right: {right, select, CREATE_REQUESTS {Create and submit requests} RECORD_PURCHASES {Record purchases} CANCEL_PURCHASES {Cancel purchase records} CLOSE_ALONE {Close exact-match requests alone} ISSUE_STOCK {Issue stock to departments} RETURN_REVERSE {Take returns and reverse documents} TRANSFER_STOCK {Send transfers to other branches} WRITE_OFF_COUNT {Ask for write-offs and run stock counts} SET_MINIMUMS {Set minimum stock levels} other {?}}."
+      "MANAGER_RIGHT_SWITCHED": "The Procurement Head switched {state, select, on {on} other {off}} your right: {right, select, CREATE_REQUESTS {Create and submit requests} RECORD_PURCHASES {Record purchases} CANCEL_PURCHASES {Cancel purchase records} CLOSE_ALONE {Close exact-match requests alone} ISSUE_STOCK {Issue stock to departments} RETURN_REVERSE {Take returns and reverse documents} TRANSFER_STOCK {Send transfers to other branches} WRITE_OFF_COUNT {Ask for write-offs and run stock counts} SET_MINIMUMS {Set minimum stock levels} other {?}}.",
+      "PRODUCT_SUGGESTED": "New product suggestion from branch {branch}: {name}.",
+      "PRODUCT_SUGGESTION_DECIDED": "Your suggestion “{name}” was {outcome, select, added {added to the catalog} other {declined}}."
     }
   },
   "months": {
@@ -650,7 +659,12 @@
       "lastActive": "The last active subtype stays active. To stop using the item, deactivate the product.",
       "fact": "{price} · {state}"
     },
-    "importButton": "Import from Excel"
+    "importButton": "Import from Excel",
+    "suggestionsRow": {
+      "title": "Product suggestions",
+      "description": "Items Managers asked to add to the catalog.",
+      "pending": "{count, plural, =0 {Nothing waiting} one {# waiting} other {# waiting}}"
+    }
   },
   "prices": {
     "title": "Prices",
@@ -747,5 +761,64 @@
         "note": "Note"
       }
     }
+  },
+  "suggestions": {
+    "title": "Product suggestions",
+    "intro": "Ask the Procurement Head to add an item that is missing from the catalog.",
+    "new": "Suggest a product",
+    "newTitle": "Suggest a product",
+    "back": "Back to suggestions",
+    "allBranches": "All my branches",
+    "oneBranch": "Branch {code}, {name}",
+    "fields": {
+      "branchId": "Branch",
+      "name": "Name",
+      "unitText": "Measure",
+      "photoFileId": "Photo",
+      "note": "Note",
+      "reason": "Reason"
+    },
+    "hints": {
+      "name": "As it should appear in the catalog.",
+      "unitText": "As you would count it: pieces, boxes, kilograms.",
+      "photoFileId": "Optional. JPG, PNG, WebP or HEIC up to 10 MB.",
+      "note": "Optional. What it is for, a brand, a link to a shop.",
+      "reason": "The Manager reads this reason."
+    },
+    "chooseBranch": "Choose a branch",
+    "send": "Send suggestion",
+    "sent": "Suggestion sent to the Procurement Head",
+    "status": {
+      "PENDING": "Waiting for the Head",
+      "ADDED": "Added to the catalog",
+      "DECLINED": "Declined"
+    },
+    "columns": {
+      "name": "Name",
+      "unitText": "Measure",
+      "branch": "Branch",
+      "by": "Suggested by",
+      "date": "Sent",
+      "status": "Status"
+    },
+    "emptyTitle": "No suggestions yet",
+    "emptyText": "When an item you need is not in the catalog, suggest it here.",
+    "suggestedBy": "Suggested by",
+    "sentOn": "Sent",
+    "decidedBy": "Decided by",
+    "decidedOn": "Decided",
+    "product": "Product in the catalog",
+    "noNote": "No note",
+    "add": "Add to catalog",
+    "addTitle": "Add to the catalog",
+    "addIntro": "Check and complete the product, then save it. The suggestion is marked as added and {name} is told.",
+    "askedMeasure": "Measure asked for: {unit}",
+    "added": "Added to the catalog",
+    "decline": "Decline",
+    "declineTitle": "Decline this suggestion?",
+    "declineResult": "The suggestion is closed and the Manager sees your reason. This cannot be undone.",
+    "declined": "Suggestion declined",
+    "photoAlt": "Photo of {name}",
+    "noPhoto": "No photo"
   }
 }

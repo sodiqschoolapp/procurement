@@ -46,6 +46,9 @@ export const AUDIT_ACTIONS = [
   "subtype.deactivate",
   "subtype.activate",
   "price.add",
+  "suggestion.create",
+  "suggestion.add",
+  "suggestion.decline",
   "settings.change",
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];

@@ -64,7 +64,8 @@
       "notTemplate": "Bu import shabloni emas. Shablonni yuklab oling va toʻldiring.",
       "fileTooLarge": "Fayl 900 KB dan katta.",
       "tooManyRows": "Faylda 500 dan ortiq qator bor. Uni kichikroq fayllarga boʻling.",
-      "noRows": "Faylda import qilinadigan qator yoʻq."
+      "noRows": "Faylda import qilinadigan qator yoʻq.",
+      "inCatalog": "Bu tovar katalogda allaqachon bor, ehtimol nofaol. Xaridlar rahbaridan soʻrang."
     },
     "file": {
       "tooLarge": "Fayl 10 MB dan katta. Kichikroq fayl tanlang yoki suratni qaytadan oling.",
@@ -149,6 +150,11 @@
       },
       "price": {
         "add": "Yangi narx"
+      },
+      "suggestion": {
+        "create": "Taklif yuborildi",
+        "add": "Taklif katalogga qoʻshildi",
+        "decline": "Taklif rad etildi"
       }
     },
     "fields": {
@@ -269,7 +275,8 @@
         "title": "Hozircha tasdiqlash kerak emas",
         "line": "Bu yerda tasdiqingizni kutayotgan buyurtmalar, hisob-kitob kutayotgan buyurtmalar va menejerlardagi pul chiqadi."
       }
-    }
+    },
+    "suggest": "Tovar taklif qilish"
   },
   "profile": {
     "title": "Profil",
@@ -296,7 +303,9 @@
     "pages": "Bildirishnoma sahifalari",
     "types": {
       "BRANCH_ROLE_VACANT": "{branch} filialida faol {role, select, HEAD {xaridlar rahbari} MANAGER {menejer} PRINCIPAL {direktor} FINANCE {moliya xodimi} other {foydalanuvchi}} yoʻq.",
-      "MANAGER_RIGHT_SWITCHED": "Xaridlar rahbari sizning huquqingizni {state, select, on {yoqdi} other {oʻchirdi}}: {right, select, CREATE_REQUESTS {Buyurtmalar yaratish va yuborish} RECORD_PURCHASES {Xaridlarni yozish} CANCEL_PURCHASES {Xarid yozuvlarini bekor qilish} CLOSE_ALONE {Farqsiz buyurtmalarni oʻzi yopish} ISSUE_STOCK {Boʻlimlarga tovar berish} RETURN_REVERSE {Qaytarishlarni qabul qilish va hujjatlarni bekor qilish} TRANSFER_STOCK {Boshqa filiallarga koʻchirish yuborish} WRITE_OFF_COUNT {Hisobdan chiqarishni soʻrash va inventarizatsiya oʻtkazish} SET_MINIMUMS {Minimal qoldiqlarni belgilash} other {?}}."
+      "MANAGER_RIGHT_SWITCHED": "Xaridlar rahbari sizning huquqingizni {state, select, on {yoqdi} other {oʻchirdi}}: {right, select, CREATE_REQUESTS {Buyurtmalar yaratish va yuborish} RECORD_PURCHASES {Xaridlarni yozish} CANCEL_PURCHASES {Xarid yozuvlarini bekor qilish} CLOSE_ALONE {Farqsiz buyurtmalarni oʻzi yopish} ISSUE_STOCK {Boʻlimlarga tovar berish} RETURN_REVERSE {Qaytarishlarni qabul qilish va hujjatlarni bekor qilish} TRANSFER_STOCK {Boshqa filiallarga koʻchirish yuborish} WRITE_OFF_COUNT {Hisobdan chiqarishni soʻrash va inventarizatsiya oʻtkazish} SET_MINIMUMS {Minimal qoldiqlarni belgilash} other {?}}.",
+      "PRODUCT_SUGGESTED": "{branch} filialidan yangi tovar taklifi: {name}.",
+      "PRODUCT_SUGGESTION_DECIDED": "“{name}” taklifingiz {outcome, select, added {katalogga qoʻshildi} other {rad etildi}}."
     }
   },
   "months": {
@@ -650,7 +659,12 @@
       "lastActive": "Oxirgi faol tur faol qoladi. Mahsulotdan foydalanishni toʻxtatish uchun mahsulotni faolsizlantiring.",
       "fact": "{price} · {state}"
     },
-    "importButton": "Exceldan import"
+    "importButton": "Exceldan import",
+    "suggestionsRow": {
+      "title": "Tovar takliflari",
+      "description": "Menejerlar katalogga qoʻshishni soʻragan tovarlar.",
+      "pending": "{count, plural, =0 {Kutayotgani yoʻq} other {# ta kutmoqda}}"
+    }
   },
   "prices": {
     "title": "Narxlar",
@@ -747,5 +761,64 @@
         "note": "Izoh"
       }
     }
+  },
+  "suggestions": {
+    "title": "Tovar takliflari",
+    "intro": "Katalogda yoʻq tovarni qoʻshishni xaridlar rahbaridan soʻrang.",
+    "new": "Tovar taklif qilish",
+    "newTitle": "Tovar taklif qilish",
+    "back": "Takliflarga qaytish",
+    "allBranches": "Barcha filiallarim",
+    "oneBranch": "{code} filiali, {name}",
+    "fields": {
+      "branchId": "Filial",
+      "name": "Nomi",
+      "unitText": "Oʻlchov birligi",
+      "photoFileId": "Rasm",
+      "note": "Izoh",
+      "reason": "Sabab"
+    },
+    "hints": {
+      "name": "Katalogda qanday nomlanishi kerak boʻlsa.",
+      "unitText": "Qanday sanaysiz: dona, quti, kilogramm.",
+      "photoFileId": "Ixtiyoriy. JPG, PNG, WebP yoki HEIC, 10 MB gacha.",
+      "note": "Ixtiyoriy. Nima uchun kerak, brend, doʻkon havolasi.",
+      "reason": "Menejer bu sababni koʻradi."
+    },
+    "chooseBranch": "Filialni tanlang",
+    "send": "Taklifni yuborish",
+    "sent": "Taklif xaridlar rahbariga yuborildi",
+    "status": {
+      "PENDING": "Rahbarni kutmoqda",
+      "ADDED": "Katalogga qoʻshildi",
+      "DECLINED": "Rad etildi"
+    },
+    "columns": {
+      "name": "Nomi",
+      "unitText": "Birlik",
+      "branch": "Filial",
+      "by": "Taklif qilgan",
+      "date": "Yuborilgan",
+      "status": "Holati"
+    },
+    "emptyTitle": "Hozircha taklif yoʻq",
+    "emptyText": "Kerakli tovar katalogda boʻlmasa, shu yerda taklif qiling.",
+    "suggestedBy": "Taklif qilgan",
+    "sentOn": "Yuborilgan",
+    "decidedBy": "Qaror qilgan",
+    "decidedOn": "Qaror sanasi",
+    "product": "Katalogdagi tovar",
+    "noNote": "Izoh yoʻq",
+    "add": "Katalogga qoʻshish",
+    "addTitle": "Katalogga qoʻshish",
+    "addIntro": "Tovarni tekshirib, toʻldiring va saqlang. Taklif qoʻshilgan deb belgilanadi, {name} xabar oladi.",
+    "askedMeasure": "Soʻralgan birlik: {unit}",
+    "added": "Katalogga qoʻshildi",
+    "decline": "Rad etish",
+    "declineTitle": "Bu taklif rad etilsinmi?",
+    "declineResult": "Taklif yopiladi, menejer sababingizni koʻradi. Buni qaytarib boʻlmaydi.",
+    "declined": "Taklif rad etildi",
+    "photoAlt": "{name} rasmi",
+    "noPhoto": "Rasm yoʻq"
   }
 }

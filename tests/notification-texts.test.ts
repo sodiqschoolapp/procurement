@@ -21,12 +21,16 @@ const MESSAGES = { uz, ru, en } as const;
 const SAMPLE: { [Type in SendableType]: Record<string, string | number> } = {
   BRANCH_ROLE_VACANT: { branch: "DEMO", role: "PRINCIPAL" },
   MANAGER_RIGHT_SWITCHED: { right: "RECORD_PURCHASES", state: "on" },
+  PRODUCT_SUGGESTED: { name: "Demo glue stick", branch: "DEMO" },
+  PRODUCT_SUGGESTION_DECIDED: { name: "Demo glue stick", outcome: "added" },
 };
 
 /** The free text of a sample that the text must show as it is; null for a type of codes only. */
 const SHOWN: { [Type in SendableType]: string | null } = {
   BRANCH_ROLE_VACANT: "DEMO",
   MANAGER_RIGHT_SWITCHED: null,
+  PRODUCT_SUGGESTED: "Demo glue stick",
+  PRODUCT_SUGGESTION_DECIDED: "Demo glue stick",
 };
 
 describe("notification texts by type (build-plan 0.11; rule 14)", () => {
@@ -76,6 +80,15 @@ describe("notification texts by type (build-plan 0.11; rule 14)", () => {
         for (const right of MANAGER_RIGHTS) expect(text).not.toContain(right);
         expect(text).not.toContain("?");
       }
+    });
+
+    it(`${locale}: PRODUCT_SUGGESTION_DECIDED says added or declined (04-catalogs.md rule 8: "notified either way")`, () => {
+      const t = createTranslator({ locale, messages: MESSAGES[locale] });
+      const [added, declined] = (["added", "declined"] as const).map((outcome) =>
+        t("notifications.types.PRODUCT_SUGGESTION_DECIDED", { name: "Demo glue stick", outcome }),
+      );
+      expect(added).not.toBe(declined);
+      for (const text of [added, declined]) expect(text).toContain("Demo glue stick");
     });
   }
 });
