@@ -53,10 +53,20 @@ describe("the active item (plan of 0.10b, decision 7)", () => {
     expect(isActive(head.home!, "/requests")).toBe(false);
   });
 
-  it("Warehouse on every warehouse page, Admin on catalogs, users, branches and settings", () => {
+  // 11-screens-and-ux.md: "Admin groups catalogs, prices, users, branches and settings"; prices
+  // since 1.9.
+  it("Warehouse on every warehouse page, Admin on catalogs, prices, users, branches and settings", () => {
     expect(isActive(head.warehouse!, "/warehouse/documents")).toBe(true);
     expect(isActive(head.warehouse!, "/warehouse/stock")).toBe(true);
-    for (const path of ["/catalog/products", "/users", "/branches", "/settings"]) {
+    expect(isActive(head.admin!, "/pricesx")).toBe(false);
+    for (const path of [
+      "/catalog/products",
+      "/prices",
+      "/prices/x",
+      "/users",
+      "/branches",
+      "/settings",
+    ]) {
       expect(isActive(head.admin!, path), path).toBe(true);
     }
   });

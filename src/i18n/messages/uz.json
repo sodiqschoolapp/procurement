@@ -138,6 +138,9 @@
         "update": "Tur oʻzgartirildi",
         "deactivate": "Tur faolsizlantirildi",
         "activate": "Tur faollashtirildi"
+      },
+      "price": {
+        "add": "Yangi narx"
       }
     },
     "fields": {
@@ -341,6 +344,7 @@
   "admin": {
     "label": "Boshqaruv sahifalari",
     "catalog": "Kataloglar",
+    "prices": "Narxlar",
     "branches": "Filiallar",
     "settings": "Sozlamalar",
     "users": "Foydalanuvchilar"
@@ -637,6 +641,38 @@
       "count": "{count, plural, other {# tur}}",
       "lastActive": "Oxirgi faol tur faol qoladi. Mahsulotdan foydalanishni toʻxtatish uchun mahsulotni faolsizlantiring.",
       "fact": "{price} · {state}"
+    }
+  },
+  "prices": {
+    "title": "Narxlar",
+    "summary": "{count, plural, other {# ta tur}}",
+    "search": "Narxlarni qidirish",
+    "searchHint": "Mahsulot yoki turi",
+    "product": "Mahsulot",
+    "subtype": "Turi",
+    "current": "Joriy narx",
+    "currentLine": "Joriy narx: {price}",
+    "setOn": "Belgilangan sana",
+    "setBy": "Kim belgilagan",
+    "noPrice": "Narx yo'q",
+    "emptyTitle": "Hali mahsulot yo'q",
+    "emptyText": "Katalogdagi har bir mahsulot va turi shu yerda narxi bilan ko'rinadi.",
+    "historyLink": "Narxlar tarixi",
+    "historyTitle": "Narxlar tarixi",
+    "newPrice": "Yangi narx",
+    "newPriceHint": "Butun so'mda. Joriy narx tarixda qoladi.",
+    "note": "Izoh",
+    "noteHint": "Narx nega o'zgaradi, bir necha so'z bilan. 200 belgigacha.",
+    "save": "Yangi narxni saqlash",
+    "saved": "Yangi narx saqlandi.",
+    "price": "Narx",
+    "source": "Manba",
+    "when": "Qachon",
+    "who": "Kim",
+    "noRows": "Hali narx belgilanmagan.",
+    "sources": {
+      "HEAD": "Rahbar",
+      "PURCHASE": "Xarid"
     }
   }
 }

@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import { AdminNav } from "@/components/admin-nav";
 import { ChangeHistory, type HistoryField } from "@/components/change-history";
 import { Icon } from "@/components/icon";
-import { PRODUCTS } from "@/domain/catalogs";
+import { PRODUCTS, SUBTYPES } from "@/domain/catalogs";
 import { listChangeHistory } from "@/features/audit/queries/change-history";
 import { getProduct, listProductChoices } from "@/features/catalog/queries/products";
 import { listSubtypes } from "@/features/catalog/queries/subtypes";
@@ -14,6 +14,7 @@ import { requireUser } from "@/server/auth/session";
 
 import { readOrNotFound } from "../../../branches/read-or-not-found";
 import { CatalogActiveButton } from "../../catalog-active-button";
+import { PriceHistoryLink } from "../../../prices/price-history-link";
 import { ProductForm } from "../product-form";
 import { SubtypeList } from "../subtype-list";
 
@@ -22,7 +23,8 @@ import { SubtypeList } from "../subtype-list";
 // they were then and the ids stay hidden (plan of 1.7, decision 11). The reference price is shown,
 // not edited (decision 2); from 1.8 it is the hidden default subtype's, and a product with
 // subtypes says its prices are per subtype (plan of 1.8, decisions 2 and 4, Look first). The
-// Subtypes section lists the real subtypes (1.8). An unknown id, or one that is not an id, is "not found", as is any role
+// Subtypes section lists the real subtypes (1.8). A product without subtypes links to its default's
+// price page, and its history shows that default's new prices (plan of 1.9). An unknown id, or one that is not an id, is "not found", as is any role
 // without "Manage catalogs …" (03 rule 1).
 
 const FIELDS: Record<string, HistoryField> = {
@@ -39,6 +41,9 @@ const FIELDS: Record<string, HistoryField> = {
   photoFileId: { label: "catalog.fields.photoFileId", kind: "text", hidden: true },
   photo: { label: "catalog.fields.photoFileId", kind: "text" },
   isActive: { label: "catalog.fields.isActive", kind: "boolean" },
+  note: { label: "catalog.fields.note", kind: "text" },
+  productId: { label: "catalog.fields.productId", kind: "text", hidden: true },
+  product: { label: "catalog.fields.productId", kind: "text" },
   hasVariants: { label: "catalog.fields.hasVariants", kind: "boolean" },
 };
 
@@ -51,9 +56,14 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
   const subtypes = await listSubtypes(user.id, product.id);
   const t = await getTranslations("catalog");
   const format = await getFormatters();
+  // A product without subtypes also shows the new prices of its hidden default (04 rule 9; plan
+  // review of 1.9, Should fix 5).
   const history = await listChangeHistory(user.id, {
     entity: PRODUCTS.entity,
     entityId: product.id,
+    ...(product.defaultVariantId
+      ? { also: { entity: SUBTYPES.entity, entityId: product.defaultVariantId } }
+      : {}),
   });
   const entry = {
     id: product.id,
@@ -100,6 +110,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
               : format.money(product.referencePrice)
         }
       />
+      {product.defaultVariantId && <PriceHistoryLink variantId={product.defaultVariantId} />}
       <SubtypeList
         productId={product.id}
         productName={product.name}

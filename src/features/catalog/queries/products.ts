@@ -55,6 +55,8 @@ export type ProductDetail = ProductRow & {
   description: string | null;
   /** Type and measure are locked (04 Catalogs table; plan of 1.7, decision 1). */
   inUse: boolean;
+  /** The hidden default subtype's id; null once the product has real subtypes (1.9). */
+  defaultVariantId: string | null;
 };
 
 export type Choice = { id: string; name: string; isActive: boolean };
@@ -159,6 +161,7 @@ export async function getProduct(userId: string, id: string): Promise<ProductDet
       defaultCompanyName: companies.name,
       defaultCompanyActive: companies.isActive,
       description: products.description,
+      defaultVariantId: productVariants.id,
     })
     .from(products)
     .innerJoin(categories, eq(categories.id, products.categoryId))

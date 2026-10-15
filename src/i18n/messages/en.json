@@ -138,6 +138,9 @@
         "update": "Subtype changed",
         "deactivate": "Subtype deactivated",
         "activate": "Subtype activated"
+      },
+      "price": {
+        "add": "New price"
       }
     },
     "fields": {
@@ -341,6 +344,7 @@
   "admin": {
     "label": "Admin pages",
     "catalog": "Catalogs",
+    "prices": "Prices",
     "branches": "Branches",
     "settings": "Settings",
     "users": "Users"
@@ -637,6 +641,38 @@
       "count": "{count, plural, one {# subtype} other {# subtypes}}",
       "lastActive": "The last active subtype stays active. To stop using the item, deactivate the product.",
       "fact": "{price} · {state}"
+    }
+  },
+  "prices": {
+    "title": "Prices",
+    "summary": "{count, plural, one {# subtype} other {# subtypes}}",
+    "search": "Search prices",
+    "searchHint": "Product or subtype",
+    "product": "Product",
+    "subtype": "Subtype",
+    "current": "Current price",
+    "currentLine": "Current price: {price}",
+    "setOn": "Set on",
+    "setBy": "Set by",
+    "noPrice": "No price",
+    "emptyTitle": "No products yet",
+    "emptyText": "Every product and subtype of the catalog appears here with its price.",
+    "historyLink": "Price history",
+    "historyTitle": "Price history",
+    "newPrice": "New price",
+    "newPriceHint": "Whole so'm. The current price stays in the history.",
+    "note": "Note",
+    "noteHint": "Why the price changes, in a few words. Up to 200 characters.",
+    "save": "Save the new price",
+    "saved": "The new price is saved.",
+    "price": "Price",
+    "source": "Source",
+    "when": "When",
+    "who": "Who",
+    "noRows": "No price has been set yet.",
+    "sources": {
+      "HEAD": "Head",
+      "PURCHASE": "Purchase"
     }
   }
 }

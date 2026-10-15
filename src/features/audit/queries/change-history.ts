@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, or } from "drizzle-orm";
 import * as z from "zod";
 
 import type { AuditObject } from "@/domain/audit";
@@ -16,9 +16,18 @@ import { auditLog, users } from "@/server/db/schema";
 
 const CHANGE_HISTORY_PAGE_SIZE = 50;
 
-const changeHistoryInput = z.object({
+const record = {
   entity: z.string().regex(/^[a-z][a-z_]*$/),
   entityId: z.string().trim().min(1).max(200),
+};
+
+const changeHistoryInput = z.object({
+  ...record,
+  /**
+   * The rows of one more record shown with it: the `price.add` rows of a product's hidden default
+   * subtype on the product's page (04 rule 9; plan review of 1.9, Should fix 5).
+   */
+  also: z.object(record).optional(),
   page: z.number().int().min(1).default(1),
 });
 
@@ -54,7 +63,14 @@ export async function listChangeHistory(
     })
     .from(auditLog)
     .innerJoin(users, eq(users.id, auditLog.actorId))
-    .where(and(eq(auditLog.entity, input.entity), eq(auditLog.entityId, input.entityId)))
+    .where(
+      or(
+        and(eq(auditLog.entity, input.entity), eq(auditLog.entityId, input.entityId)),
+        input.also
+          ? and(eq(auditLog.entity, input.also.entity), eq(auditLog.entityId, input.also.entityId))
+          : undefined,
+      ),
+    )
     .orderBy(desc(auditLog.createdAt), desc(auditLog.id))
     .limit(CHANGE_HISTORY_PAGE_SIZE + 1)
     .offset((input.page - 1) * CHANGE_HISTORY_PAGE_SIZE);
