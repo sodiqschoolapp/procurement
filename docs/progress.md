@@ -669,4 +669,22 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - For phases 3 and 4: `ownerClosesAlone` is `true` when the owner is the Head or a Manager with `CLOSE_ALONE` on; a phase-2 caller passes `false` for the facts not built yet.
 - A Draft of another user is `not_found` for everyone but its owner and the Head.
 
-The next task is 2.4.
+## 2.4 Orders schema and many orders in one action (16.10.2026, pull request #49)
+
+**Built**
+- Migration `0019_orders`: `number_counters`, `orders`, `order_extras`, `order_revisions`, `order_actions`, `order_events`, empty `stock_balances` (no `avg_cost`); enums from the domain lists; triggers `orders_guard` (number fixed, branch fixed once numbered, plan frozen outside DRAFT/RETURNED except Finance's payment type, delete only of a never-submitted draft), `order_extras_guard`, append-only history (UPDATE, DELETE, TRUNCATE).
+- `src/server/order-action.ts`: `ordersInput()`, `defineOrdersAction()`, `runOrdersAction()`, `ordersServerAction()`; result `{ actionId, orders: [{ id, status }] }`. `src/server/order-moves.ts`: `orderMoveAction()`, `orderState()`. `authorizeOrders()`; code `not_ready`; `ActionFailure.orders`; `behindDraftWall()` in the domain.
+
+**Left out, and the task that brings it**
+- Every order action with a screen and its permission-matrix rows: 2.5, 2.7, 2.10, 2.11; the full matrix 2.15. Counter and revision rows: 2.7. "Already approved by … at …": 2.10. `avg_cost` and the ledger: 3.1.
+
+**What the next sessions must know**
+- Every action on ticked orders is an `orderMoveAction()` (or `defineOrdersAction()`); never `runAction()` with a loop. Write what a move adds in `afterMove` and return each order's event `note`/`payload`.
+- For 2.5: drafts are edited with `runAction()` and `versionOf` on `orders`; a never-submitted draft writes no event and is deleted with its extras (cascade). Register orders as a file holder for `reference_photo_file_id` (unique).
+- For 2.7: Submit sets `number`, `submitted_at`, `planned_total`, `stock_at_submit` before the status leaves DRAFT (the CHECKs need them); "Created by Head" is already `payload.headStepAuto`.
+- For 2.5, 2.7, 2.10, 2.11: add each action's full role × branch × right rows to the permission-matrix test (permission review of 2.4).
+- For 2.10: who acted and when comes from the order's newest `order_events` row.
+- Test helpers: `tests/helpers/orders.ts` (`insertOrder`, `insertDepartment`, `insertOrderExtra`, `inventedNumber`).
+- Trap: drizzle's `inArray(orders.id, …)` names the table, so it fails inside SQL that aliases `orders o`; join the ids with `sql.join` there.
+
+The next task is 2.5.

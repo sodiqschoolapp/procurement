@@ -961,6 +961,35 @@ Choices made during the build:
 - The facts the screen cannot know before the action (Finance's close readiness) are checked by `checkMoves()` only; `allowedActions()` checks the rest of the same `judge()`, so the two never disagree on anything else.
 - The generated test runs 92 160 combinations (10 statuses × 12 actions × 6 role-and-right settings × 128 relations and facts) against a hand-written oracle, in about a second.
 
+### 2.4 Orders schema and many orders in one action (16.10.2026)
+
+The plan's decisions as the plan review of 15.10.2026 confirmed them (corrections 1 to 5 applied), and those of the build. The Look first items come first.
+
+1. **Look first** (approval order). Refusal order per order: `not_found` (branch wall, then draft wall), `stale_version`, `wrong_status`, `forbidden`, `not_ready`; every failing order is named with its first code, the action's code is the first any order has (correction 2: an order that is both forbidden and stale is `stale_version`). New code `not_ready` with `errors.notReady`; a missing or short reason is `invalid_input` on the field `reason`, for the whole action, before any order is judged.
+2. **Look first** (approval order, CLAUDE.md rule 12; 06 rules 1 and 6). The plan, its cached `planned_total` and its extra costs change only while the order was `DRAFT` or `RETURNED` before the write; Finance's payment type also at `PENDING_FINANCE` (`orders_guard`, `order_extras_guard`).
+3. **Look first** (branch wall). Composite foreign key (`department_id`, `branch_id`) → `departments (id, branch_id)`.
+4. **Look first** (spec gap, rule 11). A never-submitted draft has no events; it is deleted with its extras (`ON DELETE CASCADE`, the guard lets the cascade through). A numbered order is never deleted.
+5. **Look first** (enums). `order_action_type` and `order_event_type` hold the twelve move codes; "Created by Head" is the Submit event's `payload` `{ "headStepAuto": true }` (correction 5). A later task adds a value with `ALTER TYPE … ADD VALUE`.
+6. **Look first.** `order_events.action_id`, `from_status` and `to_status` are NOT NULL (correction 4).
+7. **Look first** (money rule). `stock_balances.avg_cost` is left to 3.1, with the average formula.
+8. **Look first** (approval order). `createdByHead` is the creator's current role (`users.role` of `created_by`); a role change in between at worst gives a demoted creator's order the Head step.
+9. **Look first** (changes decisions 0.8 no. 1 for this form). Step order lock, repeat, authorize, version, status: branch and owner are read once under the lock; a repeat answers only after its own `authorizeOrders()` on the stored orders with the permission of the move as made, and only for the same user and the same action type (permission review). The lock is taken on every sent id before the branch check: a user can hold another branch's rows for one short transaction, refused as `not_found`, and learns nothing (permission review, Should fix 3; kept, as the review of the plan confirmed).
+10. Lock order by `orders.id`.
+11. One result shape for the first call and a repeat: `{ actionId, orders: [{ id, status }] }`, rebuilt from the stored action and its events.
+12. `orders.client_key` UNIQUE for the draft create of 2.5.
+13. `version` and `revision` start at 1; `progress` NOT NULL default `OPEN`.
+14. The plan columns are nullable while `DRAFT` and required outside it; Urgent needs its reason outside `DRAFT`; `planned_total` ≥ 0 (correction 1: 0.001 × 400 so'm rounds to 0).
+15. `reference_photo_file_id` UNIQUE (decisions 0.12 no. 5).
+16. `authorizeOrders()` in `authorize.ts`: one actor read, `decide()` per order.
+17. "Already approved by … at …" is read by 2.10 from the newest event.
+
+Choices made during the build:
+
+- The history tables also refuse TRUNCATE, as `audit_log` and `price_history` do.
+- `behindDraftWall()` lives once in `src/domain/order-moves.ts`; the state machine and the wrapper call it (spec review, Should fix 1).
+- The lock query joins the ids with `sql.join`: drizzle's `inArray(orders.id, …)` names the table and fails under the alias `o`.
+- `UPLOAD_STATUS` answers `not_ready` with 409, as every code needs a status there.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.
