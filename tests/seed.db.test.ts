@@ -1,10 +1,36 @@
 import pg from "pg";
 import { afterAll, describe, expect, inject, it } from "vitest";
 
+import { newClientKey } from "@/components/client-key";
+import {
+  catalogName,
+  isCatalogName,
+  isCompanyKind,
+  isNote,
+  isShortName,
+  isTaxId,
+} from "@/domain/catalogs";
+import { isDescription, isProductType } from "@/domain/products";
+import { fullName, isFullName, isPhone, phone } from "@/domain/users";
+import { createCompany } from "@/features/catalog/actions/companies";
+import { createDepartment } from "@/features/catalog/actions/departments";
+import { createProduct } from "@/features/catalog/actions/products";
+import { createSubtype } from "@/features/catalog/actions/subtypes";
+import { listProducts } from "@/features/catalog/queries/products";
+import { runAction } from "@/server/action";
 import { db } from "@/server/db/client";
 import { signIn } from "@/server/auth/sign-in";
 
 import { createFirstHead } from "../scripts/first-head.mjs";
+import {
+  SEED_CATALOGS,
+  SEED_CATEGORIES,
+  SEED_COMPANIES,
+  SEED_DEPARTMENTS,
+  SEED_EXTRA_COST_TYPES,
+  SEED_MEASURES,
+  SEED_PRODUCTS,
+} from "../scripts/seed-catalogs.mjs";
 import { SEED_PASSWORD_VARIABLES, seed } from "../scripts/seed.mjs";
 import { runTogether } from "./helpers/together";
 import { createTestDatabase, dropTestDatabase } from "./helpers/test-database";
@@ -21,7 +47,22 @@ const ENV = {
   SEED_PRINCIPAL_PASSWORD: "invented-seed-principal",
   SEED_FINANCE_PASSWORD: "invented-seed-finance",
 };
-const TABLES = ["branches", "users", "accounts", "user_branches", "manager_rights", "audit_log"];
+const TABLES = [
+  "branches",
+  "users",
+  "accounts",
+  "user_branches",
+  "manager_rights",
+  "audit_log",
+  "units",
+  "categories",
+  "extra_cost_types",
+  "companies",
+  "departments",
+  "products",
+  "product_variants",
+  "price_history",
+];
 
 const serverUrl = inject("databaseServerUrl");
 const made: string[] = [];
@@ -74,7 +115,7 @@ describe("npm run db:seed (build-plan 0.14; developer-rules.md rule 14)", () => 
     await withFreshDatabase(async (connect) => {
       const client = await connect();
 
-      expect(await seed(client, ENV, MOMENT)).toEqual(CREATED_LINES);
+      expect((await seed(client, ENV, MOMENT)).lines).toEqual(CREATED_LINES);
 
       const branches = await client.query("select code, name from branches order by code");
       expect(branches.rows.map((row) => row.code)).toEqual(["CHL", "YUN"]);
@@ -109,7 +150,8 @@ describe("npm run db:seed (build-plan 0.14; developer-rules.md rule 14)", () => 
         created_at: Date;
       }>(
         `select a.action, u.username as actor, a.after, a.created_at
-           from audit_log a join users u on u.id = a.actor_id order by a.action, a.entity_id`,
+           from audit_log a join users u on u.id = a.actor_id
+          where a.entity in ('branches', 'users') order by a.action, a.entity_id`,
       );
       expect(rows.rows.map((row) => row.action).sort()).toEqual([
         "branch.create",
@@ -135,7 +177,7 @@ describe("npm run db:seed (build-plan 0.14; developer-rules.md rule 14)", () => 
       const hashes = await client.query("select user_id, password from accounts order by user_id");
 
       const other = Object.fromEntries(Object.keys(ENV).map((name) => [name, "another-invented"]));
-      expect(await seed(client, other, MOMENT)).toEqual(
+      expect((await seed(client, other, MOMENT)).lines).toEqual(
         CREATED_LINES.map((line) => line.replace("created", "kept")),
       );
 
@@ -164,7 +206,7 @@ describe("npm run db:seed (build-plan 0.14; developer-rules.md rule 14)", () => 
         [MOMENT],
       );
 
-      expect(await seed(client, ENV, MOMENT)).toEqual([
+      expect((await seed(client, ENV, MOMENT)).lines).toEqual([
         "kept branch CHL",
         "created branch YUN",
         "kept user seed_head",
@@ -272,7 +314,7 @@ describe("npm run db:seed (build-plan 0.14; developer-rules.md rule 14)", () => 
       );
       await client.query("commit");
 
-      expect(await seed(client, ENV, MOMENT)).toContain("created user seed_principal");
+      expect((await seed(client, ENV, MOMENT)).lines).toContain("created user seed_principal");
 
       const led = await client.query(
         `select u.username from user_branches ub join users u on u.id = ub.user_id
@@ -301,12 +343,12 @@ describe("npm run db:seed (build-plan 0.14; developer-rules.md rule 14)", () => 
 
       expect(outcomes.map((outcome) => outcome.status)).toEqual(["fulfilled", "fulfilled"]);
       const lines = outcomes.map((outcome) =>
-        outcome.status === "fulfilled" ? outcome.value : [],
+        outcome.status === "fulfilled" ? outcome.value.lines : [],
       );
       expect(lines).toContainEqual(CREATED_LINES);
       expect(lines).toContainEqual(CREATED_LINES.map((line) => line.replace("created", "kept")));
       const total = await counts(first);
-      expect(total).toMatchObject({ branches: 2, users: 4, audit_log: 6 });
+      expect(total).toMatchObject({ branches: 2, users: 4, audit_log: 79, products: 30 });
     });
   });
 
@@ -369,5 +411,595 @@ describe("npm run db:seed (build-plan 0.14; developer-rules.md rule 14)", () => 
     }
     const wrong = await signIn({ username: "seed_head", password: ENV.SEED_MANAGER_PASSWORD });
     expect(wrong.ok).toBe(false);
+  });
+});
+
+// build-plan 1.13 ("The seed gains measures, categories, extra cost types, companies, departments
+// for both branches, and 30 products with subtypes and prices. All names are invented"; Done when:
+// "the Head sees 30 products"); developer-rules.md rule 14. Plan of 1.13 and its review: the
+// catalog outcome is returned by seed(), not printed (correction 1); the subtypes of a found
+// product count as kept when found (correction 2).
+
+const ALL_CREATED = [
+  { catalog: "measures", created: 5, kept: 0 },
+  { catalog: "categories", created: 6, kept: 0 },
+  { catalog: "extra cost types", created: 3, kept: 0 },
+  { catalog: "companies", created: 6, kept: 0 },
+  { catalog: "departments", created: 7, kept: 0 },
+  { catalog: "products", created: 30, kept: 0 },
+  { catalog: "subtypes", created: 16, kept: 0 },
+];
+const ALL_KEPT = ALL_CREATED.map(({ catalog, created }) => ({
+  catalog,
+  created: 0,
+  kept: created,
+}));
+
+async function auditAfter(
+  client: pg.Client | pg.PoolClient,
+  action: string,
+  entity: string,
+  where: string,
+  values: unknown[],
+): Promise<Record<string, unknown>> {
+  const rows = await client.query<{ after: Record<string, unknown> }>(
+    `select a.after from audit_log a where a.action = $1 and a.entity = $2
+        and a.entity_id = (${where})::text`,
+    [action, entity, ...values],
+  );
+  expect(rows.rows, `${action} ${JSON.stringify(values)}`).toHaveLength(1);
+  return rows.rows[0]!.after;
+}
+
+describe("npm run db:seed: the catalogs (build-plan 1.13; developer-rules.md rule 14)", () => {
+  it("fills an empty database with every catalog, 30 products and 16 subtypes, in one go", async () => {
+    await withFreshDatabase(async (connect) => {
+      const client = await connect();
+
+      const result = await seed(client, ENV, MOMENT);
+
+      expect(result.lines).toEqual(CREATED_LINES);
+      expect(result.catalogs).toEqual(ALL_CREATED);
+      expect(result.catalogs.map((row) => row.catalog)).toEqual(SEED_CATALOGS);
+      expect(await counts(client)).toMatchObject({
+        units: 5,
+        categories: 6,
+        extra_cost_types: 3,
+        companies: 6,
+        departments: 7,
+        products: 30,
+        // 24 hidden defaults and 16 real subtypes, each with one HEAD row.
+        product_variants: 40,
+        price_history: 40,
+        audit_log: 6 + 5 + 6 + 3 + 6 + 7 + 30 + 16,
+      });
+    });
+  });
+
+  it("every subtype has a price, held by its newest HEAD row, set by seed_head with no note (04 rules 1 and 4)", async () => {
+    await withFreshDatabase(async (connect) => {
+      const client = await connect();
+      await seed(client, ENV, MOMENT);
+
+      const variants = await client.query<{
+        product: string;
+        has_variants: boolean;
+        product_price: string | null;
+        name: string;
+        is_default: boolean;
+        price: string | null;
+        newest: string | null;
+        source: string;
+        note: string | null;
+        set_by: string;
+        created_at: Date;
+      }>(
+        `select p.name as product, p.has_variants, p.reference_price::text as product_price,
+                v.name, v.is_default, v.reference_price::text as price,
+                h.price::text as newest, h.source, h.note, u.username as set_by, h.created_at
+           from product_variants v
+           join products p on p.id = v.product_id
+           join lateral (select * from price_history ph where ph.variant_id = v.id
+                          order by ph.seq desc limit 1) h on true
+           join users u on u.id = h.set_by`,
+      );
+      expect(variants.rows).toHaveLength(40);
+      for (const row of variants.rows) {
+        expect(row.price, row.product).not.toBeNull();
+        expect(row.newest, row.product).toBe(row.price);
+        expect(row).toMatchObject({ source: "HEAD", note: null, set_by: "seed_head" });
+        expect(row.created_at.getTime()).toBe(MOMENT.getTime());
+      }
+
+      // Each listed product as written: with subtypes, the real ones and no price of its own;
+      // without, one hidden default whose price the product holds too, as createProduct writes it.
+      for (const product of SEED_PRODUCTS) {
+        const rows = variants.rows.filter((row) => row.product === product.name);
+        if (product.subtypes) {
+          expect(rows.map((row) => [row.name, row.price, row.is_default]).sort()).toEqual(
+            product.subtypes.map((subtype) => [subtype.name, String(subtype.price), false]).sort(),
+          );
+          expect(rows.every((row) => row.has_variants && row.product_price === null)).toBe(true);
+        } else {
+          expect(rows).toHaveLength(1);
+          expect(rows[0]).toMatchObject({
+            name: "default",
+            is_default: true,
+            has_variants: false,
+            price: String(product.price),
+            product_price: String(product.price),
+          });
+        }
+      }
+      expect(SEED_PRODUCTS.filter((product) => product.subtypes)).toHaveLength(6);
+    });
+  });
+
+  it("gives both branches departments, with one name in each (04 rule 3: unique inside a branch)", async () => {
+    await withFreshDatabase(async (connect) => {
+      const client = await connect();
+      await seed(client, ENV, MOMENT);
+
+      const rows = await client.query<{ code: string; name: string }>(
+        `select b.code, d.name from departments d join branches b on b.id = d.branch_id
+          order by b.code, d.name`,
+      );
+      expect(new Set(rows.rows.map((row) => row.code))).toEqual(new Set(["CHL", "YUN"]));
+      expect(rows.rows.filter((row) => row.name === "Oshxona").map((row) => row.code)).toEqual([
+        "CHL",
+        "YUN",
+      ]);
+    });
+  });
+
+  it("holds measures with and without decimals, every company kind and both product types (04, Catalogs table)", async () => {
+    await withFreshDatabase(async (connect) => {
+      const client = await connect();
+      await seed(client, ENV, MOMENT);
+
+      const decimals = await client.query("select distinct allow_decimal from units order by 1");
+      expect(decimals.rows.map((row) => row.allow_decimal)).toEqual([false, true]);
+      // In the order of the enum company_kind (0010).
+      const kinds = await client.query("select distinct kind from companies order by 1");
+      expect(kinds.rows.map((row) => row.kind)).toEqual(["BRAND", "SUPPLIER", "BOTH"]);
+      const types = await client.query<{ type: string; count: number }>(
+        "select type, count(*)::int as count from products group by type order by type",
+      );
+      expect(types.rows).toEqual([
+        { type: "GOODS", count: 26 },
+        { type: "SERVICE", count: 4 },
+      ]);
+    });
+  });
+
+  it("writes one audit row per created entry, the seed Head as actor, at the seed's moment (04 rule 9)", async () => {
+    await withFreshDatabase(async (connect) => {
+      const client = await connect();
+      await seed(client, ENV, MOMENT);
+
+      const rows = await client.query<{ action: string; count: number; actors: string[] }>(
+        `select a.action, count(*)::int as count, array_agg(distinct u.username) as actors
+           from audit_log a join users u on u.id = a.actor_id
+          where a.created_at = $1 group by a.action order by a.action`,
+        [MOMENT],
+      );
+      expect(rows.rows).toEqual(
+        [
+          ["branch.create", 2],
+          ["category.create", 6],
+          ["company.create", 6],
+          ["department.create", 7],
+          ["extra_cost_type.create", 3],
+          ["product.create", 30],
+          ["subtype.create", 16],
+          ["unit.create", 5],
+          ["user.create", 4],
+        ].map(([action, count]) => ({ action, count, actors: ["seed_head"] })),
+      );
+      const total = await client.query("select count(*)::int as count from audit_log");
+      expect(total.rows[0].count).toBe(79);
+    });
+  });
+
+  it("keeps everything on a second run: the same counts as kept, and no row added anywhere", async () => {
+    await withFreshDatabase(async (connect) => {
+      const client = await connect();
+      await seed(client, ENV, MOMENT);
+      const before = await counts(client);
+
+      const again = await seed(client, ENV, new Date("2031-04-03T05:00:00Z"));
+
+      expect(again.catalogs).toEqual(ALL_KEPT);
+      expect(await counts(client)).toEqual(before);
+    });
+  });
+
+  it("keeps found entries as they are and adds only what is missing (plan of 1.13, decisions 4 and 5)", async () => {
+    await withFreshDatabase(async (connect) => {
+      // Entries of the seed that the Head made by hand before the seed ran.
+      const fresh = await connect();
+      {
+        const head = await createFirstHead(
+          fresh,
+          {
+            fullName: "Bahrom Namunaev",
+            username: "seed_head",
+            phone: "+998 90 000 98 01",
+            password: "invented-x",
+          },
+          MOMENT,
+        );
+        await fresh.query("begin");
+        const unit = await fresh.query(
+          `insert into units (name, short_name, allow_decimal, is_active, created_at)
+           values ('Dona', 'dona', false, true, $1) returning id`,
+          [MOMENT],
+        );
+        const category = await fresh.query(
+          `insert into categories (name, is_active, created_at)
+           values ('kanselyariya', true, $1) returning id`,
+          [MOMENT],
+        );
+        // "Ruchka" typed in another case with extra spaces, with only its hidden default and its
+        // own price; "Qalam" as the seed lists it but at another price.
+        const products = await fresh.query(
+          `insert into products (name, type, category_id, unit_id, reference_price, has_variants,
+             is_active, created_at)
+           values ('  RUCHKA  ', 'GOODS', $1, $2, 3000, false, true, $3),
+                  ('Qalam', 'GOODS', $1, $2, 1700, false, true, $3)
+           returning id, reference_price`,
+          [category.rows[0].id, unit.rows[0].id, MOMENT],
+        );
+        for (const product of products.rows) {
+          const variant = await fresh.query(
+            `insert into product_variants (product_id, name, is_default, reference_price, created_at)
+             values ($1, 'default', true, $2, $3) returning id`,
+            [product.id, product.reference_price, MOMENT],
+          );
+          await fresh.query(
+            `insert into price_history (variant_id, price, source, set_by, created_at)
+             values ($1, $2, 'HEAD', $3, $4)`,
+            [variant.rows[0].id, product.reference_price, head.id, MOMENT],
+          );
+        }
+        await fresh.query("commit");
+
+        const result = await seed(fresh, ENV, MOMENT);
+
+        expect(result.catalogs).toEqual([
+          { catalog: "measures", created: 4, kept: 1 },
+          { catalog: "categories", created: 5, kept: 1 },
+          { catalog: "extra cost types", created: 3, kept: 0 },
+          { catalog: "companies", created: 6, kept: 0 },
+          { catalog: "departments", created: 7, kept: 0 },
+          { catalog: "products", created: 28, kept: 2 },
+          // Ruchka's three are neither added nor found: 16 - 3.
+          { catalog: "subtypes", created: 13, kept: 0 },
+        ]);
+        const kept = await fresh.query(
+          `select p.name, p.reference_price::text as price, p.has_variants,
+                  array_agg(v.name order by v.name) as subtypes
+             from products p join product_variants v on v.product_id = p.id
+            where p.id = any($1::uuid[]) group by p.id order by lower(btrim(p.name))`,
+          [products.rows.map((row) => row.id)],
+        );
+        expect(kept.rows).toEqual([
+          { name: "Qalam", price: "1700", has_variants: false, subtypes: ["default"] },
+          { name: "  RUCHKA  ", price: "3000", has_variants: false, subtypes: ["default"] },
+        ]);
+        const units = await fresh.query("select name from units where short_name = 'dona'");
+        expect(units.rows).toEqual([{ name: "Dona" }]);
+        // A new product of the seed points at the found category.
+        const daftar = await fresh.query("select category_id from products where name = 'Daftar'");
+        expect(daftar.rows[0].category_id).toBe(category.rows[0].id);
+      }
+    });
+  });
+
+  it("counts a listed subtype found under a found product as kept, and adds none (review correction 2)", async () => {
+    await withFreshDatabase(async (connect) => {
+      const client = await connect();
+      await seed(client, ENV, MOMENT);
+      // Another subtype of a found product, made by the Head after the seed, is no seed subtype.
+      const ruchka = await client.query("select id from products where name = 'Ruchka'");
+      await client.query("begin");
+      const extra = await client.query(
+        `insert into product_variants (product_id, name, is_default, created_at)
+         values ($1, 'Yashil', false, $2) returning id`,
+        [ruchka.rows[0].id, MOMENT],
+      );
+      await client.query("commit");
+
+      const again = await seed(client, ENV, MOMENT);
+
+      expect(again.catalogs.find((row) => row.catalog === "subtypes")).toEqual({
+        catalog: "subtypes",
+        created: 0,
+        kept: 16,
+      });
+      const names = await client.query(
+        "select name from product_variants where product_id = $1 order by name",
+        [ruchka.rows[0].id],
+      );
+      expect(names.rows.map((row) => row.name)).toEqual(["Ko'k", "Qizil", "Qora", "Yashil"]);
+      expect(extra.rows).toHaveLength(1);
+    });
+  });
+
+  it("keeps a measure found by its short name only, instead of clashing on the unique short name (0010)", async () => {
+    await withFreshDatabase(async (connect) => {
+      const client = await connect();
+      await client.query(
+        `insert into units (name, short_name, allow_decimal, is_active, created_at)
+         values ('Kilo', 'KG', true, true, $1)`,
+        [MOMENT],
+      );
+
+      const result = await seed(client, ENV, MOMENT);
+
+      expect(result.catalogs[0]).toEqual({ catalog: "measures", created: 4, kept: 1 });
+      const guruch = await client.query(
+        `select u.name from products p join units u on u.id = p.unit_id where p.name = 'Guruch'`,
+      );
+      expect(guruch.rows).toEqual([{ name: "Kilo" }]);
+    });
+  });
+
+  it.each([
+    [
+      "an inactive category for a new product",
+      `insert into categories (name, is_active, created_at) values ('Mebel', false, $1)`,
+      'Refused: the category "Mebel" is inactive; the product "Stul" cannot use it. Nothing was written.',
+    ],
+    [
+      "an inactive measure for a new product",
+      `insert into units (name, short_name, allow_decimal, is_active, created_at)
+       values ('litr', 'l', true, false, $1)`,
+      'Refused: the measure "litr" is inactive; the product "Suyuq sovun" cannot use it. Nothing was written.',
+    ],
+    [
+      "an inactive company for a new product",
+      `insert into companies (name, kind, is_active, created_at)
+       values ('Sinov Brend (demo)', 'BRAND', false, $1)`,
+      'Refused: the company "Sinov Brend (demo)" is inactive; the product "Ruchka" cannot use it. Nothing was written.',
+    ],
+    [
+      "an inactive branch for a new department",
+      `insert into branches (name, code, address, is_active, created_at)
+       values ('Invented YUN', 'YUN', 'Invented street', false, $1)`,
+      'Refused: the branch YUN is inactive; the department "Oshxona" cannot be added to it. Nothing was written.',
+    ],
+  ])("refuses %s and writes nothing (04 rule 2)", async (_case, insert, message) => {
+    await withFreshDatabase(async (connect) => {
+      const client = await connect();
+      await client.query(insert, [MOMENT]);
+      const before = await counts(client);
+
+      await expect(seed(client, ENV, MOMENT)).rejects.toThrow(message);
+
+      expect(await counts(client)).toEqual(before);
+    });
+  });
+
+  it("writes every value in the form the create actions store (plan of 1.13, decision 11)", () => {
+    const stored = (value: string, valid: (value: string) => boolean) =>
+      expect(catalogName(value) === value && valid(value), value).toBe(true);
+    for (const measure of SEED_MEASURES) {
+      stored(measure.name, isCatalogName);
+      stored(measure.shortName, isShortName);
+    }
+    for (const name of [...SEED_CATEGORIES, ...SEED_EXTRA_COST_TYPES]) stored(name, isCatalogName);
+    for (const company of SEED_COMPANIES) {
+      stored(company.name, isCatalogName);
+      expect(isCompanyKind(company.kind)).toBe(true);
+      if (company.taxId !== null) expect(isTaxId(company.taxId), company.taxId).toBe(true);
+      if (company.phone !== null) {
+        expect(phone(company.phone) === company.phone && isPhone(company.phone)).toBe(true);
+      }
+      if (company.note !== null) expect(isNote(company.note)).toBe(true);
+    }
+    for (const department of SEED_DEPARTMENTS) {
+      stored(department.name, isCatalogName);
+      expect(fullName(department.responsibleName)).toBe(department.responsibleName);
+      expect(isFullName(department.responsibleName)).toBe(true);
+      expect(isPhone(department.responsiblePhone)).toBe(true);
+    }
+    expect(SEED_PRODUCTS).toHaveLength(30);
+    for (const product of SEED_PRODUCTS) {
+      stored(product.name, isCatalogName);
+      expect(isProductType(product.type ?? "GOODS")).toBe(true);
+      if (product.description) expect(isDescription(product.description)).toBe(true);
+      // Whole so'm as a bigint, above zero (CLAUDE.md rule 6; the price CHECKs of 0013 and 0014).
+      const prices = product.subtypes
+        ? product.subtypes.map((subtype) => subtype.price)
+        : [product.price];
+      for (const price of prices) {
+        expect(typeof price).toBe("bigint");
+        expect(price! > 0n).toBe(true);
+      }
+      for (const subtype of product.subtypes ?? []) stored(subtype.name, isCatalogName);
+    }
+    // No two seed phones alike, and none of a seed user (CLAUDE.md, Conventions: invented).
+    const phones = [
+      ...SEED_COMPANIES.map((company) => company.phone).filter(Boolean),
+      ...SEED_DEPARTMENTS.map((department) => department.responsiblePhone),
+    ];
+    expect(new Set(phones).size).toBe(phones.length);
+  });
+});
+
+describe("the seed's catalogs in the app (build-plan 1.13, Done when)", () => {
+  it("lets seed_head see 30 products, and its audit rows match the create actions' field for field", async () => {
+    const client = await db.$client.connect();
+    try {
+      await seed(client, ENV, MOMENT);
+      const [head] = (
+        await client.query<{ id: string }>("select id from users where username = 'seed_head'")
+      ).rows;
+      const headId = head!.id;
+
+      // "By hand on the test copy: the Head sees 30 products."
+      const page = await listProducts(headId);
+      expect(page).toMatchObject({ found: 30, active: 30, inactive: 0 });
+
+      // The same values through the create actions, under other names, give the same `after`
+      // (04 rule 9; plan of 1.13, decision 3); prices as decimal text (CLAUDE.md rule 6).
+      const a4 = SEED_PRODUCTS.find((product) => product.name === "A4 qog'oz")!;
+      const ids = await client.query<Record<string, string>>(
+        `select (select id from categories where name = $1) as category,
+                (select id from units where name = $2) as unit,
+                (select id from companies where name = $3) as company,
+                (select id from categories where name = 'IT jihozlari') as it,
+                (select id from units where name = 'dona') as dona,
+                (select id from branches where code = 'CHL') as chl`,
+        [a4.category, a4.measure, a4.company],
+      );
+      const ref = ids.rows[0]!;
+
+      const madeProduct = await runAction(createProduct, headId, {
+        clientKey: newClientKey(),
+        name: "A4 qog'oz (action)",
+        type: "GOODS",
+        categoryId: ref.category,
+        unitId: ref.unit,
+        defaultCompanyId: ref.company,
+        referencePrice: String(a4.price),
+        description: a4.description,
+      });
+      expect(madeProduct).toMatchObject({ ok: true });
+      const seedA4 = await auditAfter(
+        client,
+        "product.create",
+        "products",
+        "select id from products where name = $3",
+        [a4.name],
+      );
+      const actionA4 = await auditAfter(
+        client,
+        "product.create",
+        "products",
+        "select id from products where name = $3",
+        ["A4 qog'oz (action)"],
+      );
+      expect(seedA4).toEqual({ ...actionA4, name: a4.name });
+      expect(seedA4.referencePrice).toBe("320000");
+
+      // A product with subtypes: written as the Excel import writes it, no price of its own.
+      const kabel = SEED_PRODUCTS.find((product) => product.name === "Kabel")!;
+      const madeKabel = await runAction(createProduct, headId, {
+        clientKey: newClientKey(),
+        name: "Kabel (action)",
+        type: "GOODS",
+        categoryId: ref.it,
+        unitId: ref.dona,
+        defaultCompanyId: (
+          await client.query("select id from companies where name = $1", [kabel.company])
+        ).rows[0].id,
+        referencePrice: "",
+      });
+      expect(madeKabel).toMatchObject({ ok: true });
+      const kabelId = (madeKabel as { ok: true; data: { id: string } }).data.id;
+      const seedKabel = await auditAfter(
+        client,
+        "product.create",
+        "products",
+        "select id from products where name = $3",
+        ["Kabel"],
+      );
+      const actionKabel = await auditAfter(
+        client,
+        "product.create",
+        "products",
+        "select id::text from products where id = $3",
+        [kabelId],
+      );
+      expect(seedKabel).toEqual({ ...actionKabel, name: "Kabel" });
+      expect(seedKabel.referencePrice).toBeNull();
+
+      // A subtype of a product that already has real ones: the first turns the default real, the
+      // second is a new row, as each seed subtype is.
+      const subtype = kabel.subtypes![0]!;
+      for (const name of ["Birinchi", subtype.name]) {
+        const added = await runAction(createSubtype, headId, {
+          clientKey: newClientKey(),
+          productId: kabelId,
+          name,
+          referencePrice: String(subtype.price),
+        });
+        expect(added).toMatchObject({ ok: true });
+      }
+      const seedSubtype = await auditAfter(
+        client,
+        "subtype.create",
+        "product_variants",
+        `select v.id from product_variants v join products p on p.id = v.product_id
+          where p.name = 'Kabel' and v.name = $3`,
+        [subtype.name],
+      );
+      const actionSubtype = await auditAfter(
+        client,
+        "subtype.create",
+        "product_variants",
+        "select id from product_variants where product_id = $3 and name = $4",
+        [kabelId, subtype.name],
+      );
+      const seedKabelId = (await client.query("select id from products where name = 'Kabel'"))
+        .rows[0].id;
+      expect(seedSubtype).toEqual({ ...actionSubtype, productId: seedKabelId, product: "Kabel" });
+      expect(seedSubtype.referencePrice).toBe(String(subtype.price));
+
+      const company = SEED_COMPANIES.find((entry) => entry.note !== null)!;
+      expect(
+        await runAction(createCompany, headId, {
+          clientKey: newClientKey(),
+          ...company,
+          name: "Kompaniya (action)",
+        }),
+      ).toMatchObject({ ok: true });
+      expect(
+        await auditAfter(
+          client,
+          "company.create",
+          "companies",
+          "select id from companies where name = $3",
+          [company.name],
+        ),
+      ).toEqual({
+        ...(await auditAfter(
+          client,
+          "company.create",
+          "companies",
+          "select id from companies where name = $3",
+          ["Kompaniya (action)"],
+        )),
+        name: company.name,
+      });
+
+      const department = SEED_DEPARTMENTS[0]!;
+      expect(
+        await runAction(createDepartment, headId, {
+          clientKey: newClientKey(),
+          branchId: ref.chl,
+          name: "Bo'lim (action)",
+          responsibleName: department.responsibleName,
+          responsiblePhone: department.responsiblePhone,
+        }),
+      ).toMatchObject({ ok: true });
+      const where = "select id from departments where branch_id = $3 and name = $4";
+      expect(
+        await auditAfter(client, "department.create", "departments", where, [
+          ref.chl,
+          department.name,
+        ]),
+      ).toEqual({
+        ...(await auditAfter(client, "department.create", "departments", where, [
+          ref.chl,
+          "Bo'lim (action)",
+        ])),
+        name: department.name,
+      });
+    } finally {
+      client.release();
+    }
   });
 });
