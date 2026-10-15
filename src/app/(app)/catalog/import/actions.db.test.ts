@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import ExcelJS from "exceljs";
-import { inArray } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { newClientKey } from "@/components/client-key";
@@ -9,7 +9,7 @@ import type { ActionResult } from "@/server/action-result";
 import type { CurrentUser } from "@/server/auth/session";
 import { AuthorizationError } from "@/server/authorize";
 import { db } from "@/server/db/client";
-import { products } from "@/server/db/schema";
+import { branches, products } from "@/server/db/schema";
 
 import { insertCategory, insertUnit } from "../../../../../tests/helpers/catalog";
 import { type Value, importSheet, productRow } from "../../../../../tests/helpers/imports";
@@ -101,6 +101,27 @@ describePermissionMatrix("saveImportAction", {
     const { file } = await validFile();
     signedIn(user);
     asMatrixAnswer(await saveImportAction(formOf(file)));
+  },
+});
+
+describePermissionMatrix("saveImportAction, departments", {
+  permission: "catalog.manage",
+  async run({ user, branchId }) {
+    const [branch] = await db
+      .select({ code: branches.code })
+      .from(branches)
+      .where(eq(branches.id, branchId));
+    const book = new ExcelJS.Workbook();
+    const page = book.addWorksheet("Boʻlimlar");
+    page.addRow(
+      importSheet("departments", [], "uz").header.map((cell) =>
+        cell.kind === "text" ? cell.text : null,
+      ),
+    );
+    page.addRow([branch!.code, `Matritsa ${randomUUID().slice(0, 8)}`]);
+    const file = new File([new Uint8Array(await book.xlsx.writeBuffer())], "bolimlar.xlsx");
+    signedIn(user);
+    asMatrixAnswer(await saveImportAction(formOf(file, "departments")));
   },
 });
 

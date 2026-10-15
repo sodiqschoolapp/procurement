@@ -7,9 +7,11 @@ import { newClientKey } from "@/components/client-key";
 import { previewImport } from "@/features/catalog/queries/imports";
 import { runAction } from "@/server/action";
 import type { ActionResult } from "@/server/action-result";
+import { AuthorizationError } from "@/server/authorize";
 import { db } from "@/server/db/client";
 import {
   auditLog,
+  branches,
   catalogImports,
   categories,
   departments,
@@ -26,6 +28,7 @@ import {
   insertUnit,
 } from "../../../../tests/helpers/catalog";
 import { type Value, importSheet, productRow } from "../../../../tests/helpers/imports";
+import { describePermissionMatrix } from "../../../../tests/helpers/permission-matrix";
 import { insertUser } from "../../../../tests/helpers/users";
 import { importDepartments, importProducts } from "./imports";
 
@@ -497,4 +500,44 @@ describe("importDepartments (04 rule 3: names unique inside a branch; decisions 
     const third = await insertBranch();
     expectOk(await runAction(importDepartments, head.id, departmentsInput([[third.code, name]])));
   });
+});
+
+// 03-roles-and-permissions.md, "Manage catalogs, users, branches, settings": the Head only, the
+// branch of the case beside it (permission review of the diff, Must fix 1 and 2).
+function answerOf(result: ActionResult<unknown>): void {
+  if (result.ok) return;
+  const { code } = result.error;
+  if (code === "not_found" || code === "forbidden") throw new AuthorizationError(code);
+  throw new Error(`Unexpected answer: ${code}`);
+}
+
+describePermissionMatrix("importProducts", {
+  permission: "catalog.manage",
+  async run({ user }) {
+    const refs = await catalogRefs();
+    answerOf(
+      await runAction(
+        importProducts,
+        user.id,
+        productsInput([productRow(`Matritsa ${tag()}`, refs)]),
+      ),
+    );
+  },
+});
+
+describePermissionMatrix("importDepartments", {
+  permission: "catalog.manage",
+  async run({ user, branchId }) {
+    const [branch] = await db
+      .select({ code: branches.code })
+      .from(branches)
+      .where(eq(branches.id, branchId));
+    answerOf(
+      await runAction(
+        importDepartments,
+        user.id,
+        departmentsInput([[branch!.code, `Matritsa ${tag()}`]]),
+      ),
+    );
+  },
 });
