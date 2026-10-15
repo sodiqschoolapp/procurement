@@ -127,6 +127,13 @@
       "when": 1792037122725,
       "tag": "0017_catalog_suggestions",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1792096434409,
+      "tag": "0018_overspend_guard_min_amount",
+      "breakpoints": true
     }
   ]
 }

@@ -895,6 +895,24 @@ Choices made during the build:
 
 - The catalogs live in their own file, `scripts/seed-catalogs.mjs`, which the Dockerfile's run stage now copies beside `seed.mjs` (`tests/image-files.test.ts` demands every file `db-seed.mjs` reaches).
 
+### 2.1 Orders: names and the built parts (15.10.2026)
+
+The plan's decisions as the plan review of 15.10.2026 confirmed them (corrections 1 to 3 applied), with the change the permission review made to decision 3, and those of the build. The Look first items come first.
+
+1. **Look first** (money rule). `overspend_guard_min_amount` is stored as a JSON text of whole so'm (`"100000"`, CHECK `^(0|[1-9][0-9]{0,14})$` of migration 0018) and read as a `bigint`; `settingsFrom()` and `storedSettingValue()` of `src/domain/settings.ts` are the only conversions. A JSON number is read by JavaScript as a float (CLAUDE.md rule 6).
+2. **Look first** (money rule). The amount may be 0 (only the percent counts) up to `MONEY_MAX`; the guard's one switch stays `overspend_guard_percent = "off"`; while it is off the amount field is hidden, its value kept and not sent (08, Overspend guard).
+3. **Look first** (branch wall). The eleven request notification types are sendable with `{ actor, count, branch }` and the waiting ones with `{ count, hours }`. `branch` is one branch's code: an action on ticked orders of several branches sends one notification per branch with that branch's id and count (`orderActionNotices()`), so no recipient learns another branch's orders (03 rule 1; permission review). `actor` is the user's name for every type; `hours` is the setting in force; "submitted again" uses `REQUEST_SUBMITTED`.
+4. Internal codes keep "request" (D43): permission keys, `CREATE_REQUESTS`, `RequestStatus`, the `requestStatus` namespace, the notification type names. Only the menu id and its keys (`shell.menu.orders`, `settings.ordersAndMoney`) are renamed.
+5. The school name hint says "Shown in the menu."; 2.14 decides the PDF header.
+6. Russian "заказ" / "Заказы" (the owner corrects Russian, D12).
+7. The domain-import lint rule moves to task 2.2 (progress has the note).
+
+Choices made during the build:
+
+- Settings are read as `value::text` and parsed once with `JSON.parse` (`selectSettingRows()`, `parsedSettingRows()`): Drizzle's `jsonb` column runs `JSON.parse` again on what `pg` already parsed, so a stored `"100000"` came back as a number and a school name of digits would have made `settingsFrom()` throw. Any later read of a jsonb column that can hold a top-level JSON string goes the same way.
+- `parseSomOrZero()` and `isSomOrZero()` in `src/domain/money.ts` beside `parseSom()`, for an amount where 0 has a meaning.
+- The "no request word" test reads only the visible text of an ICU message (argument names and branch keys left out); "ariza" is matched at a word's start, so "inventarizatsiya" is not caught.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

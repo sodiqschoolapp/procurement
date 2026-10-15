@@ -176,10 +176,10 @@ describe("signing in (A8; build-plan 0.6)", () => {
     setClock(SIGNED_IN_AT);
     const head = await insertUser("HEAD");
 
-    const back = await signIn({ ...head, returnPath: "/requests?tab=x" });
+    const back = await signIn({ ...head, returnPath: "/orders?tab=x" });
     const away = await signIn({ ...head, returnPath: "//evil.example" });
 
-    expect(back).toMatchObject({ ok: true, returnPath: "/requests?tab=x" });
+    expect(back).toMatchObject({ ok: true, returnPath: "/orders?tab=x" });
     expect(away).toMatchObject({ ok: true, returnPath: "/" });
   });
 

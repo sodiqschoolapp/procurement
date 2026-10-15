@@ -10,6 +10,7 @@ import {
   PERCENT_MAX,
   PERCENT_MIN,
   SCHOOL_NAME_MAX,
+  STORED_AMOUNT,
 } from "@/domain/settings";
 
 import { users } from "./users";
@@ -77,6 +78,15 @@ export const settings = pgTable(
     check(
       "settings_receipt_required_for_cash_check",
       forKey("receipt_required_for_cash", sql`jsonb_typeof(${VALUE}) = 'boolean'`),
+    ),
+    // Whole so'm as a JSON text of digits, 0 to 15 digits with no leading zero, never a JSON
+    // number (plan of 2.1, decision 1, Look first; CLAUDE.md rule 6).
+    check(
+      "settings_overspend_guard_min_amount_check",
+      forKey(
+        "overspend_guard_min_amount",
+        sql`CASE WHEN jsonb_typeof(${VALUE}) IS DISTINCT FROM 'string' THEN false ELSE (${VALUE} #>> '{}') ~ ${sql.raw(`'${STORED_AMOUNT.source}'`)} END`,
+      ),
     ),
     // Trimmed: no white space at either end; counted by code point (decision 10).
     check(

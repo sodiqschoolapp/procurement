@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ROLES } from "@/domain/permissions";
@@ -19,11 +19,13 @@ import { saveSettings } from "./save-settings";
 // Head only); developer-rules.md rule 3 (one transaction) and rule 13 (changes to settings go to
 // the audit log); plan of 1.1, decisions 7, 8 and 15, review correction 3.
 
+/** The rows, each value parsed once from its JSON text (src/server/settings.ts). */
 async function storedRows() {
-  return db
-    .select({ key: settings.key, value: settings.value })
+  const rows = await db
+    .select({ key: settings.key, json: sql<string>`${settings.value}::text` })
     .from(settings)
     .orderBy(settings.key);
+  return rows.map(({ key, json }) => ({ key, value: JSON.parse(json) as unknown }));
 }
 
 async function auditRowsBy(actorId: string) {
@@ -68,6 +70,8 @@ describe("saveSettings (build-plan 1.1)", () => {
         await runAction(saveSettings, user.id, {
           price_hint_percent: 30,
           receipt_required_for_cash: true,
+          // A valid amount too (build-plan 2.1; permission review of 2.1, Should fix 1).
+          overspend_guard_min_amount: "250 000",
         }),
       ).toMatchObject({ ok: false, error: { code: "forbidden" } });
       expect(await storedRows()).toEqual([]);
@@ -139,6 +143,45 @@ describe("saveSettings (build-plan 1.1)", () => {
     expect(await auditRowsBy(head.id)).toHaveLength(1);
   });
 
+  it("the overspend guard amount saves as decimal text with an audit row (build-plan 2.1, Done when; plan of 2.1, decision 1)", async () => {
+    setClock("2026-10-15T09:00:00Z");
+    const head = await insertUser("HEAD");
+    const result = await runAction(saveSettings, head.id, {
+      overspend_guard_min_amount: "250 000",
+    });
+    expect(result).toMatchObject({ ok: true, data: { changed: ["overspend_guard_min_amount"] } });
+    expect(await storedRows()).toEqual([{ key: "overspend_guard_min_amount", value: "250000" }]);
+    expect(await auditRowsBy(head.id)).toEqual([
+      expect.objectContaining({
+        action: "settings.change",
+        before: { overspend_guard_min_amount: "100000" },
+        after: { overspend_guard_min_amount: "250000" },
+      }),
+    ]);
+    expect((await readSettings(db)).overspend_guard_min_amount).toBe(250_000n);
+
+    // 0: only the percent counts (08, Overspend guard; decision 2).
+    expect(
+      await runAction(saveSettings, head.id, { overspend_guard_min_amount: "0" }),
+    ).toMatchObject({ ok: true, data: { changed: ["overspend_guard_min_amount"] } });
+    expect((await readSettings(db)).overspend_guard_min_amount).toBe(0n);
+  });
+
+  it("the amount already in force, the default and a stored one, writes no row and no audit row (review of the plan of 2.1, Must fix 1)", async () => {
+    const head = await insertUser("HEAD");
+    expect(
+      await runAction(saveSettings, head.id, { overspend_guard_min_amount: "100 000" }),
+    ).toMatchObject({ ok: true, data: { changed: [] } });
+    expect(await storedRows()).toEqual([]);
+    expect(await auditRowsBy(head.id)).toEqual([]);
+
+    await runAction(saveSettings, head.id, { overspend_guard_min_amount: "250000" });
+    expect(
+      await runAction(saveSettings, head.id, { overspend_guard_min_amount: "250 000" }),
+    ).toMatchObject({ ok: true, data: { changed: [] } });
+    expect(await auditRowsBy(head.id)).toHaveLength(1);
+  });
+
   it("trims the school name before it is checked and stored (decision 10)", async () => {
     const head = await insertUser("HEAD");
     expect(
@@ -156,6 +199,11 @@ describe("saveSettings (build-plan 1.1)", () => {
     ["an empty school name", { school_name: "   " }],
     ["a 121-character school name", { school_name: "x".repeat(121) }],
     ["29 February", { school_year_start: { month: 2, day: 29 } }],
+    // build-plan 2.1, Done when: the new setting "refuses a negative amount".
+    ["a negative amount", { overspend_guard_min_amount: "-5" }],
+    ["an amount with a fraction", { overspend_guard_min_amount: "1.5" }],
+    ["an amount as a number", { overspend_guard_min_amount: 100000 }],
+    ["an amount above MONEY_MAX", { overspend_guard_min_amount: "1000000000000000" }],
     ["null for a value", { school_name: null }],
     ["one good key beside a bad one", { reminder_hours: 12, escalation_hours: 721 }],
   ])("refuses %s before any write (developer-rules.md rule 13: Zod first)", async (_, input) => {

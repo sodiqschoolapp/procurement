@@ -1,0 +1,1 @@
+ALTER TABLE "settings" ADD CONSTRAINT "settings_overspend_guard_min_amount_check" CHECK (key <> 'overspend_guard_min_amount' OR (CASE WHEN jsonb_typeof(value) IS DISTINCT FROM 'string' THEN false ELSE (value #>> '{}') ~ '^(0|[1-9][0-9]{0,14})$' END));

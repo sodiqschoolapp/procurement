@@ -49,7 +49,7 @@ describe("notifications table (14-data-model.md, System: user_id, type, params, 
     });
   });
 
-  it.each(["/", "/requests/1", "/notifications?page=2", "/a/b"])(
+  it.each(["/", "/orders/1", "/notifications?page=2", "/a/b"])(
     "accepts the address inside the app %j (Should fix 6)",
     async (link) => {
       const row = await insertOne({ link });

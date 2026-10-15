@@ -193,7 +193,7 @@ Everything the Head sets up before the first request can be written.
 
 From a draft on the branch's order list to fully approved orders, ticked and acted on many at once, with their numbers, their history and the download. Requests became orders on 15 October 2026 (`docs/spec-changes.md`).
 
-- [ ] **2.1 Orders: names and the built parts**
+- [x] **2.1 Orders: names and the built parts**
   - **Read:** `11-screens-and-ux.md` (Screens; Interface per role); `10-notifications-analytics-reports.md` (Notifications: the paragraph on grouping); `08-money-and-settlement.md` (Overspend guard); `14-data-model.md` (Notes for the build: settings keys); `05-order-request-form.md` (first paragraph).
   - **Build:** The menu word "Requests" becomes "Orders" in the three languages and the address `/requests` becomes `/orders`; the request notification types keep their internal names and carry a count, so each text says how many orders it covers ("15 orders submitted"); the setting `overspend_guard_min_amount` (100 000 so'm) on the Settings page beside the percent; every other built text that says "request" for this flow follows, and the feature folder `src/features/requests` becomes `src/features/orders`.
   - **Done when:** Tests: each role's menu shows Orders at `/orders`; a notification of type submitted with a count of 15 reads "15" in each language; the new setting saves with an audit row and refuses a negative amount.

@@ -23,7 +23,7 @@ export type Notification<Type extends SendableType> = {
    * an event of no branch, told to Heads or to the person it names (permission review of 0.11).
    */
   branchId: string | null;
-  /** An address inside the app, such as `/requests/<id>`. */
+  /** An address inside the app, such as `/notifications` or a filtered list `/orders?…`. */
   link: string;
   /** From the injected clock (CLAUDE.md rule 10); no database default. */
   at: Date;

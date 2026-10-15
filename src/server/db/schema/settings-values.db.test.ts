@@ -14,7 +14,7 @@ import { settings } from "@/server/db/schema";
 
 import { refusalOf } from "../../../../tests/helpers/database-error";
 
-// The value CHECKs of migration 0007 (plan of 1.1, decision 3, Look first; CLAUDE.md rule 5:
+// The value CHECKs of migrations 0007 and 0018 (plan of 1.1, decision 3, Look first; CLAUDE.md rule 5:
 // the database is the last defence). D39: every refused case reaches the database directly, by an
 // insert and by an update, and is refused as a check violation (23514) by its named constraint,
 // never as a cast error. D40: each refused value is tried beside an accepted value of the same key.
@@ -35,6 +35,24 @@ const CASES: Case[] = [
     key: "overspend_guard_percent",
     good: [PERCENT_MIN, 10, PERCENT_MAX, "off"],
     bad: ["OFF", "on", "", 1.5, PERCENT_MIN - 1, PERCENT_MAX + 1, false],
+  },
+  {
+    // Migration 0018: whole so'm as a JSON text (plan of 2.1, decision 1, Look first).
+    key: "overspend_guard_min_amount",
+    good: ["0", "100000", "999999999999999"],
+    bad: [
+      100000,
+      0,
+      "-1",
+      "1.5",
+      "01",
+      "1000000000000000",
+      "",
+      " 1",
+      "1 000",
+      true,
+      { amount: "1" },
+    ],
   },
   {
     key: "reminder_hours",
@@ -102,12 +120,13 @@ function update(key: string, value: unknown) {
   return db.execute(sql`update settings set value = ${json(value)}::jsonb where key = ${key}`);
 }
 
+/** The stored values, each parsed once from its JSON text (src/server/settings.ts). */
 async function storedValue(key: string) {
   const rows = await db
-    .select({ value: settings.value })
+    .select({ json: sql<string>`${settings.value}::text` })
     .from(settings)
     .where(eq(settings.key, key));
-  return rows.map((row) => row.value);
+  return rows.map((row) => JSON.parse(row.json) as unknown);
 }
 
 describe("settings value CHECKs (plan of 1.1, decision 3; D39, D40)", () => {

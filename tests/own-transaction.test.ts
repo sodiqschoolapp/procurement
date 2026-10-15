@@ -23,10 +23,10 @@ const TRANSACTION =
 const CLOCK = "export const moment = new Date();\n";
 
 const FENCED = [
-  "src/features/requests/actions/sample.ts",
-  "src/features/requests/queries/sample.ts",
-  "src/features/requests/components/sample.ts",
-  "src/features/requests/components/sample.tsx",
+  "src/features/orders/actions/sample.ts",
+  "src/features/orders/queries/sample.ts",
+  "src/features/orders/components/sample.ts",
+  "src/features/orders/components/sample.tsx",
   "src/app/sample/actions.ts",
   "src/app/sample/route.ts",
   "src/app/sample/page.tsx",
@@ -37,7 +37,7 @@ const FENCED = [
 
 describe("no action opens its own transaction (developer-rules.md rule 3)", () => {
   beforeAll(async () => {
-    await eslint.calculateConfigForFile("src/features/requests/actions/sample.ts");
+    await eslint.calculateConfigForFile("src/features/orders/actions/sample.ts");
   }, 60_000);
 
   it("refuses .transaction( in screens, routes and the actions and queries of an area", async () => {
@@ -56,7 +56,7 @@ describe("no action opens its own transaction (developer-rules.md rule 3)", () =
     for (const place of [
       "src/server/action.ts",
       "src/server/auth/sign-in.ts",
-      "src/features/requests/actions/sample.test.ts",
+      "src/features/orders/actions/sample.test.ts",
     ]) {
       expect(await reports(TRANSACTION, place, "opens a transaction"), place).toEqual([]);
     }

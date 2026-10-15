@@ -35,10 +35,10 @@ function linkLabels(html: string): string[] {
 
 describe("the sidebar (Interface per role; design system, Layout shell)", () => {
   const cases: Record<Role, string[]> = {
-    MANAGER: ["Home", "Requests", "Warehouse", "Analytics", "Reports"],
-    HEAD: ["Home", "Requests", "Warehouse", "Money", "Analytics", "Reports", "Admin"],
-    PRINCIPAL: ["Home", "Requests", "Stock", "Analytics", "Reports"],
-    FINANCE: ["Home", "Requests", "Money", "Stock", "Analytics", "Reports"],
+    MANAGER: ["Home", "Orders", "Warehouse", "Analytics", "Reports"],
+    HEAD: ["Home", "Orders", "Warehouse", "Money", "Analytics", "Reports", "Admin"],
+    PRINCIPAL: ["Home", "Orders", "Stock", "Analytics", "Reports"],
+    FINANCE: ["Home", "Orders", "Money", "Stock", "Analytics", "Reports"],
   };
   for (const [role, labels] of Object.entries(cases)) {
     it(`${role}: exactly its items, each named for the rail`, () => {
@@ -78,10 +78,10 @@ describe("the sidebar (Interface per role; design system, Layout shell)", () => 
 });
 
 describe("the phone tab bar (design system, This app: Phone tab bar)", () => {
-  it("Head: Home, Requests, Warehouse, Money and More", () => {
+  it("Head: Home, Orders, Warehouse, Money and More", () => {
     const html = wrap(<TabBar role="HEAD" />);
     expect(html.match(/<a /g)).toHaveLength(4);
-    for (const word of ["Home", "Requests", "Warehouse", "Money", "More"]) {
+    for (const word of ["Home", "Orders", "Warehouse", "Money", "More"]) {
       expect(html).toContain(`>${word}</span>`);
     }
     expect(html).not.toContain(">Admin<");

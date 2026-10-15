@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import { MONEY_MAX } from "./money";
+
 import {
   GUARD_OFF,
   SETTING_CHECKS,
@@ -12,19 +14,22 @@ import {
   isPaymentType,
   isPercent,
   isSchoolName,
+  isStoredAmount,
   lastDayOf,
   settingsFrom,
+  storedSettingValue,
 } from "./settings";
 
 // build-plan 1.1; 14-data-model.md, Notes for the build (the keys and defaults); plan of 1.1,
 // decisions 1, 2, 6, 7, 9 and 10.
 
 describe("the settings keys and defaults (14-data-model.md, Notes for the build)", () => {
-  it("has exactly the eight keys of the spec and D10", () => {
+  it("has exactly the nine keys of the spec and D10", () => {
     expect([...SETTING_KEYS].sort()).toEqual(
       [
         "default_payment_type",
         "escalation_hours",
+        "overspend_guard_min_amount",
         "overspend_guard_percent",
         "price_hint_percent",
         "receipt_required_for_cash",
@@ -43,6 +48,8 @@ describe("the settings keys and defaults (14-data-model.md, Notes for the build)
       default_payment_type: "CASH",
       price_hint_percent: 20,
       overspend_guard_percent: 10,
+      // 14, Notes for the build: `overspend_guard_min_amount` (100 000), whole so'm as a bigint.
+      overspend_guard_min_amount: 100_000n,
       reminder_hours: 24,
       escalation_hours: 48,
       receipt_required_for_cash: false,
@@ -71,6 +78,21 @@ describe("value checks (plan of 1.1, decisions 1, 2, 9, 10)", () => {
     for (const ok of [0, 10, 1000, GUARD_OFF]) expect(isGuard(ok)).toBe(true);
     for (const bad of ["OFF", "on", "", -1, 1001, 1.5, false, null]) {
       expect(isGuard(bad)).toBe(false);
+    }
+  });
+
+  it("overspend guard amount: a bigint of whole so'm, 0 to MONEY_MAX (08, Overspend guard; plan of 2.1, decisions 1 and 2)", () => {
+    const check = SETTING_CHECKS.overspend_guard_min_amount;
+    for (const ok of [0n, 1n, 100_000n, MONEY_MAX]) expect(check(ok)).toBe(true);
+    for (const bad of [-1n, MONEY_MAX + 1n, 100_000, "100000", null]) {
+      expect(check(bad)).toBe(false);
+    }
+  });
+
+  it("the amount's stored text: digits, 0 to 15 of them, no leading zero, no sign (decision 1)", () => {
+    for (const ok of ["0", "1", "100000", "999999999999999"]) expect(isStoredAmount(ok)).toBe(true);
+    for (const bad of ["-1", "1.5", "01", "1000000000000000", "", " 1", "1 000", 100000, null]) {
+      expect(isStoredAmount(bad)).toBe(false);
     }
   });
 
@@ -145,6 +167,23 @@ describe("settingsFrom (build-plan 1.1: the defaults come back on an empty table
     });
   });
 
+  it("the amount's stored text reads as a bigint, never a number (CLAUDE.md rule 6; review of the plan, Must fix 1)", () => {
+    const values = settingsFrom([{ key: "overspend_guard_min_amount", value: "250000" }]);
+    expect(values.overspend_guard_min_amount).toBe(250_000n);
+    expect(settingsFrom([{ key: "overspend_guard_min_amount", value: "0" }])).toEqual({
+      ...SETTING_DEFAULTS,
+      overspend_guard_min_amount: 0n,
+    });
+  });
+
+  it("an amount stored as a JSON number or with a sign throws", () => {
+    for (const value of [250000, "-1", "01", "1.5"]) {
+      expect(() => settingsFrom([{ key: "overspend_guard_min_amount", value }])).toThrow(
+        /overspend_guard_min_amount/,
+      );
+    }
+  });
+
   it("a stored value of the wrong shape throws, never guesses (CLAUDE.md, what matters most 1)", () => {
     expect(() => settingsFrom([{ key: "price_hint_percent", value: "20" }])).toThrow(
       /price_hint_percent/,
@@ -175,6 +214,30 @@ describe("changedSettings (plan of 1.1, decision 7)", () => {
     const current = { ...SETTING_DEFAULTS, overspend_guard_percent: 0 };
     expect(changedSettings(current, { overspend_guard_percent: GUARD_OFF })).toEqual([
       "overspend_guard_percent",
+    ]);
+  });
+});
+
+describe("storedSettingValue (plan of 2.1, decision 1; review of the plan, Must fix 1)", () => {
+  it("writes the amount as decimal text, the one form the CHECK of 0018 accepts", () => {
+    expect(storedSettingValue("overspend_guard_min_amount", 250_000n)).toBe("250000");
+    expect(storedSettingValue("overspend_guard_min_amount", 0n)).toBe("0");
+    expect(storedSettingValue("overspend_guard_min_amount", MONEY_MAX)).toBe("999999999999999");
+  });
+
+  it("is the way back from settingsFrom for every key", () => {
+    const values = { ...SETTING_DEFAULTS, school_name: "Invented School" };
+    const rows = SETTING_KEYS.filter((key) => values[key] !== null).map((key) => ({
+      key,
+      value: storedSettingValue(key, values[key]),
+    }));
+    expect(settingsFrom(rows)).toEqual(values);
+  });
+
+  it("the same amount again is no change; another amount is (decision 7 of 1.1)", () => {
+    expect(changedSettings(SETTING_DEFAULTS, { overspend_guard_min_amount: 100_000n })).toEqual([]);
+    expect(changedSettings(SETTING_DEFAULTS, { overspend_guard_min_amount: 0n })).toEqual([
+      "overspend_guard_min_amount",
     ]);
   });
 });

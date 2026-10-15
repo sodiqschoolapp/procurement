@@ -37,8 +37,8 @@ const SCREENS = [
   "src/app/sample/actions.ts",
   "src/components/sample.tsx",
   "src/components/sample.ts",
-  "src/features/requests/components/sample.tsx",
-  "src/features/requests/components/sample.ts",
+  "src/features/orders/components/sample.tsx",
+  "src/features/orders/components/sample.ts",
 ];
 
 describe("the database-import fence (developer-rules.md rule 4)", () => {
@@ -57,7 +57,7 @@ describe("the database-import fence (developer-rules.md rule 4)", () => {
   it("lets server code, queries and the health route read the database", async () => {
     for (const place of [
       "src/server/sample.ts",
-      "src/features/requests/queries/sample.ts",
+      "src/features/orders/queries/sample.ts",
       "src/app/health/route.ts",
     ]) {
       for (const code of Object.values(SAMPLES)) {

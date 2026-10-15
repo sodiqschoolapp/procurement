@@ -19,12 +19,12 @@ async function signIn(page: Page, username: string, password: string): Promise<v
 test("a deep link opened signed out goes to sign-in, then lands on that page (build-plan 0.6; edge-cases/system.md)", async ({
   page,
 }) => {
-  await page.goto("/requests?tab=x");
+  await page.goto("/orders?tab=x");
 
-  await expect(page).toHaveURL(/\/login\?next=%2Frequests%3Ftab%3Dx$/);
+  await expect(page).toHaveURL(/\/login\?next=%2Forders%3Ftab%3Dx$/);
   await signIn(page, E2E_USER.username, E2E_USER.password);
 
-  await expect(page).toHaveURL(/\/requests\?tab=x$/);
+  await expect(page).toHaveURL(/\/orders\?tab=x$/);
 });
 
 test("a wrong password shows the error line (A8; plan of 0.6, decision 6)", async ({ page }) => {
@@ -85,6 +85,6 @@ test("signing out returns to the sign-in page, and the deep link asks again (A8)
   await page.getByRole("main").getByRole("button", { name: uz.session.signOut }).click();
 
   await expect(page).toHaveURL(/\/login$/);
-  await page.goto("/requests");
-  await expect(page).toHaveURL(/\/login\?next=%2Frequests$/);
+  await page.goto("/orders");
+  await expect(page).toHaveURL(/\/login\?next=%2Forders$/);
 });

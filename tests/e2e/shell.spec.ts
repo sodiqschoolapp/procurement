@@ -13,10 +13,10 @@ import { E2E_BRANCHES, E2E_LANGUAGE_USERS, E2E_ROLES } from "./global-setup";
 
 /** 11-screens-and-ux.md, Interface per role, "Menu, in order", as the Uzbek words. */
 const MENUS = {
-  MANAGER: ["home", "requests", "warehouse", "analytics", "reports"],
-  HEAD: ["home", "requests", "warehouse", "money", "analytics", "reports", "admin"],
-  PRINCIPAL: ["home", "requests", "stock", "analytics", "reports"],
-  FINANCE: ["home", "requests", "money", "stock", "analytics", "reports"],
+  MANAGER: ["home", "orders", "warehouse", "analytics", "reports"],
+  HEAD: ["home", "orders", "warehouse", "money", "analytics", "reports", "admin"],
+  PRINCIPAL: ["home", "orders", "stock", "analytics", "reports"],
+  FINANCE: ["home", "orders", "money", "stock", "analytics", "reports"],
 } as const;
 
 type Words = typeof uz.shell.menu;
@@ -97,14 +97,14 @@ test("changing the language on /profile changes the menu at once, and it stays (
   const user = E2E_LANGUAGE_USERS[testInfo.project.name as keyof typeof E2E_LANGUAGE_USERS];
   await signIn(page, user);
   await page.goto("/profile");
-  expect(await menuWords(page, uz.shell.menu)).toContain(uz.shell.menu.requests);
+  expect(await menuWords(page, uz.shell.menu)).toContain(uz.shell.menu.orders);
   // A mark on the window: it survives a re-render, not a reload.
   await page.evaluate(() => Object.assign(window, { notReloaded: true }));
 
   await page.getByRole("radio", { name: ru.languages.ru }).click();
 
   await expect(page.getByRole("heading", { level: 1, name: ru.profile.title })).toBeVisible();
-  expect(await menuWords(page, ru.shell.menu)).toContain(ru.shell.menu.requests);
+  expect(await menuWords(page, ru.shell.menu)).toContain(ru.shell.menu.orders);
   expect(await page.evaluate(() => "notReloaded" in window)).toBe(true);
   await expect(page.locator("html")).toHaveAttribute("lang", "ru");
 
@@ -113,7 +113,7 @@ test("changing the language on /profile changes the menu at once, and it stays (
 
   await page.getByRole("radio", { name: uz.languages.uz }).click();
   await expect(page.getByRole("heading", { level: 1, name: uz.profile.title })).toBeVisible();
-  expect(await menuWords(page, uz.shell.menu)).toContain(uz.shell.menu.requests);
+  expect(await menuWords(page, uz.shell.menu)).toContain(uz.shell.menu.orders);
   await noSideScroll(page);
 });
 

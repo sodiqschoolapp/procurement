@@ -617,4 +617,23 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - `seed()` no longer returns an array: read `.lines`.
 - For the request tasks: the seed's products, subtypes and departments exist after `npm run db:seed`; look them up by name, never by a fixed id.
 
-The next task is 2.1.
+## 2.1 Orders: names and the built parts (15.10.2026, pull request #45)
+
+**Built**
+- Menu item `orders` (Orders, Заказы, Buyurtmalar) at `/orders`; `src/features/orders/`; every built text says order, with a test that none says request.
+- Texts and params for the eleven `REQUEST_*` notification types: `{ actor, count, branch }`, the two waiting types `{ count, hours }`; `orderActionNotices()` splits an action into one notice per branch.
+- Setting `overspend_guard_min_amount` (100 000n): migration `0018` (CHECK on the JSON text), `parseSomOrZero()`/`isSomOrZero()`, `storedSettingValue()`, the field on `/settings` beside the percent.
+- Settings are read as `value::text` and parsed once (`selectSettingRows()`/`parsedSettingRows()` in `src/server/settings.ts`).
+
+**Left out, and the task that brings it**
+- The `/orders` page: 2.5 and 2.8. Sending the order notifications: 2.7, 2.10, 2.11, phase 4; the reminders: 8.1. The guard's check: phase 4.
+
+**What the next sessions must know**
+- For 2.2: add the lint rule that stops `src/domain/` importing from outside its folder (moved from 2.1, decision 7; the note in 0.1 named the old numbering).
+- For 2.7: an order action notifies through `orderActionNotices(actor, orders)`: one `notify()` per branch with its `branchId`; never one notification across branches.
+- For 8.1: a waiting reminder's `count` covers only the recipient's branches; `hours` is the setting in force.
+- Trap: Drizzle's `jsonb` column parses a JSON text a second time (`"100000"` → 100000). Read a jsonb column that can hold a top-level JSON string as `::text` and `JSON.parse` once.
+- A setting holding money is a JSON text in the row and a bigint in force; convert only through `settingsFrom()` and `storedSettingValue()`.
+- Internal codes keep "request": permission keys `request.*`, `CREATE_REQUESTS`, `RequestStatus`, `requestStatus.*`, `REQUEST_*` (D43).
+
+The next task is 2.2.
