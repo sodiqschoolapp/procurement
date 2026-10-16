@@ -18,3 +18,5 @@ Read first, under `docs/spec/`: `11-screens-and-ux.md` (the whole file); `10-not
 - Irreversible actions ask for confirmation and state the result. A colour label always carries an icon, a word and the amount.
 - Whatever a screen holds while a call runs (a held save queue, a pending flag, an open dialog) is released in a `finally`, so a dropped connection never leaves a row waiting for ever. (Spec review of 2.5b.)
 - A refusal that only the server would give is not offered: a button that every chosen row would refuse is not shown (read the rights the page computed for each row). (Spec review of 2.5b.)
+- A callback a child puts in an effect's dependencies is stable: never a function made anew on every render (a factory such as `typedOf(name)` returns the same function each time). Otherwise the effect runs on every render and can loop. (Build of 2.6.)
+- A write retried after a lost answer may count as saved from a reread only when the reread version is the one its own write made (`sent + 1`) and the row holds what was sent; a newer version is someone else's write and takes the stale path. (Permission review of 2.6.)

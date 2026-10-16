@@ -1063,6 +1063,29 @@ Choices made during the build:
 - The table's scroll box is `relative`, so its hidden file inputs stay inside it (they made the page scroll sideways at 375 px).
 - Two lines added to `.claude/rules/ui.md` and one to `.claude/rules/server-actions.md` from the reviews.
 
+### 2.6 Drafts: keyboard and phone (16.10.2026)
+
+The plan's decisions as the plan review of 16.10.2026 confirmed or changed them (corrections 1 to 4 applied), and those of the build and its reviews. The Look first items come first.
+
+1. **Look first** (developer-rules rule 8; decisions 2.5a item 14). An add that gets no answer is sent again with the same input and client key until an answer comes. While it retries, the grid holds its refreshes and disables delete, so a draft made by the lost try cannot be shown, deleted and made again by the retry. What stays is the risk 2.5a accepted: a delete from a second device during the outage brings the draft back once.
+2. **Look first** (developer-rules rule 9). An edit is retried with the same version and needs no client key. A retry answered `stale_version` counts as saved only when the reloaded row holds every field the retry sent (`rowHoldsSent()`, which fails closed on extra-cost rows) and its version is the one this write made (`sentVersion + 1`; permission review, Must fix 1). Otherwise it takes the stale path of 2.5b item 13. A failed reload also takes the stale path (spec review, Should fix 3): rare, and it never loses data on the server.
+3. Tab moves across, in the browser's order; Enter moves to the same column of the next draft, Shift+Enter up; Enter on the last draft goes to the add row, where Enter adds when the row is complete and otherwise goes to the first empty field.
+4. Enter on a select moves; Space or Alt+Down opens it. Buttons, the tick box and the open product list keep Enter for themselves.
+5. Cards below 640 px, the design system's phone width; the same DOM restyled, each cell with its column name for the eye (`aria-hidden`), every control 44 px.
+6. The totals of the ticked drafts stick to the bottom of the window (above the tab bar on a phone), folded to the count and grand total on a phone with "Show details".
+7. Delete and "Apply to ticked" are not retried automatically.
+8. The add row is locked from its first try until an answer; after the online tries run out ("Not added") its fields stay locked to the input the key was made for: "Add" sends the same again, "Start over" drops the key and reads the list again (both reviewers, Should fix 1).
+9. The grid's network text is "No connection. Trying again…"; other screens keep `errors.network`.
+10. Offline: wait for the `online` event (checking every 30 s) without limit. Online with no answer: five tries after 2, 4, 8, 16 and 30 s, then "Not saved" with "Try again". Nothing is kept in browser storage.
+11. "The same drafts" at 375 px are the same three products and departments, added by the 375 project's own Manager (plan review, decision 12).
+
+Choices made during the build:
+
+- `src/components/retry-wait.ts` (the waits, `retryWhileLost()`), `sent-guard.ts`, `grid-keys.ts`, `save-state.tsx`: plain parts with their own unit tests.
+- A render loop found on `main` (each typed cell got a new `onDirty` callback every render; "Maximum update depth exceeded" on `/orders`) is fixed with one stable callback per cell; the e2e tests assert that no such error appears.
+- On a phone the product list is as wide as its field (it made the page scroll sideways).
+- Two lines added to `.claude/rules/ui.md` from the build and the reviews.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

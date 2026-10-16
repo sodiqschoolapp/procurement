@@ -159,6 +159,16 @@ const paper = `Qog'oz ${run}`;
 const bluePen = `${pen} — Ko'k`;
 const science = `Fizika ${run}`;
 const music = `Musiqa ${run}`;
+// 2.6: three products, each of its own department, so no merge can hide a double add (D40).
+const notebook = `Daftar ${run}`;
+const marker = `Marker ${run}`;
+const chalk = `Bor ${run}`;
+const history = `Tarix ${run}`;
+const KEYBOARD_DRAFTS = [
+  { product: notebook, department: science, quantity: "4" },
+  { product: marker, department: music, quantity: "6" },
+  { product: chalk, department: history, quantity: "8" },
+] as const;
 
 test.beforeAll(async () => {
   await withDatabase(async (client) => {
@@ -170,6 +180,10 @@ test.beforeAll(async () => {
     await insertProduct(client, paper, 2000);
     await insertDepartment(client, science);
     await insertDepartment(client, music);
+    await insertProduct(client, notebook, 3000);
+    await insertProduct(client, marker, 9000);
+    await insertProduct(client, chalk, 1500);
+    await insertDepartment(client, history);
   });
 });
 
@@ -280,4 +294,234 @@ test("/orders opens at 375 px with no horizontal page scroll (11 rule 13)", asyn
   await addDraft(page, paper, music, "3");
   await expect(rows(page)).toHaveCount(1);
   expect(await scrollsSideways(page)).toBe(false);
+});
+
+// Build-plan 2.6 (11-screens-and-ux.md, Rules for a smooth feel 2, 7 and 13; plan of 2.6 and its
+// review, corrections 3 and 4). These run after the tests above: each starts from an empty grid.
+
+/** The never-submitted drafts of the person, with product, department and quantity. */
+async function draftsOf(person: Person) {
+  return withDatabase(async (client) => {
+    const { rows: found } = await client.query<{
+      product: string;
+      department: string;
+      quantity: string;
+      price: string | null;
+    }>(
+      `select p.name as product, d.name as department, o.planned_qty::text as quantity,
+              o.planned_price::text as price
+         from orders o join product_variants v on v.id = o.variant_id
+         join products p on p.id = v.product_id join departments d on d.id = o.department_id
+        where o.status = 'DRAFT' and o.number is null
+          and o.owner_id = (select id from users where username = $1)
+        order by o.created_at`,
+      [person.username],
+    );
+    return found;
+  });
+}
+
+/**
+ * React's "Maximum update depth exceeded" errors of the page (a render loop of the typed cells,
+ * found and fixed in the build of 2.6): collected from the start, asserted empty at the end.
+ */
+function renderLoops(page: Page): string[] {
+  const found: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error" && message.text().includes("Maximum update depth")) {
+      found.push(message.text());
+    }
+  });
+  return found;
+}
+
+async function focusedId(page: Page): Promise<string> {
+  return page.evaluate(() => document.activeElement?.id ?? "");
+}
+
+test("Done when: three drafts are added with the keyboard only (11 rules 2 and 13)", async ({
+  page,
+}, info) => {
+  test.skip(info.project.name !== "desktop-1440", "The Done-when is at 1440 px.");
+  const manager = E2E_DRAFT_USERS["desktop-1440"];
+  const loops = renderLoops(page);
+  await freshGrid(manager);
+  await signIn(page, manager);
+  await page.goto("/orders");
+  await page.waitForLoadState("networkidle");
+
+  // From here to the third row: only keyboard.press and keyboard.type (review, correction 4).
+  for (let presses = 0; (await focusedId(page)) !== "add-product"; presses += 1) {
+    expect(presses, "Tab reaches the product cell of the add row").toBeLessThan(80);
+    await page.keyboard.press("Tab");
+  }
+  for (const [at, draft] of KEYBOARD_DRAFTS.entries()) {
+    const option = page.getByRole("option", { name: draft.product });
+    // Typed again until the search shows the product as the active hit (typing before the page
+    // has hydrated, or before the search answered, is not seen by the picker).
+    await expect(async () => {
+      await page.keyboard.press("ControlOrMeta+a");
+      await page.keyboard.type(draft.product);
+      await expect(option).toHaveAttribute("aria-selected", "true", { timeout: 2000 });
+    }).toPass();
+    await page.keyboard.press("Enter");
+    // Enter on the picked product moves to "Department" (decided item 2).
+    await expect(page.locator("#add-department")).toBeFocused();
+    await page.keyboard.type(draft.department);
+    await expect(page.locator("#add-department option:checked")).toHaveText(draft.department);
+    await page.keyboard.press("Tab");
+    await expect(page.locator("#add-quantity")).toBeFocused();
+    await page.keyboard.type(draft.quantity);
+    // Enter on the last row adds a draft (11 rule 2), and the focus is back on the product cell.
+    await page.keyboard.press("Enter");
+    await expect(rows(page)).toHaveCount(at + 1);
+    await expect(page.locator("#add-product")).toBeFocused();
+  }
+
+  // Three drafts, one per pair, in the database too: nothing was added twice (D40).
+  expect(
+    (await draftsOf(manager)).map((one) => [one.product, one.department, Number(one.quantity)]),
+  ).toEqual(KEYBOARD_DRAFTS.map((one) => [one.product, one.department, Number(one.quantity)]));
+
+  // Enter in a typed cell saves it and moves to the same column of the next row (11 rule 2).
+  const firstQuantity = rows(page).nth(0).getByLabel(t.columns.quantity);
+  await firstQuantity.focus();
+  await page.keyboard.press("ControlOrMeta+a");
+  await page.keyboard.type("5");
+  await page.keyboard.press("Enter");
+  await expect(rows(page).nth(1).getByLabel(t.columns.quantity)).toBeFocused();
+  await expect(rows(page).nth(0)).toContainText(t.save.saved);
+  await expect(firstQuantity).toHaveValue("5");
+  // Shift+Enter goes back up; Enter on the last draft goes to the add row.
+  await page.keyboard.press("Shift+Enter");
+  await expect(firstQuantity).toBeFocused();
+  await rows(page).nth(2).getByLabel(t.columns.quantity).focus();
+  await page.keyboard.press("Enter");
+  await expect(page.locator("#add-product")).toBeFocused();
+  expect(loops).toEqual([]);
+});
+
+test("a save made offline keeps what was typed and is sent when the connection is back (11 rule 7)", async ({
+  page,
+  context,
+}, info) => {
+  test.skip(info.project.name !== "desktop-1440", "Once is enough.");
+  const manager = E2E_DRAFT_USERS["desktop-1440"];
+  // The three drafts of the keyboard test above.
+  expect(await draftsOf(manager)).toHaveLength(3);
+  await signIn(page, manager);
+  await page.goto("/orders");
+  const row = rows(page).nth(1);
+  const price = row.getByLabel(t.columns.price);
+  await expect(price).toHaveValue("9000");
+
+  await context.setOffline(true);
+  await price.fill("9500");
+  await price.press("Tab");
+  await expect(row).toContainText(t.save.retrying);
+  await expect(price).toHaveValue("9500");
+
+  await context.setOffline(false);
+  await expect(row).toContainText(t.save.saved);
+  await expect(price).toHaveValue("9500");
+  const after = await draftsOf(manager);
+  expect(after).toHaveLength(3);
+  expect(after[1]).toMatchObject({ product: marker, price: "9500" });
+});
+
+test("an add sent offline keeps its fields and makes one draft when the connection is back (developer-rules rule 8; 11 rule 7)", async ({
+  page,
+  context,
+}, info) => {
+  test.skip(info.project.name !== "desktop-1440", "Once is enough.");
+  const manager = E2E_DRAFT_USERS["desktop-1440"];
+  expect(await draftsOf(manager)).toHaveLength(3);
+  await signIn(page, manager);
+  await page.goto("/orders");
+  await expect(rows(page)).toHaveCount(3);
+
+  // A new pair: notebook for the music department.
+  const form = addForm(page);
+  const picker = form.getByRole("combobox", { name: t.columns.product });
+  const option = page.getByRole("option", { name: notebook });
+  await expect(async () => {
+    await picker.fill(notebook);
+    await expect(option).toBeVisible({ timeout: 2000 });
+  }).toPass();
+  await option.click();
+  await form.getByLabel(t.columns.requestedBy).selectOption({ label: music });
+  await form.getByLabel(t.columns.quantity).fill("3");
+
+  await context.setOffline(true);
+  await form.getByRole("button", { name: t.add.button }).click();
+  await expect(form.getByRole("status")).toHaveText(t.add.retrying);
+  // The fields keep what was typed and are locked while the add waits (decided item 9).
+  await expect(form.getByLabel(t.columns.quantity)).toHaveValue("3");
+  await expect(form.getByLabel(t.columns.quantity)).toBeDisabled();
+
+  await context.setOffline(false);
+  await expect(rows(page)).toHaveCount(4);
+  await expect(form.getByLabel(t.columns.quantity)).toHaveValue("");
+  const after = await draftsOf(manager);
+  expect(after.filter((one) => one.product === notebook && one.department === music)).toEqual([
+    expect.objectContaining({ quantity: "3.000" }),
+  ]);
+  expect(after).toHaveLength(4);
+});
+
+test("Done when: the same drafts show as cards at 375 px, with 44 px controls (11 rules 2 and 13)", async ({
+  page,
+}, info) => {
+  test.skip(info.project.name !== "phone-375", "The phone width.");
+  // The 375 project has its own Manager: "the same drafts" are the same three pairs (review,
+  // decision 12).
+  const manager = E2E_DRAFT_USERS["phone-375"];
+  const loops = renderLoops(page);
+  await freshGrid(manager);
+  await signIn(page, manager);
+  await page.goto("/orders");
+  for (const [at, draft] of KEYBOARD_DRAFTS.entries()) {
+    await addDraft(page, draft.product, draft.department, draft.quantity);
+    await expect(rows(page)).toHaveCount(at + 1);
+  }
+
+  await expect(page.locator("thead")).toBeHidden();
+  for (let at = 0; at < 3; at += 1) {
+    const card = rows(page).nth(at);
+    // A card: the cells stand one above the other, each with its column's name.
+    const product = await card.locator('td[data-col="product"]').boundingBox();
+    const quantity = await card.locator('td[data-col="quantity"]').boundingBox();
+    expect(product!.y + product!.height).toBeLessThanOrEqual(quantity!.y + 1);
+    await expect(card.locator('td[data-col="quantity"] [data-card-label]')).toHaveText(
+      t.columns.quantity,
+    );
+    // 11 rule 13: every control a finger uses is at least 44 px high (review, correction 3).
+    const controls = card.locator(
+      "input:visible:not([type=checkbox]):not([type=file]), select:visible, button:visible, [data-tick]",
+    );
+    const count = await controls.count();
+    expect(count).toBeGreaterThan(5);
+    for (let one = 0; one < count; one += 1) {
+      const box = await controls.nth(one).boundingBox();
+      expect(
+        box!.height,
+        await controls.nth(one).evaluate((el) => el.outerHTML.slice(0, 80)),
+      ).toBeGreaterThanOrEqual(44);
+    }
+  }
+  expect(await scrollsSideways(page)).toBe(false);
+
+  // The totals of the ticked drafts stay visible (11 rule 2), folded to the grand total.
+  await rows(page).nth(0).locator("[data-tick]").click();
+  await page.evaluate(() => window.scrollTo(0, 0));
+  const totals = page.getByRole("region", { name: t.totals.title });
+  await expect(totals).toBeInViewport();
+  await expect(totals.locator('[data-total="grand"] dd')).toHaveText(som("12000"));
+  await expect(totals.locator('[data-total="CASH"]')).toBeHidden();
+  const details = totals.getByRole("button", { name: t.totals.showDetails });
+  expect((await details.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  await details.click();
+  await expect(totals.locator('[data-total="CASH"] dd')).toHaveText(som("12000"));
+  expect(await scrollsSideways(page)).toBe(false);
+  expect(loops).toEqual([]);
 });

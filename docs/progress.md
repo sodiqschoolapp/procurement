@@ -719,4 +719,21 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - e2e: `E2E_DRAFT_USERS` (one Manager per project); type into the picker with `expect(...).toPass()` (typing before hydration is lost).
 - A text with the word "request" fails `tests/notification-texts.test.ts`: field 7 is labelled "Department".
 
-The next task is 2.6.
+## 2.6 Drafts: keyboard and phone (16.10.2026, pull request #52)
+
+**Built**
+- Enter moves down a column (Shift+Enter up), the last draft to the add row; Enter in the add row adds or goes to the first empty field; after an add the focus is on the product cell.
+- Below 640 px each draft is a card (same DOM, `data-card-label`); the ticked totals stick to the bottom, folded on a phone.
+- Retries: `src/components/retry-wait.ts` (`createRetryWaits()`, `retryWhileLost()`); the row queue answers `lost` and retries; "No connection. Trying again…", "Not saved" with "Try again"; an unanswered add stays locked with "Start over".
+- Fixed: a render loop of the typed cells on `/orders` (stable `typedOf`).
+
+**Left out, and the task that brings it**
+- Submit: 2.7. Group rows, filters: 2.8. Ctrl+K search: its own task.
+
+**What the next sessions must know**
+- Every cell of a draft row is `Cell` with `data-col`: a new column needs one, or Enter skips it. The add row's fields have the ids `add-branch`, `add-product`, `add-department`, `add-quantity`.
+- For 2.7: Submit is a move without a client key: never retried automatically (decisions 2.6 item 7). Use the grid's `refresh()` (held while an add retries), not `router.refresh()`.
+- `queue.save(job, landed)`: a job answers `lost` for no answer; `landed(sentVersion)` decides a stale retry.
+- e2e: `context.setOffline(true)` makes a server action throw at once in Next 16; `renderLoops(page)` in `drafts.spec.ts` catches React render loops.
+
+The next task is 2.7.

@@ -23,6 +23,12 @@ export type UseAction<Input, Result> = {
   errorText: string | null;
   /** The text of each wrong field, by its path. */
   fieldTexts: Record<string, string>;
+  /**
+   * Drops the client key and the last answer, so the next run is a new create. Only for a form
+   * the person clears on purpose after an unanswered create (plan of 2.6, permission review
+   * Should fix 1): the key otherwise goes with the input it was made for.
+   */
+  forget(): void;
 };
 
 type WithClientKey<Input> = Input & { clientKey?: string };
@@ -60,5 +66,10 @@ export function useAction<Input extends object, Result>(
     for (const [path, key] of Object.entries(result.error.fields)) fieldTexts[path] = t(key);
   }
 
-  return { run, pending, result, errorText, fieldTexts };
+  const forget = useCallback(() => {
+    clientKey.current = null;
+    setResult(null);
+  }, []);
+
+  return { run, pending, result, errorText, fieldTexts, forget };
 }

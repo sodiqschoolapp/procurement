@@ -84,7 +84,9 @@ export function ProductPicker({
       event.preventDefault();
       setActive((at) => Math.max(at - 1, 0));
     } else if (event.key === "Enter" && open && hits[active]) {
+      // The pick is this Enter's whole job: the grid does not move on it (plan of 2.6).
       event.preventDefault();
+      event.stopPropagation();
       pick(hits[active]!);
     } else if (event.key === "Escape") {
       setOpen(false);
@@ -130,7 +132,7 @@ export function ProductPicker({
           role="listbox"
           aria-label={label}
           aria-busy={loading || undefined}
-          className="absolute top-full left-0 z-40 mt-1 max-h-80 w-[min(26rem,calc(100vw-2rem))] overflow-y-auto rounded-xl bg-popover p-1 text-popover-foreground shadow-float"
+          className="absolute top-full left-0 z-40 mt-1 max-h-80 w-[min(26rem,calc(100vw-2rem))] overflow-y-auto rounded-xl bg-popover p-1 text-popover-foreground shadow-float max-sm:w-full"
         >
           {hits.length === 0 ? (
             <li className="px-3 py-2 text-sm text-muted-foreground">
