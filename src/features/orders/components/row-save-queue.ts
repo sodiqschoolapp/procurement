@@ -7,9 +7,7 @@
 // other (review of the plan, Should fix 4). Plain TypeScript, so it is tested without React.
 
 export type SaveAnswer =
-  | { kind: "saved"; version: number }
-  | { kind: "refused" }
-  | { kind: "stale" };
+  { kind: "saved"; version: number } | { kind: "refused" } | { kind: "stale" };
 
 export type SaveJob = (version: number) => Promise<SaveAnswer>;
 
@@ -25,12 +23,17 @@ export type RowSaveQueue = {
   /** The version of a row the server sent again, taken only while nothing runs or waits. */
   adopt(version: number): boolean;
   state(): QueueState;
+  /** Sets who hears of a change of state and of a stale answer. */
+  listen(events: QueueEvents): void;
 };
+
+export type QueueEvents = { onChange?: (state: QueueState) => void; onStale?: () => void };
 
 export function createRowSaveQueue(
   initialVersion: number,
-  events: { onChange?: (state: QueueState) => void; onStale?: () => void } = {},
+  initialEvents: QueueEvents = {},
 ): RowSaveQueue {
+  let events = initialEvents;
   let version = initialVersion;
   let running = false;
   let held = false;
@@ -103,5 +106,8 @@ export function createRowSaveQueue(
       return true;
     },
     state: () => ({ busy: busy(), version }),
+    listen(next) {
+      events = next;
+    },
   };
 }

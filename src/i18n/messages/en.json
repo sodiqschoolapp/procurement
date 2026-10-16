@@ -838,6 +838,132 @@
     "noPhoto": "No photo"
   },
   "orders": {
+    "title": "Orders",
+    "draftsTitle": "Drafts",
+    "owners": {
+      "label": "Whose drafts",
+      "mine": "My drafts",
+      "all": "Everyone's"
+    },
+    "empty": {
+      "title": "No drafts yet",
+      "line": "Add the first order below: pick the product, the department and the quantity."
+    },
+    "listComing": {
+      "title": "Your order list comes here",
+      "line": "The orders you act on will be listed on this page."
+    },
+    "columns": {
+      "tick": "Tick",
+      "number": "Number",
+      "branch": "Branch",
+      "product": "Product or service",
+      "type": "Type",
+      "subtype": "Subtype",
+      "inStock": "In stock",
+      "photo": "Photo",
+      "company": "Brand or company",
+      "requestedBy": "Requested by",
+      "requesterName": "Person",
+      "neededBy": "Needed by",
+      "measure": "Measure",
+      "quantity": "Quantity",
+      "price": "Price per unit",
+      "extras": "Extra costs",
+      "paymentType": "Payment type",
+      "priority": "Priority",
+      "urgentReason": "Reason for Urgent",
+      "comment": "Comment",
+      "total": "Order total",
+      "state": "Saving",
+      "actions": "Actions"
+    },
+    "tickRow": "Tick {product}",
+    "draftWord": "Draft",
+    "revision": "rev {revision}",
+    "labels": {
+      "SENT_BACK": "Sent back",
+      "TAKEN_BACK": "Taken back"
+    },
+    "ownerAndDate": "{owner}, {date}",
+    "none": "—",
+    "noCompany": "Not set",
+    "pickDepartment": "Pick a department",
+    "responsible": "Responsible: {name}",
+    "priority": {
+      "NORMAL": "Normal",
+      "URGENT": "Urgent"
+    },
+    "save": {
+      "saving": "Saving…",
+      "saved": "Saved",
+      "failed": "Not saved",
+      "stale": "Changed elsewhere: the newest version is shown. Type your change again.",
+      "branchPending": "Pick a department of the new branch to save",
+      "urgentPending": "Type the reason to save Urgent"
+    },
+    "add": {
+      "title": "New order",
+      "button": "Add",
+      "merged": "Added to your draft: now {quantity}",
+      "added": "Draft added"
+    },
+    "picker": {
+      "placeholder": "Search by name",
+      "empty": "Nothing found",
+      "loading": "Searching…",
+      "stock": "In stock: {stock}",
+      "noStock": "In stock: —"
+    },
+    "photo": {
+      "none": "No photo",
+      "alt": "Photo of {name}"
+    },
+    "reference": {
+      "add": "Add a reference photo",
+      "open": "Open the reference photo",
+      "remove": "Remove the reference photo",
+      "uploading": "Uploading…",
+      "alt": "Reference photo of {name}"
+    },
+    "extras": {
+      "open": "Edit the extra costs of {product}",
+      "title": "Extra costs",
+      "type": "Type",
+      "amount": "Amount",
+      "pickType": "Pick a type",
+      "addRow": "Add a row",
+      "removeRow": "Remove the row",
+      "done": "Done",
+      "max": "At most {max} rows"
+    },
+    "delete": {
+      "label": "Delete the draft of {product}",
+      "title": "Delete this draft?",
+      "result": "The draft of {product} is deleted. This cannot be undone.",
+      "confirm": "Delete",
+      "done": "Draft deleted"
+    },
+    "ticked": {
+      "count": "{count, plural, one {# draft ticked} other {# drafts ticked}}",
+      "neededBy": "Needed-by date for the ticked drafts",
+      "apply": "Apply to ticked",
+      "applied": "{count, plural, one {Needed-by date set on # draft} other {Needed-by date set on # drafts}}",
+      "failed": "Nothing was changed. {count, plural, one {# draft} other {# drafts}} could not take the date and were reloaded.",
+      "clear": "Clear"
+    },
+    "totals": {
+      "title": "Totals of the ticked drafts",
+      "count": "{count, plural, one {# draft} other {# drafts}}",
+      "goods": "Goods",
+      "extras": "Extra costs",
+      "grand": "Grand total",
+      "withoutPrice": "{count, plural, one {# draft without a price is left out} other {# drafts without a price are left out}}"
+    },
+    "date": {
+      "placeholder": "dd.mm.yyyy",
+      "invalid": "Type the date as 08.10.2026"
+    },
     "priceHint": "{percent, number, ::sign-always}% vs catalog price"
   }
 }
