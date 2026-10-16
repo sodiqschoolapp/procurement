@@ -15,6 +15,7 @@ import {
   quantityOf,
 } from "./order-totals";
 import type { PaymentType } from "./payment-types";
+import { allowedActions } from "./order-moves";
 import { type Actor, type Role, decide } from "./permissions";
 import type { ProductType } from "./products";
 import type { RequestStatus } from "./request-status";
@@ -247,6 +248,38 @@ export function draftRowRights(
     isDraftEditable(row.status) &&
     decide("request.edit", actor, { branchId: row.branchId, ownerId: row.ownerId }) === "allow";
   return { editable, deletable: editable && row.ownerId === actor.userId && isNeverSubmitted(row) };
+}
+
+/**
+ * Whether the grid offers Submit on one row (05 Drafts 4; plan of 2.7): the state machine offers
+ * SUBMIT (a DRAFT, the owner or the Head, CREATE_REQUESTS on; developer-rules.md rule 2), and the
+ * draft has no number: a taken-back draft is submitted again from 2.11 (decided item 3, Look
+ * first). The Submit button is shown when every ticked row answers true; the server asks again.
+ */
+export function draftSubmittable(
+  actor: Actor,
+  row: {
+    id: string;
+    branchId: string;
+    ownerId: string;
+    status: RequestStatus;
+    number: string | null;
+  },
+): boolean {
+  if (row.number !== null) return false;
+  const state = {
+    id: row.id,
+    status: row.status,
+    branchId: row.branchId,
+    ownerId: row.ownerId,
+    // Facts no Submit reads: who created the order changes where it goes, not whether it may.
+    createdByHead: false,
+    buyingFinished: false,
+    exactMatch: false,
+    ownerClosesAlone: false,
+    readyToClose: false,
+  };
+  return allowedActions(actor, [state]).includes("SUBMIT");
 }
 
 /** Whether the grid's add row offers a branch: active, and `request.create` allows (05 field 1). */

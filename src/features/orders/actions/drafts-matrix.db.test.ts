@@ -22,6 +22,7 @@ import { describeSubmitMatrix } from "../../../../tests/helpers/submit-matrix";
 import { insertUser } from "../../../../tests/helpers/users";
 import { getDraft, listDrafts } from "../queries/drafts";
 import { listDraftChoices, searchDraftProducts } from "../queries/draft-picker";
+import { submittedNumbers } from "../queries/submitted";
 import { deleteDraft, setDraftsNeededBy } from "./drafts";
 import { submitDrafts } from "./submit";
 
@@ -224,3 +225,16 @@ describe('deleteDraft: permission matrix by hand, "Create, edit … a request", 
 describeSubmitMatrix("submitDrafts", (user, orders) =>
   runOrdersAction(submitDrafts, user.id, { clientKey: randomUUID(), orders }),
 );
+
+// The numbers read after a Submit (build plan 2.7): "See orders", the branch inside the SQL. An
+// empty answer is the query's "not found".
+describePermissionMatrix("submittedNumbers", {
+  permission: "data.view",
+  async run({ user, branchId }) {
+    const owner = await insertUser("MANAGER", { branches: [branchId] });
+    const order = await insertOrder({ branchId, ownerId: owner.id, status: "PENDING_HEAD" });
+    const numbers = await submittedNumbers(user.id, [order.id]);
+    if (!numbers.has(order.id)) throw new AuthorizationError("not_found");
+    expect(numbers.get(order.id)).toBe(order.number);
+  },
+});

@@ -974,6 +974,19 @@
       "placeholder": "dd.mm.yyyy",
       "invalid": "Type the date as 08.10.2026"
     },
-    "priceHint": "{percent, number, ::sign-always}% vs catalog price"
+    "priceHint": "{percent, number, ::sign-always}% vs catalog price",
+    "submit": {
+      "button": "Submit ({count})",
+      "done": "{count, plural, one {Submitted 1 order} other {Submitted # orders}}: {numbers}{more, plural, =0 {} other { and # more}}.",
+      "failedTitle": "{count, plural, one {Nothing was submitted: 1 order needs a fix.} other {Nothing was submitted: # orders need a fix.}}",
+      "refused": {
+        "not_found": "Not found. The list is refreshed.",
+        "stale_version": "Changed a moment ago. Check it and submit again.",
+        "wrong_status": "Already submitted or no longer a draft.",
+        "forbidden": "You cannot submit this order.",
+        "not_ready": "This order cannot be submitted yet."
+      },
+      "failedLine": "{name} — {problem}"
+    }
   }
 }

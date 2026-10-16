@@ -11,6 +11,7 @@ import {
 } from "@/domain/drafts";
 import { behindDraftWall } from "@/domain/order-moves";
 import { priceHintPercent } from "@/domain/order-totals";
+import { inactiveEntries } from "@/domain/submit-checks";
 import type { Actor } from "@/domain/permissions";
 import type { RequestStatus } from "@/domain/request-status";
 import {
@@ -21,6 +22,7 @@ import {
   branchFilter,
 } from "@/server/authorize";
 import {
+  branches,
   categories,
   companies,
   departments,
@@ -91,6 +93,12 @@ export type DraftRow = {
   total: bigint | null;
   /** The price hint against the reference price (05 Ticking and filters), or null. */
   priceHint: bigint | null;
+  /**
+   * The cells whose catalog entry is deactivated: branch, product or subtype, department,
+   * company, an extra cost type (edge case "A product is deactivated while it sits in a draft":
+   * "the draft is marked"; plan of 2.7, decided item 9). Submit refuses them too.
+   */
+  inactive: string[];
   createdAt: Date;
 };
 
@@ -138,6 +146,11 @@ const columns = {
   urgentReason: orders.urgentReason,
   comment: orders.comment,
   stock: stockBalances.qty,
+  branchActive: branches.isActive,
+  variantActive: productVariants.isActive,
+  productActive: products.isActive,
+  departmentActive: departments.isActive,
+  companyActive: companies.isActive,
   createdAt: orders.createdAt,
 };
 
@@ -154,6 +167,7 @@ async function readRows(
     .select(columns)
     .from(orders)
     .innerJoin(owner, eq(owner.id, orders.ownerId))
+    .innerJoin(branches, eq(branches.id, orders.branchId))
     .leftJoin(productVariants, eq(productVariants.id, orders.variantId))
     .leftJoin(products, eq(products.id, productVariants.productId))
     .leftJoin(categories, eq(categories.id, products.categoryId))
@@ -179,6 +193,7 @@ async function readRows(
       extraCostTypeId: orderExtras.extraCostTypeId,
       name: extraCostTypes.name,
       amount: orderExtras.amount,
+      isActive: extraCostTypes.isActive,
     })
     .from(orderExtras)
     .innerJoin(extraCostTypes, eq(extraCostTypes.id, orderExtras.extraCostTypeId))
@@ -190,8 +205,10 @@ async function readRows(
     )
     .orderBy(asc(orderExtras.createdAt), asc(orderExtras.id));
   const extrasOf = new Map<string, DraftExtra[]>();
-  for (const { orderId, ...extra } of extras) {
+  const extrasActive = new Map<string, { active: boolean }[]>();
+  for (const { orderId, isActive, ...extra } of extras) {
     extrasOf.set(orderId, [...(extrasOf.get(orderId) ?? []), extra]);
+    extrasActive.set(orderId, [...(extrasActive.get(orderId) ?? []), { active: isActive }]);
   }
   const threshold = (await readSettings(executor)).price_hint_percent;
 
@@ -242,6 +259,17 @@ async function readRows(
         paymentType: row.paymentType,
       }),
       priceHint: priceHintPercent(row.price, row.referencePrice, threshold),
+      inactive: inactiveEntries({
+        branchActive: row.branchActive,
+        variantId: row.variantId,
+        subtypeActive:
+          row.variantActive === null ? null : row.variantActive && row.productActive === true,
+        departmentId: row.departmentId,
+        departmentActive: row.departmentActive,
+        companyId: row.companyId,
+        companyActive: row.companyActive,
+        extras: extrasActive.get(row.id) ?? [],
+      }),
       createdAt: row.createdAt,
     };
   });

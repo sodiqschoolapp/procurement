@@ -974,6 +974,19 @@
       "placeholder": "дд.мм.гггг",
       "invalid": "Введите дату как 08.10.2026"
     },
-    "priceHint": "{percent, number, ::sign-always}% к цене каталога"
+    "priceHint": "{percent, number, ::sign-always}% к цене каталога",
+    "submit": {
+      "button": "Отправить ({count})",
+      "done": "{count, plural, one {Отправлен # заказ} few {Отправлено # заказа} other {Отправлено # заказов}}: {numbers}{more, plural, =0 {} other { и ещё #}}.",
+      "failedTitle": "{count, plural, one {Ничего не отправлено: # заказ нужно исправить.} few {Ничего не отправлено: # заказа нужно исправить.} other {Ничего не отправлено: # заказов нужно исправить.}}",
+      "refused": {
+        "not_found": "Не найдено. Список обновлён.",
+        "stale_version": "Только что изменён. Проверьте и отправьте снова.",
+        "wrong_status": "Уже отправлен или больше не черновик.",
+        "forbidden": "Вы не можете отправить этот заказ.",
+        "not_ready": "Этот заказ пока нельзя отправить."
+      },
+      "failedLine": "{name} — {problem}"
+    }
   }
 }

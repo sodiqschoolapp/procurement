@@ -28,7 +28,6 @@ import { advanceClock, setClock } from "../../../../tests/helpers/clock";
 import { refusalOf } from "../../../../tests/helpers/database-error";
 import {
   insertDepartment,
-  insertExtraCostType,
   insertItem,
   insertOrder,
   insertOrderExtra,
@@ -38,7 +37,8 @@ import {
 import { commitWhileWaiting } from "../../../../tests/helpers/together";
 import { insertUser } from "../../../../tests/helpers/users";
 import { updateBranch } from "../../catalog/actions/branches";
-import { numbersOfOrders, submitDrafts } from "./submit";
+import { submittedNumbers } from "../queries/submitted";
+import { submitDrafts } from "./submit";
 
 // Submit and the order numbers, build plan 2.7 (Done when: S14; 201 ticked drafts refused; one
 // past needed-by date among five stops all five; the counter restarts on 1 January; a double
@@ -394,7 +394,7 @@ describe("The order number (05 Order number)", () => {
       branchId: branch.id,
       year: 2026,
       lastValue: 9998,
-      createdAt: new Date(),
+      createdAt: new Date("2026-10-01T00:00:00Z"),
     });
     const two = await drafts(branch.id, manager.id, 2);
     okOf(await submit(manager.id, ticked(two)));
@@ -411,15 +411,15 @@ describe("Submit is clicked twice (edge case; developer-rules rules 8 and 9)", (
     const two = await drafts(branch.id, manager.id, 2);
     const input = ticked(two);
     const first = okOf<{ orders: { id: string }[] }>(await submit(manager.id, input));
-    const numbers = await numbersOfOrders(
-      db,
+    const numbers = await submittedNumbers(
+      manager.id,
       two.map((order) => order.id),
     );
     const again = okOf(await submit(manager.id, input));
     expect(again).toEqual(first);
     expect(
-      await numbersOfOrders(
-        db,
+      await submittedNumbers(
+        manager.id,
         two.map((order) => order.id),
       ),
     ).toEqual(numbers);

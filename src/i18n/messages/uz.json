@@ -974,6 +974,19 @@
       "placeholder": "kk.oo.yyyy",
       "invalid": "Sanani 08.10.2026 kabi yozing"
     },
-    "priceHint": "katalog narxidan {percent, number, ::sign-always}%"
+    "priceHint": "katalog narxidan {percent, number, ::sign-always}%",
+    "submit": {
+      "button": "Yuborish ({count})",
+      "done": "{count} ta buyurtma yuborildi: {numbers}{more, plural, =0 {} other { va yana #}}.",
+      "failedTitle": "Hech narsa yuborilmadi: {count} ta buyurtmani tuzatish kerak.",
+      "refused": {
+        "not_found": "Topilmadi. Roʻyxat yangilandi.",
+        "stale_version": "Hozirgina oʻzgartirildi. Tekshirib, qayta yuboring.",
+        "wrong_status": "Allaqachon yuborilgan yoki endi qoralama emas.",
+        "forbidden": "Bu buyurtmani yubora olmaysiz.",
+        "not_ready": "Bu buyurtmani hozircha yuborib boʻlmaydi."
+      },
+      "failedLine": "{name} — {problem}"
+    }
   }
 }

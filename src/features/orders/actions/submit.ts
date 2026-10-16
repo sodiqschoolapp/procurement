@@ -404,16 +404,3 @@ export const submitDrafts = orderMoveAction<Input>({
     }
   },
 });
-
-/** The numbers of submitted orders, read after the action (a repeat's too; plan, Should fix 3). */
-export async function numbersOfOrders(
-  tx: Pick<Transaction, "select">,
-  orderIds: readonly string[],
-): Promise<Map<string, string>> {
-  if (orderIds.length === 0) return new Map();
-  const rows = await tx
-    .select({ id: orders.id, number: orders.number })
-    .from(orders)
-    .where(inArray(orders.id, [...orderIds]));
-  return new Map(rows.flatMap((row) => (row.number ? [[row.id, row.number] as const] : [])));
-}

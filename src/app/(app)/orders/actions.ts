@@ -20,8 +20,9 @@ import {
   wireProduct,
   wireUpdated,
 } from "@/features/orders/draft-wire";
-import { numbersOfOrders, submitDrafts } from "@/features/orders/actions/submit";
+import { submitDrafts } from "@/features/orders/actions/submit";
 import { getDraft } from "@/features/orders/queries/drafts";
+import { submittedNumbers } from "@/features/orders/queries/submitted";
 import { listDraftChoices, searchDraftProducts } from "@/features/orders/queries/draft-picker";
 import { serverAction } from "@/server/action";
 import { type ActionResult, failure } from "@/server/action-result";
@@ -93,18 +94,20 @@ export type WireSubmitted = { orders: { id: string; status: string; number: stri
 
 /**
  * Submits the ticked drafts, all or nothing (05 Drafts 4; Checks at submit; 06 rule 8). The
- * numbers are read after the action: the orders' own, which the action (or its repeat, after its
- * own authorize) has just answered for, and which never change (`orders_number_fixed`; plan of
- * 2.7, Should fix 3). Never retried by the screen (progress 2.6, "For 2.7").
+ * numbers are read after the action by submittedNumbers(), which calls authorize() itself; they
+ * never change (`orders_number_fixed`), so a repeat answers the first call's (plan of 2.7, Should
+ * fix 3). Never retried by the screen (progress 2.6, "For 2.7").
  */
 export async function submitDraftsAction(input: unknown): Promise<ActionResult<WireSubmitted>> {
   const result = await submit(input);
   if (!result.ok) return result;
-  const { db } = await import("@/server/db/client");
-  const numbers = await numbersOfOrders(
-    db,
-    result.data.orders.map((order) => order.id),
-  );
+  const user = await getCurrentUser();
+  const numbers = user
+    ? await submittedNumbers(
+        user.id,
+        result.data.orders.map((order) => order.id),
+      )
+    : new Map<string, string>();
   revalidatePath("/orders");
   return {
     ok: true,
