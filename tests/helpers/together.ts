@@ -48,11 +48,13 @@ export async function runTogether<T>(
  * change, then commits it: so the action meets the change exactly in the middle of its own
  * transaction (15 Test layers: "prove the locks work"). `change` runs on its own connection
  * inside BEGIN; the wait is read from pg_stat_activity, never timed. The action's outcome is
- * returned.
+ * returned. `waiters` is how many connections must wait before the commit: an action that runs
+ * two transactions at once gives 2, so both meet the change (review of 2.7, Must fix 1).
  */
 export async function commitWhileWaiting<T>(
   change: (query: (text: string, values?: unknown[]) => Promise<unknown>) => Promise<void>,
   action: () => Promise<T>,
+  waiters = 1,
 ): Promise<T> {
   const { db } = await import("@/server/db/client");
   const client = await db.$client.connect();
@@ -69,7 +71,7 @@ export async function commitWhileWaiting<T>(
         `select count(*)::int as n from pg_stat_activity
          where datname = current_database() and wait_event_type = 'Lock' and pid <> pg_backend_pid()`,
       );
-      if (waiting.rows[0]!.n > 0) break;
+      if (waiting.rows[0]!.n >= waiters) break;
       if (tries > 5_000) throw new Error("commitWhileWaiting: the action never waited on a lock.");
     }
     await client.query("commit");

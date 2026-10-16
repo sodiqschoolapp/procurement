@@ -4,7 +4,12 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { getDraftAction, setDraftsNeededByAction } from "@/app/(app)/orders/actions";
+import {
+  getDraftAction,
+  setDraftsNeededByAction,
+  submitDraftsAction,
+} from "@/app/(app)/orders/actions";
+import { newClientKey } from "@/components/client-key";
 import { toast } from "@/components/toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,7 +22,7 @@ import { AddDraftRow } from "./add-draft-row";
 import { DraftRow } from "./draft-row";
 import { type GridBranch, GridProvider } from "./grid-context";
 import { enterGoesTo, enterMoves } from "./grid-keys";
-import { canApplyToTicked } from "./grid-rules";
+import { canApplyToTicked, canSubmitTicked, cellOfField, submitKeyFor } from "./grid-rules";
 import type { RowSaveQueue } from "./row-save-queue";
 import { TickedTotals } from "./ticked-totals";
 
@@ -34,7 +39,16 @@ import { TickedTotals } from "./ticked-totals";
 // refreshed and no draft is deleted, so a draft the lost try made cannot be shown, deleted and
 // made again by the retry (decided item 1, Look first).
 
-export type GridRow = { row: WireDraftRow; editable: boolean; deletable: boolean };
+export type GridRow = {
+  row: WireDraftRow;
+  editable: boolean;
+  deletable: boolean;
+  /** draftSubmittable() of src/domain/drafts.ts: the state machine offers Submit (plan of 2.7). */
+  submittable: boolean;
+};
+
+/** One failing order of the last Submit, for the short list on top (05 Checks at submit). */
+type SubmitFailure = { id: string; name: string; problem: string };
 
 export function DraftsGrid({
   rows: sent,
@@ -67,6 +81,21 @@ export function DraftsGrid({
   const [neededByWrong, setNeededByWrong] = useState(false);
   const [applying, setApplying] = useState(false);
   const [adding, setAdding] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitMarks, setSubmitMarks] = useState<ReadonlyMap<string, Record<string, string>>>(
+    new Map(),
+  );
+  const [submitFailures, setSubmitFailures] = useState<readonly SubmitFailure[]>([]);
+  // The client key of a Submit that got no answer, kept only while the same drafts are ticked
+  // (review of the plan of 2.7, correction 4; developer-rules.md rule 8). Any answer drops it.
+  const submitKey = useRef<{ key: string; ticked: string } | null>(null);
+  // Any change to the ticks drops it too, not only a different set at the next Submit: A, then
+  // A+B, then A again is a new Submit (correction 4; spec review of 2.7, Should fix 1). A refresh
+  // that keeps the same ticks (a new Set, the same ids) keeps it.
+  useEffect(() => {
+    if (submitKey.current?.ticked !== submitKeyFor([...ticked])) submitKey.current = null;
+  }, [ticked]);
+  const failuresTop = useRef<HTMLDivElement>(null);
   const addingNow = useRef(false);
   const refreshWaits = useRef(false);
   const queues = useRef(new Map<string, RowSaveQueue>());
@@ -237,11 +266,132 @@ export function DraftsGrid({
     }
   }
 
+  /** The name of a row in messages: its number, else its product and department. */
+  function nameOf(row: WireDraftRow | undefined): string {
+    if (!row) return "";
+    if (row.number) return row.number;
+    return [row.productName ?? t("draftWord"), row.departmentName].filter(Boolean).join(", ");
+  }
+
+  /**
+   * 05 Drafts 4: the ticked drafts go to the Head, all or nothing (Checks at submit; 06 rule 8).
+   * Pending saves land first, so the versions sent are the rows' own. A refusal marks the exact
+   * cells of the exact orders, lists them on top and moves to the first one. Never retried
+   * automatically (progress 2.6, "For 2.7").
+   */
+  async function submit() {
+    if (submitting || ticked.size === 0) return;
+    setSubmitting(true);
+    const ids = rows.filter((row) => ticked.has(row.id)).map((row) => row.id);
+    const held = ids.map((id) => queues.current.get(id)!);
+    const released = new Set<number>();
+    const release = (at: number, version?: number) => {
+      if (released.has(at)) return;
+      released.add(at);
+      held[at]!.release(version);
+    };
+    const tickedNow = submitKeyFor(ids);
+    if (submitKey.current?.ticked !== tickedNow) {
+      submitKey.current = { key: newClientKey(), ticked: tickedNow };
+    }
+    const clientKey = submitKey.current.key;
+    let answered = false;
+    try {
+      const versions = await Promise.all(held.map((queue) => queue.hold()));
+      const result = await submitDraftsAction({
+        clientKey,
+        orders: ids.map((id, at) => ({ id, version: versions[at]! })),
+      });
+      answered = true;
+      if (result.ok) {
+        const numbers = result.data.orders.flatMap((order) => (order.number ? [order.number] : []));
+        toast.success(
+          t("submit.done", {
+            count: numbers.length,
+            numbers: numbers.slice(0, 10).join(", "),
+            more: Math.max(0, numbers.length - 10),
+          }),
+        );
+        setSubmitMarks(new Map());
+        setSubmitFailures([]);
+        setTicked(new Set());
+        for (const id of ids) onGone(id);
+        return;
+      }
+      const failed = result.error.orders ?? [];
+      if (failed.length === 0) {
+        toast.error(tAll(result.error.messageKey));
+        return;
+      }
+      const byId = new Map(rows.map((row) => [row.id, row]));
+      const marks = new Map<string, Record<string, string>>();
+      const listed: SubmitFailure[] = [];
+      for (const order of failed) {
+        const texts: Record<string, string> = {};
+        for (const [field, key] of Object.entries(order.fields ?? {})) {
+          // An extra-cost row is marked on the extras cell, which shows its rows.
+          texts[field.startsWith("extras.") ? "extras" : field] = tAll(key);
+        }
+        marks.set(order.orderId, texts);
+        const first = Object.entries(order.fields ?? {})[0];
+        listed.push({
+          id: order.orderId,
+          name: nameOf(byId.get(order.orderId)),
+          problem: first
+            ? `${t(`columns.${cellOfField(first[0])}`)}: ${tAll(first[1])}`
+            : t(`submit.refused.${order.code}`),
+        });
+      }
+      setSubmitMarks(marks);
+      setSubmitFailures(listed);
+      // The screen moves to the first failing cell (05 Checks at submit), after the marks render.
+      const firstOrder = failed[0]!;
+      const firstField = Object.keys(firstOrder.fields ?? {})[0];
+      requestAnimationFrame(() => {
+        const rowElement = document.querySelector<HTMLElement>(
+          `tr[data-draft="${firstOrder.orderId}"]`,
+        );
+        const cell = firstField
+          ? rowElement?.querySelector<HTMLElement>(`td[data-col="${cellOfField(firstField)}"]`)
+          : null;
+        const target = cell ?? rowElement ?? failuresTop.current;
+        target?.scrollIntoView({ block: "center" });
+        (
+          cell?.querySelector<HTMLElement>("input:not([type=hidden]), select, button") ??
+          failuresTop.current
+        )?.focus();
+      });
+    } catch {
+      toast.error(tAll("errors.network"));
+    } finally {
+      // Any answer drops the key; a call that got none keeps it for the same ticks (correction 4).
+      if (answered) submitKey.current = null;
+      held.forEach((_, at) => release(at));
+      setSubmitting(false);
+      refresh();
+    }
+  }
+
   const tickedRows = rows.filter((row) => ticked.has(row.id));
+  const canSubmit = canSubmitTicked(
+    tickedRows.map((row) => row.id),
+    rights,
+  );
   const canApply = canApplyToTicked(
     tickedRows.map((row) => row.id),
     rights,
   );
+  /** The cells marked on a row: a deactivated entry, then the last Submit's refusals. */
+  function marksOf(row: WireDraftRow): Record<string, string> | undefined {
+    const fromSubmit = submitMarks.get(row.id);
+    if (row.inactive.length === 0 && !fromSubmit) return undefined;
+    const marks: Record<string, string> = {};
+    for (const field of row.inactive) {
+      marks[field.startsWith("extras.") ? "extras" : field] = tAll("errors.field.inactive");
+    }
+    return { ...marks, ...fromSubmit };
+  }
+
   const columns = [
     "number",
     "branch",
@@ -304,6 +454,17 @@ export function DraftsGrid({
                   </Button>
                 </>
               )}
+              {canSubmit && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  pending={submitting}
+                  onClick={() => void submit()}
+                >
+                  {t("submit.button", { count: ticked.size })}
+                </Button>
+              )}
               <Button type="button" variant="ghost" size="sm" onClick={() => setTicked(new Set())}>
                 {t("ticked.clear")}
               </Button>
@@ -313,6 +474,26 @@ export function DraftsGrid({
                 {t("date.invalid")}
               </span>
             )}
+          </div>
+        )}
+
+        {submitFailures.length > 0 && (
+          <div
+            ref={failuresTop}
+            role="alert"
+            tabIndex={-1}
+            className="flex flex-col gap-2 rounded-xl border border-destructive bg-card px-4 py-3 text-sm outline-none"
+          >
+            <span className="font-semibold text-destructive">
+              {t("submit.failedTitle", { count: submitFailures.length })}
+            </span>
+            <ul className="flex flex-col gap-1">
+              {submitFailures.map((failure) => (
+                <li key={failure.id}>
+                  {t("submit.failedLine", { name: failure.name, problem: failure.problem })}
+                </li>
+              ))}
+            </ul>
           </div>
         )}
 
@@ -353,6 +534,7 @@ export function DraftsGrid({
                       onDirty={onDirty}
                       registerQueue={registerQueue}
                       deleteHeld={adding}
+                      marks={marksOf(row)}
                     />
                   );
                 })}

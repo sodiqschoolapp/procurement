@@ -20,13 +20,16 @@ import {
   wireProduct,
   wireUpdated,
 } from "@/features/orders/draft-wire";
+import { submitDrafts } from "@/features/orders/actions/submit";
 import { getDraft } from "@/features/orders/queries/drafts";
+import { submittedNumbers } from "@/features/orders/queries/submitted";
 import { listDraftChoices, searchDraftProducts } from "@/features/orders/queries/draft-picker";
 import { serverAction } from "@/server/action";
 import { type ActionResult, failure } from "@/server/action-result";
 import { getCurrentUser } from "@/server/auth/session";
 import { AuthorizationError } from "@/server/authorize";
 import { draftsServerAction } from "@/server/drafts-action";
+import { ordersServerAction } from "@/server/order-action";
 
 // The actions of the drafts grid on /orders (plan of 2.5b, Server actions and queries). Each runs
 // the 2.5a definition in its wrapper, or the 2.5a query, which calls authorize() itself; none
@@ -37,6 +40,7 @@ const create = serverAction(createDraft);
 const update = serverAction(updateDraft);
 const remove = serverAction(deleteDraft);
 const applyNeededBy = draftsServerAction(setDraftsNeededBy);
+const submit = ordersServerAction(submitDrafts);
 
 /** A query as an answer: a refusal of authorize() or of the input is returned, never thrown. */
 async function asked<T>(read: (userId: string) => Promise<T>): Promise<ActionResult<T>> {
@@ -83,6 +87,38 @@ export async function setDraftsNeededByAction(
   if (!result.ok) return result;
   revalidatePath("/orders");
   return result;
+}
+
+/** What a Submit answers: each order's status and its new number (05 Order number). */
+export type WireSubmitted = { orders: { id: string; status: string; number: string | null }[] };
+
+/**
+ * Submits the ticked drafts, all or nothing (05 Drafts 4; Checks at submit; 06 rule 8). The
+ * numbers are read after the action by submittedNumbers(), which calls authorize() itself; they
+ * never change (`orders_number_fixed`), so a repeat answers the first call's (plan of 2.7, Should
+ * fix 3). Never retried by the screen (progress 2.6, "For 2.7").
+ */
+export async function submitDraftsAction(input: unknown): Promise<ActionResult<WireSubmitted>> {
+  const result = await submit(input);
+  if (!result.ok) return result;
+  const user = await getCurrentUser();
+  const numbers = user
+    ? await submittedNumbers(
+        user.id,
+        result.data.orders.map((order) => order.id),
+      )
+    : new Map<string, string>();
+  revalidatePath("/orders");
+  return {
+    ok: true,
+    data: {
+      orders: result.data.orders.map((order) => ({
+        id: order.id,
+        status: order.status,
+        number: numbers.get(order.id) ?? null,
+      })),
+    },
+  };
 }
 
 /** The product picker of a branch (05 field 2): photo, category, type, stock, subtypes. */

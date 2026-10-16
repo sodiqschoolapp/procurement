@@ -17,7 +17,7 @@ import type { FieldMessageKey } from "@/server/action-result";
 import { audit } from "@/server/audit";
 import type { Executor } from "@/server/authorize";
 import { now } from "@/server/clock";
-import { auditLog, branches } from "@/server/db/schema";
+import { auditLog, branches, orders } from "@/server/db/schema";
 
 // The Head's branches (build-plan 1.2; 04-catalogs.md, Catalogs table: Branches; rules 2, 3, 9).
 // "Manage catalogs, users, branches, settings": catalog.manage, Head only, global (03, Permission
@@ -193,6 +193,20 @@ function pick(
   return Object.fromEntries(fields.map((field) => [field, values[field]]));
 }
 
+/**
+ * Whether the branch's code is locked: it has an order with a number (04 Catalogs table,
+ * Branches: "It locks after the first order"; plan of 2.7, decided item 8, Look first). The
+ * trigger `branches_code_locked` of migration 0021 says the same as the last defence.
+ */
+export async function branchCodeLocked(tx: Executor, branchId: string): Promise<boolean> {
+  const [row] = await tx
+    .select({ one: sql<number>`1` })
+    .from(orders)
+    .where(and(eq(orders.branchId, branchId), sql`${orders.number} is not null`))
+    .limit(1);
+  return row !== undefined;
+}
+
 export const updateBranch = defineAction({
   name: "updateBranch",
   permission: "catalog.manage",
@@ -205,12 +219,17 @@ export const updateBranch = defineAction({
     return row ? { target: GLOBAL_TARGET, rows: row } : null;
   },
   // An inactive branch is edited too, so its name can be freed (D41; decisions 0.7 item 11). The
-  // code is free to change until the first request locks it (2.7; decision 2).
+  // code is free to change until the branch's first numbered order locks it (plan of 2.7, decided
+  // item 8); the branch row is locked FOR UPDATE, and a submit holds it FOR SHARE, so the two
+  // cannot pass each other.
   async write({ tx, input, locked }): Promise<UpdatedBranch> {
     const current = locked!.rows;
     const { id, ...sent } = input;
     const changed = changedBranchFields(current, sent);
     if (changed.length === 0) return { branch: current, changed, before: {}, after: {} };
+    if (changed.includes("code") && (await branchCodeLocked(tx, id))) {
+      throw new ActionError("invalid_input", { code: "errors.field.locked" });
+    }
     const after = pick(sent, changed);
     await refuseTaken(tx, after, id);
     const [row] = await tx

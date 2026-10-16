@@ -5,6 +5,8 @@ import { BRANCHES_PAGE_SIZE } from "@/domain/branches";
 import { authorize } from "@/server/authorize";
 import { branches } from "@/server/db/schema";
 
+import { branchCodeLocked } from "../actions/branches";
+
 // The Head's branch list and one branch (build-plan 1.2; 11-screens-and-ux.md, Screens: "Users
 // and branches, /branches, Head"). "Manage catalogs, users, branches, settings": catalog.manage,
 // Head only (03). No branch filter: only the Head reads these, and the Head sees every branch.
@@ -62,11 +64,15 @@ export async function listBranches(
   return { rows, page, pages, active, inactive: all - active };
 }
 
+/** One branch and whether its code is locked (04, Branches; plan of 2.7, decided item 8). */
+export type BranchDetail = BranchRow & { codeLocked: boolean };
+
 /** One branch, or `null` for an id that is unknown or not an id at all (the page: "not found"). */
-export async function getBranch(userId: string, id: string): Promise<BranchRow | null> {
+export async function getBranch(userId: string, id: string): Promise<BranchDetail | null> {
   await authorize(userId, "catalog.manage");
   if (!z.uuid().safeParse(id).success) return null;
   const { db } = await import("@/server/db/client");
   const [row] = await db.select(columns).from(branches).where(eq(branches.id, id));
-  return row ?? null;
+  if (!row) return null;
+  return { ...row, codeLocked: await branchCodeLocked(db, row.id) };
 }

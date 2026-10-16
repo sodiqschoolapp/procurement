@@ -9,6 +9,7 @@ import {
   addsDraftsIn,
   draftComment,
   draftRowRights,
+  draftSubmittable,
   draftTotal,
   isDraftComment,
   isDraftEditable,
@@ -344,5 +345,44 @@ describe("draftRowRights and addsDraftsIn (03 Manager rights: CREATE_REQUESTS; 0
       editable: false,
       deletable: false,
     });
+  });
+});
+
+describe("draftSubmittable (05 Drafts 4; 06 Allowed moves: Draft; plan of 2.7, decided item 3)", () => {
+  const OWN = "11111111-1111-4111-8111-111111111111";
+  const OTHER = "22222222-2222-4222-8222-222222222222";
+  const ME = "33333333-3333-4333-8333-333333333333";
+  const COLLEAGUE = "44444444-4444-4444-8444-444444444444";
+  const manager: Actor = { userId: ME, role: "MANAGER", branchIds: [OWN], disabledRights: [] };
+  const viewOnly: Actor = { ...manager, disabledRights: ["CREATE_REQUESTS"] };
+  const head: Actor = { userId: COLLEAGUE, role: "HEAD", branchIds: [], disabledRights: [] };
+  const principal: Actor = {
+    userId: COLLEAGUE,
+    role: "PRINCIPAL",
+    branchIds: [OWN],
+    disabledRights: [],
+  };
+  const draft = {
+    id: "55555555-5555-4555-8555-555555555555",
+    branchId: OWN,
+    ownerId: ME,
+    status: "DRAFT" as const,
+    number: null,
+  };
+
+  it("the owner and the Head may submit a numberless draft; nobody else", () => {
+    expect(draftSubmittable(manager, draft)).toBe(true);
+    expect(draftSubmittable(head, draft)).toBe(true);
+    expect(draftSubmittable(viewOnly, draft)).toBe(false);
+    expect(draftSubmittable(principal, draft)).toBe(false);
+    expect(draftSubmittable(manager, { ...draft, branchId: OTHER })).toBe(false);
+    expect(draftSubmittable(manager, { ...draft, ownerId: COLLEAGUE })).toBe(false);
+  });
+
+  it("a sent-back order is Submit again (2.11), a taken-back draft waits for 2.11", () => {
+    expect(draftSubmittable(manager, { ...draft, status: "RETURNED", number: "EA-26-0001" })).toBe(
+      false,
+    );
+    expect(draftSubmittable(manager, { ...draft, number: "EA-26-0002" })).toBe(false);
   });
 });

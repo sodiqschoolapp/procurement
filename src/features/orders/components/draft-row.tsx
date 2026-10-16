@@ -53,6 +53,12 @@ export type DraftRowProps = {
   registerQueue(id: string, queue: RowSaveQueue | null): void;
   /** True while the add row retries an add: deletes wait (plan of 2.6, decided item 1). */
   deleteHeld?: boolean;
+  /**
+   * The texts the grid marks on this row's cells, by field name: a deactivated entry (edge case
+   * "A product is deactivated while it sits in a draft") and the refusals of the last Submit
+   * (05 Checks at submit; plan of 2.7). A save's own field error is shown first.
+   */
+  marks?: Readonly<Record<string, string>>;
 };
 
 const CELL = "px-2 py-2 align-top max-sm:block max-sm:min-w-0 max-sm:px-0 max-sm:py-1.5";
@@ -287,7 +293,11 @@ export function DraftRow(props: DraftRowProps) {
     router.refresh();
   }
 
-  const fieldError = (name: string) => errors[name];
+  const fieldError = (name: string) => errors[name] ?? props.marks?.[name];
+  const errorText = (name: string) =>
+    fieldError(name) && (
+      <span className="mt-1 block text-[13px] leading-4 text-destructive">{fieldError(name)}</span>
+    );
   const ro = (text: string | null) => (
     <span className="block min-h-10 py-2.5 text-sm leading-5">{text ?? t("none")}</span>
   );
@@ -362,6 +372,7 @@ export function DraftRow(props: DraftRowProps) {
         ) : (
           ro(branchName(row.branchId))
         )}
+        {errorText("branchId")}
         {pendingBranch && (
           <span className="mt-1 block text-[13px] leading-4 text-warning">
             {t("save.branchPending")}
@@ -418,6 +429,7 @@ export function DraftRow(props: DraftRowProps) {
           <Select
             aria-label={t("columns.company")}
             value={row.companyId ?? ""}
+            aria-invalid={fieldError("companyId") ? true : undefined}
             onChange={(event) => void save({ companyId: event.target.value || null })}
             className="min-w-40"
           >
@@ -435,6 +447,7 @@ export function DraftRow(props: DraftRowProps) {
         ) : (
           ro(row.companyName)
         )}
+        {errorText("companyId")}
       </Cell>
       <Cell col="requestedBy" label={t("columns.requestedBy")} className="min-w-48">
         {editable ? (

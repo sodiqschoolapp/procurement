@@ -736,4 +736,22 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - `queue.save(job, landed)`: a job answers `lost` for no answer; `landed(sentVersion)` decides a stale retry.
 - e2e: `context.setOffline(true)` makes a server action throw at once in Next 16; `renderLoops(page)` in `drafts.spec.ts` catches React render loops.
 
-The next task is 2.7.
+## 2.7 Submit and the order numbers (16.10.2026, pull request #53)
+
+**Built**
+- Submit of ticked drafts on `/orders`: `submitDrafts` (`src/features/orders/actions/submit.ts`) on `orderMoveAction` with a `beforeMove` hook; checks by `submitRefusals()` (`src/domain/submit-checks.ts`), all or nothing, `not_ready` with the failing cells in `fields`.
+- Numbers `CODE-YY-NNNN` by `orderNumber()` (`src/domain/order-numbers.ts`), one upsert of `number_counters` per branch, in creation order; `planned_total`, `stock_at_submit`, one `order_revisions` row; Head-created orders go to Waiting for Principal, "Created by Head".
+- Branch code locks at its first numbered order: `updateBranch` and the trigger `branches_code_locked` (0021).
+- The grid: Submit in the selection bar, marks on the exact cells, the list on top; `submittedNumbers` reads the numbers for the message.
+
+**Left out, and the task that brings it**
+- Submit again, Take back, Cancel: 2.11. The `action=` filter of the notification link: 2.8. "What changed": 2.12.
+
+**What the next sessions must know**
+- For 2.11: a numbered DRAFT (taken back) is refused at Submit with `not_ready`; its re-submit needs a new revision row (`order_revisions` is append-only, UNIQUE(order_id, revision)), and `submitted_at` of a re-submit is decided there.
+- For 2.8: the notification link is `/orders?branch=<id>&action=<actionId>`; read `action` as "the orders of this action", with the branch and draft walls in the SQL.
+- For 4.10: `toWhenHeadCreated` and the Principal's "Head approved" rest on the actor of a Head-created draft being a Head; a Head-created draft moved to a Manager breaks that; check the actor is a Head there (permission review of 2.7).
+- `commitWhileWaiting(change, action, waiters)`: pass 2 when two transactions must both wait on the change.
+- A query reading orders by id puts the draft wall in the SQL even for numbered orders (`.claude/rules/server-actions.md`).
+
+The next task is 2.8.

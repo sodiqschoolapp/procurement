@@ -69,7 +69,8 @@
       "inCatalog": "This item is already in the catalog, perhaps inactive. Ask the Procurement Head about it.",
       "wholeOnly": "This measure is counted in whole units: type a whole number",
       "tooManyDecimals": "At most 3 digits after the point",
-      "draftExists": "You already have a draft of this item for this department. Change the quantity there."
+      "draftExists": "You already have a draft of this item for this department. Change the quantity there.",
+      "inPast": "The date is in the past. Pick today or a later day."
     },
     "file": {
       "tooLarge": "The file is larger than 10 MB. Choose a smaller file or take the photo again.",
@@ -396,6 +397,7 @@
     "name": "Name",
     "code": "Code",
     "codeHint": "2 to 4 Latin capital letters, for example CHL. Used in order numbers.",
+    "codeLocked": "Locked: the branch already has submitted orders, and the code is in their numbers.",
     "address": "Address",
     "status": "Status",
     "active": "Active",
@@ -972,6 +974,19 @@
       "placeholder": "dd.mm.yyyy",
       "invalid": "Type the date as 08.10.2026"
     },
-    "priceHint": "{percent, number, ::sign-always}% vs catalog price"
+    "priceHint": "{percent, number, ::sign-always}% vs catalog price",
+    "submit": {
+      "button": "Submit ({count})",
+      "done": "{count, plural, one {Submitted 1 order} other {Submitted # orders}}: {numbers}{more, plural, =0 {} other { and # more}}.",
+      "failedTitle": "{count, plural, one {Nothing was submitted: 1 order needs a fix.} other {Nothing was submitted: # orders need a fix.}}",
+      "refused": {
+        "not_found": "Not found. The list is refreshed.",
+        "stale_version": "Changed a moment ago. Check it and submit again.",
+        "wrong_status": "Already submitted or no longer a draft.",
+        "forbidden": "You cannot submit this order.",
+        "not_ready": "This order cannot be submitted yet."
+      },
+      "failedLine": "{name} — {problem}"
+    }
   }
 }

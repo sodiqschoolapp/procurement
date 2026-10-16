@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { describe, expect, it } from "vitest";
 
 import { type Role } from "@/domain/permissions";
@@ -5,6 +7,7 @@ import { runAction } from "@/server/action";
 import type { ActionResult } from "@/server/action-result";
 import { AuthorizationError } from "@/server/authorize";
 import { runDraftsAction } from "@/server/drafts-action";
+import { runOrdersAction } from "@/server/order-action";
 
 import { insertBranch, setManagerRight } from "../../../../tests/helpers/branches";
 import {
@@ -15,10 +18,13 @@ import {
   insertOrder,
 } from "../../../../tests/helpers/orders";
 import { describePermissionMatrix } from "../../../../tests/helpers/permission-matrix";
+import { describeSubmitMatrix } from "../../../../tests/helpers/submit-matrix";
 import { insertUser } from "../../../../tests/helpers/users";
 import { getDraft, listDrafts } from "../queries/drafts";
 import { listDraftChoices, searchDraftProducts } from "../queries/draft-picker";
+import { submittedNumbers } from "../queries/submitted";
 import { deleteDraft, setDraftsNeededBy } from "./drafts";
+import { submitDrafts } from "./submit";
 
 // Every new action and query of build plan 2.5a in the permission matrix (15-quality-and-
 // acceptance.md, Test layers: "each action × each role × own branch and other branch";
@@ -212,5 +218,46 @@ describe('deleteDraft: permission matrix by hand, "Create, edit … a request", 
     expect(await answerOf(() => remove(user.id, id))).toBe("not_found");
     const head = await insertUser("HEAD");
     expect(await answerOf(() => remove(head.id, id))).toBe("forbidden");
+  });
+});
+
+// Submit (build plan 2.7), the feature definition called directly.
+describeSubmitMatrix("submitDrafts", (user, orders) =>
+  runOrdersAction(submitDrafts, user.id, { clientKey: randomUUID(), orders }),
+);
+
+// The numbers read after a Submit (build plan 2.7): "See orders", the branch inside the SQL. An
+// empty answer is the query's "not found".
+describePermissionMatrix("submittedNumbers", {
+  permission: "data.view",
+  async run({ user, branchId }) {
+    const owner = await insertUser("MANAGER", { branches: [branchId] });
+    const order = await insertOrder({ branchId, ownerId: owner.id, status: "PENDING_HEAD" });
+    const numbers = await submittedNumbers(user.id, [order.id]);
+    if (!numbers.has(order.id)) throw new AuthorizationError("not_found");
+    expect(numbers.get(order.id)).toBe(order.number);
+  },
+});
+
+// A taken-back DRAFT keeps its number (06 Allowed moves, Take back) and stays behind the draft
+// wall (06 Statuses: Draft, "Visible to the owner and the Head only"; permission review of 2.7,
+// Must fix 1): its number is read by its owner and the Head only.
+describe("submittedNumbers: a numbered DRAFT behind the draft wall (06 Statuses)", () => {
+  it("not_found for a colleague Manager, the Principal and Finance; read by the owner and the Head", async () => {
+    const branch = await insertBranch();
+    const owner = await insertUser("MANAGER", { branches: [branch.id] });
+    const draft = await insertOrder({
+      branchId: branch.id,
+      ownerId: owner.id,
+      status: "DRAFT",
+      number: "TST-26-9001",
+    });
+    for (const role of ["MANAGER", "PRINCIPAL", "FINANCE"] as const satisfies readonly Role[]) {
+      const user = await insertUser(role, { branches: [branch.id] });
+      expect((await submittedNumbers(user.id, [draft.id])).has(draft.id), role).toBe(false);
+    }
+    for (const user of [owner, await insertUser("HEAD")]) {
+      expect((await submittedNumbers(user.id, [draft.id])).get(draft.id)).toBe("TST-26-9001");
+    }
   });
 });

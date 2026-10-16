@@ -78,6 +78,8 @@ export const FIELD_ERROR_KINDS = [
   "wholeOnly",
   "tooManyDecimals",
   "draftExists",
+  // A needed-by date before today in Tashkent at submit (plan of 2.7, decided item 2).
+  "inPast",
 ] as const;
 export type FieldErrorKind = (typeof FIELD_ERROR_KINDS)[number];
 export type FieldMessageKey = `errors.field.${FieldErrorKind}`;
@@ -93,7 +95,16 @@ export const ORDER_REFUSAL_CODES = [
 export type OrderRefusalCode = (typeof ORDER_REFUSAL_CODES)[number];
 
 /** One failing order of an action on ticked orders (06-approval-workflow.md rule 8). */
-export type OrderFailure = { orderId: string; code: OrderRefusalCode };
+export type OrderFailure = {
+  orderId: string;
+  code: OrderRefusalCode;
+  /**
+   * For `not_ready` of a Submit: the message key of each cell of this order that stops it, by the
+   * field names of the draft actions (`neededBy`, `extras.0.extraCostTypeId`), so the screen marks
+   * the exact cell of the exact order (05 Checks at submit; plan of 2.7, decided item 10).
+   */
+  fields?: Record<string, FieldMessageKey>;
+};
 
 export type ActionFailure = {
   code: ActionErrorCode;

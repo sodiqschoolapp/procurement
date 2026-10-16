@@ -69,7 +69,8 @@
       "inCatalog": "Bu tovar katalogda allaqachon bor, ehtimol nofaol. Xaridlar rahbaridan soʻrang.",
       "wholeOnly": "Bu oʻlchov butun sonda hisoblanadi: butun son kiriting",
       "tooManyDecimals": "Nuqtadan keyin koʻpi bilan 3 ta raqam",
-      "draftExists": "Bu boʻlim uchun bu tovarning qoralamasi sizda allaqachon bor. Miqdorini oʻsha yerda oʻzgartiring."
+      "draftExists": "Bu boʻlim uchun bu tovarning qoralamasi sizda allaqachon bor. Miqdorini oʻsha yerda oʻzgartiring.",
+      "inPast": "Sana oʻtib ketgan. Bugun yoki keyingi kunni tanlang."
     },
     "file": {
       "tooLarge": "Fayl 10 MB dan katta. Kichikroq fayl tanlang yoki suratni qaytadan oling.",
@@ -396,6 +397,7 @@
     "name": "Nomi",
     "code": "Kodi",
     "codeHint": "2 tadan 4 tagacha lotin bosh harfi, masalan CHL. Buyurtma raqamlarida ishlatiladi.",
+    "codeLocked": "Qulflangan: filialda yuborilgan buyurtmalar bor, kod ularning raqamlarida.",
     "address": "Manzil",
     "status": "Holati",
     "active": "Faol",
@@ -972,6 +974,19 @@
       "placeholder": "kk.oo.yyyy",
       "invalid": "Sanani 08.10.2026 kabi yozing"
     },
-    "priceHint": "katalog narxidan {percent, number, ::sign-always}%"
+    "priceHint": "katalog narxidan {percent, number, ::sign-always}%",
+    "submit": {
+      "button": "Yuborish ({count})",
+      "done": "{count} ta buyurtma yuborildi: {numbers}{more, plural, =0 {} other { va yana #}}.",
+      "failedTitle": "Hech narsa yuborilmadi: {count} ta buyurtmani tuzatish kerak.",
+      "refused": {
+        "not_found": "Topilmadi. Roʻyxat yangilandi.",
+        "stale_version": "Hozirgina oʻzgartirildi. Tekshirib, qayta yuboring.",
+        "wrong_status": "Allaqachon yuborilgan yoki endi qoralama emas.",
+        "forbidden": "Bu buyurtmani yubora olmaysiz.",
+        "not_ready": "Bu buyurtmani hozircha yuborib boʻlmaydi."
+      },
+      "failedLine": "{name} — {problem}"
+    }
   }
 }

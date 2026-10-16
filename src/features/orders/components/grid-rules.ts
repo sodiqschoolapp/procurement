@@ -16,6 +16,57 @@ export function canApplyToTicked(
 }
 
 /**
+ * Whether Submit is offered on the ticked rows (plan of 2.7): every one is submittable, as
+ * draftSubmittable() of src/domain/drafts.ts says (the state machine offers SUBMIT; developer-rules
+ * rule 2). A button every ticked row would refuse is not shown (.claude/rules/ui.md).
+ */
+export function canSubmitTicked(
+  ticked: readonly string[],
+  rights: ReadonlyMap<string, { submittable: boolean }>,
+): boolean {
+  return ticked.length > 0 && ticked.every((id) => rights.get(id)?.submittable === true);
+}
+
+/** The ticked set as one text, so a kept Submit key belongs to these drafts only (correction 4). */
+export function submitKeyFor(ids: readonly string[]): string {
+  return [...ids].sort().join(",");
+}
+
+/** The grid columns a Submit refusal can name (`data-col`, and the column's label). */
+export type SubmitCell =
+  | "branch"
+  | "product"
+  | "company"
+  | "requestedBy"
+  | "neededBy"
+  | "quantity"
+  | "price"
+  | "extras"
+  | "priority"
+  | "comment";
+
+const CELL_OF_FIELD: Readonly<Record<string, SubmitCell>> = {
+  branchId: "branch",
+  variantId: "product",
+  companyId: "company",
+  departmentId: "requestedBy",
+  requesterName: "requestedBy",
+  neededBy: "neededBy",
+  quantity: "quantity",
+  price: "price",
+  extras: "extras",
+  urgentReason: "priority",
+  priority: "priority",
+  comment: "comment",
+};
+
+/** The grid column of a field a Submit refuses (05 Checks at submit); an extra-cost row's is extras. */
+export function cellOfField(field: string): SubmitCell {
+  if (field.startsWith("extras.")) return "extras";
+  return CELL_OF_FIELD[field] ?? "product";
+}
+
+/**
  * Whether the row the server holds now carries every field a retried save sent (review of the
  * plan of 2.6, correction 1; developer-rules.md rule 9). A retry answered `stale` counts as saved
  * only then: the first try was saved and only its answer was lost. Each field is compared as the
