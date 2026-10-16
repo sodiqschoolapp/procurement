@@ -33,8 +33,12 @@ export function TextCell({
 }) {
   const [text, setText] = useState(value);
   const typing = useRef(false);
+  // Enter commits and the blur after it would commit the same text again (spec review, Should
+  // fix 2): a text already sent is not sent twice until the server's value changes.
+  const sent = useRef<string | null>(null);
 
   useEffect(() => {
+    sent.current = null;
     if (!typing.current) setText(value);
   }, [value]);
 
@@ -45,7 +49,9 @@ export function TextCell({
 
   function commit() {
     typing.current = false;
-    if (text !== value) onCommit(text);
+    if (text === value || text === sent.current) return;
+    sent.current = text;
+    onCommit(text);
   }
 
   return (
@@ -59,7 +65,10 @@ export function TextCell({
         placeholder={placeholder}
         disabled={disabled}
         className={className}
-        onFocus={() => (typing.current = true)}
+        onFocus={() => {
+          typing.current = true;
+          sent.current = null;
+        }}
         onChange={(event) => setText(event.target.value)}
         onBlur={commit}
         onKeyDown={(event) => {

@@ -4,7 +4,7 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { setDraftsNeededByAction } from "@/app/(app)/orders/actions";
+import { getDraftAction, setDraftsNeededByAction } from "@/app/(app)/orders/actions";
 import { toast } from "@/components/toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,7 @@ import { parseTypedDate } from "@/i18n/format";
 import { AddDraftRow } from "./add-draft-row";
 import { DraftRow } from "./draft-row";
 import { type GridBranch, GridProvider } from "./grid-context";
+import { canApplyToTicked } from "./grid-rules";
 import type { RowSaveQueue } from "./row-save-queue";
 import { TickedTotals } from "./ticked-totals";
 
@@ -117,7 +118,13 @@ export function DraftsGrid({
   }
 
   function onAdded(created: WireCreated) {
-    if (!created.merged) {
+    if (created.merged) {
+      // The merged row takes the server's row, dirty or not, so its quantity, total and version
+      // are the server's (spec review of 2.5b, Must fix 1).
+      void getDraftAction({ id: created.id }).then((answer) => {
+        if (answer.ok && answer.data) onRow(answer.data);
+      });
+    } else {
       setJustAdded((current) => new Set([...current, created.id]));
       // A new draft sorts last (oldest first): go to the page it lands on (Should fix 2).
       const last = Math.ceil((total + 1) / DRAFTS_PAGE_SIZE);
@@ -137,6 +144,13 @@ export function DraftsGrid({
     setApplying(true);
     const ids = rows.filter((row) => ticked.has(row.id)).map((row) => row.id);
     const held = ids.map((id) => queues.current.get(id)!);
+    // Every held queue is released, also when the call throws (spec review, Must fix 2).
+    const released = new Set<number>();
+    const release = (at: number, version?: number) => {
+      if (released.has(at)) return;
+      released.add(at);
+      held[at]!.release(version);
+    };
     try {
       const versions = await Promise.all(held.map((queue) => queue.hold()));
       const result = await setDraftsNeededByAction({
@@ -145,11 +159,10 @@ export function DraftsGrid({
       });
       if (result.ok) {
         const versionOf = new Map(result.data.orders.map((order) => [order.id, order.version]));
-        ids.forEach((id, at) => held[at]!.release(versionOf.get(id)));
+        ids.forEach((id, at) => release(at, versionOf.get(id)));
         toast.success(t("ticked.applied", { count: ids.length }));
         setNeededBy("");
       } else {
-        held.forEach((queue) => queue.release());
         const failed = new Set((result.error.orders ?? []).map((order) => order.orderId));
         const names = rows
           .filter((row) => failed.has(row.id))
@@ -161,13 +174,20 @@ export function DraftsGrid({
             : tAll(result.error.messageKey),
         );
       }
+    } catch {
+      toast.error(tAll("errors.network"));
     } finally {
+      held.forEach((_, at) => release(at));
       setApplying(false);
       router.refresh();
     }
   }
 
   const tickedRows = rows.filter((row) => ticked.has(row.id));
+  const canApply = canApplyToTicked(
+    tickedRows.map((row) => row.id),
+    rights,
+  );
   const columns = [
     "number",
     "branch",
@@ -205,27 +225,31 @@ export function DraftsGrid({
               {t("ticked.count", { count: ticked.size })}
             </span>
             <span className="flex flex-wrap items-center gap-2">
-              <label htmlFor="ticked-needed-by" className="sr-only">
-                {t("ticked.neededBy")}
-              </label>
-              <Input
-                id="ticked-needed-by"
-                value={neededBy}
-                placeholder={t("date.placeholder")}
-                aria-invalid={neededByWrong || undefined}
-                aria-describedby={neededByWrong ? "ticked-needed-by-error" : undefined}
-                onChange={(event) => setNeededBy(event.target.value)}
-                className="w-36 sm:h-8"
-              />
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                pending={applying}
-                onClick={() => void apply()}
-              >
-                {t("ticked.apply")}
-              </Button>
+              {canApply && (
+                <>
+                  <label htmlFor="ticked-needed-by" className="sr-only">
+                    {t("ticked.neededBy")}
+                  </label>
+                  <Input
+                    id="ticked-needed-by"
+                    value={neededBy}
+                    placeholder={t("date.placeholder")}
+                    aria-invalid={neededByWrong || undefined}
+                    aria-describedby={neededByWrong ? "ticked-needed-by-error" : undefined}
+                    onChange={(event) => setNeededBy(event.target.value)}
+                    className="w-36"
+                  />
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    pending={applying}
+                    onClick={() => void apply()}
+                  >
+                    {t("ticked.apply")}
+                  </Button>
+                </>
+              )}
               <Button type="button" variant="ghost" size="sm" onClick={() => setTicked(new Set())}>
                 {t("ticked.clear")}
               </Button>

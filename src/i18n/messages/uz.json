@@ -847,7 +847,8 @@
     },
     "empty": {
       "title": "Hali qoralama yoʻq",
-      "line": "Birinchi buyurtmani pastda qoʻshing: mahsulot, boʻlim va miqdorni tanlang."
+      "line": "Birinchi buyurtmani pastda qoʻshing: mahsulot, boʻlim va miqdorni tanlang.",
+      "lineViewOnly": "Bu yerda qoralamalaringiz va sizga qaytarilgan buyurtmalar chiqadi."
     },
     "listComing": {
       "title": "Buyurtmalar roʻyxatingiz shu yerda boʻladi",

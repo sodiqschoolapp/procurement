@@ -81,7 +81,13 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
         {title}
         {user.role === "HEAD" && <OwnersSwitch all={everyOwner} />}
       </div>
-      {list.total === 0 && <EmptyState title={t("empty.title")} line={t("empty.line")} />}
+      {list.total === 0 && (
+        // A Manager who may only view orders is not told to add one (spec review, Should fix 7).
+        <EmptyState
+          title={t("empty.title")}
+          line={t(canAdd ? "empty.line" : "empty.lineViewOnly")}
+        />
+      )}
       <DraftsGrid
         rows={rows}
         page={list.page}

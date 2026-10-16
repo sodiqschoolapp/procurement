@@ -77,6 +77,7 @@ describe("the drafts grid's page actions (03 rule 1; 2.5a decided item 23)", () 
       clientKey: newClientKey(),
       quantity: "10",
     });
+    expect(foreign).toMatchObject({ ok: true, data: { merged: false } });
     const foreignId = (foreign as { ok: true; data: { id: string } }).data.id;
 
     signedIn(own.manager);
@@ -85,6 +86,7 @@ describe("the drafts grid's page actions (03 rule 1; 2.5a decided item 23)", () 
       clientKey: newClientKey(),
       quantity: "10",
     });
+    expect(added).toMatchObject({ ok: true, data: { merged: false } });
     const id = (added as { ok: true; data: { id: string } }).data.id;
     const extraType = await insertExtraCostType();
     expect(

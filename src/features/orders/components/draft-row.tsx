@@ -176,13 +176,20 @@ export function DraftRow(props: DraftRowProps) {
 
   async function remove() {
     setDeleting(true);
-    const version = await queue.hold();
-    const result = await deleteDraftAction({ id: row.id, version });
-    queue.release();
-    setDeleting(false);
-    setAsking(false);
-    if (!result.ok) {
-      toast.error(tAll(result.error.messageKey));
+    let result: Awaited<ReturnType<typeof deleteDraftAction>> | null = null;
+    try {
+      const version = await queue.hold();
+      result = await deleteDraftAction({ id: row.id, version });
+    } catch {
+      result = null;
+    } finally {
+      // Released also when the call throws (spec review, Must fix 2).
+      queue.release();
+      setDeleting(false);
+      setAsking(false);
+    }
+    if (!result?.ok) {
+      toast.error(tAll(result ? result.error.messageKey : "errors.network"));
       void reload();
       return;
     }
@@ -199,7 +206,7 @@ export function DraftRow(props: DraftRowProps) {
 
   return (
     <tr
-      className={cn("border-t border-border", props.ticked && "bg-today")}
+      className={cn("border-t border-border", props.ticked && "bg-muted")}
       onFocusCapture={loadChoices}
       data-draft={row.id}
     >

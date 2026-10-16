@@ -37,7 +37,16 @@ async function withDatabase<T>(work: (client: pg.Client) => Promise<T>): Promise
 }
 
 /** An invented product without subtypes, with a reference price, in its own category and measure. */
-async function insertProduct(client: pg.Client, name: string, referencePrice: number) {
+/**
+ * An invented product in its own category and measure: with named subtypes when given (each with
+ * its reference price), else with its hidden default subtype (04 rule 1).
+ */
+async function insertProduct(
+  client: pg.Client,
+  name: string,
+  referencePrice: number,
+  subtypes: readonly { name: string; referencePrice: number }[] = [],
+) {
   const tag = randomUUID().slice(0, 8);
   await client.query("begin");
   try {
@@ -52,20 +61,24 @@ async function insertProduct(client: pg.Client, name: string, referencePrice: nu
     );
     const product = await client.query<{ id: string }>(
       `insert into products (name, type, category_id, unit_id, reference_price, is_active, has_variants, created_at)
-       values ($1, 'GOODS', $2, $3, $4, true, false, now()) returning id`,
-      [name, category.rows[0]!.id, unit.rows[0]!.id, referencePrice],
+       values ($1, 'GOODS', $2, $3, $4, true, $5, now()) returning id`,
+      [name, category.rows[0]!.id, unit.rows[0]!.id, referencePrice, subtypes.length > 0],
     );
-    const variant = await client.query<{ id: string }>(
-      `insert into product_variants (product_id, name, is_default, reference_price, is_active, created_at)
-       values ($1, 'default', true, $2, true, now()) returning id`,
-      [product.rows[0]!.id, referencePrice],
-    );
-    // A reference price is the newest HEAD row of its history (04 rule 4; migration 0014).
-    await client.query(
-      `insert into price_history (variant_id, price, source, set_by, created_at)
-       select $1, $2, 'HEAD', id, now() from users where username = $3`,
-      [variant.rows[0]!.id, referencePrice, E2E_ROLES.HEAD.username],
-    );
+    const variants =
+      subtypes.length > 0 ? subtypes : [{ name: "default", referencePrice, isDefault: true }];
+    for (const variant of variants) {
+      const made = await client.query<{ id: string }>(
+        `insert into product_variants (product_id, name, is_default, reference_price, is_active, created_at)
+         values ($1, $2, $3, $4, true, now()) returning id`,
+        [product.rows[0]!.id, variant.name, "isDefault" in variant, variant.referencePrice],
+      );
+      // A reference price is the newest HEAD row of its history (04 rule 4; migration 0014).
+      await client.query(
+        `insert into price_history (variant_id, price, source, set_by, created_at)
+         select $1, $2, 'HEAD', id, now() from users where username = $3`,
+        [made.rows[0]!.id, variant.referencePrice, E2E_ROLES.HEAD.username],
+      );
+    }
     await client.query("commit");
   } catch (error) {
     await client.query("rollback");
@@ -118,9 +131,13 @@ async function addDraft(
 ) {
   const form = addForm(page);
   const picker = form.getByRole("combobox", { name: t.columns.product });
-  await picker.fill(product);
+  // The search is by the product's name; the hit is the product and its subtype. Typed again
+  // until the hit shows: text typed before the page has hydrated is not seen by the picker.
   const option = page.getByRole("option", { name: new RegExp(product) });
-  await expect(option).toBeVisible();
+  await expect(async () => {
+    await picker.fill(product.split(" — ")[0]!);
+    await expect(option).toBeVisible({ timeout: 2000 });
+  }).toPass();
   // 05 field 2: the hit shows its category, type and stock.
   await expect(option).toContainText(en.catalog.productType.GOODS);
   await expect(option).toContainText("In stock: 0");
@@ -139,12 +156,17 @@ function scrollsSideways(page: Page) {
 const run = randomUUID().slice(0, 8);
 const pen = `Ruchka ${run}`;
 const paper = `Qog'oz ${run}`;
+const bluePen = `${pen} — Ko'k`;
 const science = `Fizika ${run}`;
 const music = `Musiqa ${run}`;
 
 test.beforeAll(async () => {
   await withDatabase(async (client) => {
-    await insertProduct(client, pen, 5000);
+    // The pen has two subtypes: one pick in the picker names product and subtype (05 fields 2, 3).
+    await insertProduct(client, pen, 5000, [
+      { name: "Ko'k", referencePrice: 5000 },
+      { name: "Qora", referencePrice: 7000 },
+    ]);
     await insertProduct(client, paper, 2000);
     await insertDepartment(client, science);
     await insertDepartment(client, music);
@@ -162,10 +184,11 @@ test("Done when: add through the picker, merge, ticked totals, delete (05 Drafts
   await expect(page.getByRole("heading", { name: t.empty.title })).toBeVisible();
 
   // A double click on "Add" sends one add (correction 3; developer-rules rule 8).
-  await addDraft(page, pen, science, "10", "dblclick");
+  await addDraft(page, bluePen, science, "10", "dblclick");
   await expect(rows(page)).toHaveCount(1);
   const penRow = rows(page).first();
   await expect(penRow).toContainText(t.save.saved);
+  await expect(penRow.getByRole("combobox", { name: t.columns.product })).toHaveValue(bluePen);
 
   // 05 field 11 and 16; Price hint: 10 × 6 750 = 67 500 so'm, 35% above the reference 5 000.
   const price = penRow.getByLabel(t.columns.price);
@@ -177,7 +200,7 @@ test("Done when: add through the picker, merge, ticked totals, delete (05 Drafts
   await expect(penRow).toContainText(t.save.saved);
 
   // 05 Drafts 2: the same subtype for the same department raises the draft.
-  await addDraft(page, pen, science, "10");
+  await addDraft(page, bluePen, science, "10");
   await expect(page.getByText("Added to your draft: now 20")).toBeVisible();
   await expect(rows(page)).toHaveCount(1);
   await expect(penRow.getByLabel(t.columns.quantity)).toHaveValue("20");
@@ -227,7 +250,17 @@ test("Done when: add through the picker, merge, ticked totals, delete (05 Drafts
 
 test("the Principal of the branch sees no draft (06 Statuses: Draft)", async ({ page }, info) => {
   test.skip(info.project.name !== "desktop-1440", "Once is enough.");
-  // The desktop Manager's drafts of the test above are in branch EA, the Principal's branch.
+  // The desktop Manager's drafts of the test above are in branch EA, the Principal's branch (D40).
+  const there = await withDatabase(async (client) => {
+    const { rows: found } = await client.query(
+      `select 1 from orders o join product_variants v on v.id = o.variant_id
+         join products p on p.id = v.product_id join branches b on b.id = o.branch_id
+        where p.name = $1 and b.code = 'EA' and o.status = 'DRAFT' and o.number is null`,
+      [pen],
+    );
+    return found.length;
+  });
+  expect(there).toBeGreaterThan(0);
   await signIn(page, E2E_ROLES.PRINCIPAL);
   await page.goto("/orders");
   await expect(page.locator("h1")).toBeVisible();

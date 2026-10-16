@@ -847,7 +847,8 @@
     },
     "empty": {
       "title": "No drafts yet",
-      "line": "Add the first order below: pick the product, the department and the quantity."
+      "line": "Add the first order below: pick the product, the department and the quantity.",
+      "lineViewOnly": "Your draft orders and the orders sent back to you appear here."
     },
     "listComing": {
       "title": "Your order list comes here",
