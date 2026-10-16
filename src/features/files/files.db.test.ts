@@ -158,15 +158,16 @@ describe("an order's reference photo (05 field 5; 06 Statuses: Draft; plan of 2.
     return { branch, owner, photo, id };
   }
 
-  it("of a Draft: the owner and the Head get it, the owner with CREATE_REQUESTS off too; a colleague and the Principal of the branch do not", async () => {
+  it("of a Draft, all four roles: the owner and the Head get it, the owner with CREATE_REQUESTS off too; a colleague Manager, the Principal and Finance of the branch get not_found", async () => {
     const { branch, owner, photo } = await draftWithPhoto();
     const head = await insertUser("HEAD");
     const colleague = await insertUser("MANAGER", { branches: [branch.id] });
     const principal = await insertUser("PRINCIPAL", { branches: [branch.id] });
+    const finance = await insertUser("FINANCE", { branches: [branch.id] });
 
     await expect(fileForDownload(owner.id, photo)).resolves.toMatchObject({ mime: "image/jpeg" });
     await expect(fileForDownload(head.id, photo)).resolves.toMatchObject({ mime: "image/jpeg" });
-    for (const user of [colleague, principal]) {
+    for (const user of [colleague, principal, finance]) {
       await expect(fileForDownload(user.id, photo)).rejects.toMatchObject({ kind: "not_found" });
     }
     // 03 Manager rights: "The Manager can only view orders" with the right off.
@@ -204,4 +205,18 @@ describe("an order's reference photo (05 field 5; 06 Statuses: Draft; plan of 2.
     await expect(fileForDownload(owner.id, photo)).resolves.toMatchObject({ mime: "image/jpeg" });
     await expect(fileForDownload(head.id, photo)).rejects.toMatchObject({ kind: "not_found" });
   });
+});
+
+// The reference photo of an order past Draft in the matrix of "See requests, stock and reports"
+// (03; plan of 2.5a, decided item 11, Look first; permission review of 2.5a, P1): its owner is a
+// Manager of the branch, the photo sits on a RETURNED order, and the record decides.
+describePermissionMatrix("fileForDownload of an order's reference photo", {
+  permission: "data.view",
+  async run({ user, branchId }) {
+    const owner = await insertUser("MANAGER", { branches: [branchId] });
+    const photo = await fileOf(owner.id);
+    const order = await insertOrder({ branchId, ownerId: owner.id, status: "RETURNED" });
+    await db.update(orders).set({ referencePhotoFileId: photo }).where(eq(orders.id, order.id));
+    await fileForDownload(user.id, photo);
+  },
 });
