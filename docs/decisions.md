@@ -1086,6 +1086,33 @@ Choices made during the build:
 - On a phone the product list is as wide as its field (it made the page scroll sideways).
 - Two lines added to `.claude/rules/ui.md` from the build and the reviews.
 
+### 2.7 Submit and the order numbers (16.10.2026)
+
+The plan's decisions as the plan review of 16.10.2026 confirmed or changed them (corrections 1 to 5 applied), and those of the build and its reviews. The Look first items come first.
+
+1. **Look first** (approval order). The submit checks: every required field of 05 Order (branch, subtype, department, needed-by, quantity, price, payment type; an Urgent order its reason), the quantity against the measure's decimal rule (field 10), and every catalog entry the order itself holds active: branch, product, subtype, department, brand or company, each extra cost type. Not the product's measure or category (review correction 1: the measure is automatic from the product and the category is no order field; decisions 1.7 keep such a product orderable). The owner's active flag is not checked.
+2. **Look first** (approval order). Needed-by "not in the past" compares with `businessDate(now())` in Tashkent: today passes, yesterday fails.
+3. **Look first** (approval order). A DRAFT that already has a number (taken back, 2.11) is refused at Submit with `not_ready` until 2.11 decides its re-submit: `order_revisions` is append-only with UNIQUE(order_id, revision).
+4. **Look first** (money). `planned_total = orderTotal()` of `src/domain/order-totals.ts`, written once at submit.
+5. **Look first** (numbers). Year = `businessYear(now())`, two digits `year % 100`; within a submit by `created_at`, then `id`; one counter upsert per branch in branch-id order after the orders' lock; locks always orders → branches → counters.
+6. **Look first** (notifications). "Orders submitted" to every active Head but the actor, one per branch; a Head-created order skips the Head step, so the branch's Principal gets "Head approved".
+7. **Look first** (spec wording). The branch code locks at the branch's first order with a number; guarded in `updateBranch` and by the trigger `branches_code_locked` (raised as `check_violation` with the constraint name). Proposed `/spec-change` for 04, Catalogs table, Branches: "It locks at the branch's first submitted order."
+8. The notification link is `/orders?branch=<id>&action=<actionId>`; 2.8 builds the filter.
+9. A draft using an inactive entry of item 1 is marked on its cell when the grid loads, and again as the submit error.
+10. `not_ready` carries its cells in an optional `fields` of `OrderFailure`; the order of `ORDER_REFUSAL_CODES` is unchanged.
+11. Moved to 2.11 with item 3.
+12. The snapshot holds ids and values, money as whole-so'm strings, not names.
+13. Submit is never retried automatically. Its client key is kept only after a call with no answer and only while the same drafts stay ticked; any answer or any change to the ticks drops it (review correction 4; spec review of the build, Should fix 1).
+
+Choices made during the build and its reviews:
+
+- `stock_at_submit` is copied in SQL as `numeric(14,3)` (correction 3); the `beforeMove` hook of `orderMoveAction` writes number, `submitted_at`, `planned_total` and `stock_at_submit` while the row is still DRAFT (correction 5).
+- `submittedNumbers` has the draft wall inside the SQL, since a taken-back DRAFT keeps its number (permission review, Must fix 1); a rule line added to `.claude/rules/server-actions.md`.
+- The Submit matrix has cases where only the branch wall refuses (the user's own draft in a branch he is not assigned to; permission review, Must fix 2).
+- `commitWhileWaiting` takes a number of waiters; S14 commits the held counter row only when both submits wait on it (spec review, Must fix 1).
+- Submit is a small secondary button in the selection bar (design system, Lists; spec review, Should fix 2).
+- Left for 4.10: a Head-created draft moved to a Manager would skip the Head step on that Manager's submit (permission review, Should fix 1); noted in progress.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.
