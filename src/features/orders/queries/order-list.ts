@@ -28,6 +28,7 @@ import {
   users,
 } from "@/server/db/schema";
 import { orderState } from "@/server/order-moves";
+import { readSnapshot } from "@/server/read-snapshot";
 import { readSettings } from "@/server/settings";
 
 import { type ListFilters, NO_FILTERS, numberParts } from "../list-filters";
@@ -205,8 +206,17 @@ export async function listOrderGroups(
   page = 1,
 ): Promise<OrderGroupPage> {
   const actor = await authorizeFilters(userId, filters);
-  // Loaded here, not at the top: `next build` has no DATABASE_URL (progress 0.6).
-  const { db } = await import("@/server/db/client");
+  // One snapshot: the count, the heads, their orders and extras of one moment (spec review of
+  // 2.8, Must fix 1).
+  return readSnapshot((db) => readGroups(db, actor, filters, page));
+}
+
+async function readGroups(
+  db: Executor,
+  actor: Actor,
+  filters: ListFilters,
+  page: number,
+): Promise<OrderGroupPage> {
   const where = listWhere(actor, filters);
 
   const grouped = db
@@ -348,19 +358,21 @@ export async function selectAllOnFilter(
   filters: ListFilters = NO_FILTERS,
 ): Promise<{ orders: { id: string; version: number }[]; matching: number }> {
   const actor = await authorizeFilters(userId, filters);
-  const { db } = await import("@/server/db/client");
   const where = listWhere(actor, filters);
-  const [counted] = await db.select({ total: count() }).from(orders).where(where);
-  const rows = await db
-    .select({ id: orders.id, version: orders.version })
-    .from(orders)
-    .innerJoin(branches, eq(branches.id, orders.branchId))
-    .innerJoin(productVariants, eq(productVariants.id, orders.variantId))
-    .innerJoin(products, eq(products.id, productVariants.productId))
-    .where(where)
-    .orderBy(...groupOrder(actor, filters.sort, true), ...MEMBER_ORDER)
-    .limit(ORDER_ACTION_MAX);
-  return { orders: rows, matching: counted?.total ?? 0 };
+  // One snapshot, so "200 of N" counts the orders it ticks (spec review of 2.8, Should fix 2).
+  return readSnapshot(async (db) => {
+    const [counted] = await db.select({ total: count() }).from(orders).where(where);
+    const rows = await db
+      .select({ id: orders.id, version: orders.version })
+      .from(orders)
+      .innerJoin(branches, eq(branches.id, orders.branchId))
+      .innerJoin(productVariants, eq(productVariants.id, orders.variantId))
+      .innerJoin(products, eq(products.id, productVariants.productId))
+      .where(where)
+      .orderBy(...groupOrder(actor, filters.sort, true), ...MEMBER_ORDER)
+      .limit(ORDER_ACTION_MAX);
+    return { orders: rows, matching: counted?.total ?? 0 };
+  });
 }
 
 export type TickedSummary = {
@@ -391,48 +403,50 @@ export async function tickedSummary(
     actions: [],
   };
   if (ids.length === 0) return none;
-  const { db } = await import("@/server/db/client");
-  const creator = sql`(select c.role from users c where c.id = ${orders.createdBy})`;
-  const found = await db
-    .select({
-      id: orders.id,
-      branchId: orders.branchId,
-      ownerId: orders.ownerId,
-      status: orders.status,
-      version: orders.version,
-      revision: orders.revision,
-      progress: orders.progress,
-      createdByHead: sql<boolean>`${creator} = 'HEAD'`,
-      // As the action wrapper reads it (src/server/order-action.ts): the Head, or a Manager whose
-      // CLOSE_ALONE is not switched off.
-      ownerClosesAlone: sql<boolean>`(select w.role = 'HEAD' or (w.role = 'MANAGER' and not exists (
+  // The orders and their extras of one moment (spec review of 2.8, Should fix 1).
+  return readSnapshot(async (db) => {
+    const creator = sql`(select c.role from users c where c.id = ${orders.createdBy})`;
+    const found = await db
+      .select({
+        id: orders.id,
+        branchId: orders.branchId,
+        ownerId: orders.ownerId,
+        status: orders.status,
+        version: orders.version,
+        revision: orders.revision,
+        progress: orders.progress,
+        createdByHead: sql<boolean>`${creator} = 'HEAD'`,
+        // As the action wrapper reads it (src/server/order-action.ts): the Head, or a Manager whose
+        // CLOSE_ALONE is not switched off.
+        ownerClosesAlone: sql<boolean>`(select w.role = 'HEAD' or (w.role = 'MANAGER' and not exists (
         select 1 from manager_rights mr
         where mr.user_id = w.id and mr."right" = 'CLOSE_ALONE' and not mr.enabled
       )) from users w where w.id = ${orders.ownerId})`,
-      quantity: orders.plannedQty,
-      price: orders.plannedPrice,
-      paymentType: orders.paymentType,
-    })
-    .from(orders)
-    .where(and(inArray(orders.id, ids), listWhere(actor, NO_FILTERS)));
-  const extras = await extrasOf(
-    db,
-    found.map((row) => row.id),
-  );
-  const seen = new Set(found.map((row) => row.id));
-  return {
-    count: found.length,
-    missing: ids.filter((id) => !seen.has(id)),
-    totals: ordersTotals(
-      found.map((row) => ({
-        quantity: row.quantity!,
-        price: row.price!,
-        extras: extras.get(row.id) ?? [],
-        paymentType: row.paymentType,
-      })),
-    ),
-    actions: allowedActions(actor, found.map(orderState)),
-  };
+        quantity: orders.plannedQty,
+        price: orders.plannedPrice,
+        paymentType: orders.paymentType,
+      })
+      .from(orders)
+      .where(and(inArray(orders.id, ids), listWhere(actor, NO_FILTERS)));
+    const extras = await extrasOf(
+      db,
+      found.map((row) => row.id),
+    );
+    const seen = new Set(found.map((row) => row.id));
+    return {
+      count: found.length,
+      missing: ids.filter((id) => !seen.has(id)),
+      totals: ordersTotals(
+        found.map((row) => ({
+          quantity: row.quantity!,
+          price: row.price!,
+          extras: extras.get(row.id) ?? [],
+          paymentType: row.paymentType,
+        })),
+      ),
+      actions: allowedActions(actor, found.map(orderState)),
+    };
+  });
 }
 
 export type FilterChoice = { id: string; name: string; isActive: boolean };

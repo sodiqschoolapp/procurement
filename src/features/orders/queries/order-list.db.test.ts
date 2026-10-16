@@ -289,9 +289,16 @@ describe("tickedSummary: the action bar (11 Order list layout 4; 06 rule 8; deci
   it("refuses 201 ids and an id ticked twice (06 rule 8)", async () => {
     const { manager } = await scene();
     const many = Array.from({ length: 201 }, () => randomUUID());
-    await expect(tickedSummary(manager.id, many)).rejects.toThrow();
+    await expect(tickedSummary(manager.id, many)).rejects.toThrow(
+      expect.objectContaining({ name: "ZodError", message: expect.stringContaining("too_big") }),
+    );
     const one = randomUUID();
-    await expect(tickedSummary(manager.id, [one, one])).rejects.toThrow();
+    await expect(tickedSummary(manager.id, [one, one])).rejects.toThrow(
+      expect.objectContaining({
+        name: "ZodError",
+        message: expect.stringContaining("An order is ticked twice"),
+      }),
+    );
     expect((await tickedSummary(manager.id, many.slice(0, 200))).missing).toHaveLength(200);
   });
 });
