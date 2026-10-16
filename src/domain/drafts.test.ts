@@ -11,6 +11,7 @@ import {
   isDraftEditable,
   isNeverSubmitted,
   isRequesterName,
+  inStock,
   isUrgentReason,
   plainQuantity,
   quantityRefusal,
@@ -90,7 +91,7 @@ describe("addQuantities (05 Drafts 2: the existing draft's quantity rises by the
   });
 });
 
-describe("plainQuantity (05 Drafts 2: \"now 20\", the same text at the first answer and at a repeat)", () => {
+describe('plainQuantity (05 Drafts 2: "now 20", the same text at the first answer and at a repeat)', () => {
   it("drops the trailing zeros numeric(14,3) keeps", () => {
     expect(plainQuantity("20.000")).toBe("20");
     expect(plainQuantity("2.500")).toBe("2.5");
@@ -195,5 +196,15 @@ describe("seesDraftsGrid (11-screens-and-ux.md, Screens: Order list, drafts for 
     expect(seesDraftsGrid("MANAGER")).toBe(true);
     expect(seesDraftsGrid("PRINCIPAL")).toBe(false);
     expect(seesDraftsGrid("FINANCE")).toBe(false);
+  });
+});
+
+describe("inStock (05 field 4: current stock of this branch; services show a dash)", () => {
+  it("a product's stock without trailing zeros; no stock row is 0; a service has none", () => {
+    expect(inStock("GOODS", "12.500")).toBe("12.5");
+    expect(inStock("GOODS", "0.000")).toBe("0");
+    expect(inStock("GOODS", null)).toBe("0");
+    expect(inStock("SERVICE", "3.000")).toBeNull();
+    expect(inStock("SERVICE", null)).toBeNull();
   });
 });

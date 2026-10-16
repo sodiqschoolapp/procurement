@@ -7,6 +7,7 @@
 import { catalogName, isCatalogName } from "./catalogs";
 import { type OrderPlan, QUANTITY, orderTotal, quantityOf } from "./order-totals";
 import type { Role } from "./permissions";
+import type { ProductType } from "./products";
 import type { RequestStatus } from "./request-status";
 
 /** Why a typed quantity is refused, as a field error kind (`errors.field.<kind>`). */
@@ -56,6 +57,15 @@ export function addQuantities(held: string, added: string): string | null {
 /** A stored quantity without the trailing zeros numeric(14,3) keeps: "20.000" is "20". */
 export function plainQuantity(stored: string): string {
   return quantityOf(stored).toFixed();
+}
+
+/**
+ * "In stock" of an order (05 field 4): the branch's stock as stored, without trailing zeros; no
+ * stock row is 0; a service has no stock and shows a dash (null).
+ */
+export function inStock(type: ProductType, stored: string | null): string | null {
+  if (type === "SERVICE") return null;
+  return stored === null || !/[1-9]/.test(stored) ? "0" : plainQuantity(stored);
 }
 
 /**

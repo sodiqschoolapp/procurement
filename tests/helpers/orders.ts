@@ -39,7 +39,7 @@ export async function insertDepartment(
       isActive: options.isActive ?? true,
       createdAt: now(),
     })
-    .returning({ id: departments.id });
+    .returning({ id: departments.id, name: departments.name });
   return row!;
 }
 
