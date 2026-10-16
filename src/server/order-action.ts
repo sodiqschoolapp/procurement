@@ -77,7 +77,12 @@ export type LockedOrder = {
   version: number;
   revision: number;
   progress: "OPEN" | "DONE" | "DONE_SHORT" | "NOT_BOUGHT";
-  /** The creator's role is HEAD (plan of 2.4, decision 8, Look first). */
+  /**
+   * The creator's role is HEAD (plan of 2.4, decision 8, Look first), and the order was never
+   * submitted: only a first Submit skips the Head step (03 rule 6). A taken-back order has its
+   * number and goes to the Head like any re-submitted one (06 rule 4; permission review of 2.11,
+   * Must fix 1, Look first).
+   */
   createdByHead: boolean;
   /** The owner is the Head, or a Manager whose CLOSE_ALONE is not switched off. */
   ownerClosesAlone: boolean;
@@ -197,7 +202,7 @@ export async function lockOrders(tx: Transaction, ids: readonly string[]): Promi
     owner_closes_alone: boolean;
   }>(sql`
     select o.id, o.branch_id, o.owner_id, o.status, o.version, o.revision, o.progress,
-           c.role = 'HEAD' as created_by_head,
+           (c.role = 'HEAD' and o.number is null) as created_by_head,
            (w.role = 'HEAD' or (w.role = 'MANAGER' and not exists (
              select 1 from manager_rights mr
              where mr.user_id = w.id and mr."right" = 'CLOSE_ALONE' and not mr.enabled

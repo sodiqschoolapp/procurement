@@ -9,6 +9,7 @@ import { orderExtras } from "@/server/db/schema";
 import { runDraftsAction } from "@/server/drafts-action";
 import { type OrdersActionDefinition, runOrdersAction } from "@/server/order-action";
 
+import { insertBranch } from "../../../../tests/helpers/branches";
 import { refusalOf } from "../../../../tests/helpers/database-error";
 import {
   REASON,
@@ -28,6 +29,7 @@ import {
   orderRow,
   setOrderStatus,
 } from "../../../../tests/helpers/orders";
+import { insertUser } from "../../../../tests/helpers/users";
 import { approveOrders } from "./approve";
 import { cancelOrders } from "./cancel";
 import { deleteDraft, setDraftsNeededBy } from "./drafts";
@@ -83,6 +85,31 @@ describe("Reject (06 Allowed moves; rule 3)", () => {
       // The actor is never told of his own act.
       expect(await noticesOf(scene.head.id, "REQUEST_REJECTED")).toEqual([]);
     }
+  });
+});
+
+describe("The owner and the Head are told, once per branch (10 Notifications; .claude/rules/tests.md)", () => {
+  it("orders of two branches: one notice per branch to each owner and every Head, never the actor", async () => {
+    const first = await moveScene();
+    const second = await insertBranch();
+    const finance = await insertUser("FINANCE", { branches: [first.branch.id, second.id] });
+    const otherOwner = await insertUser("MANAGER", { branches: [second.id] });
+    const [a1, a2] = await ordersAt(first.branch.id, first.manager.id, "PENDING_FINANCE", 2);
+    const [b1] = await ordersAt(second.id, otherOwner.id, "PENDING_FINANCE");
+    expect(await reject(finance.id, tickedInput([a1!, a2!, b1!]))).toMatchObject({ ok: true });
+
+    // Each owner hears of the own branch only, with its count.
+    expect(await noticesOf(first.manager.id, "REQUEST_REJECTED")).toEqual([
+      { params: expect.objectContaining({ branch: first.branch.code, count: 2 }) },
+    ]);
+    expect(await noticesOf(otherOwner.id, "REQUEST_REJECTED")).toEqual([
+      { params: expect.objectContaining({ branch: second.code, count: 1 }) },
+    ]);
+    const heads = await noticesOf(first.head.id, "REQUEST_REJECTED");
+    expect(heads.map((notice) => (notice.params as { branch: string }).branch).sort()).toEqual(
+      [first.branch.code, second.code].sort(),
+    );
+    expect(await noticesOf(finance.id, "REQUEST_REJECTED")).toEqual([]);
   });
 });
 

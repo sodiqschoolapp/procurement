@@ -2,7 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 
 import { db } from "@/server/db/client";
-import { orderRevisions } from "@/server/db/schema";
+import { orderEvents, orderRevisions } from "@/server/db/schema";
 import { runOrdersAction } from "@/server/order-action";
 
 import { setClock } from "../../../../tests/helpers/clock";
@@ -14,7 +14,9 @@ import {
   tickedInput,
 } from "../../../../tests/helpers/moves";
 import { addDraft, editDraft, orderRow } from "../../../../tests/helpers/orders";
+import { sendBackOrders } from "./send-back";
 import { submitDrafts } from "./submit";
+import { submitAgainOrders } from "./submit-again";
 import { takeBackOrders } from "./take-back";
 
 // Take back (build plan 2.11): 06-approval-workflow.md, Allowed moves ("Waiting for Head | Take
@@ -115,5 +117,41 @@ describe("Submit after a Take back (decided items 1 and 2, Look first; 05 Drafts
       .orderBy(orderRevisions.submission);
     expect(copies.map((copy) => copy.submission)).toEqual([1, 2]);
     expect(copies[1]!.snapshot).toMatchObject({ quantity: "9.000", number: first.number });
+  });
+});
+
+describe("A taken-back order never skips the Head step (06 rule 4; 03 rule 6; permission review of 2.11, Must fix 1)", () => {
+  it("a Head-created order sent back, submitted again and taken back goes to Waiting for Head at its Submit", async () => {
+    const { branch, principal, head } = await moveScene();
+    // The Head's own order submitted once: it skipped the Head step (03 rule 6).
+    const [order] = await ordersAt(branch.id, head.id, "PENDING_PRINCIPAL");
+    setClock("2026-10-16T05:00:00Z");
+    expect(
+      await runOrdersAction(sendBackOrders, principal.id, tickedInput([order!])),
+    ).toMatchObject({ ok: true });
+    setClock("2026-10-16T06:00:00Z");
+    expect(
+      await runOrdersAction(
+        submitAgainOrders,
+        head.id,
+        tickedInput([{ id: order!.id, version: 2 }], {}),
+      ),
+    ).toMatchObject({ ok: true, data: { orders: [{ status: "PENDING_HEAD" }] } });
+    setClock("2026-10-16T07:00:00Z");
+    expect(await takeBack(head.id, tickedInput([{ id: order!.id, version: 3 }], {}))).toMatchObject(
+      {
+        ok: true,
+      },
+    );
+    setClock("2026-10-16T08:00:00Z");
+    expect(await submit(head.id, tickedInput([{ id: order!.id, version: 4 }], {}))).toMatchObject({
+      ok: true,
+      data: { orders: [{ id: order!.id, status: "PENDING_HEAD" }] },
+    });
+    const [last] = await db
+      .select({ payload: orderEvents.payload })
+      .from(orderEvents)
+      .where(and(eq(orderEvents.orderId, order!.id), eq(orderEvents.type, "SUBMIT")));
+    expect(last!.payload).toBe(null);
   });
 });

@@ -338,7 +338,11 @@ describe("the state machine answers on the server (developer-rules rule 2; plan 
     expect(action?.reason).toBe("abcde");
   });
 
-  it("Submit again raises the revision; a Submit of the Head's order skips the Head step", async () => {
+  // Changed in 2.11 (permission review of 2.11, Must fix 1, Look first): only a first Submit of
+  // the Head's order skips the Head step. The generic move here writes no number, so its numbered
+  // Draft is a taken-back one, which goes to the Head; the skip itself is proved with a real first
+  // Submit in src/features/orders/actions/submit.db.test.ts ("Created by Head").
+  it("Submit again raises the revision; a taken-back Draft of the Head's order goes to the Head", async () => {
     const returned = await insertOrder({ branchId, ownerId: manager.id, status: "RETURNED" });
     expectOk(await runOrdersAction(move("SUBMIT_AGAIN"), manager.id, ticked([returned])));
     expect((await stateOf([returned])).get(returned.id)).toMatchObject({
@@ -356,10 +360,9 @@ describe("the state machine answers on the server (developer-rules rule 2; plan 
       sql`update orders set submitted_at = '2031-04-11T05:00:00Z' where id = ${byHead.id}`,
     );
     const result = expectOk(await runOrdersAction(move("SUBMIT"), head.id, ticked([byHead])));
-    expect(result.orders).toEqual([{ id: byHead.id, status: "PENDING_PRINCIPAL" }]);
+    expect(result.orders).toEqual([{ id: byHead.id, status: "PENDING_HEAD" }]);
     const [event] = await historyOf([byHead]);
-    // "Created by Head" (03 rule 6; review of the plan, correction 5).
-    expect(event).toMatchObject({ toStatus: "PENDING_PRINCIPAL", payload: { headStepAuto: true } });
+    expect(event).toMatchObject({ toStatus: "PENDING_HEAD", payload: null });
     expect((await stateOf([byHead])).get(byHead.id)?.revision).toBe(1);
   });
 });
