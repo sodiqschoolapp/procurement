@@ -261,7 +261,7 @@ From a draft on the branch's order list to fully approved orders, ticked and act
 
 - [ ] **2.14 Download: Excel and PDF**
   - **Read:** `05-order-request-form.md` (Download); `13-technology.md` (Excel and PDF); `15-quality-and-acceptance.md` (S17).
-  - **Build:** The filtered order list downloads as Excel (ExcelJS) and as a plain PDF (@react-pdf/renderer, A4 landscape, fonts for Uzbek and Russian built in, the filters used and who downloaded it and when on every page, no signature lines), one row per order with the planned columns and who approved each step and when, in the language of the downloader, no product photos. Every number comes from the domain functions. The actual columns arrive in 4.11.
+  - **Build:** The filtered order list downloads as Excel (ExcelJS) and as a plain PDF (@react-pdf/renderer, A4 landscape, fonts for Uzbek and Russian built in, the filters used and who downloaded it and when on every page, no signature lines), one row per order with the planned columns and who approved each step and when, in the language of the downloader, no product photos. Every number comes from the domain functions. The actual columns arrive in 3.5.
   - **Done when:** S17 as a test that reads the Excel file and the text of the PDF; a product name in Cyrillic is readable in the PDF.
 
 - [ ] **2.15 Orders: branch wall and matrix**
@@ -523,7 +523,7 @@ Stock moving between branches, and stock checked against the shelf.
 
 ## Phase 8: Jobs and polish
 
-The scheduled work, and a pass over every screen.
+The scheduled work, and the translation pass.
 
 - [ ] **8.1 Reminders and escalation**
   - **Read:** `06-approval-workflow.md` (Rules: 8); `10-notifications-analytics-reports.md` (Notifications: "Orders waiting more than 24 hours"; "Orders waiting more than 48 hours"; "Needed-by date is 2 days away and the order's buying is not finished"); `14-data-model.md` (Notes for the build: settings keys); `16-build-order.md` (phase 8 row); `open-questions.md` (question 7).
