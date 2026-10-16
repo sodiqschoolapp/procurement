@@ -22,8 +22,13 @@ export type SaveAnswer =
 
 export type SaveJob = (version: number) => Promise<SaveAnswer>;
 
-/** After a retried job answered stale: the server's version when its row holds what was sent. */
-export type LandedCheck = () => Promise<number | null>;
+/**
+ * After a retried job answered stale: the server's version when its row holds what was sent and
+ * that version is the one the job's own write made (`sentVersion + 1`); else null. A newer version
+ * means another write came after it, and the saves waiting behind must not skip its check
+ * (developer-rules.md rule 9; permission review of 2.6, Must fix 1).
+ */
+export type LandedCheck = (sentVersion: number) => Promise<number | null>;
 
 export type QueueState = { busy: boolean; version: number };
 
@@ -79,6 +84,7 @@ export function createRowSaveQueue(
     running = true;
     changed();
     const started = generation;
+    const sentVersion = version;
     const send = async (): Promise<SaveAnswer> => {
       try {
         return await next.job(version);
@@ -104,11 +110,11 @@ export function createRowSaveQueue(
     if (answer.kind === "stale" && retried && next.landed) {
       let landedVersion: number | null = null;
       try {
-        landedVersion = await next.landed();
+        landedVersion = await next.landed(sentVersion);
       } catch {
         landedVersion = null;
       }
-      if (landedVersion !== null) answer = { kind: "saved", version: landedVersion };
+      if (landedVersion === sentVersion + 1) answer = { kind: "saved", version: landedVersion };
     }
     running = false;
     if (started === generation) {

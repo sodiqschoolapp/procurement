@@ -362,7 +362,12 @@ export function DraftsGrid({
         )}
 
         {canAdd && (
-          <AddDraftRow defaultBranchId={defaultBranchId} onAdded={onAdded} onBusy={onAddBusy} />
+          <AddDraftRow
+            defaultBranchId={defaultBranchId}
+            onAdded={onAdded}
+            onBusy={onAddBusy}
+            onStartOver={refresh}
+          />
         )}
 
         <TickedTotals

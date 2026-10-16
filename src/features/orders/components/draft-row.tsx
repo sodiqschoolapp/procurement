@@ -217,11 +217,12 @@ export function DraftRow(props: DraftRowProps) {
         return { kind: "refused" };
       },
       // A retry answered stale: saved only when the server row holds what was sent (review of
-      // the plan, correction 1).
-      async () => {
+      // the plan, correction 1) and its version is the one this write made (permission review,
+      // Must fix 1: a later write by someone else is never skipped).
+      async (sentVersion) => {
         const now = await getDraftAction({ id: latest.current.id });
-        if (!now.ok || !now.data || !rowHoldsSent(now.data, fields)) return null;
-        return now.data.version;
+        if (!now.ok || !now.data || now.data.version !== sentVersion + 1) return null;
+        return rowHoldsSent(now.data, fields) ? now.data.version : null;
       },
     );
     if (answer !== "dropped" && answer.kind === "saved") {

@@ -911,7 +911,8 @@
       "merged": "Qoralamangizga qoʻshildi: endi {quantity}",
       "added": "Qoralama qoʻshildi",
       "retrying": "Aloqa yoʻq. Aloqa tiklanganda qoralama qoʻshiladi; hech narsa ikki marta qoʻshilmaydi.",
-      "notAdded": "Qoʻshilmadi: server javob bermadi. Yana urinish uchun «Qoʻshish»ni bosing; ikki marta qoʻshilmaydi."
+      "notAdded": "Qoʻshilmadi: server javob bermadi. Shu qoralamani yana yuborish uchun «Qoʻshish»ni bosing (u ikki marta qoʻshilmaydi) yoki roʻyxatni qayta koʻrish uchun «Boshidan boshlash»ni bosing.",
+      "startOver": "Boshidan boshlash"
     },
     "picker": {
       "placeholder": "Nomi boʻyicha qidirish",

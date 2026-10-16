@@ -911,7 +911,8 @@
       "merged": "Added to your draft: now {quantity}",
       "added": "Draft added",
       "retrying": "No connection. The draft will be added when it is back; nothing is added twice.",
-      "notAdded": "Not added: the server did not answer. Press Add to try again; it is never added twice."
+      "notAdded": "Not added: the server did not answer. Press Add to send the same draft again (it is never added twice), or Start over to see the list again.",
+      "startOver": "Start over"
     },
     "picker": {
       "placeholder": "Search by name",

@@ -161,7 +161,10 @@ describe("createRowSaveQueue with a lost answer (11 rule 7)", () => {
         }
         return { kind: "stale" };
       },
-      async () => 4,
+      async (sentVersion) => {
+        expect(sentVersion).toBe(3);
+        return 4;
+      },
     );
     const two = queue.save(async (version) => {
       sent.push(`price@${version}`);
@@ -243,5 +246,32 @@ describe("createRowSaveQueue with a lost answer (11 rule 7)", () => {
     open();
     await held;
     expect(heldAt).toBe(2);
+  });
+
+  it("a retry answered stale whose landed row is two writes on (v+2): the stale path, the waiting save dropped (developer-rules rule 9)", async () => {
+    let reloads = 0;
+    const queue = createRowSaveQueue(3, { onStale: () => (reloads += 1) }, instantWaits());
+    let first = true;
+    const one = queue.save(
+      async () => {
+        if (first) {
+          first = false;
+          return { kind: "lost" };
+        }
+        return { kind: "stale" };
+      },
+      // Our write made v4; someone else then made v5. The check reports what it read.
+      async () => 5,
+    );
+    let ranSecond = false;
+    const two = queue.save(async () => {
+      ranSecond = true;
+      return { kind: "saved", version: 9 };
+    });
+    expect(await one).toEqual({ kind: "stale" });
+    expect(await two).toBe("dropped");
+    expect(ranSecond).toBe(false);
+    expect(reloads).toBe(1);
+    expect(queue.state().version).toBe(3);
   });
 });

@@ -35,12 +35,15 @@ export function AddDraftRow({
   defaultBranchId,
   onAdded,
   onBusy,
+  onStartOver,
 }: {
   /** The top bar's branch when it is active and a draft may be added there, else null. */
   defaultBranchId: string | null;
   onAdded(created: WireCreated): void;
   /** True from the first try of an add until its answer, retries included. */
   onBusy?(busy: boolean): void;
+  /** "Start over" after an unanswered add: the grid reads the page again. */
+  onStartOver?(): void;
 }) {
   const t = useTranslations("orders");
   const format = useFormatters();
@@ -54,6 +57,10 @@ export function AddDraftRow({
   const add = useAction(createDraftAction, { create: true });
   const [busy, setBusy] = useState(false);
   const [retrying, setRetrying] = useState(false);
+  // An add whose tries all went unanswered: its client key is still held, so its fields stay
+  // locked to the input the key was made for; "Add" sends the same again, "Start over" drops the
+  // key (permission review of 2.6, Should fix 1; decided item 9).
+  const [unanswered, setUnanswered] = useState(false);
   const busyNow = useRef(false);
 
   useEffect(() => {
@@ -98,6 +105,7 @@ export function AddDraftRow({
       setBusy(false);
       onBusy?.(false);
     }
+    setUnanswered(Boolean(result && !result.ok && result.error.code === "network"));
     if (!result?.ok) {
       const wrong = Object.keys(result && !result.ok ? (result.error.fields ?? {}) : {})[0];
       const ids: Record<string, string> = {
@@ -117,7 +125,18 @@ export function AddDraftRow({
     }
     setPicked(null);
     setQuantity("");
+    setUnanswered(false);
     onAdded(created);
+    focus("add-product");
+  }
+
+  function startOver() {
+    add.forget();
+    setUnanswered(false);
+    setPicked(null);
+    setDepartmentId("");
+    setQuantity("");
+    onStartOver?.();
     focus("add-product");
   }
 
@@ -154,6 +173,7 @@ export function AddDraftRow({
           >
             <Select
               value={branchId ?? ""}
+              disabled={unanswered}
               onChange={(event) => {
                 setBranchId(event.target.value || null);
                 setPicked(null);
@@ -180,6 +200,7 @@ export function AddDraftRow({
             <ProductPicker
               id="add-product"
               branchId={branchId}
+              disabled={unanswered}
               shown={shown}
               label={t("columns.product")}
               onPick={(hit) => {
@@ -198,7 +219,7 @@ export function AddDraftRow({
         >
           <Select
             value={departmentId}
-            disabled={!branchId}
+            disabled={!branchId || unanswered}
             onChange={(event) => setDepartmentId(event.target.value)}
           >
             <option value="">{t("pickDepartment")}</option>
@@ -217,6 +238,7 @@ export function AddDraftRow({
         >
           <Input
             inputMode="decimal"
+            disabled={unanswered}
             value={quantity}
             className="text-right tabular-nums"
             onChange={(event) => setQuantity(event.target.value)}
@@ -235,6 +257,11 @@ export function AddDraftRow({
           </Button>
         </span>
       </fieldset>
+      {unanswered && !busy && (
+        <Button type="button" variant="ghost" size="sm" onClick={startOver} className="self-start">
+          {t("add.startOver")}
+        </Button>
+      )}
       {retrying && (
         <p role="status" className="text-sm text-muted-foreground">
           {t("add.retrying")}
