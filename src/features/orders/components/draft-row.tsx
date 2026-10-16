@@ -172,12 +172,22 @@ export function DraftRow(props: DraftRowProps) {
     return () => report(row.id, false);
   }, [dirty, row.id]);
 
+  // One stable callback per cell: a new one on every render would run the cell's effect again on
+  // every render and loop ("Maximum update depth exceeded", found in the build of 2.6).
+  const [typedSetters] = useState(() => new Map<string, (isTyped: boolean) => void>());
   const typedOf = useCallback(
-    (name: string) => (isTyped: boolean) =>
-      setTyped((current) =>
-        current[name] === isTyped ? current : { ...current, [name]: isTyped },
-      ),
-    [],
+    (name: string) => {
+      let setter = typedSetters.get(name);
+      if (!setter) {
+        setter = (isTyped: boolean) =>
+          setTyped((current) =>
+            current[name] === isTyped ? current : { ...current, [name]: isTyped },
+          );
+        typedSetters.set(name, setter);
+      }
+      return setter;
+    },
+    [typedSetters],
   );
 
   /** Saves the given fields; resolves to the field errors of a refusal, or null when saved. */

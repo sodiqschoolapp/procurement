@@ -321,6 +321,20 @@ async function draftsOf(person: Person) {
   });
 }
 
+/**
+ * React's "Maximum update depth exceeded" errors of the page (a render loop of the typed cells,
+ * found and fixed in the build of 2.6): collected from the start, asserted empty at the end.
+ */
+function renderLoops(page: Page): string[] {
+  const found: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error" && message.text().includes("Maximum update depth")) {
+      found.push(message.text());
+    }
+  });
+  return found;
+}
+
 async function focusedId(page: Page): Promise<string> {
   return page.evaluate(() => document.activeElement?.id ?? "");
 }
@@ -330,6 +344,7 @@ test("Done when: three drafts are added with the keyboard only (11 rules 2 and 1
 }, info) => {
   test.skip(info.project.name !== "desktop-1440", "The Done-when is at 1440 px.");
   const manager = E2E_DRAFT_USERS["desktop-1440"];
+  const loops = renderLoops(page);
   await freshGrid(manager);
   await signIn(page, manager);
   await page.goto("/orders");
@@ -383,6 +398,7 @@ test("Done when: three drafts are added with the keyboard only (11 rules 2 and 1
   await rows(page).nth(2).getByLabel(t.columns.quantity).focus();
   await page.keyboard.press("Enter");
   await expect(page.locator("#add-product")).toBeFocused();
+  expect(loops).toEqual([]);
 });
 
 test("a save made offline keeps what was typed and is sent when the connection is back (11 rule 7)", async ({
@@ -460,6 +476,7 @@ test("Done when: the same drafts show as cards at 375 px, with 44 px controls (1
   // The 375 project has its own Manager: "the same drafts" are the same three pairs (review,
   // decision 12).
   const manager = E2E_DRAFT_USERS["phone-375"];
+  const loops = renderLoops(page);
   await freshGrid(manager);
   await signIn(page, manager);
   await page.goto("/orders");
@@ -506,4 +523,5 @@ test("Done when: the same drafts show as cards at 375 px, with 44 px controls (1
   await details.click();
   await expect(totals.locator('[data-total="CASH"] dd')).toHaveText(som("12000"));
   expect(await scrollsSideways(page)).toBe(false);
+  expect(loops).toEqual([]);
 });

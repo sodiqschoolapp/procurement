@@ -132,7 +132,7 @@ export function ProductPicker({
           role="listbox"
           aria-label={label}
           aria-busy={loading || undefined}
-          className="absolute top-full left-0 z-40 mt-1 max-h-80 w-[min(26rem,calc(100vw-2rem))] overflow-y-auto max-sm:w-full rounded-xl bg-popover p-1 text-popover-foreground shadow-float"
+          className="absolute top-full left-0 z-40 mt-1 max-h-80 w-[min(26rem,calc(100vw-2rem))] overflow-y-auto rounded-xl bg-popover p-1 text-popover-foreground shadow-float max-sm:w-full"
         >
           {hits.length === 0 ? (
             <li className="px-3 py-2 text-sm text-muted-foreground">
