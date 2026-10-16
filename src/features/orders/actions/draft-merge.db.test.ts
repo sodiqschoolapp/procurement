@@ -17,7 +17,7 @@ import {
   inventedNumber,
   orderRow,
 } from "../../../../tests/helpers/orders";
-import { runTogether } from "../../../../tests/helpers/together";
+import { commitWhileWaiting, runTogether } from "../../../../tests/helpers/together";
 import { insertUser } from "../../../../tests/helpers/users";
 
 // Build plan 2.5a, Done when 6 and "the same add sent twice leaves 20": 05-order-request-form.md
@@ -312,5 +312,44 @@ describe("two writes at once into one trio (decided item 24; 15 Test layers: two
     expect(
       await editDraft(manager.id, { id: second.id, version: 1, variantId: free.variantId }),
     ).toMatchObject({ ok: true });
+  });
+});
+
+describe("an add meets a draft that moves or goes in the middle (review of 2.5a, S1; 05 Drafts 2 and 3)", () => {
+  it("the trio's draft moved to another department while the add waits: the moved draft keeps 10, the trio gets a new draft of 10", async () => {
+    const { manager, base } = await scene();
+    const other = await insertDepartment(base.branchId);
+    const draft = data(await addDraft(manager.id, base));
+    const answer = await commitWhileWaiting(
+      (query) =>
+        query("update orders set department_id = $1, version = version + 1 where id = $2", [
+          other.id,
+          draft.id,
+        ]).then(() => undefined),
+      () => addDraft(manager.id, base),
+    );
+    const added = data(answer);
+    expect(added.merged).toBe(false);
+    expect(added.id).not.toBe(draft.id);
+    expect(await orderRow(draft.id)).toMatchObject({
+      departmentId: other.id,
+      plannedQty: "10.000",
+    });
+    expect(await orderRow(added.id)).toMatchObject({
+      departmentId: base.departmentId,
+      plannedQty: "10.000",
+    });
+  });
+
+  it("the trio's draft deleted while the add waits: a new draft, no error", async () => {
+    const { manager, base } = await scene();
+    const draft = data(await addDraft(manager.id, base));
+    const answer = await commitWhileWaiting(
+      (query) => query("delete from orders where id = $1", [draft.id]).then(() => undefined),
+      () => addDraft(manager.id, base),
+    );
+    const added = data(answer);
+    expect(added).toMatchObject({ merged: false, version: 1 });
+    expect((await orderRow(added.id))!.plannedQty).toBe("10.000");
   });
 });

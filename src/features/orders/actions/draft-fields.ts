@@ -251,16 +251,39 @@ export async function neverSubmittedOf(tx: Executor, trio: DraftTrio, exceptId?:
   const [row] = await tx
     .select({ id: orders.id })
     .from(orders)
-    .where(
-      and(
-        eq(orders.ownerId, trio.ownerId),
-        eq(orders.branchId, trio.branchId),
-        eq(orders.variantId, trio.variantId),
-        eq(orders.departmentId, trio.departmentId),
-        isNull(orders.number),
-        exceptId ? ne(orders.id, exceptId) : undefined,
-      ),
-    );
+    .where(and(ofTrio(trio), exceptId ? ne(orders.id, exceptId) : undefined));
+  return row ?? null;
+}
+
+/** The owner's never-submitted draft of the trio: the full match of `orders_one_draft_key`. */
+function ofTrio(trio: DraftTrio) {
+  return and(
+    eq(orders.ownerId, trio.ownerId),
+    eq(orders.branchId, trio.branchId),
+    eq(orders.variantId, trio.variantId),
+    eq(orders.departmentId, trio.departmentId),
+    isNull(orders.number),
+  );
+}
+
+/**
+ * The owner's never-submitted draft of the trio, locked FOR UPDATE with the full match: a draft
+ * that another write moves to another trio or deletes while this one waits is re-checked by
+ * PostgreSQL under the lock and drops out, so an add never raises the wrong draft (review of
+ * 2.5a, S1). `null` when none is left.
+ */
+export async function lockTrioDraft(tx: Executor, trio: DraftTrio) {
+  const [row] = await tx
+    .select({
+      id: orders.id,
+      plannedQty: orders.plannedQty,
+      plannedPrice: orders.plannedPrice,
+      paymentType: orders.paymentType,
+      version: orders.version,
+    })
+    .from(orders)
+    .where(ofTrio(trio))
+    .for("update");
   return row ?? null;
 }
 

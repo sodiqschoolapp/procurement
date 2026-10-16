@@ -30,6 +30,7 @@ import {
   extrasField,
   isOneDraftViolation,
   lockDraftTrio,
+  lockTrioDraft,
   neededByField,
   neverSubmittedOf,
   optionalId,
@@ -201,8 +202,8 @@ export const createDraft = defineAction({
       departmentId: input.departmentId,
     };
     await lockDraftTrio(tx, trio);
-    const existing = await neverSubmittedOf(tx, trio);
-    if (existing) return mergeInto(tx, existing.id, input.quantity, input.clientKey, userId);
+    const existing = await lockTrioDraft(tx, trio);
+    if (existing) return mergeInto(tx, existing, input.quantity, input.clientKey, userId);
 
     try {
       return await insertDraft(tx, input, userId, subtype);
@@ -222,26 +223,16 @@ export const createDraft = defineAction({
  */
 async function mergeInto(
   tx: Executor,
-  orderId: string,
+  draft: NonNullable<Awaited<ReturnType<typeof lockTrioDraft>>>,
   added: string,
   clientKey: string,
   userId: string,
 ): Promise<CreatedDraft> {
-  const [draft] = await tx
-    .select({
-      id: orders.id,
-      plannedQty: orders.plannedQty,
-      plannedPrice: orders.plannedPrice,
-      paymentType: orders.paymentType,
-      version: orders.version,
-    })
-    .from(orders)
-    .where(eq(orders.id, orderId))
-    .for("update");
-  const quantity = draft!.plannedQty ? addQuantities(draft!.plannedQty, added) : added;
+  const orderId = draft.id;
+  const quantity = draft.plannedQty ? addQuantities(draft.plannedQty, added) : added;
   if (quantity === null) refuse("quantity", "errors.field.tooLarge");
-  const total = await totalWith(tx, draft!, quantity);
-  const version = draft!.version + 1;
+  const total = await totalWith(tx, draft, quantity);
+  const version = draft.version + 1;
   const at = now();
   await tx
     .update(orders)
