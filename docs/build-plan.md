@@ -223,7 +223,7 @@ From a draft on the branch's order list to fully approved orders, ticked and act
   - **Build:** The drafts grid on `/orders` on the actions and queries of 2.5a: every field of the order table as a cell (product picker with photo, category, type and stock; subtype; in stock, a dash for services; photo and one extra reference photo; brand or company; requested by; needed by with "apply to all ticked"; measure; quantity; the suggested price; extra-cost rows; payment type; priority with a reason for Urgent; comment; order total); the totals of the ticked drafts; the price-hint label; autosave with "Saved"; "Added to your draft: now 20"; delete with a confirmation; the labels "Sent back" and "Taken back"; texts in uz, ru and en.
   - **Done when:** Playwright at 1440 px: a Manager adds a draft through the picker, sees "Saved", its total and "+35% vs catalog price"; adding the same subtype for the same department shows "Added to your draft: now 20" and one row; ticking two drafts shows their totals by payment type; deleting a draft removes its row. The page opens at 375 px with no horizontal page scroll (the cards come in 2.6).
 
-- [ ] **2.6 Drafts: keyboard and phone**
+- [x] **2.6 Drafts: keyboard and phone**
   - **Read:** `11-screens-and-ux.md` (Rules for a smooth feel: 2, 7, 13).
   - **Build:** Tab and Enter move between cells and Enter on the last row adds a draft; the totals of the ticked drafts stay visible; on a phone each draft is a card; what was typed survives a dropped connection and is retried.
   - **Done when:** Playwright: three drafts are added with the keyboard only at 1440 px; the same drafts show as cards at 375 px.
