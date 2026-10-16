@@ -3,6 +3,7 @@ import * as z from "zod";
 
 import type { NewestMove } from "@/domain/already-decided";
 import type { OrderAction } from "@/domain/order-moves";
+import type { RequestStatus } from "@/domain/request-status";
 import { authorizeList, branchFilter } from "@/server/authorize";
 import { orders } from "@/server/db/schema";
 
@@ -32,15 +33,16 @@ export async function newestMoves(
     id: string;
     version: number;
     type: OrderAction;
+    from_status: RequestStatus;
     actor_id: string;
     actor_name: string;
     at: Date | string;
   }>(sql`
-    select orders.id, orders.version, e.type, e.actor_id, u.full_name as actor_name,
+    select orders.id, orders.version, e.type, e.from_status, e.actor_id, u.full_name as actor_name,
            e.created_at as at
     from orders
     join lateral (
-      select e.type, e.actor_id, e.created_at
+      select e.type, e.from_status, e.actor_id, e.created_at
       from order_events e
       where e.order_id = orders.id
       order by e.created_at desc, e.id desc
@@ -59,6 +61,7 @@ export async function newestMoves(
       {
         version: row.version,
         type: row.type,
+        from: row.from_status,
         actorId: row.actor_id,
         actorName: row.actor_name,
         at: new Date(row.at),

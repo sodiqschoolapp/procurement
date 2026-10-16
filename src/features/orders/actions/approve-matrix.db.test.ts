@@ -1,5 +1,7 @@
 import { randomUUID } from "node:crypto";
 
+import { expect } from "vitest";
+
 import type { Permission } from "@/domain/permissions";
 import type { RequestStatus } from "@/domain/request-status";
 import type { ActionResult } from "@/server/action-result";
@@ -57,12 +59,13 @@ describePermissionMatrix("newestMoves", {
     const owner = await insertUser("MANAGER", { branches: [branchId] });
     const order = await insertOrder({ branchId, ownerId: owner.id, status: "PENDING_HEAD" });
     const head = await insertUser("HEAD");
-    asMatrixAnswer(
+    // The fixture must succeed, or a refusal here would read as the expected "not found" (D38).
+    expect(
       await runOrdersAction(approveOrders, head.id, {
         clientKey: randomUUID(),
         orders: [{ id: order.id, version: order.version }],
       }),
-    );
+    ).toMatchObject({ ok: true });
     if (!(await newestMoves(user.id, [order.id])).has(order.id)) {
       throw new AuthorizationError("not_found");
     }

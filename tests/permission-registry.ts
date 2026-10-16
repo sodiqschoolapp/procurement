@@ -78,8 +78,11 @@ export const SERVER_ACTIONS: Record<string, Entry> = {
   // (src/domain/order-moves.ts), in the matrix through describeSubmitMatrix.
   "src/app/(app)/orders/actions.ts#submitDraftsAction": "request.edit",
   // Approve of ticked orders (plan of 2.10, decided item 1, Look first): one action for the three
-  // steps; the state machine's row of each order's status names request.approve_step1, 2 or 3
-  // (src/domain/order-moves.ts), each in the matrix through actions-matrix.db.test.ts.
+  // steps, so the permission depends on each order's status: request.approve_step1 at Waiting for
+  // Head, request.approve_step2 at Waiting for Principal, request.approve_step3 at Waiting for
+  // Finance (the state machine's rows, src/domain/order-moves.ts). The entry names step 1 only
+  // because the registry takes one; all three are in the matrix through actions-matrix.db.test.ts
+  // (permission review of 2.10, Should fix 1).
   "src/app/(app)/orders/actions.ts#approveOrdersAction": "request.approve_step1",
   // The order list on /orders (plan of 2.8): each export in the matrix through itself.
   "src/app/(app)/orders/actions.ts#selectAllOnFilterAction": "data.view",

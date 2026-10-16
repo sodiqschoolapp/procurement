@@ -24,6 +24,7 @@ import { insertItem, insertOrder, orderRow } from "../../../../tests/helpers/ord
 import { commitWhileWaiting } from "../../../../tests/helpers/together";
 import { insertUser } from "../../../../tests/helpers/users";
 import { createUser } from "../../users/actions/users";
+import { NO_FILTERS } from "../list-filters";
 import { listOrderGroups } from "../queries/order-list";
 import { getOrderPage } from "../queries/order-page";
 import { newestMoves } from "../queries/newest-moves";
@@ -92,7 +93,13 @@ async function statesOf(ids: readonly string[]) {
 }
 
 /** Nothing of a refused action was written (06 rule 8: all or nothing). */
-async function nothingSaved(clientKey: string, ids: readonly string[]) {
+/** How many notifications exist: a refused action adds none. */
+async function noticeCount(): Promise<number> {
+  return (await db.select({ id: notifications.id }).from(notifications)).length;
+}
+
+async function nothingSaved(clientKey: string, ids: readonly string[], noticesBefore: number) {
+  expect(await noticeCount()).toBe(noticesBefore);
   expect(await db.select().from(orderActions).where(eq(orderActions.clientKey, clientKey))).toEqual(
     [],
   );
@@ -165,7 +172,7 @@ describe("S8, first half: two Heads approve the same ticked orders together (15 
     const newest = await newestMoves(loser.id, ids);
     for (const id of ids) {
       expect(
-        alreadyApprovedBy({ code: "stale_version", sentVersion: 1 }, newest.get(id)!, loser.id),
+        alreadyApprovedBy({ code: "stale_version", sentVersion: 1 }, newest.get(id)!, loser),
       ).toEqual({ name: winner.fullName, at: new Date("2026-10-16T09:32:00Z") });
     }
   });
@@ -179,6 +186,7 @@ describe("All or nothing (06 rule 8)", () => {
     // The middle order moved on to v2 since the Head saw it at v1.
     await db.update(orders).set({ version: 2 }).where(eq(orders.id, three[1]!.id));
     const input = ticked(sent);
+    const notices = await noticeCount();
     expect(await approve(head.id, input)).toMatchObject({
       ok: false,
       error: { code: "stale_version", orders: [{ orderId: three[1]!.id, code: "stale_version" }] },
@@ -188,6 +196,7 @@ describe("All or nothing (06 rule 8)", () => {
     await nothingSaved(
       input.clientKey,
       three.map((order) => order.id),
+      notices,
     );
   });
 
@@ -196,12 +205,13 @@ describe("All or nothing (06 rule 8)", () => {
     const [a] = await waiting(branch.id, manager.id, "PENDING_HEAD");
     const [b] = await waiting(branch.id, manager.id, "PENDING_PRINCIPAL");
     const input = ticked([a!, b!]);
+    const notices = await noticeCount();
     expect(await approve(head.id, input)).toMatchObject({
       ok: false,
       error: { code: "forbidden", orders: [{ orderId: b!.id, code: "forbidden" }] },
     });
     expect(await orderRow(a!.id)).toMatchObject({ status: "PENDING_HEAD", version: 1 });
-    await nothingSaved(input.clientKey, [a!.id, b!.id]);
+    await nothingSaved(input.clientKey, [a!.id, b!.id], notices);
     // The Principal of the branch ticking the same two is refused on A the same way.
     const again = ticked([a!, b!]);
     expect(await approve(principal.id, again)).toMatchObject({
@@ -226,6 +236,7 @@ describe("The branch wall (03 rules 1 and 8; 15 S7)", () => {
     });
 
     const hidden = ticked([mine[0]!, theirs!, mine[1]!]);
+    const notices = await noticeCount();
     expect(await approve(own.principal.id, hidden)).toMatchObject({
       ok: false,
       error: { code: "not_found", orders: [{ orderId: theirs!.id, code: "not_found" }] },
@@ -235,6 +246,7 @@ describe("The branch wall (03 rules 1 and 8; 15 S7)", () => {
     await nothingSaved(
       hidden.clientKey,
       [...mine, theirs!].map((order) => order.id),
+      notices,
     );
     // Behind the wall nobody is named (03 rule 1).
     expect((await newestMoves(own.principal.id, [theirs!.id])).size).toBe(0);
@@ -310,13 +322,32 @@ describe("Finance's step: Open, approved_at and the payment type (06 rules 1, 11
       [principal, atPrincipal!],
     ] as const) {
       const input = ticked([order], { paymentTypes: { [order.id]: "TRANSFER" } });
+      const notices = await noticeCount();
       expect(await approve(actor.id, input)).toMatchObject({
         ok: false,
         error: { code: "forbidden", orders: [{ orderId: order.id, code: "forbidden" }] },
       });
       expect(await orderRow(order.id)).toMatchObject({ paymentType: "CASH", version: 1 });
-      await nothingSaved(input.clientKey, [order.id]);
+      await nothingSaved(input.clientKey, [order.id], notices);
     }
+  });
+
+  it("a refused Finance action writes no payment type: one stale order among the ticked (06 rule 8)", async () => {
+    const { branch, manager, finance } = await scene();
+    const [fresh, stale] = await waiting(branch.id, manager.id, "PENDING_FINANCE", 2);
+    await db.update(orders).set({ version: 2 }).where(eq(orders.id, stale!.id));
+    const input = ticked([fresh!, { id: stale!.id, version: 1 }], {
+      paymentTypes: { [fresh!.id]: "CARD", [stale!.id]: "TRANSFER" },
+    });
+    const notices = await noticeCount();
+    expect(await approve(finance.id, input)).toMatchObject({
+      ok: false,
+      error: { code: "stale_version", orders: [{ orderId: stale!.id, code: "stale_version" }] },
+    });
+    const states = await statesOf([fresh!.id, stale!.id]);
+    expect(states.get(fresh!.id)).toMatchObject({ status: "PENDING_FINANCE", paymentType: "CASH" });
+    expect(states.get(stale!.id)).toMatchObject({ status: "PENDING_FINANCE", paymentType: "CASH" });
+    await nothingSaved(input.clientKey, [fresh!.id, stale!.id], notices);
   });
 
   it("a payment type for an order that is not ticked is a wrong input", async () => {
@@ -388,33 +419,85 @@ describe("Notifications: one per action and branch to the next step (10 Notifica
   });
 });
 
+describe("Finance approved across two branches: one branch per notice (10 Notifications; permission review of 2.10, Must fix 2)", () => {
+  it("each owner hears of their own branch only; each Head gets one notice per branch", async () => {
+    const x = await insertBranch();
+    const y = await insertBranch();
+    const finance = await insertUser("FINANCE", { branches: [x.id, y.id] });
+    const inX = await insertUser("MANAGER", { branches: [x.id] });
+    const inY = await insertUser("MANAGER", { branches: [y.id] });
+    // A Manager of both branches who owns orders in X only.
+    const both = await insertUser("MANAGER", { branches: [x.id, y.id] });
+    const head = await insertUser("HEAD");
+    const sent = [
+      ...(await waiting(x.id, inX.id, "PENDING_FINANCE", 2)),
+      ...(await waiting(x.id, both.id, "PENDING_FINANCE")),
+      ...(await waiting(y.id, inY.id, "PENDING_FINANCE")),
+    ];
+    expect(await approve(finance.id, ticked(sent))).toMatchObject({ ok: true });
+
+    const paramsOf = async (userId: string) =>
+      (await noticesOf(userId, "REQUEST_FINANCE_APPROVED"))
+        .map((notice) => notice.params as { branch: string; count: number })
+        .sort((a, b) => a.branch.localeCompare(b.branch));
+    const xNotice = { actor: finance.fullName, count: 3, branch: x.code };
+    const yNotice = { actor: finance.fullName, count: 1, branch: y.code };
+    expect(await paramsOf(inX.id)).toEqual([xNotice]);
+    expect(await paramsOf(inY.id)).toEqual([yNotice]);
+    expect(await paramsOf(both.id)).toEqual([xNotice]);
+    expect(await paramsOf(head.id)).toEqual(
+      [xNotice, yNotice].sort((a, b) => a.branch.localeCompare(b.branch)),
+    );
+  });
+});
+
+describe("newestMoves keeps the draft wall (06 Statuses; permission review of 2.10, Must fix 1)", () => {
+  it("a numbered Draft's mover is named to its owner and the Head only", async () => {
+    const { branch, manager, principal, finance, head } = await scene();
+    const colleague = await insertUser("MANAGER", { branches: [branch.id] });
+    const [order] = await waiting(branch.id, manager.id, "PENDING_HEAD");
+    expect(await approve(head.id, ticked([order!]))).toMatchObject({ ok: true });
+    // Taken back to Draft, it keeps its number and its events (06 Allowed moves, Take back).
+    await db.update(orders).set({ status: "DRAFT" }).where(eq(orders.id, order!.id));
+    for (const user of [manager, head]) {
+      expect((await newestMoves(user.id, [order!.id])).has(order!.id)).toBe(true);
+    }
+    for (const user of [colleague, principal, finance]) {
+      expect((await newestMoves(user.id, [order!.id])).size).toBe(0);
+    }
+  });
+});
+
 describe("S19 up to the Principal (15 S19; 05 Group rows)", () => {
   it("the Head approves 20, then 10 more; the Principal approves one row of 30, one event each", async () => {
-    const { branch, principal, head } = await scene();
-    const first = await insertUser("MANAGER", { branches: [branch.id] });
-    const second = await insertUser("MANAGER", { branches: [branch.id] });
-    const third = await insertUser("MANAGER", { branches: [branch.id] });
+    // One Manager submits 10, then 10 more, then (after the Head approved) 10 more (15 S19).
+    const { branch, manager, principal, head } = await scene();
     const paper = await insertItem();
-    const ten = (ownerId: string) =>
-      waiting(branch.id, ownerId, "PENDING_HEAD", 10, { variantId: paper.variantId });
-    const a = await ten(first.id);
-    const b = await ten(second.id);
+    const ten = () =>
+      waiting(branch.id, manager.id, "PENDING_HEAD", 10, { variantId: paper.variantId });
+    const a = await ten();
+    const b = await ten();
 
-    expect(await approve(head.id, ticked([...a, ...b]))).toMatchObject({ ok: true });
-    const rowOf = async (userId: string) =>
-      (await listOrderGroups(userId)).groups.filter(
-        (group) => group.variantId === paper.variantId && group.status === "PENDING_PRINCIPAL",
+    const rowOf = async (userId: string, status: "PENDING_HEAD" | "PENDING_PRINCIPAL") =>
+      // The branch's own view: the Head sees every branch, other tests' orders included.
+      (await listOrderGroups(userId, { ...NO_FILTERS, branch: branch.id })).groups.filter(
+        (group) => group.variantId === paper.variantId && group.status === status,
       );
-    let rows = await rowOf(principal.id);
+    // "The Head first sees one row 'Tata pens, 20'".
+    const headRows = await rowOf(head.id, "PENDING_HEAD");
+    expect(headRows).toHaveLength(1);
+    expect(headRows[0]!.summary.count).toBe(20);
+
+    expect(await approve(head.id, ticked(headRows[0]!.orders))).toMatchObject({ ok: true });
+    let rows = await rowOf(principal.id, "PENDING_PRINCIPAL");
     expect(rows).toHaveLength(1);
     expect(rows[0]!.summary.count).toBe(20);
 
-    const c = await ten(third.id);
+    const c = await ten();
     expect(await approve(head.id, ticked(c))).toMatchObject({ ok: true });
-    rows = await rowOf(principal.id);
+    rows = await rowOf(principal.id, "PENDING_PRINCIPAL");
     expect(rows).toHaveLength(1);
     expect(rows[0]!.summary.count).toBe(30);
-    expect(new Set(rows[0]!.orders.map((order) => order.ownerName)).size).toBe(3);
 
     // Ticking the row ticks its 30 orders (Group rows 3); one approval moves them all.
     expect(await approve(principal.id, ticked(rows[0]!.orders))).toMatchObject({ ok: true });
@@ -494,7 +577,7 @@ describe("A repeat of the same client key (developer-rules.md rule 8)", () => {
     const input = ticked([order!]);
     expect(await approve(principal.id, input)).toMatchObject({ ok: true });
     // The Head moves the Principal out: a new Principal replaces him.
-    await runAction(createUser, head.id, {
+    const replaced = await runAction(createUser, head.id, {
       clientKey: newClientKey(),
       fullName: "Invented Successor",
       username: `test_principal_${newClientKey().slice(0, 8)}`,
@@ -505,8 +588,9 @@ describe("A repeat of the same client key (developer-rules.md rule 8)", () => {
       branchIds: [branch.id],
       replacePrincipal: true,
     });
+    expect(replaced).toMatchObject({ ok: true });
     const repeat = await approve(principal.id, input);
-    expect(repeat).toMatchObject({ ok: false });
+    expect(repeat).toMatchObject({ ok: false, error: { code: "forbidden" } });
   });
 });
 

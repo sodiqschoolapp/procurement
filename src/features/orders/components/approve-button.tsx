@@ -37,8 +37,11 @@ export function ApproveButton({
   versionOf,
   total,
   onAnswer,
+  size,
   className,
 }: {
+  /** Small in a desktop selection bar beside Clear (design system: one size in one row). */
+  size?: "sm";
   /** The ticked orders. */
   orders: readonly ApproveOrder[];
   /** The version the screen last showed an order at, read when the call goes out (06 rule 7). */
@@ -121,7 +124,7 @@ export function ApproveButton({
 
   return (
     <>
-      <Button pending={pending} onClick={open} className={className}>
+      <Button pending={pending} onClick={open} size={size} className={className}>
         {orders.length > 1 ? t("buttonCount", { count: orders.length }) : t("button")}
       </Button>
       <ConfirmDialog

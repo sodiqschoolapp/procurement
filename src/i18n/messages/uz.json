@@ -1067,7 +1067,8 @@
         "action": "Bitta amaldagi buyurtmalar",
         "removeAction": "Faqat bitta amaldagini emas, barcha buyurtmalarni ko'rsatish"
       },
-      "noStock": "–"
+      "noStock": "–",
+      "refusedMark": "Tasdiqlanmadi"
     },
     "page": {
       "noNumber": "Raqamsiz qoralama",

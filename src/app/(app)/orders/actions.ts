@@ -181,7 +181,7 @@ export async function approveOrdersAction(input: unknown): Promise<ApproveAnswer
       const by = alreadyApprovedBy(
         { code: order.code, sentVersion: sent.get(order.orderId) ?? 0 },
         newest.get(order.orderId) ?? null,
-        user.id,
+        { id: user.id, role: user.role },
       );
       if (by) decided.push({ orderId: order.orderId, name: by.name, at: by.at.toISOString() });
     }

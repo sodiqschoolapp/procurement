@@ -1067,7 +1067,8 @@
         "action": "Orders of one action",
         "removeAction": "Show all orders, not only those of one action"
       },
-      "noStock": "–"
+      "noStock": "–",
+      "refusedMark": "Not approved"
     },
     "page": {
       "noNumber": "Draft without a number",

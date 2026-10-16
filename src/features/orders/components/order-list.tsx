@@ -130,6 +130,8 @@ export function OrderList({
   }
 
   const tickedSet = new Set(ticked);
+  // The orders a refused action named stay marked until the next answer (decided item 6).
+  const refusedSet = new Set(failed?.lines.map((line) => line.orderId) ?? []);
   const summary = answered?.ids === ticked.join(",") ? answered.summary : null;
 
   return (
@@ -206,6 +208,7 @@ export function OrderList({
                 })
               }
               ticked={tickedSet}
+              refused={refusedSet}
               onTick={tick}
             />
           ))}
@@ -248,7 +251,8 @@ export function OrderList({
                   setFailed(answer);
                   clear();
                 }}
-                className="max-sm:h-11 max-sm:flex-1"
+                size="sm"
+                className="max-sm:flex-1"
               />
             ) : null
           }
@@ -263,12 +267,15 @@ function GroupRows({
   open,
   onToggle,
   ticked,
+  refused,
   onTick,
 }: {
   group: WireOrderGroup;
   open: boolean;
   onToggle: () => void;
   ticked: ReadonlySet<string>;
+  /** Orders the last refused action named (06 rule 8; decided item 6). */
+  refused: ReadonlySet<string>;
   onTick: (ids: readonly string[], on: boolean) => void;
 }) {
   const t = useTranslations("orders.list");
@@ -403,7 +410,8 @@ function GroupRows({
                   <tr
                     key={order.id}
                     data-order={order.id}
-                    className="border-t border-border max-sm:grid max-sm:grid-cols-2 max-sm:gap-1 max-sm:rounded-lg max-sm:bg-muted max-sm:p-3"
+                    data-refused={refused.has(order.id) || undefined}
+                    className="border-t border-border data-refused:bg-destructive-bg max-sm:grid max-sm:grid-cols-2 max-sm:gap-1 max-sm:rounded-lg max-sm:bg-muted max-sm:p-3"
                   >
                     <td className="py-2 pr-2 max-sm:col-span-2">
                       <label className="flex size-11 cursor-pointer items-center justify-center sm:size-6">
@@ -431,6 +439,12 @@ function GroupRows({
                       )}
                       {order.priority === "URGENT" && (
                         <span className="ml-2 text-destructive">{t("urgent")}</span>
+                      )}
+                      {refused.has(order.id) && (
+                        <span className="ml-2 inline-flex items-center gap-1 text-destructive">
+                          <Icon name="error" size={16} />
+                          {t("refusedMark")}
+                        </span>
                       )}
                     </td>
                     <td className="py-2 pr-3">{order.departmentName}</td>
