@@ -14,6 +14,7 @@ import {
   isUrgentReason,
   quantityRefusal,
   requesterName,
+  seesDraftsGrid,
   suggestedPrice,
   urgentReason,
 } from "./drafts";
@@ -176,5 +177,14 @@ describe("the draft's limits and states (05 field 12; Drafts 3 and 5)", () => {
     expect(isNeverSubmitted({ status: "DRAFT", number: null })).toBe(true);
     expect(isNeverSubmitted({ status: "DRAFT", number: "TST-26-0001" })).toBe(false);
     expect(isNeverSubmitted({ status: "RETURNED", number: "TST-26-0001" })).toBe(false);
+  });
+});
+
+describe("seesDraftsGrid (11-screens-and-ux.md, Screens: Order list, drafts for Manager and Head)", () => {
+  it("the Head and a Manager have drafts; the Principal and Finance do not", () => {
+    expect(seesDraftsGrid("HEAD")).toBe(true);
+    expect(seesDraftsGrid("MANAGER")).toBe(true);
+    expect(seesDraftsGrid("PRINCIPAL")).toBe(false);
+    expect(seesDraftsGrid("FINANCE")).toBe(false);
   });
 });

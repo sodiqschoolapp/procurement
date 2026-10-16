@@ -13,6 +13,7 @@ import { orderActions, orderEvents, orders } from "@/server/db/schema";
 import { ActionError, describeForLog } from "./action";
 import { fieldErrors } from "./action-input";
 import {
+  type ActionFailure,
   type ActionResult,
   ORDER_REFUSAL_CODES,
   type OrderFailure,
@@ -40,7 +41,7 @@ import {
 // ORDER_REFUSAL_CODES (decision 1, Look first; review of the plan, correction 2); any failure
 // saves nothing.
 
-type Transaction = Parameters<Parameters<typeof Database.transaction>[0]>[0];
+export type Transaction = Parameters<Parameters<typeof Database.transaction>[0]>[0];
 
 /** The input every action on ticked orders carries: its browser-made id and the orders it saw. */
 const ORDERS_SHAPE = {
@@ -133,8 +134,12 @@ export function defineOrdersAction<Input extends OrdersInput>(
   return definition;
 }
 
-/** Thrown inside the transaction to roll it back with a refusal. */
-class OrdersRefusal extends Error {
+/**
+ * Thrown inside the transaction to roll it back with a refusal. Exported with the lock, guard and
+ * failure helpers below for the many-drafts edit of ./drafts-action.ts (plan of 2.5a, decided item
+ * 10, Look first; review of the plan: reused, not copied).
+ */
+export class OrdersRefusal extends Error {
   constructor(
     readonly code: ServerErrorCode,
     readonly orders?: readonly OrderFailure[],
@@ -152,7 +157,7 @@ function firstCode(codes: Iterable<OrderRefusalCode>): OrderRefusalCode | undefi
 }
 
 /** Collects the codes of each failing order; refuses with every order's first code. */
-class Failures {
+export class Failures {
   private readonly byOrder = new Map<string, Set<OrderRefusalCode>>();
 
   add(orderId: string, code: OrderRefusalCode): void {
@@ -179,7 +184,7 @@ class Failures {
 }
 
 /** The lock: every order and the facts about its owner and creator, by id, FOR UPDATE. */
-async function lockOrders(tx: Transaction, ids: readonly string[]): Promise<LockedOrder[]> {
+export async function lockOrders(tx: Transaction, ids: readonly string[]): Promise<LockedOrder[]> {
   const found = await tx.execute<{
     id: string;
     branch_id: string;
@@ -306,36 +311,13 @@ export async function runOrdersAction<Input extends OrdersInput>(
       const first = await repeated(definition, tx, userId, input.clientKey);
       if (first) return first;
 
-      const failures = new Failures();
-      const byId = new Map(locked.map((order) => [order.id, order]));
-      for (const { id } of sent) if (!byId.has(id)) failures.add(id, "not_found");
-
-      const { actor, decisions } = await authorizeOrders(
-        userId,
-        locked.map((order) => ({
-          permission: definition.permission(order),
-          target: { branchId: order.branchId, ownerId: order.ownerId },
-        })),
+      const { actor, failures, visible } = await guardOrders(
         tx,
+        userId,
+        sent,
+        locked,
+        definition.permission,
       );
-      locked.forEach((order, at) => {
-        const decision = decisions[at];
-        if (decision === "not_found" || behindDraftWall(actor, order)) {
-          failures.add(order.id, "not_found");
-        } else if (decision === "forbidden") {
-          failures.add(order.id, "forbidden");
-        }
-      });
-
-      for (const { id, version } of sent) {
-        const order = byId.get(id);
-        if (order && !failures.has(id, "not_found") && order.version !== version) {
-          failures.add(id, "stale_version");
-        }
-      }
-
-      // The check sees only the orders behind no wall: an order of another branch tells nothing.
-      const visible = locked.filter((order) => !failures.has(order.id, "not_found"));
       const context: OrdersContext<Input> = { tx, input, userId, actor, orders: visible };
       if (visible.length > 0) {
         for (const { orderId, code } of definition.check(context)) failures.add(orderId, code);
@@ -344,12 +326,8 @@ export async function runOrdersAction<Input extends OrdersInput>(
 
       const extras = (await definition.write(context)) ?? new Map<string, OrderEventExtra>();
       const at = now();
-      const ids = locked.map((order) => order.id);
-      const raised = await tx.execute<{ id: string; status: RequestStatus }>(sql`
-        update orders set version = version + 1, updated_at = ${at}
-        where ${inArray(orders.id, ids)}
-        returning id, status`);
-      const statusOf = new Map(raised.rows.map((row) => [row.id, row.status]));
+      const raised = await raiseVersions(tx, locked, at);
+      const statusOf = new Map(raised.map((row) => [row.id, row.status]));
 
       const [action] = await tx
         .insert(orderActions)
@@ -386,12 +364,79 @@ export async function runOrdersAction<Input extends OrdersInput>(
     });
     return { ok: true, data };
   } catch (error) {
-    if (error instanceof OrdersRefusal) return failure(error.code, undefined, error.orders);
-    if (error instanceof ActionError) return failure(error.code, error.fields);
-    if (error instanceof AuthorizationError) return failure(error.kind);
-    console.error(`Action ${definition.name} failed: ${describeForLog(error)}`);
-    return failure("unexpected");
+    return ordersFailure(definition.name, error);
   }
+}
+
+/** The answer of a thrown refusal or error of an action on ticked orders; logged by name only. */
+export function ordersFailure(name: string, error: unknown): { ok: false; error: ActionFailure } {
+  if (error instanceof OrdersRefusal) return failure(error.code, undefined, error.orders);
+  if (error instanceof ActionError) return failure(error.code, error.fields);
+  if (error instanceof AuthorizationError) return failure(error.kind);
+  console.error(`Action ${name} failed: ${describeForLog(error)}`);
+  return failure("unexpected");
+}
+
+/**
+ * The guard of every action on ticked orders, under the lock: an order not found, behind the
+ * branch wall or the draft wall is `not_found`, one the permission refuses `forbidden`, one sent
+ * with an old version `stale_version` (developer-rules.md rules 4, 9; 06 rule 8). Returns the
+ * actor, the failures so far and the orders behind no wall, which alone the status check sees:
+ * an order of another branch tells nothing.
+ */
+export async function guardOrders(
+  tx: Transaction,
+  userId: string,
+  sent: readonly { id: string; version: number }[],
+  locked: readonly LockedOrder[],
+  permission: (order: LockedOrder) => Permission,
+): Promise<{ actor: Actor; failures: Failures; visible: LockedOrder[] }> {
+  const failures = new Failures();
+  const byId = new Map(locked.map((order) => [order.id, order]));
+  for (const { id } of sent) if (!byId.has(id)) failures.add(id, "not_found");
+
+  const { actor, decisions } = await authorizeOrders(
+    userId,
+    locked.map((order) => ({
+      permission: permission(order),
+      target: { branchId: order.branchId, ownerId: order.ownerId },
+    })),
+    tx,
+  );
+  locked.forEach((order, at) => {
+    const decision = decisions[at];
+    if (decision === "not_found" || behindDraftWall(actor, order)) {
+      failures.add(order.id, "not_found");
+    } else if (decision === "forbidden") {
+      failures.add(order.id, "forbidden");
+    }
+  });
+
+  for (const { id, version } of sent) {
+    const order = byId.get(id);
+    if (order && !failures.has(id, "not_found") && order.version !== version) {
+      failures.add(id, "stale_version");
+    }
+  }
+
+  const visible = locked.filter((order) => !failures.has(order.id, "not_found"));
+  return { actor, failures, visible };
+}
+
+/** Raises the version of every locked order and sets `updated_at`, in one statement (rule 12). */
+export async function raiseVersions(
+  tx: Transaction,
+  locked: readonly LockedOrder[],
+  at: Date,
+): Promise<{ id: string; status: RequestStatus; version: number }[]> {
+  const raised = await tx.execute<{ id: string; status: RequestStatus; version: number }>(sql`
+    update orders set version = version + 1, updated_at = ${at}
+    where ${inArray(
+      orders.id,
+      locked.map((order) => order.id),
+    )}
+    returning id, status, version`);
+  return raised.rows;
 }
 
 /**

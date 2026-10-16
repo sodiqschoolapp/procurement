@@ -104,3 +104,12 @@ export function businessDayStart(date: BusinessDate): Date {
   const first = new Date(midnightAsUtc - offsetAt(asUtc));
   return new Date(midnightAsUtc - offsetAt(first));
 }
+
+/** Whether a value is a business date as text: YYYY-MM-DD, a day that exists (05 field 8). */
+export function isBusinessDate(value: unknown): value is BusinessDate {
+  const match = typeof value === "string" ? BUSINESS_DATE_PATTERN.exec(value) : null;
+  if (!match) return false;
+  const [year, month, day] = match.slice(1).map(Number) as [number, number, number];
+  const asUtc = new Date(Date.UTC(year, month - 1, day));
+  return asUtc.toISOString().slice(0, 10) === value;
+}

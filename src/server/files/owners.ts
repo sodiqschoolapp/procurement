@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 
 import type { Permission, Target } from "@/domain/permissions";
 import type { Executor } from "@/server/authorize";
-import { catalogSuggestions, productVariants, products } from "@/server/db/schema";
+import { catalogSuggestions, orders, productVariants, products } from "@/server/db/schema";
 
 // Who may download a file: the record it belongs to decides (build plan 0.12: the download route
 // "calls authorize() for the record the file belongs to; each later task that attaches files adds
@@ -14,10 +14,12 @@ import { catalogSuggestions, productVariants, products } from "@/server/db/schem
 //
 // The contract every owner and every attaching action keeps (permission review of 0.12, Should
 // fix 1 to 3):
-// - An owner returns the permission and target that see the record in its current state, with
-//   the owner where only the owner may see it: a file of a Draft request, which only its owner
-//   and the Head see (06-approval-workflow.md, Statuses), returns `request.edit` with the
-//   request's `ownerId`, not `data.view` on the branch.
+// - An owner returns the permission and target that see the record in its current state, and
+//   names the owner where only the owner and the Head may see it: a file of a Draft order, which
+//   only its owner and the Head see (06-approval-workflow.md, Statuses), returns `data.view` on
+//   the order's branch with the order's owner as `draftOwnerId`, which fileForDownload() checks
+//   with the draft wall. Not `request.edit`: a Manager whose CREATE_REQUESTS is off still sees
+//   his own orders ("can only view orders"; plan of 2.5a, decided item 11, Look first).
 // - A file has one holder. The attaching action refuses a file that another record already holds
 //   (and its task adds a unique constraint on the file column), so the order of FILE_OWNERS never
 //   decides anything.
@@ -25,7 +27,12 @@ import { catalogSuggestions, productVariants, products } from "@/server/db/schem
 //   under its lock: a file id from the browser can otherwise carry another person's or another
 //   branch's file into the caller's record, and out through it.
 
-export type FileAccess = { permission: Permission; target?: Target };
+export type FileAccess = {
+  permission: Permission;
+  target?: Target;
+  /** The owner of a Draft order that holds the file: behind the draft wall for everyone else. */
+  draftOwnerId?: string;
+};
 
 export type FileOwner = {
   /** For the log and the tests. */
@@ -86,10 +93,32 @@ export const SUGGESTION_PHOTOS: FileOwner = {
   },
 };
 
+/**
+ * An order's extra reference photo (05 field 5; task 2.5a): seen through `data.view` on the
+ * order's branch, and while the order is a Draft by its owner and the Head only (06 Statuses; the
+ * draft wall; plan of 2.5a, decided item 11, Look first).
+ */
+export const ORDER_REFERENCE_PHOTOS: FileOwner = {
+  name: "orders.reference_photo_file_id",
+  async find(executor, fileId) {
+    const [row] = await executor
+      .select({ branchId: orders.branchId, ownerId: orders.ownerId, status: orders.status })
+      .from(orders)
+      .where(eq(orders.referencePhotoFileId, fileId));
+    if (!row) return null;
+    return {
+      permission: "data.view",
+      target: { branchId: row.branchId },
+      ...(row.status === "DRAFT" ? { draftOwnerId: row.ownerId } : {}),
+    };
+  },
+};
+
 export const FILE_OWNERS: readonly FileOwner[] = [
   PRODUCT_PHOTOS,
   SUBTYPE_PHOTOS,
   SUGGESTION_PHOTOS,
+  ORDER_REFERENCE_PHOTOS,
 ];
 
 /** The access of the first record that holds the file, or `null` for a file no record holds. */

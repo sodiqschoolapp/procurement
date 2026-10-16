@@ -6,6 +6,7 @@
 
 import { catalogName, isCatalogName } from "./catalogs";
 import { type OrderPlan, QUANTITY, orderTotal, quantityOf } from "./order-totals";
+import type { Role } from "./permissions";
 import type { RequestStatus } from "./request-status";
 
 /** Why a typed quantity is refused, as a field error kind (`errors.field.<kind>`). */
@@ -130,4 +131,14 @@ export function isDraftEditable(status: RequestStatus): boolean {
  */
 export function isNeverSubmitted(order: { status: RequestStatus; number: string | null }): boolean {
   return order.status === "DRAFT" && order.number === null;
+}
+
+/**
+ * Whether a role has a drafts grid: the Manager and the Head (11-screens-and-ux.md, Screens:
+ * "Order list, with the drafts grid … drafts for Manager and Head"; Order list layout 3). The
+ * Principal and Finance make no drafts, so their list of drafts is refused (plan of 2.5a,
+ * decided item 9, Look first).
+ */
+export function seesDraftsGrid(role: Role): boolean {
+  return role === "HEAD" || role === "MANAGER";
 }
