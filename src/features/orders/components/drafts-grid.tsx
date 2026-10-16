@@ -89,6 +89,12 @@ export function DraftsGrid({
   // The client key of a Submit that got no answer, kept only while the same drafts are ticked
   // (review of the plan of 2.7, correction 4; developer-rules.md rule 8). Any answer drops it.
   const submitKey = useRef<{ key: string; ticked: string } | null>(null);
+  // Any change to the ticks drops it too, not only a different set at the next Submit: A, then
+  // A+B, then A again is a new Submit (correction 4; spec review of 2.7, Should fix 1). A refresh
+  // that keeps the same ticks (a new Set, the same ids) keeps it.
+  useEffect(() => {
+    if (submitKey.current?.ticked !== submitKeyFor([...ticked])) submitKey.current = null;
+  }, [ticked]);
   const failuresTop = useRef<HTMLDivElement>(null);
   const addingNow = useRef(false);
   const refreshWaits = useRef(false);
@@ -449,7 +455,13 @@ export function DraftsGrid({
                 </>
               )}
               {canSubmit && (
-                <Button type="button" size="sm" pending={submitting} onClick={() => void submit()}>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  pending={submitting}
+                  onClick={() => void submit()}
+                >
                   {t("submit.button", { count: ticked.size })}
                 </Button>
               )}

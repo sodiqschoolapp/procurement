@@ -134,7 +134,8 @@ describe("S14: two Managers submit at the same moment (15 S14; 05 Order number 5
     });
 
     // The counter row of CHL 2027 is made and held uncommitted on its own connection; both
-    // submits start at once and must wait for it (15 Test layers: "prove the locks work").
+    // submits start at once and both must wait for it before it commits, so neither runs after
+    // the other (15 Test layers: "prove the locks work"; review of 2.7, Must fix 1).
     const results = await commitWhileWaiting(
       async (query) => {
         await query(
@@ -144,6 +145,7 @@ describe("S14: two Managers submit at the same moment (15 S14; 05 Order number 5
         );
       },
       () => Promise.all([submit(first.id, ticked(mine)), submit(second.id, ticked(yours))]),
+      2,
     );
     for (const result of results) expect(result).toMatchObject({ ok: true });
 
