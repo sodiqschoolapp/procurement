@@ -6,7 +6,15 @@
 
 import { catalogName, isCatalogName } from "./catalogs";
 import { isSomOrZero } from "./money";
-import { type OrderPlan, QUANTITY, orderTotal, quantityOf } from "./order-totals";
+import {
+  type OrderPlan,
+  type OrdersTotals,
+  QUANTITY,
+  orderTotal,
+  ordersTotals,
+  quantityOf,
+} from "./order-totals";
+import type { PaymentType } from "./payment-types";
 import type { Role } from "./permissions";
 import type { ProductType } from "./products";
 import type { RequestStatus } from "./request-status";
@@ -165,4 +173,61 @@ export function isNeverSubmitted(order: { status: RequestStatus; number: string 
  */
 export function seesDraftsGrid(role: Role): boolean {
   return role === "HEAD" || role === "MANAGER";
+}
+
+/**
+ * A ticked draft as the server last answered it (plan of 2.5b, decided item 1, Look first): money
+ * and quantity as text (plan of 2.5a, decided item 23), never a value still being typed.
+ */
+export type TickedDraft = {
+  quantity: string | null;
+  /** Whole so'm as decimal text, or null while no price is given. */
+  price: string | null;
+  /** Each extra cost in whole so'm as decimal text. */
+  extras: readonly string[];
+  paymentType: PaymentType;
+};
+
+export type TickedDraftsTotals = {
+  /** How many drafts are ticked (11 Order list layout 4: the count beside the totals). */
+  count: number;
+  /** The sums of the drafts that have an order value (05, the totals under the list). */
+  totals: OrdersTotals;
+  /** Ticked drafts without a quantity or a price: no order value, so left out and counted. */
+  withoutPrice: number;
+};
+
+const WHOLE_SOM_TEXT = /^[0-9]{1,19}$/;
+
+/** Whole so'm text read with BigInt() only (CLAUDE.md rule 6), refused unless plain digits. */
+function somOf(text: string): bigint {
+  // BigInt() alone would read "" as 0 and accept spaces and "0x10".
+  if (!WHOLE_SOM_TEXT.test(text)) throw new RangeError(`An amount is "${text}": not whole so'm`);
+  return BigInt(text);
+}
+
+/**
+ * The totals of the ticked drafts (05: "Under the list, the totals of the ticked orders: goods,
+ * extra costs, grand total, and the grand total split by payment type"; 08: "The totals of a
+ * group row or of ticked orders are the sums of the order values"). A draft without a quantity or
+ * a price has no order value (plan of 2.5a, decided item 19): the whole draft, its extra costs
+ * included, is left out and counted, so a sum never guesses (plan of 2.5b, decided item 1, Look
+ * first; review of the plan, correction 2). The sums come from ordersTotals(), the one formula.
+ */
+export function tickedDraftsTotals(drafts: readonly TickedDraft[]): TickedDraftsTotals {
+  const plans: OrderPlan[] = [];
+  let withoutPrice = 0;
+  for (const draft of drafts) {
+    if (draft.quantity === null || draft.price === null) {
+      withoutPrice += 1;
+      continue;
+    }
+    plans.push({
+      quantity: draft.quantity,
+      price: somOf(draft.price),
+      extras: draft.extras.map(somOf),
+      paymentType: draft.paymentType,
+    });
+  }
+  return { count: drafts.length, totals: ordersTotals(plans), withoutPrice };
 }

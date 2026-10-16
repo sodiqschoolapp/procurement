@@ -18,6 +18,7 @@ import {
   requesterName,
   seesDraftsGrid,
   suggestedPrice,
+  tickedDraftsTotals,
   totalFits,
   urgentReason,
 } from "./drafts";
@@ -226,5 +227,63 @@ describe("totalFits (05 field 16; developer-rules rule 6: whole so'm up to MONEY
       paymentType: "CASH",
     });
     expect(totalFits(total)).toBe(false);
+  });
+});
+
+describe("tickedDraftsTotals (05 the totals of the ticked orders; 08 sums of the order values)", () => {
+  const a = { quantity: "10", price: "6750", extras: ["1000"], paymentType: "CASH" } as const;
+  const b = { quantity: "2.5", price: "3333", extras: [], paymentType: "TRANSFER" } as const;
+  // Extra costs but no price: no order value, so the whole draft is left out (correction 2).
+  const c = { quantity: "4", price: null, extras: ["700"], paymentType: "CARD" } as const;
+
+  it("sums the order values and counts the draft without a price (plan of 2.5b, item 1)", () => {
+    const result = tickedDraftsTotals([a, b, c]);
+    expect(result.count).toBe(3);
+    expect(result.withoutPrice).toBe(1);
+    // 10 × 6 750 = 67 500; 2.5 × 3 333 = 8 332.5, half up 8 333.
+    expect(result.totals).toEqual({
+      goods: 75_833n,
+      extras: 1_000n,
+      grand: 76_833n,
+      byPaymentType: { CASH: 68_500n, TRANSFER: 8_333n, CARD: 0n },
+    });
+  });
+
+  it("gives each draft's grand total equal to its own draftTotal(), the row's total", () => {
+    for (const draft of [a, b]) {
+      const row = draftTotal({
+        quantity: draft.quantity,
+        price: BigInt(draft.price),
+        extras: draft.extras.map(BigInt),
+        paymentType: draft.paymentType,
+      });
+      expect(tickedDraftsTotals([draft]).totals.grand).toBe(row);
+    }
+  });
+
+  it("counts a draft without a quantity as without a price", () => {
+    const result = tickedDraftsTotals([{ ...a, quantity: null }]);
+    expect(result).toMatchObject({ count: 1, withoutPrice: 1 });
+    expect(result.totals.grand).toBe(0n);
+  });
+
+  it("refuses money text that is not plain whole so'm (CLAUDE.md rule 6)", () => {
+    for (const price of ["", " 12", "1e3", "0x10", "12.5", "-5"]) {
+      expect(() => tickedDraftsTotals([{ ...a, price }])).toThrow(RangeError);
+    }
+    expect(() => tickedDraftsTotals([{ ...a, extras: [""] }])).toThrow(RangeError);
+  });
+
+  it("gives zero sums for nothing ticked", () => {
+    expect(tickedDraftsTotals([])).toEqual({
+      count: 0,
+      withoutPrice: 0,
+      totals: {
+        goods: 0n,
+        extras: 0n,
+        grand: 0n,
+        byPaymentType: { CASH: 0n, TRANSFER: 0n, CARD: 0n },
+      },
+    });
   });
 });
