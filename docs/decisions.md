@@ -1170,6 +1170,28 @@ Choices made during the build and its reviews:
 - The percent of the hint is passed to next-intl as the bigint, as the list and the grid do (decisions 2.2, build: next-intl prints a bigint exactly).
 - The e2e test has its own Manager and Finance user per project (`E2E_PAGE_USERS`) and submits through the page's own Submit.
 
+### 2.10 Approvals (16.10.2026)
+
+The plan's decisions as the plan review of 16.10.2026 confirmed them (corrections 1 to 4 applied), and those of the build and its reviews. The Look first items come first.
+
+1. **Look first** (state machine, permission matrix). One `approveOrders` action for the three steps; each order's permission is its status row's (`request.approve_step1/2/3`); ticks at mixed steps refuse the whole action, the other step's orders `forbidden`.
+2. **Look first** (06 rule 1). Finance changes the payment type only inside its own Approve, per order, written in `beforeMove` while the order is still PENDING_FINANCE (`orders_guard`); the total does not change; a type from any other actor or on any other step refuses the whole action as `forbidden`; an unchanged type writes and logs nothing; a change is logged `{ paymentType: { from, to } }` and shown in History.
+3. **Look first** (06 rule 7; branch wall). "Already approved by X at T" only for an order the actor may still see, refused `stale_version` or `wrong_status`, its version above the one sent, its newest event an Approve by another user, and the actor's role approving that step (permission review, Should fix 2); otherwise the plain refusal line. Behind a wall: `not_found`, no name.
+4. Stock now is read when the page or list loads, in the same snapshot; stock at submit is `stock_at_submit`; a service shows "–"; 0 reads "0".
+5. Notices: Head approved → the branch's active Principal; Principal approved → its active Finance users; Finance approved → the owners of that branch's orders and every active Head; one per branch and recipient; never the actor.
+6. Ticks are cleared after every answer; a refusal names each order above the list and marks it in its opened group until the next answer.
+7. A replaced Principal needs no data move (03 rule 3).
+8. `approved_at` is written from the clock by Finance's approval (review correction 1); time in Tashkent through the shared formatters (correction 2).
+
+Choices made during the build and its reviews:
+
+- Each ticked order is sent with the version the screen last showed it at (a ref per id, filled from the groups and from "Select all"), read when the call goes out.
+- `tickedSummary` also returns each ticked order's number, status and payment type, for the dialog.
+- The refusal lines take their texts as three callbacks (`ApproveTexts`), so the helper needs no typed translator.
+- The registry lists `approveOrdersAction` under `request.approve_step1` with a note naming all three; the matrix tests all three steps.
+- Approve is Small in the desktop selection bar beside Clear (design system, one size in a row).
+
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

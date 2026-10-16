@@ -791,4 +791,22 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - A query file's exports under `queries/` are counted as queries by `tests/permission-registry.test.ts`: shared SQL fragments live outside `queries/`.
 - Two vitest runs at once drop each other's template database: run one at a time.
 
-The next task is 2.10.
+## 2.10 Approvals (16.10.2026, pull request #56)
+
+**Built**
+- `approveOrders` (`src/features/orders/actions/approve.ts`): one action for the three steps on `orderMoveAction`; Finance's `paymentTypes` written in `beforeMove`, `approved_at` in `afterMove`; one notice per branch and step (`notices.ts`: `actionLink`, `branchNotices`, shared with Submit).
+- `approveOrdersAction` answers `decided` for orders another approver moved: `newestMoves` query + `alreadyApprovedBy()` (`src/domain/already-decided.ts`), named only to a role that approves that step.
+- `ApproveButton` (list bar and order page), Finance's payment-type selects in the dialog; refused orders named above the list and marked in their group. Stock at submit and now on the page and in the opened group.
+
+**Left out, and the task that brings it**
+- The cash table of Finance's dialog and per-type totals following the selects: 4.2. Send back, Reject, Cancel, Take back and their "Already … by" verbs: 2.11.
+
+**What the next sessions must know**
+- For 2.11: pass a move's button into `ListActionBar`'s `actions` slot and `OrderActionBar` like `ApproveButton`; send versions through `versionOf` (the list keeps the last shown version per id in a ref).
+- For 2.11: extend `alreadyApprovedBy()` with the other verbs; `newestMoves` already returns `type` and `from`.
+- For 4.2: `ConfirmDialog` takes `children` under its result line; the Finance dialog's selects live in `approve-button.tsx`.
+- `plainQuantity()` refuses 0; a stock is read with `inStock()`.
+- The e2e Head reads Uzbek and is shared: never change his language in a spec.
+- `departments.spec.ts` can fail when its random tag holds "eb"/"ea" (the branch filter is `hasText`); seen once in this build, not fixed here.
+
+The next task is 2.11.
