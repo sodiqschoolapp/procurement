@@ -112,6 +112,13 @@ export const QUERIES: Record<string, Permission> = {
   // The bell and /notifications (plan of 0.11, decision 2, Look first).
   "src/features/notifications/queries/my-notifications.ts#listMyNotifications": "notification.own",
   "src/features/notifications/queries/my-notifications.ts#countMyUnread": "notification.own",
+  // The drafts grid (plan of 2.5a, decided item 9, Look first): its rows under data.view with the
+  // draft wall, Principal and Finance refused the list; the picker and the grid's choices under
+  // request.create on the branch, as they show that branch's stock and departments.
+  "src/features/orders/queries/drafts.ts#listDrafts": "data.view",
+  "src/features/orders/queries/drafts.ts#getDraft": "data.view",
+  "src/features/orders/queries/draft-picker.ts#searchDraftProducts": "request.create",
+  "src/features/orders/queries/draft-picker.ts#listDraftChoices": "request.create",
   // The download route's file: file.upload for a file no record holds; each owner a later task
   // adds to src/server/files/owners.ts names its own permission there (plan of 0.12, decision 5).
   "src/features/files/queries/file-for-download.ts#fileForDownload": "file.upload",

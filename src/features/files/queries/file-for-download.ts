@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 
 import type { FileMime } from "@/domain/files";
+import { behindDraftWall } from "@/domain/order-moves";
 import { AuthorizationError, authorize } from "@/server/authorize";
 import { files } from "@/server/db/schema";
 import { type FileOwner, FILE_OWNERS, accessOf } from "@/server/files/owners";
@@ -41,7 +42,15 @@ export async function fileForDownload(
   try {
     const access = await accessOf(db, fileId, owners);
     if (access) {
-      await authorize(userId, access.permission, access.target);
+      const actor = await authorize(userId, access.permission, access.target);
+      // A file of a Draft order: its owner and the Head only (06 Statuses; plan of 2.5a, decided
+      // item 11, Look first).
+      if (
+        access.draftOwnerId !== undefined &&
+        behindDraftWall(actor, { status: "DRAFT", ownerId: access.draftOwnerId })
+      ) {
+        throw new AuthorizationError("not_found");
+      }
     } else {
       await authorize(userId, "file.upload");
       if (file.uploadedBy !== userId) throw new AuthorizationError("not_found");

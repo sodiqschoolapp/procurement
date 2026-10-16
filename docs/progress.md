@@ -687,4 +687,20 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - Test helpers: `tests/helpers/orders.ts` (`insertOrder`, `insertDepartment`, `insertOrderExtra`, `inventedNumber`).
 - Trap: drizzle's `inArray(orders.id, …)` names the table, so it fails inside SQL that aliases `orders o`; join the ids with `sql.join` there.
 
-The next task is 2.5.
+## 2.5a Drafts: rules, actions and queries (16.10.2026, pull request #50)
+
+**Built**
+- `src/domain/drafts.ts` (quantity as the measure allows, suggested price, merge sum, Urgent reason, comment, `draftTotal()`, `totalFits()`, `seesDraftsGrid()`, `DRAFT_EXTRAS_MAX` 20); `isBusinessDate()`; the quantity pattern and `quantityOf()` exported from `order-totals.ts`.
+- `src/features/orders/actions/drafts.ts`: `createDraft` (merges into the owner's never-submitted draft of the same branch, subtype and department, safe to repeat), `updateDraft`, `deleteDraft` (owner only), `setDraftsNeededBy` (all or nothing, `src/server/drafts-action.ts` on the 2.4 helpers). Queries `listDrafts` (paged, 25), `getDraft`, `searchDraftProducts`, `listDraftChoices`.
+- Migration `0020_order_draft_adds` (the key, quantity, version and total of a merged add); `ORDER_USES` locks a product's type and measure; `ORDER_REFERENCE_PHOTOS` file owner with the draft wall.
+
+**Left out, and the task that brings it**
+- The grid on `/orders`, the `"use server"` exports and the Playwright tests: 2.5b. Keyboard, cards, offline retry: 2.6. Submit: 2.7.
+
+**What the next sessions must know**
+- For 2.5b: the actions are definitions only; add the `"use server"` exports there. A merged add answers `{ id, merged: true, quantity, version, total }`: update the shown row with them. `getDraft` returns `null` for every kind of not-found.
+- For 2.5b: an edit that would make a second draft of the same trio is refused `draftExists` on `variantId` or `departmentId`; a total past `MONEY_MAX` is `tooLarge`.
+- For 2.6: retries reuse the create's `client_key`; a deleted draft frees its keys (accepted risk, decisions 2.5a item 14).
+- Find a row to merge into with `SELECT … FOR UPDATE` and the full match (`lockTrioDraft()`), never by id after a plain read. `tests/helpers/together.ts` `commitWhileWaiting()` tests a race without timers.
+
+The next task is 2.5b.

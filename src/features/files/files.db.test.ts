@@ -8,11 +8,18 @@ import { runAction } from "@/server/action";
 import { AuthorizationError } from "@/server/authorize";
 import { now } from "@/server/clock";
 import { db } from "@/server/db/client";
-import { files } from "@/server/db/schema";
+import { files, orders } from "@/server/db/schema";
 import type { FileOwner } from "@/server/files/owners";
 
-import { insertBranch } from "../../../tests/helpers/branches";
+import { insertBranch, setManagerRight } from "../../../tests/helpers/branches";
 import { setClock } from "../../../tests/helpers/clock";
+import {
+  addDraft,
+  editDraft,
+  insertDepartment,
+  insertItem,
+  insertOrder,
+} from "../../../tests/helpers/orders";
 import { describePermissionMatrix } from "../../../tests/helpers/permission-matrix";
 import { insertUser } from "../../../tests/helpers/users";
 import { uploadFile } from "./actions/upload-file";
@@ -133,4 +140,83 @@ describe("a file held by a record: the record decides (plan of 0.12, decision 5,
       kind: "not_found",
     });
   });
+});
+
+describe("an order's reference photo (05 field 5; 06 Statuses: Draft; plan of 2.5a, decided item 11, Look first)", () => {
+  async function draftWithPhoto() {
+    const branch = await insertBranch();
+    const owner = await insertUser("MANAGER", { branches: [branch.id] });
+    const photo = await fileOf(owner.id);
+    const added = await addDraft(owner.id, {
+      branchId: branch.id,
+      variantId: (await insertItem()).variantId,
+      departmentId: (await insertDepartment(branch.id)).id,
+      referencePhotoFileId: photo,
+    });
+    expect(added).toMatchObject({ ok: true });
+    const id = (added as { ok: true; data: { id: string } }).data.id;
+    return { branch, owner, photo, id };
+  }
+
+  it("of a Draft, all four roles: the owner and the Head get it, the owner with CREATE_REQUESTS off too; a colleague Manager, the Principal and Finance of the branch get not_found", async () => {
+    const { branch, owner, photo } = await draftWithPhoto();
+    const head = await insertUser("HEAD");
+    const colleague = await insertUser("MANAGER", { branches: [branch.id] });
+    const principal = await insertUser("PRINCIPAL", { branches: [branch.id] });
+    const finance = await insertUser("FINANCE", { branches: [branch.id] });
+
+    await expect(fileForDownload(owner.id, photo)).resolves.toMatchObject({ mime: "image/jpeg" });
+    await expect(fileForDownload(head.id, photo)).resolves.toMatchObject({ mime: "image/jpeg" });
+    for (const user of [colleague, principal, finance]) {
+      await expect(fileForDownload(user.id, photo)).rejects.toMatchObject({ kind: "not_found" });
+    }
+    // 03 Manager rights: "The Manager can only view orders" with the right off.
+    await setManagerRight(owner.id, "CREATE_REQUESTS", false);
+    await expect(fileForDownload(owner.id, photo)).resolves.toMatchObject({ mime: "image/jpeg" });
+  });
+
+  it("past Draft the branch sees it (data.view); another branch does not", async () => {
+    const branch = await insertBranch();
+    const owner = await insertUser("MANAGER", { branches: [branch.id] });
+    const photo = await fileOf(owner.id);
+    const returned = await insertOrder({
+      branchId: branch.id,
+      ownerId: owner.id,
+      status: "RETURNED",
+    });
+    // Straight in the table (D39): the photo of a sent-back order.
+    await db.update(orders).set({ referencePhotoFileId: photo }).where(eq(orders.id, returned.id));
+    const principal = await insertUser("PRINCIPAL", { branches: [branch.id] });
+    const elsewhere = await insertUser("FINANCE", { branches: [(await insertBranch()).id] });
+    await expect(fileForDownload(principal.id, photo)).resolves.toMatchObject({
+      mime: "image/jpeg",
+    });
+    await expect(fileForDownload(elsewhere.id, photo)).rejects.toMatchObject({
+      kind: "not_found",
+    });
+  });
+
+  it("a photo replaced in the draft goes back to its uploader only", async () => {
+    const { owner, photo, id } = await draftWithPhoto();
+    const head = await insertUser("HEAD");
+    expect(await editDraft(owner.id, { id, version: 1, referencePhotoFileId: null })).toMatchObject(
+      { ok: true },
+    );
+    await expect(fileForDownload(owner.id, photo)).resolves.toMatchObject({ mime: "image/jpeg" });
+    await expect(fileForDownload(head.id, photo)).rejects.toMatchObject({ kind: "not_found" });
+  });
+});
+
+// The reference photo of an order past Draft in the matrix of "See requests, stock and reports"
+// (03; plan of 2.5a, decided item 11, Look first; permission review of 2.5a, P1): its owner is a
+// Manager of the branch, the photo sits on a RETURNED order, and the record decides.
+describePermissionMatrix("fileForDownload of an order's reference photo", {
+  permission: "data.view",
+  async run({ user, branchId }) {
+    const owner = await insertUser("MANAGER", { branches: [branchId] });
+    const photo = await fileOf(owner.id);
+    const order = await insertOrder({ branchId, ownerId: owner.id, status: "RETURNED" });
+    await db.update(orders).set({ referencePhotoFileId: photo }).where(eq(orders.id, order.id));
+    await fileForDownload(user.id, photo);
+  },
 });

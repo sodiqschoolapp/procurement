@@ -287,3 +287,38 @@ export const orderEvents = pgTable(
     index("order_events_actor_id_idx").on(table.actorId),
   ],
 );
+
+// One merged add of a draft (05 Drafts 2; plan of 2.5a, decided item 3, Look first): an add whose
+// branch, subtype and department equal the owner's never-submitted draft makes no order row to
+// hold its `client_key`, so this row holds it with the quantity added, the quantity, version and
+// total after, so a repeat returns the first answer and adds nothing (developer-rules.md rules
+// 8, 9). It goes with its deleted never-submitted draft (ON DELETE CASCADE; decided item 14, Look
+// first). No code path updates or deletes it.
+export const orderDraftAdds = pgTable(
+  "order_draft_adds",
+  {
+    id: id(),
+    clientKey: uuid("client_key").notNull(),
+    orderId: uuid("order_id")
+      .notNull()
+      .references(() => orders.id, { onDelete: "cascade" }),
+    addedQty: quantity("added_qty").notNull(),
+    qtyAfter: quantity("qty_after").notNull(),
+    versionAfter: integer("version_after").notNull(),
+    // The total of the first answer: null while the draft has no price (review of 2.5a, S2).
+    totalAfter: money("total_after"),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
+    createdAt: moment("created_at").notNull(),
+  },
+  (table) => [
+    unique("order_draft_adds_client_key_key").on(table.clientKey),
+    check("order_draft_adds_added_qty_check", sql`${table.addedQty} > 0`),
+    check("order_draft_adds_qty_after_check", sql`${table.qtyAfter} > 0`),
+    check("order_draft_adds_version_after_check", sql`${table.versionAfter} > 0`),
+    check("order_draft_adds_total_after_check", sql`${table.totalAfter} >= 0`),
+    index("order_draft_adds_order_id_idx").on(table.orderId),
+    index("order_draft_adds_user_id_idx").on(table.userId),
+  ],
+);

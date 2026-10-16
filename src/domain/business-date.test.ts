@@ -6,6 +6,7 @@ import {
   businessDayStart,
   businessTime,
   businessYear,
+  isBusinessDate,
 } from "./business-date";
 
 // developer-rules.md rule 10: "Timestamps are stored in UTC. Business dates use the
@@ -86,5 +87,28 @@ describe("business time: the wall clock in Tashkent (11-screens-and-ux.md rule 1
 
   it("refuses an invalid moment instead of writing NaN into a time", () => {
     expect(() => businessTime(new Date("x"))).toThrow(/not a valid moment/);
+  });
+});
+
+describe("isBusinessDate: a day that exists, as YYYY-MM-DD (05 field 8; plan of 2.5a, decided item 16)", () => {
+  it("takes a real day, a leap day, and a day in the past (the past is a submit check)", () => {
+    expect(isBusinessDate("2031-05-01")).toBe(true);
+    expect(isBusinessDate("2028-02-29")).toBe(true);
+    expect(isBusinessDate("2001-01-01")).toBe(true);
+  });
+
+  it("refuses a day that does not exist, another form, and what is not text", () => {
+    for (const value of [
+      "2031-02-30",
+      "2027-02-29",
+      "2031-5-1",
+      "01.05.2031",
+      "",
+      "2031-05-01T00:00",
+    ]) {
+      expect(isBusinessDate(value), value).toBe(false);
+    }
+    expect(isBusinessDate(null)).toBe(false);
+    expect(isBusinessDate(20310501)).toBe(false);
   });
 });

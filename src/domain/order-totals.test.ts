@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  QUANTITY,
   type OrderPlan,
   orderExtras,
   orderGoods,
   orderTotal,
   ordersTotals,
   priceHintPercent,
+  quantityOf,
 } from "./order-totals";
 
 // 08-money-and-settlement.md, Numbers the system calculates (Planned total; "The totals of a
@@ -165,5 +167,22 @@ describe("priceHintPercent (05 Ticking and filters: Price hint)", () => {
     }
     expect(() => priceHintPercent(0n, 5_000n, 20)).toThrow(RangeError);
     expect(() => priceHintPercent(5_000n, 0n, 20)).toThrow(RangeError);
+  });
+});
+
+describe("the quantity text (05 field 10; numeric(14,3); plan of 2.5a, decided item 5)", () => {
+  it("QUANTITY is the one pattern: up to 11 whole digits and 3 decimals, nothing else", () => {
+    for (const text of ["1", "100", "2.125", "99999999999.999", "0.5"]) {
+      expect(QUANTITY.test(text), text).toBe(true);
+    }
+    for (const text of ["", "1.2345", "100000000000", "1e2", "0x10", "-1", " 1", "1."]) {
+      expect(QUANTITY.test(text), text).toBe(false);
+    }
+  });
+
+  it("quantityOf reads it exactly and refuses 0 and other text", () => {
+    expect(quantityOf("2.125").toFixed()).toBe("2.125");
+    expect(() => quantityOf("0")).toThrow(RangeError);
+    expect(() => quantityOf("1e2")).toThrow(RangeError);
   });
 });

@@ -66,7 +66,10 @@
       "fileTooLarge": "The file is larger than 900 KB.",
       "tooManyRows": "The file has more than 500 rows. Split it into smaller files.",
       "noRows": "The file has no rows to import.",
-      "inCatalog": "This item is already in the catalog, perhaps inactive. Ask the Procurement Head about it."
+      "inCatalog": "This item is already in the catalog, perhaps inactive. Ask the Procurement Head about it.",
+      "wholeOnly": "This measure is counted in whole units: type a whole number",
+      "tooManyDecimals": "At most 3 digits after the point",
+      "draftExists": "You already have a draft of this item for this department. Change the quantity there."
     },
     "file": {
       "tooLarge": "The file is larger than 10 MB. Choose a smaller file or take the photo again.",

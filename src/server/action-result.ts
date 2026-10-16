@@ -72,6 +72,12 @@ export const FIELD_ERROR_KINDS = [
   "noRows",
   // A product suggestion whose name a product already holds (plan of 1.12, decision 7).
   "inCatalog",
+  // A draft's quantity (plan of 2.5a, decided item 5): decimals for a measure counted in whole
+  // units, more than 3 decimals; and a change that would make a second never-submitted draft of
+  // the same branch, subtype and department (decided item 2, Look first).
+  "wholeOnly",
+  "tooManyDecimals",
+  "draftExists",
 ] as const;
 export type FieldErrorKind = (typeof FIELD_ERROR_KINDS)[number];
 export type FieldMessageKey = `errors.field.${FieldErrorKind}`;
