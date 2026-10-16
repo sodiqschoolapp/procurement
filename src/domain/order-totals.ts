@@ -20,8 +20,12 @@ import { isPaymentType, isPercent } from "./settings";
  */
 const Exact = Decimal.clone({ precision: 64, rounding: Decimal.ROUND_HALF_UP });
 
-/** numeric(14,3): up to 11 whole digits and up to 3 decimals, no sign, no exponent, no spaces. */
-const QUANTITY = /^[0-9]{1,11}(\.[0-9]{1,3})?$/;
+/**
+ * numeric(14,3): up to 11 whole digits and up to 3 decimals, no sign, no exponent, no spaces. The
+ * one pattern of a quantity's text: the draft rules of ./drafts.ts read it too (plan of 2.5a,
+ * decided item 5).
+ */
+export const QUANTITY = /^[0-9]{1,11}(\.[0-9]{1,3})?$/;
 
 /** The plan of one order as these functions read it (05 fields 10 to 13). */
 export type OrderPlan = {
@@ -43,7 +47,11 @@ export type OrdersTotals = {
   byPaymentType: Record<PaymentType, bigint>;
 };
 
-function quantityOf(text: string): Decimal {
+/**
+ * A quantity's text read exactly: refused with a RangeError unless it is numeric(14,3) text more
+ * than 0. The draft merge adds two of these (./drafts.ts, addQuantities).
+ */
+export function quantityOf(text: string): Decimal {
   // The pattern runs before decimal.js reads the text, which would also take "0x10", "1e2",
   // "Infinity" and padded text (plan of 2.2, decision 5).
   if (!QUANTITY.test(text)) throw new RangeError(`A quantity is "${text}": not numeric(14,3)`);
