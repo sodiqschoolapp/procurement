@@ -82,6 +82,18 @@ Decided by the owner's reviewer on the owner's behalf and merged by the owner wi
 4. The size and the price are the ones of `18-hosting-and-costs.md`, row 7. Anything dearer is a stop-list item (money).
 5. The proof inside the loop is CI: the image builds, the container starts against the CI database and its health route answers. The proof online is the owner's, after their steps: the start page opens at the test address and shows the commit of `main`.
 
+### Open questions 3, 8, 9, 11, 12, 13 and 19 (17.10.2026)
+
+Answered by the owner on 17.10.2026 ("ok to all", to the parent chat's proposals). Each answer enters the spec through `/spec-change` later; until then this is the answer a task uses (`open-questions.md`, top). None of these is a Look first decision any more.
+
+1. **Question 3, for tasks 3.2, 3.7 and 4.3: cancelling a purchase record or a money action fills its cancel fields once, and nothing else changes.** `is_cancelled` goes from false to true, with `cancel_reason`, `cancelled_by` and `cancelled_at`, in one update that can never be undone or repeated; every other column stays as it was written, and the database refuses any other update. What the record did to stock or money is undone by new rows (a stock movement, a money row), as every correction is (`CLAUDE.md` rule 7). The order's History gets an event with who, when and the reason. No separate cancellation table.
+2. **Question 8, for task 3.10: "recent purchases" are the last 3 purchase records of that subtype in that branch within the last 90 days, at least 2 of them.** Cancelled records do not count. Fewer than 2 such records: no prompt.
+3. **Question 9, for task 5.4: "Give straight to requester" is hidden on a service order.** A service never enters stock, so there is nothing to issue.
+4. **Question 11, for task 5.6: a return from a department comes back in at the item's current average cost in that branch.** The average does not change by the return.
+5. **Question 12, for tasks 5.8 and 5.9: a direct entry enters the moving average like a purchase receipt**, at the cost per unit the Head types (prefilled from the reference price).
+6. **Question 13, for task 5.11: the write-off reasons are damaged, expired, lost, returned to supplier, lost in transfer, and "Other", which needs a comment.**
+7. **Question 19, for task 5.7: who may reverse a warehouse document.** An issue and a return: their creator or the Head. A direct entry, an approved write-off, a received transfer and an approved count: the Head only.
+
 ## Task sections
 
 Each task adds one section here, newest at the bottom:
