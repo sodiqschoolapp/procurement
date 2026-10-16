@@ -22,6 +22,7 @@ import {
 } from "@/features/orders/draft-wire";
 import { approveOrders } from "@/features/orders/actions/approve";
 import { cancelOrders } from "@/features/orders/actions/cancel";
+import { copyOrdersAsNew } from "@/features/orders/actions/copy-as-new";
 import { rejectOrders } from "@/features/orders/actions/reject";
 import { sendBackOrders } from "@/features/orders/actions/send-back";
 import { submitAgainOrders } from "@/features/orders/actions/submit-again";
@@ -39,6 +40,7 @@ import { serverAction } from "@/server/action";
 import { type ActionFailure, type ActionResult, failure } from "@/server/action-result";
 import { getCurrentUser } from "@/server/auth/session";
 import { AuthorizationError } from "@/server/authorize";
+import { copyServerAction } from "@/server/copy-action";
 import { draftsServerAction } from "@/server/drafts-action";
 import { ordersServerAction } from "@/server/order-action";
 
@@ -58,6 +60,7 @@ const reject = ordersServerAction(rejectOrders);
 const cancel = ordersServerAction(cancelOrders);
 const takeBack = ordersServerAction(takeBackOrders);
 const submitAgain = ordersServerAction(submitAgainOrders);
+const copyAsNew = copyServerAction(copyOrdersAsNew);
 
 /** A query as an answer: a refusal of authorize() or of the input is returned, never thrown. */
 async function asked<T>(read: (userId: string) => Promise<T>): Promise<ActionResult<T>> {
@@ -238,6 +241,33 @@ export async function takeBackOrdersAction(input: unknown): Promise<MoveAnswer> 
 /** Submits the ticked sent-back orders again: revision + 1, back to the Head (plan of 2.11). */
 export async function submitAgainOrdersAction(input: unknown): Promise<MoveAnswer> {
   return moveAnswer(submitAgain, input);
+}
+
+/** What Copy as new answers: each ticked order's draft, and for a merge the quantity after it. */
+export type WireCopied = {
+  orders: { id: string; draftId: string; merged: boolean; quantity: string | null }[];
+};
+
+/**
+ * Copies the ticked orders into drafts of the user, all or nothing (05 Ticking and filters: Copy
+ * as new; Drafts 2; 06 rule 8; plan of 2.13). Each order carries its own client key, so a retry
+ * gives the first answer (developer-rules.md rule 8).
+ */
+export async function copyOrdersAsNewAction(input: unknown): Promise<ActionResult<WireCopied>> {
+  const result = await copyAsNew(input);
+  if (!result.ok) return result;
+  revalidatePath("/orders");
+  return {
+    ok: true,
+    data: {
+      orders: result.data.orders.map(({ id, made }) => ({
+        id,
+        draftId: made.id,
+        merged: made.merged,
+        quantity: made.merged ? made.quantity : null,
+      })),
+    },
+  };
 }
 
 /** The product picker of a branch (05 field 2): photo, category, type, stock, subtypes. */
