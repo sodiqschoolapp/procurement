@@ -45,7 +45,7 @@ export function TickedTotals({ drafts }: { drafts: readonly TickedDraft[] }) {
       aria-labelledby="ticked-totals-title"
       aria-live="polite"
       data-ticked-totals
-      className="sticky bottom-0 z-10 flex flex-col gap-3 rounded-xl border-t border-border bg-card p-4 max-sm:bottom-[calc(4.5rem+env(safe-area-inset-bottom))] sm:p-6"
+      className="sticky bottom-0 z-10 flex flex-col gap-3 rounded-xl border-t border-border bg-card p-4 max-sm:bottom-[calc(4rem+env(safe-area-inset-bottom))] sm:p-6"
     >
       <h2
         id="ticked-totals-title"
