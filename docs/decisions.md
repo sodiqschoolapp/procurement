@@ -1113,6 +1113,35 @@ Choices made during the build and its reviews:
 - Submit is a small secondary button in the selection bar (design system, Lists; spec review, Should fix 2).
 - Left for 4.10: a Head-created draft moved to a Manager would skip the Head step on that Manager's submit (permission review, Should fix 1); noted in progress.
 
+### 2.8 Order list: group rows, ticking and filters (16.10.2026)
+
+The plan's decisions as the plan review of 16.10.2026 confirmed them (correction 1 applied to item 8), and those of the build and its reviews. The Look first items come first.
+
+1. **Look first** (approval order). The list shows every status but `DRAFT`; drafts, never submitted or taken back, stay in the drafts grid. `RETURNED` is in both. The SQL has `status <> 'DRAFT'` for everyone, which is also the draft wall.
+2. **Look first** (spec wording). 05 Group rows 5 ("The Manager's own view counts every stage") is the Manager's home summary of 6.1, not a second group key. Proposed `/spec-change` for 05 Group rows 5: "On the Manager's home, a summary counts every stage of the Manager's own orders: 'Tata pens: 30 requested'."
+3. **Look first** (money). Group sums are `groupSummary()` of `src/domain/order-list.ts`: `ordersTotals()` of the member orders, the quantity summed with decimal.js outside `quantityOf()` (a group may pass 11 whole digits). SQL only filters, groups, orders and pages.
+4. **Look first** (money). The price hint of a submitted order compares with today's reference price and `price_hint_percent`; a group shows the hint farthest from the catalog price, the positive one on a tie (`groupPriceHint()`).
+5. **Look first** (approval order). The action bar asks `allowedActions()` on the server (`tickedSummary`) and shows a button only for a move with a server action; in 2.8 none (Approve 2.10; Send back, Reject, Cancel, Take back 2.11), so it shows count, totals and "Clear".
+6. **Look first** (dates). One date range with its kind (created, submitted, approved, closed), Tashkent days inclusive through `businessDayStart()` and `nextBusinessDate()`; "approved" is `approved_at`, written when Finance's approval opens the order (2.10).
+7. The group key is branch, `variant_id`, status.
+8. "Select all on this filter" ticks the first 200 in the list's order and the bar says "200 of 340 ticked".
+9. The list's ticks and the grid's are separate. The list's ticks survive a change of page; a change of filter or sort clears them (review correction 1). The grid's ticks belong to its page shown.
+10. Sorts `neededBy` (default), `submitted` (earliest submit, then the lower counter as an integer), `product`; no sort by amount. Inside a group: submitted_at, then the counter.
+11. Number range: same branch code and year, counters compared as integers; two prefixes keep `from` only and say so.
+12. `?branch=` wins for the list, else the top bar's branch ("As in the top bar" in the branch choice). The grid keeps the top bar's branch. The list pages with `?page=`, the grid with `?draftsPage=`; each pager keeps every other parameter, and so does the Head's "My drafts / Everyone's".
+13. Filters are single choices; `action=` filters on `order_events.action_id` with a removable chip.
+14. Urgent is pinned on top for the Head, Principal and Finance, not the Manager.
+15. An opened group shows its orders of the current filter, read with the page.
+16. `tickedSummary` counts unknown, unseen and now-Draft ids alike as `missing`; the screen unticks them and refreshes. A repeated id is refused.
+17. A tick that would pass 200 orders ticks nothing and says so (`tickFits()`).
+
+Choices made during the build and its reviews:
+
+- `readSnapshot()` (`src/server/read-snapshot.ts`): the list's count, heads, orders and extras, the ticked orders and their extras, and Select all's count and ids each read in one read-only REPEATABLE READ transaction (spec review, Must fix 1 and Should fix 1, 2); a rule line added to `.claude/rules/server-actions.md`.
+- The filter choices: owners of the listed orders, departments of the visible branches, every category (a global catalog); inactive entries stay, marked.
+- Two e2e tests of 2.5b changed with the layout, not weakened: the Principal now has the order list (a table), so "no table" became "no draft row and no drafts grid"; the phone totals test scrolls to the grid, which now stands below the list.
+- The test helper `insertOrder()` takes needed-by, quantity, price, payment type and the dates; its planned total is `orderTotal()`.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.
