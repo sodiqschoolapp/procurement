@@ -26,7 +26,8 @@ import {
 //
 //   input     the Zod check, before the transaction: 1 to 200 orders, no id and no key twice
 //   lock      SELECT … FOR UPDATE of every ticked order, ORDER BY id
-//   repeat    every key seen before: the first answers, to their maker only (rule 8)
+//   repeat    every key seen before: the first answers, to their maker only, while the ticked
+//             orders still pass the walls (rule 8)
 //   authorize authorizeOrders(): branch, owner and the draft wall read under the lock
 //   version   each order's sent version against the locked one (decided item 5, Look first)
 //   prepare   reads the ticked orders once and says what the action refuses (an inactive branch)
@@ -107,6 +108,7 @@ async function repeated<Item, Prepared>(
   tx: Transaction,
   userId: string,
   sent: CopyInput["orders"],
+  locked: readonly LockedOrder[],
 ): Promise<CopyResult<Item> | null> {
   // Sorted, so two calls with shared keys wait for each other in one order.
   for (const key of sent.map((order) => order.clientKey).toSorted()) {
@@ -129,6 +131,18 @@ async function repeated<Item, Prepared>(
     tx,
   );
   if (decisions.some((decision) => decision !== "allow")) throw new OrdersRefusal("not_found");
+  // The ticked orders pass the branch wall and the draft wall again, as on a first call: a repeat
+  // never answers for an order id the user may not see (permission review, Must fix 1). Their
+  // versions are not asked: a repeat answers what the first call did.
+  const versionOf = new Map(locked.map((order) => [order.id, order.version]));
+  const { failures } = await guardOrders(
+    tx,
+    userId,
+    sent.map((order) => ({ id: order.id, version: versionOf.get(order.id) ?? order.version })),
+    locked,
+    () => definition.permission,
+  );
+  failures.throwIfAny(sent);
   return { orders: sent.map((order, at) => ({ id: order.id, made: known[at]!.result })) };
 }
 
@@ -152,7 +166,7 @@ export async function runCopyAction<Item, Prepared>(
         sent.map((order) => order.id),
       );
 
-      const first = await repeated(definition, tx, userId, sent);
+      const first = await repeated(definition, tx, userId, sent, locked);
       if (first) return first;
 
       const { actor, failures, visible } = await guardOrders(

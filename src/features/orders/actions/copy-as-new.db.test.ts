@@ -18,10 +18,11 @@ import {
   orderExtras,
   orders,
   products,
+  userBranches,
 } from "@/server/db/schema";
 import { runOrdersAction } from "@/server/order-action";
 
-import { insertBranch } from "../../../../tests/helpers/branches";
+import { insertBranch, setManagerRight } from "../../../../tests/helpers/branches";
 import { insertCompany } from "../../../../tests/helpers/catalog";
 import {
   REASON,
@@ -34,6 +35,7 @@ import {
   insertExtraCostType,
   insertItem,
   insertOrder,
+  inventedNumber,
   orderRow,
   setOrderStatus,
 } from "../../../../tests/helpers/orders";
@@ -361,6 +363,20 @@ describe("Several ticked orders and the draft merge (05 Drafts 2 and 5; decided 
   });
 });
 
+describe("A Manager copies a colleague's order of the own branch (03 matrix: branch scope; decided item 1)", () => {
+  it("the copy is the Manager's own draft", async () => {
+    const { branch, manager } = await moveScene();
+    const colleague = await insertUser("MANAGER", { branches: [branch.id] });
+    const [theirs] = await ordersAt(branch.id, colleague.id, "REJECTED");
+    const made = okOf<Made>(await copy(manager.id, copyInput([theirs!])));
+    expect(await orderRow(made.orders[0]!.made.id)).toMatchObject({
+      ownerId: manager.id,
+      status: "DRAFT",
+    });
+    expect(await orderRow(theirs!.id)).toMatchObject({ ownerId: colleague.id, status: "REJECTED" });
+  });
+});
+
 describe("A copy is safe to repeat (developer-rules.md rule 8; decided item 4, Look first)", () => {
   it("the same keys twice give the first answer and make nothing new", async () => {
     const { branch, manager } = await moveScene();
@@ -396,6 +412,57 @@ describe("A copy is safe to repeat (developer-rules.md rule 8; decided item 4, L
     okOf(await copy(manager.id, input));
     expect(await copy(other.id, input)).toMatchObject({ ok: false, error: { code: "not_found" } });
     expect(await draftsOf(other.id)).toEqual([]);
+  });
+
+  it("the same keys with an order id of another branch are Not found, and nothing is written (permission review, Must fix 1)", async () => {
+    const { branch, manager } = await moveScene();
+    const [a] = await ordersAt(branch.id, manager.id, "REJECTED");
+    const input = copyInput([a!]);
+    okOf(await copy(manager.id, input));
+    const other = await insertBranch();
+    const otherOwner = await insertUser("MANAGER", { branches: [other.id] });
+    const [foreign] = await ordersAt(other.id, otherOwner.id, "REJECTED");
+    const forged = { orders: [{ ...input.orders[0]!, id: foreign!.id }] };
+    expect(await copy(manager.id, forged)).toMatchObject({
+      ok: false,
+      error: { code: "not_found", orders: [{ orderId: foreign!.id, code: "not_found" }] },
+    });
+    expect(
+      await copy(manager.id, { orders: [{ ...input.orders[0]!, id: randomUUID() }] }),
+    ).toMatchObject({ ok: false, error: { code: "not_found" } });
+    expect(await draftsOf(manager.id)).toHaveLength(1);
+  });
+
+  it("a repeat after the maker left the branch, or after CREATE_REQUESTS was switched off, is Not found (decided item 4)", async () => {
+    const { branch, manager } = await moveScene();
+    const second = await insertBranch();
+    await db.insert(userBranches).values({
+      userId: manager.id,
+      branchId: second.id,
+      userRole: "MANAGER",
+      userIsActive: true,
+      createdAt: now(),
+    });
+    const [a] = await ordersAt(branch.id, manager.id, "REJECTED");
+    const input = copyInput([a!]);
+    okOf(await copy(manager.id, input));
+
+    await setManagerRight(manager.id, "CREATE_REQUESTS", false);
+    expect(await copy(manager.id, input)).toMatchObject({
+      ok: false,
+      error: { code: "not_found" },
+    });
+    await setManagerRight(manager.id, "CREATE_REQUESTS", true);
+    expect(await copy(manager.id, input)).toMatchObject({ ok: true });
+
+    await db
+      .delete(userBranches)
+      .where(and(eq(userBranches.userId, manager.id), eq(userBranches.branchId, branch.id)));
+    expect(await copy(manager.id, input)).toMatchObject({
+      ok: false,
+      error: { code: "not_found" },
+    });
+    expect(await draftsOf(manager.id)).toHaveLength(1);
   });
 
   it("some keys known and some new is a conflict, and nothing is saved", async () => {
@@ -471,6 +538,24 @@ describe("All or nothing (06 rule 8; developer-rules.md rule 4)", () => {
     const colleague = await insertUser("MANAGER", { branches: [branch.id] });
     const [theirs] = await ordersAt(branch.id, colleague.id, "DRAFT");
     await refusedWith(manager.id, [order, theirs!], theirs!.id, "not_found");
+  });
+
+  it("a colleague's taken-back Draft, which keeps its number, is behind the draft wall too", async () => {
+    const { branch, manager, order } = await good();
+    const colleague = await insertUser("MANAGER", { branches: [branch.id] });
+    const [taken] = await ordersAt(branch.id, colleague.id, "DRAFT");
+    await db.update(orders).set({ number: inventedNumber() }).where(eq(orders.id, taken!.id));
+    await refusedWith(manager.id, [order, taken!], taken!.id, "not_found");
+  });
+
+  it("the Principal of the branch is refused beside a good order (03: no drafts for the Principal)", async () => {
+    const { principal, order } = await good();
+    const result = await copy(principal.id, copyInput([order]));
+    expect(result).toMatchObject({
+      ok: false,
+      error: { orders: [{ orderId: order.id, code: "forbidden" }] },
+    });
+    expect(await draftsOf(principal.id)).toEqual([]);
   });
 
   it("a stale version names the order", async () => {
