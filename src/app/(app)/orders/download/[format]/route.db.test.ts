@@ -271,10 +271,18 @@ describe("the download route's walls (03 rule 1; plan of 0.7, item 5; plan of 2.
   });
 
   it("a branch= of another branch is 404, the same as an unknown branch", async () => {
-    const { manager, other } = await scene();
-    const cookie = await signInAs(manager);
-    expect((await download("excel", `branch=${other.branchId}`, cookie)).status).toBe(404);
-    expect((await download("pdf", `branch=${randomUUID()}`, cookie)).status).toBe(404);
+    const { manager, branch, other } = await scene();
+    // Every role with a branch wall (permission review of 2.14, Should fix 2).
+    const readers = [
+      manager,
+      await insertUser("PRINCIPAL", { branches: [(await insertBranch()).id] }),
+      await insertUser("FINANCE", { branches: [branch.id] }),
+    ];
+    for (const reader of readers) {
+      const cookie = await signInAs(reader);
+      expect((await download("excel", `branch=${other.branchId}`, cookie)).status).toBe(404);
+      expect((await download("pdf", `branch=${randomUUID()}`, cookie)).status).toBe(404);
+    }
   });
 
   it("the Head's download with branch= holds that branch only; without it every branch", async () => {

@@ -76,31 +76,35 @@ describe("orderDownload, the draft wall and the names of the filter (decided ite
     }
   });
 
-  it("names an owner and a department of another branch '—' (null), and lists none of their orders", async () => {
-    const branch = await insertBranch();
-    const otherBranch = await insertBranch();
-    const manager = await insertUser("MANAGER", { branches: [branch.id] });
-    const other = await waitingOrder(otherBranch.id);
-    const own = await waitingOrder(branch.id);
+  // Each role with a branch wall (permission review of 2.14, Should fix 1).
+  it.each(["MANAGER", "PRINCIPAL", "FINANCE"] as const)(
+    "names an owner and a department of another branch '—' (null), and lists none of their orders: %s",
+    async (role) => {
+      const branch = await insertBranch();
+      const otherBranch = await insertBranch();
+      const manager = await insertUser(role, { branches: [branch.id] });
+      const other = await waitingOrder(otherBranch.id);
+      const own = await waitingOrder(branch.id);
 
-    const byOwner = await orderDownload(manager.id, { ...NO_FILTERS, owner: other.ownerId });
-    expect(byOwner.names.owner).toBeNull();
-    expect(byOwner.orders).toEqual([]);
-    const byDepartment = await orderDownload(manager.id, {
-      ...NO_FILTERS,
-      department: other.departmentId,
-    });
-    expect(byDepartment.names.department).toBeNull();
-    expect(byDepartment.orders).toEqual([]);
+      const byOwner = await orderDownload(manager.id, { ...NO_FILTERS, owner: other.ownerId });
+      expect(byOwner.names.owner).toBeNull();
+      expect(byOwner.orders).toEqual([]);
+      const byDepartment = await orderDownload(manager.id, {
+        ...NO_FILTERS,
+        department: other.departmentId,
+      });
+      expect(byDepartment.names.department).toBeNull();
+      expect(byDepartment.orders).toEqual([]);
 
-    // The same filters on the reader's own branch are named.
-    const ownOwner = await orderDownload(manager.id, { ...NO_FILTERS, owner: own.ownerId });
-    expect(ownOwner.names.owner).not.toBeNull();
-    expect(ownOwner.orders.map((each) => each.id)).toEqual([own.id]);
-    const ownDepartment = await orderDownload(manager.id, {
-      ...NO_FILTERS,
-      department: own.departmentId,
-    });
-    expect(ownDepartment.names.department).toContain(branch.code);
-  });
+      // The same filters on the reader's own branch are named.
+      const ownOwner = await orderDownload(manager.id, { ...NO_FILTERS, owner: own.ownerId });
+      expect(ownOwner.names.owner).not.toBeNull();
+      expect(ownOwner.orders.map((each) => each.id)).toEqual([own.id]);
+      const ownDepartment = await orderDownload(manager.id, {
+        ...NO_FILTERS,
+        department: own.departmentId,
+      });
+      expect(ownDepartment.names.department).toContain(branch.code);
+    },
+  );
 });
