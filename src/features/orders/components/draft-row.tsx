@@ -19,8 +19,10 @@ import type { ActionResult } from "@/server/action-result";
 
 import { ExtrasCell } from "./extras-editor";
 import { useGrid } from "./grid-context";
+import { rowHoldsSent } from "./grid-rules";
 import { ProductPicker, Thumb } from "./product-picker";
 import { ReferencePhoto } from "./reference-photo";
+import { type SaveState, SaveStateText } from "./save-state";
 import { type RowSaveQueue, createRowSaveQueue } from "./row-save-queue";
 import { TextCell } from "./text-cell";
 
@@ -30,9 +32,13 @@ import { TextCell } from "./text-cell";
 // read again from the server (getDraft), so price, company, measure, photo, stock, total and
 // hint are always the server's (review of the plan, Must fix 3). A row the person may not edit
 // (decide() on the server page) shows text only.
-
-type SaveState =
-  { kind: "idle" } | { kind: "saving" } | { kind: "saved" } | { kind: "error"; text: string };
+//
+// Plan of 2.6: below 640 px the same row is a card (decided items 4 and 5): each cell carries its
+// column's name above it, for the eye only (the control keeps its own label). Each cell has
+// `data-col`, so Enter moves to the same column of the next row (grid-keys.ts). A save that gets
+// no answer is sent again by the row's queue (decided items 7 and 11): "No connection. Trying
+// again…", then "Not saved" with "Try again" when the tries are used up (review of the plan,
+// correction 2); what was typed stays in the cell.
 
 export type DraftRowProps = {
   row: WireDraftRow;
@@ -45,9 +51,46 @@ export type DraftRowProps = {
   onGone(id: string): void;
   onDirty(id: string, dirty: boolean): void;
   registerQueue(id: string, queue: RowSaveQueue | null): void;
+  /** True while the add row retries an add: deletes wait (plan of 2.6, decided item 1). */
+  deleteHeld?: boolean;
 };
 
-const CELL = "px-2 py-2 align-top";
+const CELL = "px-2 py-2 align-top max-sm:block max-sm:min-w-0 max-sm:px-0 max-sm:py-1.5";
+
+/** One cell: its column for Enter, its name above it on a phone card, half or full card width. */
+function Cell({
+  col,
+  label,
+  half = false,
+  className,
+  children,
+  ...rest
+}: {
+  col: string;
+  label?: string;
+  half?: boolean;
+  className?: string;
+  children?: React.ReactNode;
+} & Omit<React.ComponentProps<"td">, "children" | "className">) {
+  return (
+    <td
+      data-col={col}
+      className={cn(CELL, half ? "max-sm:w-1/2 max-sm:pr-2" : "max-sm:w-full", className)}
+      {...rest}
+    >
+      {label && (
+        <span
+          aria-hidden="true"
+          data-card-label
+          className="mb-1 block text-[13px] leading-4 font-semibold text-muted-foreground sm:hidden"
+        >
+          {label}
+        </span>
+      )}
+      {children}
+    </td>
+  );
+}
 
 export function DraftRow(props: DraftRowProps) {
   const { row, editable, deletable } = props;
@@ -70,6 +113,7 @@ export function DraftRow(props: DraftRowProps) {
   const [deleting, setDeleting] = useState(false);
   const [typed, setTyped] = useState<Record<string, boolean>>({});
 
+  const lastLost = useRef<Record<string, unknown> | null>(null);
   const latest = useRef(row);
   const callbacks = useRef(props);
   useEffect(() => {
@@ -97,6 +141,9 @@ export function DraftRow(props: DraftRowProps) {
         setState({ kind: "error", text: t("save.stale") });
         void reload();
       },
+      onRetrying: (retrying) => {
+        if (retrying) setState({ kind: "retrying" });
+      },
     });
   }, [queue, reload, t]);
 
@@ -113,7 +160,12 @@ export function DraftRow(props: DraftRowProps) {
 
   const anyTyped = Object.values(typed).some(Boolean);
   const dirty =
-    anyTyped || busy || pendingBranch !== null || pendingUrgent || state.kind === "error";
+    anyTyped ||
+    busy ||
+    pendingBranch !== null ||
+    pendingUrgent ||
+    state.kind === "error" ||
+    state.kind === "notSaved";
   useEffect(() => {
     const report = callbacks.current.onDirty;
     report(row.id, dirty);
@@ -132,34 +184,59 @@ export function DraftRow(props: DraftRowProps) {
   async function save(fields: Record<string, unknown>): Promise<Record<string, string> | null> {
     setState({ kind: "saving" });
     let refused: Record<string, string> | null = null;
-    const answer = await queue.save(async (version) => {
-      let result: ActionResult<unknown>;
-      try {
-        result = await updateDraftAction({ id: latest.current.id, version, ...fields });
-      } catch {
-        refused = {};
-        setState({ kind: "error", text: tAll("errors.network") });
+    const answer = await queue.save(
+      async (version) => {
+        let result: ActionResult<unknown>;
+        try {
+          result = await updateDraftAction({ id: latest.current.id, version, ...fields });
+        } catch {
+          // No answer came: the queue sends the same save again (11 rule 7; decided item 11).
+          return { kind: "lost" };
+        }
+        if (result.ok) {
+          return { kind: "saved", version: (result.data as { version: number }).version };
+        }
+        if (result.error.code === "stale_version") return { kind: "stale" };
+        const texts: Record<string, string> = {};
+        for (const [path, key] of Object.entries(result.error.fields ?? {})) {
+          texts[path] = tAll(key);
+        }
+        refused = texts;
+        setErrors(texts);
+        setState({ kind: "error", text: tAll(result.error.messageKey) });
         return { kind: "refused" };
-      }
-      if (result.ok) {
-        return { kind: "saved", version: (result.data as { version: number }).version };
-      }
-      if (result.error.code === "stale_version") return { kind: "stale" };
-      const texts: Record<string, string> = {};
-      for (const [path, key] of Object.entries(result.error.fields ?? {})) texts[path] = tAll(key);
-      refused = texts;
-      setErrors(texts);
-      setState({ kind: "error", text: tAll(result.error.messageKey) });
-      return { kind: "refused" };
-    });
+      },
+      // A retry answered stale: saved only when the server row holds what was sent (review of
+      // the plan, correction 1).
+      async () => {
+        const now = await getDraftAction({ id: latest.current.id });
+        if (!now.ok || !now.data || !rowHoldsSent(now.data, fields)) return null;
+        return now.data.version;
+      },
+    );
     if (answer !== "dropped" && answer.kind === "saved") {
+      lastLost.current = null;
       setErrors({});
       setState({ kind: "saved" });
       await reload();
       return null;
     }
+    if (answer !== "dropped" && answer.kind === "lost") {
+      lastLost.current = fields;
+      setState({ kind: "notSaved" });
+    }
     return refused ?? {};
   }
+
+  /** "Try again" after "Not saved": the same fields once more (correction 2). */
+  function tryAgain() {
+    const fields = lastLost.current;
+    if (fields) void save(fields);
+  }
+
+  /** For a typed cell: true when saved, so a failed text may be sent again. */
+  const saved = (fields: Record<string, unknown>) =>
+    save(fields).then((refused) => refused === null);
 
   function loadChoices() {
     if (editable) void grid.loadChoices(pendingBranch ?? row.branchId);
@@ -206,20 +283,32 @@ export function DraftRow(props: DraftRowProps) {
 
   return (
     <tr
-      className={cn("border-t border-border", props.ticked && "bg-muted")}
+      className={cn(
+        "border-t border-border",
+        // A phone card (decided items 4 and 5; docs/design-system.md: a white panel, corner 12,
+        // no shadow and no side stripe; a ticked card is --muted, as a ticked row).
+        "max-sm:flex max-sm:flex-wrap max-sm:items-start max-sm:rounded-xl max-sm:border-t-0 max-sm:bg-card max-sm:p-4",
+        props.ticked && "bg-muted max-sm:bg-muted",
+      )}
       onFocusCapture={loadChoices}
       data-draft={row.id}
     >
-      <td className={CELL}>
-        <input
-          type="checkbox"
-          checked={props.ticked}
-          onChange={(event) => props.onTick(event.target.checked)}
-          aria-label={t("tickRow", { product: productText })}
-          className="mt-3 size-4 accent-foreground"
-        />
-      </td>
-      <td className={cn(CELL, "min-w-36")}>
+      <Cell col="tick" className="max-sm:w-auto max-sm:pr-2">
+        {/* The tick's touch target is 44 px on a phone (11 rule 13). */}
+        <label
+          data-tick
+          className="flex cursor-pointer items-start max-sm:size-11 max-sm:items-center max-sm:justify-center"
+        >
+          <input
+            type="checkbox"
+            checked={props.ticked}
+            onChange={(event) => props.onTick(event.target.checked)}
+            aria-label={t("tickRow", { product: productText })}
+            className="mt-3 size-4 accent-foreground max-sm:mt-0 max-sm:size-5"
+          />
+        </label>
+      </Cell>
+      <Cell col="number" className="min-w-36 max-sm:w-auto max-sm:flex-1">
         <span className="flex flex-col gap-1 py-2">
           <span className="flex flex-wrap items-center gap-2 text-sm font-semibold">
             {row.number ?? t("draftWord")}
@@ -237,8 +326,8 @@ export function DraftRow(props: DraftRowProps) {
             })}
           </span>
         </span>
-      </td>
-      <td className={CELL}>
+      </Cell>
+      <Cell col="branch" label={t("columns.branch")}>
         {editable && neverSubmitted && creatable.length > 1 ? (
           <Select
             aria-label={t("columns.branch")}
@@ -267,8 +356,8 @@ export function DraftRow(props: DraftRowProps) {
             {t("save.branchPending")}
           </span>
         )}
-      </td>
-      <td className={CELL}>
+      </Cell>
+      <Cell col="product" label={t("columns.product")}>
         <span className="flex items-start gap-2">
           <Thumb fileId={row.photoFileId} alt={t("photo.alt", { name: productText })} />
           {editable ? (
@@ -290,23 +379,30 @@ export function DraftRow(props: DraftRowProps) {
             ro(productText)
           )}
         </span>
-      </td>
-      <td className={CELL}>
+      </Cell>
+      <Cell col="type" label={t("columns.type")} half>
         {ro(row.productType ? tCatalog(`productType.${row.productType}`) : null)}
-      </td>
-      <td className={CELL}>{ro(row.subtypeName)}</td>
-      <td className={cn(CELL, "text-right tabular-nums")}>
+      </Cell>
+      <Cell col="subtype" label={t("columns.subtype")} half>
+        {ro(row.subtypeName)}
+      </Cell>
+      <Cell
+        col="inStock"
+        label={t("columns.inStock")}
+        half
+        className="text-right tabular-nums max-sm:text-left"
+      >
         {ro(row.inStock === null ? null : format.quantity(row.inStock))}
-      </td>
-      <td className={CELL}>
+      </Cell>
+      <Cell col="photo" label={t("columns.photo")}>
         <ReferencePhoto
           fileId={row.referencePhotoFileId}
           product={productText}
           editable={editable}
           onSave={(fileId) => save({ referencePhotoFileId: fileId })}
         />
-      </td>
-      <td className={CELL}>
+      </Cell>
+      <Cell col="company" label={t("columns.company")}>
         {editable ? (
           <Select
             aria-label={t("columns.company")}
@@ -328,8 +424,8 @@ export function DraftRow(props: DraftRowProps) {
         ) : (
           ro(row.companyName)
         )}
-      </td>
-      <td className={cn(CELL, "min-w-48")}>
+      </Cell>
+      <Cell col="requestedBy" label={t("columns.requestedBy")} className="min-w-48">
         {editable ? (
           <span className="flex flex-col gap-1">
             <Select
@@ -377,7 +473,7 @@ export function DraftRow(props: DraftRowProps) {
               placeholder={t("columns.requesterName")}
               error={fieldError("requesterName")}
               onDirty={typedOf("requesterName")}
-              onCommit={(text) => void save({ requesterName: text })}
+              onCommit={(text) => saved({ requesterName: text })}
             />
           </span>
         ) : (
@@ -388,21 +484,23 @@ export function DraftRow(props: DraftRowProps) {
             )}
           </span>
         )}
-      </td>
-      <td className={cn(CELL, "min-w-32")}>
+      </Cell>
+      <Cell col="neededBy" label={t("columns.neededBy")} className="min-w-32">
         {editable ? (
           <NeededByCell
             value={row.neededBy ? format.date(row.neededBy) : ""}
             serverError={fieldError("neededBy")}
             onDirty={typedOf("neededBy")}
-            onSave={(neededBy) => save({ neededBy })}
+            onSave={(neededBy) => saved({ neededBy })}
           />
         ) : (
           ro(row.neededBy ? format.date(row.neededBy) : null)
         )}
-      </td>
-      <td className={CELL}>{ro(row.unitShortName)}</td>
-      <td className={cn(CELL, "min-w-24")}>
+      </Cell>
+      <Cell col="measure" label={t("columns.measure")} half>
+        {ro(row.unitShortName)}
+      </Cell>
+      <Cell col="quantity" label={t("columns.quantity")} half className="min-w-24">
         {editable ? (
           <TextCell
             value={row.quantity ?? ""}
@@ -411,13 +509,13 @@ export function DraftRow(props: DraftRowProps) {
             className="text-right tabular-nums"
             error={fieldError("quantity")}
             onDirty={typedOf("quantity")}
-            onCommit={(text) => void save({ quantity: text })}
+            onCommit={(text) => saved({ quantity: text })}
           />
         ) : (
           ro(row.quantity === null ? null : format.quantity(row.quantity))
         )}
-      </td>
-      <td className={cn(CELL, "min-w-28")}>
+      </Cell>
+      <Cell col="price" label={t("columns.price")} half className="min-w-28">
         {editable ? (
           <TextCell
             value={row.price ?? ""}
@@ -426,13 +524,13 @@ export function DraftRow(props: DraftRowProps) {
             className="text-right tabular-nums"
             error={fieldError("price")}
             onDirty={typedOf("price")}
-            onCommit={(text) => void save({ price: text })}
+            onCommit={(text) => saved({ price: text })}
           />
         ) : (
           ro(row.price === null ? null : format.money(BigInt(row.price)))
         )}
-      </td>
-      <td className={cn(CELL, "text-right")}>
+      </Cell>
+      <Cell col="extras" label={t("columns.extras")} half className="text-right max-sm:text-left">
         <span className="flex min-h-10 items-center justify-end">
           <ExtrasCell
             product={productText}
@@ -446,8 +544,8 @@ export function DraftRow(props: DraftRowProps) {
         {fieldError("extras") && (
           <span className="text-[13px] leading-4 text-destructive">{fieldError("extras")}</span>
         )}
-      </td>
-      <td className={CELL}>
+      </Cell>
+      <Cell col="paymentType" label={t("columns.paymentType")}>
         {editable ? (
           <Select
             aria-label={t("columns.paymentType")}
@@ -464,8 +562,8 @@ export function DraftRow(props: DraftRowProps) {
         ) : (
           ro(tPayment(row.paymentType))
         )}
-      </td>
-      <td className={cn(CELL, "min-w-36")}>
+      </Cell>
+      <Cell col="priority" label={t("columns.priority")} className="min-w-36">
         {editable ? (
           <span className="flex flex-col gap-1">
             <Select
@@ -491,8 +589,9 @@ export function DraftRow(props: DraftRowProps) {
                 error={fieldError("urgentReason")}
                 onDirty={typedOf("urgentReason")}
                 onCommit={(text) =>
-                  void save({ priority: "URGENT", urgentReason: text }).then((refused) => {
-                    if (refused === null) setPendingUrgent(false);
+                  saved({ priority: "URGENT", urgentReason: text }).then((ok) => {
+                    if (ok) setPendingUrgent(false);
+                    return ok;
                   })
                 }
               />
@@ -509,21 +608,21 @@ export function DraftRow(props: DraftRowProps) {
             )}
           </span>
         )}
-      </td>
-      <td className={cn(CELL, "min-w-48")}>
+      </Cell>
+      <Cell col="comment" label={t("columns.comment")} className="min-w-48">
         {editable ? (
           <TextCell
             value={row.comment ?? ""}
             label={t("columns.comment")}
             error={fieldError("comment")}
             onDirty={typedOf("comment")}
-            onCommit={(text) => void save({ comment: text })}
+            onCommit={(text) => saved({ comment: text })}
           />
         ) : (
           ro(row.comment)
         )}
-      </td>
-      <td className={cn(CELL, "text-right")}>
+      </Cell>
+      <Cell col="total" label={t("columns.total")} half className="text-right max-sm:text-left">
         <span className="flex min-h-10 flex-col items-end justify-center gap-1 py-1">
           <span className="text-sm font-semibold whitespace-nowrap tabular-nums" data-cell="total">
             {row.total === null ? t("none") : format.money(BigInt(row.total))}
@@ -537,22 +636,11 @@ export function DraftRow(props: DraftRowProps) {
             </span>
           )}
         </span>
-      </td>
-      <td className={cn(CELL, "min-w-28")} aria-live="polite">
-        <span
-          className={cn(
-            "block py-2.5 text-[13px] leading-5",
-            state.kind === "saved" && "text-success",
-            state.kind === "error" && "text-destructive",
-            state.kind === "saving" && "text-muted-foreground",
-          )}
-        >
-          {state.kind === "saving" && t("save.saving")}
-          {state.kind === "saved" && t("save.saved")}
-          {state.kind === "error" && state.text}
-        </span>
-      </td>
-      <td className={CELL}>
+      </Cell>
+      <Cell col="state" half className="min-w-28" aria-live="polite">
+        <SaveStateText state={state} onTryAgain={tryAgain} />
+      </Cell>
+      <Cell col="actions" half className="max-sm:text-right">
         {deletable && (
           <>
             <Button
@@ -561,6 +649,7 @@ export function DraftRow(props: DraftRowProps) {
               size="icon-sm"
               icon="delete"
               aria-label={t("delete.label", { product: productText })}
+              disabled={props.deleteHeld}
               onClick={() => setAsking(true)}
             />
             <ConfirmDialog
@@ -577,7 +666,7 @@ export function DraftRow(props: DraftRowProps) {
             />
           </>
         )}
-      </td>
+      </Cell>
     </tr>
   );
 }
@@ -592,7 +681,7 @@ function NeededByCell({
   value: string;
   serverError?: string;
   onDirty(dirty: boolean): void;
-  onSave(neededBy: string | null): Promise<unknown>;
+  onSave(neededBy: string | null): Promise<boolean>;
 }) {
   const t = useTranslations("orders");
   const [wrong, setWrong] = useState(false);
@@ -614,12 +703,11 @@ function NeededByCell({
       onCommit={(text) => {
         if (text.trim() === "") {
           setWrong(false);
-          void onSave(null);
-          return;
+          return onSave(null);
         }
         const date = parseTypedDate(text);
         setWrong(date === null);
-        if (date) void onSave(date);
+        return date ? onSave(date) : Promise.resolve(false);
       }}
     />
   );

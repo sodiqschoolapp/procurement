@@ -901,13 +901,17 @@
       "failed": "Not saved",
       "stale": "Changed elsewhere: the newest version is shown. Type your change again.",
       "branchPending": "Pick a department of the new branch to save",
-      "urgentPending": "Type the reason to save Urgent"
+      "urgentPending": "Type the reason to save Urgent",
+      "retrying": "No connection. Trying again…",
+      "tryAgain": "Try again"
     },
     "add": {
       "title": "New order",
       "button": "Add",
       "merged": "Added to your draft: now {quantity}",
-      "added": "Draft added"
+      "added": "Draft added",
+      "retrying": "No connection. The draft will be added when it is back; nothing is added twice.",
+      "notAdded": "Not added: the server did not answer. Press Add to try again; it is never added twice."
     },
     "picker": {
       "placeholder": "Search by name",
@@ -959,7 +963,9 @@
       "goods": "Goods",
       "extras": "Extra costs",
       "grand": "Grand total",
-      "withoutPrice": "{count, plural, one {# draft without a price is left out} other {# drafts without a price are left out}}"
+      "withoutPrice": "{count, plural, one {# draft without a price is left out} other {# drafts without a price are left out}}",
+      "showDetails": "Show details",
+      "hideDetails": "Hide details"
     },
     "date": {
       "placeholder": "dd.mm.yyyy",

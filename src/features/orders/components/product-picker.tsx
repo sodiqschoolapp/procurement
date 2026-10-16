@@ -84,7 +84,9 @@ export function ProductPicker({
       event.preventDefault();
       setActive((at) => Math.max(at - 1, 0));
     } else if (event.key === "Enter" && open && hits[active]) {
+      // The pick is this Enter's whole job: the grid does not move on it (plan of 2.6).
       event.preventDefault();
+      event.stopPropagation();
       pick(hits[active]!);
     } else if (event.key === "Escape") {
       setOpen(false);

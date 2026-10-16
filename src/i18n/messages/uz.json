@@ -901,13 +901,17 @@
       "failed": "Saqlanmadi",
       "stale": "Boshqa joyda oʻzgartirildi: eng yangi holati koʻrsatildi. Oʻzgarishingizni qayta kiriting.",
       "branchPending": "Saqlash uchun yangi filialning boʻlimini tanlang",
-      "urgentPending": "Shoshilinchni saqlash uchun sababini yozing"
+      "urgentPending": "Shoshilinchni saqlash uchun sababini yozing",
+      "retrying": "Aloqa yoʻq. Qayta urinilmoqda…",
+      "tryAgain": "Qayta urinish"
     },
     "add": {
       "title": "Yangi buyurtma",
       "button": "Qoʻshish",
       "merged": "Qoralamangizga qoʻshildi: endi {quantity}",
-      "added": "Qoralama qoʻshildi"
+      "added": "Qoralama qoʻshildi",
+      "retrying": "Aloqa yoʻq. Aloqa tiklanganda qoralama qoʻshiladi; hech narsa ikki marta qoʻshilmaydi.",
+      "notAdded": "Qoʻshilmadi: server javob bermadi. Yana urinish uchun «Qoʻshish»ni bosing; ikki marta qoʻshilmaydi."
     },
     "picker": {
       "placeholder": "Nomi boʻyicha qidirish",
@@ -959,7 +963,9 @@
       "goods": "Tovarlar",
       "extras": "Qoʻshimcha xarajatlar",
       "grand": "Umumiy jami",
-      "withoutPrice": "{count, plural, other {Narxi yoʻq # ta qoralama hisobga olinmadi}}"
+      "withoutPrice": "{count, plural, other {Narxi yoʻq # ta qoralama hisobga olinmadi}}",
+      "showDetails": "Batafsil koʻrsatish",
+      "hideDetails": "Batafsilni yashirish"
     },
     "date": {
       "placeholder": "kk.oo.yyyy",

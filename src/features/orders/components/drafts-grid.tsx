@@ -16,6 +16,7 @@ import { parseTypedDate } from "@/i18n/format";
 import { AddDraftRow } from "./add-draft-row";
 import { DraftRow } from "./draft-row";
 import { type GridBranch, GridProvider } from "./grid-context";
+import { enterGoesTo, enterMoves } from "./grid-keys";
 import { canApplyToTicked } from "./grid-rules";
 import type { RowSaveQueue } from "./row-save-queue";
 import { TickedTotals } from "./ticked-totals";
@@ -26,6 +27,12 @@ import { TickedTotals } from "./ticked-totals";
 // state when the page is sent again (review of the plan, Must fix 3). Ticks belong to the page
 // shown (decided item 5). The selection bar above the table holds the count, "Apply to ticked"
 // and "Clear"; the totals stand under the grid, as 05 says (Must fix 2).
+//
+// Plan of 2.6: Enter moves to the same column of the next draft, Shift+Enter up, and the last
+// draft's Enter goes to the add row (11 rule 2; grid-keys.ts). Below 640 px the table is a list
+// of cards (decided items 4 and 5). While the add row retries a lost add, the page is not
+// refreshed and no draft is deleted, so a draft the lost try made cannot be shown, deleted and
+// made again by the retry (decided item 1, Look first).
 
 export type GridRow = { row: WireDraftRow; editable: boolean; deletable: boolean };
 
@@ -59,11 +66,58 @@ export function DraftsGrid({
   const [neededBy, setNeededBy] = useState("");
   const [neededByWrong, setNeededByWrong] = useState(false);
   const [applying, setApplying] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const addingNow = useRef(false);
+  const refreshWaits = useRef(false);
   const queues = useRef(new Map<string, RowSaveQueue>());
   const dirtyNow = useRef(dirtyRows);
   useEffect(() => {
     dirtyNow.current = dirtyRows;
   }, [dirtyRows]);
+
+  /** router.refresh(), held while the add row retries (decided item 1). */
+  const refresh = useCallback(() => {
+    if (addingNow.current) refreshWaits.current = true;
+    else router.refresh();
+  }, [router]);
+
+  const onAddBusy = useCallback(
+    (busy: boolean) => {
+      addingNow.current = busy;
+      setAdding(busy);
+      if (!busy && refreshWaits.current) {
+        refreshWaits.current = false;
+        router.refresh();
+      }
+    },
+    [router],
+  );
+
+  /** 11 rule 2: Enter moves down a column; from the last draft to the add row. */
+  function onGridKey(event: React.KeyboardEvent<HTMLTableSectionElement>) {
+    if (event.key !== "Enter" || event.altKey || event.ctrlKey || event.metaKey) return;
+    const target = event.target as HTMLElement;
+    const moves = enterMoves({
+      tagName: target.tagName,
+      type: (target as HTMLInputElement).type,
+      expanded: target.getAttribute("aria-expanded"),
+    });
+    const cell = target.closest<HTMLElement>("td[data-col]");
+    const row = target.closest<HTMLElement>("tr[data-draft]");
+    if (!moves || !cell || !row) return;
+    const shown = Array.from(event.currentTarget.querySelectorAll<HTMLElement>("tr[data-draft]"));
+    const to = enterGoesTo(shown.indexOf(row), shown.length, event.shiftKey);
+    if (to === null) return;
+    event.preventDefault();
+    if (to === "add") {
+      document.getElementById("add-product")?.focus();
+      return;
+    }
+    const next = shown[to]!.querySelector<HTMLElement>(
+      `td[data-col="${cell.dataset.col}"] input:not([type=hidden]):not([tabindex="-1"]), td[data-col="${cell.dataset.col}"] select`,
+    );
+    next?.focus();
+  }
 
   const rights = useMemo(() => new Map(sent.map((one) => [one.row.id, one])), [sent]);
 
@@ -133,7 +187,7 @@ export function DraftsGrid({
         return;
       }
     }
-    router.refresh();
+    refresh();
   }
 
   /** 05 field 8: one needed-by date on every ticked draft, all or nothing (06 rule 8). */
@@ -179,7 +233,7 @@ export function DraftsGrid({
     } finally {
       held.forEach((_, at) => release(at));
       setApplying(false);
-      router.refresh();
+      refresh();
     }
   }
 
@@ -213,7 +267,7 @@ export function DraftsGrid({
 
   return (
     <GridProvider branches={branches} actorId={actorId}>
-      <UnsavedChangesGuard dirty={dirtyRows.size > 0} />
+      <UnsavedChangesGuard dirty={dirtyRows.size > 0 || adding} />
       <div className="flex flex-col gap-4">
         {ticked.size > 0 && (
           <div
@@ -263,10 +317,10 @@ export function DraftsGrid({
         )}
 
         {rows.length > 0 && (
-          <div className="relative overflow-x-auto rounded-xl bg-card">
-            <table className="w-max min-w-full border-collapse text-sm">
+          <div className="relative overflow-x-auto rounded-xl bg-card max-sm:overflow-visible max-sm:rounded-none max-sm:bg-transparent">
+            <table className="w-max min-w-full border-collapse text-sm max-sm:block max-sm:w-full">
               <caption className="sr-only">{t("draftsTitle")}</caption>
-              <thead className="bg-muted text-left text-[13px] leading-[18px] text-muted-foreground">
+              <thead className="bg-muted text-left text-[13px] leading-[18px] text-muted-foreground max-sm:hidden">
                 <tr>
                   <th scope="col" className="px-2 py-2 font-semibold">
                     <span className="sr-only">{t("columns.tick")}</span>
@@ -282,7 +336,7 @@ export function DraftsGrid({
                   ))}
                 </tr>
               </thead>
-              <tbody>
+              <tbody onKeyDown={onGridKey} className="max-sm:flex max-sm:flex-col max-sm:gap-3">
                 {rows.map((row) => {
                   const right = rights.get(row.id);
                   return (
@@ -298,6 +352,7 @@ export function DraftsGrid({
                       onGone={onGone}
                       onDirty={onDirty}
                       registerQueue={registerQueue}
+                      deleteHeld={adding}
                     />
                   );
                 })}
@@ -306,7 +361,9 @@ export function DraftsGrid({
           </div>
         )}
 
-        {canAdd && <AddDraftRow defaultBranchId={defaultBranchId} onAdded={onAdded} />}
+        {canAdd && (
+          <AddDraftRow defaultBranchId={defaultBranchId} onAdded={onAdded} onBusy={onAddBusy} />
+        )}
 
         <TickedTotals
           drafts={tickedRows.map((row) => ({
