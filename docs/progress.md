@@ -88,6 +88,7 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - For 0.3: the owner's answers are in `docs/decisions.md`, "Decided ahead: task 0.3"; the owner merges that pull request by hand.
 - For 0.16: the task after 0.3 is 0.16, the test copy, moved forward from 0.15 (D22); "Decided ahead: task 0.16".
 - 14.10.2026: the loop brought up to sodiq-platform of 14 October (D27 to D41): only a `[review]` by `abbosc` counts and a fork's pull request gets nothing; after every push the builder checks that CI started and calls the owner instead of pushing an empty commit; a failure outside the code is re-run once, and a head green after a re-run is reviewed again.
+- 17.10.2026: balanced reviews and one spec review of the code (D44 to D46): reviewers name over-engineering as a should-fix to remove and never ask for safeguards no rule needs; `/finish-task` runs only the `permission-reviewer`, and the review routine applies the `spec-reviewer` checks and the matching `.claude/rules/` lines to the code; twenty-two check lines brought from sodiq-platform.
 
 ## 0.3 CI (14.10.2026, pull request #12)
 
