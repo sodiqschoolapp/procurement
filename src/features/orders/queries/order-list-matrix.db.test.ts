@@ -73,8 +73,10 @@ describePermissionMatrix("listOrderFilterChoices", {
   async run({ user, branchId }) {
     const order = await waitingOrder(branchId);
     const choices = await listOrderFilterChoices(user.id);
-    if (!choices.departments.some((each) => each.id === order.departmentId)) {
-      throw new AuthorizationError("not_found");
-    }
+    const seesDepartment = choices.departments.some((each) => each.id === order.departmentId);
+    // The owner's name is shown too (permission review of 2.8, Should fix 2).
+    const seesOwner = choices.owners.some((each) => each.id === order.ownerId);
+    expect(seesOwner).toBe(seesDepartment);
+    if (!seesDepartment) throw new AuthorizationError("not_found");
   },
 });
