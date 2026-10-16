@@ -21,13 +21,13 @@ The whole project as ordered tasks. One task is one Claude Code session and one 
 | 1. Catalogs and admin | 13 | Everything the Head sets up before the first order can be written. |
 | 2. Orders to approval | 15 | From a draft on the order list to fully approved orders, with their numbers, their history and the download. |
 | 3. Purchasing | 10 | The Manager records what was really bought, one order or one whole shop visit at a time. |
-| 4. Money and settlement | 11 | Cash given, cash spent, the difference, and the close, per order. |
-| 5. Warehouse | 13 | Stock screens and every document that moves stock inside one branch. |
+| 4. Money and settlement | 10 | Cash given, cash spent, the difference, and the close, per order. |
+| 5. Warehouse | 11 | Stock screens and every document that moves stock inside one branch. |
 | 6. Home, analytics, reports | 10 | What each role sees first, and the numbers behind the work. |
 | 7. Transfers and counts | 4 | Stock moving between branches, and stock checked against the shelf. |
-| 8. Jobs and polish | 4 | The scheduled work, and a pass over every screen. |
+| 8. Jobs and polish | 3 | The scheduled work, and the translation pass. |
 | 9. Before go-live | 6 | Proof that it works, then the real environment and the real data. |
-| **Total** | **103** | |
+| **Total** | **99** | |
 
 ## Phase 0: Foundations
 
@@ -130,7 +130,7 @@ Everything the Head sets up before the first request can be written.
 
 - [x] **1.2 Branches**
   - **Read:** `04-catalogs.md` (Catalogs table: Branches; Rules: 2, 3, 9); `14-data-model.md` (branches).
-  - **Build:** `/branches` for the Head: name, code (2 to 4 Latin capital letters, unique), address, active; deactivate instead of delete; change history. The code lock after the first request is wired in 2.7; the block on closing a branch is 5.13.
+  - **Build:** `/branches` for the Head: name, code (2 to 4 Latin capital letters, unique), address, active; deactivate instead of delete; change history. The code lock after the first request is wired in 2.7; the block on closing a branch is 5.12.
   - **Done when:** Tests: a lower-case code and a 5-letter code are refused; a duplicate code is refused by the database; a Manager cannot open the screen.
 
 - [x] **1.3 Users**
@@ -248,15 +248,11 @@ From a draft on the branch's order list to fully approved orders, ticked and act
   - **Build:** Approve ticked orders or group rows at the Head, Principal and Finance steps, all or nothing: one changed order refuses the action, names it and refreshes; the slower user sees "Already approved by ... at ..."; each order shows stock at submit and stock now; Finance may change an order's payment type while approving; one grouped notification to the next step. The cash table of the Finance dialog arrives in 4.2. When a branch's Principal is replaced, waiting orders pass to the new Principal and past approvals keep the old name.
   - **Done when:** Tests: the first half of S8 (two Head users approve the same ticked orders together: one success, one clear message, nothing half-saved); S19 up to the Principal; a Principal of another branch is refused, also when one such order hides among ticked orders of their own branch; after Finance approves the status is Open.
 
-- [ ] **2.11 Send back, reject, cancel, take back**
-  - **Read:** `06-approval-workflow.md` (Allowed moves; Rules: 2, 3, 4, 8); `02-assumptions.md` (A4); `10-notifications-analytics-reports.md` (Notifications: "Sent back, rejected"); `14-data-model.md` (order_events); `open-questions.md` (question 5).
-  - **Build:** On ticked orders, with one reason of at least 5 characters for the action: send back, with an optional note per order; the returned orders are editable by their owner; submitting again raises each order's revision and returns it to the Head; earlier approvals stay in History and no longer count; reject; cancel by the owner or the Head from any Waiting step or from Sent back; take back before the Head decides; the owner and the Head get one grouped notification for a send-back or a reject.
-  - **Done when:** Tests: a 4-character reason is refused; a re-submitted order is at Waiting for Head with revision 2 and the same number; a rejected order refuses every write. Playwright: the owner of a submitted order sees Take back and no Approve; the Head sees Approve, Send back and Reject.
-
-- [ ] **2.12 What changed**
-  - **Read:** `06-approval-workflow.md` (Rules: 5); `14-data-model.md` (order_revisions); `15-quality-and-acceptance.md` (S5).
-  - **Build:** On a re-submitted order the approvers see its changed fields highlighted, with old and new values side by side, computed from the revision snapshots by a domain function.
-  - **Done when:** S5 as a Playwright test: the Head sees "100 → 80" highlighted, the same number and "rev 2".
+- [ ] **2.11 Send back, reject, cancel, take back; what changed**
+  - **Read:** `06-approval-workflow.md` (Allowed moves; Rules: 2, 3, 4, 8); `02-assumptions.md` (A4); `10-notifications-analytics-reports.md` (Notifications: "Sent back, rejected"); `14-data-model.md` (order_events); `open-questions.md` (question 5). From the former 2.12: `06-approval-workflow.md` (Rules: 5); `14-data-model.md` (order_revisions); `15-quality-and-acceptance.md` (S5).
+  - **Build:** On ticked orders, with one reason of at least 5 characters for the action: send back, with an optional note per order; the returned orders are editable by their owner; submitting again raises each order's revision and returns it to the Head; earlier approvals stay in History and no longer count; reject; cancel by the owner or the Head from any Waiting step or from Sent back; take back before the Head decides; the owner and the Head get one grouped notification for a send-back or a reject. From the former 2.12 (What changed): On a re-submitted order the approvers see its changed fields highlighted, with old and new values side by side, computed from the revision snapshots by a domain function.
+  - **Done when:** Tests: a 4-character reason is refused; a re-submitted order is at Waiting for Head with revision 2 and the same number; a rejected order refuses every write. Playwright: the owner of a submitted order sees Take back and no Approve; the Head sees Approve, Send back and Reject. S5 as a Playwright test: the Head sees "100 → 80" highlighted, the same number and "rev 2".
+  - Merged with the former 2.12 by the owner on 17.10.2026 (D47).
 
 - [ ] **2.13 Copy as new and stale drafts**
   - **Read:** `05-order-request-form.md` (Ticking and filters: Copy as new); `15-quality-and-acceptance.md` (S6, S18); `edge-cases/requests-and-approval.md` ("The catalog price changes after the draft was written"; "A product is deactivated while it sits in a draft"; "The needed-by date passes while the order waits").
@@ -298,10 +294,11 @@ The Manager records what was really bought, one order or one whole shop visit at
   - **Build:** The Manager ticks Open orders or a group row and records the visit once, for orders of one branch and one owner (on a group row of several owners, the recording Manager's own orders): date, supplier, payment type and receipt files shared; quantity, price, subtype bought, extra costs and comment per order; on a group row one quantity and one price, split by 3.2's function and changeable before saving; a "Delivery" service order is recorded in the trip like any other order; one record per order, saved all or nothing.
   - **Done when:** Database tests: a trip of three orders writes three records, one trip and the receipt once; one failing order saves nothing; a trip over orders of two owners is refused; a trip with a "Delivery" service order raises no stock for it. Playwright: 30 Tata pens recorded on a group row of 20 and 10 fill both orders.
 
-- [ ] **3.5 Purchases tab and order progress**
-  - **Read:** `07-purchasing.md` (Order progress; Finishing); `11-screens-and-ux.md` (Order page layout: 3); `15-quality-and-acceptance.md` (S4); `edge-cases/purchasing-and-money.md` ("The shop has only part of the quantity"; "The item cannot be found at all"; "More was bought than approved").
-  - **Build:** The Purchases tab of the order page; the four progress states; "Finish order" and "Not bought" with one reason on ticked orders; reopening a finished order's buying while it is Open; buying more than planned needs a comment.
-  - **Done when:** S4 without the issue: 60 notebooks, then 40; stock 60, then 100; the order stays Open until the second record.
+- [ ] **3.5 Purchases tab, order progress and the actual columns of the download**
+  - **Read:** `07-purchasing.md` (Order progress; Finishing); `11-screens-and-ux.md` (Order page layout: 3); `15-quality-and-acceptance.md` (S4); `edge-cases/purchasing-and-money.md` ("The shop has only part of the quantity"; "The item cannot be found at all"; "More was bought than approved"). From the former 4.11: `05-order-request-form.md` (Download: 1).
+  - **Build:** The Purchases tab of the order page; the four progress states; "Finish order" and "Not bought" with one reason on ticked orders; reopening a finished order's buying while it is Open; buying more than planned needs a comment. From the former 4.11 (Download: actual columns): From status Open onward the Excel and PDF rows add actual quantity, actual price, actual extra costs, actual total and difference.
+  - **Done when:** S4 without the issue: 60 notebooks, then 40; stock 60, then 100; the order stays Open until the second record. A test reads the downloads of the Cheaper case and finds 470 000 and 50 000.
+  - Merged with the former 4.11 by the owner on 17.10.2026 (D47).
 
 - [ ] **3.6 Substitution**
   - **Read:** `07-purchasing.md` (Substitution); `15-quality-and-acceptance.md` (S10); `edge-cases/purchasing-and-money.md` ("A different colour or size was bought"; "A completely different product is needed").
@@ -383,12 +380,6 @@ Cash given, cash spent, the difference and the close, per order, with Finance wo
   - **Build:** The Head moves ticked orders to another Manager of the same branch, only orders whose cash count is 0, all or nothing; the move is written to each order's History.
   - **Done when:** Database tests: blocked when one of three ticked orders has a count of 50 000, and none moves; allowed at 0; a Manager of another branch cannot be chosen.
 
-- [ ] **4.11 Download: actual columns**
-  - **Read:** `05-order-request-form.md` (Download: 1).
-  - **Build:** From status Open onward the Excel and PDF rows add actual quantity, actual price, actual extra costs, actual total and difference.
-  - **Done when:** A test reads the downloads of the Cheaper case and finds 470 000 and 50 000.
-
-
 ## Phase 5: Warehouse
 
 Stock screens and every document that moves stock inside one branch.
@@ -408,15 +399,11 @@ Stock screens and every document that moves stock inside one branch.
   - **Build:** `/warehouse/items/[id]`: every movement of one subtype in one branch, newest first, with the running balance and a link to the source document or order.
   - **Done when:** A database test checks the order and the running balance. By hand: the card of a purchased item lists the receipt with a working link.
 
-- [ ] **5.4 Issue to a department**
-  - **Read:** `09-warehouse.md` (Issue to a department); `07-purchasing.md` (Purchase record: Give straight to requester; What saving a record does: 5); `03-roles-and-permissions.md` (Manager rights: ISSUE_STOCK; Permission matrix: "Issue, return, transfer stock"); `15-quality-and-acceptance.md` (S4, S8, S11); `edge-cases/warehouse.md` ("Two Managers issue the last items at the same moment"; "An item goes straight from the shop to a classroom"); `open-questions.md` (question 9); `11-screens-and-ux.md` (Interface per role: Manager).
-  - **Build:** The issue form (branch, date, department, received by prefilled, lines with current stock beside each, comment); the server checks stock again under a lock and names the item and the available amount when it fails; the number `ISS-CHL-26-0031`; "Give straight to requester" on the purchase record creates an issue in the same transaction. The form has a phone layout.
-  - **Done when:** S4 in full, S11 and the second half of S8 as tests.
-
-- [ ] **5.5 Issue note PDF**
-  - **Read:** `09-warehouse.md` (Issue to a department: 2); `05-order-request-form.md` (Download: 2, 3); `16-build-order.md` (phase 5 row).
-  - **Build:** The issue note as a PDF in the style of the order list download: number, date, department, items, who gave them and who received them as typed; no signature lines.
-  - **Done when:** A test reads the number and both names from the file and finds no signature line. By hand: the spec's phase 5 check, download an issue note.
+- [ ] **5.4 Issue to a department and the issue note PDF**
+  - **Read:** `09-warehouse.md` (Issue to a department); `07-purchasing.md` (Purchase record: Give straight to requester; What saving a record does: 5); `03-roles-and-permissions.md` (Manager rights: ISSUE_STOCK; Permission matrix: "Issue, return, transfer stock"); `15-quality-and-acceptance.md` (S4, S8, S11); `edge-cases/warehouse.md` ("Two Managers issue the last items at the same moment"; "An item goes straight from the shop to a classroom"); `open-questions.md` (question 9); `11-screens-and-ux.md` (Interface per role: Manager). From the former 5.5: `09-warehouse.md` (Issue to a department: 2); `05-order-request-form.md` (Download: 2, 3); `16-build-order.md` (phase 5 row).
+  - **Build:** The issue form (branch, date, department, received by prefilled, lines with current stock beside each, comment); the server checks stock again under a lock and names the item and the available amount when it fails; the number `ISS-CHL-26-0031`; "Give straight to requester" on the purchase record creates an issue in the same transaction. The form has a phone layout. From the former 5.5 (Issue note PDF): The issue note as a PDF in the style of the order list download: number, date, department, items, who gave them and who received them as typed; no signature lines.
+  - **Done when:** S4 in full, S11 and the second half of S8 as tests. A test reads the number and both names from the file and finds no signature line. By hand: the spec's phase 5 check, download an issue note.
+  - Merged with the former 5.5 by the owner on 17.10.2026 (D47).
 
 - [ ] **5.6 Return from a department**
   - **Read:** `09-warehouse.md` (Other documents: Return from a department; Movement types: Return row); `open-questions.md` (question 11).
@@ -448,16 +435,11 @@ Stock screens and every document that moves stock inside one branch.
   - **Build:** The Manager asks for a write-off with items, quantities, a reason from the fixed list and a comment; stock changes only when the Head approves; the Head approves or refuses; the decision goes back to the Manager.
   - **Done when:** Database tests: stock is unchanged while the write-off waits; approval lowers it; a refusal changes nothing.
 
-- [ ] **5.12 Warehouse documents list**
-  - **Read:** `09-warehouse.md` (Stock screens: Documents); `11-screens-and-ux.md` (Screens: Warehouse documents; New issue, return, transfer, write-off).
-  - **Build:** `/warehouse/documents` with filters by type, date and department; `/warehouse/documents/new?type=` opens the right form. The seed gains an issue and a direct entry.
-  - **Done when:** A database test for the branch wall. By hand: filter to the issues of one department.
-
-- [ ] **5.13 Closing a branch**
-  - **Read:** `04-catalogs.md` (Rules: 2); `edge-cases/requests-and-approval.md` ("The Head wants to close a branch").
-  - **Build:** Deactivating a branch is blocked while it has unfinished orders or stock above 0, and the message says which.
-  - **Done when:** Database tests for both blocks and for the free case.
-
+- [ ] **5.12 Warehouse documents list and closing a branch**
+  - **Read:** `09-warehouse.md` (Stock screens: Documents); `11-screens-and-ux.md` (Screens: Warehouse documents; New issue, return, transfer, write-off). From the former 5.13: `04-catalogs.md` (Rules: 2); `edge-cases/requests-and-approval.md` ("The Head wants to close a branch").
+  - **Build:** `/warehouse/documents` with filters by type, date and department; `/warehouse/documents/new?type=` opens the right form. The seed gains an issue and a direct entry. From the former 5.13 (Closing a branch): Deactivating a branch is blocked while it has unfinished orders or stock above 0, and the message says which.
+  - **Done when:** A database test for the branch wall. By hand: filter to the issues of one department. Database tests for both blocks and for the free case.
+  - Merged with the former 5.13 by the owner on 17.10.2026 (D47).
 
 ## Phase 6: Home, analytics, reports
 
@@ -553,11 +535,6 @@ The scheduled work, and a pass over every screen.
   - **Build:** A nightly job recomputes `stock_balances` from the movements and reports any mismatch, as answered in open question 17; a weekly job saves a copy of the database to R2.
   - **Done when:** Database test: a balance changed directly in the database is reported. By hand on the test copy: the weekly file is in the bucket.
 
-- [ ] **8.3 Accessibility pass**
-  - **Read:** `11-screens-and-ux.md` (Rules for a smooth feel: 13); `01-summary.md` (Quality bar); `15-quality-and-acceptance.md` (Done-check for every phase).
-  - **Build:** Every screen checked for keyboard use and WCAG AA contrast at 375 px and 1440 px, and for 44 px touch targets at 375 px, and fixed.
-  - **Done when:** An automated accessibility check runs in Playwright on every screen with no serious finding; S1 passes with the keyboard only.
-
 - [ ] **8.4 Translation pass**
   - **Read:** `02-assumptions.md` (A2); `11-screens-and-ux.md` (Rules for a smooth feel: 14).
   - **Build:** All three languages complete and consistent; a script exports every Uzbek and Russian text to one Excel file for the owner to correct, and reads the corrected file back.
@@ -568,10 +545,11 @@ The scheduled work, and a pass over every screen.
 
 Proof that it works, then the real environment and the real data.
 
-- [ ] **9.1 Acceptance run**
-  - **Read:** `15-quality-and-acceptance.md` (whole file); `16-build-order.md` (whole file).
-  - **Build:** Every scenario S1 to S20 as a Playwright test at phone and desktop width; a scenario covered so far only by database tests gets its browser test.
-  - **Done when:** All 18 are green in CI at both widths.
+- [ ] **9.1 Acceptance run and accessibility pass**
+  - **Read:** `15-quality-and-acceptance.md` (whole file); `16-build-order.md` (whole file). From the former 8.3: `11-screens-and-ux.md` (Rules for a smooth feel: 13); `01-summary.md` (Quality bar); `15-quality-and-acceptance.md` (Done-check for every phase).
+  - **Build:** Every scenario S1 to S20 as a Playwright test at phone and desktop width; a scenario covered so far only by database tests gets its browser test. From the former 8.3 (Accessibility pass): Every screen checked for keyboard use and WCAG AA contrast at 375 px and 1440 px, and for 44 px touch targets at 375 px, and fixed.
+  - **Done when:** All 18 are green in CI at both widths. An automated accessibility check runs in Playwright on every screen with no serious finding; S1 passes with the keyboard only.
+  - Merged with the former 8.3 by the owner on 17.10.2026 (D47).
 
 - [ ] **9.2 Speed**
   - **Read:** `01-summary.md` (Quality bar: Fast); `edge-cases/developer-rules.md` (rule 12); `11-screens-and-ux.md` (Rules for a smooth feel: 5, 8).
