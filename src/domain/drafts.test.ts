@@ -12,6 +12,7 @@ import {
   isNeverSubmitted,
   isRequesterName,
   isUrgentReason,
+  plainQuantity,
   quantityRefusal,
   requesterName,
   seesDraftsGrid,
@@ -86,6 +87,14 @@ describe("addQuantities (05 Drafts 2: the existing draft's quantity rises by the
   it("refuses text that is not a quantity", () => {
     expect(() => addQuantities("1e2", "1")).toThrow(RangeError);
     expect(() => addQuantities("1", "0")).toThrow(RangeError);
+  });
+});
+
+describe("plainQuantity (05 Drafts 2: \"now 20\", the same text at the first answer and at a repeat)", () => {
+  it("drops the trailing zeros numeric(14,3) keeps", () => {
+    expect(plainQuantity("20.000")).toBe("20");
+    expect(plainQuantity("2.500")).toBe("2.5");
+    expect(plainQuantity("0.125")).toBe("0.125");
   });
 });
 

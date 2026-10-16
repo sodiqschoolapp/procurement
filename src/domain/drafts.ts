@@ -53,6 +53,11 @@ export function addQuantities(held: string, added: string): string | null {
   return QUANTITY.test(sum) ? sum : null;
 }
 
+/** A stored quantity without the trailing zeros numeric(14,3) keeps: "20.000" is "20". */
+export function plainQuantity(stored: string): string {
+  return quantityOf(stored).toFixed();
+}
+
 /**
  * The suggested price of a subtype (05 field 11: "the reference price set by the Head, else the
  * last purchase price, else empty"), never the product's own price (decisions 1.8, item 4).

@@ -8,6 +8,7 @@ import {
   draftTotal,
   isDraftEditable,
   isNeverSubmitted,
+  plainQuantity,
   suggestedPrice,
 } from "@/domain/drafts";
 import { behindDraftWall } from "@/domain/order-moves";
@@ -163,7 +164,13 @@ async function firstAnswer(
   // costs, which are the first answer's while the draft's version is still `version_after`.
   const total = await totalWith(tx, added, added.quantity);
   return {
-    result: { id: added.id, merged: true, quantity: added.quantity, version: added.version, total },
+    result: {
+      id: added.id,
+      merged: true,
+      quantity: plainQuantity(added.quantity),
+      version: added.version,
+      total,
+    },
     userId: added.userId,
     branchId: added.branchId,
   };
