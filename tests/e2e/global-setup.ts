@@ -203,6 +203,29 @@ export const E2E_MOVE_USERS = {
   },
 } as const satisfies Record<string, E2eUser>;
 
+/**
+ * The owners of the copy-as-new spec (build plan 2.13), one per project: the copies land in their
+ * own drafts, which no other spec reads. Reset to Uzbek before every run (A2).
+ */
+export const E2E_COPY_USERS = {
+  "phone-375": {
+    fullName: "Kamola Sinovova",
+    username: "e2e_copy_phone",
+    phone: "+998 90 000 99 61",
+    role: "MANAGER",
+    password: PASSWORD,
+    branches: ["EA"],
+  },
+  "desktop-1440": {
+    fullName: "Rustam Sinovov",
+    username: "e2e_copy_desktop",
+    phone: "+998 90 000 99 62",
+    role: "MANAGER",
+    password: PASSWORD,
+    branches: ["EA"],
+  },
+} as const satisfies Record<string, E2eUser>;
+
 // A fixed invented moment: the rows' time does not matter to any browser test.
 /**
  * One Head per project for the notifications test (plan of 0.11, review of the plan, Must fix 2):
@@ -332,6 +355,7 @@ export default async function globalSetup(): Promise<void> {
       ...Object.values(E2E_LIST_USERS),
       ...Object.values(E2E_PAGE_USERS).flatMap((pair) => [pair.manager, pair.finance]),
       ...Object.values(E2E_MOVE_USERS),
+      ...Object.values(E2E_COPY_USERS),
     ]) {
       await insertUserIfMissing(client, user, branchIds);
     }
