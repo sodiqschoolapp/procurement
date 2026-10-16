@@ -14,6 +14,7 @@ import {
   orderRow,
 } from "../../../../tests/helpers/orders";
 import { describePermissionMatrix } from "../../../../tests/helpers/permission-matrix";
+import { describeSubmitMatrix } from "../../../../tests/helpers/submit-matrix";
 import { type InsertedUser, insertUser } from "../../../../tests/helpers/users";
 
 // The page actions of the drafts grid in the permission matrix, called through their own
@@ -36,6 +37,7 @@ const {
   listDraftChoicesAction,
   searchDraftProductsAction,
   setDraftsNeededByAction,
+  submitDraftsAction,
   updateDraftAction,
 } = await import("./actions");
 
@@ -269,4 +271,10 @@ describe("setDraftsNeededByAction: all or nothing across branches (06 rule 8)", 
     expect((await orderRow(mine))!.neededBy).toBeNull();
     expect((await orderRow(theirs))!.neededBy).toBeNull();
   });
+});
+
+// Submit (build plan 2.7) through the page's own export.
+describeSubmitMatrix("submitDraftsAction", (user, orders) => {
+  signedIn(user);
+  return submitDraftsAction({ clientKey: newClientKey(), orders });
 });

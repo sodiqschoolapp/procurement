@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { describe, expect, it } from "vitest";
 
 import { type Role } from "@/domain/permissions";
@@ -5,6 +7,7 @@ import { runAction } from "@/server/action";
 import type { ActionResult } from "@/server/action-result";
 import { AuthorizationError } from "@/server/authorize";
 import { runDraftsAction } from "@/server/drafts-action";
+import { runOrdersAction } from "@/server/order-action";
 
 import { insertBranch, setManagerRight } from "../../../../tests/helpers/branches";
 import {
@@ -15,10 +18,12 @@ import {
   insertOrder,
 } from "../../../../tests/helpers/orders";
 import { describePermissionMatrix } from "../../../../tests/helpers/permission-matrix";
+import { describeSubmitMatrix } from "../../../../tests/helpers/submit-matrix";
 import { insertUser } from "../../../../tests/helpers/users";
 import { getDraft, listDrafts } from "../queries/drafts";
 import { listDraftChoices, searchDraftProducts } from "../queries/draft-picker";
 import { deleteDraft, setDraftsNeededBy } from "./drafts";
+import { submitDrafts } from "./submit";
 
 // Every new action and query of build plan 2.5a in the permission matrix (15-quality-and-
 // acceptance.md, Test layers: "each action × each role × own branch and other branch";
@@ -214,3 +219,8 @@ describe('deleteDraft: permission matrix by hand, "Create, edit … a request", 
     expect(await answerOf(() => remove(head.id, id))).toBe("forbidden");
   });
 });
+
+// Submit (build plan 2.7), the feature definition called directly.
+describeSubmitMatrix("submitDrafts", (user, orders) =>
+  runOrdersAction(submitDrafts, user.id, { clientKey: randomUUID(), orders }),
+);
