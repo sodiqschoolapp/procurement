@@ -1196,6 +1196,32 @@ Choices made during the build and its reviews:
 - Approve is Small in the desktop selection bar beside Clear (design system, one size in a row).
 
 
+### 2.11 Send back, reject, cancel, take back; what changed (16.10.2026)
+
+The plan's decisions as the plan review of 16.10.2026 confirmed them (corrections 1 and 2 applied), and those of the build and its reviews. The Look first items come first.
+
+1. **Look first** (approval order; 06 Take back; decisions 2.3 item 1). A taken-back Draft is submitted with Submit and keeps its number, revision and first `submitted_at`.
+2. **Look first** (constraint widened; 14 order_revisions). `order_revisions.submission`; the key is (order, revision, submission), migration 0022. The newest copy of a revision is its highest submission, never its latest time (correction 1).
+3. **Look first** (06 rule 5). What changed compares the newest copy of the revision before with the newest of the current one, from rev 2, for everyone who sees the order; the plan fields of `orders_plan_frozen`, each extra cost by type (summed), and the planned total. A taken-back resubmit keeps rev 1 and shows none.
+4. **Look first** (06 rule 10; money). `planned_total = orderTotal()` and `stock_at_submit` are written at every submit; `submitted_at` only at the first (correction 2: reminders of 8.1 count from the step's newest event).
+5. **Look first** (notifications). Send back, Reject: the owners and every active Head, one per branch, de-duplicated, never the actor. Submit again: every active Head. Take back, Cancel: nobody.
+6. **Look first** (permission matrix). Take back and Submit again the owner's only; Cancel owner or Head (decisions 2.3 item 5).
+7. **Look first** (06 rule 7). "Already sent back / rejected / cancelled / taken back by X at T" as for Approve; the approver's verbs only to a role that decides that step; Cancel and Take back to any reader who still sees the order.
+8. **Look first** (approval order; permission review, Must fix 1). Only the first Submit of a Head-created order skips the Head step: `created_by_head` of the lock is true only while the order has no number. A taken-back order goes to the Head.
+9. **Look first** (tests changed because a decision changed). The 2.7 test "a numbered Draft is refused until 2.11" became "a taken-back Draft is submitted with its own number"; the 2.4 schema test of the revision key follows item 2; the 2.4 wrapper test's numbered Head Draft now goes to the Head (item 8); the e2e owner bars of 2.9 and 2.10 count Take back and Cancel. Each still proves its rule.
+10. The note per Send back order: trimmed, up to 500 code points, an empty one dropped, stored in `order_events.note`.
+11. The grid offers Submit or Submit again only when the state machine allows it on every ticked row; mixed ticks offer neither. The list bar has no Submit again.
+12. Cancel of a taken-back Draft stays impossible (decisions 2.3 item 7).
+13. The reason box counts characters; Confirm waits for 5; the server checks again.
+
+Choices made during the build and its reviews:
+
+- `approve-lines.ts` became `move-lines.ts` with one `alreadyDecided(verb)` text; `orders.approve.alreadyApproved` moved to `orders.moves.already.APPROVE`.
+- `ConfirmDialog` takes `confirmDisabled`.
+- What changed uses the existing `edit` icon; no icon was added.
+- Two e2e Managers of their own (`E2E_MOVE_USERS`), reset to Uzbek each run.
+- A rule line in `.claude/rules/server-actions.md`: a first-pass shortcut is checked again when a task opens a way back.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.
