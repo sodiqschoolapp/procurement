@@ -279,10 +279,11 @@ async function readPage(db: Executor, actor: Actor, id: string): Promise<OrderPa
     companyName: row.companyName,
     neededBy: row.neededBy,
     quantity: row.quantity === null ? null : plainQuantity(row.quantity),
+    // inStock() reads 0 as "0"; plainQuantity() refuses it (a plan quantity is above 0).
     stockAtSubmit:
-      row.productType === "SERVICE" || row.stockAtSubmit === null
+      row.productType === null || row.stockAtSubmit === null
         ? null
-        : plainQuantity(row.stockAtSubmit),
+        : inStock(row.productType, row.stockAtSubmit),
     stockNow: row.productType === null ? null : inStock(row.productType, row.stockNow),
     price: row.price,
     extras,

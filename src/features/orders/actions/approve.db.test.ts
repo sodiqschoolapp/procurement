@@ -22,7 +22,7 @@ import { insertBranch } from "../../../../tests/helpers/branches";
 import { setClock } from "../../../../tests/helpers/clock";
 import { insertItem, insertOrder, orderRow } from "../../../../tests/helpers/orders";
 import { commitWhileWaiting } from "../../../../tests/helpers/together";
-import { type InsertedUser, insertUser } from "../../../../tests/helpers/users";
+import { insertUser } from "../../../../tests/helpers/users";
 import { createUser } from "../../users/actions/users";
 import { listOrderGroups } from "../queries/order-list";
 import { getOrderPage } from "../queries/order-page";
@@ -543,9 +543,14 @@ describe("Stock at submit and stock now (06 rule 10; edge case 'Stock changes be
     });
     expect((await getOrderPage(principal.id, order!.id))!.stockNow).toBe("12.5");
 
-    // No stock row is 0; a service has no stock.
+    // No stock row is 0, at submit and now (found by the e2e run: 0 was refused as a quantity).
     const [none] = await waiting(branch.id, manager.id, "PENDING_PRINCIPAL");
-    expect((await getOrderPage(principal.id, none!.id))!.stockNow).toBe("0");
+    await db.update(orders).set({ stockAtSubmit: "0.000" }).where(eq(orders.id, none!.id));
+    expect(await getOrderPage(principal.id, none!.id)).toMatchObject({
+      stockAtSubmit: "0",
+      stockNow: "0",
+    });
+    // A service has no stock.
     const cleaning = await insertItem({ type: "SERVICE" });
     const [service] = await waiting(branch.id, manager.id, "PENDING_PRINCIPAL", 1, {
       variantId: cleaning.variantId,

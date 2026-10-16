@@ -445,7 +445,7 @@ function GroupRows({
                       <td
                         key={column}
                         data-cell={column!}
-                        className="py-2 pr-3 whitespace-nowrap tabular-nums"
+                        className="py-2 pr-3 tabular-nums sm:whitespace-nowrap"
                       >
                         <span className="text-muted-foreground sm:hidden">
                           {t(`columns.${column as "stockAtSubmit" | "stockNow"}`)}{" "}
