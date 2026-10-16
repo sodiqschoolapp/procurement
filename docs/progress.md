@@ -772,4 +772,23 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - The grid pages with `?draftsPage=` now; `page=` is the list's.
 - A query that reads in several statements uses `readSnapshot()` (`.claude/rules/server-actions.md`).
 
-The next task is 2.9.
+## 2.9 Order page (16.10.2026, pull request #55)
+
+**Built**
+- `/orders/[id]` for every role: top block, stepper, tabs Details and History (`?tab=history`), the action bar with Submit on a Draft and otherwise the waiting line. The list's order number links to it.
+- Domain `src/domain/order-steps.ts`: `orderSteps()` (only the moves after the newest Submit count) and `waitingFor()`.
+- Query `getOrderPage` (`queries/order-page.ts`) in one `readSnapshot()`, the walls inside the SQL; `othersSeen` counts only the orders of an action the reader may see.
+- `src/features/orders/order-facts.ts`: `createdByHeadSql`, `ownerClosesAloneSql`, shared with `tickedSummary`.
+
+**Left out, and the task that brings it**
+- Approve: 2.10. Send back, Reject, Cancel, Take back, Submit again: 2.11. What changed: 2.12. Purchases tab: 3.5. Money tab: 4.3. Colour labels: phase 3/4. Stock at submit and now: 2.10.
+
+**What the next sessions must know**
+- For 2.10 and 2.11: add each move's button to `OrderActionBar` (`src/features/orders/components/order-action-bar.tsx`) where `order.actions` names it, with the confirmation of 11 rule 6; the waiting line shows only when `actions` is empty (decisions 2.9 item 4).
+- For 2.10: stock at submit and stock now go into the page's Details and the list's opened group (06 rule 10).
+- For 2.12: History reads `order_events` newest first; "What changed" can sit above Details on a re-submitted order.
+- Every e2e project has its own order-page Manager and Finance user (`E2E_PAGE_USERS`).
+- A query file's exports under `queries/` are counted as queries by `tests/permission-registry.test.ts`: shared SQL fragments live outside `queries/`.
+- Two vitest runs at once drop each other's template database: run one at a time.
+
+The next task is 2.10.

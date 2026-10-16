@@ -33,6 +33,8 @@ import { readSettings } from "@/server/settings";
 
 import { type ListFilters, NO_FILTERS, numberParts } from "../list-filters";
 
+import { createdByHeadSql, ownerClosesAloneSql } from "../order-facts";
+
 // The order list on /orders (05-order-request-form.md, Group rows; Ticking and filters;
 // 11-screens-and-ux.md, Order list layout; Rules for a smooth feel 8; plan of 2.8). Under
 // `data.view` with the branch inside the SQL (developer-rules.md rule 4; 03 matrix "See orders,
@@ -405,7 +407,6 @@ export async function tickedSummary(
   if (ids.length === 0) return none;
   // The orders and their extras of one moment (spec review of 2.8, Should fix 1).
   return readSnapshot(async (db) => {
-    const creator = sql`(select c.role from users c where c.id = ${orders.createdBy})`;
     const found = await db
       .select({
         id: orders.id,
@@ -415,13 +416,8 @@ export async function tickedSummary(
         version: orders.version,
         revision: orders.revision,
         progress: orders.progress,
-        createdByHead: sql<boolean>`${creator} = 'HEAD'`,
-        // As the action wrapper reads it (src/server/order-action.ts): the Head, or a Manager whose
-        // CLOSE_ALONE is not switched off.
-        ownerClosesAlone: sql<boolean>`(select w.role = 'HEAD' or (w.role = 'MANAGER' and not exists (
-        select 1 from manager_rights mr
-        where mr.user_id = w.id and mr."right" = 'CLOSE_ALONE' and not mr.enabled
-      )) from users w where w.id = ${orders.ownerId})`,
+        createdByHead: createdByHeadSql,
+        ownerClosesAlone: ownerClosesAloneSql,
         quantity: orders.plannedQty,
         price: orders.plannedPrice,
         paymentType: orders.paymentType,

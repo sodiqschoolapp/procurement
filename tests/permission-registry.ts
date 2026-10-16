@@ -144,6 +144,9 @@ export const QUERIES: Record<string, Permission> = {
   "src/features/orders/queries/order-list.ts#selectAllOnFilter": "data.view",
   "src/features/orders/queries/order-list.ts#tickedSummary": "data.view",
   "src/features/orders/queries/order-list.ts#listOrderFilterChoices": "data.view",
+  // The order page /orders/[id] (plan of 2.9): data.view with the branch and the draft wall in
+  // the SQL (src/features/orders/queries/order-page.db.test.ts and its matrix test).
+  "src/features/orders/queries/order-page.ts#getOrderPage": "data.view",
   // The download route's file: file.upload for a file no record holds; each owner a later task
   // adds to src/server/files/owners.ts names its own permission there (plan of 0.12, decision 5).
   "src/features/files/queries/file-for-download.ts#fileForDownload": "file.upload",

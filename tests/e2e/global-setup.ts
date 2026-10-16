@@ -137,6 +137,49 @@ export const E2E_LIST_USERS = {
   },
 } as const satisfies Record<string, E2eUser>;
 
+/**
+ * One Manager and one Finance user per project for the order page (plan of 2.9, Tests): the
+ * projects run in parallel, and each sets its own people's language.
+ */
+export const E2E_PAGE_USERS = {
+  "phone-375": {
+    manager: {
+      fullName: "Malika Sinovova",
+      username: "e2e_page_phone",
+      phone: "+998 90 000 99 41",
+      role: "MANAGER",
+      password: PASSWORD,
+      branches: ["EA"],
+    },
+    finance: {
+      fullName: "Sardor Sinovov",
+      username: "e2e_page_finance_phone",
+      phone: "+998 90 000 99 42",
+      role: "FINANCE",
+      password: PASSWORD,
+      branches: ["EA"],
+    },
+  },
+  "desktop-1440": {
+    manager: {
+      fullName: "Shahlo Sinovova",
+      username: "e2e_page_desktop",
+      phone: "+998 90 000 99 43",
+      role: "MANAGER",
+      password: PASSWORD,
+      branches: ["EA"],
+    },
+    finance: {
+      fullName: "Ulugbek Sinovov",
+      username: "e2e_page_finance_desktop",
+      phone: "+998 90 000 99 44",
+      role: "FINANCE",
+      password: PASSWORD,
+      branches: ["EA"],
+    },
+  },
+} as const satisfies Record<string, { manager: E2eUser; finance: E2eUser }>;
+
 // A fixed invented moment: the rows' time does not matter to any browser test.
 /**
  * One Head per project for the notifications test (plan of 0.11, review of the plan, Must fix 2):
@@ -264,6 +307,7 @@ export default async function globalSetup(): Promise<void> {
       ...Object.values(E2E_NOTIFICATION_USERS),
       ...Object.values(E2E_DRAFT_USERS),
       ...Object.values(E2E_LIST_USERS),
+      ...Object.values(E2E_PAGE_USERS).flatMap((pair) => [pair.manager, pair.finance]),
     ]) {
       await insertUserIfMissing(client, user, branchIds);
     }
