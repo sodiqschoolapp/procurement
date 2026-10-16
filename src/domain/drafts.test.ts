@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
 
+import type { Actor } from "./permissions";
 import {
   DRAFT_COMMENT_MAX,
   DRAFT_EXTRAS_MAX,
   URGENT_REASON_MAX,
   addQuantities,
+  addsDraftsIn,
   draftComment,
+  draftRowRights,
   draftTotal,
   isDraftComment,
   isDraftEditable,
@@ -284,6 +287,62 @@ describe("tickedDraftsTotals (05 the totals of the ticked orders; 08 sums of the
         grand: 0n,
         byPaymentType: { CASH: 0n, TRANSFER: 0n, CARD: 0n },
       },
+    });
+  });
+});
+
+describe("draftRowRights and addsDraftsIn (03 Manager rights: CREATE_REQUESTS; 05 Drafts 3; 06 Statuses: Draft)", () => {
+  const OWN = "11111111-1111-4111-8111-111111111111";
+  const OTHER = "22222222-2222-4222-8222-222222222222";
+  const ME = "33333333-3333-4333-8333-333333333333";
+  const COLLEAGUE = "44444444-4444-4444-8444-444444444444";
+  const manager: Actor = { userId: ME, role: "MANAGER", branchIds: [OWN], disabledRights: [] };
+  const viewOnly: Actor = { ...manager, disabledRights: ["CREATE_REQUESTS"] };
+  const head: Actor = { userId: COLLEAGUE, role: "HEAD", branchIds: [], disabledRights: [] };
+  const draft = { branchId: OWN, ownerId: ME, status: "DRAFT", number: null } as const;
+
+  it("the owner edits and deletes a never-submitted draft; a numbered or RETURNED one is edited only", () => {
+    expect(draftRowRights(manager, draft)).toEqual({ editable: true, deletable: true });
+    expect(draftRowRights(manager, { ...draft, number: "EA-26-0001" })).toEqual({
+      editable: true,
+      deletable: false,
+    });
+    expect(draftRowRights(manager, { ...draft, status: "RETURNED", number: "EA-26-0002" })).toEqual(
+      { editable: true, deletable: false },
+    );
+    expect(
+      draftRowRights(manager, { ...draft, status: "PENDING_HEAD", number: "EA-26-0003" }),
+    ).toEqual({ editable: false, deletable: false });
+  });
+
+  it("a Manager with CREATE_REQUESTS off sees his rows read-only and adds nowhere", () => {
+    expect(draftRowRights(viewOnly, draft)).toEqual({ editable: false, deletable: false });
+    expect(addsDraftsIn(viewOnly, { id: OWN, isActive: true })).toBe(false);
+    expect(addsDraftsIn(manager, { id: OWN, isActive: true })).toBe(true);
+  });
+
+  it("the Head edits a Manager's draft but never deletes it (2.5a decided item 7)", () => {
+    expect(draftRowRights(head, draft)).toEqual({ editable: true, deletable: false });
+    expect(draftRowRights(head, { ...draft, ownerId: COLLEAGUE })).toEqual({
+      editable: true,
+      deletable: true,
+    });
+  });
+
+  it("another branch and an inactive branch add nothing; a colleague's row is not editable", () => {
+    expect(addsDraftsIn(manager, { id: OTHER, isActive: true })).toBe(false);
+    expect(addsDraftsIn(head, { id: OTHER, isActive: false })).toBe(false);
+    expect(addsDraftsIn(head, { id: OTHER, isActive: true })).toBe(true);
+    expect(
+      draftRowRights(manager, {
+        ...draft,
+        ownerId: COLLEAGUE,
+        status: "RETURNED",
+        number: "EA-26-0004",
+      }),
+    ).toEqual({
+      editable: false,
+      deletable: false,
     });
   });
 });

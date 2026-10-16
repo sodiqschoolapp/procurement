@@ -15,7 +15,7 @@ import {
   quantityOf,
 } from "./order-totals";
 import type { PaymentType } from "./payment-types";
-import type { Role } from "./permissions";
+import { type Actor, type Role, decide } from "./permissions";
 import type { ProductType } from "./products";
 import type { RequestStatus } from "./request-status";
 
@@ -230,4 +230,26 @@ export function tickedDraftsTotals(drafts: readonly TickedDraft[]): TickedDrafts
     });
   }
   return { count: drafts.length, totals: ordersTotals(plans), withoutPrice };
+}
+
+/**
+ * What the drafts grid offers on one row (plan of 2.5b, decided items 2 and 3, Look first;
+ * permission review of 2.5b, Should fix 1): edit where the row is a DRAFT or RETURNED order and
+ * `request.edit` allows (the owner or the Head, CREATE_REQUESTS on); delete only on the person's
+ * own never-submitted draft (05 Drafts 3; 2.5a decided item 7). The same decide() the server asks;
+ * the server refuses again.
+ */
+export function draftRowRights(
+  actor: Actor,
+  row: { branchId: string; ownerId: string; status: RequestStatus; number: string | null },
+): { editable: boolean; deletable: boolean } {
+  const editable =
+    isDraftEditable(row.status) &&
+    decide("request.edit", actor, { branchId: row.branchId, ownerId: row.ownerId }) === "allow";
+  return { editable, deletable: editable && row.ownerId === actor.userId && isNeverSubmitted(row) };
+}
+
+/** Whether the grid's add row offers a branch: active, and `request.create` allows (05 field 1). */
+export function addsDraftsIn(actor: Actor, branch: { id: string; isActive: boolean }): boolean {
+  return branch.isActive && decide("request.create", actor, { branchId: branch.id }) === "allow";
 }
