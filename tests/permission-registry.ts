@@ -77,6 +77,9 @@ export const SERVER_ACTIONS: Record<string, Entry> = {
   // Submit of ticked drafts (plan of 2.7): the state machine's SUBMIT move under request.edit
   // (src/domain/order-moves.ts), in the matrix through describeSubmitMatrix.
   "src/app/(app)/orders/actions.ts#submitDraftsAction": "request.edit",
+  // The order list on /orders (plan of 2.8): each export in the matrix through itself.
+  "src/app/(app)/orders/actions.ts#selectAllOnFilterAction": "data.view",
+  "src/app/(app)/orders/actions.ts#tickedSummaryAction": "data.view",
 };
 
 /** Exports of `src/features/<area>/queries/`, as `<file>#<export>`. */

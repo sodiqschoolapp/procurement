@@ -852,10 +852,6 @@
       "line": "Add the first order below: pick the product, the department and the quantity.",
       "lineViewOnly": "Your draft orders and the orders sent back to you appear here."
     },
-    "listComing": {
-      "title": "Your order list comes here",
-      "line": "The orders you act on will be listed on this page."
-    },
     "columns": {
       "tick": "Tick",
       "number": "Number",
@@ -987,6 +983,88 @@
         "not_ready": "This order cannot be submitted yet."
       },
       "failedLine": "{name} — {problem}"
+    },
+    "list": {
+      "title": "Order list",
+      "groupCount": "{count, plural, one {# row} other {# rows}}",
+      "selectAll": "Select all on this filter",
+      "columns": {
+        "tick": "Tick",
+        "product": "Product",
+        "status": "Status",
+        "quantity": "Quantity",
+        "total": "Total",
+        "count": "Orders",
+        "neededBy": "Needed by",
+        "number": "Number",
+        "department": "Department",
+        "price": "Price",
+        "paymentType": "Payment type",
+        "owner": "Owner",
+        "submitted": "Submitted"
+      },
+      "tickGroup": "Tick every order of {product}",
+      "tickOrder": "Tick order {number}",
+      "showOrders": "Show the orders of {product}",
+      "hideOrders": "Hide the orders of {product}",
+      "ordersOf": "The orders of {product}",
+      "urgent": "Urgent",
+      "orderCount": "{count, plural, one {# order} other {# orders}}",
+      "tooMany": "At most 200 orders in one action. Untick some or narrow the filter.",
+      "refreshed": "Some ticked orders changed and left the list. They were unticked and the list was refreshed.",
+      "summaryFailed": "The ticked orders could not be read. Check the connection and tick again.",
+      "empty": {
+        "title": "No orders yet",
+        "line": "Submitted orders appear here, one row per product and status."
+      },
+      "emptyFiltered": {
+        "title": "No orders match these filters",
+        "line": "Change or clear the filters to see more orders."
+      },
+      "bar": {
+        "title": "Ticked orders",
+        "count": "{count, plural, one {# order} other {# orders}}",
+        "countOf": "{count} of {matching} ticked",
+        "clear": "Clear"
+      },
+      "filters": {
+        "label": "Filters",
+        "open": "Filters",
+        "openCount": "Filters ({count})",
+        "clear": "Clear filters",
+        "any": "All",
+        "topBar": "As in the top bar",
+        "inactive": "{name} (inactive)",
+        "sort": "Sort",
+        "sorts": {
+          "neededBy": "Needed by, earliest first",
+          "submitted": "Submitted, oldest first",
+          "product": "Product"
+        },
+        "status": "Status",
+        "branch": "Branch",
+        "owner": "Owner",
+        "department": "Department",
+        "category": "Category",
+        "payment": "Payment type",
+        "dates": "Date",
+        "dateKinds": {
+          "created": "Created",
+          "submitted": "Submitted",
+          "approved": "Approved",
+          "closed": "Closed"
+        },
+        "from": "From",
+        "to": "To",
+        "numberFrom": "Number from",
+        "numberTo": "Number to",
+        "numberPlaceholder": "CHL-26-0142",
+        "numberInvalid": "Write a number such as CHL-26-0142.",
+        "numberToIgnored": "“Number to” was not used: it has another branch code or year.",
+        "urgent": "Urgent only",
+        "action": "Orders of one action",
+        "removeAction": "Show all orders, not only those of one action"
+      }
     }
   }
 }
