@@ -11,7 +11,8 @@ import {
   pinsUrgent,
 } from "@/domain/order-list";
 import { ORDER_ACTION_MAX, type OrderAction, allowedActions } from "@/domain/order-moves";
-import { isOverdue } from "@/domain/order-steps";
+import { type DownloadRow, orderDownloadRow } from "@/domain/order-download";
+import { type StepEvent, isOverdue } from "@/domain/order-steps";
 import { type OrdersTotals, ordersTotals, priceHintPercent } from "@/domain/order-totals";
 import type { PaymentType } from "@/domain/payment-types";
 import type { Actor } from "@/domain/permissions";
@@ -36,7 +37,7 @@ import { readSettings } from "@/server/settings";
 
 import { type ListFilters, NO_FILTERS, numberParts } from "../list-filters";
 
-import { createdByHeadSql, ownerClosesAloneSql } from "../order-facts";
+import { createdByHeadSql, headStepAutoSql, ownerClosesAloneSql } from "../order-facts";
 
 // The order list on /orders (05-order-request-form.md, Group rows; Ticking and filters;
 // 11-screens-and-ux.md, Order list layout; Rules for a smooth feel 8; plan of 2.8). Under
@@ -533,4 +534,225 @@ export async function listOrderFilterChoices(userId: string): Promise<ListFilter
     .from(categories)
     .orderBy(asc(categories.name), asc(categories.id));
   return { owners, departments: departmentRows, categories: categoryRows };
+}
+
+export type DownloadOrder = {
+  id: string;
+  number: string;
+  revision: number;
+  status: ListStatus;
+  branchCode: string;
+  ownerName: string;
+  departmentName: string;
+  productName: string;
+  /** The subtype's name; null for the hidden default subtype of a product without subtypes. */
+  subtypeName: string | null;
+  unitShortName: string;
+  /** Plain decimal text, without trailing zeros. */
+  quantity: string;
+  price: bigint;
+  paymentType: PaymentType;
+  /** The extra costs, the planned total and who approved each step: orderDownloadRow(). */
+  row: DownloadRow;
+};
+
+export type OrderDownload = {
+  orders: DownloadOrder[];
+  /** ordersTotals() of every order of the file (plan of 2.14, decided item 6, Look first). */
+  totals: OrdersTotals;
+  downloadedBy: string;
+  schoolName: string | null;
+  /**
+   * The names of the filter values, read inside the walls: null for an id this user may not see
+   * or that does not exist; it still filters (plan of 2.14, decided item 4, Look first).
+   */
+  names: {
+    branch: string | null;
+    owner: string | null;
+    department: string | null;
+    category: string | null;
+  };
+};
+
+/**
+ * The order list's download (05-order-request-form.md, Download; plan of 2.14): every order of
+ * the filter, in the list's order, with no page and no cap (decided item 7). Under `data.export`
+ * (03 matrix "Export to Excel, download PDF, print"); the walls are the list's own `listWhere()`.
+ */
+export async function orderDownload(
+  userId: string,
+  filters: ListFilters = NO_FILTERS,
+): Promise<OrderDownload> {
+  const actor = await authorizeList(userId, "data.export");
+  if (filters.branch) await authorize(userId, "data.export", { branchId: filters.branch });
+  const where = listWhere(actor, filters);
+  // The orders of the filter as a subquery, so a long list never meets a bound-parameter limit.
+  const listed = listedIds(where);
+  return readSnapshot(async (db) => {
+    const owner = users;
+    const rows = await db
+      .select({
+        id: orders.id,
+        number: orders.number,
+        revision: orders.revision,
+        status: orders.status,
+        branchCode: branches.code,
+        ownerName: owner.fullName,
+        departmentName: departments.name,
+        productName: products.name,
+        variantName: productVariants.name,
+        variantIsDefault: productVariants.isDefault,
+        unitShortName: units.shortName,
+        quantity: orders.plannedQty,
+        price: orders.plannedPrice,
+        paymentType: orders.paymentType,
+      })
+      .from(orders)
+      .innerJoin(branches, eq(branches.id, orders.branchId))
+      .innerJoin(owner, eq(owner.id, orders.ownerId))
+      .innerJoin(departments, eq(departments.id, orders.departmentId))
+      .innerJoin(productVariants, eq(productVariants.id, orders.variantId))
+      .innerJoin(products, eq(products.id, productVariants.productId))
+      .innerJoin(units, eq(units.id, products.unitId))
+      .where(where)
+      .orderBy(...groupOrder(actor, filters.sort, true), ...MEMBER_ORDER);
+
+    const extraRows = await db
+      .select({ orderId: orderExtras.orderId, amount: orderExtras.amount })
+      .from(orderExtras)
+      .where(inArray(orderExtras.orderId, listed))
+      .orderBy(asc(orderExtras.createdAt), asc(orderExtras.id));
+    const extras = new Map<string, bigint[]>();
+    for (const extra of extraRows) {
+      extras.set(extra.orderId, [...(extras.get(extra.orderId) ?? []), extra.amount]);
+    }
+
+    const actorOfEvent = users;
+    const eventRows = await db
+      .select({
+        orderId: orderEvents.orderId,
+        type: orderEvents.type,
+        from: orderEvents.fromStatus,
+        to: orderEvents.toStatus,
+        actorName: actorOfEvent.fullName,
+        at: orderEvents.createdAt,
+        headStepAuto: headStepAutoSql,
+      })
+      .from(orderEvents)
+      .innerJoin(actorOfEvent, eq(actorOfEvent.id, orderEvents.actorId))
+      .where(inArray(orderEvents.orderId, listed))
+      .orderBy(asc(orderEvents.createdAt), asc(orderEvents.id));
+    const events = new Map<string, StepEvent[]>();
+    for (const { orderId, ...event } of eventRows) {
+      events.set(orderId, [...(events.get(orderId) ?? []), event]);
+    }
+
+    const [me] = await db
+      .select({ name: users.fullName })
+      .from(users)
+      .where(eq(users.id, actor.userId));
+    const settings = await readSettings(db);
+
+    const downloadOrders = rows.map((row): DownloadOrder => {
+      // Outside DRAFT the plan is complete (`orders_submitted_plan_check`).
+      const plan = {
+        quantity: row.quantity!,
+        price: row.price!,
+        extras: extras.get(row.id) ?? [],
+        paymentType: row.paymentType,
+      };
+      return {
+        id: row.id,
+        number: row.number!,
+        revision: row.revision,
+        status: row.status as ListStatus,
+        branchCode: row.branchCode,
+        ownerName: row.ownerName,
+        departmentName: row.departmentName,
+        productName: row.productName,
+        subtypeName: row.variantIsDefault ? null : row.variantName,
+        unitShortName: row.unitShortName,
+        quantity: plainQuantity(row.quantity!),
+        price: row.price!,
+        paymentType: row.paymentType,
+        row: orderDownloadRow(row.status, plan, events.get(row.id) ?? []),
+      };
+    });
+
+    return {
+      orders: downloadOrders,
+      totals: ordersTotals(
+        downloadOrders.map((order) => ({
+          quantity: order.quantity,
+          price: order.price,
+          extras: extras.get(order.id) ?? [],
+          paymentType: order.paymentType,
+        })),
+      ),
+      downloadedBy: me?.name ?? "",
+      schoolName: settings.school_name,
+      names: await filterNames(db, actor, filters),
+    };
+  });
+}
+
+/** The ids of the orders a `listWhere()` holds, as a subquery. */
+function listedIds(where: SQL | undefined): SQL {
+  return sql`(select ${orders.id} from ${orders} where ${where ?? sql`true`})`;
+}
+
+/** The names of the filter values, each read inside the walls (decided item 4, Look first). */
+async function filterNames(
+  db: Executor,
+  actor: Actor,
+  filters: ListFilters,
+): Promise<OrderDownload["names"]> {
+  const one = async (rows: Promise<{ name: string }[]>) => (await rows)[0]?.name ?? null;
+  return {
+    // Authorized with `data.export` before the read.
+    branch: filters.branch
+      ? await one(
+          db
+            .select({ name: sql<string>`${branches.code} || ' ' || ${branches.name}` })
+            .from(branches)
+            .where(and(eq(branches.id, filters.branch), branchFilter(actor, branches.id))),
+        )
+      : null,
+    // Only an owner of an order this user may see, as the owner filter's choices.
+    owner: filters.owner
+      ? await one(
+          db
+            .select({ name: users.fullName })
+            .from(users)
+            .where(
+              and(
+                eq(users.id, filters.owner),
+                sql`exists (select 1 from ${orders} where ${orders.ownerId} = ${users.id} and ${listWhere(actor, NO_FILTERS)})`,
+              ),
+            ),
+        )
+      : null,
+    department: filters.department
+      ? await one(
+          db
+            .select({ name: sql<string>`${branches.code} || ' ' || ${departments.name}` })
+            .from(departments)
+            .innerJoin(branches, eq(branches.id, departments.branchId))
+            .where(
+              and(
+                eq(departments.id, filters.department),
+                branchFilter(actor, departments.branchId),
+              ),
+            ),
+        )
+      : null,
+    category: filters.category
+      ? await one(
+          db
+            .select({ name: categories.name })
+            .from(categories)
+            .where(eq(categories.id, filters.category)),
+        )
+      : null,
+  };
 }

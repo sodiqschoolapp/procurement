@@ -1290,6 +1290,45 @@
         "forbidden": "Bu buyurtma filialida qoralama qo'sha olmaysiz.",
         "not_ready": "Uni nusxalab bo'lmaydi: filial faol emas, buyurtmada hali mahsulot, bo'lim yoki miqdor yo'q, yoki qoralamangiz juda katta bo'lib ketadi."
       }
+    },
+    "download": {
+      "excel": "Excel yuklab olish",
+      "pdf": "PDF yuklab olish",
+      "title": "Buyurtmalar",
+      "sheet": "Buyurtmalar",
+      "columns": {
+        "number": "Raqam",
+        "status": "Holat",
+        "branch": "Filial",
+        "owner": "Egasi",
+        "department": "Boʻlim",
+        "product": "Mahsulot",
+        "subtype": "Turi",
+        "quantity": "Miqdor",
+        "measure": "Oʻlchov",
+        "price": "Birlik narxi",
+        "extras": "Qoʻshimcha xarajatlar",
+        "paymentType": "Toʻlov turi",
+        "plannedTotal": "Rejadagi summa",
+        "step": "{role}",
+        "stepAt": "{role}, vaqt"
+      },
+      "totals": "Jami",
+      "downloadedBy": "Yuklab oldi: {name}, {at}",
+      "page": "{pages} betdan {page}-bet",
+      "filters": {
+        "none": "Filtrsiz",
+        "label": "Filtrlar: {list}",
+        "dateRange": "{kind}: {from} – {to}",
+        "dateFrom": "{kind}: {from} dan",
+        "dateTo": "{kind}: {to} gacha",
+        "numberRange": "Raqamlar: {from} – {to}",
+        "numberFrom": "Raqamlar: {from} dan",
+        "numberTo": "Raqamlar: {to} gacha",
+        "item": "{label}: {value}",
+        "unknown": "—",
+        "sort": "Saralash: {sort}"
+      }
     }
   }
 }

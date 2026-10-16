@@ -1,10 +1,11 @@
 import { type SQL, sql } from "drizzle-orm";
 
-import { orders } from "@/server/db/schema";
+import { orderEvents, orders } from "@/server/db/schema";
 
 // Two facts of the state machine's OrderState, read as the action wrapper reads them
 // (src/server/order-action.ts), for the queries that ask allowedActions() before any write: the
 // ticked orders of the list (2.8) and the order page (2.9). Kept once, so the two never differ.
+// With them, one fact of an order event that the stepper and the download read.
 
 /** The order's creator is a Head now (decisions 2.4 item 8). */
 export const createdByHeadSql: SQL<boolean> = sql<boolean>`(select c.role = 'HEAD' from users c where c.id = ${orders.createdBy})`;
@@ -14,3 +15,10 @@ export const ownerClosesAloneSql: SQL<boolean> = sql<boolean>`(select w.role = '
         select 1 from manager_rights mr
         where mr.user_id = w.id and mr."right" = 'CLOSE_ALONE' and not mr.enabled
       )) from users w where w.id = ${orders.ownerId})`;
+
+/**
+ * The Submit of a Head-created order also finished the Head step (03 rule 6), as orderSteps() of
+ * src/domain/order-steps.ts reads an event: the order page (2.9) and the download (2.14) read it
+ * through this one fragment (spec review of the plan of 2.14, Should fix 3).
+ */
+export const headStepAutoSql: SQL<boolean> = sql<boolean>`coalesce((${orderEvents.payload} ->> 'headStepAuto')::boolean, false)`;
