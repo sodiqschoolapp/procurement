@@ -23,7 +23,7 @@ import { createBranchAction, updateBranchAction } from "./actions";
 
 const noSubscription = () => () => undefined;
 
-type Props = { branch: (BranchFields & { id: string }) | null };
+type Props = { branch: (BranchFields & { id: string; codeLocked?: boolean }) | null };
 
 const EMPTY: BranchFields = { name: "", code: "", address: "" };
 
@@ -100,13 +100,16 @@ export function BranchForm({ branch }: Props) {
           autoCapitalize="characters"
           spellCheck={false}
           className="sm:max-w-40"
+          // Locked after the branch's first numbered order (04, Branches; plan of 2.7, decided
+          // item 8): read-only here, refused by the server and the database.
+          readOnly={branch?.codeLocked === true}
           aria-describedby={
             error("code") ? "branch-code-error branch-code-hint" : "branch-code-hint"
           }
         />
       </Field>
       <p id="branch-code-hint" className="-mt-3 text-sm leading-5 text-muted-foreground">
-        {t("branches.codeHint")}
+        {t(branch?.codeLocked ? "branches.codeLocked" : "branches.codeHint")}
       </p>
       <Field id="branch-address" label={t("branches.address")} error={error("address")}>
         <Input {...register("address")} maxLength={400} autoComplete="off" />

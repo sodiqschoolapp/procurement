@@ -63,9 +63,9 @@ describe("submitRefusals (05 Checks at submit)", () => {
   });
 
   it("refuses Urgent without a reason, and passes it with one (05 field 14)", () => {
-    expect(submitRefusals({ ...complete, priority: "URGENT", urgentReason: " " }, TODAY)).toEqual(
-      { urgentReason: "required" },
-    );
+    expect(submitRefusals({ ...complete, priority: "URGENT", urgentReason: " " }, TODAY)).toEqual({
+      urgentReason: "required",
+    });
     expect(
       submitRefusals({ ...complete, priority: "URGENT", urgentReason: "Exam tomorrow" }, TODAY),
     ).toEqual({});
@@ -106,10 +106,7 @@ describe("submitRefusals (05 Checks at submit)", () => {
 
   it("passes an active company and no extras (05 fields 6 and 12 are optional)", () => {
     expect(
-      submitRefusals(
-        { ...complete, companyId: "company", companyActive: true, extras: [] },
-        TODAY,
-      ),
+      submitRefusals({ ...complete, companyId: "company", companyActive: true, extras: [] }, TODAY),
     ).toEqual({});
   });
 });
@@ -117,8 +114,8 @@ describe("submitRefusals (05 Checks at submit)", () => {
 describe("inactiveEntries (edge case: the draft is marked)", () => {
   it("names only the deactivated entries the draft names", () => {
     expect(inactiveEntries(complete)).toEqual([]);
-    expect(inactiveEntries({ ...complete, subtypeActive: false, extras: [{ active: false }] })).toEqual(
-      ["variantId", "extras.0.extraCostTypeId"],
-    );
+    expect(
+      inactiveEntries({ ...complete, subtypeActive: false, extras: [{ active: false }] }),
+    ).toEqual(["variantId", "extras.0.extraCostTypeId"]);
   });
 });

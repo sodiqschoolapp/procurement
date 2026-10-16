@@ -69,7 +69,8 @@
       "inCatalog": "This item is already in the catalog, perhaps inactive. Ask the Procurement Head about it.",
       "wholeOnly": "This measure is counted in whole units: type a whole number",
       "tooManyDecimals": "At most 3 digits after the point",
-      "draftExists": "You already have a draft of this item for this department. Change the quantity there."
+      "draftExists": "You already have a draft of this item for this department. Change the quantity there.",
+      "inPast": "The date is in the past. Pick today or a later day."
     },
     "file": {
       "tooLarge": "The file is larger than 10 MB. Choose a smaller file or take the photo again.",
@@ -396,6 +397,7 @@
     "name": "Name",
     "code": "Code",
     "codeHint": "2 to 4 Latin capital letters, for example CHL. Used in order numbers.",
+    "codeLocked": "Locked: the branch already has submitted orders, and the code is in their numbers.",
     "address": "Address",
     "status": "Status",
     "active": "Active",
