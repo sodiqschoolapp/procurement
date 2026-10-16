@@ -16,6 +16,7 @@ import type { WireOrderGroup, WireTickedSummary } from "@/features/orders/list-w
 import { useFormatters } from "@/i18n/use-formatters";
 
 import { ApproveButton } from "./approve-button";
+import { CopyButton } from "./copy-button";
 import { ListActionBar } from "./list-action-bar";
 import { type MoveKind, MoveButton } from "./move-button";
 
@@ -279,6 +280,18 @@ export function OrderList({
                     className="max-sm:flex-1"
                   />
                 ))}
+                {summary.canCopy ? (
+                  <CopyButton
+                    orders={summary.orders}
+                    versionOf={(id) => seen.current.get(id) ?? 0}
+                    onAnswer={(answer) => {
+                      setFailed(answer);
+                      clear();
+                    }}
+                    size="sm"
+                    className="max-sm:flex-1"
+                  />
+                ) : null}
               </>
             ) : null
           }
@@ -366,6 +379,15 @@ function GroupRows({
               <span className="inline-flex items-center gap-1 text-[13px] font-semibold text-destructive">
                 <Icon name="warning" size={16} />
                 {t("urgent")}
+              </span>
+            )}
+            {group.summary.overdue && (
+              <span
+                data-overdue
+                className="inline-flex items-center gap-1 text-[13px] font-semibold text-warning"
+              >
+                <Icon name="schedule" size={16} />
+                {tOrders("overdue")}
               </span>
             )}
           </span>
@@ -465,6 +487,15 @@ function GroupRows({
                       )}
                       {order.priority === "URGENT" && (
                         <span className="ml-2 text-destructive">{t("urgent")}</span>
+                      )}
+                      {order.overdue && (
+                        <span
+                          data-overdue
+                          className="ml-2 inline-flex items-center gap-1 text-warning"
+                        >
+                          <Icon name="schedule" size={16} />
+                          {tOrders("overdue")}
+                        </span>
                       )}
                       {refused.has(order.id) && (
                         <span className="ml-2 inline-flex items-center gap-1 text-destructive">

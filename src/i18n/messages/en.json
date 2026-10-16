@@ -1273,6 +1273,23 @@
       "reasonHint": "At least {min} characters, one reason for every order. {count} of {max}.",
       "notesTitle": "Notes per order (optional)",
       "noteOf": "Note for {number}"
+    },
+    "overdue": "Overdue",
+    "copy": {
+      "button": "Copy as new",
+      "buttonCount": "Copy as new ({count})",
+      "title": "{count, plural, one {Copy 1 order as a new draft?} other {Copy # orders as new drafts?}}",
+      "result": "Each order becomes a draft of yours in its branch, with the same product, department, quantity, price, extra costs and payment type. Where you already have a draft of the same product for the same department, only the quantity is added to it. The orders themselves do not change.",
+      "done": "{count, plural, one {Copied 1 order into your drafts.} other {Copied # orders into your drafts.}}",
+      "failedTitle": "{count, plural, one {Nothing was copied: 1 order is named below.} other {Nothing was copied: # orders are named below.}}",
+      "failedLine": "{number} — {problem}",
+      "refused": {
+        "not_found": "Not found. The list is refreshed.",
+        "stale_version": "Changed a moment ago. The list is refreshed; check it and copy again.",
+        "wrong_status": "It cannot be copied now. The list is refreshed.",
+        "forbidden": "You cannot add drafts in this order's branch.",
+        "not_ready": "It cannot be copied: its branch is inactive, it has no product, department or quantity yet, or your draft would grow too large."
+      }
     }
   }
 }

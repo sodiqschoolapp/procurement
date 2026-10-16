@@ -12,6 +12,7 @@ import { toast } from "@/components/toast";
 import { Button } from "@/components/ui/button";
 
 import { type ApproveOrder, ApproveButton } from "./approve-button";
+import { CopyButton } from "./copy-button";
 import { type MoveKind, MoveButton } from "./move-button";
 import { cellOfField } from "./grid-rules";
 
@@ -20,7 +21,8 @@ import { cellOfField } from "./grid-rules";
 // who the order is waiting for"). Which moves are allowed is allowedActions() of the server; a
 // button is shown only for a move with a server action: Submit (plan of 2.9, decided item 4,
 // Look first; a taken-back Draft too since 2.11), Approve (2.10), Send back, Reject, Cancel, Take
-// back and Submit again (2.11). Submit asks first and states the result (11 rule 6); it is never retried
+// back and Submit again (2.11); Copy as new (2.13), beside them and on a Rejected, Cancelled or
+// Closed order whose bar has no move. Submit asks first and states the result (11 rule 6); it is never retried
 // automatically, and its client key is kept only after a call with no answer (decisions 2.7 item
 // 13). A refusal names the fields to fix in the order list, where the drafts are edited.
 
@@ -31,6 +33,7 @@ export function OrderActionBar({
   approve,
   moves,
   number,
+  canCopy,
   waitingLine,
 }: {
   orderId: string;
@@ -42,6 +45,8 @@ export function OrderActionBar({
   number: string | null;
   /** The order as Approve sends it, with its planned total formatted; null without the move. */
   approve: { order: ApproveOrder; total: string } | null;
+  /** Copy as new is offered (05 Ticking and filters; plan of 2.13): the server's `canCopy`. */
+  canCopy: boolean;
   /** Shown when the user has no allowed move; null otherwise. */
   waitingLine: string | null;
 }) {
@@ -122,7 +127,7 @@ export function OrderActionBar({
           {refused}
         </p>
       ) : null}
-      {approve || (moves.length > 0 && number) ? (
+      {approve || ((moves.length > 0 || canCopy) && number) ? (
         <div className="flex flex-wrap gap-3 sm:ml-auto">
           {approve ? (
             <ApproveButton
@@ -146,6 +151,14 @@ export function OrderActionBar({
                 />
               ))
             : null}
+          {number && canCopy ? (
+            <CopyButton
+              orders={[{ id: orderId, number }]}
+              versionOf={() => version}
+              onAnswer={(answer) => setRefused(answer?.lines[0]?.line ?? null)}
+              className="max-sm:h-11 max-sm:w-full"
+            />
+          ) : null}
         </div>
       ) : null}
       {canSubmit ? (
