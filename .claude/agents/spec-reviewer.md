@@ -43,6 +43,7 @@ Then check:
 - a branch of a database guard (a CHECK, a unique index, a foreign key, a trigger; on insert and on update, each refused case) without a test that reaches the database with nothing in front of it that refuses first: not `authorize()`, not the action wrapper's status or version check, not a Zod schema, not another constraint (D39);
 - a test that a guard lets a case through (`authorize()`, a branch filter in the SQL, a move of the state machine, a constraint), run without the data the guard would refuse if it were wrong: another branch's record beside it, a status one step off, a quantity one past the stock (D40);
 - a unique mark or claim on a record (a unique code or username, a link that holds another record) that stays held once the record is deactivated, while no screen or server action can reach it any more and the spec does not say that it stays held: every action that deactivates the record frees the mark in the same transaction with its audit row, or an action can still free it (D41).
+- a row found by a plain `SELECT` and then locked by its id alone, without the full match re-read under the lock (or found with `SELECT … FOR UPDATE` and the full `WHERE`): a concurrent write that moves the row out of the match, or deletes it, would redirect the write or break it; and a merged or repeated answer (a safe repeat, a merge) rebuilt from the row as it stands now instead of from values stored with the first answer, every one it returns (review of 2.5a).
 
 ## What you report
 

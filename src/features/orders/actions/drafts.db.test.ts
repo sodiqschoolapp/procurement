@@ -651,6 +651,11 @@ describe("delete (05 Drafts 3; developer-rules rule 11; decided item 7)", () => 
       ok: false,
       error: { code: "forbidden" },
     });
+    // The owner is checked before the version (permission review of 2.5a, P4).
+    expect(await runAction(deleteDraft, head.id, { id: managers.id, version: 7 })).toMatchObject({
+      ok: false,
+      error: { code: "forbidden" },
+    });
     const own = await draftOf(head.id, base);
     expect(await runAction(deleteDraft, head.id, { id: own.id, version: 2 })).toMatchObject({
       ok: false,

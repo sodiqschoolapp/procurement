@@ -511,8 +511,8 @@ export const deleteDraft = defineAction({
   check({ input, actor, locked }) {
     const row = locked!.rows;
     if (behindDraftWall(actor, row)) throw new ActionError("not_found");
-    if (row.version !== input.version) throw new ActionError("stale_version");
     if (row.ownerId !== actor.userId) throw new ActionError("forbidden");
+    if (row.version !== input.version) throw new ActionError("stale_version");
     if (!isNeverSubmitted(row)) throw new ActionError("wrong_status");
   },
   async write({ tx, locked }) {
