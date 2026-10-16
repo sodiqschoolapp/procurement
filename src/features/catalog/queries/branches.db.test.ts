@@ -6,6 +6,7 @@ import { branches } from "@/server/db/schema";
 
 import { insertBranch } from "../../../../tests/helpers/branches";
 import { describePermissionMatrix } from "../../../../tests/helpers/permission-matrix";
+import { insertOrder } from "../../../../tests/helpers/orders";
 import { insertUser } from "../../../../tests/helpers/users";
 import { getBranch, listBranches } from "./branches";
 
@@ -47,9 +48,21 @@ describe("the branch queries (build-plan 1.2)", () => {
       code: branch.code,
       address: branch.address,
       isActive: false,
+      // 04, Branches: "It locks after the first order" (plan of 2.7, decided item 8).
+      codeLocked: false,
     });
     expect(await getBranch(head.id, "00000000-0000-4000-8000-000000000000")).toBeNull();
     expect(await getBranch(head.id, "not-an-id")).toBeNull();
+  });
+
+  it("getBranch says the code is locked once the branch has a numbered order, not for a draft (04, Branches; plan of 2.7)", async () => {
+    const head = await insertUser("HEAD");
+    const branch = await insertBranch();
+    const manager = await insertUser("MANAGER", { branches: [branch.id] });
+    await insertOrder({ branchId: branch.id, ownerId: manager.id });
+    expect(await getBranch(head.id, branch.id)).toMatchObject({ codeLocked: false });
+    await insertOrder({ branchId: branch.id, ownerId: manager.id, status: "PENDING_HEAD" });
+    expect(await getBranch(head.id, branch.id)).toMatchObject({ codeLocked: true });
   });
 });
 

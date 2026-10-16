@@ -164,6 +164,10 @@ const notebook = `Daftar ${run}`;
 const marker = `Marker ${run}`;
 const chalk = `Bor ${run}`;
 const history = `Tarix ${run}`;
+// 2.7: products of the Submit tests, each in its own row.
+const stapler = `Stepler ${run}`;
+const tape = `Skotch ${run}`;
+const glue = `Kley ${run}`;
 const KEYBOARD_DRAFTS = [
   { product: notebook, department: science, quantity: "4" },
   { product: marker, department: music, quantity: "6" },
@@ -184,6 +188,9 @@ test.beforeAll(async () => {
     await insertProduct(client, marker, 9000);
     await insertProduct(client, chalk, 1500);
     await insertDepartment(client, history);
+    await insertProduct(client, stapler, 12000);
+    await insertProduct(client, tape, 4000);
+    await insertProduct(client, glue, 3000);
   });
 });
 
@@ -524,4 +531,104 @@ test("Done when: the same drafts show as cards at 375 px, with 44 px controls (1
   await expect(totals.locator('[data-total="CASH"] dd')).toHaveText(som("12000"));
   expect(await scrollsSideways(page)).toBe(false);
   expect(loops).toEqual([]);
+});
+
+// Build-plan 2.7 (05-order-request-form.md, Drafts 4; Checks at submit; Order number;
+// 06-approval-workflow.md rule 8; plan of 2.7, Tests: Playwright). The drafts are written
+// complete straight into the table, so the test is about Submit and not about typing.
+
+/** A complete never-submitted draft of the person in EA: 2 of the product for `science`. */
+async function insertCompleteDraft(person: Person, product: string, neededBy: string) {
+  await withDatabase(async (client) => {
+    await client.query(
+      `insert into orders (branch_id, owner_id, created_by, variant_id, department_id, needed_by,
+                           planned_qty, planned_price, payment_type, created_at, updated_at)
+       select b.id, u.id, u.id, v.id, d.id, $3, 2, 5000, 'CASH', now(), now()
+         from branches b, users u, product_variants v, products p, departments d
+        where b.code = 'EA' and u.username = $1 and p.name = $2 and v.product_id = p.id
+          and d.name = $4 and d.branch_id = b.id`,
+      [person.username, product, neededBy, science],
+    );
+  });
+}
+
+/** The numbers of the person's orders of the product (null for a draft). */
+async function numbersOf(person: Person, product: string) {
+  return withDatabase(async (client) => {
+    const { rows: found } = await client.query<{ number: string | null; status: string }>(
+      `select o.number, o.status from orders o
+         join product_variants v on v.id = o.variant_id join products p on p.id = v.product_id
+        where p.name = $2 and o.owner_id = (select id from users where username = $1)
+        order by o.created_at`,
+      [person.username, product],
+    );
+    return found;
+  });
+}
+
+/** The draft row of a product: the product sits in an input, so the row is found by its tick. */
+function tickOf(page: Page, product: string): Locator {
+  return page.getByRole("checkbox", { name: t.tickRow.replace("{product}", product) });
+}
+
+function rowOf(page: Page, product: string): Locator {
+  return rows(page).filter({ has: tickOf(page, product) });
+}
+
+test("Submit: a past needed-by date stops all, on its cell; then the good drafts get numbers (05 Checks at submit)", async ({
+  page,
+}, info) => {
+  test.skip(info.project.name !== "desktop-1440", "The Done-when is at 1440 px.");
+  const manager = E2E_DRAFT_USERS["desktop-1440"];
+  await freshGrid(manager);
+  await insertCompleteDraft(manager, stapler, "2031-05-01");
+  await insertCompleteDraft(manager, tape, "2031-05-01");
+  await insertCompleteDraft(manager, glue, "2020-01-01");
+  await signIn(page, manager);
+  await page.goto("/orders");
+  await expect(rows(page)).toHaveCount(3);
+
+  for (const product of [stapler, glue]) {
+    await tickOf(page, product).check();
+  }
+  await page.getByRole("button", { name: t.submit.button.replace("{count}", "2") }).click();
+  // Nothing is submitted: the list on top names the order, the cell carries the message.
+  const list = page.getByRole("alert").filter({ hasText: "Nothing was submitted" });
+  await expect(list).toContainText(glue);
+  await expect(rowOf(page, glue).locator('td[data-col="neededBy"]')).toContainText(
+    en.errors.field.inPast,
+  );
+  expect(await numbersOf(manager, stapler)).toEqual([{ number: null, status: "DRAFT" }]);
+  expect(await numbersOf(manager, glue)).toEqual([{ number: null, status: "DRAFT" }]);
+
+  // The good two, ticked alone, go to the Head with their numbers.
+  await tickOf(page, glue).uncheck();
+  await tickOf(page, tape).check();
+  await page.getByRole("button", { name: t.submit.button.replace("{count}", "2") }).click();
+  await expect(page.getByText(/Submitted 2 orders: EA-\d{2}-\d{4,}/)).toBeVisible();
+  await expect(rows(page)).toHaveCount(1);
+  await expect(rowOf(page, glue)).toHaveCount(1);
+  for (const product of [stapler, tape]) {
+    const [order] = await numbersOf(manager, product);
+    expect(order).toMatchObject({ status: "PENDING_HEAD" });
+    expect(order!.number).toMatch(/^EA-\d{2}-\d{4,}$/);
+  }
+});
+
+test("Submit at 375 px: the card's Submit sends the draft, no horizontal page scroll (11 rule 13)", async ({
+  page,
+}, info) => {
+  test.skip(info.project.name !== "phone-375", "The phone width.");
+  const manager = E2E_DRAFT_USERS["phone-375"];
+  await freshGrid(manager);
+  await insertCompleteDraft(manager, stapler, "2031-05-01");
+  await signIn(page, manager);
+  await page.goto("/orders");
+  await expect(rows(page)).toHaveCount(1);
+  await tickOf(page, stapler).check();
+  expect(await scrollsSideways(page)).toBe(false);
+  await page.getByRole("button", { name: t.submit.button.replace("{count}", "1") }).click();
+  await expect(page.getByText(/Submitted 1 order: EA-\d{2}-\d{4,}/)).toBeVisible();
+  await expect(rows(page)).toHaveCount(0);
+  expect(await scrollsSideways(page)).toBe(false);
 });
