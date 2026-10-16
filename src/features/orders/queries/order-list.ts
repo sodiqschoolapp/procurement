@@ -33,7 +33,7 @@ import { readSettings } from "@/server/settings";
 
 import { type ListFilters, NO_FILTERS, numberParts } from "../list-filters";
 
-import { createdByHeadSql, ownerClosesAloneSql } from "./order-facts";
+import { createdByHeadSql, ownerClosesAloneSql } from "../order-facts";
 
 // The order list on /orders (05-order-request-form.md, Group rows; Ticking and filters;
 // 11-screens-and-ux.md, Order list layout; Rules for a smooth feel 8; plan of 2.8). Under
