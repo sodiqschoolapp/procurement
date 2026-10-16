@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { OrderAction } from "./order-moves";
-import { type StepEvent, type StepView, orderSteps, waitingFor } from "./order-steps";
+import { type StepEvent, type StepView, isOverdue, orderSteps, waitingFor } from "./order-steps";
 import { REQUEST_STATUSES, type RequestStatus } from "./request-status";
 
 // 11-screens-and-ux.md, Order page layout 2 ("Draft, Head, Principal, Finance, Open, Closed, with
@@ -266,5 +266,46 @@ describe("waitingFor (06 Statuses, Who acts next; decided item 5)", () => {
       REJECTED: "NOBODY",
       CANCELLED: "NOBODY",
     });
+  });
+});
+
+describe("isOverdue (edge case 'The needed-by date passes while the order waits'; plan of 2.13, decided item 8)", () => {
+  const today = "2026-10-16";
+  const yesterday = "2026-10-15";
+
+  it("a waiting, sent back or open order past its needed-by date is overdue", () => {
+    for (const status of [
+      "PENDING_HEAD",
+      "PENDING_PRINCIPAL",
+      "PENDING_FINANCE",
+      "RETURNED",
+      "PURCHASING",
+    ] as const) {
+      expect(isOverdue(status, "OPEN", yesterday, today), status).toBe(true);
+    }
+  });
+
+  it("no other status is overdue, also a day past", () => {
+    for (const status of ["DRAFT", "SETTLEMENT", "CLOSED", "REJECTED", "CANCELLED"] as const) {
+      expect(isOverdue(status, "OPEN", yesterday, today), status).toBe(false);
+    }
+  });
+
+  it("an Open order whose buying is finished is not overdue", () => {
+    for (const progress of ["DONE", "DONE_SHORT", "NOT_BOUGHT"] as const) {
+      expect(isOverdue("PURCHASING", progress, yesterday, today), progress).toBe(false);
+    }
+  });
+
+  it("needed by today or later, or no date, is not overdue", () => {
+    expect(isOverdue("PENDING_HEAD", "OPEN", today, today)).toBe(false);
+    expect(isOverdue("PENDING_HEAD", "OPEN", "2026-10-17", today)).toBe(false);
+    expect(isOverdue("PENDING_HEAD", "OPEN", null, today)).toBe(false);
+  });
+
+  it("every status is answered", () => {
+    for (const status of REQUEST_STATUSES) {
+      expect(typeof isOverdue(status, "OPEN", yesterday, today)).toBe("boolean");
+    }
   });
 });

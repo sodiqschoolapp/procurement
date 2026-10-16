@@ -2,9 +2,10 @@ import { and, asc, eq, inArray, ne, or, sql } from "drizzle-orm";
 import { type AnyPgColumn, alias } from "drizzle-orm/pg-core";
 import * as z from "zod";
 
-import { inStock, plainQuantity } from "@/domain/drafts";
+import { businessDate } from "@/domain/business-date";
+import { addsDraftsIn, inStock, plainQuantity } from "@/domain/drafts";
 import { type OrderAction, allowedActions } from "@/domain/order-moves";
-import { type StepEvent, type StepView, orderSteps } from "@/domain/order-steps";
+import { type StepEvent, type StepView, isOverdue, orderSteps } from "@/domain/order-steps";
 import { extrasSum, priceHintPercent } from "@/domain/order-totals";
 import {
   type RevisionField,
@@ -15,6 +16,7 @@ import type { PaymentType } from "@/domain/payment-types";
 import type { Actor } from "@/domain/permissions";
 import type { RequestStatus } from "@/domain/request-status";
 import { type Executor, authorizeList, branchFilter } from "@/server/authorize";
+import { now } from "@/server/clock";
 import {
   branches,
   companies,
@@ -119,6 +121,8 @@ export type OrderPage = {
   actualTotal: bigint | null;
   /** Against today's reference price (decided item 8); null when none applies. */
   priceHint: bigint | null;
+  /** "Overdue", by isOverdue() (edge case "The needed-by date passes"; plan of 2.13). */
+  overdue: boolean;
   submittedAt: Date | null;
   approvedAt: Date | null;
   closedAt: Date | null;
@@ -127,6 +131,11 @@ export type OrderPage = {
   events: OrderPageEvent[];
   /** The moves the state machine allows this user on this order now (11 Order page layout 4). */
   actions: OrderAction[];
+  /**
+   * Copy as new is offered: the user may add drafts in the order's branch, which is active (05
+   * Ticking and filters; plan of 2.13, decided item 1, Look first). The server asks again.
+   */
+  canCopy: boolean;
   /** The branch's active Principal now (03 rules 2 and 3; decided items 5 and 14). */
   principalName: string | null;
   /**
@@ -171,6 +180,7 @@ async function readPage(db: Executor, actor: Actor, id: string): Promise<OrderPa
       ownerClosesAlone: ownerClosesAloneSql,
       branchCode: branches.code,
       branchName: branches.name,
+      branchActive: branches.isActive,
       ownerName: owner.fullName,
       departmentName: departments.name,
       requesterName: orders.requesterName,
@@ -319,6 +329,7 @@ async function readPage(db: Executor, actor: Actor, id: string): Promise<OrderPa
     plannedTotal: row.plannedTotal,
     actualTotal: row.actualTotal,
     priceHint: priceHintPercent(row.price, row.referencePrice, threshold),
+    overdue: isOverdue(row.status, row.progress, row.neededBy, businessDate(now())),
     submittedAt: row.submittedAt,
     approvedAt: row.approvedAt,
     closedAt: row.closedAt,
@@ -337,6 +348,7 @@ async function readPage(db: Executor, actor: Actor, id: string): Promise<OrderPa
         progress: row.progress,
       }),
     ]),
+    canCopy: addsDraftsIn(actor, { id: row.branchId, isActive: row.branchActive }),
     principalName: principal?.name ?? null,
     changes,
   };

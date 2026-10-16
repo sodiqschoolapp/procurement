@@ -223,6 +223,15 @@ export default async function OrderPageScreen({
               {t("urgent", { reason: order.urgentReason ?? "" })}
             </span>
           ) : null}
+          {order.overdue ? (
+            <span
+              data-overdue
+              className="inline-flex items-center gap-1 text-[13px] font-semibold text-warning"
+            >
+              <Icon name="schedule" size={16} />
+              {tOrders("overdue")}
+            </span>
+          ) : null}
         </div>
         <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {fact("product", t("product"), product)}
@@ -300,6 +309,8 @@ export default async function OrderPageScreen({
         }
         moves={PAGE_MOVES.filter((move) => order.actions.includes(move))}
         number={order.number}
+        // Copy as new of a numbered order; a draft is edited in the drafts grid (decided item 11).
+        canCopy={order.canCopy && order.status !== "DRAFT" && order.number !== null}
         waitingLine={line}
       />
     </div>

@@ -26,6 +26,7 @@ function member(over: Partial<GroupMember> = {}): GroupMember {
     neededBy: "2026-11-01",
     priority: "NORMAL",
     priceHint: null,
+    overdue: false,
     ...over,
   };
 }
@@ -70,6 +71,11 @@ describe("groupSummary (05 Group rows 1; 08 the sums of the order values)", () =
     expect(summary.earliestNeededBy).toBe("2026-10-30");
     expect(summary.urgent).toBe(true);
     expect(groupSummary([member()]).urgent).toBe(false);
+  });
+
+  it("Overdue when any order is overdue (edge case 'The needed-by date passes'; plan of 2.13)", () => {
+    expect(groupSummary([member(), member({ overdue: true })]).overdue).toBe(true);
+    expect(groupSummary([member(), member()]).overdue).toBe(false);
   });
 
   it("refuses a group without orders", () => {

@@ -34,6 +34,7 @@ vi.mock("next/cache", () => ({ revalidatePath: () => undefined }));
 const {
   approveOrdersAction,
   cancelOrdersAction,
+  copyOrdersAsNewAction,
   createDraftAction,
   deleteDraftAction,
   getDraftAction,
@@ -409,4 +410,20 @@ describeOwnerMoveMatrix("submitAgainOrdersAction", "RETURNED", async (user, orde
   signedIn(user);
   const answer = await submitAgainOrdersAction({ clientKey: newClientKey(), orders });
   return answer.ok ? answer : { ok: false, error: answer.error };
+});
+
+// Copy as new: `request.create` on the ticked order's branch (05 Ticking and filters; plan of
+// 2.13, decided item 1, Look first). The order is a Rejected one of the case's owner, so neither
+// the draft wall nor a status decides.
+describePermissionMatrix("copyOrdersAsNewAction", {
+  permission: "request.create",
+  async run({ user, branchId, ownerId }) {
+    const order = await insertOrder({ branchId, ownerId, status: "REJECTED" });
+    signedIn(user);
+    asMatrixAnswer(
+      await copyOrdersAsNewAction({
+        orders: [{ id: order.id, version: order.version, clientKey: newClientKey() }],
+      }),
+    );
+  },
 });

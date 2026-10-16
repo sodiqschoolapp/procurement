@@ -1,8 +1,8 @@
 import { type SQL, and, asc, count, desc, eq, gte, inArray, lt, ne, or, sql } from "drizzle-orm";
 import * as z from "zod";
 
-import { businessDayStart, nextBusinessDate } from "@/domain/business-date";
-import { inStock, plainQuantity } from "@/domain/drafts";
+import { businessDate, businessDayStart, nextBusinessDate } from "@/domain/business-date";
+import { addsDraftsIn, inStock, plainQuantity } from "@/domain/drafts";
 import {
   type GroupSummary,
   ORDER_LIST_PAGE_SIZE,
@@ -11,10 +11,12 @@ import {
   pinsUrgent,
 } from "@/domain/order-list";
 import { ORDER_ACTION_MAX, type OrderAction, allowedActions } from "@/domain/order-moves";
+import { isOverdue } from "@/domain/order-steps";
 import { type OrdersTotals, ordersTotals, priceHintPercent } from "@/domain/order-totals";
 import type { PaymentType } from "@/domain/payment-types";
 import type { Actor } from "@/domain/permissions";
 import { type Executor, authorize, authorizeList, branchFilter } from "@/server/authorize";
+import { now } from "@/server/clock";
 import {
   branches,
   categories,
@@ -65,6 +67,8 @@ export type ListOrder = {
   submittedAt: Date;
   priority: "NORMAL" | "URGENT";
   priceHint: bigint | null;
+  /** "Overdue", by isOverdue() (edge case "The needed-by date passes"; plan of 2.13). */
+  overdue: boolean;
 };
 
 export type OrderGroup = {
@@ -286,6 +290,7 @@ async function readGroups(
       ownerName: owner.fullName,
       submittedAt: orders.submittedAt,
       priority: orders.priority,
+      progress: orders.progress,
       referencePrice: productVariants.referencePrice,
     })
     .from(orders)
@@ -313,6 +318,7 @@ async function readGroups(
     members.map((member) => member.id),
   );
   const threshold = (await readSettings(db)).price_hint_percent;
+  const today = businessDate(now());
 
   const byGroup = new Map<string, { order: ListOrder; extras: bigint[] }[]>();
   for (const member of members) {
@@ -333,6 +339,7 @@ async function readGroups(
       submittedAt: member.submittedAt!,
       priority: member.priority,
       priceHint: priceHintPercent(member.price, member.referencePrice, threshold),
+      overdue: isOverdue(member.status, member.progress, member.neededBy, today),
     };
     const key = groupKey(member.branchId, member.variantId!, member.status);
     byGroup.set(key, [...(byGroup.get(key) ?? []), { order, extras: extras.get(member.id) ?? [] }]);
@@ -359,6 +366,7 @@ async function readGroups(
           neededBy: order.neededBy,
           priority: order.priority,
           priceHint: order.priceHint,
+          overdue: order.overdue,
         })),
       ),
       orders: held.map(({ order }) => order),
@@ -401,6 +409,11 @@ export type TickedSummary = {
   /** The moves the state machine allows on every ticked order (06 rule 8; decided item 7). */
   actions: OrderAction[];
   /**
+   * Copy as new is offered: the user may add drafts in the branch of every ticked order, which is
+   * active (05 Ticking and filters; plan of 2.13, decided item 1, Look first). The server asks again.
+   */
+  canCopy: boolean;
+  /**
    * Each ticked order's number and payment type, for the approve dialog: Finance may change the
    * payment type there (06 rule 1; plan of 2.10). In the list's order of numbers.
    */
@@ -424,6 +437,7 @@ export async function tickedSummary(
     missing: [],
     totals: ordersTotals([]),
     actions: [],
+    canCopy: false,
     orders: [],
   };
   if (ids.length === 0) return none;
@@ -444,8 +458,10 @@ export async function tickedSummary(
         quantity: orders.plannedQty,
         price: orders.plannedPrice,
         paymentType: orders.paymentType,
+        branchActive: branches.isActive,
       })
       .from(orders)
+      .innerJoin(branches, eq(branches.id, orders.branchId))
       .where(and(inArray(orders.id, ids), listWhere(actor, NO_FILTERS)));
     const extras = await extrasOf(
       db,
@@ -464,6 +480,9 @@ export async function tickedSummary(
         })),
       ),
       actions: allowedActions(actor, found.map(orderState)),
+      canCopy:
+        found.length > 0 &&
+        found.every((row) => addsDraftsIn(actor, { id: row.branchId, isActive: row.branchActive })),
       orders: found
         .map((row) => ({
           id: row.id,

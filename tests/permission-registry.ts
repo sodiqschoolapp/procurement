@@ -92,6 +92,7 @@ export const SERVER_ACTIONS: Record<string, Entry> = {
   "src/app/(app)/orders/actions.ts#cancelOrdersAction": "request.edit",
   "src/app/(app)/orders/actions.ts#takeBackOrdersAction": "request.edit",
   "src/app/(app)/orders/actions.ts#submitAgainOrdersAction": "request.edit",
+  "src/app/(app)/orders/actions.ts#copyOrdersAsNewAction": "request.create",
   // The order list on /orders (plan of 2.8): each export in the matrix through itself.
   "src/app/(app)/orders/actions.ts#selectAllOnFilterAction": "data.view",
   "src/app/(app)/orders/actions.ts#tickedSummaryAction": "data.view",

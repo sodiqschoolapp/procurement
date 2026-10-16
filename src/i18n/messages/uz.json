@@ -1273,6 +1273,23 @@
       "reasonHint": "Kamida {min} ta belgi, barcha buyurtmalar uchun bitta sabab. {count} / {max}.",
       "notesTitle": "Har bir buyurtmaga izoh (ixtiyoriy)",
       "noteOf": "{number} uchun izoh"
+    },
+    "overdue": "Muddati o'tgan",
+    "copy": {
+      "button": "Yangi sifatida nusxalash",
+      "buttonCount": "Yangi sifatida nusxalash ({count})",
+      "title": "{count, plural, other {# ta buyurtma yangi qoralama sifatida nusxalansinmi?}}",
+      "result": "Har bir buyurtma o'z filialida sizning qoralamangizga aylanadi: o'sha mahsulot, bo'lim, miqdor, narx, qo'shimcha xarajatlar va to'lov turi bilan. Agar sizda shu bo'lim uchun shu mahsulotning qoralamasi bo'lsa, unga faqat miqdor qo'shiladi. Buyurtmalarning o'zi o'zgarmaydi.",
+      "done": "{count, plural, other {# ta buyurtma qoralamalaringizga nusxalandi.}}",
+      "failedTitle": "{count, plural, other {Hech narsa nusxalanmadi: quyida # ta buyurtma ko'rsatilgan.}}",
+      "failedLine": "{number} — {problem}",
+      "refused": {
+        "not_found": "Topilmadi. Ro'yxat yangilandi.",
+        "stale_version": "Hozirgina o'zgardi. Ro'yxat yangilandi; tekshirib, qayta nusxalang.",
+        "wrong_status": "Hozir uni nusxalab bo'lmaydi. Ro'yxat yangilandi.",
+        "forbidden": "Bu buyurtma filialida qoralama qo'sha olmaysiz.",
+        "not_ready": "Uni nusxalab bo'lmaydi: filial faol emas, buyurtmada hali mahsulot, bo'lim yoki miqdor yo'q, yoki qoralamangiz juda katta bo'lib ketadi."
+      }
     }
   }
 }

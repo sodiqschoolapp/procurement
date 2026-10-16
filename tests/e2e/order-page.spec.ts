@@ -142,9 +142,11 @@ test("Done when: the submitted order's stepper stands at Head, History shows the
   expect(await scrollsSideways(owner)).toBe(false);
 
   // Changed in 2.11, which gives the owner's moves their buttons: at Waiting for Head the owner
-  // has Take back and Cancel and nothing else, and so no waiting line (2.9 decided item 4).
+  // has Take back and Cancel, and so no waiting line (2.9 decided item 4). Changed in 2.13: Copy
+  // as new too, since the owner may add drafts in the branch (2.13 decided item 1).
   const ownerBar = owner.locator("[data-order-bar]");
-  await expect(ownerBar.getByRole("button")).toHaveCount(2);
+  await expect(ownerBar.getByRole("button")).toHaveCount(3);
+  await expect(ownerBar.locator("[data-copy-as-new]")).toBeVisible();
   await expect(
     ownerBar.getByRole("button", { name: en.orders.moves.button.TAKE_BACK }),
   ).toBeVisible();

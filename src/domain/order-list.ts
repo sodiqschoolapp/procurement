@@ -35,6 +35,8 @@ export type GroupMember = OrderPlan & {
   priority: "NORMAL" | "URGENT";
   /** The order's price hint, by priceHintPercent(), or null. */
   priceHint: bigint | null;
+  /** The order shows "Overdue", by isOverdue() of ./order-steps.ts (plan of 2.13). */
+  overdue: boolean;
 };
 
 export type GroupSummary = {
@@ -48,6 +50,8 @@ export type GroupSummary = {
   urgent: boolean;
   /** The hint farthest from the catalog price, or null (decided item 5, Look first). */
   priceHint: bigint | null;
+  /** Any of its orders is overdue (plan of 2.13, decided item 8). */
+  overdue: boolean;
 };
 
 /**
@@ -97,6 +101,7 @@ export function groupSummary(members: readonly GroupMember[]): GroupSummary {
     earliestNeededBy: earliest,
     urgent: members.some((member) => member.priority === "URGENT"),
     priceHint: groupPriceHint(members.map((member) => member.priceHint)),
+    overdue: members.some((member) => member.overdue),
   };
 }
 
