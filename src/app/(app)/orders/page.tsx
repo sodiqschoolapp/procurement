@@ -12,6 +12,7 @@ import {
 } from "@/domain/drafts";
 import { BRANCH_COOKIE } from "@/features/catalog/branch-cookie";
 import { currentBranchChoice, listMyBranches } from "@/features/catalog/queries/my-branches";
+import { DownloadButtons } from "@/features/orders/components/download-buttons";
 import { DraftsGrid, type GridRow } from "@/features/orders/components/drafts-grid";
 import { ListFiltersBar } from "@/features/orders/components/list-filters";
 import { OrderList } from "@/features/orders/components/order-list";
@@ -102,9 +103,12 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
   );
   const listSection = (
     <section aria-labelledby="order-list-title" className="flex flex-col gap-4">
-      <h2 id="order-list-title" className="text-[20px] leading-7 font-bold">
-        {t("list.title")}
-      </h2>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 id="order-list-title" className="text-[20px] leading-7 font-bold">
+          {t("list.title")}
+        </h2>
+        <DownloadButtons query={listFiltersParams(filters).toString()} />
+      </div>
       <ListFiltersBar
         filters={parsed.filters}
         topBarBranch={parsed.filters.branch === null ? cookieBranch : null}

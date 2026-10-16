@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
+import { readFile } from "node:fs/promises";
 
 import { type Page, expect, test } from "@playwright/test";
+import ExcelJS from "exceljs";
 import pg from "pg";
 
 import en from "../../src/i18n/messages/en.json" with { type: "json" };
@@ -181,4 +183,40 @@ test("ticks survive a change of page; a change of filter clears them (review of 
   await page.getByLabel(t.filters.status, { exact: true }).selectOption("PENDING_PRINCIPAL");
   await expect(page).toHaveURL(/status=PENDING_PRINCIPAL/);
   await expect(bar).toHaveCount(0);
+});
+
+test("the list downloads as Excel and PDF with its filters (05 Download; 11 Order list layout 1; plan of 2.14)", async ({
+  page,
+}, info) => {
+  const person = E2E_LIST_USERS[info.project.name as keyof typeof E2E_LIST_USERS];
+  const run = randomUUID().slice(0, 8);
+  const ownerId = await seedOrders(person, run, 2);
+  await signIn(page, person);
+  await page.goto(`/orders?status=PENDING_HEAD&owner=${ownerId}`);
+  await expect(page.locator("tbody[data-group]")).toHaveCount(2);
+
+  const excelLink = page.getByRole("link", { name: en.orders.download.excel });
+  const pdfLink = page.getByRole("link", { name: en.orders.download.pdf });
+  await expect(excelLink).toBeVisible();
+  await expect(pdfLink).toBeVisible();
+  // The links carry the list's filters, so the file holds what the list shows.
+  await expect(excelLink).toHaveAttribute("href", new RegExp(`owner=${ownerId}`));
+  expect(await scrollsSideways(page)).toBe(false);
+  if (info.project.name === "phone-375") {
+    const box = await excelLink.boundingBox();
+    expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
+  }
+
+  const [excel] = await Promise.all([page.waitForEvent("download"), excelLink.click()]);
+  expect(excel.suggestedFilename()).toMatch(/^orders-\d{4}-\d{2}-\d{2}\.xlsx$/);
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.readFile(await excel.path());
+  const products: string[] = [];
+  workbook.worksheets[0]!.getColumn(6).eachCell((cell) => products.push(String(cell.value)));
+  expect(products.filter((name) => name.includes(run))).toHaveLength(4);
+
+  const [pdf] = await Promise.all([page.waitForEvent("download"), pdfLink.click()]);
+  expect(pdf.suggestedFilename()).toMatch(/^orders-\d{4}-\d{2}-\d{2}\.pdf$/);
+  const bytes = await readFile(await pdf.path());
+  expect(bytes.subarray(0, 5).toString()).toBe("%PDF-");
 });

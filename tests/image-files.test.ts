@@ -112,3 +112,17 @@ describe("the image holds what its scripts import (build-plan 0.15; 0.16, decisi
     expect(isCopied("drizzle/0001_sign_in.sql", ["drizzle"])).toBe(true);
   });
 });
+
+describe("the image holds the files the app reads at run time (plan of 2.14, decided item 9)", () => {
+  it("copies the PDF fonts and the logo of the order download into the run stage", () => {
+    const copied = copiedIntoRunStage();
+    for (const file of [
+      "src/features/orders/download/fonts/GolosText-Regular.ttf",
+      "src/features/orders/download/fonts/GolosText-SemiBold.ttf",
+      "public/brand/sodiq-logo-horizontal-on-dark.svg",
+    ]) {
+      expect(existsSync(file), file).toBe(true);
+      expect(isCopied(file, copied), file).toBe(true);
+    }
+  });
+});

@@ -1294,8 +1294,8 @@
     "download": {
       "excel": "Скачать Excel",
       "pdf": "Скачать PDF",
-      "title": "Заявки",
-      "sheet": "Заявки",
+      "title": "Заказы",
+      "sheet": "Заказы",
       "columns": {
         "number": "Номер",
         "status": "Статус",
