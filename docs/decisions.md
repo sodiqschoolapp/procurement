@@ -990,6 +990,45 @@ Choices made during the build:
 - The lock query joins the ids with `sql.join`: drizzle's `inArray(orders.id, …)` names the table and fails under the alias `o`.
 - `UPLOAD_STATUS` answers `not_ready` with 409, as every code needs a status there.
 
+### 2.5a Drafts: rules, actions and queries (16.10.2026)
+
+The plan's decisions as the plan review of 16.10.2026 confirmed them (corrections 1 and 2 applied), and those of the build and its reviews. The Look first items come first.
+
+1. **Look first** (task split). 2.5 is split into 2.5a (rules, actions, queries) and 2.5b (the grid); every test of the old Done-when is a server rule and sits in 2.5a.
+2. **Look first** (05 Drafts 2 and 3). A draft is added once it names branch, subtype, department and quantity; the merge happens at the add only; a later edit into an existing trio is refused `draftExists`. `updateDraft` refuses an empty branch, subtype, department or quantity (`required`, correction 1).
+3. **Look first** (developer-rules rule 8). `order_draft_adds` holds a merged add's `client_key` with `qty_after`, `version_after` (correction 2) and `total_after` (spec review of the build): a repeat returns the stored first answer, never one rebuilt from the current row.
+4. **Look first** (05 field 11). Suggested price: the subtype's reference price, else its last purchase price, else empty; written into `planned_price` when none is typed. The hint compares with the reference price only.
+5. **Look first** (05 field 10). Decimals only where the measure allows them; a change of subtype re-checks the stored quantity (`wholeOnly`); a merged sum past numeric(14,3) or a total past `MONEY_MAX` is `tooLarge`, never `unexpected`.
+6. **Look first** (decisions 1.7 item 1). Any order, a draft included, locks its product's type and measure (`FOR SHARE` against the edit's `FOR UPDATE`); deleting the only draft lifts it.
+7. **Look first** (draft wall). Another user's `DRAFT` is `not_found` for everyone but its owner and the Head; edit is the owner's or the Head's; delete is the owner's only, the owner check before the version check (permission review).
+8. **Look first** (branch wall). A draft's branch changes only to an active branch, with a department of it, passing `request.create` for the actor (`not_found`) and for the owner (`branchId: notAllowed`); a numbered order's branch is refused.
+9. **Look first** (permission matrix). The grid lists `DRAFT` and `RETURNED` orders, paged 25 on the server; a Manager sees own rows (with `CREATE_REQUESTS` off too, read-only); the Head own rows, every owner's with `owners=all` (any other value falls back to own); Principal and Finance are refused the list (role checked before branch, `seesDraftsGrid()`).
+10. **Look first** (action wrapper). "Apply needed-by to all ticked" is one transaction on up to 200 drafts on the exported 2.4 helpers; no `order_actions` or event row (a draft edit is no move).
+11. **Look first** (file access). The reference photo answers `data.view` plus the draft wall (`draftOwnerId`), so the owner keeps it with `CREATE_REQUESTS` off; it has its own permission-matrix test.
+12. **Look first** (spec contradiction). Proposed `/spec-change` for 05 Drafts 3: "Autosave. Once its product, department and quantity are given, a draft saves itself after each change and shows "Saved"."
+13. **Look first** (money). At most 20 extra-cost rows per order (`DRAFT_EXTRAS_MAX`); each amount more than 0.
+14. **Look first** (accepted risk). `order_draft_adds` and `orders.client_key` go with a deleted never-submitted draft (cascade); a retry is only sent before the first answer, and a delete needs that answer.
+15. Urgent reason: 1 to 200 code points, checked on the row as it will be; Normal clears it.
+16. Needed-by date: any valid date in a draft (`isBusinessDate()`); "not in the past" is checked at submit (2.7).
+17. Payment type defaults to `default_payment_type`; the company to the product's default company while that company is active.
+18. Comment at most 1000, requested-by at most 120 code points, trimmed, empty as null.
+19. `planned_total` is written on every draft write by `draftTotal()`, null while quantity or price is missing.
+20. Inactive branch, product (also under an active subtype), subtype, department, company and extra-cost type are refused when picked.
+21. No audit row, event or notification for a draft write.
+22. `RETURNED` orders and numbered drafts are edited, never merged or deleted.
+23. Money and quantity cross the wire as text.
+24. No change to `src/server/action.ts`; the trio's advisory lock is taken in `write`, a 23505 on `orders_one_draft_key` is `draftExists`.
+25. `.claude/rules/requests.md` still names `src/features/requests/**`; a process change for the owner.
+
+Choices made during the build:
+
+- `createDraft` finds the draft to merge with `SELECT … FOR UPDATE` and the full match (`lockTrioDraft()`), so a draft moved or deleted meanwhile drops out and the add makes a new one (spec review, Must fix 1); a line in `.claude/agents/spec-reviewer.md` now checks this pattern.
+- `deleteDraft` checks the version in its `check` step under the lock, since the wrapper's version step would raise the version of a deleted row.
+- `getDraft` turns a `not_found` of `authorize()` into `null`, so every not-found looks the same.
+- `order_draft_adds` has no append-only trigger: the cascade of a deleted draft needs the delete, and no code updates it.
+- `plainQuantity()` drops trailing zeros, so a first answer and a repeat both say "20"; `inStock()` shows "0" without a stock row and nothing for a service.
+- `tests/helpers/together.ts` `commitWhileWaiting()` holds a change until the action waits on a row lock (read from `pg_stat_activity`).
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.
