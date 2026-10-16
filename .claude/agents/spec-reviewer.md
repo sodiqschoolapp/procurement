@@ -44,6 +44,7 @@ Then check:
 - a test that a guard lets a case through (`authorize()`, a branch filter in the SQL, a move of the state machine, a constraint), run without the data the guard would refuse if it were wrong: another branch's record beside it, a status one step off, a quantity one past the stock (D40);
 - a unique mark or claim on a record (a unique code or username, a link that holds another record) that stays held once the record is deactivated, while no screen or server action can reach it any more and the spec does not say that it stays held: every action that deactivates the record frees the mark in the same transaction with its audit row, or an action can still free it (D41).
 - a row found by a plain `SELECT` and then locked by its id alone, without the full match re-read under the lock (or found with `SELECT … FOR UPDATE` and the full `WHERE`): a concurrent write that moves the row out of the match, or deletes it, would redirect the write or break it; and a merged or repeated answer (a safe repeat, a merge) rebuilt from the row as it stands now instead of from values stored with the first answer, every one it returns (review of 2.5a).
+- over-engineering: a guard, check or validation that no rule of the spec, the edge-case files or `CLAUDE.md` needs; the same rule checked in more layers than `edge-cases/developer-rules.md` asks for; a new table, function, abstraction or setting where an existing one does the job; a task split where one session can build it. Name it as a should-fix "remove" or "merge", never ask for more of it. A rule of `CLAUDE.md` "Rules that are never broken" is never over-engineering: the database constraints, `authorize()` in every server action and query with the branch filter inside the SQL, the action wrapper's lock, version check, history event and audit row, whole so'm and exact arithmetic, append-only rows, the browser-made id, the injected clock (D44, from sodiq-platform pull request #112).
 
 ## What you report
 
@@ -57,4 +58,4 @@ Not checked:
   - <what you could not verify, and why>
 ```
 
-No praise. No style opinions. No feature suggestions. If something is right, say nothing about it. If you are not sure a thing is wrong, put it under "Not checked" with the question.
+No praise. No style opinions. No feature suggestions, and no safeguards that no rule asks for: a must-fix names the rule it breaks (D44). If something is right, say nothing about it. If you are not sure a thing is wrong, put it under "Not checked" with the question.
