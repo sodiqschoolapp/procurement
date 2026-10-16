@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import { eq } from "drizzle-orm";
 
+import { orderTotal } from "@/domain/order-totals";
 import type { PaymentType } from "@/domain/payment-types";
 import type { ProductType } from "@/domain/products";
 import type { RequestStatus } from "@/domain/request-status";
@@ -73,6 +74,14 @@ export type OrderRow = {
   revision?: number;
   priority?: "NORMAL" | "URGENT";
   urgentReason?: string | null;
+  neededBy?: string;
+  plannedQty?: string;
+  plannedPrice?: bigint;
+  paymentType?: PaymentType;
+  submittedAt?: Date;
+  approvedAt?: Date | null;
+  closedAt?: Date | null;
+  createdAt?: Date;
 };
 
 /**
@@ -94,17 +103,24 @@ export async function insertOrder(row: OrderRow) {
       number: row.number === undefined ? (submitted ? inventedNumber() : null) : row.number,
       variantId,
       departmentId,
-      neededBy: "2031-05-01",
-      plannedQty: "10.000",
-      plannedPrice: 5000n,
-      plannedTotal: 50000n,
-      paymentType: "CASH",
+      neededBy: row.neededBy ?? "2031-05-01",
+      plannedQty: row.plannedQty ?? "10.000",
+      plannedPrice: row.plannedPrice ?? 5000n,
+      plannedTotal: orderTotal({
+        quantity: row.plannedQty ?? "10.000",
+        price: row.plannedPrice ?? 5000n,
+        extras: [],
+        paymentType: row.paymentType ?? "CASH",
+      }),
+      paymentType: row.paymentType ?? "CASH",
       priority: row.priority ?? "NORMAL",
       urgentReason: row.urgentReason ?? null,
       version: row.version ?? 1,
       revision: row.revision ?? 1,
-      submittedAt: submitted ? now() : null,
-      createdAt: now(),
+      submittedAt: submitted ? (row.submittedAt ?? now()) : null,
+      approvedAt: row.approvedAt ?? null,
+      closedAt: row.closedAt ?? null,
+      createdAt: row.createdAt ?? now(),
       updatedAt: now(),
     })
     .returning({ id: orders.id, number: orders.number, version: orders.version });

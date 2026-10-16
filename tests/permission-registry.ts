@@ -135,6 +135,12 @@ export const QUERIES: Record<string, Permission> = {
   // The numbers of just-submitted orders for the Submit message (plan of 2.7): data.view with
   // the branch and the draft wall inside the SQL (a taken-back DRAFT keeps its number).
   "src/features/orders/queries/submitted.ts#submittedNumbers": "data.view",
+  // The order list on /orders (plan of 2.8): data.view with the branch and the draft wall in the
+  // SQL (src/features/orders/queries/order-list.db.test.ts and its matrix test).
+  "src/features/orders/queries/order-list.ts#listOrderGroups": "data.view",
+  "src/features/orders/queries/order-list.ts#selectAllOnFilter": "data.view",
+  "src/features/orders/queries/order-list.ts#tickedSummary": "data.view",
+  "src/features/orders/queries/order-list.ts#listOrderFilterChoices": "data.view",
   // The download route's file: file.upload for a file no record holds; each owner a later task
   // adds to src/server/files/owners.ts names its own permission there (plan of 0.12, decision 5).
   "src/features/files/queries/file-for-download.ts#fileForDownload": "file.upload",
