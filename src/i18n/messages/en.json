@@ -39,6 +39,7 @@
     "staleVersion": "Someone changed this while you had it open. Reload the page to see the new version, then try again.",
     "wrongStatus": "This cannot be done at the current status. Reload the page to see where it stands now.",
     "conflict": "This was moved to another branch or person while you were working. Reload the page and check before trying again.",
+    "notReady": "Some of the ticked orders are not ready for this step yet. Untick the marked orders and act again.",
     "unexpected": "Something went wrong and nothing was saved. Try again; if it happens again, tell the Procurement Head.",
     "network": "The connection was lost. Reload the page to see whether your change was saved.",
     "field": {

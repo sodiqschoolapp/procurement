@@ -39,6 +39,14 @@ describe("message keys of the typed errors (11-screens-and-ux.md rule 14)", () =
     });
   }
 
+  it("failure() names the failing orders of an action on ticked orders (plan of 2.4, decision 1)", () => {
+    const orders = [{ orderId: "c1", code: "not_ready" as const }];
+    expect(failure("not_ready", undefined, orders)).toEqual({
+      ok: false,
+      error: { code: "not_ready", messageKey: "errors.notReady", orders },
+    });
+  });
+
   it("failure() carries the code's key", () => {
     expect(failure("stale_version")).toEqual({
       ok: false,

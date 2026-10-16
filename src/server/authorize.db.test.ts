@@ -1,7 +1,13 @@
 import { TransactionRollbackError, eq, sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 
-import { AuthorizationError, authorize, branchFilter } from "@/server/authorize";
+import {
+  AuthorizationError,
+  type OrderCheck,
+  authorize,
+  authorizeOrders,
+  branchFilter,
+} from "@/server/authorize";
 import { db } from "@/server/db/client";
 import { branches, users } from "@/server/db/schema";
 
@@ -172,6 +178,60 @@ describe("authorize() (03-roles-and-permissions.md)", () => {
   it("creates an invented Principal with a branch of its own when none is given", async () => {
     const principal = await insertUser("PRINCIPAL");
     expect(principal.branchIds).toHaveLength(1);
+  });
+});
+
+describe("authorizeOrders(): authorize() for many ticked orders (plan of 2.4; 03 rule 8)", () => {
+  it("answers each order as authorize() answers it alone", async () => {
+    const own = await insertBranch();
+    const other = await insertBranch();
+    const manager = await insertUser("MANAGER", { branches: [own.id] });
+    const colleague = await insertUser("MANAGER", { branches: [own.id] });
+    const checks: OrderCheck[] = [
+      { permission: "request.edit", target: { branchId: own.id, ownerId: manager.id } },
+      { permission: "request.edit", target: { branchId: own.id, ownerId: colleague.id } },
+      { permission: "request.edit", target: { branchId: other.id, ownerId: manager.id } },
+      { permission: "request.approve_step1", target: { branchId: own.id } },
+      { permission: "data.view", target: { branchId: own.id } },
+    ];
+    const alone = async () =>
+      Promise.all(
+        checks.map(async (check) => {
+          const kind = await refusalKind(authorize(manager.id, check.permission, check.target));
+          return kind === "allowed" ? "allow" : kind;
+        }),
+      );
+
+    const answer = await authorizeOrders(manager.id, checks, db);
+    expect(answer.decisions).toEqual(["allow", "forbidden", "not_found", "forbidden", "allow"]);
+    expect(answer.decisions).toEqual(await alone());
+    expect(answer.actor).toMatchObject({
+      userId: manager.id,
+      role: "MANAGER",
+      branchIds: [own.id],
+    });
+
+    // A right switched off counts at once, for every order (03, Manager rights).
+    await setManagerRight(manager.id, "CREATE_REQUESTS", false);
+    const switchedOff = await authorizeOrders(manager.id, checks, db);
+    expect(switchedOff.decisions).toEqual([
+      "forbidden",
+      "forbidden",
+      "not_found",
+      "forbidden",
+      "allow",
+    ]);
+    expect(switchedOff.decisions).toEqual(await alone());
+  });
+
+  it("refuses an inactive user and an unknown one", async () => {
+    const branch = await insertBranch();
+    const inactive = await insertUser("MANAGER", { branches: [branch.id], isActive: false });
+    const check: OrderCheck = { permission: "data.view", target: { branchId: branch.id } };
+    expect(await refusalKind(authorizeOrders(inactive.id, [check], db))).toBe("forbidden");
+    expect(
+      await refusalKind(authorizeOrders("00000000-0000-4000-8000-000000000000", [check], db)),
+    ).toBe("forbidden");
   });
 });
 

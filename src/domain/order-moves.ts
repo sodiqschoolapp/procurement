@@ -314,6 +314,14 @@ function moveOf(status: RequestStatus, action: OrderAction): OrderMove | undefin
   return ORDER_MOVES.find((move) => move.from === status && move.action === action);
 }
 
+/** A draft is visible to its owner and the Head only (06 Statuses; 03 rule 1). */
+export function behindDraftWall(
+  actor: Actor,
+  order: Pick<OrderState, "status" | "ownerId">,
+): boolean {
+  return order.status === "DRAFT" && actor.role !== "HEAD" && actor.userId !== order.ownerId;
+}
+
 /**
  * One order and one action. `ready_to_close` is left to the server (`withReadiness`): the screen
  * offers Close and the server names the orders that are not ready (08 Closing 3; decision 8).
@@ -327,9 +335,7 @@ function judge(
   // The branch wall, and the draft wall: a draft is visible to its owner and the Head only
   // (03 rule 1; 06 Statuses).
   if (!seesBranch(actor, order.branchId)) return { reason: "not_found" };
-  if (order.status === "DRAFT" && actor.role !== "HEAD" && actor.userId !== order.ownerId) {
-    return { reason: "not_found" };
-  }
+  if (behindDraftWall(actor, order)) return { reason: "not_found" };
 
   const move = moveOf(order.status, action);
   if (!move) return { reason: "wrong_status" };

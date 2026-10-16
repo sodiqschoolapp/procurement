@@ -160,6 +160,9 @@ export const departments = pgTable(
   },
   (table) => [
     unique("departments_client_key_key").on(table.clientKey),
+    // The target of the orders' composite foreign key (department_id, branch_id): an order's
+    // department is of the order's branch (A6; plan of 2.4, decision 3, Look first).
+    unique("departments_id_branch_id_key").on(table.id, table.branchId),
     check("departments_name_check", sql`btrim(${table.name}) <> ''`),
     check(
       "departments_responsible_name_check",

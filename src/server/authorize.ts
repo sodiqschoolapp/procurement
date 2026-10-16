@@ -7,6 +7,7 @@ import {
   type Permission,
   type Role,
   type Target,
+  type Decision,
   decide,
   decideList,
 } from "@/domain/permissions";
@@ -79,6 +80,30 @@ export async function authorize(
   const decision = decide(permission, actor, target);
   if (decision !== "allow") throw new AuthorizationError(decision);
   return actor;
+}
+
+/** One order of an action on ticked orders: the permission it needs and its branch and owner. */
+export type OrderCheck = { permission: Permission; target: Target };
+
+/**
+ * authorize() for an action on many ticked orders (plan of 2.4, decision 16): the actor is read
+ * once, in one query, and each order is answered like authorize() would answer it alone, so 200
+ * orders cost one query, not 200 (developer-rules.md rule 12). Each target is read from the locked
+ * order, never from the input (rule 13). Throws AuthorizationError("forbidden") for an unknown or
+ * inactive user; otherwise returns the actor and one decision per check, in the same order. The
+ * caller refuses the whole action when any decision is not "allow" (03 rule 8).
+ */
+export async function authorizeOrders(
+  userId: string,
+  checks: readonly OrderCheck[],
+  executor: Executor,
+): Promise<{ actor: Actor; decisions: Decision[] }> {
+  const actor = await loadActor(userId, executor);
+  if (!actor) throw new AuthorizationError("forbidden");
+  return {
+    actor,
+    decisions: checks.map((check) => decide(check.permission, actor, check.target)),
+  };
 }
 
 /**
