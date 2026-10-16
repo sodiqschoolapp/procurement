@@ -137,15 +137,19 @@ describe("Done when 2: the suggested price (05 field 11; decided item 4)", () =>
     const { manager, base } = await scene();
     const draft = await draftOf(manager.id, base);
     const other = await insertItem({ referencePrice: 7_000n });
-    await editDraft(manager.id, { id: draft.id, version: 1, variantId: other.variantId });
+    expect(
+      await editDraft(manager.id, { id: draft.id, version: 1, variantId: other.variantId }),
+    ).toMatchObject({ ok: true });
     expect((await orderRow(draft.id))!.plannedPrice).toBe(7_000n);
     const third = await insertItem({ referencePrice: 9_000n });
-    await editDraft(manager.id, {
-      id: draft.id,
-      version: 2,
-      variantId: third.variantId,
-      price: "8000",
-    });
+    expect(
+      await editDraft(manager.id, {
+        id: draft.id,
+        version: 2,
+        variantId: third.variantId,
+        price: "8000",
+      }),
+    ).toMatchObject({ ok: true });
     expect((await orderRow(draft.id))!.plannedPrice).toBe(8_000n);
   });
 
@@ -236,19 +240,23 @@ describe("Done when 4: Urgent needs a reason (05 field 14; decided item 15)", ()
     expect(
       await editDraft(manager.id, { id: draft.id, version: 1, priority: "URGENT" }),
     ).toMatchObject(refusedOn("urgentReason", "required"));
-    await editDraft(manager.id, {
-      id: draft.id,
-      version: 1,
-      priority: "URGENT",
-      urgentReason: "Imtihon",
-    });
+    expect(
+      await editDraft(manager.id, {
+        id: draft.id,
+        version: 1,
+        priority: "URGENT",
+        urgentReason: "Imtihon",
+      }),
+    ).toMatchObject({ ok: true });
     expect(
       await editDraft(manager.id, { id: draft.id, version: 2, urgentReason: "" }),
     ).toMatchObject(refusedOn("urgentReason", "required"));
     expect(
       await editDraft(manager.id, { id: draft.id, version: 2, urgentReason: "a".repeat(201) }),
     ).toMatchObject(refusedOn("urgentReason", "tooLong"));
-    await editDraft(manager.id, { id: draft.id, version: 2, priority: "NORMAL" });
+    expect(
+      await editDraft(manager.id, { id: draft.id, version: 2, priority: "NORMAL" }),
+    ).toMatchObject({ ok: true });
     expect(await orderRow(draft.id)).toMatchObject({ priority: "NORMAL", urgentReason: null });
   });
 });
@@ -634,7 +642,9 @@ describe("versions and all or nothing (developer-rules rule 9; 06 rule 8)", () =
   it("updateDraft with an old version is stale_version and saves nothing", async () => {
     const { manager, base } = await scene();
     const draft = await draftOf(manager.id, base);
-    await editDraft(manager.id, { id: draft.id, version: 1, comment: "Birinchi" });
+    expect(
+      await editDraft(manager.id, { id: draft.id, version: 1, comment: "Birinchi" }),
+    ).toMatchObject({ ok: true });
     expect(
       await editDraft(manager.id, { id: draft.id, version: 1, comment: "Ikkinchi" }),
     ).toMatchObject({ ok: false, error: { code: "stale_version" } });
@@ -648,7 +658,9 @@ describe("versions and all or nothing (developer-rules rule 9; 06 rule 8)", () =
       const department = await insertDepartment(base.branchId);
       ids.push((await draftOf(manager.id, { ...base, departmentId: department.id })).id);
     }
-    await editDraft(manager.id, { id: ids[2], version: 1, comment: "o'zgardi" });
+    expect(
+      await editDraft(manager.id, { id: ids[2], version: 1, comment: "o'zgardi" }),
+    ).toMatchObject({ ok: true });
     const stale = await runDraftsAction(setDraftsNeededBy, manager.id, {
       orders: ids.map((id) => ({ id, version: 1 })),
       neededBy: "2031-06-01",
@@ -777,5 +789,40 @@ describe("the rows the guard keeps (D40)", () => {
     });
     const [row] = await db.select().from(orders).where(eq(orders.id, pending.id));
     expect(row!.plannedQty).toBe("10.000");
+  });
+});
+
+describe("a total past MONEY_MAX is refused as too large (05 field 16; developer-rules rule 6; review of 2.5a, S3)", () => {
+  const HUGE = "999 999 999 999 999";
+
+  it("on create: the largest quantity at the largest price is tooLarge on quantity; 1 at that price saves", async () => {
+    const { manager, base } = await scene();
+    expect(
+      await addDraft(manager.id, { ...base, quantity: "99999999999", price: HUGE }),
+    ).toMatchObject(refusedOn("quantity", "tooLarge"));
+    expect(await addDraft(manager.id, { ...base, quantity: "1", price: HUGE })).toMatchObject({
+      ok: true,
+    });
+  });
+
+  it("on a merged add: a sum whose total no longer fits is tooLarge on quantity and leaves the draft", async () => {
+    const { manager, base } = await scene();
+    const draft = await draftOf(manager.id, { ...base, quantity: "1", price: HUGE });
+    expect(await addDraft(manager.id, { ...base, quantity: "1" })).toMatchObject(
+      refusedOn("quantity", "tooLarge"),
+    );
+    expect(await orderRow(draft.id)).toMatchObject({ plannedQty: "1.000", version: 1 });
+  });
+
+  it("on update: a price that pushes the total past it is tooLarge on price; a quantity, on quantity", async () => {
+    const { manager, base } = await scene();
+    const draft = await draftOf(manager.id, { ...base, price: "100 000 000" });
+    expect(await editDraft(manager.id, { id: draft.id, version: 1, price: HUGE })).toMatchObject(
+      refusedOn("price", "tooLarge"),
+    );
+    expect(
+      await editDraft(manager.id, { id: draft.id, version: 1, quantity: "99999999999" }),
+    ).toMatchObject(refusedOn("quantity", "tooLarge"));
+    expect(await orderRow(draft.id)).toMatchObject({ plannedQty: "10.000", version: 1 });
   });
 });

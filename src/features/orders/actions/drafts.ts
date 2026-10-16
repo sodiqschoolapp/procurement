@@ -10,6 +10,7 @@ import {
   isNeverSubmitted,
   plainQuantity,
   suggestedPrice,
+  totalFits,
 } from "@/domain/drafts";
 import { behindDraftWall } from "@/domain/order-moves";
 import { priceHintPercent } from "@/domain/order-totals";
@@ -229,6 +230,7 @@ async function mergeInto(
   const quantity = draft.plannedQty ? addQuantities(draft.plannedQty, added) : added;
   if (quantity === null) refuse("quantity", "errors.field.tooLarge");
   const total = await totalWith(tx, draft, quantity);
+  if (!totalFits(total)) refuse("quantity", "errors.field.tooLarge");
   const version = draft.version + 1;
   const at = now();
   await tx
@@ -271,6 +273,7 @@ async function insertDraft(
     extras: extras.map((extra) => extra.amount),
     paymentType,
   });
+  if (!totalFits(total)) refuse("quantity", "errors.field.tooLarge");
   const at = now();
   const [row] = await tx
     .insert(orders)
@@ -439,6 +442,16 @@ export const updateDraft = defineAction({
       extras: extras.map((extra) => extra.amount),
       paymentType,
     });
+    if (!totalFits(total)) {
+      const field = sent("quantity")
+        ? "quantity"
+        : sent("price")
+          ? "price"
+          : sent("extras")
+            ? "extras"
+            : "quantity";
+      refuse(field, "errors.field.tooLarge");
+    }
 
     try {
       await tx

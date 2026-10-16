@@ -18,6 +18,7 @@ import {
   requesterName,
   seesDraftsGrid,
   suggestedPrice,
+  totalFits,
   urgentReason,
 } from "./drafts";
 import { REQUEST_STATUSES } from "./request-status";
@@ -206,5 +207,24 @@ describe("inStock (05 field 4: current stock of this branch; services show a das
     expect(inStock("GOODS", null)).toBe("0");
     expect(inStock("SERVICE", "3.000")).toBeNull();
     expect(inStock("SERVICE", null)).toBeNull();
+  });
+});
+
+describe("totalFits (05 field 16; developer-rules rule 6: whole so'm up to MONEY_MAX; review of 2.5a, S3)", () => {
+  it("a total of 0 to 999 999 999 999 999 so'm fits, and so does none; one more does not", () => {
+    expect(totalFits(null)).toBe(true);
+    expect(totalFits(0n)).toBe(true);
+    expect(totalFits(999_999_999_999_999n)).toBe(true);
+    expect(totalFits(1_000_000_000_000_000n)).toBe(false);
+  });
+
+  it("the largest quantity at the largest price does not fit", () => {
+    const total = draftTotal({
+      quantity: "99999999999.999",
+      price: 999_999_999_999_999n,
+      extras: [],
+      paymentType: "CASH",
+    });
+    expect(totalFits(total)).toBe(false);
   });
 });

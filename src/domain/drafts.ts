@@ -5,6 +5,7 @@
 // decimal text of numeric(14,3), read only by ./order-totals.ts (developer-rules.md rules 1, 6).
 
 import { catalogName, isCatalogName } from "./catalogs";
+import { isSomOrZero } from "./money";
 import { type OrderPlan, QUANTITY, orderTotal, quantityOf } from "./order-totals";
 import type { Role } from "./permissions";
 import type { ProductType } from "./products";
@@ -133,6 +134,14 @@ export type DraftPlan = Omit<OrderPlan, "quantity" | "price"> & {
 export function draftTotal(plan: DraftPlan): bigint | null {
   if (plan.quantity === null || plan.price === null) return null;
   return orderTotal({ ...plan, quantity: plan.quantity, price: plan.price });
+}
+
+/**
+ * Whether a draft's total can be stored: none, or whole so'm from 0 to MONEY_MAX (developer-rules
+ * rule 6; review of 2.5a, S3). A larger one is refused as too large, never left to the database.
+ */
+export function totalFits(total: bigint | null): boolean {
+  return total === null || isSomOrZero(total);
 }
 
 /** The statuses whose plan is edited in the drafts grid (05 Drafts 5; 06 rule 6). */

@@ -257,7 +257,9 @@ describe("paged on the server, 25 rows a page (11 Rules for a smooth feel 8; dev
       ...base,
       departmentId: (await insertDepartment(base.branchId)).id,
     });
-    await editDraft(manager.id, { id: older.id, version: 1, comment: "keyin" });
+    expect(
+      await editDraft(manager.id, { id: older.id, version: 1, comment: "keyin" }),
+    ).toMatchObject({ ok: true });
     expect((await listDrafts(manager.id)).rows.map((row) => row.id)).toEqual([older.id, newer.id]);
   });
 });
