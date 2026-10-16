@@ -141,9 +141,15 @@ test("Done when: the submitted order's stepper stands at Head, History shows the
   await expect(submitted.locator("time")).toHaveText(TIME);
   expect(await scrollsSideways(owner)).toBe(false);
 
-  // The owner has no move at Waiting for Head in 2.9 beyond Take back (2.11), which has no button
-  // yet: neither a button nor the waiting line (decided item 4).
-  await expect(owner.locator("[data-order-bar]").getByRole("button")).toHaveCount(0);
+  // Changed in 2.11, which gives the owner's moves their buttons: at Waiting for Head the owner
+  // has Take back and Cancel and nothing else, and so no waiting line (2.9 decided item 4).
+  const ownerBar = owner.locator("[data-order-bar]");
+  await expect(ownerBar.getByRole("button")).toHaveCount(2);
+  await expect(
+    ownerBar.getByRole("button", { name: en.orders.moves.button.TAKE_BACK }),
+  ).toBeVisible();
+  await expect(ownerBar.getByRole("button", { name: en.orders.moves.button.CANCEL })).toBeVisible();
+  await expect(ownerBar.locator("[data-waiting]")).toHaveCount(0);
 
   // The order number in the list's opened group links to the page (progress 2.8, "For 2.9").
   await owner.goto(`/orders?status=PENDING_HEAD&owner=${seeded.ownerId}`);

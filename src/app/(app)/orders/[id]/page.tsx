@@ -212,7 +212,7 @@ export default async function OrderPageScreen({
             {order.number ?? t("noNumber")}
           </h1>
           {order.number ? (
-            <span className="text-[15px] leading-[22px] text-muted-foreground">
+            <span data-revision className="text-[15px] leading-[22px] text-muted-foreground">
               {tOrders("revision", { revision: order.revision })}
             </span>
           ) : null}

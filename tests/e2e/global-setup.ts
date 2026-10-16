@@ -180,6 +180,29 @@ export const E2E_PAGE_USERS = {
   },
 } as const satisfies Record<string, { manager: E2eUser; finance: E2eUser }>;
 
+/**
+ * The owners of the send-back spec (build plan 2.11), one per project: projects run in parallel,
+ * and these people are reset to Uzbek before every run (A2), so the spec reads the Uzbek texts.
+ */
+export const E2E_MOVE_USERS = {
+  "phone-375": {
+    fullName: "Nodira Sinovova",
+    username: "e2e_move_phone",
+    phone: "+998 90 000 99 51",
+    role: "MANAGER",
+    password: PASSWORD,
+    branches: ["EA"],
+  },
+  "desktop-1440": {
+    fullName: "Jasur Sinovov",
+    username: "e2e_move_desktop",
+    phone: "+998 90 000 99 52",
+    role: "MANAGER",
+    password: PASSWORD,
+    branches: ["EA"],
+  },
+} as const satisfies Record<string, E2eUser>;
+
 // A fixed invented moment: the rows' time does not matter to any browser test.
 /**
  * One Head per project for the notifications test (plan of 0.11, review of the plan, Must fix 2):
@@ -308,6 +331,7 @@ export default async function globalSetup(): Promise<void> {
       ...Object.values(E2E_DRAFT_USERS),
       ...Object.values(E2E_LIST_USERS),
       ...Object.values(E2E_PAGE_USERS).flatMap((pair) => [pair.manager, pair.finance]),
+      ...Object.values(E2E_MOVE_USERS),
     ]) {
       await insertUserIfMissing(client, user, branchIds);
     }

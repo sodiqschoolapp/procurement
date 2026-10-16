@@ -31,7 +31,6 @@ import {
   insertItem,
   insertOrder,
   insertOrderExtra,
-  inventedNumber,
   orderRow,
 } from "../../../../tests/helpers/orders";
 import { commitWhileWaiting } from "../../../../tests/helpers/together";
