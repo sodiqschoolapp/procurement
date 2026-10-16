@@ -264,10 +264,10 @@ export async function listDrafts(
 ): Promise<DraftPage> {
   const branchId = branchInput.parse(options.branchId ?? null);
   const everyOwner = ownersInput.parse(options.owners ?? null) === "all";
-  const actor = branchId
-    ? await authorize(userId, "data.view", { branchId })
-    : await authorizeList(userId, "data.view");
+  // The role first: the Principal and Finance are refused the grid in every branch.
+  const actor = await authorizeList(userId, "data.view");
   refuseWithoutGrid(actor);
+  if (branchId) await authorize(userId, "data.view", { branchId });
   // Loaded here, not at the top: `next build` has no DATABASE_URL (progress 0.6).
   const { db } = await import("@/server/db/client");
   const where = and(
