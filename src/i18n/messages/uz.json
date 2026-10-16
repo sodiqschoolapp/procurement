@@ -982,7 +982,8 @@
         "forbidden": "Bu buyurtmani yubora olmaysiz.",
         "not_ready": "Bu buyurtmani hozircha yuborib boʻlmaydi."
       },
-      "failedLine": "{name} — {problem}"
+      "failedLine": "{name} — {problem}",
+      "againButton": "Qayta yuborish ({count})"
     },
     "list": {
       "title": "Buyurtmalar ro'yxati",
@@ -1178,6 +1179,30 @@
         "done": "Yuborildi: {number}.",
         "failed": "Yuborilmadi. Buyurtmalar roʻyxatida tuzating: {fields}.",
         "editInList": "Buyurtmalar roʻyxatida tahrirlash"
+      },
+      "changes": {
+        "title": "{revision}-tahrirdan beri nima o'zgardi",
+        "before": "Avval",
+        "now": "Hozir",
+        "none": "Ko'rsatilmagan",
+        "total": "Rejadagi jami",
+        "fields": {
+          "variantId": "Mahsulot va turi",
+          "companyId": "Brend yoki kompaniya",
+          "departmentId": "Bo'lim",
+          "requesterName": "Xodim",
+          "neededBy": "Kerakli sana",
+          "quantity": "Miqdor",
+          "price": "Birlik narxi",
+          "paymentType": "To'lov turi",
+          "priority": "Muhimlik",
+          "urgentReason": "Shoshilinchlik sababi",
+          "comment": "Izoh",
+          "referencePhotoFileId": "Namuna rasmi"
+        },
+        "extra": "Qo'shimcha xarajat: {type}",
+        "photoChanged": "Boshqa rasm",
+        "arrow": "→"
       }
     },
     "approve": {
@@ -1190,7 +1215,6 @@
       "done": "{count, plural, other {# ta buyurtma tasdiqlandi.}}",
       "failedTitle": "{count, plural, other {Hech narsa tasdiqlanmadi: # ta buyurtma quyida ko'rsatilgan.}}",
       "failedLine": "{number} — {problem}",
-      "alreadyApproved": "{name} allaqachon tasdiqlagan: {date} {time}.",
       "refused": {
         "not_found": "Topilmadi. Ro'yxat yangilandi.",
         "stale_version": "Hozirgina o'zgardi. Ro'yxat yangilandi; tekshirib, qayta tasdiqlang.",
@@ -1198,6 +1222,57 @@
         "forbidden": "Bu buyurtmani uning bosqichida tasdiqlay olmaysiz.",
         "not_ready": "Bu buyurtmani hozircha tasdiqlab bo'lmaydi."
       }
+    },
+    "moves": {
+      "already": {
+        "APPROVE": "{name} allaqachon tasdiqlagan: {date} {time}.",
+        "SEND_BACK": "{name} allaqachon tuzatishga qaytargan: {date} {time}.",
+        "REJECT": "{name} allaqachon rad etgan: {date} {time}.",
+        "CANCEL": "{name} allaqachon bekor qilgan: {date} {time}.",
+        "TAKE_BACK": "{name} allaqachon qaytarib olgan: {date} {time}."
+      },
+      "button": {
+        "SEND_BACK": "Tuzatishga qaytarish",
+        "REJECT": "Rad etish",
+        "CANCEL": "Buyurtmani bekor qilish",
+        "TAKE_BACK": "Qaytarib olish",
+        "SUBMIT_AGAIN": "Qayta yuborish"
+      },
+      "buttonCount": "{label} ({count})",
+      "title": {
+        "SEND_BACK": "{count, plural, other {# ta buyurtmani qaytarasizmi?}}",
+        "REJECT": "{count, plural, other {# ta buyurtmani rad etasizmi?}}",
+        "CANCEL": "{count, plural, other {# ta buyurtmani bekor qilasizmi?}}",
+        "TAKE_BACK": "{count, plural, other {# ta buyurtmani qaytarib olasizmi?}}",
+        "SUBMIT_AGAIN": "{count, plural, other {# ta buyurtmani qayta yuborasizmi?}}"
+      },
+      "result": {
+        "SEND_BACK": "{count, plural, other {Buyurtmalar}} tuzatish uchun egasiga qaytadi. Egasi va rahbarga xabar boradi. Keyingi yuborishdan so'ng tasdiqlash yana rahbardan boshlanadi.",
+        "REJECT": "{count, plural, other {Buyurtmalar}} butunlay rad etiladi va boshqa o'zgarmaydi. Egasi va rahbarga xabar boradi. Egasi uni yangi buyurtma sifatida nusxalashi mumkin.",
+        "CANCEL": "{count, plural, other {Buyurtmalar}} butunlay to'xtatiladi va boshqa o'zgarmaydi.",
+        "TAKE_BACK": "{count, plural, other {Buyurtmalar}} o'sha raqam bilan qoralamalaringizga qaytadi: tuzatib, qayta yuborasiz.",
+        "SUBMIT_AGAIN": "{count, plural, other {Buyurtmalar}} keyingi tahrir va o'sha raqam bilan yana rahbarga boradi. Avvalgi tasdiqlar endi hisobga olinmaydi."
+      },
+      "done": {
+        "SEND_BACK": "{count, plural, other {# ta buyurtma qaytarildi.}}",
+        "REJECT": "{count, plural, other {# ta buyurtma rad etildi.}}",
+        "CANCEL": "{count, plural, other {# ta buyurtma bekor qilindi.}}",
+        "TAKE_BACK": "{count, plural, other {# ta buyurtma qaytarib olindi.}}",
+        "SUBMIT_AGAIN": "{count, plural, other {# ta buyurtma qayta yuborildi.}}"
+      },
+      "failedTitle": "{count, plural, other {Hech narsa saqlanmadi: # ta buyurtma quyida ko'rsatilgan.}}",
+      "failedLine": "{number} — {problem}",
+      "refused": {
+        "not_found": "Topilmadi. Ro'yxat yangilandi.",
+        "stale_version": "Hozirgina o'zgardi. Ro'yxat yangilandi; tekshirib, qayta urinib ko'ring.",
+        "wrong_status": "Buyurtma holati endi bunga yo'l qo'ymaydi. Ro'yxat yangilandi.",
+        "forbidden": "Bu buyurtma bilan buni qila olmaysiz.",
+        "not_ready": "Buyurtma yuborishdagi tekshiruvlardan o'tmaydi. Uni buyurtmalar ro'yxatida tuzating."
+      },
+      "reason": "Sabab",
+      "reasonHint": "Kamida {min} ta belgi, barcha buyurtmalar uchun bitta sabab. {count} / {max}.",
+      "notesTitle": "Har bir buyurtmaga izoh (ixtiyoriy)",
+      "noteOf": "{number} uchun izoh"
     }
   }
 }

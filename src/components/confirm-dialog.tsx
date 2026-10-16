@@ -30,6 +30,7 @@ export function ConfirmDialogBody({
   resultId,
   text,
   pending = false,
+  confirmDisabled = false,
   onConfirm,
   onCancel,
   children,
@@ -38,6 +39,8 @@ export function ConfirmDialogBody({
   resultId: string;
   text: ConfirmDialogText;
   pending?: boolean;
+  /** While what the user still has to give is missing (a reason too short); the server checks again. */
+  confirmDisabled?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
   /** What the user may still set before confirming, under the result (Finance's payment types). */
@@ -60,6 +63,7 @@ export function ConfirmDialogBody({
         <Button
           variant={text.danger ? "destructive" : "default"}
           pending={pending}
+          disabled={confirmDisabled}
           onClick={onConfirm}
         >
           {text.confirm}
@@ -74,6 +78,7 @@ export function ConfirmDialog({
   onOpenChange,
   text,
   pending = false,
+  confirmDisabled = false,
   onConfirm,
   children,
 }: {
@@ -81,6 +86,7 @@ export function ConfirmDialog({
   onOpenChange: (open: boolean) => void;
   text: ConfirmDialogText;
   pending?: boolean;
+  confirmDisabled?: boolean;
   onConfirm: () => void;
   children?: ReactNode;
 }) {
@@ -110,6 +116,7 @@ export function ConfirmDialog({
             resultId={resultId}
             text={text}
             pending={pending}
+            confirmDisabled={confirmDisabled}
             onConfirm={onConfirm}
             onCancel={() => onOpenChange(false)}
           >

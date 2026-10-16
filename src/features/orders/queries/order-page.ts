@@ -1,4 +1,4 @@
-import { and, asc, eq, ne, or, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, ne, or, sql } from "drizzle-orm";
 import { type AnyPgColumn, alias } from "drizzle-orm/pg-core";
 import * as z from "zod";
 
@@ -6,6 +6,11 @@ import { inStock, plainQuantity } from "@/domain/drafts";
 import { type OrderAction, allowedActions } from "@/domain/order-moves";
 import { type StepEvent, type StepView, orderSteps } from "@/domain/order-steps";
 import { extrasSum, priceHintPercent } from "@/domain/order-totals";
+import {
+  type RevisionField,
+  type RevisionSnapshot,
+  revisionChanges,
+} from "@/domain/revision-changes";
 import type { PaymentType } from "@/domain/payment-types";
 import type { Actor } from "@/domain/permissions";
 import type { RequestStatus } from "@/domain/request-status";
@@ -17,6 +22,7 @@ import {
   extraCostTypes,
   orderEvents,
   orderExtras,
+  orderRevisions,
   orders,
   productVariants,
   products,
@@ -60,6 +66,17 @@ export type OrderPageEvent = {
    */
   othersSeen: number;
 };
+
+/**
+ * One changed field of "What changed" (06 rule 5), its ids named: the product and subtype, the
+ * company and the department as their names, an extra cost by its type's name. Other values stay
+ * as stored (quantity and money as text, a date as `YYYY-MM-DD`, codes) for the screen's
+ * formatters; null where the order had none.
+ */
+export type OrderPageChange =
+  | { kind: "field"; field: RevisionField; from: string | null; to: string | null }
+  | { kind: "extra"; typeName: string; from: string | null; to: string | null }
+  | { kind: "total"; from: string | null; to: string | null };
 
 export type OrderPage = {
   id: string;
@@ -112,6 +129,11 @@ export type OrderPage = {
   actions: OrderAction[];
   /** The branch's active Principal now (03 rules 2 and 3; decided items 5 and 14). */
   principalName: string | null;
+  /**
+   * What changed since the revision before (06 rule 5; plan of 2.11, decided item 3, Look first),
+   * from revision 2 on; null on revision 1.
+   */
+  changes: { since: number; list: OrderPageChange[] } | null;
 };
 
 const idInput = z.uuid();
@@ -251,6 +273,7 @@ async function readPage(db: Executor, actor: Actor, id: string): Promise<OrderPa
     );
 
   const threshold = (await readSettings(db)).price_hint_percent;
+  const changes = row.revision >= 2 ? await readChanges(db, row.id, row.revision) : null;
   const stepEvents: StepEvent[] = events.map((event) => ({
     type: event.type,
     from: event.from,
@@ -315,5 +338,108 @@ async function readPage(db: Executor, actor: Actor, id: string): Promise<OrderPa
       }),
     ]),
     principalName: principal?.name ?? null,
+    changes,
+  };
+}
+
+/** The ids a field of a snapshot holds, named by the query below. */
+const NAMED: readonly RevisionField[] = ["variantId", "companyId", "departmentId"];
+
+/**
+ * "What changed" of an order at `revision` (≥ 2): the newest copy of the revision before against
+ * the newest copy of this one, "newest" being the highest submission, never the latest time
+ * (review of the plan of 2.11, correction 1). Read in the page's snapshot, after the walls let
+ * the order through.
+ */
+async function readChanges(
+  db: Executor,
+  orderId: string,
+  revision: number,
+): Promise<{ since: number; list: OrderPageChange[] } | null> {
+  const copies = await db
+    .selectDistinctOn([orderRevisions.revision], {
+      revision: orderRevisions.revision,
+      snapshot: orderRevisions.snapshot,
+    })
+    .from(orderRevisions)
+    .where(
+      and(
+        eq(orderRevisions.orderId, orderId),
+        sql`${orderRevisions.revision} in (${revision - 1}, ${revision})`,
+      ),
+    )
+    .orderBy(asc(orderRevisions.revision), sql`${orderRevisions.submission} desc`);
+  const before = copies.find((copy) => copy.revision === revision - 1)?.snapshot;
+  const after = copies.find((copy) => copy.revision === revision)?.snapshot;
+  if (!before || !after) return null;
+  const changes = revisionChanges(before as RevisionSnapshot, after as RevisionSnapshot);
+
+  const ids = (field: RevisionField) =>
+    changes.flatMap((change) =>
+      change.kind === "field" && change.field === field
+        ? [change.from, change.to].filter((id): id is string => id !== null)
+        : [],
+    );
+  const typeIds = changes.flatMap((change) =>
+    change.kind === "extra" ? [change.extraCostTypeId] : [],
+  );
+  const names = new Map<string, string>();
+  const variantIds = ids("variantId");
+  if (variantIds.length > 0) {
+    const rows = await db
+      .select({
+        id: productVariants.id,
+        product: products.name,
+        variant: productVariants.name,
+        isDefault: productVariants.isDefault,
+      })
+      .from(productVariants)
+      .innerJoin(products, eq(products.id, productVariants.productId))
+      .where(inArray(productVariants.id, variantIds));
+    for (const row of rows) {
+      names.set(row.id, row.isDefault ? row.product : `${row.product}, ${row.variant}`);
+    }
+  }
+  const companyIds = ids("companyId");
+  if (companyIds.length > 0) {
+    const rows = await db
+      .select({ id: companies.id, name: companies.name })
+      .from(companies)
+      .where(inArray(companies.id, companyIds));
+    for (const row of rows) names.set(row.id, row.name);
+  }
+  const departmentIds = ids("departmentId");
+  if (departmentIds.length > 0) {
+    const rows = await db
+      .select({ id: departments.id, name: departments.name })
+      .from(departments)
+      .where(inArray(departments.id, departmentIds));
+    for (const row of rows) names.set(row.id, row.name);
+  }
+  if (typeIds.length > 0) {
+    const rows = await db
+      .select({ id: extraCostTypes.id, name: extraCostTypes.name })
+      .from(extraCostTypes)
+      .where(inArray(extraCostTypes.id, typeIds));
+    for (const row of rows) names.set(row.id, row.name);
+  }
+  const named = (id: string | null) => (id === null ? null : (names.get(id) ?? id));
+
+  return {
+    since: revision - 1,
+    list: changes.map((change): OrderPageChange => {
+      if (change.kind === "extra") {
+        return {
+          kind: "extra",
+          typeName: named(change.extraCostTypeId)!,
+          from: change.from,
+          to: change.to,
+        };
+      }
+      if (change.kind === "field" && NAMED.includes(change.field)) {
+        return { ...change, from: named(change.from), to: named(change.to) };
+      }
+      return change;
+    }),
   };
 }

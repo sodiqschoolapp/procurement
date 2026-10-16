@@ -10,6 +10,7 @@ import {
   draftComment,
   draftRowRights,
   draftSubmittable,
+  draftSubmittableAgain,
   draftTotal,
   isDraftComment,
   isDraftEditable,
@@ -379,10 +380,53 @@ describe("draftSubmittable (05 Drafts 4; 06 Allowed moves: Draft; plan of 2.7, d
     expect(draftSubmittable(manager, { ...draft, ownerId: COLLEAGUE })).toBe(false);
   });
 
-  it("a sent-back order is Submit again (2.11), a taken-back draft waits for 2.11", () => {
-    expect(draftSubmittable(manager, { ...draft, status: "RETURNED", number: "EA-26-0001" })).toBe(
-      false,
-    );
-    expect(draftSubmittable(manager, { ...draft, number: "EA-26-0002" })).toBe(false);
+  // Changed in 2.11: a taken-back draft is submitted like any draft (plan of 2.11, decided item 1,
+  // Look first; it replaces decisions 2.7 item 3, "refused until 2.11").
+  it("a taken-back draft is submittable by its owner and the Head, not another Manager (05 Drafts 5; 06 Submit)", () => {
+    const takenBack = { ...draft, number: "EA-26-0002" };
+    const colleague: Actor = { ...manager, userId: COLLEAGUE };
+    expect(draftSubmittable(manager, takenBack)).toBe(true);
+    expect(draftSubmittable(head, takenBack)).toBe(true);
+    expect(draftSubmittable(colleague, takenBack)).toBe(false);
+  });
+
+  it("a sent-back order is Submit again, not Submit", () => {
+    expect(draftSubmittable(manager, { ...draft, status: "RETURNED" })).toBe(false);
+  });
+});
+
+describe("draftSubmittableAgain (05 Drafts 5; 06 Allowed moves: Submit again, Owner; decisions 2.3 item 5)", () => {
+  const OWN = "11111111-1111-4111-8111-111111111111";
+  const ME = "33333333-3333-4333-8333-333333333333";
+  const COLLEAGUE = "44444444-4444-4444-8444-444444444444";
+  const manager: Actor = { userId: ME, role: "MANAGER", branchIds: [OWN], disabledRights: [] };
+  const sentBack = {
+    id: "55555555-5555-4555-8555-555555555555",
+    branchId: OWN,
+    ownerId: ME,
+    status: "RETURNED" as const,
+  };
+
+  it("only the owner may submit a sent-back order again: not the Head, not another Manager (D40)", () => {
+    expect(draftSubmittableAgain(manager, sentBack)).toBe(true);
+    expect(
+      draftSubmittableAgain(
+        { userId: COLLEAGUE, role: "HEAD", branchIds: [], disabledRights: [] },
+        sentBack,
+      ),
+    ).toBe(false);
+    expect(draftSubmittableAgain({ ...manager, userId: COLLEAGUE }, sentBack)).toBe(false);
+    expect(
+      draftSubmittableAgain({ ...manager, disabledRights: ["CREATE_REQUESTS"] }, sentBack),
+    ).toBe(false);
+  });
+
+  it("a Draft is Submit, never Submit again", () => {
+    expect(draftSubmittableAgain(manager, { ...sentBack, status: "DRAFT" })).toBe(false);
+  });
+
+  it("the Head may submit again his own sent-back order", () => {
+    const head: Actor = { userId: ME, role: "HEAD", branchIds: [], disabledRights: [] };
+    expect(draftSubmittableAgain(head, sentBack)).toBe(true);
   });
 });

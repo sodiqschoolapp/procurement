@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   getDraftAction,
   setDraftsNeededByAction,
+  submitAgainOrdersAction,
   submitDraftsAction,
 } from "@/app/(app)/orders/actions";
 import { newClientKey } from "@/components/client-key";
@@ -22,7 +23,13 @@ import { AddDraftRow } from "./add-draft-row";
 import { DraftRow } from "./draft-row";
 import { type GridBranch, GridProvider } from "./grid-context";
 import { enterGoesTo, enterMoves } from "./grid-keys";
-import { canApplyToTicked, canSubmitTicked, cellOfField, submitKeyFor } from "./grid-rules";
+import {
+  canApplyToTicked,
+  canSubmitAgainTicked,
+  canSubmitTicked,
+  cellOfField,
+  submitKeyFor,
+} from "./grid-rules";
 import type { RowSaveQueue } from "./row-save-queue";
 import { TickedTotals } from "./ticked-totals";
 
@@ -45,6 +52,8 @@ export type GridRow = {
   deletable: boolean;
   /** draftSubmittable() of src/domain/drafts.ts: the state machine offers Submit (plan of 2.7). */
   submittable: boolean;
+  /** draftSubmittableAgain(): the state machine offers Submit again (plan of 2.11). */
+  submittableAgain: boolean;
 };
 
 /** One failing order of the last Submit, for the short list on top (05 Checks at submit). */
@@ -274,12 +283,13 @@ export function DraftsGrid({
   }
 
   /**
-   * 05 Drafts 4: the ticked drafts go to the Head, all or nothing (Checks at submit; 06 rule 8).
-   * Pending saves land first, so the versions sent are the rows' own. A refusal marks the exact
-   * cells of the exact orders, lists them on top and moves to the first one. Never retried
+   * 05 Drafts 4: the ticked drafts go to the Head, all or nothing (Checks at submit; 06 rule 8);
+   * 05 Drafts 5: ticked sent-back orders are submitted again the same way (plan of 2.11, decided
+   * item 9). Pending saves land first, so the versions sent are the rows' own. A refusal marks the
+   * exact cells of the exact orders, lists them on top and moves to the first one. Never retried
    * automatically (progress 2.6, "For 2.7").
    */
-  async function submit() {
+  async function submit(again: boolean) {
     if (submitting || ticked.size === 0) return;
     setSubmitting(true);
     const ids = rows.filter((row) => ticked.has(row.id)).map((row) => row.id);
@@ -298,20 +308,25 @@ export function DraftsGrid({
     let answered = false;
     try {
       const versions = await Promise.all(held.map((queue) => queue.hold()));
-      const result = await submitDraftsAction({
-        clientKey,
-        orders: ids.map((id, at) => ({ id, version: versions[at]! })),
-      });
+      const input = { clientKey, orders: ids.map((id, at) => ({ id, version: versions[at]! })) };
+      const submitted = again ? null : await submitDraftsAction(input);
+      const result = submitted ?? (await submitAgainOrdersAction(input));
       answered = true;
       if (result.ok) {
-        const numbers = result.data.orders.flatMap((order) => (order.number ? [order.number] : []));
-        toast.success(
-          t("submit.done", {
-            count: numbers.length,
-            numbers: numbers.slice(0, 10).join(", "),
-            more: Math.max(0, numbers.length - 10),
-          }),
-        );
+        if (submitted?.ok) {
+          const numbers = submitted.data.orders.flatMap((order) =>
+            order.number ? [order.number] : [],
+          );
+          toast.success(
+            t("submit.done", {
+              count: numbers.length,
+              numbers: numbers.slice(0, 10).join(", "),
+              more: Math.max(0, numbers.length - 10),
+            }),
+          );
+        } else {
+          toast.success(t("moves.done.SUBMIT_AGAIN", { count: result.data.orders.length }));
+        }
         setSubmitMarks(new Map());
         setSubmitFailures([]);
         setTicked(new Set());
@@ -374,6 +389,10 @@ export function DraftsGrid({
 
   const tickedRows = rows.filter((row) => ticked.has(row.id));
   const canSubmit = canSubmitTicked(
+    tickedRows.map((row) => row.id),
+    rights,
+  );
+  const canSubmitAgain = canSubmitAgainTicked(
     tickedRows.map((row) => row.id),
     rights,
   );
@@ -454,15 +473,17 @@ export function DraftsGrid({
                   </Button>
                 </>
               )}
-              {canSubmit && (
+              {(canSubmit || canSubmitAgain) && (
                 <Button
                   type="button"
                   variant="secondary"
                   size="sm"
                   pending={submitting}
-                  onClick={() => void submit()}
+                  onClick={() => void submit(canSubmitAgain)}
                 >
-                  {t("submit.button", { count: ticked.size })}
+                  {t(canSubmitAgain ? "submit.againButton" : "submit.button", {
+                    count: ticked.size,
+                  })}
                 </Button>
               )}
               <Button type="button" variant="ghost" size="sm" onClick={() => setTicked(new Set())}>
