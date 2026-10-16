@@ -2,12 +2,22 @@ import { randomUUID } from "node:crypto";
 
 import { eq } from "drizzle-orm";
 
+import type { PaymentType } from "@/domain/payment-types";
+import type { ProductType } from "@/domain/products";
 import type { RequestStatus } from "@/domain/request-status";
+import { runAction } from "@/server/action";
+import type { ActionResult } from "@/server/action-result";
 import { now } from "@/server/clock";
 import { db } from "@/server/db/client";
-import { departments, extraCostTypes, orderExtras, orders } from "@/server/db/schema";
+import { departments, extraCostTypes, orderExtras, orders, settings } from "@/server/db/schema";
 
-import { insertProduct } from "./catalog";
+import {
+  type CreatedDraft,
+  type UpdatedDraft,
+  createDraft,
+  updateDraft,
+} from "../../src/features/orders/actions/drafts";
+import { insertProduct, insertUnit, setLastPurchasePrice } from "./catalog";
 
 // Departments, extra cost types and orders in the database for tests (task 2.4). Names are
 // invented; everything is written at the moment of the clock. An order written here goes past
@@ -16,22 +26,31 @@ import { insertProduct } from "./catalog";
 let made = 0;
 const next = () => (made += 1);
 
-export async function insertDepartment(branchId: string, options: { name?: string } = {}) {
+export async function insertDepartment(
+  branchId: string,
+  options: { name?: string; isActive?: boolean; responsibleName?: string } = {},
+) {
   const [row] = await db
     .insert(departments)
     .values({
       branchId,
       name: options.name ?? `Bo'lim ${randomUUID().slice(0, 8)} ${next()}`,
+      responsibleName: options.responsibleName ?? null,
+      isActive: options.isActive ?? true,
       createdAt: now(),
     })
     .returning({ id: departments.id });
   return row!;
 }
 
-export async function insertExtraCostType() {
+export async function insertExtraCostType(options: { isActive?: boolean } = {}) {
   const [row] = await db
     .insert(extraCostTypes)
-    .values({ name: `Xarajat ${randomUUID().slice(0, 8)} ${next()}`, createdAt: now() })
+    .values({
+      name: `Xarajat ${randomUUID().slice(0, 8)} ${next()}`,
+      isActive: options.isActive ?? true,
+      createdAt: now(),
+    })
     .returning({ id: extraCostTypes.id });
   return row!;
 }
@@ -108,4 +127,63 @@ export async function insertOrderExtra(orderId: string, amount = 20000n) {
 /** Sets an order's status straight in the table, as a move would, for a test's starting point. */
 export async function setOrderStatus(orderId: string, status: RequestStatus) {
   await db.update(orders).set({ status }).where(eq(orders.id, orderId));
+}
+
+/**
+ * A product of its own measure for a draft (2.5a): counted in pieces unless `allowDecimal`, with
+ * the reference price and the last purchase price given (05 field 11). Returns its hidden default
+ * subtype as `variantId`.
+ */
+export async function insertItem(
+  options: {
+    allowDecimal?: boolean;
+    referencePrice?: bigint | null;
+    lastPurchasePrice?: bigint | null;
+    type?: ProductType;
+    isActive?: boolean;
+    defaultCompanyId?: string | null;
+    photoFileId?: string | null;
+  } = {},
+) {
+  const unit = await insertUnit({ allowDecimal: options.allowDecimal ?? false });
+  const product = await insertProduct({
+    unitId: unit.id,
+    type: options.type,
+    referencePrice: options.referencePrice ?? null,
+    isActive: options.isActive,
+    defaultCompanyId: options.defaultCompanyId,
+    photoFileId: options.photoFileId,
+  });
+  if (options.lastPurchasePrice != null) {
+    await setLastPurchasePrice(product.defaultVariantId, options.lastPurchasePrice);
+  }
+  return { ...product, variantId: product.defaultVariantId };
+}
+
+/** Adds a draft through the action: 10 of the item unless the input says otherwise. */
+export function addDraft(userId: string, input: Record<string, unknown>) {
+  return runAction(createDraft, userId, {
+    clientKey: randomUUID(),
+    quantity: "10",
+    ...input,
+  }) as Promise<ActionResult<CreatedDraft>>;
+}
+
+/** Saves a draft's changed fields through the action. */
+export function editDraft(userId: string, input: Record<string, unknown>) {
+  return runAction(updateDraft, userId, input) as Promise<ActionResult<UpdatedDraft>>;
+}
+
+/** An order as it is stored. */
+export async function orderRow(id: string) {
+  const [row] = await db.select().from(orders).where(eq(orders.id, id));
+  return row;
+}
+
+/** Sets the school's default payment type (05 field 13: "Default is Cash (a setting)"). */
+export async function setDefaultPaymentType(type: PaymentType) {
+  await db
+    .insert(settings)
+    .values({ key: "default_payment_type", value: type, createdAt: now() })
+    .onConflictDoUpdate({ target: settings.key, set: { value: type } });
 }

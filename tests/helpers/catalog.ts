@@ -221,3 +221,14 @@ export async function insertSubtypes(
     return ids;
   });
 }
+
+/**
+ * A subtype's last purchase price, set straight in the table: purchases write it from 3.x (plan
+ * of 2.5a, Left out). Enough for the price suggestion of a draft (05 field 11).
+ */
+export async function setLastPurchasePrice(variantId: string, price: bigint | null) {
+  await db
+    .update(productVariants)
+    .set({ lastPurchasePrice: price, lastPurchaseAt: price === null ? null : now() })
+    .where(eq(productVariants.id, variantId));
+}
