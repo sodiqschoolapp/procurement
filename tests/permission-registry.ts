@@ -74,6 +74,9 @@ export const SERVER_ACTIONS: Record<string, Entry> = {
   "src/app/(app)/orders/actions.ts#searchDraftProductsAction": "request.create",
   "src/app/(app)/orders/actions.ts#listDraftChoicesAction": "request.create",
   "src/app/(app)/orders/actions.ts#getDraftAction": "data.view",
+  // Submit of ticked drafts (plan of 2.7): the state machine's SUBMIT move under request.edit
+  // (src/domain/order-moves.ts), in the matrix through describeSubmitMatrix.
+  "src/app/(app)/orders/actions.ts#submitDraftsAction": "request.edit",
 };
 
 /** Exports of `src/features/<area>/queries/`, as `<file>#<export>`. */
@@ -129,6 +132,9 @@ export const QUERIES: Record<string, Permission> = {
   "src/features/orders/queries/drafts.ts#getDraft": "data.view",
   "src/features/orders/queries/draft-picker.ts#searchDraftProducts": "request.create",
   "src/features/orders/queries/draft-picker.ts#listDraftChoices": "request.create",
+  // The numbers of just-submitted orders for the Submit message (plan of 2.7): data.view with
+  // the branch inside the SQL; a draft has no number, so nothing behind the draft wall is read.
+  "src/features/orders/queries/submitted.ts#submittedNumbers": "data.view",
   // The download route's file: file.upload for a file no record holds; each owner a later task
   // adds to src/server/files/owners.ts names its own permission there (plan of 0.12, decision 5).
   "src/features/files/queries/file-for-download.ts#fileForDownload": "file.upload",
