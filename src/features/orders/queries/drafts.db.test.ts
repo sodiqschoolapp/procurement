@@ -79,8 +79,18 @@ describe("Done when 3: another Manager of the same branch cannot read a draft (0
     await expect(listDrafts(elsewhere.id, { branchId: base.branchId })).rejects.toMatchObject({
       kind: "not_found",
     });
-    await expect(getDraft(elsewhere.id, draft.id)).rejects.toMatchObject({ kind: "not_found" });
+    // Every "not found" looks the same: null (permission review of 2.5a, P2).
+    expect(await getDraft(elsewhere.id, draft.id)).toBeNull();
     expect((await listDrafts(elsewhere.id)).rows).toEqual([]);
+  });
+
+  it("the Principal and Finance of the same branch: getDraft is null on a Draft (permission review of 2.5a, P3)", async () => {
+    const { branch, manager, base } = await scene();
+    const draft = await draftOf(manager.id, base);
+    for (const role of ["PRINCIPAL", "FINANCE"] as const) {
+      const user = await insertUser(role, { branches: [branch.id] });
+      expect(await getDraft(user.id, draft.id), role).toBeNull();
+    }
   });
 
   it("a Manager asking for owners=all still sees only his own rows", async () => {

@@ -101,7 +101,10 @@ describePermissionMatrix("getDraft", {
   permission: "data.view",
   async run({ user, branchId, ownerId }) {
     const order = await insertOrder({ branchId, ownerId, status: "RETURNED" });
-    expect(await getDraft(user.id, order.id)).toMatchObject({ id: order.id });
+    // null is getDraft's "not found" (permission review of 2.5a, P2).
+    const row = await getDraft(user.id, order.id);
+    if (row === null) throw new AuthorizationError("not_found");
+    expect(row).toMatchObject({ id: order.id });
   },
 });
 

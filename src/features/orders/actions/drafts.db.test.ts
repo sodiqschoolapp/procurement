@@ -196,6 +196,30 @@ describe("Done when 3: the draft wall on the actions (06 Statuses: Draft; 03 rul
     });
   });
 
+  it("the Principal and Finance of the same branch: update, delete and apply needed-by are not_found, not forbidden (permission review of 2.5a, P3)", async () => {
+    const { branch, manager, base } = await scene();
+    const draft = await draftOf(manager.id, base);
+    for (const role of ["PRINCIPAL", "FINANCE"] as const) {
+      const user = await insertUser(role, { branches: [branch.id] });
+      const notFound = { ok: false, error: { code: "not_found" } };
+      expect(
+        await editDraft(user.id, { id: draft.id, version: 1, comment: "x" }),
+        role,
+      ).toMatchObject(notFound);
+      expect(
+        await runAction(deleteDraft, user.id, { id: draft.id, version: 1 }),
+        role,
+      ).toMatchObject(notFound);
+      expect(
+        await runDraftsAction(setDraftsNeededBy, user.id, {
+          orders: [{ id: draft.id, version: 1 }],
+          neededBy: "2031-06-01",
+        }),
+        role,
+      ).toMatchObject(notFound);
+    }
+  });
+
   it("the Head edits a Manager's draft; a Manager of another branch gets not_found", async () => {
     const { manager, base } = await scene();
     const head = await insertUser("HEAD");

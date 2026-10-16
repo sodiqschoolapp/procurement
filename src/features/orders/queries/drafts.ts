@@ -290,8 +290,8 @@ export async function listDrafts(
 
 /**
  * One row of the grid, or `null` for an id that is unknown, not an id, not a DRAFT or RETURNED
- * order, or another user's Draft for anyone but the Head (the draft wall). Another branch's order
- * is "Not found" through authorize() on its own branch (03 rule 1).
+ * order, another user's Draft for anyone but the Head (the draft wall), or another branch's order
+ * (03 rule 1), alike: authorize() on the order's own branch decides, and its "Not found" is null.
  */
 export async function getDraft(userId: string, id: string): Promise<DraftRow | null> {
   const { db } = await import("@/server/db/client");
@@ -305,7 +305,14 @@ export async function getDraft(userId: string, id: string): Promise<DraftRow | n
     await authorizeList(userId, "data.view");
     return null;
   }
-  const actor = await authorize(userId, "data.view", { branchId: found.branchId });
+  let actor: Actor;
+  try {
+    actor = await authorize(userId, "data.view", { branchId: found.branchId });
+  } catch (error) {
+    // Another branch's order is null like every other "not found" (permission review of 2.5a, P2).
+    if (error instanceof AuthorizationError && error.kind === "not_found") return null;
+    throw error;
+  }
   if (behindDraftWall(actor, found)) return null;
   const [row] = await readRows(
     db,
