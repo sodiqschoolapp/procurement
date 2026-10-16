@@ -1029,6 +1029,40 @@ Choices made during the build:
 - `plainQuantity()` drops trailing zeros, so a first answer and a repeat both say "20"; `inStock()` shows "0" without a stock row and nothing for a service.
 - `tests/helpers/together.ts` `commitWhileWaiting()` holds a change until the action waits on a row lock (read from `pg_stat_activity`).
 
+### 2.5b Drafts grid on `/orders` (16.10.2026)
+
+The plan's decisions as the plan review of 16.10.2026 confirmed them (corrections 1 to 5 applied), and those of the build and its reviews. The Look first items come first.
+
+1. **Look first** (money: ticked totals). The totals under the grid come from `tickedDraftsTotals()` of `src/domain/drafts.ts`, which calls `ordersTotals()`; a ticked draft without quantity or price is left out whole, its extra costs included, and counted ("N without a price"). Money text is read with `BigInt()` only, after a digits check.
+2. **Look first** (money: a new formula). `extrasSum()` in `src/domain/order-totals.ts`, which `orderExtras()` now calls; the extras cell shows it, never total minus goods.
+3. **Look first** (permission matrix: read-only grid). A Manager with `CREATE_REQUESTS` off sees his rows as text, no add row, no Apply, no delete; `draftRowRights()` and `addsDraftsIn()` ask `decide()` as the server does.
+4. **Look first** (draft wall on screen). Delete only on the person's own never-submitted draft; the Head edits another owner's draft but cannot delete it.
+5. **Look first** (spec contradiction). 05 field 7 is named "Requested by", and the rule of 2.1 (`tests/notification-texts.test.ts`) forbids the word "request" in any text. The column is labelled "Department" / "Boʻlim" / "Отдел". Proposed `/spec-change` for 05 field 7: "| 7 | Department | Department picked from this branch; shows its responsible person | Required. An optional text field names a specific person. |".
+6. **Look first** (design system). The totals of the ticked drafts stand under the grid (05 "Under the list"), with the count beside them; the selection bar above keeps the count, the date, Apply and Clear. The design system puts selection totals in the bar; the spec wins.
+7. Ticks belong to the page shown; a page, branch or owners change clears them.
+8. Autosave: selects, priority and the extras dialog save on change; text cells on blur or Enter, once per text. One save at a time per row, the next with the answered version (`row-save-queue.ts`); every save reloads the row with `getDraftAction`.
+9. Urgent waits for its reason; Normal saves at once and clears it.
+10. "Add" needs branch, product with its subtype, department and quantity; one client key per add, a second click while pending sends nothing.
+11. The add row's branch is the top bar's branch when active and allowed, the only branch when there is one, else a select.
+12. Branch, product, subtype, department stay editable; a branch change waits for a department of the new branch and both go in one save.
+13. `stale_version` reloads the row and says so.
+14. Principal and Finance see "Your order list comes here" with no button; an empty grid of a view-only Manager says where drafts appear, not "add below".
+15. The extras dialog edits up to 20 rows and saves once on "Done".
+16. The reference photo uses the 0.12 upload, opens in a new tab, "Remove" saves without it.
+17. The Head's "My drafts / Everyone's" is a segmented control kept in the address.
+18. Oldest first, no sort control; a new draft on a later page sends the person to that page.
+19. "Sent back" has RETURNED's look (info, `undo`); "Taken back" info with `history`.
+
+Choices made during the build:
+
+- The subtype is picked inside the product picker (one hit per subtype), and the subtype cell is text: one pick gives the `variantId` the action takes, for adding and for changing.
+- Needed-by is typed as `08.10.2026` and read by `parseTypedDate()`: a native date field shows the browser's format, against 11 rule 10.
+- A ticked row is shaded `--muted`, not `--today` (the token is for "now" and the selection bar).
+- The save queue is `src/features/orders/components/row-save-queue.ts`, plain TypeScript with its unit test; `canApplyToTicked()` in `grid-rules.ts`.
+- Each Playwright project has its own drafts Manager (`E2E_DRAFT_USERS`), whose never-submitted drafts the test deletes first, in the e2e database only.
+- The table's scroll box is `relative`, so its hidden file inputs stay inside it (they made the page scroll sideways at 375 px).
+- Two lines added to `.claude/rules/ui.md` and one to `.claude/rules/server-actions.md` from the reviews.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

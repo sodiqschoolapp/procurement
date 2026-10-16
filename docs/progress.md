@@ -703,4 +703,20 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - For 2.6: retries reuse the create's `client_key`; a deleted draft frees its keys (accepted risk, decisions 2.5a item 14).
 - Find a row to merge into with `SELECT … FOR UPDATE` and the full match (`lockTrioDraft()`), never by id after a plain read. `tests/helpers/together.ts` `commitWhileWaiting()` tests a race without timers.
 
-The next task is 2.5b.
+## 2.5b Drafts grid on `/orders` (16.10.2026, pull request #51)
+
+**Built**
+- `/orders`: the drafts grid for Manager and Head (every field of the order table as a cell, the add row with the product picker, the extra-costs dialog, the reference photo, autosave with "Saved", delete with a confirmation, "Sent back"/"Taken back" labels, the Head's "My drafts / Everyone's"); the selection bar (count, apply needed-by, clear); the ticked totals under the grid. Principal and Finance: title and an empty state.
+- Domain: `extrasSum()`, `tickedDraftsTotals()`, `draftRowRights()`, `addsDraftsIn()`. `parseTypedDate()` in `src/i18n/format.ts`. `draftsServerAction()`. Seven page actions in `src/app/(app)/orders/actions.ts`, money as text (`src/features/orders/draft-wire.ts`).
+
+**Left out, and the task that brings it**
+- Tab and Enter between cells, phone cards, offline retry: 2.6. Submit: 2.7. Group rows, filters, sorting, "Select all on this filter": 2.8.
+
+**What the next sessions must know**
+- For 2.6: each row saves through `createRowSaveQueue()` (`src/features/orders/components/row-save-queue.ts`); "Apply to ticked" holds the queues. Text cells are `TextCell` (blur or Enter). After every save the row is read again with `getDraftAction`.
+- For 2.7: put Submit in the selection bar beside Apply, shown with `canApplyToTicked()`-style rights; ticks belong to the page shown.
+- For 2.8: the grid page reads the branch from the top bar's cookie (`currentBranchChoice`); the list goes above the grid.
+- e2e: `E2E_DRAFT_USERS` (one Manager per project); type into the picker with `expect(...).toPass()` (typing before hydration is lost).
+- A text with the word "request" fails `tests/notification-texts.test.ts`: field 7 is labelled "Department".
+
+The next task is 2.6.
