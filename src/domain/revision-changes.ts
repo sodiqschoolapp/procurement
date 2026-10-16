@@ -85,16 +85,18 @@ export function revisionChanges(
     if (!same) changes.push({ kind: "field", field, from, to });
   }
 
-  const extrasBefore = extrasByType(before.extras);
-  const extrasAfter = extrasByType(after.extras);
+  const extrasBefore = extrasByType(before.extras ?? []);
+  const extrasAfter = extrasByType(after.extras ?? []);
   for (const type of new Set([...extrasBefore.keys(), ...extrasAfter.keys()])) {
     const from = extrasBefore.get(type) ?? null;
     const to = extrasAfter.get(type) ?? null;
     if (!sameNumber(from, to)) changes.push({ kind: "extra", extraCostTypeId: type, from, to });
   }
 
-  if (!sameNumber(before.plannedTotal, after.plannedTotal)) {
-    changes.push({ kind: "total", from: before.plannedTotal, to: after.plannedTotal });
+  const totalBefore = before.plannedTotal ?? null;
+  const totalAfter = after.plannedTotal ?? null;
+  if (!sameNumber(totalBefore, totalAfter)) {
+    changes.push({ kind: "total", from: totalBefore, to: totalAfter });
   }
   return changes;
 }
