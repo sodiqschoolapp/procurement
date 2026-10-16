@@ -2,6 +2,7 @@ import {
   businessDate,
   businessDayStart,
   businessTime,
+  isBusinessDate,
   type BusinessDate,
 } from "@/domain/business-date";
 
@@ -43,6 +44,20 @@ export function formatDate(value: Date | BusinessDate): string {
   }
   const [year, month, day] = date.split("-");
   return `${day}.${month}.${year}`;
+}
+
+const TYPED_DATE = /^\s*(\d{1,2})[./-](\d{1,2})[./-](\d{4})\s*$/;
+
+/**
+ * A date typed as it is shown, `08.10.2026` (or `8.10.2026`), read back as a `YYYY-MM-DD` business
+ * date; null for anything else or a day that does not exist (plan of 2.5b, the needed-by cell).
+ */
+export function parseTypedDate(text: string): BusinessDate | null {
+  const match = TYPED_DATE.exec(text);
+  if (!match) return null;
+  const [, day = "", month = "", year = ""] = match;
+  const date = `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+  return isBusinessDate(date) ? date : null;
 }
 
 /** The wall-clock time in Tashkent, 24 hours: `14:05`. */

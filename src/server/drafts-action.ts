@@ -2,6 +2,7 @@ import * as z from "zod";
 
 import { ORDER_ACTION_MAX } from "@/domain/order-moves";
 import type { Actor, Permission } from "@/domain/permissions";
+import { type CurrentUser, getCurrentUser } from "@/server/auth/session";
 import { now } from "@/server/clock";
 
 import { fieldErrors } from "./action-input";
@@ -122,4 +123,20 @@ export async function runDraftsAction<Input extends DraftsInput>(
   } catch (error) {
     return ordersFailure(definition.name, error);
   }
+}
+
+/**
+ * An edit on ticked drafts as a server action of a page (plan of 2.5b, Server actions; review of
+ * the plan, Must fix 6): the signed-in user, then runDraftsAction(), as ordersServerAction() does
+ * for the moves.
+ */
+export function draftsServerAction<Input extends DraftsInput>(
+  definition: DraftsActionDefinition<Input>,
+  currentUser: () => Promise<CurrentUser | null> = getCurrentUser,
+): (input: unknown) => Promise<ActionResult<DraftsResult>> {
+  return async (input) => {
+    const user = await currentUser();
+    if (!user) return failure("signed_out");
+    return runDraftsAction(definition, user.id, input);
+  };
 }

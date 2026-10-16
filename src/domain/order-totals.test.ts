@@ -9,6 +9,7 @@ import {
   ordersTotals,
   priceHintPercent,
   quantityOf,
+  extrasSum,
 } from "./order-totals";
 
 // 08-money-and-settlement.md, Numbers the system calculates (Planned total; "The totals of a
@@ -184,5 +185,17 @@ describe("the quantity text (05 field 10; numeric(14,3); plan of 2.5a, decided i
     expect(quantityOf("2.125").toFixed()).toBe("2.125");
     expect(() => quantityOf("0")).toThrow(RangeError);
     expect(() => quantityOf("1e2")).toThrow(RangeError);
+  });
+});
+
+describe("extrasSum (05 field 12: each amount more than 0; the cell shows the sum)", () => {
+  it("sums the amounts, with or without a price on the order", () => {
+    expect(extrasSum([20_000n, 1_500n])).toBe(21_500n);
+    expect(extrasSum([])).toBe(0n);
+  });
+
+  it("refuses an amount of 0 or less", () => {
+    expect(() => extrasSum([0n])).toThrow(RangeError);
+    expect(() => extrasSum([5n, -1n])).toThrow(RangeError);
   });
 });

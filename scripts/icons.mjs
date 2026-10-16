@@ -50,6 +50,10 @@ export const ICONS = [
   "shopping_cart",
   "block",
   "cancel",
+  // The drafts grid (plan of 2.5b): delete a draft, the "Taken back" label, the reference photo.
+  "delete",
+  "history",
+  "add_photo_alternate",
 ];
 
 /**

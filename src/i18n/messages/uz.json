@@ -838,6 +838,133 @@
     "noPhoto": "Rasm yoʻq"
   },
   "orders": {
+    "title": "Buyurtmalar",
+    "draftsTitle": "Qoralamalar",
+    "owners": {
+      "label": "Kimning qoralamalari",
+      "mine": "Mening qoralamalarim",
+      "all": "Hammaniki"
+    },
+    "empty": {
+      "title": "Hali qoralama yoʻq",
+      "line": "Birinchi buyurtmani pastda qoʻshing: mahsulot, boʻlim va miqdorni tanlang.",
+      "lineViewOnly": "Bu yerda qoralamalaringiz va sizga qaytarilgan buyurtmalar chiqadi."
+    },
+    "listComing": {
+      "title": "Buyurtmalar roʻyxatingiz shu yerda boʻladi",
+      "line": "Siz koʻrib chiqadigan buyurtmalar shu sahifada chiqadi."
+    },
+    "columns": {
+      "tick": "Belgilash",
+      "number": "Raqam",
+      "branch": "Filial",
+      "product": "Mahsulot yoki xizmat",
+      "type": "Turi",
+      "subtype": "Kichik tur",
+      "inStock": "Omborda",
+      "photo": "Rasm",
+      "company": "Brend yoki kompaniya",
+      "requestedBy": "Boʻlim",
+      "requesterName": "Shaxs",
+      "neededBy": "Kerakli sana",
+      "measure": "Oʻlchov",
+      "quantity": "Miqdor",
+      "price": "Birlik narxi",
+      "extras": "Qoʻshimcha xarajatlar",
+      "paymentType": "Toʻlov turi",
+      "priority": "Muhimlik",
+      "urgentReason": "Shoshilinch sababi",
+      "comment": "Izoh",
+      "total": "Buyurtma jami",
+      "state": "Saqlash",
+      "actions": "Amallar"
+    },
+    "tickRow": "{product} ni belgilash",
+    "draftWord": "Qoralama",
+    "revision": "{revision}-tahrir",
+    "labels": {
+      "SENT_BACK": "Qaytarilgan",
+      "TAKEN_BACK": "Qaytarib olingan"
+    },
+    "ownerAndDate": "{owner}, {date}",
+    "none": "—",
+    "noCompany": "Tanlanmagan",
+    "pickDepartment": "Boʻlimni tanlang",
+    "responsible": "Masʼul: {name}",
+    "priority": {
+      "NORMAL": "Oddiy",
+      "URGENT": "Shoshilinch"
+    },
+    "save": {
+      "saving": "Saqlanmoqda…",
+      "saved": "Saqlandi",
+      "failed": "Saqlanmadi",
+      "stale": "Boshqa joyda oʻzgartirildi: eng yangi holati koʻrsatildi. Oʻzgarishingizni qayta kiriting.",
+      "branchPending": "Saqlash uchun yangi filialning boʻlimini tanlang",
+      "urgentPending": "Shoshilinchni saqlash uchun sababini yozing"
+    },
+    "add": {
+      "title": "Yangi buyurtma",
+      "button": "Qoʻshish",
+      "merged": "Qoralamangizga qoʻshildi: endi {quantity}",
+      "added": "Qoralama qoʻshildi"
+    },
+    "picker": {
+      "placeholder": "Nomi boʻyicha qidirish",
+      "empty": "Hech narsa topilmadi",
+      "loading": "Qidirilmoqda…",
+      "stock": "Omborda: {stock}",
+      "noStock": "Omborda: —"
+    },
+    "photo": {
+      "none": "Rasm yoʻq",
+      "alt": "{name} rasmi"
+    },
+    "reference": {
+      "add": "Namuna rasmini qoʻshish",
+      "open": "Namuna rasmini ochish",
+      "remove": "Namuna rasmini olib tashlash",
+      "uploading": "Yuklanmoqda…",
+      "alt": "{name} namuna rasmi"
+    },
+    "extras": {
+      "open": "{product} qoʻshimcha xarajatlarini tahrirlash",
+      "title": "Qoʻshimcha xarajatlar",
+      "type": "Turi",
+      "amount": "Summa",
+      "pickType": "Turini tanlang",
+      "addRow": "Qator qoʻshish",
+      "removeRow": "Qatorni olib tashlash",
+      "done": "Tayyor",
+      "max": "Koʻpi bilan {max} qator"
+    },
+    "delete": {
+      "label": "{product} qoralamasini oʻchirish",
+      "title": "Bu qoralama oʻchirilsinmi?",
+      "result": "{product} qoralamasi oʻchiriladi. Buni qaytarib boʻlmaydi.",
+      "confirm": "Oʻchirish",
+      "done": "Qoralama oʻchirildi"
+    },
+    "ticked": {
+      "count": "{count, plural, other {# ta qoralama belgilandi}}",
+      "neededBy": "Belgilangan qoralamalar uchun kerakli sana",
+      "apply": "Belgilanganlarga qoʻllash",
+      "applied": "{count, plural, other {# ta qoralamaga kerakli sana qoʻyildi}}",
+      "failed": "Hech narsa oʻzgarmadi. {count, plural, other {# ta qoralama}} sanani qabul qilmadi va qayta yuklandi.",
+      "clear": "Tozalash"
+    },
+    "totals": {
+      "title": "Belgilangan qoralamalar jami",
+      "count": "{count, plural, other {# ta qoralama}}",
+      "goods": "Tovarlar",
+      "extras": "Qoʻshimcha xarajatlar",
+      "grand": "Umumiy jami",
+      "withoutPrice": "{count, plural, other {Narxi yoʻq # ta qoralama hisobga olinmadi}}"
+    },
+    "date": {
+      "placeholder": "kk.oo.yyyy",
+      "invalid": "Sanani 08.10.2026 kabi yozing"
+    },
     "priceHint": "katalog narxidan {percent, number, ::sign-always}%"
   }
 }

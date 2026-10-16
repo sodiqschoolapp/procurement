@@ -3,7 +3,14 @@ import { describe, expect, it } from "vitest";
 import en from "./messages/en.json";
 import ru from "./messages/ru.json";
 import uz from "./messages/uz.json";
-import { bindFormatters, formatDate, formatMoney, formatQuantity, formatTime } from "./format";
+import {
+  bindFormatters,
+  formatDate,
+  formatMoney,
+  formatQuantity,
+  formatTime,
+  parseTypedDate,
+} from "./format";
 
 // 11-screens-and-ux.md rule 10: "Money as `1 250 000 so'm`. Dates as `08.10.2026`. Time in 24
 // hours, Tashkent. Quantities without trailing zeros." The spaces are no-break spaces (U+00A0,
@@ -124,6 +131,27 @@ describe("the formatters bound to a language (11-screens-and-ux.md rule 10)", ()
     for (const locale of ["uz", "ru", "en"] as const) {
       const format = bindFormatters(locale, SOM);
       expect([format.date(moment), format.time(moment)]).toEqual(["08.10.2026", "14:05"]);
+    }
+  });
+});
+
+describe("parseTypedDate (11 rule 10: dates as 08.10.2026, typed back)", () => {
+  it("reads a date typed as it is shown", () => {
+    expect(parseTypedDate("08.10.2026")).toBe("2026-10-08");
+    expect(parseTypedDate(" 8.1.2027 ")).toBe("2027-01-08");
+    expect(formatDate(parseTypedDate("29.02.2028")!)).toBe("29.02.2028");
+  });
+
+  it("refuses a day that does not exist and any other text", () => {
+    for (const text of [
+      "31.02.2026",
+      "2026-10-08",
+      "08.10.26",
+      "",
+      "8 October 2026",
+      "00.10.2026",
+    ]) {
+      expect(parseTypedDate(text)).toBeNull();
     }
   });
 });

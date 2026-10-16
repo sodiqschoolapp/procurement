@@ -148,6 +148,32 @@ export function RequestStatusLabel({
   );
 }
 
+/**
+ * The label of a numbered order in the drafts grid (05-order-request-form.md, Drafts 5: "with
+ * their number and the label 'Sent back' or 'Taken back'"; plan of 2.5b, decided item 17).
+ * "Sent back" has the look of RETURNED, so the grid and the order page agree (11 rule 11).
+ */
+export const DRAFT_LABEL_LOOK = {
+  SENT_BACK: REQUEST_STATUS_LOOK.RETURNED,
+  TAKEN_BACK: { tone: "info", icon: "history" },
+} as const satisfies Record<string, { tone: "info" | "muted"; icon: IconName }>;
+
+export function DraftGridLabel({
+  label,
+  className,
+}: {
+  label: keyof typeof DRAFT_LABEL_LOOK;
+  className?: string;
+}) {
+  const t = useTranslations("orders.labels");
+  const look = DRAFT_LABEL_LOOK[label];
+  return (
+    <LabelBox tone={look.tone} icon={look.icon} className={className}>
+      {t(label)}
+    </LabelBox>
+  );
+}
+
 /** One of the three colour labels of a line or a request: Number, Price or Total. */
 export function ColourLabel(props: ColourLabelProps & { className?: string }) {
   const t = useTranslations("colourLabel");

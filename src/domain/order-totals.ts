@@ -74,9 +74,18 @@ export function orderGoods(plan: OrderPlan): bigint {
   return BigInt(quantity.times(price).toDecimalPlaces(0, Exact.ROUND_HALF_UP).toFixed(0));
 }
 
+/**
+ * The sum of extra-cost amounts, each whole so'm more than 0 (05 field 12: "Each amount more than
+ * 0. The cell shows the sum"). The drafts grid shows it in the extra-costs cell, with or without a
+ * price (review of the plan of 2.5b, correction 1).
+ */
+export function extrasSum(amounts: readonly bigint[]): bigint {
+  return amounts.reduce((sum, extra) => sum + positive(extra, "An extra cost"), 0n);
+}
+
 /** The sum of the order's extra costs (05 field 12). */
 export function orderExtras(plan: OrderPlan): bigint {
-  return plan.extras.reduce((sum, extra) => sum + positive(extra, "An extra cost"), 0n);
+  return extrasSum(plan.extras);
 }
 
 /** round(quantity × price) + extra costs (08, Planned total; 05 field 16). */

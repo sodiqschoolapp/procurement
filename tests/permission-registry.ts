@@ -64,6 +64,16 @@ export const SERVER_ACTIONS: Record<string, Entry> = {
   "src/app/(app)/suggestions/actions.ts#suggestProductAction": "catalog.suggest",
   "src/app/(app)/suggestions/actions.ts#addSuggestedProductAction": "catalog.manage",
   "src/app/(app)/suggestions/actions.ts#declineSuggestionAction": "catalog.manage",
+  // The drafts grid on /orders (plan of 2.5b, review of the plan, Must fix 7): each export is in
+  // the permission matrix through itself (src/app/(app)/orders/actions-matrix.db.test.ts), beside
+  // the 2.5a definitions' own (drafts-matrix.db.test.ts; permission review of 2.5b).
+  "src/app/(app)/orders/actions.ts#createDraftAction": "request.create",
+  "src/app/(app)/orders/actions.ts#updateDraftAction": "request.edit",
+  "src/app/(app)/orders/actions.ts#deleteDraftAction": "request.edit",
+  "src/app/(app)/orders/actions.ts#setDraftsNeededByAction": "request.edit",
+  "src/app/(app)/orders/actions.ts#searchDraftProductsAction": "request.create",
+  "src/app/(app)/orders/actions.ts#listDraftChoicesAction": "request.create",
+  "src/app/(app)/orders/actions.ts#getDraftAction": "data.view",
 };
 
 /** Exports of `src/features/<area>/queries/`, as `<file>#<export>`. */
