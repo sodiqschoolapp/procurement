@@ -3,6 +3,7 @@
 // that says who the order is waiting for (Order page layout 4; 06-approval-workflow.md, Statuses,
 // "Who acts next"). Pure: the caller reads the order's status and events (plan of 2.9).
 
+import type { BusinessDate } from "./business-date";
 import type { OrderAction } from "./order-moves";
 import type { RequestStatus } from "./request-status";
 
@@ -136,5 +137,36 @@ export function waitingFor(status: RequestStatus): WaitingFor {
     case "REJECTED":
     case "CANCELLED":
       return "NOBODY";
+  }
+}
+
+/**
+ * Whether an order shows "Overdue" (edge-cases/requests-and-approval.md, "The needed-by date passes
+ * while the order waits": "The order shows 'Overdue'. Nothing is blocked"; plan of 2.13, decided
+ * item 8). It waits while it stands at a Waiting step, is Sent back, or is Open with its buying not
+ * finished; its needed-by date is before `today`, the Tashkent business date of the injected clock
+ * (developer-rules.md rule 10). Today itself is not overdue. A label only: no move asks it.
+ */
+export function isOverdue(
+  status: RequestStatus,
+  progress: "OPEN" | "DONE" | "DONE_SHORT" | "NOT_BOUGHT",
+  neededBy: BusinessDate | null,
+  today: BusinessDate,
+): boolean {
+  if (neededBy === null || neededBy >= today) return false;
+  switch (status) {
+    case "PENDING_HEAD":
+    case "PENDING_PRINCIPAL":
+    case "PENDING_FINANCE":
+    case "RETURNED":
+      return true;
+    case "PURCHASING":
+      return progress === "OPEN";
+    case "DRAFT":
+    case "SETTLEMENT":
+    case "CLOSED":
+    case "REJECTED":
+    case "CANCELLED":
+      return false;
   }
 }
