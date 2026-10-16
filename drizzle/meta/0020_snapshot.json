@@ -1,5 +1,5 @@
 {
-  "id": "0b3dd53d-6b65-4c48-a578-7526950a089a",
+  "id": "f1c203b9-c868-4d89-980a-c2567834e5f8",
   "prevId": "faea9db3-fee5-4b6d-a878-314bd558b675",
   "version": "7",
   "dialect": "postgresql",
@@ -1783,6 +1783,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "total_after": {
+          "name": "total_after",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
         "user_id": {
           "name": "user_id",
           "type": "uuid",
@@ -1879,6 +1885,10 @@
         "order_draft_adds_version_after_check": {
           "name": "order_draft_adds_version_after_check",
           "value": "\"order_draft_adds\".\"version_after\" > 0"
+        },
+        "order_draft_adds_total_after_check": {
+          "name": "order_draft_adds_total_after_check",
+          "value": "\"order_draft_adds\".\"total_after\" >= 0"
         }
       },
       "isRLSEnabled": false

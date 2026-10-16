@@ -151,26 +151,23 @@ async function firstAnswer(
     .select({
       id: orders.id,
       branchId: orders.branchId,
-      plannedPrice: orders.plannedPrice,
-      paymentType: orders.paymentType,
       userId: orderDraftAdds.userId,
       quantity: orderDraftAdds.qtyAfter,
       version: orderDraftAdds.versionAfter,
+      total: orderDraftAdds.totalAfter,
     })
     .from(orderDraftAdds)
     .innerJoin(orders, eq(orders.id, orderDraftAdds.orderId))
     .where(eq(orderDraftAdds.clientKey, clientKey));
   if (!added) return null;
-  // The total of the first answer: the quantity after the add with the draft's price and extra
-  // costs, which are the first answer's while the draft's version is still `version_after`.
-  const total = await totalWith(tx, added, added.quantity);
   return {
     result: {
       id: added.id,
       merged: true,
       quantity: plainQuantity(added.quantity),
       version: added.version,
-      total,
+      // Stored with the add, never rebuilt from the draft as it stands (review of 2.5a, S2).
+      total: added.total,
     },
     userId: added.userId,
     branchId: added.branchId,
@@ -244,6 +241,7 @@ async function mergeInto(
     addedQty: added,
     qtyAfter: quantity,
     versionAfter: version,
+    totalAfter: total,
     userId,
     createdAt: at,
   });

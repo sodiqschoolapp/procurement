@@ -192,6 +192,18 @@ describe("the same add sent twice (developer-rules rule 8; decided item 3, Look 
     expect(adds[0]).toMatchObject({ qtyAfter: "20.000", versionAfter: 2, userId: manager.id });
   });
 
+  it("a merged add, then a price edit, then the same key again: the first total (review of 2.5a, S2)", async () => {
+    const { manager, base } = await scene();
+    data(await addDraft(manager.id, base));
+    const clientKey = randomUUID();
+    const first = data(await addDraft(manager.id, { ...base, clientKey }));
+    expect(first.total).toBe(100_000n);
+    expect(
+      await editDraft(manager.id, { id: first.id, version: first.version, price: "7000" }),
+    ).toMatchObject({ ok: true, data: { total: 140_000n } });
+    expect(data(await addDraft(manager.id, { ...base, clientKey }))).toEqual(first);
+  });
+
   it("a new draft sent again returns the same draft; the key of another user is not_found", async () => {
     const { branch, manager, base } = await scene();
     const clientKey = randomUUID();

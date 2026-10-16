@@ -35,6 +35,7 @@ type AddRow = {
   addedQty?: string;
   qtyAfter?: string;
   versionAfter?: number;
+  totalAfter?: bigint | null;
   userId?: string;
 };
 
@@ -48,6 +49,7 @@ async function add(row: AddRow = {}) {
       addedQty: row.addedQty ?? "10",
       qtyAfter: row.qtyAfter ?? "20",
       versionAfter: row.versionAfter ?? 2,
+      totalAfter: row.totalAfter === undefined ? 100_000n : row.totalAfter,
       userId: row.userId ?? ownerId,
       createdAt: new Date(AT),
     })
@@ -87,6 +89,15 @@ describe("order_draft_adds (05 Drafts 2; developer-rules rules 5 and 8)", () => 
       constraint: "order_draft_adds_version_after_check",
     });
     await add({ versionAfter: 1 });
+  });
+
+  it("the total after is whole so'm of 0 or more, or none while the draft has no price (review of 2.5a, S2)", async () => {
+    expect(await refusalOf(add({ totalAfter: -1n }))).toMatchObject({
+      code: CHECK,
+      constraint: "order_draft_adds_total_after_check",
+    });
+    await add({ totalAfter: 0n });
+    await add({ totalAfter: null });
   });
 
   it("an unknown order or an unknown user is refused (a foreign key on every relation)", async () => {
