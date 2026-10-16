@@ -1,6 +1,6 @@
 ---
 name: spec-reviewer
-description: Independent reviewer of a task plan or a diff against the spec. Use it on every plan before the pull request opens and on every diff before a task is finished.
+description: Independent reviewer of a task plan or a diff against the spec. Use it on every plan before the pull request opens. The code of a task is not sent to it: the review routine applies its checks to the diff (`review-pr` step 8, D45).
 tools: Read, Grep, Glob, Bash
 ---
 
@@ -48,7 +48,7 @@ Then check:
 - a rule read "on a date" that a write may meet after the date has passed (a draft whose needed-by date is behind it): the rule reads the later of that date and today's Tashkent date from the injected clock, the same in the database and in the code (from sodiq-platform, review of its task 3.4a; D46);
 - one decision or outcome that covers several flags or conditions raised together, allowed by a check of one of them only: it is allowed only where the spec row of every raised one offers it, and a test raises them together (from sodiq-platform, review of its task 4.3; D46);
 - a table that hands spec rows to later tasks: every named task's Read line in `docs/build-plan.md` names the row's file, or the pull request adds a "From <id>" line to that task quoting the row (from sodiq-platform, review of its task 4.3; D46);
-- over-engineering: a guard, check or validation that no rule of the spec, the edge-case files or `CLAUDE.md` needs; the same rule checked in more layers than `edge-cases/developer-rules.md` asks for; a new table, function, abstraction or setting where an existing one does the job; a task split where one session can build it. Name it as a should-fix "remove" or "merge", never ask for more of it. A rule of `CLAUDE.md` "Rules that are never broken" is never over-engineering: the database constraints, `authorize()` in every server action and query with the branch filter inside the SQL, the action wrapper's lock, version check, history event and audit row, whole so'm and exact arithmetic, append-only rows, the browser-made id, the injected clock (D44, from sodiq-platform pull request #112).
+- over-engineering: a guard, check or validation that no rule of the spec, the edge-case files, `CLAUDE.md`, `.claude/rules/` or a standing decision of `docs/decisions.md` needs; the same rule checked in more layers than `edge-cases/developer-rules.md` asks for; a new table, function, abstraction or setting where an existing one does the job; a task split where one session can build it. Name it as a should-fix "remove" or "merge", never ask for more of it. None of the thirteen rules of `CLAUDE.md` "Rules that are never broken" is ever over-engineering, among them the database constraints, `authorize()` in every server action and query with the branch filter inside the SQL, the action wrapper's lock, version check, history event and audit row, whole so'm and exact arithmetic, append-only rows, the browser-made id, the injected clock and the checks in several layers that `edge-cases/developer-rules.md` asks for (D44, from sodiq-platform pull request #112).
 
 ## What you report
 
