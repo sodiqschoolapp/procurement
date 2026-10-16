@@ -259,7 +259,7 @@ From a draft on the branch's order list to fully approved orders, ticked and act
   - **Build:** Any order, a rejected one included, and several ticked orders at once, are copied into new drafts (the draft merge of section 5 applies); a draft keeps its typed price when the catalog price changes and shows the new suggestion as a hint; a draft with a deactivated entry is marked; a waiting order past its needed-by date shows "Overdue" and nothing is blocked.
   - **Done when:** S6 and S18 as tests.
 
-- [ ] **2.14 Download: Excel and PDF**
+- [x] **2.14 Download: Excel and PDF**
   - **Read:** `05-order-request-form.md` (Download); `13-technology.md` (Excel and PDF); `15-quality-and-acceptance.md` (S17).
   - **Build:** The filtered order list downloads as Excel (ExcelJS) and as a plain PDF (@react-pdf/renderer, A4 landscape, fonts for Uzbek and Russian built in, the filters used and who downloaded it and when on every page, no signature lines), one row per order with the planned columns and who approved each step and when, in the language of the downloader, no product photos. Every number comes from the domain functions. The actual columns arrive in 3.5.
   - **Done when:** S17 as a test that reads the Excel file and the text of the PDF; a product name in Cyrillic is readable in the PDF.

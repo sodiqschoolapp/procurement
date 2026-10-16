@@ -1261,6 +1261,37 @@ Choices made during the build:
 - A repeat puts the ids sent through the branch wall and the draft wall again (permission review, Must fix 1); a rule line in `.claude/rules/server-actions.md` now asks for it.
 - A key spent on `createDraft` and sent again to Copy as new (or the other way) gives the first action's answer: both write the same kind of row, the answer goes only to the same user in a branch still allowed, and keys are made anew per call by the browser. No action type is stored for it (permission review, Should fix 1, not taken: it would add a column for a case no screen sends).
 
+### 2.14 Download: Excel and PDF (17.10.2026)
+
+The plan's decisions as the plan review of 16.10.2026 confirmed or changed them (corrections 1 to 6 applied), and those of the build. The Look first items come first.
+
+1. **Look first** (a dependency installed for the first time). `@react-pdf/renderer` 4.9.0, on the stack line (13 "Excel and PDF"); MIT; `npm audit --omit=dev --audit-level=high` shows only the four existing moderate findings of `drizzle-kit`. No `serverExternalPackages` needed: the download passed its browser test on `next dev` and on a production build (`next build` and `next start`).
+2. **Look first** (a new dev dependency). `pdfjs-dist` 6.4.299 (Apache-2.0, Mozilla), devDependency only, to read the PDF's text in tests (`tests/helpers/pdf-text.ts`), as the Done-when asks.
+3. **Look first** (money, CLAUDE.md rule 6; review correction 1). Money in the Excel file is a number cell, `Number(amount)` only from 0 to `MONEY_MAX` (999 999 999 999 999, the 15 digits Excel keeps exactly), refused above; no formulas, the totals rows are values of `ordersTotals()`. Quantities from their `numeric(14,3)` text. Formats `#,##0` and General.
+4. **Look first** (branch wall). `data.export` (every role, branch scope); rows from `listWhere()` with the branch wall and the draft wall in the SQL; a `branch=` of another branch is 404. The names in the filters line are read inside the same walls; an id they do not name prints "—" and still filters.
+5. **Look first** (approval order). Who approved each step is `orderSteps()`: only moves after the newest Submit count; a Head-created order's Head step is the Head's Submit; a Rejected or Cancelled order keeps its finished steps.
+6. **Look first** (which orders a total covers; review correction 5). The totals under the rows cover every order of the file, with exactly the fields of the list's totals bar: goods, extra costs, grand total, and each payment type.
+7. Every order of the filter is in the file, no page and no 200 cap, in the list's order.
+8. Columns beyond the spec's list: measure beside quantity; the step's name and time as two Excel columns (one cell of two lines in the PDF); "rev n" on the number from rev 2; extra costs as their sum.
+9. **Fonts** (review correction 2). From the OFL variable file of google/fonts (`ofl/golostext/GolosText[wght].ttf`, sha256 `17bb58fb…2063`; the OFL names no Reserved Font Name), made once in the session with fontTools 4.67 and opentype-feature-freezer:
+   - `fonttools varLib.instancer GolosText[wght].ttf wght=400 -o r.ttf` and `wght=600 -o s.ttf`;
+   - `pyftfeatfreeze -f tnum r.ttf GolosText-Regular.ttf` and the same for SemiBold: tabular figures are the default digits;
+   - U+02BB, missing from Golos Text, is mapped in the cmap to the glyph of U+2018 (the same turned-comma shape), so Uzbek "oʻ, gʻ" print;
+   - the SemiBold file's names are set to "Golos Text SemiBold" / PostScript `GolosText-SemiBold` (typographic family "Golos Text"): with the same PostScript name as Regular, react-pdf embedded a new font copy for every text run.
+   The files and `OFL.txt` are in `src/features/orders/download/fonts/`, copied into the image by the Dockerfile (checked by `tests/image-files.test.ts`).
+10. The PDF header (decides decisions 2.1 item 5; review correction 6): the letterhead strip with the on-dark one-line logo made a PNG by sharp, once per process; the school name before the title when set; the filters line, "Downloaded by …, dd.mm.yyyy HH:mm" (the injected clock) and "Page n of m" on every page; the Status word of Rejected and Cancelled in muted grey (review correction 3). No signature lines.
+11. The language is `chooseLocale()` of the user's locale and the cookie, as the screen (review correction 4); words through next-intl's `createTranslator`, formats through `bindFormatters()`.
+12. A GET route handler, not a server action; it writes nothing (D5 kept).
+13. The buttons are links with the list's effective filters (the top bar's branch included), shown over an empty list too. Both use the `download` icon of the set already built (the plan named `picture_as_pdf`; one icon keeps the icon list unchanged).
+14. File names `orders-YYYY-MM-DD.xlsx` / `.pdf`, the Tashkent date of the injected clock.
+15. `docs/design-system.md` still says "the formal request PDF (tasks 2.14 and 3.5)" and that Golos Text "covers Uzbek Latin (oʻ, gʻ with U+02BB)"; neither is true now. The shared text is not changed by a task (D23). Proposed wording: "The order list PDF (tasks 2.14 and 3.5)", and "It covers Cyrillic and Uzbek Latin except U+02BB, which the browser draws from a fallback font and the PDF fonts map to U+2018".
+
+Choices made during the build:
+
+- **Look first** (a test changed). `tests/permission-registry.ts` counts `authorizeList()` as a route file's own check beside `authorize()` and `requireUser()`: the download route names no branch unless filtered. The route calls it before `orderDownload()`, which asks again with the `branch=` filter. Nothing that passed before fails less.
+- The Russian title of the files is "Заказы", the word of `orders.title`: "Заявки" is the word for requests, which `tests/notification-texts.test.ts` forbids in this flow.
+- A step not finished is an empty Excel cell, not an empty text.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.
