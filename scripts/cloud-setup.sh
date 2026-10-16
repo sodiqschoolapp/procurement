@@ -5,7 +5,7 @@
 # (docs/cloud-loop.md says where). The copy there must equal this file.
 # It runs as root on the fresh machine before Claude starts, and what it leaves
 # on disk is kept for about a week, so it only prepares the machine: Node 24
-# and the PostgreSQL image of docker-compose.yml. What belongs to the clone of
+# and the images of docker-compose.yml. What belongs to the clone of
 # the repository (the running database, the packages, the migrations) is done
 # at every session start by scripts/cloud-session-start.sh.
 #
@@ -20,8 +20,8 @@
 # its result is not kept.
 set -uo pipefail
 
-# Must equal the image of docker-compose.yml.
-POSTGRES_IMAGE=postgres:17
+# Must equal the images of docker-compose.yml, one per service.
+IMAGES="postgres:17 chrislusf/seaweedfs:4.48"
 
 step() { echo; echo "== $*"; }
 failed() { echo "!! $* failed"; }
@@ -66,8 +66,9 @@ else
   failed "no /opt/node24/bin/node"
 fi
 
-step "Docker and the PostgreSQL image"
-# The image is downloaded once here, so that a session start finds it on disk.
+step "Docker and the images"
+# The images are downloaded once here, so that a session start finds them on
+# disk and does not meet Docker Hub's download limit (HTTP 429).
 docker_ready() { docker info >/dev/null 2>&1; }
 if ! docker_ready; then
   setsid nohup dockerd > /var/log/dockerd.log 2>&1 < /dev/null &
@@ -77,11 +78,13 @@ if ! docker_ready; then
   done
 fi
 if docker_ready; then
-  if timeout 180 docker pull -q "$POSTGRES_IMAGE"; then
-    docker image ls "$POSTGRES_IMAGE"
-  else
-    failed "docker pull $POSTGRES_IMAGE (the session start tries again)"
-  fi
+  for image in $IMAGES; do
+    if timeout 120 docker pull -q "$image"; then
+      docker image ls "$image"
+    else
+      failed "docker pull $image (the session start tries again)"
+    fi
+  done
   # What is kept is the disk, not running programs. Docker is stopped cleanly
   # so that the image is whole on disk.
   if [ -f /var/run/docker.pid ]; then
