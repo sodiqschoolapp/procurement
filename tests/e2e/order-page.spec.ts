@@ -31,7 +31,10 @@ async function withDatabase<T>(work: (client: pg.Client) => Promise<T>): Promise
 }
 
 /** A complete draft of the Manager in branch EA, its people in English. Returns its id. */
-async function seedDraft(manager: Person, finance: Person): Promise<string> {
+async function seedDraft(
+  manager: Person,
+  finance: Person,
+): Promise<{ id: string; ownerId: string; product: string }> {
   return withDatabase(async (client) => {
     await client.query("begin");
     try {
@@ -77,7 +80,7 @@ async function seedDraft(manager: Person, finance: Person): Promise<string> {
         [ownerId, variant.rows[0]!.id, department.rows[0]!.id],
       );
       await client.query("commit");
-      return draft.rows[0]!.id;
+      return { id: draft.rows[0]!.id, ownerId, product: `Daftar ${tag}` };
     } catch (error) {
       await client.query("rollback");
       throw error;
@@ -105,7 +108,8 @@ test("Done when: the submitted order's stepper stands at Head, History shows the
   page,
 }, info) => {
   const people = E2E_PAGE_USERS[info.project.name as keyof typeof E2E_PAGE_USERS];
-  const draftId = await seedDraft(people.manager, people.finance);
+  const seeded = await seedDraft(people.manager, people.finance);
+  const draftId = seeded.id;
 
   // The owner submits the draft from its page, with the confirmation of 11 rule 6.
   const owner = page;
@@ -140,6 +144,15 @@ test("Done when: the submitted order's stepper stands at Head, History shows the
   // The owner has no move at Waiting for Head in 2.9 beyond Take back (2.11), which has no button
   // yet: neither a button nor the waiting line (decided item 4).
   await expect(owner.locator("[data-order-bar]").getByRole("button")).toHaveCount(0);
+
+  // The order number in the list's opened group links to the page (progress 2.8, "For 2.9").
+  await owner.goto(`/orders?status=PENDING_HEAD&owner=${seeded.ownerId}`);
+  await owner
+    .getByRole("button", { name: en.orders.list.showOrders.replace("{product}", seeded.product) })
+    .click();
+  await owner.getByRole("link", { name: number, exact: true }).click();
+  await expect(owner).toHaveURL(new RegExp(`/orders/${draftId}$`));
+  await expect(owner.locator("[data-order-number]")).toHaveText(number);
 
   // A Finance user of the branch has no move on it, so the bar says who it waits for.
   await page.context().clearCookies();

@@ -7,7 +7,13 @@ import type { OrderAction } from "@/domain/order-moves";
 import type { RequestStatus } from "@/domain/request-status";
 import { AuthorizationError } from "@/server/authorize";
 import { db } from "@/server/db/client";
-import { orderActions, orderEvents, priceHistory, productVariants } from "@/server/db/schema";
+import {
+  orderActions,
+  orderEvents,
+  orders,
+  priceHistory,
+  productVariants,
+} from "@/server/db/schema";
 
 import { insertBranch, setManagerRight } from "../../../../tests/helpers/branches";
 import { insertProduct, priceSetter } from "../../../../tests/helpers/catalog";
@@ -104,6 +110,13 @@ describe("who sees the page (03 rule 1; 06 Statuses; decided item 6)", () => {
     expect(await getOrderPage(manager.id, colleaguesDraft.id)).toBeNull();
     expect(await getOrderPage(manager.id, takenBack.id)).toBeNull();
     expect(await getOrderPage(manager.id, randomUUID())).toBeNull();
+    // The draft wall holds for every role but the Head (permission review, Should fix 2).
+    for (const role of ["PRINCIPAL", "FINANCE"] as const) {
+      const viewer = await insertUser(role, { branches: [branch.id] });
+      expect((await getOrderPage(viewer.id, mine.id))?.id).toBe(mine.id);
+      expect(await getOrderPage(viewer.id, colleaguesDraft.id)).toBeNull();
+      expect(await getOrderPage(viewer.id, takenBack.id)).toBeNull();
+    }
     expect(await getOrderPage(manager.id, "not-an-id")).toBeNull();
 
     // The owner and the Head see the Draft.
@@ -241,6 +254,15 @@ describe('"with N other orders" counts only what the reader may see (decided ite
     expect(await othersOf(colleagueA.id, inA[0]!.id)).toBe(3);
     expect(await othersOf(managerB.id, inB[0]!.id)).toBe(1);
     expect(await othersOf(head.id, inB[0]!.id)).toBe(5);
+
+    // The Principal and Finance of A count A's waiting orders, never the Draft (permission review,
+    // Should fix 3); a Manager of both branches counts both, without the Draft.
+    const principalA = await insertUser("PRINCIPAL", { branches: [a.id] });
+    const financeA = await insertUser("FINANCE", { branches: [a.id] });
+    const managerAB = await insertUser("MANAGER", { branches: [a.id, b.id] });
+    expect(await othersOf(principalA.id, inA[0]!.id)).toBe(2);
+    expect(await othersOf(financeA.id, inA[0]!.id)).toBe(2);
+    expect(await othersOf(managerAB.id, inA[0]!.id)).toBe(4);
   });
 
   it("none visible: the count is 0, so no such text is shown", async () => {
@@ -313,6 +335,23 @@ describe("price hint against today's reference price (05 Price hint; decided ite
       plannedPrice: 7_000n,
     });
     expect((await getOrderPage(manager.id, order.id))!.priceHint).toBeNull();
+
+    // A draft without a price, of a product that has a reference price (spec review of the
+    // build, Should fix 2).
+    const priced = await insertProduct({ referencePrice: 5_000n });
+    const draft = await insertOrder({
+      branchId: branch.id,
+      ownerId: manager.id,
+      departmentId: department.id,
+      variantId: priced.defaultVariantId,
+    });
+    await db
+      .update(orders)
+      .set({ plannedPrice: null, plannedTotal: null })
+      .where(eq(orders.id, draft.id));
+    const page = await getOrderPage(manager.id, draft.id);
+    expect(page!.price).toBeNull();
+    expect(page!.priceHint).toBeNull();
   });
 });
 

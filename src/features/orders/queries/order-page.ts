@@ -1,4 +1,5 @@
 import { and, asc, eq, ne, or, sql } from "drizzle-orm";
+import { type AnyPgColumn, alias } from "drizzle-orm/pg-core";
 import * as z from "zod";
 
 import { plainQuantity } from "@/domain/drafts";
@@ -105,8 +106,11 @@ export type OrderPage = {
 
 const idInput = z.uuid();
 
-/** A Draft is seen by its owner and the Head only (06 Statuses), inside the SQL. */
-function draftWall(actor: Actor, status: typeof orders.status, ownerId: typeof orders.ownerId) {
+/**
+ * A Draft is seen by its owner and the Head only (06 Statuses), inside the SQL: the SQL form of
+ * behindDraftWall() of src/domain/order-moves.ts, for the order and for the count beside each event.
+ */
+function draftWall(actor: Actor, status: AnyPgColumn, ownerId: AnyPgColumn) {
   if (actor.role === "HEAD") return undefined;
   return or(ne(status, "DRAFT"), eq(ownerId, actor.userId));
 }
@@ -184,14 +188,20 @@ async function readPage(db: Executor, actor: Actor, id: string): Promise<OrderPa
 
   // The other orders of each event's action that this user may see now: the branch wall and the
   // draft wall inside the SQL (decided item 1, Look first).
-  const seenBranch =
-    actor.role === "HEAD"
-      ? sql`true`
-      : sql`o2.branch_id in (select ub.branch_id from user_branches ub where ub.user_id = ${actor.userId})`;
-  const seenDraft =
-    actor.role === "HEAD"
-      ? sql`true`
-      : sql`(o2.status <> 'DRAFT' or o2.owner_id = ${actor.userId})`;
+  const e2 = alias(orderEvents, "e2");
+  const o2 = alias(orders, "o2");
+  const othersSeen = db
+    .select({ count: sql<number>`count(distinct ${e2.orderId})::int` })
+    .from(e2)
+    .innerJoin(o2, eq(o2.id, e2.orderId))
+    .where(
+      and(
+        eq(e2.actionId, orderEvents.actionId),
+        ne(e2.orderId, orderEvents.orderId),
+        branchFilter(actor, o2.branchId),
+        draftWall(actor, o2.status, o2.ownerId),
+      ),
+    );
   const actor2 = users;
   const events = await db
     .select({
@@ -204,10 +214,7 @@ async function readPage(db: Executor, actor: Actor, id: string): Promise<OrderPa
       comment: orderEvents.comment,
       note: orderEvents.note,
       headStepAuto: sql<boolean>`coalesce((${orderEvents.payload} ->> 'headStepAuto')::boolean, false)`,
-      othersSeen: sql<number>`(select count(distinct e2.order_id)::int
-        from order_events e2 join orders o2 on o2.id = e2.order_id
-        where e2.action_id = ${orderEvents.actionId} and e2.order_id <> ${orderEvents.orderId}
-          and ${seenBranch} and ${seenDraft})`,
+      othersSeen: sql<number>`(${othersSeen})`,
     })
     .from(orderEvents)
     .innerJoin(actor2, eq(actor2.id, orderEvents.actorId))
