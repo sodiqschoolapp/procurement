@@ -238,3 +238,26 @@ describePermissionMatrix("submittedNumbers", {
     expect(numbers.get(order.id)).toBe(order.number);
   },
 });
+
+// A taken-back DRAFT keeps its number (06 Allowed moves, Take back) and stays behind the draft
+// wall (06 Statuses: Draft, "Visible to the owner and the Head only"; permission review of 2.7,
+// Must fix 1): its number is read by its owner and the Head only.
+describe("submittedNumbers: a numbered DRAFT behind the draft wall (06 Statuses)", () => {
+  it("not_found for a colleague Manager, the Principal and Finance; read by the owner and the Head", async () => {
+    const branch = await insertBranch();
+    const owner = await insertUser("MANAGER", { branches: [branch.id] });
+    const draft = await insertOrder({
+      branchId: branch.id,
+      ownerId: owner.id,
+      status: "DRAFT",
+      number: "TST-26-9001",
+    });
+    for (const role of ["MANAGER", "PRINCIPAL", "FINANCE"] as const satisfies readonly Role[]) {
+      const user = await insertUser(role, { branches: [branch.id] });
+      expect((await submittedNumbers(user.id, [draft.id])).has(draft.id), role).toBe(false);
+    }
+    for (const user of [owner, await insertUser("HEAD")]) {
+      expect((await submittedNumbers(user.id, [draft.id])).get(draft.id)).toBe("TST-26-9001");
+    }
+  });
+});

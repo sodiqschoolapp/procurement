@@ -133,7 +133,7 @@ export const QUERIES: Record<string, Permission> = {
   "src/features/orders/queries/draft-picker.ts#searchDraftProducts": "request.create",
   "src/features/orders/queries/draft-picker.ts#listDraftChoices": "request.create",
   // The numbers of just-submitted orders for the Submit message (plan of 2.7): data.view with
-  // the branch inside the SQL; a draft has no number, so nothing behind the draft wall is read.
+  // the branch and the draft wall inside the SQL (a taken-back DRAFT keeps its number).
   "src/features/orders/queries/submitted.ts#submittedNumbers": "data.view",
   // The download route's file: file.upload for a file no record holds; each owner a later task
   // adds to src/server/files/owners.ts names its own permission there (plan of 0.12, decision 5).

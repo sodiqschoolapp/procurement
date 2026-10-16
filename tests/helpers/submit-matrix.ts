@@ -87,6 +87,24 @@ export function describeSubmitMatrix(name: string, submit: Submit): void {
       expect(await once(await insertUser("HEAD"), [draft])).toBe("allow");
     });
 
+    // The branch wall alone, the draft wall passed: the user's own draft in a branch he is not
+    // assigned to (03 rule 1; permission review of 2.7, Must fix 2).
+    it("MANAGER: his own draft in a branch he is no longer assigned to is not_found", async () => {
+      const own = await insertBranch();
+      const left = await insertBranch();
+      const manager = await insertUser("MANAGER", { branches: [own.id] });
+      expect(await once(manager, [await draftOf(left.id, manager.id)])).toBe("not_found");
+    });
+
+    for (const role of ["PRINCIPAL", "FINANCE"] as const satisfies readonly Role[]) {
+      it(`${role}: a draft of his own in another branch is not_found, not forbidden`, async () => {
+        const own = await insertBranch();
+        const other = await insertBranch();
+        const user = await insertUser(role, { branches: [own.id] });
+        expect(await once(user, [await draftOf(other.id, user.id)])).toBe("not_found");
+      });
+    }
+
     it("one order of another branch among his own refuses the whole submit (03 rule 8; 06 rule 8)", async () => {
       const own = await insertBranch();
       const other = await insertBranch();
