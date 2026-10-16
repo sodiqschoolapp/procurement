@@ -250,36 +250,50 @@ export function draftRowRights(
   return { editable, deletable: editable && row.ownerId === actor.userId && isNeverSubmitted(row) };
 }
 
+/** One row of the drafts grid, as the state machine needs it. */
+type GridRow = {
+  id: string;
+  branchId: string;
+  ownerId: string;
+  status: RequestStatus;
+};
+
+/** The moves the state machine offers on one grid row (developer-rules.md rule 2). */
+function gridRowActions(actor: Actor, row: GridRow) {
+  return allowedActions(actor, [
+    {
+      id: row.id,
+      status: row.status,
+      branchId: row.branchId,
+      ownerId: row.ownerId,
+      // Facts no Submit reads: who created the order changes where it goes, not whether it may.
+      createdByHead: false,
+      buyingFinished: false,
+      exactMatch: false,
+      ownerClosesAlone: false,
+      readyToClose: false,
+    },
+  ]);
+}
+
 /**
- * Whether the grid offers Submit on one row (05 Drafts 4; plan of 2.7): the state machine offers
- * SUBMIT (a DRAFT, the owner or the Head, CREATE_REQUESTS on; developer-rules.md rule 2), and the
- * draft has no number: a taken-back draft is submitted again from 2.11 (decided item 3, Look
- * first). The Submit button is shown when every ticked row answers true; the server asks again.
+ * Whether the grid offers Submit on one row (05 Drafts 4 and 5; plan of 2.7): the state machine
+ * offers SUBMIT (a DRAFT, the owner or the Head, CREATE_REQUESTS on; developer-rules.md rule 2). A
+ * taken-back draft is submitted the same way and keeps its number and revision (plan of 2.11,
+ * decided item 1, Look first). The Submit button is shown when every ticked row answers true; the
+ * server asks again.
  */
-export function draftSubmittable(
-  actor: Actor,
-  row: {
-    id: string;
-    branchId: string;
-    ownerId: string;
-    status: RequestStatus;
-    number: string | null;
-  },
-): boolean {
-  if (row.number !== null) return false;
-  const state = {
-    id: row.id,
-    status: row.status,
-    branchId: row.branchId,
-    ownerId: row.ownerId,
-    // Facts no Submit reads: who created the order changes where it goes, not whether it may.
-    createdByHead: false,
-    buyingFinished: false,
-    exactMatch: false,
-    ownerClosesAlone: false,
-    readyToClose: false,
-  };
-  return allowedActions(actor, [state]).includes("SUBMIT");
+export function draftSubmittable(actor: Actor, row: GridRow): boolean {
+  return gridRowActions(actor, row).includes("SUBMIT");
+}
+
+/**
+ * Whether the grid offers Submit again on one row (05 Drafts 5; 06 Allowed moves: Sent back): the
+ * state machine offers SUBMIT_AGAIN, the owner's only, the Head on his own orders only (decisions
+ * 2.3 item 5; plan of 2.11, review Must fix 1). Never a status test in the screen.
+ */
+export function draftSubmittableAgain(actor: Actor, row: GridRow): boolean {
+  return gridRowActions(actor, row).includes("SUBMIT_AGAIN");
 }
 
 /** Whether the grid's add row offers a branch: active, and `request.create` allows (05 field 1). */

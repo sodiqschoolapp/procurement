@@ -982,7 +982,8 @@
         "forbidden": "You cannot submit this order.",
         "not_ready": "This order cannot be submitted yet."
       },
-      "failedLine": "{name} — {problem}"
+      "failedLine": "{name} — {problem}",
+      "againButton": "Submit again ({count})"
     },
     "list": {
       "title": "Order list",
@@ -1178,6 +1179,30 @@
         "done": "Submitted: {number}.",
         "failed": "Not submitted. Fix in the order list: {fields}.",
         "editInList": "Edit in the order list"
+      },
+      "changes": {
+        "title": "What changed since rev {revision}",
+        "before": "Before",
+        "now": "Now",
+        "none": "Not given",
+        "total": "Planned total",
+        "fields": {
+          "variantId": "Product and subtype",
+          "companyId": "Brand or company",
+          "departmentId": "Department",
+          "requesterName": "Person",
+          "neededBy": "Needed by",
+          "quantity": "Quantity",
+          "price": "Price per unit",
+          "paymentType": "Payment type",
+          "priority": "Priority",
+          "urgentReason": "Reason for Urgent",
+          "comment": "Comment",
+          "referencePhotoFileId": "Reference photo"
+        },
+        "extra": "Extra cost: {type}",
+        "photoChanged": "Another photo",
+        "arrow": "→"
       }
     },
     "approve": {
@@ -1190,7 +1215,6 @@
       "done": "{count, plural, one {Approved 1 order.} other {Approved # orders.}}",
       "failedTitle": "{count, plural, one {Nothing was approved: 1 order is named below.} other {Nothing was approved: # orders are named below.}}",
       "failedLine": "{number} — {problem}",
-      "alreadyApproved": "Already approved by {name} at {date} {time}.",
       "refused": {
         "not_found": "Not found. The list is refreshed.",
         "stale_version": "Changed a moment ago. The list is refreshed; check it and approve again.",
@@ -1198,6 +1222,57 @@
         "forbidden": "You cannot approve this order at its step.",
         "not_ready": "This order cannot be approved yet."
       }
+    },
+    "moves": {
+      "already": {
+        "APPROVE": "Already approved by {name} at {date} {time}.",
+        "SEND_BACK": "Already sent back by {name} at {date} {time}.",
+        "REJECT": "Already rejected by {name} at {date} {time}.",
+        "CANCEL": "Already cancelled by {name} at {date} {time}.",
+        "TAKE_BACK": "Already taken back by {name} at {date} {time}."
+      },
+      "button": {
+        "SEND_BACK": "Send back",
+        "REJECT": "Reject",
+        "CANCEL": "Cancel order",
+        "TAKE_BACK": "Take back",
+        "SUBMIT_AGAIN": "Submit again"
+      },
+      "buttonCount": "{label} ({count})",
+      "title": {
+        "SEND_BACK": "{count, plural, one {Send back 1 order?} other {Send back # orders?}}",
+        "REJECT": "{count, plural, one {Reject 1 order?} other {Reject # orders?}}",
+        "CANCEL": "{count, plural, one {Cancel 1 order?} other {Cancel # orders?}}",
+        "TAKE_BACK": "{count, plural, one {Take back 1 order?} other {Take back # orders?}}",
+        "SUBMIT_AGAIN": "{count, plural, one {Submit 1 order again?} other {Submit # orders again?}}"
+      },
+      "result": {
+        "SEND_BACK": "{count, plural, one {It goes} other {They go}} back to the owner for editing. The owner and the Head are told. After the next submit, approval starts again at the Head.",
+        "REJECT": "{count, plural, one {It is} other {They are}} refused for good and can no longer change. The owner and the Head are told. The owner can still copy it as a new order.",
+        "CANCEL": "{count, plural, one {It stops} other {They stop}} for good and can no longer change.",
+        "TAKE_BACK": "{count, plural, one {It returns} other {They return}} to your drafts with the same number, to be edited and submitted again.",
+        "SUBMIT_AGAIN": "{count, plural, one {It goes} other {They go}} to the Head again with the next revision and the same number. Earlier approvals no longer count."
+      },
+      "done": {
+        "SEND_BACK": "{count, plural, one {Sent back 1 order.} other {Sent back # orders.}}",
+        "REJECT": "{count, plural, one {Rejected 1 order.} other {Rejected # orders.}}",
+        "CANCEL": "{count, plural, one {Cancelled 1 order.} other {Cancelled # orders.}}",
+        "TAKE_BACK": "{count, plural, one {Took back 1 order.} other {Took back # orders.}}",
+        "SUBMIT_AGAIN": "{count, plural, one {Submitted 1 order again.} other {Submitted # orders again.}}"
+      },
+      "failedTitle": "{count, plural, one {Nothing was saved: 1 order is named below.} other {Nothing was saved: # orders are named below.}}",
+      "failedLine": "{number} — {problem}",
+      "refused": {
+        "not_found": "Not found. The list is refreshed.",
+        "stale_version": "Changed a moment ago. The list is refreshed; check it and try again.",
+        "wrong_status": "Its status no longer allows this. The list is refreshed.",
+        "forbidden": "You cannot do this on this order.",
+        "not_ready": "It does not pass the checks at submit. Fix it in the order list."
+      },
+      "reason": "Reason",
+      "reasonHint": "At least {min} characters, one reason for every order. {count} of {max}.",
+      "notesTitle": "Notes per order (optional)",
+      "noteOf": "Note for {number}"
     }
   }
 }

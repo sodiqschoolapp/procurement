@@ -14,6 +14,7 @@ import {
   orderRow,
 } from "../../../../tests/helpers/orders";
 import { describePermissionMatrix } from "../../../../tests/helpers/permission-matrix";
+import { describeOwnerMoveMatrix } from "../../../../tests/helpers/owner-move-matrix";
 import { describeSubmitMatrix } from "../../../../tests/helpers/submit-matrix";
 import { type InsertedUser, insertUser } from "../../../../tests/helpers/users";
 
@@ -32,14 +33,19 @@ vi.mock("next/cache", () => ({ revalidatePath: () => undefined }));
 
 const {
   approveOrdersAction,
+  cancelOrdersAction,
   createDraftAction,
   deleteDraftAction,
   getDraftAction,
   listDraftChoicesAction,
+  rejectOrdersAction,
   searchDraftProductsAction,
   selectAllOnFilterAction,
+  sendBackOrdersAction,
   setDraftsNeededByAction,
+  submitAgainOrdersAction,
   submitDraftsAction,
+  takeBackOrdersAction,
   tickedSummaryAction,
   updateDraftAction,
 } = await import("./actions");
@@ -348,3 +354,59 @@ for (const [status, permission] of [
     },
   });
 }
+
+// Send back, Reject, Cancel, Take back and Submit again (build plan 2.11) through the page's own
+// exports (.claude/rules/server-actions.md; permission review of 2.5b).
+const REASON = "Invented reason for the test";
+
+for (const [name, run] of [
+  ["sendBackOrdersAction", sendBackOrdersAction],
+  ["rejectOrdersAction", rejectOrdersAction],
+] as const) {
+  for (const [status, permission] of [
+    ["PENDING_HEAD", "request.approve_step1"],
+    ["PENDING_PRINCIPAL", "request.approve_step2"],
+    ["PENDING_FINANCE", "request.approve_step3"],
+  ] as const) {
+    describePermissionMatrix(`${name} at ${status}`, {
+      permission,
+      async run({ user, branchId }) {
+        const owner = await insertUser("MANAGER", { branches: [branchId] });
+        const order = await insertOrder({ branchId, ownerId: owner.id, status });
+        signedIn(user);
+        const answer = await run({
+          clientKey: newClientKey(),
+          orders: [{ id: order.id, version: order.version }],
+          reason: REASON,
+        });
+        asMatrixAnswer(answer.ok ? answer : { ok: false, error: answer.error });
+      },
+    });
+  }
+}
+
+describePermissionMatrix("cancelOrdersAction", {
+  permission: "request.edit",
+  async run({ user, branchId, ownerId }) {
+    const order = await insertOrder({ branchId, ownerId, status: "PENDING_PRINCIPAL" });
+    signedIn(user);
+    const answer = await cancelOrdersAction({
+      clientKey: newClientKey(),
+      orders: [{ id: order.id, version: order.version }],
+      reason: REASON,
+    });
+    asMatrixAnswer(answer.ok ? answer : { ok: false, error: answer.error });
+  },
+});
+
+describeOwnerMoveMatrix("takeBackOrdersAction", "PENDING_HEAD", async (user, orders) => {
+  signedIn(user);
+  const answer = await takeBackOrdersAction({ clientKey: newClientKey(), orders });
+  return answer.ok ? answer : { ok: false, error: answer.error };
+});
+
+describeOwnerMoveMatrix("submitAgainOrdersAction", "RETURNED", async (user, orders) => {
+  signedIn(user);
+  const answer = await submitAgainOrdersAction({ clientKey: newClientKey(), orders });
+  return answer.ok ? answer : { ok: false, error: answer.error };
+});

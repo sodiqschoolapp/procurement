@@ -7,8 +7,10 @@ import { RequestStatusLabel } from "@/components/status-label";
 import { cn } from "@/components/utils";
 import { waitingFor } from "@/domain/order-steps";
 import { OrderActionBar } from "@/features/orders/components/order-action-bar";
+import type { MoveKind } from "@/features/orders/components/move-button";
 import { OrderHistory } from "@/features/orders/components/order-history";
 import { OrderStepper } from "@/features/orders/components/order-stepper";
+import { WhatChanged } from "@/features/orders/components/what-changed";
 import { type OrderPage, getOrderPage } from "@/features/orders/queries/order-page";
 import { getFormatters } from "@/i18n/get-formatters";
 import { requireUser } from "@/server/auth/session";
@@ -21,6 +23,15 @@ import { requireUser } from "@/server/auth/session";
 // button, and otherwise who the order is waiting for (decided items 4 and 5, Look first).
 
 type Tab = "details" | "history";
+
+/** The bar's move buttons besides Submit and Approve, in the table's order (06 Allowed moves). */
+const PAGE_MOVES: readonly MoveKind[] = [
+  "SEND_BACK",
+  "REJECT",
+  "TAKE_BACK",
+  "SUBMIT_AGAIN",
+  "CANCEL",
+];
 
 /** The waiting line, or null when the user has an allowed move (decided item 4, Look first). */
 async function waitingLine(order: OrderPage): Promise<string | null> {
@@ -201,7 +212,7 @@ export default async function OrderPageScreen({
             {order.number ?? t("noNumber")}
           </h1>
           {order.number ? (
-            <span className="text-[15px] leading-[22px] text-muted-foreground">
+            <span data-revision className="text-[15px] leading-[22px] text-muted-foreground">
               {tOrders("revision", { revision: order.revision })}
             </span>
           ) : null}
@@ -248,6 +259,14 @@ export default async function OrderPageScreen({
 
       <OrderStepper steps={order.steps} />
 
+      {order.changes && order.changes.list.length > 0 ? (
+        <WhatChanged
+          since={order.changes.since}
+          changes={order.changes.list}
+          unit={order.unitShortName}
+        />
+      ) : null}
+
       <section className="flex flex-col gap-4">
         <nav
           aria-label={t("tabs.label")}
@@ -279,6 +298,8 @@ export default async function OrderPageScreen({
               }
             : null
         }
+        moves={PAGE_MOVES.filter((move) => order.actions.includes(move))}
+        number={order.number}
         waitingLine={line}
       />
     </div>

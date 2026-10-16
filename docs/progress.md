@@ -812,4 +812,23 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - The e2e Head reads Uzbek and is shared: never change his language in a spec.
 - `departments.spec.ts` can fail when its random tag holds "eb"/"ea" (the branch filter is `hasText`); seen once in this build, not fixed here.
 
-The next task is 2.11.
+## 2.11 Send back, reject, cancel, take back; what changed (16.10.2026, pull request #61)
+
+**Built**
+- `sendBackOrders` (reason, a note per order), `rejectOrders`, `cancelOrders`, `takeBackOrders`, `submitAgainOrders` (`src/features/orders/actions/`) on `orderMoveAction`; the page actions share `moveAnswer()` with Approve.
+- Submit of a taken-back Draft: same number, revision and first `submitted_at`; its copy is the revision's next `submission` (migration 0022, key (order, revision, submission)).
+- `submit-steps.ts`: the checks, numbers, plan facts and copies of Submit and Submit again, one copy.
+- Domain `revisionChanges()` (`src/domain/revision-changes.ts`) and `alreadyDecidedBy()` (all five verbs); `draftSubmittableAgain()`.
+- `MoveButton` (reason box, notes) in the list bar and the page bar; Submit again in the drafts grid; `WhatChanged` above Details from rev 2.
+
+**Left out, and the task that brings it**
+- Copy as new of a rejected order: 2.13. Reminders: 8.1. Cancel of a taken-back Draft: none (decisions 2.3 item 7).
+
+**What the next sessions must know**
+- For 8.1: `submitted_at` stays the first submit; "waiting more than 24 hours" is measured from the newest `order_events` row that moved the order into its step, never from `submitted_at` (review of the plan of 2.11, correction 2).
+- For 2.13: Copy as new reads the order as it is; `order_revisions` keeps every copy, the newest of a revision is its highest `submission`.
+- `created_by_head` of `lockOrders` is true only for a never-submitted order: a taken-back order goes to the Head (permission review, Must fix 1).
+- A test that orders events by time sets a different clock for each move: two moves at one frozen time come back in id order.
+- `catalog.spec.ts` once missed its dialog under the full parallel run; it passed alone. Not fixed here.
+
+The next task is 2.13.

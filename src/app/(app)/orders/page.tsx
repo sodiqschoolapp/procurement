@@ -3,7 +3,13 @@ import { cookies } from "next/headers";
 import * as z from "zod";
 
 import { EmptyState } from "@/components/empty-state";
-import { addsDraftsIn, draftRowRights, draftSubmittable, seesDraftsGrid } from "@/domain/drafts";
+import {
+  addsDraftsIn,
+  draftRowRights,
+  draftSubmittable,
+  draftSubmittableAgain,
+  seesDraftsGrid,
+} from "@/domain/drafts";
 import { BRANCH_COOKIE } from "@/features/catalog/branch-cookie";
 import { currentBranchChoice, listMyBranches } from "@/features/catalog/queries/my-branches";
 import { DraftsGrid, type GridRow } from "@/features/orders/components/drafts-grid";
@@ -151,6 +157,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
     row: wireDraft(row),
     ...draftRowRights(actor, row),
     submittable: draftSubmittable(actor, row),
+    submittableAgain: draftSubmittableAgain(actor, row),
   }));
   const chosen = branches.find((branch) => branch.id === cookieBranch);
   const defaultBranchId = chosen?.canCreate ? chosen.id : null;

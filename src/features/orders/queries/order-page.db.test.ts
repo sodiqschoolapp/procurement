@@ -8,8 +8,11 @@ import type { RequestStatus } from "@/domain/request-status";
 import { AuthorizationError } from "@/server/authorize";
 import { db } from "@/server/db/client";
 import {
+  departments,
+  extraCostTypes,
   orderActions,
   orderEvents,
+  orderRevisions,
   orders,
   priceHistory,
   productVariants,
@@ -423,4 +426,91 @@ describePermissionMatrix("getOrderPage", {
     if (page === null) throw new AuthorizationError("not_found");
     expect(page.id).toBe(order.id);
   },
+});
+
+// What changed (build plan 2.11, the former 2.12): 06-approval-workflow.md rule 5; 15 S5; plan of
+// 2.11, decided item 3 (Look first) and review correction 1 (the newest copy of a revision is its
+// highest submission, never its latest time).
+describe("What changed on a re-submitted order (06 rule 5)", () => {
+  async function withCopies(revision: number) {
+    const branch = await insertBranch();
+    const manager = await insertUser("MANAGER", { branches: [branch.id] });
+    const head = await insertUser("HEAD");
+    const order = await insertOrder({
+      branchId: branch.id,
+      ownerId: manager.id,
+      status: "PENDING_HEAD",
+      revision,
+    });
+    const copy = async (rev: number, submission: number, snapshot: object, at: string) =>
+      db.insert(orderRevisions).values({
+        orderId: order.id,
+        revision: rev,
+        submission,
+        snapshot: {
+          variantId: order.variantId,
+          departmentId: order.departmentId,
+          companyId: null,
+          extras: [],
+          ...snapshot,
+        },
+        createdAt: new Date(at),
+      });
+    return { branch, manager, head, order, copy };
+  }
+
+  it("S5: 100 → 80 against the newest copy of rev 1, by submission and not by time", async () => {
+    const { head, order, copy } = await withCopies(2);
+    // Submission 2 of rev 1 (after a Take back) carries 90 and an earlier time stamp than
+    // submission 1: the frozen clock of a test can give two copies one time.
+    await copy(1, 1, { quantity: "100.000", plannedTotal: "500000" }, "2026-10-16T09:00:00Z");
+    await copy(1, 2, { quantity: "90.000", plannedTotal: "450000" }, "2026-10-16T08:00:00Z");
+    await copy(2, 1, { quantity: "80.000", plannedTotal: "400000" }, "2026-10-16T10:00:00Z");
+    const page = (await getOrderPage(head.id, order.id))!;
+    expect(page.changes).toEqual({
+      since: 1,
+      list: [
+        { kind: "field", field: "quantity", from: "90.000", to: "80.000" },
+        { kind: "total", from: "450000", to: "400000" },
+      ],
+    });
+  });
+
+  it("names a changed department and extra cost by their names", async () => {
+    const { branch, head, order, copy } = await withCopies(2);
+    const moved = await insertDepartment(branch.id);
+    const [named] = await db
+      .select({ name: departments.name })
+      .from(departments)
+      .where(eq(departments.id, moved.id));
+    const [type] = await db
+      .insert(extraCostTypes)
+      .values({ name: `Delivery ${randomUUID()}`, createdAt: new Date("2026-10-16T08:00:00Z") })
+      .returning({ id: extraCostTypes.id, name: extraCostTypes.name });
+    await copy(1, 1, {}, "2026-10-16T09:00:00Z");
+    await copy(
+      2,
+      1,
+      { departmentId: moved.id, extras: [{ extraCostTypeId: type!.id, amount: "20000" }] },
+      "2026-10-16T10:00:00Z",
+    );
+    const page = (await getOrderPage(head.id, order.id))!;
+    const fromName = (
+      await db
+        .select({ name: departments.name })
+        .from(departments)
+        .where(eq(departments.id, order.departmentId))
+    )[0]!.name;
+    expect(page.changes!.list).toEqual([
+      { kind: "field", field: "departmentId", from: fromName, to: named!.name },
+      { kind: "extra", typeName: type!.name, from: null, to: "20000" },
+    ]);
+  });
+
+  it("revision 1 shows nothing, a taken-back resubmit included (decided item 3)", async () => {
+    const { head, order, copy } = await withCopies(1);
+    await copy(1, 1, { quantity: "100.000" }, "2026-10-16T09:00:00Z");
+    await copy(1, 2, { quantity: "90.000" }, "2026-10-16T10:00:00Z");
+    expect((await getOrderPage(head.id, order.id))!.changes).toBe(null);
+  });
 });

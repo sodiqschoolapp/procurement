@@ -11,7 +11,7 @@ import { toast } from "@/components/toast";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { PAYMENT_TYPES, type PaymentType } from "@/domain/payment-types";
-import { approveFailureLines } from "@/features/orders/approve-lines";
+import { moveFailureLines } from "@/features/orders/move-lines";
 import { useFormatters } from "@/i18n/use-formatters";
 
 // Approve of ticked orders or of one order (06-approval-workflow.md, Allowed moves: the three
@@ -53,6 +53,7 @@ export function ApproveButton({
   className?: string;
 }) {
   const t = useTranslations("orders.approve");
+  const tMoves = useTranslations("orders.moves");
   const tPayment = useTranslations("paymentTypes");
   const tAll = useTranslations();
   const format = useFormatters();
@@ -95,12 +96,12 @@ export function ApproveButton({
         return;
       }
       const numberOf = new Map(orders.map((order) => [order.id, order.number]));
-      const lines = approveFailureLines(
+      const lines = moveFailureLines(
         answer.error,
         answer.decided,
         (id) => numberOf.get(id) ?? "",
         {
-          alreadyApproved: (values) => t("alreadyApproved", values),
+          alreadyDecided: (verb, values) => tMoves(`already.${verb}`, values),
           refused: (code) => t(`refused.${code}`),
           failedLine: (values) => t("failedLine", values),
         },

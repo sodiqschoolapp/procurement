@@ -2,7 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import type { WireDraftRow } from "@/features/orders/draft-wire";
 
-import { canApplyToTicked, rowHoldsSent } from "./grid-rules";
+import {
+  canApplyToTicked,
+  canSubmitAgainTicked,
+  canSubmitTicked,
+  rowHoldsSent,
+} from "./grid-rules";
 
 // 03 Manager rights: CREATE_REQUESTS off "can only view orders"; plan of 2.5b, decided item 2
 // (Look first); spec review of 2.5b, Must fix 3.
@@ -68,5 +73,26 @@ describe("rowHoldsSent (developer-rules rule 9; 11 rule 7)", () => {
     expect(rowHoldsSent(row, { extras: [] })).toBe(false);
     expect(rowHoldsSent(row, { quantity: "abc" })).toBe(false);
     expect(rowHoldsSent(row, { price: "6.5" })).toBe(false);
+  });
+});
+
+describe("Submit and Submit again on ticked rows (05 Drafts 5; plan of 2.11, decided item 9)", () => {
+  // The rights are the state machine's per row (draftSubmittable(), draftSubmittableAgain()): a
+  // Head ticking a Manager's sent-back row has submittableAgain false (review of the plan, Must fix 1).
+  const rights = new Map([
+    ["draft", { submittable: true, submittableAgain: false }],
+    ["mine", { submittable: false, submittableAgain: true }],
+    ["managers", { submittable: false, submittableAgain: false }],
+  ]);
+
+  it("offers Submit again only when every ticked row allows it", () => {
+    expect(canSubmitAgainTicked(["mine"], rights)).toBe(true);
+    expect(canSubmitAgainTicked(["mine", "managers"], rights)).toBe(false);
+    expect(canSubmitAgainTicked([], rights)).toBe(false);
+  });
+
+  it("a mixed tick of a draft and a sent-back order offers neither", () => {
+    expect(canSubmitTicked(["draft", "mine"], rights)).toBe(false);
+    expect(canSubmitAgainTicked(["draft", "mine"], rights)).toBe(false);
   });
 });

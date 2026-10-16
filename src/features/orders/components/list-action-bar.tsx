@@ -14,7 +14,8 @@ import { useFormatters } from "@/i18n/use-formatters";
 // actions this user can take on all of them now"; 05, the totals under the list). The numbers
 // are tickedSummary() of the server: ordersTotals() of src/domain/order-totals.ts. The actions
 // come from allowedActions() of the state machine; a button is shown only for a move that has a
-// server action (plan of 2.8, decided item 7, Look first): Approve from 2.10, which the list
+// server action (plan of 2.8, decided item 7, Look first): Approve from 2.10, Send back, Reject,
+// Cancel and Take back from 2.11, which the list
 // passes in as `actions`. White panel with a top border, no shadow (design system "What we never do" 8); on a
 // phone the count and the grand total, "Show details" opens the rest (as the drafts' totals).
 

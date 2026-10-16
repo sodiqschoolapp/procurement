@@ -567,25 +567,43 @@ describe("order_actions, order_events, order_revisions (06 rule 11; developer-ru
     await insertEvent(submitted.id);
   });
 
-  it("one revision number per order; revision 0 is refused", async () => {
+  // Changed in 2.11 (plan of 2.11, decided item 2, Look first): a taken-back Draft keeps its
+  // revision at its next submit, so one revision holds one copy per submission; the key moved from
+  // (order, revision) to (order, revision, submission). Each guard is reached with nothing in
+  // front of it (D39).
+  it("one copy per revision and submission; revision 0 and submission 0 are refused", async () => {
     const submitted = await order({ status: "PENDING_HEAD" });
-    const revision = (value: number) =>
-      db.execute(sql`insert into order_revisions (order_id, revision, snapshot, created_at)
-        values (${submitted.id}, ${value}, '{}'::jsonb, ${AT})`);
-    await revision(1);
-    expect(await refusalOf(revision(1))).toMatchObject({
+    const copy = (revision: number, submission: number) =>
+      db.execute(sql`insert into order_revisions (order_id, revision, submission, snapshot,
+          created_at)
+        values (${submitted.id}, ${revision}, ${submission}, '{}'::jsonb, ${AT})`);
+    await copy(1, 1);
+    expect(await refusalOf(copy(1, 1))).toMatchObject({
       code: UNIQUE,
-      constraint: "order_revisions_order_id_revision_key",
+      constraint: "order_revisions_order_id_revision_submission_key",
     });
-    expect(await refusalOf(revision(0))).toMatchObject({
+    // A second submit of the same revision (after a Take back) is its submission 2.
+    await copy(1, 2);
+    expect(await refusalOf(copy(0, 1))).toMatchObject({
       code: CHECK,
       constraint: "order_revisions_revision_check",
     });
-    await revision(2);
+    expect(await refusalOf(copy(3, 0))).toMatchObject({
+      code: CHECK,
+      constraint: "order_revisions_submission_check",
+    });
     expect(
       await refusalOf(
         db.execute(sql`insert into order_revisions (order_id, revision, snapshot, created_at)
-          values (${randomUUID()}, 1, '{}'::jsonb, ${AT})`),
+          values (${submitted.id}, 4, '{}'::jsonb, ${AT})`),
+      ),
+    ).toMatchObject({ code: "23502" });
+    await copy(2, 1);
+    expect(
+      await refusalOf(
+        db.execute(sql`insert into order_revisions (order_id, revision, submission, snapshot,
+            created_at)
+          values (${randomUUID()}, 1, 1, '{}'::jsonb, ${AT})`),
       ),
     ).toMatchObject({ code: FOREIGN, constraint: "order_revisions_order_id_orders_id_fk" });
   });
@@ -593,8 +611,9 @@ describe("order_actions, order_events, order_revisions (06 rule 11; developer-ru
   it("UPDATE, DELETE and TRUNCATE of the history are refused (rule 7)", async () => {
     const submitted = await order({ status: "PENDING_HEAD" });
     const event = (await insertEvent(submitted.id)).rows[0]!.id;
-    await db.execute(sql`insert into order_revisions (order_id, revision, snapshot, created_at)
-      values (${submitted.id}, 1, '{}'::jsonb, ${AT})`);
+    await db.execute(sql`insert into order_revisions (order_id, revision, submission, snapshot,
+        created_at)
+      values (${submitted.id}, 1, 1, '{}'::jsonb, ${AT})`);
     const writes: [string, ReturnType<typeof sql>][] = [
       ["order_events", sql`update order_events set comment = 'boshqa' where id = ${event}`],
       ["order_events", sql`delete from order_events where id = ${event}`],

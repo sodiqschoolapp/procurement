@@ -218,12 +218,22 @@ export const orderRevisions = pgTable(
       .notNull()
       .references(() => orders.id),
     revision: integer("revision").notNull(),
+    /**
+     * The submit within its revision: 1 for the first, 2 after a Take back and a new Submit, which
+     * keeps the revision (plan of 2.11, decided items 1 and 2, Look first).
+     */
+    submission: integer("submission").notNull(),
     snapshot: jsonb("snapshot").notNull(),
     createdAt: moment("created_at").notNull(),
   },
   (table) => [
-    unique("order_revisions_order_id_revision_key").on(table.orderId, table.revision),
+    unique("order_revisions_order_id_revision_submission_key").on(
+      table.orderId,
+      table.revision,
+      table.submission,
+    ),
     check("order_revisions_revision_check", sql`${table.revision} >= 1`),
+    check("order_revisions_submission_check", sql`${table.submission} >= 1`),
   ],
 );
 

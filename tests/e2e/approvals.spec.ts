@@ -122,14 +122,18 @@ test("the Head approves two ticked orders; the stepper moves to the Principal; s
   const groupOf = (on: Page) => on.locator("tbody[data-group]").filter({ hasText: seeded.product });
   const tickGroup = (on: Page) => groupOf(on).locator("input[type=checkbox]").first();
 
-  // The owner ticks his own orders: the bar has no Approve, only Clear.
+  // The owner ticks his own orders: the bar has no Approve; since 2.11 it has his own moves, Take
+  // back and Cancel, beside Clear (and Show details on a phone).
   await signIn(page, owner);
   await page.goto(address);
   await tickGroup(page).check();
   const ownerBar = page.locator("[data-list-bar]");
   await expect(ownerBar.locator("[data-ticked-count]")).toBeVisible();
   await expect(ownerBar.locator('[data-total="grand"]')).toBeVisible();
-  await expect(ownerBar.getByRole("button")).toHaveCount(info.project.name === "phone-375" ? 2 : 1);
+  await expect(ownerBar.locator("[data-move]")).toHaveCount(2);
+  await expect(ownerBar.locator('[data-move="TAKE_BACK"]')).toBeVisible();
+  await expect(ownerBar.locator('[data-move="CANCEL"]')).toBeVisible();
+  await expect(ownerBar.getByRole("button")).toHaveCount(info.project.name === "phone-375" ? 4 : 3);
   await page.context().clearCookies();
 
   const head = page;

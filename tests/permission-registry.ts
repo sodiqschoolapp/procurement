@@ -84,6 +84,14 @@ export const SERVER_ACTIONS: Record<string, Entry> = {
   // because the registry takes one; all three are in the matrix through actions-matrix.db.test.ts
   // (permission review of 2.10, Should fix 1).
   "src/app/(app)/orders/actions.ts#approveOrdersAction": "request.approve_step1",
+  // Send back and Reject (plan of 2.11): one action for the three steps, as Approve; the entry
+  // names step 1, all three are in the matrix through actions-matrix.db.test.ts. Cancel, Take
+  // back and Submit again: request.edit, the last two the owner's only (decisions 2.3 item 5).
+  "src/app/(app)/orders/actions.ts#sendBackOrdersAction": "request.approve_step1",
+  "src/app/(app)/orders/actions.ts#rejectOrdersAction": "request.approve_step1",
+  "src/app/(app)/orders/actions.ts#cancelOrdersAction": "request.edit",
+  "src/app/(app)/orders/actions.ts#takeBackOrdersAction": "request.edit",
+  "src/app/(app)/orders/actions.ts#submitAgainOrdersAction": "request.edit",
   // The order list on /orders (plan of 2.8): each export in the matrix through itself.
   "src/app/(app)/orders/actions.ts#selectAllOnFilterAction": "data.view",
   "src/app/(app)/orders/actions.ts#tickedSummaryAction": "data.view",

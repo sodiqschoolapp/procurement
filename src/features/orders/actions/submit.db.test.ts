@@ -31,7 +31,6 @@ import {
   insertItem,
   insertOrder,
   insertOrderExtra,
-  inventedNumber,
   orderRow,
 } from "../../../../tests/helpers/orders";
 import { commitWhileWaiting } from "../../../../tests/helpers/together";
@@ -345,19 +344,26 @@ describe("Checks at submit, all or nothing (05 Checks at submit; 06 rule 8)", ()
     });
   });
 
-  it("a Draft that already has a number is refused until 2.11, with the draft beside it (decided item 3)", async () => {
+  // Changed in 2.11 (plan of 2.11, decided item 1, Look first): a taken-back Draft is submitted
+  // like any draft and keeps its number; until then it was refused (decisions 2.7 item 3).
+  it("a taken-back Draft is submitted with its own number beside a new draft, which takes the counter's next (05 Order number; 06 Take back)", async () => {
+    setClock("2026-10-16T05:00:00Z");
     const { branch, manager } = await scene();
     const [fresh] = await drafts(branch.id, manager.id, 1);
-    const taken = await insertOrder({
-      branchId: branch.id,
-      ownerId: manager.id,
-      number: inventedNumber(),
+    const kept = `${branch.code}-26-0007`;
+    const taken = await insertOrder({ branchId: branch.id, ownerId: manager.id, number: kept });
+    okOf(await submit(manager.id, ticked([fresh!, taken])));
+    expect(await orderRow(taken.id)).toMatchObject({
+      status: "PENDING_HEAD",
+      number: kept,
+      revision: 1,
     });
-    expect(await submit(manager.id, ticked([fresh!, taken]))).toMatchObject({
-      ok: false,
-      error: { code: "not_ready", orders: [{ orderId: taken.id, code: "not_ready" }] },
+    expect(await orderRow(fresh!.id)).toMatchObject({
+      status: "PENDING_HEAD",
+      number: `${branch.code}-26-0001`,
     });
-    expect(await orderRow(fresh!.id)).toMatchObject({ status: "DRAFT", number: null });
+    // One number was drawn, for the new draft only.
+    expect(await counterOf(branch.id, 2026)).toBe(1);
   });
 });
 

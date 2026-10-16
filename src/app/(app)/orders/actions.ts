@@ -21,7 +21,12 @@ import {
   wireUpdated,
 } from "@/features/orders/draft-wire";
 import { approveOrders } from "@/features/orders/actions/approve";
+import { cancelOrders } from "@/features/orders/actions/cancel";
+import { rejectOrders } from "@/features/orders/actions/reject";
+import { sendBackOrders } from "@/features/orders/actions/send-back";
+import { submitAgainOrders } from "@/features/orders/actions/submit-again";
 import { submitDrafts } from "@/features/orders/actions/submit";
+import { takeBackOrders } from "@/features/orders/actions/take-back";
 import { getDraft } from "@/features/orders/queries/drafts";
 import { newestMoves } from "@/features/orders/queries/newest-moves";
 import { submittedNumbers } from "@/features/orders/queries/submitted";
@@ -29,7 +34,7 @@ import { selectAllOnFilter, tickedSummary } from "@/features/orders/queries/orde
 import { parseListFilters } from "@/features/orders/list-filters";
 import { type WireTickedSummary, wireTickedSummary } from "@/features/orders/list-wire";
 import { listDraftChoices, searchDraftProducts } from "@/features/orders/queries/draft-picker";
-import { alreadyApprovedBy } from "@/domain/already-decided";
+import { type DecidedVerb, alreadyDecidedBy } from "@/domain/already-decided";
 import { serverAction } from "@/server/action";
 import { type ActionFailure, type ActionResult, failure } from "@/server/action-result";
 import { getCurrentUser } from "@/server/auth/session";
@@ -48,6 +53,11 @@ const remove = serverAction(deleteDraft);
 const applyNeededBy = draftsServerAction(setDraftsNeededBy);
 const submit = ordersServerAction(submitDrafts);
 const approve = ordersServerAction(approveOrders);
+const sendBack = ordersServerAction(sendBackOrders);
+const reject = ordersServerAction(rejectOrders);
+const cancel = ordersServerAction(cancelOrders);
+const takeBack = ordersServerAction(takeBackOrders);
+const submitAgain = ordersServerAction(submitAgainOrders);
 
 /** A query as an answer: a refusal of authorize() or of the input is returned, never thrown. */
 async function asked<T>(read: (userId: string) => Promise<T>): Promise<ActionResult<T>> {
@@ -128,11 +138,11 @@ export async function submitDraftsAction(input: unknown): Promise<ActionResult<W
   };
 }
 
-/** One order another user approved since the screen showed it (06 rule 7). */
-export type WireDecided = { orderId: string; name: string; at: string };
+/** One order another user moved since the screen showed it (06 rule 7). */
+export type WireDecided = { orderId: string; verb: DecidedVerb; name: string; at: string };
 
-/** What Approve answers: each order's new status, or the refusal and who approved meanwhile. */
-export type ApproveAnswer =
+/** What a move on ticked orders answers: each order's new status, or the refusal and who moved. */
+export type MoveAnswer =
   | { ok: true; data: { orders: { id: string; status: string }[] } }
   | { ok: false; error: ActionFailure; decided: WireDecided[] };
 
@@ -150,13 +160,16 @@ function sentVersions(input: unknown): Map<string, number> {
 }
 
 /**
- * Approves the ticked orders at the Head, Principal or Finance step, all or nothing (06 Allowed
- * moves; rules 7, 8; plan of 2.10). A refusal names every order that failed; for one another user
- * approved since the screen showed it, newestMoves(), which calls authorize() itself with the
- * walls in its SQL, says who and when (decided item 3, Look first). Never retried by the screen.
+ * Runs one move on ticked orders, all or nothing (06 Allowed moves; rules 7, 8; plans of 2.10 and
+ * 2.11). A refusal names every order that failed; for one another user moved since the screen
+ * showed it, newestMoves(), which calls authorize() itself with the walls in its SQL, says who,
+ * how and when (2.10 decided item 3; 2.11 decided item 7, Look first). Never retried by the screen.
  */
-export async function approveOrdersAction(input: unknown): Promise<ApproveAnswer> {
-  const result = await approve(input);
+async function moveAnswer(
+  run: (input: unknown) => Promise<ActionResult<{ orders: { id: string; status: string }[] }>>,
+  input: unknown,
+): Promise<MoveAnswer> {
+  const result = await run(input);
   if (result.ok) {
     revalidatePath("/orders");
     return { ok: true, data: { orders: result.data.orders } };
@@ -178,16 +191,53 @@ export async function approveOrdersAction(input: unknown): Promise<ApproveAnswer
       throw error;
     });
     for (const order of asked) {
-      const by = alreadyApprovedBy(
+      const by = alreadyDecidedBy(
         { code: order.code, sentVersion: sent.get(order.orderId) ?? 0 },
         newest.get(order.orderId) ?? null,
         { id: user.id, role: user.role },
       );
-      if (by) decided.push({ orderId: order.orderId, name: by.name, at: by.at.toISOString() });
+      if (by) {
+        decided.push({
+          orderId: order.orderId,
+          verb: by.verb,
+          name: by.name,
+          at: by.at.toISOString(),
+        });
+      }
     }
   }
   revalidatePath("/orders");
   return { ok: false, error: result.error, decided };
+}
+
+/** Approves the ticked orders at the Head, Principal or Finance step (plan of 2.10). */
+export async function approveOrdersAction(input: unknown): Promise<MoveAnswer> {
+  return moveAnswer(approve, input);
+}
+
+/** Sends the ticked orders back to their owners, one reason, a note per order (plan of 2.11). */
+export async function sendBackOrdersAction(input: unknown): Promise<MoveAnswer> {
+  return moveAnswer(sendBack, input);
+}
+
+/** Rejects the ticked orders for good, with one reason (plan of 2.11). */
+export async function rejectOrdersAction(input: unknown): Promise<MoveAnswer> {
+  return moveAnswer(reject, input);
+}
+
+/** Cancels the ticked orders, by their owner or the Head, with one reason (plan of 2.11). */
+export async function cancelOrdersAction(input: unknown): Promise<MoveAnswer> {
+  return moveAnswer(cancel, input);
+}
+
+/** Takes the ticked orders back to Draft before the Head decides (plan of 2.11). */
+export async function takeBackOrdersAction(input: unknown): Promise<MoveAnswer> {
+  return moveAnswer(takeBack, input);
+}
+
+/** Submits the ticked sent-back orders again: revision + 1, back to the Head (plan of 2.11). */
+export async function submitAgainOrdersAction(input: unknown): Promise<MoveAnswer> {
+  return moveAnswer(submitAgain, input);
 }
 
 /** The product picker of a branch (05 field 2): photo, category, type, stock, subtypes. */

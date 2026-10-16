@@ -4,7 +4,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 
 import { newClientKey } from "@/components/client-key";
-import { alreadyApprovedBy } from "@/domain/already-decided";
+import { alreadyDecidedBy } from "@/domain/already-decided";
 import type { RequestStatus } from "@/domain/request-status";
 import { runAction } from "@/server/action";
 import { db } from "@/server/db/client";
@@ -172,8 +172,8 @@ describe("S8, first half: two Heads approve the same ticked orders together (15 
     const newest = await newestMoves(loser.id, ids);
     for (const id of ids) {
       expect(
-        alreadyApprovedBy({ code: "stale_version", sentVersion: 1 }, newest.get(id)!, loser),
-      ).toEqual({ name: winner.fullName, at: new Date("2026-10-16T09:32:00Z") });
+        alreadyDecidedBy({ code: "stale_version", sentVersion: 1 }, newest.get(id)!, loser),
+      ).toEqual({ verb: "APPROVE", name: winner.fullName, at: new Date("2026-10-16T09:32:00Z") });
     }
   });
 });

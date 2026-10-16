@@ -12,13 +12,15 @@ import { toast } from "@/components/toast";
 import { Button } from "@/components/ui/button";
 
 import { type ApproveOrder, ApproveButton } from "./approve-button";
+import { type MoveKind, MoveButton } from "./move-button";
 import { cellOfField } from "./grid-rules";
 
 // The action bar of the order page (11-screens-and-ux.md, Order page layout 4: "fixed at the
 // bottom: only the actions this user can take on this order now. If there are none, a line says
 // who the order is waiting for"). Which moves are allowed is allowedActions() of the server; a
 // button is shown only for a move with a server action: Submit (plan of 2.9, decided item 4,
-// Look first) and Approve (2.10). Submit asks first and states the result (11 rule 6); it is never retried
+// Look first; a taken-back Draft too since 2.11), Approve (2.10), Send back, Reject, Cancel, Take
+// back and Submit again (2.11). Submit asks first and states the result (11 rule 6); it is never retried
 // automatically, and its client key is kept only after a call with no answer (decisions 2.7 item
 // 13). A refusal names the fields to fix in the order list, where the drafts are edited.
 
@@ -27,11 +29,17 @@ export function OrderActionBar({
   version,
   canSubmit,
   approve,
+  moves,
+  number,
   waitingLine,
 }: {
   orderId: string;
   version: number;
   canSubmit: boolean;
+  /** The moves of MoveButton the server allows on this order, in the table's order. */
+  moves: readonly MoveKind[];
+  /** The order's number; null for a draft never submitted, which none of `moves` applies to. */
+  number: string | null;
   /** The order as Approve sends it, with its planned total formatted; null without the move. */
   approve: { order: ApproveOrder; total: string } | null;
   /** Shown when the user has no allowed move; null otherwise. */
@@ -114,15 +122,30 @@ export function OrderActionBar({
           {refused}
         </p>
       ) : null}
-      {approve ? (
+      {approve || (moves.length > 0 && number) ? (
         <div className="flex flex-wrap gap-3 sm:ml-auto">
-          <ApproveButton
-            orders={[approve.order]}
-            versionOf={() => version}
-            total={approve.total}
-            onAnswer={(answer) => setRefused(answer?.lines[0]?.line ?? null)}
-            className="max-sm:h-11 max-sm:w-full"
-          />
+          {approve ? (
+            <ApproveButton
+              orders={[approve.order]}
+              versionOf={() => version}
+              total={approve.total}
+              onAnswer={(answer) => setRefused(answer?.lines[0]?.line ?? null)}
+              className="max-sm:h-11 max-sm:w-full"
+            />
+          ) : null}
+          {number
+            ? moves.map((move) => (
+                <MoveButton
+                  key={move}
+                  move={move}
+                  variant={move === "SUBMIT_AGAIN" ? "default" : "secondary"}
+                  orders={[{ id: orderId, number }]}
+                  versionOf={() => version}
+                  onAnswer={(answer) => setRefused(answer?.lines[0]?.line ?? null)}
+                  className="max-sm:h-11 max-sm:w-full"
+                />
+              ))
+            : null}
         </div>
       ) : null}
       {canSubmit ? (

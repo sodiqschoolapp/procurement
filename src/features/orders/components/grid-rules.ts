@@ -27,6 +27,19 @@ export function canSubmitTicked(
   return ticked.length > 0 && ticked.every((id) => rights.get(id)?.submittable === true);
 }
 
+/**
+ * Whether Submit again is offered on the ticked rows (05 Drafts 5; plan of 2.11, decided item 9):
+ * every one is submittable again, as draftSubmittableAgain() of src/domain/drafts.ts says (the
+ * state machine offers SUBMIT_AGAIN: the owner's only). One action makes one move, so ticks of
+ * drafts and sent-back orders together offer neither button.
+ */
+export function canSubmitAgainTicked(
+  ticked: readonly string[],
+  rights: ReadonlyMap<string, { submittableAgain: boolean }>,
+): boolean {
+  return ticked.length > 0 && ticked.every((id) => rights.get(id)?.submittableAgain === true);
+}
+
 /** The ticked set as one text, so a kept Submit key belongs to these drafts only (correction 4). */
 export function submitKeyFor(ids: readonly string[]): string {
   return [...ids].sort().join(",");
