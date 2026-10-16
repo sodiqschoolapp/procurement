@@ -26,7 +26,6 @@ import { readSettings } from "@/server/settings";
 import { refusePhoto } from "../../catalog/actions/photos";
 import {
   type ExtraRow,
-  type SubtypeFacts,
   commentField,
   extrasField,
   isOneDraftViolation,
@@ -133,7 +132,7 @@ async function totalWith(
  * add it recorded (decided item 3, Look first), with its maker and the branch of its draft. The
  * key's advisory lock of runAction() is held, so a key is read once by one call at a time.
  */
-async function firstAnswer(
+export async function firstAnswer(
   tx: Executor,
   clientKey: string,
 ): Promise<FirstResult<CreatedDraft> | null> {
@@ -203,8 +202,33 @@ export const createDraft = defineAction({
     const existing = await lockTrioDraft(tx, trio);
     if (existing) return mergeInto(tx, existing, input.quantity, input.clientKey, userId);
 
+    // The picks are checked here, never in insertDraft(): a copy writes a deactivated entry as it
+    // is and the draft is marked (plan of 2.13, decided item 6; review Should fix 2).
+    if (input.companyId) await pickedCompany(tx, input.companyId);
+    const extras = input.extras ?? [];
+    await pickedExtras(tx, extras);
+    if (input.referencePhotoFileId) {
+      await refusePhoto(tx, userId, input.referencePhotoFileId, "referencePhotoFileId");
+    }
+    const priority = input.priority ?? "NORMAL";
     try {
-      return await insertDraft(tx, input, userId, subtype);
+      return await insertDraft(tx, userId, {
+        clientKey: input.clientKey,
+        branchId: input.branchId,
+        variantId: input.variantId,
+        departmentId: input.departmentId,
+        quantity: input.quantity,
+        companyId: input.companyId ?? subtype.defaultCompanyId,
+        requesterName: input.requesterName ?? null,
+        neededBy: input.neededBy ?? null,
+        price: input.price ?? suggestedPrice(subtype.referencePrice, subtype.lastPurchasePrice),
+        extras,
+        paymentType: input.paymentType ?? (await readSettings(tx)).default_payment_type,
+        priority,
+        urgentReason: storedUrgentReason(priority, input.urgentReason ?? null),
+        comment: input.comment ?? null,
+        referencePhotoFileId: input.referencePhotoFileId ?? null,
+      });
     } catch (error) {
       // The trio's lock makes this rare; the index is the last defence (decided item 24).
       if (isOneDraftViolation(error)) refuse("variantId", "errors.field.draftExists");
@@ -219,7 +243,7 @@ export const createDraft = defineAction({
  * quantity and the version after it, so a repeat answers the same (review of the plan,
  * correction 2).
  */
-async function mergeInto(
+export async function mergeInto(
   tx: Executor,
   draft: NonNullable<Awaited<ReturnType<typeof lockTrioDraft>>>,
   added: string,
@@ -250,57 +274,69 @@ async function mergeInto(
   return { id: orderId, merged: true, quantity, version, total };
 }
 
-/** A new draft: every field sent, the rest from the catalog and the settings (05 fields 6, 11, 13). */
-async function insertDraft(
+/** Every field of a new draft, as it is written: the caller has filled and checked each one. */
+export type NewDraft = {
+  clientKey: string;
+  branchId: string;
+  variantId: string;
+  departmentId: string;
+  quantity: string;
+  companyId: string | null;
+  requesterName: string | null;
+  neededBy: string | null;
+  price: bigint | null;
+  extras: readonly ExtraRow[];
+  paymentType: PaymentType;
+  priority: "NORMAL" | "URGENT";
+  urgentReason: string | null;
+  comment: string | null;
+  referencePhotoFileId: string | null;
+};
+
+/**
+ * Writes a new draft (05 Order; Drafts 1). createDraft() fills the fields not sent from the catalog
+ * and the settings (05 fields 6, 11, 13); a copy sends the ticked order's (plan of 2.13, decided
+ * item 3, Look first). The total is draftTotal() of the row as written (decided item 19).
+ */
+export async function insertDraft(
   tx: Executor,
-  input: z.output<typeof createInput>,
   userId: string,
-  subtype: SubtypeFacts,
+  draft: NewDraft,
 ): Promise<CreatedDraft> {
-  if (input.companyId) await pickedCompany(tx, input.companyId);
-  const extras = input.extras ?? [];
-  await pickedExtras(tx, extras);
-  if (input.referencePhotoFileId) {
-    await refusePhoto(tx, userId, input.referencePhotoFileId, "referencePhotoFileId");
-  }
-  const priority = input.priority ?? "NORMAL";
-  const urgentReason = storedUrgentReason(priority, input.urgentReason ?? null);
-  const price = input.price ?? suggestedPrice(subtype.referencePrice, subtype.lastPurchasePrice);
-  const paymentType = input.paymentType ?? (await readSettings(tx)).default_payment_type;
   const total = draftTotal({
-    quantity: input.quantity,
-    price,
-    extras: extras.map((extra) => extra.amount),
-    paymentType,
+    quantity: draft.quantity,
+    price: draft.price,
+    extras: draft.extras.map((extra) => extra.amount),
+    paymentType: draft.paymentType,
   });
   if (!totalFits(total)) refuse("quantity", "errors.field.tooLarge");
   const at = now();
   const [row] = await tx
     .insert(orders)
     .values({
-      branchId: input.branchId,
+      branchId: draft.branchId,
       ownerId: userId,
       createdBy: userId,
       status: "DRAFT",
-      priority,
-      urgentReason,
-      variantId: input.variantId,
-      companyId: input.companyId ?? subtype.defaultCompanyId,
-      departmentId: input.departmentId,
-      requesterName: input.requesterName ?? null,
-      neededBy: input.neededBy ?? null,
-      plannedQty: input.quantity,
-      plannedPrice: price,
-      paymentType,
-      comment: input.comment ?? null,
-      referencePhotoFileId: input.referencePhotoFileId ?? null,
+      priority: draft.priority,
+      urgentReason: draft.urgentReason,
+      variantId: draft.variantId,
+      companyId: draft.companyId,
+      departmentId: draft.departmentId,
+      requesterName: draft.requesterName,
+      neededBy: draft.neededBy,
+      plannedQty: draft.quantity,
+      plannedPrice: draft.price,
+      paymentType: draft.paymentType,
+      comment: draft.comment,
+      referencePhotoFileId: draft.referencePhotoFileId,
       plannedTotal: total,
-      clientKey: input.clientKey,
+      clientKey: draft.clientKey,
       createdAt: at,
       updatedAt: at,
     })
     .returning({ id: orders.id, version: orders.version });
-  await insertExtras(tx, row!.id, extras);
+  await insertExtras(tx, row!.id, draft.extras);
   return { id: row!.id, merged: false, version: row!.version };
 }
 
