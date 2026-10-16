@@ -852,10 +852,6 @@
       "line": "Birinchi buyurtmani pastda qoʻshing: mahsulot, boʻlim va miqdorni tanlang.",
       "lineViewOnly": "Bu yerda qoralamalaringiz va sizga qaytarilgan buyurtmalar chiqadi."
     },
-    "listComing": {
-      "title": "Buyurtmalar roʻyxatingiz shu yerda boʻladi",
-      "line": "Siz koʻrib chiqadigan buyurtmalar shu sahifada chiqadi."
-    },
     "columns": {
       "tick": "Belgilash",
       "number": "Raqam",
@@ -987,6 +983,88 @@
         "not_ready": "Bu buyurtmani hozircha yuborib boʻlmaydi."
       },
       "failedLine": "{name} — {problem}"
+    },
+    "list": {
+      "title": "Buyurtmalar ro'yxati",
+      "groupCount": "{count} qator",
+      "selectAll": "Filtrdagi hammasini belgilash",
+      "columns": {
+        "tick": "Belgi",
+        "product": "Mahsulot",
+        "status": "Holat",
+        "quantity": "Miqdor",
+        "total": "Jami",
+        "count": "Buyurtmalar",
+        "neededBy": "Kerak sana",
+        "number": "Raqam",
+        "department": "Bo'lim",
+        "price": "Narx",
+        "paymentType": "To'lov turi",
+        "owner": "Egasi",
+        "submitted": "Yuborilgan"
+      },
+      "tickGroup": "Barcha buyurtmalarni belgilash: {product}",
+      "tickOrder": "{number} buyurtmani belgilash",
+      "showOrders": "Buyurtmalarni ko'rsatish: {product}",
+      "hideOrders": "Buyurtmalarni yashirish: {product}",
+      "ordersOf": "Buyurtmalar: {product}",
+      "urgent": "Shoshilinch",
+      "orderCount": "{count} ta buyurtma",
+      "tooMany": "Bitta amalda ko'pi bilan 200 ta buyurtma. Ba'zilarining belgisini oling yoki filtrni toraytiring.",
+      "refreshed": "Belgilangan ba'zi buyurtmalar o'zgarib, ro'yxatdan chiqdi. Belgilar olindi, ro'yxat yangilandi.",
+      "summaryFailed": "Belgilangan buyurtmalarni o'qib bo'lmadi. Aloqani tekshirib, qayta belgilang.",
+      "empty": {
+        "title": "Hozircha buyurtma yo'q",
+        "line": "Yuborilgan buyurtmalar shu yerda chiqadi: har mahsulot va holat uchun bitta qator."
+      },
+      "emptyFiltered": {
+        "title": "Bu filtrlarga mos buyurtma yo'q",
+        "line": "Ko'proq buyurtma ko'rish uchun filtrlarni o'zgartiring yoki tozalang."
+      },
+      "bar": {
+        "title": "Belgilangan buyurtmalar",
+        "count": "{count} ta buyurtma",
+        "countOf": "{matching} tadan {count} tasi belgilandi",
+        "clear": "Tozalash"
+      },
+      "filters": {
+        "label": "Filtrlar",
+        "open": "Filtrlar",
+        "openCount": "Filtrlar ({count})",
+        "clear": "Filtrlarni tozalash",
+        "any": "Hammasi",
+        "topBar": "Yuqori paneldagidek",
+        "inactive": "{name} (faol emas)",
+        "sort": "Saralash",
+        "sorts": {
+          "neededBy": "Kerak sana, avval yaqini",
+          "submitted": "Yuborilgan, avval eskisi",
+          "product": "Mahsulot"
+        },
+        "status": "Holat",
+        "branch": "Filial",
+        "owner": "Egasi",
+        "department": "Bo'lim",
+        "category": "Toifa",
+        "payment": "To'lov turi",
+        "dates": "Sana",
+        "dateKinds": {
+          "created": "Yaratilgan",
+          "submitted": "Yuborilgan",
+          "approved": "Tasdiqlangan",
+          "closed": "Yopilgan"
+        },
+        "from": "Dan",
+        "to": "Gacha",
+        "numberFrom": "Raqamdan",
+        "numberTo": "Raqamgacha",
+        "numberPlaceholder": "CHL-26-0142",
+        "numberInvalid": "CHL-26-0142 kabi raqam yozing.",
+        "numberToIgnored": "“Raqamgacha” hisobga olinmadi: filial kodi yoki yili boshqa.",
+        "urgent": "Faqat shoshilinch",
+        "action": "Bitta amaldagi buyurtmalar",
+        "removeAction": "Faqat bitta amaldagini emas, barcha buyurtmalarni ko'rsatish"
+      }
     }
   }
 }

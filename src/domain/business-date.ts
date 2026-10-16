@@ -105,6 +105,15 @@ export function businessDayStart(date: BusinessDate): Date {
   return new Date(midnightAsUtc - offsetAt(first));
 }
 
+/** The business date after a given one: the end, exclusive, of a "to day …" filter (plan of 2.8). */
+export function nextBusinessDate(date: BusinessDate): BusinessDate {
+  if (!isBusinessDate(date)) {
+    throw new Error(`Refused: "${date}" is not a business date (YYYY-MM-DD, a day that exists).`);
+  }
+  const [year, month, day] = date.split("-").map(Number) as [number, number, number];
+  return new Date(Date.UTC(year, month - 1, day + 1)).toISOString().slice(0, 10);
+}
+
 /** Whether a value is a business date as text: YYYY-MM-DD, a day that exists (05 field 8). */
 export function isBusinessDate(value: unknown): value is BusinessDate {
   const match = typeof value === "string" ? BUSINESS_DATE_PATTERN.exec(value) : null;

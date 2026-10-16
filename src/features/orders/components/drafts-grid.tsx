@@ -67,7 +67,7 @@ export function DraftsGrid({
   actorId: string;
   defaultBranchId: string | null;
   canAdd: boolean;
-  /** The address query of the view without its page, such as "owners=all". */
+  /** The address query of the page without the grid's own page, such as "owners=all". */
   query: string;
 }) {
   const t = useTranslations("orders");
@@ -195,7 +195,7 @@ export function DraftsGrid({
 
   function pageHref(to: number): string {
     const params = new URLSearchParams(query);
-    if (to > 1) params.set("page", String(to));
+    if (to > 1) params.set("draftsPage", String(to));
     const text = params.toString();
     return `/orders${text ? `?${text}` : ""}`;
   }

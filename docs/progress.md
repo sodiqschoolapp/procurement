@@ -754,4 +754,22 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - `commitWhileWaiting(change, action, waiters)`: pass 2 when two transactions must both wait on the change.
 - A query reading orders by id puts the draft wall in the SQL even for numbered orders (`.claude/rules/server-actions.md`).
 
-The next task is 2.8.
+## 2.8 Order list: group rows, ticking and filters (16.10.2026, pull request #54)
+
+**Built**
+- `/orders` for every role: the order list above the drafts grid. Filters and sort in the address (`src/features/orders/list-filters.ts`), group rows per branch, subtype and status, 25 a page, opening to their orders; ticks on rows and orders; "Select all on this filter" (200); the action bar with count and totals.
+- Domain `src/domain/order-list.ts`: `groupSummary()`, `groupPriceHint()`, `pinsUrgent()`, `tickFits()`, `LIST_STATUSES`; `nextBusinessDate()`.
+- Queries `listOrderGroups`, `selectAllOnFilter`, `tickedSummary`, `listOrderFilterChoices` (`queries/order-list.ts`), each in one `readSnapshot()`; page actions `selectAllOnFilterAction`, `tickedSummaryAction`.
+
+**Left out, and the task that brings it**
+- Move buttons in the bar: 2.10, 2.11. Copy as new, Overdue: 2.13. Download: 2.14. Colour labels: phase 4. The Manager's "30 requested": 6.1.
+
+**What the next sessions must know**
+- For 2.10 and 2.11: add each move's button to `ListActionBar` where `summary.actions` names it; pass the ticked ids and versions (`selectAllOnFilter` gives versions; the groups' orders carry `version`), then `router.refresh()`. After a move the ticks should be cleared.
+- For 2.14: read the filters with `parseListFilters()` and the rows with `listWhere`'s filters; the number and date rules are there.
+- For 2.9: the order number in an opened group is plain text; make it the link to `/orders/[id]`.
+- For 6.1: 05 Group rows 5 ("30 requested", every stage) is the Manager's home (decisions 2.8 item 2).
+- The grid pages with `?draftsPage=` now; `page=` is the list's.
+- A query that reads in several statements uses `readSnapshot()` (`.claude/rules/server-actions.md`).
+
+The next task is 2.9.

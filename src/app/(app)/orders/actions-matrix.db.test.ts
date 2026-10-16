@@ -36,8 +36,10 @@ const {
   getDraftAction,
   listDraftChoicesAction,
   searchDraftProductsAction,
+  selectAllOnFilterAction,
   setDraftsNeededByAction,
   submitDraftsAction,
+  tickedSummaryAction,
   updateDraftAction,
 } = await import("./actions");
 
@@ -277,4 +279,49 @@ describe("setDraftsNeededByAction: all or nothing across branches (06 rule 8)", 
 describeSubmitMatrix("submitDraftsAction", (user, orders) => {
   signedIn(user);
   return submitDraftsAction({ clientKey: newClientKey(), orders });
+});
+
+// The order list (plan of 2.8): the two page actions through their own exports. An order left out
+// of the answer is the branch wall's "not found" (03 rule 1).
+describePermissionMatrix("selectAllOnFilterAction", {
+  permission: "data.view",
+  async run({ user, branchId }) {
+    const owner = await insertUser("MANAGER", { branches: [branchId] });
+    const order = await insertOrder({ branchId, ownerId: owner.id, status: "PENDING_HEAD" });
+    signedIn(user);
+    const answer = await selectAllOnFilterAction({ query: `branch=${branchId}` });
+    asMatrixAnswer(answer);
+    expect(answer).toMatchObject({ ok: true, data: { orders: [{ id: order.id }], matching: 1 } });
+  },
+});
+
+describePermissionMatrix("selectAllOnFilterAction, the branch wall in the SQL", {
+  permission: "data.view",
+  async run({ user, branchId }) {
+    const owner = await insertUser("MANAGER", { branches: [branchId] });
+    const order = await insertOrder({ branchId, ownerId: owner.id, status: "PENDING_HEAD" });
+    signedIn(user);
+    // No branch= in the address: the other branch's order is left out by the SQL (permission
+    // review of 2.8, Should fix 1).
+    const answer = await selectAllOnFilterAction({ query: "" });
+    asMatrixAnswer(answer);
+    if (answer.ok && !answer.data.orders.some((each) => each.id === order.id)) {
+      throw new AuthorizationError("not_found");
+    }
+  },
+});
+
+describePermissionMatrix("tickedSummaryAction", {
+  permission: "data.view",
+  async run({ user, branchId }) {
+    const owner = await insertUser("MANAGER", { branches: [branchId] });
+    const order = await insertOrder({ branchId, ownerId: owner.id, status: "PENDING_HEAD" });
+    signedIn(user);
+    const answer = await tickedSummaryAction({ ids: [order.id] });
+    asMatrixAnswer(answer);
+    if (answer.ok && answer.data.missing.includes(order.id)) {
+      throw new AuthorizationError("not_found");
+    }
+    expect(answer).toMatchObject({ ok: true, data: { count: 1, totals: { grand: "50000" } } });
+  },
 });

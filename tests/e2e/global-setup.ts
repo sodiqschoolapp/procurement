@@ -114,6 +114,29 @@ export const E2E_DRAFT_USERS = {
   },
 } as const satisfies Record<string, E2eUser>;
 
+/**
+ * One Manager per project for the order list (plan of 2.8, Tests): the projects run in parallel,
+ * and the list filtered to one owner would hold the other run's orders.
+ */
+export const E2E_LIST_USERS = {
+  "phone-375": {
+    fullName: "Nodira Sinovova",
+    username: "e2e_list_phone",
+    phone: "+998 90 000 99 31",
+    role: "MANAGER",
+    password: PASSWORD,
+    branches: ["EA"],
+  },
+  "desktop-1440": {
+    fullName: "Jasur Sinovov",
+    username: "e2e_list_desktop",
+    phone: "+998 90 000 99 32",
+    role: "MANAGER",
+    password: PASSWORD,
+    branches: ["EA"],
+  },
+} as const satisfies Record<string, E2eUser>;
+
 // A fixed invented moment: the rows' time does not matter to any browser test.
 /**
  * One Head per project for the notifications test (plan of 0.11, review of the plan, Must fix 2):
@@ -240,6 +263,7 @@ export default async function globalSetup(): Promise<void> {
       ...Object.values(E2E_LANGUAGE_USERS),
       ...Object.values(E2E_NOTIFICATION_USERS),
       ...Object.values(E2E_DRAFT_USERS),
+      ...Object.values(E2E_LIST_USERS),
     ]) {
       await insertUserIfMissing(client, user, branchIds);
     }

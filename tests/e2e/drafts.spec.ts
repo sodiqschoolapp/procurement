@@ -285,7 +285,10 @@ test("the Principal of the branch sees no draft (06 Statuses: Draft)", async ({ 
   await signIn(page, E2E_ROLES.PRINCIPAL);
   await page.goto("/orders");
   await expect(page.locator("h1")).toBeVisible();
-  await expect(page.locator("table")).toHaveCount(0);
+  // Since 2.8 the Principal has the order list, a table of submitted orders; no draft row and no
+  // drafts grid (plan of 2.8, decided item 1).
+  await expect(page.locator("tr[data-draft]")).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: t.draftsTitle })).toHaveCount(0);
   await expect(page.getByText(pen)).toHaveCount(0);
   await expect(page.locator("main")).not.toContainText(pen);
 });
@@ -492,7 +495,8 @@ test("Done when: the same drafts show as cards at 375 px, with 44 px controls (1
     await expect(rows(page)).toHaveCount(at + 1);
   }
 
-  await expect(page.locator("thead")).toBeHidden();
+  // The grid's own head; the order list above it has its own (plan of 2.8).
+  await expect(page.locator("table:has(tr[data-draft]) > thead")).toBeHidden();
   for (let at = 0; at < 3; at += 1) {
     const card = rows(page).nth(at);
     // A card: the cells stand one above the other, each with its column's name.
@@ -520,7 +524,11 @@ test("Done when: the same drafts show as cards at 375 px, with 44 px controls (1
 
   // The totals of the ticked drafts stay visible (11 rule 2), folded to the grand total.
   await rows(page).nth(0).locator("[data-tick]").click();
-  await page.evaluate(() => window.scrollTo(0, 0));
+  // The top of the grid at the top of the window: since 2.8 the order list stands above the grid,
+  // and the totals stick inside the grid's own section (plan of 2.8, Screens).
+  await rows(page)
+    .nth(0)
+    .evaluate((row) => row.scrollIntoView({ block: "start" }));
   const totals = page.getByRole("region", { name: t.totals.title });
   await expect(totals).toBeInViewport();
   await expect(totals.locator('[data-total="grand"] dd')).toHaveText(som("12000"));

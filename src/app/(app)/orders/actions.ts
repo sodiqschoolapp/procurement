@@ -23,6 +23,9 @@ import {
 import { submitDrafts } from "@/features/orders/actions/submit";
 import { getDraft } from "@/features/orders/queries/drafts";
 import { submittedNumbers } from "@/features/orders/queries/submitted";
+import { selectAllOnFilter, tickedSummary } from "@/features/orders/queries/order-list";
+import { parseListFilters } from "@/features/orders/list-filters";
+import { type WireTickedSummary, wireTickedSummary } from "@/features/orders/list-wire";
 import { listDraftChoices, searchDraftProducts } from "@/features/orders/queries/draft-picker";
 import { serverAction } from "@/server/action";
 import { type ActionResult, failure } from "@/server/action-result";
@@ -148,4 +151,26 @@ export async function getDraftAction(input: {
     const row = await getDraft(userId, String(input?.id ?? ""));
     return row && wireDraft(row);
   });
+}
+
+/**
+ * "Select all on this filter" of the order list (05 Ticking and filters; plan of 2.8, decided item
+ * 6): the filters come as the address's query text and are read like the page reads them.
+ */
+export async function selectAllOnFilterAction(input: {
+  query: string;
+}): Promise<ActionResult<{ orders: { id: string; version: number }[]; matching: number }>> {
+  return asked((userId) => {
+    const query = new URLSearchParams(String(input?.query ?? ""));
+    return selectAllOnFilter(userId, parseListFilters(Object.fromEntries(query)).filters);
+  });
+}
+
+/** The count, totals and allowed actions of the ticked orders (11 Order list layout 4). */
+export async function tickedSummaryAction(input: {
+  ids: string[];
+}): Promise<ActionResult<WireTickedSummary>> {
+  return asked(async (userId) =>
+    wireTickedSummary(await tickedSummary(userId, Array.isArray(input?.ids) ? input.ids : [])),
+  );
 }

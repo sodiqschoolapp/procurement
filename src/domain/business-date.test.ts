@@ -7,6 +7,7 @@ import {
   businessTime,
   businessYear,
   isBusinessDate,
+  nextBusinessDate,
 } from "./business-date";
 
 // developer-rules.md rule 10: "Timestamps are stored in UTC. Business dates use the
@@ -110,5 +111,18 @@ describe("isBusinessDate: a day that exists, as YYYY-MM-DD (05 field 8; plan of 
     }
     expect(isBusinessDate(null)).toBe(false);
     expect(isBusinessDate(20310501)).toBe(false);
+  });
+});
+
+describe("the business date after a day: the end of a date filter (plan of 2.8, decided item 11)", () => {
+  it("rolls over the end of a month, of February in a leap year and of a year", () => {
+    expect(nextBusinessDate("2026-10-16")).toBe("2026-10-17");
+    expect(nextBusinessDate("2026-10-31")).toBe("2026-11-01");
+    expect(nextBusinessDate("2028-02-28")).toBe("2028-02-29");
+    expect(nextBusinessDate("2026-12-31")).toBe("2027-01-01");
+  });
+
+  it("refuses a day that does not exist", () => {
+    expect(() => nextBusinessDate("2026-02-30")).toThrow();
   });
 });
