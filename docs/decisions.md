@@ -1142,6 +1142,34 @@ Choices made during the build and its reviews:
 - Two e2e tests of 2.5b changed with the layout, not weakened: the Principal now has the order list (a table), so "no table" became "no draft row and no drafts grid"; the phone totals test scrolls to the grid, which now stands below the list.
 - The test helper `insertOrder()` takes needed-by, quantity, price, payment type and the dates; its planned total is `orderTotal()`.
 
+### 2.9 Order page (16.10.2026)
+
+The plan's decisions as the plan review of 16.10.2026 confirmed them (corrections 1 and 2 applied), and those of the build and its reviews. The Look first items come first.
+
+1. **Look first** (branch wall). "With N other orders" counts only the other orders of the same action that the reader may see now (branch wall and draft wall inside the SQL, on `branchFilter()`), never `order_actions.order_count`; none visible, no such text (03 rule 1 over the literal example of 06 rule 11).
+2. **Look first** (approval order, 06 rule 4). At Draft and Sent back no step is finished; otherwise only the moves after the newest Submit or Submit again count, and no step after the current one is shown finished (a reopened order stands at Open, Closed empty).
+3. **Look first** (03 rule 6). A Head-created order's one Submit with `payload.headStepAuto` finishes Draft and Head with the Head's name and time; History says "Created by Head". The stepper keys on the event's payload, never on the creator.
+4. **Look first** (permission matrix: the action bar). The bar asks `allowedActions()` on the server and shows a button only for a move with a server action: in 2.9 Submit on a Draft, with the confirmation of 11 rule 6. The waiting line shows only when `allowedActions()` is empty, so an approver at his own step sees an empty bar until 2.10 and 2.11.
+5. **Look first** (03 rules 2 and 3). The waiting line: Head; the branch's active Principal by name, or "none is assigned"; Finance of the branch (Waiting for Finance, Waiting for settlement); the owner's name (Draft, Sent back, Open); "Finished. Nobody acts on it." (Closed, Rejected, Cancelled).
+6. **Look first** (draft wall). A Draft has a page for its owner and the Head only; another branch, another owner's Draft, an unknown and a malformed id are one `notFound()`; a never-submitted draft shows "Draft without a number".
+7. The price hint is shown to every user who may see the order, as on the list.
+8. The hint compares with today's reference price through `priceHintPercent()`; no reference or planned price, no hint.
+9. Waiting for settlement stands at Closed with Open finished by Send to settlement; after Send back for correction at Open. A Closed exact match has Open and Closed finished by the one Close (exact match); after settlement Open by Send to settlement and Closed by Finance's Close (review correction 1).
+10. Tabs in the address (`?tab=history`), Details by default; no Purchases or Money tab before 3.5 and 4.3.
+11. History newest first; times `08.10.2026 14:32` in Tashkent; the actor's current name; the reason from `order_events.comment`, the note from `order_events.note`.
+12. Stock at submit and now are 2.10's; the colour labels phase 3/4's.
+13. A Head-created draft moved to a Manager would put the Manager's name on the Head step: 4.10's case.
+14. One active Principal per branch (`user_branches_active_principal_branch_id_key`), so the name is unique.
+15. The bar stays fixed at the bottom with only the waiting line.
+
+Choices made during the build and its reviews:
+
+- `createdByHeadSql` and `ownerClosesAloneSql` moved to `src/features/orders/order-facts.ts`, shared by `tickedSummary` and `getOrderPage`; outside `queries/`, whose exports the registry test counts as queries.
+- The "with N other orders" count is a drizzle subquery on aliases with `branchFilter()` and the page's SQL draft wall, not a second hand-written wall (permission review, Should fix 1).
+- The details are inline in the page; the planned `order-details.tsx`, `order-page-wire.ts` and `not-found.tsx` were not needed (no bigint crosses to the browser; the app's not-found page serves).
+- The percent of the hint is passed to next-intl as the bigint, as the list and the grid do (decisions 2.2, build: next-intl prints a bigint exactly).
+- The e2e test has its own Manager and Finance user per project (`E2E_PAGE_USERS`) and submits through the page's own Submit.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

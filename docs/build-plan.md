@@ -238,7 +238,7 @@ From a draft on the branch's order list to fully approved orders, ticked and act
   - **Build:** `/orders`: one group row per branch, subtype and status with its total quantity, total amount, number of orders, earliest needed-by date, Urgent and price hint; opening a row shows its orders; tick boxes on rows and orders, "Select all on this filter" up to 200; the action bar with the count and totals of the ticked orders and only the actions allowed on all of them; 25 group rows per page from the server; every filter of section 5 and sorting kept in the address; Urgent pinned on top for approvers; the branch filter inside the SQL.
   - **Done when:** Database tests: each role sees only its branches' orders and nobody else's drafts; three submitted orders of one subtype make one group row with their summed quantity. By hand: a filtered link reopens the same view.
 
-- [ ] **2.9 Order page**
+- [x] **2.9 Order page**
   - **Read:** `11-screens-and-ux.md` (Order page layout; Rules for a smooth feel: 6); `06-approval-workflow.md` (Rules: 11); `edge-cases/00-definitions.md` (Orders); `05-order-request-form.md` (Ticking and filters: Price hint).
   - **Build:** `/orders/[id]`: the top block, the stepper with the name and time of each finished step, the tabs Details and History (Purchases and Money arrive in 3.5 and 4.3), the price hint for the owner and every approver, the action bar that reads the state machine, the line that says who the order is waiting for, and in History "with 14 other orders" when a move was made in one action.
   - **Done when:** Playwright: on a submitted order the stepper stands at Head, History shows the submit with name and time, and a Finance user sees the waiting line.
