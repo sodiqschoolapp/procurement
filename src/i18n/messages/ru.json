@@ -1065,6 +1065,112 @@
         "action": "Заказы одного действия",
         "removeAction": "Показать все заказы, не только одного действия"
       }
+    },
+    "page": {
+      "noNumber": "Черновик без номера",
+      "branch": "Филиал",
+      "owner": "Владелец",
+      "department": "Отдел",
+      "product": "Товар или услуга",
+      "subtype": "Подвид",
+      "plannedTotal": "Плановая сумма",
+      "actualTotal": "Фактическая сумма",
+      "notBought": "Ещё ничего не куплено",
+      "urgent": "Срочно: {reason}",
+      "stepper": {
+        "title": "Шаги",
+        "steps": {
+          "DRAFT": "Черновик",
+          "HEAD": "Руководитель",
+          "PRINCIPAL": "Директор",
+          "FINANCE": "Финансы",
+          "OPEN": "Открыт",
+          "CLOSED": "Закрыт"
+        },
+        "state": {
+          "done": "Готово",
+          "current": "Сейчас",
+          "stopped": "Остановлен здесь",
+          "todo": "Ещё нет"
+        },
+        "by": "{name}, {date} {time}",
+        "line": "{step}: {state}"
+      },
+      "tabs": {
+        "label": "Разделы заказа",
+        "details": "Детали",
+        "history": "История"
+      },
+      "details": {
+        "title": "Детали",
+        "requester": "Сотрудник",
+        "neededBy": "Нужно к",
+        "quantity": "Количество",
+        "price": "Цена за единицу",
+        "extras": "Доп. расходы",
+        "extrasNone": "Нет",
+        "paymentType": "Способ оплаты",
+        "priority": "Приоритет",
+        "normal": "Обычный",
+        "urgent": "Срочно",
+        "urgentReason": "Причина срочности",
+        "company": "Бренд или компания",
+        "comment": "Комментарий",
+        "photo": "Фото-образец",
+        "openPhoto": "Открыть фото",
+        "submittedAt": "Отправлен",
+        "approvedAt": "Одобрен",
+        "closedAt": "Закрыт",
+        "notSet": "Не указано",
+        "at": "{date} {time}",
+        "extraLine": "{type}: {amount}"
+      },
+      "history": {
+        "title": "История",
+        "empty": "С этим заказом ещё ничего не происходило. Шаги появятся здесь после отправки.",
+        "moves": {
+          "SUBMIT": "Отправлен",
+          "APPROVE": "Одобрен",
+          "SUBMIT_AGAIN": "Отправлен снова",
+          "TAKE_BACK": "Взят обратно",
+          "SEND_BACK": "Возвращён на доработку",
+          "REJECT": "Отклонён",
+          "CANCEL": "Отменён",
+          "CLOSE_EXACT": "Закрыт без расхождений",
+          "SEND_TO_SETTLEMENT": "Отправлен на расчёт",
+          "SEND_BACK_FOR_CORRECTION": "Возвращён на исправление",
+          "CLOSE": "Закрыт",
+          "REOPEN": "Открыт снова"
+        },
+        "approved": {
+          "PENDING_HEAD": "Одобрен на шаге руководителя",
+          "PENDING_PRINCIPAL": "Одобрен на шаге директора",
+          "PENDING_FINANCE": "Одобрен на шаге финансов"
+        },
+        "by": "{move}: {name}",
+        "withOthers": "вместе с {count, plural, one {# другим заказом} few {# другими заказами} many {# другими заказами} other {# другими заказами}}",
+        "createdByHead": "Создан руководителем",
+        "reason": "Причина: {text}",
+        "note": "Примечание: {text}",
+        "at": "{date} {time}"
+      },
+      "waiting": {
+        "HEAD": "Ждёт руководителя.",
+        "PRINCIPAL": "Ждёт директора филиала {branch}: {name}.",
+        "PRINCIPAL_NONE": "Ждёт директора филиала {branch}; директор не назначен.",
+        "FINANCE": "Ждёт финансы филиала {branch}.",
+        "OWNER": "Ждёт: {name}.",
+        "NOBODY": "Завершён. Действий больше нет."
+      },
+      "bar": {
+        "title": "Действия",
+        "submit": "Отправить",
+        "submitTitle": "Отправить 1 заказ?",
+        "submitResult": "Он получит номер и уйдёт на одобрение. Править его можно будет, только если его возьмут обратно или вернут.",
+        "done": "Отправлен: {number}.",
+        "failed": "Не отправлен. Исправьте в списке заказов: {fields}.",
+        "editInList": "Править в списке заказов"
+      }
     }
   }
 }

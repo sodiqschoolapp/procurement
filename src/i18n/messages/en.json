@@ -1065,6 +1065,112 @@
         "action": "Orders of one action",
         "removeAction": "Show all orders, not only those of one action"
       }
+    },
+    "page": {
+      "noNumber": "Draft without a number",
+      "branch": "Branch",
+      "owner": "Owner",
+      "department": "Department",
+      "product": "Product or service",
+      "subtype": "Subtype",
+      "plannedTotal": "Planned total",
+      "actualTotal": "Actual total",
+      "notBought": "Nothing bought yet",
+      "urgent": "Urgent: {reason}",
+      "stepper": {
+        "title": "Steps",
+        "steps": {
+          "DRAFT": "Draft",
+          "HEAD": "Head",
+          "PRINCIPAL": "Principal",
+          "FINANCE": "Finance",
+          "OPEN": "Open",
+          "CLOSED": "Closed"
+        },
+        "state": {
+          "done": "Done",
+          "current": "Now",
+          "stopped": "Stopped here",
+          "todo": "Not yet"
+        },
+        "by": "{name}, {date} {time}",
+        "line": "{step}: {state}"
+      },
+      "tabs": {
+        "label": "Order sections",
+        "details": "Details",
+        "history": "History"
+      },
+      "details": {
+        "title": "Details",
+        "requester": "Person",
+        "neededBy": "Needed by",
+        "quantity": "Quantity",
+        "price": "Price per unit",
+        "extras": "Extra costs",
+        "extrasNone": "None",
+        "paymentType": "Payment type",
+        "priority": "Priority",
+        "normal": "Normal",
+        "urgent": "Urgent",
+        "urgentReason": "Reason for Urgent",
+        "company": "Brand or company",
+        "comment": "Comment",
+        "photo": "Reference photo",
+        "openPhoto": "Open the photo",
+        "submittedAt": "Submitted",
+        "approvedAt": "Approved",
+        "closedAt": "Closed",
+        "notSet": "Not given",
+        "at": "{date} {time}",
+        "extraLine": "{type}: {amount}"
+      },
+      "history": {
+        "title": "History",
+        "empty": "Nothing has happened to this order yet. Moves appear here once it is submitted.",
+        "moves": {
+          "SUBMIT": "Submitted",
+          "APPROVE": "Approved",
+          "SUBMIT_AGAIN": "Submitted again",
+          "TAKE_BACK": "Taken back",
+          "SEND_BACK": "Sent back for editing",
+          "REJECT": "Rejected",
+          "CANCEL": "Cancelled",
+          "CLOSE_EXACT": "Closed as an exact match",
+          "SEND_TO_SETTLEMENT": "Sent to settlement",
+          "SEND_BACK_FOR_CORRECTION": "Sent back for correction",
+          "CLOSE": "Closed",
+          "REOPEN": "Reopened"
+        },
+        "approved": {
+          "PENDING_HEAD": "Approved at the Head step",
+          "PENDING_PRINCIPAL": "Approved at the Principal step",
+          "PENDING_FINANCE": "Approved at the Finance step"
+        },
+        "by": "{move} by {name}",
+        "withOthers": "with {count, plural, one {# other order} other {# other orders}}",
+        "createdByHead": "Created by Head",
+        "reason": "Reason: {text}",
+        "note": "Note: {text}",
+        "at": "{date} {time}"
+      },
+      "waiting": {
+        "HEAD": "Waiting for the Head.",
+        "PRINCIPAL": "Waiting for the Principal of {branch}: {name}.",
+        "PRINCIPAL_NONE": "Waiting for the Principal of {branch}; none is assigned.",
+        "FINANCE": "Waiting for Finance of {branch}.",
+        "OWNER": "Waiting for {name}.",
+        "NOBODY": "Finished. Nobody acts on it."
+      },
+      "bar": {
+        "title": "Actions",
+        "submit": "Submit",
+        "submitTitle": "Submit 1 order?",
+        "submitResult": "It gets its number and goes for approval. After that it is edited only if it is taken back or sent back.",
+        "done": "Submitted: {number}.",
+        "failed": "Not submitted. Fix in the order list: {fields}.",
+        "editInList": "Edit in the order list"
+      }
     }
   }
 }

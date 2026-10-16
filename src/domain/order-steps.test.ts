@@ -19,7 +19,14 @@ function event(
   headStepAuto = false,
 ): StepEvent {
   minute += 1;
-  return { type, from, to, actorName, at: new Date(Date.UTC(2026, 9, 16, 9, minute)), headStepAuto };
+  return {
+    type,
+    from,
+    to,
+    actorName,
+    at: new Date(Date.UTC(2026, 9, 16, 9, minute)),
+    headStepAuto,
+  };
 }
 
 const submit = (by = "Manager") => event("SUBMIT", "DRAFT", "PENDING_HEAD", by);
@@ -244,7 +251,9 @@ describe("orderSteps (11 Order page layout 2; 06 rule 4)", () => {
 
 describe("waitingFor (06 Statuses, Who acts next; decided item 5)", () => {
   it("answers each of the ten statuses", () => {
-    const answers = Object.fromEntries(REQUEST_STATUSES.map((status) => [status, waitingFor(status)]));
+    const answers = Object.fromEntries(
+      REQUEST_STATUSES.map((status) => [status, waitingFor(status)]),
+    );
     expect(answers).toEqual({
       DRAFT: "OWNER",
       PENDING_HEAD: "HEAD",

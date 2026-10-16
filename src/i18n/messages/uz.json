@@ -1065,6 +1065,112 @@
         "action": "Bitta amaldagi buyurtmalar",
         "removeAction": "Faqat bitta amaldagini emas, barcha buyurtmalarni ko'rsatish"
       }
+    },
+    "page": {
+      "noNumber": "Raqamsiz qoralama",
+      "branch": "Filial",
+      "owner": "Egasi",
+      "department": "Boʻlim",
+      "product": "Mahsulot yoki xizmat",
+      "subtype": "Turi",
+      "plannedTotal": "Rejadagi summa",
+      "actualTotal": "Haqiqiy summa",
+      "notBought": "Hali hech narsa olinmagan",
+      "urgent": "Shoshilinch: {reason}",
+      "stepper": {
+        "title": "Bosqichlar",
+        "steps": {
+          "DRAFT": "Qoralama",
+          "HEAD": "Rahbar",
+          "PRINCIPAL": "Direktor",
+          "FINANCE": "Moliya",
+          "OPEN": "Ochiq",
+          "CLOSED": "Yopilgan"
+        },
+        "state": {
+          "done": "Bajarildi",
+          "current": "Hozir",
+          "stopped": "Shu yerda toʻxtadi",
+          "todo": "Hali emas"
+        },
+        "by": "{name}, {date} {time}",
+        "line": "{step}: {state}"
+      },
+      "tabs": {
+        "label": "Buyurtma boʻlimlari",
+        "details": "Tafsilotlar",
+        "history": "Tarix"
+      },
+      "details": {
+        "title": "Tafsilotlar",
+        "requester": "Xodim",
+        "neededBy": "Kerakli sana",
+        "quantity": "Miqdor",
+        "price": "Birlik narxi",
+        "extras": "Qoʻshimcha xarajatlar",
+        "extrasNone": "Yoʻq",
+        "paymentType": "Toʻlov turi",
+        "priority": "Muhimlik",
+        "normal": "Oddiy",
+        "urgent": "Shoshilinch",
+        "urgentReason": "Shoshilinchlik sababi",
+        "company": "Brend yoki kompaniya",
+        "comment": "Izoh",
+        "photo": "Namuna surati",
+        "openPhoto": "Suratni ochish",
+        "submittedAt": "Yuborilgan",
+        "approvedAt": "Tasdiqlangan",
+        "closedAt": "Yopilgan",
+        "notSet": "Koʻrsatilmagan",
+        "at": "{date} {time}",
+        "extraLine": "{type}: {amount}"
+      },
+      "history": {
+        "title": "Tarix",
+        "empty": "Bu buyurtma bilan hali hech narsa boʻlmagan. Yuborilgandan keyin qadamlar shu yerda koʻrinadi.",
+        "moves": {
+          "SUBMIT": "Yuborildi",
+          "APPROVE": "Tasdiqlandi",
+          "SUBMIT_AGAIN": "Qayta yuborildi",
+          "TAKE_BACK": "Qaytarib olindi",
+          "SEND_BACK": "Tuzatishga qaytarildi",
+          "REJECT": "Rad etildi",
+          "CANCEL": "Bekor qilindi",
+          "CLOSE_EXACT": "Farqsiz yopildi",
+          "SEND_TO_SETTLEMENT": "Hisob-kitobga yuborildi",
+          "SEND_BACK_FOR_CORRECTION": "Tuzatish uchun qaytarildi",
+          "CLOSE": "Yopildi",
+          "REOPEN": "Qayta ochildi"
+        },
+        "approved": {
+          "PENDING_HEAD": "Rahbar bosqichida tasdiqlandi",
+          "PENDING_PRINCIPAL": "Direktor bosqichida tasdiqlandi",
+          "PENDING_FINANCE": "Moliya bosqichida tasdiqlandi"
+        },
+        "by": "{move}: {name}",
+        "withOthers": "yana {count, plural, other {# ta buyurtma}} bilan birga",
+        "createdByHead": "Rahbar yaratgan",
+        "reason": "Sabab: {text}",
+        "note": "Izoh: {text}",
+        "at": "{date} {time}"
+      },
+      "waiting": {
+        "HEAD": "Rahbarni kutmoqda.",
+        "PRINCIPAL": "{branch} filiali direktorini kutmoqda: {name}.",
+        "PRINCIPAL_NONE": "{branch} filiali direktorini kutmoqda; direktor tayinlanmagan.",
+        "FINANCE": "{branch} filiali moliya xodimini kutmoqda.",
+        "OWNER": "Kutmoqda: {name}.",
+        "NOBODY": "Tugallangan. Endi hech kim harakat qilmaydi."
+      },
+      "bar": {
+        "title": "Amallar",
+        "submit": "Yuborish",
+        "submitTitle": "1 ta buyurtma yuborilsinmi?",
+        "submitResult": "U raqam oladi va tasdiqlashga ketadi. Shundan keyin faqat qaytarib olinsa yoki qaytarilsa tahrirlanadi.",
+        "done": "Yuborildi: {number}.",
+        "failed": "Yuborilmadi. Buyurtmalar roʻyxatida tuzating: {fields}.",
+        "editInList": "Buyurtmalar roʻyxatida tahrirlash"
+      }
     }
   }
 }

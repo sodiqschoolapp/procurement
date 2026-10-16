@@ -189,7 +189,9 @@ async function readPage(db: Executor, actor: Actor, id: string): Promise<OrderPa
       ? sql`true`
       : sql`o2.branch_id in (select ub.branch_id from user_branches ub where ub.user_id = ${actor.userId})`;
   const seenDraft =
-    actor.role === "HEAD" ? sql`true` : sql`(o2.status <> 'DRAFT' or o2.owner_id = ${actor.userId})`;
+    actor.role === "HEAD"
+      ? sql`true`
+      : sql`(o2.status <> 'DRAFT' or o2.owner_id = ${actor.userId})`;
   const actor2 = users;
   const events = await db
     .select({

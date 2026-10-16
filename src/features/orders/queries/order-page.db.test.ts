@@ -80,7 +80,11 @@ describe("who sees the page (03 rule 1; 06 Statuses; decided item 6)", () => {
     const otherOwner = await insertUser("MANAGER", { branches: [other.id] });
     const colleague = await insertUser("MANAGER", { branches: [branch.id] });
 
-    const mine = await insertOrder({ branchId: branch.id, ownerId: manager.id, status: "PENDING_HEAD" });
+    const mine = await insertOrder({
+      branchId: branch.id,
+      ownerId: manager.id,
+      status: "PENDING_HEAD",
+    });
     const elsewhere = await insertOrder({
       branchId: other.id,
       ownerId: otherOwner.id,
@@ -111,7 +115,11 @@ describe("who sees the page (03 rule 1; 06 Statuses; decided item 6)", () => {
 
   it("a Principal or Finance user of another branch gets null; of the branch, the page", async () => {
     const { branch, manager } = await scene();
-    const order = await insertOrder({ branchId: branch.id, ownerId: manager.id, status: "PENDING_HEAD" });
+    const order = await insertOrder({
+      branchId: branch.id,
+      ownerId: manager.id,
+      status: "PENDING_HEAD",
+    });
     const finance = await insertUser("FINANCE", { branches: [branch.id] });
     const otherFinance = await insertUser("FINANCE", { branches: [(await insertBranch()).id] });
     expect((await getOrderPage(finance.id, order.id))?.id).toBe(order.id);
@@ -123,7 +131,11 @@ describe("History and stepper (06 rule 11; 11 Order page layout 2)", () => {
   it("lists every event with actor, time, reason and note, newest first; the stepper follows", async () => {
     const { branch, manager } = await scene();
     const head = await insertUser("HEAD", { fullName: "Dilnoza Rahimova" });
-    const order = await insertOrder({ branchId: branch.id, ownerId: manager.id, status: "PENDING_PRINCIPAL" });
+    const order = await insertOrder({
+      branchId: branch.id,
+      ownerId: manager.id,
+      status: "PENDING_PRINCIPAL",
+    });
     const submitted = await act(manager.id, "SUBMIT", [
       { id: order.id, from: "DRAFT", to: "PENDING_HEAD" },
     ]);
@@ -149,7 +161,11 @@ describe("History and stepper (06 rule 11; 11 Order page layout 2)", () => {
   it("a send-back shows its reason and per-order note", async () => {
     const { branch, manager } = await scene();
     const head = await insertUser("HEAD");
-    const order = await insertOrder({ branchId: branch.id, ownerId: manager.id, status: "RETURNED" });
+    const order = await insertOrder({
+      branchId: branch.id,
+      ownerId: manager.id,
+      status: "RETURNED",
+    });
     await act(manager.id, "SUBMIT", [{ id: order.id, from: "DRAFT", to: "PENDING_HEAD" }]);
     await act(
       head.id,
@@ -338,7 +354,11 @@ describe("the action bar reads the state machine (11 Order page layout 4; decide
     const { branch, manager } = await scene();
     const finance = await insertUser("FINANCE", { branches: [branch.id] });
     const head = await insertUser("HEAD");
-    const order = await insertOrder({ branchId: branch.id, ownerId: manager.id, status: "PENDING_HEAD" });
+    const order = await insertOrder({
+      branchId: branch.id,
+      ownerId: manager.id,
+      status: "PENDING_HEAD",
+    });
     expect((await getOrderPage(finance.id, order.id))!.actions).toEqual([]);
     expect((await getOrderPage(head.id, order.id))!.actions).toContain("APPROVE");
   });

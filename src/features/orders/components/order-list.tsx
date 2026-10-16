@@ -360,7 +360,13 @@ function GroupRows({
                       </label>
                     </td>
                     <td className="py-2 pr-3 font-semibold whitespace-nowrap">
-                      {order.number}
+                      {/* The order page (plan of 2.9; progress 2.8, "For 2.9"). */}
+                      <Link
+                        href={`/orders/${order.id}`}
+                        className="inline-flex min-h-11 items-center underline-offset-2 hover:underline sm:min-h-0"
+                      >
+                        {order.number}
+                      </Link>
                       {order.revision > 1 && (
                         <span className="ml-2 font-normal text-muted-foreground">
                           {tOrders("revision", { revision: order.revision })}
