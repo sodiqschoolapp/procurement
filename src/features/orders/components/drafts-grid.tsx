@@ -239,7 +239,7 @@ export function DraftsGrid({
         )}
 
         {rows.length > 0 && (
-          <div className="overflow-x-auto rounded-xl bg-card">
+          <div className="relative overflow-x-auto rounded-xl bg-card">
             <table className="w-max min-w-full border-collapse text-sm">
               <caption className="sr-only">{t("draftsTitle")}</caption>
               <thead className="bg-muted text-left text-[13px] leading-[18px] text-muted-foreground">

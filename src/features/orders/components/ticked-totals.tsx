@@ -20,8 +20,8 @@ export function TickedTotals({ drafts }: { drafts: readonly TickedDraft[] }) {
   if (drafts.length === 0) return null;
   const { count, totals, withoutPrice } = tickedDraftsTotals(drafts);
 
-  const line = (label: string, amount: bigint, strong = false) => (
-    <div className="flex items-baseline justify-between gap-4">
+  const line = (key: string, label: string, amount: bigint, strong = false) => (
+    <div data-total={key} className="flex items-baseline justify-between gap-4">
       <dt className={strong ? "font-bold" : "text-muted-foreground"}>{label}</dt>
       <dd className={`tabular-nums ${strong ? "font-bold" : ""}`}>{format.money(amount)}</dd>
     </div>
@@ -44,13 +44,13 @@ export function TickedTotals({ drafts }: { drafts: readonly TickedDraft[] }) {
       </h2>
       <div className="grid gap-x-12 gap-y-4 sm:grid-cols-2">
         <dl className="flex flex-col gap-1 text-[15px] leading-[22px]">
-          {line(t("goods"), totals.goods)}
-          {line(t("extras"), totals.extras)}
-          {line(t("grand"), totals.grand, true)}
+          {line("goods", t("goods"), totals.goods)}
+          {line("extras", t("extras"), totals.extras)}
+          {line("grand", t("grand"), totals.grand, true)}
         </dl>
         <dl className="flex flex-col gap-1 text-[15px] leading-[22px]">
           {PAYMENT_TYPES.map((type) => (
-            <div key={type}>{line(tPayment(type), totals.byPaymentType[type])}</div>
+            <div key={type}>{line(type, tPayment(type), totals.byPaymentType[type])}</div>
           ))}
         </dl>
       </div>
