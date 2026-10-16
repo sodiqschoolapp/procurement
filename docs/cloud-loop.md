@@ -56,7 +56,7 @@ Rules of the loop:
 
 | When | What runs | What it does |
 | --- | --- | --- |
-| Once per environment, then kept for about a week | `scripts/cloud-setup.sh`, pasted into the environment's "Setup script" field | Installs Node 24 into `/opt/node24`, starts Docker once and downloads the `postgres:17` image. |
+| Once per environment, then kept for about a week | `scripts/cloud-setup.sh`, pasted into the environment's "Setup script" field | Installs Node 24 into `/opt/node24`, starts Docker once and downloads the `postgres:17` and `chrislusf/seaweedfs:4.48` images. |
 | At every session start and every resume | `scripts/cloud-session-start.sh`, the `SessionStart` hook of `.claude/settings.json` | Writes the local `.env`, starts Docker, runs `docker compose up -d --wait`, `npm ci`, `npm run db:migrate`, and fetches the browser Playwright needs. |
 
 On the laptop the hook ends at once: it does its work only when `CLAUDE_CODE_REMOTE` is `true`, which only a cloud session sets.
