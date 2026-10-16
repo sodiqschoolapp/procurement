@@ -1258,6 +1258,8 @@ Choices made during the build:
 - The trio advisory locks are taken once, sorted, before the creates; the key locks of the repeat are taken sorted too.
 - The Overdue label follows the Urgent label of the same rows (icon and word, warning colour), not the status-label component: it is a flag beside the status, as Urgent is.
 - Own e2e owners `E2E_COPY_USERS`, so the copies land in drafts no other spec reads.
+- A repeat puts the ids sent through the branch wall and the draft wall again (permission review, Must fix 1); a rule line in `.claude/rules/server-actions.md` now asks for it.
+- A key spent on `createDraft` and sent again to Copy as new (or the other way) gives the first action's answer: both write the same kind of row, the answer goes only to the same user in a branch still allowed, and keys are made anew per call by the browser. No action type is stored for it (permission review, Should fix 1, not taken: it would add a column for a case no screen sends).
 
 ## Process changes
 
