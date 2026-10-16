@@ -1,6 +1,6 @@
 ---
 name: finish-task
-description: Finish the task on the current task branch - run the checks and both reviewers, tick the task, write progress and decisions, merge main in, post the report and the decisions made without the owner, mark the pull request ready, and act on the [review] comments that follow.
+description: Finish the task on the current task branch - run the checks and the permission review, tick the task, write progress and decisions, merge main in, post the report and the decisions made without the owner, mark the pull request ready, and act on the [review] comments that follow.
 ---
 
 # Finish the current task
@@ -15,8 +15,8 @@ Run on a `task/...` branch when the build is done. This skill never merges and n
    - `npm run db:seed` when the task touches the seed (a placeholder until task 0.14).
    Write the output of each test run to a file outside the repository and read the summary from it. CI runs the whole suite on the pull request and is the gate. Never skip, delete or weaken a test to get to green; a test that is wrong because a requirement or a decision changed is fixed, with the reason named in the report and the decision marked **Look first** (`CLAUDE.md`, How to work on a task).
 2. **Commit** the work on the task branch, the task id first in the subject. The reviewers read `git diff origin/main...HEAD`, which shows committed changes only.
-3. **Reviewers.** Ask the `spec-reviewer` subagent, and then the `permission-reviewer` subagent, to review the diff against `main`. Give each the task id.
-4. **Fix** every Must-fix item, run step 1 again and commit. A must-fix that is a general pattern (something another task could do again) becomes a line in `.claude/agents/spec-reviewer.md` or in a file of `.claude/rules/` in the same commit, so that the same thing is never found twice. What you disagree with is not fixed silently and not ignored: it goes into the report with your reason.
+3. **Permission review.** Ask the `permission-reviewer` subagent to review the diff against `main`, with the task id. The spec review of the code is the review routine's (`review-pr` step 8): one spec review of the code, not two (D45). The `spec-reviewer` still checks the plan (`next-task` step 8).
+4. **Fix** every Must-fix item of the permission review, run step 1 again and commit. A must-fix that is a general pattern (something another task could do again) becomes a line in `.claude/agents/spec-reviewer.md` or in a file of `.claude/rules/` in the same commit, so that the same thing is never found twice. What you disagree with is not fixed silently and not ignored: it goes into the report with your reason.
 5. **Definition of done.** Go through the list in `CLAUDE.md` point by point. Anything not met is fixed or named in the report.
 6. **Tick and write the memory.**
    - `docs/build-plan.md`: `- [ ]` becomes `- [x]` on this task's line only.
@@ -30,7 +30,7 @@ Run on a `task/...` branch when the build is done. This skill never merges and n
    - `### What the browser test proved`: one line.
    - `### Decided without the owner`: every decision of the plan as the reviewer confirmed or changed it, plus any taken during the build, in the form of issue #9, the Look first items first, each starting with **Look first**.
    - `### Left out`: what was not built, and the task that brings it.
-   - `### Reviewers`: what they found, what you changed, what you disagreed with, and what was not checked.
+   - `### Reviewers`: what the permission review found, what you changed, what you disagreed with, and what was not checked.
    - `### For the owner`: what only the owner can do (an account, a secret typed in a dashboard, a DNS record), step by step, and anything you are not sure about. When it holds a step, the comment of step 8.4 starts with `@abbosc`.
 8. **Publish in this order**, and mark the pull request ready last: marking it ready starts the review at once, so everything the review reads must be there before it.
    1. Merge `main` into the branch first, so that the pull request has no conflict (GitHub runs no CI on a pull request that conflicts with `main`, and nothing then wakes anyone): `git fetch origin main`, then `git merge origin/main`. A conflict in `docs/progress.md`, `docs/decisions.md` or `docs/build-plan.md` keeps both sides: in `docs/progress.md` the task's entry comes last (entries are newest at the bottom) and the file ends with one line `The next task is <id>.`; in `docs/decisions.md` the task's section comes last among the task sections. Any other conflict is resolved by reading both sides. When the merge brought anything in, run step 1 again and commit. Then push: `git push -u origin task/<id>-<name>`, and check that CI started on the new head ("After every push" below; you may go on with the steps below while you wait, but do not mark the pull request ready on a head that has no CI run).
