@@ -317,7 +317,10 @@ async function beforeSubmit(context: OrdersContext<Input>): Promise<void> {
       'stockAtSubmit', o.stock_at_submit::text
     ), ${at}
     from orders o
-    where ${inArray(orders.id, orderIds)}
+    where o.id in (${sql.join(
+      orderIds.map((id) => sql`${id}::uuid`),
+      sql`, `,
+    )})
     order by o.id`);
 }
 
