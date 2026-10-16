@@ -31,6 +31,8 @@ import {
 } from "@/server/order-action";
 import { orderMoveAction } from "@/server/order-moves";
 
+import { actionLink } from "./notices";
+
 // Submit of ticked drafts (05-order-request-form.md, Drafts 4; Order number; Checks at submit;
 // 06-approval-workflow.md, Allowed moves: the Draft row; rule 8; 03-roles-and-permissions.md rule
 // 6; plan of 2.7). The state machine's Submit move on the wrapper of src/server/order-action.ts:
@@ -324,11 +326,6 @@ async function beforeSubmit(context: OrdersContext<Input>): Promise<void> {
     order by o.id`);
 }
 
-/** The link of a submit's notification: the order list filtered to this action (decided item 7). */
-function linkOf(branchId: string, actionId: string): string {
-  return `/orders?${new URLSearchParams({ branch: branchId, action: actionId }).toString()}`;
-}
-
 export const submitDrafts = orderMoveAction<Input>({
   name: "submitDrafts",
   action: "SUBMIT",
@@ -368,7 +365,7 @@ export const submitDrafts = orderMoveAction<Input>({
           type: "REQUEST_SUBMITTED",
           params,
           branchId,
-          link: linkOf(branchId, result.actionId),
+          link: actionLink(branchId, result.actionId),
           at,
         },
       );
@@ -397,7 +394,7 @@ export const submitDrafts = orderMoveAction<Input>({
           type: "REQUEST_HEAD_APPROVED",
           params,
           branchId,
-          link: linkOf(branchId, result.actionId),
+          link: actionLink(branchId, result.actionId),
           at,
         },
       );

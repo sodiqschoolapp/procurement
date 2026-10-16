@@ -2,7 +2,7 @@
 
 import { AlertDialog } from "@base-ui/react/alert-dialog";
 import { useTranslations } from "next-intl";
-import { useId } from "react";
+import { type ReactNode, useId } from "react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/components/utils";
@@ -32,6 +32,7 @@ export function ConfirmDialogBody({
   pending = false,
   onConfirm,
   onCancel,
+  children,
 }: {
   titleId: string;
   resultId: string;
@@ -39,6 +40,8 @@ export function ConfirmDialogBody({
   pending?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
+  /** What the user may still set before confirming, under the result (Finance's payment types). */
+  children?: ReactNode;
 }) {
   const t = useTranslations("common");
   return (
@@ -49,6 +52,7 @@ export function ConfirmDialogBody({
       <p id={resultId} className="mt-2 text-[15px] leading-[22px] text-muted-foreground">
         {text.result}
       </p>
+      {children}
       <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
         <Button variant="secondary" onClick={onCancel} disabled={pending}>
           {t("cancel")}
@@ -71,12 +75,14 @@ export function ConfirmDialog({
   text,
   pending = false,
   onConfirm,
+  children,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   text: ConfirmDialogText;
   pending?: boolean;
   onConfirm: () => void;
+  children?: ReactNode;
 }) {
   const titleId = useId();
   const resultId = useId();
@@ -106,7 +112,9 @@ export function ConfirmDialog({
             pending={pending}
             onConfirm={onConfirm}
             onCancel={() => onOpenChange(false)}
-          />
+          >
+            {children}
+          </ConfirmDialogBody>
         </AlertDialog.Popup>
       </AlertDialog.Portal>
     </AlertDialog.Root>

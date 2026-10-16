@@ -1001,7 +1001,9 @@
         "price": "Price",
         "paymentType": "Payment type",
         "owner": "Owner",
-        "submitted": "Submitted"
+        "submitted": "Submitted",
+        "stockAtSubmit": "Stock at submit",
+        "stockNow": "Stock now"
       },
       "tickGroup": "Tick every order of {product}",
       "tickOrder": "Tick order {number}",
@@ -1064,7 +1066,8 @@
         "urgent": "Urgent only",
         "action": "Orders of one action",
         "removeAction": "Show all orders, not only those of one action"
-      }
+      },
+      "noStock": "–"
     },
     "page": {
       "noNumber": "Draft without a number",
@@ -1123,7 +1126,10 @@
         "closedAt": "Closed",
         "notSet": "Not given",
         "at": "{date} {time}",
-        "extraLine": "{type}: {amount}"
+        "extraLine": "{type}: {amount}",
+        "stockAtSubmit": "Stock at submit",
+        "stockNow": "Stock now",
+        "noStock": "–"
       },
       "history": {
         "title": "History",
@@ -1152,7 +1158,8 @@
         "createdByHead": "Created by Head",
         "reason": "Reason: {text}",
         "note": "Note: {text}",
-        "at": "{date} {time}"
+        "at": "{date} {time}",
+        "paymentType": "Payment type: {from} → {to}"
       },
       "waiting": {
         "HEAD": "Waiting for the Head.",
@@ -1170,6 +1177,25 @@
         "done": "Submitted: {number}.",
         "failed": "Not submitted. Fix in the order list: {fields}.",
         "editInList": "Edit in the order list"
+      }
+    },
+    "approve": {
+      "button": "Approve",
+      "buttonCount": "Approve ({count})",
+      "title": "{count, plural, one {Approve 1 order?} other {Approve # orders?}}",
+      "result": "Total {total}. {count, plural, one {It moves} other {They move}} to the next step and the next approver is told.",
+      "resultFinance": "Total {total}. {count, plural, one {It opens} other {They open}} for buying. You may change the payment type of each order below; the total stays the same.",
+      "paymentOf": "Payment type of {number}",
+      "done": "{count, plural, one {Approved 1 order.} other {Approved # orders.}}",
+      "failedTitle": "{count, plural, one {Nothing was approved: 1 order is named below.} other {Nothing was approved: # orders are named below.}}",
+      "failedLine": "{number} — {problem}",
+      "alreadyApproved": "Already approved by {name} at {date} {time}.",
+      "refused": {
+        "not_found": "Not found. The list is refreshed.",
+        "stale_version": "Changed a moment ago. The list is refreshed; check it and approve again.",
+        "wrong_status": "No longer waiting at this step. The list is refreshed.",
+        "forbidden": "You cannot approve this order at its step.",
+        "not_ready": "This order cannot be approved yet."
       }
     }
   }

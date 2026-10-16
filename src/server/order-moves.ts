@@ -33,8 +33,10 @@ import {
 // (developer-rules.md rule 2). Every fact of OrderState is read from the locked order and its
 // owner, never from the input (rule 13; progress 2.3, "For 2.4"). The facts of phases 3 and 4 are
 // `false` until those phases build them. Submit's checks and numbers (2.7) go in through
-// `beforeMove`, while the orders are still DRAFT; the cash of Finance's Approve (2.10, 4.2) and
-// the per-order notes of a send-back (2.11) through `afterMove`.
+// `beforeMove`, while the orders are still DRAFT; Finance's payment type (2.10) also through
+// `beforeMove`, while the order is still PENDING_FINANCE, the only status at which `orders_guard`
+// lets it change. Finance's `approved_at` (2.10), its cash (4.2) and the per-order notes of a
+// send-back (2.11) go in through `afterMove`.
 
 /** The input of a move: the orders, and a reason where the move needs one (06 rule 3). */
 export type MoveActionInput = OrdersInput & { reason?: string };
@@ -122,8 +124,9 @@ async function writeMoves(
  * written (2.7: the submit checks, which may throw a refusal before anything is written, then the
  * number, `submitted_at`, `planned_total` and `stock_at_submit`, which the CHECKs and
  * `orders_guard` of migration 0019 need while the order is still DRAFT; review of the plan of
- * 2.7, correction 5). `afterMove` writes what a move adds after it (2.10: the payment type and
- * cash; 2.11: the notes) in the same transaction. Both may return each order's event extras; `headStepAuto` is logged in the Submit event's
+ * 2.7, correction 5); 2.10: Finance's payment type, which `orders_guard` allows only while the
+ * order is still PENDING_FINANCE. `afterMove` writes what a move adds after it (2.10:
+ * `approved_at`; 4.2: the cash; 2.11: the notes) in the same transaction. Both may return each order's event extras; `headStepAuto` is logged in the Submit event's
  * payload as `{ "headStepAuto": true }`, "Created by Head" (03 rule 6; review of the plan of 2.4,
  * correction 5).
  */

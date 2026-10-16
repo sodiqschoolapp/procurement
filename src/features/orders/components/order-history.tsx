@@ -10,6 +10,7 @@ import { getFormatters } from "@/i18n/get-formatters";
 
 export async function OrderHistory({ events }: { events: readonly OrderPageEvent[] }) {
   const t = await getTranslations("orders.page.history");
+  const tPayment = await getTranslations("paymentTypes");
   const format = await getFormatters();
   if (events.length === 0) {
     return <p className="text-[15px] leading-[22px] text-muted-foreground">{t("empty")}</p>;
@@ -40,6 +41,15 @@ export async function OrderHistory({ events }: { events: readonly OrderPageEvent
               </time>
               {event.headStepAuto ? <span data-created-by-head>{t("createdByHead")}</span> : null}
             </p>
+            {event.paymentType ? (
+              // Finance's change of the payment type while approving (06 rules 1 and 11).
+              <p data-payment-change className="text-[15px] leading-[22px]">
+                {t("paymentType", {
+                  from: tPayment(event.paymentType.from),
+                  to: tPayment(event.paymentType.to),
+                })}
+              </p>
+            ) : null}
             {event.comment ? (
               <p className="text-[15px] leading-[22px]">{t("reason", { text: event.comment })}</p>
             ) : null}

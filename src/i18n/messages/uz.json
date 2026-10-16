@@ -1001,7 +1001,9 @@
         "price": "Narx",
         "paymentType": "To'lov turi",
         "owner": "Egasi",
-        "submitted": "Yuborilgan"
+        "submitted": "Yuborilgan",
+        "stockAtSubmit": "Yuborilgandagi qoldiq",
+        "stockNow": "Hozirgi qoldiq"
       },
       "tickGroup": "Barcha buyurtmalarni belgilash: {product}",
       "tickOrder": "{number} buyurtmani belgilash",
@@ -1064,7 +1066,8 @@
         "urgent": "Faqat shoshilinch",
         "action": "Bitta amaldagi buyurtmalar",
         "removeAction": "Faqat bitta amaldagini emas, barcha buyurtmalarni ko'rsatish"
-      }
+      },
+      "noStock": "–"
     },
     "page": {
       "noNumber": "Raqamsiz qoralama",
@@ -1123,7 +1126,10 @@
         "closedAt": "Yopilgan",
         "notSet": "Koʻrsatilmagan",
         "at": "{date} {time}",
-        "extraLine": "{type}: {amount}"
+        "extraLine": "{type}: {amount}",
+        "stockAtSubmit": "Yuborilgandagi qoldiq",
+        "stockNow": "Hozirgi qoldiq",
+        "noStock": "–"
       },
       "history": {
         "title": "Tarix",
@@ -1152,7 +1158,8 @@
         "createdByHead": "Rahbar yaratgan",
         "reason": "Sabab: {text}",
         "note": "Izoh: {text}",
-        "at": "{date} {time}"
+        "at": "{date} {time}",
+        "paymentType": "To'lov turi: {from} → {to}"
       },
       "waiting": {
         "HEAD": "Rahbarni kutmoqda.",
@@ -1170,6 +1177,25 @@
         "done": "Yuborildi: {number}.",
         "failed": "Yuborilmadi. Buyurtmalar roʻyxatida tuzating: {fields}.",
         "editInList": "Buyurtmalar roʻyxatida tahrirlash"
+      }
+    },
+    "approve": {
+      "button": "Tasdiqlash",
+      "buttonCount": "Tasdiqlash ({count})",
+      "title": "{count, plural, other {# ta buyurtmani tasdiqlaysizmi?}}",
+      "result": "Jami {total}. {count, plural, other {Buyurtmalar}} keyingi bosqichga o'tadi va keyingi tasdiqlovchiga xabar boradi.",
+      "resultFinance": "Jami {total}. {count, plural, other {Buyurtmalar}} xarid uchun ochiladi. Quyida har bir buyurtmaning to'lov turini o'zgartirishingiz mumkin; jami o'zgarmaydi.",
+      "paymentOf": "{number} to'lov turi",
+      "done": "{count, plural, other {# ta buyurtma tasdiqlandi.}}",
+      "failedTitle": "{count, plural, other {Hech narsa tasdiqlanmadi: # ta buyurtma quyida ko'rsatilgan.}}",
+      "failedLine": "{number} — {problem}",
+      "alreadyApproved": "{name} allaqachon tasdiqlagan: {date} {time}.",
+      "refused": {
+        "not_found": "Topilmadi. Ro'yxat yangilandi.",
+        "stale_version": "Hozirgina o'zgardi. Ro'yxat yangilandi; tekshirib, qayta tasdiqlang.",
+        "wrong_status": "Endi bu bosqichda kutmayapti. Ro'yxat yangilandi.",
+        "forbidden": "Bu buyurtmani uning bosqichida tasdiqlay olmaysiz.",
+        "not_ready": "Bu buyurtmani hozircha tasdiqlab bo'lmaydi."
       }
     }
   }
