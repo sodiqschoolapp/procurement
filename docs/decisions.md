@@ -1234,6 +1234,31 @@ Choices made during the build and its reviews:
 - Two e2e Managers of their own (`E2E_MOVE_USERS`), reset to Uzbek each run.
 - A rule line in `.claude/rules/server-actions.md`: a first-pass shortcut is checked again when a task opens a way back.
 
+### 2.13 Copy as new and stale drafts (16.10.2026)
+
+The plan's decisions as the plan review of 16.10.2026 confirmed them (corrections 1 and 2 applied), and those of the build. The Look first items come first.
+
+1. **Look first** (permission matrix). Copy as new needs `request.create` in the branch of every ticked order: the Head, and a Manager with `CREATE_REQUESTS` there, on any order of the branch they can see (05 "Any order"). Principal and Finance get no button and are refused. The source passes the branch wall and the draft wall of `guardOrders`.
+2. **Look first** (draft merge; 05 Drafts 2). The copy is the copier's draft in the order's branch; it merges into the copier's never-submitted draft of the same branch, subtype and department, also within one copy, in the order the ticked orders were sent. A Sent back or taken-back numbered draft is never merged into (05 Drafts 5). The answer names each merge: "Added to your draft: now 20".
+3. **Look first** (money). A new draft keeps the order's typed price, extra costs and payment type as they stand now; a merge adds only the quantity, and the existing draft keeps its own price, extras and payment type. `planned_total` is `draftTotal()` of the row every time. The company is copied as it is, an empty one included (review correction 2).
+4. **Look first** (developer-rules rule 8). One client key per ticked order, stored in `orders.client_key` or `order_draft_adds.client_key`; every key known gives the first answers to their maker only, while `request.create` still allows each draft's branch; some known and some new is `conflict`.
+5. **Look first** (rule 9 reading). Each ticked order's sent version is checked; the source is never written, so its version is not raised and no `order_actions` or `order_events` row is written.
+6. A deactivated product, subtype, department, company or extra cost type is copied as it is and the draft is marked; Submit refuses it. An inactive branch, or a draft that names no subtype, department or quantity, refuses that order (`not_ready`).
+7. Not copied: number, revision, history, approvals, stock at submit, the reference photo. A past needed-by is kept; Submit checks it.
+8. "Overdue": Waiting for Head, Principal or Finance, Sent back, and Open while buying is not finished, with needed-by before today's Tashkent date from the injected clock; today is not overdue. Nothing is blocked (review correction 1; tested with two approvals of an overdue order). Submit again of a Sent back order still checks the date: that is the submit rule (05 Checks at submit), not a block of a waiting order.
+9. The hint "shows the new suggestion" is the existing price hint against the reference price ("-23% vs catalog price", S18); no new text.
+10. No event, notification or audit row for a copy (a draft write; decisions 2.5a item 21).
+11. Copy as new is offered in the order list's bar and on the page of a numbered order, not in the drafts grid.
+
+Choices made during the build:
+
+- **Look first** (tests changed because a requirement was added). The e2e owner bars of 2.9 (`order-page.spec.ts`) and 2.10 (`approvals.spec.ts`) count one more button, Copy as new, and assert it is shown: the owner may add drafts in the branch (item 1). Each still proves its rule.
+- A third wrapper, `src/server/copy-action.ts`, on the lock, guard and failure helpers of `order-action.ts`: `runOrdersAction` writes action rows and raises versions, `runDraftsAction` raises versions and has no key. Each create runs in a savepoint, so a database refusal (the one-draft index) leaves the transaction usable and every failing order is named.
+- The pick checks of `createDraft` (company, extras, photo) moved out of `insertDraft()`, which now writes the fields as given.
+- The trio advisory locks are taken once, sorted, before the creates; the key locks of the repeat are taken sorted too.
+- The Overdue label follows the Urgent label of the same rows (icon and word, warning colour), not the status-label component: it is a flag beside the status, as Urgent is.
+- Own e2e owners `E2E_COPY_USERS`, so the copies land in drafts no other spec reads.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

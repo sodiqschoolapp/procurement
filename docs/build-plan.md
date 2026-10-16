@@ -254,7 +254,7 @@ From a draft on the branch's order list to fully approved orders, ticked and act
   - **Done when:** Tests: a 4-character reason is refused; a re-submitted order is at Waiting for Head with revision 2 and the same number; a rejected order refuses every write. Playwright: the owner of a submitted order sees Take back and no Approve; the Head sees Approve, Send back and Reject. S5 as a Playwright test: the Head sees "100 → 80" highlighted, the same number and "rev 2".
   - Merged with the former 2.12 by the owner on 17.10.2026 (D47).
 
-- [ ] **2.13 Copy as new and stale drafts**
+- [x] **2.13 Copy as new and stale drafts**
   - **Read:** `05-order-request-form.md` (Ticking and filters: Copy as new); `15-quality-and-acceptance.md` (S6, S18); `edge-cases/requests-and-approval.md` ("The catalog price changes after the draft was written"; "A product is deactivated while it sits in a draft"; "The needed-by date passes while the order waits").
   - **Build:** Any order, a rejected one included, and several ticked orders at once, are copied into new drafts (the draft merge of section 5 applies); a draft keeps its typed price when the catalog price changes and shows the new suggestion as a hint; a draft with a deactivated entry is marked; a waiting order past its needed-by date shows "Overdue" and nothing is blocked.
   - **Done when:** S6 and S18 as tests.

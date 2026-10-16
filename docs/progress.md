@@ -831,4 +831,21 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - A test that orders events by time sets a different clock for each move: two moves at one frozen time come back in id order.
 - `catalog.spec.ts` once missed its dialog under the full parallel run; it passed alone. Not fixed here.
 
-The next task is 2.13.
+## 2.13 Copy as new and stale drafts (16.10.2026, pull request #62)
+
+**Built**
+- `copyOrdersAsNew` (`src/features/orders/actions/copy-as-new.ts`) on a third wrapper, `runCopyAction` of `src/server/copy-action.ts`: one client key per ticked order, a savepoint per create so a refusal names its order. Page export `copyOrdersAsNewAction`.
+- `insertDraft()` takes the fields as written; `createDraft` fills and checks the picks before it. `mergeInto()` and `firstAnswer()` are exported for the copy.
+- `isOverdue()` (`src/domain/order-steps.ts`), `GroupSummary.overdue`; `overdue` and `canCopy` in `listOrderGroups`, `tickedSummary` and `getOrderPage`.
+- `CopyButton` in the list bar and the page bar; the Overdue label (icon `schedule`). S18 as a database test over the 2.5a hint.
+
+**Left out, and the task that brings it**
+- Download: 2.14. The orders' branch wall sweep: 2.15. Reminders: 8.1.
+
+**What the next sessions must know**
+- For 2.15: `copyOrdersAsNew` reads sources through `guardOrders` (branch wall, draft wall); its matrix is `copy-as-new-matrix.db.test.ts` and `actions-matrix.db.test.ts`.
+- For 8.1: `isOverdue()` is the one test of "late against needed-by"; a reminder that names late orders calls it.
+- A test fixture that gives a submitted order plan fields or extras writes them while it is RETURNED, then sets the status (`orders_plan_frozen`): see `withPlan()` in `copy-as-new.db.test.ts`.
+- Every bar that counts its buttons in an e2e test now counts Copy as new for a user who may add drafts in the branch.
+
+The next task is 2.14.
