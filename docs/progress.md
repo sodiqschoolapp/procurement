@@ -90,7 +90,7 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - 14.10.2026: the loop brought up to sodiq-platform of 14 October (D27 to D41): only a `[review]` by `abbosc` counts and a fork's pull request gets nothing; after every push the builder checks that CI started and calls the owner instead of pushing an empty commit; a failure outside the code is re-run once, and a head green after a re-run is reviewed again.
 - 17.10.2026: balanced reviews and one spec review of the code (D44 to D46): reviewers name over-engineering as a should-fix to remove and never ask for safeguards no rule needs; `/finish-task` runs only the `permission-reviewer`, and the review routine applies the `spec-reviewer` checks and the matching `.claude/rules/` lines to the code; twenty-two check lines brought from sodiq-platform.
 - 17.10.2026: five task pairs merged (D47). For 2.11, 3.5, 5.4, 5.12 and 9.1: every note and decision that names the former 2.12, 4.11, 5.5, 5.13 or 8.3 is yours.
-- 17.10.2026: the owner answered open questions 3, 8, 9, 11, 12, 13 and 19 (`docs/decisions.md`, Decided ahead). For 3.2, 3.7, 3.10, 4.3, 5.4, 5.6, 5.7, 5.8, 5.9 and 5.11: your answer is there.
+- 17.10.2026: the owner answered open questions 3, 8, 9, 11, 12, 13 and 19 (`docs/decisions.md`, Decided ahead). For 3.2, 3.7, 3.10, 4.1, 4.3, 5.4, 5.6, 5.7, 5.8, 5.9, 5.11, 7.2 and 7.4: your answer is there.
 
 ## 0.3 CI (14.10.2026, pull request #12)
 
