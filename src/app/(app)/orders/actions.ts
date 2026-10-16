@@ -20,15 +20,18 @@ import {
   wireProduct,
   wireUpdated,
 } from "@/features/orders/draft-wire";
+import { approveOrders } from "@/features/orders/actions/approve";
 import { submitDrafts } from "@/features/orders/actions/submit";
 import { getDraft } from "@/features/orders/queries/drafts";
+import { newestMoves } from "@/features/orders/queries/newest-moves";
 import { submittedNumbers } from "@/features/orders/queries/submitted";
 import { selectAllOnFilter, tickedSummary } from "@/features/orders/queries/order-list";
 import { parseListFilters } from "@/features/orders/list-filters";
 import { type WireTickedSummary, wireTickedSummary } from "@/features/orders/list-wire";
 import { listDraftChoices, searchDraftProducts } from "@/features/orders/queries/draft-picker";
+import { alreadyApprovedBy } from "@/domain/already-decided";
 import { serverAction } from "@/server/action";
-import { type ActionResult, failure } from "@/server/action-result";
+import { type ActionFailure, type ActionResult, failure } from "@/server/action-result";
 import { getCurrentUser } from "@/server/auth/session";
 import { AuthorizationError } from "@/server/authorize";
 import { draftsServerAction } from "@/server/drafts-action";
@@ -44,6 +47,7 @@ const update = serverAction(updateDraft);
 const remove = serverAction(deleteDraft);
 const applyNeededBy = draftsServerAction(setDraftsNeededBy);
 const submit = ordersServerAction(submitDrafts);
+const approve = ordersServerAction(approveOrders);
 
 /** A query as an answer: a refusal of authorize() or of the input is returned, never thrown. */
 async function asked<T>(read: (userId: string) => Promise<T>): Promise<ActionResult<T>> {
@@ -122,6 +126,68 @@ export async function submitDraftsAction(input: unknown): Promise<ActionResult<W
       })),
     },
   };
+}
+
+/** One order another user approved since the screen showed it (06 rule 7). */
+export type WireDecided = { orderId: string; name: string; at: string };
+
+/** What Approve answers: each order's new status, or the refusal and who approved meanwhile. */
+export type ApproveAnswer =
+  | { ok: true; data: { orders: { id: string; status: string }[] } }
+  | { ok: false; error: ActionFailure; decided: WireDecided[] };
+
+/** The version each ticked order was sent with, read from the raw input for the refusal only. */
+function sentVersions(input: unknown): Map<string, number> {
+  const sent = (input as { orders?: unknown } | null)?.orders;
+  const versions = new Map<string, number>();
+  if (!Array.isArray(sent)) return versions;
+  for (const order of sent as { id?: unknown; version?: unknown }[]) {
+    if (typeof order?.id === "string" && typeof order.version === "number") {
+      versions.set(order.id, order.version);
+    }
+  }
+  return versions;
+}
+
+/**
+ * Approves the ticked orders at the Head, Principal or Finance step, all or nothing (06 Allowed
+ * moves; rules 7, 8; plan of 2.10). A refusal names every order that failed; for one another user
+ * approved since the screen showed it, newestMoves(), which calls authorize() itself with the
+ * walls in its SQL, says who and when (decided item 3, Look first). Never retried by the screen.
+ */
+export async function approveOrdersAction(input: unknown): Promise<ApproveAnswer> {
+  const result = await approve(input);
+  if (result.ok) {
+    revalidatePath("/orders");
+    return { ok: true, data: { orders: result.data.orders } };
+  }
+  const refused = result.error.orders ?? [];
+  const user = await getCurrentUser();
+  const decided: WireDecided[] = [];
+  const asked = refused.filter(
+    (order) => order.code === "stale_version" || order.code === "wrong_status",
+  );
+  if (user && asked.length > 0) {
+    const sent = sentVersions(input);
+    // A user who lost the right to see orders meanwhile is told nothing more.
+    const newest = await newestMoves(
+      user.id,
+      asked.map((order) => order.orderId),
+    ).catch((error: unknown) => {
+      if (error instanceof AuthorizationError) return new Map();
+      throw error;
+    });
+    for (const order of asked) {
+      const by = alreadyApprovedBy(
+        { code: order.code, sentVersion: sent.get(order.orderId) ?? 0 },
+        newest.get(order.orderId) ?? null,
+        { id: user.id, role: user.role },
+      );
+      if (by) decided.push({ orderId: order.orderId, name: by.name, at: by.at.toISOString() });
+    }
+  }
+  revalidatePath("/orders");
+  return { ok: false, error: result.error, decided };
 }
 
 /** The product picker of a branch (05 field 2): photo, category, type, stock, subtypes. */

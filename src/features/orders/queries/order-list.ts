@@ -2,7 +2,7 @@ import { type SQL, and, asc, count, desc, eq, gte, inArray, lt, ne, or, sql } fr
 import * as z from "zod";
 
 import { businessDayStart, nextBusinessDate } from "@/domain/business-date";
-import { plainQuantity } from "@/domain/drafts";
+import { inStock, plainQuantity } from "@/domain/drafts";
 import {
   type GroupSummary,
   ORDER_LIST_PAGE_SIZE,
@@ -24,6 +24,7 @@ import {
   orders,
   productVariants,
   products,
+  stockBalances,
   units,
   users,
 } from "@/server/db/schema";
@@ -51,6 +52,12 @@ export type ListOrder = {
   departmentName: string;
   /** Plain decimal text, without trailing zeros. */
   quantity: string;
+  /**
+   * The branch's stock of the subtype at submit and now (06 rule 10; plan of 2.10, decided item
+   * 4): plain decimal text; null for a service, which has no stock.
+   */
+  stockAtSubmit: string | null;
+  stockNow: string | null;
   price: bigint;
   paymentType: PaymentType;
   neededBy: string;
@@ -267,6 +274,12 @@ async function readGroups(
       status: orders.status,
       departmentName: departments.name,
       quantity: orders.plannedQty,
+      productType: products.type,
+      stockAtSubmit: orders.stockAtSubmit,
+      // In the list's one snapshot: the branch's row, none is 0 (decided item 4).
+      stockNow: sql<string | null>`(select ${stockBalances.qty}::text from ${stockBalances}
+        where ${stockBalances.branchId} = ${orders.branchId}
+          and ${stockBalances.variantId} = ${orders.variantId})`,
       price: orders.plannedPrice,
       paymentType: orders.paymentType,
       neededBy: orders.neededBy,
@@ -279,6 +292,7 @@ async function readGroups(
     .innerJoin(owner, eq(owner.id, orders.ownerId))
     .innerJoin(departments, eq(departments.id, orders.departmentId))
     .innerJoin(productVariants, eq(productVariants.id, orders.variantId))
+    .innerJoin(products, eq(products.id, productVariants.productId))
     .where(
       and(
         where,
@@ -310,6 +324,8 @@ async function readGroups(
       version: member.version,
       departmentName: member.departmentName,
       quantity: plainQuantity(member.quantity!),
+      stockAtSubmit: inStock(member.productType, member.stockAtSubmit),
+      stockNow: inStock(member.productType, member.stockNow),
       price: member.price!,
       paymentType: member.paymentType,
       neededBy: member.neededBy!,
@@ -384,6 +400,11 @@ export type TickedSummary = {
   totals: OrdersTotals;
   /** The moves the state machine allows on every ticked order (06 rule 8; decided item 7). */
   actions: OrderAction[];
+  /**
+   * Each ticked order's number and payment type, for the approve dialog: Finance may change the
+   * payment type there (06 rule 1; plan of 2.10). In the list's order of numbers.
+   */
+  orders: { id: string; number: string; status: ListStatus; paymentType: PaymentType }[];
 };
 
 /**
@@ -403,6 +424,7 @@ export async function tickedSummary(
     missing: [],
     totals: ordersTotals([]),
     actions: [],
+    orders: [],
   };
   if (ids.length === 0) return none;
   // The orders and their extras of one moment (spec review of 2.8, Should fix 1).
@@ -418,6 +440,7 @@ export async function tickedSummary(
         progress: orders.progress,
         createdByHead: createdByHeadSql,
         ownerClosesAlone: ownerClosesAloneSql,
+        number: orders.number,
         quantity: orders.plannedQty,
         price: orders.plannedPrice,
         paymentType: orders.paymentType,
@@ -441,6 +464,14 @@ export async function tickedSummary(
         })),
       ),
       actions: allowedActions(actor, found.map(orderState)),
+      orders: found
+        .map((row) => ({
+          id: row.id,
+          number: row.number!,
+          status: row.status as ListStatus,
+          paymentType: row.paymentType,
+        }))
+        .sort((a, b) => (a.number < b.number ? -1 : a.number > b.number ? 1 : 0)),
     };
   });
 }

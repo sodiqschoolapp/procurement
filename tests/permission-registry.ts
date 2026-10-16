@@ -77,6 +77,13 @@ export const SERVER_ACTIONS: Record<string, Entry> = {
   // Submit of ticked drafts (plan of 2.7): the state machine's SUBMIT move under request.edit
   // (src/domain/order-moves.ts), in the matrix through describeSubmitMatrix.
   "src/app/(app)/orders/actions.ts#submitDraftsAction": "request.edit",
+  // Approve of ticked orders (plan of 2.10, decided item 1, Look first): one action for the three
+  // steps, so the permission depends on each order's status: request.approve_step1 at Waiting for
+  // Head, request.approve_step2 at Waiting for Principal, request.approve_step3 at Waiting for
+  // Finance (the state machine's rows, src/domain/order-moves.ts). The entry names step 1 only
+  // because the registry takes one; all three are in the matrix through actions-matrix.db.test.ts
+  // (permission review of 2.10, Should fix 1).
+  "src/app/(app)/orders/actions.ts#approveOrdersAction": "request.approve_step1",
   // The order list on /orders (plan of 2.8): each export in the matrix through itself.
   "src/app/(app)/orders/actions.ts#selectAllOnFilterAction": "data.view",
   "src/app/(app)/orders/actions.ts#tickedSummaryAction": "data.view",
@@ -147,6 +154,9 @@ export const QUERIES: Record<string, Permission> = {
   // The order page /orders/[id] (plan of 2.9): data.view with the branch and the draft wall in
   // the SQL (src/features/orders/queries/order-page.db.test.ts and its matrix test).
   "src/features/orders/queries/order-page.ts#getOrderPage": "data.view",
+  // Who approved a refused order meanwhile (plan of 2.10, decided item 3, Look first): data.view
+  // with the branch and the draft wall in the SQL.
+  "src/features/orders/queries/newest-moves.ts#newestMoves": "data.view",
   // The download route's file: file.upload for a file no record holds; each owner a later task
   // adds to src/server/files/owners.ts names its own permission there (plan of 0.12, decision 5).
   "src/features/files/queries/file-for-download.ts#fileForDownload": "file.upload",

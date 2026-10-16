@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/components/utils";
@@ -14,8 +14,8 @@ import { useFormatters } from "@/i18n/use-formatters";
 // actions this user can take on all of them now"; 05, the totals under the list). The numbers
 // are tickedSummary() of the server: ordersTotals() of src/domain/order-totals.ts. The actions
 // come from allowedActions() of the state machine; a button is shown only for a move that has a
-// server action, and no move of the list has one before 2.10 (plan of 2.8, decided item 7, Look
-// first). White panel with a top border, no shadow (design system "What we never do" 8); on a
+// server action (plan of 2.8, decided item 7, Look first): Approve from 2.10, which the list
+// passes in as `actions`. White panel with a top border, no shadow (design system "What we never do" 8); on a
 // phone the count and the grand total, "Show details" opens the rest (as the drafts' totals).
 
 export function ListActionBar({
@@ -23,7 +23,10 @@ export function ListActionBar({
   tickedCount,
   matching,
   onClear,
+  actions,
 }: {
+  /** The buttons of the moves the server allows on every ticked order. */
+  actions?: ReactNode;
   /** The server's answer for the ticks shown; null while it is read. */
   summary: WireTickedSummary | null;
   tickedCount: number;
@@ -70,9 +73,12 @@ export function ListActionBar({
               : t("count", { count: tickedCount })}
           </span>
         </h2>
-        <Button type="button" variant="ghost" size="sm" onClick={onClear}>
-          {t("clear")}
-        </Button>
+        <div className="flex flex-wrap items-center gap-3 max-sm:w-full">
+          {actions}
+          <Button type="button" variant="ghost" size="sm" onClick={onClear}>
+            {t("clear")}
+          </Button>
+        </div>
       </div>
       {summary && (
         <div className="grid gap-x-12 gap-y-4 sm:grid-cols-2">

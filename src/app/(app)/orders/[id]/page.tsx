@@ -126,6 +126,24 @@ export default async function OrderPageScreen({
           </ul>
         ),
       )}
+      {order.number
+        ? [
+            fact(
+              "stockAtSubmit",
+              t("details.stockAtSubmit"),
+              order.stockAtSubmit === null
+                ? t("details.noStock")
+                : `${format.quantity(order.stockAtSubmit)} ${order.unitShortName ?? ""}`.trim(),
+            ),
+            fact(
+              "stockNow",
+              t("details.stockNow"),
+              order.stockNow === null
+                ? t("details.noStock")
+                : `${format.quantity(order.stockNow)} ${order.unitShortName ?? ""}`.trim(),
+            ),
+          ]
+        : null}
       {fact("paymentType", t("details.paymentType"), tPayment(order.paymentType))}
       {fact(
         "priority",
@@ -248,6 +266,19 @@ export default async function OrderPageScreen({
         orderId={order.id}
         version={order.version}
         canSubmit={order.actions.includes("SUBMIT")}
+        approve={
+          order.actions.includes("APPROVE") && order.number && order.plannedTotal !== null
+            ? {
+                order: {
+                  id: order.id,
+                  number: order.number,
+                  status: order.status,
+                  paymentType: order.paymentType,
+                },
+                total: format.money(order.plannedTotal),
+              }
+            : null
+        }
         waitingLine={line}
       />
     </div>

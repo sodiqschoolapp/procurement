@@ -2,7 +2,7 @@ import { and, asc, eq, ne, or, sql } from "drizzle-orm";
 import { type AnyPgColumn, alias } from "drizzle-orm/pg-core";
 import * as z from "zod";
 
-import { plainQuantity } from "@/domain/drafts";
+import { inStock, plainQuantity } from "@/domain/drafts";
 import { type OrderAction, allowedActions } from "@/domain/order-moves";
 import { type StepEvent, type StepView, orderSteps } from "@/domain/order-steps";
 import { extrasSum, priceHintPercent } from "@/domain/order-totals";
@@ -20,6 +20,7 @@ import {
   orders,
   productVariants,
   products,
+  stockBalances,
   units,
   userBranches,
   users,
@@ -51,6 +52,8 @@ export type OrderPageEvent = {
   /** The per-order note of a send-back (06 Allowed moves). */
   note: string | null;
   headStepAuto: boolean;
+  /** Finance's change of the payment type in this Approve (06 rule 1; plan of 2.10). */
+  paymentType: { from: PaymentType; to: PaymentType } | null;
   /**
    * The other orders of the same action that this user may see now: never the action's own
    * count, which may cover other branches (decided item 1, Look first).
@@ -79,6 +82,13 @@ export type OrderPage = {
   neededBy: string | null;
   /** Plain decimal text, without trailing zeros. */
   quantity: string | null;
+  /**
+   * The branch's stock of the subtype when the order was submitted, and now (06 rule 10): plain
+   * decimal text; null for a service, which has no stock, and before the first submit.
+   */
+  stockAtSubmit: string | null;
+  /** The branch's stock now, 0 without a row; null for a service or a draft without a product. */
+  stockNow: string | null;
   price: bigint | null;
   extras: OrderPageExtra[];
   /** The sum of the extra costs (`extrasSum()` of src/domain/order-totals.ts). */
@@ -150,6 +160,12 @@ async function readPage(db: Executor, actor: Actor, id: string): Promise<OrderPa
       companyName: companies.name,
       neededBy: orders.neededBy,
       quantity: orders.plannedQty,
+      productType: products.type,
+      stockAtSubmit: orders.stockAtSubmit,
+      // In the page's one snapshot (plan of 2.10, decided item 4): the branch's row, 0 without one.
+      stockNow: sql<string>`coalesce((select ${stockBalances.qty}::text from ${stockBalances}
+        where ${stockBalances.branchId} = ${orders.branchId}
+          and ${stockBalances.variantId} = ${orders.variantId}), '0')`,
       price: orders.plannedPrice,
       paymentType: orders.paymentType,
       priority: orders.priority,
@@ -214,6 +230,7 @@ async function readPage(db: Executor, actor: Actor, id: string): Promise<OrderPa
       comment: orderEvents.comment,
       note: orderEvents.note,
       headStepAuto: sql<boolean>`coalesce((${orderEvents.payload} ->> 'headStepAuto')::boolean, false)`,
+      paymentType: sql<OrderPageEvent["paymentType"]>`${orderEvents.payload} -> 'paymentType'`,
       othersSeen: sql<number>`(${othersSeen})`,
     })
     .from(orderEvents)
@@ -262,6 +279,12 @@ async function readPage(db: Executor, actor: Actor, id: string): Promise<OrderPa
     companyName: row.companyName,
     neededBy: row.neededBy,
     quantity: row.quantity === null ? null : plainQuantity(row.quantity),
+    // inStock() reads 0 as "0"; plainQuantity() refuses it (a plan quantity is above 0).
+    stockAtSubmit:
+      row.productType === null || row.stockAtSubmit === null
+        ? null
+        : inStock(row.productType, row.stockAtSubmit),
+    stockNow: row.productType === null ? null : inStock(row.productType, row.stockNow),
     price: row.price,
     extras,
     extrasSum: extrasSum(amounts),

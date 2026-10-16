@@ -31,6 +31,7 @@ vi.mock("@/server/auth/session", () => ({ getCurrentUser: async () => store.user
 vi.mock("next/cache", () => ({ revalidatePath: () => undefined }));
 
 const {
+  approveOrdersAction,
   createDraftAction,
   deleteDraftAction,
   getDraftAction,
@@ -325,3 +326,25 @@ describePermissionMatrix("tickedSummaryAction", {
     expect(answer).toMatchObject({ ok: true, data: { count: 1, totals: { grand: "50000" } } });
   },
 });
+
+// Approve (build plan 2.10) through its own export, one matrix per step: the state machine's row
+// of the order's status names the permission (plan of 2.10, decided item 1, Look first).
+for (const [status, permission] of [
+  ["PENDING_HEAD", "request.approve_step1"],
+  ["PENDING_PRINCIPAL", "request.approve_step2"],
+  ["PENDING_FINANCE", "request.approve_step3"],
+] as const) {
+  describePermissionMatrix(`approveOrdersAction at ${status}`, {
+    permission,
+    async run({ user, branchId }) {
+      const owner = await insertUser("MANAGER", { branches: [branchId] });
+      const order = await insertOrder({ branchId, ownerId: owner.id, status });
+      signedIn(user);
+      const answer = await approveOrdersAction({
+        clientKey: newClientKey(),
+        orders: [{ id: order.id, version: order.version }],
+      });
+      asMatrixAnswer(answer.ok ? answer : { ok: false, error: answer.error });
+    },
+  });
+}

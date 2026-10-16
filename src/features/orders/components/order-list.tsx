@@ -15,6 +15,7 @@ import { tickFits } from "@/domain/order-list";
 import type { WireOrderGroup, WireTickedSummary } from "@/features/orders/list-wire";
 import { useFormatters } from "@/i18n/use-formatters";
 
+import { ApproveButton } from "./approve-button";
 import { ListActionBar } from "./list-action-bar";
 
 // The group rows of /orders (05-order-request-form.md, Group rows 1 to 3; Ticking and filters;
@@ -23,7 +24,8 @@ import { ListActionBar } from "./list-action-bar";
 // group row ticks every order in it (Group rows 3). The ticks live here and survive a change of
 // page; the page keys this component by its filters, so a change of filter or sort clears them
 // (review of the plan, correction 1). The count, totals and actions of the ticked orders are the
-// server's (tickedSummary); this component adds nothing up and decides no permission.
+// server's (tickedSummary); this component adds nothing up and decides no permission. An action
+// sends each order with the version the screen last showed it at (06 rule 7; plan of 2.10).
 
 export function OrderList({
   groups,
@@ -45,6 +47,8 @@ export function OrderList({
 }) {
   const t = useTranslations("orders.list");
   const tPager = useTranslations("pager");
+  const tCommon = useTranslations("common");
+  const format = useFormatters();
   const router = useRouter();
   const [ticked, setTicked] = useState<string[]>([]);
   const [open, setOpen] = useState<Set<string>>(new Set());
@@ -54,7 +58,19 @@ export function OrderList({
   );
   const [matching, setMatching] = useState<number | null>(null);
   const [selecting, setSelecting] = useState(false);
+  const [failed, setFailed] = useState<{
+    title: string;
+    lines: { orderId: string; line: string }[];
+  } | null>(null);
   const asked = useRef(0);
+  // The version of each order as the screen last showed it, also of ticks on another page.
+  const seen = useRef(new Map<string, number>());
+
+  useEffect(() => {
+    for (const group of groups) {
+      for (const order of group.orders) seen.current.set(order.id, order.version);
+    }
+  }, [groups]);
 
   // The bar reads the server again whenever the ticks change (decided item 16).
   useEffect(() => {
@@ -100,6 +116,7 @@ export function OrderList({
         toast.error(t("summaryFailed"));
         return;
       }
+      for (const order of answer.data.orders) seen.current.set(order.id, order.version);
       setTicked(answer.data.orders.map((order) => order.id));
       setMatching(answer.data.matching);
     } finally {
@@ -113,9 +130,35 @@ export function OrderList({
   }
 
   const tickedSet = new Set(ticked);
+  // The orders a refused action named stay marked until the next answer (decided item 6).
+  const refusedSet = new Set(failed?.lines.map((line) => line.orderId) ?? []);
+  const summary = answered?.ids === ticked.join(",") ? answered.summary : null;
 
   return (
     <div className="flex flex-col gap-4">
+      {failed && (
+        <section
+          role="alert"
+          data-approve-failed
+          className="flex flex-col gap-2 rounded-xl border border-destructive bg-card p-4"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <h2 className="text-[15px] leading-[22px] font-bold text-destructive">
+              {failed.title}
+            </h2>
+            <Button type="button" variant="ghost" size="sm" onClick={() => setFailed(null)}>
+              {tCommon("close")}
+            </Button>
+          </div>
+          <ul className="flex flex-col gap-1 text-[15px] leading-[22px]">
+            {failed.lines.map(({ orderId, line }) => (
+              <li key={orderId} data-failed-order={orderId}>
+                {line}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <span className="text-sm text-muted-foreground">{t("groupCount", { count: total })}</span>
         <Button type="button" variant="secondary" pending={selecting} onClick={selectAll}>
@@ -165,6 +208,7 @@ export function OrderList({
                 })
               }
               ticked={tickedSet}
+              refused={refusedSet}
               onTick={tick}
             />
           ))}
@@ -193,10 +237,25 @@ export function OrderList({
 
       {ticked.length > 0 && (
         <ListActionBar
-          summary={answered?.ids === ticked.join(",") ? answered.summary : null}
+          summary={summary}
           tickedCount={ticked.length}
           matching={matching}
           onClear={clear}
+          actions={
+            summary?.actions.includes("APPROVE") ? (
+              <ApproveButton
+                orders={summary.orders}
+                versionOf={(id) => seen.current.get(id) ?? 0}
+                total={format.money(BigInt(summary.totals.grand))}
+                onAnswer={(answer) => {
+                  setFailed(answer);
+                  clear();
+                }}
+                size="sm"
+                className="max-sm:flex-1"
+              />
+            ) : null
+          }
         />
       )}
     </div>
@@ -208,12 +267,15 @@ function GroupRows({
   open,
   onToggle,
   ticked,
+  refused,
   onTick,
 }: {
   group: WireOrderGroup;
   open: boolean;
   onToggle: () => void;
   ticked: ReadonlySet<string>;
+  /** Orders the last refused action named (06 rule 8; decided item 6). */
+  refused: ReadonlySet<string>;
   onTick: (ids: readonly string[], on: boolean) => void;
 }) {
   const t = useTranslations("orders.list");
@@ -328,6 +390,8 @@ function GroupRows({
                       "number",
                       "department",
                       "quantity",
+                      "stockAtSubmit",
+                      "stockNow",
                       "price",
                       "paymentType",
                       "neededBy",
@@ -346,7 +410,8 @@ function GroupRows({
                   <tr
                     key={order.id}
                     data-order={order.id}
-                    className="border-t border-border max-sm:grid max-sm:grid-cols-2 max-sm:gap-1 max-sm:rounded-lg max-sm:bg-muted max-sm:p-3"
+                    data-refused={refused.has(order.id) || undefined}
+                    className="border-t border-border data-refused:bg-destructive-bg max-sm:grid max-sm:grid-cols-2 max-sm:gap-1 max-sm:rounded-lg max-sm:bg-muted max-sm:p-3"
                   >
                     <td className="py-2 pr-2 max-sm:col-span-2">
                       <label className="flex size-11 cursor-pointer items-center justify-center sm:size-6">
@@ -375,11 +440,35 @@ function GroupRows({
                       {order.priority === "URGENT" && (
                         <span className="ml-2 text-destructive">{t("urgent")}</span>
                       )}
+                      {refused.has(order.id) && (
+                        <span className="ml-2 inline-flex items-center gap-1 text-destructive">
+                          <Icon name="error" size={16} />
+                          {t("refusedMark")}
+                        </span>
+                      )}
                     </td>
                     <td className="py-2 pr-3">{order.departmentName}</td>
                     <td className="py-2 pr-3 tabular-nums">
                       {format.quantity(order.quantity)} {group.unitShortName}
                     </td>
+                    {/* Stock at submit and now (06 rule 10; plan of 2.10, decided item 4). */}
+                    {[
+                      ["stockAtSubmit", order.stockAtSubmit],
+                      ["stockNow", order.stockNow],
+                    ].map(([column, stock]) => (
+                      <td
+                        key={column}
+                        data-cell={column!}
+                        className="py-2 pr-3 tabular-nums sm:whitespace-nowrap"
+                      >
+                        <span className="text-muted-foreground sm:hidden">
+                          {t(`columns.${column as "stockAtSubmit" | "stockNow"}`)}{" "}
+                        </span>
+                        {stock === null
+                          ? t("noStock")
+                          : `${format.quantity(stock!)} ${group.unitShortName}`}
+                      </td>
+                    ))}
                     <td className="py-2 pr-3 whitespace-nowrap tabular-nums">
                       {format.money(BigInt(order.price))}
                       {order.priceHint !== null && (
