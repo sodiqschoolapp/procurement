@@ -76,23 +76,32 @@ function asPurchaseRecord(record: CashRecord): PurchaseRecord {
 }
 
 /**
+ * What an order's live records paid by one payment type: the goods of records whose trip is that
+ * type and every extra of that type (decided item 2, Look first). Cash spent, the transfer's
+ * "value of goods received" and the card's "actually charged" of 08 Closing 2 (plan of 4.5).
+ */
+export function paidBy(records: readonly CashRecord[], type: PaymentType): bigint {
+  // Every record is checked first, as liveRecords() does, so a broken row is never hidden.
+  liveRecords(records.map(asPurchaseRecord));
+  const live = records.filter((record) => !record.isCancelled);
+  const goods = actualGoods(
+    live.filter((record) => record.paymentType === type).map(asPurchaseRecord),
+  );
+  const extras = extrasSum(
+    live.flatMap((record) =>
+      record.extras.filter((extra) => extra.paymentType === type).map((extra) => extra.amount),
+    ),
+  );
+  return goods + extras;
+}
+
+/**
  * 08 Cash spent: every purchase and extra cost of the order with payment type Cash that is not
  * cancelled. A record's goods count when its trip is Cash; each extra counts by its own payment
  * type, so a Transfer trip with a Cash delivery counts the delivery only (decided item 2).
  */
 export function cashSpent(records: readonly CashRecord[]): bigint {
-  // Every record is checked first, as liveRecords() does, so a broken row is never hidden.
-  liveRecords(records.map(asPurchaseRecord));
-  const live = records.filter((record) => !record.isCancelled);
-  const goods = actualGoods(
-    live.filter((record) => record.paymentType === "CASH").map(asPurchaseRecord),
-  );
-  const extras = extrasSum(
-    live.flatMap((record) =>
-      record.extras.filter((extra) => extra.paymentType === "CASH").map((extra) => extra.amount),
-    ),
-  );
-  return goods + extras;
+  return paidBy(records, "CASH");
 }
 
 /**
@@ -323,4 +332,168 @@ export function moneyPrefill(
     return row?.kind === kind ? row.amount : null;
   }
   return null;
+}
+
+/**
+ * The settlement screen and its actions work on orders Waiting for settlement only (06 Allowed
+ * moves: Send back for correction and Close start there; 08 Closing 2; plan of 4.5). The bar and
+ * the screen ask this for their buttons; the actions ask it again.
+ */
+export function settlementAllows(status: RequestStatus): boolean {
+  return status === "SETTLEMENT";
+}
+
+/** Sums the live rows of the kinds given. */
+function liveSum(rows: readonly MoneyRow[], kinds: readonly MoneyRowKind[]): bigint {
+  let sum = 0n;
+  for (const row of rows) {
+    const amount = amountOf(row.amount);
+    if (!row.isCancelled && kinds.includes(row.kind)) sum += amount;
+  }
+  return sum;
+}
+
+const CASH_KINDS: readonly MoneyRowKind[] = ["CASH_GIVEN", "CASH_RETURNED", "PAID_BACK"];
+
+/** 08 Closing 2, the Cash block: given, spent, returned, paid back and the count, per order. */
+export type CashBlockFigures = {
+  given: bigint;
+  spent: bigint;
+  returned: bigint;
+  paidBack: bigint;
+  count: bigint;
+};
+/** 08 Closing 2, the Bank transfer block: planned, transferred, value of goods received. */
+export type TransferBlockFigures = { planned: bigint; transferred: bigint; received: bigint };
+/**
+ * 08 Closing 2, the Corporate card block: planned, actually charged, and the difference
+ * (planned − charged: above 0 "Left", below 0 "Over"; A11: the order's figure, not the card's
+ * balance), and the Card money returned rows.
+ */
+export type CardBlockFigures = {
+  planned: bigint;
+  charged: bigint;
+  difference: bigint;
+  returned: bigint;
+};
+/** The blocks of one order; a block is null when its payment type was not used. */
+export type SettlementBlocks = {
+  cash: CashBlockFigures | null;
+  transfer: TransferBlockFigures | null;
+  card: CardBlockFigures | null;
+};
+
+/** Whether a live record (its trip) or a live extra of it used the payment type. */
+function recordsUse(records: readonly CashRecord[], type: PaymentType): boolean {
+  return records.some(
+    (record) =>
+      !record.isCancelled &&
+      (record.paymentType === type || record.extras.some((extra) => extra.paymentType === type)),
+  );
+}
+
+/** Whether a live row of one of the kinds exists. */
+function rowsUse(rows: readonly MoneyRow[], kinds: readonly MoneyRowKind[]): boolean {
+  return rows.some((row) => !row.isCancelled && kinds.includes(row.kind));
+}
+
+/**
+ * 08 Closing 2: "a block for each payment type that was used", with its figures. A type is used
+ * when a live record (its trip) or extra paid by it, or a live money row of its kinds exists
+ * (Cash: given, returned, paid back; Transfer: bank transfer; Card: top-up, card returned); a type
+ * only planned has no block (plan of 4.5, decided item 5, Look first). "Planned" of the transfer
+ * and the card is the planned total when the order's planned type is that type, else 0.
+ */
+export function settlementBlocks(order: {
+  plan: OrderPlan;
+  records: readonly CashRecord[];
+  rows: readonly MoneyRow[];
+}): SettlementBlocks {
+  const { plan, records, rows } = order;
+  const plannedOf = (type: PaymentType) => (plan.paymentType === type ? orderTotal(plan) : 0n);
+  const cash =
+    recordsUse(records, "CASH") || rowsUse(rows, CASH_KINDS)
+      ? {
+          given: liveSum(rows, ["CASH_GIVEN"]),
+          spent: cashSpent(records),
+          returned: liveSum(rows, ["CASH_RETURNED"]),
+          paidBack: liveSum(rows, ["PAID_BACK"]),
+          count: orderCashCount(rows, records),
+        }
+      : null;
+  const transfer =
+    recordsUse(records, "TRANSFER") || rowsUse(rows, ["BANK_TRANSFER"])
+      ? {
+          planned: plannedOf("TRANSFER"),
+          transferred: liveSum(rows, ["BANK_TRANSFER"]),
+          received: paidBy(records, "TRANSFER"),
+        }
+      : null;
+  let card: CardBlockFigures | null = null;
+  if (recordsUse(records, "CARD") || rowsUse(rows, ["CARD_TOPUP", "CARD_RETURNED"])) {
+    const planned = plannedOf("CARD");
+    const charged = paidBy(records, "CARD");
+    card = {
+      planned,
+      charged,
+      difference: planned - charged,
+      returned: liveSum(rows, ["CARD_RETURNED"]),
+    };
+  }
+  return { cash, transfer, card };
+}
+
+/** 08 Closing 2, Bank transfer: "If transferred and received differ, a note is required". */
+export function transferNeedsNote(block: TransferBlockFigures): boolean {
+  return block.transferred !== block.received;
+}
+
+/** One order's stored confirmations (14 order_settlements); null when none was ever written. */
+export type SettlementConfirmations = {
+  transferConfirmed: boolean;
+  transferNote: string | null;
+  cardConfirmed: boolean;
+};
+
+/**
+ * Whether a block is confirmed (08 Closing 2; plan of 4.5, decided item 9, Look first): the card
+ * when ticked; the transfer when ticked and, while transferred and received differ, a note is
+ * stored. The figures are today's, so a Bank transfer recorded or cancelled after the tick turns
+ * a mismatch without a note back to "not confirmed". The screen shows this; 4.6's readiness reads
+ * it too.
+ */
+export function blockConfirmed(
+  block: "TRANSFER" | "CARD",
+  blocks: SettlementBlocks,
+  stored: SettlementConfirmations | null,
+): boolean {
+  if (block === "CARD") return blocks.card !== null && stored?.cardConfirmed === true;
+  if (blocks.transfer === null || stored?.transferConfirmed !== true) return false;
+  return !transferNeedsNote(blocks.transfer) || (stored.transferNote ?? "").trim() !== "";
+}
+
+/** One Manager's part of a settlement action: his Receive and Pay rows above 0. */
+export type SettlementCashBlock = { managerId: string; rows: SettlementRow[] };
+
+/**
+ * 08 Closing 2, the Cash block as Finance saves it: the typed Receive and Pay rows, one block per
+ * Manager (08 Money ledger 1), blocks and rows in the order given. Rows of 0 write nothing and a
+ * Manager with nothing left gets no action (as `approvalCashRows()`; review of the plan of 4.5,
+ * Should fix 2). The crossing check is `crossingRefusal()`, against the counts under the lock.
+ */
+export function settlementCashRows(
+  orders: readonly { id: string; ownerId: string; kind: SettlementRow["kind"]; amount: bigint }[],
+): SettlementCashBlock[] {
+  const blocks = new Map<string, SettlementCashBlock>();
+  for (const order of orders) {
+    if (order.amount === 0n) continue;
+    const amount = amountOf(order.amount);
+    let block = blocks.get(order.ownerId);
+    if (block === undefined) {
+      block = { managerId: order.ownerId, rows: [] };
+      blocks.set(order.ownerId, block);
+    }
+    block.rows.push({ orderId: order.id, kind: order.kind, amount });
+  }
+  return [...blocks.values()];
 }

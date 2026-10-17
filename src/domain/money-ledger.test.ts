@@ -7,6 +7,7 @@ import {
   type MoneyRowKind,
   actionTotal,
   approvalCashRows,
+  blockConfirmed,
   cashSpent,
   crossingRefusal,
   isExactMatch,
@@ -15,10 +16,15 @@ import {
   moneyPrefill,
   moneyRecordAllows,
   orderCashCount,
+  paidBy,
   plannedCash,
   plannedCashOf,
+  settlementAllows,
+  settlementBlocks,
+  settlementCashRows,
   settlementNet,
   settlementRows,
+  transferNeedsNote,
 } from "./money-ledger";
 import type { OrderPlan } from "./order-totals";
 import type { PaymentType } from "./payment-types";
@@ -457,6 +463,195 @@ describe('the Money tab\'s prefilled rows (edge cases "Finance gives cash for se
   it("Bank transfer, Card top-up and Card money returned are never prefilled (08 names no amount)", () => {
     for (const kind of ["BANK_TRANSFER", "CARD_TOPUP", "CARD_RETURNED"] as const) {
       expect(moneyPrefill(kind, { plannedCash: 520_000n, cashCount: -30_000n })).toBeNull();
+    }
+  });
+});
+
+describe("paid by one payment type (08 Money ledger, Cash spent; Closing 2; plan of 4.5)", () => {
+  const transfer = (amount: bigint) => ({ amount, paymentType: "TRANSFER" as const });
+  it("counts the goods of records of that trip type and the extras of that type, live only", () => {
+    const records = [
+      record("10", 3_000n, [cash(5_000n)], { paymentType: "TRANSFER" }),
+      record("2", 1_000n, [transfer(4_000n)]),
+      record("5", 9_000n, [], { paymentType: "TRANSFER", isCancelled: true }),
+    ];
+    expect(paidBy(records, "TRANSFER")).toBe(30_000n + 4_000n);
+    expect(paidBy(records, "CASH")).toBe(2_000n + 5_000n);
+    expect(paidBy(records, "CARD")).toBe(0n);
+    expect(cashSpent(records)).toBe(paidBy(records, "CASH"));
+  });
+});
+
+describe("settlement blocks per payment type used (08 Closing 2; plan of 4.5, decided item 5, Look first)", () => {
+  it("a cash order of the worked example has only the Cash block, with its five figures", () => {
+    const blocks = settlementBlocks({
+      plan: NOTEBOOKS,
+      records: [record("100", 4_500n, [cash(20_000n)])],
+      rows: GIVEN,
+    });
+    expect(blocks.cash).toEqual({
+      given: 520_000n,
+      spent: 470_000n,
+      returned: 0n,
+      paidBack: 0n,
+      count: 50_000n,
+    });
+    expect(blocks.transfer).toBeNull();
+    expect(blocks.card).toBeNull();
+  });
+
+  it("a transfer order with a cash delivery has the Transfer and the Cash blocks", () => {
+    const plan: OrderPlan = { ...NOTEBOOKS, paymentType: "TRANSFER" };
+    const blocks = settlementBlocks({
+      plan,
+      records: [record("100", 5_000n, [cash(20_000n)], { paymentType: "TRANSFER" })],
+      rows: [row("BANK_TRANSFER", 500_000n), row("BANK_TRANSFER", 9_000n, true)],
+    });
+    expect(blocks.transfer).toEqual({
+      planned: 520_000n,
+      transferred: 500_000n,
+      received: 500_000n,
+    });
+    expect(blocks.cash?.spent).toBe(20_000n);
+    expect(blocks.cash?.count).toBe(-20_000n);
+    expect(blocks.card).toBeNull();
+  });
+
+  it("S9: a card order 40 000 under shows Left 40 000; charged above planned is a negative difference (Over)", () => {
+    const plan: OrderPlan = { quantity: "100", price: 4_000n, extras: [], paymentType: "CARD" };
+    const under = settlementBlocks({
+      plan,
+      records: [record("100", 3_600n, [], { paymentType: "CARD" })],
+      rows: [],
+    });
+    expect(under.card).toEqual({
+      planned: 400_000n,
+      charged: 360_000n,
+      difference: 40_000n,
+      returned: 0n,
+    });
+    const over = settlementBlocks({
+      plan,
+      records: [record("100", 4_100n, [], { paymentType: "CARD" })],
+      rows: [row("CARD_RETURNED", 1_000n)],
+    });
+    expect(over.card?.difference).toBe(-10_000n);
+    expect(over.card?.returned).toBe(1_000n);
+  });
+
+  it('S13: a Not bought cash order given 520 000 asks for 520 000 back (edge case "Cash was given but nothing was bought")', () => {
+    const blocks = settlementBlocks({ plan: NOTEBOOKS, records: [], rows: GIVEN });
+    expect(blocks.cash?.count).toBe(520_000n);
+    expect(settlementRows([{ id: "o", cashCount: blocks.cash!.count }])).toEqual([
+      { orderId: "o", kind: "CASH_RETURNED", amount: 520_000n },
+    ]);
+  });
+
+  it("a type only planned and never used has no block", () => {
+    const plan: OrderPlan = { ...NOTEBOOKS, paymentType: "CARD" };
+    const blocks = settlementBlocks({ plan, records: [record("100", 5_000n)], rows: [] });
+    expect(blocks.card).toBeNull();
+    expect(blocks.transfer).toBeNull();
+    expect(blocks.cash?.count).toBe(-500_000n);
+  });
+
+  it("cancelled rows and records use no type", () => {
+    const blocks = settlementBlocks({
+      plan: NOTEBOOKS,
+      records: [record("1", 1_000n, [], { paymentType: "CARD", isCancelled: true })],
+      rows: [row("BANK_TRANSFER", 1_000n, true), row("CASH_GIVEN", 5n, true)],
+    });
+    expect(blocks).toEqual({ cash: null, transfer: null, card: null });
+  });
+});
+
+describe("the transfer note and the confirmations (08 Closing 2; plan of 4.5, decided item 9, Look first)", () => {
+  const transferBlocks = (transferred: bigint, received: bigint) => ({
+    cash: null,
+    transfer: { planned: 0n, transferred, received },
+    card: null,
+  });
+  it("a note is needed when transferred and received differ, either way", () => {
+    expect(transferNeedsNote({ planned: 0n, transferred: 5n, received: 5n })).toBe(false);
+    expect(transferNeedsNote({ planned: 0n, transferred: 6n, received: 5n })).toBe(true);
+    expect(transferNeedsNote({ planned: 0n, transferred: 5n, received: 6n })).toBe(true);
+  });
+
+  it("a transfer ticked while it matched is not confirmed once it differs without a note", () => {
+    const stored = { transferConfirmed: true, transferNote: null, cardConfirmed: false };
+    expect(blockConfirmed("TRANSFER", transferBlocks(500n, 500n), stored)).toBe(true);
+    expect(blockConfirmed("TRANSFER", transferBlocks(600n, 500n), stored)).toBe(false);
+    expect(
+      blockConfirmed("TRANSFER", transferBlocks(600n, 500n), {
+        ...stored,
+        transferNote: "Refund owed",
+      }),
+    ).toBe(true);
+    expect(
+      blockConfirmed("TRANSFER", transferBlocks(600n, 500n), { ...stored, transferNote: "  " }),
+    ).toBe(false);
+  });
+
+  it("nothing stored, or not ticked, or no such block, is not confirmed", () => {
+    expect(blockConfirmed("TRANSFER", transferBlocks(1n, 1n), null)).toBe(false);
+    expect(
+      blockConfirmed("CARD", transferBlocks(1n, 1n), {
+        transferConfirmed: true,
+        transferNote: null,
+        cardConfirmed: true,
+      }),
+    ).toBe(false);
+    const card = {
+      cash: null,
+      transfer: null,
+      card: { planned: 0n, charged: 0n, difference: 0n, returned: 0n },
+    };
+    expect(
+      blockConfirmed("CARD", card, {
+        transferConfirmed: false,
+        transferNote: null,
+        cardConfirmed: true,
+      }),
+    ).toBe(true);
+    expect(
+      blockConfirmed("CARD", card, {
+        transferConfirmed: true,
+        transferNote: null,
+        cardConfirmed: false,
+      }),
+    ).toBe(false);
+  });
+});
+
+describe("the settlement action's rows (08 Closing 2; Money ledger 1; plan of 4.5)", () => {
+  it("drops rows of 0 and a Manager with nothing left; keeps both kinds in one block", () => {
+    expect(
+      settlementCashRows([
+        { id: "0142", ownerId: "m1", kind: "CASH_RETURNED", amount: 50_000n },
+        { id: "0143", ownerId: "m1", kind: "PAID_BACK", amount: 30_000n },
+        { id: "0200", ownerId: "m2", kind: "CASH_RETURNED", amount: 0n },
+      ]),
+    ).toEqual([
+      {
+        managerId: "m1",
+        rows: [
+          { orderId: "0142", kind: "CASH_RETURNED", amount: 50_000n },
+          { orderId: "0143", kind: "PAID_BACK", amount: 30_000n },
+        ],
+      },
+    ]);
+  });
+
+  it("refuses a negative amount", () => {
+    expect(() =>
+      settlementCashRows([{ id: "o", ownerId: "m", kind: "PAID_BACK", amount: -1n }]),
+    ).toThrow(RangeError);
+  });
+
+  it("works on orders Waiting for settlement only (06 Allowed moves)", () => {
+    expect(settlementAllows("SETTLEMENT")).toBe(true);
+    for (const status of ["PURCHASING", "CLOSED", "PENDING_FINANCE", "DRAFT"] as const) {
+      expect(settlementAllows(status)).toBe(false);
     }
   });
 });
