@@ -102,6 +102,10 @@ export const SERVER_ACTIONS: Record<string, Entry> = {
   "src/app/(app)/orders/actions.ts#finishOrdersAction": "purchase.record",
   "src/app/(app)/orders/actions.ts#markNotBoughtAction": "purchase.record",
   "src/app/(app)/orders/actions.ts#reopenBuyingAction": "purchase.record",
+  // Close of exact matches and Send to settlement (06 Allowed moves, the two rows from Open; plan
+  // of 4.4).
+  "src/app/(app)/orders/actions.ts#closeExactOrdersAction": "request.close_exact",
+  "src/app/(app)/orders/actions.ts#sendToSettlementOrdersAction": "request.send_to_settlement",
   // Cancel record and Cancel trip (plan of 3.7, decided item 5, Look first).
   "src/app/(app)/orders/actions.ts#cancelPurchaseAction": "purchase.cancel",
   "src/app/(app)/orders/actions.ts#cancelTripAction": "purchase.cancel",
