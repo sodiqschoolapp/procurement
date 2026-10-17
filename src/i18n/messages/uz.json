@@ -1493,7 +1493,11 @@
       "backToList": "Buyurtmalarga qaytish",
       "savedTrip": "{count} ta buyurtma uchun xarid saqlandi.",
       "subtype": "Sotib olingan tur",
-      "groupSubtype": "Guruh uchun sotib olingan tur"
+      "groupSubtype": "Guruh uchun sotib olingan tur",
+      "step": "{current} / {total}",
+      "next": "Keyingisi",
+      "previous": "Oldingisi",
+      "steps": "Xarid safari buyurtmalari"
     }
   }
 }
