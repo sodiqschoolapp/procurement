@@ -1035,7 +1035,8 @@
         "title": "Belgilangan buyurtmalar",
         "count": "{count} ta buyurtma",
         "countOf": "{matching} tadan {count} tasi belgilandi",
-        "clear": "Tozalash"
+        "clear": "Tozalash",
+        "recordPurchase": "Xaridni yozish"
       },
       "filters": {
         "label": "Filtrlar",
@@ -1385,7 +1386,18 @@
       },
       "back": "Buyurtmaga qaytish",
       "save": "Xaridni saqlash",
-      "saved": "Xarid saqlandi."
+      "saved": "Xarid saqlandi.",
+      "visit": "Xarid safari",
+      "owner": "Egasi",
+      "subtitleTrip": "{count} ta buyurtma · {branch}",
+      "leftOut": "Boshqa egalarning {count} ta belgilangan buyurtmasi kiritilmadi.",
+      "group": "{product}: {count} ta buyurtma, bitta miqdor va bitta narx",
+      "groupQty": "Guruh uchun miqdor, {unit}",
+      "groupPrice": "Guruh uchun birlik narxi",
+      "splitNote": "Buyurtmalarga eng eskisidan boshlab, har biriga yetmaganicha bo'linadi. Har bir buyurtma miqdorini quyida o'zgartirish mumkin.",
+      "noRecord": "0: yozuv bo'lmaydi",
+      "backToList": "Buyurtmalarga qaytish",
+      "savedTrip": "{count} ta buyurtma uchun xarid saqlandi."
     }
   }
 }

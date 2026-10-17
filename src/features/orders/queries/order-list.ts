@@ -15,7 +15,7 @@ import { type DownloadRow, orderDownloadRow } from "@/domain/order-download";
 import { type StepEvent, isOverdue } from "@/domain/order-steps";
 import { type OrdersTotals, ordersTotals, priceHintPercent } from "@/domain/order-totals";
 import type { PaymentType } from "@/domain/payment-types";
-import type { Actor } from "@/domain/permissions";
+import { type Actor, decide } from "@/domain/permissions";
 import { type Executor, authorize, authorizeList, branchFilter } from "@/server/authorize";
 import { now } from "@/server/clock";
 import {
@@ -415,6 +415,12 @@ export type TickedSummary = {
    */
   canCopy: boolean;
   /**
+   * Record purchase is offered (07 One trip, many orders; plan of 3.4, decided item 11): every
+   * ticked order is Open with its buying open, all of one branch, and the user may record at least
+   * one of them. The trip form takes the owner's orders; the server asks everything again.
+   */
+  recordTrip: boolean;
+  /**
    * Each ticked order's number and payment type, for the approve dialog: Finance may change the
    * payment type there (06 rule 1; plan of 2.10). In the list's order of numbers.
    */
@@ -439,6 +445,7 @@ export async function tickedSummary(
     totals: ordersTotals([]),
     actions: [],
     canCopy: false,
+    recordTrip: false,
     orders: [],
   };
   if (ids.length === 0) return none;
@@ -484,6 +491,19 @@ export async function tickedSummary(
       canCopy:
         found.length > 0 &&
         found.every((row) => addsDraftsIn(actor, { id: row.branchId, isActive: row.branchActive })),
+      recordTrip:
+        found.length > 0 &&
+        found.every(
+          (row) =>
+            row.status === "PURCHASING" &&
+            row.progress === "OPEN" &&
+            row.branchId === found[0]!.branchId,
+        ) &&
+        found.some(
+          (row) =>
+            decide("purchase.record", actor, { branchId: row.branchId, ownerId: row.ownerId }) ===
+            "allow",
+        ),
       orders: found
         .map((row) => ({
           id: row.id,

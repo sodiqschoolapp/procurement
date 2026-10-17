@@ -280,6 +280,17 @@ export function OrderList({
                     className="max-sm:flex-1"
                   />
                 ))}
+                {summary.recordTrip ? (
+                  // One shop visit for the ticked Open orders (07 One trip, many orders; plan of
+                  // 3.4): the form takes the user's recordable orders and asks the server again.
+                  <Link
+                    href={`/orders/purchase?ids=${summary.orders.map((order) => order.id).join(",")}`}
+                    data-record-trip
+                    className={cn(buttonVariants({ size: "sm" }), "max-sm:flex-1")}
+                  >
+                    {t("bar.recordPurchase")}
+                  </Link>
+                ) : null}
                 {summary.canCopy ? (
                   <CopyButton
                     orders={summary.orders}

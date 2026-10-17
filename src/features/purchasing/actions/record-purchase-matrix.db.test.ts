@@ -92,9 +92,9 @@ describePermissionMatrix("getPurchaseForm", {
   permission: "purchase.record",
   async run(each) {
     const order = await openOrder(each);
-    const form = await getPurchaseForm(each.user.id, order.id);
+    const form = await getPurchaseForm(each.user.id, [order.id]);
     if (!form) throw new AuthorizationError("not_found");
-    expect(form.orderId).toBe(order.id);
+    expect(form.orders.map((each) => each.orderId)).toEqual([order.id]);
   },
 });
 
@@ -110,8 +110,8 @@ describePermissionMatrix("getPurchaseForm on a numbered Draft", {
       status: "DRAFT",
       number: `TST-26-${String(Math.floor(Math.random() * 90_000) + 10_000)}`,
     });
-    expect(await getPurchaseForm(each.user.id, draft.id)).toBeNull();
-    const form = await getPurchaseForm(each.user.id, order.id);
+    expect(await getPurchaseForm(each.user.id, [draft.id])).toBeNull();
+    const form = await getPurchaseForm(each.user.id, [order.id]);
     if (!form) throw new AuthorizationError("not_found");
   },
 });

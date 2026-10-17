@@ -1035,7 +1035,8 @@
         "title": "Ticked orders",
         "count": "{count, plural, one {# order} other {# orders}}",
         "countOf": "{count} of {matching} ticked",
-        "clear": "Clear"
+        "clear": "Clear",
+        "recordPurchase": "Record purchase"
       },
       "filters": {
         "label": "Filters",
@@ -1385,7 +1386,18 @@
       },
       "back": "Back to the order",
       "save": "Save purchase",
-      "saved": "Purchase saved."
+      "saved": "Purchase saved.",
+      "visit": "The visit",
+      "owner": "Owner",
+      "subtitleTrip": "{count, plural, one {1 order} other {# orders}} · {branch}",
+      "leftOut": "{count, plural, one {1 ticked order of another owner is left out.} other {# ticked orders of other owners are left out.}}",
+      "group": "{product}: {count} orders, one quantity and one price",
+      "groupQty": "Quantity for the group, {unit}",
+      "groupPrice": "Price per unit for the group",
+      "splitNote": "Split over the orders, oldest first, each up to what it lacks. You can change each order's quantity below.",
+      "noRecord": "0: gets no record",
+      "backToList": "Back to orders",
+      "savedTrip": "{count, plural, one {Purchase saved for 1 order.} other {Purchase saved for # orders.}}"
     }
   }
 }

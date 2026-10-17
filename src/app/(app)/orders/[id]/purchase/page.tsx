@@ -13,10 +13,10 @@ import { AuthorizationError } from "@/server/authorize";
 export default async function PurchasePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const user = await requireUser(`/orders/${id}/purchase`);
-  const form = await getPurchaseForm(user.id, id).catch((error: unknown) => {
+  const form = await getPurchaseForm(user.id, [id]).catch((error: unknown) => {
     if (error instanceof AuthorizationError) return null;
     throw error;
   });
   if (!form) notFound();
-  return <PurchaseFormView form={form} />;
+  return <PurchaseFormView form={form} backHref={`/orders/${id}`} />;
 }
