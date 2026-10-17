@@ -34,7 +34,10 @@ async function withDatabase<T>(work: (client: pg.Client) => Promise<T>): Promise
  * An Open order of the owner in branch EA: 2 at 5 000 so'm, paid by card. Returns its id and today
  * in Tashkent by the database's clock, the business date the form defaults to (CLAUDE.md rule 10).
  */
-async function seedOpenOrder(owner: Person): Promise<{ orderId: string; today: string }> {
+async function seedOpenOrder(
+  owner: Person,
+  options: { subtypes?: boolean } = {},
+): Promise<{ orderId: string; today: string; otherSubtype: string | null }> {
   return withDatabase(async (client) => {
     await client.query("begin");
     try {
@@ -60,14 +63,22 @@ async function seedOpenOrder(owner: Person): Promise<{ orderId: string; today: s
       );
       const product = await client.query<{ id: string }>(
         `insert into products (name, type, category_id, unit_id, is_active, has_variants, created_at)
-         values ($1, 'GOODS', $2, $3, true, false, now()) returning id`,
-        [`Daftar ${tag}`, category.rows[0]!.id, unit.rows[0]!.id],
+         values ($1, 'GOODS', $2, $3, true, $4, now()) returning id`,
+        [`Daftar ${tag}`, category.rows[0]!.id, unit.rows[0]!.id, options.subtypes === true],
       );
+      // With subtypes, the order is for "Blue" and "Black" is the other (07 Substitution).
       const variant = await client.query<{ id: string }>(
         `insert into product_variants (product_id, name, is_default, is_active, created_at)
-         values ($1, 'default', true, true, now()) returning id`,
-        [product.rows[0]!.id],
+         values ($1, $2, $3, true, now()) returning id`,
+        [product.rows[0]!.id, options.subtypes ? "Blue" : "default", !options.subtypes],
       );
+      const other = options.subtypes
+        ? await client.query<{ id: string }>(
+            `insert into product_variants (product_id, name, is_default, is_active, created_at)
+             values ($1, 'Black', false, true, now()) returning id`,
+            [product.rows[0]!.id],
+          )
+        : null;
       const number = `EA-90-${String(Math.floor(Math.random() * 900_000) + 100_000)}`;
       const order = await client.query<{ id: string }>(
         `insert into orders (number, branch_id, owner_id, created_by, status, variant_id,
@@ -83,7 +94,11 @@ async function seedOpenOrder(owner: Person): Promise<{ orderId: string; today: s
         "select (now() at time zone 'Asia/Tashkent')::date::text as today",
       );
       await client.query("commit");
-      return { orderId: order.rows[0]!.id, today: today.rows[0]!.today };
+      return {
+        orderId: order.rows[0]!.id,
+        today: today.rows[0]!.today,
+        otherSubtype: other?.rows[0]!.id ?? null,
+      };
     } catch (error) {
       await client.query("rollback");
       throw error;
@@ -144,6 +159,31 @@ test("the owner records a purchase with Same as planned; the order shows Receive
   const event = page.locator('[data-event="RECORD_PURCHASE"]');
   await expect(event).toHaveCount(1);
   await expect(event.locator("[data-purchase]")).toContainText("2 ×");
+});
+
+test("blue ordered, black bought: the comment is asked, and the order shows Substituted (build plan 3.6; 07 Substitution; S10)", async ({
+  page,
+}, info) => {
+  const owner = E2E_PURCHASE_USERS[info.project.name as keyof typeof E2E_PURCHASE_USERS];
+  const { orderId, otherSubtype } = await seedOpenOrder(owner, { subtypes: true });
+
+  await signIn(page, owner);
+  await page.goto(`/orders/${orderId}/purchase`);
+  await page.getByRole("button", { name: f.sameAsPlanned }).click();
+  const subtype = page.locator(`#purchase-subtype-${orderId}`);
+  await expect(subtype.locator("option")).toHaveText(["Blue", "Black"]);
+  await subtype.selectOption(otherSubtype!);
+  await expect(page.locator("[data-comment-reasons]")).toHaveText(f.reasons.SUBSTITUTED);
+  await page.locator(`#purchase-comment-${orderId}`).fill("No blue in the shop");
+  expect(await scrollsSideways(page)).toBe(false);
+  await page.getByRole("button", { name: f.save }).click();
+
+  await expect(page).toHaveURL(new RegExp(`/orders/${orderId}$`));
+  await expect(page.locator("[data-substituted]")).toHaveText(en.orders.substituted);
+  await page.getByRole("link", { name: p.tabs.purchases }).click();
+  await expect(page.locator("[data-bought-subtype]")).toHaveText(
+    p.purchases.bought.replace("{subtype}", "Black"),
+  );
 });
 
 /**
