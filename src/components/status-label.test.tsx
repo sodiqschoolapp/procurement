@@ -13,6 +13,7 @@ import uz from "@/i18n/messages/uz.json";
 import {
   ColourLabel,
   type ColourLabelProps,
+  ColourLabels,
   RequestStatusLabel,
   SubstitutedLabel,
 } from "./status-label";
@@ -127,6 +128,23 @@ describe("colour labels (08 The three colours; review correction 2)", () => {
       text: "Dearer 5 so'm",
       tokens: "bg-destructive-bg",
     },
+    // Two prices that cancel out: orange with 0 (08 Price row "at or below"; plan of 3.8, item 3).
+    {
+      props: { label: "price", colour: "amber", difference: 0n },
+      text: "Cheaper 0 so'm",
+      tokens: "bg-warning-bg",
+    },
+    // A set's Number and Price: the worst colour and how many orders carry it (3.8, item 2).
+    {
+      props: { label: "number", colour: "red", orders: 2 },
+      text: "More 2 orders",
+      tokens: "bg-destructive-bg",
+    },
+    {
+      props: { label: "price", colour: "green", orders: 1 },
+      text: "Matches 1 order",
+      tokens: "bg-success-bg",
+    },
     // Grey: "In progress" for Number and Total, "Not bought yet" for Price; no amount yet.
     {
       props: { label: "number", colour: "grey" },
@@ -166,6 +184,31 @@ describe("colour labels (08 The three colours; review correction 2)", () => {
     ).toBe("Ko'p 1");
   });
 
+  it("a set's count in all three languages (plan of 3.8, decided item 2)", () => {
+    const set = <ColourLabel label="number" colour="amber" orders={5} />;
+    expect(visibleText(render(set, "ru"))).toBe("Меньше 5 заказов");
+    expect(visibleText(render(set, "uz"))).toBe(`${uz.colourLabel.number.less} 5 ta buyurtma`);
+  });
+
+  it("refuses a set's count below 1", () => {
+    expect(() => render(<ColourLabel label="price" colour="green" orders={0} />)).toThrow(
+      /at least one order/,
+    );
+  });
+
+  it("ColourLabels shows the three labels of the server's text (plan of 3.8)", () => {
+    const html = render(
+      <ColourLabels
+        colours={{
+          number: { colour: "green", difference: "0" },
+          price: { colour: "amber", difference: "50000" },
+          total: { colour: "amber", difference: "50000" },
+        }}
+      />,
+    );
+    expect(visibleText(html)).toBe("Matches 0 Cheaper 50 000 so'm Left 50 000 so'm");
+  });
+
   const refusals: { props: ColourLabelProps; needs: RegExp }[] = [
     { props: { label: "total", colour: "amber", difference: -1n }, needs: /above 0/ },
     { props: { label: "total", colour: "amber", difference: 0n }, needs: /above 0/ },
@@ -177,7 +220,7 @@ describe("colour labels (08 The three colours; review correction 2)", () => {
     { props: { label: "number", colour: "amber", difference: "0.000" }, needs: /above 0/ },
     { props: { label: "number", colour: "red", difference: "0.001" }, needs: /below 0/ },
     { props: { label: "number", colour: "green", difference: "0.001" }, needs: /exactly 0/ },
-    { props: { label: "price", colour: "amber", difference: -1n }, needs: /above 0/ },
+    { props: { label: "price", colour: "amber", difference: -1n }, needs: /0 or more/ },
     { props: { label: "price", colour: "red", difference: 1n }, needs: /below 0/ },
     { props: { label: "price", colour: "green", difference: 1n }, needs: /exactly 0/ },
   ];

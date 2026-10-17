@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 
 import { Icon, type IconName } from "@/components/icon";
 import { cn } from "@/components/utils";
+import type { Colour } from "@/domain/colours";
 import type { OrderProgress } from "@/domain/purchases";
 import type { RequestStatus } from "@/domain/request-status";
 import { useFormatters } from "@/i18n/use-formatters";
@@ -16,12 +17,15 @@ import { useFormatters } from "@/i18n/use-formatters";
 //   success, warning and danger are kept for the colour labels and alerts (plan of 0.10a,
 //   decision 8).
 // - A colour label (08-money-and-settlement.md, The three colours) shows the colour its caller
-//   gives; it decides no colour (that is src/domain/, phase 3). Green, amber and red use the
+//   gives; it decides no colour (that is src/domain/colours.ts, plan of 3.8). Green, amber and red use the
 //   success, warning and danger tokens; "orange" of 08 is drawn amber (decision 7). The word
 //   follows the colour, the amount is shown without its sign, and a difference whose sign
 //   contradicts the word is refused (review correction 2). A difference is planned minus
 //   actual: above 0 means less was bought, paid or spent (08: "A positive difference means
-//   money is left").
+//   money is left"). Price orange may show 0: two prices that cancel out are "at or below" the
+//   plan (08, Price row; plan of 3.8, decided item 3, which replaces 0.10a's "above 0").
+// - A set's Number and Price carry how many of its orders have that colour, not an amount
+//   (plan of 3.8, decided item 2).
 
 type Tone = "info" | "muted" | "green" | "amber" | "red" | "grey";
 
@@ -57,7 +61,7 @@ const COLOUR_ICONS = {
   grey: "schedule",
 } as const satisfies Record<string, IconName>;
 
-export type LabelColour = "green" | "amber" | "red";
+export type LabelColour = Colour;
 
 /** The word of each label for each colour, and for its grey state. */
 export const COLOUR_WORDS = {
@@ -69,6 +73,7 @@ export const COLOUR_WORDS = {
 export type ColourLabelProps =
   | { label: "number"; colour: LabelColour; difference: string }
   | { label: "price" | "total"; colour: LabelColour; difference: bigint }
+  | { label: "number" | "price"; colour: LabelColour; orders: number }
   | { label: "number" | "price" | "total"; colour: "grey" };
 
 const SIGN_OF_COLOUR: Record<LabelColour, -1 | 0 | 1> = { green: 0, amber: 1, red: -1 };
@@ -96,15 +101,25 @@ function splitMoney(amount: bigint): { sign: -1 | 0 | 1; magnitude: bigint } {
   };
 }
 
-function refuseContradiction(props: ColourLabelProps, sign: -1 | 0 | 1): void {
-  if (props.colour === "grey") return;
-  if (SIGN_OF_COLOUR[props.colour] !== sign) {
-    throw new Error(
-      `Refused: ${props.label} "${COLOUR_WORDS[props.label][props.colour]}" needs a difference ${
-        props.colour === "green" ? "of exactly 0" : props.colour === "amber" ? "above 0" : "below 0"
-      }.`,
-    );
-  }
+function refuseContradiction(
+  label: ColourLabelProps["label"],
+  colour: LabelColour,
+  sign: -1 | 0 | 1,
+): void {
+  // Price orange is "at or below" the plan, so 0 too (decided item 3 of 3.8).
+  const zeroAllowed = label === "price" && colour === "amber";
+  if (SIGN_OF_COLOUR[colour] === sign || (zeroAllowed && sign === 0)) return;
+  throw new Error(
+    `Refused: ${label} "${COLOUR_WORDS[label][colour]}" needs a difference ${
+      colour === "green"
+        ? "of exactly 0"
+        : zeroAllowed
+          ? "of 0 or more"
+          : colour === "amber"
+            ? "above 0"
+            : "below 0"
+    }.`,
+  );
 }
 
 function LabelBox({
@@ -220,14 +235,19 @@ export function ColourLabel(props: ColourLabelProps & { className?: string }) {
   const t = useTranslations("colourLabel");
   const format = useFormatters();
   let amount: string | null = null;
-  if (props.colour !== "grey") {
+  if ("orders" in props) {
+    if (!Number.isInteger(props.orders) || props.orders < 1) {
+      throw new Error(`Refused: a set's label counts at least one order, not ${props.orders}.`);
+    }
+    amount = t("orders", { count: props.orders });
+  } else if (props.colour !== "grey") {
     if (props.label === "number") {
       const { sign, magnitude } = splitQuantity(props.difference);
-      refuseContradiction(props, sign);
+      refuseContradiction(props.label, props.colour, sign);
       amount = format.quantity(magnitude);
     } else {
       const { sign, magnitude } = splitMoney(props.difference);
-      refuseContradiction(props, sign);
+      refuseContradiction(props.label, props.colour, sign);
       amount = format.money(magnitude);
     }
   }
@@ -241,5 +261,49 @@ export function ColourLabel(props: ColourLabelProps & { className?: string }) {
       {t(key)}
       {amount !== null && <span className="tabular-nums">{amount}</span>}
     </LabelBox>
+  );
+}
+
+/**
+ * One label as the server sends it (plan of 3.8): money as decimal text, never a JavaScript number
+ * (CLAUDE.md rule 6); a set's Number and Price as a count of orders.
+ */
+export type WireColourLabel =
+  | { colour: "grey" }
+  | { colour: LabelColour; difference: string }
+  | { colour: LabelColour; orders: number };
+
+export type WireColours = {
+  number: WireColourLabel;
+  price: WireColourLabel;
+  total: WireColourLabel;
+};
+
+function labelProps(label: "number" | "price" | "total", wire: WireColourLabel): ColourLabelProps {
+  if (wire.colour === "grey") return { label, colour: "grey" };
+  if ("orders" in wire) {
+    if (label === "total") throw new Error("Refused: Total carries the summed difference.");
+    return { label, colour: wire.colour, orders: wire.orders };
+  }
+  if (label === "number") return { label, colour: wire.colour, difference: wire.difference };
+  return { label, colour: wire.colour, difference: BigInt(wire.difference) };
+}
+
+/** Number, Price and Total of an order, a group row or ticked orders, side by side. */
+export function ColourLabels({
+  colours,
+  className,
+}: {
+  colours: WireColours;
+  className?: string;
+}) {
+  return (
+    <span data-colours className={cn("inline-flex flex-wrap gap-1", className)}>
+      {(["number", "price", "total"] as const).map((label) => (
+        <span key={label} data-colour-label={label} data-colour={colours[label].colour}>
+          <ColourLabel {...labelProps(label, colours[label])} />
+        </span>
+      ))}
+    </span>
   );
 }
