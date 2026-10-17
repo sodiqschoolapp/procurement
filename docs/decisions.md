@@ -1454,6 +1454,14 @@ The plan's decisions as the plan review of 17.10.2026 confirmed them (correction
 
 Choices made during the build: the Playwright confirmation test uses two products of its own (`ruler`, `eraser`), because the 2.7 tests read every order of their products.
 
+### 2.11b The two findings of 2.11's last review (17.10.2026)
+
+The plan's decisions as the plan review of 17.10.2026 confirmed them (corrections 1 to 3 applied). The Look first item comes first.
+
+1. **Look first** (approval order; decisions 2.11 item 8). `createdByHeadSql` is fixed in place (`c.role = 'HEAD' and number is null`) and stays a second text beside `lockOrders()`, which is raw SQL over the aliases `o` and `c` with `for update of o`, where the Drizzle column does not resolve. `order-facts.db.test.ts` reads both on the same orders and holds them together; the file's head comment names it.
+2. The test reads the fact through the fragment, selected with Drizzle over `orders` as the order page and the list select it, beside `lockOrders()`: neither query returns `createdByHead`, and no button differs (review of #61, finding 2).
+3. The migration test has its own file, its own fresh database and two journal cuts (up to 0021, then up to 0022), so 0023 to 0026 never run over its hand-made rows. It writes two old rows of one order (revisions 1 and 2) and also checks that 0022 left no default (23502).
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

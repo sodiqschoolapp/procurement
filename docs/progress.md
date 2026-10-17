@@ -993,4 +993,19 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - A Playwright step that confirms finds the button inside `getByRole("alertdialog")` with `exact: true`: the bar's "Submit (2)" stays in the page under the dialog.
 - The 2.7 Submit tests of `drafts.spec.ts` read every order of their product; a new test there uses products of its own.
 
-The next task is 2.11b.
+## 2.11b The two findings of 2.11's last review (17.10.2026, pull request #75)
+
+**Built**
+- `createdByHeadSql` reads `c.role = 'HEAD' and number is null`, as `created_by_head` of `lockOrders()`; the order page and the list's ticked summary read it.
+- `src/features/orders/order-facts.db.test.ts`: a Head's order walks Submit, Send back, Submit again, Take back; the fact reads the same on screen and server at each end.
+- `src/server/db/schema/order-revisions-0022.db.test.ts`: 0022 over rows written before it.
+
+**Left out, and the task that brings it**
+- The `/spec-change` of 03 rule 6 (decisions 2.11 item 8): the owner's, on issue #9.
+
+**What the next sessions must know**
+- A fact read by both `order-facts.ts` and `lockOrders()` changes in both, and `order-facts.db.test.ts` gets a case.
+- Take back works only at Waiting for Head: a Head's own order reaches a taken-back Draft only through Send back and Submit again.
+- A migration test over old rows cuts the journal twice (before and up to the migration), so later migrations never run over its hand-made rows.
+
+The next task is 3.6.
