@@ -89,7 +89,10 @@ export function PricePrompts({ rows }: { rows: readonly PromptRow[] }) {
               <dd className="tabular-nums">{row.referenceText}</dd>
               <dt className="text-muted-foreground">{t("prompt.average")}</dt>
               <dd className="tabular-nums">
-                {row.averageText} · {t("prompt.purchases", { count: row.count })}
+                {row.averageText}
+                <span className="block text-[13px] leading-[18px] text-muted-foreground">
+                  {t("prompt.purchases", { count: row.count })}
+                </span>
               </dd>
               <dt className="text-muted-foreground">{t("prompt.difference")}</dt>
               <dd className="font-semibold tabular-nums">
