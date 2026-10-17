@@ -499,3 +499,39 @@ describe("two actions at once (06 rule 7; the fixed lock order)", () => {
     expect(await historyOf([a!, b!, c!])).toHaveLength(2);
   });
 });
+
+describe("the facts step: read under the lock, before the check (plan of 4.4, decided item 3)", () => {
+  it("fills a fact the check and the write see, on the orders behind no wall only", async () => {
+    const there = await insertUser("MANAGER", { branches: [otherBranchId] });
+    const finished = { status: "PURCHASING", progress: "DONE" } as const;
+    const [own] = await placed(1, finished);
+    const [theirs] = await placed(1, { ...finished, branchId: otherBranchId, ownerId: there.id });
+    const reached: string[][] = [];
+    const closing = orderMoveAction({
+      name: "test CLOSE_EXACT with facts",
+      action: "CLOSE_EXACT",
+      input: withReason,
+      async facts(context) {
+        reached.push(context.orders.map((order) => order.id));
+        return context.orders.map((order) => ({ ...order, exactMatch: true }));
+      },
+    });
+
+    // Without the step the machine reads no exact match (08 Exact match): not ready.
+    const plain = expectRefused(
+      await runOrdersAction(move("CLOSE_EXACT"), manager.id, ticked([own!])),
+    );
+    expect(plain.orders).toEqual([{ orderId: own!.id, code: "not_ready" }]);
+
+    // Another branch's order is "Not found" and never reaches the step (03 rule 1).
+    const walled = expectRefused(
+      await runOrdersAction(closing, manager.id, ticked([own!, theirs!])),
+    );
+    expect(walled.orders).toEqual([{ orderId: theirs!.id, code: "not_found" }]);
+    expect(reached).toEqual([[own!.id]]);
+
+    const result = expectOk(await runOrdersAction(closing, manager.id, ticked([own!])));
+    expect(result.orders).toEqual([{ id: own!.id, status: "CLOSED" }]);
+    expect((await stateOf([own!])).get(own!.id)).toMatchObject({ status: "CLOSED" });
+  });
+});
