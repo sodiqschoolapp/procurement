@@ -85,6 +85,11 @@ export type NotificationParamsOf = {
    * by the action in `branch` (a trip is one branch), not its orders.
    */
   PURCHASE_CANCELLED: OrderActionParams;
+  /**
+   * "Recent purchases differ from the reference price by more than 20%" (plan of 3.10, decided
+   * item 8, Look first): `count` is the subtypes a purchase action made prompt in `branch`.
+   */
+  PRICE_DIFFERS: { count: number; branch: string };
   REQUEST_WAITING_24H: OrdersWaitingParams;
   REQUEST_WAITING_48H: OrdersWaitingParams;
   /** "Branch has no active user for a role": the branch's code and the role's code. */
@@ -114,6 +119,7 @@ export const NOTIFICATION_PARAMS: {
   REQUEST_CLOSED: ["actor", "count", "branch"],
   REQUEST_REOPENED: ["actor", "count", "branch"],
   PURCHASE_CANCELLED: ["actor", "count", "branch"],
+  PRICE_DIFFERS: ["count", "branch"],
   REQUEST_WAITING_24H: ["count", "hours"],
   REQUEST_WAITING_48H: ["count", "hours"],
   BRANCH_ROLE_VACANT: ["branch", "role"],

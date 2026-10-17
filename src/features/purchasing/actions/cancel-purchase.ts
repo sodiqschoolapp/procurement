@@ -28,6 +28,7 @@ import { StockShortError, postMovement } from "@/server/stock-ledger";
 
 import { actionLink, branchNotices, ownersAndHeads } from "../../orders/actions/notices";
 import { orderRecords } from "../order-records";
+import { noticePriceDiffers } from "../price-prompts";
 
 // Cancel a purchase record, or every record of one trip, while the orders are Open
 // (07-purchasing.md, Fixing a mistake; 09-warehouse.md, Stock value, third bullet; Decided ahead,
@@ -52,7 +53,8 @@ import { orderRecords } from "../order-records";
 //            Look first); each order's `actual_total`, progress and finish reason from its records
 //            (decided item 3, Look first; review correction 1)
 //   notify   one PURCHASE_CANCELLED per branch to every active Head but the actor (10
-//            Notifications; decided item 9)
+//            Notifications; decided item 9); PRICE_DIFFERS to the Heads when the cancel made a
+//            price prompt appear (plan of 3.10, decided item 8, Look first)
 //
 // The wrapper raises the versions and writes one history event per order with the reason. A
 // trip holds one record per order (3.4), so a record and its order go one to one.
@@ -416,6 +418,7 @@ function defineCancel<Input extends CancelInput>(
           },
         );
       }
+      await noticePriceDiffers(context, result.actionId, "cancelled");
     },
   });
 }

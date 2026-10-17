@@ -5,12 +5,14 @@ import * as z from "zod";
 import { AdminNav } from "@/components/admin-nav";
 import { EmptyState } from "@/components/empty-state";
 import { buttonVariants } from "@/components/ui/button";
+import { getPricePrompts } from "@/features/catalog/queries/price-prompts";
 import { listPrices } from "@/features/catalog/queries/prices";
 import { getFormatters } from "@/i18n/get-formatters";
 import { requireUser } from "@/server/auth/session";
 
 import { readOrNotFound } from "../branches/read-or-not-found";
 import { PageLinks } from "../catalog/page-links";
+import { PricePrompts, type PromptRow } from "./price-prompts";
 
 // /prices (build-plan 1.9: "under Admin, a Prices list of every subtype with its current price";
 // 04-catalogs.md rule 4; 11-screens-and-ux.md, Interface per role: "Admin groups catalogs, prices,
@@ -18,7 +20,8 @@ import { PageLinks } from "../catalog/page-links";
 // and inactive (plan of 1.9, decision 12), active first, then by product and subtype; the hidden
 // default shows as its product alone. "Set on" and "set by" are the newest HEAD row's, in Tashkent
 // time (decision 13). A row opens its price page. At phone width the table scrolls inside its
-// panel, as every catalog list. Any role but the Head: "not found" (03 rule 1).
+// panel, as every catalog list. Any role but the Head: "not found" (03 rule 1). Above the list,
+// the price prompts of 3.10 when there are any (04 rule 4; plan of 3.10, decided item 10).
 
 const pageParam = z.coerce.number().int().min(1).catch(1);
 const searchParam = z.string().trim().max(200).catch("");
@@ -36,6 +39,17 @@ export default async function PricesPage({ searchParams }: { searchParams: Promi
   const t = await getTranslations("prices");
   const tCatalog = await getTranslations("catalog");
   const format = await getFormatters();
+  const prompts: PromptRow[] = (await getPricePrompts(user.id)).map((row) => ({
+    key: `${row.variantId}/${row.branchId}`,
+    variantId: row.variantId,
+    title: row.subtypeName === null ? row.productName : `${row.productName} · ${row.subtypeName}`,
+    branchCode: row.branchCode,
+    referenceText: format.money(row.referencePrice!),
+    averageText: format.money(row.average),
+    average: row.average.toString(),
+    count: row.count,
+    percent: Number(row.percent),
+  }));
   const { page, pages } = list;
   const empty = list.found === 0 && q === "";
   const when = (moment: Date) => `${format.date(moment)} ${format.time(moment)}`;
@@ -69,6 +83,8 @@ export default async function PricesPage({ searchParams }: { searchParams: Promi
           </Link>
         )}
       </div>
+
+      {prompts.length > 0 && <PricePrompts rows={prompts} />}
 
       {empty ? (
         <EmptyState title={t("emptyTitle")} line={t("emptyText")} />
