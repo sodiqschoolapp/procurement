@@ -1783,6 +1783,8 @@ Choices made during the build:
 - The cash records of the purchase guard come from `cashRecordsByIds()`, which shares one statement with `datedCashRecordsOf()` (`src/features/purchasing/order-records.ts`), so "cash spent" is read one way.
 - The history line names both owners from the event's payload `{ owner: { from, to } }`, read in the same query as the events.
 - The browser test inserts its own two invented Managers of EA: the seed has one Manager per branch.
+- A Manager whose rights are switched off is still offered as the new owner (permission review, Should fix 1, not built): the plan review confirmed any active Manager of the branch (decided item 4), 03 says a switch only takes rights away, and leaving such Managers out would add a rule no spec line names (D44). The Head sees each Manager's switches on the user page.
+- `moveOwnerChoices()` reads the ticked orders with the branch wall and the draft wall in its SQL and answers "Not found" for any of them it cannot see before it asks the permission (permission review, Must fix 1): otherwise a colleague's draft or another branch's order answered "forbidden" where an unknown id answered "Not found".
 
 ## Process changes
 
