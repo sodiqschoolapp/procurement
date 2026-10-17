@@ -183,6 +183,8 @@ test("S7: the Principal of EA gets Not found at an EB order's address, and a for
   // Refused whole: the screen says nothing was approved (06 rule 8).
   await expect(page.getByText("Hech narsa tasdiqlanmadi", { exact: false })).toBeVisible();
   expect(forged).toBe(true);
+  // The refusal names nothing of the EB order (03 rule 1; permission review, Should fix 5).
+  await expect(page.getByText(seeded.behind.number)).toHaveCount(0);
 
   // Nothing saved on either branch: every status, version and event as before (15 S7).
   expect(await stateOf(ids)).toEqual(before);

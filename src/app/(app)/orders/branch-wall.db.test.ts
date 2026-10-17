@@ -29,7 +29,11 @@ import { type InsertedUser, insertUser } from "../../../../tests/helpers/users";
 // branch and one of another branch ticked together (build-plan 2.15: "each order action × each
 // role × own branch and other branch, alone and mixed"; 03-roles-and-permissions.md rules 1 and
 // 8; 06-approval-workflow.md rule 8; 15-quality-and-acceptance.md, Test layers: Database). The
-// alone half is actions-matrix.db.test.ts.
+// alone half is actions-matrix.db.test.ts. A move is refused behind the wall by two layers,
+// guardOrders() of src/server/order-action.ts and the state machine's judge() of
+// src/domain/order-moves.ts: where the own order is allowed, either alone keeps these cells green;
+// the guard alone is proved by the drafts and copy cells, which share it and have no state-machine
+// check, and judge() by src/domain/order-moves.test.ts (permission review of 2.15, Should fix 1).
 
 const store = vi.hoisted(() => ({ user: null as CurrentUser | null }));
 vi.mock("@/server/auth/session", () => ({ getCurrentUser: async () => store.user }));
@@ -251,12 +255,15 @@ describe("the reads of ticked ids leave another branch's order out (03 rule 1; p
       const seen = both ? [mine.id, theirs.id].sort() : [mine.id];
 
       signedIn(user);
-      const summary = await tickedSummaryAction({ ids: [mine.id, theirs.id] });
+      // An unknown id beside it: the other branch's order is missing exactly as it is
+      // (permission review of 2.15, Should fix 4).
+      const unknown = randomUUID();
+      const summary = await tickedSummaryAction({ ids: [mine.id, theirs.id, unknown] });
       expect(summary).toMatchObject({
         ok: true,
         data: {
           count: seen.length,
-          missing: both ? [] : [theirs.id],
+          missing: both ? [unknown] : [theirs.id, unknown],
           totals: { grand: String(50_000 * seen.length) },
         },
       });
@@ -267,4 +274,52 @@ describe("the reads of ticked ids leave another branch's order out (03 rule 1; p
       );
     });
   }
+});
+
+// A repeat answers from the stored first result, but the ids the browser sends pass the branch
+// wall and the draft wall again: a known key sent with another branch's order id is "Not found"
+// (.claude/rules/server-actions.md, last line; permission review of 2.15, Should fix 2).
+describe("a repeated client key sent with another branch's order id (developer-rules.md rules 4 and 8)", () => {
+  it("the Principal's own repeat answers as the first time; with the other branch's id it is not_found", async () => {
+    const own = await insertBranch();
+    const other = await insertBranch();
+    const owner = await insertUser("MANAGER", { branches: [own.id, other.id] });
+    await insertUser("PRINCIPAL", { branches: [other.id] });
+    const principal = await insertUser("PRINCIPAL", { branches: [own.id] });
+    const mine = await insertOrder({
+      branchId: own.id,
+      ownerId: owner.id,
+      status: "PENDING_PRINCIPAL",
+    });
+    const theirs = await insertOrder({
+      branchId: other.id,
+      ownerId: owner.id,
+      status: "PENDING_PRINCIPAL",
+    });
+    signedIn(principal);
+    const clientKey = newClientKey();
+    expect(
+      await approveOrdersAction({ clientKey, orders: [{ id: mine.id, version: 1 }] }),
+    ).toMatchObject({ ok: true });
+    expect(
+      await approveOrdersAction({ clientKey, orders: [{ id: mine.id, version: 1 }] }),
+    ).toMatchObject({ ok: true });
+    expect(
+      await approveOrdersAction({ clientKey, orders: [{ id: theirs.id, version: 1 }] }),
+    ).toMatchObject({ ok: false, error: { code: "not_found" } });
+    expect(
+      await approveOrdersAction({
+        clientKey,
+        orders: [
+          { id: mine.id, version: 1 },
+          { id: theirs.id, version: 1 },
+        ],
+      }),
+    ).toMatchObject({ ok: false, error: { code: "not_found" } });
+    const [row] = await db
+      .select({ status: orders.status, version: orders.version })
+      .from(orders)
+      .where(eq(orders.id, theirs.id));
+    expect(row).toEqual({ status: "PENDING_PRINCIPAL", version: 1 });
+  });
 });
