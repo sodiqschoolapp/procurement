@@ -1369,6 +1369,7 @@
         "SEND_TO_SETTLEMENT": "Hisob-kitobga",
         "SEND_BACK_FOR_CORRECTION": "Toʻgʻrilash uchun qaytarish",
         "CLOSE": "Yopish",
+        "REOPEN": "Qayta ochish",
         "ACKNOWLEDGE_OVERSPEND": "Ortiqcha xarajatni tasdiqlash"
       },
       "buttonCount": "{label} ({count})",
@@ -1385,6 +1386,7 @@
         "SEND_TO_SETTLEMENT": "{count, plural, other {# ta buyurtma hisob-kitobga yuborilsinmi?}}",
         "SEND_BACK_FOR_CORRECTION": "{count, plural, other {# ta buyurtmani toʻgʻrilash uchun qaytarasizmi?}}",
         "CLOSE": "{count, plural, other {# ta buyurtma yopilsinmi?}}",
+        "REOPEN": "{count, plural, other {# ta buyurtma qayta ochilsinmi?}}",
         "ACKNOWLEDGE_OVERSPEND": "{count, plural, other {# ta buyurtmaning ortiqcha xarajati tasdiqlansinmi?}}"
       },
       "result": {
@@ -1400,6 +1402,7 @@
         "SEND_TO_SETTLEMENT": "{count, plural, other {# ta buyurtma}} hisob-kitob uchun moliya bo'limiga o'tadi. Moliya bo'limiga xabar boradi.",
         "SEND_BACK_FOR_CORRECTION": "{count, plural, other {Buyurtmalar}} notoʻgʻri yozuvni tuzatish uchun «Ochiq» holatiga qaytadi; hisob-kitob tasdiqlari bekor qilinadi. Egasi va rahbarga xabar boradi.",
         "CLOSE": "{count, plural, other {# ta buyurtma yopiladi}} va boshqa oʻzgarmaydi. Biror buyurtma tayyor boʻlmasa, hech narsa yopilmaydi va oʻsha buyurtmalar koʻrsatiladi. Egasi, rahbar va moliya boʻlimiga xabar boradi.",
+        "REOPEN": "{count, plural, other {Buyurtma}} xatoni tuzatish uchun «Ochiq» holatiga qaytadi. Hisob-kitob tasdiqlari va ortiqcha xarajat tasdigʻi bekor qilinadi, moliya boʻlimi qayta hisob-kitob qiladi. Egasi, rahbar va moliya boʻlimiga xabar boradi.",
         "ACKNOWLEDGE_OVERSPEND": "Shundan soʻng Moliya rejadan yuqori haqiqiy summa bilan buyurtmalarni yopa oladi. Izohingiz har bir buyurtma tarixida saqlanadi, filial Moliyasiga xabar boradi."
       },
       "done": {
@@ -1415,6 +1418,7 @@
         "SEND_TO_SETTLEMENT": "{count, plural, other {# ta buyurtma hisob-kitobga yuborildi.}}",
         "SEND_BACK_FOR_CORRECTION": "{count, plural, other {# ta buyurtma toʻgʻrilash uchun qaytarildi.}}",
         "CLOSE": "{count, plural, other {# ta buyurtma yopildi.}}",
+        "REOPEN": "{count, plural, other {# ta buyurtma qayta ochildi.}}",
         "ACKNOWLEDGE_OVERSPEND": "{count, plural, other {# ta buyurtmaning ortiqcha xarajati tasdiqlandi.}}"
       },
       "failedTitle": "{count, plural, other {Hech narsa saqlanmadi: # ta buyurtma quyida ko'rsatilgan.}}",

@@ -3,18 +3,26 @@ import { randomUUID } from "node:crypto";
 import { type Page, expect, test } from "@playwright/test";
 import pg from "pg";
 
+import en from "../../src/i18n/messages/en.json" with { type: "json" };
+import ru from "../../src/i18n/messages/ru.json" with { type: "json" };
 import uz from "../../src/i18n/messages/uz.json" with { type: "json" };
 import { connectionOptions } from "../../src/server/db/connection-options.mjs";
-import { E2E_PAGE_USERS, e2eDatabaseUrl, serverDatabaseUrl } from "./global-setup";
+import { E2E_PAGE_USERS, E2E_ROLES, e2eDatabaseUrl, serverDatabaseUrl } from "./global-setup";
 
 // Build plan 4.4 (Close on an exact match), the plan's Playwright line: the Manager ticks an
 // exact-match order; the bar shows "1 of 1 match exactly" and Close; the dialog carries 08 Closing
 // 1's sentence and the result with the count (11-screens-and-ux.md rule 6); after Confirm the order
 // is Closed. Ticked with an order bought cheaper, the bar shows Send to settlement and no Close
 // (build plan 4.4, Done when). Run at 375 px and at 1440 px by the two projects; the users read
-// Uzbek.
+// Uzbek. Since 4.8 the Head reopens a Closed order from its page with a reason (06 Allowed moves,
+// Closed row; rule 3); the Head is shared with other specs, so his language is left as it is and
+// the confirm button is found by its label in any of the three languages.
 
 const t = uz.orders.moves;
+const REOPEN = new RegExp(
+  `^(${[uz, ru, en].map((messages) => messages.orders.moves.button.REOPEN).join("|")})$`,
+);
+const REOPEN_REASON = "Yopilgandan keyin xato topildi";
 
 type Person = { username: string; password: string };
 
@@ -183,4 +191,49 @@ test("the Manager closes an exact match after the confirmation; with a differenc
   await expect(page.getByText("1 ta buyurtma yopildi.")).toBeVisible();
   expect(await statusOf(seeded.exact.id)).toBe("CLOSED");
   expect(await statusOf(seeded.cheaper.id)).toBe("PURCHASING");
+});
+
+/** The order's newest REOPEN event's comment, or null. */
+async function reopenReasonOf(orderId: string): Promise<string | null> {
+  return withDatabase(async (client) => {
+    const found = await client.query<{ comment: string | null }>(
+      `select comment from order_events where order_id = $1 and type = 'REOPEN'
+        order by created_at desc limit 1`,
+      [orderId],
+    );
+    return found.rows[0]?.comment ?? null;
+  });
+}
+
+test("the Head reopens a Closed order with a reason on its page (06 Allowed moves, Closed row; rule 3; 11 rule 6)", async ({
+  page,
+}, info) => {
+  const people = E2E_PAGE_USERS[info.project.name as keyof typeof E2E_PAGE_USERS];
+  const seeded = await seedFinished(people.manager);
+  await withDatabase((client) =>
+    client.query("update orders set status = 'CLOSED', closed_at = now() where id = $1", [
+      seeded.exact.id,
+    ]),
+  );
+
+  await signIn(page, E2E_ROLES.HEAD);
+  await page.goto(`/orders/${seeded.exact.id}`);
+  const button = page.locator('[data-order-bar] [data-move="REOPEN"]');
+  await expect(button).toBeVisible();
+  expect(await scrollsSideways(page)).toBe(false);
+
+  await button.click();
+  const dialog = page.getByRole("alertdialog");
+  await expect(dialog).toBeVisible();
+  const confirm = dialog.getByRole("button", { name: REOPEN });
+  // The reason is required: 5 characters at least (06 rule 3).
+  await expect(confirm).toBeDisabled();
+  await dialog.locator("textarea[data-reason]").fill(REOPEN_REASON);
+  expect(await scrollsSideways(page)).toBe(false);
+  await confirm.click();
+  await expect(dialog).toBeHidden();
+
+  await expect.poll(() => statusOf(seeded.exact.id)).toBe("PURCHASING");
+  expect(await reopenReasonOf(seeded.exact.id)).toBe(REOPEN_REASON);
+  await expect(button).toHaveCount(0);
 });

@@ -1221,4 +1221,18 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - `acknowledge-overspend.db.test.ts` has `withGuard()`, which sets and restores both guard settings.
 - `overspend.spec.ts` signs in the shared `e2e_head` and finds labels in any language, leaving his locale alone.
 
-The next task is 4.8.
+## 4.8 Reopen (17.10.2026, pull request #88)
+
+**Built**
+- `reopenOrders` (`REOPEN`, `src/features/orders/actions/reopen.ts`): the Head reopens ticked Closed orders with one reason, all or nothing; status Open, progress kept, `closed_at` cleared, `order_settlements` confirmations, note and acknowledgment cleared (event payload `settlementCleared`); `REQUEST_REOPENED` to owners, active Heads and the branch's active Finance. Page export `reopenOrdersAction`.
+- The Reopen button through `MoveButton` on the list bar and the order page (`LIST_MOVES`, `PAGE_MOVES`), with a reason.
+
+**Left out, and the task that brings it**
+- Faulty goods returned after closing (a write-off "Returned to supplier"): Phase 5. Home lists of reopened orders: Phase 6.
+
+**What the next sessions must know**
+- A reopened order goes through the Open rows again: a cancel of a record or a money action, then Send to settlement or Close (exact match), then Finance's Close. `reopen.db.test.ts` walks the whole path with real actions and `withGuard()`.
+- Purchases recorded on another payment type or without the planned extra need a comment (07): the test helper `buy()` of `reopen.db.test.ts` always sends one.
+- `describeTickedWall` needs `owned`; a Head-only move uses `owned: false`.
+
+The next task is 4.9.

@@ -36,6 +36,7 @@ const LIST_MOVES: readonly StatusMoveKind[] = [
   "SEND_TO_SETTLEMENT",
   "SEND_BACK_FOR_CORRECTION",
   "CLOSE",
+  "REOPEN",
 ];
 
 // The group rows of /orders (05-order-request-form.md, Group rows 1 to 3; Ticking and filters;

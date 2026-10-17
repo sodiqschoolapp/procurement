@@ -74,7 +74,7 @@ export async function financeOf(tx: Transaction, branchId: string): Promise<stri
  * notification to each person told"), to the users `to` names for that branch's orders; never
  * the actor (notify()). Used by Send back, Reject and Submit again (plan of 2.11, decided item 5,
  * Look first), Send to settlement and Close (4.4), Send back for correction (4.5), the two notices
- * of the overspend guard (4.7).
+ * of the overspend guard (4.7), Reopen (4.8).
  */
 export async function noticePerBranch(
   context: {
@@ -90,6 +90,7 @@ export async function noticePerBranch(
     | "REQUEST_REJECTED"
     | "REQUEST_SENT_TO_SETTLEMENT"
     | "REQUEST_CLOSED"
+    | "REQUEST_REOPENED"
     | "OVERSPEND_ABOVE_GUARD"
     | "OVERSPEND_ACKNOWLEDGED",
   to: (ownerIds: readonly string[], branchId: string) => Promise<string[]>,
