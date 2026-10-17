@@ -8,6 +8,7 @@ import { insertAuditRow } from "../src/server/audit-row.mjs";
 import { insertPasswordUser } from "../src/server/auth/password-user.mjs";
 import { FIRST_HEAD_LOCK } from "./first-head.mjs";
 import { seedCatalogs } from "./seed-catalogs.mjs";
+import { seedOrders } from "./seed-orders.mjs";
 
 /** The variable of the local .env that holds each seed user's password (plan of 0.14, decision 3). */
 export const SEED_PASSWORD_VARIABLES = /** @type {const} */ ({
@@ -175,6 +176,7 @@ export async function seed(client, env, moment) {
     // The Head first: it is the actor of every audit row of the seed, its own included (plan of
     // 0.9, decision 4), and an audit row needs an actor that exists.
     const userLines = new Map();
+    const userIds = new Map();
     const [headUser, ...otherUsers] = SEED_USERS;
     const head = await keepOrCreateUser(
       query,
@@ -186,6 +188,7 @@ export async function seed(client, env, moment) {
       moment,
     );
     userLines.set(headUser.username, head.line);
+    userIds.set(headUser.username, head.id);
 
     const branchLines = [];
     for (const branch of SEED_BRANCHES) {
@@ -223,9 +226,13 @@ export async function seed(client, env, moment) {
         moment,
       );
       userLines.set(user.username, done.line);
+      userIds.set(user.username, done.id);
     }
 
     const catalogs = await seedCatalogs(query, { headId: head.id, branchIds, moment });
+    // The demo orders print no line, as the catalogs' rows are counted, not listed (plan of 2.15,
+    // decided item 5).
+    await seedOrders(query, { userIds, branchIds, moment });
 
     await client.query("commit");
     return {

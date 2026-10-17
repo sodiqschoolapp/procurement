@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import pg from "pg";
 import { afterAll, describe, expect, inject, it } from "vitest";
 
@@ -10,6 +11,10 @@ import {
   isShortName,
   isTaxId,
 } from "@/domain/catalogs";
+import { businessDate, businessYear, nextBusinessDate } from "@/domain/business-date";
+import { ORDER_MOVES } from "@/domain/order-moves";
+import { orderNumber } from "@/domain/order-numbers";
+import { orderTotal } from "@/domain/order-totals";
 import { isDescription, isProductType } from "@/domain/products";
 import { fullName, isFullName, isPhone, phone } from "@/domain/users";
 import { createCompany } from "@/features/catalog/actions/companies";
@@ -17,6 +22,8 @@ import { createDepartment } from "@/features/catalog/actions/departments";
 import { createProduct } from "@/features/catalog/actions/products";
 import { createSubtype } from "@/features/catalog/actions/subtypes";
 import { listProducts } from "@/features/catalog/queries/products";
+import { writeSnapshots } from "@/features/orders/actions/submit-steps";
+import { listOrderGroups } from "@/features/orders/queries/order-list";
 import { runAction } from "@/server/action";
 import { db } from "@/server/db/client";
 import { signIn } from "@/server/auth/sign-in";
@@ -31,6 +38,7 @@ import {
   SEED_MEASURES,
   SEED_PRODUCTS,
 } from "../scripts/seed-catalogs.mjs";
+import { SEED_ORDERS } from "../scripts/seed-orders.mjs";
 import { SEED_PASSWORD_VARIABLES, seed } from "../scripts/seed.mjs";
 import { runTogether } from "./helpers/together";
 import { createTestDatabase, dropTestDatabase } from "./helpers/test-database";
@@ -707,6 +715,11 @@ describe("npm run db:seed: the catalogs (build-plan 1.13; developer-rules.md rul
           [company.rows[0].id],
         );
         expect(brand.rows.map((row) => row.name)).toEqual(["Qo'lqop", "Suyuq sovun"]);
+        // The two pen orders name the subtype "Ko'k", which the hand-made Ruchka lacks: they are
+        // left out and the other five are made (plan of 2.15, decided item 5).
+        const made = await seededOrders(fresh);
+        expect(made).toHaveLength(SEED_ORDERS.length - 2);
+        expect(made.every((row) => row.client_key !== SEED_ORDERS[0]!.clientKey)).toBe(true);
       }
     });
   });
@@ -1018,3 +1031,207 @@ describe("the seed's catalogs in the app (build-plan 1.13, Done when)", () => {
     }
   });
 });
+
+// build-plan 2.15: "The seed gains a few orders in different approval statuses, two of them in
+// one group row"; plan of 2.15, decided item 5 (Look first), and the review of the plan,
+// correction 4: the seed's SQL makes the numbers and dates and holds the totals as data, so every
+// value is checked here against the domain function's own output (developer-rules.md rules 1, 2
+// and 10).
+const ORDER_TABLES = [
+  "orders",
+  "order_extras",
+  "order_revisions",
+  "order_actions",
+  "order_events",
+  "number_counters",
+];
+
+async function orderCounts(client: pg.Client): Promise<Record<string, number>> {
+  const result: Record<string, number> = {};
+  for (const table of ORDER_TABLES) {
+    const rows = await client.query<{ count: number }>(
+      `select count(*)::int as count from ${table}`,
+    );
+    result[table] = rows.rows[0]?.count ?? -1;
+  }
+  return result;
+}
+
+type SeededOrder = {
+  id: string;
+  client_key: string;
+  code: string;
+  status: string;
+  number: string | null;
+  revision: number;
+  planned_qty: string;
+  planned_price: string;
+  planned_total: string;
+  payment_type: "CASH";
+  needed_by: string;
+  submitted_at: Date | null;
+  extras: string[];
+};
+
+async function seededOrders(client: pg.Client): Promise<SeededOrder[]> {
+  const rows = await client.query<SeededOrder>(
+    `select o.id, o.client_key, b.code, o.status, o.number, o.revision, o.planned_qty::text,
+            o.planned_price::text, o.planned_total::text, o.payment_type,
+            to_char(o.needed_by, 'YYYY-MM-DD') as needed_by, o.submitted_at,
+            coalesce((select array_agg(e.amount::text) from order_extras e where e.order_id = o.id),
+                     '{}') as extras
+       from orders o join branches b on b.id = o.branch_id
+      where o.client_key = any($1::uuid[])`,
+    [SEED_ORDERS.map((order) => order.clientKey)],
+  );
+  return rows.rows;
+}
+
+describe("npm run db:seed: the orders (build-plan 2.15; plan of 2.15, decided item 5)", () => {
+  it("makes seven orders in the planned statuses, each total equal to orderTotal()", async () => {
+    await withFreshDatabase(async (connect) => {
+      const client = await connect();
+      await seed(client, ENV, MOMENT);
+      const rows = await seededOrders(client);
+      expect(rows).toHaveLength(SEED_ORDERS.length);
+      const byKey = new Map(rows.map((row) => [row.client_key, row]));
+      for (const order of SEED_ORDERS) {
+        const row = byKey.get(order.clientKey)!;
+        expect(row.code).toBe(order.branch);
+        expect(row.status).toBe(order.moves.at(-1)?.to ?? "DRAFT");
+        expect(row.planned_total).toBe(
+          orderTotal({
+            quantity: row.planned_qty,
+            price: BigInt(row.planned_price),
+            extras: row.extras.map(BigInt),
+            paymentType: row.payment_type,
+          }).toString(),
+        );
+        let date = businessDate(MOMENT);
+        for (let day = 0; day < order.neededInDays; day += 1) date = nextBusinessDate(date);
+        expect(row.needed_by).toBe(date);
+      }
+      expect(new Set(rows.map((row) => row.status))).toEqual(
+        new Set(["DRAFT", "PENDING_HEAD", "PENDING_PRINCIPAL", "PENDING_FINANCE", "RETURNED"]),
+      );
+    });
+  });
+
+  it("numbers each submitted order as orderNumber() does, from the branch's counter, the Draft none", async () => {
+    await withFreshDatabase(async (connect) => {
+      const client = await connect();
+      await seed(client, ENV, MOMENT);
+      const rows = await seededOrders(client);
+      expect(rows.filter((row) => row.status === "DRAFT").map((row) => row.number)).toEqual([null]);
+      for (const code of ["CHL", "YUN"]) {
+        const numbered = rows.filter((row) => row.code === code && row.number !== null);
+        const year = businessYear(numbered[0]!.submitted_at!);
+        expect(new Set(numbered.map((row) => businessYear(row.submitted_at!)))).toEqual(
+          new Set([year]),
+        );
+        expect(numbered.map((row) => row.number).sort()).toEqual(
+          numbered.map((_, at) => orderNumber(code, year, at + 1)),
+        );
+        const counter = await client.query<{ last_value: number }>(
+          `select c.last_value from number_counters c join branches b on b.id = c.branch_id
+            where c.scope = 'ORD' and b.code = $1 and c.year = $2`,
+          [code, year],
+        );
+        expect(counter.rows).toEqual([{ last_value: numbered.length }]);
+      }
+    });
+  });
+
+  it("writes every move as the state machine allows it, and the status is the newest move's (CLAUDE.md rule 2)", async () => {
+    await withFreshDatabase(async (connect) => {
+      const client = await connect();
+      await seed(client, ENV, MOMENT);
+      for (const row of await seededOrders(client)) {
+        const events = await client.query<{ type: string; from: string; to: string }>(
+          `select type, from_status as from, to_status as to from order_events
+            where order_id = $1 order by created_at, id`,
+          [row.id],
+        );
+        let at = "DRAFT";
+        for (const event of events.rows) {
+          expect(event.from).toBe(at);
+          expect(
+            ORDER_MOVES.some(
+              (move) =>
+                move.from === event.from && move.action === event.type && move.to === event.to,
+            ),
+          ).toBe(true);
+          at = event.to;
+        }
+        expect(row.status).toBe(at);
+        const revisions = await client.query("select 1 from order_revisions where order_id = $1", [
+          row.id,
+        ]);
+        expect(revisions.rowCount).toBe(row.status === "DRAFT" ? 0 : 1);
+      }
+    });
+  });
+
+  it("adds nothing on a second run, nor on a run in the next year (CLAUDE.md rule 8)", async () => {
+    await withFreshDatabase(async (connect) => {
+      const client = await connect();
+      await seed(client, ENV, MOMENT);
+      const first = await orderCounts(client);
+      await seed(client, ENV, MOMENT);
+      expect(await orderCounts(client)).toEqual(first);
+      await seed(client, ENV, new Date("2032-01-02T05:00:00Z"));
+      expect(await orderCounts(client)).toEqual(first);
+    });
+  });
+});
+
+describe("the seed's orders in the app (build-plan 2.15)", () => {
+  it("shows seed_head the two CHL pen orders as one group row, and each copy equals writeSnapshots()", async () => {
+    const client = await db.$client.connect();
+    try {
+      await seed(client, ENV, MOMENT);
+      const [head] = (
+        await client.query<{ id: string }>("select id from users where username = 'seed_head'")
+      ).rows;
+      const page = await listOrderGroups(head!.id);
+      const pens = page.groups.filter(
+        (group) =>
+          group.branchCode === "CHL" &&
+          group.productName === "Ruchka" &&
+          group.subtypeName === "Ko'k" &&
+          group.status === "PENDING_HEAD",
+      );
+      expect(pens).toHaveLength(1);
+      expect(pens[0]!.orders).toHaveLength(2);
+
+      // The seed's copy of each submitted plan is the one the Submit action writes.
+      for (const row of await seededOrders(client)) {
+        if (row.status === "DRAFT") continue;
+        const copies = await db
+          .transaction(async (tx) => {
+            await writeSnapshots(tx, [row.id], MOMENT);
+            const read = await tx.execute<{ submission: number; snapshot: unknown }>(
+              sql`select submission, snapshot from order_revisions
+                   where order_id = ${row.id} order by submission`,
+            );
+            throw new Rollback(read.rows);
+          })
+          .catch((error: unknown) => {
+            if (error instanceof Rollback) return error.rows;
+            throw error;
+          });
+        expect(copies.map((copy) => copy.submission)).toEqual([1, 2]);
+        expect(copies[0]!.snapshot).toEqual(copies[1]!.snapshot);
+      }
+    } finally {
+      client.release();
+    }
+  });
+});
+
+/** Undoes the transaction of a check while carrying its rows out. */
+class Rollback extends Error {
+  constructor(readonly rows: { submission: number; snapshot: unknown }[]) {
+    super("rollback");
+  }
+}
