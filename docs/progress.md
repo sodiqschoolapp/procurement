@@ -1253,4 +1253,21 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - `tests/seed.db.test.ts` checks every seeded status move with `checkMoves()`; a new seeded move needs an actor and facts that allow it.
 - `insertMoneyAction()` of `tests/helpers/money.ts` takes `occurredOn`.
 
-The next task is 4.10.
+## 4.10 Move orders to another Manager (17.10.2026, pull request #90)
+
+**Built**
+- Migration `0032_move_owner`: `MOVE_OWNER` (order actions and events). Permission `request.move_owner` (Head only).
+- Domain: `ownerMoveAllows()` (`order-moves.ts`): Waiting for Head to Waiting for settlement, Sent back included; no Draft, Closed, Rejected, Cancelled.
+- `moveOrdersToManager` (`src/features/orders/actions/move-owner.ts`): the Head, ticked orders, all or nothing; the chosen user an active Manager of every order's branch, each order's `orderCashCount()` exactly 0 and another owner; writes `owner_id`, event payload `{ owner: { from, to } }`. Page exports `moveOrdersToManagerAction`, `moveOwnerChoicesAction`.
+- `moveOwnerChoices()` (queries): the active Managers of every ticked order's branch. `tickedSummary().canMoveOwner`; `MoveOwnerButton` on the list bar; the history line "From A to B".
+- `movedSince()` (`src/features/orders/moved-since.ts`): Cancel money and the cash purchase/trip cancels are refused (`errors.field.movedSince`) after a move of one of their orders (Look first, spec change proposed).
+
+**Left out, and the task that brings it**
+- Analytics "by Manager" of a moved order: Phase 7. A warning on deactivating a user who still owns orders: not planned.
+
+**What the next sessions must know**
+- An owner change is only this action; a cancel of anything that changes a cash count asks `movedSince()` first.
+- `cashRecordsByIds()` beside `datedCashRecordsOf()` reads one record's cash effect; use it, not a second SQL.
+- Tests that write after a move advance the clock: `movedSince()` counts a write at the same moment as before the move.
+
+The next task is 5.1.
