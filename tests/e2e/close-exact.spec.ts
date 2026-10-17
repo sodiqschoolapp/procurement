@@ -163,7 +163,10 @@ test("the Manager closes an exact match after the confirmation; with a differenc
   await expect(bar.locator('[data-move="CLOSE_EXACT"]')).toHaveCount(0);
 
   // The exact match alone: Close, with the sentence and the result (08 Closing 1; 11 rule 6).
-  await cheaperGroup.locator("input[type=checkbox]").first().uncheck();
+  // Cleared through the bar: on a phone the sticky bar covers the lower row's tick box.
+  await bar.getByRole("button", { name: uz.orders.list.bar.clear }).click();
+  await expect(bar).toHaveCount(0);
+  await exactGroup.locator("input[type=checkbox]").first().check();
   await expect(bar.locator("[data-exact-count]")).toHaveText("Farqsiz: 1 / 1");
   await bar.locator('[data-move="CLOSE_EXACT"]').click();
   const dialog = page.getByRole("alertdialog");
