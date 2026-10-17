@@ -1626,7 +1626,7 @@ The plan's decisions as the plan review of 17.10.2026 confirmed them (correction
 3. **Look first** (money). No crossing for every Money tab action, against the count before the action under the orders' lock; no payment-type check and no limit on Cash given and the information kinds.
 4. **Look first** (branch wall). One Manager's orders in two branches in one call are refused whole (`errors.field.moneyOneBranch`).
 5. **Look first** (branch wall). A file only when the call saves one action (one Manager); otherwise `errors.field.fileOneManager`.
-6. **Look first** (branch wall). `MONEY_FILES`: `data.view` on the one branch of the action's orders; two branches would give no record access (only the uploader).
+6. **Look first** (branch wall). `MONEY_FILES`: `data.view` on the one branch of the action's orders; were the rows ever in two branches, the file stays held and only the Head may have it (permission review, Should fix 1; the plan said "only the uploader", which would have left the file free for another record).
 7. The owner's notice for the three cash kinds only, one per Manager and branch; `CASH_GIVEN` gains `via` (`approval`, `money`), a stored one without it reads as `approval`; nothing for the information kinds or a cancel.
 8. The date: Finance's choice, today in Tashkent by default, no limit (review correction 3); the comment 1 to 1000; the document number up to 100; no supplier.
 9. The cancel's reason is 5 to 500, as every move's.
