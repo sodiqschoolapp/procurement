@@ -103,8 +103,17 @@ export async function getPurchaseForm(
       .innerJoin(products, eq(products.id, productVariants.productId))
       .innerJoin(units, eq(units.id, products.unitId))
       .leftJoin(companies, eq(companies.id, orders.companyId))
-      .where(and(eq(orders.id, parsed.data), branchFilter(actor, orders.branchId)));
-    if (!row || row.status !== "PURCHASING" || row.progress !== "OPEN") return null;
+      .where(
+        and(
+          eq(orders.id, parsed.data),
+          branchFilter(actor, orders.branchId),
+          // Open with its buying not finished, inside the SQL: a numbered Draft is never read
+          // (the draft wall; permission review of 3.3, Should fix 1).
+          eq(orders.status, "PURCHASING"),
+          eq(orders.progress, "OPEN"),
+        ),
+      );
+    if (!row) return null;
     const decision = decide("purchase.record", actor, {
       branchId: row.branchId,
       ownerId: row.ownerId,

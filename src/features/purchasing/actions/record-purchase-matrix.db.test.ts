@@ -100,3 +100,21 @@ describePermissionMatrix("getPurchaseForm", {
     expect(form.orderId).toBe(order.id);
   },
 });
+
+// The draft wall inside the SQL (.claude/rules/tests.md: a numbered Draft is the case the matrix
+// misses; permission review of 3.3, Should fix 1): a colleague's taken-back Draft is never read.
+describePermissionMatrix("getPurchaseForm on a numbered Draft", {
+  permission: "purchase.record",
+  async run(each) {
+    const order = await openOrder(each);
+    const draft = await insertOrder({
+      branchId: each.branchId,
+      ownerId: each.ownerId,
+      status: "DRAFT",
+      number: `TST-26-${String(Math.floor(Math.random() * 90_000) + 10_000)}`,
+    });
+    expect(await getPurchaseForm(each.user.id, draft.id)).toBeNull();
+    const form = await getPurchaseForm(each.user.id, order.id);
+    if (!form) throw new AuthorizationError("not_found");
+  },
+});

@@ -21,7 +21,7 @@ import { fileForDownload } from "@/features/files/queries/file-for-download";
 import { getOrderPage } from "@/features/orders/queries/order-page";
 import { runOrdersAction } from "@/server/order-action";
 
-import { insertBranch } from "../../../../tests/helpers/branches";
+import { insertBranch, setManagerRight } from "../../../../tests/helpers/branches";
 import {
   insertCompany,
   insertFileRow,
@@ -466,6 +466,13 @@ describe("recordPurchase: receipts (07 Receipt; edge case 'No receipt photo'; 14
     await expect(fileForDownload(stranger.id, receipt.id)).rejects.toMatchObject({
       kind: "not_found",
     });
+    // The roles of several branches (permission review, Should fix 3).
+    const finance = await insertUser("FINANCE", { branches: [opened.branch.id] });
+    await expect(fileForDownload(finance.id, receipt.id)).resolves.toBeTruthy();
+    const otherManager = await insertUser("MANAGER", { branches: [otherBranch.id] });
+    await expect(fileForDownload(otherManager.id, receipt.id)).rejects.toMatchObject({
+      kind: "not_found",
+    });
   });
 });
 
@@ -603,6 +610,19 @@ describe("the order page after a record (07 What saving a record does; plan of 3
     expect(await getOrderPage(principal.id, opened.order.id)).toMatchObject({
       canRecordPurchase: false,
     });
+    // A colleague Manager, the owner's own right off, and Finance (permission review, Should fix 2).
+    const colleague = await insertUser("MANAGER", { branches: [opened.branch.id] });
+    const finance = await insertUser("FINANCE", { branches: [opened.branch.id] });
+    for (const user of [colleague, finance]) {
+      expect(await getOrderPage(user.id, opened.order.id)).toMatchObject({
+        canRecordPurchase: false,
+      });
+    }
+    await setManagerRight(opened.owner.id, "RECORD_PURCHASES", false);
+    expect(await getOrderPage(opened.owner.id, opened.order.id)).toMatchObject({
+      canRecordPurchase: false,
+    });
+    await setManagerRight(opened.owner.id, "RECORD_PURCHASES", true);
 
     expect(await record(opened, { qty: "60" })).toMatchObject({ ok: true });
     expect(await getOrderPage(principal.id, opened.order.id)).toMatchObject({
