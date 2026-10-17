@@ -145,3 +145,13 @@ export function nextBalance(balance: StockBalance, movement: StockMovement): Nex
   const avgCost = value.isNegative() ? 0n : wholeSom(value.dividedBy(after));
   return { ok: true, qty, avgCost, unitCost: movement.unitCost };
 }
+
+/**
+ * A stock line's value: quantity × moving average cost, rounded half up once to whole so'm (09
+ * Stock value; 08 Rounding; plan of 5.2, decided item 1, Look first). The one formula of the value
+ * Stock on hand shows per row; the reports of 6.x reuse it for their rows.
+ */
+export function stockValue(qty: string, avgCost: bigint): bigint {
+  if (avgCost < 0n) throw new RangeError(`An average of ${String(avgCost)}`);
+  return wholeSom(stockOf(qty).times(avgCost.toString()));
+}
