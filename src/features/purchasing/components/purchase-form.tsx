@@ -166,7 +166,9 @@ export function PurchaseFormView({ form }: { form: PurchaseForm }) {
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
-      <UnsavedChangesGuard dirty={formState.isDirty || receipts.length > 0} />
+      {/* Not while saving, so the guard's history entry is gone before the form leaves (as the
+          suggestion form does). */}
+      <UnsavedChangesGuard dirty={(formState.isDirty || receipts.length > 0) && !action.pending} />
       <header className="flex flex-col gap-1">
         <h1 className="text-[28px] leading-[34px] font-bold tracking-[-0.01em]">{t("title")}</h1>
         <p className="text-[15px] leading-[22px] text-muted-foreground">

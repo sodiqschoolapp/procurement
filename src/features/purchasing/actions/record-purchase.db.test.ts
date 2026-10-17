@@ -18,6 +18,7 @@ import {
 } from "@/server/db/schema";
 import { now } from "@/server/clock";
 import { fileForDownload } from "@/features/files/queries/file-for-download";
+import { getOrderPage } from "@/features/orders/queries/order-page";
 import { runOrdersAction } from "@/server/order-action";
 
 import { insertBranch } from "../../../../tests/helpers/branches";
@@ -583,6 +584,53 @@ describe("recordPurchase: the wrapper's rules (developer-rules.md rules 3, 8, 9;
     expect(await recordsOf(opened.order.id)).toHaveLength(1);
     expect(await balanceOf(opened.branch.id, opened.item.variantId)).toMatchObject({
       qty: "60.000",
+    });
+  });
+});
+
+describe("the order page after a record (07 What saving a record does; plan of 3.3, decided items 14 and 15)", () => {
+  it("Record purchase is offered to the owner and the Head, not to the Principal; Received and the actual total follow the records", async () => {
+    const opened = await openOrder();
+    const head = await insertUser("HEAD");
+    const principal = await insertUser("PRINCIPAL", { branches: [opened.branch.id] });
+    expect(await getOrderPage(opened.owner.id, opened.order.id)).toMatchObject({
+      canRecordPurchase: true,
+      received: "0",
+      actualTotal: 0n,
+      isService: false,
+    });
+    expect(await getOrderPage(head.id, opened.order.id)).toMatchObject({ canRecordPurchase: true });
+    expect(await getOrderPage(principal.id, opened.order.id)).toMatchObject({
+      canRecordPurchase: false,
+    });
+
+    expect(await record(opened, { qty: "60" })).toMatchObject({ ok: true });
+    expect(await getOrderPage(principal.id, opened.order.id)).toMatchObject({
+      received: "60",
+      actualTotal: 300_000n,
+    });
+    expect(await record(opened, { qty: "40" }, opened.order.version + 1)).toMatchObject({
+      ok: true,
+    });
+    // Done: the buying is finished, so the button goes (07 Finishing; decided item 3).
+    expect(await getOrderPage(opened.owner.id, opened.order.id)).toMatchObject({
+      canRecordPurchase: false,
+      received: "100",
+    });
+  });
+
+  it("a service shows Used; an order before Open has no Received", async () => {
+    const service = await openOrder({ type: "SERVICE" });
+    expect(await getOrderPage(service.owner.id, service.order.id)).toMatchObject({
+      isService: true,
+      received: "0",
+    });
+    const waiting = await openOrder();
+    await setOrderStatus(waiting.order.id, "PENDING_FINANCE");
+    expect(await getOrderPage(waiting.owner.id, waiting.order.id)).toMatchObject({
+      received: null,
+      actualTotal: null,
+      canRecordPurchase: false,
     });
   });
 });

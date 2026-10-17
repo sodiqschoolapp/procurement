@@ -67,7 +67,9 @@ export async function getPurchaseForm(
   userId: string,
   orderId: string,
 ): Promise<PurchaseForm | null> {
-  const actor = await authorizeList(userId, "purchase.record");
+  // Seeing first, so another branch's order is "Not found" for every role (03 rule 1); then the
+  // right to record on this order.
+  const actor = await authorizeList(userId, "data.view");
   const parsed = idInput.safeParse(orderId);
   if (!parsed.success) return null;
 
