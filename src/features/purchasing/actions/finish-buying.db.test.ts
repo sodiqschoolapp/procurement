@@ -114,7 +114,16 @@ async function buy(at: Scene, order: Order, qty: string, comment: string | null 
     paymentType: "CARD",
     supplierId: null,
     receiptFileIds: [],
-    lines: [{ orderId: order.id, qty, unitPrice: "5000", extras: [], comment }],
+    lines: [
+      {
+        orderId: order.id,
+        variantId: order.variantId,
+        qty,
+        unitPrice: "5000",
+        extras: [],
+        comment,
+      },
+    ],
   });
 }
 
@@ -399,7 +408,16 @@ describe("Not bought and a record of the same order at the same moment (15 Test 
         paymentType: "CARD",
         supplierId: null,
         receiptFileIds: [],
-        lines: [{ orderId: order.id, qty: "60", unitPrice: "5000", extras: [], comment: null }],
+        lines: [
+          {
+            orderId: order.id,
+            variantId: order.variantId,
+            qty: "60",
+            unitPrice: "5000",
+            extras: [],
+            comment: null,
+          },
+        ],
       });
       await waiters(holder, 1);
       const none = runOrdersAction(markNotBought, at.owner.id, {

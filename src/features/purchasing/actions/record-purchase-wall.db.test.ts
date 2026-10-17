@@ -84,6 +84,17 @@ describeTickedWall("recordPurchaseAction", {
   unchanged: purchasing,
   async run(user, ticked) {
     signedIn(user);
+    // Each line buys its order's own subtype (07 Purchase record, Subtype bought: the default).
+    const ordered = await db
+      .select({ id: orders.id, variantId: orders.variantId })
+      .from(orders)
+      .where(
+        inArray(
+          orders.id,
+          ticked.map(({ id }) => id),
+        ),
+      );
+    const variantOf = (id: string) => ordered.find((row) => row.id === id)!.variantId!;
     return wall(
       await recordPurchaseAction({
         clientKey: newClientKey(),
@@ -94,6 +105,7 @@ describeTickedWall("recordPurchaseAction", {
         receiptFileIds: [],
         lines: ticked.map(({ id }) => ({
           orderId: id,
+          variantId: variantOf(id),
           qty: "10",
           unitPrice: "5000",
           extras: [],

@@ -61,7 +61,7 @@ async function openOrder({ branchId, ownerId }: MatrixCase) {
   });
 }
 
-function input(order: { id: string; version: number }) {
+function input(order: { id: string; version: number; variantId: string }) {
   return {
     clientKey: randomUUID(),
     orders: [{ id: order.id, version: order.version }],
@@ -69,7 +69,16 @@ function input(order: { id: string; version: number }) {
     paymentType: "CASH",
     supplierId: null,
     receiptFileIds: [],
-    lines: [{ orderId: order.id, qty: "10", unitPrice: "5000", extras: [], comment: null }],
+    lines: [
+      {
+        orderId: order.id,
+        variantId: order.variantId,
+        qty: "10",
+        unitPrice: "5000",
+        extras: [],
+        comment: null,
+      },
+    ],
   };
 }
 

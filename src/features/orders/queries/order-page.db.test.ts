@@ -23,6 +23,7 @@ import {
   insertCompany,
   insertFileRow,
   insertProduct,
+  insertSubtypes,
   priceSetter,
 } from "../../../../tests/helpers/catalog";
 import { describePermissionMatrix } from "../../../../tests/helpers/permission-matrix";
@@ -555,6 +556,43 @@ describe("the Purchases tab (11 Order page layout 3; 07 Purchase record and Orde
     }
     return { tripId: trip!.id, id: made!.id };
   }
+
+  it("Substituted only while a record that is not cancelled bought another subtype (07 Substitution; plan of 3.6, decided item 3)", async () => {
+    const branch = await insertBranch();
+    const manager = await insertUser("MANAGER", { branches: [branch.id] });
+    const pens = await insertProduct();
+    const [blue, black] = await insertSubtypes(pens.id, [{ name: "Ko'k" }, { name: "Qora" }]);
+    const order = await insertOrder({
+      branchId: branch.id,
+      ownerId: manager.id,
+      status: "PURCHASING",
+      variantId: blue!,
+    });
+    // A live record of the ordered subtype and a cancelled one of black: not substituted.
+    await record({ ...order, branchId: branch.id }, manager.id, { qty: "4", unitPrice: "1" });
+    const cancelled = await record(
+      { ...order, branchId: branch.id, variantId: black! },
+      manager.id,
+      {
+        qty: "6",
+        unitPrice: "1",
+        cancelled: true,
+      },
+    );
+    let page = await getOrderPage(manager.id, order.id);
+    expect(page).toMatchObject({ substituted: false });
+    expect(page!.purchases.find((each) => each.id === cancelled.id)).toMatchObject({
+      variantId: black,
+      boughtSubtypeName: "Qora",
+      isCancelled: true,
+    });
+    await record({ ...order, branchId: branch.id, variantId: black! }, manager.id, {
+      qty: "6",
+      unitPrice: "1",
+    });
+    page = await getOrderPage(manager.id, order.id);
+    expect(page).toMatchObject({ substituted: true });
+  });
 
   it("every record newest first, with its trip's date, supplier, payment type and receipts; a cancelled one marked and left out of the numbers", async () => {
     const branch = await insertBranch();

@@ -1,8 +1,13 @@
 import { randomUUID } from "node:crypto";
 
+import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 
+import { db } from "@/server/db/client";
+import { productVariants, products } from "@/server/db/schema";
+
 import { insertBranch, setManagerRight } from "../../../../tests/helpers/branches";
+import { insertProduct, insertSubtypes } from "../../../../tests/helpers/catalog";
 import { setClock } from "../../../../tests/helpers/clock";
 import { insertItem, insertOrder } from "../../../../tests/helpers/orders";
 import { insertUser } from "../../../../tests/helpers/users";
@@ -105,5 +110,63 @@ describe("getPurchaseForm for ticked orders (07 One trip, many orders; plan of 3
     await expect(getPurchaseForm(s.manager.id, [theirs.id, mine.id])).rejects.toMatchObject({
       kind: "forbidden",
     });
+  });
+});
+
+describe("getPurchaseForm: what Subtype bought offers (07 Substitution; plan of 3.6, decided items 4 and 6)", () => {
+  async function pensOrder(names: { name: string; isActive?: boolean }[]) {
+    const s = await scene();
+    const pens = await insertProduct();
+    const ids = await insertSubtypes(pens.id, names);
+    // Another product's active subtype beside it, which is never offered (D40).
+    const other = await insertProduct();
+    await insertSubtypes(other.id, [{ name: "Boshqa" }]);
+    const order = await insertOrder({
+      branchId: s.branch.id,
+      ownerId: s.manager.id,
+      status: "PURCHASING",
+      variantId: ids[1]!,
+      approvedAt: new Date("2031-05-05T07:00:00Z"),
+    });
+    return { s, pens, ids, order };
+  }
+
+  it("the ordered subtype first, then the product's other active subtypes by name; never an inactive one or another product's", async () => {
+    const { s, ids, order } = await pensOrder([
+      { name: "Qora" },
+      { name: "Ko'k" },
+      { name: "Yashil", isActive: false },
+      { name: "Afsona" },
+    ]);
+    const form = await getPurchaseForm(s.manager.id, [order.id]);
+    expect(form?.orders[0]?.subtypes).toEqual([
+      { id: ids[1], name: "Ko'k" },
+      { id: ids[3], name: "Afsona" },
+      { id: ids[0], name: "Qora" },
+    ]);
+  });
+
+  it("the ordered subtype made inactive is still offered, first; with the product inactive, only it", async () => {
+    const { s, pens, ids, order } = await pensOrder([{ name: "Qora" }, { name: "Ko'k" }]);
+    await db
+      .update(productVariants)
+      .set({ isActive: false })
+      .where(eq(productVariants.id, ids[1]!));
+    expect((await getPurchaseForm(s.manager.id, [order.id]))?.orders[0]?.subtypes).toEqual([
+      { id: ids[1], name: "Ko'k" },
+      { id: ids[0], name: "Qora" },
+    ]);
+    await db.update(products).set({ isActive: false }).where(eq(products.id, pens.id));
+    expect((await getPurchaseForm(s.manager.id, [order.id]))?.orders[0]?.subtypes).toEqual([
+      { id: ids[1], name: "Ko'k" },
+    ]);
+  });
+
+  it("a product with only its hidden default subtype offers that one alone: no select (04 rule 1)", async () => {
+    const s = await scene();
+    const order = await s.open(s.manager.id);
+    expect((await getPurchaseForm(s.manager.id, [order.id]))?.orders[0]?.subtypes).toEqual([
+      { id: s.pens.variantId, name: "default" },
+    ]);
   });
 });

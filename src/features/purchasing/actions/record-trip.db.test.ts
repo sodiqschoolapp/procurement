@@ -95,6 +95,7 @@ function trip(
     ...shared,
     lines: ticked.map((order) => ({
       orderId: order.id,
+      variantId: order.variantId,
       qty: order.qty ?? "10",
       unitPrice: order.unitPrice ?? "5000",
       extras: order.extras ?? [],
@@ -453,8 +454,10 @@ describe("recordPurchase: one trip, many orders (07 One trip, many orders; plan 
       supplierId: null,
       receiptFileIds: [],
     };
+    // A valid subtype on every line, so only the mismatch of the ids is refused.
     const lineOf = (orderId: string) => ({
       orderId,
+      variantId: s.pens.variantId,
       qty: "10",
       unitPrice: "5000",
       extras: [],
@@ -594,8 +597,22 @@ describe("recordPurchase: one trip, many orders (07 One trip, many orders; plan 
       supplierId: null,
       receiptFileIds: [],
       lines: [
-        { orderId: s.older.id, qty: "20", unitPrice: "5000", extras: [], comment: null },
-        { orderId: s.newer.id, qty: "10", unitPrice: "5000", extras: [], comment: null },
+        {
+          orderId: s.older.id,
+          variantId: s.older.variantId,
+          qty: "20",
+          unitPrice: "5000",
+          extras: [],
+          comment: null,
+        },
+        {
+          orderId: s.newer.id,
+          variantId: s.newer.variantId,
+          qty: "10",
+          unitPrice: "5000",
+          extras: [],
+          comment: null,
+        },
       ],
     };
     const first = await runOrdersAction(recordPurchase, s.owner.id, input);
