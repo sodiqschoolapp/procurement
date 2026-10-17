@@ -390,17 +390,22 @@ describe("Cancels after a move (plan of 4.10, decided item 3, Look first; correc
   it("refuses the cancel of a cash record and of its trip written before the move", async () => {
     const s = await scene();
     const { order, purchaseId, tripId } = await movedAfterCash(s);
-    for (const [definition, field] of [
-      [cancelPurchase, { purchaseId }],
-      [cancelTrip, { tripId }],
-    ] as const) {
-      expect(
-        await runOrdersAction(definition, s.head.id, {
+    const cancels = [
+      async () =>
+        runOrdersAction(cancelPurchase, s.head.id, {
           ...(await ticked([order.id])),
-          ...field,
+          purchaseId,
           reason: REASON,
         }),
-      ).toMatchObject({
+      async () =>
+        runOrdersAction(cancelTrip, s.head.id, {
+          ...(await ticked([order.id])),
+          tripId,
+          reason: REASON,
+        }),
+    ];
+    for (const cancel of cancels) {
+      expect(await cancel()).toMatchObject({
         ok: false,
         error: { orders: [{ orderId: order.id, code: "wrong_status", fields: movedSince }] },
       });
