@@ -75,7 +75,8 @@
       "beforeApproval": "Sana buyurtma moliya tomonidan tasdiqlanishidan oldin. Shu kunni yoki keyingisini tanlang.",
       "tripOneOwner": "Bitta xarid bitta filial va bitta egasining buyurtmalarini qamraydi. Faqat ularni belgilang.",
       "otherProduct": "Buyurtma qilingan mahsulotning turini tanlang. Boshqa mahsulot uchun buyurtmani «Sotib olinmadi» deb belgilang va yangi buyurtma qoʻshing.",
-      "stockShort": "Bekor qilib boʻlmaydi: omborda yetarli emas, mahsulot allaqachon berilgan. Avval uni boʻlimdan qaytarib oling yoki hisobdan chiqaring."
+      "stockShort": "Bekor qilib boʻlmaydi: omborda yetarli emas, mahsulot allaqachon berilgan. Avval uni boʻlimdan qaytarib oling yoki hisobdan chiqaring.",
+      "cashOneBranch": "Bitta menejerga naqd pul bir vaqtda faqat bitta filial bo'yicha beriladi. Har bir filial buyurtmalarini alohida tasdiqlang yoki bitta filial naqd pulini 0 qiling."
     },
     "file": {
       "tooLarge": "Fayl 10 MB dan katta. Kichikroq fayl tanlang yoki suratni qaytadan oling.",
@@ -321,6 +322,7 @@
       "REQUEST_HEAD_APPROVED": "{branch}: xaridlar rahbari {actor} {count, plural, other {# ta buyurtmani}} tasdiqladi.",
       "REQUEST_PRINCIPAL_APPROVED": "{branch}: direktor {actor} {count, plural, other {# ta buyurtmani}} tasdiqladi.",
       "REQUEST_FINANCE_APPROVED": "{branch}: moliya ({actor}) {count, plural, other {# ta buyurtmani}} tasdiqladi.",
+      "CASH_GIVEN": "{branch}: moliya ({actor}) {count, plural, other {# ta buyurtmani}} tasdiqladi va sizga {amount} naqd pul berdi.",
       "REQUEST_SENT_BACK": "{branch}: {actor} {count, plural, other {# ta buyurtmani}} tahrirlash uchun qaytardi.",
       "REQUEST_REJECTED": "{branch}: {actor} {count, plural, other {# ta buyurtmani}} rad etdi.",
       "REQUEST_SENT_TO_SETTLEMENT": "{branch}: {actor} {count, plural, other {# ta buyurtmani}} hisob-kitobga yubordi.",

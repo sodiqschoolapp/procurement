@@ -92,6 +92,9 @@ export const FIELD_ERROR_KINDS = [
   // A cancel of a purchase record that would take stock below 0: the items were issued (07
   // Fixing a mistake 2; plan of 3.7, decided item 2, Look first).
   "stockShort",
+  // Cash given at Finance's approval to one Manager for orders of two branches: one cash action
+  // per Manager never spans two branches (plan of 4.2, decided item 5, Look first).
+  "cashOneBranch",
 ] as const;
 export type FieldErrorKind = (typeof FIELD_ERROR_KINDS)[number];
 export type FieldMessageKey = `errors.field.${FieldErrorKind}`;

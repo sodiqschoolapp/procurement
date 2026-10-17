@@ -75,7 +75,8 @@
       "beforeApproval": "The date is before Finance approved the order. Pick that day or a later one.",
       "tripOneOwner": "One purchase covers orders of one branch and one owner. Tick only those.",
       "otherProduct": "Pick a subtype of the ordered product. For another product, mark the order Not bought and add a new order.",
-      "stockShort": "Not enough in stock to cancel: the items were already issued. Take them back from the department first, or use a write-off."
+      "stockShort": "Not enough in stock to cancel: the items were already issued. Take them back from the department first, or use a write-off.",
+      "cashOneBranch": "Cash can be given to one Manager for one branch at a time. Approve each branch's orders on their own, or set the cash of one branch to 0."
     },
     "file": {
       "tooLarge": "The file is larger than 10 MB. Choose a smaller file or take the photo again.",
@@ -321,6 +322,7 @@
       "REQUEST_HEAD_APPROVED": "The Procurement Head {actor} approved {count, plural, one {# order} other {# orders}} in {branch}.",
       "REQUEST_PRINCIPAL_APPROVED": "The Principal {actor} approved {count, plural, one {# order} other {# orders}} in {branch}.",
       "REQUEST_FINANCE_APPROVED": "Finance ({actor}) approved {count, plural, one {# order} other {# orders}} in {branch}.",
+      "CASH_GIVEN": "Finance ({actor}) approved {count, plural, one {# order} other {# orders}} in {branch} and gave you {amount} in cash.",
       "REQUEST_SENT_BACK": "{actor} sent back {count, plural, one {# order} other {# orders}} in {branch} for editing.",
       "REQUEST_REJECTED": "{actor} rejected {count, plural, one {# order} other {# orders}} in {branch}.",
       "REQUEST_SENT_TO_SETTLEMENT": "{actor} sent {count, plural, one {# order} other {# orders}} in {branch} to settlement.",

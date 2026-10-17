@@ -75,6 +75,13 @@ export type NotificationParamsOf = {
   REQUEST_HEAD_APPROVED: OrderActionParams;
   REQUEST_PRINCIPAL_APPROVED: OrderActionParams;
   REQUEST_FINANCE_APPROVED: OrderActionParams;
+  /**
+   * "Cash given" at Finance's approval (plan of 4.2, decided item 4, Look first): it replaces
+   * REQUEST_FINANCE_APPROVED for an owner given cash, so that owner is told once. `count` is the
+   * approved orders in `branch`, as in that notice; `amount` the cash given to this owner in
+   * `branch`, a string of whole so'm (decision 9), formatted when shown (MONEY_PARAMS).
+   */
+  CASH_GIVEN: OrderActionParams & { amount: string };
   REQUEST_SENT_BACK: OrderActionParams;
   REQUEST_REJECTED: OrderActionParams;
   REQUEST_SENT_TO_SETTLEMENT: OrderActionParams;
@@ -113,6 +120,7 @@ export const NOTIFICATION_PARAMS: {
   REQUEST_HEAD_APPROVED: ["actor", "count", "branch"],
   REQUEST_PRINCIPAL_APPROVED: ["actor", "count", "branch"],
   REQUEST_FINANCE_APPROVED: ["actor", "count", "branch"],
+  CASH_GIVEN: ["actor", "count", "branch", "amount"],
   REQUEST_SENT_BACK: ["actor", "count", "branch"],
   REQUEST_REJECTED: ["actor", "count", "branch"],
   REQUEST_SENT_TO_SETTLEMENT: ["actor", "count", "branch"],
@@ -126,6 +134,11 @@ export const NOTIFICATION_PARAMS: {
   MANAGER_RIGHT_SWITCHED: ["right", "state"],
   PRODUCT_SUGGESTED: ["name", "branch"],
   PRODUCT_SUGGESTION_DECIDED: ["name", "outcome"],
+};
+
+/** The params that are money, a string of whole so'm, formatted as money when shown (decision 9). */
+export const MONEY_PARAMS: { readonly [Type in SendableType]?: readonly string[] } = {
+  CASH_GIVEN: ["amount"],
 };
 
 export type NotificationParamValue = string | number;

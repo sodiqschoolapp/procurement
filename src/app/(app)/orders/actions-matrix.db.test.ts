@@ -356,6 +356,22 @@ for (const [status, permission] of [
   });
 }
 
+// Finance's cash with the approval (build plan 4.2) through the same export: money.record.
+describePermissionMatrix("approveOrdersAction with cash at PENDING_FINANCE", {
+  permission: "money.record",
+  async run({ user, branchId }) {
+    const owner = await insertUser("MANAGER", { branches: [branchId] });
+    const order = await insertOrder({ branchId, ownerId: owner.id, status: "PENDING_FINANCE" });
+    signedIn(user);
+    const answer = await approveOrdersAction({
+      clientKey: newClientKey(),
+      orders: [{ id: order.id, version: order.version }],
+      cash: { [order.id]: "50000" },
+    });
+    asMatrixAnswer(answer.ok ? answer : { ok: false, error: answer.error });
+  },
+});
+
 // Send back, Reject, Cancel, Take back and Submit again (build plan 2.11) through the page's own
 // exports (.claude/rules/server-actions.md; permission review of 2.5b).
 const REASON = "Invented reason for the test";
