@@ -10,6 +10,7 @@ import {
   priceHintPercent,
   quantityOf,
   extrasSum,
+  totalsByPaymentType,
 } from "./order-totals";
 
 // 08-money-and-settlement.md, Numbers the system calculates (Planned total; "The totals of a
@@ -121,6 +122,32 @@ describe("ordersTotals (05 the totals under the list; 08 sums of the order value
   it("05 field 13: an unknown payment type throws", () => {
     const wrong = { ...plan("1", 100n), paymentType: "CHEQUE" } as unknown as OrderPlan;
     expect(() => ordersTotals([wrong])).toThrow(RangeError);
+  });
+});
+
+describe("totalsByPaymentType (08 When Finance approves: the planned totals per payment type)", () => {
+  it("the three-order example of 08 by the types Finance chose; ordersTotals() agrees", () => {
+    const plans = [
+      plan("100", 5_000n, [20_000n], "CASH"),
+      plan("50", 2_000n, [], "CASH"),
+      plan("10", 3_000n, [], "TRANSFER"),
+    ];
+    const byType = totalsByPaymentType(
+      plans.map((each) => ({ paymentType: each.paymentType, total: orderTotal(each) })),
+    );
+    expect(byType).toEqual({ CASH: 620_000n, TRANSFER: 30_000n, CARD: 0n });
+    expect(ordersTotals(plans).byPaymentType).toEqual(byType);
+  });
+
+  it("an order moved to another type moves its whole total; an unknown type throws", () => {
+    expect(totalsByPaymentType([{ paymentType: "CARD", total: 520_000n }])).toEqual({
+      CASH: 0n,
+      TRANSFER: 0n,
+      CARD: 520_000n,
+    });
+    expect(() => totalsByPaymentType([{ paymentType: "CHEQUE" as never, total: 1n }])).toThrow(
+      RangeError,
+    );
   });
 });
 

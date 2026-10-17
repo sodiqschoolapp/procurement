@@ -173,24 +173,40 @@ export function isExactMatch(order: MatchOrder): boolean {
 
 /** 08 When Finance approves: an order's planned cash, its planned total when it is Cash, else 0. */
 export function plannedCash(plan: OrderPlan): bigint {
-  return plan.paymentType === "CASH" ? orderTotal(plan) : 0n;
+  return plannedCashOf(plan.paymentType, orderTotal(plan));
+}
+
+/**
+ * The same from an order's payment type and planned total, for the Finance dialog, whose selects
+ * may change the type (plan of 4.2, decided item 6, Look first).
+ */
+export function plannedCashOf(paymentType: PaymentType, plannedTotal: bigint): bigint {
+  return paymentType === "CASH" ? plannedTotal : 0n;
+}
+
+/** 08 Money ledger: "The action's total is the sum of its rows." */
+export function actionTotal(rows: readonly { amount: bigint }[]): bigint {
+  return rows.reduce((sum, row) => sum + row.amount, 0n);
 }
 
 /** One Manager's block of the approval's table "Cash given to the Manager now". */
 export type CashBlock = { managerId: string; rows: { orderId: string; amount: bigint }[] };
 
 /**
- * 08 When Finance approves: one row per order that has planned cash, prefilled with it, one block
- * per Manager (08 Money ledger 1), blocks and rows in the order the orders are given (decided
- * item 11). Dropping rows Finance set to 0 is the approval's own step (4.2).
+ * 08 When Finance approves: the cash each Manager is given, one block per Manager (08 Money
+ * ledger 1), blocks and rows in the order the orders are given (4.1 decided item 11). An amount is
+ * the prefill (`plannedCashOf()`) or what Finance typed; "rows of 0 write nothing", so a row of 0
+ * and a block of only such rows are dropped (plan of 4.2, decided item 6, Look first). What is
+ * written and the result line's count of Managers come from here; the dialog's own rows do not,
+ * so a row set to 0 stays on the screen (review of the plan, correction 1).
  */
 export function approvalCashRows(
-  orders: readonly { id: string; ownerId: string; plan: OrderPlan }[],
+  orders: readonly { id: string; ownerId: string; amount: bigint }[],
 ): CashBlock[] {
   const blocks = new Map<string, CashBlock>();
   for (const order of orders) {
-    const amount = plannedCash(order.plan);
-    if (amount === 0n) continue;
+    if (order.amount === 0n) continue;
+    const amount = amountOf(order.amount);
     let block = blocks.get(order.ownerId);
     if (block === undefined) {
       block = { managerId: order.ownerId, rows: [] };
