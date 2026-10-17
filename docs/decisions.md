@@ -1617,6 +1617,31 @@ Choices made during the build:
 - The dialog's interactions (a row set to 0 stays, a wrong amount disables Approve, the result line follows the rows) are tested in Playwright at both widths, not in a Vitest component test as the plan said: the unit project has no DOM.
 - `money.record` and `request.approve.step3` are the same row of the matrix today, so the `money.record` check is reached alone only if they ever differ (permission review, Should fix 2); both matrix entries assert that a refused call writes no cash action (Should fix 1).
 
+### 4.3 Money tab and money actions (17.10.2026)
+
+The plan's decisions as the plan review of 17.10.2026 confirmed them (corrections 1 to 4 applied: one domain function each decides when money is recorded and when an action is cancelled; the edge case "The Manager bought before cash was given" has its own test; no refusal of a later date; the items numbered in order).
+
+1. **Look first** (status move). Money is recorded on orders Open or Waiting for settlement (`moneyRecordAllows()`); any other status is `wrong_status` (a Draft is "Not found" behind the draft wall).
+2. **Look first** (money). Prefill (`moneyPrefill()`): Cash given = `plannedCash()` whatever was given before (edge case "Finance gives cash for several orders"; D43); Cash returned = the count above 0; Paid back = the count without the minus below 0; Bank transfer and the card kinds are empty.
+3. **Look first** (money). No crossing for every Money tab action, against the count before the action under the orders' lock; no payment-type check and no limit on Cash given and the information kinds.
+4. **Look first** (branch wall). One Manager's orders in two branches in one call are refused whole (`errors.field.moneyOneBranch`).
+5. **Look first** (branch wall). A file only when the call saves one action (one Manager); otherwise `errors.field.fileOneManager`.
+6. **Look first** (branch wall). `MONEY_FILES`: `data.view` on the one branch of the action's orders; two branches would give no record access (only the uploader).
+7. The owner's notice for the three cash kinds only, one per Manager and branch; `CASH_GIVEN` gains `via` (`approval`, `money`), a stored one without it reads as `approval`; nothing for the information kinds or a cancel.
+8. The date: Finance's choice, today in Tashkent by default, no limit (review correction 3); the comment 1 to 1000; the document number up to 100; no supplier.
+9. The cancel's reason is 5 to 500, as every move's.
+10. The cancel sends exactly the action's orders with their versions (`invalid_input` otherwise); an own order with another branch's action id is "Not found".
+11. The Money tab is seen by every role that sees the order, from Open on; Record money and Cancel only for Finance of the branch.
+12. Each order's history event names the money action, its kind and the order's amount (`payload.money`); a cancel's names the action, with the reason as its comment.
+13. A cancelled action keeps its file; an action entered again takes a new upload.
+
+Choices made during the build:
+
+- The crossing check runs in the write step, after every other check has passed, and throws `OrdersRefusal("not_ready")` with `fields.amount`: a refusal there hides no other order's failure, and rolls back the `order_actions` row.
+- `Failures` of `src/server/order-action.ts` keeps the `fields` a check or inspect step gives with a code (the cancel's Closed order names "the Head reopens it first"); before, the wrapper dropped them. The whole suite passes with it, so no earlier answer changed.
+- Record money sits on the order page's action bar (as the plan says), not in the Money tab; the tab carries Cancel per action.
+- `moneyRowsOf()` is one reader of money rows for the action and the dialog; the Money tab reads its rows with their action's fields in its own query and counts them through the same `orderCashCount()`.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.
