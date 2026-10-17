@@ -105,6 +105,9 @@ export const SERVER_ACTIONS: Record<string, Entry> = {
   // Cancel record and Cancel trip (plan of 3.7, decided item 5, Look first).
   "src/app/(app)/orders/actions.ts#cancelPurchaseAction": "purchase.cancel",
   "src/app/(app)/orders/actions.ts#cancelTripAction": "purchase.cancel",
+  "src/app/(app)/orders/actions.ts#recordMoneyAction": "money.record",
+  "src/app/(app)/orders/actions.ts#cancelMoneyAction": "money.record",
+  "src/app/(app)/orders/actions.ts#moneyPrefillAction": "data.view",
 };
 
 /** Exports of `src/features/<area>/queries/`, as `<file>#<export>`. */
@@ -189,6 +192,8 @@ export const QUERIES: Record<string, Permission> = {
   // The purchase form (plan of 3.3): data.view with the branch wall in the SQL, then
   // purchase.record on the order (record-purchase-matrix.db.test.ts).
   "src/features/purchasing/queries/purchase-form.ts#getPurchaseForm": "purchase.record",
+  "src/features/money/queries/money-prefill.ts#moneyPrefillOrders": "data.view",
+  "src/features/money/queries/order-money.ts#getOrderMoney": "data.view",
 };
 
 /**
