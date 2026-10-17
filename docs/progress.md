@@ -975,4 +975,4 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - An action whose check needs rows besides the locked orders uses `inspect()`, not `write()`, so every failing order is named in one answer.
 - @react-pdf/renderer loses letters in a PDF made after a Russian one in the same process (reproduced on `main`; see the report of 3.5). `route-actual.db.test.ts` is its own file so its PDF is the process's first.
 
-The next task is 3.6.
+The next task is 2.7b.
