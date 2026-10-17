@@ -32,7 +32,7 @@ export type TickedOrder = { id: string; version: number };
 /** The answer of a page action, as far as the wall reads it. */
 export type TickedResult =
   | { ok: true }
-  | { ok: false; error: { code: string; orders?: { orderId: string; code: string }[] } };
+  | { ok: false; error: { code: string; orders?: readonly { orderId: string; code: string }[] } };
 
 export type TickedWallOptions = {
   permission: Permission;
