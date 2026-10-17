@@ -10,6 +10,10 @@ import { insertBranch } from "../../../../tests/helpers/branches";
 import { setClock } from "../../../../tests/helpers/clock";
 import { insertCategory, insertProduct, insertSubtypes } from "../../../../tests/helpers/catalog";
 import { insertUser } from "../../../../tests/helpers/users";
+import { recordPurchase } from "@/features/purchasing/actions/record-purchase";
+import { runOrdersAction } from "@/server/order-action";
+
+import { insertItem, insertOrder } from "../../../../tests/helpers/orders";
 import { listStockOnHand } from "./stock-on-hand";
 
 // Stock on hand (09-warehouse.md, Stock screens: Stock on hand; 11-screens-and-ux.md rule 8; 03
@@ -191,5 +195,52 @@ describe("listStockOnHand, the rows (09 Stock on hand and Stock value)", () => {
     expect([first.rows.length, first.page, first.pages, first.found]).toEqual([25, 1, 2, 26]);
     const last = await listStockOnHand(head.id, { q: tag }, 9);
     expect([last.page, last.rows.map((row) => row.productName)]).toEqual([2, [`${tag} 25`]]);
+  });
+});
+
+describe("listStockOnHand after a real purchase (Done when: the stock from phase 3 purchases is listed)", () => {
+  it("lists what recordPurchase received, for the branch's Principal and the Head", async () => {
+    setClock("2031-05-10T07:00:00Z");
+    const branch = await insertBranch();
+    const owner = await insertUser("MANAGER", { branches: [branch.id] });
+    const item = await insertItem();
+    const order = await insertOrder({
+      branchId: branch.id,
+      ownerId: owner.id,
+      status: "PURCHASING",
+      variantId: item.variantId,
+      plannedQty: "100",
+      plannedPrice: 5_000n,
+      paymentType: "CARD",
+      approvedAt: new Date("2031-05-05T07:00:00Z"),
+    });
+    const saved = await runOrdersAction(recordPurchase, owner.id, {
+      clientKey: randomUUID(),
+      orders: [{ id: order.id, version: order.version }],
+      purchasedOn: "2031-05-10",
+      paymentType: "CARD",
+      supplierId: null,
+      receiptFileIds: [],
+      lines: [
+        {
+          orderId: order.id,
+          variantId: order.variantId,
+          qty: "40",
+          unitPrice: "5000",
+          extras: [],
+          comment: null,
+        },
+      ],
+    });
+    expect(saved).toMatchObject({ ok: true });
+    const principal = await insertUser("PRINCIPAL", { branches: [branch.id] });
+    const head = await insertUser("HEAD");
+    for (const user of [principal, head]) {
+      const page = await listStockOnHand(user.id, { branch: branch.id });
+      // 40 received at 5 000: the average is 5 000, the value 200 000 (09 Stock value).
+      expect(
+        page.rows.map(({ variantId, quantity, value }) => ({ variantId, quantity, value })),
+      ).toEqual([{ variantId: item.variantId, quantity: "40.000", value: 200_000n }]);
+    }
   });
 });
