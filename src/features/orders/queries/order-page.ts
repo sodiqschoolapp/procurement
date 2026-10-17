@@ -25,6 +25,7 @@ import {
   actualTotal,
   buyingActions,
   difference,
+  isSubstituted,
   overPlan,
 } from "@/domain/purchases";
 import type { RequestStatus } from "@/domain/request-status";
@@ -107,6 +108,10 @@ export type OrderPageChange =
 /** One purchase record of the Purchases tab (07 Purchase record; plan of 3.5), newest first. */
 export type OrderPagePurchase = {
   id: string;
+  /** The subtype bought (07 Purchase record, Subtype bought). */
+  variantId: string;
+  /** Its name when it is not the ordered subtype (a substitution, 07 Substitution); else null. */
+  boughtSubtypeName: string | null;
   /** The trip's business date, `YYYY-MM-DD`. */
   purchasedOn: string;
   /** Plain decimal text. */
@@ -191,6 +196,8 @@ export type OrderPage = {
   actual: OrderPageActual | null;
   /** From Open on, every record, cancelled ones included (crossed out); empty before. */
   purchases: OrderPagePurchase[];
+  /** isSubstituted() of the records (07 Substitution; plan of 3.6, decided items 3 and 8). */
+  substituted: boolean;
   isService: boolean;
   /** Against today's reference price (decided item 8); null when none applies. */
   priceHint: bigint | null;
@@ -269,6 +276,7 @@ async function readPage(db: Executor, actor: Actor, id: string): Promise<OrderPa
       departmentName: departments.name,
       requesterName: orders.requesterName,
       productName: products.name,
+      variantId: orders.variantId,
       variantName: productVariants.name,
       variantIsDefault: productVariants.isDefault,
       referencePrice: productVariants.referencePrice,
@@ -379,6 +387,7 @@ async function readPage(db: Executor, actor: Actor, id: string): Promise<OrderPa
   }));
   const amounts = extras.map((extra) => extra.amount);
   const buying = BUYING_STATUSES.has(row.status);
+  const recordLines = buying ? await readPurchases(db, row.id, row.variantId) : [];
   const records = buying ? await orderRecords(db, row.id) : null;
   const received = records ? actualQuantity(records) : null;
   const total = records ? actualTotal(records) : null;
@@ -431,7 +440,8 @@ async function readPage(db: Executor, actor: Actor, id: string): Promise<OrderPa
             difference: difference(row.plannedTotal, total),
           }
         : null,
-    purchases: buying ? await readPurchases(db, row.id) : [],
+    purchases: recordLines,
+    substituted: row.variantId !== null && isSubstituted(row.variantId, recordLines),
     isService: row.productType === "SERVICE",
     priceHint: priceHintPercent(row.price, row.referencePrice, threshold),
     overdue: isOverdue(row.status, row.progress, row.neededBy, businessDate(now())),
@@ -482,11 +492,17 @@ async function readPage(db: Executor, actor: Actor, id: string): Promise<OrderPa
  * and receipt files (07 Purchase record; One trip 1), in the page's snapshot after the walls let
  * the order through. A receipt is downloaded at `/files/<id>` under `TRIP_FILES` (3.3).
  */
-async function readPurchases(db: Executor, orderId: string): Promise<OrderPagePurchase[]> {
+async function readPurchases(
+  db: Executor,
+  orderId: string,
+  orderedVariantId: string | null,
+): Promise<OrderPagePurchase[]> {
   const recorder = alias(users, "recorder");
   const rows = await db
     .select({
       id: purchases.id,
+      variantId: purchases.variantId,
+      variantName: productVariants.name,
       tripId: purchases.tripId,
       purchasedOn: purchaseTrips.purchasedOn,
       qty: purchases.qty,
@@ -502,6 +518,7 @@ async function readPurchases(db: Executor, orderId: string): Promise<OrderPagePu
     .from(purchases)
     .innerJoin(purchaseTrips, eq(purchaseTrips.id, purchases.tripId))
     .innerJoin(recorder, eq(recorder.id, purchases.createdBy))
+    .innerJoin(productVariants, eq(productVariants.id, purchases.variantId))
     .leftJoin(companies, eq(companies.id, purchaseTrips.supplierId))
     .where(eq(purchases.orderId, orderId))
     .orderBy(desc(purchases.createdAt), desc(purchases.id));
@@ -530,6 +547,8 @@ async function readPurchases(db: Executor, orderId: string): Promise<OrderPagePu
       .map(({ typeName, amount, paymentType }) => ({ typeName, amount, paymentType }));
     return {
       id: row.id,
+      variantId: row.variantId,
+      boughtSubtypeName: row.variantId === orderedVariantId ? null : row.variantName,
       purchasedOn: row.purchasedOn,
       qty: plainQuantity(row.qty),
       unitPrice: row.unitPrice,

@@ -202,6 +202,19 @@ export function ProgressLabel({
   );
 }
 
+/**
+ * "Substituted" (07-purchasing.md, Substitution; plan of 3.6, decided item 8): another subtype of
+ * the product was bought. Not a colour label, so the info token, with its icon and word.
+ */
+export function SubstitutedLabel({ className }: { className?: string }) {
+  const t = useTranslations("orders");
+  return (
+    <LabelBox tone="info" icon="swap_horiz" className={className}>
+      <span data-substituted>{t("substituted")}</span>
+    </LabelBox>
+  );
+}
+
 /** One of the three colour labels of a line or a request: Number, Price or Total. */
 export function ColourLabel(props: ColourLabelProps & { className?: string }) {
   const t = useTranslations("colourLabel");

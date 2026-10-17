@@ -19,6 +19,7 @@ import {
   progressAfterBuying,
   purchaseCommentNeeds,
   purchaseDateRefusal,
+  isSubstituted,
   sameAsPlanned,
   splitGroupQuantity,
 } from "./purchases";
@@ -425,13 +426,21 @@ describe("purchaseCommentNeeds (07 Purchase record, Comment; plan of 3.3, decide
     plannedQty: "100",
     plannedPrice: 5_000n,
     plannedPaymentType: "CARD",
+    plannedVariantId: "blue",
   };
-  const typed = (qty: string, unitPrice: bigint, paymentType: string, received = "0") => ({
+  const typed = (
+    qty: string,
+    unitPrice: bigint,
+    paymentType: string,
+    received = "0",
+    variantId = "blue",
+  ) => ({
     ...plan,
     qty,
     unitPrice,
     paymentType,
     received,
+    variantId,
   });
 
   it("a part record at the plan needs none: 60 of 100, then 40 (07, 60 on Monday and 40 on Friday)", () => {
@@ -455,6 +464,17 @@ describe("purchaseCommentNeeds (07 Purchase record, Comment; plan of 3.3, decide
 
   it("another payment type needs one (edge case 'Planned by card, paid in cash')", () => {
     expect(purchaseCommentNeeds(typed("60", 5_000n, "CASH"))).toEqual(["PAYMENT_CHANGED"]);
+  });
+
+  it("another subtype of the product needs one, the ordered one none (07 Comment: on a substitution; plan of 3.6, decided item 2)", () => {
+    expect(purchaseCommentNeeds(typed("100", 5_000n, "CARD", "0", "black"))).toEqual([
+      "SUBSTITUTED",
+    ]);
+    expect(purchaseCommentNeeds(typed("100", 5_000n, "CARD", "0", "blue"))).toEqual([]);
+    expect(purchaseCommentNeeds(typed("100", 5_500n, "CARD", "0", "black"))).toEqual([
+      "PRICE_CHANGED",
+      "SUBSTITUTED",
+    ]);
   });
 });
 
@@ -500,5 +520,22 @@ describe("sameAsPlanned (07 Purchase record, 'Same as planned'; plan of 3.3, dec
       unitPrice: 5_000n,
       extras: [],
     });
+  });
+});
+
+describe("isSubstituted (07 Substitution; 08 Exact match; plan of 3.6, decided item 3)", () => {
+  const bought = (variantId: string, isCancelled = false) => ({ variantId, isCancelled });
+
+  it("nothing bought, or only the ordered subtype: not substituted", () => {
+    expect(isSubstituted("blue", [])).toBe(false);
+    expect(isSubstituted("blue", [bought("blue"), bought("blue")])).toBe(false);
+  });
+
+  it("one record of another subtype makes the order substituted", () => {
+    expect(isSubstituted("blue", [bought("blue"), bought("black")])).toBe(true);
+  });
+
+  it("a cancelled record of another subtype does not count (08: cancelled records are left out)", () => {
+    expect(isSubstituted("blue", [bought("blue"), bought("black", true)])).toBe(false);
   });
 });

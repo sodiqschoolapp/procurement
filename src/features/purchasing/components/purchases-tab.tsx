@@ -130,6 +130,11 @@ export async function PurchasesTab({ order }: { order: OrderPage }) {
                       price: format.money(record.unitPrice),
                     })}
                   </span>
+                  {record.boughtSubtypeName ? (
+                    <span data-bought-subtype className="text-[13px] leading-[18px]">
+                      {t("bought", { subtype: record.boughtSubtypeName })}
+                    </span>
+                  ) : null}
                   {record.extras.map((extra, index) => (
                     <span key={index} className="text-[13px] leading-[18px] tabular-nums">
                       {t("extraLine", {

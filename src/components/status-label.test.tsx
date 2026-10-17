@@ -10,7 +10,12 @@ import en from "@/i18n/messages/en.json";
 import ru from "@/i18n/messages/ru.json";
 import uz from "@/i18n/messages/uz.json";
 
-import { ColourLabel, type ColourLabelProps, RequestStatusLabel } from "./status-label";
+import {
+  ColourLabel,
+  type ColourLabelProps,
+  RequestStatusLabel,
+  SubstitutedLabel,
+} from "./status-label";
 
 // 11-screens-and-ux.md rule 11 (status labels look the same everywhere; green, amber and red are
 // kept for the three labels and alerts); docs/design-system.md "This app, Status labels";
@@ -63,6 +68,18 @@ describe("request status labels (06 Statuses; 11-screens rule 11)", () => {
   it("is a rectangle with corner 6", () => {
     expect(render(<RequestStatusLabel status="DRAFT" />)).toContain("rounded-sm");
   });
+});
+
+describe("the Substituted label (07 Substitution; plan of 3.6, decided item 8)", () => {
+  for (const locale of ["uz", "ru", "en"] as const) {
+    it(`shows its ${locale} word with an icon, in the info token`, () => {
+      const html = render(<SubstitutedLabel />, locale);
+      expect(visibleText(html)).toBe(MESSAGES[locale].orders.substituted);
+      expect(html).toMatch(/<svg[^>]*aria-hidden="true"/);
+      expect(html).toContain("bg-info-bg");
+      expect(html).not.toMatch(COLOUR_TOKENS);
+    });
+  }
 });
 
 describe("colour labels (08 The three colours; review correction 2)", () => {

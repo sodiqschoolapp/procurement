@@ -49,6 +49,8 @@ export const ICONS = [
   "undo",
   "shopping_cart",
   "block",
+  // The Substituted label of an order (plan of 3.6).
+  "swap_horiz",
   "cancel",
   // The drafts grid (plan of 2.5b): delete a draft, the "Taken back" label, the reference photo.
   "delete",

@@ -290,7 +290,8 @@ export function splitGroupQuantity(
 }
 
 /** Why a purchase record needs its comment (07 Purchase record, Comment; plan of 3.3, item 1). */
-export type CommentReason = "PRICE_CHANGED" | "GIFT" | "OVER_PLAN" | "PAYMENT_CHANGED";
+export type CommentReason =
+  "PRICE_CHANGED" | "GIFT" | "OVER_PLAN" | "SUBSTITUTED" | "PAYMENT_CHANGED";
 
 /** One record as it is typed, against its order's plan and what the order has received so far. */
 export type RecordAgainstPlan = {
@@ -300,6 +301,9 @@ export type RecordAgainstPlan = {
   plannedQty: string;
   plannedPrice: bigint;
   plannedPaymentType: string;
+  /** The subtype bought, and the order's subtype (07 Purchase record, Subtype bought). */
+  variantId: string;
+  plannedVariantId: string;
   /** The actual quantity before this record, numeric(14,3) text, "0" when nothing is received. */
   received: string;
 };
@@ -308,8 +312,9 @@ export type RecordAgainstPlan = {
  * The reasons a record needs a comment, in the order of 07's Comment row (plan of 3.3, decided
  * item 1, Look first): its price differs from the planned price; a price of 0 (a gift); the
  * received quantity after it goes above the plan ("More was bought than approved"), never a part
- * record such as 60 of 100; its payment type is not the order's. Differing extra costs need none.
- * Substitution's reason comes with 3.6. The form and the server both ask this function.
+ * record such as 60 of 100; another subtype than the ordered one was bought (a substitution, plan
+ * of 3.6, decided item 2, Look first); its payment type is not the order's. Differing extra costs
+ * need none. The form and the server both ask this function.
  */
 export function purchaseCommentNeeds(record: RecordAgainstPlan): CommentReason[] {
   const reasons: CommentReason[] = [];
@@ -317,8 +322,22 @@ export function purchaseCommentNeeds(record: RecordAgainstPlan): CommentReason[]
   if (record.unitPrice === 0n) reasons.push("GIFT");
   const after = receivedOf(record.received).plus(quantityOf(record.qty));
   if (after.gt(quantityOf(record.plannedQty))) reasons.push("OVER_PLAN");
+  if (record.variantId !== record.plannedVariantId) reasons.push("SUBSTITUTED");
   if (record.paymentType !== record.plannedPaymentType) reasons.push("PAYMENT_CHANGED");
   return reasons;
+}
+
+/**
+ * Whether an order is Substituted (07 Substitution; 00-definitions, Substitution): a record that is
+ * not cancelled bought another subtype than the ordered one (plan of 3.6, decided item 3, Look
+ * first). Cancelled records are left out, as from every sum (08). 4.4's closing rules and exact
+ * match ("the subtype was not substituted", 08 Exact match) read this.
+ */
+export function isSubstituted(
+  orderedVariantId: string,
+  records: readonly { variantId: string; isCancelled: boolean }[],
+): boolean {
+  return records.some((each) => !each.isCancelled && each.variantId !== orderedVariantId);
 }
 
 /**

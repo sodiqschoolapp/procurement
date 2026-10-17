@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { Icon } from "@/components/icon";
-import { ProgressLabel, RequestStatusLabel } from "@/components/status-label";
+import { ProgressLabel, RequestStatusLabel, SubstitutedLabel } from "@/components/status-label";
 import { cn } from "@/components/utils";
 import { waitingFor } from "@/domain/order-steps";
 import { BUYING_STATUSES } from "@/domain/purchases";
@@ -240,6 +240,7 @@ export default async function OrderPageScreen({
           ) : null}
           <RequestStatusLabel status={order.status} />
           {order.status === "PURCHASING" ? <ProgressLabel progress={order.progress} /> : null}
+          {order.substituted ? <SubstitutedLabel /> : null}
           {order.priority === "URGENT" ? (
             <span className="inline-flex items-center gap-1 text-[13px] font-semibold text-destructive">
               <Icon name="warning" size={16} />

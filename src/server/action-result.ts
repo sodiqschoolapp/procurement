@@ -87,6 +87,8 @@ export const FIELD_ERROR_KINDS = [
   // A trip over orders of two branches or two owners (07 One trip, many orders; plan of 3.4,
   // decided item 2, Look first).
   "tripOneOwner",
+  // A subtype bought of another product than the ordered one (07 Substitution; plan of 3.6).
+  "otherProduct",
 ] as const;
 export type FieldErrorKind = (typeof FIELD_ERROR_KINDS)[number];
 export type FieldMessageKey = `errors.field.${FieldErrorKind}`;
