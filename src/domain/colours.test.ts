@@ -158,8 +158,9 @@ describe("which orders have colours (decided item 5)", () => {
   });
 
   it.each<RequestStatus>(["PURCHASING", "SETTLEMENT", "CLOSED"])("%s has them", (status) => {
-    expect(orderColours(order([record("100", 5_000n, [20_000n])], "DONE", NOTEBOOKS, status)))
-      .not.toBeNull();
+    expect(
+      orderColours(order([record("100", 5_000n, [20_000n])], "DONE", NOTEBOOKS, status)),
+    ).not.toBeNull();
   });
 
   it("a broken record throws, from the functions of purchases.ts", () => {

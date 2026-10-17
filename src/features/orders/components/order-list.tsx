@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { selectAllOnFilterAction, tickedSummaryAction } from "@/app/(app)/orders/actions";
 import { Icon } from "@/components/icon";
-import { RequestStatusLabel } from "@/components/status-label";
+import { ColourLabels, RequestStatusLabel } from "@/components/status-label";
 import { toast } from "@/components/toast";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/components/utils";
@@ -438,6 +438,10 @@ function GroupRows({
                 })}
               </span>
             )}
+            {/* 08 The three colours, for all of its orders (plan of 3.8). */}
+            {group.colours && (
+              <ColourLabels colours={group.colours} className="justify-end max-sm:justify-start" />
+            )}
           </span>
         </td>
         <td className={cn(cell, "text-right tabular-nums max-sm:text-left")}>
@@ -561,6 +565,10 @@ function GroupRows({
                             percent: BigInt(order.priceHint) as unknown as number,
                           })}
                         </span>
+                      )}
+                      {/* 08 The three colours of the order (plan of 3.8). */}
+                      {order.colours && (
+                        <ColourLabels colours={order.colours} className="mt-1 flex" />
                       )}
                     </td>
                     <td className="py-2 pr-3">{tPayment(order.paymentType)}</td>

@@ -3,7 +3,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { Icon } from "@/components/icon";
-import { ProgressLabel, RequestStatusLabel, SubstitutedLabel } from "@/components/status-label";
+import {
+  ColourLabels,
+  ProgressLabel,
+  RequestStatusLabel,
+  SubstitutedLabel,
+} from "@/components/status-label";
 import { cn } from "@/components/utils";
 import { waitingFor } from "@/domain/order-steps";
 import { BUYING_STATUSES } from "@/domain/purchases";
@@ -14,6 +19,7 @@ import { OrderStepper } from "@/features/orders/components/order-stepper";
 import { WhatChanged } from "@/features/orders/components/what-changed";
 import { type OrderPage, getOrderPage } from "@/features/orders/queries/order-page";
 import { PurchasesTab } from "@/features/purchasing/components/purchases-tab";
+import { wireColours } from "@/features/orders/list-wire";
 import { getFormatters } from "@/i18n/get-formatters";
 import { requireUser } from "@/server/auth/session";
 
@@ -288,6 +294,8 @@ export default async function OrderPageScreen({
             ),
           )}
         </dl>
+        {/* 08 The three colours, from Open on (11 Order page layout 1; plan of 3.8). */}
+        {order.colours ? <ColourLabels colours={wireColours(order.colours)!} /> : null}
       </header>
 
       <OrderStepper steps={order.steps} />

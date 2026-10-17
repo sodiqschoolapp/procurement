@@ -46,7 +46,10 @@ export async function orderRecords(executor: Executor, orderId: string): Promise
   return (await recordsOfOrders(executor, [orderId])).get(orderId) ?? [];
 }
 
-/** The records of a few orders by id (at most 200, the ticked orders of one action). */
+/**
+ * The records of orders by id: the ticked orders of one action (at most 200), or the orders of one
+ * page of the list, as many as their extras (plan of 3.8).
+ */
 export async function recordsOfOrders(
   executor: Executor,
   orderIds: readonly string[],

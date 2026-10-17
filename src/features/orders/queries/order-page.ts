@@ -2,6 +2,7 @@ import { and, asc, desc, eq, inArray, ne, or, sql } from "drizzle-orm";
 import { type AnyPgColumn, alias } from "drizzle-orm/pg-core";
 import * as z from "zod";
 
+import { type OrderColours, orderColours } from "@/domain/colours";
 import { businessDate } from "@/domain/business-date";
 import { isImageMime } from "@/domain/files";
 import { addsDraftsIn, inStock, plainQuantity } from "@/domain/drafts";
@@ -213,6 +214,8 @@ export type OrderPage = {
   cancelledCount: number;
   /** isSubstituted() of the records (07 Substitution; plan of 3.6, decided items 3 and 8). */
   substituted: boolean;
+  /** Number, Price and Total by orderColours(), from Open on; null before (plan of 3.8). */
+  colours: OrderColours | null;
   isService: boolean;
   /** Against today's reference price (decided item 8); null when none applies. */
   priceHint: bigint | null;
@@ -458,6 +461,21 @@ async function readPage(db: Executor, actor: Actor, id: string): Promise<OrderPa
           }
         : null,
     purchases: recordLines,
+    // From Open on the plan is complete (`orders_submitted_plan_check`).
+    colours:
+      records && row.quantity !== null && row.price !== null
+        ? orderColours({
+            status: row.status,
+            progress: row.progress,
+            plan: {
+              quantity: row.quantity,
+              price: row.price,
+              extras: amounts,
+              paymentType: row.paymentType,
+            },
+            records,
+          })
+        : null,
     cancelledCount: cancelledCount(recordLines),
     substituted: row.variantId !== null && isSubstituted(row.variantId, recordLines),
     isService: row.productType === "SERVICE",

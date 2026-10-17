@@ -134,7 +134,8 @@ export function setColours(orders: readonly ColourOrder[]): SetColours | null {
   let total: OrderLabel<bigint> = GREY;
   if (each.every((colours) => colours.total.colour !== "grey")) {
     let sum = 0n;
-    for (const colours of each) if (colours.total.colour !== "grey") sum += colours.total.difference;
+    for (const colours of each)
+      if (colours.total.colour !== "grey") sum += colours.total.difference;
     total = { colour: bySign(sum), difference: sum };
   }
   return {

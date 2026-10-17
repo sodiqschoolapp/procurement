@@ -290,13 +290,7 @@ function labelProps(label: "number" | "price" | "total", wire: WireColourLabel):
 }
 
 /** Number, Price and Total of an order, a group row or ticked orders, side by side. */
-export function ColourLabels({
-  colours,
-  className,
-}: {
-  colours: WireColours;
-  className?: string;
-}) {
+export function ColourLabels({ colours, className }: { colours: WireColours; className?: string }) {
   return (
     <span data-colours className={cn("inline-flex flex-wrap gap-1", className)}>
       {(["number", "price", "total"] as const).map((label) => (
