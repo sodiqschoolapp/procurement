@@ -4,6 +4,7 @@ export * from "./catalogs";
 export * from "./files";
 export * from "./imports";
 export * from "./jobs";
+export * from "./money";
 export * from "./orders";
 export * from "./organisation";
 export * from "./purchasing";

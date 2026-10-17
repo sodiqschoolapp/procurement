@@ -1572,6 +1572,29 @@ Choices made during the build:
 - The notice finds the action's records through its history events (`order_events.payload.purchase.id`) and reads "before" in the same transaction: the trip's records left out, or the cancelled ones counted as live. Both actions hold the subtypes FOR UPDATE since their write step, which serialises two actions on one subtype.
 - The English text says "current price" (the word of the Prices page), not "reference price".
 
+### 4.1 Money schema and domain (17.10.2026)
+
+The plan's decisions as the plan review of 17.10.2026 confirmed them (corrections 1 to 3 applied: `overspend()` reads the two settings as stored and tests in bigint; `isExactMatch()` receives the count from `orderCashCount()`; the crossing tests at count + 1 and at the count).
+
+1. **Look first.** Exact match, "the payment type is the planned one": every live record's trip and every extra of it carry the order's planned payment type; extra costs compare as sums; Number and Price green are `orderColours()`; not substituted is `isSubstituted()`.
+2. **Look first.** Cash spent: a record's goods count when its trip is Cash, each extra by its own payment type; goods are `actualGoods()`, extras `extrasSum()`.
+3. **Look first.** One row per order in an action: `UNIQUE (money_action_id, order_id)` (08: "split into rows, one per order").
+4. **Look first.** The database refuses a money row whose order's owner is not the action's Manager (`money_rows_one_manager`, on insert only).
+5. **Look first.** Overspend guard: the Head is needed when over × 100 > percent × planned and over > amount, both strict, in whole numbers; "off" never. The percent shown has one decimal, half up; `null` when the planned total is 0.
+6. **Look first.** No crossing: Cash returned ≤ count, Paid back ≤ −count, against the count before the action; the other kinds have no limit.
+7. **Look first.** Manager's cash balance: both sums over orders that are not Closed; owed is a positive amount.
+8. Settlement net: Paid back − Cash returned, as a direction and a positive amount.
+9. **Look first** (spec contradiction). `money_actions.comment` is nullable for the approval's cash action only; 4.3 and 4.5 require the comment (08 Money ledger: "and a comment"). Proposed `/spec-change` for 08 Money ledger: "one date, an optional document number, an optional file and a comment (empty on the cash action saved with the approval)".
+10. "One kind per action" is checked by the actions of 4.3 and 4.5.
+11. Prefilled cash rows: one per order with planned cash above 0, one block per owner, in the given order; dropping rows of 0 is 4.2's.
+12. `money_rows_one_manager` reads the owner on the row's insert only; the writers lock the orders first, and the owner move (4.10) needs a balance of 0.
+
+Choices made during the build:
+
+- `money_rows_one_manager` leaves an unknown action or order to its foreign key, so the key's own error is the one given.
+- The input type `CashRecord` sits in `src/domain/money-ledger.ts`; `PurchaseRecord` of `purchases.ts` is unchanged.
+- No `FILE_OWNERS` entry for `money_actions.file_id` yet: no action writes that column before 4.3, the first that attaches a file (plan, Left out; permission review Must fix 1, answered in the report).
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.
