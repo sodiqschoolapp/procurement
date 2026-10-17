@@ -10,13 +10,13 @@ import {
   companies,
   departments,
   extraCostTypes,
-  numberCounters,
   orderExtras,
   orders,
   productVariants,
   products,
   units,
 } from "@/server/db/schema";
+import { takeNumbers } from "@/server/number-counters";
 import type { Transaction } from "@/server/order-action";
 
 // The steps every submit shares (05-order-request-form.md, Order number; Checks at submit;
@@ -192,7 +192,7 @@ export function failuresOf(
 
 /**
  * One number per order, per branch per Tashkent year (05 Order number 2 and 5): the counter row
- * is taken with one upsert per branch, branches in id order; the orders get the values in the
+ * is taken with one takeNumbers() per branch, branches in id order; the orders get the values in the
  * order they were created, then by id.
  */
 export async function numbersOf(
@@ -218,15 +218,7 @@ export async function numbersOf(
         (a, b) =>
           a.createdAt.getTime() - b.createdAt.getTime() || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
       );
-    const [counter] = await tx
-      .insert(numberCounters)
-      .values({ scope: "ORD", branchId, year, lastValue: inBranch.length, createdAt: at })
-      .onConflictDoUpdate({
-        target: [numberCounters.scope, numberCounters.branchId, numberCounters.year],
-        set: { lastValue: sql`${numberCounters.lastValue} + ${inBranch.length}` },
-      })
-      .returning({ lastValue: numberCounters.lastValue });
-    const first = counter!.lastValue - inBranch.length + 1;
+    const first = await takeNumbers(tx, { scope: "ORD", branchId, year }, inBranch.length, at);
     inBranch.forEach((row, at) => {
       numbers.set(row.id, orderNumber(codeOf.get(branchId)!, year, first + at));
     });

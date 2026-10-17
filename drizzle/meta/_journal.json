@@ -232,6 +232,13 @@
       "when": 1792272038053,
       "tag": "0032_move_owner",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1792275582750,
+      "tag": "0033_stock_documents",
+      "breakpoints": true
     }
   ]
 }
