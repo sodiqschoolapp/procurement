@@ -1261,7 +1261,26 @@
         "cancelReason": "Bekor qilish sababi: {text}",
         "none": "—",
         "tripLine": "{payment} · {supplier}",
-        "bought": "Sotib olindi: {subtype}"
+        "bought": "Sotib olindi: {subtype}",
+        "cancelledCount": "{count, plural, other {# ta bekor qilingan yozuv}}",
+        "cancel": {
+          "button": {
+            "RECORD": "Yozuvni bekor qilish",
+            "TRIP": "Safarni bekor qilish ({count} ta buyurtma)"
+          },
+          "title": {
+            "RECORD": "Bu xarid yozuvi bekor qilinsinmi?",
+            "TRIP": "{count, plural, other {Safarning barcha yozuvlari, # ta buyurtma, bekor qilinsinmi?}}"
+          },
+          "result": {
+            "RECORD": "Yozuv chizilgan holda koʻrinib turadi va hech narsaga hisoblanmaydi. Qoldiq uning miqdoricha kamayadi, xaridlar rahbariga xabar boradi. Tuzatish uchun uni qaytadan kiriting.",
+            "TRIP": "Safarning barcha yozuvlari chizilgan holda koʻrinib turadi va hech narsaga hisoblanmaydi. Qoldiq har bir miqdorcha kamayadi, xaridlar rahbariga xabar boradi. Bitta yozuvni bekor qilib boʻlmasa, hech narsa bekor qilinmaydi."
+          },
+          "done": {
+            "RECORD": "Xarid yozuvi bekor qilindi.",
+            "TRIP": "{count, plural, other {# ta xarid yozuvi bekor qilindi.}}"
+          }
+        }
       }
     },
     "approve": {

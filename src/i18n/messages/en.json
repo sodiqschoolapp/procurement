@@ -1261,7 +1261,26 @@
         "cancelReason": "Cancel reason: {text}",
         "none": "—",
         "tripLine": "{payment} · {supplier}",
-        "bought": "Bought: {subtype}"
+        "bought": "Bought: {subtype}",
+        "cancelledCount": "{count, plural, one {# cancelled record} other {# cancelled records}}",
+        "cancel": {
+          "button": {
+            "RECORD": "Cancel record",
+            "TRIP": "{count, plural, one {Cancel trip (# order)} other {Cancel trip (# orders)}}"
+          },
+          "title": {
+            "RECORD": "Cancel this purchase record?",
+            "TRIP": "{count, plural, one {Cancel the trip of 1 order?} other {Cancel every record of this trip, # orders?}}"
+          },
+          "result": {
+            "RECORD": "The record stays visible, crossed out, and counts for nothing. Stock goes down by its quantity and the Procurement Head is told. To correct it, enter it again.",
+            "TRIP": "Every record of the trip stays visible, crossed out, and counts for nothing. Stock goes down by each quantity and the Procurement Head is told. Nothing is cancelled if one record cannot be."
+          },
+          "done": {
+            "RECORD": "Purchase record cancelled.",
+            "TRIP": "{count, plural, one {Cancelled 1 purchase record.} other {Cancelled # purchase records.}}"
+          }
+        }
       }
     },
     "approve": {

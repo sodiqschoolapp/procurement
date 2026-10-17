@@ -690,6 +690,67 @@ describe("the Purchases tab (11 Order page layout 3; 07 Purchase record and Orde
     expect(await buying(owner.id)).toEqual([]);
   });
 
+  it("Cancel record, Cancel trip and the cancelled count per reader (07 Fixing a mistake; plan of 3.7)", async () => {
+    const branch = await insertBranch();
+    const owner = await insertUser("MANAGER", { branches: [branch.id] });
+    const colleague = await insertUser("MANAGER", { branches: [branch.id] });
+    const principal = await insertUser("PRINCIPAL", { branches: [branch.id] });
+    const head = await insertUser("HEAD");
+    const open = () =>
+      insertOrder({ branchId: branch.id, ownerId: owner.id, status: "PURCHASING" });
+    const order = await open();
+    const partner = await open();
+    // One trip over both orders (07 One trip 1), and an earlier record of the order, cancelled.
+    const shared = await record({ ...order, branchId: branch.id }, owner.id, {
+      qty: "2",
+      unitPrice: "1",
+    });
+    await db.execute(sql`
+      insert into purchases (trip_id, order_id, branch_id, variant_id, qty, unit_price,
+        created_by, created_at)
+      values (${shared.tripId}, ${partner.id}, ${branch.id}, ${partner.variantId}, 3, 1,
+        ${owner.id}, ${later()})`);
+    const typo = await record({ ...order, branchId: branch.id }, owner.id, {
+      qty: "5",
+      unitPrice: "1",
+      cancelled: true,
+    });
+
+    const page = (await getOrderPage(owner.id, order.id))!;
+    expect(page.cancelledCount).toBe(1);
+    const sharedLine = page.purchases.find((each) => each.id === shared.id)!;
+    expect(sharedLine.canCancel).toBe(true);
+    expect(sharedLine.trip).toEqual({
+      id: shared.tripId,
+      orders: expect.arrayContaining([
+        { id: order.id, version: order.version, number: order.number },
+        { id: partner.id, version: partner.version, number: partner.number },
+      ]),
+    });
+    expect(sharedLine.trip!.orders).toHaveLength(2);
+    expect(page.purchases.find((each) => each.id === typo.id)).toMatchObject({
+      canCancel: false,
+      trip: null,
+    });
+
+    // The Head may; a colleague, the Principal and the owner with CANCEL_PURCHASES off may not.
+    const offered = async (userId: string) =>
+      (await getOrderPage(userId, order.id))!.purchases.find((each) => each.id === shared.id)!;
+    expect(await offered(head.id)).toMatchObject({ canCancel: true });
+    expect(await offered(colleague.id)).toMatchObject({ canCancel: false, trip: null });
+    expect(await offered(principal.id)).toMatchObject({ canCancel: false, trip: null });
+    await setManagerRight(owner.id, "CANCEL_PURCHASES", false);
+    expect(await offered(owner.id)).toMatchObject({ canCancel: false, trip: null });
+    await setManagerRight(owner.id, "CANCEL_PURCHASES", true);
+
+    // A trip order that is no longer Open: Cancel record stays, Cancel trip is not offered.
+    await db.update(orders).set({ status: "SETTLEMENT" }).where(eq(orders.id, partner.id));
+    expect(await offered(owner.id)).toMatchObject({ canCancel: true, trip: null });
+    // From Waiting for settlement on, nothing is offered on the order itself.
+    await db.update(orders).set({ status: "SETTLEMENT" }).where(eq(orders.id, order.id));
+    expect(await offered(owner.id)).toMatchObject({ canCancel: false, trip: null });
+  });
+
   it("before Open there is no tab data: no records, no actual numbers, no buying actions", async () => {
     const branch = await insertBranch();
     const manager = await insertUser("MANAGER", { branches: [branch.id] });

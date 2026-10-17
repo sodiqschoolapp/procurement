@@ -34,6 +34,7 @@ import {
   markNotBought,
   reopenBuying,
 } from "@/features/purchasing/actions/finish-buying";
+import { cancelPurchase, cancelTrip } from "@/features/purchasing/actions/cancel-purchase";
 import { newestMoves } from "@/features/orders/queries/newest-moves";
 import { submittedNumbers } from "@/features/orders/queries/submitted";
 import { selectAllOnFilter, tickedSummary } from "@/features/orders/queries/order-list";
@@ -69,6 +70,8 @@ const copyAsNew = copyServerAction(copyOrdersAsNew);
 const finish = ordersServerAction(finishOrders);
 const notBought = ordersServerAction(markNotBought);
 const reopen = ordersServerAction(reopenBuying);
+const cancelRecord = ordersServerAction(cancelPurchase);
+const cancelWholeTrip = ordersServerAction(cancelTrip);
 
 /** A query as an answer: a refusal of authorize() or of the input is returned, never thrown. */
 async function asked<T>(read: (userId: string) => Promise<T>): Promise<ActionResult<T>> {
@@ -264,6 +267,16 @@ export async function markNotBoughtAction(input: unknown): Promise<MoveAnswer> {
 /** Reopens the buying of the ticked finished Open orders (07 Order progress; plan of 3.5). */
 export async function reopenBuyingAction(input: unknown): Promise<MoveAnswer> {
   return moveAnswer(reopen, input);
+}
+
+/** Cancels one purchase record of an Open order, with a reason (07 Fixing a mistake; plan of 3.7). */
+export async function cancelPurchaseAction(input: unknown): Promise<MoveAnswer> {
+  return moveAnswer(cancelRecord, input);
+}
+
+/** Cancels every record of one trip, all or nothing, with a reason (07 Fixing a mistake; 3.7). */
+export async function cancelTripAction(input: unknown): Promise<MoveAnswer> {
+  return moveAnswer(cancelWholeTrip, input);
 }
 
 /** What Copy as new answers: each ticked order's draft, and for a merge the quantity after it. */

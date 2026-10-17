@@ -6,12 +6,16 @@ import { cn } from "@/components/utils";
 import type { OrderPage } from "@/features/orders/queries/order-page";
 import { getFormatters } from "@/i18n/get-formatters";
 
+import { CancelPurchaseButton } from "./cancel-purchase-button";
+
 // The Purchases tab of the order page (11-screens-and-ux.md, Order page layout 3; 07-purchasing.md,
 // Purchase record and Order progress; plan of 3.5): the progress with its reason, received of
 // planned (red with an icon and a word when more than planned was bought), the actual numbers and
 // every record, newest first, a cancelled one crossed out. Every number comes from getOrderPage(),
 // which reads the domain functions; this screen adds nothing up (.claude/rules/ui.md). On a phone
-// each record is a card; from sm on a table.
+// each record is a card; from sm on a table. Since 3.7 a record has Cancel record and, on a trip
+// of several orders, Cancel trip where the server offers them (full width on a phone), and the
+// tab counts the cancelled records (07 Fixing a mistake).
 
 export async function PurchasesTab({ order }: { order: OrderPage }) {
   const t = await getTranslations("orders.page.purchases");
@@ -38,6 +42,15 @@ export async function PurchasesTab({ order }: { order: OrderPage }) {
             {order.finishReason ? (
               <span data-finish-reason className="text-[13px] leading-[18px]">
                 {t("finishReason", { text: order.finishReason })}
+              </span>
+            ) : null}
+            {order.cancelledCount > 0 ? (
+              <span
+                data-cancelled-count={order.cancelledCount}
+                className="inline-flex items-center gap-1 text-[13px] leading-[18px] text-muted-foreground"
+              >
+                <Icon name="cancel" size={16} />
+                {t("cancelledCount", { count: order.cancelledCount })}
               </span>
             ) : null}
           </span>,
@@ -188,6 +201,30 @@ export async function PurchasesTab({ order }: { order: OrderPage }) {
                   {record.cancelReason ? (
                     <span className="text-[13px] leading-[18px]">
                       {t("cancelReason", { text: record.cancelReason })}
+                    </span>
+                  ) : null}
+                  {record.canCancel ? (
+                    <span className="mt-1 flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:justify-end">
+                      <CancelPurchaseButton
+                        target={{
+                          kind: "RECORD",
+                          purchaseId: record.id,
+                          order: {
+                            id: order.id,
+                            version: order.version,
+                            number: order.number ?? "",
+                          },
+                        }}
+                      />
+                      {record.trip ? (
+                        <CancelPurchaseButton
+                          target={{
+                            kind: "TRIP",
+                            tripId: record.trip.id,
+                            orders: record.trip.orders,
+                          }}
+                        />
+                      ) : null}
                     </span>
                   ) : null}
                 </div>

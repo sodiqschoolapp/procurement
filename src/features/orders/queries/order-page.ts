@@ -25,8 +25,10 @@ import {
   actualTotal,
   buyingActions,
   difference,
+  cancelledCount,
   isSubstituted,
   overPlan,
+  purchaseCancelAllows,
 } from "@/domain/purchases";
 import type { RequestStatus } from "@/domain/request-status";
 import { type Executor, authorizeList, branchFilter } from "@/server/authorize";
@@ -133,6 +135,17 @@ export type OrderPagePurchase = {
   receipts: { fileId: string; isImage: boolean }[];
   isCancelled: boolean;
   cancelReason: string | null;
+  /**
+   * Cancel record is offered: purchaseCancelAllows() and `purchase.cancel` on the order (07 Fixing
+   * a mistake; plan of 3.7). The server asks again.
+   */
+  canCancel: boolean;
+  /**
+   * Cancel trip is offered: the record can be cancelled and its trip holds two or more records not
+   * cancelled, of orders that are all Open and all the user's to cancel; the trip's orders with
+   * the version and number each is sent with. Null otherwise.
+   */
+  trip: { id: string; orders: { id: string; version: number; number: string }[] } | null;
 };
 
 /** The actual numbers of the order from Open on (08 Numbers the system calculates). */
@@ -196,6 +209,8 @@ export type OrderPage = {
   actual: OrderPageActual | null;
   /** From Open on, every record, cancelled ones included (crossed out); empty before. */
   purchases: OrderPagePurchase[];
+  /** How many of the order's records were cancelled (07 Fixing a mistake 3; cancelledCount()). */
+  cancelledCount: number;
   /** isSubstituted() of the records (07 Substitution; plan of 3.6, decided items 3 and 8). */
   substituted: boolean;
   isService: boolean;
@@ -387,7 +402,9 @@ async function readPage(db: Executor, actor: Actor, id: string): Promise<OrderPa
   }));
   const amounts = extras.map((extra) => extra.amount);
   const buying = BUYING_STATUSES.has(row.status);
-  const recordLines = buying ? await readPurchases(db, row.id, row.variantId) : [];
+  const recordLines = buying
+    ? await readPurchases(db, actor, { ...row, orderedVariantId: row.variantId })
+    : [];
   const records = buying ? await orderRecords(db, row.id) : null;
   const received = records ? actualQuantity(records) : null;
   const total = records ? actualTotal(records) : null;
@@ -441,6 +458,7 @@ async function readPage(db: Executor, actor: Actor, id: string): Promise<OrderPa
           }
         : null,
     purchases: recordLines,
+    cancelledCount: cancelledCount(recordLines),
     substituted: row.variantId !== null && isSubstituted(row.variantId, recordLines),
     isService: row.productType === "SERVICE",
     priceHint: priceHintPercent(row.price, row.referencePrice, threshold),
@@ -494,9 +512,16 @@ async function readPage(db: Executor, actor: Actor, id: string): Promise<OrderPa
  */
 async function readPurchases(
   db: Executor,
-  orderId: string,
-  orderedVariantId: string | null,
+  actor: Actor,
+  order: {
+    id: string;
+    status: RequestStatus;
+    branchId: string;
+    ownerId: string;
+    orderedVariantId: string | null;
+  },
 ): Promise<OrderPagePurchase[]> {
+  const { id: orderId, orderedVariantId } = order;
   const recorder = alias(users, "recorder");
   const rows = await db
     .select({
@@ -541,7 +566,46 @@ async function readPurchases(
     .innerJoin(files, eq(files.id, tripFiles.fileId))
     .where(inArray(tripFiles.tripId, [...new Set(rows.map((row) => row.tripId))]))
     .orderBy(asc(tripFiles.createdAt), asc(tripFiles.fileId));
+  const mayCancel = (each: { status: RequestStatus; branchId: string; ownerId: string }) =>
+    decide("purchase.cancel", actor, { branchId: each.branchId, ownerId: each.ownerId }) ===
+    "allow";
+  // The orders of each trip's records not cancelled, behind the walls (one branch and one owner
+  // per trip, 3.4): Cancel trip sends exactly these (plan of 3.7, decided item 7).
+  const tripRows = await db
+    .select({
+      tripId: purchases.tripId,
+      id: orders.id,
+      version: orders.version,
+      number: orders.number,
+      status: orders.status,
+      branchId: orders.branchId,
+      ownerId: orders.ownerId,
+    })
+    .from(purchases)
+    .innerJoin(orders, eq(orders.id, purchases.orderId))
+    .where(
+      and(
+        inArray(purchases.tripId, [...new Set(rows.map((row) => row.tripId))]),
+        eq(purchases.isCancelled, false),
+        branchFilter(actor, orders.branchId),
+        draftWall(actor, orders.status, orders.ownerId),
+      ),
+    )
+    .orderBy(asc(orders.number));
+  const tripOf = (tripId: string): OrderPagePurchase["trip"] => {
+    const list = tripRows.filter((each) => each.tripId === tripId);
+    if (list.length < 2) return null;
+    if (!list.every((each) => purchaseCancelAllows(each.status, { isCancelled: false }))) {
+      return null;
+    }
+    if (!list.every(mayCancel)) return null;
+    return {
+      id: tripId,
+      orders: list.map((each) => ({ id: each.id, version: each.version, number: each.number! })),
+    };
+  };
   return rows.map((row) => {
+    const canCancel = purchaseCancelAllows(order.status, row) && mayCancel(order);
     const extras = extraRows
       .filter((extra) => extra.purchaseId === row.id)
       .map(({ typeName, amount, paymentType }) => ({ typeName, amount, paymentType }));
@@ -567,6 +631,8 @@ async function readPurchases(
         .map((file) => ({ fileId: file.fileId, isImage: isImageMime(file.mime) })),
       isCancelled: row.isCancelled,
       cancelReason: row.cancelReason,
+      canCancel,
+      trip: canCancel ? tripOf(row.tripId) : null,
     };
   });
 }
