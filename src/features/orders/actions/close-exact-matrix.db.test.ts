@@ -1,8 +1,11 @@
+import { and, eq } from "drizzle-orm";
 import { vi } from "vitest";
 
 import type { ActionResult } from "@/server/action-result";
 import type { CurrentUser } from "@/server/auth/session";
 import { AuthorizationError } from "@/server/authorize";
+import { db } from "@/server/db/client";
+import { managerRights } from "@/server/db/schema";
 import { runOrdersAction } from "@/server/order-action";
 
 import { setClock } from "../../../../tests/helpers/clock";
@@ -47,11 +50,10 @@ function signedIn(user: InsertedUser): void {
 
 /**
  * The answer as the matrix reads it: a refusal of the wall or the matrix is thrown. `notReady`
- * counts as passing the permission for Close only: the generator's "HEAD still allowed" case
- * ticks the order of the Manager whose CLOSE_ALONE is off, which the permission lets the Head
- * reach and the state machine then sends to settlement (08 Closing 1; plan of 4.4, decided item
- * 2, Look first; close-exact.db.test.ts proves that refusal and the Head's Close of an order whose
- * owner may close alone).
+ * counts as passing the permission only in the generator's "HEAD still allowed" case, the Head on
+ * the order of a Manager whose CLOSE_ALONE is off: the permission lets the Head reach it and the
+ * state machine sends it to settlement (08 Closing 1; plan of 4.4, decided item 2, Look first;
+ * close-exact.db.test.ts proves that refusal). Every other allowed cell must close.
  */
 function asMatrixAnswer(result: ActionResult<unknown>, notReady = false): void {
   if (result.ok) return;
@@ -59,6 +61,22 @@ function asMatrixAnswer(result: ActionResult<unknown>, notReady = false): void {
   if (notReady && code === "not_ready") return;
   if (code === "not_found" || code === "forbidden") throw new AuthorizationError(code);
   throw new Error(`Unexpected answer: ${code}`);
+}
+
+/** The generator's Head case on the order of a Manager whose CLOSE_ALONE is off. */
+async function headOnSwitchedOff({ user, ownerId }: MatrixCase): Promise<boolean> {
+  if (user.role !== "HEAD") return false;
+  const off = await db
+    .select({ enabled: managerRights.enabled })
+    .from(managerRights)
+    .where(
+      and(
+        eq(managerRights.userId, ownerId),
+        eq(managerRights.right, "CLOSE_ALONE"),
+        eq(managerRights.enabled, false),
+      ),
+    );
+  return off.length > 0;
 }
 
 /** A finished Open order of the case's branch and owner that matches exactly. */
@@ -112,7 +130,7 @@ for (const move of MOVES) {
       const order = await exactOrder(each);
       asMatrixAnswer(
         await runOrdersAction(move.definition, each.user.id, input(order)),
-        move.name === "closeExactOrders",
+        move.name === "closeExactOrders" && (await headOnSwitchedOff(each)),
       );
     },
   });
@@ -122,7 +140,10 @@ for (const move of MOVES) {
     async run(each) {
       const order = await exactOrder(each);
       signedIn(each.user);
-      asMatrixAnswer(await move.exported()(input(order)), move.name === "closeExactOrders");
+      asMatrixAnswer(
+        await move.exported()(input(order)),
+        move.name === "closeExactOrders" && (await headOnSwitchedOff(each)),
+      );
     },
   });
 }

@@ -567,7 +567,12 @@ describe("Close by the Head and the notices per branch (10 Notifications; .claud
     const inB = await opened({ ...b, head });
     await buy(a, [{ order: inA }]);
     await buy(b, [{ order: inB }]);
+    // A deactivated Finance user of the branch is not told (10 Notifications; tests.md).
+    const gone = await insertUser("FINANCE", { branches: [a.branch.id], isActive: false });
     expectOk(await close(head.id, await ticked([inA.id, inB.id])));
+    expect((await noticesTo("REQUEST_CLOSED", [a.branch.id])).map((n) => n.userId)).not.toContain(
+      gone.id,
+    );
     const told = await toldIn("REQUEST_CLOSED", [a, b]);
     const byUser = new Map(told.map((notice) => [notice.userId, notice.params]));
     expect(byUser.get(a.finance.id)).toMatchObject({ count: 1, branch: a.branch.code });
@@ -587,6 +592,7 @@ describe("Close by the Head and the notices per branch (10 Notifications; .claud
     const inB = await opened({ ...b, head: a.head });
     await buy(a, [{ order: inA, unitPrice: "4500", comment: "Arzonroq topildi" }]);
     await buy(b, [{ order: inB, unitPrice: "4500", comment: "Arzonroq topildi" }]);
+    const gone = await insertUser("FINANCE", { branches: [a.branch.id], isActive: false });
     expectOk(await toSettlement(a.head.id, await ticked([inA.id, inB.id])));
     const told = await noticesTo("REQUEST_SENT_TO_SETTLEMENT", [a.branch.id, b.branch.id]);
     expect(
@@ -597,5 +603,6 @@ describe("Close by the Head and the notices per branch (10 Notifications; .claud
         [b.finance.id, b.branch.code],
       ].sort(),
     );
+    expect(told.map((notice) => notice.userId)).not.toContain(gone.id);
   });
 });
