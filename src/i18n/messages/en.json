@@ -84,7 +84,11 @@
       "fileOneManager": "A file can be added only when the orders belong to one Manager.",
       "closedReopenFirst": "This order is Closed. The Procurement Head reopens it first; then cancel the action.",
       "noteRequired": "Transferred and received differ: write a note (the supplier owes goods or a refund).",
-      "noBlock": "This order used no such payment type, so there is nothing to confirm."
+      "noBlock": "This order used no such payment type, so there is nothing to confirm.",
+      "notBranchManager": "Choose an active Manager of the orders' branch.",
+      "cashNotZero": "Its cash count is not 0.",
+      "alreadyOwner": "It already belongs to this Manager.",
+      "movedSince": "This order was moved to another Manager after this was recorded, so it cannot be cancelled. Finance corrects the cash count with a new money action."
     },
     "file": {
       "tooLarge": "The file is larger than 10 MB. Choose a smaller file or take the photo again.",
@@ -1208,7 +1212,8 @@
           "CANCEL_MONEY": "Money action cancelled",
           "SETTLE_CASH": "Cash settled",
           "CONFIRM_SETTLEMENT": "Settlement confirmation changed",
-          "ACKNOWLEDGE_OVERSPEND": "Overspend acknowledged"
+          "ACKNOWLEDGE_OVERSPEND": "Overspend acknowledged",
+          "MOVE_OWNER": "Moved to another Manager"
         },
         "approved": {
           "PENDING_HEAD": "Approved at the Head step",
@@ -1223,7 +1228,8 @@
         "at": "{date} {time}",
         "paymentType": "Payment type: {from} → {to}",
         "purchase": "{qty} × {price}",
-        "progress": "Buying: {from} → {to}"
+        "progress": "Buying: {from} → {to}",
+        "owner": "From {from} to {to}"
       },
       "waiting": {
         "HEAD": "Waiting for the Head.",
@@ -1370,7 +1376,8 @@
         "SEND_BACK_FOR_CORRECTION": "Send back for correction",
         "CLOSE": "Close",
         "REOPEN": "Reopen",
-        "ACKNOWLEDGE_OVERSPEND": "Acknowledge overspend"
+        "ACKNOWLEDGE_OVERSPEND": "Acknowledge overspend",
+        "MOVE_OWNER": "Move to another Manager"
       },
       "buttonCount": "{label} ({count})",
       "title": {
@@ -1387,7 +1394,8 @@
         "SEND_BACK_FOR_CORRECTION": "{count, plural, one {Send 1 order back for correction?} other {Send # orders back for correction?}}",
         "CLOSE": "{count, plural, one {Close 1 order?} other {Close # orders?}}",
         "REOPEN": "{count, plural, one {Reopen 1 order?} other {Reopen # orders?}}",
-        "ACKNOWLEDGE_OVERSPEND": "{count, plural, one {Acknowledge the overspend of 1 order?} other {Acknowledge the overspend of # orders?}}"
+        "ACKNOWLEDGE_OVERSPEND": "{count, plural, one {Acknowledge the overspend of 1 order?} other {Acknowledge the overspend of # orders?}}",
+        "MOVE_OWNER": "{count, plural, one {Move 1 order to another Manager?} other {Move # orders to another Manager?}}"
       },
       "result": {
         "SEND_BACK": "{count, plural, one {It goes} other {They go}} back to the owner for editing. The owner and the Head are told. After the next submit, approval starts again at the Head.",
@@ -1403,7 +1411,8 @@
         "SEND_BACK_FOR_CORRECTION": "{count, plural, one {It goes} other {They go}} back to Open, so a wrong record can be corrected; its settlement confirmations are cleared. The owner and the Head are told.",
         "CLOSE": "{count, plural, one {1 order will be Closed} other {# orders will be Closed}} and can no longer change. If any order is not ready, nothing closes and the orders are named. The owner, the Head and Finance are told.",
         "REOPEN": "{count, plural, one {It goes} other {They go}} back to Open, so a mistake can be corrected. Settlement confirmations and the overspend acknowledgment are cleared, and Finance settles {count, plural, one {it} other {them}} again. The owner, the Head and Finance are told.",
-        "ACKNOWLEDGE_OVERSPEND": "Finance can then close {count, plural, one {this order} other {these orders}} with the actual total above the plan. Your comment is kept in each order's history, and Finance of the branch is told."
+        "ACKNOWLEDGE_OVERSPEND": "Finance can then close {count, plural, one {this order} other {these orders}} with the actual total above the plan. Your comment is kept in each order's history, and Finance of the branch is told.",
+        "MOVE_OWNER": "The chosen Manager becomes the owner of {count, plural, one {this order} other {these orders}}. Only orders whose cash count is 0 can move; the move is kept in each order's history."
       },
       "done": {
         "SEND_BACK": "{count, plural, one {Sent back 1 order.} other {Sent back # orders.}}",
@@ -1419,7 +1428,8 @@
         "SEND_BACK_FOR_CORRECTION": "{count, plural, one {Sent back 1 order for correction.} other {Sent back # orders for correction.}}",
         "CLOSE": "{count, plural, one {Closed 1 order.} other {Closed # orders.}}",
         "REOPEN": "{count, plural, one {Reopened 1 order.} other {Reopened # orders.}}",
-        "ACKNOWLEDGE_OVERSPEND": "{count, plural, one {Acknowledged the overspend of 1 order.} other {Acknowledged the overspend of # orders.}}"
+        "ACKNOWLEDGE_OVERSPEND": "{count, plural, one {Acknowledged the overspend of 1 order.} other {Acknowledged the overspend of # orders.}}",
+        "MOVE_OWNER": "{count, plural, one {Moved 1 order.} other {Moved # orders.}}"
       },
       "failedTitle": "{count, plural, one {Nothing was saved: 1 order is named below.} other {Nothing was saved: # orders are named below.}}",
       "failedLine": "{number} — {problem}",
@@ -1438,7 +1448,8 @@
         "FINISH_ORDER": "Nothing is received yet. Use Not bought instead.",
         "MARK_NOT_BOUGHT": "Something is already received. Use Finish order instead.",
         "CLOSE": "Not ready to close: the cash count is not 0, a payment block is not confirmed, or the Head has not acknowledged the overspend.",
-        "ACKNOWLEDGE_OVERSPEND": "Not above the overspend guard now, or already acknowledged."
+        "ACKNOWLEDGE_OVERSPEND": "Not above the overspend guard now, or already acknowledged.",
+        "MOVE_OWNER": "Its cash count is not 0, or it already belongs to this Manager."
       },
       "closeConfirm": "I confirm that all items entered the warehouse of this branch.",
       "comment": "Comment"
@@ -1510,7 +1521,13 @@
       "DONE_SHORT": "Done, short",
       "NOT_BOUGHT": "Not bought"
     },
-    "substituted": "Substituted"
+    "substituted": "Substituted",
+    "moveOwner": {
+      "manager": "New Manager",
+      "choose": "Choose a Manager",
+      "loading": "Loading…",
+      "noManagers": "No other active Manager works in this branch."
+    }
   },
   "purchase": {
     "form": {

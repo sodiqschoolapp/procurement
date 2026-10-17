@@ -17,7 +17,12 @@ import {
   groupSummary,
   pinsUrgent,
 } from "@/domain/order-list";
-import { ORDER_ACTION_MAX, type OrderAction, allowedActions } from "@/domain/order-moves";
+import {
+  ORDER_ACTION_MAX,
+  type OrderAction,
+  allowedActions,
+  ownerMoveAllows,
+} from "@/domain/order-moves";
 import { type DownloadRow, orderDownloadRow } from "@/domain/order-download";
 import { type StepEvent, isOverdue } from "@/domain/order-steps";
 import {
@@ -488,6 +493,12 @@ export type TickedSummary = {
    */
   canAcknowledgeOverspend: boolean;
   /**
+   * Move to another Manager is offered (03 rule 7; plan of 4.10): every ticked order in a status
+   * that can be moved (`ownerMoveAllows()`) and `request.move_owner` on each. The cash count and
+   * the chosen Manager are the action's to ask, as Close's readiness is.
+   */
+  canMoveOwner: boolean;
+  /**
    * The buying actions allowed on every ticked order (07 Order progress: "Finish order" and "Not
    * bought" on ticked orders; plan of 3.5): buyingActions() of src/domain/purchases.ts, which the
    * actions ask again.
@@ -533,6 +544,7 @@ export async function tickedSummary(
     canRecordMoney: false,
     canSettle: false,
     canAcknowledgeOverspend: false,
+    canMoveOwner: false,
     buying: [],
     orders: [],
   };
@@ -661,6 +673,16 @@ export async function tickedSummary(
             }) === "allow"
           );
         }),
+      canMoveOwner:
+        found.length > 0 &&
+        found.every(
+          (row) =>
+            ownerMoveAllows(row.status) &&
+            decide("request.move_owner", actor, {
+              branchId: row.branchId,
+              ownerId: row.ownerId,
+            }) === "allow",
+        ),
       buying: buyingActions(
         actor,
         found.map((row) => ({

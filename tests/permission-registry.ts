@@ -120,6 +120,9 @@ export const SERVER_ACTIONS: Record<string, Entry> = {
   // The Head's Reopen (06 Allowed moves, "Closed | Reopen | Head"; plan of 4.8).
   "src/app/(app)/orders/actions.ts#reopenOrdersAction": "request.reopen",
   "src/app/(app)/orders/actions.ts#acknowledgeOverspendAction": "request.acknowledge_overspend",
+  // Move orders to another Manager and its Manager choices (03 rule 7; plan of 4.10).
+  "src/app/(app)/orders/actions.ts#moveOrdersToManagerAction": "request.move_owner",
+  "src/app/(app)/orders/actions.ts#moveOwnerChoicesAction": "request.move_owner",
 };
 
 /** Exports of `src/features/<area>/queries/`, as `<file>#<export>`. */
@@ -205,6 +208,7 @@ export const QUERIES: Record<string, Permission> = {
   // purchase.record on the order (record-purchase-matrix.db.test.ts).
   "src/features/purchasing/queries/purchase-form.ts#getPurchaseForm": "purchase.record",
   "src/features/money/queries/money-prefill.ts#moneyPrefillOrders": "data.view",
+  "src/features/orders/queries/move-owner-choices.ts#moveOwnerChoices": "request.move_owner",
   "src/features/money/queries/order-money.ts#getOrderMoney": "data.view",
   "src/features/money/queries/settlement.ts#getSettlement": "request.settle",
   // Money with managers (plan of 4.9, decided item 1, Look first).

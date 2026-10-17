@@ -20,6 +20,7 @@ import { CopyButton } from "./copy-button";
 import { RecordMoneyButton } from "@/features/money/components/record-money-button";
 
 import { ListActionBar } from "./list-action-bar";
+import { MoveOwnerButton } from "./move-owner-button";
 import { MoveButton, type StatusMoveKind } from "./move-button";
 
 /**
@@ -348,6 +349,20 @@ export function OrderList({
                   // 4.7): the server's canAcknowledgeOverspend, asked again by the action.
                   <MoveButton
                     move="ACKNOWLEDGE_OVERSPEND"
+                    orders={summary.orders}
+                    versionOf={(id) => seen.current.get(id) ?? 0}
+                    onAnswer={(answer) => {
+                      setFailed(answer);
+                      clear();
+                    }}
+                    size="sm"
+                    className="max-sm:flex-1"
+                  />
+                ) : null}
+                {summary.canMoveOwner ? (
+                  // The Head moves the ticked orders to another Manager (03 rule 7; plan of
+                  // 4.10): the server's canMoveOwner, asked again by the action.
+                  <MoveOwnerButton
                     orders={summary.orders}
                     versionOf={(id) => seen.current.get(id) ?? 0}
                     onAnswer={(answer) => {

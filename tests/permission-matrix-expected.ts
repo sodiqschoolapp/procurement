@@ -144,6 +144,13 @@ export const EXPECTED_MATRIX: Record<Permission, Expected> = {
     PRINCIPAL: "no",
     FINANCE: "no",
   },
+  "request.move_owner": {
+    row: "Move orders to another Manager",
+    HEAD: "all",
+    MANAGER: "no",
+    PRINCIPAL: "no",
+    FINANCE: "no",
+  },
   "stock.issue": {
     row: "Issue, return, transfer stock (issue)",
     HEAD: "all",

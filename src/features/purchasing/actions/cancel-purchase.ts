@@ -1,6 +1,7 @@
 import { asc, eq, inArray, sql } from "drizzle-orm";
 import * as z from "zod";
 
+import { cashSpent } from "@/domain/money-ledger";
 import { isMoveReason, moveReason } from "@/domain/order-moves";
 import {
   actualQuantity,
@@ -27,7 +28,8 @@ import { reasonFields } from "@/server/order-moves";
 import { StockShortError, postMovement } from "@/server/stock-ledger";
 
 import { actionLink, branchNotices, ownersAndHeads } from "../../orders/actions/notices";
-import { orderRecords } from "../order-records";
+import { movedSince } from "../../orders/moved-since";
+import { cashRecordsByIds, orderRecords } from "../order-records";
 import { noticePriceDiffers } from "../price-prompts";
 
 // Cancel a purchase record, or every record of one trip, while the orders are Open
@@ -41,7 +43,8 @@ import { noticePriceDiffers } from "../price-prompts";
 //            order, or a trip none of whose records is on a sent order, is `not_found`; a record
 //            cancelled before, or a trip with none left, is `wrong_status`; a trip whose orders
 //            are not the sent ones is `invalid_input` (decided item 7; review of the plan, Should
-//            fix 1)
+//            fix 1); a record that changes a cash count on an order moved since it was written is
+//            `wrong_status` (`movedSince()`; plan of 4.10, decided item 3, Look first)
 //   write    the products FOR SHARE and the subtypes bought FOR UPDATE, each in id order (the lock
 //            order of .claude/rules/server-actions.md); each record's one cancel update (the
 //            trigger purchases_cancel_only of 0024 allows nothing else); for a product a priced
@@ -210,6 +213,35 @@ function chosen(
   };
 }
 
+/**
+ * A record that changes a cash count (`cashSpent()` above 0: Cash goods or a Cash extra) on an
+ * order moved to another Manager since it was written is refused (plan of 4.10, decided item 3,
+ * Look first; review of the plan, correction 1): its cash would land on the new owner's count. A
+ * Transfer or Card record changes no count and is cancelled as 07 says.
+ */
+async function movedAfterCash(
+  context: OrdersContext<CancelInput>,
+  records: readonly HeldRecord[],
+): Promise<OrderFailure[]> {
+  const cash = (
+    await cashRecordsByIds(
+      context.tx,
+      records.map((record) => record.id),
+    )
+  ).filter((row) => cashSpent([{ ...row.record, isCancelled: false }]) > 0n);
+  const refused = new Set<string>();
+  for (const row of cash) {
+    if ((await movedSince(context.tx, [row.orderId], row.createdAt)).size > 0) {
+      refused.add(row.orderId);
+    }
+  }
+  return [...refused].map((orderId) => ({
+    orderId,
+    code: "wrong_status" as const,
+    fields: { status: "errors.field.movedSince" as const },
+  }));
+}
+
 function compare(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
 }
@@ -343,7 +375,8 @@ function defineCancel<Input extends CancelInput>(
     reason: (typed) => (isMoveReason(typed.reason) ? moveReason(typed.reason) : null),
     check: (context) => statusCheck(context),
     async inspect(context) {
-      return chosen(context, await lockRecords(context)).failures;
+      const { failures, records } = chosen(context, await lockRecords(context));
+      return [...failures, ...(await movedAfterCash(context, records))];
     },
     async write(context) {
       const reason = storedReason(context.input);

@@ -1763,6 +1763,29 @@ Choices made during the build:
 - The seed test's set of statuses gains Open and Closed and its title says ten orders: the Build line of 4.9 asks the seed for them. Its move test now also accepts the writes that move no status (type in `ORDER_EVENT_TYPES`, status unchanged) and asks `checkMoves()` for each status move.
 - The disclosure is a native `<details>` with the `expand_more` icon; the screen needs no client code.
 
+### 4.10 Move orders to another Manager (17.10.2026)
+
+The plan's decisions as the plan review of 17.10.2026 confirmed them (corrections applied: the purchase cancels are refused only for a record that changes a cash count, with a test that a Transfer record of a moved order can still be cancelled; the spec contradiction of item 3 carries its proposed `/spec-change` wording).
+
+1. **Look first** (approval order). The statuses that can be moved: Waiting for Head, Principal or Finance, Sent back, Open and Waiting for settlement (`ownerMoveAllows()` of `src/domain/order-moves.ts`). Not a Draft: the list drops drafts, a never-submitted draft is one per owner (`orders_one_draft_key`) and a Head-created one would skip the Head step at its first Submit by the new owner (03 rule 6). Not Closed, Rejected or Cancelled: nobody works on them.
+2. **Look first** (money). "Cash count is zero" means exactly 0 (`orderCashCount()` under the orders' lock): a count below 0, the Manager owed, is refused too.
+3. **Look first** (money; spec contradiction). A cancel of a money action, or of a purchase record or trip that changes a cash count (`cashSpent()` above 0), is refused (`wrong_status`, `errors.field.movedSince`) when one of its orders has a `MOVE_OWNER` event at or after the moment it was written (`movedSince()` of `src/features/orders/moved-since.ts`); a move back leaves the event, so the refusal stays. Otherwise the cash would land on the count of an owner who never held it. Proposed `/spec-change` for 08 Money ledger: "Actions are never deleted; a wrong one is cancelled whole, with a reason, while none of its orders is Closed and none was moved to another owner after it was written. When one of its orders is already Closed, the Head reopens that order first; when one was moved, Finance corrects the count with a new action." and the same addition to the cancel of a purchase record and of a trip in 07 Fixing a mistake.
+4. The chosen user is an active Manager in `user_branches` of every ticked order's branch, else `invalid_input` on `managerId` for the whole action; an order the chosen Manager owns already is `not_ready` (03 rule 7: "another Manager").
+5. Nobody is notified and no reason is asked: 10 Notifications has no row for a move, and 06 names the moves that take a reason.
+6. The button is on the order list only.
+7. Its own permission `request.move_owner` (the Head only) and its own action and event type `MOVE_OWNER` (migration `0032_move_owner`); not a row of `ORDER_MOVES`.
+8. Past money actions keep their Manager, past purchases their creator.
+
+Choices made during the build:
+
+- `moveOwnerChoices()` authorizes `request.move_owner` on each ticked order's branch, read from the order, so another branch is "Not found" as the matrix expects; an id that is no order is "Not found" too.
+- "At or after" in `movedSince()`: two writes of one moment are taken as the move coming last, the side that keeps the count right.
+- The cash records of the purchase guard come from `cashRecordsByIds()`, which shares one statement with `datedCashRecordsOf()` (`src/features/purchasing/order-records.ts`), so "cash spent" is read one way.
+- The history line names both owners from the event's payload `{ owner: { from, to } }`, read in the same query as the events.
+- The browser test inserts its own two invented Managers of EA: the seed has one Manager per branch.
+- A Manager whose rights are switched off is still offered as the new owner (permission review, Should fix 1, not built): the plan review confirmed any active Manager of the branch (decided item 4), 03 says a switch only takes rights away, and leaving such Managers out would add a rule no spec line names (D44). The Head sees each Manager's switches on the user page.
+- `moveOwnerChoices()` reads the ticked orders with the branch wall and the draft wall in its SQL and answers "Not found" for any of them it cannot see before it asks the permission (permission review, Must fix 1): otherwise a colleague's draft or another branch's order answered "forbidden" where an unknown id answered "Not found".
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

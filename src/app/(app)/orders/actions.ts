@@ -27,6 +27,7 @@ import { copyOrdersAsNew } from "@/features/orders/actions/copy-as-new";
 import { rejectOrders } from "@/features/orders/actions/reject";
 import { sendBackOrders } from "@/features/orders/actions/send-back";
 import { closeOrders } from "@/features/orders/actions/close";
+import { moveOrdersToManager } from "@/features/orders/actions/move-owner";
 import { reopenOrders } from "@/features/orders/actions/reopen";
 import { sendBackForCorrectionOrders } from "@/features/orders/actions/send-back-for-correction";
 import { sendToSettlementOrders } from "@/features/orders/actions/send-to-settlement";
@@ -46,6 +47,10 @@ import { confirmSettlement } from "@/features/money/actions/confirm-settlement";
 import { recordMoney } from "@/features/money/actions/record-money";
 import { settleCash } from "@/features/money/actions/settle-cash";
 import { moneyPrefillOrders } from "@/features/money/queries/money-prefill";
+import {
+  type MoveOwnerChoice,
+  moveOwnerChoices,
+} from "@/features/orders/queries/move-owner-choices";
 import { newestMoves } from "@/features/orders/queries/newest-moves";
 import { submittedNumbers } from "@/features/orders/queries/submitted";
 import { selectAllOnFilter, tickedSummary } from "@/features/orders/queries/order-list";
@@ -94,6 +99,7 @@ const toCorrection = ordersServerAction(sendBackForCorrectionOrders);
 const close = ordersServerAction(closeOrders);
 const reopenClosed = ordersServerAction(reopenOrders);
 const acknowledge = ordersServerAction(acknowledgeOverspend);
+const moveOwner = ordersServerAction(moveOrdersToManager);
 
 /** A query as an answer: a refusal of authorize() or of the input is returned, never thrown. */
 async function asked<T>(read: (userId: string) => Promise<T>): Promise<ActionResult<T>> {
@@ -349,6 +355,18 @@ export async function reopenOrdersAction(input: unknown): Promise<MoveAnswer> {
 /** The Head acknowledges the overspend of the ticked orders with one comment (08; plan of 4.7). */
 export async function acknowledgeOverspendAction(input: unknown): Promise<MoveAnswer> {
   return moveAnswer(acknowledge, input);
+}
+
+/** The Head moves the ticked orders to another Manager of their branch (03 rule 7; plan of 4.10). */
+export async function moveOrdersToManagerAction(input: unknown): Promise<MoveAnswer> {
+  return moveAnswer(moveOwner, input);
+}
+
+/** The Managers the ticked orders can be moved to (03 rule 7; plan of 4.10). */
+export async function moveOwnerChoicesAction(input: {
+  ids: string[];
+}): Promise<ActionResult<MoveOwnerChoice[]>> {
+  return asked((userId) => moveOwnerChoices(userId, Array.isArray(input?.ids) ? input.ids : []));
 }
 
 /** One ticked order as the Record money dialog shows it; money as text of whole so'm. */

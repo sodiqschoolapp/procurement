@@ -392,7 +392,7 @@ Cash given, cash spent, the difference and the close, per order, with Finance wo
   - **Build:** `/money` for Finance (own branches) and the Head: every Manager's cash balance across their orders that are not Closed, held and owed shown apart, oldest first, with the date since when, opening the orders behind it. The seed gains Open orders with cash given and a Closed one.
   - **Done when:** Database test: Finance of one branch sees no balance of another. By hand: the seed shows one Manager holding money.
 
-- [ ] **4.10 Move orders to another Manager**
+- [x] **4.10 Move orders to another Manager**
   - **Read:** `03-roles-and-permissions.md` (Rules: 7; Permission matrix: "Move orders to another Manager"); `edge-cases/requests-and-approval.md` ("A Manager with cash in hand leaves the branch"; "A user is deactivated with work waiting").
   - **Build:** The Head moves ticked orders to another Manager of the same branch, only orders whose cash count is 0, all or nothing; the move is written to each order's History.
   - **Done when:** Database tests: blocked when one of three ticked orders has a count of 50 000, and none moves; allowed at 0; a Manager of another branch cannot be chosen.

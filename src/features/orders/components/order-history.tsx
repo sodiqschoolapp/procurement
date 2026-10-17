@@ -69,6 +69,12 @@ export async function OrderHistory({ events }: { events: readonly OrderPageEvent
                 })}
               </p>
             ) : null}
+            {event.owner ? (
+              // A move to another Manager (03 rule 7; plan of 4.10).
+              <p data-owner-change className="text-[15px] leading-[22px]">
+                {t("owner", { from: event.owner.from, to: event.owner.to })}
+              </p>
+            ) : null}
             {event.comment ? (
               <p className="text-[15px] leading-[22px]">{t("reason", { text: event.comment })}</p>
             ) : null}
