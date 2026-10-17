@@ -213,6 +213,9 @@ export const QUERIES: Record<string, Permission> = {
   "src/features/money/queries/settlement.ts#getSettlement": "request.settle",
   // Money with managers (plan of 4.9, decided item 1, Look first).
   "src/features/money/queries/money-with-managers.ts#getMoneyWithManagers": "money.managers",
+  // Stock on hand (plan of 5.2): data.view with the branch wall in the SQL.
+  "src/features/warehouse/queries/stock-on-hand.ts#listStockOnHand": "data.view",
+  "src/features/warehouse/queries/stock-on-hand.ts#stockCategoryChoices": "data.view",
 };
 
 /**
