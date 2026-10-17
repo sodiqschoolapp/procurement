@@ -50,6 +50,7 @@ const {
   rejectOrdersAction,
   reopenBuyingAction,
   reopenOrdersAction,
+  moveOrdersToManagerAction,
   closeExactOrdersAction,
   sendToSettlementOrdersAction,
   sendBackOrdersAction,
@@ -452,4 +453,34 @@ describe("a repeated client key sent with another branch's order id (developer-r
       .where(eq(orders.id, theirs.id));
     expect(row).toEqual({ status: "PENDING_PRINCIPAL", version: 1 });
   });
+});
+
+// The Head's move to another Manager (03 rule 7; plan of 4.10): the chosen Manager works in both
+// branches, so only the walls decide.
+describeTickedWall("moveOrdersToManagerAction", {
+  permission: "request.move_owner",
+  status: "PURCHASING",
+  owned: false,
+  async run(user, ticked) {
+    const rows = await db
+      .select({ branchId: orders.branchId })
+      .from(orders)
+      .where(
+        inArray(
+          orders.id,
+          ticked.map((order) => order.id),
+        ),
+      );
+    const next = await insertUser("MANAGER", {
+      branches: [...new Set(rows.map((row) => row.branchId))],
+    });
+    signedIn(user);
+    return wall(
+      await moveOrdersToManagerAction({
+        clientKey: newClientKey(),
+        orders: versions(ticked),
+        managerId: next.id,
+      }),
+    );
+  },
 });
