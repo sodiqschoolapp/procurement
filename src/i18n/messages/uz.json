@@ -1394,7 +1394,7 @@
         "CLOSE_EXACT": "{count, plural, other {# ta buyurtma yopiladi}} va boshqa o'zgarmaydi. Egasi, rahbar va moliya bo'limiga xabar boradi.",
         "SEND_TO_SETTLEMENT": "{count, plural, other {# ta buyurtma}} hisob-kitob uchun moliya bo'limiga o'tadi. Moliya bo'limiga xabar boradi.",
         "SEND_BACK_FOR_CORRECTION": "{count, plural, other {Buyurtmalar}} notoʻgʻri yozuvni tuzatish uchun «Ochiq» holatiga qaytadi; hisob-kitob tasdiqlari bekor qilinadi. Egasi va rahbarga xabar boradi.",
-        "CLOSE": "{count, plural, other {# ta buyurtma yopiladi}} va boshqa o'zgarmaydi. Biror buyurtma tayyor bo'lmasa, hech narsa yopilmaydi va o'sha buyurtmalar ko'rsatiladi. Egasi, rahbar va moliya bo'limiga xabar boradi."
+        "CLOSE": "{count, plural, other {# ta buyurtma yopiladi}} va boshqa oʻzgarmaydi. Biror buyurtma tayyor boʻlmasa, hech narsa yopilmaydi va oʻsha buyurtmalar koʻrsatiladi. Egasi, rahbar va moliya boʻlimiga xabar boradi."
       },
       "done": {
         "SEND_BACK": "{count, plural, other {# ta buyurtma qaytarildi.}}",
@@ -1426,7 +1426,7 @@
       "notReady": {
         "FINISH_ORDER": "Hali hech narsa olinmagan. «Sotib olinmadi»dan foydalaning.",
         "MARK_NOT_BOUGHT": "Nimadir allaqachon olingan. «Buyurtmani yakunlash»dan foydalaning.",
-        "CLOSE": "Yopishga tayyor emas: naqd pul qoldig'i 0 emas, to'lov bloki tasdiqlanmagan yoki rahbar ortiqcha xarajatni tasdiqlamagan."
+        "CLOSE": "Yopishga tayyor emas: naqd pul qoldigʻi 0 emas, toʻlov bloki tasdiqlanmagan yoki rahbar ortiqcha xarajatni tasdiqlamagan."
       },
       "closeConfirm": "Barcha mahsulotlar ushbu filial omboriga kelib tushganini tasdiqlayman."
     },
