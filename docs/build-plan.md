@@ -381,7 +381,7 @@ Cash given, cash spent, the difference and the close, per order, with Finance wo
   - **Done when:** S12 as a test; with the guard off the same order closes without the Head.
   - From 4.6: Finance's Close already reads the guard: `readyToClose()` of `src/domain/money-ledger.ts` refuses an order whose `overspend().needsHead` is true until `order_settlements.overspend_ack_at` is set (the Close test writes it directly). 4.7 builds the Head's "Acknowledge overspend" with its comment, its notices and S12 through the button, not a second check.
 
-- [ ] **4.8 Reopen**
+- [x] **4.8 Reopen**
   - **Read:** `06-approval-workflow.md` (Allowed moves: Closed row; Rules: 3); `03-roles-and-permissions.md` (Permission matrix: "Reopen a closed order"); `edge-cases/purchasing-and-money.md` ("An error is found after closing"; "Faulty goods go back to the supplier"); `10-notifications-analytics-reports.md` (Notifications: "Closed, reopened").
   - **Build:** The Head reopens a Closed order with a reason; the status is Open; its counts are recalculated; earlier settlement confirmations and the overspend acknowledgment are cleared; Finance settles it again; the owner, the Head and Finance are notified.
   - **Done when:** Database test: reopen, cancel one record, and the order needs settlement again with the old confirmations gone.

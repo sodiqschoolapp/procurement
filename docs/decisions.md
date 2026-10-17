@@ -1725,6 +1725,23 @@ Choices made during the build:
 - The settlement line shows "—" for the percent when the planned total is 0 (`overspend()` gives no percent then).
 - The browser test signs in the shared `e2e_head` without changing his language and finds the confirm button by its label in all three languages.
 
+### 4.8 Reopen (17.10.2026)
+
+The plan's decisions as the plan review of 17.10.2026 confirmed them (corrections 1 and 2 applied: the Done-when test asserts that the plan is unchanged after the reopen and after the cancel; the reopen of an order with no settlement row asserts that no row is made).
+
+1. **Look first** (approval order). Reopen clears `orders.closed_at` (left open by 4.4, item 5). A reopened order is Open, so the "closed" date filter does not find it; the next Close writes the date again; both moves stay in History.
+2. **Look first** (money). "Settlement confirmations" are the transfer and card confirmations and the transfer note. Reopen clears them and the overspend acknowledgment with the same update as Send back for correction; the row is updated, never deleted; the event carries `settlementCleared`.
+3. **Look first** (approval order). The reopened order keeps its buying progress. "Finance settles it again" runs through the existing Open rows (Send to settlement, then Finance's Close); no move from Closed straight to Waiting for settlement is added.
+4. **Look first** (who is told). "Closed, reopened" goes to the owners, every active Head and the branch's active Finance, never the actor, one notice per branch, as Close.
+5. "Its counts are recalculated": the counts are read from the rows on every read, so the reopen writes no count.
+6. No "Already reopened by …" line: a second Head at the same moment gets the plain "changed a moment ago" refusal.
+7. The Reopen button is secondary, not danger: it ends nothing.
+
+Choices made during the build:
+
+- The Done-when test sets both guard settings to 0 (every overspend needs the Head) so that the order stays above the guard after the cancel and Finance's `not_ready` can only mean the cleared confirmation and acknowledgment.
+- The browser test is in `close-exact.spec.ts`, signs in the shared `e2e_head` without changing his language, and finds the confirm button by its label in all three languages, as `overspend.spec.ts` does.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.
