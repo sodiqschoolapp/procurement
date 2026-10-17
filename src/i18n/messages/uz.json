@@ -1695,6 +1695,7 @@
       "since": "Sanadan",
       "inactive": "faol emas",
       "product": "{product}, {subtype}",
+      "orderLine": "{branch} · {product}",
       "orderHolds": "Qo'lida {amount}",
       "orderOwed": "Maktab qarzi {amount}",
       "orderSince": "{date} dan",

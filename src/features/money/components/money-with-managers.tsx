@@ -64,10 +64,15 @@ export async function MoneyWithManagers({ blocks }: { blocks: MoneyWithManagersB
                         {order.number}
                       </Link>
                       <span className="text-[15px] leading-[22px]">
-                        {order.branchCode} ·{" "}
-                        {order.subtypeName
-                          ? t("product", { product: order.productName, subtype: order.subtypeName })
-                          : order.productName}
+                        {t("orderLine", {
+                          branch: order.branchCode,
+                          product: order.subtypeName
+                            ? t("product", {
+                                product: order.productName,
+                                subtype: order.subtypeName,
+                              })
+                            : order.productName,
+                        })}
                       </span>
                       <RequestStatusLabel status={order.status} />
                       <span className="flex flex-col sm:items-end">

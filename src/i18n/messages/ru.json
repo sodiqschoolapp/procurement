@@ -1695,6 +1695,7 @@
       "since": "С даты",
       "inactive": "неактивен",
       "product": "{product}, {subtype}",
+      "orderLine": "{branch} · {product}",
       "orderHolds": "На руках {amount}",
       "orderOwed": "Долг школы {amount}",
       "orderSince": "с {date}",

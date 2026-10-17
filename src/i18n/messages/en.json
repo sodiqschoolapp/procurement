@@ -1695,6 +1695,7 @@
       "since": "Since",
       "inactive": "inactive",
       "product": "{product}, {subtype}",
+      "orderLine": "{branch} · {product}",
       "orderHolds": "Holds {amount}",
       "orderOwed": "Owed {amount}",
       "orderSince": "since {date}",
