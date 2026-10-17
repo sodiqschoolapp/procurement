@@ -12,7 +12,15 @@ import {
   isTaxId,
 } from "@/domain/catalogs";
 import { businessDate, businessYear, nextBusinessDate } from "@/domain/business-date";
-import { ORDER_MOVES } from "@/domain/order-moves";
+import { orderCashCount } from "@/domain/money-ledger";
+import {
+  ORDER_ACTIONS,
+  ORDER_EVENT_TYPES,
+  ORDER_MOVES,
+  type OrderAction,
+  checkMoves,
+} from "@/domain/order-moves";
+import type { Role } from "@/domain/permissions";
 import { orderNumber } from "@/domain/order-numbers";
 import { orderTotal } from "@/domain/order-totals";
 import { isDescription, isProductType } from "@/domain/products";
@@ -23,6 +31,7 @@ import { createProduct } from "@/features/catalog/actions/products";
 import { createSubtype } from "@/features/catalog/actions/subtypes";
 import { listProducts } from "@/features/catalog/queries/products";
 import { writeSnapshots } from "@/features/orders/actions/submit-steps";
+import { getMoneyWithManagers } from "@/features/money/queries/money-with-managers";
 import { listOrderGroups } from "@/features/orders/queries/order-list";
 import { runAction } from "@/server/action";
 import { db } from "@/server/db/client";
@@ -1044,6 +1053,8 @@ const ORDER_TABLES = [
   "order_actions",
   "order_events",
   "number_counters",
+  "money_actions",
+  "money_rows",
 ];
 
 async function orderCounts(client: pg.Client): Promise<Record<string, number>> {
@@ -1088,7 +1099,7 @@ async function seededOrders(client: pg.Client): Promise<SeededOrder[]> {
 }
 
 describe("npm run db:seed: the orders (build-plan 2.15; plan of 2.15, decided item 5)", () => {
-  it("makes seven orders in the planned statuses, each total equal to orderTotal()", async () => {
+  it("makes ten orders in the planned statuses, each total equal to orderTotal()", async () => {
     await withFreshDatabase(async (connect) => {
       const client = await connect();
       await seed(client, ENV, MOMENT);
@@ -1112,7 +1123,16 @@ describe("npm run db:seed: the orders (build-plan 2.15; plan of 2.15, decided it
         expect(row.needed_by).toBe(date);
       }
       expect(new Set(rows.map((row) => row.status))).toEqual(
-        new Set(["DRAFT", "PENDING_HEAD", "PENDING_PRINCIPAL", "PENDING_FINANCE", "RETURNED"]),
+        new Set([
+          "DRAFT",
+          "PENDING_HEAD",
+          "PENDING_PRINCIPAL",
+          "PENDING_FINANCE",
+          "RETURNED",
+          // Money with managers (build plan 4.9).
+          "PURCHASING",
+          "CLOSED",
+        ]),
       );
     });
   });
@@ -1147,20 +1167,87 @@ describe("npm run db:seed: the orders (build-plan 2.15; plan of 2.15, decided it
       const client = await connect();
       await seed(client, ENV, MOMENT);
       for (const row of await seededOrders(client)) {
-        const events = await client.query<{ type: string; from: string; to: string }>(
-          `select type, from_status as from, to_status as to from order_events
-            where order_id = $1 order by created_at, id`,
+        const events = await client.query<{
+          type: string;
+          from: string;
+          to: string;
+          comment: string | null;
+          actor_id: string;
+          created_at: Date;
+        }>(
+          `select type, from_status as from, to_status as to, comment, actor_id, created_at
+             from order_events where order_id = $1 order by created_at, id`,
+          [row.id],
+        );
+        const owner = await client.query<{ owner_id: string; branch_id: string }>(
+          "select owner_id, branch_id from orders where id = $1",
           [row.id],
         );
         let at = "DRAFT";
+        let buyingFinished = false;
         for (const event of events.rows) {
           expect(event.from).toBe(at);
+          if (!(ORDER_ACTIONS as readonly string[]).includes(event.type)) {
+            // A write that moves no status (plan of 3.3): the status stays.
+            expect(ORDER_EVENT_TYPES as readonly string[]).toContain(event.type);
+            expect(event.to).toBe(at);
+            if (event.type === "MARK_NOT_BOUGHT") buyingFinished = true;
+            continue;
+          }
           expect(
             ORDER_MOVES.some(
               (move) =>
                 move.from === event.from && move.action === event.type && move.to === event.to,
             ),
           ).toBe(true);
+          // checkMoves() of the state machine allows the move from the state before it, for the
+          // actor who made it (review of the plan of 4.9, Must fix 2).
+          const actor = await client.query<{ role: Role; branch_ids: string[] }>(
+            `select u.role, coalesce(array_agg(ub.branch_id) filter (where ub.branch_id is not null),
+                                     '{}') as branch_ids
+               from users u left join user_branches ub on ub.user_id = u.id
+              where u.id = $1 group by u.id`,
+            [event.actor_id],
+          );
+          const rows = await client.query<{ kind: string; amount: string }>(
+            `select r.kind, r.amount::text as amount from money_rows r
+               join money_actions a on a.id = r.money_action_id
+              where r.order_id = $1 and r.created_at < $2 and not a.is_cancelled`,
+            [row.id, event.created_at],
+          );
+          const count = orderCashCount(
+            rows.rows.map((each) => ({
+              kind: each.kind as "CASH_GIVEN",
+              amount: BigInt(each.amount),
+              isCancelled: false,
+            })),
+            [],
+          );
+          const check = checkMoves(
+            {
+              userId: event.actor_id,
+              role: actor.rows[0]!.role,
+              branchIds: actor.rows[0]!.role === "HEAD" ? [] : actor.rows[0]!.branch_ids,
+              disabledRights: [],
+            },
+            [
+              {
+                id: row.id,
+                status: event.from as never,
+                branchId: owner.rows[0]!.branch_id,
+                ownerId: owner.rows[0]!.owner_id,
+                createdByHead: false,
+                buyingFinished,
+                exactMatch: false,
+                ownerClosesAlone: true,
+                // 08 Closing 3: the seed has no purchase, no transfer or card block, no overspend.
+                readyToClose: count === 0n,
+              },
+            ],
+            event.type as OrderAction,
+            { reason: event.comment ?? undefined },
+          );
+          expect(check.ok).toBe(true);
           at = event.to;
         }
         expect(row.status).toBe(at);
@@ -1169,6 +1256,66 @@ describe("npm run db:seed: the orders (build-plan 2.15; plan of 2.15, decided it
         ]);
         expect(revisions.rowCount).toBe(row.status === "DRAFT" ? 0 : 1);
       }
+    });
+  });
+
+  it("writes money as the actions do: each action dated its order action's Tashkent day and naming it; approved_at and closed_at at their moves (build plan 4.9; plan of 4.9, decided item 9)", async () => {
+    await withFreshDatabase(async (connect) => {
+      const client = await connect();
+      await seed(client, ENV, MOMENT);
+      const money = await client.query<{
+        occurred_on: string;
+        comment: string | null;
+        client_key: string;
+        type: string;
+        acted_at: Date;
+        kind: string;
+        amount: string;
+        order_id: string;
+        manager_ok: boolean;
+      }>(
+        `select to_char(a.occurred_on, 'YYYY-MM-DD') as occurred_on, a.comment, a.client_key,
+                oa.type, oa.created_at as acted_at, r.kind, r.amount::text as amount, r.order_id,
+                (a.manager_id = o.owner_id and a.created_by = oa.actor_id
+                 and a.created_at = oa.created_at and a.client_key = oa.client_key) as manager_ok
+           from money_actions a
+           join order_actions oa on oa.id = a.order_action_id
+           join money_rows r on r.money_action_id = a.id
+           join orders o on o.id = r.order_id`,
+      );
+      expect(money.rows).toHaveLength(4);
+      for (const row of money.rows) {
+        expect(row.occurred_on).toBe(businessDate(row.acted_at));
+        expect(row.manager_ok).toBe(true);
+        if (row.type === "APPROVE") {
+          expect(row.kind).toBe("CASH_GIVEN");
+          expect(row.comment).toBeNull();
+        } else {
+          expect([row.type, row.kind]).toEqual(["RECORD_MONEY", "CASH_RETURNED"]);
+          expect(row.comment).not.toBeNull();
+        }
+      }
+      const dates = await client.query<{
+        status: string;
+        approved_ok: boolean;
+        closed_ok: boolean;
+        progress: string;
+      }>(
+        `select o.status, o.progress,
+                o.approved_at is not distinct from (select e.created_at from order_events e
+                  where e.order_id = o.id and e.type = 'APPROVE' and e.to_status = 'PURCHASING')
+                  as approved_ok,
+                o.closed_at is not distinct from (select e.created_at from order_events e
+                  where e.order_id = o.id and e.type = 'CLOSE') as closed_ok
+           from orders o where o.client_key = any($1::uuid[])`,
+        [SEED_ORDERS.map((order) => order.clientKey)],
+      );
+      for (const row of dates.rows) {
+        expect(row).toMatchObject({ approved_ok: true, closed_ok: true });
+      }
+      expect(dates.rows.filter((row) => row.status === "CLOSED")).toEqual([
+        { status: "CLOSED", progress: "NOT_BOUGHT", approved_ok: true, closed_ok: true },
+      ]);
     });
   });
 
@@ -1223,6 +1370,35 @@ describe("the seed's orders in the app (build-plan 2.15)", () => {
         expect(copies.map((copy) => copy.submission)).toEqual([1, 2]);
         expect(copies[0]!.snapshot).toEqual(copies[1]!.snapshot);
       }
+    } finally {
+      client.release();
+    }
+  });
+});
+
+describe("the seed's money in the app (build plan 4.9, Done when: the seed shows one Manager holding money)", () => {
+  it("shows seed_head seed_manager holding the cash of the two Open orders since the older approval; the Closed one is not behind it", async () => {
+    const client = await db.$client.connect();
+    try {
+      await seed(client, ENV, MOMENT);
+      const users = await client.query<{ username: string; id: string }>(
+        "select username, id from users where username in ('seed_head', 'seed_manager')",
+      );
+      const idOf = (name: string) => users.rows.find((row) => row.username === name)!.id;
+      const blocks = await getMoneyWithManagers(idOf("seed_head"), null);
+      const block = blocks.find((each) => each.ownerId === idOf("seed_manager"))!;
+      const open = await client.query<{ id: string; approved_at: Date }>(
+        `select id, approved_at from orders
+          where client_key = any($1::uuid[]) and status = 'PURCHASING' order by approved_at`,
+        [SEED_ORDERS.map((order) => order.clientKey)],
+      );
+      expect(open.rows).toHaveLength(2);
+      expect(block).toMatchObject({
+        held: 120_000n,
+        owed: 0n,
+        since: businessDate(open.rows[0]!.approved_at),
+      });
+      expect(block.orders.map((order) => order.id)).toEqual(open.rows.map((row) => row.id));
     } finally {
       client.release();
     }
