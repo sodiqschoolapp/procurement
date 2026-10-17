@@ -4,11 +4,15 @@ import { orderEvents, orders } from "@/server/db/schema";
 
 // Two facts of the state machine's OrderState, read as the action wrapper reads them
 // (src/server/order-action.ts), for the queries that ask allowedActions() before any write: the
-// ticked orders of the list (2.8) and the order page (2.9). Kept once, so the two never differ.
+// ticked orders of the list (2.8) and the order page (2.9). Kept once, so the two never differ;
+// order-facts.db.test.ts reads both sides on the same orders and holds them together (2.11b).
 // With them, one fact of an order event that the stepper and the download read.
 
-/** The order's creator is a Head now (decisions 2.4 item 8). */
-export const createdByHeadSql: SQL<boolean> = sql<boolean>`(select c.role = 'HEAD' from users c where c.id = ${orders.createdBy})`;
+/**
+ * The order's creator is a Head now (decisions 2.4 item 8) and the order has no number yet: only
+ * its first Submit skips the Head step (decisions 2.11 item 8). As `created_by_head` of lockOrders().
+ */
+export const createdByHeadSql: SQL<boolean> = sql<boolean>`(select c.role = 'HEAD' and ${orders.number} is null from users c where c.id = ${orders.createdBy})`;
 
 /** The owner is the Head, or a Manager whose CLOSE_ALONE is not switched off (decisions 2.3 item 6). */
 export const ownerClosesAloneSql: SQL<boolean> = sql<boolean>`(select w.role = 'HEAD' or (w.role = 'MANAGER' and not exists (
