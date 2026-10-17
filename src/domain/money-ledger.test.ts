@@ -5,6 +5,7 @@ import {
   type MatchOrder,
   type MoneyRow,
   type MoneyRowKind,
+  type SettlementConfirmations,
   actionTotal,
   approvalCashRows,
   blockConfirmed,
@@ -667,7 +668,7 @@ describe("the settlement action's rows (08 Closing 2; Money ledger 1; plan of 4.
 
 describe("readyToClose() (08 Closing 3; Overspend guard; plan of 4.6, decided items 1 and 2, Look first)", () => {
   const GUARD = { overspend_guard_percent: 10, overspend_guard_min_amount: 100_000n } as const;
-  const NONE = {
+  const NONE: SettlementConfirmations = {
     transferConfirmed: false,
     transferNote: null,
     cardConfirmed: false,
@@ -677,7 +678,7 @@ describe("readyToClose() (08 Closing 3; Overspend guard; plan of 4.6, decided it
     plan: OrderPlan,
     records: CashRecord[],
     rows: MoneyRow[],
-    stored: typeof NONE | null = null,
+    stored: SettlementConfirmations | null = null,
     guard: Parameters<typeof readyToClose>[1] = GUARD,
   ) =>
     readyToClose(
