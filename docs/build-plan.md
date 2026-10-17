@@ -327,7 +327,7 @@ The Manager records what was really bought, one order or one whole shop visit at
   - **Build:** A domain function that returns Number, Price and Total for an order and for a set of orders (grey while in progress; Price green only when every record's unit price is the planned one; the worst colour wins; Total from the summed difference); the label component with icon, word and amount; the labels on orders, group rows and the ticked totals.
   - **Done when:** Unit tests of the four worked-example cases, of two records of 0.25 at the planned price 1 001 (Price green), and of "red beats orange, orange beats green" on a group row. By hand: the Cheaper case shows orange "Left 50 000".
 
-- [ ] **3.9 Buying on a phone**
+- [x] **3.9 Buying on a phone**
   - **Read:** `11-screens-and-ux.md` (Rules for a smooth feel: 3; Interface per role: Manager); `07-purchasing.md` (Purchase record: Receipt).
   - **Build:** The phone layout of the purchase form: one order or group row at a time, large buttons, "Same as planned", and the camera opens directly for the receipt.
   - **Done when:** Playwright at 375 px records a purchase with a receipt file.

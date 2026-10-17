@@ -1061,4 +1061,20 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - For 4.5 and 6.x: a screen that shows colours calls `orderColours()`/`setColours()` with the order's status, progress, plan (extras included) and records, and sends them through `wireColours()`.
 - A set's Number and Price have `orders`, an order's have `difference`; `ColourLabels` takes both.
 
-The next task is 3.9.
+## 3.9 Buying on a phone (17.10.2026, pull request #79)
+
+**Built**
+- `PurchaseFormView` at phone width (below `sm`): one step per block (one order, or one group row with its orders), Previous/Next and "{current} of {total}" in `[data-step-bar]`, Save only on the last step, the visit under the last block. Desktop: every block at once, the visit in the left column; the Head's owner select now sits above the form at every width.
+- `firstStepWithError()` (`src/features/purchasing/components/purchase-steps.ts`): after a refused save, the first step with an error, line errors mapped through `sent`.
+- "Take photo" and "Choose file" stacked full width, 48 px, at phone width; the camera input carries `data-receipt-camera`.
+- Texts `purchase.form.step`, `next`, `previous`, `steps`.
+
+**Left out, and the task that brings it**
+- The Manager home's Record purchase button: 6.1. The issue form's phone layout and "Give straight to requester": 5.4.
+
+**What the next sessions must know**
+- For 5.4: the issue form's phone layout can follow this one: steps hidden by `max-sm:hidden` (never unmounted), a `data-step` per block, the heading `data-step-heading` with `tabIndex={-1}`, and `firstStepWithError()` for refusals.
+- An e2e test at 375 px that records a trip of several products walks the steps with `[data-step-bar]` buttons; the Next.js dev tools button is also named "Next", so scope the locator.
+- Playwright tests the camera input through `page.waitForEvent("filechooser")` after a click on "Take photo".
+
+The next task is 3.10.
