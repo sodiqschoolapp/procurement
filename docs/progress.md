@@ -904,4 +904,21 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - For 8.2: replay movements by `seq`; `balance_after` of the newest is the balance.
 - A same-moment test of an existing balance must find the row there first: `insert … on conflict do nothing` alone also serialises a held update, so `postMovement` locks before it inserts.
 
-The next task is 3.2.
+## 3.2 Purchases schema and domain (17.10.2026, pull request #66)
+
+**Built**
+- Migration `0024_purchases`: `purchase_trips` (unique `client_key`), `purchases` (with `branch_id`: composite keys to the trip and to the order, `orders_id_branch_key`; CHECKs on qty, price ≥ 0, comment length, the cancel fields together), `purchase_extras` (amount > 0), `trip_files` (unique `file_id`); `stock_movements_purchase_fk` on (`purchase_id`, `branch_id`, `variant_id`); the key of `price_history.purchase_id`.
+- Triggers: `purchases_cancel_only` (one cancel, nothing else; no delete); `purchasing_append_only` on trips, extras and trip files.
+- `src/domain/purchases.ts`: `actualQuantity`, `actualGoods`, `actualExtra`, `actualTotal`, `difference`, `progressAfterBuying`, `finishRefusal`, `splitGroupQuantity`, `ORDER_PROGRESS` (the enum of `orders.progress` now reads it). `Exact` of `order-totals.ts` is exported and shared.
+- `tests/helpers/purchases.ts`: `insertTrip`, `insertPurchaseRow`, `insertPurchase` (raw rows for constraint tests).
+
+**Left out, and the task that brings it**
+- Recording, the cached `actual_total`, progress written, `last_purchase_price` and the PURCHASE price row: 3.3. Trip of many orders and the one-owner rule: 3.4. Finish and Not bought: 3.5. Same-product substitution: 3.6. Cancel and its reason rules: 3.7.
+
+**What the next sessions must know**
+- For 3.3: a record's date, supplier and payment type are read from its trip; write `purchases.branch_id` = the trip's branch, and a receipt movement with `purchaseId` and the record's subtype, or the keys refuse. Add the `trip_files` owner to `FILE_OWNERS` (trip's branch, `data.view`) in the same task, and refuse under the lock a file held anywhere or not uploaded by the caller (permission review of 3.2). `price_history.price > 0`: decide whether a gift writes a PURCHASE row. Permission-matrix tests: four roles, own and other branch, own and other Manager's order, RECORD_PURCHASES off.
+- For 3.3 and 3.5: after each record saved or cancelled, `orders.progress` = `progressAfterBuying(current, planned, actualQuantity(records))`; `actual_total` = `actualTotal(records)`, never a stored sum.
+- For 3.4: build the group's orders from the trip's branch in SQL before `splitGroupQuantity`; an order given "0" gets no record.
+- For 3.7: a cancel is one UPDATE of the four cancel columns; the trigger refuses anything else. Cancel trip = cancel each record.
+
+The next task is 3.3.

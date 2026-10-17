@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  type AnyPgColumn,
   bigint,
   boolean,
   check,
@@ -19,6 +20,7 @@ import { PRODUCT_TYPES } from "@/domain/products";
 
 import { files } from "./files";
 import { branches } from "./organisation";
+import { purchases } from "./purchasing";
 import { users } from "./users";
 
 // Four catalogs of the "Organisation and catalogs" group of docs/spec/14-data-model.md: units
@@ -296,8 +298,8 @@ export const priceSource = pgEnum("price_source", PRICE_SOURCES);
 // purchase is recorded"; 04-catalogs.md rule 4). Task 1.9. A HEAD row for every price the Head
 // sets, the price typed at creation included, with no note then (plan of 1.9, decision 1, Look
 // first); a new price carries its short note. PURCHASE rows and the foreign key of `purchase_id`
-// come with 3.2 (build-plan 1.9); a PURCHASE row names its purchase and a HEAD row none (decision
-// 10). `seq` orders the rows without a tie (the clock is frozen in tests, and two writes can share
+// come with 3.2 (build-plan 1.9; a plain key, price_history has no branch: plan of 3.2, decided
+// item 2); a PURCHASE row names its purchase and a HEAD row none (decision 10). `seq` orders the rows without a tie (the clock is frozen in tests, and two writes can share
 // a moment; plan review of 1.9, Must fix 1). Migration 0014 adds by hand what Drizzle cannot
 // express: the append-only trigger (decision 3, Look first), the deferred check that a subtype's
 // reference price is the price of its newest HEAD row (decision 2, Look first), and the backfill.
@@ -315,7 +317,7 @@ export const priceHistory = pgTable(
     setBy: uuid("set_by")
       .notNull()
       .references(() => users.id),
-    purchaseId: uuid("purchase_id"),
+    purchaseId: uuid("purchase_id").references((): AnyPgColumn => purchases.id),
     clientKey: uuid("client_key"),
     createdAt: moment("created_at").notNull(),
   },

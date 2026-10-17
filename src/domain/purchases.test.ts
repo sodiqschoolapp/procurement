@@ -1,0 +1,284 @@
+import { describe, expect, it } from "vitest";
+
+import { orderTotal } from "./order-totals";
+import {
+  type GroupOrder,
+  type PurchaseRecord,
+  actualExtra,
+  actualGoods,
+  actualQuantity,
+  actualTotal,
+  difference,
+  finishRefusal,
+  progressAfterBuying,
+  splitGroupQuantity,
+} from "./purchases";
+
+// 08-money-and-settlement.md, Numbers the system calculates and Worked example; 07-purchasing.md,
+// Purchase record, Order progress and One trip, many orders: 2; developer-rules.md rules 1 and 6.
+
+function record(
+  qty: string,
+  unitPrice: bigint,
+  extras: bigint[] = [],
+  isCancelled = false,
+): PurchaseRecord {
+  return { qty, unitPrice, extras, isCancelled };
+}
+
+/** 08 Worked example: 100 notebooks × 5 000 in cash, plus 20 000 delivery. */
+const PLANNED = orderTotal({
+  quantity: "100",
+  price: 5_000n,
+  extras: [20_000n],
+  paymentType: "CASH",
+});
+
+describe("the actual numbers (08 Numbers the system calculates; Worked example)", () => {
+  it("the plan of the worked example is 520 000", () => {
+    expect(PLANNED).toBe(520_000n);
+  });
+
+  it("Exact: 100 × 5 000 + 20 000 = 520 000, difference 0", () => {
+    const records = [record("100", 5_000n, [20_000n])];
+    expect(actualQuantity(records)).toBe("100");
+    expect(actualGoods(records)).toBe(500_000n);
+    expect(actualExtra(records)).toBe(20_000n);
+    expect(actualTotal(records)).toBe(520_000n);
+    expect(difference(PLANNED, actualTotal(records))).toBe(0n);
+  });
+
+  it("Cheaper: 100 × 4 500 + 20 000 = 470 000, left 50 000", () => {
+    const records = [record("100", 4_500n, [20_000n])];
+    expect(actualQuantity(records)).toBe("100");
+    expect(actualGoods(records)).toBe(450_000n);
+    expect(actualTotal(records)).toBe(470_000n);
+    expect(difference(PLANNED, actualTotal(records))).toBe(50_000n);
+  });
+
+  it("Dearer: 100 × 5 200 + 30 000 = 550 000, over 30 000", () => {
+    const records = [record("100", 5_200n, [30_000n])];
+    expect(actualGoods(records)).toBe(520_000n);
+    expect(actualExtra(records)).toBe(30_000n);
+    expect(actualTotal(records)).toBe(550_000n);
+    expect(difference(PLANNED, actualTotal(records))).toBe(-30_000n);
+  });
+
+  it("Fewer: 90 × 5 000 + 20 000 = 470 000, left 50 000", () => {
+    const records = [record("90", 5_000n, [20_000n])];
+    expect(actualQuantity(records)).toBe("90");
+    expect(actualTotal(records)).toBe(470_000n);
+    expect(difference(PLANNED, actualTotal(records))).toBe(50_000n);
+  });
+
+  it("07 Purchase record: 60 notebooks on Monday and 40 on Friday are 100", () => {
+    const records = [record("60", 5_000n), record("40", 5_000n, [20_000n])];
+    expect(actualQuantity(records)).toBe("100");
+    expect(actualTotal(records)).toBe(520_000n);
+  });
+
+  it("cancelled records are left out of every sum (08: records that are not cancelled)", () => {
+    const records = [
+      record("60", 5_000n, [10_000n]),
+      record("40", 7_000n, [20_000n], true),
+      record("5", 1n, [3n], true),
+    ];
+    expect(actualQuantity(records)).toBe("60");
+    expect(actualGoods(records)).toBe(300_000n);
+    expect(actualExtra(records)).toBe(10_000n);
+    expect(actualTotal(records)).toBe(310_000n);
+    expect(difference(PLANNED, actualTotal(records))).toBe(210_000n);
+  });
+
+  it("only cancelled records, or none, give 0 everywhere", () => {
+    for (const records of [[], [record("100", 5_000n, [20_000n], true)]]) {
+      expect(actualQuantity(records)).toBe("0");
+      expect(actualGoods(records)).toBe(0n);
+      expect(actualExtra(records)).toBe(0n);
+      expect(actualTotal(records)).toBe(0n);
+      expect(difference(PLANNED, actualTotal(records))).toBe(PLANNED);
+    }
+  });
+
+  it("08 rounding: each record is rounded half up on its own, then summed", () => {
+    // Two records of 0.5 × 3 = 1.5 each round to 2 + 2 = 4, never round(1 × 3) = 3.
+    expect(actualGoods([record("0.5", 3n), record("0.5", 3n)])).toBe(4n);
+    expect(actualGoods([record("2.5", 3n)])).toBe(8n); // 7.5, exactly half: up
+    expect(actualGoods([record("1.333", 1_500n)])).toBe(2_000n); // 1 999.5
+    expect(actualQuantity([record("0.5", 3n), record("0.25", 3n)])).toBe("0.75");
+  });
+
+  it("07 Purchase record: a gift at price 0 counts its quantity and no goods", () => {
+    const records = [record("3", 0n), record("2", 1_000n)];
+    expect(actualQuantity(records)).toBe("5");
+    expect(actualGoods(records)).toBe(2_000n);
+  });
+
+  it("a record that is not well formed is a RangeError", () => {
+    expect(() => actualQuantity([record("0", 1n)])).toThrow(RangeError);
+    expect(() => actualQuantity([record("1e2", 1n)])).toThrow(RangeError);
+    expect(() => actualGoods([record("1", -1n)])).toThrow(RangeError);
+    expect(() => actualExtra([record("1", 1n, [0n])])).toThrow(RangeError);
+    // A cancelled record is checked too: a broken row is never hidden by its cancel.
+    expect(() => actualTotal([record("-1", 1n, [], true)])).toThrow(RangeError);
+  });
+});
+
+describe("progressAfterBuying (07 Order progress), after a record is saved or cancelled", () => {
+  it("Open and Done: Done at the planned quantity or more, Open below", () => {
+    for (const current of ["OPEN", "DONE"] as const) {
+      expect(progressAfterBuying(current, "100", "100")).toBe("DONE");
+      expect(progressAfterBuying(current, "100", "120")).toBe("DONE");
+      expect(progressAfterBuying(current, "100", "99.999")).toBe("OPEN");
+      expect(progressAfterBuying(current, "100", "0")).toBe("OPEN");
+    }
+  });
+
+  it("the review's walk: 60 and 40 Done; cancel the 40, Open; finish at 60; cancel the 60, Open", () => {
+    expect(progressAfterBuying("OPEN", "100", "60")).toBe("OPEN");
+    expect(progressAfterBuying("OPEN", "100", "100")).toBe("DONE");
+    expect(progressAfterBuying("DONE", "100", "60")).toBe("OPEN");
+    expect(finishRefusal("DONE_SHORT", "100", "60")).toBeNull();
+    expect(progressAfterBuying("DONE_SHORT", "100", "0")).toBe("OPEN");
+  });
+
+  it("Done short stays while 0 < received < planned: one of two records cancelled", () => {
+    // Finished by hand at 50 of 100 (30 + 20); the 20 is cancelled: still finished by hand.
+    expect(progressAfterBuying("DONE_SHORT", "100", "30")).toBe("DONE_SHORT");
+    expect(progressAfterBuying("DONE_SHORT", "100", "99.999")).toBe("DONE_SHORT");
+    expect(progressAfterBuying("DONE_SHORT", "100", "100")).toBe("DONE");
+    // Decided item 4, Look first: nothing received any more, the Manager decides again.
+    expect(progressAfterBuying("DONE_SHORT", "100", "0")).toBe("OPEN");
+  });
+
+  it("Not bought stays while nothing is received; once something is, Done or Open", () => {
+    expect(progressAfterBuying("NOT_BOUGHT", "100", "0")).toBe("NOT_BOUGHT");
+    expect(progressAfterBuying("NOT_BOUGHT", "100", "40")).toBe("OPEN");
+    expect(progressAfterBuying("NOT_BOUGHT", "100", "100")).toBe("DONE");
+  });
+
+  it("a quantity that is not numeric(14,3) text is a RangeError", () => {
+    expect(() => progressAfterBuying("OPEN", "0", "1")).toThrow(RangeError);
+    expect(() => progressAfterBuying("OPEN", "100", "-1")).toThrow(RangeError);
+    expect(() => progressAfterBuying("OPEN", "100", "1e2")).toThrow(RangeError);
+  });
+});
+
+describe("finishRefusal (07 Order progress: Finish order and Not bought)", () => {
+  it("Done short needs something received and less than planned", () => {
+    expect(finishRefusal("DONE_SHORT", "100", "60")).toBeNull();
+    expect(finishRefusal("DONE_SHORT", "100", "0.001")).toBeNull();
+    expect(finishRefusal("DONE_SHORT", "100", "0")).toBe("NOTHING_RECEIVED");
+    expect(finishRefusal("DONE_SHORT", "100", "100")).toBe("NOT_SHORT");
+    expect(finishRefusal("DONE_SHORT", "100", "120")).toBe("NOT_SHORT");
+  });
+
+  it("Not bought needs nothing received", () => {
+    expect(finishRefusal("NOT_BOUGHT", "100", "0")).toBeNull();
+    expect(finishRefusal("NOT_BOUGHT", "100", "0.001")).toBe("SOMETHING_RECEIVED");
+    expect(finishRefusal("NOT_BOUGHT", "100", "100")).toBe("SOMETHING_RECEIVED");
+  });
+});
+
+describe("splitGroupQuantity (07 One trip, many orders: 2)", () => {
+  const AT = new Date("2031-04-11T05:00:00Z");
+  const LATER = new Date("2031-04-11T06:00:00Z");
+
+  function order(
+    id: string,
+    number: string,
+    submittedAt: Date,
+    plannedQty: string,
+    received = "0",
+  ): GroupOrder {
+    return { id, number, submittedAt, plannedQty, received };
+  }
+
+  const LACKS_20 = order("a", "CHL-31-0001", AT, "20");
+  const LACKS_10 = order("b", "CHL-31-0002", LATER, "10");
+
+  function split(total: string, orders: GroupOrder[]) {
+    return splitGroupQuantity(total, orders).map((part) => [part.id, part.qty]);
+  }
+
+  it("30 Tata pens over orders lacking 20 and 10: 20 and 10", () => {
+    expect(split("30", [LACKS_20, LACKS_10])).toEqual([
+      ["a", "20"],
+      ["b", "10"],
+    ]);
+  });
+
+  it("35 over the same: 20 and 15, the rest to the newest", () => {
+    expect(split("35", [LACKS_20, LACKS_10])).toEqual([
+      ["a", "20"],
+      ["b", "15"],
+    ]);
+  });
+
+  it("25 over the same: 20 and 5, the oldest filled first", () => {
+    expect(split("25", [LACKS_20, LACKS_10])).toEqual([
+      ["a", "20"],
+      ["b", "5"],
+    ]);
+  });
+
+  it("the oldest submit first, whatever order the orders come in", () => {
+    expect(split("25", [LACKS_10, LACKS_20])).toEqual([
+      ["a", "20"],
+      ["b", "5"],
+    ]);
+  });
+
+  it("at the same moment the lower number first, compared as numbers: 0999 before 10000", () => {
+    const high = order("high", "CHL-31-10000", AT, "10");
+    const low = order("low", "CHL-31-0999", AT, "10");
+    expect(split("15", [high, low])).toEqual([
+      ["low", "10"],
+      ["high", "5"],
+    ]);
+    // The year before the counter: CHL-30-9999 is lower than CHL-31-0001.
+    const lastYear = order("y30", "CHL-30-9999", AT, "10");
+    const thisYear = order("y31", "CHL-31-0001", AT, "10");
+    expect(split("15", [thisYear, lastYear])).toEqual([
+      ["y30", "10"],
+      ["y31", "5"],
+    ]);
+  });
+
+  it("what an order lacks is planned − received, never below 0", () => {
+    const halfBought = order("a", "CHL-31-0001", AT, "20", "15");
+    const overBought = order("b", "CHL-31-0002", LATER, "10", "12");
+    const newest = order("c", "CHL-31-0003", new Date("2031-04-12T05:00:00Z"), "10");
+    expect(split("12", [halfBought, overBought, newest])).toEqual([
+      ["a", "5"],
+      ["b", "0"],
+      ["c", "7"],
+    ]);
+  });
+
+  it("the rest goes to the newest even when it lacked nothing", () => {
+    const full = order("b", "CHL-31-0002", LATER, "10", "10");
+    expect(split("25", [LACKS_20, full])).toEqual([
+      ["a", "20"],
+      ["b", "5"],
+    ]);
+  });
+
+  it("decimal quantities split exactly", () => {
+    const a = order("a", "CHL-31-0001", AT, "2.5");
+    const b = order("b", "CHL-31-0002", LATER, "1.25");
+    expect(split("3.6", [a, b])).toEqual([
+      ["a", "2.5"],
+      ["b", "1.1"],
+    ]);
+  });
+
+  it("an empty group, a total of 0 and text that is not numeric(14,3) are RangeErrors", () => {
+    expect(() => splitGroupQuantity("30", [])).toThrow(RangeError);
+    expect(() => splitGroupQuantity("0", [LACKS_20])).toThrow(RangeError);
+    expect(() => splitGroupQuantity("3,5", [LACKS_20])).toThrow(RangeError);
+    expect(() => splitGroupQuantity("30", [{ ...LACKS_20, number: "CHL-0001" }])).toThrow(
+      RangeError,
+    );
+  });
+});

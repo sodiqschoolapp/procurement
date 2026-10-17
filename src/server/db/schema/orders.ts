@@ -21,6 +21,7 @@ import {
 
 import { ORDER_ACTIONS, ORDER_ACTION_MAX } from "@/domain/order-moves";
 import { PAYMENT_TYPES } from "@/domain/payment-types";
+import { ORDER_PROGRESS } from "@/domain/purchases";
 import { REQUEST_STATUSES } from "@/domain/request-status";
 
 import { departments, companies, extraCostTypes, productVariants } from "./catalogs";
@@ -52,7 +53,7 @@ export const paymentType = pgEnum("payment_type", PAYMENT_TYPES);
 /** NORMAL or URGENT (05, field 14). */
 export const orderPriority = pgEnum("order_priority", ["NORMAL", "URGENT"]);
 /** 07-purchasing.md, Order progress. */
-export const orderProgress = pgEnum("order_progress", ["OPEN", "DONE", "DONE_SHORT", "NOT_BOUGHT"]);
+export const orderProgress = pgEnum("order_progress", ORDER_PROGRESS);
 /** The documents that are numbered per branch and year (14, number_counters). */
 export const numberScope = pgEnum("number_scope", [
   "ORD",
@@ -145,6 +146,9 @@ export const orders = pgTable(
   (table) => [
     unique("orders_number_key").on(table.number),
     unique("orders_client_key_key").on(table.clientKey),
+    // The key a purchase record names, so its order is of its trip's branch (plan of 3.2, decided
+    // item 1, Look first).
+    unique("orders_id_branch_key").on(table.id, table.branchId),
     unique("orders_reference_photo_file_id_key").on(table.referencePhotoFileId),
     foreignKey({
       name: "orders_department_branch_fk",

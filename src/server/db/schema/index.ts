@@ -6,6 +6,7 @@ export * from "./imports";
 export * from "./jobs";
 export * from "./orders";
 export * from "./organisation";
+export * from "./purchasing";
 export * from "./suggestions";
 export * from "./system";
 export * from "./users";

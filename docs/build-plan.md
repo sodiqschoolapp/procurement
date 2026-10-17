@@ -279,7 +279,7 @@ The Manager records what was really bought, one order or one whole shop visit at
   - **Build:** `stock_movements` (append-only) and the full `stock_balances`; one `postMovement()` used by everything that changes stock: it locks the balance row, writes the movement with `balance_after`, and updates quantity and average cost in the same transaction; the moving-average domain function. The foreign keys from movements to purchases and to document lines are added in 3.2 and 5.1.
   - **Done when:** Unit tests of the average formula on a receipt and of the reset at 0. Database tests: a movement that would go below zero is refused by the code and by the CHECK; two movements at the same moment both land with the right `balance_after`.
 
-- [ ] **3.2 Purchases schema and domain**
+- [x] **3.2 Purchases schema and domain**
   - **Read:** `14-data-model.md` (Purchasing and money: purchase_trips, purchases, purchase_extras, trip_files); `08-money-and-settlement.md` (Numbers the system calculates); `07-purchasing.md` (Order progress; One trip, many orders: 2); `edge-cases/developer-rules.md` (rules 1, 7); `open-questions.md` (question 3).
   - **Build:** Migrations for the four tables, with the foreign keys from `stock_movements` and `price_history` to `purchases`; the date, supplier and payment type of a record are read from its trip only; domain functions for actual quantity, actual goods, actual extra, actual total, difference and order progress; the split of a group row's quantity (oldest submit first, each up to what it lacks, the rest to the newest).
   - **Done when:** Unit tests with the four cases of the worked example; cancelled records are left out of every sum; 30 pens split over orders lacking 20 and 10, and 35 over the same.
