@@ -22,6 +22,16 @@ import { now } from "./clock";
 // the committed row. Under REPEATABLE READ (src/server/read-snapshot.ts) the FOR UPDATE after a
 // concurrent insert or update ends in a serialization failure instead of waiting, so a stock
 // write never runs in a read snapshot (review of the plan of 3.1, correction 1).
+//
+// The caller's contract (permission review of 3.1): `branchId` comes from the record the caller
+// locked (its document, purchase or order), never from the input; `createdBy` is the wrapper's
+// `userId`, as for audit(). Each type is posted only by the action of its matrix row
+// (03-roles-and-permissions.md): DIRECT_ENTRY by the Head alone; WRITE_OFF and CORRECTION only
+// after the Head approves; ISSUE under ISSUE_STOCK; RETURN and REVERSAL under RETURN_REVERSE (a
+// cancelled purchase under CANCEL_PURCHASES); TRANSFER_OUT under TRANSFER_STOCK, its TRANSFER_IN
+// in the receiving branch; RECEIPT under RECORD_PURCHASES. A StockShortError's `available` is
+// shown only for a branch the actor may see. A reversal's match to the movement it reverses is
+// checked by its task (5.7, and 3.7 for a cancelled purchase).
 
 export type PostedMovementInput = {
   branchId: string;

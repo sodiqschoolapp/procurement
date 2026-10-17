@@ -274,7 +274,7 @@ From a draft on the branch's order list to fully approved orders, ticked and act
 
 The Manager records what was really bought, one order or one whole shop visit at a time. Products enter stock at once; services count as used.
 
-- [ ] **3.1 Stock ledger**
+- [x] **3.1 Stock ledger**
   - **Read:** `09-warehouse.md` (first paragraph; Movement types; Stock value); `14-data-model.md` (Warehouse: stock_balances, stock_movements; Notes for the build: first bullet); `edge-cases/developer-rules.md` (rules 5, 7).
   - **Build:** `stock_movements` (append-only) and the full `stock_balances`; one `postMovement()` used by everything that changes stock: it locks the balance row, writes the movement with `balance_after`, and updates quantity and average cost in the same transaction; the moving-average domain function. The foreign keys from movements to purchases and to document lines are added in 3.2 and 5.1.
   - **Done when:** Unit tests of the average formula on a receipt and of the reset at 0. Database tests: a movement that would go below zero is refused by the code and by the CHECK; two movements at the same moment both land with the right `balance_after`.
