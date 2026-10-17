@@ -238,7 +238,8 @@ export default async function OrderPageScreen({
       href={to === "details" ? `/orders/${order.id}` : `/orders/${order.id}?tab=${to}`}
       aria-current={tab === to ? "page" : undefined}
       className={cn(
-        "flex h-11 flex-1 items-center justify-center rounded-lg px-4 text-[15px] font-semibold sm:flex-none",
+        // Four tabs fit 375 px: narrow padding and no shrink floor on a phone (11 rule 13 keeps 44 px).
+        "flex h-11 min-w-0 flex-1 items-center justify-center truncate rounded-lg px-2 text-[15px] font-semibold sm:flex-none sm:px-4",
         tab === to ? "bg-card text-foreground" : "text-muted-foreground hover:text-foreground",
       )}
     >
