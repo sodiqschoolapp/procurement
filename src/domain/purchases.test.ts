@@ -13,10 +13,13 @@ import {
   buyingActions,
   buyingRefusal,
   type BuyingOrder,
+  cancelledCount,
+  finishReasonAfter,
   difference,
   finishedProgress,
   overPlan,
   progressAfterBuying,
+  purchaseCancelAllows,
   purchaseCommentNeeds,
   purchaseDateRefusal,
   isSubstituted,
@@ -537,5 +540,39 @@ describe("isSubstituted (07 Substitution; 08 Exact match; plan of 3.6, decided i
 
   it("a cancelled record of another subtype does not count (08: cancelled records are left out)", () => {
     expect(isSubstituted("blue", [bought("blue"), bought("black", true)])).toBe(false);
+  });
+});
+
+describe("purchaseCancelAllows (07 Fixing a mistake 1; plan of 3.7, decided item 4)", () => {
+  it("allows a live record of an Open order, whatever its progress", () => {
+    expect(purchaseCancelAllows("PURCHASING", { isCancelled: false })).toBe(true);
+  });
+
+  it("refuses a record cancelled before: the cancel is one update (Decided ahead, question 3)", () => {
+    expect(purchaseCancelAllows("PURCHASING", { isCancelled: true })).toBe(false);
+  });
+
+  it("refuses from Waiting for settlement on, and before Open", () => {
+    for (const status of ["SETTLEMENT", "CLOSED", "PENDING_FINANCE", "CANCELLED"] as const) {
+      expect(purchaseCancelAllows(status, { isCancelled: false })).toBe(false);
+    }
+  });
+});
+
+describe("cancelledCount (07 Fixing a mistake 3: the order shows how many were cancelled)", () => {
+  it("counts the cancelled records only", () => {
+    expect(cancelledCount([])).toBe(0);
+    expect(
+      cancelledCount([{ isCancelled: true }, { isCancelled: false }, { isCancelled: true }]),
+    ).toBe(2);
+  });
+});
+
+describe("finishReasonAfter (orders_finish_reason_check; plan of 3.7, review correction 1)", () => {
+  it("keeps the reason at Done short and Not bought, and clears it otherwise", () => {
+    expect(finishReasonAfter("DONE_SHORT", "No more in the shop")).toBe("No more in the shop");
+    expect(finishReasonAfter("NOT_BOUGHT", "Not in any shop")).toBe("Not in any shop");
+    expect(finishReasonAfter("OPEN", "No more in the shop")).toBeNull();
+    expect(finishReasonAfter("DONE", "No more in the shop")).toBeNull();
   });
 });

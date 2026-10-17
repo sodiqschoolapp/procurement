@@ -341,6 +341,35 @@ export function isSubstituted(
 }
 
 /**
+ * A purchase record can be cancelled (07 Fixing a mistake: "While the order is Open, the Manager
+ * can cancel a purchase record with a reason"; plan of 3.7, decided item 4, Look first): its order
+ * is Open (`PURCHASING`) whatever its progress, and the record is not cancelled yet, since the
+ * cancel is one update that is never repeated (Decided ahead, question 3). Who may is
+ * `purchase.cancel` (03 Manager rights: CANCEL_PURCHASES). The screen asks this for its buttons,
+ * the actions ask it again.
+ */
+export function purchaseCancelAllows(
+  status: RequestStatus,
+  record: { isCancelled: boolean },
+): boolean {
+  return status === "PURCHASING" && !record.isCancelled;
+}
+
+/** How many of an order's records were cancelled (07 Fixing a mistake, third bullet). */
+export function cancelledCount(records: readonly { isCancelled: boolean }[]): number {
+  return records.filter((each) => each.isCancelled).length;
+}
+
+/**
+ * The finish reason an order keeps once a cancel changed its progress: the reason only at Done
+ * short or Not bought, else none, as `orders_finish_reason_check` (0026) holds it (plan of 3.7,
+ * review correction 1).
+ */
+export function finishReasonAfter(progress: OrderProgress, reason: string | null): string | null {
+  return progress === "DONE_SHORT" || progress === "NOT_BOUGHT" ? reason : null;
+}
+
+/**
  * Why a date bought is refused, or null (07 Purchase record, Date bought: "Not in the future, not
  * before the Finance approval of the order"; plan of 3.3, decided item 7). All three are business
  * dates in Tashkent (YYYY-MM-DD, which compare as text); an order without an approval date is

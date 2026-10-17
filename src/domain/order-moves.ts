@@ -40,6 +40,7 @@ export const ORDER_EVENT_TYPES = [
   "FINISH_ORDER",
   "MARK_NOT_BOUGHT",
   "REOPEN_BUYING",
+  "CANCEL_PURCHASE",
 ] as const;
 export type OrderEventType = (typeof ORDER_EVENT_TYPES)[number];
 
