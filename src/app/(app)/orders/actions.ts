@@ -26,6 +26,7 @@ import { closeExactOrders } from "@/features/orders/actions/close-exact";
 import { copyOrdersAsNew } from "@/features/orders/actions/copy-as-new";
 import { rejectOrders } from "@/features/orders/actions/reject";
 import { sendBackOrders } from "@/features/orders/actions/send-back";
+import { sendBackForCorrectionOrders } from "@/features/orders/actions/send-back-for-correction";
 import { sendToSettlementOrders } from "@/features/orders/actions/send-to-settlement";
 import { submitAgainOrders } from "@/features/orders/actions/submit-again";
 import { submitDrafts } from "@/features/orders/actions/submit";
@@ -38,7 +39,9 @@ import {
 } from "@/features/purchasing/actions/finish-buying";
 import { cancelPurchase, cancelTrip } from "@/features/purchasing/actions/cancel-purchase";
 import { cancelMoney } from "@/features/money/actions/cancel-money";
+import { confirmSettlement } from "@/features/money/actions/confirm-settlement";
 import { recordMoney } from "@/features/money/actions/record-money";
+import { settleCash } from "@/features/money/actions/settle-cash";
 import { moneyPrefillOrders } from "@/features/money/queries/money-prefill";
 import { newestMoves } from "@/features/orders/queries/newest-moves";
 import { submittedNumbers } from "@/features/orders/queries/submitted";
@@ -82,6 +85,9 @@ const cancelRecord = ordersServerAction(cancelPurchase);
 const cancelWholeTrip = ordersServerAction(cancelTrip);
 const recordMoneyRun = ordersServerAction(recordMoney);
 const cancelMoneyRun = ordersServerAction(cancelMoney);
+const settleCashRun = ordersServerAction(settleCash);
+const confirmSettlementRun = ordersServerAction(confirmSettlement);
+const toCorrection = ordersServerAction(sendBackForCorrectionOrders);
 
 /** A query as an answer: a refusal of authorize() or of the input is returned, never thrown. */
 async function asked<T>(read: (userId: string) => Promise<T>): Promise<ActionResult<T>> {
@@ -307,6 +313,21 @@ export async function recordMoneyAction(input: unknown): Promise<MoveAnswer> {
 /** Cancels a wrong money action whole, with a reason (08 Money ledger; plan of 4.3). */
 export async function cancelMoneyAction(input: unknown): Promise<MoveAnswer> {
   return moveAnswer(cancelMoneyRun, input);
+}
+
+/** Finance's settlement action: Receive and Pay rows, one action per Manager (08 Closing 2; 4.5). */
+export async function settleCashAction(input: unknown): Promise<MoveAnswer> {
+  return moveAnswer(settleCashRun, input);
+}
+
+/** Ticks or unticks "Confirmed" of a transfer or card block (08 Closing 2; plan of 4.5). */
+export async function confirmSettlementAction(input: unknown): Promise<MoveAnswer> {
+  return moveAnswer(confirmSettlementRun, input);
+}
+
+/** Sends the ticked settlement orders back to Open with a reason (08 Closing 4; plan of 4.5). */
+export async function sendBackForCorrectionOrdersAction(input: unknown): Promise<MoveAnswer> {
+  return moveAnswer(toCorrection, input);
 }
 
 /** One ticked order as the Record money dialog shows it; money as text of whole so'm. */

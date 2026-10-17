@@ -151,7 +151,9 @@ test("the Head fills the four catalogs, sees a clash refused, finds and deactiva
   await expect(dialog).toContainText(t.deactivateResult);
   await dialog.getByRole("button", { name: t.deactivate }).click();
   await expect(page.getByText(t.deactivated).first()).toBeVisible();
-  await expect(page.getByRole("button", { name: t.activate })).toBeVisible();
+  // The page's own button: while the dialog closes it can still show its button with the same
+  // name (e2e of 4.5's plan commit, phone-375).
+  await expect(page.getByRole("main").getByRole("button", { name: t.activate })).toBeVisible();
   await expect(page.getByText(uz.audit.actions.company.deactivate).first()).toBeVisible();
   await expect(page.getByText(uz.audit.actions.company.create).first()).toBeVisible();
 

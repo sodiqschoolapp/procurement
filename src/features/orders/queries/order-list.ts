@@ -28,7 +28,7 @@ import {
 } from "@/domain/order-totals";
 import type { PaymentType } from "@/domain/payment-types";
 import { type Actor, decide } from "@/domain/permissions";
-import { moneyRecordAllows } from "@/domain/money-ledger";
+import { moneyRecordAllows, settlementAllows } from "@/domain/money-ledger";
 import { type BuyingAction, actualQuantity, buyingActions } from "@/domain/purchases";
 import { type Executor, authorize, authorizeList, branchFilter } from "@/server/authorize";
 import { now } from "@/server/clock";
@@ -475,6 +475,12 @@ export type TickedSummary = {
    */
   canRecordMoney: boolean;
   /**
+   * Settle is offered (08 Closing 2; plan of 4.5, decided item 4, Look first): every ticked order
+   * Waiting for settlement (`settlementAllows()`), all of one branch, and `request.settle` on each.
+   * The settlement screen and its actions ask again.
+   */
+  canSettle: boolean;
+  /**
    * The buying actions allowed on every ticked order (07 Order progress: "Finish order" and "Not
    * bought" on ticked orders; plan of 3.5): buyingActions() of src/domain/purchases.ts, which the
    * actions ask again.
@@ -518,6 +524,7 @@ export async function tickedSummary(
     canCopy: false,
     recordTrip: false,
     canRecordMoney: false,
+    canSettle: false,
     buying: [],
     orders: [],
   };
@@ -612,6 +619,15 @@ export async function tickedSummary(
           (row) =>
             moneyRecordAllows(row.status) &&
             decide("money.record", actor, { branchId: row.branchId, ownerId: row.ownerId }) ===
+              "allow",
+        ),
+      canSettle:
+        found.length > 0 &&
+        found.every(
+          (row) =>
+            settlementAllows(row.status) &&
+            row.branchId === found[0]!.branchId &&
+            decide("request.settle", actor, { branchId: row.branchId, ownerId: row.ownerId }) ===
               "allow",
         ),
       buying: buyingActions(

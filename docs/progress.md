@@ -1168,4 +1168,23 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - For 4.6, 4.8: the notice of "Closed, reopened" goes to owners, active Heads and the branch's active Finance (`noticePerBranch` with `ownersAndHeads` and `financeOf`).
 - Tests that read notices filter by the branch code in `params` and the scene's users: every active Head of the test database is told of a Close.
 
-The next task is 4.5.
+## 4.5 Settlement screen (17.10.2026, pull request #85)
+
+**Built**
+- Migration `0030_settlement`: `SETTLE_CASH`, `CONFIRM_SETTLEMENT` (order actions and events), `CASH_SETTLED`, `REQUEST_SENT_BACK_FOR_CORRECTION` (notices).
+- Domain (`money-ledger.ts`): `paidBy()` (`cashSpent()` is its Cash case), `settlementBlocks()`, `transferNeedsNote()`, `blockConfirmed()`, `settlementAllows()`, `settlementCashRows()`.
+- `settleCash`, `confirmSettlement` (`src/features/money/actions/`), `sendBackForCorrectionOrders` (`src/features/orders/actions/`); page exports `settleCashAction`, `confirmSettlementAction`, `sendBackForCorrectionOrdersAction`.
+- `getSettlement()` and `settlementFactsOf()`; `/orders/settle?ids=` (`SettlementView`); `canSettle` on `tickedSummary()` and `getOrderPage()`; Settle and Send back for correction on both bars; `NoReceiptLabel`; anchors `#purchase-<id>` on the Purchases tab; Record money takes a preset `kind` and `label`.
+
+**Left out, and the task that brings it**
+- Finance's Close and readiness: 4.6. Overspend and the acknowledgment: 4.7. Reopen: 4.8. Finance's home list of settlements: 6.x.
+
+**What the next sessions must know**
+- For 4.6: readiness reads `blockConfirmed()` for the transfer and card blocks and a Cash count of 0 from `settlementFactsOf()` under the lock (a `facts` step, as 4.4's `exactMatch`); add Close to the settlement screen and the list bar.
+- For 4.7: Send back for correction already clears `overspend_ack_*` with the confirmations and names it in history (`payload.settlementCleared`).
+- For 4.8: the reopen clears the same columns; copy the update of `send-back-for-correction.ts`.
+- `settleCash` refuses rows of two branches in one call (`moneyOneBranch`); the screen takes one branch.
+- A checkbox of the screen is controlled by the server's answer: Playwright clicks it and waits for `toBeChecked()`, never `check()`.
+- `order-page.spec.ts` and `settlement.spec.ts` share the page users and set them to English; a spec that shares them reads English or no label.
+
+The next task is 4.6.

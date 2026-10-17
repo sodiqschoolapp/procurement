@@ -37,7 +37,9 @@ import { useFormatters } from "@/i18n/use-formatters";
 // per order, prefilled by moneyPrefill() (decided item 2, Look first) and changeable; a row left
 // empty or at 0 writes nothing. The result line names the orders and the total per Manager
 // (actionTotal()). A call is never retried by the screen; its client key is kept only after a call
-// with no answer. After every answer the page is refreshed and the caller clears its ticks.
+// with no answer. After every answer the page is refreshed and the caller clears its ticks. The
+// settlement screen opens it with a kind preset and its own label (Card money returned; plan of
+// 4.5, decided item 14).
 
 type Failed = { title: string; lines: { orderId: string; line: string }[] } | null;
 
@@ -46,8 +48,14 @@ export function RecordMoneyButton({
   onAnswer,
   size,
   className,
+  kind: preset = "CASH_GIVEN",
+  label,
 }: {
   orderIds: readonly string[];
+  /** The kind the dialog opens with. */
+  kind?: MoneyRowKind;
+  /** The button's text, when it is not "Record money". */
+  label?: string;
   onAnswer?: (failed: Failed) => void;
   size?: "sm";
   className?: string;
@@ -66,7 +74,7 @@ export function RecordMoneyButton({
   const [pending, setPending] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [orders, setOrders] = useState<WireMoneyOrder[]>([]);
-  const [kind, setKind] = useState<MoneyRowKind>("CASH_GIVEN");
+  const [kind, setKind] = useState<MoneyRowKind>(preset);
   const [date, setDate] = useState("");
   const [documentNo, setDocumentNo] = useState("");
   const [comment, setComment] = useState("");
@@ -107,7 +115,7 @@ export function RecordMoneyButton({
     valid && given.length > 0 && comment.trim() !== "" && date !== "" && !uploading && !loading;
 
   async function open() {
-    setKind("CASH_GIVEN");
+    setKind(preset);
     setDocumentNo("");
     setComment("");
     setFile(null);
@@ -240,7 +248,7 @@ export function RecordMoneyButton({
         className={className}
         data-record-money
       >
-        {t("button")}
+        {label ?? t("button")}
       </Button>
       <ConfirmDialog
         open={asking}

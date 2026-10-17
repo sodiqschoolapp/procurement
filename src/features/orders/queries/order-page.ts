@@ -8,7 +8,7 @@ import { isImageMime } from "@/domain/files";
 import { addsDraftsIn, inStock, plainQuantity } from "@/domain/drafts";
 import { type OrderAction, type OrderEventType, allowedActions } from "@/domain/order-moves";
 import { type StepEvent, type StepView, isOverdue, orderSteps } from "@/domain/order-steps";
-import { moneyRecordAllows } from "@/domain/money-ledger";
+import { moneyRecordAllows, settlementAllows } from "@/domain/money-ledger";
 import { extrasSum, priceHintPercent } from "@/domain/order-totals";
 import {
   type RevisionField,
@@ -247,6 +247,11 @@ export type OrderPage = {
    * `moneyRecordAllows()` (Open or Waiting for settlement). The server asks again.
    */
   canRecordMoney: boolean;
+  /**
+   * Settle is offered (08 Closing 2; plan of 4.5): Waiting for settlement (`settlementAllows()`)
+   * and `request.settle`. The settlement screen and its actions ask again.
+   */
+  canSettle: boolean;
   /**
    * The buying actions this user may take on this order now (07 Order progress; plan of 3.5):
    * buyingActions() of src/domain/purchases.ts. The server asks again.
@@ -513,6 +518,9 @@ async function readPage(db: Executor, actor: Actor, id: string): Promise<OrderPa
     canRecordMoney:
       moneyRecordAllows(row.status) &&
       decide("money.record", actor, { branchId: row.branchId, ownerId: row.ownerId }) === "allow",
+    canSettle:
+      settlementAllows(row.status) &&
+      decide("request.settle", actor, { branchId: row.branchId, ownerId: row.ownerId }) === "allow",
     canRecordPurchase:
       row.status === "PURCHASING" &&
       row.progress === "OPEN" &&

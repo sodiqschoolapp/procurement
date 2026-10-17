@@ -43,6 +43,7 @@ const PAGE_MOVES: readonly StatusMoveKind[] = [
   "CANCEL",
   "CLOSE_EXACT",
   "SEND_TO_SETTLEMENT",
+  "SEND_BACK_FOR_CORRECTION",
 ];
 
 /** The waiting line, or null when the user has an allowed move (decided item 4, Look first). */
@@ -51,6 +52,7 @@ async function waitingLine(order: OrderPage): Promise<string | null> {
     order.actions.length > 0 ||
     order.canRecordPurchase ||
     order.canRecordMoney ||
+    order.canSettle ||
     order.buying.length > 0
   ) {
     return null;
@@ -374,6 +376,7 @@ export default async function OrderPageScreen({
         canCopy={order.canCopy && order.status !== "DRAFT" && order.number !== null}
         recordPurchase={order.canRecordPurchase ? `/orders/${order.id}/purchase` : null}
         canRecordMoney={order.canRecordMoney}
+        settle={order.canSettle ? `/orders/settle?ids=${order.id}` : null}
         waitingLine={line}
       />
     </div>

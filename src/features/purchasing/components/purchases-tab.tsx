@@ -113,6 +113,7 @@ export async function PurchasesTab({ order }: { order: OrderPage }) {
             {order.purchases.map((record) => (
               <li
                 key={record.id}
+                id={`purchase-${record.id}`}
                 data-purchase-record={record.id}
                 data-cancelled={record.isCancelled ? "" : undefined}
                 className="grid grid-cols-1 gap-x-6 gap-y-2 py-3 sm:grid-cols-[minmax(7rem,auto)_1fr_auto]"
