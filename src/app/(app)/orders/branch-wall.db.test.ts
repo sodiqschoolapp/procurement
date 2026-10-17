@@ -281,6 +281,7 @@ describeTickedWall("sendToSettlementOrdersAction", {
 describeTickedWall("reopenOrdersAction", {
   permission: "request.reopen",
   status: "CLOSED",
+  owned: false,
   async run(user, ticked) {
     signedIn(user);
     return wall(
