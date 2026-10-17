@@ -1008,4 +1008,22 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - Take back works only at Waiting for Head: a Head's own order reaches a taken-back Draft only through Send back and Submit again.
 - A migration test over old rows cuts the journal twice (before and up to the migration), so later migrations never run over its hand-made rows.
 
-The next task is 3.6.
+## 3.6 Substitution (17.10.2026, pull request #76)
+
+**Built**
+- `recordPurchase`: each `lines[]` entry takes `variantId`, the subtype bought; `refuseSubtypes()` locks every subtype bought `FOR UPDATE` in id order and refuses another product's or an unknown id (`errors.field.otherProduct`) and an inactive subtype or product (`errors.field.inactive`); the ordered subtype is always allowed. Record, Receipt movement, last purchase price and PURCHASE price row take the subtype bought; the event payload names it.
+- Domain: `isSubstituted()`; `purchaseCommentNeeds()` takes `variantId` and `plannedVariantId` and returns `SUBSTITUTED`.
+- `getPurchaseForm`: `subtypes` per order (the ordered first, then the product's other active ones by name); the form's Subtype bought select per line and per group block.
+- `getOrderPage`: `substituted`, and `variantId` and `boughtSubtypeName` per record; `SubstitutedLabel` (info, `swap_horiz`) in the header, "Bought: …" in the Purchases tab.
+- The 4.4 line "From 3.6" in the build plan.
+
+**Left out, and the task that brings it**
+- "Cannot close alone; Finance reviews it" and exact match: 4.4. Cancel of a substituted record: 3.7.
+
+**What the next sessions must know**
+- For 4.4: substituted is `isSubstituted(order.variantId, records)` over records with `variantId` and `isCancelled`; `orderRecords()` does not carry `variantId` yet, so read it beside them or widen the row.
+- For 3.7: a cancel's REVERSAL is on the record's `variant_id` (the subtype bought), not the order's.
+- For 3.9: the subtype select is `#purchase-subtype-<orderId>`; it shows only when `subtypes` has more than one entry.
+- Any action that updates `product_variants` rows it also checks locks them `FOR UPDATE` first, in id order: a share lock upgraded later deadlocks two trips (`substitution.db.test.ts`).
+
+The next task is 3.7.

@@ -312,7 +312,7 @@ The Manager records what was really bought, one order or one whole shop visit at
   - **Done when:** S4 without the issue: 60 notebooks, then 40; stock 60, then 100; the order stays Open until the second record. A test reads the downloads of the Cheaper case and finds 470 000 and 50 000.
   - Merged with the former 4.11 by the owner on 17.10.2026 (D47).
 
-- [ ] **3.6 Substitution**
+- [x] **3.6 Substitution**
   - **Read:** `07-purchasing.md` (Substitution); `15-quality-and-acceptance.md` (S10); `edge-cases/purchasing-and-money.md` ("A different colour or size was bought"; "A completely different product is needed").
   - **Build:** The Manager picks the subtype really bought, inside the same product; stock rises for that subtype; the order shows "Substituted"; the closing rules of 4.4 read this.
   - **Done when:** Tests: a subtype of another product is refused; S10 up to the stock check (stock rises for black pens, not for blue).

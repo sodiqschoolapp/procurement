@@ -1462,6 +1462,29 @@ The plan's decisions as the plan review of 17.10.2026 confirmed them (correction
 2. The test reads the fact through the fragment, selected with Drizzle over `orders` as the order page and the list select it, beside `lockOrders()`: neither query returns `createdByHead`, and no button differs (review of #61, finding 2).
 3. The migration test has its own file, its own fresh database and two journal cuts (up to 0021, then up to 0022), so 0023 to 0026 never run over its hand-made rows. It writes two old rows of one order (revisions 1 and 2) and also checks that 0022 left no default (23502).
 
+### 3.6 Substitution (17.10.2026)
+
+The plan's decisions as the plan review of 17.10.2026 confirmed them (corrections 1 and 2 applied), and those of the build. The Look first items come first.
+
+1. **Look first** (stock and money). The subtype bought takes the stock receipt, the last purchase price and the PURCHASE price row; the ordered subtype's prices stay (07 What saving 2 and 3; Substitution).
+2. **Look first** (comment). A substitution needs its comment: `purchaseCommentNeeds()` returns `SUBSTITUTED`; the price is still compared with the order's planned price (07 Comment).
+3. **Look first** (read by 4.4). An order is Substituted when a record that is not cancelled bought another subtype (`isSubstituted()`); cancelled records do not count (08).
+4. **Look first** (which subtypes). The ordered subtype, or another active subtype of the same active product; the ordered one stays allowed after a deactivation of it or its product (04 rule 2).
+5. **Look first** (where checked). In the action, under a `FOR UPDATE` lock of every subtype bought in id order; no database trigger (not in "Constraints the spec names"; D44).
+6. The select lists the ordered subtype first, then the others by name (review correction 1); a product with only its hidden default shows none.
+7. A group block has one select that sets each of its lines; each line keeps its own.
+8. "Substituted" shows on the order page header from Open on and on the record in the Purchases tab; not in list rows; the download keeps the ordered subtype.
+9. Own refusal text `errors.field.otherProduct` (07 Substitution, last sentence).
+10. The event payload `purchase` gains `variantId`; the history line is unchanged.
+11. No notification for a substitution.
+12. Icon `swap_horiz` through `npm run icons`; no new dependency.
+13. A "From 3.6" line on 4.4 in the build plan.
+
+Choices made during the build:
+
+- The subtype tests are their own file, `substitution.db.test.ts`, not `record-purchase.db.test.ts` as the plan said.
+- The same-moment test holds black's row in a third transaction while both trips wait on it; with a share lock instead of `FOR UPDATE` it fails with a deadlock (checked).
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.
