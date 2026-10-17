@@ -80,6 +80,11 @@ export type NotificationParamsOf = {
   REQUEST_SENT_TO_SETTLEMENT: OrderActionParams;
   REQUEST_CLOSED: OrderActionParams;
   REQUEST_REOPENED: OrderActionParams;
+  /**
+   * "Purchase record cancelled" (plan of 3.7, decided item 9): `count` is the records cancelled
+   * by the action in `branch` (a trip is one branch), not its orders.
+   */
+  PURCHASE_CANCELLED: OrderActionParams;
   REQUEST_WAITING_24H: OrdersWaitingParams;
   REQUEST_WAITING_48H: OrdersWaitingParams;
   /** "Branch has no active user for a role": the branch's code and the role's code. */
@@ -108,6 +113,7 @@ export const NOTIFICATION_PARAMS: {
   REQUEST_SENT_TO_SETTLEMENT: ["actor", "count", "branch"],
   REQUEST_CLOSED: ["actor", "count", "branch"],
   REQUEST_REOPENED: ["actor", "count", "branch"],
+  PURCHASE_CANCELLED: ["actor", "count", "branch"],
   REQUEST_WAITING_24H: ["count", "hours"],
   REQUEST_WAITING_48H: ["count", "hours"],
   BRANCH_ROLE_VACANT: ["branch", "role"],

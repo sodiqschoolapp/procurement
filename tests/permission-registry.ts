@@ -102,6 +102,9 @@ export const SERVER_ACTIONS: Record<string, Entry> = {
   "src/app/(app)/orders/actions.ts#finishOrdersAction": "purchase.record",
   "src/app/(app)/orders/actions.ts#markNotBoughtAction": "purchase.record",
   "src/app/(app)/orders/actions.ts#reopenBuyingAction": "purchase.record",
+  // Cancel record and Cancel trip (plan of 3.7, decided item 5, Look first).
+  "src/app/(app)/orders/actions.ts#cancelPurchaseAction": "purchase.cancel",
+  "src/app/(app)/orders/actions.ts#cancelTripAction": "purchase.cancel",
 };
 
 /** Exports of `src/features/<area>/queries/`, as `<file>#<export>`. */

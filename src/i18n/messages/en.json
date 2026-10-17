@@ -74,7 +74,8 @@
       "inFuture": "The date is in the future. Pick today or an earlier day.",
       "beforeApproval": "The date is before Finance approved the order. Pick that day or a later one.",
       "tripOneOwner": "One purchase covers orders of one branch and one owner. Tick only those.",
-      "otherProduct": "Pick a subtype of the ordered product. For another product, mark the order Not bought and add a new order."
+      "otherProduct": "Pick a subtype of the ordered product. For another product, mark the order Not bought and add a new order.",
+      "stockShort": "Not enough in stock to cancel: the items were already issued. Take them back from the department first, or use a write-off."
     },
     "file": {
       "tooLarge": "The file is larger than 10 MB. Choose a smaller file or take the photo again.",
@@ -324,6 +325,7 @@
       "REQUEST_SENT_TO_SETTLEMENT": "{actor} sent {count, plural, one {# order} other {# orders}} in {branch} to settlement.",
       "REQUEST_CLOSED": "{actor} closed {count, plural, one {# order} other {# orders}} in {branch}.",
       "REQUEST_REOPENED": "{actor} reopened {count, plural, one {# order} other {# orders}} in {branch}.",
+      "PURCHASE_CANCELLED": "{actor} cancelled {count, plural, one {# purchase record} other {# purchase records}} in {branch}.",
       "REQUEST_WAITING_24H": "{count, plural, one {# order has} other {# orders have}} waited more than {hours, plural, one {# hour} other {# hours}} for your approval.",
       "REQUEST_WAITING_48H": "{count, plural, one {# order has} other {# orders have}} waited more than {hours, plural, one {# hour} other {# hours}} for approval.",
       "BRANCH_ROLE_VACANT": "Branch {branch} has no active {role, select, HEAD {Procurement Head} MANAGER {Manager} PRINCIPAL {Principal} FINANCE {Finance user} other {user}}.",
@@ -1168,7 +1170,8 @@
           "RECORD_PURCHASE": "Purchase recorded",
           "FINISH_ORDER": "Buying finished",
           "MARK_NOT_BOUGHT": "Marked not bought",
-          "REOPEN_BUYING": "Buying reopened"
+          "REOPEN_BUYING": "Buying reopened",
+          "CANCEL_PURCHASE": "Purchase record cancelled"
         },
         "approved": {
           "PENDING_HEAD": "Approved at the Head step",
@@ -1258,7 +1261,26 @@
         "cancelReason": "Cancel reason: {text}",
         "none": "—",
         "tripLine": "{payment} · {supplier}",
-        "bought": "Bought: {subtype}"
+        "bought": "Bought: {subtype}",
+        "cancelledCount": "{count, plural, one {# cancelled record} other {# cancelled records}}",
+        "cancel": {
+          "button": {
+            "RECORD": "Cancel record",
+            "TRIP": "{count, plural, one {Cancel trip (# order)} other {Cancel trip (# orders)}}"
+          },
+          "title": {
+            "RECORD": "Cancel this purchase record?",
+            "TRIP": "{count, plural, one {Cancel the trip of 1 order?} other {Cancel every record of this trip, # orders?}}"
+          },
+          "result": {
+            "RECORD": "The record stays visible, crossed out, and counts for nothing. Stock goes down by its quantity and the Procurement Head is told. To correct it, enter it again.",
+            "TRIP": "Every record of the trip stays visible, crossed out, and counts for nothing. Stock goes down by each quantity and the Procurement Head is told. Nothing is cancelled if one record cannot be."
+          },
+          "done": {
+            "RECORD": "Purchase record cancelled.",
+            "TRIP": "{count, plural, one {Cancelled 1 purchase record.} other {Cancelled # purchase records.}}"
+          }
+        }
       }
     },
     "approve": {

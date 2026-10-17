@@ -74,7 +74,8 @@
       "inFuture": "Sana kelajakda. Bugun yoki oldingi kunni tanlang.",
       "beforeApproval": "Sana buyurtma moliya tomonidan tasdiqlanishidan oldin. Shu kunni yoki keyingisini tanlang.",
       "tripOneOwner": "Bitta xarid bitta filial va bitta egasining buyurtmalarini qamraydi. Faqat ularni belgilang.",
-      "otherProduct": "Buyurtma qilingan mahsulotning turini tanlang. Boshqa mahsulot uchun buyurtmani «Sotib olinmadi» deb belgilang va yangi buyurtma qoʻshing."
+      "otherProduct": "Buyurtma qilingan mahsulotning turini tanlang. Boshqa mahsulot uchun buyurtmani «Sotib olinmadi» deb belgilang va yangi buyurtma qoʻshing.",
+      "stockShort": "Bekor qilib boʻlmaydi: omborda yetarli emas, mahsulot allaqachon berilgan. Avval uni boʻlimdan qaytarib oling yoki hisobdan chiqaring."
     },
     "file": {
       "tooLarge": "Fayl 10 MB dan katta. Kichikroq fayl tanlang yoki suratni qaytadan oling.",
@@ -324,6 +325,7 @@
       "REQUEST_SENT_TO_SETTLEMENT": "{branch}: {actor} {count, plural, other {# ta buyurtmani}} hisob-kitobga yubordi.",
       "REQUEST_CLOSED": "{branch}: {actor} {count, plural, other {# ta buyurtmani}} yopdi.",
       "REQUEST_REOPENED": "{branch}: {actor} {count, plural, other {# ta buyurtmani}} qayta ochdi.",
+      "PURCHASE_CANCELLED": "{branch}: {actor} {count, plural, other {# ta xarid yozuvini}} bekor qildi.",
       "REQUEST_WAITING_24H": "{count, plural, other {# ta buyurtma}} tasdiqingizni {hours, plural, other {# soatdan}} ortiq kutmoqda.",
       "REQUEST_WAITING_48H": "{count, plural, other {# ta buyurtma}} tasdiqlashni {hours, plural, other {# soatdan}} ortiq kutmoqda.",
       "BRANCH_ROLE_VACANT": "{branch} filialida faol {role, select, HEAD {xaridlar rahbari} MANAGER {menejer} PRINCIPAL {direktor} FINANCE {moliya xodimi} other {foydalanuvchi}} yoʻq.",
@@ -1168,7 +1170,8 @@
           "RECORD_PURCHASE": "Xarid yozildi",
           "FINISH_ORDER": "Xarid yakunlandi",
           "MARK_NOT_BOUGHT": "Sotib olinmadi deb belgilandi",
-          "REOPEN_BUYING": "Xarid qayta ochildi"
+          "REOPEN_BUYING": "Xarid qayta ochildi",
+          "CANCEL_PURCHASE": "Xarid yozuvi bekor qilindi"
         },
         "approved": {
           "PENDING_HEAD": "Rahbar bosqichida tasdiqlandi",
@@ -1258,7 +1261,26 @@
         "cancelReason": "Bekor qilish sababi: {text}",
         "none": "—",
         "tripLine": "{payment} · {supplier}",
-        "bought": "Sotib olindi: {subtype}"
+        "bought": "Sotib olindi: {subtype}",
+        "cancelledCount": "{count, plural, other {# ta bekor qilingan yozuv}}",
+        "cancel": {
+          "button": {
+            "RECORD": "Yozuvni bekor qilish",
+            "TRIP": "Safarni bekor qilish ({count} ta buyurtma)"
+          },
+          "title": {
+            "RECORD": "Bu xarid yozuvi bekor qilinsinmi?",
+            "TRIP": "{count, plural, other {Safarning barcha yozuvlari, # ta buyurtma, bekor qilinsinmi?}}"
+          },
+          "result": {
+            "RECORD": "Yozuv chizilgan holda koʻrinib turadi va hech narsaga hisoblanmaydi. Qoldiq uning miqdoricha kamayadi, xaridlar rahbariga xabar boradi. Tuzatish uchun uni qaytadan kiriting.",
+            "TRIP": "Safarning barcha yozuvlari chizilgan holda koʻrinib turadi va hech narsaga hisoblanmaydi. Qoldiq har bir miqdorcha kamayadi, xaridlar rahbariga xabar boradi. Bitta yozuvni bekor qilib boʻlmasa, hech narsa bekor qilinmaydi."
+          },
+          "done": {
+            "RECORD": "Xarid yozuvi bekor qilindi.",
+            "TRIP": "{count, plural, other {# ta xarid yozuvi bekor qilindi.}}"
+          }
+        }
       }
     },
     "approve": {

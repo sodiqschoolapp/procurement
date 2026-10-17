@@ -1026,4 +1026,23 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - For 3.9: the subtype select is `#purchase-subtype-<orderId>`; it shows only when `subtypes` has more than one entry.
 - Any action that updates `product_variants` rows it also checks locks them `FOR UPDATE` first, in id order: a share lock upgraded later deadlocks two trips (`substitution.db.test.ts`).
 
-The next task is 3.7.
+## 3.7 Cancel a purchase record or a trip (17.10.2026, pull request #77)
+
+**Built**
+- `cancelPurchase` and `cancelTrip` (`src/features/purchasing/actions/cancel-purchase.ts`) on `runOrdersAction` under `purchase.cancel`, event `CANCEL_PURCHASE` (migration `0027_cancel_purchase`), payload `purchase: {id, tripId}` and `progress: {from, to}`; page exports `cancelPurchaseAction`, `cancelTripAction`.
+- The write: the one cancel update; a priced `REVERSAL` per goods record on its branch and subtype bought, `reverses_movement_id` its RECEIPT; every short subtype refused at once (`not_ready`, field `stock: errors.field.stockShort`); the last purchase price back to the newest live record; `actual_total`, progress and finish reason again; `PURCHASE_CANCELLED` to every active Head.
+- Domain: `purchaseCancelAllows()`, `cancelledCount()`, `finishReasonAfter()`.
+- `getOrderPage`: `canCancel` and `trip` per record, `cancelledCount`; `CancelPurchaseButton` on the Purchases tab; the count beside the progress.
+
+**Left out, and the task that brings it**
+- Settlement's cancelled count with links: 4.5. Corrections after Closed: 4.8 (a "From 3.7" line). Manager analytics' cancelled records: 6.5.
+
+**What the next sessions must know**
+- For 4.5: the count is `cancelledCount()` over the order's records; link each record of the Purchases tab.
+- For 4.8: a reopened order is Open, so `purchaseCancelAllows()` lets the cancel through; nothing else to build for it.
+- For 5.4: an issue made by "Give straight to requester" blocks the record's cancel through the stock rule; the message already names the two ways out.
+- For 6.5: cancelled records are `purchases.is_cancelled`, by `cancelled_by`.
+- An action that reads child rows named by the browser filters them by the locked orders inside its SQL before locking them (`lockRecords()`).
+- `tsc` can keep stale message-file types in `tsconfig.tsbuildinfo`: delete it when a new key is reported missing.
+
+The next task is 3.8.
