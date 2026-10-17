@@ -85,18 +85,25 @@ function record(
   fields: Record<string, unknown> = {},
   version = opened.order.version,
 ) {
+  // The order's own fields go into its line (plan of 3.4: one line per ticked order).
+  const { qty, unitPrice, extras, comment, ...shared } = fields;
   return runOrdersAction(recordPurchase, opened.owner.id, {
     clientKey: randomUUID(),
     orders: [{ id: opened.order.id, version }],
     purchasedOn: TODAY,
-    qty: "100",
-    unitPrice: "5000",
     paymentType: "CARD",
     supplierId: null,
-    extras: [],
     receiptFileIds: [],
-    comment: null,
-    ...fields,
+    ...shared,
+    lines: [
+      {
+        orderId: opened.order.id,
+        qty: qty ?? "100",
+        unitPrice: unitPrice ?? "5000",
+        extras: extras ?? [],
+        comment: comment ?? null,
+      },
+    ],
   });
 }
 
@@ -294,7 +301,7 @@ describe("recordPurchase: the field rules (07 Purchase record)", () => {
     const opened = await openOrder();
     expect(await record(opened, { unitPrice: "0" })).toMatchObject({
       ok: false,
-      error: { code: "invalid_input", fields: { comment: "errors.field.required" } },
+      error: { code: "invalid_input", fields: { "lines.0.comment": "errors.field.required" } },
     });
     expect(await recordsOf(opened.order.id)).toEqual([]);
     expect(await record(opened, { unitPrice: "0", comment: "sovg'a" })).toMatchObject({
@@ -313,7 +320,7 @@ describe("recordPurchase: the field rules (07 Purchase record)", () => {
     ]) {
       expect(await record(opened, fields)).toMatchObject({
         ok: false,
-        error: { code: "invalid_input", fields: { comment: "errors.field.required" } },
+        error: { code: "invalid_input", fields: { "lines.0.comment": "errors.field.required" } },
       });
     }
     expect(await recordsOf(opened.order.id)).toEqual([]);
@@ -346,7 +353,7 @@ describe("recordPurchase: the field rules (07 Purchase record)", () => {
     const whole = await openOrder();
     expect(await record(whole, { qty: "2.5" })).toMatchObject({
       ok: false,
-      error: { fields: { qty: "errors.field.wholeOnly" } },
+      error: { fields: { "lines.0.qty": "errors.field.wholeOnly" } },
     });
     const decimal = await openOrder({ allowDecimal: true });
     expect(await record(decimal, { qty: "2.5" })).toMatchObject({ ok: true });
@@ -366,7 +373,7 @@ describe("recordPurchase: the field rules (07 Purchase record)", () => {
       }),
     ).toMatchObject({
       ok: false,
-      error: { fields: { "extras.0.extraCostTypeId": "errors.field.inactive" } },
+      error: { fields: { "lines.0.extras.0.extraCostTypeId": "errors.field.inactive" } },
     });
     expect(await recordsOf(opened.order.id)).toEqual([]);
     const active = await insertCompany();
@@ -576,13 +583,12 @@ describe("recordPurchase: the wrapper's rules (developer-rules.md rules 3, 8, 9;
       clientKey: randomUUID(),
       orders: [{ id: opened.order.id, version: opened.order.version }],
       purchasedOn: TODAY,
-      qty: "60",
-      unitPrice: "5000",
       paymentType: "CARD",
       supplierId: null,
-      extras: [],
       receiptFileIds: [],
-      comment: null,
+      lines: [
+        { orderId: opened.order.id, qty: "60", unitPrice: "5000", extras: [], comment: null },
+      ],
     };
     const first = await runOrdersAction(recordPurchase, opened.owner.id, input);
     const second = await runOrdersAction(recordPurchase, opened.owner.id, input);

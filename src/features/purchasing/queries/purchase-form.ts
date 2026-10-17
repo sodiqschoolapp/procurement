@@ -1,10 +1,11 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import * as z from "zod";
 
 import { businessDate } from "@/domain/business-date";
 import type { PaymentType } from "@/domain/payment-types";
 import { decide } from "@/domain/permissions";
-import { actualQuantity } from "@/domain/purchases";
+import { ORDER_ACTION_MAX } from "@/domain/order-moves";
+import { actualQuantity, inSplitOrder } from "@/domain/purchases";
 import { AuthorizationError, authorizeList, branchFilter } from "@/server/authorize";
 import { now } from "@/server/clock";
 import {
@@ -16,26 +17,35 @@ import {
   productVariants,
   products,
   units,
+  users,
 } from "@/server/db/schema";
 import { readSnapshot } from "@/server/read-snapshot";
 import { readSettings } from "@/server/settings";
 
 import { orderRecords } from "../order-records";
 
-// The purchase form of one Open order, /orders/[id]/purchase (07-purchasing.md, Purchase record;
-// plan of 3.3). Under `purchase.record`: the Head in any branch, the order's owner with
-// RECORD_PURCHASES on (03 Permission matrix "Record purchases"). The branch wall is inside the
-// SQL; an order of another branch, an unknown or malformed id, and an order that is not Open or
-// whose buying is finished are `null` (decided item 14); an order the user sees but may not record
-// is `forbidden`. One snapshot, so the plan, the records and the defaults are of one moment.
+// The purchase form of one trip: one Open order at /orders/[id]/purchase, or the ticked orders
+// and group rows at /orders/purchase (07-purchasing.md, Purchase record; One trip, many orders;
+// plans of 3.3 and 3.4). Under `purchase.record`: the Head in any branch, the order's owner with
+// RECORD_PURCHASES on (03 Permission matrix "Record purchases"). The branch wall, the draft wall,
+// the status and the progress are inside the SQL: an id it does not return (another branch, an
+// unknown or malformed id, a Draft, an order that is not Open or whose buying is finished) is
+// dropped and never counted (plan of 3.4, spec review Should fix 2). What is left: `null` when
+// nothing, or two branches; `forbidden` when the user may record none of it (a colleague's
+// orders, a right switched off); else the orders the user may record, by owner (a Manager: only
+// own orders; the Head picks one owner on the form, decided item 9) and how many were left out
+// (decided item 10). One snapshot, so the plans, the records and the defaults are of one moment.
 
 export type PurchaseFormChoice = { id: string; name: string };
 
-export type PurchaseForm = {
+export type PurchaseFormOrder = {
   orderId: string;
   version: number;
   number: string;
-  branchCode: string;
+  /** The first submit: with the number, the split's order (07 One trip 2). */
+  submittedAt: Date;
+  ownerId: string;
+  variantId: string;
   productName: string;
   /** The subtype's name, or null for a product's hidden default subtype (04 rule 1). */
   subtypeName: string | null;
@@ -46,44 +56,55 @@ export type PurchaseForm = {
   plannedQty: string;
   plannedPrice: bigint;
   plannedExtras: { extraCostTypeId: string; typeName: string; amount: bigint }[];
-  /** "Payment type used: Default from the order" (07). */
+  /** The order's payment type: the comment rule compares with it (07 Comment). */
   paymentType: PaymentType;
-  /** The actual quantity before this record (08 Actual quantity). */
+  /** The actual quantity before this trip (08 Actual quantity). */
   received: string;
-  /** "Default today" (07), the business date in Tashkent. */
-  today: string;
   /** The business date of the Finance approval: no date before it (07). */
   approvedOn: string | null;
-  /** The order's company while it is active (07 Supplier; spec review of the plan, Should fix 4). */
-  defaultSupplierId: string | null;
+  /** The order's company while it is active (07 Supplier; 3.3 spec review, Should fix 4). */
+  companyId: string | null;
+};
+
+export type PurchaseForm = {
+  branchCode: string;
+  /** The recordable orders, in the split's order (inSplitOrder()). */
+  orders: PurchaseFormOrder[];
+  /** The owners of `orders`, with the most orders first, then by name (decided item 9). */
+  owners: PurchaseFormChoice[];
+  /** Visible ticked orders this user may not record (another owner's): a count only. */
+  leftOut: number;
+  /** "Default today" (07), the business date in Tashkent. */
+  today: string;
   receiptRequiredForCash: boolean;
   suppliers: PurchaseFormChoice[];
   extraCostTypes: PurchaseFormChoice[];
 };
 
-const idInput = z.uuid();
+const idsInput = z.array(z.uuid()).min(1).max(ORDER_ACTION_MAX);
 
 export async function getPurchaseForm(
   userId: string,
-  orderId: string,
+  orderIds: readonly string[],
 ): Promise<PurchaseForm | null> {
-  // Seeing first, so another branch's order is "Not found" for every role (03 rule 1); then the
-  // right to record on this order.
+  // Seeing first, so another branch's order is dropped for every role (03 rule 1); then the right
+  // to record each order.
   const actor = await authorizeList(userId, "data.view");
-  const parsed = idInput.safeParse(orderId);
+  const parsed = idsInput.safeParse([...new Set(orderIds)]);
   if (!parsed.success) return null;
 
   return readSnapshot(async (db) => {
-    const [row] = await db
+    const rows = await db
       .select({
         id: orders.id,
         version: orders.version,
         number: orders.number,
-        status: orders.status,
-        progress: orders.progress,
+        submittedAt: orders.submittedAt,
         branchId: orders.branchId,
         ownerId: orders.ownerId,
+        ownerName: users.fullName,
         branchCode: branches.code,
+        variantId: orders.variantId,
         productName: products.name,
         variantName: productVariants.name,
         variantIsDefault: productVariants.isDefault,
@@ -99,13 +120,14 @@ export async function getPurchaseForm(
       })
       .from(orders)
       .innerJoin(branches, eq(branches.id, orders.branchId))
+      .innerJoin(users, eq(users.id, orders.ownerId))
       .innerJoin(productVariants, eq(productVariants.id, orders.variantId))
       .innerJoin(products, eq(products.id, productVariants.productId))
       .innerJoin(units, eq(units.id, products.unitId))
       .leftJoin(companies, eq(companies.id, orders.companyId))
       .where(
         and(
-          eq(orders.id, parsed.data),
+          inArray(orders.id, parsed.data),
           branchFilter(actor, orders.branchId),
           // Open with its buying not finished, inside the SQL: a numbered Draft is never read
           // (the draft wall; permission review of 3.3, Should fix 1).
@@ -113,22 +135,27 @@ export async function getPurchaseForm(
           eq(orders.progress, "OPEN"),
         ),
       );
-    if (!row) return null;
-    const decision = decide("purchase.record", actor, {
-      branchId: row.branchId,
-      ownerId: row.ownerId,
-    });
-    if (decision !== "allow") throw new AuthorizationError(decision);
+    if (rows.length === 0) return null;
+    // 07 One trip: one branch (decided item 2, Look first).
+    if (rows.some((row) => row.branchId !== rows[0]!.branchId)) return null;
+    const recordable = rows.filter(
+      (row) =>
+        decide("purchase.record", actor, { branchId: row.branchId, ownerId: row.ownerId }) ===
+        "allow",
+    );
+    if (recordable.length === 0) throw new AuthorizationError("forbidden");
 
+    const ids = recordable.map((row) => row.id);
     const plannedExtras = await db
       .select({
+        orderId: orderExtras.orderId,
         extraCostTypeId: orderExtras.extraCostTypeId,
         typeName: extraCostTypes.name,
         amount: orderExtras.amount,
       })
       .from(orderExtras)
       .innerJoin(extraCostTypes, eq(extraCostTypes.id, orderExtras.extraCostTypeId))
-      .where(eq(orderExtras.orderId, row.id))
+      .where(inArray(orderExtras.orderId, ids))
       .orderBy(asc(orderExtras.createdAt), asc(orderExtras.id));
     const suppliers = await db
       .select({ id: companies.id, name: companies.name })
@@ -142,24 +169,48 @@ export async function getPurchaseForm(
       .orderBy(asc(extraCostTypes.name));
     const settings = await readSettings(db);
 
+    const formOrders: PurchaseFormOrder[] = [];
+    for (const row of recordable) {
+      formOrders.push({
+        orderId: row.id,
+        version: row.version,
+        number: row.number!,
+        submittedAt: row.submittedAt!,
+        ownerId: row.ownerId,
+        variantId: row.variantId!,
+        productName: row.productName,
+        subtypeName: row.variantIsDefault ? null : row.variantName,
+        unitShortName: row.unitShortName,
+        allowDecimal: row.allowDecimal,
+        isService: row.productType === "SERVICE",
+        plannedQty: row.plannedQty!,
+        plannedPrice: row.plannedPrice!,
+        plannedExtras: plannedExtras
+          .filter((extra) => extra.orderId === row.id)
+          .map(({ extraCostTypeId, typeName, amount }) => ({ extraCostTypeId, typeName, amount })),
+        paymentType: row.paymentType,
+        received: actualQuantity(await orderRecords(db, row.id)),
+        approvedOn: row.approvedAt ? businessDate(row.approvedAt) : null,
+        companyId: row.companyId && row.companyActive ? row.companyId : null,
+      });
+    }
+
+    const counts = new Map<string, { id: string; name: string; count: number }>();
+    for (const row of recordable) {
+      const owner = counts.get(row.ownerId) ?? { id: row.ownerId, name: row.ownerName, count: 0 };
+      owner.count += 1;
+      counts.set(row.ownerId, owner);
+    }
+    const owners = [...counts.values()]
+      .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
+      .map(({ id, name }) => ({ id, name }));
+
     return {
-      orderId: row.id,
-      version: row.version,
-      number: row.number!,
-      branchCode: row.branchCode,
-      productName: row.productName,
-      subtypeName: row.variantIsDefault ? null : row.variantName,
-      unitShortName: row.unitShortName,
-      allowDecimal: row.allowDecimal,
-      isService: row.productType === "SERVICE",
-      plannedQty: row.plannedQty!,
-      plannedPrice: row.plannedPrice!,
-      plannedExtras,
-      paymentType: row.paymentType,
-      received: actualQuantity(await orderRecords(db, row.id)),
+      branchCode: rows[0]!.branchCode,
+      orders: inSplitOrder(formOrders),
+      owners,
+      leftOut: rows.length - recordable.length,
       today: businessDate(now()),
-      approvedOn: row.approvedAt ? businessDate(row.approvedAt) : null,
-      defaultSupplierId: row.companyId && row.companyActive ? row.companyId : null,
       receiptRequiredForCash: settings.receipt_required_for_cash,
       suppliers,
       extraCostTypes: types,

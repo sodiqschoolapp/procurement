@@ -937,4 +937,21 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - For 3.5, 3.7: add new history writes to `ORDER_EVENT_TYPES` and a label under `orders.page.history.moves`.
 - A form with `UnsavedChangesGuard` that leaves after saving passes `dirty && !pending`, and does not `revalidatePath` its own page: the guard's `history.back()` or the re-render cancels `router.push`.
 
-The next task is 3.4.
+## 3.4 One trip, many orders (17.10.2026, pull request #68)
+
+**Built**
+- `recordPurchase` takes 1 to 200 orders as one trip: shared `purchasedOn`, `paymentType`, `supplierId`, `receiptFileIds`; one `lines[]` entry per ticked order (`qty`, `unitPrice`, `extras`, `comment`), matched to the ticked ids by Zod. One branch and one owner checked first in `write()` (`errors.field.tripOneOwner`); records written in `inSplitOrder()` (new in `src/domain/purchases.ts`, shared with `splitGroupQuantity`); movements through one `postMovements()`; last purchase price per subtype in variant-id order.
+- `getPurchaseForm(userId, ids)` returns the recordable orders, their owners and a left-out count; `/orders/purchase?ids=` (new) and `/orders/[id]/purchase` share `PurchaseFormView` (blocks per subtype with one quantity and price split by `splitGroupQuantity`, per-order Same as planned, the Head's owner select).
+- `tickedSummary().recordTrip` and the "Record purchase" link in the list's action bar.
+- `describeTickedWall` options `order`, `oneBranch`, `unchanged`.
+
+**Left out, and the task that brings it**
+- Subtype bought (substitution): 3.6. Give straight to requester: 5.4. Purchases tab, finish, reopen: 3.5. Cancel a record or trip: 3.7. Colours: 3.8. Phone one-at-a-time layout: 3.9.
+
+**What the next sessions must know**
+- For 3.5 and 3.7: an action on ticked orders that writes purchasing rows passes `unchanged` to `describeTickedWall` so a refusal is checked against those tables.
+- For 3.6: the subtype bought goes into each `lines[]` entry; `plansOf()` in `record-purchase.ts` reads the ordered subtype, and the movement and price steps take `plan.variantId`.
+- For 3.9: `PurchaseFormView` takes `backHref`; its line errors are `lines.<index in what was sent>.<field>`, mapped back through `sent`.
+- An e2e insert that uses one `pg` parameter in two places casts each use (`$5::numeric`, `$5::bigint`), or PostgreSQL refuses "inconsistent types deduced".
+
+The next task is 3.5.

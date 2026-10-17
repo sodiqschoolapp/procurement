@@ -16,7 +16,7 @@ import {
 
 import { type Answer, expectedAnswer } from "../permission-matrix-expected";
 import { insertBranch } from "./branches";
-import { insertOrder } from "./orders";
+import { type OrderRow, insertOrder } from "./orders";
 import { type InsertedUser, insertUser } from "./users";
 
 // The mixed half of the permission matrix (15-quality-and-acceptance.md, Test layers: "each
@@ -47,10 +47,20 @@ export type TickedWallOptions = {
   run: (user: InsertedUser, ticked: TickedOrder[]) => Promise<TickedResult>;
   /** What "saved" means for an action that does not raise the ticked orders' version. */
   saved?: (user: InsertedUser, ticked: TickedOrder[]) => Promise<void>;
+  /** More facts of each ticked order (a purchase needs its approval date). */
+  order?: Partial<OrderRow>;
+  /**
+   * The action is one branch by its own rule (a trip, 07 One trip, many orders; plan of 3.4,
+   * decided item 14): where the matrix lets both orders through, the answer is this whole refusal
+   * with nothing saved, and the allowed counterpart puts both orders in one branch.
+   */
+  oneBranch?: { code: string; fields: Record<string, string> };
+  /** Rows the action writes beyond the order tables, read before and after a refusal. */
+  unchanged?: () => Promise<unknown>;
 };
 
 /** Every row an order action may write, counted, and the ticked orders as they stand. */
-async function snapshot(ids: readonly string[]) {
+async function snapshot(ids: readonly string[], unchanged?: () => Promise<unknown>) {
   const counted: Record<string, number> = {};
   for (const [name, table] of Object.entries({
     orders,
@@ -64,6 +74,7 @@ async function snapshot(ids: readonly string[]) {
   }
   return {
     counted,
+    more: unchanged ? await unchanged() : null,
     // S14 "no gap": a refused Submit must not move a counter.
     counters: await db
       .select()
@@ -95,11 +106,14 @@ function named(ticked: readonly TickedOrder[], answers: readonly Answer[]) {
 }
 
 export function describeTickedWall(name: string, options: TickedWallOptions): void {
-  const { permission, status, owned, run } = options;
+  const { permission, status, owned, run, oneBranch, unchanged } = options;
   const saved = options.saved ?? ((_user, ticked) => versionsRose(ticked));
 
   const orderOf = (branchId: string, ownerId: string) =>
-    insertOrder({ branchId, ownerId, status }).then(({ id, version }) => ({ id, version }));
+    insertOrder({ ...options.order, branchId, ownerId, status }).then(({ id, version }) => ({
+      id,
+      version,
+    }));
 
   describe(`${name} at ${status}: ticked orders of two branches (03 rules 1 and 8; 06 rule 8; 15 Test layers)`, () => {
     for (const role of ROLES) {
@@ -125,6 +139,13 @@ export function describeTickedWall(name: string, options: TickedWallOptions): vo
         const mine = await orderOf(ownBranch.id, owner.id);
         const theirs = await orderOf(otherBranch.id, owner.id);
 
+        if (together && oneBranch) {
+          const before = await snapshot([mine.id, theirs.id], unchanged);
+          const result = await run(user, [mine, theirs]);
+          expect(result).toMatchObject({ ok: false, error: oneBranch });
+          expect(await snapshot([mine.id, theirs.id], unchanged)).toEqual(before);
+          return;
+        }
         if (together) {
           expect(await run(user, [mine, theirs])).toMatchObject({ ok: true });
           await saved(user, [mine, theirs]);
@@ -140,11 +161,11 @@ export function describeTickedWall(name: string, options: TickedWallOptions): vo
             [other, own],
           ],
         ] as const) {
-          const before = await snapshot([mine.id, theirs.id]);
+          const before = await snapshot([mine.id, theirs.id], unchanged);
           const result = await run(user, [...ticked]);
           expect(result.ok).toBe(false);
           expect(result.ok ? [] : result.error.orders).toEqual(named(ticked, answers));
-          expect(await snapshot([mine.id, theirs.id])).toEqual(before);
+          expect(await snapshot([mine.id, theirs.id], unchanged)).toEqual(before);
         }
       });
     }
@@ -155,7 +176,7 @@ export function describeTickedWall(name: string, options: TickedWallOptions): vo
       if (role === "HEAD" || expectedAnswer(permission, role, "own") !== "allow") continue;
       it(`${role}: two orders it may act on, ticked together, are both saved`, async () => {
         const first = await insertBranch();
-        const second = role === "PRINCIPAL" ? first : await insertBranch();
+        const second = role === "PRINCIPAL" || oneBranch ? first : await insertBranch();
         const user = await insertUser(role, { branches: [...new Set([first.id, second.id])] });
         const owner = owned
           ? user

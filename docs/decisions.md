@@ -1381,6 +1381,34 @@ Choices made during the build:
 - Icons reused (`add_photo_alternate`, `description`, `done_all`); no new icon.
 - Permission review: the form's query filters status and progress in its SQL (draft wall); more cases for the button and the receipt download.
 
+### 3.4 One trip, many orders (17.10.2026)
+
+The plan's decisions as the plan review of 17.10.2026 confirmed them (corrections 1 and 2 applied), and those of the build. The Look first items come first.
+
+1. **Look first** (money rule, shared date). The trip's one date is not in the future and not before the approval date of any of its orders: the newest approval wins (07 Purchase record, Date bought; One trip 1).
+2. **Look first** (branch wall, one owner). A trip of orders of two branches or two owners is refused whole for everyone, the Head included (`invalid_input`, `orders: errors.field.tripOneOwner`), checked first in `write()`, so a per-order refusal of the wrapper is named before it. The Head picks one owner on the form (07 One trip).
+3. **Look first** (split). A group row's one quantity is split by `splitGroupQuantity()`; each order's quantity can be changed before saving; the server checks each line on its own; an order left at 0 is not sent and gets no record (07 One trip 2; 3.2 item 5).
+4. **Look first** (money, last purchase price). Records are written in `inSplitOrder()` (oldest submit, then the lower number), whatever order the browser sent; a subtype's last purchase price is its last record above price 0 in that order; `product_variants` are updated in variant-id order and stock through one `postMovements()`, so two trips cannot deadlock. Each record above price 0 writes its own PURCHASE price row.
+5. **Look first** (money, comment). Each line's comment need is `purchaseCommentNeeds()` against its own order's plan, received quantity and planned payment type.
+6. Ticked orders of one subtype are one group row (2.8's key: branch, subtype, status); the form makes a block of them.
+7. A trip may hold orders of different subtypes (07: "ticks Open orders").
+8. The subtype bought stays the ordered one until 3.6; "Give straight to requester" is 5.4.
+9. The Head with orders of several owners picks one in a select; the default is the owner with the most ticked orders, then by name.
+10. A Manager's form holds only own orders and a count of the left-out ones; no other owner's order is named.
+11. "Record purchase" is offered when every ticked order is Open with buying open, all of one branch, and the user may record at least one of them.
+12. One `order_actions` row, one event per order (the wrapper).
+13. A fee that turns up at the shop is an extra cost on one order's line; nothing is split.
+14. `describeTickedWall` gains `oneBranch`: where the matrix lets both orders through, the trip is refused whole; the allowed counterpart puts both in one branch.
+15. The ids travel in the address (`/orders/purchase?ids=`); 200 ids are about 7.4 kB.
+16. After saving, the trip form returns to `/orders`; the one-order page to the order page.
+
+Choices made during the build:
+
+- `getPurchaseForm` keeps 3.3's answer for what the user sees but may not record (only a colleague's orders, or RECORD_PURCHASES off): `forbidden`, as the permission matrix expects; the pages show Not found for it and for `null` alike. The plan's test line "only a colleague's orders: null" was built as this refusal.
+- "Same as planned" is on every order line (review correction 1); each line has its own button, the group has none.
+- The trip's payment type defaults to the first order's in the split's order, the supplier to the company every order shares while active, else none.
+- The 3.3 tests were moved to the new input shape (the order's own fields into `lines[0]`, field paths `lines.0.<field>`); no assertion changed.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

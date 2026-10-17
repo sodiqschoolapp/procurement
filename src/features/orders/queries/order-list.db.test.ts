@@ -1,10 +1,11 @@
 import { randomUUID } from "node:crypto";
 
+import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 
 import { now } from "@/server/clock";
 import { db } from "@/server/db/client";
-import { orderActions, orderEvents } from "@/server/db/schema";
+import { orderActions, orderEvents, orders } from "@/server/db/schema";
 
 import { insertBranch, setManagerRight } from "../../../../tests/helpers/branches";
 import { insertCategory, insertProduct, insertSubtypes } from "../../../../tests/helpers/catalog";
@@ -300,6 +301,54 @@ describe("tickedSummary: the action bar (11 Order list layout 4; 06 rule 8; deci
       }),
     );
     expect((await tickedSummary(manager.id, many.slice(0, 200))).missing).toHaveLength(200);
+  });
+});
+
+describe("tickedSummary: Record purchase on ticked orders (07 One trip, many orders; plan of 3.4, decided item 11)", () => {
+  it("offered on Open orders of one branch the user may record; not with a finished order, two branches, or for the Principal and Finance", async () => {
+    const own = await scene();
+    const other = await scene();
+    const head = await insertUser("HEAD");
+    const principal = await insertUser("PRINCIPAL", { branches: [own.branch.id] });
+    const finance = await insertUser("FINANCE", { branches: [own.branch.id] });
+    const a = await order({ ...own.base, status: "PURCHASING" });
+    const b = await order({ ...own.base, status: "PURCHASING" });
+    const done = await order({ ...own.base, status: "PURCHASING" });
+    await db.update(orders).set({ progress: "DONE" }).where(eq(orders.id, done.id));
+    const elsewhere = await order({ ...other.base, status: "PURCHASING" });
+
+    expect((await tickedSummary(own.manager.id, [a.id, b.id])).recordTrip).toBe(true);
+    expect((await tickedSummary(head.id, [a.id, b.id])).recordTrip).toBe(true);
+    expect((await tickedSummary(head.id, [a.id, done.id])).recordTrip).toBe(false);
+    expect((await tickedSummary(head.id, [a.id, elsewhere.id])).recordTrip).toBe(false);
+    expect((await tickedSummary(principal.id, [a.id, b.id])).recordTrip).toBe(false);
+    expect((await tickedSummary(finance.id, [a.id, b.id])).recordTrip).toBe(false);
+    // An order still waiting for approval beside an Open one hides it too.
+    const waiting = await order({ ...own.base, status: "PENDING_HEAD" });
+    expect((await tickedSummary(head.id, [a.id, waiting.id])).recordTrip).toBe(false);
+  });
+
+  it("a Manager of two branches ticking own Open orders in both: not offered; in one of them: offered", async () => {
+    const own = await scene();
+    const other = await scene();
+    const manager = await insertUser("MANAGER", { branches: [own.branch.id, other.branch.id] });
+    const here = await order({ ...own.base, ownerId: manager.id, status: "PURCHASING" });
+    const there = await order({ ...other.base, ownerId: manager.id, status: "PURCHASING" });
+    const hereToo = await order({ ...own.base, ownerId: manager.id, status: "PURCHASING" });
+    expect((await tickedSummary(manager.id, [here.id, there.id])).recordTrip).toBe(false);
+    expect((await tickedSummary(manager.id, [here.id, hereToo.id])).recordTrip).toBe(true);
+  });
+
+  it("a Manager ticking only a colleague's Open orders: not offered; with one own order added: offered; with RECORD_PURCHASES off: not offered", async () => {
+    const { branch, base } = await scene();
+    const manager = await insertUser("MANAGER", { branches: [branch.id] });
+    const theirs = await order({ ...base, status: "PURCHASING" });
+    const theirsToo = await order({ ...base, status: "PURCHASING" });
+    const mine = await order({ ...base, ownerId: manager.id, status: "PURCHASING" });
+    expect((await tickedSummary(manager.id, [theirs.id, theirsToo.id])).recordTrip).toBe(false);
+    expect((await tickedSummary(manager.id, [theirs.id, mine.id])).recordTrip).toBe(true);
+    await setManagerRight(manager.id, "RECORD_PURCHASES", false);
+    expect((await tickedSummary(manager.id, [theirs.id, mine.id])).recordTrip).toBe(false);
   });
 });
 

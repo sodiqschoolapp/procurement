@@ -1,14 +1,17 @@
-import { eq, inArray, sql } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import * as z from "zod";
 
 import { businessDate, isBusinessDate } from "@/domain/business-date";
 import { DRAFT_EXTRAS_MAX, draftComment, isDraftComment, quantityRefusal } from "@/domain/drafts";
+import { ORDER_ACTION_MAX } from "@/domain/order-moves";
 import { FILE_MIMES } from "@/domain/files";
 import { parseSomOrZero } from "@/domain/money";
 import { PAYMENT_TYPES, type PaymentType } from "@/domain/payment-types";
 import {
+  type PurchaseRecord,
   actualQuantity,
   actualTotal,
+  inSplitOrder,
   progressAfterBuying,
   purchaseCommentNeeds,
   purchaseDateRefusal,
@@ -24,44 +27,52 @@ import {
   orders,
   priceHistory,
   productVariants,
+  products,
   purchaseExtras,
   purchaseTrips,
   purchases,
   tripFiles,
+  units,
 } from "@/server/db/schema";
 import { accessOf } from "@/server/files/owners";
 import {
+  type OrderEventExtra,
   type OrdersContext,
   type OrdersInput,
   defineOrdersAction,
   ordersInput,
 } from "@/server/order-action";
 import { readSettings } from "@/server/settings";
-import { postMovement } from "@/server/stock-ledger";
+import { postMovements } from "@/server/stock-ledger";
 
 import { requiredPriceField } from "../../catalog/actions/catalog-fields";
 import { orderRecords } from "../order-records";
 
-// Record a purchase for one Open order, a trip of one (07-purchasing.md, Purchase record; What
-// saving a record does; 02-assumptions.md A7; plan of 3.3). It runs in the wrapper of
-// src/server/order-action.ts: lock, repeat, authorize (`purchase.record`: the Head in any branch,
-// the owner with RECORD_PURCHASES on; 03 Permission matrix), version, then the status check: the
-// order is Open and its buying is not finished (decided item 3, Look first; 3.5 reopens it). The
-// write step first checks under the lock what needs the database, as field errors that roll the
-// whole transaction back (spec review of the plan, Should fix 1), then writes in one transaction
-// (07, What saving a record does; developer-rules.md rule 3):
+// Record a purchase: one shop visit, a trip, for one or many Open orders of one branch and one
+// owner (07-purchasing.md, Purchase record; One trip, many orders; What saving a record does;
+// 02-assumptions.md A7; plans of 3.3 and 3.4). It runs in the wrapper of src/server/order-action.ts:
+// lock, repeat, authorize (`purchase.record`: the Head in any branch, the owner with
+// RECORD_PURCHASES on; 03 Permission matrix), version, then the status check: every order is Open
+// and its buying is not finished (3.3 decided item 3, Look first; 3.5 reopens it). The write step
+// first refuses a trip over two branches or two owners (3.4 decided item 2, Look first), then
+// checks under the lock what needs the database, as field errors that roll the whole transaction
+// back, then writes in one transaction, all or nothing (07 One trip 4; developer-rules.md rule 3):
 //
-//   1  the trip (date, supplier, payment type: never copied to the record; 14 purchases), the
-//      record, its extra costs and the receipt files
-//   2  for a product, a Receipt movement at the record's price (09 Stock value, first bullet:
-//      extra costs not included); a service changes no stock (A7)
-//   3  above price 0, the subtype's last purchase price and a PURCHASE price row; a gift writes
-//      neither (decided item 2, Look first)
-//   4  the order's `actual_total` and `progress`, from every record of the order (progress 3.2,
+//   1  the trip (date, supplier, payment type, shared: never copied to a record; 14 purchases) and
+//      its receipt files once; then per order, oldest submit first and then the lower number (the
+//      split's order, never the browser's; 3.4 decided item 4), its record and extra costs
+//   2  for every product, a Receipt movement at the record's price, all through one
+//      postMovements() for its fixed lock order (09 Stock value, first bullet: extra costs not
+//      included); a service changes no stock (A7)
+//   3  above price 0, a PURCHASE price row per record, and each subtype's last purchase price from
+//      its last record in that order, the subtypes updated in the order of their ids; a gift
+//      writes neither (3.3 decided item 2, Look first)
+//   4  each order's `actual_total` and `progress`, from every record of the order (progress 3.2,
 //      "For 3.3 and 3.5"); the wrapper raises its version
-//   6  the history event, by the wrapper; its note is the record's comment
+//   6  one history event per order, by the wrapper; its note is the order's comment
 //
-// No notification (decided item 11). The trip takes the action's client key (decided item 12).
+// No notification (3.3 decided item 11). The trip takes the action's client key (3.3 decided
+// item 12).
 
 /** "0 to 5 photos or PDF files" (07 Purchase record, Receipt). */
 export const RECEIPT_FILES_MAX = 5;
@@ -72,26 +83,28 @@ const unitPriceField = z
   .refine((value) => parseSomOrZero(value) !== null)
   .transform((value) => parseSomOrZero(value)!);
 
-export type RecordPurchaseInput = OrdersInput & {
-  purchasedOn: string;
+/** One order's part of the trip (07 One trip, many orders: 1, "Per order"). */
+export type PurchaseLine = {
+  orderId: string;
   qty: string;
   unitPrice: bigint;
-  paymentType: PaymentType;
-  supplierId: string | null;
   extras: { extraCostTypeId: string; amount: bigint; paymentType: PaymentType }[];
-  receiptFileIds: string[];
   comment: string | null;
 };
 
-const input = ordersInput({
-  purchasedOn: z.string().refine(isBusinessDate),
+export type RecordPurchaseInput = OrdersInput & {
+  purchasedOn: string;
+  paymentType: PaymentType;
+  supplierId: string | null;
+  receiptFileIds: string[];
+  /** One line per ticked order, the same ids (plan of 3.4, spec review Should fix 5). */
+  lines: PurchaseLine[];
+};
+
+const line = z.object({
+  orderId: z.uuid(),
   qty: z.string().trim().min(1).max(40),
   unitPrice: unitPriceField,
-  paymentType: z.enum(PAYMENT_TYPES),
-  supplierId: z
-    .uuid()
-    .nullish()
-    .transform((value) => value ?? null),
   extras: z
     .array(
       z.object({
@@ -101,7 +114,6 @@ const input = ordersInput({
       }),
     )
     .max(DRAFT_EXTRAS_MAX),
-  receiptFileIds: z.array(z.uuid()).max(RECEIPT_FILES_MAX),
   comment: z
     .string()
     .nullish()
@@ -109,11 +121,30 @@ const input = ordersInput({
     .refine((value) => value === null || isDraftComment(value), {
       params: { fieldError: "tooLong" },
     }),
+});
+
+const input = ordersInput({
+  purchasedOn: z.string().refine(isBusinessDate),
+  paymentType: z.enum(PAYMENT_TYPES),
+  supplierId: z
+    .uuid()
+    .nullish()
+    .transform((value) => value ?? null),
+  receiptFileIds: z.array(z.uuid()).max(RECEIPT_FILES_MAX),
+  lines: z.array(line).min(1).max(ORDER_ACTION_MAX),
 })
-  .refine((value) => value.orders.length === 1, {
-    path: ["orders"],
-    message: "A purchase is recorded for one order (plan of 3.3, decided item 13).",
-  })
+  .refine(
+    (value) => {
+      // One line per ticked order: the same ids as a set, none twice (plan of 3.4).
+      const ids = new Set(value.lines.map((each) => each.orderId));
+      return (
+        ids.size === value.lines.length &&
+        ids.size === value.orders.length &&
+        value.orders.every((order) => ids.has(order.id))
+      );
+    },
+    { path: ["lines"], message: "Each ticked order has exactly one line." },
+  )
   .refine((value) => new Set(value.receiptFileIds).size === value.receiptFileIds.length, {
     path: ["receiptFileIds"],
     message: "A receipt file is sent twice.",
@@ -123,36 +154,59 @@ function refuse(field: string, kind: FieldMessageKey): never {
   throw new ActionError("invalid_input", { [field]: kind });
 }
 
-/** The order's plan and catalog facts, read under the wrapper's lock of the order. */
-async function planOf(tx: Executor, orderId: string) {
-  const found = await tx.execute<{
-    variant_id: string;
-    planned_qty: string;
-    planned_price: string;
-    payment_type: PaymentType;
-    approved_at: Date | null;
-    progress: "OPEN" | "DONE" | "DONE_SHORT" | "NOT_BOUGHT";
-    product_type: "GOODS" | "SERVICE";
-    allow_decimal: boolean;
-  }>(sql`
-    select o.variant_id, o.planned_qty, o.planned_price, o.payment_type, o.approved_at, o.progress,
-           p.type as product_type, u.allow_decimal
-    from orders o
-    join product_variants v on v.id = o.variant_id
-    join products p on p.id = v.product_id
-    join units u on u.id = p.unit_id
-    where o.id = ${orderId}`);
-  const row = found.rows[0]!;
-  return {
-    variantId: row.variant_id,
-    plannedQty: row.planned_qty,
-    plannedPrice: BigInt(row.planned_price),
-    paymentType: row.payment_type,
-    approvedAt: row.approved_at === null ? null : new Date(row.approved_at),
-    progress: row.progress,
-    isService: row.product_type === "SERVICE",
-    allowDecimal: row.allow_decimal,
-  };
+type Plan = {
+  orderId: string;
+  number: string;
+  submittedAt: Date;
+  variantId: string;
+  plannedQty: string;
+  plannedPrice: bigint;
+  paymentType: PaymentType;
+  approvedAt: Date | null;
+  progress: "OPEN" | "DONE" | "DONE_SHORT" | "NOT_BOUGHT";
+  isService: boolean;
+  allowDecimal: boolean;
+};
+
+/**
+ * The orders' plans and catalog facts, read under the wrapper's lock of the orders, in the
+ * split's order (inSplitOrder()): the order in which the records are written (3.4 decided item 4).
+ */
+async function plansOf(tx: Executor, orderIds: readonly string[]): Promise<Plan[]> {
+  const rows = await tx
+    .select({
+      orderId: orders.id,
+      number: orders.number,
+      submittedAt: orders.submittedAt,
+      variantId: orders.variantId,
+      plannedQty: orders.plannedQty,
+      plannedPrice: orders.plannedPrice,
+      paymentType: orders.paymentType,
+      approvedAt: orders.approvedAt,
+      progress: orders.progress,
+      productType: products.type,
+      allowDecimal: units.allowDecimal,
+    })
+    .from(orders)
+    .innerJoin(productVariants, eq(productVariants.id, orders.variantId))
+    .innerJoin(products, eq(products.id, productVariants.productId))
+    .innerJoin(units, eq(units.id, products.unitId))
+    .where(inArray(orders.id, [...orderIds]));
+  return inSplitOrder(
+    rows.map((row) => ({
+      orderId: row.orderId,
+      number: row.number!,
+      submittedAt: row.submittedAt!,
+      variantId: row.variantId!,
+      plannedQty: row.plannedQty!,
+      plannedPrice: row.plannedPrice!,
+      paymentType: row.paymentType,
+      approvedAt: row.approvedAt,
+      progress: row.progress,
+      isService: row.productType === "SERVICE",
+      allowDecimal: row.allowDecimal,
+    })),
+  );
 }
 
 /** An active entry, read FOR SHARE so a deactivation and a pick cannot pass each other (04 rule 2). */
@@ -202,50 +256,80 @@ export const recordPurchase = defineOrdersAction<RecordPurchaseInput>({
   repeatPermission: () => "purchase.record",
   reason: () => null,
   check({ orders: locked }) {
-    // 07 Order progress: a finished order's buying is reopened first (3.5; decided item 3).
+    // 07 Order progress: a finished order's buying is reopened first (3.5; 3.3 decided item 3).
     return locked
       .filter((order) => order.status !== "PURCHASING" || order.progress !== "OPEN")
       .map((order) => ({ orderId: order.id, code: "wrong_status" as const }));
   },
   async write(context: OrdersContext<RecordPurchaseInput>) {
     const { tx, input: typed, userId } = context;
-    const order = context.orders[0]!;
-    const plan = await planOf(tx, order.id);
 
-    // The fields the database decides, before anything is written.
-    const qtyRefusal = quantityRefusal(typed.qty, plan.allowDecimal);
-    if (qtyRefusal) refuse("qty", `errors.field.${qtyRefusal}`);
+    // 07 One trip, many orders: "a trip covers orders of one branch and one owner", the Head
+    // included; here, after every per-order refusal of the wrapper (3.4 decided item 2, Look first).
+    const branchId = context.orders[0]!.branchId;
+    const ownerId = context.orders[0]!.ownerId;
+    if (context.orders.some((order) => order.branchId !== branchId || order.ownerId !== ownerId)) {
+      refuse("orders", "errors.field.tripOneOwner");
+    }
+
+    const plans = await plansOf(
+      tx,
+      context.orders.map((order) => order.id),
+    );
+    const at = typed.lines.map((each) => each.orderId);
+    const lineOf = (orderId: string) => typed.lines[at.indexOf(orderId)]!;
+    const path = (orderId: string, field: string) => `lines.${at.indexOf(orderId)}.${field}`;
+
+    // The fields the database decides, before anything is written. Per order first.
+    const before = new Map<string, PurchaseRecord[]>();
+    for (const plan of plans) {
+      const typedLine = lineOf(plan.orderId);
+      const qtyRefusal = quantityRefusal(typedLine.qty, plan.allowDecimal);
+      if (qtyRefusal) refuse(path(plan.orderId, "qty"), `errors.field.${qtyRefusal}`);
+      const records = await orderRecords(tx, plan.orderId);
+      before.set(plan.orderId, records);
+      // 07 Comment, per order against its own plan (3.4 decided item 5, Look first).
+      const needs = purchaseCommentNeeds({
+        qty: typedLine.qty,
+        unitPrice: typedLine.unitPrice,
+        paymentType: typed.paymentType,
+        plannedQty: plan.plannedQty,
+        plannedPrice: plan.plannedPrice,
+        plannedPaymentType: plan.paymentType,
+        received: actualQuantity(records),
+      });
+      if (needs.length > 0 && typedLine.comment === null) {
+        refuse(path(plan.orderId, "comment"), "errors.field.required");
+      }
+    }
+    const extraTypes = [
+      ...new Set(typed.lines.flatMap((each) => each.extras.map((extra) => extra.extraCostTypeId))),
+    ].sort();
+    await refuseInactive(tx, extraCostTypes, extraTypes, (id) => {
+      const index = typed.lines.findIndex((each) =>
+        each.extras.some((extra) => extra.extraCostTypeId === id),
+      );
+      const extra = typed.lines[index]!.extras.findIndex((each) => each.extraCostTypeId === id);
+      return `lines.${index}.extras.${extra}.extraCostTypeId`;
+    });
+
+    // Then the shared fields. The one date meets every order's rule: the newest approval wins
+    // (07 Date bought; 3.4 decided item 1, Look first).
     const today = businessDate(now());
-    const dateRefusal = purchaseDateRefusal(
-      typed.purchasedOn,
-      today,
+    const approvals = plans.map((plan) =>
       plan.approvedAt === null ? null : businessDate(plan.approvedAt),
     );
+    const newestApproval = approvals.includes(null)
+      ? null
+      : approvals.reduce((newest, day) => (day! > newest! ? day : newest));
+    const dateRefusal = purchaseDateRefusal(typed.purchasedOn, today, newestApproval);
     if (dateRefusal) refuse("purchasedOn", `errors.field.${dateRefusal}`);
-    const before = await orderRecords(tx, order.id);
-    const needs = purchaseCommentNeeds({
-      qty: typed.qty,
-      unitPrice: typed.unitPrice,
-      paymentType: typed.paymentType,
-      plannedQty: plan.plannedQty,
-      plannedPrice: plan.plannedPrice,
-      plannedPaymentType: plan.paymentType,
-      received: actualQuantity(before),
-    });
-    if (needs.length > 0 && typed.comment === null) refuse("comment", "errors.field.required");
     if (typed.supplierId) {
       await refuseInactive(tx, companies, [typed.supplierId], () => "supplierId");
     }
-    await refuseInactive(
-      tx,
-      extraCostTypes,
-      [...new Set(typed.extras.map((extra) => extra.extraCostTypeId))],
-      (id) =>
-        `extras.${typed.extras.findIndex((extra) => extra.extraCostTypeId === id)}.extraCostTypeId`,
-    );
     const settings = await readSettings(tx);
-    // 07 Purchase record, Receipt; edge case "No receipt photo"; decided item 4, Look first: a
-    // cash purchase is a trip paid in cash, whatever its extra costs' payment types.
+    // 07 Purchase record, Receipt; edge case "No receipt photo"; 3.3 decided item 4, Look first:
+    // a cash purchase is a trip paid in cash, whatever its extra costs' payment types.
     if (
       settings.receipt_required_for_cash &&
       typed.paymentType === "CASH" &&
@@ -255,99 +339,117 @@ export const recordPurchase = defineOrdersAction<RecordPurchaseInput>({
     }
     await refuseReceipts(tx, userId, typed.receiptFileIds);
 
-    const at = now();
+    // 1  The trip and its receipt files once, then the records in the split's order.
+    const savedAt = now();
     const [trip] = await tx
       .insert(purchaseTrips)
       .values({
         clientKey: typed.clientKey,
-        branchId: order.branchId,
+        branchId,
         purchasedOn: typed.purchasedOn,
         supplierId: typed.supplierId,
         paymentType: typed.paymentType,
         createdBy: userId,
-        createdAt: at,
+        createdAt: savedAt,
       })
       .returning({ id: purchaseTrips.id });
-    const qty = typed.qty.trim();
-    const [record] = await tx
-      .insert(purchases)
-      .values({
-        tripId: trip!.id,
-        orderId: order.id,
-        branchId: order.branchId,
-        variantId: plan.variantId,
-        qty,
-        unitPrice: typed.unitPrice,
-        comment: typed.comment,
-        createdBy: userId,
-        createdAt: at,
-      })
-      .returning({ id: purchases.id });
-    if (typed.extras.length > 0) {
-      await tx.insert(purchaseExtras).values(
-        typed.extras.map((extra) => ({
-          purchaseId: record!.id,
-          extraCostTypeId: extra.extraCostTypeId,
-          amount: extra.amount,
-          paymentType: extra.paymentType,
-          createdAt: at,
-        })),
-      );
-    }
     if (typed.receiptFileIds.length > 0) {
       await tx
         .insert(tripFiles)
         .values(
-          typed.receiptFileIds.map((fileId) => ({ tripId: trip!.id, fileId, createdAt: at })),
+          typed.receiptFileIds.map((fileId) => ({ tripId: trip!.id, fileId, createdAt: savedAt })),
         );
     }
-
-    if (!plan.isService) {
-      await postMovement(tx, {
-        branchId: order.branchId,
-        variantId: plan.variantId,
-        type: "RECEIPT",
-        qtyDelta: qty,
-        unitCost: typed.unitPrice,
-        createdBy: userId,
-        purchaseId: record!.id,
-      });
+    const saved: { plan: Plan; recordId: string; qty: string; unitPrice: bigint }[] = [];
+    for (const plan of plans) {
+      const typedLine = lineOf(plan.orderId);
+      const qty = typedLine.qty.trim();
+      const [record] = await tx
+        .insert(purchases)
+        .values({
+          tripId: trip!.id,
+          orderId: plan.orderId,
+          branchId,
+          variantId: plan.variantId,
+          qty,
+          unitPrice: typedLine.unitPrice,
+          comment: typedLine.comment,
+          createdBy: userId,
+          createdAt: savedAt,
+        })
+        .returning({ id: purchases.id });
+      if (typedLine.extras.length > 0) {
+        await tx.insert(purchaseExtras).values(
+          typedLine.extras.map((extra) => ({
+            purchaseId: record!.id,
+            extraCostTypeId: extra.extraCostTypeId,
+            amount: extra.amount,
+            paymentType: extra.paymentType,
+            createdAt: savedAt,
+          })),
+        );
+      }
+      saved.push({ plan, recordId: record!.id, qty, unitPrice: typedLine.unitPrice });
     }
 
-    if (typed.unitPrice > 0n) {
+    // 2  Stock for the products, in postMovements()'s fixed lock order (progress 3.1).
+    await postMovements(
+      tx,
+      saved
+        .filter(({ plan }) => !plan.isService)
+        .map(({ plan, recordId, qty, unitPrice }) => ({
+          branchId,
+          variantId: plan.variantId,
+          type: "RECEIPT" as const,
+          qtyDelta: qty,
+          unitCost: unitPrice,
+          createdBy: userId,
+          purchaseId: recordId,
+        })),
+    );
+
+    // 3  Prices: each subtype's last record above 0 in the split's order, the subtypes in the
+    //    order of their ids so two trips cannot deadlock (3.4 decided item 4, Look first).
+    const lastPrice = new Map<string, bigint>();
+    for (const { plan, unitPrice } of saved) {
+      if (unitPrice > 0n) lastPrice.set(plan.variantId, unitPrice);
+    }
+    for (const variantId of [...lastPrice.keys()].sort()) {
       await tx
         .update(productVariants)
-        .set({ lastPurchasePrice: typed.unitPrice, lastPurchaseAt: at })
-        .where(eq(productVariants.id, plan.variantId));
-      await tx.insert(priceHistory).values({
-        variantId: plan.variantId,
-        price: typed.unitPrice,
-        source: "PURCHASE",
-        setBy: userId,
-        purchaseId: record!.id,
-        createdAt: at,
-      });
+        .set({ lastPurchasePrice: lastPrice.get(variantId)!, lastPurchaseAt: savedAt })
+        .where(eq(productVariants.id, variantId));
+    }
+    const priced = saved.filter(({ unitPrice }) => unitPrice > 0n);
+    if (priced.length > 0) {
+      await tx.insert(priceHistory).values(
+        priced.map(({ plan, recordId, unitPrice }) => ({
+          variantId: plan.variantId,
+          price: unitPrice,
+          source: "PURCHASE" as const,
+          setBy: userId,
+          purchaseId: recordId,
+          createdAt: savedAt,
+        })),
+      );
     }
 
-    const after = await orderRecords(tx, order.id);
-    await tx
-      .update(orders)
-      .set({
-        actualTotal: actualTotal(after),
-        progress: progressAfterBuying(plan.progress, plan.plannedQty, actualQuantity(after)),
-      })
-      .where(eq(orders.id, order.id));
-
-    return new Map([
-      [
-        order.id,
-        {
-          note: typed.comment,
-          payload: {
-            purchase: { id: record!.id, qty, unitPrice: typed.unitPrice.toString() },
-          },
-        },
-      ],
-    ]);
+    // 4  Each order's actual total and progress, from its records.
+    const extras = new Map<string, OrderEventExtra>();
+    for (const { plan, recordId, qty, unitPrice } of saved) {
+      const after = await orderRecords(tx, plan.orderId);
+      await tx
+        .update(orders)
+        .set({
+          actualTotal: actualTotal(after),
+          progress: progressAfterBuying(plan.progress, plan.plannedQty, actualQuantity(after)),
+        })
+        .where(eq(orders.id, plan.orderId));
+      extras.set(plan.orderId, {
+        note: lineOf(plan.orderId).comment,
+        payload: { purchase: { id: recordId, qty, unitPrice: unitPrice.toString() } },
+      });
+    }
+    return extras;
   },
 });
