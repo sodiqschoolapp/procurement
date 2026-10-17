@@ -332,7 +332,7 @@ The Manager records what was really bought, one order or one whole shop visit at
   - **Build:** The phone layout of the purchase form: one order or group row at a time, large buttons, "Same as planned", and the camera opens directly for the receipt.
   - **Done when:** Playwright at 375 px records a purchase with a receipt file.
 
-- [ ] **3.10 Price prompt for the Head**
+- [x] **3.10 Price prompt for the Head**
   - **Read:** `04-catalogs.md` (Rules: 4); `10-notifications-analytics-reports.md` (Notifications: "Recent purchases differ from the reference price by more than 20%"); `open-questions.md` (question 8).
   - **Build:** When recent purchases differ from the reference price by more than 20%, the Head gets a notification and a prompt that updates the price in one click.
   - **Done when:** A database test written from the answer to open question 8; the one-click update writes a `price_history` row with source HEAD.

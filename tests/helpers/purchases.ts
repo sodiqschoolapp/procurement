@@ -11,11 +11,16 @@ import { insertOrder } from "./orders";
 
 const AT = "2031-05-02T05:00:00Z";
 
-export function insertTrip(branchId: string, createdBy: string, clientKey = randomUUID()) {
+export function insertTrip(
+  branchId: string,
+  createdBy: string,
+  clientKey = randomUUID(),
+  purchasedOn = "2031-05-02",
+) {
   return db.execute<{ id: string }>(sql`
     insert into purchase_trips (client_key, branch_id, purchased_on, payment_type, created_by,
       created_at)
-    values (${clientKey}, ${branchId}, '2031-05-02', 'CASH', ${createdBy}, ${AT})
+    values (${clientKey}, ${branchId}, ${purchasedOn}, 'CASH', ${createdBy}, ${AT})
     returning id`);
 }
 

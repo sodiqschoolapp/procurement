@@ -327,6 +327,7 @@
       "REQUEST_CLOSED": "Закрыто ({actor}): {count, plural, one {# заказ} few {# заказа} many {# заказов} other {# заказа}}, {branch}.",
       "REQUEST_REOPENED": "Открыто заново ({actor}): {count, plural, one {# заказ} few {# заказа} many {# заказов} other {# заказа}}, {branch}.",
       "PURCHASE_CANCELLED": "Отменено ({actor}): {count, plural, one {# запись о покупке} few {# записи о покупке} many {# записей о покупке} other {# записи о покупке}}, {branch}.",
+      "PRICE_DIFFERS": "{branch}: недавние покупки {count, plural, one {# позиции} other {# позиций}} отличаются от текущей цены более чем на 20%.",
       "REQUEST_WAITING_24H": "Ждут вашего согласования дольше {hours, plural, one {# часа} few {# часов} many {# часов} other {# часа}}: {count, plural, one {# заказ} few {# заказа} many {# заказов} other {# заказа}}.",
       "REQUEST_WAITING_48H": "Ждут согласования дольше {hours, plural, one {# часа} few {# часов} many {# часов} other {# часа}}: {count, plural, one {# заказ} few {# заказа} many {# заказов} other {# заказа}}.",
       "BRANCH_ROLE_VACANT": "В филиале {branch} нет активного {role, select, HEAD {руководителя закупок} MANAGER {менеджера} PRINCIPAL {директора} FINANCE {сотрудника финансов} other {пользователя}}.",
@@ -726,7 +727,18 @@
       "HEAD": "Руководитель",
       "PURCHASE": "Закупка"
     },
-    "importButton": "Импорт цен"
+    "importButton": "Импорт цен",
+    "prompt": {
+      "title": "Подсказки по ценам",
+      "line": "Недавние покупки отличаются от текущей цены более чем на 20%. Одно нажатие делает их среднюю цену новой.",
+      "branch": "Филиал",
+      "average": "Средняя по покупкам",
+      "purchases": "{count, plural, one {# покупка} few {# покупки} many {# покупок} other {# покупки}}",
+      "difference": "Разница",
+      "percent": "{percent, number, ::sign-always}%",
+      "set": "Установить {price}",
+      "note": "Средняя по {count} недавним покупкам, {branch}"
+    }
   },
   "imports": {
     "back": "Назад",

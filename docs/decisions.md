@@ -1547,6 +1547,31 @@ Choices made during the build:
 - A step move scrolls the form into view and focuses the step's first heading (`tabIndex={-1}`); choosing another owner returns to step 1 without moving the focus off the select.
 - Next has no icon: the icon set has no forward arrow and the button's icon comes before its words.
 
+### 3.10 Price prompt for the Head (17.10.2026)
+
+The plan's decisions as the plan review of 17.10.2026 confirmed them (corrections 1 to 3 applied: `PRICE_PROMPT_PERCENT` beside the other numbers in `src/domain/prices.ts`; gifts left out in the SQL and in `pricePrompt()`; the prompt and the click read `product_variants.reference_price`).
+
+1. **Look first.** The average is the plain mean of the records' unit prices, not weighted by quantity (Decided ahead 2: "the average unit price of those records").
+2. **Look first.** "More than 20%" is compared exactly on the unrounded mean by `priceHintPercent(sum, n × reference, 20)`; the average shown and set is rounded half up to whole so'm, the percent half away from zero, as the price hint.
+3. **Look first.** 20% is a fixed constant, not the setting `price_hint_percent`: 04 rule 4 and 10 say "more than 20%" with no setting. Proposed `/spec-change` if they should be tied: "04 rule 4: … by more than the price-hint percent (a setting, 20% by default)".
+4. **Look first.** A gift (0 so'm) is not a recent purchase: it is no real purchase price (04 rule 4).
+5. **Look first.** Per subtype and branch, against the one school-wide reference price (Decided ahead 2; A14); two branches can prompt for one subtype with two averages.
+6. "Within the last 90 days": trip date (Tashkent) on or after today − 89 days (`recentPurchaseSince()`); the last 3 by trip date, then `created_at`, then id.
+7. Records count for the subtype really bought (07 Substitution).
+8. **Look first.** PRICE_DIFFERS is sent when a purchase action (a trip, a cancel of a record or a trip) makes a prompt appear, once per action, its count the subtypes newly prompting; nothing on a standing prompt, a new reference price or the window passing. Proposed `/spec-change` wording for 10 Notifications: "Recent purchases differ from the reference price by more than 20% | Head, once when a purchase or a cancel makes it so".
+9. The actor is never told (notify()): a Head who records the trip sees the prompt on `/prices` only.
+10. The prompts live on `/prices`; the notification links there.
+11. The click is `addPrice` with the average and a note from the message files (`prices.prompt.note`, in the Head's language); no server re-check of the amount, since `price.add` may set any price.
+12. Inactive subtypes and products give no prompt (04 rule 2).
+13. One client key per prompt row until it is saved (`useAction` with `create`).
+14. No paging; the largest difference first, then product, subtype and branch code.
+
+Choices made during the build:
+
+- The shared SQL `recentPurchasePrices()` and `promptsOf()` live in `src/features/purchasing/price-prompts.ts` beside the notice; the query file exports only `getPricePrompts()`, which authorizes (every export of a `queries/` file is in the permission registry).
+- The notice finds the action's records through its history events (`order_events.payload.purchase.id`) and reads "before" in the same transaction: the trip's records left out, or the cancelled ones counted as live. Both actions hold the subtypes FOR UPDATE since their write step, which serialises two actions on one subtype.
+- The English text says "current price" (the word of the Prices page), not "reference price".
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

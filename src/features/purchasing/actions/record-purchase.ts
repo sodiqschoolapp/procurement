@@ -47,6 +47,7 @@ import { postMovements } from "@/server/stock-ledger";
 
 import { requiredPriceField } from "../../catalog/actions/catalog-fields";
 import { orderRecords } from "../order-records";
+import { noticePriceDiffers } from "../price-prompts";
 
 // Record a purchase: one shop visit, a trip, for one or many Open orders of one branch and one
 // owner (07-purchasing.md, Purchase record; One trip, many orders; What saving a record does;
@@ -73,8 +74,10 @@ import { orderRecords } from "../order-records";
 //      "For 3.3 and 3.5"); the wrapper raises its version
 //   6  one history event per order, by the wrapper; its note is the order's comment
 //
-// No notification (3.3 decided item 11). The trip takes the action's client key (3.3 decided
-// item 12).
+//   7  notify: PRICE_DIFFERS to the Heads when the trip made a price prompt appear (plan of
+//      3.10, decided item 8, Look first); no other notification (3.3 decided item 11)
+//
+// The trip takes the action's client key (3.3 decided item 12).
 
 /** "0 to 5 photos or PDF files" (07 Purchase record, Receipt). */
 export const RECEIPT_FILES_MAX = 5;
@@ -535,5 +538,8 @@ export const recordPurchase = defineOrdersAction<RecordPurchaseInput>({
       });
     }
     return extras;
+  },
+  async notify(context, result) {
+    await noticePriceDiffers(context, result.actionId, "recorded");
   },
 });

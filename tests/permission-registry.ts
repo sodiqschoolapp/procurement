@@ -137,6 +137,7 @@ export const QUERIES: Record<string, Permission> = {
   // Prices: the Admin list and one subtype's price history (plan of 1.9, decision 4, Look first).
   "src/features/catalog/queries/prices.ts#listPrices": "catalog.manage",
   "src/features/catalog/queries/prices.ts#getPriceHistory": "catalog.manage",
+  "src/features/catalog/queries/price-prompts.ts#getPricePrompts": "catalog.manage",
   // Product suggestions: the list and one suggestion under the branch wall, the Head's count of
   // pending ones for /catalog (plan of 1.12, decision 1, Look first).
   "src/features/catalog/queries/suggestions.ts#listSuggestions": "catalog.suggest",

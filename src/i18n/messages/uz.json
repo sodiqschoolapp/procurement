@@ -327,6 +327,7 @@
       "REQUEST_CLOSED": "{branch}: {actor} {count, plural, other {# ta buyurtmani}} yopdi.",
       "REQUEST_REOPENED": "{branch}: {actor} {count, plural, other {# ta buyurtmani}} qayta ochdi.",
       "PURCHASE_CANCELLED": "{branch}: {actor} {count, plural, other {# ta xarid yozuvini}} bekor qildi.",
+      "PRICE_DIFFERS": "{branch}: {count, plural, other {# ta mahsulotning}} so'nggi xaridlari joriy narxdan 20% dan ko'proq farq qiladi.",
       "REQUEST_WAITING_24H": "{count, plural, other {# ta buyurtma}} tasdiqingizni {hours, plural, other {# soatdan}} ortiq kutmoqda.",
       "REQUEST_WAITING_48H": "{count, plural, other {# ta buyurtma}} tasdiqlashni {hours, plural, other {# soatdan}} ortiq kutmoqda.",
       "BRANCH_ROLE_VACANT": "{branch} filialida faol {role, select, HEAD {xaridlar rahbari} MANAGER {menejer} PRINCIPAL {direktor} FINANCE {moliya xodimi} other {foydalanuvchi}} yoʻq.",
@@ -726,7 +727,18 @@
       "HEAD": "Rahbar",
       "PURCHASE": "Xarid"
     },
-    "importButton": "Narxlarni import qilish"
+    "importButton": "Narxlarni import qilish",
+    "prompt": {
+      "title": "Narx bo'yicha takliflar",
+      "line": "So'nggi xaridlar joriy narxdan 20% dan ko'proq farq qiladi. Bir bosish ularning o'rtachasini yangi narx qiladi.",
+      "branch": "Filial",
+      "average": "So'nggi o'rtacha",
+      "purchases": "{count, plural, other {# ta xarid}}",
+      "difference": "Farq",
+      "percent": "{percent, number, ::sign-always}%",
+      "set": "{price} qilish",
+      "note": "{branch}: so'nggi {count} ta xaridning o'rtachasi"
+    }
   },
   "imports": {
     "back": "Orqaga",

@@ -1077,4 +1077,20 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - An e2e test at 375 px that records a trip of several products walks the steps with `[data-step-bar]` buttons; the Next.js dev tools button is also named "Next", so scope the locator.
 - Playwright tests the camera input through `page.waitForEvent("filechooser")` after a click on "Take photo".
 
-The next task is 3.10.
+## 3.10 Price prompt for the Head (17.10.2026, pull request #80)
+
+**Built**
+- `pricePrompt()`, `recentPurchaseSince()` and the numbers (3, 2, 90 days, 20%) in `src/domain/prices.ts`; the test and percent are `priceHintPercent()`.
+- `recentPurchasePrices()`/`promptsOf()` and `noticePriceDiffers()` in `src/features/purchasing/price-prompts.ts`; `getPricePrompts()` (catalog.manage) in `src/features/catalog/queries/price-prompts.ts`.
+- PRICE_DIFFERS `{ count, branch }` from the notify step of `recordPurchase`, `cancelPurchase` and `cancelTrip`, when the action makes a prompt appear.
+- The Price prompts section on `/prices`; "Set {average}" runs `addPriceAction` with a note from `prices.prompt.note`.
+
+**Left out, and the task that brings it**
+- The prompts on the Head's home: 6.1.
+
+**What the next sessions must know**
+- For 6.1: the Head home reads `getPricePrompts()`; do not count prompts a second way.
+- For 5.x and any action that writes or cancels a purchase record: call `noticePriceDiffers(context, actionId, change)` from its notify step; it reads the action's records from `order_events.payload.purchase.id`.
+- `tests/helpers/purchases.ts` `insertTrip()` takes a trip date as its fourth argument.
+
+The next task is 4.1.
