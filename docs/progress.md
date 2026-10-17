@@ -1289,4 +1289,20 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - Numbers use the Tashkent year of the creating moment, not `doc_date`.
 - A test that reverses a movement twice now hits `stock_movements_reverses_movement_id_key`.
 
-The next task is 5.2.
+## 5.2 Stock on hand (17.10.2026, pull request #92)
+
+**Built**
+- `stockValue(qty, avgCost)` and `STOCK_PAGE_SIZE` in `src/domain/stock.ts`.
+- `listStockOnHand()` and `stockCategoryChoices()` (`src/features/warehouse/queries/stock-on-hand.ts`): `data.view`, `branchFilter` in the SQL, services left out, count and rows in one `readSnapshot()`.
+- `/warehouse/stock` with `loading.tsx`; texts under `warehouse.stock`. S7's stock part in `tests/e2e/branch-wall.spec.ts`.
+
+**Left out, and the task that brings it**
+- Minimum column, "Low" and "Low stock only": 5.10. Row link to the item card: 5.3. Stock report and its downloads: 6.x.
+
+**What the next sessions must know**
+- For 5.3: link each row of `/warehouse/stock` to the card; the card's address of another branch is the "Not found" page of S7's stock part.
+- For 5.10: add the minimum to `StockRow` and the switch to the page's GET form; rows at 0 are already listed.
+- For 6.x: a stock row's value is `stockValue()`; never multiply in SQL.
+- `quantity` comes back as stored ("2.500"); `format.quantity` drops the zeros.
+
+The next task is 5.3.

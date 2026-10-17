@@ -1809,6 +1809,26 @@ Choices made during the build:
 - A database link between a movement's branch and its document's branches is not built (permission review, Should fix 2): the helpers take the branch from the locked document, and a trigger for it is a guard no rule asks for (D44).
 - The same-moment numbering test was run once with the held side's counter write left out and seen to fail (the second side never waited).
 
+### 5.2 Stock on hand (17.10.2026)
+
+The plan's decisions as the plan review of 17.10.2026 confirmed them (corrections 1 and 2 applied), and those of the build. The Look first items come first.
+
+1. **Look first** (stock and money formula). A row's value is quantity × moving average cost, rounded half up once per row to whole so'm: `stockValue()` in `src/domain/stock.ts`, read on the server, never computed in SQL or the screen. No page or branch total on this screen; the stock report of 6.x decides its branch total and reuses `stockValue()` for its rows.
+2. **Look first** (spec contradiction). Every role sees the value column: 09 Stock screens names it for Stock on hand, a screen of every role; "shown in reports only" of 09 Stock value is read as "never on an order or in settlement". Proposed `/spec-change` of 09 Stock value, first sentence: "Value is shown on Stock on hand and in reports, never on an order, and never affects settlement."
+3. A balance at 0 stays listed (the minimum of 5.10 needs these rows).
+4. One row per branch and subtype, with the branch code.
+5. `branch=` in the address wins, then the top bar's choice, then all branches seen, as `/orders`; another branch shows the same empty list. The "Not found" page of a stock address comes with 5.3.
+6. Stock of a deactivated product stays listed; inactive categories are offered marked.
+7. The empty screen has no create button before 5.4.
+8. Fixed order: product name, default subtype first then subtypes by name, branch code.
+9. Phone layout: the catalog lists' table scrolling inside its panel.
+
+Choices made during the build:
+
+- Search never matches the hidden default subtype's stored name "default" (plan review, correction 1).
+- `stockCategoryChoices` has no branch, so its permission test is a test per role and an inactive user, not the own/other-branch matrix.
+- The by-hand Done-when check ("the stock from phase 3 purchases is listed") is also a database test: `recordPurchase` receives 40 at 5 000, and the branch's Principal and the Head see 40 worth 200 000.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.
