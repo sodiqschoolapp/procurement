@@ -16,9 +16,10 @@ import { isPaymentType, isPercent } from "./settings";
 /**
  * Our own decimal.js: the global `Decimal` keeps 20 significant digits, which would cut an
  * 11 + 15 + 3 digit product silently, and any other code could change its settings (plan of
- * 2.2, decision 9).
+ * 2.2, decision 9). Shared with ./purchases.ts, so that the planned and the actual money round
+ * alike; nobody calls `Exact.set`.
  */
-const Exact = Decimal.clone({ precision: 64, rounding: Decimal.ROUND_HALF_UP });
+export const Exact = Decimal.clone({ precision: 64, rounding: Decimal.ROUND_HALF_UP });
 
 /**
  * numeric(14,3): up to 11 whole digits and up to 3 decimals, no sign, no exponent, no spaces. The
