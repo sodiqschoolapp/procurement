@@ -11,6 +11,7 @@ import { getFormatters } from "@/i18n/get-formatters";
 export async function OrderHistory({ events }: { events: readonly OrderPageEvent[] }) {
   const t = await getTranslations("orders.page.history");
   const tPayment = await getTranslations("paymentTypes");
+  const tProgress = await getTranslations("orders.progress");
   const format = await getFormatters();
   if (events.length === 0) {
     return <p className="text-[15px] leading-[22px] text-muted-foreground">{t("empty")}</p>;
@@ -56,6 +57,15 @@ export async function OrderHistory({ events }: { events: readonly OrderPageEvent
                 {t("purchase", {
                   qty: format.quantity(event.purchase.qty),
                   price: format.money(BigInt(event.purchase.unitPrice)),
+                })}
+              </p>
+            ) : null}
+            {event.progress ? (
+              // The progress a buying action set (07 Order progress; plan of 3.5).
+              <p data-progress-change className="text-[15px] leading-[22px]">
+                {t("progress", {
+                  from: tProgress(event.progress.from),
+                  to: tProgress(event.progress.to),
                 })}
               </p>
             ) : null}

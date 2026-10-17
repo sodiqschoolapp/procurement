@@ -18,14 +18,14 @@ import { useFormatters } from "@/i18n/use-formatters";
 import { ApproveButton } from "./approve-button";
 import { CopyButton } from "./copy-button";
 import { ListActionBar } from "./list-action-bar";
-import { type MoveKind, MoveButton } from "./move-button";
+import { MoveButton, type StatusMoveKind } from "./move-button";
 
 /**
  * The moves of the list's action bar besides Approve, in the table's order. Submit again is not
  * among them: sent-back orders are edited and submitted again in the drafts grid or from their
  * page (05 Drafts 5; plan of 2.11, decided item 9).
  */
-const LIST_MOVES: readonly MoveKind[] = ["SEND_BACK", "REJECT", "CANCEL", "TAKE_BACK"];
+const LIST_MOVES: readonly StatusMoveKind[] = ["SEND_BACK", "REJECT", "CANCEL", "TAKE_BACK"];
 
 // The group rows of /orders (05-order-request-form.md, Group rows 1 to 3; Ticking and filters;
 // 11-screens-and-ux.md, Order list layout 2 and 4; Rules for a smooth feel 8, 13; plan of 2.8).
@@ -267,6 +267,22 @@ export function OrderList({
                   />
                 ) : null}
                 {LIST_MOVES.filter((move) => summary.actions.includes(move)).map((move) => (
+                  <MoveButton
+                    key={move}
+                    move={move}
+                    orders={summary.orders}
+                    versionOf={(id) => seen.current.get(id) ?? 0}
+                    onAnswer={(answer) => {
+                      setFailed(answer);
+                      clear();
+                    }}
+                    size="sm"
+                    className="max-sm:flex-1"
+                  />
+                ))}
+                {summary.buying.map((move) => (
+                  // Finish order, Not bought, Reopen buying on every ticked order (07 Order
+                  // progress; plan of 3.5): the server's buyingActions(), asked again on save.
                   <MoveButton
                     key={move}
                     move={move}

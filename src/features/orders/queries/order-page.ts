@@ -3,6 +3,7 @@ import { type AnyPgColumn, alias } from "drizzle-orm/pg-core";
 import * as z from "zod";
 
 import { businessDate } from "@/domain/business-date";
+import { isImageMime } from "@/domain/files";
 import { addsDraftsIn, inStock, plainQuantity } from "@/domain/drafts";
 import { type OrderAction, type OrderEventType, allowedActions } from "@/domain/order-moves";
 import { type StepEvent, type StepView, isOverdue, orderSteps } from "@/domain/order-steps";
@@ -34,6 +35,7 @@ import {
   companies,
   departments,
   extraCostTypes,
+  files,
   orderEvents,
   orderExtras,
   orderRevisions,
@@ -82,6 +84,8 @@ export type OrderPageEvent = {
   paymentType: { from: PaymentType; to: PaymentType } | null;
   /** The record a Record purchase event saved: its quantity and price per unit (plan of 3.3). */
   purchase: { qty: string; unitPrice: string } | null;
+  /** The progress a buying action set (plan of 3.5): Finish order, Not bought, Reopen buying. */
+  progress: { from: OrderProgress; to: OrderProgress } | null;
   /**
    * The other orders of the same action that this user may see now: never the action's own
    * count, which may cover other branches (decided item 1, Look first).
@@ -117,8 +121,11 @@ export type OrderPagePurchase = {
   comment: string | null;
   recordedBy: string;
   recordedAt: Date;
-  /** The trip's receipt files, downloaded under the trip file's own check (`TRIP_FILES`). */
-  receiptFileIds: string[];
+  /**
+   * The trip's receipt files, downloaded under the trip file's own check (`TRIP_FILES`): an image
+   * at its large size, a PDF as it is.
+   */
+  receipts: { fileId: string; isImage: boolean }[];
   isCancelled: boolean;
   cancelReason: string | null;
 };
@@ -222,7 +229,6 @@ export type OrderPage = {
 };
 
 const idInput = z.uuid();
-
 
 /**
  * A Draft is seen by its owner and the Head only (06 Statuses), inside the SQL: the SQL form of
@@ -341,6 +347,7 @@ async function readPage(db: Executor, actor: Actor, id: string): Promise<OrderPa
       headStepAuto: headStepAutoSql,
       paymentType: sql<OrderPageEvent["paymentType"]>`${orderEvents.payload} -> 'paymentType'`,
       purchase: sql<OrderPageEvent["purchase"]>`${orderEvents.payload} -> 'purchase'`,
+      progress: sql<OrderPageEvent["progress"]>`${orderEvents.payload} -> 'progress'`,
       othersSeen: sql<number>`(${othersSeen})`,
     })
     .from(orderEvents)
@@ -512,8 +519,9 @@ async function readPurchases(db: Executor, orderId: string): Promise<OrderPagePu
     .where(inArray(purchaseExtras.purchaseId, ids))
     .orderBy(asc(purchaseExtras.id));
   const fileRows = await db
-    .select({ tripId: tripFiles.tripId, fileId: tripFiles.fileId })
+    .select({ tripId: tripFiles.tripId, fileId: tripFiles.fileId, mime: files.mime })
     .from(tripFiles)
+    .innerJoin(files, eq(files.id, tripFiles.fileId))
     .where(inArray(tripFiles.tripId, [...new Set(rows.map((row) => row.tripId))]))
     .orderBy(asc(tripFiles.createdAt), asc(tripFiles.fileId));
   return rows.map((row) => {
@@ -535,7 +543,9 @@ async function readPurchases(db: Executor, orderId: string): Promise<OrderPagePu
       comment: row.comment,
       recordedBy: row.recordedBy,
       recordedAt: row.recordedAt,
-      receiptFileIds: fileRows.filter((file) => file.tripId === row.tripId).map((f) => f.fileId),
+      receipts: fileRows
+        .filter((file) => file.tripId === row.tripId)
+        .map((file) => ({ fileId: file.fileId, isImage: isImageMime(file.mime) })),
       isCancelled: row.isCancelled,
       cancelReason: row.cancelReason,
     };

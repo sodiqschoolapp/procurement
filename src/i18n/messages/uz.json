@@ -1112,7 +1112,8 @@
       "tabs": {
         "label": "Buyurtma boʻlimlari",
         "details": "Tafsilotlar",
-        "history": "Tarix"
+        "history": "Tarix",
+        "purchases": "Xaridlar"
       },
       "details": {
         "title": "Tafsilotlar",
@@ -1160,7 +1161,10 @@
           "SEND_BACK_FOR_CORRECTION": "Tuzatish uchun qaytarildi",
           "CLOSE": "Yopildi",
           "REOPEN": "Qayta ochildi",
-          "RECORD_PURCHASE": "Xarid yozildi"
+          "RECORD_PURCHASE": "Xarid yozildi",
+          "FINISH_ORDER": "Xarid yakunlandi",
+          "MARK_NOT_BOUGHT": "Sotib olinmadi deb belgilandi",
+          "REOPEN_BUYING": "Xarid qayta ochildi"
         },
         "approved": {
           "PENDING_HEAD": "Rahbar bosqichida tasdiqlandi",
@@ -1174,7 +1178,8 @@
         "note": "Izoh: {text}",
         "at": "{date} {time}",
         "paymentType": "To'lov turi: {from} → {to}",
-        "purchase": "{qty} × {price}"
+        "purchase": "{qty} × {price}",
+        "progress": "Xarid: {from} → {to}"
       },
       "waiting": {
         "HEAD": "Rahbarni kutmoqda.",
@@ -1217,6 +1222,38 @@
         "extra": "Qo'shimcha xarajat: {type}",
         "photoChanged": "Boshqa rasm",
         "arrow": "→"
+      },
+      "purchases": {
+        "title": "Xaridlar",
+        "progress": "Xarid",
+        "finishReason": "Sabab: {text}",
+        "received": "Olindi",
+        "used": "Ishlatildi",
+        "receivedOf": "{planned} {unit} dan {received}",
+        "overPlan": "Rejadan ortiq",
+        "qty": "Haqiqiy miqdor",
+        "goods": "Haqiqiy tovar summasi",
+        "extras": "Haqiqiy qoʻshimcha xarajatlar",
+        "total": "Haqiqiy summa",
+        "difference": "Farq",
+        "records": "Xarid yozuvlari",
+        "empty": "Hali hech narsa yozilmagan. Har bir xarid yoki yetkazib berish shu yerda chiqadi.",
+        "date": "Xarid sanasi",
+        "price": "Birlik narxi",
+        "line": "{qty} × {price}",
+        "paymentType": "Toʻlov turi",
+        "supplier": "Yetkazib beruvchi",
+        "comment": "Izoh",
+        "by": "Yozgan",
+        "byLine": "{name}, {date} {time}",
+        "receipts": "Cheklar",
+        "receipt": "Chek {n}",
+        "noReceipt": "Cheksiz",
+        "extraLine": "{type}: {amount}, {payment}",
+        "cancelled": "Bekor qilingan",
+        "cancelReason": "Bekor qilish sababi: {text}",
+        "none": "—",
+        "tripLine": "{payment} · {supplier}"
       }
     },
     "approve": {
@@ -1250,7 +1287,10 @@
         "REJECT": "Rad etish",
         "CANCEL": "Buyurtmani bekor qilish",
         "TAKE_BACK": "Qaytarib olish",
-        "SUBMIT_AGAIN": "Qayta yuborish"
+        "SUBMIT_AGAIN": "Qayta yuborish",
+        "FINISH_ORDER": "Buyurtmani yakunlash",
+        "MARK_NOT_BOUGHT": "Sotib olinmadi",
+        "REOPEN_BUYING": "Xaridni qayta ochish"
       },
       "buttonCount": "{label} ({count})",
       "title": {
@@ -1258,21 +1298,30 @@
         "REJECT": "{count, plural, other {# ta buyurtmani rad etasizmi?}}",
         "CANCEL": "{count, plural, other {# ta buyurtmani bekor qilasizmi?}}",
         "TAKE_BACK": "{count, plural, other {# ta buyurtmani qaytarib olasizmi?}}",
-        "SUBMIT_AGAIN": "{count, plural, other {# ta buyurtmani qayta yuborasizmi?}}"
+        "SUBMIT_AGAIN": "{count, plural, other {# ta buyurtmani qayta yuborasizmi?}}",
+        "FINISH_ORDER": "{count, plural, other {# ta buyurtma xaridini yakunlaysizmi?}}",
+        "MARK_NOT_BOUGHT": "{count, plural, other {# ta buyurtmani sotib olinmadi deb belgilaysizmi?}}",
+        "REOPEN_BUYING": "{count, plural, other {# ta buyurtma xaridini qayta ochasizmi?}}"
       },
       "result": {
         "SEND_BACK": "{count, plural, other {Buyurtmalar}} tuzatish uchun egasiga qaytadi. Egasi va rahbarga xabar boradi. Keyingi yuborishdan so'ng tasdiqlash yana rahbardan boshlanadi.",
         "REJECT": "{count, plural, other {Buyurtmalar}} butunlay rad etiladi va boshqa o'zgarmaydi. Egasi va rahbarga xabar boradi. Egasi uni yangi buyurtma sifatida nusxalashi mumkin.",
         "CANCEL": "{count, plural, other {Buyurtmalar}} butunlay to'xtatiladi va boshqa o'zgarmaydi.",
         "TAKE_BACK": "{count, plural, other {Buyurtmalar}} o'sha raqam bilan qoralamalaringizga qaytadi: tuzatib, qayta yuborasiz.",
-        "SUBMIT_AGAIN": "{count, plural, other {Buyurtmalar}} keyingi tahrir va o'sha raqam bilan yana rahbarga boradi. Avvalgi tasdiqlar endi hisobga olinmaydi."
+        "SUBMIT_AGAIN": "{count, plural, other {Buyurtmalar}} keyingi tahrir va o'sha raqam bilan yana rahbarga boradi. Avvalgi tasdiqlar endi hisobga olinmaydi.",
+        "FINISH_ORDER": "Xarid olingan miqdor bilan yakunlanadi: rejadan kam boʻlsa «Bajarildi, toʻliq emas». Keyingi qadam — yopish yoki hisob-kitob.",
+        "MARK_NOT_BOUGHT": "Hech narsa sotib olinmagan. Hisob-kitobda berilgan naqd pul toʻliq qaytariladi.",
+        "REOPEN_BUYING": "Xarid yana ochiladi, yangi xaridlarni yozish mumkin."
       },
       "done": {
         "SEND_BACK": "{count, plural, other {# ta buyurtma qaytarildi.}}",
         "REJECT": "{count, plural, other {# ta buyurtma rad etildi.}}",
         "CANCEL": "{count, plural, other {# ta buyurtma bekor qilindi.}}",
         "TAKE_BACK": "{count, plural, other {# ta buyurtma qaytarib olindi.}}",
-        "SUBMIT_AGAIN": "{count, plural, other {# ta buyurtma qayta yuborildi.}}"
+        "SUBMIT_AGAIN": "{count, plural, other {# ta buyurtma qayta yuborildi.}}",
+        "FINISH_ORDER": "{count, plural, other {# ta buyurtma xaridi yakunlandi.}}",
+        "MARK_NOT_BOUGHT": "{count, plural, other {# ta buyurtma sotib olinmadi deb belgilandi.}}",
+        "REOPEN_BUYING": "{count, plural, other {# ta buyurtma xaridi qayta ochildi.}}"
       },
       "failedTitle": "{count, plural, other {Hech narsa saqlanmadi: # ta buyurtma quyida ko'rsatilgan.}}",
       "failedLine": "{number} — {problem}",
@@ -1286,7 +1335,11 @@
       "reason": "Sabab",
       "reasonHint": "Kamida {min} ta belgi, barcha buyurtmalar uchun bitta sabab. {count} / {max}.",
       "notesTitle": "Har bir buyurtmaga izoh (ixtiyoriy)",
-      "noteOf": "{number} uchun izoh"
+      "noteOf": "{number} uchun izoh",
+      "notReady": {
+        "FINISH_ORDER": "Hali hech narsa olinmagan. «Sotib olinmadi»dan foydalaning.",
+        "MARK_NOT_BOUGHT": "Nimadir allaqachon olingan. «Buyurtmani yakunlash»dan foydalaning."
+      }
     },
     "overdue": "Muddati o'tgan",
     "copy": {
@@ -1325,7 +1378,12 @@
         "paymentType": "Toʻlov turi",
         "plannedTotal": "Rejadagi summa",
         "step": "{role}",
-        "stepAt": "{role}, vaqt"
+        "stepAt": "{role}, vaqt",
+        "actualQty": "Haqiqiy miqdor",
+        "actualPrice": "Haqiqiy narx",
+        "actualExtras": "Haqiqiy qoʻsh. xarajatlar",
+        "actualTotal": "Haqiqiy summa",
+        "difference": "Farq"
       },
       "totals": "Jami",
       "downloadedBy": "Yuklab oldi: {name}, {at}",
@@ -1343,6 +1401,12 @@
         "unknown": "—",
         "sort": "Saralash: {sort}"
       }
+    },
+    "progress": {
+      "OPEN": "Xarid ochiq",
+      "DONE": "Bajarildi",
+      "DONE_SHORT": "Bajarildi, toʻliq emas",
+      "NOT_BOUGHT": "Sotib olinmadi"
     }
   },
   "purchase": {

@@ -86,7 +86,7 @@ describe("orders_progress_status_check: a finished progress exists only from Ope
       ),
     ).toMatchObject(statusRefused);
     await order({ status: "SETTLEMENT", progress: "DONE_SHORT", finishReason: REASON });
-    await order({ status: "CLOSED", progress: "DONE", closedAt: new Date() });
+    await order({ status: "CLOSED", progress: "DONE", closedAt: new Date("2031-05-10T07:00:00Z") });
   });
 
   it("on update: a finished progress on a Waiting-for-Finance order is refused; on an Open one it passes", async () => {

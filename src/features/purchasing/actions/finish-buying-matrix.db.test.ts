@@ -32,9 +32,8 @@ const store = vi.hoisted(() => ({ user: null as CurrentUser | null }));
 vi.mock("@/server/auth/session", () => ({ getCurrentUser: async () => store.user }));
 vi.mock("next/cache", () => ({ revalidatePath: () => undefined }));
 
-const { finishOrdersAction, markNotBoughtAction, reopenBuyingAction } = await import(
-  "@/app/(app)/orders/actions"
-);
+const { finishOrdersAction, markNotBoughtAction, reopenBuyingAction } =
+  await import("@/app/(app)/orders/actions");
 
 function signedIn(user: InsertedUser): void {
   store.user = {

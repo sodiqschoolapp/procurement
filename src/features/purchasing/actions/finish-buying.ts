@@ -45,7 +45,9 @@ import { recordsOfOrders } from "../order-records";
 export type FinishInput = OrdersInput & { reason: string };
 export type ReopenInput = OrdersInput;
 
-const withReason = ordersInput({ reason: z.string().optional() }) as unknown as z.ZodType<FinishInput>;
+const withReason = ordersInput({
+  reason: z.string().optional(),
+}) as unknown as z.ZodType<FinishInput>;
 const noReason = ordersInput({}) as unknown as z.ZodType<ReopenInput>;
 
 /** The status check of one buying action: every order it does not start from is `wrong_status`. */
@@ -85,7 +87,8 @@ async function receivedCheck(
 
 /** One reason for every ticked order, 5 to 500 once trimmed (06 rule 3; decided item 7). */
 function storedReason(input: FinishInput): string {
-  if (!isMoveReason(input.reason)) throw new ActionError("invalid_input", reasonFields(input.reason));
+  if (!isMoveReason(input.reason))
+    throw new ActionError("invalid_input", reasonFields(input.reason));
   return moveReason(input.reason);
 }
 
@@ -97,10 +100,7 @@ async function writeProgress(
   const extras = new Map<string, OrderEventExtra>();
   for (const order of context.orders) {
     const { progress, finishReason } = next(order.id);
-    await context.tx
-      .update(orders)
-      .set({ progress, finishReason })
-      .where(eq(orders.id, order.id));
+    await context.tx.update(orders).set({ progress, finishReason }).where(eq(orders.id, order.id));
     extras.set(order.id, { payload: { progress: { from: order.progress, to: progress } } });
   }
   return extras;

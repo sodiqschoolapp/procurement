@@ -77,7 +77,9 @@ async function versionOf(orderId: string) {
 }
 
 async function ticked(list: readonly Order[]) {
-  return Promise.all(list.map(async (order) => ({ id: order.id, version: await versionOf(order.id) })));
+  return Promise.all(
+    list.map(async (order) => ({ id: order.id, version: await versionOf(order.id) })),
+  );
 }
 
 async function finish(at: Scene, list: readonly Order[], reason: unknown = REASON) {

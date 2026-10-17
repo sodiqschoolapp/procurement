@@ -264,9 +264,9 @@ describe("buyingRefusal and buyingActions (07 Order progress; 03 Permission matr
   it("the Head and the owner with RECORD_PURCHASES on; nobody else (decided item 2)", () => {
     const open = order();
     expect(buyingActions(actor("HEAD"), [open])).toEqual(["FINISH_ORDER"]);
-    expect(buyingActions(actor("HEAD"), [order({ branchId: OTHER, ownerId: "other" })])).toEqual(
-      ["FINISH_ORDER"],
-    );
+    expect(buyingActions(actor("HEAD"), [order({ branchId: OTHER, ownerId: "other" })])).toEqual([
+      "FINISH_ORDER",
+    ]);
     expect(buyingActions(actor("MANAGER"), [open])).toEqual(["FINISH_ORDER"]);
     expect(buyingActions(actor("MANAGER"), [order({ ownerId: "colleague" })])).toEqual([]);
     expect(buyingActions(actor("MANAGER"), [order({ branchId: OTHER })])).toEqual([]);

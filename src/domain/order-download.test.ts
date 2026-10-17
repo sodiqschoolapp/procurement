@@ -43,9 +43,12 @@ const plan: OrderPlan = {
 
 describe("orderDownloadRow (05 Download 1 and 3)", () => {
   it("gives the planned total and the extra costs of order-totals (05 fields 12 and 16)", () => {
-    const row = orderDownloadRow("PENDING_HEAD", plan, [
-      event("SUBMIT", "DRAFT", "PENDING_HEAD", "Manager"),
-    ], NONE);
+    const row = orderDownloadRow(
+      "PENDING_HEAD",
+      plan,
+      [event("SUBMIT", "DRAFT", "PENDING_HEAD", "Manager")],
+      NONE,
+    );
     expect(row.extras).toBe(2_000n);
     expect(row.plannedTotal).toBe(52_000n);
     expect(row.plannedTotal).toBe(orderTotal(plan));
@@ -86,12 +89,17 @@ describe("orderDownloadRow (05 Download 1 and 3)", () => {
   it("a Rejected order keeps the steps it finished (05 Download 1)", () => {
     const head = event("APPROVE", "PENDING_HEAD", "PENDING_PRINCIPAL", "Head Invented");
     const principal = event("APPROVE", "PENDING_PRINCIPAL", "PENDING_FINANCE", "Principal One");
-    const row = orderDownloadRow("REJECTED", plan, [
-      event("SUBMIT", "DRAFT", "PENDING_HEAD", "Manager"),
-      head,
-      principal,
-      event("REJECT", "PENDING_FINANCE", "REJECTED", "Finance One"),
-    ], NONE);
+    const row = orderDownloadRow(
+      "REJECTED",
+      plan,
+      [
+        event("SUBMIT", "DRAFT", "PENDING_HEAD", "Manager"),
+        head,
+        principal,
+        event("REJECT", "PENDING_FINANCE", "REJECTED", "Finance One"),
+      ],
+      NONE,
+    );
     expect(row.approvals).toEqual({
       HEAD: { name: "Head Invented", at: head.at },
       PRINCIPAL: { name: "Principal One", at: principal.at },
@@ -101,12 +109,17 @@ describe("orderDownloadRow (05 Download 1 and 3)", () => {
 
   it("an Open order names all three steps", () => {
     const finance = event("APPROVE", "PENDING_FINANCE", "PURCHASING", "Finance One");
-    const row = orderDownloadRow("PURCHASING", plan, [
-      event("SUBMIT", "DRAFT", "PENDING_HEAD", "Manager"),
-      event("APPROVE", "PENDING_HEAD", "PENDING_PRINCIPAL", "Head Invented"),
-      event("APPROVE", "PENDING_PRINCIPAL", "PENDING_FINANCE", "Principal One"),
-      finance,
-    ], NONE);
+    const row = orderDownloadRow(
+      "PURCHASING",
+      plan,
+      [
+        event("SUBMIT", "DRAFT", "PENDING_HEAD", "Manager"),
+        event("APPROVE", "PENDING_HEAD", "PENDING_PRINCIPAL", "Head Invented"),
+        event("APPROVE", "PENDING_PRINCIPAL", "PENDING_FINANCE", "Principal One"),
+        finance,
+      ],
+      NONE,
+    );
     expect(row.approvals.FINANCE).toEqual({ name: "Finance One", at: finance.at });
   });
 });
@@ -158,8 +171,6 @@ describe("orderDownloadRow: the actual columns (05 Download 1; 08 Numbers the sy
       { qty: "5", unitPrice: 5_200n, extras: [], isCancelled: true },
     ];
     // 15 S3: 520 000 + 30 000 delivery = 550 000, over by 30 000.
-    expect(orderDownloadRow("PURCHASING", notebooks, [], dearer).actual?.difference).toBe(
-      -30_000n,
-    );
+    expect(orderDownloadRow("PURCHASING", notebooks, [], dearer).actual?.difference).toBe(-30_000n);
   });
 });

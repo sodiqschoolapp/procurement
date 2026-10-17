@@ -3,29 +3,31 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { Icon } from "@/components/icon";
-import { RequestStatusLabel } from "@/components/status-label";
+import { ProgressLabel, RequestStatusLabel } from "@/components/status-label";
 import { cn } from "@/components/utils";
 import { waitingFor } from "@/domain/order-steps";
+import { BUYING_STATUSES } from "@/domain/purchases";
 import { OrderActionBar } from "@/features/orders/components/order-action-bar";
-import type { MoveKind } from "@/features/orders/components/move-button";
+import type { StatusMoveKind } from "@/features/orders/components/move-button";
 import { OrderHistory } from "@/features/orders/components/order-history";
 import { OrderStepper } from "@/features/orders/components/order-stepper";
 import { WhatChanged } from "@/features/orders/components/what-changed";
 import { type OrderPage, getOrderPage } from "@/features/orders/queries/order-page";
+import { PurchasesTab } from "@/features/purchasing/components/purchases-tab";
 import { getFormatters } from "@/i18n/get-formatters";
 import { requireUser } from "@/server/auth/session";
 
 // /orders/[id] (11-screens-and-ux.md, Screens: "Order page | All"; Order page layout 1 to 4; plan
 // of 2.9). Another branch's order, another user's Draft, an unknown or a malformed id are all "Not
 // found" (03 rule 1; decided item 6, Look first): getOrderPage() answers null for each. The tabs
-// are Details and History, kept in the address (`?tab=history`; decided item 10); Purchases and
-// Money arrive with 3.5 and 4.3. The action bar shows the moves the server allowed that have a
+// are Details, Purchases from status Open on (plan of 3.5) and History, kept in the address
+// (`?tab=purchases`, `?tab=history`; decided item 10); Money arrives with 4.3. The action bar shows the moves the server allowed that have a
 // button, and otherwise who the order is waiting for (decided items 4 and 5, Look first).
 
-type Tab = "details" | "history";
+type Tab = "details" | "purchases" | "history";
 
 /** The bar's move buttons besides Submit and Approve, in the table's order (06 Allowed moves). */
-const PAGE_MOVES: readonly MoveKind[] = [
+const PAGE_MOVES: readonly StatusMoveKind[] = [
   "SEND_BACK",
   "REJECT",
   "TAKE_BACK",
@@ -35,7 +37,7 @@ const PAGE_MOVES: readonly MoveKind[] = [
 
 /** The waiting line, or null when the user has an allowed move (decided item 4, Look first). */
 async function waitingLine(order: OrderPage): Promise<string | null> {
-  if (order.actions.length > 0 || order.canRecordPurchase) return null;
+  if (order.actions.length > 0 || order.canRecordPurchase || order.buying.length > 0) return null;
   const t = await getTranslations("orders.page.waiting");
   const who = waitingFor(order.status);
   if (who === "PRINCIPAL") {
@@ -59,7 +61,15 @@ export default async function OrderPageScreen({
   const user = await requireUser(`/orders/${id}`);
   const order = await getOrderPage(user.id, id);
   if (!order) notFound();
-  const tab: Tab = (await searchParams).tab === "history" ? "history" : "details";
+  const asked = (await searchParams).tab;
+  // The Purchases tab exists from status Open on (plan of 3.5, decided item 11).
+  const hasPurchases = BUYING_STATUSES.has(order.status);
+  const tab: Tab =
+    asked === "history"
+      ? "history"
+      : asked === "purchases" && hasPurchases
+        ? "purchases"
+        : "details";
 
   const t = await getTranslations("orders.page");
   const tOrders = await getTranslations("orders");
@@ -205,7 +215,7 @@ export default async function OrderPageScreen({
   const tabLink = (to: Tab) => (
     <Link
       key={to}
-      href={to === "details" ? `/orders/${order.id}` : `/orders/${order.id}?tab=history`}
+      href={to === "details" ? `/orders/${order.id}` : `/orders/${order.id}?tab=${to}`}
       aria-current={tab === to ? "page" : undefined}
       className={cn(
         "flex h-11 flex-1 items-center justify-center rounded-lg px-4 text-[15px] font-semibold sm:flex-none",
@@ -229,6 +239,7 @@ export default async function OrderPageScreen({
             </span>
           ) : null}
           <RequestStatusLabel status={order.status} />
+          {order.status === "PURCHASING" ? <ProgressLabel progress={order.progress} /> : null}
           {order.priority === "URGENT" ? (
             <span className="inline-flex items-center gap-1 text-[13px] font-semibold text-destructive">
               <Icon name="warning" size={16} />
@@ -294,11 +305,18 @@ export default async function OrderPageScreen({
           className="flex gap-1 rounded-xl bg-muted p-1 sm:self-start"
         >
           {tabLink("details")}
+          {hasPurchases ? tabLink("purchases") : null}
           {tabLink("history")}
         </nav>
         <div className="rounded-xl bg-card p-4 sm:p-6">
-          <h2 className="sr-only">{t(tab === "details" ? "details.title" : "history.title")}</h2>
-          {tab === "details" ? details : <OrderHistory events={order.events} />}
+          <h2 className="sr-only">{t(`${tab}.title`)}</h2>
+          {tab === "details" ? (
+            details
+          ) : tab === "purchases" ? (
+            <PurchasesTab order={order} />
+          ) : (
+            <OrderHistory events={order.events} />
+          )}
         </div>
       </section>
 
@@ -319,7 +337,7 @@ export default async function OrderPageScreen({
               }
             : null
         }
-        moves={PAGE_MOVES.filter((move) => order.actions.includes(move))}
+        moves={[...PAGE_MOVES.filter((move) => order.actions.includes(move)), ...order.buying]}
         number={order.number}
         // Copy as new of a numbered order; a draft is edited in the drafts grid (decided item 11).
         canCopy={order.canCopy && order.status !== "DRAFT" && order.number !== null}
