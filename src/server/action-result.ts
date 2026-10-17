@@ -105,6 +105,11 @@ export const FIELD_ERROR_KINDS = [
   "moneyOneBranch",
   "fileOneManager",
   "closedReopenFirst",
+  // A settlement confirmation (plan of 4.5): a transfer whose transferred and received amounts
+  // differ needs a note (08 Closing 2); the order used no such payment type, so there is nothing
+  // to confirm.
+  "noteRequired",
+  "noBlock",
 ] as const;
 export type FieldErrorKind = (typeof FIELD_ERROR_KINDS)[number];
 export type FieldMessageKey = `errors.field.${FieldErrorKind}`;

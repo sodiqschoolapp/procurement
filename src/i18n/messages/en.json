@@ -82,7 +82,9 @@
       "noAmount": "Type an amount above 0 for at least one order.",
       "moneyOneBranch": "One action covers one Manager's orders of one branch. Record each branch's orders on their own.",
       "fileOneManager": "A file can be added only when the orders belong to one Manager.",
-      "closedReopenFirst": "This order is Closed. The Procurement Head reopens it first; then cancel the action."
+      "closedReopenFirst": "This order is Closed. The Procurement Head reopens it first; then cancel the action.",
+      "noteRequired": "Transferred and received differ: write a note (the supplier owes goods or a refund).",
+      "noBlock": "This order used no such payment type, so there is nothing to confirm."
     },
     "file": {
       "tooLarge": "The file is larger than 10 MB. Choose a smaller file or take the photo again.",

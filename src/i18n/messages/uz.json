@@ -82,7 +82,9 @@
       "noAmount": "Kamida bitta buyurtmaga 0 dan katta summa kiriting.",
       "moneyOneBranch": "Bitta amal bitta menejerning bitta filialdagi buyurtmalarini qamraydi. Har bir filial buyurtmalarini alohida yozing.",
       "fileOneManager": "Fayl faqat buyurtmalar bitta menejerniki boʻlganda qoʻshiladi.",
-      "closedReopenFirst": "Bu buyurtma yopilgan. Avval xaridlar rahbari uni qayta ochadi, soʻng amalni bekor qiling."
+      "closedReopenFirst": "Bu buyurtma yopilgan. Avval xaridlar rahbari uni qayta ochadi, soʻng amalni bekor qiling.",
+      "noteRequired": "Oʻtkazilgan va olingan summa farq qiladi: izoh yozing (yetkazib beruvchi tovar yoki pul qaytarishi kerak).",
+      "noBlock": "Bu buyurtmada bunday toʻlov turi ishlatilmagan, tasdiqlash uchun hech narsa yoʻq."
     },
     "file": {
       "tooLarge": "Fayl 10 MB dan katta. Kichikroq fayl tanlang yoki suratni qaytadan oling.",
