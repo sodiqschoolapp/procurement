@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { orderTotal } from "./order-totals";
+import type { Actor, ManagerRight, Role } from "./permissions";
 import {
   type GroupOrder,
   type PurchaseRecord,
@@ -8,8 +9,13 @@ import {
   actualGoods,
   actualQuantity,
   actualTotal,
+  actualUnitPrice,
+  buyingActions,
+  buyingRefusal,
+  type BuyingOrder,
   difference,
-  finishRefusal,
+  finishedProgress,
+  overPlan,
   progressAfterBuying,
   purchaseCommentNeeds,
   purchaseDateRefusal,
@@ -141,7 +147,7 @@ describe("progressAfterBuying (07 Order progress), after a record is saved or ca
     expect(progressAfterBuying("OPEN", "100", "60")).toBe("OPEN");
     expect(progressAfterBuying("OPEN", "100", "100")).toBe("DONE");
     expect(progressAfterBuying("DONE", "100", "60")).toBe("OPEN");
-    expect(finishRefusal("DONE_SHORT", "100", "60")).toBeNull();
+    expect(finishedProgress("FINISH", "100", "60")).toEqual({ progress: "DONE_SHORT" });
     expect(progressAfterBuying("DONE_SHORT", "100", "0")).toBe("OPEN");
   });
 
@@ -167,19 +173,147 @@ describe("progressAfterBuying (07 Order progress), after a record is saved or ca
   });
 });
 
-describe("finishRefusal (07 Order progress: Finish order and Not bought)", () => {
-  it("Done short needs something received and less than planned", () => {
-    expect(finishRefusal("DONE_SHORT", "100", "60")).toBeNull();
-    expect(finishRefusal("DONE_SHORT", "100", "0.001")).toBeNull();
-    expect(finishRefusal("DONE_SHORT", "100", "0")).toBe("NOTHING_RECEIVED");
-    expect(finishRefusal("DONE_SHORT", "100", "100")).toBe("NOT_SHORT");
-    expect(finishRefusal("DONE_SHORT", "100", "120")).toBe("NOT_SHORT");
+describe("finishedProgress (07 Order progress: Finish order and Not bought)", () => {
+  it("Finish order gives Done short with something received and less than planned", () => {
+    expect(finishedProgress("FINISH", "100", "60")).toEqual({ progress: "DONE_SHORT" });
+    expect(finishedProgress("FINISH", "100", "0.001")).toEqual({ progress: "DONE_SHORT" });
+    expect(finishedProgress("FINISH", "100", "99.999")).toEqual({ progress: "DONE_SHORT" });
+  });
+
+  it("Finish order with nothing received is refused: it is Not bought", () => {
+    expect(finishedProgress("FINISH", "100", "0")).toEqual({ refusal: "NOTHING_RECEIVED" });
+  });
+
+  // Plan of 3.5, decided item 1, Look first: this changes decisions 3.2 item 4, whose
+  // finishRefusal() refused these two as NOT_SHORT. A reopened Done order with no further record
+  // is finished back to Done, or nothing could ever finish it.
+  it("Finish order at the plan or more gives Done (a reopened Done order)", () => {
+    expect(finishedProgress("FINISH", "100", "100")).toEqual({ progress: "DONE" });
+    expect(finishedProgress("FINISH", "100", "120")).toEqual({ progress: "DONE" });
   });
 
   it("Not bought needs nothing received", () => {
-    expect(finishRefusal("NOT_BOUGHT", "100", "0")).toBeNull();
-    expect(finishRefusal("NOT_BOUGHT", "100", "0.001")).toBe("SOMETHING_RECEIVED");
-    expect(finishRefusal("NOT_BOUGHT", "100", "100")).toBe("SOMETHING_RECEIVED");
+    expect(finishedProgress("NOT_BOUGHT", "100", "0")).toEqual({ progress: "NOT_BOUGHT" });
+    expect(finishedProgress("NOT_BOUGHT", "100", "0.001")).toEqual({
+      refusal: "SOMETHING_RECEIVED",
+    });
+    expect(finishedProgress("NOT_BOUGHT", "100", "100")).toEqual({
+      refusal: "SOMETHING_RECEIVED",
+    });
+  });
+});
+
+describe("buyingRefusal and buyingActions (07 Order progress; 03 Permission matrix, Record purchases)", () => {
+  const ME = "user-me";
+  const OWN = "branch-own";
+  const OTHER = "branch-other";
+
+  function actor(role: Role, off: ManagerRight | null = null): Actor {
+    return {
+      userId: ME,
+      role,
+      branchIds: role === "HEAD" ? [] : [OWN],
+      disabledRights: off ? [off] : [],
+    };
+  }
+
+  function order(overrides: Partial<BuyingOrder> = {}): BuyingOrder {
+    return {
+      status: "PURCHASING",
+      progress: "OPEN",
+      branchId: OWN,
+      ownerId: ME,
+      plannedQty: "100",
+      received: "60",
+      ...overrides,
+    };
+  }
+
+  it("Finish order and Not bought need an Open order whose buying is open", () => {
+    for (const status of ["PENDING_FINANCE", "SETTLEMENT", "CLOSED"] as const) {
+      expect(buyingRefusal("FINISH_ORDER", order({ status }))).toBe("wrong_status");
+      expect(buyingRefusal("MARK_NOT_BOUGHT", order({ status, received: "0" }))).toBe(
+        "wrong_status",
+      );
+    }
+    for (const progress of ["DONE", "DONE_SHORT", "NOT_BOUGHT"] as const) {
+      expect(buyingRefusal("FINISH_ORDER", order({ progress }))).toBe("wrong_status");
+      expect(buyingRefusal("MARK_NOT_BOUGHT", order({ progress, received: "0" }))).toBe(
+        "wrong_status",
+      );
+    }
+    expect(buyingRefusal("FINISH_ORDER", order())).toBeNull();
+    expect(buyingRefusal("MARK_NOT_BOUGHT", order({ received: "0" }))).toBeNull();
+  });
+
+  it("the received rule is finishedProgress(): not_ready", () => {
+    expect(buyingRefusal("FINISH_ORDER", order({ received: "0" }))).toBe("not_ready");
+    expect(buyingRefusal("MARK_NOT_BOUGHT", order({ received: "60" }))).toBe("not_ready");
+  });
+
+  it("Reopen buying needs an Open order whose buying is finished (decided item 3)", () => {
+    for (const progress of ["DONE", "DONE_SHORT", "NOT_BOUGHT"] as const) {
+      expect(buyingRefusal("REOPEN_BUYING", order({ progress }))).toBeNull();
+      expect(buyingRefusal("REOPEN_BUYING", order({ progress, status: "SETTLEMENT" }))).toBe(
+        "wrong_status",
+      );
+    }
+    expect(buyingRefusal("REOPEN_BUYING", order())).toBe("wrong_status");
+  });
+
+  it("the Head and the owner with RECORD_PURCHASES on; nobody else (decided item 2)", () => {
+    const open = order();
+    expect(buyingActions(actor("HEAD"), [open])).toEqual(["FINISH_ORDER"]);
+    expect(buyingActions(actor("HEAD"), [order({ branchId: OTHER, ownerId: "other" })])).toEqual(
+      ["FINISH_ORDER"],
+    );
+    expect(buyingActions(actor("MANAGER"), [open])).toEqual(["FINISH_ORDER"]);
+    expect(buyingActions(actor("MANAGER"), [order({ ownerId: "colleague" })])).toEqual([]);
+    expect(buyingActions(actor("MANAGER"), [order({ branchId: OTHER })])).toEqual([]);
+    expect(buyingActions(actor("MANAGER", "RECORD_PURCHASES"), [open])).toEqual([]);
+    expect(buyingActions(actor("PRINCIPAL"), [open])).toEqual([]);
+    expect(buyingActions(actor("FINANCE"), [open])).toEqual([]);
+  });
+
+  it("an action is offered only when every ticked order allows it", () => {
+    const short = order();
+    const empty = order({ received: "0" });
+    const done = order({ progress: "DONE", received: "100" });
+    expect(buyingActions(actor("MANAGER"), [empty])).toEqual(["MARK_NOT_BOUGHT"]);
+    expect(buyingActions(actor("MANAGER"), [short, empty])).toEqual([]);
+    expect(buyingActions(actor("MANAGER"), [done])).toEqual(["REOPEN_BUYING"]);
+    expect(buyingActions(actor("MANAGER"), [done, short])).toEqual([]);
+    expect(buyingActions(actor("MANAGER"), [])).toEqual([]);
+  });
+});
+
+describe("actualUnitPrice (05 Download 1, actual price; plan of 3.5, decided item 4)", () => {
+  it("the Cheaper case: 100 at 4 500 is 4 500", () => {
+    expect(actualUnitPrice([record("100", 4_500n, [20_000n])])).toBe(4_500n);
+  });
+
+  it("two prices: actual goods ÷ actual quantity, 60 × 4 500 + 40 × 4 600 = 4 540", () => {
+    expect(actualUnitPrice([record("60", 4_500n), record("40", 4_600n)])).toBe(4_540n);
+  });
+
+  it("a quotient ending in exactly .5 rounds half up: 4 501 and 4 500 give 4 501", () => {
+    expect(actualUnitPrice([record("1", 4_501n), record("1", 4_500n)])).toBe(4_501n);
+  });
+
+  it("only live records count; nothing received is null", () => {
+    expect(actualUnitPrice([record("1", 4_501n), record("1", 9_999n, [], true)])).toBe(4_501n);
+    expect(actualUnitPrice([])).toBeNull();
+    expect(actualUnitPrice([record("10", 5_000n, [], true)])).toBeNull();
+  });
+});
+
+describe("overPlan (07 Order progress: buying more than planned shows red)", () => {
+  it("is true only above the plan", () => {
+    expect(overPlan("100", "100.001")).toBe(true);
+    expect(overPlan("100", "110")).toBe(true);
+    expect(overPlan("100", "100")).toBe(false);
+    expect(overPlan("100", "60")).toBe(false);
+    expect(overPlan("100", "0")).toBe(false);
   });
 });
 
