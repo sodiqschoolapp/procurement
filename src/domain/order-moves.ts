@@ -31,9 +31,16 @@ export type OrderAction = (typeof ORDER_ACTIONS)[number];
 /**
  * Every write an order's history names: the moves above, then the writes on an Open order that
  * move no status (plan of 3.3, Database changes). The `order_actions.type` and `order_events.type`
- * enums read this list; `ORDER_MOVES` never names the writes. 3.5 and 3.7 add theirs here.
+ * enums read this list; `ORDER_MOVES` never names the writes. The buying actions of 3.5 are
+ * BUYING_ACTIONS of ./purchases.ts; 3.7 adds its own here.
  */
-export const ORDER_EVENT_TYPES = [...ORDER_ACTIONS, "RECORD_PURCHASE"] as const;
+export const ORDER_EVENT_TYPES = [
+  ...ORDER_ACTIONS,
+  "RECORD_PURCHASE",
+  "FINISH_ORDER",
+  "MARK_NOT_BOUGHT",
+  "REOPEN_BUYING",
+] as const;
 export type OrderEventType = (typeof ORDER_EVENT_TYPES)[number];
 
 /**

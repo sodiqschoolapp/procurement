@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, ne, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, ne, or, sql } from "drizzle-orm";
 import { type AnyPgColumn, alias } from "drizzle-orm/pg-core";
 import * as z from "zod";
 
@@ -14,7 +14,18 @@ import {
 } from "@/domain/revision-changes";
 import type { PaymentType } from "@/domain/payment-types";
 import { type Actor, decide } from "@/domain/permissions";
-import { actualQuantity, actualTotal } from "@/domain/purchases";
+import {
+  BUYING_STATUSES,
+  type BuyingAction,
+  type OrderProgress,
+  actualExtra,
+  actualGoods,
+  actualQuantity,
+  actualTotal,
+  buyingActions,
+  difference,
+  overPlan,
+} from "@/domain/purchases";
 import type { RequestStatus } from "@/domain/request-status";
 import { type Executor, authorizeList, branchFilter } from "@/server/authorize";
 import { now } from "@/server/clock";
@@ -27,6 +38,10 @@ import {
   orderExtras,
   orderRevisions,
   orders,
+  purchaseExtras,
+  purchaseTrips,
+  purchases,
+  tripFiles,
   productVariants,
   products,
   stockBalances,
@@ -85,6 +100,39 @@ export type OrderPageChange =
   | { kind: "extra"; typeName: string; from: string | null; to: string | null }
   | { kind: "total"; from: string | null; to: string | null };
 
+/** One purchase record of the Purchases tab (07 Purchase record; plan of 3.5), newest first. */
+export type OrderPagePurchase = {
+  id: string;
+  /** The trip's business date, `YYYY-MM-DD`. */
+  purchasedOn: string;
+  /** Plain decimal text. */
+  qty: string;
+  unitPrice: bigint;
+  /** round(quantity × price), half up: actualGoods() of the one record (08). */
+  goods: bigint;
+  extras: { typeName: string; amount: bigint; paymentType: PaymentType }[];
+  /** The trip's payment type used (07 One trip 1: shared). */
+  paymentType: PaymentType;
+  supplierName: string | null;
+  comment: string | null;
+  recordedBy: string;
+  recordedAt: Date;
+  /** The trip's receipt files, downloaded under the trip file's own check (`TRIP_FILES`). */
+  receiptFileIds: string[];
+  isCancelled: boolean;
+  cancelReason: string | null;
+};
+
+/** The actual numbers of the order from Open on (08 Numbers the system calculates). */
+export type OrderPageActual = {
+  qty: string;
+  goods: bigint;
+  extras: bigint;
+  total: bigint;
+  /** Planned total − actual total: above 0 money is left, below 0 more was spent. */
+  difference: bigint;
+};
+
 export type OrderPage = {
   id: string;
   /** null on a never-submitted draft. */
@@ -127,6 +175,15 @@ export type OrderPage = {
   actualTotal: bigint | null;
   /** From Open on, `actualQuantity()` of the records: Received, or Used for a service (07). */
   received: string | null;
+  /** Received above the plan: shown red (07 Order progress; overPlan()). */
+  overPlan: boolean;
+  /** 07 Order progress, and the reason of Done short or Not bought. */
+  progress: OrderProgress;
+  finishReason: string | null;
+  /** From Open on, the actual numbers; null before. */
+  actual: OrderPageActual | null;
+  /** From Open on, every record, cancelled ones included (crossed out); empty before. */
+  purchases: OrderPagePurchase[];
   isService: boolean;
   /** Against today's reference price (decided item 8); null when none applies. */
   priceHint: bigint | null;
@@ -150,6 +207,11 @@ export type OrderPage = {
    * `purchase.record` on it (03 Permission matrix; plan of 3.3). The server asks again.
    */
   canRecordPurchase: boolean;
+  /**
+   * The buying actions this user may take on this order now (07 Order progress; plan of 3.5):
+   * buyingActions() of src/domain/purchases.ts. The server asks again.
+   */
+  buying: BuyingAction[];
   /** The branch's active Principal now (03 rules 2 and 3; decided items 5 and 14). */
   principalName: string | null;
   /**
@@ -161,8 +223,6 @@ export type OrderPage = {
 
 const idInput = z.uuid();
 
-/** The statuses from Open on, which have purchase records (06 Statuses; 07). */
-const BUYING_STATUSES: ReadonlySet<RequestStatus> = new Set(["PURCHASING", "SETTLEMENT", "CLOSED"]);
 
 /**
  * A Draft is seen by its owner and the Head only (06 Statuses), inside the SQL: the SQL form of
@@ -193,6 +253,7 @@ async function readPage(db: Executor, actor: Actor, id: string): Promise<OrderPa
       branchId: orders.branchId,
       ownerId: orders.ownerId,
       progress: orders.progress,
+      finishReason: orders.finishReason,
       createdByHead: createdByHeadSql,
       ownerClosesAlone: ownerClosesAloneSql,
       branchCode: branches.code,
@@ -310,7 +371,10 @@ async function readPage(db: Executor, actor: Actor, id: string): Promise<OrderPa
     headStepAuto: event.headStepAuto,
   }));
   const amounts = extras.map((extra) => extra.amount);
-  const records = BUYING_STATUSES.has(row.status) ? await orderRecords(db, row.id) : null;
+  const buying = BUYING_STATUSES.has(row.status);
+  const records = buying ? await orderRecords(db, row.id) : null;
+  const received = records ? actualQuantity(records) : null;
+  const total = records ? actualTotal(records) : null;
 
   return {
     id: row.id,
@@ -345,8 +409,22 @@ async function readPage(db: Executor, actor: Actor, id: string): Promise<OrderPa
     comment: row.comment,
     referencePhotoFileId: row.referencePhotoFileId,
     plannedTotal: row.plannedTotal,
-    actualTotal: records ? actualTotal(records) : null,
-    received: records ? actualQuantity(records) : null,
+    actualTotal: total,
+    received,
+    overPlan: received !== null && row.quantity !== null && overPlan(row.quantity, received),
+    progress: row.progress,
+    finishReason: row.finishReason,
+    actual:
+      records && received !== null && total !== null && row.plannedTotal !== null
+        ? {
+            qty: received,
+            goods: actualGoods(records),
+            extras: actualExtra(records),
+            total,
+            difference: difference(row.plannedTotal, total),
+          }
+        : null,
+    purchases: buying ? await readPurchases(db, row.id) : [],
     isService: row.productType === "SERVICE",
     priceHint: priceHintPercent(row.price, row.referencePrice, threshold),
     overdue: isOverdue(row.status, row.progress, row.neededBy, businessDate(now())),
@@ -374,9 +452,94 @@ async function readPage(db: Executor, actor: Actor, id: string): Promise<OrderPa
       row.progress === "OPEN" &&
       decide("purchase.record", actor, { branchId: row.branchId, ownerId: row.ownerId }) ===
         "allow",
+    buying:
+      received === null || row.quantity === null
+        ? []
+        : buyingActions(actor, [
+            {
+              status: row.status,
+              progress: row.progress,
+              branchId: row.branchId,
+              ownerId: row.ownerId,
+              plannedQty: row.quantity,
+              received,
+            },
+          ]),
     principalName: principal?.name ?? null,
     changes,
   };
+}
+
+/**
+ * The records of the Purchases tab, newest first, with their trip's date, payment type, supplier
+ * and receipt files (07 Purchase record; One trip 1), in the page's snapshot after the walls let
+ * the order through. A receipt is downloaded at `/files/<id>` under `TRIP_FILES` (3.3).
+ */
+async function readPurchases(db: Executor, orderId: string): Promise<OrderPagePurchase[]> {
+  const recorder = alias(users, "recorder");
+  const rows = await db
+    .select({
+      id: purchases.id,
+      tripId: purchases.tripId,
+      purchasedOn: purchaseTrips.purchasedOn,
+      qty: purchases.qty,
+      unitPrice: purchases.unitPrice,
+      paymentType: purchaseTrips.paymentType,
+      supplierName: companies.name,
+      comment: purchases.comment,
+      recordedBy: recorder.fullName,
+      recordedAt: purchases.createdAt,
+      isCancelled: purchases.isCancelled,
+      cancelReason: purchases.cancelReason,
+    })
+    .from(purchases)
+    .innerJoin(purchaseTrips, eq(purchaseTrips.id, purchases.tripId))
+    .innerJoin(recorder, eq(recorder.id, purchases.createdBy))
+    .leftJoin(companies, eq(companies.id, purchaseTrips.supplierId))
+    .where(eq(purchases.orderId, orderId))
+    .orderBy(desc(purchases.createdAt), desc(purchases.id));
+  if (rows.length === 0) return [];
+  const ids = rows.map((row) => row.id);
+  const extraRows = await db
+    .select({
+      purchaseId: purchaseExtras.purchaseId,
+      typeName: extraCostTypes.name,
+      amount: purchaseExtras.amount,
+      paymentType: purchaseExtras.paymentType,
+    })
+    .from(purchaseExtras)
+    .innerJoin(extraCostTypes, eq(extraCostTypes.id, purchaseExtras.extraCostTypeId))
+    .where(inArray(purchaseExtras.purchaseId, ids))
+    .orderBy(asc(purchaseExtras.id));
+  const fileRows = await db
+    .select({ tripId: tripFiles.tripId, fileId: tripFiles.fileId })
+    .from(tripFiles)
+    .where(inArray(tripFiles.tripId, [...new Set(rows.map((row) => row.tripId))]))
+    .orderBy(asc(tripFiles.createdAt), asc(tripFiles.fileId));
+  return rows.map((row) => {
+    const extras = extraRows
+      .filter((extra) => extra.purchaseId === row.id)
+      .map(({ typeName, amount, paymentType }) => ({ typeName, amount, paymentType }));
+    return {
+      id: row.id,
+      purchasedOn: row.purchasedOn,
+      qty: plainQuantity(row.qty),
+      unitPrice: row.unitPrice,
+      // The record's own goods, whether cancelled or not: the line shows what it was.
+      goods: actualGoods([
+        { qty: row.qty, unitPrice: row.unitPrice, extras: [], isCancelled: false },
+      ]),
+      extras,
+      paymentType: row.paymentType,
+      supplierName: row.supplierName,
+      comment: row.comment,
+      recordedBy: row.recordedBy,
+      recordedAt: row.recordedAt,
+      receiptFileIds: fileRows.filter((file) => file.tripId === row.tripId).map((f) => f.fileId),
+      isCancelled: row.isCancelled,
+      cancelReason: row.cancelReason,
+    };
+  });
 }
 
 /** The ids a field of a snapshot holds, named by the query below. */
