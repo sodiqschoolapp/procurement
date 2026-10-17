@@ -78,6 +78,10 @@
       "notAnImage": "The photo cannot be opened. It may be damaged; take it again or choose another one."
     }
   },
+  "notFoundPage": {
+    "title": "Not found",
+    "back": "Back to orders"
+  },
   "audit": {
     "title": "Change history",
     "empty": "No changes yet",

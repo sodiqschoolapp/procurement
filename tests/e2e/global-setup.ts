@@ -315,6 +315,30 @@ async function insertUserIfMissing(
   }
 }
 
+/**
+ * One Manager per project for the branch wall (S7; plan of 2.15, decided item 7): the owner of
+ * the EA orders the Principal ticks and of the EB order behind the wall, so the owner filter
+ * keeps each project's orders apart.
+ */
+export const E2E_WALL_USERS = {
+  "phone-375": {
+    fullName: "Shoira Sinovova",
+    username: "e2e_wall_phone",
+    phone: "+998 90 000 99 71",
+    role: "MANAGER",
+    password: PASSWORD,
+    branches: ["EA", "EB"],
+  },
+  "desktop-1440": {
+    fullName: "Ulugbek Sinovov",
+    username: "e2e_wall_desktop",
+    phone: "+998 90 000 99 72",
+    role: "MANAGER",
+    password: PASSWORD,
+    branches: ["EA", "EB"],
+  },
+} as const satisfies Record<string, E2eUser>;
+
 export default async function globalSetup(): Promise<void> {
   // The e2e server's own bucket on the storage of docker-compose.yml (plan of 0.12, review
   // correction 1), by the same script as `npm run storage:bucket`, in its own process as below.
@@ -356,6 +380,7 @@ export default async function globalSetup(): Promise<void> {
       ...Object.values(E2E_PAGE_USERS).flatMap((pair) => [pair.manager, pair.finance]),
       ...Object.values(E2E_MOVE_USERS),
       ...Object.values(E2E_COPY_USERS),
+      ...Object.values(E2E_WALL_USERS),
     ]) {
       await insertUserIfMissing(client, user, branchIds);
     }

@@ -78,6 +78,10 @@
       "notAnImage": "Surat ochilmayapti. U buzilgan bo'lishi mumkin: qaytadan oling yoki boshqasini tanlang."
     }
   },
+  "notFoundPage": {
+    "title": "Topilmadi",
+    "back": "Buyurtmalarga qaytish"
+  },
   "audit": {
     "title": "O'zgarishlar tarixi",
     "empty": "Hozircha o'zgarish yo'q",

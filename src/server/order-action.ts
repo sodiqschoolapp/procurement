@@ -290,6 +290,37 @@ async function repeated<Input extends OrdersInput>(
 }
 
 /**
+ * The ids a repeat sends pass the branch wall and the draft wall, as on a first call: a known key
+ * sent with an order id the user may not see is "Not found", never the first answer under that id
+ * (.claude/rules/server-actions.md; permission review of 2.15, Should fix 2). Only seeing is
+ * asked: a repeat answers what the first call did, whatever the orders' status is now.
+ */
+async function wallSent(
+  tx: Transaction,
+  userId: string,
+  sent: readonly { id: string }[],
+  locked: readonly LockedOrder[],
+): Promise<void> {
+  const failures = new Failures();
+  const found = new Set(locked.map((order) => order.id));
+  for (const { id } of sent) if (!found.has(id)) failures.add(id, "not_found");
+  const { actor, decisions } = await authorizeOrders(
+    userId,
+    locked.map((order) => ({
+      permission: "data.view",
+      target: { branchId: order.branchId, ownerId: order.ownerId },
+    })),
+    tx,
+  );
+  locked.forEach((order, at) => {
+    if (decisions[at] !== "allow" || behindDraftWall(actor, order)) {
+      failures.add(order.id, "not_found");
+    }
+  });
+  failures.throwIfAny(sent);
+}
+
+/**
  * Runs an action on ticked orders for a user: the Zod check, then every step in one transaction.
  * Returns the one result shape, or a refusal that names every failing order; nothing is saved
  * unless every step succeeded for every order (06 rule 8).
@@ -314,7 +345,10 @@ export async function runOrdersAction<Input extends OrdersInput>(
       );
 
       const first = await repeated(definition, tx, userId, input.clientKey);
-      if (first) return first;
+      if (first) {
+        await wallSent(tx, userId, sent, locked);
+        return first;
+      }
 
       const { actor, failures, visible } = await guardOrders(
         tx,
