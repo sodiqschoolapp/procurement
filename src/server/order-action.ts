@@ -32,6 +32,8 @@ import {
 //   repeat    the client_key seen before: the first result, after its own authorizeOrders()
 //   authorize authorizeOrders(): branch and owner read under the lock, the draft wall
 //   version   each order's sent version against the locked one
+//   facts     optional: facts of the state machine that other tables hold (08 Exact match), read
+//             under the same lock on the orders behind no wall (plan of 4.4, decided item 3)
 //   check     the status check (a move: the state machine)
 //   inspect   optional: what the check needs from other tables, read under the same lock (plan
 //             of 3.5, decided item 15, Look first); its failures join the check's
@@ -90,6 +92,8 @@ export type LockedOrder = {
   createdByHead: boolean;
   /** The owner is the Head, or a Manager whose CLOSE_ALONE is not switched off. */
   ownerClosesAlone: boolean;
+  /** 08 Exact match, when the action's `facts` step read it (plan of 4.4); otherwise unknown. */
+  exactMatch?: boolean;
 };
 
 /** What the history step writes for one order besides its statuses. */
@@ -134,6 +138,11 @@ export type OrdersActionDefinition<Input extends OrdersInput> = {
    * reason) throws ActionError.
    */
   check(context: OrdersContext<Input>): readonly OrderFailure[];
+  /**
+   * The facts of the state machine that other tables hold (08 Exact match; plan of 4.4), read
+   * under the lock on the orders behind no wall, before the status check: the orders with them.
+   */
+  facts?(context: OrdersContext<Input>): Promise<readonly LockedOrder[]>;
   /**
    * A check that reads rows besides the locked orders (the purchase records of 3.5), inside the
    * transaction after the lock and the status check, on the orders behind no wall. Its failures
@@ -371,13 +380,12 @@ export async function runOrdersAction<Input extends OrdersInput>(
         return first;
       }
 
-      const { actor, failures, visible } = await guardOrders(
-        tx,
-        userId,
-        sent,
-        locked,
-        definition.permission,
-      );
+      const guarded = await guardOrders(tx, userId, sent, locked, definition.permission);
+      const { actor, failures } = guarded;
+      let visible = guarded.visible;
+      if (visible.length > 0 && definition.facts) {
+        visible = [...(await definition.facts({ tx, input, userId, actor, orders: visible }))];
+      }
       const checking: OrdersContext<Input> = { tx, input, userId, actor, orders: visible };
       if (visible.length > 0) {
         for (const { orderId, code, fields } of definition.check(checking)) {

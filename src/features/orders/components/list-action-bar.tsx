@@ -84,6 +84,12 @@ export function ListActionBar({
       </div>
       {/* 08 The three colours of the ticked orders, from Open on (plan of 3.8). */}
       {summary?.colours && <ColourLabels colours={summary.colours} />}
+      {/* 07 Finishing: how many of the ticked finished orders match exactly (plan of 4.4). */}
+      {summary && summary.exactCount !== null && (
+        <p data-exact-count className="text-[15px] leading-[22px] text-muted-foreground">
+          {t("exact", { exact: summary.exactCount, count: summary.count })}
+        </p>
+      )}
       {summary && (
         <div className="grid gap-x-12 gap-y-4 sm:grid-cols-2">
           <dl className="flex flex-col gap-1 text-[15px] leading-[22px]">

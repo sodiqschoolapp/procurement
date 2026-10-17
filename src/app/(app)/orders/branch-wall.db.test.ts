@@ -16,6 +16,7 @@ import { runOrdersAction } from "@/server/order-action";
 
 import { insertBranch } from "../../../../tests/helpers/branches";
 
+import { insertMoneyAction, insertMoneyRow } from "../../../../tests/helpers/money";
 import { REASON } from "../../../../tests/helpers/moves";
 import {
   type TickedOrder,
@@ -48,6 +49,8 @@ const {
   markNotBoughtAction,
   rejectOrdersAction,
   reopenBuyingAction,
+  closeExactOrdersAction,
+  sendToSettlementOrdersAction,
   sendBackOrdersAction,
   setDraftsNeededByAction,
   submitAgainOrdersAction,
@@ -220,6 +223,56 @@ describeTickedWall("reopenBuyingAction", {
   async run(user, ticked) {
     signedIn(user);
     return wall(await reopenBuyingAction({ clientKey: newClientKey(), orders: versions(ticked) }));
+  },
+});
+
+/** A finished order bought exactly as planned in cash, with that cash given (08 Exact match). */
+async function exactMatch(order: {
+  id: string;
+  branchId: string;
+  ownerId: string;
+  variantId: string;
+}): Promise<void> {
+  await db.update(orders).set({ progress: "DONE" }).where(eq(orders.id, order.id));
+  const tripId = (await insertTrip(order.branchId, order.ownerId)).rows[0]!.id;
+  await insertPurchaseRow({
+    tripId,
+    orderId: order.id,
+    branchId: order.branchId,
+    variantId: order.variantId,
+    createdBy: order.ownerId,
+    qty: "10",
+    unitPrice: "5000",
+  });
+  const action = (await insertMoneyAction({ managerId: order.ownerId, createdBy: order.ownerId }))
+    .rows[0]!;
+  await insertMoneyRow({ moneyActionId: action.id, orderId: order.id, amount: "50000" });
+}
+
+describeTickedWall("closeExactOrdersAction", {
+  permission: "request.close_exact",
+  status: "PURCHASING",
+  owned: true,
+  order: { paymentType: "CASH" },
+  prepare: exactMatch,
+  async run(user, ticked) {
+    signedIn(user);
+    return wall(
+      await closeExactOrdersAction({ clientKey: newClientKey(), orders: versions(ticked) }),
+    );
+  },
+});
+
+describeTickedWall("sendToSettlementOrdersAction", {
+  permission: "request.send_to_settlement",
+  status: "PURCHASING",
+  owned: true,
+  prepare: exactMatch,
+  async run(user, ticked) {
+    signedIn(user);
+    return wall(
+      await sendToSettlementOrdersAction({ clientKey: newClientKey(), orders: versions(ticked) }),
+    );
   },
 });
 

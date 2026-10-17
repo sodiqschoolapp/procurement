@@ -1642,6 +1642,24 @@ Choices made during the build:
 - Record money sits on the order page's action bar (as the plan says), not in the Money tab; the tab carries Cancel per action.
 - `moneyRowsOf()` is one reader of money rows for the action and the dialog; the Money tab reads its rows with their action's fields in its own query and counts them through the same `orderCashCount()`.
 
+### 4.4 Close on an exact match (17.10.2026)
+
+The plan's decisions as the plan review of 17.10.2026 confirmed them (corrections 1 to 3 applied).
+
+1. **Look first** (a status move's reach and a task's scope). 4.4 builds the Manager's Send to settlement (action, buttons, the notice to the branch's Finance users); 4.5 keeps the Finance screen and Send back for correction. A "From 4.4" line under 4.5 in the build plan says so.
+2. **Look first** (the state machine). Close needs exact match and an owner who closes alone for the Head too: the order of a Manager whose `CLOSE_ALONE` is off goes to settlement even when the Head ticks it (decisions 2.3 item 6; 08 Closing 1). No change to `src/domain/`.
+3. **Look first** (the wrapper). Exact match is read in a new `facts` step of the orders wrapper, under the lock and before the status check, so the state machine decides the move with the real fact; only on orders behind no wall.
+4. The "summary of their differences" (07 Finishing) is the bar's three labels and totals of the ticked orders plus the count of exact matches.
+5. Close writes `orders.closed_at` from the injected clock; 4.8 decides whether a reopen clears it.
+6. Close's notice: the owners, every active Head and the branch's active Finance users, never the actor (10 Notifications, "Closed, reopened").
+7. Neither move takes a reason (06 Allowed moves names none).
+8. A Done short or Not bought order closes only on an exact match, as `isExactMatch()` reads it; otherwise it goes to settlement.
+
+Choices made during the build:
+
+- The permission-matrix test of Close counts `not_ready` as passing the permission: the generator's "HEAD still allowed" case ticks the order of the Manager whose `CLOSE_ALONE` is off, which the machine sends to settlement (item 2); `close-exact.db.test.ts` proves that refusal.
+- Send to settlement's notice goes to the Finance users only, no Head (10 Notifications, "Sent to settlement").
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

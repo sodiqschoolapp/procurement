@@ -62,6 +62,7 @@ import { readSettings } from "@/server/settings";
 
 import { orderRecords } from "@/features/purchasing/order-records";
 
+import { exactMatchOf } from "../exact-match";
 import { createdByHeadSql, headStepAutoSql, ownerClosesAloneSql } from "../order-facts";
 
 // The order page /orders/[id] (11-screens-and-ux.md, Order page layout 1 to 4; 06 rule 11; plan
@@ -505,6 +506,7 @@ async function readPage(db: Executor, actor: Actor, id: string): Promise<OrderPa
         version: row.version,
         revision: row.revision,
         progress: row.progress,
+        exactMatch: (await exactMatchOf(db, [row.id])).get(row.id) === true,
       }),
     ]),
     canCopy: addsDraftsIn(actor, { id: row.branchId, isActive: row.branchActive }),
