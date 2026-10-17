@@ -600,6 +600,31 @@ describe("Refusals (Decided ahead, question 3; 06 rules 3, 8 and 9)", () => {
     expect((await recordRow(bought.recordOf(other))).isCancelled).toBe(false);
   });
 
+  it("another branch's record sent with an own Open order is not found, and nothing is written (03 rule 1; permission review of 3.7)", async () => {
+    const s = await scene();
+    const other = await scene();
+    const pens = await insertItem();
+    const mine = await openOrder(s, pens.variantId, "10");
+    const theirs = await openOrder(other, pens.variantId, "10");
+    await buy(s, [{ order: mine, qty: "10" }]);
+    // The other branch's record is Open, not cancelled, of goods with stock: only the wall stops it.
+    const elsewhere = await buy(other, [{ order: theirs, qty: "10" }]);
+    const reversals = () =>
+      db.$count(
+        stockMovements,
+        and(eq(stockMovements.variantId, pens.variantId), eq(stockMovements.type, "REVERSAL")),
+      );
+
+    const result = await cancelRecord(s.owner, mine, elsewhere.recordOf(theirs));
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.orders).toEqual([{ orderId: mine.id, code: "not_found" }]);
+    expect((await recordRow(elsewhere.recordOf(theirs))).isCancelled).toBe(false);
+    expect(await reversals()).toBe(0);
+    expect(await balanceOf(other, pens.variantId)).toMatchObject({ qty: 10 });
+  });
+
   it("a reason under 5 characters is invalid input (06 rule 3)", async () => {
     const s = await scene();
     const item = await insertItem();

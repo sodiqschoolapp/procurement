@@ -94,13 +94,26 @@ type HeldRecord = {
   isCancelled: boolean;
 };
 
-/** The record or the trip's records, FOR UPDATE of the records, in id order. */
-async function lockRecords(context: OrdersContext<CancelInput>): Promise<HeldRecord[]> {
+/**
+ * The record or the trip's records on the sent orders behind no wall, FOR UPDATE of the records,
+ * in id order: a record of any other order is neither read nor locked (permission review of 3.7,
+ * Should fix 1). For a trip that has records on them, also how many of its records not cancelled
+ * are on other orders: a trip is one branch (`purchases_trip_branch_fk`) and one owner (3.4), so
+ * those are the actor's own branch and owner's orders the browser left out, never another
+ * branch's, and they are read only for the count.
+ */
+async function lockRecords(
+  context: OrdersContext<CancelInput>,
+): Promise<{ held: HeldRecord[]; elsewhere: number }> {
   const input = context.input;
+  const sent = sql.join(
+    context.orders.map((order) => sql`${order.id}::uuid`),
+    sql`, `,
+  );
   const where =
     "purchaseId" in input
-      ? sql`p.id = ${input.purchaseId}`
-      : sql`p.trip_id = ${(input as CancelTripInput).tripId}`;
+      ? sql`p.id = ${input.purchaseId} and p.order_id in (${sent})`
+      : sql`p.trip_id = ${(input as CancelTripInput).tripId} and p.order_id in (${sent})`;
   const found = await context.tx.execute<{
     id: string;
     trip_id: string;
@@ -121,7 +134,7 @@ async function lockRecords(context: OrdersContext<CancelInput>): Promise<HeldRec
     where ${where}
     order by p.id
     for update of p`);
-  return found.rows.map((row) => ({
+  const held = found.rows.map((row) => ({
     id: row.id,
     tripId: row.trip_id,
     orderId: row.order_id,
@@ -133,6 +146,12 @@ async function lockRecords(context: OrdersContext<CancelInput>): Promise<HeldRec
     unitPrice: BigInt(row.unit_price),
     isCancelled: row.is_cancelled,
   }));
+  if ("purchaseId" in input || held.length === 0) return { held, elsewhere: 0 };
+  const others = await context.tx.execute<{ count: number }>(sql`
+    select count(*)::int as count from purchases
+    where trip_id = ${(input as CancelTripInput).tripId} and not is_cancelled
+      and order_id not in (${sent})`);
+  return { held, elsewhere: others.rows[0]!.count };
 }
 
 /** The status check of both actions: every order Open (07 Fixing a mistake 1; decided item 4). */
@@ -149,7 +168,7 @@ function statusCheck(context: OrdersContext<CancelInput>): OrderFailure[] {
  */
 function chosen(
   context: OrdersContext<CancelInput>,
-  held: readonly HeldRecord[],
+  { held, elsewhere }: { held: readonly HeldRecord[]; elsewhere: number },
 ): { failures: OrderFailure[]; records: HeldRecord[] } {
   const sent = context.orders;
   const sentIds = new Set(sent.map((order) => order.id));
@@ -158,7 +177,7 @@ function chosen(
     records: [],
   });
   // A record or trip of another order tells nothing about it (03 rule 1).
-  const onSent = held.filter((record) => sentIds.has(record.orderId));
+  const onSent = held;
   if (onSent.length === 0) return notFound();
 
   const statusOf = new Map(sent.map((order) => [order.id, order.status]));
@@ -178,7 +197,7 @@ function chosen(
     };
   }
   const liveOrders = new Set(live.map((record) => record.orderId));
-  if (liveOrders.size !== sentIds.size || [...liveOrders].some((id) => !sentIds.has(id))) {
+  if (elsewhere > 0 || liveOrders.size !== sentIds.size) {
     throw new ActionError("invalid_input", { orders: "errors.field.notAllowed" });
   }
   return {
