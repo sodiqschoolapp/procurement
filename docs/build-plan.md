@@ -19,7 +19,7 @@ The whole project as ordered tasks. One task is one Claude Code session and one 
 | --- | --- | --- |
 | 0. Foundations | 17 | Nothing a user can use yet. |
 | 1. Catalogs and admin | 13 | Everything the Head sets up before the first order can be written. |
-| 2. Orders to approval | 15 | From a draft on the order list to fully approved orders, with their numbers, their history and the download. |
+| 2. Orders to approval | 16 | From a draft on the order list to fully approved orders, with their numbers, their history and the download. |
 | 3. Purchasing | 10 | The Manager records what was really bought, one order or one whole shop visit at a time. |
 | 4. Money and settlement | 10 | Cash given, cash spent, the difference, and the close, per order. |
 | 5. Warehouse | 11 | Stock screens and every document that moves stock inside one branch. |
@@ -27,7 +27,7 @@ The whole project as ordered tasks. One task is one Claude Code session and one 
 | 7. Transfers and counts | 4 | Stock moving between branches, and stock checked against the shelf. |
 | 8. Jobs and polish | 3 | The scheduled work, and the translation pass. |
 | 9. Before go-live | 6 | Proof that it works, then the real environment and the real data. |
-| **Total** | **99** | |
+| **Total** | **100** | |
 
 ## Phase 0: Foundations
 
@@ -269,6 +269,12 @@ From a draft on the branch's order list to fully approved orders, ticked and act
   - **Build:** Every order action and query is in the permission-matrix test, for one order and for ticked orders that mix branches; S7 is a Playwright test; whatever the matrix finds is fixed. The seed gains a few orders in different approval statuses, two of them in one group row.
   - **Done when:** The matrix covers each order action × each role × own branch and other branch, alone and mixed, and is green; S7 is green for orders; its stock and report parts are added in 5.2 and 6.8.
 
+
+- [ ] **2.7b Confirm before Submit in the drafts grid; the S19 test**
+  - **Read:** `11-screens-and-ux.md` (Rules for a smooth feel: 6); `05-order-request-form.md` (Group rows: 1, 4); `15-quality-and-acceptance.md` (S19); `docs/decisions.md` (D48).
+  - **Build:** "Submit" and "Submit again" in the drafts grid ask for confirmation first, saying how many orders they cover, and state the result, as Submit on the order page does (decision 2.9 item 4); Cancel submits nothing. The S19 database test makes three orders of quantity 10, as the scenario does, and asserts the group row's quantity (20, then 30) and that it holds three orders.
+  - **Done when:** Playwright: Submit in the grid opens the confirmation with the count; Cancel leaves every draft a Draft; confirming submits them. The S19 test fails if the row sums orders instead of quantities.
+  - Added by the owner on 17.10.2026 from the Phase 2 audit (D48), not from a changed decision on issue #9.
 
 ## Phase 3: Purchasing
 
