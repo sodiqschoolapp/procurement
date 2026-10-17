@@ -36,7 +36,8 @@ export type MovementType = (typeof MOVEMENT_TYPES)[number];
  * - RETURN: at the current average, which it leaves unchanged (Decided ahead, question 11).
  * - CORRECTION: a stock count's difference has no price of its own.
  * - REVERSAL: a cancelled purchase removes its quantity at its own price (09 Stock value, third
- *   bullet); the other reversals are decided in 5.7.
+ *   bullet); a document's reversal moves the opposite quantity at the reversed movement's own
+ *   cost (reversalOf() of ./stock-documents.ts; plan of 5.1, decided item 2, Look first).
  */
 export const MOVEMENT_RULES = {
   RECEIPT: { direction: "in", cost: "priced" },

@@ -401,7 +401,7 @@ Cash given, cash spent, the difference and the close, per order, with Finance wo
 
 Stock screens and every document that moves stock inside one branch.
 
-- [ ] **5.1 Stock documents schema**
+- [x] **5.1 Stock documents schema**
   - **Read:** `14-data-model.md` (Warehouse: stock_documents, stock_document_lines; Orders: number_counters); `09-warehouse.md` (Movement types); `edge-cases/developer-rules.md` (rules 5, 7).
   - **Build:** Migrations for both tables, with the foreign key from `stock_movements` to document lines; numbering for ISS, RET, TRF, WOF, CNT and ENT through `number_counters`; the document posting helper on top of `postMovement()`; the reverse helper.
   - **Done when:** Database tests: two documents posted at the same moment get different numbers; a reverse writes the opposite movement and marks the original Reversed.

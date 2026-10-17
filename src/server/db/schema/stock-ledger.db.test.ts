@@ -145,9 +145,11 @@ describe("stock_movements CHECKs (developer-rules rule 5; 09 Movement types)", (
 
   it.each(["CORRECTION", "REVERSAL"])("a %s goes either way", async (type) => {
     const v = await variant();
-    const target = (await insertMovement(v)).rows[0]!.id;
-    const reverses = type === "REVERSAL" ? target : null;
     for (const qtyDelta of ["1", "-1"]) {
+      // Each reversal undoes a movement of its own: one is reversed at most once (plan of 5.1,
+      // decided item 4).
+      const target = (await insertMovement(v)).rows[0]!.id;
+      const reverses = type === "REVERSAL" ? target : null;
       await db.execute(sql`
         insert into stock_movements (branch_id, variant_id, type, qty_delta, unit_cost,
           balance_after, reverses_movement_id, created_by, created_at)

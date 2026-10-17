@@ -31,7 +31,8 @@ import { now } from "./clock";
 // cancelled purchase under CANCEL_PURCHASES); TRANSFER_OUT under TRANSFER_STOCK, its TRANSFER_IN
 // in the receiving branch; RECEIPT under RECORD_PURCHASES. A StockShortError's `available` is
 // shown only for a branch the actor may see. A reversal's match to the movement it reverses is
-// checked by its task (5.7, and 3.7 for a cancelled purchase).
+// checked by its task (3.7 for a cancelled purchase); a document's reversal takes them from the
+// movement it reverses (reverseDocument() of ./stock-documents.ts, 5.1).
 
 export type PostedMovementInput = {
   branchId: string;
