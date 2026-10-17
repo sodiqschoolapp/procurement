@@ -1,8 +1,9 @@
 import { randomUUID } from "node:crypto";
 
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 
+import { addSubtype } from "@/features/catalog/actions/subtypes";
 import { getOrderPage } from "@/features/orders/queries/order-page";
 import { db } from "@/server/db/client";
 import {
@@ -253,5 +254,49 @@ describe("two trips of one subtype at the same moment (15 Test layers; review of
     expect(onto).toMatchObject({ ok: true });
     expect(plain).toMatchObject({ ok: true });
     expect(await balanceOf(s.branch.id, s.black)).toBe("20.000");
+  });
+});
+
+describe("a first subtype added while its product's order is bought (review of 3.6, finding 1; 3.4 decided item 4)", () => {
+  it("both finish one after the other with no deadlock: the product is locked before its subtype, as addSubtype() locks them", async () => {
+    setClock(`${TODAY}T07:00:00Z`);
+    const branch = await insertBranch();
+    const owner = await insertUser("MANAGER", { branches: [branch.id] });
+    const head = await insertUser("HEAD");
+    // A product with its hidden default subtype only: the first subtype added turns that row real.
+    const pens = await insertProduct();
+    const order = await openOrder(branch.id, owner.id, pens.defaultVariantId);
+    const s = { branch, owner, pens, order } as unknown as Scene;
+
+    // addSubtype() holds the product FOR UPDATE; the trip starts and waits on a lock; only then
+    // does addSubtype() go on to the default subtype. A trip that had locked the subtype first
+    // would now wait on the product while addSubtype() waits on the subtype: 40P01.
+    const { running } = await db.transaction(async (tx) => {
+      await tx.execute(sql`select id from products where id = ${pens.id} for update`);
+      const running = trip(s, [{ order, variantId: pens.defaultVariantId, comment: null }]);
+      running.catch(() => undefined);
+      for (let tries = 0; ; tries += 1) {
+        const waiting = await db.execute<{ n: number }>(sql`
+          select count(*)::int as n from pg_stat_activity
+          where datname = current_database() and wait_event_type = 'Lock'`);
+        if (waiting.rows[0]!.n >= 1) break;
+        if (tries > 5_000) throw new Error("the trip never waited on the product");
+      }
+      await addSubtype(
+        tx,
+        head.id,
+        { productId: pens.id, name: "Ko'k", referencePrice: null, photoFileId: null },
+        null,
+      );
+      return { running };
+    });
+
+    expect(await running).toMatchObject({ ok: true });
+    expect(await balanceOf(branch.id, pens.defaultVariantId)).toBe("10.000");
+    const [made] = await db
+      .select({ name: productVariants.name, isDefault: productVariants.isDefault })
+      .from(productVariants)
+      .where(eq(productVariants.id, pens.defaultVariantId));
+    expect(made).toEqual({ name: "Ko'k", isDefault: false });
   });
 });

@@ -218,7 +218,12 @@ async function plansOf(tx: Executor, orderIds: readonly string[]): Promise<Plan[
 }
 
 /**
- * The subtypes bought, locked FOR UPDATE once in the order of their ids: the price step updates
+ * The products first, FOR SHARE in the order of their ids, then the subtypes bought: the catalog
+ * takes a product before its subtypes (addSubtype locks the product, then its default subtype),
+ * and postMovement() share-locks the product again later, so the subtype locked first would
+ * deadlock against a first subtype added at the same moment (review of 3.6, finding 1; 3.4
+ * decided item 4). The subtypes bought are then locked FOR UPDATE once in the order of their
+ * ids: the price step updates
  * the same rows, so a share lock upgraded there would deadlock two trips of one subtype (review of
  * the plan of 3.6, Must fix 1; 3.4 decided item 4), and the lock holds off a deactivation, which
  * locks the row FOR UPDATE too (04 rule 2). Then each line's subtype is refused unless it is the
@@ -233,6 +238,20 @@ async function refuseSubtypes(
   path: (orderId: string, field: string) => string,
 ) {
   const ids = [...new Set(plans.map((plan) => lineOf(plan.orderId).variantId))].sort();
+  // A subtype's product never changes, so it is read without a lock before the product is locked.
+  const owners = await tx
+    .select({ productId: productVariants.productId })
+    .from(productVariants)
+    .where(inArray(productVariants.id, ids));
+  const productIds = [
+    ...new Set([...plans.map((plan) => plan.productId), ...owners.map((row) => row.productId)]),
+  ].sort();
+  await tx
+    .select({ id: products.id })
+    .from(products)
+    .where(inArray(products.id, productIds))
+    .orderBy(asc(products.id))
+    .for("share");
   const rows = await tx
     .select({
       id: productVariants.id,
