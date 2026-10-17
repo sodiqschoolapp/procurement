@@ -9,7 +9,12 @@ import {
   countMyUnread,
   listMyNotifications,
 } from "@/features/notifications/queries/my-notifications";
-import { NOTIFICATIONS_MAX_PAGE, type SendableType } from "@/domain/notifications";
+import {
+  MONEY_PARAMS,
+  NOTIFICATIONS_MAX_PAGE,
+  type NotificationParams,
+  type SendableType,
+} from "@/domain/notifications";
 import { getFormatters } from "@/i18n/get-formatters";
 import { requireUser } from "@/server/auth/session";
 
@@ -22,6 +27,22 @@ import { MarkAllRead, NotificationList } from "./notification-list";
 
 // A page number the list cannot have goes to page 1 (spec review of 0.11).
 const pageParam = z.coerce.number().int().min(1).max(NOTIFICATIONS_MAX_PAGE).catch(1);
+
+/** A row's params with each money param shown as money, "650 000 so'm" (plan of 0.11, decision 9). */
+function shownParams(
+  type: SendableType,
+  params: NotificationParams,
+  money: (amount: bigint) => string,
+): NotificationParams {
+  const keys = MONEY_PARAMS[type];
+  if (!keys) return params;
+  const shown: Record<string, string | number> = { ...params };
+  for (const key of keys) {
+    const value = params[key];
+    if (typeof value === "string" && /^[0-9]{1,19}$/.test(value)) shown[key] = money(BigInt(value));
+  }
+  return shown;
+}
 
 export default async function NotificationsPage({
   searchParams,
@@ -43,7 +64,10 @@ export default async function NotificationsPage({
   const items = list.rows.map((row) => ({
     id: row.id,
     // notify() writes only a type with a text (decision 10), so every row has one.
-    text: t(`notifications.types.${row.type as SendableType}`, row.params),
+    text: t(
+      `notifications.types.${row.type as SendableType}`,
+      shownParams(row.type as SendableType, row.params, format.money),
+    ),
     when: `${format.date(row.createdAt)} ${format.time(row.createdAt)}`,
     unread: row.readAt === null,
   }));

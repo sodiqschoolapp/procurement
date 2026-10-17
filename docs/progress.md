@@ -1112,4 +1112,23 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - For 4.5, 4.6, 4.7: the confirmations are Finance's (own branches) and the acknowledgment the Head's; authorise each column group with its own permission.
 - For 4.9 and 6.x: `managerCashBalance()` sums the orders it is given; pass only orders of the viewer's branches.
 
-The next task is 4.2.
+## 4.2 Finance approval with cash (17.10.2026, pull request #82)
+
+**Built**
+- `approveOrders` takes `cash` (order id → whole so'm as digits); `checkCash()` (only at Finance's step, `money.record` per order, one branch per Manager: `errors.field.cashOneBranch`) in `beforeMove`; `giveCash()` in `afterMove` writes one `money_actions` per Manager (the approval's client key, `order_action_id`, today in Tashkent, no comment) and its `CASH_GIVEN` rows; rows of 0 write nothing.
+- `runOrdersAction` writes `order_actions` before `write`; `write`, `beforeMove` and `afterMove` get `OrdersWriteContext` with `actionId`.
+- Domain: `plannedCashOf()`, `actionTotal()`, `approvalCashRows({ id, ownerId, amount })` (drops 0), `totalsByPaymentType()` (used by `ordersTotals()`).
+- `CASH_GIVEN` notice (`actor`, `count`, `branch`, `amount`) replaces `REQUEST_FINANCE_APPROVED` for an owner given cash; `MONEY_PARAMS` formats money params on `/notifications`.
+- The Finance dialog: per-type totals, the table "Cash given to the Manager now" per Manager, the result line with the cash. `tickedSummary().orders` and the order page carry `plannedTotal` and the owner.
+
+**Left out, and the task that brings it**
+- The Money tab, other money actions and their cancel: 4.3. Settlement: 4.5.
+
+**What the next sessions must know**
+- For 4.3 and 4.5: write money with `context.actionId` of the orders wrapper as `order_action_id` (settlement); the total of an action is `actionTotal()`.
+- For 4.3: an approval's cash action never spans two branches (decided item 5), so the cancel's branch check holds for it.
+- For 4.3, 4.5: a new money notice adds its money params to `MONEY_PARAMS` of `src/domain/notifications.ts`.
+- The test environment has no DOM: a dialog's interactions are tested in Playwright (`approvals.spec.ts`).
+- `notifications.spec.ts` can fail at 1440 px when run beside `send-back.spec.ts`: every Head is told of a send-back, so its Head's bell shows 2. Seen once in this build; passes alone.
+
+The next task is 4.3.

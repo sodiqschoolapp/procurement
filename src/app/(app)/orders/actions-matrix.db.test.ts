@@ -1,3 +1,4 @@
+import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { newClientKey } from "@/components/client-key";
@@ -5,6 +6,8 @@ import type { Role } from "@/domain/permissions";
 import type { ActionResult } from "@/server/action-result";
 import type { CurrentUser } from "@/server/auth/session";
 import { AuthorizationError } from "@/server/authorize";
+import { db } from "@/server/db/client";
+import { moneyActions } from "@/server/db/schema";
 
 import { insertBranch, setManagerRight } from "../../../../tests/helpers/branches";
 import {
@@ -355,6 +358,29 @@ for (const [status, permission] of [
     },
   });
 }
+
+// Finance's cash with the approval (build plan 4.2) through the same export: money.record.
+describePermissionMatrix("approveOrdersAction with cash at PENDING_FINANCE", {
+  permission: "money.record",
+  async run({ user, branchId }) {
+    const owner = await insertUser("MANAGER", { branches: [branchId] });
+    const order = await insertOrder({ branchId, ownerId: owner.id, status: "PENDING_FINANCE" });
+    signedIn(user);
+    const clientKey = newClientKey();
+    const answer = await approveOrdersAction({
+      clientKey,
+      orders: [{ id: order.id, version: order.version }],
+      cash: { [order.id]: "50000" },
+    });
+    // An allowed call wrote its one cash action; a refused one wrote none (permission review).
+    const given = await db
+      .select({ id: moneyActions.id })
+      .from(moneyActions)
+      .where(eq(moneyActions.clientKey, clientKey));
+    expect(given).toHaveLength(answer.ok ? 1 : 0);
+    asMatrixAnswer(answer.ok ? answer : { ok: false, error: answer.error });
+  },
+});
 
 // Send back, Reject, Cancel, Take back and Submit again (build plan 2.11) through the page's own
 // exports (.claude/rules/server-actions.md; permission review of 2.5b).

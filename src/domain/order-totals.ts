@@ -100,23 +100,40 @@ export function orderTotal(plan: OrderPlan): bigint {
  * values"; plan of 2.2, decision 1).
  */
 export function ordersTotals(plans: readonly OrderPlan[]): OrdersTotals {
-  const byPaymentType = Object.fromEntries(PAYMENT_TYPES.map((type) => [type, 0n])) as Record<
-    PaymentType,
-    bigint
-  >;
   let goods = 0n;
   let extras = 0n;
+  const totals: { paymentType: PaymentType; total: bigint }[] = [];
   for (const plan of plans) {
-    if (!isPaymentType(plan.paymentType)) {
-      throw new RangeError(`A payment type is "${String(plan.paymentType)}": not one of the three`);
-    }
     const orderGoodsValue = orderGoods(plan);
     const orderExtrasValue = orderExtras(plan);
     goods += orderGoodsValue;
     extras += orderExtrasValue;
-    byPaymentType[plan.paymentType] += orderGoodsValue + orderExtrasValue;
+    totals.push({ paymentType: plan.paymentType, total: orderGoodsValue + orderExtrasValue });
   }
-  return { goods, extras, grand: goods + extras, byPaymentType };
+  return { goods, extras, grand: goods + extras, byPaymentType: totalsByPaymentType(totals) };
+}
+
+/**
+ * The planned totals per payment type (08 When Finance approves: "the planned totals of the
+ * ticked orders per payment type"), each order's total under its type. The Finance dialog calls
+ * it with the types of its selects, so the split follows them (plan of 4.2, decided item 7).
+ */
+export function totalsByPaymentType(
+  orders: readonly { paymentType: PaymentType; total: bigint }[],
+): Record<PaymentType, bigint> {
+  const byPaymentType = Object.fromEntries(PAYMENT_TYPES.map((type) => [type, 0n])) as Record<
+    PaymentType,
+    bigint
+  >;
+  for (const order of orders) {
+    if (!isPaymentType(order.paymentType)) {
+      throw new RangeError(
+        `A payment type is "${String(order.paymentType)}": not one of the three`,
+      );
+    }
+    byPaymentType[order.paymentType] += order.total;
+  }
+  return byPaymentType;
 }
 
 /**

@@ -13,7 +13,7 @@ import { insertOrder, inventedNumber } from "../../tests/helpers/orders";
 import { runTogether } from "../../tests/helpers/together";
 import { type InsertedUser, insertUser } from "../../tests/helpers/users";
 import type { ActionResult } from "./action-result";
-import { type OrdersResult, ordersInput, runOrdersAction } from "./order-action";
+import { OrdersRefusal, type OrdersResult, ordersInput, runOrdersAction } from "./order-action";
 import { orderMoveAction } from "./order-moves";
 
 // The wrapper for one action on many ticked orders (build plan 2.4, Done when; plan of 2.4,
@@ -194,6 +194,55 @@ describe("one action on many orders, all or nothing (06 rule 8; developer-rules 
     const state = await stateOf(two);
     for (const order of two) expect(state.get(order.id)?.status).toBe("PENDING_HEAD");
     expect(await actionsWith(input.clientKey)).toHaveLength(0);
+  });
+
+  it("the write sees its own order_actions row by context.actionId (plan of 4.2, decided item 8)", async () => {
+    const two = await placed(2);
+    const input = ticked(two);
+    let seen: { id: string; clientKey: string }[] = [];
+    let named = "";
+    const looking = orderMoveAction({
+      name: "test APPROVE looking",
+      action: "APPROVE",
+      input: withReason,
+      async afterMove(context) {
+        named = context.actionId;
+        seen = await context.tx
+          .select({ id: orderActions.id, clientKey: orderActions.clientKey })
+          .from(orderActions)
+          .where(eq(orderActions.id, context.actionId));
+      },
+    });
+    const result = expectOk(await runOrdersAction(looking, head.id, input));
+    expect(named).toBe(result.actionId);
+    expect(seen).toEqual([{ id: result.actionId, clientKey: input.clientKey }]);
+  });
+
+  it("a refusal in the write leaves no order_actions row, and a retry with the key runs again (rule 8; review of the plan of 4.2, correction 3)", async () => {
+    const two = await placed(2);
+    const input = ticked(two);
+    let refuse = true;
+    const refusing = orderMoveAction({
+      name: "test APPROVE refusing",
+      action: "APPROVE",
+      input: withReason,
+      async afterMove() {
+        if (refuse) throw new OrdersRefusal("invalid_input");
+      },
+    });
+    const error = expectRefused(await runOrdersAction(refusing, head.id, input));
+    expect(error.code).toBe("invalid_input");
+    expect(await actionsWith(input.clientKey)).toHaveLength(0);
+    const state = await stateOf(two);
+    for (const order of two)
+      expect(state.get(order.id)).toMatchObject({ status: "PENDING_HEAD", version: 1 });
+
+    refuse = false;
+    const again = expectOk(await runOrdersAction(refusing, head.id, input));
+    for (const order of again.orders) expect(order.status).toBe("PENDING_PRINCIPAL");
+    expect(await actionsWith(input.clientKey)).toEqual([
+      expect.objectContaining({ id: again.actionId }),
+    ]);
   });
 
   it("201 orders, an order ticked twice and none are refused before the transaction", async () => {

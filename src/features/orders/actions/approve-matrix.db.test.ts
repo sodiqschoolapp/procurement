@@ -1,11 +1,14 @@
 import { randomUUID } from "node:crypto";
 
+import { eq } from "drizzle-orm";
 import { expect } from "vitest";
 
 import type { Permission } from "@/domain/permissions";
 import type { RequestStatus } from "@/domain/request-status";
 import type { ActionResult } from "@/server/action-result";
 import { AuthorizationError } from "@/server/authorize";
+import { db } from "@/server/db/client";
+import { moneyActions } from "@/server/db/schema";
 import { runOrdersAction } from "@/server/order-action";
 
 import { insertOrder } from "../../../../tests/helpers/orders";
@@ -50,6 +53,30 @@ for (const [status, permission] of STEPS) {
     },
   });
 }
+
+// Finance's cash with the approval (build plan 4.2; review of the plan, correction 2): giving cash
+// is "Record money given, returned, paid back" (money.record), proved with an order at Finance's
+// step and an amount above 0. An allowed call writes the cash (D38).
+describePermissionMatrix("approveOrders with cash at PENDING_FINANCE", {
+  permission: "money.record",
+  async run({ user, branchId }) {
+    const owner = await insertUser("MANAGER", { branches: [branchId] });
+    const order = await insertOrder({ branchId, ownerId: owner.id, status: "PENDING_FINANCE" });
+    const clientKey = randomUUID();
+    const result = await runOrdersAction(approveOrders, user.id, {
+      clientKey,
+      orders: [{ id: order.id, version: order.version }],
+      cash: { [order.id]: "50000" },
+    });
+    // An allowed call wrote its one cash action; a refused one wrote none (permission review).
+    const given = await db
+      .select({ id: moneyActions.id })
+      .from(moneyActions)
+      .where(eq(moneyActions.clientKey, clientKey));
+    expect(given).toHaveLength(result.ok ? 1 : 0);
+    asMatrixAnswer(result);
+  },
+});
 
 // Who approved a refused order: "See orders", the branch and the draft wall inside the SQL. An
 // empty answer is the query's "not found".

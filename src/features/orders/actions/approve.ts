@@ -1,20 +1,26 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
 import * as z from "zod";
 
+import { parseSomOrZero } from "@/domain/money";
+import { type CashBlock, actionTotal, approvalCashRows } from "@/domain/money-ledger";
 import { PAYMENT_TYPES, type PaymentType } from "@/domain/payment-types";
+import { decide } from "@/domain/permissions";
 import type { RequestStatus } from "@/domain/request-status";
 import type { OrderFailure } from "@/server/action-result";
-import { now } from "@/server/clock";
-import { orders, userBranches, users } from "@/server/db/schema";
+import { now, today } from "@/server/clock";
+import { moneyActions, moneyRows, orders, userBranches, users } from "@/server/db/schema";
 import { notify } from "@/server/notify";
 import {
+  type LockedOrder,
   type OrderEventExtra,
   type OrdersContext,
   type OrdersInput,
   OrdersRefusal,
+  type OrdersWriteContext,
   type Transaction,
   ordersInput,
 } from "@/server/order-action";
+import { ActionError } from "@/server/action";
 import { orderMoveAction } from "@/server/order-moves";
 
 import { actionLink, branchNotices } from "./notices";
@@ -30,22 +36,48 @@ import { actionLink, branchNotices } from "./notices";
 //   beforeMove  Finance's payment type per order (06 rule 1; 05 field 13), while the order is
 //               still PENDING_FINANCE, the only status at which `orders_guard` of migration 0019
 //               lets it change (decided item 2, Look first); the total does not change
+//               and the checks of Finance's cash (4.2): only at Finance's step, `money.record` for
+//               each order given cash, one branch per Manager (plan of 4.2, decided item 5)
 //   afterMove   `approved_at` of the orders Finance opens, from the clock (review of the plan,
-//               correction 1; decisions 2.8 item 6)
-//   notify      one notice per branch to the next step (10 Notifications; decided item 5)
+//               correction 1; decisions 2.8 item 6); the cash given now, one money action per
+//               Manager naming this approval (08 When Finance approves; Money ledger 1; plan of 4.2)
+//   notify      one notice per branch to the next step (10 Notifications; decided item 5); an
+//               owner given cash gets CASH_GIVEN instead (plan of 4.2, decided item 4, Look first)
 
-/** The input: the ticked orders and, at Finance's step only, a payment type per order. */
-export type ApproveInput = OrdersInput & { paymentTypes?: Record<string, PaymentType> };
+/**
+ * The input: the ticked orders and, at Finance's step only, a payment type per order and the
+ * cash given now per order, whole so'm as digits (08 When Finance approves). An order not in
+ * `cash`, or at 0, is given nothing (plan of 4.2, decided item 1, Look first).
+ */
+export type ApproveInput = OrdersInput & {
+  paymentTypes?: Record<string, PaymentType>;
+  cash?: Record<string, bigint>;
+};
+
+/** Whole so'm from 0, typed as digits; never a JavaScript number (developer-rules.md rule 6). */
+const cashField = z
+  .string()
+  .refine((value) => parseSomOrZero(value) !== null)
+  .transform((value) => parseSomOrZero(value)!);
 
 const input = ordersInput({
   paymentTypes: z.record(z.uuid(), z.enum(PAYMENT_TYPES)).optional(),
-}).refine(
-  (value) => {
-    const ticked = new Set(value.orders.map((order) => order.id));
-    return Object.keys(value.paymentTypes ?? {}).every((id) => ticked.has(id));
-  },
-  { path: ["paymentTypes"], message: "A payment type names an order that is not ticked." },
-) as z.ZodType<ApproveInput>;
+  cash: z.record(z.uuid(), cashField).optional(),
+})
+  .refine(
+    (value) => {
+      const ticked = new Set(value.orders.map((order) => order.id));
+      return Object.keys(value.paymentTypes ?? {}).every((id) => ticked.has(id));
+    },
+    { path: ["paymentTypes"], message: "A payment type names an order that is not ticked." },
+  )
+  .refine(
+    (value) => {
+      const ticked = new Set(value.orders.map((order) => order.id));
+      return Object.keys(value.cash ?? {}).every((id) => ticked.has(id));
+    },
+    { path: ["cash"], message: "Cash names an order that is not ticked." },
+  ) as unknown as z.ZodType<ApproveInput>;
 
 /** Who is told when an order leaves a step (10 Notifications). */
 const NOTICE_OF: Partial<
@@ -68,6 +100,7 @@ const NOTICE_OF: Partial<
 async function beforeApprove(
   context: OrdersContext<ApproveInput>,
 ): Promise<ReadonlyMap<string, OrderEventExtra>> {
+  checkCash(context);
   const asked = Object.entries(context.input.paymentTypes ?? {});
   const extras = new Map<string, OrderEventExtra>();
   if (asked.length === 0) return extras;
@@ -95,6 +128,88 @@ async function beforeApprove(
     extras.set(id, { payload: { paymentType: { from: current.get(id)!, to: type } } });
   }
   return extras;
+}
+
+/**
+ * The checks of Finance's cash, before anything is written. Cash on an order not at Finance's
+ * step refuses the whole action as `forbidden`, as a payment type does; every order given cash
+ * also needs `money.record` of its branch (03 matrix, "Record money given, returned, paid back";
+ * review of the plan of 4.2, correction 2); and one Manager's cash never spans two branches, since
+ * one action per Manager is all the browser id allows (plan of 4.2, decided item 5, Look first).
+ */
+function checkCash(context: OrdersContext<ApproveInput>): void {
+  const given = cashBlocks(context);
+  if (given.length === 0) return;
+  const orderOf = new Map(context.orders.map((order) => [order.id, order]));
+  const refused: OrderFailure[] = [];
+  for (const block of given) {
+    for (const { orderId } of block.rows) {
+      const order = orderOf.get(orderId)!;
+      const target = { branchId: order.branchId, ownerId: order.ownerId };
+      // money.record and request.approve.step3 are both Finance of the branch today (03 matrix),
+      // so the status half refuses every other role first; the permission review of 4.2 notes that
+      // this check is reached on its own only if the two rows ever differ.
+      if (
+        order.status !== "PENDING_FINANCE" ||
+        decide("money.record", context.actor, target) !== "allow"
+      ) {
+        refused.push({ orderId, code: "forbidden" });
+      }
+    }
+  }
+  if (refused.length > 0) throw new OrdersRefusal("forbidden", refused);
+  for (const block of given) {
+    const branches = new Set(block.rows.map(({ orderId }) => orderOf.get(orderId)!.branchId));
+    if (branches.size > 1) {
+      throw new ActionError("invalid_input", { cash: "errors.field.cashOneBranch" });
+    }
+  }
+}
+
+/**
+ * The cash given now, one block per Manager (the owner as locked, never from the input), rows of
+ * 0 dropped (08 When Finance approves: "rows of 0 write nothing"), in the lock order.
+ */
+function cashBlocks(context: OrdersContext<ApproveInput>): CashBlock[] {
+  const cash = context.input.cash ?? {};
+  return approvalCashRows(
+    context.orders
+      .filter((order) => order.id in cash)
+      .map((order) => ({ id: order.id, ownerId: order.ownerId, amount: cash[order.id]! })),
+  );
+}
+
+/**
+ * 08 When Finance approves: "The cash action is saved in the same transaction as the approval."
+ * One money action per Manager (08 Money ledger 1), all with the approval's browser id and their
+ * own `manager_id` (14: UNIQUE (client_key, manager_id)), naming the approval; dated today in
+ * Tashkent, no comment (decisions 4.1 item 9; plan of 4.2, decided item 3, Look first). The orders
+ * are locked; `money_rows_one_manager` reads their owners.
+ */
+async function giveCash(context: OrdersWriteContext<ApproveInput>): Promise<void> {
+  const at = now();
+  for (const block of cashBlocks(context)) {
+    const [action] = await context.tx
+      .insert(moneyActions)
+      .values({
+        clientKey: context.input.clientKey,
+        orderActionId: context.actionId,
+        managerId: block.managerId,
+        occurredOn: today(),
+        createdBy: context.userId,
+        createdAt: at,
+      })
+      .returning({ id: moneyActions.id });
+    await context.tx.insert(moneyRows).values(
+      block.rows.map((row) => ({
+        moneyActionId: action!.id,
+        orderId: row.orderId,
+        kind: "CASH_GIVEN" as const,
+        amount: row.amount,
+        createdAt: at,
+      })),
+    );
+  }
 }
 
 async function paymentTypesOf(
@@ -138,6 +253,17 @@ async function recipientsOf(
   return [...new Set([...ownerIds, ...heads.map((head) => head.id)])];
 }
 
+/** The cash each owner was given in one branch by this approval (`actionTotal()` of his rows). */
+function cashByOwner(context: OrdersContext<ApproveInput>, branchId: string): Map<string, bigint> {
+  const branchOf = new Map<string, LockedOrder>(context.orders.map((order) => [order.id, order]));
+  const byOwner = new Map<string, bigint>();
+  for (const block of cashBlocks(context)) {
+    const rows = block.rows.filter(({ orderId }) => branchOf.get(orderId)!.branchId === branchId);
+    if (rows.length > 0) byOwner.set(block.managerId, actionTotal(rows));
+  }
+  return byOwner;
+}
+
 export const approveOrders = orderMoveAction<ApproveInput>({
   name: "approveOrders",
   action: "APPROVE",
@@ -148,6 +274,7 @@ export const approveOrders = orderMoveAction<ApproveInput>({
     if (opened.length > 0) {
       await context.tx.update(orders).set({ approvedAt: now() }).where(inArray(orders.id, opened));
     }
+    await giveCash(context);
   },
   async notify(context, result) {
     const { tx, userId } = context;
@@ -165,17 +292,32 @@ export const approveOrders = orderMoveAction<ApproveInput>({
         const owners = moved
           .filter((order) => order.branchId === branchId)
           .map((order) => order.ownerId);
+        const link = actionLink(branchId, result.actionId);
+        const cashOf = from === "PENDING_FINANCE" ? cashByOwner(context, branchId) : new Map();
         await notify(
           { tx, userId },
           {
-            to: await recipientsOf(tx, from, branchId, owners),
+            to: (await recipientsOf(tx, from, branchId, owners)).filter((id) => !cashOf.has(id)),
             type,
             params,
             branchId,
-            link: actionLink(branchId, result.actionId),
+            link,
             at,
           },
         );
+        for (const [ownerId, amount] of cashOf) {
+          await notify(
+            { tx, userId },
+            {
+              to: [ownerId],
+              type: "CASH_GIVEN",
+              params: { ...params, amount: amount.toString() },
+              branchId,
+              link,
+              at,
+            },
+          );
+        }
       }
     }
   },

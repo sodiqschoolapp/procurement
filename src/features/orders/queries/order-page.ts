@@ -169,6 +169,7 @@ export type OrderPage = {
   branchId: string;
   branchCode: string;
   branchName: string;
+  ownerId: string;
   ownerName: string;
   departmentName: string | null;
   requesterName: string | null;
@@ -421,6 +422,7 @@ async function readPage(db: Executor, actor: Actor, id: string): Promise<OrderPa
     branchId: row.branchId,
     branchCode: row.branchCode,
     branchName: row.branchName,
+    ownerId: row.ownerId,
     ownerName: row.ownerName,
     departmentName: row.departmentName,
     requesterName: row.requesterName,

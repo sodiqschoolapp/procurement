@@ -75,7 +75,8 @@
       "beforeApproval": "The date is before Finance approved the order. Pick that day or a later one.",
       "tripOneOwner": "One purchase covers orders of one branch and one owner. Tick only those.",
       "otherProduct": "Pick a subtype of the ordered product. For another product, mark the order Not bought and add a new order.",
-      "stockShort": "Not enough in stock to cancel: the items were already issued. Take them back from the department first, or use a write-off."
+      "stockShort": "Not enough in stock to cancel: the items were already issued. Take them back from the department first, or use a write-off.",
+      "cashOneBranch": "Cash can be given to one Manager for one branch at a time. Approve each branch's orders on their own, or set the cash of one branch to 0."
     },
     "file": {
       "tooLarge": "The file is larger than 10 MB. Choose a smaller file or take the photo again.",
@@ -321,6 +322,7 @@
       "REQUEST_HEAD_APPROVED": "The Procurement Head {actor} approved {count, plural, one {# order} other {# orders}} in {branch}.",
       "REQUEST_PRINCIPAL_APPROVED": "The Principal {actor} approved {count, plural, one {# order} other {# orders}} in {branch}.",
       "REQUEST_FINANCE_APPROVED": "Finance ({actor}) approved {count, plural, one {# order} other {# orders}} in {branch}.",
+      "CASH_GIVEN": "Finance ({actor}) approved {count, plural, one {# order} other {# orders}} in {branch} and gave you {amount} in cash.",
       "REQUEST_SENT_BACK": "{actor} sent back {count, plural, one {# order} other {# orders}} in {branch} for editing.",
       "REQUEST_REJECTED": "{actor} rejected {count, plural, one {# order} other {# orders}} in {branch}.",
       "REQUEST_SENT_TO_SETTLEMENT": "{actor} sent {count, plural, one {# order} other {# orders}} in {branch} to settlement.",
@@ -1303,6 +1305,12 @@
       "result": "Total {total}. {count, plural, one {It moves} other {They move}} to the next step and the next approver is told.",
       "resultFinance": "Total {total}. {count, plural, one {It opens} other {They open}} for buying. You may change the payment type of each order below; the total stays the same.",
       "paymentOf": "Payment type of {number}",
+      "totalsTitle": "Planned totals by payment type",
+      "cashTitle": "Cash given to the Manager now",
+      "cashHint": "Prefilled with each order's planned cash. Change any row, or set it to 0 to give cash later.",
+      "plannedCash": "Planned cash {amount}",
+      "cashInvalid": "Type whole so'm: 0 or more.",
+      "resultCash": "{amount} in cash is given to {managers, plural, one {# Manager} other {# Managers}}.",
       "done": "{count, plural, one {Approved 1 order.} other {Approved # orders.}}",
       "failedTitle": "{count, plural, one {Nothing was approved: 1 order is named below.} other {Nothing was approved: # orders are named below.}}",
       "failedLine": "{number} — {problem}",

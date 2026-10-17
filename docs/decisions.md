@@ -1595,6 +1595,28 @@ Choices made during the build:
 - The input type `CashRecord` sits in `src/domain/money-ledger.ts`; `PurchaseRecord` of `purchases.ts` is unchanged.
 - No `FILE_OWNERS` entry for `money_actions.file_id` yet: no action writes that column before 4.3, the first that attaches a file (plan, Left out; permission review Must fix 1, answered in the report).
 
+### 4.2 Finance approval with cash (17.10.2026)
+
+The plan's decisions as the plan review of 17.10.2026 confirmed them (corrections 1 to 3 applied: the dialog's rows come from `plannedCashOf()` under the selects, so a row set to 0 stays; the cash also asks `money.record`; the earlier `order_actions` insert is checked against every `write`/`inspect` and tested for a refusal and a retry).
+
+A. **Look first** (spec text to make plain). The table has rows only for orders whose planned cash is above 0 (Cash orders under the current selects). Proposed `/spec-change` for 08 When Finance approves: "one row per order whose planned cash is above 0 (its planned total when its payment type is Cash, else 0), prefilled with it".
+1. **Look first.** An order not in `cash` gets no cash; the server never prefills by itself.
+2. **Look first.** No server check of the payment type and no upper limit on cash given (08 Money ledger 3).
+3. **Look first.** `occurred_on` is the approval's day in Tashkent from the clock; no comment, document number, file or supplier.
+4. **Look first** (spec text to make plain). An owner given cash gets one `CASH_GIVEN` ("approved N orders in CHL and gave you 650 000 so'm in cash") instead of `REQUEST_FINANCE_APPROVED`; the amount is that owner's cash in that branch. Proposed `/spec-change` for 10 Notifications, row "Cash given, cash returned, paid back | Owner": add "; at Finance's approval it replaces the owner's 'Finance approved' notice".
+5. **Look first** (branch wall). One Manager's cash in two branches in one call is refused whole (`invalid_input`, `cash: errors.field.cashOneBranch`).
+6. **Look first** (domain). `approvalCashRows({ id, ownerId, amount })` drops rows of 0 and empty blocks; `plannedCashOf()` is the prefill; `actionTotal()` the sum of an action's rows.
+7. **Look first** (domain). `totalsByPaymentType()` in `order-totals.ts`; `ordersTotals()` uses it.
+8. The orders wrapper writes `order_actions` before `write` and passes `actionId`. Checked: no `write` or `inspect` reads `order_actions` (Approve, Send back, Reject, Cancel, Take back, Submit, Submit again, the purchasing actions); `noticePriceDiffers()` reads `order_events` in the notify step, after the events.
+9. No cash amount in the approval's history event; the money rows are the record (4.3 shows them).
+10. Lock order: orders by the wrapper, then the money rows by Manager and order.
+
+Choices made during the build:
+
+- The `CASH_GIVEN` amount is a money param shown through `MONEY_PARAMS` and `format.money` on `/notifications` (0.11 decision 9). No `branch_id` on notifications (0.11 decision 4): the amount is the recipient's own cash, so a reader who later loses the branch learns nothing about anyone else. **Look first** (branch wall).
+- The dialog's interactions (a row set to 0 stays, a wrong amount disables Approve, the result line follows the rows) are tested in Playwright at both widths, not in a Vitest component test as the plan said: the unit project has no DOM.
+- `money.record` and `request.approve.step3` are the same row of the matrix today, so the `money.record` check is reached alone only if they ever differ (permission review, Should fix 2); both matrix entries assert that a refused call writes no cash action (Should fix 1).
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

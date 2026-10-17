@@ -341,6 +341,8 @@ export default async function OrderPageScreen({
                   number: order.number,
                   status: order.status,
                   paymentType: order.paymentType,
+                  plannedTotal: order.plannedTotal.toString(),
+                  owner: { id: order.ownerId, name: order.ownerName },
                 },
                 total: format.money(order.plannedTotal),
               }

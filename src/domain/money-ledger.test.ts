@@ -5,6 +5,7 @@ import {
   type MatchOrder,
   type MoneyRow,
   type MoneyRowKind,
+  actionTotal,
   approvalCashRows,
   cashSpent,
   crossingRefusal,
@@ -12,6 +13,7 @@ import {
   managerCashBalance,
   orderCashCount,
   plannedCash,
+  plannedCashOf,
   settlementNet,
   settlementRows,
 } from "./money-ledger";
@@ -131,9 +133,14 @@ const THREE = [
   { id: "CHL-26-0144", ownerId: "manager-a", plan: FOLDERS },
 ];
 
-describe("When Finance approves: the prefilled cash rows (08; decided item 11)", () => {
+/** Each order with its prefilled amount, as the dialog and the approval give them (plan of 4.2). */
+function prefilled(orders: readonly { id: string; ownerId: string; plan: OrderPlan }[]) {
+  return orders.map(({ id, ownerId, plan }) => ({ id, ownerId, amount: plannedCash(plan) }));
+}
+
+describe("When Finance approves: the prefilled cash rows (08; decided item 11; plan of 4.2, item 6)", () => {
   it("three orders, one action: 650 000 split 520 000, 100 000, 30 000 (08 Worked example)", () => {
-    const blocks = approvalCashRows(THREE);
+    const blocks = approvalCashRows(prefilled(THREE));
     expect(blocks).toEqual([
       {
         managerId: "manager-a",
@@ -144,23 +151,28 @@ describe("When Finance approves: the prefilled cash rows (08; decided item 11)",
         ],
       },
     ]);
-    expect(blocks[0]!.rows.reduce((sum, each) => sum + each.amount, 0n)).toBe(650_000n);
+    expect(actionTotal(blocks[0]!.rows)).toBe(650_000n);
   });
 
   it("planned cash is the planned total for a Cash order, 0 otherwise", () => {
     expect(plannedCash(NOTEBOOKS)).toBe(520_000n);
     expect(plannedCash({ ...NOTEBOOKS, paymentType: "TRANSFER" })).toBe(0n);
     expect(plannedCash({ ...NOTEBOOKS, paymentType: "CARD" })).toBe(0n);
+    expect(plannedCashOf("CASH", 520_000n)).toBe(520_000n);
+    expect(plannedCashOf("TRANSFER", 520_000n)).toBe(0n);
+    expect(plannedCashOf("CARD", 520_000n)).toBe(0n);
   });
 
   it("a non-cash order gets no row; orders of two Managers give two blocks (08 Money ledger 1)", () => {
     expect(
-      approvalCashRows([
-        { id: "a1", ownerId: "manager-a", plan: NOTEBOOKS },
-        { id: "b1", ownerId: "manager-b", plan: PENS },
-        { id: "a2", ownerId: "manager-a", plan: { ...FOLDERS, paymentType: "TRANSFER" } },
-        { id: "a3", ownerId: "manager-a", plan: FOLDERS },
-      ]),
+      approvalCashRows(
+        prefilled([
+          { id: "a1", ownerId: "manager-a", plan: NOTEBOOKS },
+          { id: "b1", ownerId: "manager-b", plan: PENS },
+          { id: "a2", ownerId: "manager-a", plan: { ...FOLDERS, paymentType: "TRANSFER" } },
+          { id: "a3", ownerId: "manager-a", plan: FOLDERS },
+        ]),
+      ),
     ).toEqual([
       {
         managerId: "manager-a",
@@ -175,8 +187,39 @@ describe("When Finance approves: the prefilled cash rows (08; decided item 11)",
 
   it("only non-cash orders give no block at all", () => {
     expect(
-      approvalCashRows([{ id: "t", ownerId: "m", plan: { ...PENS, paymentType: "CARD" } }]),
+      approvalCashRows(
+        prefilled([{ id: "t", ownerId: "m", plan: { ...PENS, paymentType: "CARD" } }]),
+      ),
     ).toEqual([]);
+  });
+
+  it("rows of 0 write nothing: a row Finance set to 0 is dropped, and a block of only 0 rows too (08)", () => {
+    expect(
+      approvalCashRows([
+        { id: "a1", ownerId: "manager-a", amount: 520_000n },
+        { id: "a2", ownerId: "manager-a", amount: 0n },
+        { id: "b1", ownerId: "manager-b", amount: 0n },
+      ]),
+    ).toEqual([{ managerId: "manager-a", rows: [{ orderId: "a1", amount: 520_000n }] }]);
+  });
+
+  it("Finance may type more than the planned cash: Cash given has no limit (08 Money ledger 3)", () => {
+    expect(approvalCashRows([{ id: "a1", ownerId: "m", amount: 900_000n }])).toEqual([
+      { managerId: "m", rows: [{ orderId: "a1", amount: 900_000n }] },
+    ]);
+  });
+
+  it("a negative amount is refused, never written (14 money_rows CHECK amount > 0)", () => {
+    expect(() => approvalCashRows([{ id: "a1", ownerId: "m", amount: -1n }])).toThrow(RangeError);
+  });
+});
+
+describe("an action's total is the sum of its rows (08 Money ledger)", () => {
+  it("650 000 for the three-order example; 0 for no rows", () => {
+    expect(actionTotal([{ amount: 520_000n }, { amount: 100_000n }, { amount: 30_000n }])).toBe(
+      650_000n,
+    );
+    expect(actionTotal([])).toBe(0n);
   });
 });
 
