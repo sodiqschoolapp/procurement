@@ -1746,7 +1746,7 @@ Choices made during the build:
 
 The plan's decisions as the plan review of 17.10.2026 confirmed them (corrections applied: owners are grouped whatever their role, with a database case of a Head-owned order; Closed is left out by `managerCashBalance()` only).
 
-1. **Look first** (permission matrix). A new permission `money.managers`: Head all branches, Finance own branches, Manager and Principal no. 03 has no row for the page; 11 Screens names Finance and Head; `data.view` would let the Manager and the Principal in.
+1. **Look first** (permission matrix). A new permission `money.managers`: Head all branches, Finance own branches, Manager and Principal no. 03 has no row for the page; 11 Screens names Finance and Head; `data.view` would let the Manager and the Principal in. It guards this page only: the report "Money with managers" of 10 Reports, which every role gets for its own branches, must not reuse it (permission review of 4.9).
 2. **Look first** (a formula in `src/domain/`). "The date since when" is the order's first live cash movement (a Cash given, Cash returned or Paid back row of an action not cancelled, by its date; a live record whose `cashSpent()` is above 0, by its trip's date); a Manager's is the oldest of the orders behind his balance. Known limit: a count that went back to 0 and away again shows the older date. Proposed `/spec-change` if the owner prefers the other reading, 08 Money with managers: "the date since when is the date the order's cash count last moved away from 0".
 3. One balance per owner across the branches the viewer sees; Finance of one branch sees only that branch's orders of a Manager in two.
 4. Every status but Closed counts; Draft is not read (no money reaches one); an order with count 0 is not listed.
