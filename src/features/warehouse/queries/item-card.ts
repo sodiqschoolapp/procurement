@@ -133,7 +133,15 @@ export async function getItemCard(
       })
       .from(stockMovements)
       .leftJoin(purchases, eq(purchases.id, stockMovements.purchaseId))
-      .leftJoin(orders, and(eq(orders.id, purchases.orderId), orderSeen(actor)))
+      .leftJoin(
+        orders,
+        and(
+          eq(orders.id, purchases.orderId),
+          // The movement's own branch again, beside the draft wall (permission review, should-fix 1).
+          eq(orders.branchId, stockMovements.branchId),
+          orderSeen(actor),
+        ),
+      )
       .leftJoin(stockDocumentLines, eq(stockDocumentLines.id, stockMovements.documentLineId))
       .leftJoin(stockDocuments, eq(stockDocuments.id, stockDocumentLines.documentId))
       .where(where)

@@ -176,6 +176,12 @@ describe("getItemCard: the walls (03 rule 1; 06 Statuses; plan of 5.3, decided i
     const seenByColleague = await getItemCard(colleague.id, variantId, branch.id);
     expect(seenByColleague!.movements).toHaveLength(1);
     expect(seenByColleague!.movements[0]).toMatchObject({ balanceAfter: "6.000", order: null });
+    // The branch's Principal and Finance are behind the wall too (permission review, should-fix 2).
+    for (const role of ["PRINCIPAL", "FINANCE"] as const) {
+      const viewer = await insertUser(role, { branches: [branch.id] });
+      const seen = await getItemCard(viewer.id, variantId, branch.id);
+      expect(seen!.movements[0]).toMatchObject({ balanceAfter: "6.000", order: null });
+    }
     // The owner and the Head see the same row with its order.
     const seenByOwner = await getItemCard(owner.id, variantId, branch.id);
     expect(seenByOwner!.movements[0]!.order?.id).toBe(receipt.order.id);
