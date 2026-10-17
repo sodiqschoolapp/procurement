@@ -276,7 +276,7 @@ From a draft on the branch's order list to fully approved orders, ticked and act
   - **Done when:** Playwright: Submit in the grid opens the confirmation with the count; Cancel leaves every draft a Draft; confirming submits them. The S19 test fails if the row sums orders instead of quantities.
   - Added by the owner on 17.10.2026 from the Phase 2 audit (D48), not from a changed decision on issue #9.
 
-- [ ] **2.11b The two findings of 2.11's last review**
+- [x] **2.11b The two findings of 2.11's last review**
   - **Read:** `06-approval-workflow.md` (Rules: 4); `03-roles-and-permissions.md` (rule 6); `docs/decisions.md` (D49; decisions of task 2.11, item 8); the `[review] changes needed` comment of pull request #61 (16.10.2026, 22:17 UTC), findings 1 and 2.
   - **Build:** `createdByHeadSql` (`src/features/orders/order-facts.ts`) reads the same fact as the action wrapper (`src/server/order-action.ts`, `created_by_head`: the creator is a Head and the order has no number yet), or both read one expression; a test with a taken-back Draft that a Head created shows the fact false on the order page and in the list, as on the server. A database test applies the migrations up to `0021`, writes an `order_revisions` row the way the 2.7 Submit did (no `submission`), applies `0022`, and checks that the row has `submission = 1`, that a second (order, revision, 1) is refused by `order_revisions_order_id_revision_submission_key`, and that (order, revision, 2) is accepted.
   - **Done when:** both tests exist and pass, and each fails without its fix.
