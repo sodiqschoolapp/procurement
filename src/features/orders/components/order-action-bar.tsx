@@ -9,7 +9,8 @@ import { submitDraftsAction } from "@/app/(app)/orders/actions";
 import { type ClientKey, newClientKey } from "@/components/client-key";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { toast } from "@/components/toast";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { cn } from "@/components/utils";
 
 import { type ApproveOrder, ApproveButton } from "./approve-button";
 import { CopyButton } from "./copy-button";
@@ -34,6 +35,7 @@ export function OrderActionBar({
   moves,
   number,
   canCopy,
+  recordPurchase,
   waitingLine,
 }: {
   orderId: string;
@@ -47,6 +49,8 @@ export function OrderActionBar({
   approve: { order: ApproveOrder; total: string } | null;
   /** Copy as new is offered (05 Ticking and filters; plan of 2.13): the server's `canCopy`. */
   canCopy: boolean;
+  /** The purchase form's address when the server's `canRecordPurchase` is set (plan of 3.3). */
+  recordPurchase: string | null;
   /** Shown when the user has no allowed move; null otherwise. */
   waitingLine: string | null;
 }) {
@@ -127,8 +131,17 @@ export function OrderActionBar({
           {refused}
         </p>
       ) : null}
-      {approve || ((moves.length > 0 || canCopy) && number) ? (
+      {approve || recordPurchase || ((moves.length > 0 || canCopy) && number) ? (
         <div className="flex flex-wrap gap-3 sm:ml-auto">
+          {recordPurchase ? (
+            <Link
+              href={recordPurchase}
+              data-record-purchase
+              className={cn(buttonVariants({ variant: "default" }), "max-sm:h-11 max-sm:w-full")}
+            >
+              {t("recordPurchase")}
+            </Link>
+          ) : null}
           {approve ? (
             <ApproveButton
               orders={[approve.order]}

@@ -70,7 +70,9 @@
       "wholeOnly": "Bu oʻlchov butun sonda hisoblanadi: butun son kiriting",
       "tooManyDecimals": "Nuqtadan keyin koʻpi bilan 3 ta raqam",
       "draftExists": "Bu boʻlim uchun bu tovarning qoralamasi sizda allaqachon bor. Miqdorini oʻsha yerda oʻzgartiring.",
-      "inPast": "Sana oʻtib ketgan. Bugun yoki keyingi kunni tanlang."
+      "inPast": "Sana oʻtib ketgan. Bugun yoki keyingi kunni tanlang.",
+      "inFuture": "Sana kelajakda. Bugun yoki oldingi kunni tanlang.",
+      "beforeApproval": "Sana buyurtma moliya tomonidan tasdiqlanishidan oldin. Shu kunni yoki keyingisini tanlang."
     },
     "file": {
       "tooLarge": "Fayl 10 MB dan katta. Kichikroq fayl tanlang yoki suratni qaytadan oling.",
@@ -1135,7 +1137,10 @@
         "extraLine": "{type}: {amount}",
         "stockAtSubmit": "Yuborilgandagi qoldiq",
         "stockNow": "Hozirgi qoldiq",
-        "noStock": "–"
+        "noStock": "–",
+        "received": "Olindi",
+        "used": "Foydalanildi",
+        "receivedOf": "{planned} {unit} dan {received}"
       },
       "history": {
         "title": "Tarix",
@@ -1152,7 +1157,8 @@
           "SEND_TO_SETTLEMENT": "Hisob-kitobga yuborildi",
           "SEND_BACK_FOR_CORRECTION": "Tuzatish uchun qaytarildi",
           "CLOSE": "Yopildi",
-          "REOPEN": "Qayta ochildi"
+          "REOPEN": "Qayta ochildi",
+          "RECORD_PURCHASE": "Xarid yozildi"
         },
         "approved": {
           "PENDING_HEAD": "Rahbar bosqichida tasdiqlandi",
@@ -1165,7 +1171,8 @@
         "reason": "Sabab: {text}",
         "note": "Izoh: {text}",
         "at": "{date} {time}",
-        "paymentType": "To'lov turi: {from} → {to}"
+        "paymentType": "To'lov turi: {from} → {to}",
+        "purchase": "{qty} × {price}"
       },
       "waiting": {
         "HEAD": "Rahbarni kutmoqda.",
@@ -1182,7 +1189,8 @@
         "submitResult": "U raqam oladi va tasdiqlashga ketadi. Shundan keyin faqat qaytarib olinsa yoki qaytarilsa tahrirlanadi.",
         "done": "Yuborildi: {number}.",
         "failed": "Yuborilmadi. Buyurtmalar roʻyxatida tuzating: {fields}.",
-        "editInList": "Buyurtmalar roʻyxatida tahrirlash"
+        "editInList": "Buyurtmalar roʻyxatida tahrirlash",
+        "recordPurchase": "Xaridni yozish"
       },
       "changes": {
         "title": "{revision}-tahrirdan beri nima o'zgardi",
@@ -1333,6 +1341,50 @@
         "unknown": "—",
         "sort": "Saralash: {sort}"
       }
+    }
+  },
+  "purchase": {
+    "form": {
+      "title": "Xaridni yozish",
+      "subtitle": "{number} · {product}",
+      "plan": "Reja",
+      "plannedQty": "Rejadagi miqdor",
+      "plannedPrice": "Rejadagi birlik narxi",
+      "plannedExtras": "Rejadagi qoʻshimcha xarajatlar",
+      "plannedPayment": "Rejadagi toʻlov turi",
+      "received": "Hozirgacha olindi",
+      "used": "Hozirgacha foydalanildi",
+      "none": "Yoʻq",
+      "sameAsPlanned": "Rejadagidek",
+      "date": "Xarid sanasi",
+      "qty": "Haqiqiy miqdor, {unit}",
+      "price": "Haqiqiy birlik narxi",
+      "supplier": "Yetkazib beruvchi",
+      "noSupplier": "Koʻrsatilmagan",
+      "paymentType": "Toʻlov turi",
+      "extras": "Qoʻshimcha xarajatlar",
+      "extraType": "Turi",
+      "extraAmount": "Summa",
+      "extraPayment": "Toʻlangan",
+      "pick": "Tanlang…",
+      "addExtra": "Xarajat qoʻshish",
+      "removeExtra": "Bu xarajatni olib tashlash",
+      "receipt": "Chek (5 tagacha rasm yoki PDF)",
+      "receiptRequired": "Chek (naqd xarid uchun majburiy; 5 tagacha rasm yoki PDF)",
+      "takePhoto": "Suratga olish",
+      "chooseFile": "Fayl tanlash",
+      "removeReceipt": "{name} ni olib tashlash",
+      "comment": "Izoh",
+      "commentRequired": "Izoh (majburiy)",
+      "reasons": {
+        "PRICE_CHANGED": "Narx rejadagidan farq qiladi.",
+        "GIFT": "Narx 0: nega bepul ekanini yozing.",
+        "OVER_PLAN": "Rejadagidan koʻp sotib olindi.",
+        "PAYMENT_CHANGED": "Toʻlov turi buyurtmadagidan farq qiladi."
+      },
+      "back": "Buyurtmaga qaytish",
+      "save": "Xaridni saqlash",
+      "saved": "Xarid saqlandi."
     }
   }
 }

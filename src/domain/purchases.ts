@@ -176,3 +176,78 @@ export function splitGroupQuantity(
   newest.qty = newest.qty.plus(left);
   return parts.map((part) => ({ id: part.id, qty: part.qty.toFixed() }));
 }
+
+/** Why a purchase record needs its comment (07 Purchase record, Comment; plan of 3.3, item 1). */
+export type CommentReason = "PRICE_CHANGED" | "GIFT" | "OVER_PLAN" | "PAYMENT_CHANGED";
+
+/** One record as it is typed, against its order's plan and what the order has received so far. */
+export type RecordAgainstPlan = {
+  qty: string;
+  unitPrice: bigint;
+  paymentType: string;
+  plannedQty: string;
+  plannedPrice: bigint;
+  plannedPaymentType: string;
+  /** The actual quantity before this record, numeric(14,3) text, "0" when nothing is received. */
+  received: string;
+};
+
+/**
+ * The reasons a record needs a comment, in the order of 07's Comment row (plan of 3.3, decided
+ * item 1, Look first): its price differs from the planned price; a price of 0 (a gift); the
+ * received quantity after it goes above the plan ("More was bought than approved"), never a part
+ * record such as 60 of 100; its payment type is not the order's. Differing extra costs need none.
+ * Substitution's reason comes with 3.6. The form and the server both ask this function.
+ */
+export function purchaseCommentNeeds(record: RecordAgainstPlan): CommentReason[] {
+  const reasons: CommentReason[] = [];
+  if (record.unitPrice !== record.plannedPrice) reasons.push("PRICE_CHANGED");
+  if (record.unitPrice === 0n) reasons.push("GIFT");
+  const after = receivedOf(record.received).plus(quantityOf(record.qty));
+  if (after.gt(quantityOf(record.plannedQty))) reasons.push("OVER_PLAN");
+  if (record.paymentType !== record.plannedPaymentType) reasons.push("PAYMENT_CHANGED");
+  return reasons;
+}
+
+/**
+ * Why a date bought is refused, or null (07 Purchase record, Date bought: "Not in the future, not
+ * before the Finance approval of the order"; plan of 3.3, decided item 7). All three are business
+ * dates in Tashkent (YYYY-MM-DD, which compare as text); an order without an approval date is
+ * refused, never let through.
+ */
+export function purchaseDateRefusal(
+  date: string,
+  today: string,
+  approvedOn: string | null,
+): "inFuture" | "beforeApproval" | null {
+  if (date > today) return "inFuture";
+  if (approvedOn === null || date < approvedOn) return "beforeApproval";
+  return null;
+}
+
+/** What "Same as planned" fills (07 Purchase record). */
+export type SameAsPlanned = { qty: string; unitPrice: bigint; extras: readonly bigint[] };
+
+/**
+ * "Same as planned" (07: "fills quantity, price and extra costs from the order in one tap"; plan
+ * of 3.3, decided item 5): the plan while nothing is received; once something is, the quantity
+ * still lacking, the planned price and no extra costs, so the planned extras are not counted
+ * twice. With nothing lacking, the planned quantity.
+ */
+export function sameAsPlanned(
+  plannedQty: string,
+  plannedPrice: bigint,
+  plannedExtras: readonly bigint[],
+  received: string,
+): SameAsPlanned {
+  const planned = quantityOf(plannedQty);
+  const got = receivedOf(received);
+  if (got.isZero())
+    return { qty: planned.toFixed(), unitPrice: plannedPrice, extras: plannedExtras };
+  const lacking = planned.minus(got);
+  return {
+    qty: lacking.gt(0) ? lacking.toFixed() : planned.toFixed(),
+    unitPrice: plannedPrice,
+    extras: [],
+  };
+}

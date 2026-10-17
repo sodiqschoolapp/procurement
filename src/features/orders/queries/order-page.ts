@@ -4,7 +4,7 @@ import * as z from "zod";
 
 import { businessDate } from "@/domain/business-date";
 import { addsDraftsIn, inStock, plainQuantity } from "@/domain/drafts";
-import { type OrderAction, allowedActions } from "@/domain/order-moves";
+import { type OrderAction, type OrderEventType, allowedActions } from "@/domain/order-moves";
 import { type StepEvent, type StepView, isOverdue, orderSteps } from "@/domain/order-steps";
 import { extrasSum, priceHintPercent } from "@/domain/order-totals";
 import {
@@ -13,7 +13,8 @@ import {
   revisionChanges,
 } from "@/domain/revision-changes";
 import type { PaymentType } from "@/domain/payment-types";
-import type { Actor } from "@/domain/permissions";
+import { type Actor, decide } from "@/domain/permissions";
+import { actualQuantity, actualTotal } from "@/domain/purchases";
 import type { RequestStatus } from "@/domain/request-status";
 import { type Executor, authorizeList, branchFilter } from "@/server/authorize";
 import { now } from "@/server/clock";
@@ -37,6 +38,8 @@ import { orderState } from "@/server/order-moves";
 import { readSnapshot } from "@/server/read-snapshot";
 import { readSettings } from "@/server/settings";
 
+import { orderRecords } from "@/features/purchasing/queries/order-records";
+
 import { createdByHeadSql, headStepAutoSql, ownerClosesAloneSql } from "../order-facts";
 
 // The order page /orders/[id] (11-screens-and-ux.md, Order page layout 1 to 4; 06 rule 11; plan
@@ -50,7 +53,7 @@ export type OrderPageExtra = { typeName: string; amount: bigint };
 
 export type OrderPageEvent = {
   id: string;
-  type: OrderAction;
+  type: OrderEventType;
   from: RequestStatus;
   to: RequestStatus;
   actorName: string;
@@ -62,6 +65,8 @@ export type OrderPageEvent = {
   headStepAuto: boolean;
   /** Finance's change of the payment type in this Approve (06 rule 1; plan of 2.10). */
   paymentType: { from: PaymentType; to: PaymentType } | null;
+  /** The record a Record purchase event saved: its quantity and price per unit (plan of 3.3). */
+  purchase: { qty: string; unitPrice: string } | null;
   /**
    * The other orders of the same action that this user may see now: never the action's own
    * count, which may cover other branches (decided item 1, Look first).
@@ -118,7 +123,11 @@ export type OrderPage = {
   comment: string | null;
   referencePhotoFileId: string | null;
   plannedTotal: bigint | null;
+  /** From Open on, `actualTotal()` over the order's records (08); null before. */
   actualTotal: bigint | null;
+  /** From Open on, `actualQuantity()` of the records: Received, or Used for a service (07). */
+  received: string | null;
+  isService: boolean;
   /** Against today's reference price (decided item 8); null when none applies. */
   priceHint: bigint | null;
   /** "Overdue", by isOverdue() (edge case "The needed-by date passes"; plan of 2.13). */
@@ -136,6 +145,11 @@ export type OrderPage = {
    * Ticking and filters; plan of 2.13, decided item 1, Look first). The server asks again.
    */
   canCopy: boolean;
+  /**
+   * Record purchase is offered: the order is Open, its buying not finished, and the user holds
+   * `purchase.record` on it (03 Permission matrix; plan of 3.3). The server asks again.
+   */
+  canRecordPurchase: boolean;
   /** The branch's active Principal now (03 rules 2 and 3; decided items 5 and 14). */
   principalName: string | null;
   /**
@@ -146,6 +160,9 @@ export type OrderPage = {
 };
 
 const idInput = z.uuid();
+
+/** The statuses from Open on, which have purchase records (06 Statuses; 07). */
+const BUYING_STATUSES: ReadonlySet<RequestStatus> = new Set(["PURCHASING", "SETTLEMENT", "CLOSED"]);
 
 /**
  * A Draft is seen by its owner and the Head only (06 Statuses), inside the SQL: the SQL form of
@@ -205,7 +222,6 @@ async function readPage(db: Executor, actor: Actor, id: string): Promise<OrderPa
       comment: orders.comment,
       referencePhotoFileId: orders.referencePhotoFileId,
       plannedTotal: orders.plannedTotal,
-      actualTotal: orders.actualTotal,
       submittedAt: orders.submittedAt,
       approvedAt: orders.approvedAt,
       closedAt: orders.closedAt,
@@ -263,6 +279,7 @@ async function readPage(db: Executor, actor: Actor, id: string): Promise<OrderPa
       note: orderEvents.note,
       headStepAuto: headStepAutoSql,
       paymentType: sql<OrderPageEvent["paymentType"]>`${orderEvents.payload} -> 'paymentType'`,
+      purchase: sql<OrderPageEvent["purchase"]>`${orderEvents.payload} -> 'purchase'`,
       othersSeen: sql<number>`(${othersSeen})`,
     })
     .from(orderEvents)
@@ -293,6 +310,7 @@ async function readPage(db: Executor, actor: Actor, id: string): Promise<OrderPa
     headStepAuto: event.headStepAuto,
   }));
   const amounts = extras.map((extra) => extra.amount);
+  const records = BUYING_STATUSES.has(row.status) ? await orderRecords(db, row.id) : null;
 
   return {
     id: row.id,
@@ -327,7 +345,9 @@ async function readPage(db: Executor, actor: Actor, id: string): Promise<OrderPa
     comment: row.comment,
     referencePhotoFileId: row.referencePhotoFileId,
     plannedTotal: row.plannedTotal,
-    actualTotal: row.actualTotal,
+    actualTotal: records ? actualTotal(records) : null,
+    received: records ? actualQuantity(records) : null,
+    isService: row.productType === "SERVICE",
     priceHint: priceHintPercent(row.price, row.referencePrice, threshold),
     overdue: isOverdue(row.status, row.progress, row.neededBy, businessDate(now())),
     submittedAt: row.submittedAt,
@@ -349,6 +369,11 @@ async function readPage(db: Executor, actor: Actor, id: string): Promise<OrderPa
       }),
     ]),
     canCopy: addsDraftsIn(actor, { id: row.branchId, isActive: row.branchActive }),
+    canRecordPurchase:
+      row.status === "PURCHASING" &&
+      row.progress === "OPEN" &&
+      decide("purchase.record", actor, { branchId: row.branchId, ownerId: row.ownerId }) ===
+        "allow",
     principalName: principal?.name ?? null,
     changes,
   };

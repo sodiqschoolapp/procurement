@@ -19,7 +19,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
-import { ORDER_ACTIONS, ORDER_ACTION_MAX } from "@/domain/order-moves";
+import { ORDER_ACTION_MAX, ORDER_EVENT_TYPES } from "@/domain/order-moves";
 import { PAYMENT_TYPES } from "@/domain/payment-types";
 import { ORDER_PROGRESS } from "@/domain/purchases";
 import { REQUEST_STATUSES } from "@/domain/request-status";
@@ -69,8 +69,8 @@ export const numberScope = pgEnum("number_scope", [
  * machine. A later task adds its own value with ALTER TYPE … ADD VALUE (plan of 2.4, decision 5,
  * Look first).
  */
-export const orderActionType = pgEnum("order_action_type", ORDER_ACTIONS);
-export const orderEventType = pgEnum("order_event_type", ORDER_ACTIONS);
+export const orderActionType = pgEnum("order_action_type", ORDER_EVENT_TYPES);
+export const orderEventType = pgEnum("order_event_type", ORDER_EVENT_TYPES);
 
 // One counter per scope, branch and calendar year in Tashkent time (05 Order number 2). Written
 // under a row lock inside the submit transaction by 2.7.

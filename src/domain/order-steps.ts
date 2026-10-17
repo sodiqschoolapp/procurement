@@ -4,7 +4,7 @@
 // "Who acts next"). Pure: the caller reads the order's status and events (plan of 2.9).
 
 import type { BusinessDate } from "./business-date";
-import type { OrderAction } from "./order-moves";
+import type { OrderEventType } from "./order-moves";
 import type { RequestStatus } from "./request-status";
 
 /** The six steps, in the stepper's order. */
@@ -13,7 +13,7 @@ export type OrderStep = (typeof ORDER_STEPS)[number];
 
 /** One event of the order's history, as the stepper reads it. */
 export type StepEvent = {
-  type: OrderAction;
+  type: OrderEventType;
   from: RequestStatus;
   to: RequestStatus;
   actorName: string;

@@ -35,7 +35,7 @@ const PAGE_MOVES: readonly MoveKind[] = [
 
 /** The waiting line, or null when the user has an allowed move (decided item 4, Look first). */
 async function waitingLine(order: OrderPage): Promise<string | null> {
-  if (order.actions.length > 0) return null;
+  if (order.actions.length > 0 || order.canRecordPurchase) return null;
   const t = await getTranslations("orders.page.waiting");
   const who = waitingFor(order.status);
   if (who === "PRINCIPAL") {
@@ -137,6 +137,18 @@ export default async function OrderPageScreen({
           </ul>
         ),
       )}
+      {order.received !== null
+        ? fact(
+            "received",
+            // 07 What saving a record does: a service shows Used where a product shows Received.
+            t(order.isService ? "details.used" : "details.received"),
+            t("details.receivedOf", {
+              received: format.quantity(order.received),
+              planned: format.quantity(order.quantity ?? "0"),
+              unit: order.unitShortName ?? "",
+            }),
+          )
+        : null}
       {order.number
         ? [
             fact(
@@ -257,7 +269,7 @@ export default async function OrderPageScreen({
           {fact(
             "actualTotal",
             t("actualTotal"),
-            order.actualTotal === null ? (
+            order.actualTotal === null || order.received === "0" ? (
               <span className="text-muted-foreground">{t("notBought")}</span>
             ) : (
               <span className="tabular-nums">{format.money(order.actualTotal)}</span>
@@ -311,6 +323,7 @@ export default async function OrderPageScreen({
         number={order.number}
         // Copy as new of a numbered order; a draft is edited in the drafts grid (decided item 11).
         canCopy={order.canCopy && order.status !== "DRAFT" && order.number !== null}
+        recordPurchase={order.canRecordPurchase ? `/orders/${order.id}/purchase` : null}
         waitingLine={line}
       />
     </div>
