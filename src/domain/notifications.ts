@@ -54,6 +54,12 @@ export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 export type OrderActionParams = { actor: string; count: number; branch: string };
 
 /**
+ * Where cash was given (plan of 4.3, decided item 7): with Finance's approval (4.2), whose text
+ * says "approved", or later from the Money tab, whose text does not.
+ */
+export type CashGivenVia = "approval" | "money";
+
+/**
  * The params of a waiting reminder (10: "9 orders have waited more than 24 hours"): `hours` is
  * the setting in force (`reminder_hours`, `escalation_hours`), never a fixed 24 (decision 3).
  * `count` covers only the branches the recipient may see: a Principal's or a Finance user's own
@@ -81,7 +87,14 @@ export type NotificationParamsOf = {
    * approved orders in `branch`, as in that notice; `amount` the cash given to this owner in
    * `branch`, a string of whole so'm (decision 9), formatted when shown (MONEY_PARAMS).
    */
-  CASH_GIVEN: OrderActionParams & { amount: string };
+  CASH_GIVEN: OrderActionParams & { amount: string; via: CashGivenVia };
+  /**
+   * "Cash returned" and "Paid back" from the Money tab (10 Notifications, "Cash given, cash
+   * returned, paid back | Owner"; plan of 4.3, decided item 7): one per money action, so one
+   * Manager and one branch; `count` is the action's orders, `amount` its total (`actionTotal()`).
+   */
+  CASH_RETURNED: OrderActionParams & { amount: string };
+  CASH_PAID_BACK: OrderActionParams & { amount: string };
   REQUEST_SENT_BACK: OrderActionParams;
   REQUEST_REJECTED: OrderActionParams;
   REQUEST_SENT_TO_SETTLEMENT: OrderActionParams;
@@ -120,7 +133,9 @@ export const NOTIFICATION_PARAMS: {
   REQUEST_HEAD_APPROVED: ["actor", "count", "branch"],
   REQUEST_PRINCIPAL_APPROVED: ["actor", "count", "branch"],
   REQUEST_FINANCE_APPROVED: ["actor", "count", "branch"],
-  CASH_GIVEN: ["actor", "count", "branch", "amount"],
+  CASH_GIVEN: ["actor", "count", "branch", "amount", "via"],
+  CASH_RETURNED: ["actor", "count", "branch", "amount"],
+  CASH_PAID_BACK: ["actor", "count", "branch", "amount"],
   REQUEST_SENT_BACK: ["actor", "count", "branch"],
   REQUEST_REJECTED: ["actor", "count", "branch"],
   REQUEST_SENT_TO_SETTLEMENT: ["actor", "count", "branch"],
@@ -139,6 +154,19 @@ export const NOTIFICATION_PARAMS: {
 /** The params that are money, a string of whole so'm, formatted as money when shown (decision 9). */
 export const MONEY_PARAMS: { readonly [Type in SendableType]?: readonly string[] } = {
   CASH_GIVEN: ["amount"],
+  CASH_RETURNED: ["amount"],
+  CASH_PAID_BACK: ["amount"],
+};
+
+/**
+ * A param a stored notification may lack because an earlier task wrote it without one, with the
+ * value it is shown with: a CASH_GIVEN of 4.2 has no `via` and was given with the approval (plan of
+ * 4.3, decided item 7).
+ */
+export const PARAM_DEFAULTS: {
+  readonly [Type in SendableType]?: Readonly<Record<string, NotificationParamValue>>;
+} = {
+  CASH_GIVEN: { via: "approval" },
 };
 
 export type NotificationParamValue = string | number;

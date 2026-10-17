@@ -430,16 +430,22 @@ describe("the Money tab: when money can be recorded or cancelled (08 Money ledge
   });
 });
 
-describe("the Money tab's prefilled rows (edge cases \"Finance gives cash for several orders\"; D43; plan of 4.3, decided item 2, Look first)", () => {
+describe('the Money tab\'s prefilled rows (edge cases "Finance gives cash for several orders"; D43; plan of 4.3, decided item 2, Look first)', () => {
   it("Cash given is the order's planned cash, also when cash was given before; empty for a non-cash order", () => {
-    expect(moneyPrefill("CASH_GIVEN", { plannedCash: 520_000n, cashCount: 520_000n })).toBe(520_000n);
+    expect(moneyPrefill("CASH_GIVEN", { plannedCash: 520_000n, cashCount: 520_000n })).toBe(
+      520_000n,
+    );
     expect(moneyPrefill("CASH_GIVEN", { plannedCash: 0n, cashCount: 0n })).toBeNull();
   });
 
   it("Cash returned is the count above 0 (worked example, Cheaper: +50 000); empty at 0 and below", () => {
-    expect(moneyPrefill("CASH_RETURNED", { plannedCash: 520_000n, cashCount: 50_000n })).toBe(50_000n);
+    expect(moneyPrefill("CASH_RETURNED", { plannedCash: 520_000n, cashCount: 50_000n })).toBe(
+      50_000n,
+    );
     expect(moneyPrefill("CASH_RETURNED", { plannedCash: 520_000n, cashCount: 0n })).toBeNull();
-    expect(moneyPrefill("CASH_RETURNED", { plannedCash: 520_000n, cashCount: -30_000n })).toBeNull();
+    expect(
+      moneyPrefill("CASH_RETURNED", { plannedCash: 520_000n, cashCount: -30_000n }),
+    ).toBeNull();
   });
 
   it("Paid back is the count without its minus below 0 (worked example, Dearer: −30 000); empty at 0 and above", () => {

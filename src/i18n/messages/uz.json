@@ -76,7 +76,13 @@
       "tripOneOwner": "Bitta xarid bitta filial va bitta egasining buyurtmalarini qamraydi. Faqat ularni belgilang.",
       "otherProduct": "Buyurtma qilingan mahsulotning turini tanlang. Boshqa mahsulot uchun buyurtmani «Sotib olinmadi» deb belgilang va yangi buyurtma qoʻshing.",
       "stockShort": "Bekor qilib boʻlmaydi: omborda yetarli emas, mahsulot allaqachon berilgan. Avval uni boʻlimdan qaytarib oling yoki hisobdan chiqaring.",
-      "cashOneBranch": "Bitta menejerga naqd pul bir vaqtda faqat bitta filial boʻyicha beriladi. Har bir filial buyurtmalarini alohida tasdiqlang yoki bitta filial naqd pulini 0 qiling."
+      "cashOneBranch": "Bitta menejerga naqd pul bir vaqtda faqat bitta filial boʻyicha beriladi. Har bir filial buyurtmalarini alohida tasdiqlang yoki bitta filial naqd pulini 0 qiling.",
+      "aboveCount": "Bu buyurtma boʻyicha menejerdagi puldan koʻp. Naqd pul qoldigʻidan koʻp qaytarib boʻlmaydi.",
+      "aboveOwed": "Bu buyurtma boʻyicha maktab qarzidan koʻp. Qarzdan koʻp qoplab boʻlmaydi.",
+      "noAmount": "Kamida bitta buyurtmaga 0 dan katta summa kiriting.",
+      "moneyOneBranch": "Bitta amal bitta menejerning bitta filialdagi buyurtmalarini qamraydi. Har bir filial buyurtmalarini alohida yozing.",
+      "fileOneManager": "Fayl faqat buyurtmalar bitta menejerniki boʻlganda qoʻshiladi.",
+      "closedReopenFirst": "Bu buyurtma yopilgan. Avval xaridlar rahbari uni qayta ochadi, soʻng amalni bekor qiling."
     },
     "file": {
       "tooLarge": "Fayl 10 MB dan katta. Kichikroq fayl tanlang yoki suratni qaytadan oling.",
@@ -322,7 +328,7 @@
       "REQUEST_HEAD_APPROVED": "{branch}: xaridlar rahbari {actor} {count, plural, other {# ta buyurtmani}} tasdiqladi.",
       "REQUEST_PRINCIPAL_APPROVED": "{branch}: direktor {actor} {count, plural, other {# ta buyurtmani}} tasdiqladi.",
       "REQUEST_FINANCE_APPROVED": "{branch}: moliya ({actor}) {count, plural, other {# ta buyurtmani}} tasdiqladi.",
-      "CASH_GIVEN": "{branch}: moliya ({actor}) {count, plural, other {# ta buyurtmani}} tasdiqladi va sizga {amount} naqd pul berdi.",
+      "CASH_GIVEN": "{via, select, money {{branch}: moliya ({actor}) {count, plural, other {# ta buyurtma}} uchun sizga {amount} naqd pul berdi.} other {{branch}: moliya ({actor}) {count, plural, other {# ta buyurtmani}} tasdiqladi va sizga {amount} naqd pul berdi.}}",
       "REQUEST_SENT_BACK": "{branch}: {actor} {count, plural, other {# ta buyurtmani}} tahrirlash uchun qaytardi.",
       "REQUEST_REJECTED": "{branch}: {actor} {count, plural, other {# ta buyurtmani}} rad etdi.",
       "REQUEST_SENT_TO_SETTLEMENT": "{branch}: {actor} {count, plural, other {# ta buyurtmani}} hisob-kitobga yubordi.",
@@ -335,7 +341,9 @@
       "BRANCH_ROLE_VACANT": "{branch} filialida faol {role, select, HEAD {xaridlar rahbari} MANAGER {menejer} PRINCIPAL {direktor} FINANCE {moliya xodimi} other {foydalanuvchi}} yoʻq.",
       "MANAGER_RIGHT_SWITCHED": "Xaridlar rahbari sizning huquqingizni {state, select, on {yoqdi} other {oʻchirdi}}: {right, select, CREATE_REQUESTS {Buyurtmalar yaratish va yuborish} RECORD_PURCHASES {Xaridlarni yozish} CANCEL_PURCHASES {Xarid yozuvlarini bekor qilish} CLOSE_ALONE {Farqsiz buyurtmalarni oʻzi yopish} ISSUE_STOCK {Boʻlimlarga tovar berish} RETURN_REVERSE {Qaytarishlarni qabul qilish va hujjatlarni bekor qilish} TRANSFER_STOCK {Boshqa filiallarga koʻchirish yuborish} WRITE_OFF_COUNT {Hisobdan chiqarishni soʻrash va inventarizatsiya oʻtkazish} SET_MINIMUMS {Minimal qoldiqlarni belgilash} other {?}}.",
       "PRODUCT_SUGGESTED": "{branch} filialidan yangi tovar taklifi: {name}.",
-      "PRODUCT_SUGGESTION_DECIDED": "“{name}” taklifingiz {outcome, select, added {katalogga qoʻshildi} other {rad etildi}}."
+      "PRODUCT_SUGGESTION_DECIDED": "“{name}” taklifingiz {outcome, select, added {katalogga qoʻshildi} other {rad etildi}}.",
+      "CASH_RETURNED": "{branch}: moliya ({actor}) {count, plural, other {# ta buyurtma}} boʻyicha sizdan {amount} naqd pulni qaytarib oldi.",
+      "CASH_PAID_BACK": "{branch}: moliya ({actor}) {count, plural, other {# ta buyurtma}} boʻyicha sizga {amount} qoplab berdi."
     }
   },
   "months": {
@@ -1134,7 +1142,8 @@
         "label": "Buyurtma boʻlimlari",
         "details": "Tafsilotlar",
         "history": "Tarix",
-        "purchases": "Xaridlar"
+        "purchases": "Xaridlar",
+        "money": "Pul"
       },
       "details": {
         "title": "Tafsilotlar",
@@ -1186,7 +1195,9 @@
           "FINISH_ORDER": "Xarid yakunlandi",
           "MARK_NOT_BOUGHT": "Sotib olinmadi deb belgilandi",
           "REOPEN_BUYING": "Xarid qayta ochildi",
-          "CANCEL_PURCHASE": "Xarid yozuvi bekor qilindi"
+          "CANCEL_PURCHASE": "Xarid yozuvi bekor qilindi",
+          "RECORD_MONEY": "Pul yozildi",
+          "CANCEL_MONEY": "Pul amali bekor qilindi"
         },
         "approved": {
           "PENDING_HEAD": "Rahbar bosqichida tasdiqlandi",
@@ -1296,6 +1307,9 @@
             "TRIP": "{count, plural, other {# ta xarid yozuvi bekor qilindi.}}"
           }
         }
+      },
+      "money": {
+        "title": "Pul"
       }
     },
     "approve": {
@@ -1518,6 +1532,57 @@
       "next": "Keyingisi",
       "previous": "Oldingisi",
       "steps": "Xarid safari buyurtmalari"
+    }
+  },
+  "money": {
+    "kinds": {
+      "CASH_GIVEN": "Naqd berildi",
+      "CASH_RETURNED": "Naqd qaytarildi",
+      "PAID_BACK": "Qoplab berildi",
+      "BANK_TRANSFER": "Bank oʻtkazmasi",
+      "CARD_TOPUP": "Kartani toʻldirish",
+      "CARD_RETURNED": "Kartadan qaytarilgan pul"
+    },
+    "tab": {
+      "count": "Naqd pul qoldigʻi",
+      "holds": "Bu buyurtma boʻyicha menejerda maktabning {amount} puli bor.",
+      "owed": "Bu buyurtma boʻyicha maktab menejerga {amount} qarzdor.",
+      "settled": "Hisob-kitob qilingan: bu buyurtma boʻyicha hech kim qarzdor emas.",
+      "rows": "Pul qatorlari",
+      "empty": "Bu buyurtma boʻyicha hali pul yozilmagan.",
+      "date": "Sana",
+      "cancelled": "Bekor qilingan",
+      "documentNo": "Hujjat № {text}",
+      "byLine": "{name}, {date} {time}",
+      "file": "Faylni ochish",
+      "cancelLine": "{name} bekor qildi, {date} {time}. Sabab: {text}"
+    },
+    "record": {
+      "button": "Pul yozish",
+      "confirm": "Yozish",
+      "title": "{count, plural, other {# ta buyurtma}} uchun pul yozish",
+      "result": "{name}: {kind}, {amount}, {count, plural, other {# ta buyurtma}}.",
+      "resultNone": "Kamida bitta buyurtmaga 0 dan katta summa kiriting.",
+      "done": "{count, plural, other {# ta buyurtma}} uchun pul yozildi.",
+      "failedTitle": "Hech narsa yozilmadi: {count, plural, other {# ta buyurtma}} rad etildi.",
+      "kind": "Turi",
+      "date": "Sana",
+      "documentNo": "Hujjat raqami (ixtiyoriy)",
+      "comment": "Izoh",
+      "file": "Fayl (ixtiyoriy)",
+      "chooseFile": "Fayl tanlash",
+      "removeFile": "Olib tashlash",
+      "fileOneManager": "Buyurtmalar bitta menejerniki boʻlganda fayl qoʻshish mumkin.",
+      "rowsTitle": "Buyurtma boʻyicha summa",
+      "loading": "Buyurtmalar yuklanmoqda…",
+      "rowFacts": "Rejadagi naqd {planned} · qoldiq {count}",
+      "amountInvalid": "Butun soʻm kiriting, 0 yoki undan koʻp."
+    },
+    "cancel": {
+      "button": "Amalni bekor qilish",
+      "title": "{total} lik amal {count, plural, other {# ta buyurtma}} boʻyicha bekor qilinsinmi?",
+      "result": "{numbers} buyurtmalari: amal roʻyxatda chizilgan holda qoladi va hech qaysi qoldiqqa kirmaydi. Buni qaytarib boʻlmaydi; soʻng toʻgʻri amalni qayta kiriting.",
+      "done": "Amal {count, plural, other {# ta buyurtma}} boʻyicha bekor qilindi."
     }
   }
 }

@@ -19,6 +19,8 @@ import { OrderStepper } from "@/features/orders/components/order-stepper";
 import { WhatChanged } from "@/features/orders/components/what-changed";
 import { type OrderPage, getOrderPage } from "@/features/orders/queries/order-page";
 import { PurchasesTab } from "@/features/purchasing/components/purchases-tab";
+import { MoneyTab } from "@/features/money/components/money-tab";
+import { getOrderMoney } from "@/features/money/queries/order-money";
 import { wireColours } from "@/features/orders/list-wire";
 import { getFormatters } from "@/i18n/get-formatters";
 import { requireUser } from "@/server/auth/session";
@@ -27,10 +29,10 @@ import { requireUser } from "@/server/auth/session";
 // of 2.9). Another branch's order, another user's Draft, an unknown or a malformed id are all "Not
 // found" (03 rule 1; decided item 6, Look first): getOrderPage() answers null for each. The tabs
 // are Details, Purchases from status Open on (plan of 3.5) and History, kept in the address
-// (`?tab=purchases`, `?tab=history`; decided item 10); Money arrives with 4.3. The action bar shows the moves the server allowed that have a
+// (`?tab=purchases`, `?tab=money`, `?tab=history`; decided item 10); Money from 4.3, as Purchases. The action bar shows the moves the server allowed that have a
 // button, and otherwise who the order is waiting for (decided items 4 and 5, Look first).
 
-type Tab = "details" | "purchases" | "history";
+type Tab = "details" | "purchases" | "money" | "history";
 
 /** The bar's move buttons besides Submit and Approve, in the table's order (06 Allowed moves). */
 const PAGE_MOVES: readonly StatusMoveKind[] = [
@@ -43,7 +45,14 @@ const PAGE_MOVES: readonly StatusMoveKind[] = [
 
 /** The waiting line, or null when the user has an allowed move (decided item 4, Look first). */
 async function waitingLine(order: OrderPage): Promise<string | null> {
-  if (order.actions.length > 0 || order.canRecordPurchase || order.buying.length > 0) return null;
+  if (
+    order.actions.length > 0 ||
+    order.canRecordPurchase ||
+    order.canRecordMoney ||
+    order.buying.length > 0
+  ) {
+    return null;
+  }
   const t = await getTranslations("orders.page.waiting");
   const who = waitingFor(order.status);
   if (who === "PRINCIPAL") {
@@ -75,7 +84,12 @@ export default async function OrderPageScreen({
       ? "history"
       : asked === "purchases" && hasPurchases
         ? "purchases"
-        : "details";
+        : asked === "money" && hasPurchases
+          ? "money"
+          : "details";
+  // The Money tab, from Open on as Purchases (plan of 4.3, decided item 11), read only when shown.
+  const money = tab === "money" ? await getOrderMoney(user.id, order.id) : null;
+  if (tab === "money" && !money) notFound();
 
   const t = await getTranslations("orders.page");
   const tOrders = await getTranslations("orders");
@@ -315,6 +329,7 @@ export default async function OrderPageScreen({
         >
           {tabLink("details")}
           {hasPurchases ? tabLink("purchases") : null}
+          {hasPurchases ? tabLink("money") : null}
           {tabLink("history")}
         </nav>
         <div className="rounded-xl bg-card p-4 sm:p-6">
@@ -323,6 +338,8 @@ export default async function OrderPageScreen({
             details
           ) : tab === "purchases" ? (
             <PurchasesTab order={order} />
+          ) : tab === "money" && money ? (
+            <MoneyTab money={money} />
           ) : (
             <OrderHistory events={order.events} />
           )}
@@ -353,6 +370,7 @@ export default async function OrderPageScreen({
         // Copy as new of a numbered order; a draft is edited in the drafts grid (decided item 11).
         canCopy={order.canCopy && order.status !== "DRAFT" && order.number !== null}
         recordPurchase={order.canRecordPurchase ? `/orders/${order.id}/purchase` : null}
+        canRecordMoney={order.canRecordMoney}
         waitingLine={line}
       />
     </div>

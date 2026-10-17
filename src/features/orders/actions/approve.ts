@@ -311,7 +311,7 @@ export const approveOrders = orderMoveAction<ApproveInput>({
             {
               to: [ownerId],
               type: "CASH_GIVEN",
-              params: { ...params, amount: amount.toString() },
+              params: { ...params, amount: amount.toString(), via: "approval" },
               branchId,
               link,
               at,

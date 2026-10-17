@@ -76,7 +76,13 @@
       "tripOneOwner": "One purchase covers orders of one branch and one owner. Tick only those.",
       "otherProduct": "Pick a subtype of the ordered product. For another product, mark the order Not bought and add a new order.",
       "stockShort": "Not enough in stock to cancel: the items were already issued. Take them back from the department first, or use a write-off.",
-      "cashOneBranch": "Cash can be given to one Manager for one branch at a time. Approve each branch's orders on their own, or set the cash of one branch to 0."
+      "cashOneBranch": "Cash can be given to one Manager for one branch at a time. Approve each branch's orders on their own, or set the cash of one branch to 0.",
+      "aboveCount": "More than the Manager holds for this order. Return at most its cash count.",
+      "aboveOwed": "More than the school owes on this order. Pay back at most what it is owed.",
+      "noAmount": "Type an amount above 0 for at least one order.",
+      "moneyOneBranch": "One action covers one Manager's orders of one branch. Record each branch's orders on their own.",
+      "fileOneManager": "A file can be added only when the orders belong to one Manager.",
+      "closedReopenFirst": "This order is Closed. The Procurement Head reopens it first; then cancel the action."
     },
     "file": {
       "tooLarge": "The file is larger than 10 MB. Choose a smaller file or take the photo again.",
@@ -322,7 +328,7 @@
       "REQUEST_HEAD_APPROVED": "The Procurement Head {actor} approved {count, plural, one {# order} other {# orders}} in {branch}.",
       "REQUEST_PRINCIPAL_APPROVED": "The Principal {actor} approved {count, plural, one {# order} other {# orders}} in {branch}.",
       "REQUEST_FINANCE_APPROVED": "Finance ({actor}) approved {count, plural, one {# order} other {# orders}} in {branch}.",
-      "CASH_GIVEN": "Finance ({actor}) approved {count, plural, one {# order} other {# orders}} in {branch} and gave you {amount} in cash.",
+      "CASH_GIVEN": "{via, select, money {Finance ({actor}) gave you {amount} in cash for {count, plural, one {# order} other {# orders}} in {branch}.} other {Finance ({actor}) approved {count, plural, one {# order} other {# orders}} in {branch} and gave you {amount} in cash.}}",
       "REQUEST_SENT_BACK": "{actor} sent back {count, plural, one {# order} other {# orders}} in {branch} for editing.",
       "REQUEST_REJECTED": "{actor} rejected {count, plural, one {# order} other {# orders}} in {branch}.",
       "REQUEST_SENT_TO_SETTLEMENT": "{actor} sent {count, plural, one {# order} other {# orders}} in {branch} to settlement.",
@@ -335,7 +341,9 @@
       "BRANCH_ROLE_VACANT": "Branch {branch} has no active {role, select, HEAD {Procurement Head} MANAGER {Manager} PRINCIPAL {Principal} FINANCE {Finance user} other {user}}.",
       "MANAGER_RIGHT_SWITCHED": "The Procurement Head switched {state, select, on {on} other {off}} your right: {right, select, CREATE_REQUESTS {Add and submit orders} RECORD_PURCHASES {Record purchases} CANCEL_PURCHASES {Cancel purchase records} CLOSE_ALONE {Close exact-match orders alone} ISSUE_STOCK {Issue stock to departments} RETURN_REVERSE {Take returns and reverse documents} TRANSFER_STOCK {Send transfers to other branches} WRITE_OFF_COUNT {Ask for write-offs and run stock counts} SET_MINIMUMS {Set minimum stock levels} other {?}}.",
       "PRODUCT_SUGGESTED": "New product suggestion from branch {branch}: {name}.",
-      "PRODUCT_SUGGESTION_DECIDED": "Your suggestion “{name}” was {outcome, select, added {added to the catalog} other {declined}}."
+      "PRODUCT_SUGGESTION_DECIDED": "Your suggestion “{name}” was {outcome, select, added {added to the catalog} other {declined}}.",
+      "CASH_RETURNED": "Finance ({actor}) recorded {amount} in cash returned by you for {count, plural, one {# order} other {# orders}} in {branch}.",
+      "CASH_PAID_BACK": "Finance ({actor}) paid you back {amount} for {count, plural, one {# order} other {# orders}} in {branch}."
     }
   },
   "months": {
@@ -1134,7 +1142,8 @@
         "label": "Order sections",
         "details": "Details",
         "history": "History",
-        "purchases": "Purchases"
+        "purchases": "Purchases",
+        "money": "Money"
       },
       "details": {
         "title": "Details",
@@ -1186,7 +1195,9 @@
           "FINISH_ORDER": "Buying finished",
           "MARK_NOT_BOUGHT": "Marked not bought",
           "REOPEN_BUYING": "Buying reopened",
-          "CANCEL_PURCHASE": "Purchase record cancelled"
+          "CANCEL_PURCHASE": "Purchase record cancelled",
+          "RECORD_MONEY": "Money recorded",
+          "CANCEL_MONEY": "Money action cancelled"
         },
         "approved": {
           "PENDING_HEAD": "Approved at the Head step",
@@ -1296,6 +1307,9 @@
             "TRIP": "{count, plural, one {Cancelled 1 purchase record.} other {Cancelled # purchase records.}}"
           }
         }
+      },
+      "money": {
+        "title": "Money"
       }
     },
     "approve": {
@@ -1518,6 +1532,57 @@
       "next": "Next",
       "previous": "Previous",
       "steps": "Orders of the trip"
+    }
+  },
+  "money": {
+    "kinds": {
+      "CASH_GIVEN": "Cash given",
+      "CASH_RETURNED": "Cash returned",
+      "PAID_BACK": "Paid back",
+      "BANK_TRANSFER": "Bank transfer",
+      "CARD_TOPUP": "Card top-up",
+      "CARD_RETURNED": "Card money returned"
+    },
+    "tab": {
+      "count": "Cash count",
+      "holds": "The Manager holds {amount} of school money for this order.",
+      "owed": "The school owes the Manager {amount} for this order.",
+      "settled": "Settled: nobody owes anything on this order.",
+      "rows": "Money rows",
+      "empty": "No money was recorded on this order yet.",
+      "date": "Date",
+      "cancelled": "Cancelled",
+      "documentNo": "Document no. {text}",
+      "byLine": "By {name}, {date} {time}",
+      "file": "Open file",
+      "cancelLine": "Cancelled by {name}, {date} {time}. Reason: {text}"
+    },
+    "record": {
+      "button": "Record money",
+      "confirm": "Record",
+      "title": "Record money for {count, plural, one {# order} other {# orders}}",
+      "result": "{kind} of {amount} for {count, plural, one {# order} other {# orders}} of {name}.",
+      "resultNone": "Type an amount above 0 for at least one order.",
+      "done": "Money recorded for {count, plural, one {# order} other {# orders}}.",
+      "failedTitle": "Nothing was recorded: {count, plural, one {# order was} other {# orders were}} refused.",
+      "kind": "Kind",
+      "date": "Date",
+      "documentNo": "Document number (optional)",
+      "comment": "Comment",
+      "file": "File (optional)",
+      "chooseFile": "Choose file",
+      "removeFile": "Remove",
+      "fileOneManager": "A file can be added when the orders belong to one Manager.",
+      "rowsTitle": "Amount per order",
+      "loading": "Loading the orders…",
+      "rowFacts": "Planned cash {planned} · count {count}",
+      "amountInvalid": "Type whole so'm, 0 or more."
+    },
+    "cancel": {
+      "button": "Cancel action",
+      "title": "Cancel this action of {total} on {count, plural, one {# order} other {# orders}}?",
+      "result": "Orders {numbers}: the action stays in the list crossed out and is left out of every count. This cannot be undone; enter the right action again afterwards.",
+      "done": "The action was cancelled on {count, plural, one {# order} other {# orders}}."
     }
   }
 }

@@ -12,6 +12,8 @@ import { toast } from "@/components/toast";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/components/utils";
 
+import { RecordMoneyButton } from "@/features/money/components/record-money-button";
+
 import { type ApproveOrder, ApproveButton } from "./approve-button";
 import { CopyButton } from "./copy-button";
 import { type MoveKind, MoveButton } from "./move-button";
@@ -36,6 +38,7 @@ export function OrderActionBar({
   number,
   canCopy,
   recordPurchase,
+  canRecordMoney = false,
   waitingLine,
 }: {
   orderId: string;
@@ -51,6 +54,8 @@ export function OrderActionBar({
   canCopy: boolean;
   /** The purchase form's address when the server's `canRecordPurchase` is set (plan of 3.3). */
   recordPurchase: string | null;
+  /** Record money is offered (08 Money ledger; plan of 4.3): the server's `canRecordMoney`. */
+  canRecordMoney?: boolean;
   /** Shown when the user has no allowed move; null otherwise. */
   waitingLine: string | null;
 }) {
@@ -131,7 +136,7 @@ export function OrderActionBar({
           {refused}
         </p>
       ) : null}
-      {approve || recordPurchase || ((moves.length > 0 || canCopy) && number) ? (
+      {approve || recordPurchase || canRecordMoney || ((moves.length > 0 || canCopy) && number) ? (
         <div className="flex flex-wrap gap-3 sm:ml-auto">
           {recordPurchase ? (
             <Link
@@ -141,6 +146,13 @@ export function OrderActionBar({
             >
               {t("recordPurchase")}
             </Link>
+          ) : null}
+          {canRecordMoney ? (
+            <RecordMoneyButton
+              orderIds={[orderId]}
+              onAnswer={(answer) => setRefused(answer?.lines[0]?.line ?? null)}
+              className="max-sm:h-11 max-sm:w-full"
+            />
           ) : null}
           {approve ? (
             <ApproveButton
