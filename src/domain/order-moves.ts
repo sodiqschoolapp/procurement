@@ -47,6 +47,7 @@ export const ORDER_EVENT_TYPES = [
   "SETTLE_CASH",
   "CONFIRM_SETTLEMENT",
   "ACKNOWLEDGE_OVERSPEND",
+  "MOVE_OWNER",
 ] as const;
 export type OrderEventType = (typeof ORDER_EVENT_TYPES)[number];
 
@@ -272,6 +273,27 @@ export const ORDER_MOVES: readonly OrderMove[] = [
     needs: REASON,
   },
 ];
+
+/**
+ * The statuses an order can be moved to another Manager in (03-roles-and-permissions.md rule 7;
+ * plan of 4.10, decided item 1, Look first): from Waiting for Head to Waiting for settlement, Sent
+ * back included. Not a Draft: a never-submitted one is its owner's (one per owner, and a
+ * Head-created one skips the Head step at its first Submit, 03 rule 6). Not Closed, Rejected or
+ * Cancelled: nobody works on them. A write that moves no status, so not a row of ORDER_MOVES.
+ */
+const OWNER_MOVE_STATUSES: readonly RequestStatus[] = [
+  "PENDING_HEAD",
+  "PENDING_PRINCIPAL",
+  "PENDING_FINANCE",
+  "RETURNED",
+  "PURCHASING",
+  "SETTLEMENT",
+];
+
+/** Whether an order of this status can be moved to another Manager (plan of 4.10). */
+export function ownerMoveAllows(status: RequestStatus): boolean {
+  return OWNER_MOVE_STATUSES.includes(status);
+}
 
 /** The facts the machine reads about one order, each read from the database by the caller. */
 export type OrderState = {

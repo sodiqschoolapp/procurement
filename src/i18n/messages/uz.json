@@ -84,7 +84,11 @@
       "fileOneManager": "Fayl faqat buyurtmalar bitta menejerniki boʻlganda qoʻshiladi.",
       "closedReopenFirst": "Bu buyurtma yopilgan. Avval xaridlar rahbari uni qayta ochadi, soʻng amalni bekor qiling.",
       "noteRequired": "Oʻtkazilgan va olingan summa farq qiladi: izoh yozing (yetkazib beruvchi tovar yoki pul qaytarishi kerak).",
-      "noBlock": "Bu buyurtmada bunday toʻlov turi ishlatilmagan, tasdiqlash uchun hech narsa yoʻq."
+      "noBlock": "Bu buyurtmada bunday toʻlov turi ishlatilmagan, tasdiqlash uchun hech narsa yoʻq.",
+      "notBranchManager": "Buyurtmalar filialining faol menejerini tanlang.",
+      "cashNotZero": "Uning naqd pul qoldigʻi 0 emas.",
+      "alreadyOwner": "U allaqachon shu menejerga tegishli.",
+      "movedSince": "Bu buyurtma ushbu yozuvdan keyin boshqa menejerga oʻtkazilgan, shuning uchun uni bekor qilib boʻlmaydi. Moliyachi naqd pul qoldigʻini yangi pul amali bilan tuzatadi."
     },
     "file": {
       "tooLarge": "Fayl 10 MB dan katta. Kichikroq fayl tanlang yoki suratni qaytadan oling.",
@@ -1208,7 +1212,8 @@
           "CANCEL_MONEY": "Pul amali bekor qilindi",
           "SETTLE_CASH": "Naqd pul hisob-kitobi",
           "CONFIRM_SETTLEMENT": "Hisob-kitob tasdigʻi oʻzgartirildi",
-          "ACKNOWLEDGE_OVERSPEND": "Ortiqcha xarajat tasdiqlandi"
+          "ACKNOWLEDGE_OVERSPEND": "Ortiqcha xarajat tasdiqlandi",
+          "MOVE_OWNER": "Boshqa menejerga oʻtkazildi"
         },
         "approved": {
           "PENDING_HEAD": "Rahbar bosqichida tasdiqlandi",
@@ -1223,7 +1228,8 @@
         "at": "{date} {time}",
         "paymentType": "To'lov turi: {from} → {to}",
         "purchase": "{qty} × {price}",
-        "progress": "Xarid: {from} → {to}"
+        "progress": "Xarid: {from} → {to}",
+        "owner": "{from} dan {to} ga"
       },
       "waiting": {
         "HEAD": "Rahbarni kutmoqda.",
@@ -1370,7 +1376,8 @@
         "SEND_BACK_FOR_CORRECTION": "Toʻgʻrilash uchun qaytarish",
         "CLOSE": "Yopish",
         "REOPEN": "Qayta ochish",
-        "ACKNOWLEDGE_OVERSPEND": "Ortiqcha xarajatni tasdiqlash"
+        "ACKNOWLEDGE_OVERSPEND": "Ortiqcha xarajatni tasdiqlash",
+        "MOVE_OWNER": "Boshqa menejerga oʻtkazish"
       },
       "buttonCount": "{label} ({count})",
       "title": {
@@ -1387,7 +1394,8 @@
         "SEND_BACK_FOR_CORRECTION": "{count, plural, other {# ta buyurtmani toʻgʻrilash uchun qaytarasizmi?}}",
         "CLOSE": "{count, plural, other {# ta buyurtma yopilsinmi?}}",
         "REOPEN": "{count, plural, other {# ta buyurtma qayta ochilsinmi?}}",
-        "ACKNOWLEDGE_OVERSPEND": "{count, plural, other {# ta buyurtmaning ortiqcha xarajati tasdiqlansinmi?}}"
+        "ACKNOWLEDGE_OVERSPEND": "{count, plural, other {# ta buyurtmaning ortiqcha xarajati tasdiqlansinmi?}}",
+        "MOVE_OWNER": "{count, plural, one {1 ta buyurtmani boshqa menejerga oʻtkazasizmi?} other {# ta buyurtmani boshqa menejerga oʻtkazasizmi?}}"
       },
       "result": {
         "SEND_BACK": "{count, plural, other {Buyurtmalar}} tuzatish uchun egasiga qaytadi. Egasi va rahbarga xabar boradi. Keyingi yuborishdan so'ng tasdiqlash yana rahbardan boshlanadi.",
@@ -1403,7 +1411,8 @@
         "SEND_BACK_FOR_CORRECTION": "{count, plural, other {Buyurtmalar}} notoʻgʻri yozuvni tuzatish uchun «Ochiq» holatiga qaytadi; hisob-kitob tasdiqlari bekor qilinadi. Egasi va rahbarga xabar boradi.",
         "CLOSE": "{count, plural, other {# ta buyurtma yopiladi}} va boshqa oʻzgarmaydi. Biror buyurtma tayyor boʻlmasa, hech narsa yopilmaydi va oʻsha buyurtmalar koʻrsatiladi. Egasi, rahbar va moliya boʻlimiga xabar boradi.",
         "REOPEN": "{count, plural, other {Buyurtma}} xatoni tuzatish uchun «Ochiq» holatiga qaytadi. Hisob-kitob tasdiqlari va ortiqcha xarajat tasdigʻi bekor qilinadi, moliya boʻlimi qayta hisob-kitob qiladi. Egasi, rahbar va moliya boʻlimiga xabar boradi.",
-        "ACKNOWLEDGE_OVERSPEND": "Shundan soʻng Moliya rejadan yuqori haqiqiy summa bilan buyurtmalarni yopa oladi. Izohingiz har bir buyurtma tarixida saqlanadi, filial Moliyasiga xabar boradi."
+        "ACKNOWLEDGE_OVERSPEND": "Shundan soʻng Moliya rejadan yuqori haqiqiy summa bilan buyurtmalarni yopa oladi. Izohingiz har bir buyurtma tarixida saqlanadi, filial Moliyasiga xabar boradi.",
+        "MOVE_OWNER": "Tanlangan menejer {count, plural, one {bu buyurtmaning} other {bu buyurtmalarning}} egasi boʻladi. Faqat naqd pul qoldigʻi 0 boʻlgan buyurtmalar oʻtkaziladi; oʻtkazish har bir buyurtma tarixida saqlanadi."
       },
       "done": {
         "SEND_BACK": "{count, plural, other {# ta buyurtma qaytarildi.}}",
@@ -1419,7 +1428,8 @@
         "SEND_BACK_FOR_CORRECTION": "{count, plural, other {# ta buyurtma toʻgʻrilash uchun qaytarildi.}}",
         "CLOSE": "{count, plural, other {# ta buyurtma yopildi.}}",
         "REOPEN": "{count, plural, other {# ta buyurtma qayta ochildi.}}",
-        "ACKNOWLEDGE_OVERSPEND": "{count, plural, other {# ta buyurtmaning ortiqcha xarajati tasdiqlandi.}}"
+        "ACKNOWLEDGE_OVERSPEND": "{count, plural, other {# ta buyurtmaning ortiqcha xarajati tasdiqlandi.}}",
+        "MOVE_OWNER": "{count, plural, one {1 ta buyurtma oʻtkazildi.} other {# ta buyurtma oʻtkazildi.}}"
       },
       "failedTitle": "{count, plural, other {Hech narsa saqlanmadi: # ta buyurtma quyida ko'rsatilgan.}}",
       "failedLine": "{number} — {problem}",
@@ -1438,7 +1448,8 @@
         "FINISH_ORDER": "Hali hech narsa olinmagan. «Sotib olinmadi»dan foydalaning.",
         "MARK_NOT_BOUGHT": "Nimadir allaqachon olingan. «Buyurtmani yakunlash»dan foydalaning.",
         "CLOSE": "Yopishga tayyor emas: naqd pul qoldigʻi 0 emas, toʻlov bloki tasdiqlanmagan yoki rahbar ortiqcha xarajatni tasdiqlamagan.",
-        "ACKNOWLEDGE_OVERSPEND": "Hozir ortiqcha xarajat chegarasidan yuqori emas yoki allaqachon tasdiqlangan."
+        "ACKNOWLEDGE_OVERSPEND": "Hozir ortiqcha xarajat chegarasidan yuqori emas yoki allaqachon tasdiqlangan.",
+        "MOVE_OWNER": "Naqd pul qoldigʻi 0 emas yoki buyurtma allaqachon shu menejerga tegishli."
       },
       "closeConfirm": "Barcha mahsulotlar ushbu filial omboriga kelib tushganini tasdiqlayman.",
       "comment": "Izoh"
@@ -1510,7 +1521,13 @@
       "DONE_SHORT": "Bajarildi, toʻliq emas",
       "NOT_BOUGHT": "Sotib olinmadi"
     },
-    "substituted": "Almashtirilgan"
+    "substituted": "Almashtirilgan",
+    "moveOwner": {
+      "manager": "Yangi menejer",
+      "choose": "Menejerni tanlang",
+      "loading": "Yuklanmoqda…",
+      "noManagers": "Bu filialda boshqa faol menejer yoʻq."
+    }
   },
   "purchase": {
     "form": {

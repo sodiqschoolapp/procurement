@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  ownerMoveAllows,
   behindDraftWall,
   ORDER_ACTIONS,
   ORDER_ACTION_MAX,
@@ -646,4 +647,22 @@ describe("behindDraftWall(): a draft is visible to its owner and the Head only (
       false,
     );
   });
+});
+
+describe("ownerMoveAllows (03-roles-and-permissions.md rule 7; plan of 4.10, decided item 1)", () => {
+  const movable: RequestStatus[] = [
+    "PENDING_HEAD",
+    "PENDING_PRINCIPAL",
+    "PENDING_FINANCE",
+    "RETURNED",
+    "PURCHASING",
+    "SETTLEMENT",
+  ];
+
+  it.each(REQUEST_STATUSES.map((status) => [status, movable.includes(status)] as const))(
+    "%s: %s",
+    (status, allowed) => {
+      expect(ownerMoveAllows(status)).toBe(allowed);
+    },
+  );
 });

@@ -93,6 +93,8 @@ export type OrderPageEvent = {
   purchase: { qty: string; unitPrice: string } | null;
   /** The progress a buying action set (plan of 3.5): Finish order, Not bought, Reopen buying. */
   progress: { from: OrderProgress; to: OrderProgress } | null;
+  /** The old and the new owner of a move to another Manager, by name (plan of 4.10). */
+  owner: { from: string; to: string } | null;
   /**
    * The other orders of the same action that this user may see now: never the action's own
    * count, which may cover other branches (decided item 1, Look first).
@@ -394,6 +396,12 @@ async function readPage(db: Executor, actor: Actor, id: string): Promise<OrderPa
       paymentType: sql<OrderPageEvent["paymentType"]>`${orderEvents.payload} -> 'paymentType'`,
       purchase: sql<OrderPageEvent["purchase"]>`${orderEvents.payload} -> 'purchase'`,
       progress: sql<OrderPageEvent["progress"]>`${orderEvents.payload} -> 'progress'`,
+      owner: sql<OrderPageEvent["owner"]>`case when ${orderEvents.payload} ? 'owner' then
+        json_build_object(
+          'from', (select u.full_name from users u
+                   where u.id = (${orderEvents.payload} #>> '{owner,from}')::uuid),
+          'to', (select u.full_name from users u
+                 where u.id = (${orderEvents.payload} #>> '{owner,to}')::uuid)) end`,
       othersSeen: sql<number>`(${othersSeen})`,
     })
     .from(orderEvents)

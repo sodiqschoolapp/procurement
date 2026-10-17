@@ -110,6 +110,14 @@ export const FIELD_ERROR_KINDS = [
   // to confirm.
   "noteRequired",
   "noBlock",
+  // Move orders to another Manager (plan of 4.10): the chosen user is no active Manager of the
+  // orders' branch (decided item 4), an order whose cash count is not 0 (03 rule 7; decided item
+  // 2, Look first) or that the chosen Manager owns already (03 rule 7: "another Manager"); and a
+  // cancel of what was written before the order was moved (decided item 3, Look first).
+  "notBranchManager",
+  "cashNotZero",
+  "alreadyOwner",
+  "movedSince",
 ] as const;
 export type FieldErrorKind = (typeof FIELD_ERROR_KINDS)[number];
 export type FieldMessageKey = `errors.field.${FieldErrorKind}`;

@@ -95,12 +95,39 @@ export async function datedCashRecordsOf(
 ): Promise<Map<string, DatedCashRecord[]>> {
   const byOrder = new Map<string, DatedCashRecord[]>();
   if (orderIds.length === 0) return byOrder;
-  const list = sql.join(
-    orderIds.map((id) => sql`${id}::uuid`),
+  for (const row of await cashRecordRows(executor, sql`p.order_id in (${uuidList(orderIds)})`)) {
+    const list = byOrder.get(row.orderId) ?? [];
+    list.push({ record: row.record, purchasedOn: row.purchasedOn });
+    byOrder.set(row.orderId, list);
+  }
+  return byOrder;
+}
+
+/**
+ * The records of these ids as `cashSpent()` reads them, with each one's order and the moment it
+ * was written: the purchase cancels' guard on a moved order (plan of 4.10, decided item 3).
+ */
+export async function cashRecordsByIds(
+  executor: Executor,
+  purchaseIds: readonly string[],
+): Promise<{ id: string; orderId: string; createdAt: Date; record: CashRecord }[]> {
+  if (purchaseIds.length === 0) return [];
+  return cashRecordRows(executor, sql`p.id in (${uuidList(purchaseIds)})`);
+}
+
+function uuidList(ids: readonly string[]): SQL {
+  return sql.join(
+    ids.map((id) => sql`${id}::uuid`),
     sql`, `,
   );
+}
+
+/** One statement for both readers above: a record's goods by its trip's type, each extra by its own. */
+async function cashRecordRows(executor: Executor, where: SQL) {
   const found = await executor.execute<{
+    id: string;
     order_id: string;
+    created_at: Date | string;
     variant_id: string;
     qty: string;
     unit_price: string;
@@ -109,7 +136,7 @@ export async function datedCashRecordsOf(
     is_cancelled: boolean;
     extras: { amount: string; payment_type: PaymentType }[];
   }>(sql`
-    select p.order_id, p.variant_id, p.qty, p.unit_price, t.payment_type,
+    select p.id, p.order_id, p.created_at, p.variant_id, p.qty, p.unit_price, t.payment_type,
            t.purchased_on::text as purchased_on, p.is_cancelled,
            coalesce(json_agg(json_build_object('amount', e.amount::text,
                                                'payment_type', e.payment_type) order by e.id)
@@ -117,26 +144,24 @@ export async function datedCashRecordsOf(
     from purchases p
     join purchase_trips t on t.id = p.trip_id
     left join purchase_extras e on e.purchase_id = p.id
-    where p.order_id in (${list})
+    where ${where}
     group by p.id, t.payment_type, t.purchased_on
     order by p.order_id, p.created_at, p.id`);
-  for (const row of found.rows) {
-    const list = byOrder.get(row.order_id) ?? [];
-    list.push({
-      record: {
-        variantId: row.variant_id,
-        qty: row.qty,
-        unitPrice: BigInt(row.unit_price),
-        paymentType: row.payment_type,
-        extras: row.extras.map((extra) => ({
-          amount: BigInt(extra.amount),
-          paymentType: extra.payment_type,
-        })),
-        isCancelled: row.is_cancelled,
-      },
-      purchasedOn: row.purchased_on,
-    });
-    byOrder.set(row.order_id, list);
-  }
-  return byOrder;
+  return found.rows.map((row) => ({
+    id: row.id,
+    orderId: row.order_id,
+    createdAt: new Date(row.created_at),
+    purchasedOn: row.purchased_on,
+    record: {
+      variantId: row.variant_id,
+      qty: row.qty,
+      unitPrice: BigInt(row.unit_price),
+      paymentType: row.payment_type,
+      extras: row.extras.map((extra) => ({
+        amount: BigInt(extra.amount),
+        paymentType: extra.payment_type,
+      })),
+      isCancelled: row.is_cancelled,
+    } satisfies CashRecord,
+  }));
 }

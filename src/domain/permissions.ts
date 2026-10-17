@@ -107,6 +107,8 @@ export const PERMISSIONS = {
   "request.acknowledge_overspend": { scope: "branch", roles: HEAD_ONLY },
   // "Reopen a closed request"
   "request.reopen": { scope: "branch", roles: HEAD_ONLY },
+  // "Move orders to another Manager"
+  "request.move_owner": { scope: "branch", roles: HEAD_ONLY },
   // "Issue, return, transfer stock", split by the three rights.
   "stock.issue": { scope: "branch", roles: HEAD_AND_MANAGER, right: "ISSUE_STOCK" },
   "stock.return_reverse": { scope: "branch", roles: HEAD_AND_MANAGER, right: "RETURN_REVERSE" },
