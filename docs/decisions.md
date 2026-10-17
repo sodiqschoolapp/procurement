@@ -1786,6 +1786,29 @@ Choices made during the build:
 - A Manager whose rights are switched off is still offered as the new owner (permission review, Should fix 1, not built): the plan review confirmed any active Manager of the branch (decided item 4), 03 says a switch only takes rights away, and leaving such Managers out would add a rule no spec line names (D44). The Head sees each Manager's switches on the user page.
 - `moveOwnerChoices()` reads the ticked orders with the branch wall and the draft wall in its SQL and answers "Not found" for any of them it cannot see before it asks the permission (permission review, Must fix 1): otherwise a colleague's draft or another branch's order answered "forbidden" where an unknown id answered "Not found".
 
+### 5.1 Stock documents schema (17.10.2026)
+
+The plan's decisions as the plan review of 17.10.2026 confirmed them (correction 1 applied), and those of the build. The Look first items come first.
+
+1. **Look first** (stock rule; data model). A reverse is stored on the original document: `reversed_by`, `reversed_at`, `reverse_reason`, set exactly when the status is REVERSED, the reason not blank; the opposite movements point at the original lines and at the movements they undo. Proposed `/spec-change` of 14-data-model.md, `stock_documents`, third line: `reason, comment, client_key UNIQUE, created_by, decided_by, decided_at, reversed_by, reversed_at, reverse_reason`.
+2. **Look first** (stock rule). Every reversal moves the opposite quantity at the reversed movement's own unit cost (`reversalOf()`), so the value taken out or put in is given back exactly; the rule 09 Stock value gives a cancelled purchase. `MOVEMENT_RULES`' comment points at it (plan review, correction 1).
+3. **Look first** (data model). `reason` is the enum `stock_document_reason` of the two fixed lists, checked by type: direct entry EXISTING_STOCK, GIFT, OTHER; write-off DAMAGED, EXPIRED, LOST, RETURNED_TO_SUPPLIER, LOST_IN_TRANSFER, OTHER; empty otherwise. The comment rules stay in 5.8 and 5.11.
+4. **Look first** (stock rule; constraint added). A movement is reversed at most once: a unique index on `stock_movements.reverses_movement_id` replaces the plain one. The 3.1 constraint test that reversed one movement twice now gives each reversal its own target; what it asserts (a REVERSAL goes either way) is unchanged.
+5. **Look first** (stock rule). The movement's key to its line is (`document_line_id`, `variant_id`); the branch stays free for a transfer's TRANSFER_IN in `to_branch_id`.
+6. One line per subtype per document.
+7. The number is given at the create, from the branch's counter (the sender's for a transfer) in the Tashkent year of the creating moment, not of `doc_date`; a pending write-off is numbered from the start.
+8. Only POSTED and RECEIVED documents are reversed; who may reverse which type is 5.7's and 7.x's (Decided ahead, question 19).
+9. `client_key` is NOT NULL UNIQUE; a document made inside another action gets its key from that action.
+10. `takeNumbers()` is the one writer of `number_counters`; submit's `numbersOf()` calls it with scope ORD.
+11. Lines keep `qty >= 0`; a posted 0 is refused by `stock_movements_qty_delta_check`.
+
+Choices made during the build:
+
+- The reason and the reverse CHECKs wrap their test in `COALESCE(…, false)`: a NULL reason or a NULL `reverse_reason` would otherwise make the CHECK pass.
+- Permission review, Must fix 1: `postLines(tx, { documentId, postedBy })` locks the document and reads its type and branch itself; a status other than POSTED or IN_TRANSIT, or a line that already moved, is `wrong_status`. Must fix 2: the header of `stock-documents.ts` states who makes and reverses each type, which inputs come from the browser, and that an approved write-off or count carries `decided_by` (`createDocument()` takes `decidedBy`). Must fix 3: `lockDocument()` returns type, status, branch, receiving branch and creator, for the caller to authorize before `reverseDocument()` in the same transaction; a transfer is of its sending branch.
+- A database link between a movement's branch and its document's branches is not built (permission review, Should fix 2): the helpers take the branch from the locked document, and a trigger for it is a guard no rule asks for (D44).
+- The same-moment numbering test was run once with the held side's counter write left out and seen to fail (the second side never waited).
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

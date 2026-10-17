@@ -1270,4 +1270,23 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - `cashRecordsByIds()` beside `datedCashRecordsOf()` reads one record's cash effect; use it, not a second SQL.
 - Tests that write after a move advance the clock: `movedSince()` counts a write at the same moment as before the move.
 
-The next task is 5.1.
+## 5.1 Stock documents schema (17.10.2026, pull request #91)
+
+**Built**
+- Migration `0033_stock_documents`: `stock_documents` (enums type, status, reason; number and client_key unique; CHECKs of number prefix, transfer branch, department, reason by type, decided pair, `reversed_*` iff REVERSED; department of its branch by composite key), `stock_document_lines` (one per subtype), `stock_movements` key (`document_line_id`, `variant_id`) and a unique `reverses_movement_id`.
+- Domain `stock-documents.ts`: `documentNumber()` (prefix + `orderNumber()`), `lineMovement()`, `reversalOf()` (opposite quantity at its own cost), `REVERSIBLE_STATUSES`.
+- `takeNumbers()` (`src/server/number-counters.ts`), the one writer of `number_counters`; submit's `numbersOf()` calls it.
+- `src/server/stock-documents.ts`: `createDocument()`, `lockDocument()`, `postLines()` (locks, reads type and branch, posts once), `reverseDocument()`.
+
+**Left out, and the task that brings it**
+- Every form, action and permission: 5.4, 5.6, 5.7, 5.8, 5.11, 7.x. The movement of a count line and of a transfer's receipt: 7.4, 7.2 (they add a case to `lineMovement()`).
+- A database link between a movement's branch and its document's branches: not planned; the helpers set it from the locked document.
+
+**What the next sessions must know**
+- For 5.4 to 7.4: the who-may-do-what of each type is the header of `stock-documents.ts`; a reverse action calls `lockDocument()`, authorizes on its row ("Not found" for another branch), then `reverseDocument()` in the same transaction.
+- For 5.11 and 7.4: approval sets status POSTED with `decided_by`/`decided_at` first, then `postLines()`; a second post is `wrong_status`.
+- For 5.4 and 7.2: a document made inside another action still needs a `client_key` (NOT NULL UNIQUE); derive it from that action.
+- Numbers use the Tashkent year of the creating moment, not `doc_date`.
+- A test that reverses a movement twice now hits `stock_movements_reverses_movement_id_key`.
+
+The next task is 5.2.
