@@ -650,6 +650,7 @@ describe("what the screens are told (08 Overspend guard; Closing 3; D40)", () =>
     expect(await offered(s.head.id, [first, open])).toBe(false);
     expect(await offered(s.finance.id, [first])).toBe(false);
     expect(await offered(s.manager.id, [first])).toBe(false);
+    expect(await offered(s.principal.id, [first])).toBe(false);
   });
 
   it("the order page offers it to the Head on an order above the guard only", async () => {
@@ -659,6 +660,7 @@ describe("what the screens are told (08 Overspend guard; Closing 3; D40)", () =>
     expect((await getOrderPage(s.head.id, over.id))?.canAcknowledgeOverspend).toBe(true);
     expect((await getOrderPage(s.head.id, under.id))?.canAcknowledgeOverspend).toBe(false);
     expect((await getOrderPage(s.finance.id, over.id))?.canAcknowledgeOverspend).toBe(false);
+    expect((await getOrderPage(s.principal.id, over.id))?.canAcknowledgeOverspend).toBe(false);
     expectOk(await acknowledge(s.head.id, [over]));
     expect((await getOrderPage(s.head.id, over.id))?.canAcknowledgeOverspend).toBe(false);
   });
