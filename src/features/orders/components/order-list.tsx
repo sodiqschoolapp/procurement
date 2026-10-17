@@ -27,7 +27,14 @@ import { MoveButton, type StatusMoveKind } from "./move-button";
  * among them: sent-back orders are edited and submitted again in the drafts grid or from their
  * page (05 Drafts 5; plan of 2.11, decided item 9).
  */
-const LIST_MOVES: readonly StatusMoveKind[] = ["SEND_BACK", "REJECT", "CANCEL", "TAKE_BACK"];
+const LIST_MOVES: readonly StatusMoveKind[] = [
+  "SEND_BACK",
+  "REJECT",
+  "CANCEL",
+  "TAKE_BACK",
+  "CLOSE_EXACT",
+  "SEND_TO_SETTLEMENT",
+];
 
 // The group rows of /orders (05-order-request-form.md, Group rows 1 to 3; Ticking and filters;
 // 11-screens-and-ux.md, Order list layout 2 and 4; Rules for a smooth feel 8, 13; plan of 2.8).

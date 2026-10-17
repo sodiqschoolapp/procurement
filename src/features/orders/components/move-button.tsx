@@ -7,11 +7,13 @@ import { useId, useRef, useState } from "react";
 import {
   type MoveAnswer,
   cancelOrdersAction,
+  closeExactOrdersAction,
   finishOrdersAction,
   markNotBoughtAction,
   rejectOrdersAction,
   reopenBuyingAction,
   sendBackOrdersAction,
+  sendToSettlementOrdersAction,
   submitAgainOrdersAction,
   takeBackOrdersAction,
 } from "@/app/(app)/orders/actions";
@@ -37,10 +39,18 @@ import { useFormatters } from "@/i18n/use-formatters";
 // and the caller clears its ticks; a refusal names every order, "Already … by … at …" where the
 // server named who moved it meanwhile (decided item 7). Since 3.5 also the buying actions Finish
 // order and Not bought (one reason) and Reopen buying, which move no status (07 Order progress;
-// plan of 3.5, decided item 13): shown when the server's buyingActions() names them.
+// plan of 3.5, decided item 13): shown when the server's buyingActions() names them. Since 4.4
+// Close of exact matches, whose dialog carries 08 Closing 1's sentence, and Send to settlement.
 
 /** The state machine's moves this button makes. */
-export type StatusMoveKind = "SEND_BACK" | "REJECT" | "CANCEL" | "TAKE_BACK" | "SUBMIT_AGAIN";
+export type StatusMoveKind =
+  | "SEND_BACK"
+  | "REJECT"
+  | "CANCEL"
+  | "TAKE_BACK"
+  | "SUBMIT_AGAIN"
+  | "CLOSE_EXACT"
+  | "SEND_TO_SETTLEMENT";
 export type MoveKind = StatusMoveKind | BuyingAction;
 
 const RUN: Record<MoveKind, (input: unknown) => Promise<MoveAnswer>> = {
@@ -49,6 +59,8 @@ const RUN: Record<MoveKind, (input: unknown) => Promise<MoveAnswer>> = {
   CANCEL: cancelOrdersAction,
   TAKE_BACK: takeBackOrdersAction,
   SUBMIT_AGAIN: submitAgainOrdersAction,
+  CLOSE_EXACT: closeExactOrdersAction,
+  SEND_TO_SETTLEMENT: sendToSettlementOrdersAction,
   FINISH_ORDER: finishOrdersAction,
   MARK_NOT_BOUGHT: markNotBoughtAction,
   REOPEN_BUYING: reopenBuyingAction,
@@ -186,6 +198,11 @@ export function MoveButton({
         }}
         onConfirm={() => void run()}
       >
+        {move === "CLOSE_EXACT" ? (
+          <p data-close-confirm className="mt-4 text-[15px] leading-[22px] font-semibold">
+            {t("closeConfirm")}
+          </p>
+        ) : null}
         {needsReason ? (
           <div className="mt-4 flex flex-col gap-1.5">
             <label htmlFor={reasonId} className="text-sm leading-5 font-semibold">

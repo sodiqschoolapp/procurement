@@ -53,6 +53,7 @@ import { type ListFilters, NO_FILTERS, numberParts } from "../list-filters";
 
 import { recordsOfListed, recordsOfOrders } from "@/features/purchasing/order-records";
 
+import { exactMatchOf } from "../exact-match";
 import { createdByHeadSql, headStepAutoSql, ownerClosesAloneSql } from "../order-facts";
 
 // The order list on /orders (05-order-request-form.md, Group rows; Ticking and filters;
@@ -453,6 +454,11 @@ export type TickedSummary = {
   /** The moves the state machine allows on every ticked order (06 rule 8; decided item 7). */
   actions: OrderAction[];
   /**
+   * How many ticked orders match exactly (08 Exact match; 07 Finishing, "a summary of their
+   * differences"; plan of 4.4, decided item 4): null until a ticked Open order's buying is finished.
+   */
+  exactCount: number | null;
+  /**
    * Copy as new is offered: the user may add drafts in the branch of every ticked order, which is
    * active (05 Ticking and filters; plan of 2.13, decided item 1, Look first). The server asks again.
    */
@@ -508,6 +514,7 @@ export async function tickedSummary(
     totals: ordersTotals([]),
     colours: null,
     actions: [],
+    exactCount: null,
     canCopy: false,
     recordTrip: false,
     canRecordMoney: false,
@@ -547,6 +554,10 @@ export async function tickedSummary(
       db,
       found.map((row) => row.id),
     );
+    const exact = await exactMatchOf(
+      db,
+      found.map((row) => row.id),
+    );
     const seen = new Set(found.map((row) => row.id));
     return {
       count: found.length,
@@ -572,7 +583,13 @@ export async function tickedSummary(
           records: records.get(row.id) ?? [],
         })),
       ),
-      actions: allowedActions(actor, found.map(orderState)),
+      actions: allowedActions(
+        actor,
+        found.map((row) => orderState({ ...row, exactMatch: exact.get(row.id) === true })),
+      ),
+      exactCount: found.some((row) => row.status === "PURCHASING" && row.progress !== "OPEN")
+        ? found.filter((row) => exact.get(row.id) === true).length
+        : null,
       canCopy:
         found.length > 0 &&
         found.every((row) => addsDraftsIn(actor, { id: row.branchId, isActive: row.branchActive })),

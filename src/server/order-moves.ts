@@ -61,8 +61,8 @@ export function orderState(order: LockedOrder): OrderState {
     ownerId: order.ownerId,
     createdByHead: order.createdByHead,
     buyingFinished: order.progress !== "OPEN",
-    // 08 Exact match and close readiness: phases 3 and 4.
-    exactMatch: false,
+    // 08 Exact match: read by the `facts` step of Close (plan of 4.4); close readiness: 4.6.
+    exactMatch: order.exactMatch ?? false,
     ownerClosesAlone: order.ownerClosesAlone,
     readyToClose: false,
   };
@@ -145,6 +145,8 @@ export function orderMoveAction<Input extends MoveActionInput>(options: {
     moves: readonly PlannedMove[],
   ): Promise<ReadonlyMap<string, OrderEventExtra> | void>;
   notify?(context: OrdersContext<Input>, result: OrdersResult): Promise<void>;
+  /** The state machine's facts other tables hold, under the lock (plan of 4.4). */
+  facts?(context: OrdersContext<Input>): Promise<readonly LockedOrder[]>;
 }): OrdersActionDefinition<Input> {
   const { action } = options;
   return defineOrdersAction<Input>({
@@ -154,6 +156,7 @@ export function orderMoveAction<Input extends MoveActionInput>(options: {
     permission: (order) => permissionOf(order.status, action),
     repeatPermission: (fromStatus) => permissionOf(fromStatus, action),
     reason: (input) => (isMoveReason(input.reason) ? moveReason(input.reason) : null),
+    facts: options.facts,
     check: (context) => checkOf(action, context),
     async write(context) {
       const moves = assertMove(context.actor, context.orders.map(orderState), action, {

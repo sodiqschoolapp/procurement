@@ -1065,7 +1065,8 @@
         "count": "{count} ta buyurtma",
         "countOf": "{matching} tadan {count} tasi belgilandi",
         "clear": "Tozalash",
-        "recordPurchase": "Xaridni yozish"
+        "recordPurchase": "Xaridni yozish",
+        "exact": "Farqsiz: {exact} / {count}"
       },
       "filters": {
         "label": "Filtrlar",
@@ -1352,7 +1353,9 @@
         "SUBMIT_AGAIN": "Qayta yuborish",
         "FINISH_ORDER": "Buyurtmani yakunlash",
         "MARK_NOT_BOUGHT": "Sotib olinmadi",
-        "REOPEN_BUYING": "Xaridni qayta ochish"
+        "REOPEN_BUYING": "Xaridni qayta ochish",
+        "CLOSE_EXACT": "Yopish",
+        "SEND_TO_SETTLEMENT": "Hisob-kitobga"
       },
       "buttonCount": "{label} ({count})",
       "title": {
@@ -1363,7 +1366,9 @@
         "SUBMIT_AGAIN": "{count, plural, other {# ta buyurtmani qayta yuborasizmi?}}",
         "FINISH_ORDER": "{count, plural, other {# ta buyurtma xaridini yakunlaysizmi?}}",
         "MARK_NOT_BOUGHT": "{count, plural, other {# ta buyurtmani sotib olinmadi deb belgilaysizmi?}}",
-        "REOPEN_BUYING": "{count, plural, other {# ta buyurtma xaridini qayta ochasizmi?}}"
+        "REOPEN_BUYING": "{count, plural, other {# ta buyurtma xaridini qayta ochasizmi?}}",
+        "CLOSE_EXACT": "{count, plural, other {# ta buyurtma yopilsinmi?}}",
+        "SEND_TO_SETTLEMENT": "{count, plural, other {# ta buyurtma hisob-kitobga yuborilsinmi?}}"
       },
       "result": {
         "SEND_BACK": "{count, plural, other {Buyurtmalar}} tuzatish uchun egasiga qaytadi. Egasi va rahbarga xabar boradi. Keyingi yuborishdan so'ng tasdiqlash yana rahbardan boshlanadi.",
@@ -1373,7 +1378,9 @@
         "SUBMIT_AGAIN": "{count, plural, other {Buyurtmalar}} keyingi tahrir va o'sha raqam bilan yana rahbarga boradi. Avvalgi tasdiqlar endi hisobga olinmaydi.",
         "FINISH_ORDER": "Xarid olingan miqdor bilan yakunlanadi: rejadan kam boʻlsa «Bajarildi, toʻliq emas». Keyingi qadam — yopish yoki hisob-kitob.",
         "MARK_NOT_BOUGHT": "Hech narsa sotib olinmagan. Hisob-kitobda berilgan naqd pul toʻliq qaytariladi.",
-        "REOPEN_BUYING": "Xarid yana ochiladi, yangi xaridlarni yozish mumkin."
+        "REOPEN_BUYING": "Xarid yana ochiladi, yangi xaridlarni yozish mumkin.",
+        "CLOSE_EXACT": "{count, plural, other {# ta buyurtma yopiladi}} va boshqa o'zgarmaydi. Egasi, rahbar va moliya bo'limiga xabar boradi.",
+        "SEND_TO_SETTLEMENT": "{count, plural, other {# ta buyurtma}} hisob-kitob uchun moliya bo'limiga o'tadi. Moliya bo'limiga xabar boradi."
       },
       "done": {
         "SEND_BACK": "{count, plural, other {# ta buyurtma qaytarildi.}}",
@@ -1383,7 +1390,9 @@
         "SUBMIT_AGAIN": "{count, plural, other {# ta buyurtma qayta yuborildi.}}",
         "FINISH_ORDER": "{count, plural, other {# ta buyurtma xaridi yakunlandi.}}",
         "MARK_NOT_BOUGHT": "{count, plural, other {# ta buyurtma sotib olinmadi deb belgilandi.}}",
-        "REOPEN_BUYING": "{count, plural, other {# ta buyurtma xaridi qayta ochildi.}}"
+        "REOPEN_BUYING": "{count, plural, other {# ta buyurtma xaridi qayta ochildi.}}",
+        "CLOSE_EXACT": "{count, plural, other {# ta buyurtma yopildi.}}",
+        "SEND_TO_SETTLEMENT": "{count, plural, other {# ta buyurtma hisob-kitobga yuborildi.}}"
       },
       "failedTitle": "{count, plural, other {Hech narsa saqlanmadi: # ta buyurtma quyida ko'rsatilgan.}}",
       "failedLine": "{number} — {problem}",
@@ -1401,7 +1410,8 @@
       "notReady": {
         "FINISH_ORDER": "Hali hech narsa olinmagan. «Sotib olinmadi»dan foydalaning.",
         "MARK_NOT_BOUGHT": "Nimadir allaqachon olingan. «Buyurtmani yakunlash»dan foydalaning."
-      }
+      },
+      "closeConfirm": "Barcha mahsulotlar ushbu filial omboriga kelib tushganini tasdiqlayman."
     },
     "overdue": "Muddati o'tgan",
     "copy": {

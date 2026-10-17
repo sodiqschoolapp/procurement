@@ -41,6 +41,8 @@ const PAGE_MOVES: readonly StatusMoveKind[] = [
   "TAKE_BACK",
   "SUBMIT_AGAIN",
   "CANCEL",
+  "CLOSE_EXACT",
+  "SEND_TO_SETTLEMENT",
 ];
 
 /** The waiting line, or null when the user has an allowed move (decided item 4, Look first). */

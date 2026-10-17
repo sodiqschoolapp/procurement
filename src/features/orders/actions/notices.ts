@@ -2,7 +2,7 @@ import { and, eq, inArray } from "drizzle-orm";
 
 import { type OrderActionParams, orderActionNotices } from "@/domain/notifications";
 import { now } from "@/server/clock";
-import { branches, users } from "@/server/db/schema";
+import { branches, userBranches, users } from "@/server/db/schema";
 import { notify } from "@/server/notify";
 import type { Transaction } from "@/server/order-action";
 
@@ -54,11 +54,26 @@ export async function ownersAndHeads(
   return [...new Set([...ownerIds, ...heads.map((head) => head.id)])];
 }
 
+/** The active Finance users of a branch (10 Notifications: "Finance users of the branch"). */
+export async function financeOf(tx: Transaction, branchId: string): Promise<string[]> {
+  const rows = await tx
+    .select({ id: userBranches.userId })
+    .from(userBranches)
+    .where(
+      and(
+        eq(userBranches.branchId, branchId),
+        eq(userBranches.userRole, "FINANCE"),
+        eq(userBranches.userIsActive, true),
+      ),
+    );
+  return rows.map((row) => row.id);
+}
+
 /**
  * One notification per branch of the moved orders (10 Notifications: "One action sends one
  * notification to each person told"), to the users `to` names for that branch's orders; never
  * the actor (notify()). Used by Send back, Reject and Submit again (plan of 2.11, decided item 5,
- * Look first).
+ * Look first), Send to settlement and Close (4.4).
  */
 export async function noticePerBranch(
   context: {
@@ -67,8 +82,13 @@ export async function noticePerBranch(
     orders: readonly { branchId: string; ownerId: string }[];
   },
   actionId: string,
-  type: "REQUEST_SUBMITTED" | "REQUEST_SENT_BACK" | "REQUEST_REJECTED",
-  to: (ownerIds: readonly string[]) => Promise<string[]>,
+  type:
+    | "REQUEST_SUBMITTED"
+    | "REQUEST_SENT_BACK"
+    | "REQUEST_REJECTED"
+    | "REQUEST_SENT_TO_SETTLEMENT"
+    | "REQUEST_CLOSED",
+  to: (ownerIds: readonly string[], branchId: string) => Promise<string[]>,
 ): Promise<void> {
   const { tx, userId } = context;
   const at = now();
@@ -78,7 +98,14 @@ export async function noticePerBranch(
       .map((order) => order.ownerId);
     await notify(
       { tx, userId },
-      { to: await to(owners), type, params, branchId, link: actionLink(branchId, actionId), at },
+      {
+        to: await to(owners, branchId),
+        type,
+        params,
+        branchId,
+        link: actionLink(branchId, actionId),
+        at,
+      },
     );
   }
 }

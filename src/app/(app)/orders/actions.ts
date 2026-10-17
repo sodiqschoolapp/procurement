@@ -22,9 +22,11 @@ import {
 } from "@/features/orders/draft-wire";
 import { approveOrders } from "@/features/orders/actions/approve";
 import { cancelOrders } from "@/features/orders/actions/cancel";
+import { closeExactOrders } from "@/features/orders/actions/close-exact";
 import { copyOrdersAsNew } from "@/features/orders/actions/copy-as-new";
 import { rejectOrders } from "@/features/orders/actions/reject";
 import { sendBackOrders } from "@/features/orders/actions/send-back";
+import { sendToSettlementOrders } from "@/features/orders/actions/send-to-settlement";
 import { submitAgainOrders } from "@/features/orders/actions/submit-again";
 import { submitDrafts } from "@/features/orders/actions/submit";
 import { takeBackOrders } from "@/features/orders/actions/take-back";
@@ -74,6 +76,8 @@ const copyAsNew = copyServerAction(copyOrdersAsNew);
 const finish = ordersServerAction(finishOrders);
 const notBought = ordersServerAction(markNotBought);
 const reopen = ordersServerAction(reopenBuying);
+const closeExact = ordersServerAction(closeExactOrders);
+const toSettlement = ordersServerAction(sendToSettlementOrders);
 const cancelRecord = ordersServerAction(cancelPurchase);
 const cancelWholeTrip = ordersServerAction(cancelTrip);
 const recordMoneyRun = ordersServerAction(recordMoney);
@@ -258,6 +262,16 @@ export async function takeBackOrdersAction(input: unknown): Promise<MoveAnswer> 
 /** Submits the ticked sent-back orders again: revision + 1, back to the Head (plan of 2.11). */
 export async function submitAgainOrdersAction(input: unknown): Promise<MoveAnswer> {
   return moveAnswer(submitAgain, input);
+}
+
+/** Closes the ticked finished orders that match exactly (08 Closing 1; plan of 4.4). */
+export async function closeExactOrdersAction(input: unknown): Promise<MoveAnswer> {
+  return moveAnswer(closeExact, input);
+}
+
+/** Sends the ticked finished orders to Finance for settlement (06 Allowed moves; plan of 4.4). */
+export async function sendToSettlementOrdersAction(input: unknown): Promise<MoveAnswer> {
+  return moveAnswer(toSettlement, input);
 }
 
 /** Finishes the buying of the ticked Open orders, with one reason (07 Order progress; plan of 3.5). */

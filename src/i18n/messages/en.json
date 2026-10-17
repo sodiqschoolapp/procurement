@@ -1065,7 +1065,8 @@
         "count": "{count, plural, one {# order} other {# orders}}",
         "countOf": "{count} of {matching} ticked",
         "clear": "Clear",
-        "recordPurchase": "Record purchase"
+        "recordPurchase": "Record purchase",
+        "exact": "{exact} of {count} match exactly"
       },
       "filters": {
         "label": "Filters",
@@ -1352,7 +1353,9 @@
         "SUBMIT_AGAIN": "Submit again",
         "FINISH_ORDER": "Finish order",
         "MARK_NOT_BOUGHT": "Not bought",
-        "REOPEN_BUYING": "Reopen buying"
+        "REOPEN_BUYING": "Reopen buying",
+        "CLOSE_EXACT": "Close",
+        "SEND_TO_SETTLEMENT": "Send to settlement"
       },
       "buttonCount": "{label} ({count})",
       "title": {
@@ -1363,7 +1366,9 @@
         "SUBMIT_AGAIN": "{count, plural, one {Submit 1 order again?} other {Submit # orders again?}}",
         "FINISH_ORDER": "{count, plural, one {Finish the buying of 1 order?} other {Finish the buying of # orders?}}",
         "MARK_NOT_BOUGHT": "{count, plural, one {Mark 1 order not bought?} other {Mark # orders not bought?}}",
-        "REOPEN_BUYING": "{count, plural, one {Reopen the buying of 1 order?} other {Reopen the buying of # orders?}}"
+        "REOPEN_BUYING": "{count, plural, one {Reopen the buying of 1 order?} other {Reopen the buying of # orders?}}",
+        "CLOSE_EXACT": "{count, plural, one {Close 1 order?} other {Close # orders?}}",
+        "SEND_TO_SETTLEMENT": "{count, plural, one {Send 1 order to settlement?} other {Send # orders to settlement?}}"
       },
       "result": {
         "SEND_BACK": "{count, plural, one {It goes} other {They go}} back to the owner for editing. The owner and the Head are told. After the next submit, approval starts again at the Head.",
@@ -1373,7 +1378,9 @@
         "SUBMIT_AGAIN": "{count, plural, one {It goes} other {They go}} to the Head again with the next revision and the same number. Earlier approvals no longer count.",
         "FINISH_ORDER": "Buying stops with what was received: Done, short when less than planned. The next step is closing or settlement.",
         "MARK_NOT_BOUGHT": "Nothing is bought. In settlement any cash given is returned in full.",
-        "REOPEN_BUYING": "{count, plural, one {Its buying is} other {Their buying is}} open again, so more purchases can be recorded."
+        "REOPEN_BUYING": "{count, plural, one {Its buying is} other {Their buying is}} open again, so more purchases can be recorded.",
+        "CLOSE_EXACT": "{count, plural, one {1 order will be Closed} other {# orders will be Closed}} and can no longer change. The owner, the Head and Finance are told.",
+        "SEND_TO_SETTLEMENT": "{count, plural, one {1 order goes} other {# orders go}} to Finance for settlement. Finance is told."
       },
       "done": {
         "SEND_BACK": "{count, plural, one {Sent back 1 order.} other {Sent back # orders.}}",
@@ -1383,7 +1390,9 @@
         "SUBMIT_AGAIN": "{count, plural, one {Submitted 1 order again.} other {Submitted # orders again.}}",
         "FINISH_ORDER": "{count, plural, one {Finished the buying of 1 order.} other {Finished the buying of # orders.}}",
         "MARK_NOT_BOUGHT": "{count, plural, one {Marked 1 order not bought.} other {Marked # orders not bought.}}",
-        "REOPEN_BUYING": "{count, plural, one {Reopened the buying of 1 order.} other {Reopened the buying of # orders.}}"
+        "REOPEN_BUYING": "{count, plural, one {Reopened the buying of 1 order.} other {Reopened the buying of # orders.}}",
+        "CLOSE_EXACT": "{count, plural, one {Closed 1 order.} other {Closed # orders.}}",
+        "SEND_TO_SETTLEMENT": "{count, plural, one {Sent 1 order to settlement.} other {Sent # orders to settlement.}}"
       },
       "failedTitle": "{count, plural, one {Nothing was saved: 1 order is named below.} other {Nothing was saved: # orders are named below.}}",
       "failedLine": "{number} — {problem}",
@@ -1401,7 +1410,8 @@
       "notReady": {
         "FINISH_ORDER": "Nothing is received yet. Use Not bought instead.",
         "MARK_NOT_BOUGHT": "Something is already received. Use Finish order instead."
-      }
+      },
+      "closeConfirm": "I confirm that all items entered the warehouse of this branch."
     },
     "overdue": "Overdue",
     "copy": {
