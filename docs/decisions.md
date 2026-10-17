@@ -1332,6 +1332,26 @@ Choices made during the build:
 - `postMovements()` posts the lines of one document in (branch, subtype) order, so two documents cannot deadlock on balance rows (the reason of decisions 2.4 item 10). Its test proves the order; a test of two opposite documents was dropped, because it passes without the sort.
 - The permission review's should-fix items (branch from the locked record, `createdBy` from the wrapper, the type-to-permission map, `available` shown only for an own branch) are written as the caller's contract in the header of `src/server/stock-ledger.ts`; a check of a reversal's branch and subtype is left to 3.7 and 5.7, as the plan review decided.
 
+### 3.2 Purchases schema and domain (17.10.2026)
+
+The plan's decisions as the plan review of 17.10.2026 confirmed them (corrections 1 and 2 applied). The Look first items come first.
+
+1. **Look first** (branch wall). `purchases.branch_id`, not in the data model, held by composite keys to `purchase_trips (id, branch_id)` and `orders (id, branch_id)`: a record, its trip and its order are of one branch. Proposed `/spec-change` of 14-data-model.md: `purchases            trip_id, order_id, branch_id, variant_id, qty, unit_price, comment,` with `-- branch_id: the trip's and the order's branch, held by two composite keys`.
+2. **Look first** (stock rule). The movement's key to its purchase is (`purchase_id`, `branch_id`, `variant_id`): a receipt or reversal moves only the subtype bought in the trip's branch. `price_history` keeps a plain key (it has no branch).
+3. **Look first** (money rule). Actual quantity counts every live record of the order, whatever subtype; goods are round(qty × price) half up per record, then summed; the functions read records only, never a stored total.
+4. **Look first** (progress). `progressAfterBuying`: Done at the plan or more from any state; Done short stays while 0 < received < planned; Done short left with 0 received becomes Open; Not bought stays while nothing is received and otherwise becomes Open (review correction 1); everything else Open. Finish order needs 0 < received < planned; Not bought needs nothing received.
+5. **Look first** (split). Lacking = max(planned − received, 0); oldest `submitted_at` first, then the lower number by year and counter as numbers (`0999` before `10000`, review correction 2); the rest to the newest even when it lacked nothing; an order given 0 gets no record.
+6. The comment rules of a record stay in code (3.3); the database checks amounts only (spec review of the plan, Should fix 2).
+7. A trip, its extras and its files are append-only; only a record has the cancel fields (Decided ahead, question 3).
+8. The cancel reason must not be blank; its length rule comes with the cancel action of 3.7.
+
+Choices made during the build:
+
+- `Exact` (the decimal.js clone of `order-totals.ts`) is exported and shared with `purchases.ts`, so planned and actual money round alike; `ORDER_PROGRESS` lives in `src/domain/purchases.ts` and the `order_progress` enum reads it (same SQL).
+- `trip_files.file_id` is UNIQUE (the file contract of 0.12); its `FILE_OWNERS` entry comes with 3.3, which first inserts into the table. Until then a trip file is held by no record and only its uploader may download it.
+- The tests of `price_history` name a real purchase in their PURCHASE rows (`tests/helpers/purchases.ts`), since its key exists now; no assertion changed.
+- An UPDATE of `qty` cannot reach `purchases_qty_check`: the cancel-only trigger refuses it first, so the CHECK is tested on insert only.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.
