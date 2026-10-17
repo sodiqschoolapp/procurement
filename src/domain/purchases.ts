@@ -144,6 +144,25 @@ function numberKey(number: string): [number, bigint] {
 }
 
 /**
+ * Orders in the split's order: the oldest submit first, at the same moment the lower order number
+ * (by year and counter as numbers). A trip writes its records in this order too, so "the record
+ * saved last" does not depend on the order the browser sent (plan of 3.4, decided item 4).
+ */
+export function inSplitOrder<Order extends { number: string; submittedAt: Date }>(
+  orders: readonly Order[],
+): Order[] {
+  return orders
+    .map((order) => ({ order, key: numberKey(order.number) }))
+    .sort((a, b) => {
+      const byTime = a.order.submittedAt.getTime() - b.order.submittedAt.getTime();
+      if (byTime !== 0) return byTime;
+      if (a.key[0] !== b.key[0]) return a.key[0] - b.key[0];
+      return a.key[1] < b.key[1] ? -1 : a.key[1] > b.key[1] ? 1 : 0;
+    })
+    .map(({ order }) => order);
+}
+
+/**
  * 07 One trip, many orders: 2. The quantity bought for a group row, split over its orders: the
  * oldest submit first (at the same moment, the lower order number first), each up to what it
  * lacks (planned − received, never below 0), and anything above the group's total to the newest
@@ -156,15 +175,7 @@ export function splitGroupQuantity(
 ): { id: string; qty: string }[] {
   if (orders.length === 0) throw new RangeError("A group row has no orders");
   let left = quantityOf(total);
-  const sorted = orders
-    .map((order) => ({ order, key: numberKey(order.number) }))
-    .sort((a, b) => {
-      const byTime = a.order.submittedAt.getTime() - b.order.submittedAt.getTime();
-      if (byTime !== 0) return byTime;
-      if (a.key[0] !== b.key[0]) return a.key[0] - b.key[0];
-      return a.key[1] < b.key[1] ? -1 : a.key[1] > b.key[1] ? 1 : 0;
-    })
-    .map(({ order }) => order);
+  const sorted = inSplitOrder(orders);
 
   const parts = sorted.map((order) => {
     const lacking = Exact.max(quantityOf(order.plannedQty).minus(receivedOf(order.received)), 0);

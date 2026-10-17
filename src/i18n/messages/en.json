@@ -72,7 +72,8 @@
       "draftExists": "You already have a draft of this item for this department. Change the quantity there.",
       "inPast": "The date is in the past. Pick today or a later day.",
       "inFuture": "The date is in the future. Pick today or an earlier day.",
-      "beforeApproval": "The date is before Finance approved the order. Pick that day or a later one."
+      "beforeApproval": "The date is before Finance approved the order. Pick that day or a later one.",
+      "tripOneOwner": "One purchase covers orders of one branch and one owner. Tick only those."
     },
     "file": {
       "tooLarge": "The file is larger than 10 MB. Choose a smaller file or take the photo again.",

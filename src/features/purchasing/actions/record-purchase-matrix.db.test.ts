@@ -64,13 +64,10 @@ function input(order: { id: string; version: number }) {
     clientKey: randomUUID(),
     orders: [{ id: order.id, version: order.version }],
     purchasedOn: "2031-05-10",
-    qty: "10",
-    unitPrice: "5000",
     paymentType: "CASH",
     supplierId: null,
-    extras: [],
     receiptFileIds: [],
-    comment: null,
+    lines: [{ orderId: order.id, qty: "10", unitPrice: "5000", extras: [], comment: null }],
   };
 }
 

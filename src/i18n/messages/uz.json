@@ -72,7 +72,8 @@
       "draftExists": "Bu boʻlim uchun bu tovarning qoralamasi sizda allaqachon bor. Miqdorini oʻsha yerda oʻzgartiring.",
       "inPast": "Sana oʻtib ketgan. Bugun yoki keyingi kunni tanlang.",
       "inFuture": "Sana kelajakda. Bugun yoki oldingi kunni tanlang.",
-      "beforeApproval": "Sana buyurtma moliya tomonidan tasdiqlanishidan oldin. Shu kunni yoki keyingisini tanlang."
+      "beforeApproval": "Sana buyurtma moliya tomonidan tasdiqlanishidan oldin. Shu kunni yoki keyingisini tanlang.",
+      "tripOneOwner": "Bitta xarid bitta filial va bitta egasining buyurtmalarini qamraydi. Faqat ularni belgilang."
     },
     "file": {
       "tooLarge": "Fayl 10 MB dan katta. Kichikroq fayl tanlang yoki suratni qaytadan oling.",
