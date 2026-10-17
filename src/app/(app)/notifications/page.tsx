@@ -11,6 +11,7 @@ import {
 } from "@/features/notifications/queries/my-notifications";
 import {
   MONEY_PARAMS,
+  PARAM_DEFAULTS,
   NOTIFICATIONS_MAX_PAGE,
   type NotificationParams,
   type SendableType,
@@ -28,16 +29,17 @@ import { MarkAllRead, NotificationList } from "./notification-list";
 // A page number the list cannot have goes to page 1 (spec review of 0.11).
 const pageParam = z.coerce.number().int().min(1).max(NOTIFICATIONS_MAX_PAGE).catch(1);
 
-/** A row's params with each money param shown as money, "650 000 so'm" (plan of 0.11, decision 9). */
+/**
+ * A row's params with each money param shown as money, "650 000 so'm" (plan of 0.11, decision 9),
+ * and a param an earlier task's row lacks at its default (PARAM_DEFAULTS; plan of 4.3, item 7).
+ */
 function shownParams(
   type: SendableType,
   params: NotificationParams,
   money: (amount: bigint) => string,
 ): NotificationParams {
-  const keys = MONEY_PARAMS[type];
-  if (!keys) return params;
-  const shown: Record<string, string | number> = { ...params };
-  for (const key of keys) {
+  const shown: Record<string, string | number> = { ...PARAM_DEFAULTS[type], ...params };
+  for (const key of MONEY_PARAMS[type] ?? []) {
     const value = params[key];
     if (typeof value === "string" && /^[0-9]{1,19}$/.test(value)) shown[key] = money(BigInt(value));
   }

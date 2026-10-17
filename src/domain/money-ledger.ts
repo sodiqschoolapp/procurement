@@ -280,3 +280,47 @@ export function settlementNet(rows: readonly SettlementRow[]): SettlementNet {
   if (net > 0n) return { direction: "TO_MANAGER", amount: net };
   return { direction: "NONE", amount: 0n };
 }
+
+/**
+ * Money can be recorded on an order (08 Money ledger; When Finance approves: "Finance can add more
+ * actions at any time while the orders are Open"; Closing 2 records money in settlement): Open or
+ * Waiting for settlement. An order before Open has no approval yet; a Closed one is settled and
+ * changes only after the Head reopens it (plan of 4.3, decided item 1, Look first). The screen asks
+ * this for its buttons, the action asks it again (review of the plan, correction 1).
+ */
+export function moneyRecordAllows(status: RequestStatus): boolean {
+  return status === "PURCHASING" || status === "SETTLEMENT";
+}
+
+/**
+ * A money action can be cancelled (08 Money ledger: "cancelled whole, with a reason, while none of
+ * its orders is Closed … the Head reopens that order first"): it is not cancelled yet, since the
+ * cancel is one update that is never repeated (Decided ahead, question 3), and none of its orders
+ * is Closed. Asked by the screen and by the action (review of the plan, correction 1).
+ */
+export function moneyCancelAllows(
+  action: { isCancelled: boolean },
+  statuses: readonly RequestStatus[],
+): boolean {
+  return !action.isCancelled && statuses.every((status) => status !== "CLOSED");
+}
+
+/**
+ * The prefilled amount of one order's row in a Money tab action of `kind` (08 Closing 2; edge
+ * cases "Finance gives cash for several orders"; D43; plan of 4.3, decided item 2, Look first):
+ * Cash given is the order's planned cash, whatever was given before; Cash returned is the count
+ * when the Manager holds money, Paid back the count without its minus when he is owed, as
+ * `settlementRows()` prefills them; the three information kinds have no amount in section 8. `null`
+ * is an empty row.
+ */
+export function moneyPrefill(
+  kind: MoneyRowKind,
+  order: { plannedCash: bigint; cashCount: bigint },
+): bigint | null {
+  if (kind === "CASH_GIVEN") return order.plannedCash > 0n ? order.plannedCash : null;
+  if (kind === "CASH_RETURNED" || kind === "PAID_BACK") {
+    const [row] = settlementRows([{ id: "", cashCount: order.cashCount }]);
+    return row?.kind === kind ? row.amount : null;
+  }
+  return null;
+}

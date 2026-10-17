@@ -95,6 +95,16 @@ export const FIELD_ERROR_KINDS = [
   // Cash given at Finance's approval to one Manager for orders of two branches: one cash action
   // per Manager never spans two branches (plan of 4.2, decided item 5, Look first).
   "cashOneBranch",
+  // A money action of the Money tab (plan of 4.3): a row that would cross over (08 Money ledger 3;
+  // decided item 3, Look first), no amount above 0, one Manager's orders in two branches (decided
+  // item 4, Look first), a file with two Managers (decided item 5, Look first), and a cancel with
+  // an order Closed (08 Money ledger: the Head reopens it first).
+  "aboveCount",
+  "aboveOwed",
+  "noAmount",
+  "moneyOneBranch",
+  "fileOneManager",
+  "closedReopenFirst",
 ] as const;
 export type FieldErrorKind = (typeof FIELD_ERROR_KINDS)[number];
 export type FieldMessageKey = `errors.field.${FieldErrorKind}`;

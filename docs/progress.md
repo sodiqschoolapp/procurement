@@ -1131,4 +1131,23 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - The test environment has no DOM: a dialog's interactions are tested in Playwright (`approvals.spec.ts`).
 - `notifications.spec.ts` can fail at 1440 px when run beside `send-back.spec.ts`: every Head is told of a send-back, so its Head's bell shows 2. Seen once in this build; passes alone.
 
-The next task is 4.3.
+## 4.3 Money tab and money actions (17.10.2026, pull request #83)
+
+**Built**
+- Migration `0029_money_actions`: `RECORD_MONEY`, `CANCEL_MONEY` in `order_action_type` and `order_event_type`.
+- Domain (`money-ledger.ts`): `moneyRecordAllows()` (Open, Waiting for settlement), `moneyCancelAllows()`, `moneyPrefill()`.
+- `recordMoney` and `cancelMoney` (`src/features/money/actions/`), orders wrapper, `money.record`; page exports `recordMoneyAction`, `cancelMoneyAction`, `moneyPrefillAction`.
+- `getOrderMoney()` and `moneyPrefillOrders()` (`src/features/money/queries/`), each with its own branch and draft wall; `moneyRowsOf()` (`src/features/money/money-rows.ts`) and `cashRecordsOf()` (`order-records.ts`) feed `orderCashCount()`.
+- The Money tab (`?tab=money`), Record money on the list bar and the order page bar, Cancel per action; `MONEY_FILES` owner; `CASH_RETURNED`, `CASH_PAID_BACK` notices; `CASH_GIVEN` has `via` (`PARAM_DEFAULTS` reads a stored one without it as the approval's).
+- `Failures` of the orders wrapper keeps the `fields` a check or inspect gives with a code.
+
+**Left out, and the task that brings it**
+- Settlement action with mixed rows and the net, confirmations: 4.5. The Head's reopen before a cancel: 4.8.
+
+**What the next sessions must know**
+- For 4.5: count an order with `orderCashCount(moneyRowsOf(), cashRecordsOf())`; prefill with `moneyPrefill()`/`settlementRows()`; a crossing check reads the counts under the orders' lock in the write step and throws `OrdersRefusal("not_ready")` with `fields.amount` (`errors.field.aboveCount`/`aboveOwed`), as `recordMoney` does.
+- For 4.5, 4.6: a check or inspect step may return `fields` with an order's code now; the screen shows them through `moveFailureLines()` and the field key.
+- For 4.8: a cancel on an action with a Closed order answers `wrong_status` with `fields.status = errors.field.closedReopenFirst`; after the reopen the same cancel passes.
+- For 4.9, 6.x: the Money tab's count is `getOrderMoney().count`; do not count again.
+
+The next task is 4.4.

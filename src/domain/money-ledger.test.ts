@@ -11,6 +11,9 @@ import {
   crossingRefusal,
   isExactMatch,
   managerCashBalance,
+  moneyCancelAllows,
+  moneyPrefill,
+  moneyRecordAllows,
   orderCashCount,
   plannedCash,
   plannedCashOf,
@@ -399,5 +402,61 @@ describe("exact match (08 Exact match; decided item 1, Look first)", () => {
     expect(isExactMatch(match({ plan, records, cashCount: orderCashCount([], records) }))).toBe(
       true,
     );
+  });
+});
+
+describe("the Money tab: when money can be recorded or cancelled (08 Money ledger; plan of 4.3, decided item 1, Look first)", () => {
+  it("recorded on Open and Waiting for settlement only", () => {
+    expect(moneyRecordAllows("PURCHASING")).toBe(true);
+    expect(moneyRecordAllows("SETTLEMENT")).toBe(true);
+    for (const status of [
+      "DRAFT",
+      "PENDING_HEAD",
+      "PENDING_PRINCIPAL",
+      "PENDING_FINANCE",
+      "RETURNED",
+      "CLOSED",
+      "REJECTED",
+      "CANCELLED",
+    ] as const) {
+      expect(moneyRecordAllows(status)).toBe(false);
+    }
+  });
+
+  it("cancelled while none of its orders is Closed, and only once (08 Money ledger; Decided ahead, question 3)", () => {
+    expect(moneyCancelAllows({ isCancelled: false }, ["PURCHASING", "SETTLEMENT"])).toBe(true);
+    expect(moneyCancelAllows({ isCancelled: false }, ["PURCHASING", "CLOSED"])).toBe(false);
+    expect(moneyCancelAllows({ isCancelled: true }, ["PURCHASING"])).toBe(false);
+  });
+});
+
+describe('the Money tab\'s prefilled rows (edge cases "Finance gives cash for several orders"; D43; plan of 4.3, decided item 2, Look first)', () => {
+  it("Cash given is the order's planned cash, also when cash was given before; empty for a non-cash order", () => {
+    expect(moneyPrefill("CASH_GIVEN", { plannedCash: 520_000n, cashCount: 520_000n })).toBe(
+      520_000n,
+    );
+    expect(moneyPrefill("CASH_GIVEN", { plannedCash: 0n, cashCount: 0n })).toBeNull();
+  });
+
+  it("Cash returned is the count above 0 (worked example, Cheaper: +50 000); empty at 0 and below", () => {
+    expect(moneyPrefill("CASH_RETURNED", { plannedCash: 520_000n, cashCount: 50_000n })).toBe(
+      50_000n,
+    );
+    expect(moneyPrefill("CASH_RETURNED", { plannedCash: 520_000n, cashCount: 0n })).toBeNull();
+    expect(
+      moneyPrefill("CASH_RETURNED", { plannedCash: 520_000n, cashCount: -30_000n }),
+    ).toBeNull();
+  });
+
+  it("Paid back is the count without its minus below 0 (worked example, Dearer: −30 000); empty at 0 and above", () => {
+    expect(moneyPrefill("PAID_BACK", { plannedCash: 520_000n, cashCount: -30_000n })).toBe(30_000n);
+    expect(moneyPrefill("PAID_BACK", { plannedCash: 520_000n, cashCount: 0n })).toBeNull();
+    expect(moneyPrefill("PAID_BACK", { plannedCash: 520_000n, cashCount: 50_000n })).toBeNull();
+  });
+
+  it("Bank transfer, Card top-up and Card money returned are never prefilled (08 names no amount)", () => {
+    for (const kind of ["BANK_TRANSFER", "CARD_TOPUP", "CARD_RETURNED"] as const) {
+      expect(moneyPrefill(kind, { plannedCash: 520_000n, cashCount: -30_000n })).toBeNull();
+    }
   });
 });

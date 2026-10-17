@@ -17,6 +17,8 @@ import { useFormatters } from "@/i18n/use-formatters";
 
 import { ApproveButton } from "./approve-button";
 import { CopyButton } from "./copy-button";
+import { RecordMoneyButton } from "@/features/money/components/record-money-button";
+
 import { ListActionBar } from "./list-action-bar";
 import { MoveButton, type StatusMoveKind } from "./move-button";
 
@@ -306,6 +308,19 @@ export function OrderList({
                   >
                     {t("bar.recordPurchase")}
                   </Link>
+                ) : null}
+                {summary.canRecordMoney ? (
+                  // Finance's money on the ticked orders (08 Money ledger; plan of 4.3): the
+                  // server's canRecordMoney, asked again on save.
+                  <RecordMoneyButton
+                    orderIds={summary.orders.map((order) => order.id)}
+                    onAnswer={(answer) => {
+                      setFailed(answer);
+                      clear();
+                    }}
+                    size="sm"
+                    className="max-sm:flex-1"
+                  />
                 ) : null}
                 {summary.canCopy ? (
                   <CopyButton

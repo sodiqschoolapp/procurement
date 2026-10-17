@@ -4,6 +4,8 @@ import type { Permission, Target } from "@/domain/permissions";
 import type { Executor } from "@/server/authorize";
 import {
   catalogSuggestions,
+  moneyActions,
+  moneyRows,
   orders,
   productVariants,
   products,
@@ -138,12 +140,36 @@ export const TRIP_FILES: FileOwner = {
   },
 };
 
+/**
+ * A money action's file (08 Money ledger: "an optional file"; task 4.3): seen through `data.view`
+ * on the branch of the action's orders, as its Money tab (plan of 4.3, decided item 6, Look first;
+ * progress 4.1, "its target must cover the branches of the action's rows"). No writer lets an
+ * action span two branches (decided item 4); were it ever to, the file stays held (never free for
+ * another record to take) and only the Head, who sees every branch, may have it (permission review
+ * of 4.3, Should fix 1). A cancelled action keeps its file (decided item 13).
+ */
+export const MONEY_FILES: FileOwner = {
+  name: "money_actions.file_id",
+  async find(executor, fileId) {
+    const rows = await executor
+      .selectDistinct({ branchId: orders.branchId })
+      .from(moneyActions)
+      .innerJoin(moneyRows, eq(moneyRows.moneyActionId, moneyActions.id))
+      .innerJoin(orders, eq(orders.id, moneyRows.orderId))
+      .where(eq(moneyActions.fileId, fileId));
+    if (rows.length === 0) return null;
+    if (rows.length > 1) return { permission: "catalog.manage" };
+    return { permission: "data.view", target: { branchId: rows[0]!.branchId } };
+  },
+};
+
 export const FILE_OWNERS: readonly FileOwner[] = [
   PRODUCT_PHOTOS,
   SUBTYPE_PHOTOS,
   SUGGESTION_PHOTOS,
   ORDER_REFERENCE_PHOTOS,
   TRIP_FILES,
+  MONEY_FILES,
 ];
 
 /** The access of the first record that holds the file, or `null` for a file no record holds. */

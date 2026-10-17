@@ -28,6 +28,7 @@ import {
 } from "@/domain/order-totals";
 import type { PaymentType } from "@/domain/payment-types";
 import { type Actor, decide } from "@/domain/permissions";
+import { moneyRecordAllows } from "@/domain/money-ledger";
 import { type BuyingAction, actualQuantity, buyingActions } from "@/domain/purchases";
 import { type Executor, authorize, authorizeList, branchFilter } from "@/server/authorize";
 import { now } from "@/server/clock";
@@ -463,6 +464,11 @@ export type TickedSummary = {
    */
   recordTrip: boolean;
   /**
+   * Record money is offered (08 Money ledger; plan of 4.3): `money.record` on every ticked order
+   * and every one Open or Waiting for settlement (`moneyRecordAllows()`). The server asks again.
+   */
+  canRecordMoney: boolean;
+  /**
    * The buying actions allowed on every ticked order (07 Order progress: "Finish order" and "Not
    * bought" on ticked orders; plan of 3.5): buyingActions() of src/domain/purchases.ts, which the
    * actions ask again.
@@ -504,6 +510,7 @@ export async function tickedSummary(
     actions: [],
     canCopy: false,
     recordTrip: false,
+    canRecordMoney: false,
     buying: [],
     orders: [],
   };
@@ -581,6 +588,14 @@ export async function tickedSummary(
           (row) =>
             decide("purchase.record", actor, { branchId: row.branchId, ownerId: row.ownerId }) ===
             "allow",
+        ),
+      canRecordMoney:
+        found.length > 0 &&
+        found.every(
+          (row) =>
+            moneyRecordAllows(row.status) &&
+            decide("money.record", actor, { branchId: row.branchId, ownerId: row.ownerId }) ===
+              "allow",
         ),
       buying: buyingActions(
         actor,

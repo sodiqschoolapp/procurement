@@ -35,6 +35,9 @@ import {
   reopenBuying,
 } from "@/features/purchasing/actions/finish-buying";
 import { cancelPurchase, cancelTrip } from "@/features/purchasing/actions/cancel-purchase";
+import { cancelMoney } from "@/features/money/actions/cancel-money";
+import { recordMoney } from "@/features/money/actions/record-money";
+import { moneyPrefillOrders } from "@/features/money/queries/money-prefill";
 import { newestMoves } from "@/features/orders/queries/newest-moves";
 import { submittedNumbers } from "@/features/orders/queries/submitted";
 import { selectAllOnFilter, tickedSummary } from "@/features/orders/queries/order-list";
@@ -45,6 +48,7 @@ import { type DecidedVerb, alreadyDecidedBy } from "@/domain/already-decided";
 import { serverAction } from "@/server/action";
 import { type ActionFailure, type ActionResult, failure } from "@/server/action-result";
 import { getCurrentUser } from "@/server/auth/session";
+import { today } from "@/server/clock";
 import { AuthorizationError } from "@/server/authorize";
 import { copyServerAction } from "@/server/copy-action";
 import { draftsServerAction } from "@/server/drafts-action";
@@ -72,6 +76,8 @@ const notBought = ordersServerAction(markNotBought);
 const reopen = ordersServerAction(reopenBuying);
 const cancelRecord = ordersServerAction(cancelPurchase);
 const cancelWholeTrip = ordersServerAction(cancelTrip);
+const recordMoneyRun = ordersServerAction(recordMoney);
+const cancelMoneyRun = ordersServerAction(cancelMoney);
 
 /** A query as an answer: a refusal of authorize() or of the input is returned, never thrown. */
 async function asked<T>(read: (userId: string) => Promise<T>): Promise<ActionResult<T>> {
@@ -277,6 +283,48 @@ export async function cancelPurchaseAction(input: unknown): Promise<MoveAnswer> 
 /** Cancels every record of one trip, all or nothing, with a reason (07 Fixing a mistake; 3.7). */
 export async function cancelTripAction(input: unknown): Promise<MoveAnswer> {
   return moveAnswer(cancelWholeTrip, input);
+}
+
+/** Records a money action of one kind on the ticked orders, one per Manager (08; plan of 4.3). */
+export async function recordMoneyAction(input: unknown): Promise<MoveAnswer> {
+  return moveAnswer(recordMoneyRun, input);
+}
+
+/** Cancels a wrong money action whole, with a reason (08 Money ledger; plan of 4.3). */
+export async function cancelMoneyAction(input: unknown): Promise<MoveAnswer> {
+  return moveAnswer(cancelMoneyRun, input);
+}
+
+/** One ticked order as the Record money dialog shows it; money as text of whole so'm. */
+export type WireMoneyOrder = {
+  id: string;
+  version: number;
+  number: string;
+  status: string;
+  branchId: string;
+  ownerId: string;
+  ownerName: string;
+  plannedCash: string;
+  cashCount: string;
+};
+
+/**
+ * The ticked orders the Record money dialog prefills from (plan of 4.3, decided item 2), and
+ * today in Tashkent from the injected clock, the date it starts at (decided item 8).
+ */
+export async function moneyPrefillAction(input: {
+  ids: string[];
+}): Promise<ActionResult<{ today: string; orders: WireMoneyOrder[] }>> {
+  return asked(async (userId) => ({
+    today: today(),
+    orders: (await moneyPrefillOrders(userId, Array.isArray(input?.ids) ? input.ids : [])).map(
+      (order) => ({
+        ...order,
+        plannedCash: order.plannedCash.toString(),
+        cashCount: order.cashCount.toString(),
+      }),
+    ),
+  }));
 }
 
 /** What Copy as new answers: each ticked order's draft, and for a merge the quantity after it. */
