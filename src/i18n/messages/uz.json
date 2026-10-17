@@ -1686,6 +1686,22 @@
         "waits": "Rejadan {amount} ({percent}%) ortiq: Xaridlar rahbari tasdigʻini kutmoqda.",
         "acknowledged": "Rejadan {amount} ({percent}%) ortiq: {name} tasdiqladi."
       }
+    },
+    "managers": {
+      "title": "Menejerlardagi pul",
+      "line": "Hozir maktab puli kimda va qachondan beri. Yopilgan buyurtmalar hisobga olinmaydi.",
+      "holds": "Qo'lida",
+      "owed": "Maktab qarzi",
+      "since": "Sanadan",
+      "inactive": "faol emas",
+      "product": "{product}, {subtype}",
+      "orderHolds": "Qo'lida {amount}",
+      "orderOwed": "Maktab qarzi {amount}",
+      "orderSince": "{date} dan",
+      "empty": {
+        "title": "Hech kimda maktab puli yo'q",
+        "line": "Yopilmagan har bir buyurtmaning naqd pul qoldig'i 0."
+      }
     }
   }
 }

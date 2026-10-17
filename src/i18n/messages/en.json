@@ -1686,6 +1686,22 @@
         "waits": "Over the plan by {amount} ({percent}%): waits for the Procurement Head's acknowledgment.",
         "acknowledged": "Over the plan by {amount} ({percent}%): acknowledged by {name}."
       }
+    },
+    "managers": {
+      "title": "Money with managers",
+      "line": "Who holds school money right now, and since when. Closed orders are not counted.",
+      "holds": "Holds",
+      "owed": "Owed",
+      "since": "Since",
+      "inactive": "inactive",
+      "product": "{product}, {subtype}",
+      "orderHolds": "Holds {amount}",
+      "orderOwed": "Owed {amount}",
+      "orderSince": "since {date}",
+      "empty": {
+        "title": "Nobody holds school money",
+        "line": "Every order that is not Closed has a cash count of 0."
+      }
     }
   }
 }
