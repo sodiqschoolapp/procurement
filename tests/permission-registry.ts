@@ -115,6 +115,8 @@ export const SERVER_ACTIONS: Record<string, Entry> = {
   "src/app/(app)/orders/actions.ts#settleCashAction": "request.settle",
   "src/app/(app)/orders/actions.ts#confirmSettlementAction": "request.settle",
   "src/app/(app)/orders/actions.ts#sendBackForCorrectionOrdersAction": "request.settle",
+  // Finance's Close (06 Allowed moves, "Waiting for settlement | Close"; plan of 4.6).
+  "src/app/(app)/orders/actions.ts#closeOrdersAction": "request.settle",
 };
 
 /** Exports of `src/features/<area>/queries/`, as `<file>#<export>`. */

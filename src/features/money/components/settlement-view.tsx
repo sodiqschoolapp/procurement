@@ -35,6 +35,7 @@ import { RecordMoneyButton } from "./record-money-button";
 // receipt", and Send back for correction. One Save writes one settlement action per Manager, all
 // in one transaction; its confirmation names the orders, the Managers and each net. Every figure
 // comes from the server; the server asks every action again. On a phone each order is a card.
+// Close (08 Closing 3; plan of 4.6) acts on every order the screen shows.
 
 type Failed = { title: string; lines: { orderId: string; line: string }[] } | null;
 
@@ -560,6 +561,18 @@ export function SettlementView({ settlement }: { settlement: WireSettlement }) {
           </div>
         </section>
       ) : null}
+
+      {/* 08 Closing 3: Close of every order the screen shows; the server names those not ready. */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:justify-end" data-settle-close>
+        <MoveButton
+          move="CLOSE"
+          variant="default"
+          orders={allOrders.map((order) => ({ id: order.id, number: order.number }))}
+          versionOf={(id) => allOrders.find((order) => order.id === id)?.version ?? 0}
+          onAnswer={setFailed}
+          className="max-sm:h-12 max-sm:w-full"
+        />
+      </div>
 
       <ConfirmDialog
         open={asking}

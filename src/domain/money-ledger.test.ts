@@ -5,6 +5,7 @@ import {
   type MatchOrder,
   type MoneyRow,
   type MoneyRowKind,
+  type SettlementConfirmations,
   actionTotal,
   approvalCashRows,
   blockConfirmed,
@@ -19,6 +20,7 @@ import {
   paidBy,
   plannedCash,
   plannedCashOf,
+  readyToClose,
   settlementAllows,
   settlementBlocks,
   settlementCashRows,
@@ -578,7 +580,12 @@ describe("the transfer note and the confirmations (08 Closing 2; plan of 4.5, de
   });
 
   it("a transfer ticked while it matched is not confirmed once it differs without a note", () => {
-    const stored = { transferConfirmed: true, transferNote: null, cardConfirmed: false };
+    const stored = {
+      transferConfirmed: true,
+      transferNote: null,
+      cardConfirmed: false,
+      overspendAcknowledged: false,
+    };
     expect(blockConfirmed("TRANSFER", transferBlocks(500n, 500n), stored)).toBe(true);
     expect(blockConfirmed("TRANSFER", transferBlocks(600n, 500n), stored)).toBe(false);
     expect(
@@ -599,6 +606,7 @@ describe("the transfer note and the confirmations (08 Closing 2; plan of 4.5, de
         transferConfirmed: true,
         transferNote: null,
         cardConfirmed: true,
+        overspendAcknowledged: false,
       }),
     ).toBe(false);
     const card = {
@@ -611,6 +619,7 @@ describe("the transfer note and the confirmations (08 Closing 2; plan of 4.5, de
         transferConfirmed: false,
         transferNote: null,
         cardConfirmed: true,
+        overspendAcknowledged: false,
       }),
     ).toBe(true);
     expect(
@@ -618,6 +627,7 @@ describe("the transfer note and the confirmations (08 Closing 2; plan of 4.5, de
         transferConfirmed: true,
         transferNote: null,
         cardConfirmed: false,
+        overspendAcknowledged: false,
       }),
     ).toBe(false);
   });
@@ -653,5 +663,125 @@ describe("the settlement action's rows (08 Closing 2; Money ledger 1; plan of 4.
     for (const status of ["PURCHASING", "CLOSED", "PENDING_FINANCE", "DRAFT"] as const) {
       expect(settlementAllows(status)).toBe(false);
     }
+  });
+});
+
+describe("readyToClose() (08 Closing 3; Overspend guard; plan of 4.6, decided items 1 and 2, Look first)", () => {
+  const GUARD = { overspend_guard_percent: 10, overspend_guard_min_amount: 100_000n } as const;
+  const NONE: SettlementConfirmations = {
+    transferConfirmed: false,
+    transferNote: null,
+    cardConfirmed: false,
+    overspendAcknowledged: false,
+  };
+  const ready = (
+    plan: OrderPlan,
+    records: CashRecord[],
+    rows: MoneyRow[],
+    stored: SettlementConfirmations | null = null,
+    guard: Parameters<typeof readyToClose>[1] = GUARD,
+  ) =>
+    readyToClose(
+      { plan, records, blocks: settlementBlocks({ plan, records, rows }), stored },
+      guard,
+    );
+  const EXACT = [record("100", 5_000n, [cash(20_000n)])];
+
+  it("a cash count of 0 with no other block is ready", () => {
+    expect(ready(NOTEBOOKS, EXACT, GIVEN)).toBe(true);
+  });
+
+  it("a count above or below 0 is not ready (Worked example, Cheaper and Dearer before settlement)", () => {
+    expect(ready(NOTEBOOKS, [record("100", 4_500n, [cash(20_000n)])], GIVEN)).toBe(false);
+    expect(ready(NOTEBOOKS, [record("100", 5_200n, [cash(30_000n)])], GIVEN)).toBe(false);
+  });
+
+  it("Cheaper after Receive 50 000 and Dearer after Pay 30 000 are ready: under the guard, no Head step", () => {
+    expect(
+      ready(
+        NOTEBOOKS,
+        [record("100", 4_500n, [cash(20_000n)])],
+        [...GIVEN, row("CASH_RETURNED", 50_000n)],
+      ),
+    ).toBe(true);
+    expect(
+      ready(
+        NOTEBOOKS,
+        [record("100", 5_200n, [cash(30_000n)])],
+        [...GIVEN, row("PAID_BACK", 30_000n)],
+      ),
+    ).toBe(true);
+  });
+
+  it("a cancelled settlement row does not count: the count is back above 0", () => {
+    expect(
+      ready(
+        NOTEBOOKS,
+        [record("100", 4_500n, [cash(20_000n)])],
+        [...GIVEN, row("CASH_RETURNED", 50_000n, true)],
+      ),
+    ).toBe(false);
+  });
+
+  const TRANSFER: OrderPlan = { ...NOTEBOOKS, extras: [], paymentType: "TRANSFER" };
+  const BY_TRANSFER = [record("100", 5_000n, [], { paymentType: "TRANSFER" })];
+  it("a used transfer block must be confirmed, with a note while the amounts differ", () => {
+    const matched = [row("BANK_TRANSFER", 500_000n)];
+    expect(ready(TRANSFER, BY_TRANSFER, matched)).toBe(false);
+    expect(ready(TRANSFER, BY_TRANSFER, matched, { ...NONE, transferConfirmed: true })).toBe(true);
+    const differs = [row("BANK_TRANSFER", 520_000n)];
+    expect(ready(TRANSFER, BY_TRANSFER, differs, { ...NONE, transferConfirmed: true })).toBe(false);
+    expect(
+      ready(TRANSFER, BY_TRANSFER, differs, {
+        ...NONE,
+        transferConfirmed: true,
+        transferNote: "Invented refund owed",
+      }),
+    ).toBe(true);
+  });
+
+  const CARD: OrderPlan = { ...NOTEBOOKS, extras: [], paymentType: "CARD" };
+  it("S9: a card order 40 000 under is ready once Confirmed; the leftover stays on the card", () => {
+    const records = [record("100", 4_600n, [], { paymentType: "CARD" })];
+    expect(settlementBlocks({ plan: CARD, records, rows: [] }).card?.difference).toBe(40_000n);
+    expect(ready(CARD, records, [])).toBe(false);
+    expect(ready(CARD, records, [], { ...NONE, transferConfirmed: true })).toBe(false);
+    expect(ready(CARD, records, [], { ...NONE, cardConfirmed: true })).toBe(true);
+  });
+
+  it("an unused block needs nothing: a card confirmation does not stand in for a cash count", () => {
+    expect(ready(NOTEBOOKS, [], GIVEN, { ...NONE, cardConfirmed: true })).toBe(false);
+  });
+
+  // S12: planned 520 000, actual 600 000: 80 000 and about 15% over.
+  const S12 = [record("100", 5_800n, [cash(20_000n)])];
+  const S12_ROWS = [...GIVEN, row("PAID_BACK", 80_000n)];
+  it("S12: above the guard (amount 50 000) the Head's acknowledgment is needed; at 100 000 it is not", () => {
+    const tight = { ...GUARD, overspend_guard_min_amount: 50_000n };
+    expect(ready(NOTEBOOKS, S12, S12_ROWS, null, GUARD)).toBe(true);
+    expect(ready(NOTEBOOKS, S12, S12_ROWS, null, tight)).toBe(false);
+    expect(ready(NOTEBOOKS, S12, S12_ROWS, NONE, tight)).toBe(false);
+    expect(ready(NOTEBOOKS, S12, S12_ROWS, { ...NONE, overspendAcknowledged: true }, tight)).toBe(
+      true,
+    );
+  });
+
+  it("with the guard off no overspend needs the Head", () => {
+    const off = { overspend_guard_percent: "off", overspend_guard_min_amount: 0n } as const;
+    expect(ready(NOTEBOOKS, S12, S12_ROWS, null, off)).toBe(true);
+  });
+
+  it("the worked example's 0142 and 0143 after the one settlement action are ready", () => {
+    const pens: OrderPlan = { quantity: "50", price: 2_000n, extras: [], paymentType: "CASH" };
+    expect(
+      ready(
+        NOTEBOOKS,
+        [record("100", 4_500n, [cash(20_000n)])],
+        [...GIVEN, row("CASH_RETURNED", 50_000n)],
+      ),
+    ).toBe(true);
+    expect(
+      ready(pens, [record("50", 2_600n)], [row("CASH_GIVEN", 100_000n), row("PAID_BACK", 30_000n)]),
+    ).toBe(true);
   });
 });

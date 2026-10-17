@@ -369,7 +369,7 @@ Cash given, cash spent, the difference and the close, per order, with Finance wo
   - **Done when:** Database tests: the two-order settlement of the worked example records one action and leaves both counts at 0; a Pay row above what the order is owed is refused; a transfer mismatch without a note cannot be confirmed.
   - From 4.4: the Manager's "Send to settlement" exists: `sendToSettlementOrders` (`src/features/orders/actions/send-to-settlement.ts`), its buttons on the list bar and the order page, and the `REQUEST_SENT_TO_SETTLEMENT` notice to the branch's Finance users. 4.5 does not build them again; it builds the Finance screen and Send back for correction.
 
-- [ ] **4.6 Finance closes**
+- [x] **4.6 Finance closes**
   - **Read:** `08-money-and-settlement.md` (Closing: 3); `15-quality-and-acceptance.md` (S2, S3, S9, S13, S20); `10-notifications-analytics-reports.md` (Notifications: "Closed, reopened"); `03-roles-and-permissions.md` (Permission matrix: "Settle and close an order with differences"); `06-approval-workflow.md` (Allowed moves: Waiting for settlement, Close row).
   - **Build:** "Close" for Finance on ticked orders: it works when every ticked order has a count of 0, every block confirmed and any required Head acknowledgment; otherwise nothing closes and the screen names the orders that are not ready; one grouped notification to the owners, the Head and Finance.
   - **Done when:** S2, S3, S9, S13 and S20 as tests, and the endings of S10 and S16.
@@ -379,6 +379,7 @@ Cash given, cash spent, the difference and the close, per order, with Finance wo
   - **Read:** `08-money-and-settlement.md` (Overspend guard); `02-assumptions.md` (A10); `10-notifications-analytics-reports.md` (Notifications: "Overspend above the guard"; "Overspend acknowledged"); `15-quality-and-acceptance.md` (S12).
   - **Build:** An order above both the percent and the amount setting notifies the Head, who must click "Acknowledge overspend" with a comment, for one order or several ticked ones, before Finance can close; a 0 in either setting leaves only the other; both 0 means every overspend; off means none; Finance is notified when the Head acknowledges.
   - **Done when:** S12 as a test; with the guard off the same order closes without the Head.
+  - From 4.6: Finance's Close already reads the guard: `readyToClose()` of `src/domain/money-ledger.ts` refuses an order whose `overspend().needsHead` is true until `order_settlements.overspend_ack_at` is set (the Close test writes it directly). 4.7 builds the Head's "Acknowledge overspend" with its comment, its notices and S12 through the button, not a second check.
 
 - [ ] **4.8 Reopen**
   - **Read:** `06-approval-workflow.md` (Allowed moves: Closed row; Rules: 3); `03-roles-and-permissions.md` (Permission matrix: "Reopen a closed order"); `edge-cases/purchasing-and-money.md` ("An error is found after closing"; "Faulty goods go back to the supplier"); `10-notifications-analytics-reports.md` (Notifications: "Closed, reopened").

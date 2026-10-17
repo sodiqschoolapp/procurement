@@ -26,6 +26,7 @@ import { closeExactOrders } from "@/features/orders/actions/close-exact";
 import { copyOrdersAsNew } from "@/features/orders/actions/copy-as-new";
 import { rejectOrders } from "@/features/orders/actions/reject";
 import { sendBackOrders } from "@/features/orders/actions/send-back";
+import { closeOrders } from "@/features/orders/actions/close";
 import { sendBackForCorrectionOrders } from "@/features/orders/actions/send-back-for-correction";
 import { sendToSettlementOrders } from "@/features/orders/actions/send-to-settlement";
 import { submitAgainOrders } from "@/features/orders/actions/submit-again";
@@ -88,6 +89,7 @@ const cancelMoneyRun = ordersServerAction(cancelMoney);
 const settleCashRun = ordersServerAction(settleCash);
 const confirmSettlementRun = ordersServerAction(confirmSettlement);
 const toCorrection = ordersServerAction(sendBackForCorrectionOrders);
+const close = ordersServerAction(closeOrders);
 
 /** A query as an answer: a refusal of authorize() or of the input is returned, never thrown. */
 async function asked<T>(read: (userId: string) => Promise<T>): Promise<ActionResult<T>> {
@@ -328,6 +330,11 @@ export async function confirmSettlementAction(input: unknown): Promise<MoveAnswe
 /** Sends the ticked settlement orders back to Open with a reason (08 Closing 4; plan of 4.5). */
 export async function sendBackForCorrectionOrdersAction(input: unknown): Promise<MoveAnswer> {
   return moveAnswer(toCorrection, input);
+}
+
+/** Finance closes the ticked settlement orders that are all ready (08 Closing 3; plan of 4.6). */
+export async function closeOrdersAction(input: unknown): Promise<MoveAnswer> {
+  return moveAnswer(close, input);
 }
 
 /** One ticked order as the Record money dialog shows it; money as text of whole so'm. */

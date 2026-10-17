@@ -14,10 +14,12 @@ import {
   type PurchaseRecord,
   actualExtra,
   actualGoods,
+  actualTotal,
   isSubstituted,
   liveRecords,
 } from "./purchases";
 import type { RequestStatus } from "./request-status";
+import { type GuardSettings, overspend } from "./overspend";
 
 /** 14 money_rows.kind, in the order of 08's Money ledger table. */
 export const MONEY_ROW_KINDS = [
@@ -453,6 +455,8 @@ export type SettlementConfirmations = {
   transferConfirmed: boolean;
   transferNote: string | null;
   cardConfirmed: boolean;
+  /** The Head's "Acknowledge overspend" is given (14 order_settlements.overspend_ack_at). */
+  overspendAcknowledged: boolean;
 };
 
 /**
@@ -496,4 +500,34 @@ export function settlementCashRows(
     block.rows.push({ orderId: order.id, kind: order.kind, amount });
   }
   return [...blocks.values()];
+}
+
+/**
+ * 08 Closing 3: whether Finance may close the order: its cash count is 0, every block that
+ * `settlementBlocks()` returns for a used payment type is confirmed (`blockConfirmed()`; the Cash
+ * block by its count), and, when the order is above the overspend guard, the Head has acknowledged
+ * it (08 Overspend guard: "before Finance can close it"; plan of 4.6, decided items 1 and 2, Look
+ * first). The actual total is `actualTotal()` of ./purchases.ts over the records, never a second
+ * sum (review of the plan of 4.6, correction 1).
+ */
+export function readyToClose(
+  order: {
+    plan: OrderPlan;
+    records: readonly CashRecord[];
+    blocks: SettlementBlocks;
+    stored: SettlementConfirmations | null;
+  },
+  guard: GuardSettings,
+): boolean {
+  const { plan, records, blocks, stored } = order;
+  if ((blocks.cash?.count ?? 0n) !== 0n) return false;
+  if (blocks.transfer !== null && !blockConfirmed("TRANSFER", blocks, stored)) return false;
+  if (blocks.card !== null && !blockConfirmed("CARD", blocks, stored)) return false;
+  const actual = actualTotal(records.map(asPurchaseRecord));
+  if (
+    overspend(orderTotal(plan), actual, guard).needsHead &&
+    stored?.overspendAcknowledged !== true
+  )
+    return false;
+  return true;
 }

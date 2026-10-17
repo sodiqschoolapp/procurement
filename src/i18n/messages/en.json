@@ -1364,7 +1364,8 @@
         "REOPEN_BUYING": "Reopen buying",
         "CLOSE_EXACT": "Close",
         "SEND_TO_SETTLEMENT": "Send to settlement",
-        "SEND_BACK_FOR_CORRECTION": "Send back for correction"
+        "SEND_BACK_FOR_CORRECTION": "Send back for correction",
+        "CLOSE": "Close"
       },
       "buttonCount": "{label} ({count})",
       "title": {
@@ -1378,7 +1379,8 @@
         "REOPEN_BUYING": "{count, plural, one {Reopen the buying of 1 order?} other {Reopen the buying of # orders?}}",
         "CLOSE_EXACT": "{count, plural, one {Close 1 order?} other {Close # orders?}}",
         "SEND_TO_SETTLEMENT": "{count, plural, one {Send 1 order to settlement?} other {Send # orders to settlement?}}",
-        "SEND_BACK_FOR_CORRECTION": "{count, plural, one {Send 1 order back for correction?} other {Send # orders back for correction?}}"
+        "SEND_BACK_FOR_CORRECTION": "{count, plural, one {Send 1 order back for correction?} other {Send # orders back for correction?}}",
+        "CLOSE": "{count, plural, one {Close 1 order?} other {Close # orders?}}"
       },
       "result": {
         "SEND_BACK": "{count, plural, one {It goes} other {They go}} back to the owner for editing. The owner and the Head are told. After the next submit, approval starts again at the Head.",
@@ -1391,7 +1393,8 @@
         "REOPEN_BUYING": "{count, plural, one {Its buying is} other {Their buying is}} open again, so more purchases can be recorded.",
         "CLOSE_EXACT": "{count, plural, one {1 order will be Closed} other {# orders will be Closed}} and can no longer change. The owner, the Head and Finance are told.",
         "SEND_TO_SETTLEMENT": "{count, plural, one {1 order goes} other {# orders go}} to Finance for settlement. Finance is told.",
-        "SEND_BACK_FOR_CORRECTION": "{count, plural, one {It goes} other {They go}} back to Open, so a wrong record can be corrected; its settlement confirmations are cleared. The owner and the Head are told."
+        "SEND_BACK_FOR_CORRECTION": "{count, plural, one {It goes} other {They go}} back to Open, so a wrong record can be corrected; its settlement confirmations are cleared. The owner and the Head are told.",
+        "CLOSE": "{count, plural, one {1 order will be Closed} other {# orders will be Closed}} and can no longer change. If any order is not ready, nothing closes and the orders are named. The owner, the Head and Finance are told."
       },
       "done": {
         "SEND_BACK": "{count, plural, one {Sent back 1 order.} other {Sent back # orders.}}",
@@ -1404,7 +1407,8 @@
         "REOPEN_BUYING": "{count, plural, one {Reopened the buying of 1 order.} other {Reopened the buying of # orders.}}",
         "CLOSE_EXACT": "{count, plural, one {Closed 1 order.} other {Closed # orders.}}",
         "SEND_TO_SETTLEMENT": "{count, plural, one {Sent 1 order to settlement.} other {Sent # orders to settlement.}}",
-        "SEND_BACK_FOR_CORRECTION": "{count, plural, one {Sent back 1 order for correction.} other {Sent back # orders for correction.}}"
+        "SEND_BACK_FOR_CORRECTION": "{count, plural, one {Sent back 1 order for correction.} other {Sent back # orders for correction.}}",
+        "CLOSE": "{count, plural, one {Closed 1 order.} other {Closed # orders.}}"
       },
       "failedTitle": "{count, plural, one {Nothing was saved: 1 order is named below.} other {Nothing was saved: # orders are named below.}}",
       "failedLine": "{number} — {problem}",
@@ -1421,7 +1425,8 @@
       "noteOf": "Note for {number}",
       "notReady": {
         "FINISH_ORDER": "Nothing is received yet. Use Not bought instead.",
-        "MARK_NOT_BOUGHT": "Something is already received. Use Finish order instead."
+        "MARK_NOT_BOUGHT": "Something is already received. Use Finish order instead.",
+        "CLOSE": "Not ready to close: the cash count is not 0, a payment block is not confirmed, or the Head has not acknowledged the overspend."
       },
       "closeConfirm": "I confirm that all items entered the warehouse of this branch."
     },

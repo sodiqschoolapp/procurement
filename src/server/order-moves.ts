@@ -61,10 +61,11 @@ export function orderState(order: LockedOrder): OrderState {
     ownerId: order.ownerId,
     createdByHead: order.createdByHead,
     buyingFinished: order.progress !== "OPEN",
-    // 08 Exact match: read by the `facts` step of Close (plan of 4.4); close readiness: 4.6.
+    // 08 Exact match: read by the `facts` step of Close (plan of 4.4); 08 Closing 3: read by the
+    // `facts` step of Finance's Close (plan of 4.6). Unread is false, never a guess.
     exactMatch: order.exactMatch ?? false,
     ownerClosesAlone: order.ownerClosesAlone,
-    readyToClose: false,
+    readyToClose: order.readyToClose ?? false,
   };
 }
 
