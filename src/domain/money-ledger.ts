@@ -141,6 +141,99 @@ export function managerCashBalance(
   return { held, owed };
 }
 
+/** A money row with its action's business date, `YYYY-MM-DD` in Tashkent. */
+export type DatedMoneyRow = { row: MoneyRow; occurredOn: string };
+/** A purchase record with its trip's business date, `YYYY-MM-DD` in Tashkent. */
+export type DatedCashRecord = { record: CashRecord; purchasedOn: string };
+
+/**
+ * 08 Money with managers, "the date since when", of one order: the oldest date among its live
+ * movements that change the cash count (a row of a kind that moves it, of an action not
+ * cancelled; a live record whose `cashSpent()` is above 0, by its trip's date). The order's first
+ * cash movement (plan of 4.9, decided item 2, Look first). Null when nothing changes the count.
+ */
+export function cashSince(
+  rows: readonly DatedMoneyRow[],
+  records: readonly DatedCashRecord[],
+): string | null {
+  const dates = [
+    ...rows
+      .filter(({ row }) => !row.isCancelled && COUNT_SIGN[row.kind] !== 0n)
+      .map((each) => each.occurredOn),
+    ...records
+      .filter(({ record }) => !record.isCancelled && cashSpent([record]) > 0n)
+      .map((each) => each.purchasedOn),
+  ];
+  // `YYYY-MM-DD` sorts as text.
+  return dates.reduce<string | null>(
+    (oldest, date) => (oldest && oldest <= date ? oldest : date),
+    null,
+  );
+}
+
+/** One counted order as the page Money with managers reads it. */
+export type ManagerOrder = {
+  id: string;
+  number: string;
+  ownerId: string;
+  ownerName: string;
+  status: RequestStatus;
+  /** `orderCashCount()` of the order. */
+  cashCount: bigint;
+  /** `cashSince()` of the order. */
+  since: string;
+};
+
+/** One owner's block: the balance, its date and the orders behind it. */
+export type ManagerBlock<T extends ManagerOrder> = CashBalance & {
+  ownerId: string;
+  ownerName: string;
+  since: string;
+  orders: T[];
+};
+
+const bySince = (a: { since: string }, b: { since: string }) =>
+  a.since < b.since ? -1 : a.since > b.since ? 1 : 0;
+
+/**
+ * 08 Money with managers: every owner's cash balance, held and owed apart (`managerCashBalance()`),
+ * the oldest since date of the orders behind it, oldest first (ties by name, then id). An order
+ * whose count is 0 is behind no balance. Owners are grouped whatever their role: the Head can own
+ * an order (review of the plan of 4.9, correction 1). Pass only orders of the viewer's branches.
+ */
+export function managerBalances<T extends ManagerOrder>(orders: readonly T[]): ManagerBlock<T>[] {
+  const byOwner = new Map<string, T[]>();
+  for (const order of orders) {
+    if (order.cashCount === 0n) continue;
+    const list = byOwner.get(order.ownerId) ?? [];
+    list.push(order);
+    byOwner.set(order.ownerId, list);
+  }
+  const blocks: ManagerBlock<T>[] = [];
+  for (const [ownerId, list] of byOwner) {
+    const balance = managerCashBalance(list);
+    // Closed is left out by managerCashBalance() only; the query reads no Closed order.
+    const behind = [...list].sort(
+      (a, b) => bySince(a, b) || (a.number < b.number ? -1 : a.number > b.number ? 1 : 0),
+    );
+    const first = behind[0];
+    if (!first) continue;
+    blocks.push({
+      ...balance,
+      ownerId,
+      ownerName: first.ownerName,
+      since: first.since,
+      orders: behind,
+    });
+  }
+  return blocks.sort(
+    (a, b) =>
+      bySince(a, b) ||
+      a.ownerName.localeCompare(b.ownerName) ||
+      (a.ownerId < b.ownerId ? -1 : a.ownerId > b.ownerId ? 1 : 0),
+  );
+}
+
 /** One order as exact match reads it. `cashCount` is `orderCashCount()` of the order. */
 export type MatchOrder = {
   status: RequestStatus;

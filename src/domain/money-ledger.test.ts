@@ -9,9 +9,11 @@ import {
   actionTotal,
   approvalCashRows,
   blockConfirmed,
+  cashSince,
   cashSpent,
   crossingRefusal,
   isExactMatch,
+  managerBalances,
   managerCashBalance,
   moneyCancelAllows,
   moneyPrefill,
@@ -133,6 +135,132 @@ describe("Manager's cash balance (08 Money ledger; decided item 7)", () => {
 
   it("nothing is 0 and 0", () => {
     expect(managerCashBalance([])).toEqual({ held: 0n, owed: 0n });
+  });
+});
+
+describe("the date since when (08 Money with managers; plan of 4.9, decided item 2, Look first)", () => {
+  const dated = (kind: MoneyRowKind, occurredOn: string, isCancelled = false) => ({
+    row: row(kind, 10_000n, isCancelled),
+    occurredOn,
+  });
+  const bought = (purchasedOn: string, value: CashRecord) => ({ record: value, purchasedOn });
+
+  it("the oldest live row that changes the count: Cash given, Cash returned, Paid back", () => {
+    expect(
+      cashSince(
+        [
+          dated("CASH_GIVEN", "2031-05-10"),
+          dated("CASH_RETURNED", "2031-05-07"),
+          dated("PAID_BACK", "2031-05-12"),
+        ],
+        [],
+      ),
+    ).toBe("2031-05-07");
+  });
+
+  it("a cancelled action and a Bank transfer, Card top-up or Card money returned row give no date", () => {
+    expect(
+      cashSince(
+        [
+          dated("CASH_GIVEN", "2031-05-01", true),
+          dated("BANK_TRANSFER", "2031-05-02"),
+          dated("CARD_TOPUP", "2031-05-03"),
+          dated("CARD_RETURNED", "2031-05-04"),
+          dated("CASH_GIVEN", "2031-05-09"),
+        ],
+        [],
+      ),
+    ).toBe("2031-05-09");
+  });
+
+  it("a live record with cash spent counts by its trip's date; bought before cash was given", () => {
+    expect(
+      cashSince([dated("CASH_GIVEN", "2031-05-09")], [bought("2031-05-02", record("1", 100n))]),
+    ).toBe("2031-05-02");
+  });
+
+  it("a cancelled record and a Transfer trip without a Cash extra give no date", () => {
+    expect(
+      cashSince(
+        [dated("CASH_GIVEN", "2031-05-09")],
+        [
+          bought("2031-05-01", record("1", 100n, [], { isCancelled: true })),
+          bought("2031-05-02", record("1", 100n, [], { paymentType: "TRANSFER" })),
+        ],
+      ),
+    ).toBe("2031-05-09");
+  });
+
+  it("a Transfer trip with a Cash delivery changes the count, so its date counts (08 Cash spent)", () => {
+    expect(
+      cashSince(
+        [dated("CASH_GIVEN", "2031-05-09")],
+        [bought("2031-05-03", record("1", 100n, [cash(5_000n)], { paymentType: "TRANSFER" }))],
+      ),
+    ).toBe("2031-05-03");
+  });
+
+  it("nothing that changes the count gives null", () => {
+    expect(cashSince([dated("BANK_TRANSFER", "2031-05-02")], [])).toBeNull();
+    expect(cashSince([], [])).toBeNull();
+  });
+});
+
+describe("money with managers (08 Money with managers; Manager's cash balance)", () => {
+  const order = (
+    id: string,
+    ownerId: string,
+    ownerName: string,
+    cashCount: bigint,
+    since: string,
+    number = id,
+  ) => ({ id, number, ownerId, ownerName, status: "PURCHASING" as const, cashCount, since });
+
+  it("one block per owner with held and owed apart, never netted", () => {
+    const blocks = managerBalances([
+      order("a", "m1", "Zarina", 50_000n, "2031-05-01"),
+      order("b", "m1", "Zarina", -30_000n, "2031-05-02"),
+    ]);
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0]).toMatchObject({ ownerId: "m1", held: 50_000n, owed: 30_000n });
+    expect(blocks[0]!.orders.map((each) => each.id)).toEqual(["a", "b"]);
+  });
+
+  it("an order whose count is 0 is not behind any balance, and an owner with only such orders is not listed", () => {
+    const blocks = managerBalances([
+      order("a", "m1", "Zarina", 0n, "2031-05-01"),
+      order("b", "m2", "Bahrom", 10_000n, "2031-05-05"),
+      order("c", "m2", "Bahrom", 0n, "2031-04-01"),
+    ]);
+    expect(blocks.map((each) => each.ownerId)).toEqual(["m2"]);
+    expect(blocks[0]!.orders.map((each) => each.id)).toEqual(["b"]);
+    // The since date is of the orders behind the balance only: c's older date is not taken.
+    expect(blocks[0]!.since).toBe("2031-05-05");
+  });
+
+  it("oldest first: by the oldest since of each owner's orders, ties by name, then id", () => {
+    const blocks = managerBalances([
+      order("a", "m1", "Zarina", 10_000n, "2031-05-09"),
+      order("b", "m1", "Zarina", 10_000n, "2031-05-03"),
+      order("c", "m2", "Bahrom", 10_000n, "2031-05-04"),
+      order("d", "m3", "Aziz", 10_000n, "2031-05-04"),
+      order("e", "m4", "Aziz", -10_000n, "2031-05-04"),
+    ]);
+    expect(blocks.map((each) => [each.ownerId, each.since])).toEqual([
+      ["m1", "2031-05-03"],
+      ["m3", "2031-05-04"],
+      ["m4", "2031-05-04"],
+      ["m2", "2031-05-04"],
+    ]);
+  });
+
+  it("the orders inside a block: oldest first, then by number", () => {
+    const blocks = managerBalances([
+      order("a", "m1", "Zarina", 10_000n, "2031-05-09", "CHL-31-0003"),
+      order("b", "m1", "Zarina", 10_000n, "2031-05-03", "CHL-31-0009"),
+      order("c", "m1", "Zarina", 10_000n, "2031-05-09", "CHL-31-0001"),
+    ]);
+    expect(blocks[0]!.orders.map((each) => each.id)).toEqual(["b", "c", "a"]);
   });
 });
 
