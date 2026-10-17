@@ -168,6 +168,9 @@ const history = `Tarix ${run}`;
 const stapler = `Stepler ${run}`;
 const tape = `Skotch ${run}`;
 const glue = `Kley ${run}`;
+// 2.7b: the products of the confirmation test, so the 2.7 tests read only their own orders.
+const ruler = `Chizgʻich ${run}`;
+const eraser = `Oʻchirgʻich ${run}`;
 const KEYBOARD_DRAFTS = [
   { product: notebook, department: science, quantity: "4" },
   { product: marker, department: music, quantity: "6" },
@@ -191,6 +194,8 @@ test.beforeAll(async () => {
     await insertProduct(client, stapler, 12000);
     await insertProduct(client, tape, 4000);
     await insertProduct(client, glue, 3000);
+    await insertProduct(client, ruler, 2500);
+    await insertProduct(client, eraser, 1000);
   });
 });
 
@@ -583,6 +588,54 @@ function rowOf(page: Page, product: string): Locator {
   return rows(page).filter({ has: tickOf(page, product) });
 }
 
+/** Submit (N) of the ticked bar, confirmed in its dialog (11 rule 6; plan of 2.7b). */
+async function submitConfirmed(page: Page, count: number): Promise<void> {
+  await page
+    .getByRole("button", { name: t.submit.button.replace("{count}", String(count)) })
+    .click();
+  await page
+    .getByRole("alertdialog")
+    .getByRole("button", { name: t.submit.confirm, exact: true })
+    .click();
+}
+
+test("Done when (2.7b): Submit in the grid asks first with the count; Cancel leaves the drafts Drafts; Confirm submits them (11 rule 6)", async ({
+  page,
+}, info) => {
+  test.skip(info.project.name !== "desktop-1440", "The Done-when is at 1440 px.");
+  const manager = E2E_DRAFT_USERS["desktop-1440"];
+  await freshGrid(manager);
+  await insertCompleteDraft(manager, ruler, "2031-05-01");
+  await insertCompleteDraft(manager, eraser, "2031-05-01");
+  await signIn(page, manager);
+  await page.goto("/orders");
+  await expect(rows(page)).toHaveCount(2);
+  for (const product of [ruler, eraser]) await tickOf(page, product).check();
+
+  const submit = page.getByRole("button", { name: t.submit.button.replace("{count}", "2") });
+  await submit.click();
+  const dialog = page.getByRole("alertdialog");
+  await expect(dialog).toContainText("Submit 2 orders?");
+  await expect(dialog).toContainText("Each gets its own number and goes for approval.");
+  await dialog.getByRole("button", { name: en.common.cancel }).click();
+  await expect(dialog).toHaveCount(0);
+  // Cancel submits nothing: both are still Drafts without a number, still in the grid.
+  for (const product of [ruler, eraser]) {
+    expect(await numbersOf(manager, product)).toEqual([{ number: null, status: "DRAFT" }]);
+  }
+  await expect(rows(page)).toHaveCount(2);
+
+  await submit.click();
+  await dialog.getByRole("button", { name: t.submit.confirm, exact: true }).click();
+  await expect(page.getByText(/Submitted 2 orders: EA-\d{2}-\d{4,}/)).toBeVisible();
+  await expect(rows(page)).toHaveCount(0);
+  for (const product of [ruler, eraser]) {
+    const [order] = await numbersOf(manager, product);
+    expect(order).toMatchObject({ status: "PENDING_HEAD" });
+    expect(order!.number).toMatch(/^EA-\d{2}-\d{4,}$/);
+  }
+});
+
 test("Submit: a past needed-by date stops all, on its cell; then the good drafts get numbers (05 Checks at submit)", async ({
   page,
 }, info) => {
@@ -599,7 +652,7 @@ test("Submit: a past needed-by date stops all, on its cell; then the good drafts
   for (const product of [stapler, glue]) {
     await tickOf(page, product).check();
   }
-  await page.getByRole("button", { name: t.submit.button.replace("{count}", "2") }).click();
+  await submitConfirmed(page, 2);
   // Nothing is submitted: the list on top names the order, the cell carries the message.
   const list = page.getByRole("alert").filter({ hasText: "Nothing was submitted" });
   await expect(list).toContainText(glue);
@@ -612,7 +665,7 @@ test("Submit: a past needed-by date stops all, on its cell; then the good drafts
   // The good two, ticked alone, go to the Head with their numbers.
   await tickOf(page, glue).uncheck();
   await tickOf(page, tape).check();
-  await page.getByRole("button", { name: t.submit.button.replace("{count}", "2") }).click();
+  await submitConfirmed(page, 2);
   await expect(page.getByText(/Submitted 2 orders: EA-\d{2}-\d{4,}/)).toBeVisible();
   await expect(rows(page)).toHaveCount(1);
   await expect(rowOf(page, glue)).toHaveCount(1);
@@ -636,6 +689,11 @@ test("Submit at 375 px: the card's Submit sends the draft, no horizontal page sc
   await tickOf(page, stapler).check();
   expect(await scrollsSideways(page)).toBe(false);
   await page.getByRole("button", { name: t.submit.button.replace("{count}", "1") }).click();
+  // The confirmation fits the phone too (11 rules 6 and 13).
+  const dialog = page.getByRole("alertdialog");
+  await expect(dialog).toContainText("Submit 1 order?");
+  expect(await scrollsSideways(page)).toBe(false);
+  await dialog.getByRole("button", { name: t.submit.confirm, exact: true }).click();
   await expect(page.getByText(/Submitted 1 order: EA-\d{2}-\d{4,}/)).toBeVisible();
   await expect(rows(page)).toHaveCount(0);
   expect(await scrollsSideways(page)).toBe(false);
