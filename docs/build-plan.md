@@ -9,7 +9,7 @@ The whole project as ordered tasks. One task is one Claude Code session and one 
 - **Done when**: a test, or a thing the owner can try by hand. A scenario named S1 to S20 is in `15-quality-and-acceptance.md`.
 - A task that turns out too large is split by the builder into a, b, c in this file, in the task's own pull request; the first part is planned and built, and the split is flagged **Look first** on issue #9. Nothing waits for a confirmation.
 - A task that names an open question uses the owner's answer under "Decided ahead" in `docs/decisions.md`. Where no answer came, the builder takes the most reasonable reading and flags it **Look first** (D20, D26). The owner's reviewer prepares each phase's questions while the phase before it runs.
-- A fix task `<id>b` (for example `1.3b`) is added by the owner when a decision made without the owner is changed on issue #9 and code must change. It is placed first among the open tasks, so the start routine takes it next; its Read line names the decision it changes.
+- A fix task `<id>b` (for example `1.3b`) is added by the owner when a decision made without the owner is changed on issue #9, or an owner's audit finds a gap (D48), and code must change. It is placed first among the open tasks, so the start routine takes it next; its Read line names the decision it changes or comes from.
 - One owner gate stands before task 9.4, where the live system, real data and secrets start: a quoted line that begins with the words "Owner gate." in bold. The start routine starts nothing after it until the owner deletes that line.
 - Tick a task only in `/finish-task`.
 
@@ -272,7 +272,7 @@ From a draft on the branch's order list to fully approved orders, ticked and act
 
 - [ ] **2.7b Confirm before Submit in the drafts grid; the S19 test**
   - **Read:** `11-screens-and-ux.md` (Rules for a smooth feel: 6); `05-order-request-form.md` (Group rows: 1, 4); `15-quality-and-acceptance.md` (S19); `docs/decisions.md` (D48).
-  - **Build:** "Submit" and "Submit again" in the drafts grid ask for confirmation first, saying how many orders they cover, and state the result, as Submit on the order page does (decision 2.9 item 4); Cancel submits nothing. The S19 database test makes three orders of quantity 10, as the scenario does, and asserts the group row's quantity (20, then 30) and that it holds three orders.
+  - **Build:** "Submit" and "Submit again" in the drafts grid ask for confirmation first, saying how many orders they cover, and state the result, as Submit on the order page does (decision 2.9 item 4); Cancel submits nothing. The S19 database test makes three orders of quantity 10, as the scenario does, and asserts the group row's quantity (20, then 30) and that it holds three orders. Its counts of events and numbers then become 3 instead of 30: that follows the scenario and is no weakened test.
   - **Done when:** Playwright: Submit in the grid opens the confirmation with the count; Cancel leaves every draft a Draft; confirming submits them. The S19 test fails if the row sums orders instead of quantities.
   - Added by the owner on 17.10.2026 from the Phase 2 audit (D48), not from a changed decision on issue #9.
 
