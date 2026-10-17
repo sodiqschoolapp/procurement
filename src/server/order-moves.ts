@@ -25,6 +25,7 @@ import {
   type OrdersContext,
   type OrdersInput,
   type OrdersResult,
+  type OrdersWriteContext,
   defineOrdersAction,
 } from "./order-action";
 
@@ -97,7 +98,7 @@ function checkOf<Input extends MoveActionInput>(
 
 /** Writes each order's new status, and its revision where the move raises it. */
 async function writeMoves(
-  context: OrdersContext<MoveActionInput>,
+  context: OrdersWriteContext<MoveActionInput>,
   moves: readonly PlannedMove[],
 ): Promise<void> {
   // One statement per target status and revision step, never one per order (rule 12).
@@ -126,7 +127,8 @@ async function writeMoves(
  * `orders_guard` of migration 0019 need while the order is still DRAFT; review of the plan of
  * 2.7, correction 5); 2.10: Finance's payment type, which `orders_guard` allows only while the
  * order is still PENDING_FINANCE. `afterMove` writes what a move adds after it (2.10:
- * `approved_at`; 4.2: the cash; 2.11: the notes) in the same transaction. Both may return each order's event extras; `headStepAuto` is logged in the Submit event's
+ * `approved_at`; 4.2: the cash, which names `context.actionId`; 2.11: the notes) in the same
+ * transaction. Both may return each order's event extras; `headStepAuto` is logged in the Submit event's
  * payload as `{ "headStepAuto": true }`, "Created by Head" (03 rule 6; review of the plan of 2.4,
  * correction 5).
  */
@@ -135,11 +137,11 @@ export function orderMoveAction<Input extends MoveActionInput>(options: {
   action: OrderAction;
   input: z.ZodType<Input>;
   beforeMove?(
-    context: OrdersContext<Input>,
+    context: OrdersWriteContext<Input>,
     moves: readonly PlannedMove[],
   ): Promise<ReadonlyMap<string, OrderEventExtra> | void>;
   afterMove?(
-    context: OrdersContext<Input>,
+    context: OrdersWriteContext<Input>,
     moves: readonly PlannedMove[],
   ): Promise<ReadonlyMap<string, OrderEventExtra> | void>;
   notify?(context: OrdersContext<Input>, result: OrdersResult): Promise<void>;

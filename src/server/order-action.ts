@@ -35,8 +35,10 @@ import {
 //   check     the status check (a move: the state machine)
 //   inspect   optional: what the check needs from other tables, read under the same lock (plan
 //             of 3.5, decided item 15, Look first); its failures join the check's
+//   action    the order_actions row, before the write, so a row the write adds can name it
+//             (money_actions.order_action_id; plan of 4.2, decided item 8)
 //   write     the change; the wrapper raises every version and sets updated_at
-//   history   one order_actions row and one order_events row per order
+//   history   one order_events row per order
 //   notify    the notifications
 //
 // Every failing order is collected and named with its first code in the order of
@@ -108,6 +110,9 @@ export type OrdersContext<Input> = {
   orders: readonly LockedOrder[];
 };
 
+/** The context of the write: also this action's `order_actions` row, written just before it. */
+export type OrdersWriteContext<Input> = OrdersContext<Input> & { actionId: string };
+
 export type OrdersActionDefinition<Input extends OrdersInput> = {
   /** For the log only. */
   name: string;
@@ -136,7 +141,7 @@ export type OrdersActionDefinition<Input extends OrdersInput> = {
    */
   inspect?(context: OrdersContext<Input>): Promise<readonly OrderFailure[]>;
   /** The change. Returns what each order's event adds (a note, a payload). */
-  write(context: OrdersContext<Input>): Promise<ReadonlyMap<string, OrderEventExtra> | void>;
+  write(context: OrdersWriteContext<Input>): Promise<ReadonlyMap<string, OrderEventExtra> | void>;
   notify?(context: OrdersContext<Input>, result: OrdersResult): Promise<void>;
 };
 
@@ -365,20 +370,16 @@ export async function runOrdersAction<Input extends OrdersInput>(
         locked,
         definition.permission,
       );
-      const context: OrdersContext<Input> = { tx, input, userId, actor, orders: visible };
+      const checking: OrdersContext<Input> = { tx, input, userId, actor, orders: visible };
       if (visible.length > 0) {
-        for (const { orderId, code } of definition.check(context)) failures.add(orderId, code);
-        for (const { orderId, code } of (await definition.inspect?.(context)) ?? []) {
+        for (const { orderId, code } of definition.check(checking)) failures.add(orderId, code);
+        for (const { orderId, code } of (await definition.inspect?.(checking)) ?? []) {
           failures.add(orderId, code);
         }
       }
       failures.throwIfAny(sent);
 
-      const extras = (await definition.write(context)) ?? new Map<string, OrderEventExtra>();
       const at = now();
-      const raised = await raiseVersions(tx, locked, at);
-      const statusOf = new Map(raised.map((row) => [row.id, row.status]));
-
       const [action] = await tx
         .insert(orderActions)
         .values({
@@ -390,6 +391,11 @@ export async function runOrdersAction<Input extends OrdersInput>(
           createdAt: at,
         })
         .returning({ id: orderActions.id });
+      const context: OrdersWriteContext<Input> = { ...checking, actionId: action!.id };
+      const extras = (await definition.write(context)) ?? new Map<string, OrderEventExtra>();
+      const raised = await raiseVersions(tx, locked, at);
+      const statusOf = new Map(raised.map((row) => [row.id, row.status]));
+
       await tx.insert(orderEvents).values(
         locked.map((order) => ({
           orderId: order.id,
