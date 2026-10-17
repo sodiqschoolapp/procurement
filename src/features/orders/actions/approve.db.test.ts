@@ -68,7 +68,11 @@ async function waiting(
   ownerId: string,
   status: RequestStatus,
   count = 1,
-  options: { variantId?: string; paymentType?: "CASH" | "TRANSFER" | "CARD" } = {},
+  options: {
+    variantId?: string;
+    paymentType?: "CASH" | "TRANSFER" | "CARD";
+    plannedQty?: string;
+  } = {},
 ) {
   const made = [];
   for (let at = 0; at < count; at += 1) {
@@ -468,13 +472,19 @@ describe("newestMoves keeps the draft wall (06 Statuses; permission review of 2.
   });
 });
 
-describe("S19 up to the Principal (15 S19; 05 Group rows)", () => {
-  it("the Head approves 20, then 10 more; the Principal approves one row of 30, one event each", async () => {
-    // One Manager submits 10, then 10 more, then (after the Head approved) 10 more (15 S19).
+describe("S19 up to the Principal (15 S19; 05 Group rows 1, 4)", () => {
+  it("the Head approves a row of 20, then 10 more; the Principal approves one row of 30 holding three orders", async () => {
+    // One Manager submits 10 pens, then 10 more, then (after the Head approved the first 20) 10
+    // more (15 S19): three orders of quantity 10, given here, not left to the helper's default.
     const { branch, manager, principal, head } = await scene();
     const paper = await insertItem();
-    const ten = () =>
-      waiting(branch.id, manager.id, "PENDING_HEAD", 10, { variantId: paper.variantId });
+    const ten = async () =>
+      (
+        await waiting(branch.id, manager.id, "PENDING_HEAD", 1, {
+          variantId: paper.variantId,
+          plannedQty: "10.000",
+        })
+      )[0]!;
     const a = await ten();
     const b = await ten();
 
@@ -483,41 +493,44 @@ describe("S19 up to the Principal (15 S19; 05 Group rows)", () => {
       (await listOrderGroups(userId, { ...NO_FILTERS, branch: branch.id })).groups.filter(
         (group) => group.variantId === paper.variantId && group.status === status,
       );
-    // "The Head first sees one row 'Tata pens, 20'".
+    // "The Head first sees one row 'Tata pens, 20'": the quantity, not the count of orders.
     const headRows = await rowOf(head.id, "PENDING_HEAD");
     expect(headRows).toHaveLength(1);
-    expect(headRows[0]!.summary.count).toBe(20);
+    expect(headRows[0]!.summary).toMatchObject({ quantity: "20", count: 2 });
 
     expect(await approve(head.id, ticked(headRows[0]!.orders))).toMatchObject({ ok: true });
+    // "After approving it, the Principal sees 20".
     let rows = await rowOf(principal.id, "PENDING_PRINCIPAL");
     expect(rows).toHaveLength(1);
-    expect(rows[0]!.summary.count).toBe(20);
+    expect(rows[0]!.summary).toMatchObject({ quantity: "20", count: 2 });
 
     const c = await ten();
-    expect(await approve(head.id, ticked(c))).toMatchObject({ ok: true });
+    expect(await approve(head.id, ticked([c]))).toMatchObject({ ok: true });
+    // "One row 'Tata pens, 30' holding three orders".
     rows = await rowOf(principal.id, "PENDING_PRINCIPAL");
     expect(rows).toHaveLength(1);
-    expect(rows[0]!.summary.count).toBe(30);
+    expect(rows[0]!.summary).toMatchObject({ quantity: "30", count: 3 });
 
-    // Ticking the row ticks its 30 orders (Group rows 3); one approval moves them all.
+    // Ticking the row ticks its three orders (Group rows 3); one approval moves them all.
     expect(await approve(principal.id, ticked(rows[0]!.orders))).toMatchObject({ ok: true });
-    const ids = [...a, ...b, ...c].map((order) => order.id);
+    const ids = [a, b, c].map((order) => order.id);
     const states = await statesOf(ids);
     for (const id of ids) expect(states.get(id)!.status).toBe("PENDING_FINANCE");
+    // Each keeps its own history (Group rows 4): one event from the Principal's step each.
     const events = await db
       .select({ orderId: orderEvents.orderId, from: orderEvents.fromStatus })
       .from(orderEvents)
       .where(
         and(inArray(orderEvents.orderId, ids), eq(orderEvents.fromStatus, "PENDING_PRINCIPAL")),
       );
-    expect(events).toHaveLength(30);
-    expect(new Set(events.map((event) => event.orderId)).size).toBe(30);
+    expect(events).toHaveLength(3);
+    expect(new Set(events.map((event) => event.orderId)).size).toBe(3);
     // Each keeps its own number.
     const numbers = await db
       .select({ number: orders.number })
       .from(orders)
       .where(inArray(orders.id, ids));
-    expect(new Set(numbers.map((row) => row.number)).size).toBe(30);
+    expect(new Set(numbers.map((row) => row.number)).size).toBe(3);
   });
 });
 

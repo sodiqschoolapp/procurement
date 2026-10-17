@@ -1440,6 +1440,20 @@ Choices made during the build:
 - `ProgressLabel` lives beside the status labels in `src/components/status-label.tsx` (the one status-label component), not in a purchasing file as the plan said.
 - `insertOrder()` of `tests/helpers/orders.ts` takes `progress` and `finishReason`; `describeTickedWall()` takes `prepare` to set a ticked order's scene before anything is read.
 
+
+### 2.7b Confirm before Submit in the drafts grid; the S19 test (17.10.2026)
+
+The plan's decisions as the plan review of 17.10.2026 confirmed them (corrections 1 and 2 applied). The Look first items come first.
+
+1. **Look first** (a test changed because the scenario reads otherwise; D48). The S19 approve test makes three orders of quantity 10, given explicitly (correction 1), and asserts quantity and count on every row it reads (correction 2): 20/2 for the Head, 20/2 for the Principal, 30/3 after the last approval; events and numbers are 3, not 30. The old test made thirty orders. Seen to fail when the row counts orders instead of summing quantities.
+2. **Look first** (existing e2e tests changed; `11` rule 6). The three grid Submit steps of `drafts.spec.ts` and the Submit again step of `send-back.spec.ts` confirm in the dialog; each asserts what it asserted, and Submit again gains a Cancel step.
+3. New pluralized keys `orders.submit.confirmTitle`, `confirmResult`, `confirm`; Submit again reuses `orders.moves.title/result/button.SUBMIT_AGAIN`, so one move says one thing everywhere; the page's singular `orders.page.bar.submitTitle` stays for the page.
+4. The ids and the move are kept when the dialog opens and exactly those are sent: the count shown is the count sent.
+5. Pending saves are still awaited inside `submit()` after Confirm; the client-key rules of 2.7 item 13 are unchanged.
+6. The dialog closes on any answer and in `finally`; on a refusal the marks, the list on top and the focus on the first failing cell are those of 2.7 (seen in the browser: the focus lands on the failing cell).
+
+Choices made during the build: the Playwright confirmation test uses two products of its own (`ruler`, `eraser`), because the 2.7 tests read every order of their products.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

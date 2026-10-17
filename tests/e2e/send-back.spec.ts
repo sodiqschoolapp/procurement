@@ -112,6 +112,17 @@ async function quantityOf(id: string): Promise<string> {
   });
 }
 
+/** The status and revision of an order, read from the database. */
+async function stateOf(id: string): Promise<{ status: string; revision: number }> {
+  return withDatabase(async (client) => {
+    const { rows } = await client.query<{ status: string; revision: number }>(
+      "select status, revision from orders where id = $1",
+      [id],
+    );
+    return rows[0]!;
+  });
+}
+
 async function signIn(page: Page, user: Person): Promise<void> {
   await page.goto("/login");
   await page.locator("#username").fill(user.username);
@@ -185,7 +196,18 @@ test("S5: send back with a note, 100 → 80, submit again; the Head sees the sam
   await quantity.press("Tab");
   await expect.poll(() => quantityOf(order.id)).toBe("80.000");
   await row.locator("[data-tick] input").check();
-  await page.getByRole("button", { name: t.submit.againButton.replace("{count}", "1") }).click();
+  // Submit again asks first, with the count (11 rule 6); Cancel sends nothing (plan of 2.7b).
+  const again = page.getByRole("button", { name: t.submit.againButton.replace("{count}", "1") });
+  await again.click();
+  const confirmation = page.getByRole("alertdialog");
+  await expect(confirmation).toContainText("1 ta buyurtmani qayta yuborasizmi?");
+  await confirmation.getByRole("button", { name: uz.common.cancel }).click();
+  await expect(confirmation).toHaveCount(0);
+  expect(await stateOf(order.id)).toEqual({ status: "RETURNED", revision: 1 });
+  await again.click();
+  await confirmation
+    .getByRole("button", { name: t.moves.button.SUBMIT_AGAIN, exact: true })
+    .click();
   await expect(page.getByText("1 ta buyurtma qayta yuborildi.")).toBeVisible();
   await page.context().clearCookies();
 

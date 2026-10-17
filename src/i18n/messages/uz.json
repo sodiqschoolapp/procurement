@@ -990,7 +990,10 @@
         "not_ready": "Bu buyurtmani hozircha yuborib boʻlmaydi."
       },
       "failedLine": "{name} — {problem}",
-      "againButton": "Qayta yuborish ({count})"
+      "againButton": "Qayta yuborish ({count})",
+      "confirmTitle": "{count} ta buyurtma yuborilsinmi?",
+      "confirmResult": "{count, plural, one {U raqam oladi va tasdiqlashga ketadi. Shundan keyin faqat qaytarib olinsa yoki qaytarilsa tahrirlanadi.} other {Har biri oʻz raqamini oladi va tasdiqlashga ketadi. Shundan keyin ular faqat qaytarib olinsa yoki qaytarilsa tahrirlanadi.}}",
+      "confirm": "Yuborish"
     },
     "list": {
       "title": "Buyurtmalar ro'yxati",
