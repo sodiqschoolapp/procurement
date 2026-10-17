@@ -34,3 +34,14 @@ describe("orderState() reads exactMatch from the facts step (08 Exact match)", (
     expect(orderState({ ...locked, progress: "OPEN" }).buyingFinished).toBe(false);
   });
 });
+
+describe("orderState() reads readyToClose from the facts step (08 Closing 3)", () => {
+  it("is false when no step read it", () => {
+    expect(orderState({ ...locked, status: "SETTLEMENT" }).readyToClose).toBe(false);
+  });
+
+  it("is what the step read", () => {
+    expect(orderState({ ...locked, readyToClose: true }).readyToClose).toBe(true);
+    expect(orderState({ ...locked, readyToClose: false }).readyToClose).toBe(false);
+  });
+});

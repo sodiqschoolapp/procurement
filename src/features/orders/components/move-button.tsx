@@ -8,6 +8,7 @@ import {
   type MoveAnswer,
   cancelOrdersAction,
   closeExactOrdersAction,
+  closeOrdersAction,
   finishOrdersAction,
   markNotBoughtAction,
   rejectOrdersAction,
@@ -43,6 +44,7 @@ import { useFormatters } from "@/i18n/use-formatters";
 // plan of 3.5, decided item 13): shown when the server's buyingActions() names them. Since 4.4
 // Close of exact matches, whose dialog carries 08 Closing 1's sentence, and Send to settlement.
 // Since 4.5 Finance's Send back for correction, with one reason (06 Allowed moves; 08 Closing 4).
+// Since 4.6 Finance's Close, whose "not ready" line says what readiness needs (08 Closing 3).
 
 /** The state machine's moves this button makes. */
 export type StatusMoveKind =
@@ -53,7 +55,8 @@ export type StatusMoveKind =
   | "SUBMIT_AGAIN"
   | "CLOSE_EXACT"
   | "SEND_TO_SETTLEMENT"
-  | "SEND_BACK_FOR_CORRECTION";
+  | "SEND_BACK_FOR_CORRECTION"
+  | "CLOSE";
 export type MoveKind = StatusMoveKind | BuyingAction;
 
 const RUN: Record<MoveKind, (input: unknown) => Promise<MoveAnswer>> = {
@@ -65,6 +68,7 @@ const RUN: Record<MoveKind, (input: unknown) => Promise<MoveAnswer>> = {
   CLOSE_EXACT: closeExactOrdersAction,
   SEND_TO_SETTLEMENT: sendToSettlementOrdersAction,
   SEND_BACK_FOR_CORRECTION: sendBackForCorrectionOrdersAction,
+  CLOSE: closeOrdersAction,
   FINISH_ORDER: finishOrdersAction,
   MARK_NOT_BOUGHT: markNotBoughtAction,
   REOPEN_BUYING: reopenBuyingAction,
@@ -152,9 +156,11 @@ export function MoveButton({
         (id) => numberOf.get(id) ?? "",
         {
           alreadyDecided: (verb, values) => t(`already.${verb}`, values),
-          // A buying action's "not ready" is what the order has received (decided item 8).
+          // A buying action's "not ready" is what the order has received (decided item 8); Close's
+          // is what readiness needs (08 Closing 3).
           refused: (code) =>
-            code === "not_ready" && (move === "FINISH_ORDER" || move === "MARK_NOT_BOUGHT")
+            code === "not_ready" &&
+            (move === "FINISH_ORDER" || move === "MARK_NOT_BOUGHT" || move === "CLOSE")
               ? t(`notReady.${move}`)
               : t(`refused.${code}`),
           failedLine: (values) => t("failedLine", values),

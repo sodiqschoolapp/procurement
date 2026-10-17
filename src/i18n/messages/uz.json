@@ -1364,7 +1364,8 @@
         "REOPEN_BUYING": "Xaridni qayta ochish",
         "CLOSE_EXACT": "Yopish",
         "SEND_TO_SETTLEMENT": "Hisob-kitobga",
-        "SEND_BACK_FOR_CORRECTION": "Toʻgʻrilash uchun qaytarish"
+        "SEND_BACK_FOR_CORRECTION": "Toʻgʻrilash uchun qaytarish",
+        "CLOSE": "Yopish"
       },
       "buttonCount": "{label} ({count})",
       "title": {
@@ -1378,7 +1379,8 @@
         "REOPEN_BUYING": "{count, plural, other {# ta buyurtma xaridini qayta ochasizmi?}}",
         "CLOSE_EXACT": "{count, plural, other {# ta buyurtma yopilsinmi?}}",
         "SEND_TO_SETTLEMENT": "{count, plural, other {# ta buyurtma hisob-kitobga yuborilsinmi?}}",
-        "SEND_BACK_FOR_CORRECTION": "{count, plural, other {# ta buyurtmani toʻgʻrilash uchun qaytarasizmi?}}"
+        "SEND_BACK_FOR_CORRECTION": "{count, plural, other {# ta buyurtmani toʻgʻrilash uchun qaytarasizmi?}}",
+        "CLOSE": "{count, plural, other {# ta buyurtma yopilsinmi?}}"
       },
       "result": {
         "SEND_BACK": "{count, plural, other {Buyurtmalar}} tuzatish uchun egasiga qaytadi. Egasi va rahbarga xabar boradi. Keyingi yuborishdan so'ng tasdiqlash yana rahbardan boshlanadi.",
@@ -1391,7 +1393,8 @@
         "REOPEN_BUYING": "Xarid yana ochiladi, yangi xaridlarni yozish mumkin.",
         "CLOSE_EXACT": "{count, plural, other {# ta buyurtma yopiladi}} va boshqa o'zgarmaydi. Egasi, rahbar va moliya bo'limiga xabar boradi.",
         "SEND_TO_SETTLEMENT": "{count, plural, other {# ta buyurtma}} hisob-kitob uchun moliya bo'limiga o'tadi. Moliya bo'limiga xabar boradi.",
-        "SEND_BACK_FOR_CORRECTION": "{count, plural, other {Buyurtmalar}} notoʻgʻri yozuvni tuzatish uchun «Ochiq» holatiga qaytadi; hisob-kitob tasdiqlari bekor qilinadi. Egasi va rahbarga xabar boradi."
+        "SEND_BACK_FOR_CORRECTION": "{count, plural, other {Buyurtmalar}} notoʻgʻri yozuvni tuzatish uchun «Ochiq» holatiga qaytadi; hisob-kitob tasdiqlari bekor qilinadi. Egasi va rahbarga xabar boradi.",
+        "CLOSE": "{count, plural, other {# ta buyurtma yopiladi}} va boshqa o'zgarmaydi. Biror buyurtma tayyor bo'lmasa, hech narsa yopilmaydi va o'sha buyurtmalar ko'rsatiladi. Egasi, rahbar va moliya bo'limiga xabar boradi."
       },
       "done": {
         "SEND_BACK": "{count, plural, other {# ta buyurtma qaytarildi.}}",
@@ -1404,7 +1407,8 @@
         "REOPEN_BUYING": "{count, plural, other {# ta buyurtma xaridi qayta ochildi.}}",
         "CLOSE_EXACT": "{count, plural, other {# ta buyurtma yopildi.}}",
         "SEND_TO_SETTLEMENT": "{count, plural, other {# ta buyurtma hisob-kitobga yuborildi.}}",
-        "SEND_BACK_FOR_CORRECTION": "{count, plural, other {# ta buyurtma toʻgʻrilash uchun qaytarildi.}}"
+        "SEND_BACK_FOR_CORRECTION": "{count, plural, other {# ta buyurtma toʻgʻrilash uchun qaytarildi.}}",
+        "CLOSE": "{count, plural, other {# ta buyurtma yopildi.}}"
       },
       "failedTitle": "{count, plural, other {Hech narsa saqlanmadi: # ta buyurtma quyida ko'rsatilgan.}}",
       "failedLine": "{number} — {problem}",
@@ -1421,7 +1425,8 @@
       "noteOf": "{number} uchun izoh",
       "notReady": {
         "FINISH_ORDER": "Hali hech narsa olinmagan. «Sotib olinmadi»dan foydalaning.",
-        "MARK_NOT_BOUGHT": "Nimadir allaqachon olingan. «Buyurtmani yakunlash»dan foydalaning."
+        "MARK_NOT_BOUGHT": "Nimadir allaqachon olingan. «Buyurtmani yakunlash»dan foydalaning.",
+        "CLOSE": "Yopishga tayyor emas: naqd pul qoldig'i 0 emas, to'lov bloki tasdiqlanmagan yoki rahbar ortiqcha xarajatni tasdiqlamagan."
       },
       "closeConfirm": "Barcha mahsulotlar ushbu filial omboriga kelib tushganini tasdiqlayman."
     },

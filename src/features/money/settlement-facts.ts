@@ -1,6 +1,7 @@
 import { asc, inArray } from "drizzle-orm";
 
 import {
+  type CashRecord,
   type SettlementBlocks,
   type SettlementConfirmations,
   settlementBlocks,
@@ -14,12 +15,14 @@ import { moneyRowsOf } from "./money-rows";
 
 // The settlement blocks of orders and their stored confirmations (08-money-and-settlement.md,
 // Closing 2; plan of 4.5), read in one place for the settlement screen and, under the orders'
-// lock, for Confirm (review of the plan, Should fix 5); 4.6's readiness reads them too. The
+// lock, for Confirm (review of the plan, Should fix 5) and for Finance's Close (plan of 4.6). The
 // figures are settlementBlocks() of src/domain/money-ledger.ts over the order's plan, records and
 // money rows, never a second sum. The caller has put the orders behind their walls.
 
 export type SettlementFacts = {
   plan: OrderPlan;
+  /** The order's purchase records, cancelled ones included (`cashRecordsOf()`). */
+  records: CashRecord[];
   blocks: SettlementBlocks;
   /** 14 order_settlements; null when nothing was ever confirmed. */
   stored: SettlementConfirmations | null;
@@ -57,6 +60,7 @@ export async function settlementFactsOf(
           transferConfirmedAt: orderSettlements.transferConfirmedAt,
           transferNote: orderSettlements.transferNote,
           cardConfirmedAt: orderSettlements.cardConfirmedAt,
+          overspendAckAt: orderSettlements.overspendAckAt,
         })
         .from(orderSettlements)
         .where(inArray(orderSettlements.orderId, ids))
@@ -66,6 +70,7 @@ export async function settlementFactsOf(
         transferConfirmed: row.transferConfirmedAt !== null,
         transferNote: row.transferNote,
         cardConfirmed: row.cardConfirmedAt !== null,
+        overspendAcknowledged: row.overspendAckAt !== null,
       },
     ]),
   );
@@ -80,11 +85,13 @@ export async function settlementFactsOf(
       extras: extras.get(order.id) ?? [],
       paymentType: order.paymentType,
     };
+    const own = records.get(order.id) ?? [];
     answer.set(order.id, {
       plan,
+      records: own,
       blocks: settlementBlocks({
         plan,
-        records: records.get(order.id) ?? [],
+        records: own,
         rows: rows.get(order.id) ?? [],
       }),
       stored: stored.get(order.id) ?? null,

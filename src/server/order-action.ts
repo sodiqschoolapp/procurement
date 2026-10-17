@@ -94,6 +94,8 @@ export type LockedOrder = {
   ownerClosesAlone: boolean;
   /** 08 Exact match, when the action's `facts` step read it (plan of 4.4); otherwise unknown. */
   exactMatch?: boolean;
+  /** 08 Closing 3, when Close's `facts` step read it (plan of 4.6); otherwise unknown. */
+  readyToClose?: boolean;
 };
 
 /** What the history step writes for one order besides its statuses. */
