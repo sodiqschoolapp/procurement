@@ -16,11 +16,12 @@ export function insertTrip(
   createdBy: string,
   clientKey = randomUUID(),
   purchasedOn = "2031-05-02",
+  paymentType: "CASH" | "TRANSFER" | "CARD" = "CASH",
 ) {
   return db.execute<{ id: string }>(sql`
     insert into purchase_trips (client_key, branch_id, purchased_on, payment_type, created_by,
       created_at)
-    values (${clientKey}, ${branchId}, ${purchasedOn}, 'CASH', ${createdBy}, ${AT})
+    values (${clientKey}, ${branchId}, ${purchasedOn}, ${paymentType}, ${createdBy}, ${AT})
     returning id`);
 }
 

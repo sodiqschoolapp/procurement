@@ -67,7 +67,7 @@ export const MONEY_DOCUMENT_MAX = 100;
 export const MONEY_COMMENT_MAX = 1000;
 
 /** Whole so'm from 0, typed as digits; never a JavaScript number (developer-rules.md rule 6). */
-const amountField = z
+export const amountField = z
   .string()
   .refine((value) => parseSomOrZero(value) !== null)
   .transform((value) => parseSomOrZero(value)!);
@@ -88,8 +88,11 @@ const input = ordersInput({
   { path: ["amounts"], message: "An amount names an order that is not ticked." },
 ) as unknown as z.ZodType<RecordMoneyInput>;
 
-/** The trimmed comment, document number and date, or the fields that refuse them. */
-function storedFields(value: RecordMoneyInput): {
+/**
+ * The trimmed comment, document number and date, or the fields that refuse them. The settlement
+ * action of 4.5 asks the same (./settle-cash.ts).
+ */
+export function storedFields(value: { comment: string; documentNo?: string; occurredOn: string }): {
   comment: string;
   documentNo: string | null;
   occurredOn: string;
@@ -164,7 +167,7 @@ async function crossings(
 }
 
 /** The file: the actor's own upload of a stored type that no record holds, locked FOR UPDATE. */
-async function refuseFile(tx: Transaction, userId: string, fileId: string): Promise<void> {
+export async function refuseFile(tx: Transaction, userId: string, fileId: string): Promise<void> {
   const [file] = await tx
     .select({ uploadedBy: files.uploadedBy, mime: files.mime })
     .from(files)
