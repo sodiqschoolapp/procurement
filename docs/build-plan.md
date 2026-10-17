@@ -317,7 +317,7 @@ The Manager records what was really bought, one order or one whole shop visit at
   - **Build:** The Manager picks the subtype really bought, inside the same product; stock rises for that subtype; the order shows "Substituted"; the closing rules of 4.4 read this.
   - **Done when:** Tests: a subtype of another product is refused; S10 up to the stock check (stock rises for black pens, not for blue).
 
-- [ ] **3.7 Cancel a purchase record or a trip**
+- [x] **3.7 Cancel a purchase record or a trip**
   - **Read:** `07-purchasing.md` (Fixing a mistake); `09-warehouse.md` (Stock value: third bullet); `10-notifications-analytics-reports.md` (Notifications: "Purchase record cancelled"); `03-roles-and-permissions.md` (Manager rights: CANCEL_PURCHASES); `edge-cases/purchasing-and-money.md` ("A typo in a purchase record"; "A purchase record must be cancelled but the items were already issued"); `open-questions.md` (question 3).
   - **Build:** Cancel a record with a reason while its order is Open, and "Cancel trip" for every record of one trip, all or nothing; stock goes down by the same quantity and the average is recalculated; the cancel is blocked when stock would go below zero, and the message names the two ways out; cancelled records stay visible, crossed out; the Head is notified; the order shows how many of its records were cancelled.
   - **Done when:** Database tests: a cancel lowers stock; a cancel after stock was lowered by a test movement is blocked and nothing changes; "Cancel trip" with one blocked record cancels none; a Manager with `CANCEL_PURCHASES` off is refused.
@@ -382,6 +382,7 @@ Cash given, cash spent, the difference and the close, per order, with Finance wo
   - **Read:** `06-approval-workflow.md` (Allowed moves: Closed row; Rules: 3); `03-roles-and-permissions.md` (Permission matrix: "Reopen a closed order"); `edge-cases/purchasing-and-money.md` ("An error is found after closing"; "Faulty goods go back to the supplier"); `10-notifications-analytics-reports.md` (Notifications: "Closed, reopened").
   - **Build:** The Head reopens a Closed order with a reason; the status is Open; its counts are recalculated; earlier settlement confirmations and the overspend acknowledgment are cleared; Finance settles it again; the owner, the Head and Finance are notified.
   - **Done when:** Database test: reopen, cancel one record, and the order needs settlement again with the old confirmations gone.
+  - From 3.7: `07-purchasing.md` (Fixing a mistake, fourth bullet: "After the order is Closed, only a reopen by the Head allows corrections"). The cancel is `cancelPurchase` / `cancelTrip` of `src/features/purchasing/actions/cancel-purchase.ts`, allowed by `purchaseCancelAllows()` at status Open only; a reopened order is Open again and needs no other path.
 
 - [ ] **4.9 Money with managers**
   - **Read:** `08-money-and-settlement.md` (Money with managers; Money ledger: Manager's cash balance); `11-screens-and-ux.md` (Screens: Money with managers).

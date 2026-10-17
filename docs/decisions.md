@@ -1485,6 +1485,32 @@ Choices made during the build:
 - The subtype tests are their own file, `substitution.db.test.ts`, not `record-purchase.db.test.ts` as the plan said.
 - The same-moment test holds black's row in a third transaction while both trips wait on it; with a share lock instead of `FOR UPDATE` it fails with a deadlock (checked).
 
+### 3.7 Cancel a purchase record or a trip (17.10.2026)
+
+The plan's decisions as the plan review of 17.10.2026 confirmed them (corrections 1 to 3 applied), and those of the build. The Look first items come first.
+
+1. **Look first** (stock). A cancel is a priced `REVERSAL` at the record's own price on its branch and subtype bought, `reverses_movement_id` its RECEIPT; the average is `nextBalance()`'s priced-out formula, floored at 0 and 0 at stock 0 (09 Stock value 3; decisions 3.1 items 3 and 4). A goods record without its receipt is `unexpected`.
+2. **Look first** (stock). Blocked means the whole action is refused, a trip included: every order whose record's subtype would go below 0 is named `not_ready` with `errors.field.stockShort`, whose text names both ways out; the check is `postMovement()`'s own (07 Fixing a mistake 2; D44).
+3. **Look first** (progress). After a cancel the progress is `progressAfterBuying()` of the remaining records; the finish reason is kept only at Done short or Not bought (`finishReasonAfter()`, review correction 1).
+4. **Look first** (status). "While the order is Open" is status `PURCHASING`, whatever its progress (`purchaseCancelAllows()`).
+5. **Look first** (permission). Both actions need `purchase.cancel`: the Head in any branch, the owner with `CANCEL_PURCHASES` on.
+6. **Look first** (money). A cancel sets the subtype's last purchase price back to its newest PURCHASE `price_history` row (by `seq`) whose record is not cancelled, or to empty, when the price in force was the cancelled record's; a price set otherwise stays (00-definitions, Last purchase price). Proposed `/spec-change` of 07, Fixing a mistake, first bullet, appended: "The subtype's last purchase price goes back to its newest purchase that is not cancelled, or to empty."
+7. Cancel trip cancels every record of the trip not cancelled yet; it is offered when the trip has two or more, of orders all Open and all the user's to cancel; a trip with none left is `wrong_status`; an order of the trip no longer Open refuses the whole trip (review correction 2).
+8. One event type `CANCEL_PURCHASE` for both actions.
+9. `PURCHASE_CANCELLED` once per action and branch to every active Head but the actor, with the count of records.
+10. The cancelled count shows on the order page only; settlement's is 4.5.
+11. No audit row.
+12. New field kind `stockShort`; icon `cancel` reused.
+13. Secondary buttons on the record; the dialog's confirm is the danger kind.
+14. Texts with counts use ICU plurals.
+15. A trip holds one record per order (3.4).
+
+Choices made during the build:
+
+- The last-price rule compares with the price in force before the action: the newest row of a record live until now. The first build compared with the newest row of any record and left a price of an earlier cancelled record in place (its test caught it).
+- `lockRecords()` reads and locks only records on the sent orders behind no wall; for a trip, the trip's live records on other orders are counted without a lock, and any makes the trip `invalid_input` (permission review, Should fix 1 and 2). Another branch's record or trip is `not_found`, tested for both actions (Must fix 1; a check line in `.claude/rules/tests.md`).
+- Cancel trip has no ticked-wall test (`describeTickedWall`): a trip cannot hold orders of two branches (`purchases_trip_branch_fk`), and the cross-branch case is its own test.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.
