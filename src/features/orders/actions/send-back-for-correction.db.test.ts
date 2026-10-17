@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 
 import { db } from "@/server/db/client";
-import { orderSettlements } from "@/server/db/schema";
+import { orderEvents, orderSettlements } from "@/server/db/schema";
 import { runOrdersAction } from "@/server/order-action";
 
 import { insertBranch } from "../../../../tests/helpers/branches";
@@ -86,6 +86,11 @@ describe("Send back for correction (06 Allowed moves; 08 Closing 4)", () => {
       overspendAckAt: null,
       overspendAckComment: null,
     });
+    const [event] = await db
+      .select({ payload: orderEvents.payload })
+      .from(orderEvents)
+      .where(eq(orderEvents.orderId, order!.id));
+    expect(event!.payload).toMatchObject({ settlementCleared: true });
     const [kept] = await db
       .select()
       .from(orderSettlements)

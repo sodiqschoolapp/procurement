@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { type Page, expect, test } from "@playwright/test";
 import pg from "pg";
 
-import uz from "../../src/i18n/messages/uz.json" with { type: "json" };
+import en from "../../src/i18n/messages/en.json" with { type: "json" };
 import { connectionOptions } from "../../src/server/db/connection-options.mjs";
 import { E2E_PAGE_USERS, e2eDatabaseUrl, serverDatabaseUrl } from "./global-setup";
 
@@ -13,9 +13,10 @@ import { E2E_PAGE_USERS, e2eDatabaseUrl, serverDatabaseUrl } from "./global-setu
 // (11-screens-and-ux.md rule 6; review of the plan, Should fix 1), and both counts reach 0;
 // confirms a transfer that differs only after writing the note (08 Closing 2); sends an order back
 // for correction with a reason (08 Closing 4). Run at 375 px and at 1440 px by the two projects;
-// the users read Uzbek.
+// the users read English, as order-page.spec.ts sets them (it shares these users and runs beside
+// this one).
 
-const t = uz.money.settle;
+const t = en.money.settle;
 
 type Person = { username: string; password: string };
 
@@ -44,6 +45,9 @@ async function seedSettlement(owner: Person, finance: Person) {
       const idOf = async (username: string) =>
         (await client.query<{ id: string }>("select id from users where username = $1", [username]))
           .rows[0]!.id;
+      await client.query("update users set locale = 'en' where username = any($1)", [
+        [owner.username, finance.username],
+      ]);
       const ownerId = await idOf(owner.username);
       const financeId = await idOf(finance.username);
       const tag = randomUUID().slice(0, 8);
@@ -200,7 +204,7 @@ test("Finance settles two cash orders with one action and the net, confirms a tr
   await expect(page.locator(`[data-settle-amount="${seeded.more.id}"]`)).toHaveValue("2000");
   await expect(page.locator(`[data-settle-amount="${seeded.less.id}"]`)).toHaveValue("1000");
   const net = page.locator("[data-settle-net]");
-  await expect(net).toContainText("topshiradi");
+  await expect(net).toContainText("hands Finance");
   await expect(net).toContainText("1 000");
   expect(await scrollsSideways(page)).toBe(false);
 
@@ -208,10 +212,10 @@ test("Finance settles two cash orders with one action and the net, confirms a tr
   await page.locator("[data-settle-save]").click();
   const dialog = page.getByRole("alertdialog");
   await expect(dialog).toBeVisible();
-  await expect(dialog).toContainText("2 ta buyurtma, 1 ta menejer:");
-  await expect(dialog).toContainText("topshiradi");
+  await expect(dialog).toContainText("2 orders, 1 Manager:");
+  await expect(dialog).toContainText("hands Finance");
   await dialog.getByRole("button", { name: t.save, exact: true }).click();
-  await expect(page.getByText("2 ta buyurtma boʻyicha hisob-kitob saqlandi.")).toBeVisible();
+  await expect(page.getByText("Settlement saved for 2 orders.")).toBeVisible();
   expect(await countOf(seeded.more.id)).toBe(0);
   expect(await countOf(seeded.less.id)).toBe(0);
 
@@ -236,7 +240,7 @@ test("Finance settles two cash orders with one action and the net, confirms a tr
   const back = page.getByRole("alertdialog");
   await back.locator("textarea[data-reason]").fill("Narx notoʻgʻri yozilgan");
   await back
-    .getByRole("button", { name: uz.orders.moves.button.SEND_BACK_FOR_CORRECTION, exact: true })
+    .getByRole("button", { name: en.orders.moves.button.SEND_BACK_FOR_CORRECTION, exact: true })
     .click();
   await expect.poll(() => statusOf(seeded.transfer.id)).toBe("PURCHASING");
 });

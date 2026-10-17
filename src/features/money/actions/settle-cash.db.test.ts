@@ -16,6 +16,7 @@ import {
 import { runOrdersAction } from "@/server/order-action";
 
 import { insertBranch } from "../../../../tests/helpers/branches";
+import { insertFileRow } from "../../../../tests/helpers/catalog";
 import { setClock } from "../../../../tests/helpers/clock";
 import { insertMoneyAction, insertMoneyRow } from "../../../../tests/helpers/money";
 import { insertOrder } from "../../../../tests/helpers/orders";
@@ -400,5 +401,69 @@ describe("the settlement action (08 Closing 2, the Cash block)", () => {
       ok: false,
       error: { orders: [{ orderId: o142.id, code: "stale_version" }] },
     });
+  });
+
+  it("Managers of two branches in one call are refused whole (decided item 4, Look first; permission review, Should fix 1)", async () => {
+    const { branch, manager } = await scene();
+    const other = await insertBranch();
+    const finance = await insertUser("FINANCE", { branches: [branch.id, other.id] });
+    const there = await insertUser("MANAGER", { branches: [other.id] });
+    const here = await insertOrder({
+      branchId: branch.id,
+      ownerId: manager.id,
+      status: "SETTLEMENT",
+      progress: "DONE",
+    });
+    await given(here.id, manager.id, finance.id, "50000");
+    const away = await insertOrder({
+      branchId: other.id,
+      ownerId: there.id,
+      status: "SETTLEMENT",
+      progress: "DONE",
+    });
+    await given(away.id, there.id, finance.id, "50000");
+    const notices = (await db.select({ id: notifications.id }).from(notifications)).length;
+    const sent = input([here, away], { [here.id]: receive("50000"), [away.id]: receive("50000") });
+    expect(await settle(finance.id, sent)).toMatchObject({
+      ok: false,
+      error: { code: "invalid_input", fields: { rows: "errors.field.moneyOneBranch" } },
+    });
+    expect(await actionsOf(sent.clientKey)).toEqual([]);
+    expect((await db.select({ id: notifications.id }).from(notifications)).length).toBe(notices);
+    // Each branch alone passes (D40).
+    expect(await settle(finance.id, input([here], { [here.id]: receive("50000") }))).toMatchObject({
+      ok: true,
+    });
+  });
+
+  it("a file from the browser must be the actor's own upload that no record holds (developer-rules.md rule 13; permission review, Must fix 2)", async () => {
+    const { manager, finance, o142 } = await workedExample();
+    const otherFinance = await insertUser("FINANCE");
+    const theirs = await insertFileRow(otherFinance.id, "application/pdf");
+    const foreign = input([o142], { [o142.id]: receive("50000") }, { fileId: theirs.id });
+    expect(await settle(finance.id, foreign)).toMatchObject({
+      ok: false,
+      error: { code: "invalid_input", fields: { fileId: "errors.field.notAllowed" } },
+    });
+    expect(await actionsOf(foreign.clientKey)).toEqual([]);
+
+    // A file of the actor's already held by another money action.
+    const own = await insertFileRow(finance.id, "application/pdf");
+    const holder = (
+      await insertMoneyAction({ managerId: manager.id, createdBy: finance.id, fileId: own.id })
+    ).rows[0]!.id;
+    await insertMoneyRow({ moneyActionId: holder, orderId: o142.id, amount: "1" });
+    const held = input([o142], { [o142.id]: receive("50000") }, { fileId: own.id });
+    expect(await settle(finance.id, held)).toMatchObject({
+      ok: false,
+      error: { code: "invalid_input", fields: { fileId: "errors.field.notAllowed" } },
+    });
+    expect(await actionsOf(held.clientKey)).toEqual([]);
+
+    // A free file of the actor's passes and is held by the settlement action (D40).
+    const free = await insertFileRow(finance.id, "application/pdf");
+    const right = input([o142], { [o142.id]: receive("50000") }, { fileId: free.id });
+    expect(await settle(finance.id, right)).toMatchObject({ ok: true });
+    expect((await actionsOf(right.clientKey))[0]!.fileId).toBe(free.id);
   });
 });

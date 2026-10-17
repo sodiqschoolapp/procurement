@@ -34,8 +34,8 @@ import { amountField, refuseFile, storedFields } from "./record-money";
 //
 //   check    the comment, the date, the document number (as Record money, decided item 3, Look
 //            first); every order Waiting for settlement (`settlementAllows()`); at least one row
-//            above 0; one Manager's orders in one branch (decided item 4, Look first); a file only
-//            for one Manager
+//            above 0; the rows' orders in one branch, as the screen takes one branch (decided item
+//            4, Look first; permission review, Should fix 1); a file only for one Manager
 //   write    first no crossing over: each Receive (Cash returned) and Pay (Paid back) row against
 //            the order's count before the action, read under the orders' lock (08 Money ledger 3;
 //            decided items 1 and 2, Look first), refused `not_ready` with the field that says why;
@@ -127,10 +127,11 @@ export const settleCash = defineOrdersAction<SettleCashInput>({
       throw new ActionError("invalid_input", { rows: "errors.field.noAmount" });
     }
     const branchOf = new Map(context.orders.map((order) => [order.id, order.branchId]));
-    for (const block of blocks) {
-      if (new Set(block.rows.map((row) => branchOf.get(row.orderId))).size > 1) {
-        throw new ActionError("invalid_input", { rows: "errors.field.moneyOneBranch" });
-      }
+    const branches = new Set(
+      blocks.flatMap((block) => block.rows.map((row) => branchOf.get(row.orderId))),
+    );
+    if (branches.size > 1) {
+      throw new ActionError("invalid_input", { rows: "errors.field.moneyOneBranch" });
     }
     if (context.input.fileId && blocks.length > 1) {
       throw new ActionError("invalid_input", { fileId: "errors.field.fileOneManager" });
@@ -186,7 +187,7 @@ export const settleCash = defineOrdersAction<SettleCashInput>({
     const orderOf = new Map(context.orders.map((order) => [order.id, order]));
     for (const block of blocksOf(context)) {
       const moved = block.rows.map((row) => orderOf.get(row.orderId)!);
-      // One branch per block (the check), so the net is this owner's in that branch.
+      // One branch per action (the check), so the net is this owner's in that branch.
       const net = settlementNet(block.rows);
       for (const { branchId, params } of await branchNotices(tx, userId, moved)) {
         await notify(

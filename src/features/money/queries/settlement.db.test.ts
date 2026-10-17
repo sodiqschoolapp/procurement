@@ -10,7 +10,7 @@ import { insertBranch } from "../../../../tests/helpers/branches";
 import { insertFileRow } from "../../../../tests/helpers/catalog";
 import { setClock } from "../../../../tests/helpers/clock";
 import { insertMoneyAction, insertMoneyRow } from "../../../../tests/helpers/money";
-import { insertOrder } from "../../../../tests/helpers/orders";
+import { insertOrder, inventedNumber } from "../../../../tests/helpers/orders";
 import { insertPurchaseRow, insertTrip } from "../../../../tests/helpers/purchases";
 import { insertUser } from "../../../../tests/helpers/users";
 import { getSettlement } from "./settlement";
@@ -181,5 +181,20 @@ describe("the settlement screen's query (08 Closing 2)", () => {
       needsNote: true,
     });
     expect(found.blocks.cash).toBeNull();
+  });
+
+  it("a numbered Draft is dropped (the draft wall; .claude/rules/tests.md)", async () => {
+    const { branch, manager, finance } = await scene();
+    // Every other value lets it in: the same branch and a number (a taken-back order keeps it).
+    const draft = await insertOrder({
+      branchId: branch.id,
+      ownerId: manager.id,
+      status: "DRAFT",
+      number: inventedNumber(),
+    });
+    const kept = await settled(branch.id, manager.id, finance.id);
+    const answer = await getSettlement(finance.id, [draft.id, kept.id]);
+    expect(answer!.managers.flatMap((m) => m.orders.map((o) => o.id))).toEqual([kept.id]);
+    expect(await getSettlement(finance.id, [draft.id])).toBeNull();
   });
 });
