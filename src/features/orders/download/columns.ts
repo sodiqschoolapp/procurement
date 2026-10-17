@@ -22,7 +22,11 @@ import { filtersText } from "./filters-text";
 
 const MESSAGES = { uz, ru, en } satisfies Record<Locale, unknown>;
 
-/** The columns of an order's line, in the file's order (05 Download 1, the planned part). */
+/**
+ * The columns of an order's line, in the file's order (05 Download 1): the planned part, then
+ * "from Open onward actual quantity, actual price, actual extra costs, actual total and
+ * difference" (plan of 3.5).
+ */
 export const DOWNLOAD_COLUMNS = [
   "number",
   "status",
@@ -37,6 +41,11 @@ export const DOWNLOAD_COLUMNS = [
   "extras",
   "paymentType",
   "plannedTotal",
+  "actualQty",
+  "actualPrice",
+  "actualExtras",
+  "actualTotal",
+  "difference",
 ] as const;
 export type DownloadColumn = (typeof DOWNLOAD_COLUMNS)[number];
 
@@ -56,6 +65,16 @@ export type DownloadLine = {
   extras: bigint;
   paymentType: string;
   plannedTotal: bigint;
+  /**
+   * From status Open on, the actual numbers of orderDownloadRow(); null before, an empty cell
+   * (plan of 3.5, decided item 6, Look first). `actualPrice` is null while nothing is received;
+   * `difference` is planned − actual, below 0 when more was spent (08).
+   */
+  actualQty: string | null;
+  actualPrice: bigint | null;
+  actualExtras: bigint | null;
+  actualTotal: bigint | null;
+  difference: bigint | null;
   /** Who finished each approval step, and when as `dd.mm.yyyy HH:mm`; empty when not finished. */
   steps: Record<ApprovalStep, { name: string; at: string }>;
 };
@@ -156,6 +175,11 @@ export function downloadSheet(
       extras: order.row.extras,
       paymentType: tRoot(`paymentTypes.${order.paymentType}`),
       plannedTotal: order.row.plannedTotal,
+      actualQty: order.row.actual?.qty ?? null,
+      actualPrice: order.row.actual?.unitPrice ?? null,
+      actualExtras: order.row.actual?.extras ?? null,
+      actualTotal: order.row.actual?.total ?? null,
+      difference: order.row.actual?.difference ?? null,
       steps: Object.fromEntries(
         APPROVAL_STEPS.map((step) => {
           const by = order.row.approvals[step];

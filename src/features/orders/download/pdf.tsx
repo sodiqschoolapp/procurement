@@ -68,11 +68,11 @@ function logoPng(): Promise<Buffer> {
 const styles = StyleSheet.create({
   page: {
     fontFamily: "Golos Text",
-    fontSize: 7.5,
+    fontSize: 6.5,
     color: NAVY,
     paddingTop: 92,
     paddingBottom: 36,
-    paddingHorizontal: 28,
+    paddingHorizontal: 20,
   },
   top: { position: "absolute", top: 0, left: 0, right: 0 },
   strip: { flexDirection: "row", height: 30 },
@@ -80,26 +80,26 @@ const styles = StyleSheet.create({
     width: 190,
     backgroundColor: NAVY,
     borderTopRightRadius: 12,
-    paddingHorizontal: 28,
+    paddingHorizontal: 20,
     justifyContent: "center",
   },
   logo: { height: 16, width: 100 },
   band: { flexGrow: 1, height: 6, marginTop: 24, backgroundColor: ORANGE },
-  heading: { paddingHorizontal: 28, paddingTop: 8, gap: 2 },
+  heading: { paddingHorizontal: 20, paddingTop: 8, gap: 2 },
   title: { fontSize: 13, fontWeight: 600 },
   caption: { fontSize: 9, color: MUTED },
   footer: {
     position: "absolute",
     bottom: 16,
-    left: 28,
-    right: 28,
+    left: 20,
+    right: 20,
     fontSize: 9,
     color: MUTED,
     textAlign: "right",
   },
   row: { flexDirection: "row", borderBottomWidth: 0.5, borderBottomColor: BORDER },
   head: { backgroundColor: HEADER_FILL, fontWeight: 600 },
-  cell: { paddingVertical: 3, paddingHorizontal: 3 },
+  cell: { paddingVertical: 3, paddingHorizontal: 2 },
   number: { textAlign: "right" },
   muted: { color: MUTED },
   totals: { marginTop: 10, marginLeft: "auto", width: 240, gap: 2 },
@@ -107,41 +107,85 @@ const styles = StyleSheet.create({
   strong: { fontWeight: 600 },
 });
 
-/** The width of each column, in parts of the page's width. */
-const WIDTHS: Record<DownloadColumn, number> = {
-  number: 7.5,
-  status: 7,
-  branch: 3.5,
-  owner: 7,
-  department: 7,
-  product: 9,
-  subtype: 6,
-  quantity: 4.5,
-  measure: 3.5,
-  price: 6,
-  extras: 5.5,
-  paymentType: 6,
-  plannedTotal: 6.5,
+/**
+ * The PDF's columns: the table's, with the measure printed beside each quantity instead of in a
+ * column of its own, so the five actual columns of 3.5 fit the A4 landscape page (plan of 3.5;
+ * review remark on the PDF). The Excel file keeps every column.
+ */
+type PdfColumn = Exclude<DownloadColumn, "measure">;
+const PDF_COLUMNS = DOWNLOAD_COLUMNS.filter((column): column is PdfColumn => column !== "measure");
+
+/** The width of each column, in parts of the page's width: 100 with the three steps. */
+const WIDTHS: Record<PdfColumn, number> = {
+  number: 6,
+  status: 4.5,
+  branch: 3,
+  owner: 4.5,
+  department: 5,
+  product: 5,
+  subtype: 3,
+  quantity: 4,
+  price: 5.5,
+  extras: 5,
+  paymentType: 3.5,
+  plannedTotal: 6,
+  actualQty: 4,
+  actualPrice: 5.5,
+  actualExtras: 5,
+  actualTotal: 6,
+  difference: 6,
 };
-const STEP_WIDTH = 7;
-const NUMBER_COLUMNS = new Set<DownloadColumn>(["quantity", "price", "extras", "plannedTotal"]);
+const STEP_WIDTH = 6;
+const NUMBER_COLUMNS = new Set<PdfColumn>([
+  "quantity",
+  "price",
+  "extras",
+  "plannedTotal",
+  "actualQty",
+  "actualPrice",
+  "actualExtras",
+  "actualTotal",
+  "difference",
+]);
 /** The statuses printed in grey (design-system.md, This app, Printouts). */
 const GREY_STATUSES = new Set(["REJECTED", "CANCELLED"]);
 
 const width = (parts: number) => `${parts}%`;
 
-function cellText(sheet: DownloadSheet, line: DownloadLine, column: DownloadColumn): string {
+/**
+ * An amount as the cell prints it: the digits never break (their spaces are no-break), the unit
+ * word may go to a second line in a narrow column (plan of 3.5).
+ */
+function moneyText(sheet: DownloadSheet, amount: bigint): string {
+  return sheet.formatMoney(amount).replace(/\u00a0(?=\D*$)/, " ");
+}
+
+function quantityText(sheet: DownloadSheet, line: DownloadLine, value: string): string {
+  return `${sheet.formatQuantity(value)} ${line.measure}`.trim();
+}
+
+function cellText(sheet: DownloadSheet, line: DownloadLine, column: PdfColumn): string {
   switch (column) {
     case "number":
       return line.number;
     case "status":
       return line.statusWord;
     case "quantity":
-      return sheet.formatQuantity(line.quantity);
+      return quantityText(sheet, line, line.quantity);
     case "price":
     case "extras":
     case "plannedTotal":
-      return sheet.formatMoney(line[column]);
+      return moneyText(sheet, line[column]);
+    // Before Open, and a price while nothing is received: an empty cell (plan of 3.5).
+    case "actualQty":
+      return line.actualQty === null ? "" : quantityText(sheet, line, line.actualQty);
+    case "actualPrice":
+    case "actualExtras":
+    case "actualTotal":
+    case "difference": {
+      const amount = line[column];
+      return amount === null ? "" : moneyText(sheet, amount);
+    }
     default:
       return line[column];
   }
@@ -169,7 +213,7 @@ function OrdersPdf({ sheet, logoSrc }: { sheet: DownloadSheet; logoSrc: Buffer }
         </View>
 
         <View style={[styles.row, styles.head]} fixed>
-          {DOWNLOAD_COLUMNS.map((column) => (
+          {PDF_COLUMNS.map((column) => (
             <Text
               key={column}
               style={[
@@ -190,7 +234,7 @@ function OrdersPdf({ sheet, logoSrc }: { sheet: DownloadSheet; logoSrc: Buffer }
 
         {sheet.lines.map((line, index) => (
           <View key={index} style={styles.row} wrap={false}>
-            {DOWNLOAD_COLUMNS.map((column) => (
+            {PDF_COLUMNS.map((column) => (
               <Text
                 key={column}
                 style={[
