@@ -12,7 +12,7 @@ import { ORDER_ACTION_MAX } from "@/domain/order-moves";
 import { orderTotal } from "@/domain/order-totals";
 import type { PaymentType } from "@/domain/payment-types";
 import { decide } from "@/domain/permissions";
-import { authorizeList, branchFilter } from "@/server/authorize";
+import { AuthorizationError, authorizeList, branchFilter } from "@/server/authorize";
 import { today } from "@/server/clock";
 import { orders } from "@/server/db/schema";
 import { readSnapshot } from "@/server/read-snapshot";
@@ -23,7 +23,8 @@ import { settlementFactsOf } from "../settlement-facts";
 // settlement.md, Closing 2 with its table, 4 and the last paragraph; edge cases "No receipt
 // photo", "The ticked orders in settlement belong to two Managers"; plan of 4.5). Under
 // `request.settle`, Finance of its own branches (03 Permission matrix: "Settle and close an order
-// with differences"); anyone else is refused. The branch wall and the status are inside the SQL:
+// with differences"): what the user sees but may not settle is refused. The branch wall and the
+// status are inside the SQL:
 // an id it does not return (another branch, an unknown or malformed id, a Draft, an order not
 // Waiting for settlement) is dropped. Nothing left, or two branches (decided item 4, Look
 // first): null. Read in one snapshot, so the figures, the prefill and the confirmations are of
@@ -66,7 +67,9 @@ export async function getSettlement(
   userId: string,
   orderIds: readonly string[],
 ): Promise<Settlement | null> {
-  const actor = await authorizeList(userId, "request.settle");
+  // Seeing first, so another branch's order is dropped for every role (03 rule 1); then the right
+  // to settle each order (as getPurchaseForm()).
+  const actor = await authorizeList(userId, "data.view");
   const parsed = idsInput.safeParse([...new Set(orderIds)]);
   if (!parsed.success) return null;
   const wall = branchFilter(actor, orders.branchId) ?? sql`true`;
@@ -99,12 +102,14 @@ export async function getSettlement(
       )})
         and orders.status = 'SETTLEMENT' and ${wall}
       order by u.full_name, orders.owner_id, orders.number`);
+    if (found.rows.length === 0) return null;
     const rows = found.rows.filter(
       (row) =>
         decide("request.settle", actor, { branchId: row.branch_id, ownerId: row.owner_id }) ===
         "allow",
     );
-    if (rows.length === 0 || new Set(rows.map((row) => row.branch_id)).size > 1) return null;
+    if (rows.length === 0) throw new AuthorizationError("forbidden");
+    if (new Set(rows.map((row) => row.branch_id)).size > 1) return null;
     const ids = rows.map((row) => row.id);
     const facts = await settlementFactsOf(db, ids);
 

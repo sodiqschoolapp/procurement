@@ -112,6 +112,9 @@ export const SERVER_ACTIONS: Record<string, Entry> = {
   "src/app/(app)/orders/actions.ts#recordMoneyAction": "money.record",
   "src/app/(app)/orders/actions.ts#cancelMoneyAction": "money.record",
   "src/app/(app)/orders/actions.ts#moneyPrefillAction": "data.view",
+  "src/app/(app)/orders/actions.ts#settleCashAction": "request.settle",
+  "src/app/(app)/orders/actions.ts#confirmSettlementAction": "request.settle",
+  "src/app/(app)/orders/actions.ts#sendBackForCorrectionOrdersAction": "request.settle",
 };
 
 /** Exports of `src/features/<area>/queries/`, as `<file>#<export>`. */
@@ -198,6 +201,7 @@ export const QUERIES: Record<string, Permission> = {
   "src/features/purchasing/queries/purchase-form.ts#getPurchaseForm": "purchase.record",
   "src/features/money/queries/money-prefill.ts#moneyPrefillOrders": "data.view",
   "src/features/money/queries/order-money.ts#getOrderMoney": "data.view",
+  "src/features/money/queries/settlement.ts#getSettlement": "request.settle",
 };
 
 /**
