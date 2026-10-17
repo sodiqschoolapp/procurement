@@ -176,6 +176,13 @@
       "when": 1792205002622,
       "tag": "0024_purchases",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1792207843983,
+      "tag": "0025_record_purchase",
+      "breakpoints": true
     }
   ]
 }

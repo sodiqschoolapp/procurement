@@ -339,6 +339,29 @@ export const E2E_WALL_USERS = {
   },
 } as const satisfies Record<string, E2eUser>;
 
+/**
+ * One Manager per project for the purchase spec (build plan 3.3): the owner of the Open order each
+ * project records, so the two runs never meet on one order.
+ */
+export const E2E_PURCHASE_USERS = {
+  "phone-375": {
+    fullName: "Dilnoza Sinovova",
+    username: "e2e_buy_phone",
+    phone: "+998 90 000 99 81",
+    role: "MANAGER",
+    password: PASSWORD,
+    branches: ["EA"],
+  },
+  "desktop-1440": {
+    fullName: "Sardor Sinovov",
+    username: "e2e_buy_desktop",
+    phone: "+998 90 000 99 82",
+    role: "MANAGER",
+    password: PASSWORD,
+    branches: ["EA"],
+  },
+} as const satisfies Record<string, E2eUser>;
+
 export default async function globalSetup(): Promise<void> {
   // The e2e server's own bucket on the storage of docker-compose.yml (plan of 0.12, review
   // correction 1), by the same script as `npm run storage:bucket`, in its own process as below.
@@ -381,6 +404,7 @@ export default async function globalSetup(): Promise<void> {
       ...Object.values(E2E_MOVE_USERS),
       ...Object.values(E2E_COPY_USERS),
       ...Object.values(E2E_WALL_USERS),
+      ...Object.values(E2E_PURCHASE_USERS),
     ]) {
       await insertUserIfMissing(client, user, branchIds);
     }

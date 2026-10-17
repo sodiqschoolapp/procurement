@@ -70,7 +70,9 @@
       "wholeOnly": "This measure is counted in whole units: type a whole number",
       "tooManyDecimals": "At most 3 digits after the point",
       "draftExists": "You already have a draft of this item for this department. Change the quantity there.",
-      "inPast": "The date is in the past. Pick today or a later day."
+      "inPast": "The date is in the past. Pick today or a later day.",
+      "inFuture": "The date is in the future. Pick today or an earlier day.",
+      "beforeApproval": "The date is before Finance approved the order. Pick that day or a later one."
     },
     "file": {
       "tooLarge": "The file is larger than 10 MB. Choose a smaller file or take the photo again.",
@@ -1135,7 +1137,10 @@
         "extraLine": "{type}: {amount}",
         "stockAtSubmit": "Stock at submit",
         "stockNow": "Stock now",
-        "noStock": "–"
+        "noStock": "–",
+        "received": "Received",
+        "used": "Used",
+        "receivedOf": "{received} of {planned} {unit}"
       },
       "history": {
         "title": "History",
@@ -1152,7 +1157,8 @@
           "SEND_TO_SETTLEMENT": "Sent to settlement",
           "SEND_BACK_FOR_CORRECTION": "Sent back for correction",
           "CLOSE": "Closed",
-          "REOPEN": "Reopened"
+          "REOPEN": "Reopened",
+          "RECORD_PURCHASE": "Purchase recorded"
         },
         "approved": {
           "PENDING_HEAD": "Approved at the Head step",
@@ -1165,7 +1171,8 @@
         "reason": "Reason: {text}",
         "note": "Note: {text}",
         "at": "{date} {time}",
-        "paymentType": "Payment type: {from} → {to}"
+        "paymentType": "Payment type: {from} → {to}",
+        "purchase": "{qty} × {price}"
       },
       "waiting": {
         "HEAD": "Waiting for the Head.",
@@ -1182,7 +1189,8 @@
         "submitResult": "It gets its number and goes for approval. After that it is edited only if it is taken back or sent back.",
         "done": "Submitted: {number}.",
         "failed": "Not submitted. Fix in the order list: {fields}.",
-        "editInList": "Edit in the order list"
+        "editInList": "Edit in the order list",
+        "recordPurchase": "Record purchase"
       },
       "changes": {
         "title": "What changed since rev {revision}",
@@ -1333,6 +1341,50 @@
         "unknown": "—",
         "sort": "Sort: {sort}"
       }
+    }
+  },
+  "purchase": {
+    "form": {
+      "title": "Record purchase",
+      "subtitle": "{number} · {product}",
+      "plan": "The plan",
+      "plannedQty": "Planned quantity",
+      "plannedPrice": "Planned price per unit",
+      "plannedExtras": "Planned extra costs",
+      "plannedPayment": "Planned payment type",
+      "received": "Received so far",
+      "used": "Used so far",
+      "none": "None",
+      "sameAsPlanned": "Same as planned",
+      "date": "Date bought",
+      "qty": "Actual quantity, {unit}",
+      "price": "Actual price per unit",
+      "supplier": "Supplier",
+      "noSupplier": "Not named",
+      "paymentType": "Payment type used",
+      "extras": "Extra costs",
+      "extraType": "Type",
+      "extraAmount": "Amount",
+      "extraPayment": "Paid by",
+      "pick": "Choose…",
+      "addExtra": "Add extra cost",
+      "removeExtra": "Remove this extra cost",
+      "receipt": "Receipt (up to 5 photos or PDFs)",
+      "receiptRequired": "Receipt (required for a cash purchase; up to 5 photos or PDFs)",
+      "takePhoto": "Take photo",
+      "chooseFile": "Choose file",
+      "removeReceipt": "Remove {name}",
+      "comment": "Comment",
+      "commentRequired": "Comment (required)",
+      "reasons": {
+        "PRICE_CHANGED": "The price differs from the plan.",
+        "GIFT": "The price is 0: say why the item was free.",
+        "OVER_PLAN": "More than planned is bought.",
+        "PAYMENT_CHANGED": "The payment type differs from the order."
+      },
+      "back": "Back to the order",
+      "save": "Save purchase",
+      "saved": "Purchase saved."
     }
   }
 }

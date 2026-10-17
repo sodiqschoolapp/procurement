@@ -1352,6 +1352,35 @@ Choices made during the build:
 - The tests of `price_history` name a real purchase in their PURCHASE rows (`tests/helpers/purchases.ts`), since its key exists now; no assertion changed.
 - An UPDATE of `qty` cannot reach `purchases_qty_check`: the cancel-only trigger refuses it first, so the CHECK is tested on insert only.
 
+### 3.3 Record a purchase (17.10.2026)
+
+The plan's decisions as the plan review of 17.10.2026 confirmed them (corrections 1 to 3 applied), and those of the build. The Look first items come first.
+
+1. **Look first** (money rule, comment). A record needs its comment when its price differs from the planned price, at price 0, when the received quantity after it goes above the plan, or when its payment type is not the order's; a part record (60 of 100) and differing extra costs need none (`purchaseCommentNeeds()`). Proposed `/spec-change` of 07, Purchase record, Comment: "Required when the price differs from the plan, when the received quantity goes above the plan, on a substitution, on price 0, or when the payment type changed."
+2. **Look first** (money rule, gift). A record at price 0 writes no PURCHASE price row and keeps `last_purchase_price` (both CHECK > 0); its receipt enters stock at cost 0 (09 Stock value, first bullet). Proposed `/spec-change` of 07, What saving a record does, step 3: "The subtype's last purchase price is updated, except for a record at price 0 (a gift)."
+3. **Look first** (progress). A record only while the order is Open and its progress OPEN; Done, Done short and Not bought are refused `wrong_status` until 3.5's reopen.
+4. **Look first** (money rule, cash). `receipt_required_for_cash` applies to a trip whose payment type used is Cash; a cash extra cost on a Transfer trip does not make it one.
+5. "Same as planned": the plan while nothing is received; then the quantity still lacking, the planned price and no extras; with nothing lacking, the planned quantity.
+6. The subtype bought is the ordered one; substitution is 3.6.
+7. Dates are business dates: not after today, not before the Tashkent date of `approved_at`; an Open order without `approved_at` is refused.
+8. The last purchase price is the record saved last, `last_purchase_at` its saving time.
+9. The supplier is optional, defaults to the order's company while it is active; an inactive company or extra-cost type is refused. Any company kind may be the supplier (04: one list serves both).
+10. No audit row: the record has its history event, the price its `price_history` row. The owner confirms on issue #9.
+11. No notification for a record.
+12. The trip takes the action's client key.
+13. One order per action in 3.3; 3.4 applies `describeTickedWall()`.
+14. Anyone who may not record the order gets Not found at `/orders/[id]/purchase`.
+15. Received/Used and the actual total on the order page from status Open on, computed from the records.
+
+Choices made during the build:
+
+- `ORDER_EVENT_TYPES = [...ORDER_ACTIONS, "RECORD_PURCHASE"]` feeds both enums and the wrapper's `type`; `ORDER_MOVES` and `allowedActions()` are unchanged.
+- The field checks that need the database run first in the action's `write()` and throw `invalid_input`; the wrapper is not widened. Two field kinds: `inFuture`, `beforeApproval`.
+- `orderRecords()` lives outside `queries/` (it authorizes nothing; its callers have).
+- The page action does not revalidate: after a record that finishes the buying, a re-render of the form is Not found and cancelled the client's `router.push`.
+- Icons reused (`add_photo_alternate`, `description`, `done_all`); no new icon.
+- Permission review: the form's query filters status and progress in its SQL (draft wall); more cases for the button and the receipt download.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

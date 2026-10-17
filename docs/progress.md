@@ -921,4 +921,20 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - For 3.4: build the group's orders from the trip's branch in SQL before `splitGroupQuantity`; an order given "0" gets no record.
 - For 3.7: a cancel is one UPDATE of the four cancel columns; the trigger refuses anything else. Cancel trip = cancel each record.
 
-The next task is 3.3.
+## 3.3 Record a purchase (17.10.2026, pull request #67)
+
+**Built**
+- `recordPurchase` (`src/features/purchasing/actions/record-purchase.ts`) on `runOrdersAction`, one order (`.length(1)`): trip, record, extras, trip files, Receipt movement for a product, last purchase price and PURCHASE price row above price 0, `actual_total` and `progress`, event `RECORD_PURCHASE` (payload `purchase`, note = comment). Page export `src/app/(app)/orders/[id]/purchase/actions.ts`.
+- Domain: `purchaseCommentNeeds`, `purchaseDateRefusal`, `sameAsPlanned` in `src/domain/purchases.ts`. `ORDER_EVENT_TYPES` (moves + writes) in `order-moves.ts`; migration `0025_record_purchase` adds the enum value.
+- `/orders/[id]/purchase` (`PurchaseFormView`), `getPurchaseForm`; order page: Record purchase button, Received/Used fact, actual total from the records. `TRIP_FILES` in `FILE_OWNERS`. `orderRecords()` in `src/features/purchasing/order-records.ts`.
+
+**Left out, and the task that brings it**
+- Many orders and group rows, `describeTickedWall()`: 3.4. Purchases tab, finish, reopen, red over-plan number: 3.5. Substitution: 3.6. Cancel: 3.7. "No receipt" label: 4.5. Give to requester: 5.4. Home button: 6.1.
+
+**What the next sessions must know**
+- For 3.4: widen the input's `.length(1)`; the field checks run in `write()` and throw `ActionError("invalid_input")` with paths per order; add `describeTickedWall()`.
+- For 3.5: "buying more than planned needs a comment" is `purchaseCommentNeeds()` (`OVER_PLAN`); reuse it. A record is refused unless progress is OPEN: the reopen makes it recordable. Read actual numbers with `orderRecords()`.
+- For 3.5, 3.7: add new history writes to `ORDER_EVENT_TYPES` and a label under `orders.page.history.moves`.
+- A form with `UnsavedChangesGuard` that leaves after saving passes `dirty && !pending`, and does not `revalidatePath` its own page: the guard's `history.back()` or the re-render cancels `router.push`.
+
+The next task is 3.4.

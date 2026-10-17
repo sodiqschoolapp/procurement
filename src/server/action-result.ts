@@ -80,6 +80,10 @@ export const FIELD_ERROR_KINDS = [
   "draftExists",
   // A needed-by date before today in Tashkent at submit (plan of 2.7, decided item 2).
   "inPast",
+  // A purchase's date bought after today or before the order's Finance approval (plan of 3.3,
+  // decided item 7).
+  "inFuture",
+  "beforeApproval",
 ] as const;
 export type FieldErrorKind = (typeof FIELD_ERROR_KINDS)[number];
 export type FieldMessageKey = `errors.field.${FieldErrorKind}`;

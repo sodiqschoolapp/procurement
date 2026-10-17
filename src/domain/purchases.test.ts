@@ -11,6 +11,9 @@ import {
   difference,
   finishRefusal,
   progressAfterBuying,
+  purchaseCommentNeeds,
+  purchaseDateRefusal,
+  sameAsPlanned,
   splitGroupQuantity,
 } from "./purchases";
 
@@ -280,5 +283,88 @@ describe("splitGroupQuantity (07 One trip, many orders: 2)", () => {
     expect(() => splitGroupQuantity("30", [{ ...LACKS_20, number: "CHL-0001" }])).toThrow(
       RangeError,
     );
+  });
+});
+
+describe("purchaseCommentNeeds (07 Purchase record, Comment; plan of 3.3, decided item 1)", () => {
+  const plan = {
+    plannedQty: "100",
+    plannedPrice: 5_000n,
+    plannedPaymentType: "CARD",
+  };
+  const typed = (qty: string, unitPrice: bigint, paymentType: string, received = "0") => ({
+    ...plan,
+    qty,
+    unitPrice,
+    paymentType,
+    received,
+  });
+
+  it("a part record at the plan needs none: 60 of 100, then 40 (07, 60 on Monday and 40 on Friday)", () => {
+    expect(purchaseCommentNeeds(typed("60", 5_000n, "CARD"))).toEqual([]);
+    expect(purchaseCommentNeeds(typed("40", 5_000n, "CARD", "60"))).toEqual([]);
+    expect(purchaseCommentNeeds(typed("100", 5_000n, "CARD"))).toEqual([]);
+  });
+
+  it("above the plan after the record needs one (edge case 'More was bought than approved')", () => {
+    expect(purchaseCommentNeeds(typed("10", 5_000n, "CARD", "100"))).toEqual(["OVER_PLAN"]);
+    expect(purchaseCommentNeeds(typed("100.001", 5_000n, "CARD"))).toEqual(["OVER_PLAN"]);
+  });
+
+  it("another price needs one", () => {
+    expect(purchaseCommentNeeds(typed("60", 5_500n, "CARD"))).toEqual(["PRICE_CHANGED"]);
+  });
+
+  it("a price of 0 needs one (edge case 'The item was free')", () => {
+    expect(purchaseCommentNeeds(typed("60", 0n, "CARD"))).toEqual(["PRICE_CHANGED", "GIFT"]);
+  });
+
+  it("another payment type needs one (edge case 'Planned by card, paid in cash')", () => {
+    expect(purchaseCommentNeeds(typed("60", 5_000n, "CASH"))).toEqual(["PAYMENT_CHANGED"]);
+  });
+});
+
+describe("purchaseDateRefusal (07 Purchase record, Date bought; plan of 3.3, decided item 7)", () => {
+  it("a date after today is refused", () => {
+    expect(purchaseDateRefusal("2026-10-18", "2026-10-17", "2026-10-01")).toBe("inFuture");
+  });
+
+  it("a date before the Finance approval is refused", () => {
+    expect(purchaseDateRefusal("2026-09-30", "2026-10-17", "2026-10-01")).toBe("beforeApproval");
+  });
+
+  it("the approval day and today are allowed", () => {
+    expect(purchaseDateRefusal("2026-10-01", "2026-10-17", "2026-10-01")).toBeNull();
+    expect(purchaseDateRefusal("2026-10-17", "2026-10-17", "2026-10-01")).toBeNull();
+  });
+
+  it("an order without an approval date is refused", () => {
+    expect(purchaseDateRefusal("2026-10-17", "2026-10-17", null)).toBe("beforeApproval");
+  });
+});
+
+describe("sameAsPlanned (07 Purchase record, 'Same as planned'; plan of 3.3, decided item 5)", () => {
+  it("nothing received: the plan", () => {
+    expect(sameAsPlanned("100", 5_000n, [20_000n], "0")).toEqual({
+      qty: "100",
+      unitPrice: 5_000n,
+      extras: [20_000n],
+    });
+  });
+
+  it("60 received: the 40 lacking, the planned price, no extras", () => {
+    expect(sameAsPlanned("100", 5_000n, [20_000n], "60")).toEqual({
+      qty: "40",
+      unitPrice: 5_000n,
+      extras: [],
+    });
+  });
+
+  it("nothing lacking: the planned quantity", () => {
+    expect(sameAsPlanned("100.000", 5_000n, [], "100")).toEqual({
+      qty: "100",
+      unitPrice: 5_000n,
+      extras: [],
+    });
   });
 });

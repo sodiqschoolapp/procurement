@@ -29,6 +29,14 @@ export const ORDER_ACTIONS = [
 export type OrderAction = (typeof ORDER_ACTIONS)[number];
 
 /**
+ * Every write an order's history names: the moves above, then the writes on an Open order that
+ * move no status (plan of 3.3, Database changes). The `order_actions.type` and `order_events.type`
+ * enums read this list; `ORDER_MOVES` never names the writes. 3.5 and 3.7 add theirs here.
+ */
+export const ORDER_EVENT_TYPES = [...ORDER_ACTIONS, "RECORD_PURCHASE"] as const;
+export type OrderEventType = (typeof ORDER_EVENT_TYPES)[number];
+
+/**
  * Who acts, in the table's words. Only `owner` adds a check of its own (the actor is the order's
  * owner, the Head included only when he is the owner; plan of 2.3, decision 5); the others are
  * the permission's grant.

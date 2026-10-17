@@ -96,6 +96,8 @@ export const SERVER_ACTIONS: Record<string, Entry> = {
   // The order list on /orders (plan of 2.8): each export in the matrix through itself.
   "src/app/(app)/orders/actions.ts#selectAllOnFilterAction": "data.view",
   "src/app/(app)/orders/actions.ts#tickedSummaryAction": "data.view",
+  // Record purchases (03; plan of 3.3): the Head, the owner with RECORD_PURCHASES on.
+  "src/app/(app)/orders/[id]/purchase/actions.ts#recordPurchaseAction": "purchase.record",
 };
 
 /** Exports of `src/features/<area>/queries/`, as `<file>#<export>`. */
@@ -176,6 +178,9 @@ export const QUERIES: Record<string, Permission> = {
   // decision 4, Look first).
   "src/features/settings/queries/settings.ts#getSettingsForHead": "catalog.manage",
   "src/features/settings/queries/settings.ts#getSchoolName": "profile.edit",
+  // The purchase form (plan of 3.3): data.view with the branch wall in the SQL, then
+  // purchase.record on the order (record-purchase-matrix.db.test.ts).
+  "src/features/purchasing/queries/purchase-form.ts#getPurchaseForm": "purchase.record",
 };
 
 /**

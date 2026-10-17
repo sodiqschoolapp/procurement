@@ -50,6 +50,15 @@ export async function OrderHistory({ events }: { events: readonly OrderPageEvent
                 })}
               </p>
             ) : null}
+            {event.purchase ? (
+              // The record a Record purchase saved (07 What saving a record does 6; plan of 3.3).
+              <p data-purchase className="text-[15px] leading-[22px] tabular-nums">
+                {t("purchase", {
+                  qty: format.quantity(event.purchase.qty),
+                  price: format.money(BigInt(event.purchase.unitPrice)),
+                })}
+              </p>
+            ) : null}
             {event.comment ? (
               <p className="text-[15px] leading-[22px]">{t("reason", { text: event.comment })}</p>
             ) : null}

@@ -2,7 +2,14 @@ import { eq } from "drizzle-orm";
 
 import type { Permission, Target } from "@/domain/permissions";
 import type { Executor } from "@/server/authorize";
-import { catalogSuggestions, orders, productVariants, products } from "@/server/db/schema";
+import {
+  catalogSuggestions,
+  orders,
+  productVariants,
+  products,
+  purchaseTrips,
+  tripFiles,
+} from "@/server/db/schema";
 
 // Who may download a file: the record it belongs to decides (build plan 0.12: the download route
 // "calls authorize() for the record the file belongs to; each later task that attaches files adds
@@ -114,11 +121,29 @@ export const ORDER_REFERENCE_PHOTOS: FileOwner = {
   },
 };
 
+/**
+ * A trip's receipt file (07 Purchase record, Receipt; task 3.3): seen through `data.view` on the
+ * trip's branch, as the order it was bought for (progress 3.2, "For 3.3"). A trip's orders are
+ * Open or later, never a Draft.
+ */
+export const TRIP_FILES: FileOwner = {
+  name: "trip_files.file_id",
+  async find(executor, fileId) {
+    const [row] = await executor
+      .select({ branchId: purchaseTrips.branchId })
+      .from(tripFiles)
+      .innerJoin(purchaseTrips, eq(purchaseTrips.id, tripFiles.tripId))
+      .where(eq(tripFiles.fileId, fileId));
+    return row ? { permission: "data.view", target: { branchId: row.branchId } } : null;
+  },
+};
+
 export const FILE_OWNERS: readonly FileOwner[] = [
   PRODUCT_PHOTOS,
   SUBTYPE_PHOTOS,
   SUGGESTION_PHOTOS,
   ORDER_REFERENCE_PHOTOS,
+  TRIP_FILES,
 ];
 
 /** The access of the first record that holds the file, or `null` for a file no record holds. */

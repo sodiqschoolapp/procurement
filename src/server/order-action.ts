@@ -1,7 +1,7 @@
 import { inArray, sql } from "drizzle-orm";
 import * as z from "zod";
 
-import { ORDER_ACTION_MAX, type OrderAction, behindDraftWall } from "@/domain/order-moves";
+import { ORDER_ACTION_MAX, type OrderEventType, behindDraftWall } from "@/domain/order-moves";
 import type { Actor, Permission } from "@/domain/permissions";
 import type { RequestStatus } from "@/domain/request-status";
 import { type CurrentUser, getCurrentUser } from "@/server/auth/session";
@@ -110,7 +110,7 @@ export type OrdersActionDefinition<Input extends OrdersInput> = {
   /** For the log only. */
   name: string;
   /** The `order_actions.type` and `order_events.type` it writes. */
-  type: OrderAction;
+  type: OrderEventType;
   input: z.ZodType<Input>;
   /** The permission one order needs now; a move takes its row's (src/server/order-moves.ts). */
   permission(order: LockedOrder): Permission;
@@ -242,7 +242,7 @@ async function repeated<Input extends OrdersInput>(
 ): Promise<OrdersResult | null> {
   // Two calls with one key wait for each other here; the second finds the first's row.
   await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${clientKey}, 0))`);
-  const stored = await tx.execute<{ id: string; actor_id: string; type: OrderAction }>(
+  const stored = await tx.execute<{ id: string; actor_id: string; type: OrderEventType }>(
     sql`select id, actor_id, type from order_actions where client_key = ${clientKey}`,
   );
   const action = stored.rows[0];
