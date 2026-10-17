@@ -20,7 +20,7 @@ import {
 import { readSnapshot } from "@/server/read-snapshot";
 import { readSettings } from "@/server/settings";
 
-import { orderRecords } from "./order-records";
+import { orderRecords } from "../order-records";
 
 // The purchase form of one Open order, /orders/[id]/purchase (07-purchasing.md, Purchase record;
 // plan of 3.3). Under `purchase.record`: the Head in any branch, the order's owner with

@@ -38,7 +38,7 @@ import { orderState } from "@/server/order-moves";
 import { readSnapshot } from "@/server/read-snapshot";
 import { readSettings } from "@/server/settings";
 
-import { orderRecords } from "@/features/purchasing/queries/order-records";
+import { orderRecords } from "@/features/purchasing/order-records";
 
 import { createdByHeadSql, headStepAutoSql, ownerClosesAloneSql } from "../order-facts";
 

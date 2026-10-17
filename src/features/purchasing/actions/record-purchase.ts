@@ -40,7 +40,7 @@ import { readSettings } from "@/server/settings";
 import { postMovement } from "@/server/stock-ledger";
 
 import { requiredPriceField } from "../../catalog/actions/catalog-fields";
-import { orderRecords } from "../queries/order-records";
+import { orderRecords } from "../order-records";
 
 // Record a purchase for one Open order, a trip of one (07-purchasing.md, Purchase record; What
 // saving a record does; 02-assumptions.md A7; plan of 3.3). It runs in the wrapper of
