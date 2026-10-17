@@ -1742,6 +1742,27 @@ Choices made during the build:
 - The Done-when test sets both guard settings to 0 (every overspend needs the Head) so that the order stays above the guard after the cancel and Finance's `not_ready` can only mean the cleared confirmation and acknowledgment.
 - The browser test is in `close-exact.spec.ts`, signs in the shared `e2e_head` without changing his language, and finds the confirm button by its label in all three languages, as `overspend.spec.ts` does.
 
+### 4.9 Money with managers (17.10.2026)
+
+The plan's decisions as the plan review of 17.10.2026 confirmed them (corrections applied: owners are grouped whatever their role, with a database case of a Head-owned order; Closed is left out by `managerCashBalance()` only).
+
+1. **Look first** (permission matrix). A new permission `money.managers`: Head all branches, Finance own branches, Manager and Principal no. 03 has no row for the page; 11 Screens names Finance and Head; `data.view` would let the Manager and the Principal in. It guards this page only: the report "Money with managers" of 10 Reports, which every role gets for its own branches, must not reuse it (permission review of 4.9).
+2. **Look first** (a formula in `src/domain/`). "The date since when" is the order's first live cash movement (a Cash given, Cash returned or Paid back row of an action not cancelled, by its date; a live record whose `cashSpent()` is above 0, by its trip's date); a Manager's is the oldest of the orders behind his balance. Known limit: a count that went back to 0 and away again shows the older date. Proposed `/spec-change` if the owner prefers the other reading, 08 Money with managers: "the date since when is the date the order's cash count last moved away from 0".
+3. One balance per owner across the branches the viewer sees; Finance of one branch sees only that branch's orders of a Manager in two.
+4. Every status but Closed counts; Draft is not read (no money reaches one); an order with count 0 is not listed.
+5. Oldest first by the since date, ties by name then id; orders inside the same, then by number.
+6. The page follows the top bar's branch choice; a chosen branch that is not the user's is refused, as the order list does.
+7. A deactivated owner is listed with the plain word "inactive".
+8. Each block opens to its orders, each a link to its page; no new order-list filter.
+9. The seed's money orders move through the real path (the state machine's moves, money actions dated the Tashkent day of their order action and naming it, `approved_at`, `closed_at`); the Closed one is Not bought with a reason before Send to settlement; no purchase, so no stock movement.
+10. The since date is shown as a date only; age buckets are Analytics' (Phase 6).
+
+Choices made during the build:
+
+- The seed's Skotch order uses the department "IT xonasi": the seed Draft already holds Skotch for "Oshxona", and `orders_one_draft_key` allows one Draft per subtype and department (the new order is created as a Draft first).
+- The seed test's set of statuses gains Open and Closed and its title says ten orders: the Build line of 4.9 asks the seed for them. Its move test now also accepts the writes that move no status (type in `ORDER_EVENT_TYPES`, status unchanged) and asks `checkMoves()` for each status move.
+- The disclosure is a native `<details>` with the `expand_more` icon; the screen needs no client code.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

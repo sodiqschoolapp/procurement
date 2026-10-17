@@ -19,6 +19,12 @@ const PRINCIPAL_APPROVES = {
   to: "PENDING_FINANCE",
   actor: "seed_principal",
 };
+const FINANCE_APPROVES = {
+  type: "APPROVE",
+  from: "PENDING_FINANCE",
+  to: "PURCHASING",
+  actor: "seed_finance",
+};
 const HEAD_SENDS_BACK = {
   type: "SEND_BACK",
   from: "PENDING_HEAD",
@@ -27,11 +33,24 @@ const HEAD_SENDS_BACK = {
   reason: "Miqdorni kamaytiring (demo)",
 };
 
+/** The moves of a Finance approval with the cash it gives (08 When Finance approves; plan of 4.9). */
+function approvedWithCash(prefix, cash) {
+  return [
+    { ...SUBMIT, key: `${prefix}1` },
+    { ...HEAD_APPROVES, key: `${prefix}2` },
+    { ...PRINCIPAL_APPROVES, key: `${prefix}3` },
+    { ...FINANCE_APPROVES, key: `${prefix}4`, cash },
+  ];
+}
+
 /**
- * The seven orders, all owned by the seed Manager. `moves` are the history oldest first; orders
+ * The ten orders, all owned by the seed Manager. `moves` are the history oldest first; orders
  * that name the same `submitKey` were submitted in one action, as were the two of the group row.
  * `total` is round(quantity × price) + extras (08-money-and-settlement.md, Planned total), checked
- * against orderTotal() by the seed test. `neededInDays` counts from the seed's Tashkent date.
+ * against orderTotal() by the seed test. `neededInDays` counts from the seed's Tashkent date. `daysAgo` moves the
+ * whole history of an order that many days back, so its money has an age (build plan 4.9; plan of
+ * 4.9, decided item 9). A move with `cash` gives that much at Finance's approval; `money` records
+ * a money action as the Money tab does; `finish` marks the buying finished with a reason.
  */
 export const SEED_ORDERS = [
   // The group row: one subtype at one status in CHL, two departments (05 Group rows).
@@ -137,10 +156,91 @@ export const SEED_ORDERS = [
     neededInDays: 14,
     moves: [{ ...SUBMIT, key: "0e5d7a4e-4a51-4c1e-9a10-0000000000e1" }],
   },
+  // Money with managers (build plan 4.9): two Open orders holding the cash given at approval, on
+  // two past days, and a Closed one whose cash came back in full.
+  {
+    clientKey: "0e5d7a4e-4a51-4c1e-9a10-000000000008",
+    branch: "CHL",
+    product: "Qalam",
+    subtype: null,
+    department: "Kutubxona",
+    quantity: "40",
+    price: 1500n,
+    extras: [],
+    total: 60000n,
+    neededInDays: 7,
+    daysAgo: 3,
+    moves: approvedWithCash("0e5d7a4e-4a51-4c1e-9a10-0000000000f", 60000n),
+  },
+  {
+    clientKey: "0e5d7a4e-4a51-4c1e-9a10-000000000009",
+    branch: "CHL",
+    product: "Skotch",
+    subtype: null,
+    department: "IT xonasi",
+    quantity: "10",
+    price: 6000n,
+    extras: [],
+    total: 60000n,
+    neededInDays: 7,
+    daysAgo: 12,
+    moves: approvedWithCash("0e5d7a4e-4a51-4c1e-9a10-0000000001a", 60000n),
+  },
+  {
+    clientKey: "0e5d7a4e-4a51-4c1e-9a10-000000000010",
+    branch: "CHL",
+    product: "Papka",
+    subtype: null,
+    department: "Xo'jalik bo'limi",
+    quantity: "20",
+    price: 5000n,
+    extras: [],
+    total: 100000n,
+    neededInDays: 7,
+    daysAgo: 20,
+    moves: [
+      ...approvedWithCash("0e5d7a4e-4a51-4c1e-9a10-0000000001b", 100000n),
+      {
+        type: "RECORD_MONEY",
+        from: "PURCHASING",
+        to: "PURCHASING",
+        actor: "seed_finance",
+        key: "0e5d7a4e-4a51-4c1e-9a10-0000000001b5",
+        money: { kind: "CASH_RETURNED", amount: 100000n, comment: "Pul qaytarildi (demo)" },
+      },
+      {
+        type: "MARK_NOT_BOUGHT",
+        from: "PURCHASING",
+        to: "PURCHASING",
+        actor: "seed_manager",
+        key: "0e5d7a4e-4a51-4c1e-9a10-0000000001b6",
+        reason: "Do'konda topilmadi (demo)",
+        finish: "NOT_BOUGHT",
+      },
+      {
+        type: "SEND_TO_SETTLEMENT",
+        from: "PURCHASING",
+        to: "SETTLEMENT",
+        actor: "seed_manager",
+        key: "0e5d7a4e-4a51-4c1e-9a10-0000000001b7",
+      },
+      {
+        type: "CLOSE",
+        from: "SETTLEMENT",
+        to: "CLOSED",
+        actor: "seed_finance",
+        key: "0e5d7a4e-4a51-4c1e-9a10-0000000001b8",
+      },
+    ],
+  },
 ];
 
 /** One hour between two moves, the last one an hour before the seed moment, so they sort. */
 const HOUR = 60 * 60 * 1000;
+const DAY = 24 * HOUR;
+
+/** The seed moment moved `daysAgo` days back: the end of the order's history. */
+const endOf = (order, moment) => moment.getTime() - (order.daysAgo ?? 0) * DAY;
 
 /**
  * Writes the seed orders that are not there yet, in the seed's transaction. A found client key
@@ -173,7 +273,7 @@ export async function seedOrders(query, { userIds, branchIds, moment }) {
     // department: that order is left out, and the seed goes on (as the catalogs keep found rows).
     if (!variant.rows[0] || !department.rows[0]) continue;
     const status = order.moves.at(-1)?.to ?? "DRAFT";
-    const created = new Date(moment.getTime() - (order.moves.length + 1) * HOUR);
+    const created = new Date(endOf(order, moment) - (order.moves.length + 1) * HOUR);
     // Inserted as a DRAFT and moved to its status last: the plan, its extras and its number are
     // written while the order is editable (orders_guard; order_extras_guard of 0019).
     const inserted = await query(
@@ -211,7 +311,7 @@ export async function seedOrders(query, { userIds, branchIds, moment }) {
 
     // The number at the first submit (05 Order number): the branch's next counter value of the
     // Tashkent year of the submit, as 2.7's submit takes it.
-    const submitted = new Date(moment.getTime() - order.moves.length * HOUR);
+    const submitted = new Date(endOf(order, moment) - order.moves.length * HOUR);
     const counter = await query(
       `insert into number_counters (scope, branch_id, year, last_value, created_at)
        values ('ORD', $1, extract(year from $2::timestamptz at time zone 'Asia/Tashkent'), 1, $2)
@@ -268,36 +368,86 @@ export async function seedOrders(query, { userIds, branchIds, moment }) {
   for (const order of missing) {
     if (!ids.has(order.clientKey)) continue;
     order.moves.forEach((move, at) => {
-      const action = actions.get(move.key) ?? { move, at: 0, orders: [] };
+      const action = actions.get(move.key) ?? { move, when: Infinity, orders: [] };
       action.orders.push(ids.get(order.clientKey));
       actions.set(move.key, action);
-      action.at = Math.max(action.at, order.moves.length - at);
+      action.when = Math.min(action.when, endOf(order, moment) - (order.moves.length - at) * HOUR);
     });
   }
-  for (const [key, { move, at, orders }] of actions) {
-    const when = new Date(moment.getTime() - at * HOUR);
+  for (const [key, { move, when: time, orders }] of actions) {
+    const when = new Date(time);
     const actorId = userIds.get(move.actor);
     const action = await query(
       `insert into order_actions (client_key, type, actor_id, reason, order_count, created_at)
        values ($1, $2, $3, $4, $5, $6) returning id`,
       [key, move.type, actorId, move.reason ?? null, orders.length, when],
     );
+    const actionId = action.rows[0].id;
     for (const orderId of orders) {
+      const payload = await seedOrderWrite(query, { move, orderId, actionId, actorId, when });
       await query(
         `insert into order_events (order_id, action_id, type, from_status, to_status, actor_id,
-           comment, created_at)
-         values ($1, $2, $3, $4, $5, $6, $7, $8)`,
+           comment, payload, created_at)
+         values ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
         [
           orderId,
-          action.rows[0].id,
+          actionId,
           move.type,
           move.from,
           move.to,
           actorId,
           move.reason ?? null,
+          payload === null ? null : JSON.stringify(payload),
           when,
         ],
       );
     }
   }
+}
+
+/**
+ * What a move writes beside its history, as its action does (plan of 4.9, decided item 9): the
+ * cash of Finance's approval (approve.ts giveCash: one money action naming the approval, dated
+ * that day in Tashkent, no comment) and `approved_at`; a money action of the Money tab
+ * (record-money.ts); the buying finished with its reason (finish-buying.ts); `closed_at` of
+ * Finance's Close (close.ts). Returns the event's payload, or null.
+ */
+async function seedOrderWrite(query, { move, orderId, actionId, actorId, when }) {
+  const money = async (kind, amount, comment) => {
+    const owner = await query("select owner_id from orders where id = $1", [orderId]);
+    const inserted = await query(
+      `insert into money_actions (client_key, order_action_id, manager_id, occurred_on, comment,
+         created_by, created_at)
+       values ($1, $2, $3, ($4::timestamptz at time zone 'Asia/Tashkent')::date, $5, $6, $4)
+       returning id`,
+      [move.key, actionId, owner.rows[0].owner_id, when, comment, actorId],
+    );
+    await query(
+      `insert into money_rows (money_action_id, order_id, kind, amount, created_at)
+       values ($1, $2, $3, $4::bigint, $5)`,
+      [inserted.rows[0].id, orderId, kind, amount, when],
+    );
+    return inserted.rows[0].id;
+  };
+  if (move.cash) {
+    await money("CASH_GIVEN", move.cash, null);
+    await query("update orders set approved_at = $2 where id = $1", [orderId, when]);
+    return null;
+  }
+  if (move.money) {
+    const id = await money(move.money.kind, move.money.amount, move.money.comment);
+    return { money: { actionId: id, kind: move.money.kind, amount: move.money.amount.toString() } };
+  }
+  if (move.finish) {
+    await query("update orders set progress = $2, finish_reason = $3 where id = $1", [
+      orderId,
+      move.finish,
+      move.reason,
+    ]);
+    return { progress: { from: "OPEN", to: move.finish } };
+  }
+  if (move.type === "CLOSE") {
+    await query("update orders set closed_at = $2 where id = $1", [orderId, when]);
+  }
+  return null;
 }

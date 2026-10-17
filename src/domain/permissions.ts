@@ -84,6 +84,13 @@ export const PERMISSIONS = {
   "request.approve_step3": { scope: "branch", roles: FINANCE_ONLY },
   // "Record money given, returned, paid back"
   "money.record": { scope: "branch", roles: FINANCE_ONLY },
+  // The page Money with managers: not a row of 03. 11 Screens: "Money with managers, /money,
+  // Finance, Head"; 08 Money with managers: "Finance and the Head have a page" (plan of 4.9,
+  // decided item 1, Look first).
+  "money.managers": {
+    scope: "branch",
+    roles: { HEAD: "all", MANAGER: "no", PRINCIPAL: "no", FINANCE: "own" },
+  },
   // "Record purchases"
   "purchase.record": { scope: "branch", roles: HEAD_AND_OWNER, right: "RECORD_PURCHASES" },
   // CANCEL_PURCHASES: "Only the Head can cancel a record" when it is off.

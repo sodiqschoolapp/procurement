@@ -1235,4 +1235,22 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - Purchases recorded on another payment type or without the planned extra need a comment (07): the test helper `buy()` of `reopen.db.test.ts` always sends one.
 - `describeTickedWall` needs `owned`; a Head-only move uses `owned: false`.
 
-The next task is 4.9.
+## 4.9 Money with managers (17.10.2026, pull request #89)
+
+**Built**
+- Permission `money.managers` (Head all, Finance own; not a row of 03, Look first).
+- Domain (`money-ledger.ts`): `cashSince()` (an order's first live cash movement) and `managerBalances()` (groups by owner, sums through `managerCashBalance()`, drops count 0, oldest first).
+- `datedMoneyRowsOf()` and `datedCashRecordsOf()` beside `moneyRowsOf()`/`cashRecordsOf()`, which now map from them (one SQL each).
+- `getMoneyWithManagers(userId, branchId)` (`src/features/money/queries/`): branch wall in SQL, a chosen branch authorized first; `/money` (`MoneyWithManagers`), one block per owner with Holds, Owed, Since, opening to its orders.
+- Seed: two Open CHL orders of `seed_manager` with cash given 3 and 12 days back, one Closed (cash returned, Not bought, settled, closed by Finance); `daysAgo`, `cash`, `money`, `finish` on seed moves.
+
+**Left out, and the task that brings it**
+- Finance's and the Head's home lists of money with managers, the Cash analytics by age, the report: Phase 6 and 7.
+
+**What the next sessions must know**
+- For 4.10: a Manager's balance per branch is `getMoneyWithManagers()`; the move's "cash count is 0" check is `orderCashCount()` per order, not this page.
+- For 6.x: the home list and the age buckets read `getMoneyWithManagers()` and `cashSince()`; do not date money a second way.
+- `tests/seed.db.test.ts` checks every seeded status move with `checkMoves()`; a new seeded move needs an actor and facts that allow it.
+- `insertMoneyAction()` of `tests/helpers/money.ts` takes `occurredOn`.
+
+The next task is 4.10.

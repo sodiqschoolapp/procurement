@@ -387,7 +387,7 @@ Cash given, cash spent, the difference and the close, per order, with Finance wo
   - **Done when:** Database test: reopen, cancel one record, and the order needs settlement again with the old confirmations gone.
   - From 3.7: `07-purchasing.md` (Fixing a mistake, fourth bullet: "After the order is Closed, only a reopen by the Head allows corrections"). The cancel is `cancelPurchase` / `cancelTrip` of `src/features/purchasing/actions/cancel-purchase.ts`, allowed by `purchaseCancelAllows()` at status Open only; a reopened order is Open again and needs no other path.
 
-- [ ] **4.9 Money with managers**
+- [x] **4.9 Money with managers**
   - **Read:** `08-money-and-settlement.md` (Money with managers; Money ledger: Manager's cash balance); `11-screens-and-ux.md` (Screens: Money with managers).
   - **Build:** `/money` for Finance (own branches) and the Head: every Manager's cash balance across their orders that are not Closed, held and owed shown apart, oldest first, with the date since when, opening the orders behind it. The seed gains Open orders with cash given and a Closed one.
   - **Done when:** Database test: Finance of one branch sees no balance of another. By hand: the seed shows one Manager holding money.

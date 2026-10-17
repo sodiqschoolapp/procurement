@@ -17,13 +17,15 @@ export type MoneyActionRow = {
   fileId?: string | null;
   documentNo?: string | null;
   comment?: string | null;
+  /** The action's business date; 2 May 2031 unless given. */
+  occurredOn?: string;
 };
 
 export function insertMoneyAction(row: MoneyActionRow) {
   return db.execute<{ id: string }>(sql`
     insert into money_actions (client_key, manager_id, occurred_on, document_no, file_id, comment,
       created_by, created_at)
-    values (${row.clientKey ?? randomUUID()}, ${row.managerId}, '2031-05-02',
+    values (${row.clientKey ?? randomUUID()}, ${row.managerId}, ${row.occurredOn ?? "2031-05-02"},
       ${row.documentNo ?? null}, ${row.fileId ?? null}, ${row.comment ?? null}, ${row.createdBy},
       ${AT})
     returning id`);

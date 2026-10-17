@@ -207,6 +207,8 @@ export const QUERIES: Record<string, Permission> = {
   "src/features/money/queries/money-prefill.ts#moneyPrefillOrders": "data.view",
   "src/features/money/queries/order-money.ts#getOrderMoney": "data.view",
   "src/features/money/queries/settlement.ts#getSettlement": "request.settle",
+  // Money with managers (plan of 4.9, decided item 1, Look first).
+  "src/features/money/queries/money-with-managers.ts#getMoneyWithManagers": "money.managers",
 };
 
 /**
