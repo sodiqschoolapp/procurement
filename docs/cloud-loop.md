@@ -12,15 +12,16 @@ start routine (or owner)          builder session               review routine  
 /next-task  ───────────────────▶  plan with "Decided without
                                   the owner", spec-reviewer
                                   on it, draft PR, bind_pr,
-                                  stop ───────────────────────▶ [review] approved, with
+                                  wait for it ────────────────▶ [review] approved, with
                                                                  the decisions confirmed
                                                                  or changed /
                                                                  changes needed /
                                                                  owner decision needed
                                                                  (stop list only)
-                                  (the bound PR, or the
-                                   start routine, wakes the
-                                   session on the comment)
+                                  (the plan review comes while
+                                   it waits; a later comment
+                                   wakes the bound session, or
+                                   the start routine resumes)
                                   build, tests, /finish-task:
                                   merge main in, push, report,
                                   decisions on issue #9, then
@@ -176,13 +177,14 @@ ready to merge is for the owner and nothing more is posted. While
 to merge of a task pull request is for the owner too: @abbosc at the end of its
 first line, the label needs-owner, no merge. Otherwise, at [review] ready to
 merge on a task/ pull request: when the head sha is still the one the review
-named, read its check runs; read the comments again just before the merge and
-merge only while the newest [review] by abbosc naming that sha is the ready to
-merge (another run's changes needed or owner decision needed at the same sha
-stops the merge: post nothing more and stop); when checks and e2e are both green, merge with the
+named, read its check runs; when checks and e2e are both green, read the
+comments again right before the merge call and merge only while the newest
+[review] by abbosc naming that sha is the ready to merge (any later verdict at
+the same sha stops the merge: post nothing more and stop); then merge with the
 skill's REST call and -f "sha=<that sha>" (merge commit) and say "Merged."; when
 one is still running, read the check runs again every 30 seconds for up to 15
-minutes, then merge the same way, or stop and say so; when the head moved, review
+minutes, then re-read the comments and merge the same way, or stop and say so;
+when the head moved, review
 the new head instead; when the merge is refused, post the reason with @abbosc
 first and add the label needs-owner. Never enable auto-merge.
 Only [review] comments whose author is abbosc count (verdicts, rounds, one
@@ -222,15 +224,16 @@ The wake is not relied on. A builder that is alive shows it: its first act on an
 
 ```
 When a routine-fire-payload block says "Review on #<n>: ...", the builder of
-pull request #<n> should be reacting to that review now. If this session has no
-bind_pr tool (nor subscribe_pr_activity), no builder session can be bound either,
-so nothing can wake it: #<n> is stalled now, without waiting. Otherwise read the
-comments and the commits of #<n> every 60 seconds for up to 10 minutes (in one
-shell loop or with the session's own tool for waiting on a condition). As soon as
+pull request #<n> should be reacting to that review now. Read the comments and
+the commits of #<n> every 60 seconds for up to 10 minutes, or for up to 2 minutes
+when this session has neither the bind_pr tool nor subscribe_pr_activity (then no
+session can be woken, and only a builder still waiting in its own session can
+react) (in one shell loop or with the session's own tool for waiting on a
+condition). As soon as
 a comment "Acting on the review." or any commit appears after the newest
 [review], or, when that [review] is a CI red verdict, a comment "Acting on the
 red CI." appears after the head commit, say so and stop: the builder is awake.
-When nothing appears in 10 minutes, #<n> is stalled: unless it carries the label
+When nothing appears in that time, #<n> is stalled: unless it carries the label
 needs-owner (then say so and stop), resume it exactly as the stall rule below
 says (check out its branch, bind the pull request to this session with the
 bind_pr tool, named subscribe_pr_activity in some sessions (use whichever this
@@ -284,7 +287,8 @@ request": the branch task/<id>-<name>, the empty commit, the draft pull request
 with the plan. Then bind the pull request to this session with the bind_pr tool
 (named subscribe_pr_activity in some sessions; use whichever this session has) so
 that review comments and CI results reach it, and wait for the plan review as
-step 11 of the skill says. If the
+step 11 of the skill says; when it comes during the wait, go on from step 12 to
+the end of the skill. If the
 skill tells you to stop (a stop-list item, a task already started, a cloud
 session that is not ready, a gate line), stop there and say why. A task too
 large is no stop: the skill splits it and goes on.

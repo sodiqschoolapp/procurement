@@ -72,7 +72,7 @@ npm run user:first-head     the first Head of an empty database, password typed 
 
 One task per session, branch and pull request. The loop runs without the owner in the middle (`docs/cloud-loop.md`): the start routine or the owner runs `/next-task`, and the review routine reviews with `/review-pr`.
 
-1. `/next-task` reads the task, its spec files, `docs/progress.md` and the decisions, writes a plan, has the `spec-reviewer` check it, opens a draft pull request and stops.
+1. `/next-task` reads the task, its spec files, `docs/progress.md` and the decisions, writes a plan, has the `spec-reviewer` check it, opens a draft pull request and waits in the same session for the plan review (up to 15 minutes), then builds; without a review in that time it stops.
 2. Where the spec is silent or unclear, nothing waits: take the most reasonable reading (the spec's own lines, the standing decisions, the way the school works), write it in the plan under "Decided without the owner" with the reason, and go on. The reviewer confirms or changes it; the owner confirms or changes it afterwards on issue #9. A rule the spec gives is never replaced by a reading, and nobody works from memory of the spec.
 3. Build only after `[review] approved`, with its corrections. Build the plan and nothing more.
 4. Run `npm run format`, lint, typecheck and the tests the change touches. CI runs everything on the pull request and is the gate; a red CI is fixed before a review is asked for. Never skip, delete or weaken a test to get to green. A test that is wrong because a requirement or a decision changed is fixed, with the reason in the report and the mark **Look first**.
