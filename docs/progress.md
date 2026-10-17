@@ -885,4 +885,23 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - The seed's orders are data in `SEED_ORDERS`; an order whose product, subtype or department is not found as listed is left out.
 - `notifications.spec.ts` (its users are Heads, and every parallel Submit or Approve notifies all Heads) and `catalog.spec.ts` each failed once in the full local e2e run and passed alone; not fixed here.
 
-The next task is 3.1.
+## 3.1 Stock ledger (17.10.2026, pull request #65)
+
+**Built**
+- Migration `0023_stock_ledger`: `stock_movements` (enum `stock_movement_type`, `seq` identity for order, CHECKs on 0, sign by type, cost and balance, append-only triggers); `stock_balances.avg_cost` (bigint, ≥ 0, 0 when empty).
+- `src/domain/stock.ts`: `MOVEMENT_TYPES`, `MOVEMENT_RULES` (direction and priced/at-average per type), `nextBalance()` (stock, moving average half up, refusal with the available quantity).
+- `src/server/stock-ledger.ts`: `postMovement(tx, input)` (product FOR SHARE, service and measure refused, balance FOR UPDATE or made, movement and balance written) and `postMovements()` (lines in branch, subtype order); `StockShortError` (`conflict` with `available`).
+- `STOCK_USES` in `PRODUCT_USES`: a movement locks a product's type and measure.
+
+**Left out, and the task that brings it**
+- FKs of `purchase_id` and `document_line_id`: 3.2 and 5.1. A reversal's match to its movement: 3.7 and 5.7. The nightly recompute: 8.2.
+
+**What the next sessions must know**
+- For 3.3, 3.7 and 5.x: call `postMovement()` (one line) or `postMovements()` (several) inside the action's transaction; `branchId` from the locked record, `createdBy` the wrapper's `userId`; the type-to-permission contract is in the header of `stock-ledger.ts`. Never under `readSnapshot()` (REPEATABLE READ).
+- For 3.7: a cancelled purchase is a priced REVERSAL of the receipt (`unitCost` = its price); the average floors at 0. Check its branch and variant against the receipt.
+- For 5.4: `StockShortError.available` is what the Issue screen names; show it only for the actor's own branch.
+- For 5.6: a RETURN into empty stock comes in at average 0 (decisions 3.1 item 2); a cost of its own enters through `MOVEMENT_RULES`.
+- For 8.2: replay movements by `seq`; `balance_after` of the newest is the balance.
+- A same-moment test of an existing balance must find the row there first: `insert … on conflict do nothing` alone also serialises a held update, so `postMovement` locks before it inserts.
+
+The next task is 3.2.

@@ -1311,6 +1311,27 @@ Choices made during the build:
 - Seed history: one hour between moves, the last an hour before the seed moment, so the events sort by time.
 - The seed's actors are not checked against the state machine at run time (permission review, Should fix 3): the seed creates its users with the roles and branches the moves need; a seed user changed by hand later is not a path the seed guards. Not fixed.
 
+### 3.1 Stock ledger (17.10.2026)
+
+The plan's decisions as the plan review of 17.10.2026 confirmed them (corrections 1 and 2 applied), and those of the build. The Look first items come first.
+
+1. **Look first** (money rule). `avg_cost` and `unit_cost` are `bigint` whole so'm; `nextBalance()` computes with decimal.js and rounds the average half up once per change (developer-rules rule 6; 09 Stock value: value never affects settlement).
+2. **Look first** (stock rule). One table of how each type meets the average: RECEIPT, DIRECT_ENTRY (Decided ahead 12), TRANSFER_IN priced and entering the average; ISSUE, WRITE_OFF, TRANSFER_OUT out at the average; RETURN in at the average (Decided ahead 11); CORRECTION either way at the average; REVERSAL priced or at the average as its caller says. A return or correction into empty stock comes in at 0, and a later receipt blends it in at 0; 5.6 may give it a cost through the table.
+3. **Look first** (stock rule). A priced removal worth more than the stock leaves the average at 0, never negative. Proposed `/spec-change` of 09 Stock value, third bullet, add: "If the result would be below 0, the average is 0."
+4. **Look first** (stock rule). The reset to 0 holds for every movement that brings the stock to 0; CHECK `qty > 0 OR avg_cost = 0`. Proposed `/spec-change` of 09 Stock value: move "If stock reaches 0, the average resets to 0" to its own bullet, for any movement.
+5. Every movement stores the unit cost it moved at (14-data-model `unit_cost`).
+6. The sign of `qty_delta` by type is a database CHECK (09 Movement types; rule 5). Reversal guards are left to 5.7 and 3.7 (plan review, D44).
+7. `postMovement()` refuses a service and a quantity the measure does not allow, and takes the product row FOR SHARE; `STOCK_USES` joins `PRODUCT_USES` (decisions 1.7 item 1).
+8. Below zero: `StockShortError`, an `ActionError("conflict")` carrying branch, subtype and the available quantity.
+9. The balance row is made by the first movement. Build: `postMovement()` first locks an existing row FOR UPDATE and inserts (`on conflict do nothing`) only when there is none: with the insert first, the insert itself waited on a held update and the lock could be removed unseen (the same-moment test passed without it).
+10. `purchase_id` and `document_line_id` exist without a foreign key until 3.2 and 5.1.
+11. `stock_movements.seq` (identity) orders movements, also those sharing one clock instant.
+
+Choices made during the build:
+
+- `postMovements()` posts the lines of one document in (branch, subtype) order, so two documents cannot deadlock on balance rows (the reason of decisions 2.4 item 10). Its test proves the order; a test of two opposite documents was dropped, because it passes without the sort.
+- The permission review's should-fix items (branch from the locked record, `createdBy` from the wrapper, the type-to-permission map, `available` shown only for an own branch) are written as the caller's contract in the header of `src/server/stock-ledger.ts`; a check of a reversal's branch and subtype is left to 3.7 and 5.7, as the plan review decided.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

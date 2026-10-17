@@ -162,6 +162,13 @@
       "when": 1792184458709,
       "tag": "0022_order_revision_submissions",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1792202238249,
+      "tag": "0023_stock_ledger",
+      "breakpoints": true
     }
   ]
 }

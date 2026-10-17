@@ -34,8 +34,26 @@ export const ORDER_USES: ProductUse = {
   },
 };
 
-/** Every kind of row that is a use of a product: orders from 2.5; stock and minimums later. */
-export const PRODUCT_USES: readonly ProductUse[] = [ORDER_USES];
+/**
+ * A stock movement of any type on any of the product's subtypes, in any branch (plan of 3.1,
+ * decided item 7). A balance row is made only by the first movement, in its transaction, so the
+ * movements alone answer. postMovement() of src/server/stock-ledger.ts takes the product row FOR
+ * SHARE before it writes.
+ */
+export const STOCK_USES: ProductUse = {
+  name: "stock_movements.variant_id",
+  async holds(tx, productId) {
+    const found = await tx.execute(sql`
+      select 1 from stock_movements m
+      join product_variants v on v.id = m.variant_id
+      where v.product_id = ${productId}
+      limit 1`);
+    return found.rows.length > 0;
+  },
+};
+
+/** Every kind of row that is a use of a product: orders from 2.5, stock from 3.1; minimums later. */
+export const PRODUCT_USES: readonly ProductUse[] = [ORDER_USES, STOCK_USES];
 
 export async function productInUse(
   tx: Executor,
