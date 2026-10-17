@@ -11,7 +11,7 @@ import { insertBranch } from "../../../../tests/helpers/branches";
 import { setClock } from "../../../../tests/helpers/clock";
 import { insertItem, insertOrder, orderRow } from "../../../../tests/helpers/orders";
 import { type InsertedUser, insertUser } from "../../../../tests/helpers/users";
-import { cancelPurchase } from "./cancel-purchase";
+import { cancelPurchase, cancelTrip } from "./cancel-purchase";
 import { recordPurchase } from "./record-purchase";
 
 // The PRICE_DIFFERS notice, build plan 3.10: 10-notifications-analytics-reports.md, Notifications
@@ -230,6 +230,34 @@ describe("cancelPurchase sends PRICE_DIFFERS when a cancel makes a prompt appear
     expect(await told([s.head])).toEqual([
       { userId: s.head.id, params: { count: 1, branch: s.branch.code }, link: "/prices" },
     ]);
+    expect(await told([s.owner, ...s.others])).toEqual([]);
+  });
+
+  it("Cancel trip shares the notice: the trip's record out, the prompt appears", async () => {
+    const s = await scene();
+    const item = await insertItem({ referencePrice: 10_000n });
+    const last = await openOrder(s, item.variantId);
+    await bought(s, "2031-05-06", last, "10000");
+    await bought(s, "2031-05-07", await openOrder(s, item.variantId), "13000");
+    await bought(s, "2031-05-08", await openOrder(s, item.variantId), "13000");
+    expect(await told([s.head])).toEqual([]);
+    const [record] = await db
+      .select({ tripId: purchases.tripId })
+      .from(purchases)
+      .where(eq(purchases.orderId, last.id));
+
+    const result = await runOrdersAction(cancelTrip, s.owner.id, {
+      clientKey: randomUUID(),
+      orders: [{ id: last.id, version: (await orderRow(last.id))!.version }],
+      tripId: record!.tripId,
+      reason: "Typed the wrong price",
+    });
+    expect(result.ok).toBe(true);
+
+    expect(await told([s.head])).toEqual([
+      { userId: s.head.id, params: { count: 1, branch: s.branch.code }, link: "/prices" },
+    ]);
+    expect(await told([s.owner, ...s.others])).toEqual([]);
   });
 
   it("a cancel that makes a prompt go tells nobody", async () => {

@@ -39,17 +39,19 @@ export default async function PricesPage({ searchParams }: { searchParams: Promi
   const t = await getTranslations("prices");
   const tCatalog = await getTranslations("catalog");
   const format = await getFormatters();
-  const prompts: PromptRow[] = (await getPricePrompts(user.id)).map((row) => ({
-    key: `${row.variantId}/${row.branchId}`,
-    variantId: row.variantId,
-    title: row.subtypeName === null ? row.productName : `${row.productName} · ${row.subtypeName}`,
-    branchCode: row.branchCode,
-    referenceText: format.money(row.referencePrice!),
-    averageText: format.money(row.average),
-    average: row.average.toString(),
-    count: row.count,
-    percent: Number(row.percent),
-  }));
+  const prompts: PromptRow[] = (await readOrNotFound(() => getPricePrompts(user.id))).map(
+    (row) => ({
+      key: `${row.variantId}/${row.branchId}`,
+      variantId: row.variantId,
+      title: row.subtypeName === null ? row.productName : `${row.productName} · ${row.subtypeName}`,
+      branchCode: row.branchCode,
+      referenceText: format.money(row.referencePrice!),
+      averageText: format.money(row.average),
+      average: row.average.toString(),
+      count: row.count,
+      percent: Number(row.percent),
+    }),
+  );
   const { page, pages } = list;
   const empty = list.found === 0 && q === "";
   const when = (moment: Date) => `${format.date(moment)} ${format.time(moment)}`;
