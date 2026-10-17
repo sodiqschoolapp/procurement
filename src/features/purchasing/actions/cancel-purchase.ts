@@ -272,18 +272,25 @@ async function reverseStock(context: OrdersContext<CancelInput>, records: readon
  * The last purchase price is "the price of the newest real purchase of a subtype"
  * (edge-cases/00-definitions.md): when the subtype's newest PURCHASE price row (by `seq`) is of a
  * record cancelled now, the price and its moment go back to its newest row whose record is not
- * cancelled, or to empty (decided item 6, Look first). A price set otherwise stays.
+ * cancelled, or to empty (decided item 6, Look first). A price set otherwise, or of an older record, stays.
  */
 async function lastPricesAgain(
   context: OrdersContext<CancelInput>,
   records: readonly HeldRecord[],
 ) {
   const cancelled = new Set(records.map((record) => record.id));
+  const cancelledNow = sql.join(
+    records.map((record) => sql`${record.id}::uuid`),
+    sql`, `,
+  );
   for (const variantId of [...new Set(records.map((record) => record.variantId))].sort()) {
+    // The price in force before this action: the newest row of a record live until now.
     const newest = await context.tx.execute<{ purchase_id: string }>(sql`
-      select purchase_id from price_history
-      where variant_id = ${variantId} and source = 'PURCHASE'
-      order by seq desc limit 1`);
+      select h.purchase_id from price_history h
+      join purchases p on p.id = h.purchase_id
+      where h.variant_id = ${variantId} and h.source = 'PURCHASE'
+        and (not p.is_cancelled or p.id in (${cancelledNow}))
+      order by h.seq desc limit 1`);
     const top = newest.rows[0];
     if (!top || !cancelled.has(top.purchase_id)) continue;
     const live = await context.tx.execute<{ price: string; created_at: Date }>(sql`
