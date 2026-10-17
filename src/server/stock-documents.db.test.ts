@@ -15,6 +15,7 @@ import {
   type CreatedDocument,
   type DocumentInput,
   createDocument,
+  lockDocument,
   postLines,
   reverseDocument,
 } from "./stock-documents";
@@ -250,7 +251,7 @@ describe("posting (09 Movement types; Issue to a department 1; rule 3)", () => {
     ]);
   });
 
-  it("a write-off that waits moves nothing until postLines()", async () => {
+  it("a write-off that waits moves nothing; postLines() refuses it until it is POSTED, then posts once", async () => {
     setClock(AT);
     const b = await branch();
     const v = await goods();
@@ -268,16 +269,77 @@ describe("posting (09 Movement types; Issue to a department 1; rule 3)", () => {
     });
     expect(waiting.posted).toEqual([]);
     expect(await balanceOf(b.id, v)).toMatchObject({ qty: "5.000" });
+    const post = () =>
+      outcome(
+        db.transaction((tx) => postLines(tx, { documentId: waiting.documentId, postedBy: userId })),
+      );
+    expect(await post()).toMatchObject({ code: "wrong_status" });
+    expect(await balanceOf(b.id, v)).toMatchObject({ qty: "5.000" });
 
-    await db.transaction((tx) =>
-      postLines(tx, {
-        documentId: waiting.documentId,
-        type: "WRITE_OFF",
-        branchId: b.id,
-        createdBy: userId,
-      }),
-    );
+    // The Head's approval (5.11) sets the status first; postLines() reads type and branch itself.
+    await db.execute(sql`update stock_documents
+      set status = 'POSTED', decided_by = ${userId}, decided_at = ${new Date(AT)}
+      where id = ${waiting.documentId}`);
+    expect(await post()).toHaveLength(1);
     expect(await balanceOf(b.id, v)).toMatchObject({ qty: "3.000" });
+
+    // A second post of the same lines is refused (permission review of 5.1, Must fix 1).
+    expect(await post()).toMatchObject({ code: "wrong_status" });
+    expect(await balanceOf(b.id, v)).toMatchObject({ qty: "3.000" });
+  });
+
+  it("an already approved write-off is created with decided_by and decided_at at the clock", async () => {
+    setClock(AT);
+    const b = await branch();
+    const v = await goods();
+    await create(entry(b.id, [{ variantId: v, qty: "5", unitCost: 100n }]));
+    const head = (await insertUser("HEAD")).id;
+    const made = await create({
+      type: "WRITE_OFF",
+      branchId: b.id,
+      docDate: "2031-05-03",
+      status: "POSTED",
+      reason: "EXPIRED",
+      comment: "Muddati o'tgan",
+      clientKey: randomUUID(),
+      createdBy: head,
+      decidedBy: head,
+      lines: [{ variantId: v, qty: "1" }],
+    });
+    const found = await db.execute<{ decided_by: string; at_clock: boolean }>(sql`
+      select decided_by, decided_at = ${new Date(AT)} as at_clock from stock_documents
+      where id = ${made.documentId}`);
+    expect(found.rows[0]).toEqual({ decided_by: head, at_clock: true });
+    expect(await balanceOf(b.id, v)).toMatchObject({ qty: "4.000" });
+  });
+
+  it("lockDocument() returns what a caller authorizes on, and not_found for an unknown id", async () => {
+    setClock(AT);
+    const [b, to] = [await branch(), await branch()];
+    const v = await goods();
+    await create(entry(b.id, [{ variantId: v, qty: "5", unitCost: 100n }]));
+    const sent = await create({
+      type: "TRANSFER",
+      branchId: b.id,
+      toBranchId: to.id,
+      docDate: "2031-05-03",
+      status: "IN_TRANSIT",
+      clientKey: randomUUID(),
+      createdBy: userId,
+      lines: [{ variantId: v, qty: "2" }],
+    });
+    expect(await balanceOf(b.id, v)).toMatchObject({ qty: "3.000" });
+    expect(await db.transaction((tx) => lockDocument(tx, sent.documentId))).toEqual({
+      id: sent.documentId,
+      type: "TRANSFER",
+      status: "IN_TRANSIT",
+      branchId: b.id,
+      toBranchId: to.id,
+      createdBy: userId,
+    });
+    expect(await outcome(db.transaction((tx) => lockDocument(tx, randomUUID())))).toMatchObject({
+      code: "not_found",
+    });
   });
 
   it("an issue past the stock names what is left and saves no document, line, movement or number", async () => {

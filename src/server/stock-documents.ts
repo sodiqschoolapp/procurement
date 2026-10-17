@@ -24,13 +24,25 @@ import { type PostedMovement, postMovements } from "./stock-ledger";
 // createDocument(), posted by postLines() and undone by reverseDocument(), inside its own action's
 // transaction; stock changes only through postMovements() of ./stock-ledger.ts.
 //
-// The caller's contract, as for postMovement() (header of ./stock-ledger.ts): the caller has
-// authorized its action (developer-rules.md rule 4), and each type is made, posted and reversed
-// only by the action of its matrix row (03-roles-and-permissions.md; Decided ahead, question 19);
-// `branchId` comes from what the caller locked or checked against the user's branches, never from
-// an unchecked input; `createdBy` and `reversedBy` are the wrapper's `userId`. postLines() is
-// called once per document, when its status becomes one whose stock moves, under the lock of the
-// document; a StockShortError leaves the caller's transaction to save nothing (rule 3).
+// The caller's contract, as for postMovement() (header of ./stock-ledger.ts; permission review of
+// 5.1). None of these functions authorizes; the caller's action has (developer-rules.md rule 4):
+// - Who makes each type (03-roles-and-permissions.md, Permission matrix; Manager rights): an issue,
+//   a return and a transfer in the actor's own branches, a Manager only with ISSUE_STOCK,
+//   RETURN_REVERSE, TRANSFER_STOCK; a write-off or count is created PENDING_APPROVAL, a Manager
+//   only with WRITE_OFF_COUNT, and becomes POSTED only by the Head's approval, which sets
+//   `decided_by`; a direct entry by the Head alone.
+// - Who reverses each type (Decided ahead, question 19): an issue and a return by their creator or
+//   the Head, a Manager only with RETURN_REVERSE; a direct entry, an approved write-off, a received
+//   transfer and an approved count by the Head alone. The caller takes lockDocument() first,
+//   decides on the row it returns (another branch is "Not found"; a transfer is of its sending
+//   branch, `branchId`), and only then calls reverseDocument(), in the same transaction.
+// - `branchId`, `toBranchId`, `departmentId` and every `variantId` of createDocument() come from
+//   the browser: the caller checks the branch against the user's branches (and that it is active)
+//   and each id against what the user may use; the database ties the department to the branch.
+// - `createdBy`, `decidedBy` and `reversedBy` are the wrapper's `userId`.
+// postLines() locks the document and reads its type and branch itself, and posts a document only
+// once (a line that already moved is `wrong_status`). A StockShortError leaves the caller's
+// transaction to save nothing (rule 3).
 
 export type DocumentLineInput = {
   variantId: string;
@@ -56,6 +68,8 @@ export type DocumentInput = {
   comment?: string | null;
   clientKey: string;
   createdBy: string;
+  /** The Head who approved it, when a write-off or count is created already approved. */
+  decidedBy?: string | null;
   lines: readonly DocumentLineInput[];
 };
 
@@ -94,11 +108,13 @@ export async function createDocument(tx: Executor, input: DocumentInput): Promis
 
   const inserted = await tx.execute<{ id: string }>(sql`
     insert into stock_documents (number, type, branch_id, to_branch_id, department_id,
-      received_by_name, doc_date, status, reason, comment, client_key, created_by, created_at)
+      received_by_name, doc_date, status, reason, comment, client_key, created_by, decided_by,
+      decided_at, created_at)
     values (${number}, ${input.type}, ${input.branchId}, ${input.toBranchId ?? null},
       ${input.departmentId ?? null}, ${input.receivedByName ?? null}, ${input.docDate},
       ${input.status}, ${input.reason ?? null}, ${input.comment ?? null}, ${input.clientKey},
-      ${input.createdBy}, ${moment})
+      ${input.createdBy}, ${input.decidedBy ?? null}, ${input.decidedBy ? moment : null},
+      ${moment})
     returning id`);
   const documentId = inserted.rows[0]!.id;
 
@@ -123,34 +139,73 @@ export async function createDocument(tx: Executor, input: DocumentInput): Promis
   const posted =
     input.status === "PENDING_APPROVAL"
       ? []
-      : await postLines(tx, {
-          documentId,
-          type: input.type,
-          branchId: input.branchId,
-          createdBy: input.createdBy,
-        });
+      : await postLines(tx, { documentId, postedBy: input.createdBy });
   return { documentId, number, lineIds, posted };
+}
+
+/** A document as lockDocument() holds it, for the caller to authorize (header contract). */
+export type LockedDocument = {
+  id: string;
+  type: DocumentType;
+  status: DocumentStatus;
+  branchId: string;
+  toBranchId: string | null;
+  createdBy: string;
+};
+
+/** Locks one document FOR UPDATE and returns what a caller authorizes on; unknown: `not_found`. */
+export async function lockDocument(tx: Executor, documentId: string): Promise<LockedDocument> {
+  const held = await tx.execute<{
+    id: string;
+    type: DocumentType;
+    status: DocumentStatus;
+    branch_id: string;
+    to_branch_id: string | null;
+    created_by: string;
+  }>(sql`
+    select id, type, status, branch_id, to_branch_id, created_by
+    from stock_documents where id = ${documentId} for update`);
+  const row = held.rows[0];
+  if (!row) throw new ActionError("not_found");
+  return {
+    id: row.id,
+    type: row.type,
+    status: row.status,
+    branchId: row.branch_id,
+    toBranchId: row.to_branch_id,
+    createdBy: row.created_by,
+  };
 }
 
 /**
  * Writes the movement of each line of one document (lineMovement() of src/domain/
- * stock-documents.ts), in postMovements()' fixed order, each pointing at its line. The lines are
- * read here, after the caller locked the document.
+ * stock-documents.ts), in postMovements()' fixed order, each pointing at its line. The document
+ * is locked here and its type and branch read from it; it must be POSTED or IN_TRANSIT (the
+ * caller sets the status first) and none of its lines may have moved yet: `wrong_status`
+ * otherwise (permission review of 5.1, Must fix 1). The lines are read after the lock, in a
+ * statement of their own.
  */
 export async function postLines(
   tx: Executor,
-  document: { documentId: string; type: DocumentType; branchId: string; createdBy: string },
+  input: { documentId: string; postedBy: string },
 ): Promise<PostedLine[]> {
+  const document = await lockDocument(tx, input.documentId);
+  if (document.status !== "POSTED" && document.status !== "IN_TRANSIT") {
+    throw new ActionError("wrong_status");
+  }
   const found = await tx.execute<{
     id: string;
     variant_id: string;
     qty: string;
     unit_cost: string | null;
+    moved: boolean;
   }>(sql`
-    select id, variant_id, qty::text as qty, unit_cost::text as unit_cost
-    from stock_document_lines where document_id = ${document.documentId}
-    order by id`);
+    select l.id, l.variant_id, l.qty::text as qty, l.unit_cost::text as unit_cost,
+      exists (select 1 from stock_movements m where m.document_line_id = l.id) as moved
+    from stock_document_lines l where l.document_id = ${document.id}
+    order by l.id`);
   const lines = found.rows;
+  if (lines.some((line) => line.moved)) throw new ActionError("wrong_status");
   const movements = await postMovements(
     tx,
     lines.map((line) => ({
@@ -160,7 +215,7 @@ export async function postLines(
       }),
       branchId: document.branchId,
       variantId: line.variant_id,
-      createdBy: document.createdBy,
+      createdBy: input.postedBy,
       documentLineId: line.id,
     })),
   );
@@ -183,7 +238,8 @@ type HeldMovement = {
 /**
  * Undoes one document (09 Movement types, last paragraph: "A wrong document is fixed with
  * 'Reverse', which writes the opposite movement and needs a reason"; Issue to a department 3: "The
- * original is then marked 'Reversed'"). The document is locked first; then, in a statement of its
+ * original is then marked 'Reversed'"). The caller has taken lockDocument() and authorized on its row
+ * (header contract); the lock is taken again here, at no cost in the same transaction; then, in a statement of its
  * own, every movement of its lines is read and one REVERSAL is written for each (reversalOf(): the
  * opposite quantity at its own unit cost, plan of 5.1, decided item 2, Look first) in its own
  * branch and subtype; then the document is marked REVERSED with who, when and the reason (decided
@@ -194,10 +250,7 @@ export async function reverseDocument(
   tx: Executor,
   input: { documentId: string; reason: string; reversedBy: string },
 ): Promise<{ reversals: PostedMovement[] }> {
-  const held = await tx.execute<{ status: DocumentStatus }>(sql`
-    select status from stock_documents where id = ${input.documentId} for update`);
-  const status = held.rows[0]?.status;
-  if (!status) throw new ActionError("not_found");
+  const { status } = await lockDocument(tx, input.documentId);
   if (!REVERSIBLE_STATUSES.includes(status)) throw new ActionError("wrong_status");
 
   const found = await tx.execute<HeldMovement>(sql`
