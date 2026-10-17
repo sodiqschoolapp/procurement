@@ -343,7 +343,9 @@
       "PRODUCT_SUGGESTED": "New product suggestion from branch {branch}: {name}.",
       "PRODUCT_SUGGESTION_DECIDED": "Your suggestion “{name}” was {outcome, select, added {added to the catalog} other {declined}}.",
       "CASH_RETURNED": "Finance ({actor}) recorded {amount} in cash returned by you for {count, plural, one {# order} other {# orders}} in {branch}.",
-      "CASH_PAID_BACK": "Finance ({actor}) paid you back {amount} for {count, plural, one {# order} other {# orders}} in {branch}."
+      "CASH_PAID_BACK": "Finance ({actor}) paid you back {amount} for {count, plural, one {# order} other {# orders}} in {branch}.",
+      "CASH_SETTLED": "Finance ({actor}) settled cash for {count, plural, one {# order} other {# orders}} in {branch}: {direction, select, TO_FINANCE {you hand Finance {amount}} TO_MANAGER {Finance pays you {amount}} other {nothing changes hands}}.",
+      "REQUEST_SENT_BACK_FOR_CORRECTION": "{actor} sent back {count, plural, one {# order} other {# orders}} in {branch} for correction."
     }
   },
   "months": {
@@ -1198,7 +1200,9 @@
           "REOPEN_BUYING": "Buying reopened",
           "CANCEL_PURCHASE": "Purchase record cancelled",
           "RECORD_MONEY": "Money recorded",
-          "CANCEL_MONEY": "Money action cancelled"
+          "CANCEL_MONEY": "Money action cancelled",
+          "SETTLE_CASH": "Cash settled",
+          "CONFIRM_SETTLEMENT": "Settlement confirmation changed"
         },
         "approved": {
           "PENDING_HEAD": "Approved at the Head step",

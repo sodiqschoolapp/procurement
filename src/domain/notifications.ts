@@ -40,6 +40,8 @@ export const NOTIFICATION_TYPES = [
   "PURCHASE_CANCELLED",
   "PRICE_DIFFERS",
   "MANAGER_RIGHT_SWITCHED",
+  "CASH_SETTLED",
+  "REQUEST_SENT_BACK_FOR_CORRECTION",
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
@@ -58,6 +60,9 @@ export type OrderActionParams = { actor: string; count: number; branch: string }
  * says "approved", or later from the Money tab, whose text does not.
  */
 export type CashGivenVia = "approval" | "money";
+
+/** The direction of a settlement action's net (`SettlementNet` of ./money-ledger.ts). */
+export type SettlementDirection = "TO_FINANCE" | "TO_MANAGER" | "NONE";
 
 /**
  * The params of a waiting reminder (10: "9 orders have waited more than 24 hours"): `hours` is
@@ -95,7 +100,15 @@ export type NotificationParamsOf = {
    */
   CASH_RETURNED: OrderActionParams & { amount: string };
   CASH_PAID_BACK: OrderActionParams & { amount: string };
+  /**
+   * The settlement action of Finance's settlement screen (10 Notifications, "Cash given, cash
+   * returned, paid back | Owner"; plan of 4.5, decided item 8, Look first): one per money action,
+   * so one Manager and one branch, with its net (`settlementNet()`): who hands whom `amount`.
+   */
+  CASH_SETTLED: OrderActionParams & { amount: string; direction: SettlementDirection };
   REQUEST_SENT_BACK: OrderActionParams;
+  /** Send back for correction (plan of 4.5, decided item 7, Look first): owners and Heads. */
+  REQUEST_SENT_BACK_FOR_CORRECTION: OrderActionParams;
   REQUEST_REJECTED: OrderActionParams;
   REQUEST_SENT_TO_SETTLEMENT: OrderActionParams;
   REQUEST_CLOSED: OrderActionParams;
@@ -136,7 +149,9 @@ export const NOTIFICATION_PARAMS: {
   CASH_GIVEN: ["actor", "count", "branch", "amount", "via"],
   CASH_RETURNED: ["actor", "count", "branch", "amount"],
   CASH_PAID_BACK: ["actor", "count", "branch", "amount"],
+  CASH_SETTLED: ["actor", "count", "branch", "amount", "direction"],
   REQUEST_SENT_BACK: ["actor", "count", "branch"],
+  REQUEST_SENT_BACK_FOR_CORRECTION: ["actor", "count", "branch"],
   REQUEST_REJECTED: ["actor", "count", "branch"],
   REQUEST_SENT_TO_SETTLEMENT: ["actor", "count", "branch"],
   REQUEST_CLOSED: ["actor", "count", "branch"],
@@ -156,6 +171,7 @@ export const MONEY_PARAMS: { readonly [Type in SendableType]?: readonly string[]
   CASH_GIVEN: ["amount"],
   CASH_RETURNED: ["amount"],
   CASH_PAID_BACK: ["amount"],
+  CASH_SETTLED: ["amount"],
 };
 
 /**

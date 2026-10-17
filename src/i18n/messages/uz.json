@@ -343,7 +343,9 @@
       "PRODUCT_SUGGESTED": "{branch} filialidan yangi tovar taklifi: {name}.",
       "PRODUCT_SUGGESTION_DECIDED": "“{name}” taklifingiz {outcome, select, added {katalogga qoʻshildi} other {rad etildi}}.",
       "CASH_RETURNED": "{branch}: moliya ({actor}) {count, plural, other {# ta buyurtma}} boʻyicha sizdan {amount} naqd pulni qaytarib oldi.",
-      "CASH_PAID_BACK": "{branch}: moliya ({actor}) {count, plural, other {# ta buyurtma}} boʻyicha sizga {amount} qoplab berdi."
+      "CASH_PAID_BACK": "{branch}: moliya ({actor}) {count, plural, other {# ta buyurtma}} boʻyicha sizga {amount} qoplab berdi.",
+      "CASH_SETTLED": "{branch}: moliya ({actor}) {count, plural, other {# ta buyurtma}} boʻyicha naqd pul hisob-kitobini qildi: {direction, select, TO_FINANCE {siz moliyaga {amount} topshirasiz} TO_MANAGER {moliya sizga {amount} toʻlaydi} other {pul berilmaydi}}.",
+      "REQUEST_SENT_BACK_FOR_CORRECTION": "{branch}: {actor} {count, plural, other {# ta buyurtmani}} tuzatish uchun qaytardi."
     }
   },
   "months": {
@@ -1198,7 +1200,9 @@
           "REOPEN_BUYING": "Xarid qayta ochildi",
           "CANCEL_PURCHASE": "Xarid yozuvi bekor qilindi",
           "RECORD_MONEY": "Pul yozildi",
-          "CANCEL_MONEY": "Pul amali bekor qilindi"
+          "CANCEL_MONEY": "Pul amali bekor qilindi",
+          "SETTLE_CASH": "Naqd pul hisob-kitobi",
+          "CONFIRM_SETTLEMENT": "Hisob-kitob tasdigʻi oʻzgartirildi"
         },
         "approved": {
           "PENDING_HEAD": "Rahbar bosqichida tasdiqlandi",

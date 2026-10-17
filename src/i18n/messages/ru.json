@@ -343,7 +343,9 @@
       "PRODUCT_SUGGESTED": "Новое предложение товара из филиала {branch}: {name}.",
       "PRODUCT_SUGGESTION_DECIDED": "Ваше предложение «{name}» {outcome, select, added {добавлено в каталог} other {отклонено}}.",
       "CASH_RETURNED": "Финансы ({actor}) приняли от вас наличными {amount}: {count, plural, one {# заказ} few {# заказа} many {# заказов} other {# заказа}}, {branch}.",
-      "CASH_PAID_BACK": "Финансы ({actor}) возместили вам {amount}: {count, plural, one {# заказ} few {# заказа} many {# заказов} other {# заказа}}, {branch}."
+      "CASH_PAID_BACK": "Финансы ({actor}) возместили вам {amount}: {count, plural, one {# заказ} few {# заказа} many {# заказов} other {# заказа}}, {branch}.",
+      "CASH_SETTLED": "Финансы ({actor}) провели расчёт наличных: {count, plural, one {# заказ} few {# заказа} many {# заказов} other {# заказа}}, {branch}. {direction, select, TO_FINANCE {Вы передаёте финансам {amount}} TO_MANAGER {Финансы выплачивают вам {amount}} other {Деньги не передаются}}.",
+      "REQUEST_SENT_BACK_FOR_CORRECTION": "Возвращено на исправление ({actor}): {count, plural, one {# заказ} few {# заказа} many {# заказов} other {# заказа}}, {branch}."
     }
   },
   "months": {
@@ -1198,7 +1200,9 @@
           "REOPEN_BUYING": "Закупка возобновлена",
           "CANCEL_PURCHASE": "Запись о покупке отменена",
           "RECORD_MONEY": "Записаны деньги",
-          "CANCEL_MONEY": "Денежная операция отменена"
+          "CANCEL_MONEY": "Денежная операция отменена",
+          "SETTLE_CASH": "Расчёт наличных",
+          "CONFIRM_SETTLEMENT": "Подтверждение расчёта изменено"
         },
         "approved": {
           "PENDING_HEAD": "Одобрен на шаге руководителя",
