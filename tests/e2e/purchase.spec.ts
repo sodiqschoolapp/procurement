@@ -339,3 +339,153 @@ test("the Purchases tab lists the record; Finish order with a reason gives Done 
   );
   await expect(page.locator("[data-record-purchase]")).toHaveCount(1);
 });
+
+/** A 1 × 1 PNG: the invented receipt photo. */
+const RECEIPT_PNG = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+  "base64",
+);
+
+/**
+ * Two Open orders of one owner in branch EA, each of its own product (two steps of the form):
+ * 2 at 5 000 so'm, by cash, approved today. Returns their ids in submit order.
+ */
+async function seedTwoProducts(owner: Person): Promise<string[]> {
+  return withDatabase(async (client) => {
+    await client.query("begin");
+    try {
+      await client.query("update users set locale = 'en' where username = $1", [owner.username]);
+      const found = await client.query<{ id: string }>("select id from users where username = $1", [
+        owner.username,
+      ]);
+      const ownerId = found.rows[0]!.id;
+      const tag = randomUUID().slice(0, 8);
+      const unit = await client.query<{ id: string }>(
+        `insert into units (name, short_name, allow_decimal, is_active, created_at)
+         values ($1, $2, false, true, now()) returning id`,
+        [`O'lchov ${tag}`, `p${tag}`],
+      );
+      const category = await client.query<{ id: string }>(
+        `insert into categories (name, is_active, created_at) values ($1, true, now()) returning id`,
+        [`Toifa ${tag}`],
+      );
+      const department = await client.query<{ id: string }>(
+        `insert into departments (branch_id, name, is_active, created_at)
+         select id, $1, true, now() from branches where code = 'EA' returning id`,
+        [`Bo'lim ${tag}`],
+      );
+      const ids: string[] = [];
+      for (const [name, submitted] of [
+        [`Qalam ${tag}`, "now() - interval '2 hours'"],
+        [`Bo'r ${tag}`, "now() - interval '1 hour'"],
+      ] as const) {
+        const product = await client.query<{ id: string }>(
+          `insert into products (name, type, category_id, unit_id, is_active, has_variants, created_at)
+           values ($1, 'GOODS', $2, $3, true, false, now()) returning id`,
+          [name, category.rows[0]!.id, unit.rows[0]!.id],
+        );
+        const variant = await client.query<{ id: string }>(
+          `insert into product_variants (product_id, name, is_default, is_active, created_at)
+           values ($1, 'default', true, true, now()) returning id`,
+          [product.rows[0]!.id],
+        );
+        const number = `EA-90-${String(Math.floor(Math.random() * 900_000) + 100_000)}`;
+        const order = await client.query<{ id: string }>(
+          `insert into orders (number, branch_id, owner_id, created_by, status, variant_id,
+                               department_id, needed_by, planned_qty, planned_price, planned_total,
+                               payment_type, submitted_at, approved_at, created_at, updated_at)
+           select $4, b.id, $1, $1, 'PURCHASING', $2, $3, '2031-05-01', 2, 5000, 10000, 'CASH',
+                  ${submitted}, now(), now(), now()
+             from branches b where b.code = 'EA'
+           returning id`,
+          [ownerId, variant.rows[0]!.id, department.rows[0]!.id, number],
+        );
+        ids.push(order.rows[0]!.id);
+      }
+      await client.query("commit");
+      return ids;
+    } catch (error) {
+      await client.query("rollback");
+      throw error;
+    }
+  });
+}
+
+test("a trip of two orders with a receipt: at 375 px one order at a time, the camera for the receipt (build plan 3.9; 11 smooth feel 3; 07 Receipt)", async ({
+  page,
+}, info) => {
+  const owner = E2E_PURCHASE_USERS[info.project.name as keyof typeof E2E_PURCHASE_USERS];
+  const [first, second] = (await seedTwoProducts(owner)) as [string, string];
+  const phone = info.project.name === "phone-375";
+
+  await signIn(page, owner);
+  await page.goto(`/orders/purchase?ids=${first},${second}`);
+  const lineOf = (id: string) => page.locator(`[data-line="${id}"]`);
+  const save = page.getByRole("button", { name: f.save });
+
+  if (phone) {
+    // Step 1: the first order alone; no visit and no Save yet (plan of 3.9).
+    const count = page.locator("[data-step-count]");
+    await expect(count).toHaveText(f.step.replace("{current}", "1").replace("{total}", "2"));
+    await expect(lineOf(first)).toBeVisible();
+    await expect(lineOf(second)).toBeHidden();
+    await expect(page.locator("#purchase-date")).toBeHidden();
+    await expect(save).toBeHidden();
+    await expect(
+      page.locator("[data-step-bar]").getByRole("button", { name: f.previous }),
+    ).toHaveCount(0);
+    await lineOf(first).getByRole("button", { name: f.sameAsPlanned }).click();
+    expect(await scrollsSideways(page)).toBe(false);
+    await page.locator("[data-step-bar]").getByRole("button", { name: f.next }).click();
+
+    // Step 2: the second order, its heading focused; then the visit and Save.
+    await expect(count).toHaveText(f.step.replace("{current}", "2").replace("{total}", "2"));
+    await expect(lineOf(first)).toBeHidden();
+    await expect(lineOf(second)).toBeVisible();
+    await expect(lineOf(second).locator("[data-step-heading]")).toBeFocused();
+    await expect(page.locator("[data-step-bar]").getByRole("button", { name: f.next })).toHaveCount(
+      0,
+    );
+    await lineOf(second).getByRole("button", { name: f.sameAsPlanned }).click();
+    await expect(page.locator("#purchase-date")).toBeVisible();
+
+    // "Take photo" opens the camera input itself: an image, the rear camera (07 Receipt).
+    const chooser = page.waitForEvent("filechooser");
+    await page.getByRole("button", { name: f.takePhoto }).click();
+    const camera = await chooser;
+    expect(await camera.element().getAttribute("capture")).toBe("environment");
+    expect(await camera.element().getAttribute("accept")).toBe("image/*");
+    await camera.setFiles({ name: "chek.png", mimeType: "image/png", buffer: RECEIPT_PNG });
+  } else {
+    // A computer shows every order and the visit at once, without a step bar.
+    await expect(lineOf(first)).toBeVisible();
+    await expect(lineOf(second)).toBeVisible();
+    await expect(page.locator("[data-step-bar]")).toBeHidden();
+    await lineOf(first).getByRole("button", { name: f.sameAsPlanned }).click();
+    await lineOf(second).getByRole("button", { name: f.sameAsPlanned }).click();
+    await page
+      .locator("[data-receipt-input]")
+      .setInputFiles({ name: "chek.png", mimeType: "image/png", buffer: RECEIPT_PNG });
+  }
+  await expect(page.locator("[data-receipt]")).toHaveText("chek.png");
+  expect(await scrollsSideways(page)).toBe(false);
+
+  await save.click();
+  await expect(page).toHaveURL(/\/orders(\?|$)/);
+
+  // One trip, a record per order on it, and the receipt file on the trip (07 One trip 1).
+  const saved = await withDatabase((client) =>
+    client.query<{ trips: string; records: string; files: string }>(
+      `select count(distinct p.trip_id)::text as trips, count(*)::text as records,
+              (select count(*) from trip_files tf
+                where tf.trip_id = min(p.trip_id::text)::uuid)::text as files
+         from purchases p where p.order_id = any($1::uuid[])`,
+      [[first, second]],
+    ),
+  );
+  expect(saved.rows[0]).toEqual({ trips: "1", records: "2", files: "1" });
+  for (const id of [first, second]) {
+    await page.goto(`/orders/${id}`);
+    await expect(page.locator('[data-fact="received"] dd')).toHaveText(/^2 of 2/);
+  }
+});
