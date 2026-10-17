@@ -56,7 +56,11 @@ describe("created_by_head: the screen and the server read one fact (decisions 2.
     });
     setClock("2026-10-16T06:00:00Z");
     expect(
-      await runOrdersAction(sendBackOrders, principal.id, tickedInput([{ id: own.id, version: 2 }])),
+      await runOrdersAction(
+        sendBackOrders,
+        principal.id,
+        tickedInput([{ id: own.id, version: 2 }]),
+      ),
     ).toMatchObject({ ok: true });
     setClock("2026-10-16T07:00:00Z");
     expect(
