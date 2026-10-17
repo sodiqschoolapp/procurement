@@ -155,3 +155,6 @@ export function stockValue(qty: string, avgCost: bigint): bigint {
   if (avgCost < 0n) throw new RangeError(`An average of ${String(avgCost)}`);
   return wholeSom(stockOf(qty).times(avgCost.toString()));
 }
+
+/** Stock on hand shows 25 rows per page (11-screens-and-ux.md rule 8). */
+export const STOCK_PAGE_SIZE = 25;
