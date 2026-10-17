@@ -1529,6 +1529,24 @@ Choices made during the build:
 - The list reads its members' records with `recordsOfOrders()` (one parameter per id, as `extrasOf()` already does for the same ids) instead of a `recordsOfListed()` subquery: a page holds at most 25 groups, and the same ids already go to the extras.
 - The wire form of the colours (`WireColours`, money as decimal text) is shared by the list and the order page (`wireColours()` in `src/features/orders/list-wire.ts`).
 
+### 3.9 Buying on a phone (17.10.2026)
+
+The plan's decisions as the plan review of 17.10.2026 confirmed them (corrections 1 to 4 applied). None is of a Look first kind.
+
+1. At phone width the visit (date, payment type, supplier, receipt) comes on the last step, under that step's block and right above Save: the receipt is taken at the till, and the shared fields belong to no one order's step (11 smooth feel 3; 07 One trip 1).
+2. A group row is one step with its orders' lines under it, so the split can be changed before saving (07 One trip 2).
+3. Phone width is below 640 px (`sm`), the breakpoint of the app's other phone layouts.
+4. Save is only on the last step at phone width; Next checks nothing. The server is the one check; a refused save opens the first step with an error (`firstStepWithError()`), and the trip-wide alert sits outside the steps.
+5. "The camera opens directly" is the `capture="environment"` image input that "Take photo" opens on the tap; a browser opens a file input only from a user gesture.
+6. A group-row step has no "Same as planned" of its own; each order line under it keeps its own.
+
+Choices made during the build:
+
+- The Head's owner select moved above the form at every width (review correction 1), so the DOM order is the order on screen; on a computer it is no longer inside "The visit".
+- Hidden steps are hidden by CSS (`max-sm:hidden`) only: every line stays registered and sent, and no width is read in JavaScript, so the server render matches.
+- A step move scrolls the form into view and focuses the step's first heading (`tabIndex={-1}`); choosing another owner returns to step 1 without moving the focus off the select.
+- Next has no icon: the icon set has no forward arrow and the button's icon comes before its words.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

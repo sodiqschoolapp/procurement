@@ -3,7 +3,7 @@
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import {
   type Control,
   type UseFormRegister,
@@ -36,6 +36,7 @@ import {
   splitGroupQuantity,
 } from "@/domain/purchases";
 import type { PurchaseForm, PurchaseFormOrder } from "@/features/purchasing/queries/purchase-form";
+import { firstStepWithError } from "@/features/purchasing/components/purchase-steps";
 import { useFormatters } from "@/i18n/use-formatters";
 
 // The purchase form of one trip (07-purchasing.md, Purchase record; One trip, many orders;
@@ -46,8 +47,12 @@ import { useFormatters } from "@/i18n/use-formatters";
 // quantity, which can be changed before saving (07 One trip 2); an order left with 0 gets no
 // record. The Head with orders of several owners picks one (07 One trip; decided item 9). Which
 // lines need a comment is purchaseCommentNeeds() of the domain, the same function the server
-// asks; the server checks everything again. One column on a phone; the shared fields beside the
-// orders on a computer (the one-at-a-time phone layout is 3.9).
+// asks; the server checks everything again. On a computer the shared fields sit beside the orders.
+// At phone width (below `sm`) the form shows one step at a time (11 smooth feel 3; plan of 3.9): a
+// step is one block, one order or one group row with its orders; the visit comes on the last step,
+// under its block and above Save, and the Head's owner select above the steps (review of the plan
+// of 3.9, correction 1). Hidden steps are hidden by CSS only, so every line stays in the form and
+// is sent; the DOM order is the order on screen at both widths (11 rule 13).
 
 type Extra = { extraCostTypeId: string; amount: string; paymentType: PaymentType };
 
@@ -144,6 +149,11 @@ export function PurchaseFormView({
   const [uploading, setUploading] = useState(false);
   const camera = useRef<HTMLInputElement>(null);
   const chooser = useRef<HTMLInputElement>(null);
+  /** The step shown at phone width: an index into `blocks` (plan of 3.9). */
+  const [step, setStep] = useState(0);
+  /** Counts the moves between steps; each move brings the new step's heading into focus. */
+  const [moves, setMoves] = useState(0);
+  const formElement = useRef<HTMLFormElement>(null);
   // Before hydration a click would submit the plain HTML form and lose what was typed (1.1).
   const hydrated = useSyncExternalStore(
     noSubscription,
@@ -169,8 +179,27 @@ export function PurchaseFormView({
     else blocks.push({ variantId: each.order.variantId, members: [each] });
   }
 
+  const last = blocks.length - 1;
+  const shownStep = Math.min(step, last);
+
+  /** Another step at phone width: the form's top comes into view and its heading takes the focus. */
+  function goTo(next: number) {
+    setStep(next);
+    setMoves((count) => count + 1);
+  }
+
+  useEffect(() => {
+    if (moves === 0) return;
+    const heading = formElement.current?.querySelector<HTMLElement>(
+      `[data-step="${shownStep}"] [data-step-heading]`,
+    );
+    formElement.current?.scrollIntoView({ block: "start" });
+    heading?.focus({ preventScroll: true });
+  }, [moves, shownStep]);
+
   function chooseOwner(id: string) {
     setOwnerId(id);
+    setStep(0);
     const orders = form.orders.filter((order) => order.ownerId === id);
     setValue("paymentType", orders[0]!.paymentType);
     setValue("supplierId", sharedSupplier(orders));
@@ -246,6 +275,13 @@ export function PurchaseFormView({
     if (!result) return;
     if (!result.ok) {
       toast.error(tAll(result.error.messageKey));
+      const at = firstStepWithError(
+        Object.keys(result.error.fields ?? {}),
+        lines.map((line) => line.orderId),
+        blocks.map((block) => block.members.map(({ order }) => order.orderId)),
+        shownStep,
+      );
+      if (at !== shownStep) goTo(at);
       return;
     }
     toast.success(single ? t("saved") : t("savedTrip", { count: lines.length }));
@@ -281,132 +317,26 @@ export function PurchaseFormView({
         ) : null}
       </header>
 
+      {form.owners.length > 1 ? (
+        <Field id="purchase-owner" label={t("owner")} className="sm:max-w-sm">
+          <Select value={ownerId} onChange={(event) => chooseOwner(event.target.value)}>
+            {form.owners.map((owner) => (
+              <option key={owner.id} value={owner.id}>
+                {owner.name}
+              </option>
+            ))}
+          </Select>
+        </Field>
+      ) : null}
+
       <form
+        ref={formElement}
         onSubmit={(event) => void onSubmit(event)}
         noValidate
         className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_2fr] lg:items-start"
       >
-        <section
-          aria-labelledby="purchase-visit"
-          className="flex flex-col gap-4 rounded-xl bg-card p-4 sm:p-6"
-        >
-          <h2 id="purchase-visit" className="text-[17px] leading-6 font-semibold">
-            {t("visit")}
-          </h2>
-          {form.owners.length > 1 ? (
-            <Field id="purchase-owner" label={t("owner")}>
-              <Select value={ownerId} onChange={(event) => chooseOwner(event.target.value)}>
-                {form.owners.map((owner) => (
-                  <option key={owner.id} value={owner.id}>
-                    {owner.name}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-          ) : null}
-          <Field id="purchase-date" label={t("date")} error={fieldTexts.purchasedOn}>
-            <Input type="date" min={earliest} max={form.today} {...register("purchasedOn")} />
-          </Field>
-          <div className="flex flex-col gap-1.5">
-            <span className="text-sm leading-5 font-semibold">{t("paymentType")}</span>
-            <Segmented
-              label={t("paymentType")}
-              options={paymentOptions}
-              value={values.paymentType}
-              onValueChange={(type) => setValue("paymentType", type, { shouldDirty: true })}
-              className="w-full sm:w-auto"
-            />
-          </div>
-          <Field id="purchase-supplier" label={t("supplier")} error={fieldTexts.supplierId}>
-            <Select {...register("supplierId")}>
-              <option value="">{t("noSupplier")}</option>
-              {form.suppliers.map((supplier) => (
-                <option key={supplier.id} value={supplier.id}>
-                  {supplier.name}
-                </option>
-              ))}
-            </Select>
-          </Field>
-
-          <div className="flex flex-col gap-2">
-            <span className="text-sm leading-5 font-semibold">
-              {receiptNeeded ? t("receiptRequired") : t("receipt")}
-            </span>
-            {receipts.length > 0 ? (
-              <ul className="flex flex-col gap-1">
-                {receipts.map((receipt) => (
-                  <li
-                    key={receipt.id}
-                    data-receipt
-                    className="flex items-center justify-between gap-2 text-[15px]"
-                  >
-                    <span className="truncate">{receipt.name}</span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-sm"
-                      icon="close"
-                      aria-label={t("removeReceipt", { name: receipt.name })}
-                      onClick={() =>
-                        setReceipts((list) => list.filter((item) => item.id !== receipt.id))
-                      }
-                    />
-                  </li>
-                ))}
-              </ul>
-            ) : null}
-            <input
-              ref={camera}
-              type="file"
-              accept="image/*"
-              capture="environment"
-              className="sr-only"
-              tabIndex={-1}
-              aria-hidden="true"
-              onChange={(event) => void addReceipt(event.target.files?.[0], camera.current)}
-            />
-            <input
-              ref={chooser}
-              type="file"
-              accept={FILE_MIMES.join(",")}
-              data-receipt-input
-              className="sr-only"
-              tabIndex={-1}
-              aria-hidden="true"
-              onChange={(event) => void addReceipt(event.target.files?.[0], chooser.current)}
-            />
-            {receipts.length < RECEIPTS_MAX ? (
-              <div className="flex flex-wrap gap-3">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  icon="add_photo_alternate"
-                  pending={uploading}
-                  onClick={() => camera.current?.click()}
-                  className="max-sm:h-11 max-sm:flex-1"
-                >
-                  {t("takePhoto")}
-                </Button>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  icon="description"
-                  pending={uploading}
-                  onClick={() => chooser.current?.click()}
-                  className="max-sm:h-11 max-sm:flex-1"
-                >
-                  {t("chooseFile")}
-                </Button>
-              </div>
-            ) : null}
-            {fieldTexts.receiptFileIds ? (
-              <p className="text-sm leading-5 text-destructive">{fieldTexts.receiptFileIds}</p>
-            ) : null}
-          </div>
-        </section>
-
-        <div className="flex flex-col gap-4">
-          {blocks.map((block) => {
+        <div className="flex flex-col gap-4 lg:col-start-2 lg:row-start-1">
+          {blocks.map((block, at) => {
             const first = block.members[0]!.order;
             const product = first.subtypeName
               ? `${first.productName} · ${first.subtypeName}`
@@ -416,15 +346,20 @@ export function PurchaseFormView({
               <section
                 key={block.variantId}
                 data-block={block.variantId}
+                data-step={at}
                 aria-label={product}
-                className="flex flex-col gap-4"
+                className={cn("flex flex-col gap-4", at !== shownStep && "max-sm:hidden")}
               >
                 {block.members.length > 1 ? (
                   <div
                     data-group
                     className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 sm:p-6"
                   >
-                    <h2 className="text-[17px] leading-6 font-semibold">
+                    <h2
+                      data-step-heading
+                      tabIndex={-1}
+                      className="text-[17px] leading-6 font-semibold outline-none"
+                    >
                       {t("group", { product, count: block.members.length })}
                     </h2>
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -484,11 +419,159 @@ export function PurchaseFormView({
               </section>
             );
           })}
+        </div>
 
+        {/* The visit: on the last step at phone width, the left column from lg (plan of 3.9). */}
+        <section
+          aria-labelledby="purchase-visit"
+          className={cn(
+            "flex flex-col gap-4 rounded-xl bg-card p-4 sm:p-6 lg:col-start-1 lg:row-span-2 lg:row-start-1",
+            shownStep !== last && "max-sm:hidden",
+          )}
+        >
+          <h2 id="purchase-visit" className="text-[17px] leading-6 font-semibold">
+            {t("visit")}
+          </h2>
+          <Field id="purchase-date" label={t("date")} error={fieldTexts.purchasedOn}>
+            <Input type="date" min={earliest} max={form.today} {...register("purchasedOn")} />
+          </Field>
+          <div className="flex flex-col gap-1.5">
+            <span className="text-sm leading-5 font-semibold">{t("paymentType")}</span>
+            <Segmented
+              label={t("paymentType")}
+              options={paymentOptions}
+              value={values.paymentType}
+              onValueChange={(type) => setValue("paymentType", type, { shouldDirty: true })}
+              className="w-full sm:w-auto"
+            />
+          </div>
+          <Field id="purchase-supplier" label={t("supplier")} error={fieldTexts.supplierId}>
+            <Select {...register("supplierId")}>
+              <option value="">{t("noSupplier")}</option>
+              {form.suppliers.map((supplier) => (
+                <option key={supplier.id} value={supplier.id}>
+                  {supplier.name}
+                </option>
+              ))}
+            </Select>
+          </Field>
+
+          <div className="flex flex-col gap-2">
+            <span className="text-sm leading-5 font-semibold">
+              {receiptNeeded ? t("receiptRequired") : t("receipt")}
+            </span>
+            {receipts.length > 0 ? (
+              <ul className="flex flex-col gap-1">
+                {receipts.map((receipt) => (
+                  <li
+                    key={receipt.id}
+                    data-receipt
+                    className="flex items-center justify-between gap-2 text-[15px]"
+                  >
+                    <span className="truncate">{receipt.name}</span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      icon="close"
+                      aria-label={t("removeReceipt", { name: receipt.name })}
+                      onClick={() =>
+                        setReceipts((list) => list.filter((item) => item.id !== receipt.id))
+                      }
+                    />
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+            <input
+              ref={camera}
+              type="file"
+              data-receipt-camera
+              accept="image/*"
+              capture="environment"
+              className="sr-only"
+              tabIndex={-1}
+              aria-hidden="true"
+              onChange={(event) => void addReceipt(event.target.files?.[0], camera.current)}
+            />
+            <input
+              ref={chooser}
+              type="file"
+              accept={FILE_MIMES.join(",")}
+              data-receipt-input
+              className="sr-only"
+              tabIndex={-1}
+              aria-hidden="true"
+              onChange={(event) => void addReceipt(event.target.files?.[0], chooser.current)}
+            />
+            {receipts.length < RECEIPTS_MAX ? (
+              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  icon="add_photo_alternate"
+                  pending={uploading}
+                  onClick={() => camera.current?.click()}
+                  className="max-sm:h-12 max-sm:w-full"
+                >
+                  {t("takePhoto")}
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  icon="description"
+                  pending={uploading}
+                  onClick={() => chooser.current?.click()}
+                  className="max-sm:h-12 max-sm:w-full"
+                >
+                  {t("chooseFile")}
+                </Button>
+              </div>
+            ) : null}
+            {fieldTexts.receiptFileIds ? (
+              <p className="text-sm leading-5 text-destructive">{fieldTexts.receiptFileIds}</p>
+            ) : null}
+          </div>
+        </section>
+
+        <div className="flex flex-col gap-4 lg:col-start-2">
+          {/* Outside the steps, so a refusal of the whole trip is never on a hidden step. */}
           {(fieldTexts.orders ?? (action.errorText && Object.keys(fieldTexts).length === 0)) ? (
             <p role="alert" className="text-[15px] leading-[22px] text-destructive">
               {fieldTexts.orders ?? action.errorText}
             </p>
+          ) : null}
+
+          {blocks.length > 1 ? (
+            <nav
+              aria-label={t("steps")}
+              data-step-bar
+              className="flex items-center justify-between gap-3 sm:hidden"
+            >
+              {shownStep > 0 ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="lg"
+                  icon="chevron_left"
+                  onClick={() => goTo(shownStep - 1)}
+                >
+                  {t("previous")}
+                </Button>
+              ) : (
+                <span />
+              )}
+              <span data-step-count className="text-[15px] leading-[22px] tabular-nums">
+                {t("step", { current: shownStep + 1, total: blocks.length })}
+              </span>
+              {shownStep < last ? (
+                <Button type="button" size="lg" onClick={() => goTo(shownStep + 1)}>
+                  {t("next")}
+                </Button>
+              ) : (
+                <span />
+              )}
+            </nav>
           ) : null}
 
           <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
@@ -498,11 +581,12 @@ export function PurchaseFormView({
             >
               {single ? t("back") : t("backToList")}
             </Link>
+            {/* At phone width only on the last step: the one primary button there (plan of 3.9). */}
             <Button
               type="submit"
               pending={action.pending}
               disabled={!hydrated || uploading || recorded.length === 0}
-              className="h-12 sm:h-10"
+              className={cn("h-12 sm:h-10", shownStep !== last && "max-sm:hidden")}
             >
               {t("save")}
             </Button>
@@ -574,7 +658,12 @@ function OrderLine({
       className={cn("flex flex-col gap-4 rounded-xl bg-card p-4 sm:p-6", empty && "opacity-70")}
     >
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 id={id("title")} className="text-[17px] leading-6 font-semibold">
+        <h2
+          id={id("title")}
+          data-step-heading
+          tabIndex={-1}
+          className="text-[17px] leading-6 font-semibold outline-none"
+        >
           {single ? t("plan") : order.number}
         </h2>
         {empty ? (

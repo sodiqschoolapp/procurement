@@ -1493,7 +1493,11 @@
       "backToList": "Back to orders",
       "savedTrip": "{count, plural, one {Purchase saved for 1 order.} other {Purchase saved for # orders.}}",
       "subtype": "Subtype bought",
-      "groupSubtype": "Subtype bought for the group"
+      "groupSubtype": "Subtype bought for the group",
+      "step": "{current} of {total}",
+      "next": "Next",
+      "previous": "Previous",
+      "steps": "Orders of the trip"
     }
   }
 }
