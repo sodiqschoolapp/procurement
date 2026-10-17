@@ -976,4 +976,20 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - An action whose check needs rows besides the locked orders uses `inspect()`, not `write()`, so every failing order is named in one answer.
 - @react-pdf/renderer loses letters in a PDF made after a Russian one in the same process (reproduced on `main`; see the report of 3.5). `route-actual.db.test.ts` is its own file so its PDF is the process's first.
 
-The next task is 2.7b.
+## 2.7b Confirm before Submit in the drafts grid; the S19 test (17.10.2026, pull request #73)
+
+**Built**
+- The drafts grid's "Submit (N)" and "Submit again (N)" open the shared `ConfirmDialog` with the count and the result (`11` rule 6); Cancel sends nothing; Confirm runs `submit(ids, again)` with the ids kept when the dialog opened, so the count shown is the count sent.
+- Texts `orders.submit.confirmTitle`, `confirmResult`, `confirm`; Submit again reuses `orders.moves.title/result/button.SUBMIT_AGAIN`.
+- The S19 test of `approve.db.test.ts`: three orders of quantity 10; each row's quantity and count (20/2, 20/2, 30/3); 3 events and 3 numbers.
+- Playwright: a new confirmation test in `drafts.spec.ts`; the grid Submit steps there and Submit again in `send-back.spec.ts` (with a Cancel step) go through the dialog.
+
+**Left out, and the task that brings it**
+- Nothing of the task.
+
+**What the next sessions must know**
+- A grid or bar action of `11` rule 6 asks through `ConfirmDialog` and sends exactly the ids the dialog counted.
+- A Playwright step that confirms finds the button inside `getByRole("alertdialog")` with `exact: true`: the bar's "Submit (2)" stays in the page under the dialog.
+- The 2.7 Submit tests of `drafts.spec.ts` read every order of their product; a new test there uses products of its own.
+
+The next task is 2.11b.

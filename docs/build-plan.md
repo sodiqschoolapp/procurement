@@ -270,7 +270,7 @@ From a draft on the branch's order list to fully approved orders, ticked and act
   - **Done when:** The matrix covers each order action × each role × own branch and other branch, alone and mixed, and is green; S7 is green for orders; its stock and report parts are added in 5.2 and 6.8.
 
 
-- [ ] **2.7b Confirm before Submit in the drafts grid; the S19 test**
+- [x] **2.7b Confirm before Submit in the drafts grid; the S19 test**
   - **Read:** `11-screens-and-ux.md` (Rules for a smooth feel: 6); `05-order-request-form.md` (Group rows: 1, 4); `15-quality-and-acceptance.md` (S19); `docs/decisions.md` (D48).
   - **Build:** "Submit" and "Submit again" in the drafts grid ask for confirmation first, saying how many orders they cover, and state the result, as Submit on the order page does (decision 2.9 item 4); Cancel submits nothing. The S19 database test makes three orders of quantity 10, as the scenario does, and asserts the group row's quantity (20, then 30) and that it holds three orders. Its counts of events and numbers then become 3 instead of 30: that follows the scenario and is no weakened test.
   - **Done when:** Playwright: Submit in the grid opens the confirmation with the count; Cancel leaves every draft a Draft; confirming submits them. The S19 test fails if the row sums orders instead of quantities.
