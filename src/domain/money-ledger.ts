@@ -19,7 +19,7 @@ import {
   liveRecords,
 } from "./purchases";
 import type { RequestStatus } from "./request-status";
-import { type GuardSettings, overspend } from "./overspend";
+import { type GuardSettings, type Overspend, overspend } from "./overspend";
 
 /** 14 money_rows.kind, in the order of 08's Money ledger table. */
 export const MONEY_ROW_KINDS = [
@@ -503,6 +503,36 @@ export function settlementCashRows(
 }
 
 /**
+ * 08 Overspend guard of one order: `overspend()` of ./overspend.ts over its planned total
+ * (`orderTotal()`) and its actual total (`actualTotal()` of ./purchases.ts over the live records),
+ * never a second sum (review of the plan of 4.6, correction 1). The settlement screen's line reads
+ * its `over` and `percent` (plan of 4.7).
+ */
+export function orderOverspend(
+  order: { plan: OrderPlan; records: readonly CashRecord[] },
+  guard: GuardSettings,
+): Overspend {
+  return overspend(orderTotal(order.plan), actualTotal(order.records.map(asPurchaseRecord)), guard);
+}
+
+/**
+ * 08 Overspend guard: the order is above the guard and the Head has not acknowledged it yet, so
+ * Finance cannot close it and the Head's "Acknowledge overspend" applies (plan of 4.7, decided
+ * item 3, Look first). The one rule the button, the notices, the settlement line and
+ * `readyToClose()` read.
+ */
+export function overspendNeedsAck(
+  order: {
+    plan: OrderPlan;
+    records: readonly CashRecord[];
+    stored: SettlementConfirmations | null;
+  },
+  guard: GuardSettings,
+): boolean {
+  return orderOverspend(order, guard).needsHead && order.stored?.overspendAcknowledged !== true;
+}
+
+/**
  * 08 Closing 3: whether Finance may close the order: its cash count is 0, every block that
  * `settlementBlocks()` returns for a used payment type is confirmed (`blockConfirmed()`; the Cash
  * block by its count), and, when the order is above the overspend guard, the Head has acknowledged
@@ -519,15 +549,9 @@ export function readyToClose(
   },
   guard: GuardSettings,
 ): boolean {
-  const { plan, records, blocks, stored } = order;
+  const { blocks, stored } = order;
   if ((blocks.cash?.count ?? 0n) !== 0n) return false;
   if (blocks.transfer !== null && !blockConfirmed("TRANSFER", blocks, stored)) return false;
   if (blocks.card !== null && !blockConfirmed("CARD", blocks, stored)) return false;
-  const actual = actualTotal(records.map(asPurchaseRecord));
-  if (
-    overspend(orderTotal(plan), actual, guard).needsHead &&
-    stored?.overspendAcknowledged !== true
-  )
-    return false;
-  return true;
+  return !overspendNeedsAck(order, guard);
 }
