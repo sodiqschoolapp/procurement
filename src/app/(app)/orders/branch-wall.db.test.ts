@@ -49,6 +49,7 @@ const {
   markNotBoughtAction,
   rejectOrdersAction,
   reopenBuyingAction,
+  reopenOrdersAction,
   closeExactOrdersAction,
   sendToSettlementOrdersAction,
   sendBackOrdersAction,
@@ -272,6 +273,22 @@ describeTickedWall("sendToSettlementOrdersAction", {
     signedIn(user);
     return wall(
       await sendToSettlementOrdersAction({ clientKey: newClientKey(), orders: versions(ticked) }),
+    );
+  },
+});
+
+// The Head's Reopen of Closed orders (06 Allowed moves, Closed row; plan of 4.8).
+describeTickedWall("reopenOrdersAction", {
+  permission: "request.reopen",
+  status: "CLOSED",
+  async run(user, ticked) {
+    signedIn(user);
+    return wall(
+      await reopenOrdersAction({
+        clientKey: newClientKey(),
+        orders: versions(ticked),
+        reason: REASON,
+      }),
     );
   },
 });

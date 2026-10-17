@@ -50,11 +50,16 @@ export const reopenOrders = orderMoveAction<MoveActionInput>({
     );
   },
   async notify(context, result) {
-    await noticePerBranch(context, result.actionId, "REQUEST_REOPENED", async (owners, branchId) => [
-      ...new Set([
-        ...(await ownersAndHeads(context.tx, owners)),
-        ...(await financeOf(context.tx, branchId)),
-      ]),
-    ]);
+    await noticePerBranch(
+      context,
+      result.actionId,
+      "REQUEST_REOPENED",
+      async (owners, branchId) => [
+        ...new Set([
+          ...(await ownersAndHeads(context.tx, owners)),
+          ...(await financeOf(context.tx, branchId)),
+        ]),
+      ],
+    );
   },
 });

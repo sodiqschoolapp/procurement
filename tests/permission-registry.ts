@@ -117,6 +117,8 @@ export const SERVER_ACTIONS: Record<string, Entry> = {
   "src/app/(app)/orders/actions.ts#sendBackForCorrectionOrdersAction": "request.settle",
   // Finance's Close (06 Allowed moves, "Waiting for settlement | Close"; plan of 4.6).
   "src/app/(app)/orders/actions.ts#closeOrdersAction": "request.settle",
+  // The Head's Reopen (06 Allowed moves, "Closed | Reopen | Head"; plan of 4.8).
+  "src/app/(app)/orders/actions.ts#reopenOrdersAction": "request.reopen",
   "src/app/(app)/orders/actions.ts#acknowledgeOverspendAction": "request.acknowledge_overspend",
 };
 
