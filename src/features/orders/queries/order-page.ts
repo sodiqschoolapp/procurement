@@ -8,7 +8,7 @@ import { isImageMime } from "@/domain/files";
 import { addsDraftsIn, inStock, plainQuantity } from "@/domain/drafts";
 import { type OrderAction, type OrderEventType, allowedActions } from "@/domain/order-moves";
 import { type StepEvent, type StepView, isOverdue, orderSteps } from "@/domain/order-steps";
-import { moneyRecordAllows, settlementAllows } from "@/domain/money-ledger";
+import { moneyRecordAllows, overspendNeedsAck, settlementAllows } from "@/domain/money-ledger";
 import { extrasSum, priceHintPercent } from "@/domain/order-totals";
 import {
   type RevisionField,
@@ -60,6 +60,7 @@ import { orderState } from "@/server/order-moves";
 import { readSnapshot } from "@/server/read-snapshot";
 import { readSettings } from "@/server/settings";
 
+import { settlementFactsOf } from "@/features/money/settlement-facts";
 import { orderRecords } from "@/features/purchasing/order-records";
 
 import { exactMatchOf } from "../exact-match";
@@ -252,6 +253,12 @@ export type OrderPage = {
    * and `request.settle`. The settlement screen and its actions ask again.
    */
   canSettle: boolean;
+  /**
+   * Acknowledge overspend is offered (08 Overspend guard; plan of 4.7): Waiting for settlement,
+   * above the guard and not yet acknowledged (`overspendNeedsAck()`), and
+   * `request.acknowledge_overspend`. The action asks again.
+   */
+  canAcknowledgeOverspend: boolean;
   /**
    * The buying actions this user may take on this order now (07 Order progress; plan of 3.5):
    * buyingActions() of src/domain/purchases.ts. The server asks again.
@@ -521,6 +528,13 @@ async function readPage(db: Executor, actor: Actor, id: string): Promise<OrderPa
     canSettle:
       settlementAllows(row.status) &&
       decide("request.settle", actor, { branchId: row.branchId, ownerId: row.ownerId }) === "allow",
+    canAcknowledgeOverspend:
+      settlementAllows(row.status) &&
+      decide("request.acknowledge_overspend", actor, {
+        branchId: row.branchId,
+        ownerId: row.ownerId,
+      }) === "allow" &&
+      (await overspendWaits(db, row.id)),
     canRecordPurchase:
       row.status === "PURCHASING" &&
       row.progress === "OPEN" &&
@@ -549,6 +563,12 @@ async function readPage(db: Executor, actor: Actor, id: string): Promise<OrderPa
  * and receipt files (07 Purchase record; One trip 1), in the page's snapshot after the walls let
  * the order through. A receipt is downloaded at `/files/<id>` under `TRIP_FILES` (3.3).
  */
+/** 08 Overspend guard: the order is above the guard now and the Head has not acknowledged it. */
+async function overspendWaits(db: Executor, orderId: string): Promise<boolean> {
+  const facts = (await settlementFactsOf(db, [orderId])).get(orderId);
+  return facts !== undefined && overspendNeedsAck(facts, await readSettings(db));
+}
+
 async function readPurchases(
   db: Executor,
   actor: Actor,

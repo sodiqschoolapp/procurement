@@ -38,6 +38,7 @@ export type WireSettlementOrder = {
   cancelledRecords: string[];
   noReceipt: boolean;
   canRecordMoney: boolean;
+  overspend: { over: Money; percent: string | null; acknowledgedBy: string | null } | null;
 };
 
 export type WireSettlement = {
@@ -97,6 +98,13 @@ export function wireSettlement(settlement: Settlement): WireSettlement {
           cancelledRecords: order.cancelledRecords,
           noReceipt: order.noReceipt,
           canRecordMoney: order.canRecordMoney,
+          overspend: order.overspend
+            ? {
+                over: order.overspend.over.toString(),
+                percent: order.overspend.percent,
+                acknowledgedBy: order.overspend.acknowledgedBy,
+              }
+            : null,
         };
       }),
     })),

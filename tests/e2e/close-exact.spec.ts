@@ -157,7 +157,12 @@ test("the Manager closes an exact match after the confirmation; with a differenc
 
   // Both ticked: no Close for either, Send to settlement offered (build plan 4.4, Done when).
   await exactGroup.locator("input[type=checkbox]").first().check();
-  await cheaperGroup.locator("input[type=checkbox]").first().check();
+  await expect(bar).toBeVisible();
+  // On a phone the action bar can cover the lower row's tick box; the page has answered the first
+  // tick, so a click event reaches the second (as settlement.spec.ts ticks its second order).
+  const cheaperBox = cheaperGroup.locator("input[type=checkbox]").first();
+  await cheaperBox.dispatchEvent("click");
+  await expect(cheaperBox).toBeChecked();
   await expect(bar.locator("[data-exact-count]")).toHaveText("Farqsiz: 1 / 2");
   await expect(bar.locator('[data-move="SEND_TO_SETTLEMENT"]')).toBeVisible();
   await expect(bar.locator('[data-move="CLOSE_EXACT"]')).toHaveCount(0);

@@ -342,6 +342,21 @@ export function OrderList({
                     {t("bar.settle")}
                   </Link>
                 ) : null}
+                {summary.canAcknowledgeOverspend ? (
+                  // The Head's Acknowledge overspend with one comment (08 Overspend guard; plan of
+                  // 4.7): the server's canAcknowledgeOverspend, asked again by the action.
+                  <MoveButton
+                    move="ACKNOWLEDGE_OVERSPEND"
+                    orders={summary.orders}
+                    versionOf={(id) => seen.current.get(id) ?? 0}
+                    onAnswer={(answer) => {
+                      setFailed(answer);
+                      clear();
+                    }}
+                    size="sm"
+                    className="max-sm:flex-1"
+                  />
+                ) : null}
                 {summary.canCopy ? (
                   <CopyButton
                     orders={summary.orders}

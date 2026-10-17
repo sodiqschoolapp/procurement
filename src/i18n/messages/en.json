@@ -347,7 +347,9 @@
       "CASH_RETURNED": "Finance ({actor}) recorded {amount} in cash returned by you for {count, plural, one {# order} other {# orders}} in {branch}.",
       "CASH_PAID_BACK": "Finance ({actor}) paid you back {amount} for {count, plural, one {# order} other {# orders}} in {branch}.",
       "CASH_SETTLED": "Finance ({actor}) settled cash for {count, plural, one {# order} other {# orders}} in {branch}: {direction, select, TO_FINANCE {you hand Finance {amount}} TO_MANAGER {Finance pays you {amount}} other {nothing changes hands}}.",
-      "REQUEST_SENT_BACK_FOR_CORRECTION": "{actor} sent back {count, plural, one {# order} other {# orders}} in {branch} for correction."
+      "REQUEST_SENT_BACK_FOR_CORRECTION": "{actor} sent back {count, plural, one {# order} other {# orders}} in {branch} for correction.",
+      "OVERSPEND_ABOVE_GUARD": "{actor} sent {count, plural, one {# order} other {# orders}} in {branch} to settlement above the overspend guard. Finance cannot close {count, plural, one {it} other {them}} until you acknowledge the overspend.",
+      "OVERSPEND_ACKNOWLEDGED": "The Procurement Head {actor} acknowledged the overspend of {count, plural, one {# order} other {# orders}} in {branch}."
     }
   },
   "months": {
@@ -1205,7 +1207,8 @@
           "RECORD_MONEY": "Money recorded",
           "CANCEL_MONEY": "Money action cancelled",
           "SETTLE_CASH": "Cash settled",
-          "CONFIRM_SETTLEMENT": "Settlement confirmation changed"
+          "CONFIRM_SETTLEMENT": "Settlement confirmation changed",
+          "ACKNOWLEDGE_OVERSPEND": "Overspend acknowledged"
         },
         "approved": {
           "PENDING_HEAD": "Approved at the Head step",
@@ -1365,7 +1368,8 @@
         "CLOSE_EXACT": "Close",
         "SEND_TO_SETTLEMENT": "Send to settlement",
         "SEND_BACK_FOR_CORRECTION": "Send back for correction",
-        "CLOSE": "Close"
+        "CLOSE": "Close",
+        "ACKNOWLEDGE_OVERSPEND": "Acknowledge overspend"
       },
       "buttonCount": "{label} ({count})",
       "title": {
@@ -1380,7 +1384,8 @@
         "CLOSE_EXACT": "{count, plural, one {Close 1 order?} other {Close # orders?}}",
         "SEND_TO_SETTLEMENT": "{count, plural, one {Send 1 order to settlement?} other {Send # orders to settlement?}}",
         "SEND_BACK_FOR_CORRECTION": "{count, plural, one {Send 1 order back for correction?} other {Send # orders back for correction?}}",
-        "CLOSE": "{count, plural, one {Close 1 order?} other {Close # orders?}}"
+        "CLOSE": "{count, plural, one {Close 1 order?} other {Close # orders?}}",
+        "ACKNOWLEDGE_OVERSPEND": "{count, plural, one {Acknowledge the overspend of 1 order?} other {Acknowledge the overspend of # orders?}}"
       },
       "result": {
         "SEND_BACK": "{count, plural, one {It goes} other {They go}} back to the owner for editing. The owner and the Head are told. After the next submit, approval starts again at the Head.",
@@ -1394,7 +1399,8 @@
         "CLOSE_EXACT": "{count, plural, one {1 order will be Closed} other {# orders will be Closed}} and can no longer change. The owner, the Head and Finance are told.",
         "SEND_TO_SETTLEMENT": "{count, plural, one {1 order goes} other {# orders go}} to Finance for settlement. Finance is told.",
         "SEND_BACK_FOR_CORRECTION": "{count, plural, one {It goes} other {They go}} back to Open, so a wrong record can be corrected; its settlement confirmations are cleared. The owner and the Head are told.",
-        "CLOSE": "{count, plural, one {1 order will be Closed} other {# orders will be Closed}} and can no longer change. If any order is not ready, nothing closes and the orders are named. The owner, the Head and Finance are told."
+        "CLOSE": "{count, plural, one {1 order will be Closed} other {# orders will be Closed}} and can no longer change. If any order is not ready, nothing closes and the orders are named. The owner, the Head and Finance are told.",
+        "ACKNOWLEDGE_OVERSPEND": "Finance can then close {count, plural, one {this order} other {these orders}} with the actual total above the plan. Your comment is kept in each order's history, and Finance of the branch is told."
       },
       "done": {
         "SEND_BACK": "{count, plural, one {Sent back 1 order.} other {Sent back # orders.}}",
@@ -1408,7 +1414,8 @@
         "CLOSE_EXACT": "{count, plural, one {Closed 1 order.} other {Closed # orders.}}",
         "SEND_TO_SETTLEMENT": "{count, plural, one {Sent 1 order to settlement.} other {Sent # orders to settlement.}}",
         "SEND_BACK_FOR_CORRECTION": "{count, plural, one {Sent back 1 order for correction.} other {Sent back # orders for correction.}}",
-        "CLOSE": "{count, plural, one {Closed 1 order.} other {Closed # orders.}}"
+        "CLOSE": "{count, plural, one {Closed 1 order.} other {Closed # orders.}}",
+        "ACKNOWLEDGE_OVERSPEND": "{count, plural, one {Acknowledged the overspend of 1 order.} other {Acknowledged the overspend of # orders.}}"
       },
       "failedTitle": "{count, plural, one {Nothing was saved: 1 order is named below.} other {Nothing was saved: # orders are named below.}}",
       "failedLine": "{number} — {problem}",
@@ -1426,9 +1433,11 @@
       "notReady": {
         "FINISH_ORDER": "Nothing is received yet. Use Not bought instead.",
         "MARK_NOT_BOUGHT": "Something is already received. Use Finish order instead.",
-        "CLOSE": "Not ready to close: the cash count is not 0, a payment block is not confirmed, or the Head has not acknowledged the overspend."
+        "CLOSE": "Not ready to close: the cash count is not 0, a payment block is not confirmed, or the Head has not acknowledged the overspend.",
+        "ACKNOWLEDGE_OVERSPEND": "Not above the overspend guard now, or already acknowledged."
       },
-      "closeConfirm": "I confirm that all items entered the warehouse of this branch."
+      "closeConfirm": "I confirm that all items entered the warehouse of this branch.",
+      "comment": "Comment"
     },
     "overdue": "Overdue",
     "copy": {
@@ -1668,7 +1677,11 @@
       "confirmTitle": "{count, plural, one {Save the settlement of 1 order?} other {Save the settlement of # orders?}}",
       "confirmResult": "{count, plural, one {# order} other {# orders}}, {managers, plural, one {# Manager} other {# Managers}}:",
       "done": "{count, plural, one {Settlement saved for 1 order.} other {Settlement saved for # orders.}}",
-      "failedTitle": "{count, plural, one {1 order was not saved} other {# orders were not saved}}; nothing was saved."
+      "failedTitle": "{count, plural, one {1 order was not saved} other {# orders were not saved}}; nothing was saved.",
+      "overspend": {
+        "waits": "Over the plan by {amount} ({percent}%): waits for the Procurement Head's acknowledgment.",
+        "acknowledged": "Over the plan by {amount} ({percent}%): acknowledged by {name}."
+      }
     }
   }
 }

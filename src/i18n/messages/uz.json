@@ -347,7 +347,9 @@
       "CASH_RETURNED": "{branch}: moliya ({actor}) {count, plural, other {# ta buyurtma}} boʻyicha sizdan {amount} naqd pulni qaytarib oldi.",
       "CASH_PAID_BACK": "{branch}: moliya ({actor}) {count, plural, other {# ta buyurtma}} boʻyicha sizga {amount} qoplab berdi.",
       "CASH_SETTLED": "{branch}: moliya ({actor}) {count, plural, other {# ta buyurtma}} boʻyicha naqd pul hisob-kitobini qildi: {direction, select, TO_FINANCE {siz moliyaga {amount} topshirasiz} TO_MANAGER {moliya sizga {amount} toʻlaydi} other {pul berilmaydi}}.",
-      "REQUEST_SENT_BACK_FOR_CORRECTION": "{branch}: {actor} {count, plural, other {# ta buyurtmani}} tuzatish uchun qaytardi."
+      "REQUEST_SENT_BACK_FOR_CORRECTION": "{branch}: {actor} {count, plural, other {# ta buyurtmani}} tuzatish uchun qaytardi.",
+      "OVERSPEND_ABOVE_GUARD": "{branch}: {actor} {count, plural, other {# ta buyurtmani}} ortiqcha xarajat chegarasidan yuqori holda hisob-kitobga yubordi. Siz tasdiqlamaguningizcha Moliya ularni yopa olmaydi.",
+      "OVERSPEND_ACKNOWLEDGED": "{branch}: Xaridlar rahbari {actor} {count, plural, other {# ta buyurtma}} boʻyicha ortiqcha xarajatni tasdiqladi."
     }
   },
   "months": {
@@ -1205,7 +1207,8 @@
           "RECORD_MONEY": "Pul yozildi",
           "CANCEL_MONEY": "Pul amali bekor qilindi",
           "SETTLE_CASH": "Naqd pul hisob-kitobi",
-          "CONFIRM_SETTLEMENT": "Hisob-kitob tasdigʻi oʻzgartirildi"
+          "CONFIRM_SETTLEMENT": "Hisob-kitob tasdigʻi oʻzgartirildi",
+          "ACKNOWLEDGE_OVERSPEND": "Ortiqcha xarajat tasdiqlandi"
         },
         "approved": {
           "PENDING_HEAD": "Rahbar bosqichida tasdiqlandi",
@@ -1365,7 +1368,8 @@
         "CLOSE_EXACT": "Yopish",
         "SEND_TO_SETTLEMENT": "Hisob-kitobga",
         "SEND_BACK_FOR_CORRECTION": "Toʻgʻrilash uchun qaytarish",
-        "CLOSE": "Yopish"
+        "CLOSE": "Yopish",
+        "ACKNOWLEDGE_OVERSPEND": "Ortiqcha xarajatni tasdiqlash"
       },
       "buttonCount": "{label} ({count})",
       "title": {
@@ -1380,7 +1384,8 @@
         "CLOSE_EXACT": "{count, plural, other {# ta buyurtma yopilsinmi?}}",
         "SEND_TO_SETTLEMENT": "{count, plural, other {# ta buyurtma hisob-kitobga yuborilsinmi?}}",
         "SEND_BACK_FOR_CORRECTION": "{count, plural, other {# ta buyurtmani toʻgʻrilash uchun qaytarasizmi?}}",
-        "CLOSE": "{count, plural, other {# ta buyurtma yopilsinmi?}}"
+        "CLOSE": "{count, plural, other {# ta buyurtma yopilsinmi?}}",
+        "ACKNOWLEDGE_OVERSPEND": "{count, plural, other {# ta buyurtmaning ortiqcha xarajati tasdiqlansinmi?}}"
       },
       "result": {
         "SEND_BACK": "{count, plural, other {Buyurtmalar}} tuzatish uchun egasiga qaytadi. Egasi va rahbarga xabar boradi. Keyingi yuborishdan so'ng tasdiqlash yana rahbardan boshlanadi.",
@@ -1394,7 +1399,8 @@
         "CLOSE_EXACT": "{count, plural, other {# ta buyurtma yopiladi}} va boshqa o'zgarmaydi. Egasi, rahbar va moliya bo'limiga xabar boradi.",
         "SEND_TO_SETTLEMENT": "{count, plural, other {# ta buyurtma}} hisob-kitob uchun moliya bo'limiga o'tadi. Moliya bo'limiga xabar boradi.",
         "SEND_BACK_FOR_CORRECTION": "{count, plural, other {Buyurtmalar}} notoʻgʻri yozuvni tuzatish uchun «Ochiq» holatiga qaytadi; hisob-kitob tasdiqlari bekor qilinadi. Egasi va rahbarga xabar boradi.",
-        "CLOSE": "{count, plural, other {# ta buyurtma yopiladi}} va boshqa oʻzgarmaydi. Biror buyurtma tayyor boʻlmasa, hech narsa yopilmaydi va oʻsha buyurtmalar koʻrsatiladi. Egasi, rahbar va moliya boʻlimiga xabar boradi."
+        "CLOSE": "{count, plural, other {# ta buyurtma yopiladi}} va boshqa oʻzgarmaydi. Biror buyurtma tayyor boʻlmasa, hech narsa yopilmaydi va oʻsha buyurtmalar koʻrsatiladi. Egasi, rahbar va moliya boʻlimiga xabar boradi.",
+        "ACKNOWLEDGE_OVERSPEND": "Shundan soʻng Moliya rejadan yuqori haqiqiy summa bilan buyurtmalarni yopa oladi. Izohingiz har bir buyurtma tarixida saqlanadi, filial Moliyasiga xabar boradi."
       },
       "done": {
         "SEND_BACK": "{count, plural, other {# ta buyurtma qaytarildi.}}",
@@ -1408,7 +1414,8 @@
         "CLOSE_EXACT": "{count, plural, other {# ta buyurtma yopildi.}}",
         "SEND_TO_SETTLEMENT": "{count, plural, other {# ta buyurtma hisob-kitobga yuborildi.}}",
         "SEND_BACK_FOR_CORRECTION": "{count, plural, other {# ta buyurtma toʻgʻrilash uchun qaytarildi.}}",
-        "CLOSE": "{count, plural, other {# ta buyurtma yopildi.}}"
+        "CLOSE": "{count, plural, other {# ta buyurtma yopildi.}}",
+        "ACKNOWLEDGE_OVERSPEND": "{count, plural, other {# ta buyurtmaning ortiqcha xarajati tasdiqlandi.}}"
       },
       "failedTitle": "{count, plural, other {Hech narsa saqlanmadi: # ta buyurtma quyida ko'rsatilgan.}}",
       "failedLine": "{number} — {problem}",
@@ -1426,9 +1433,11 @@
       "notReady": {
         "FINISH_ORDER": "Hali hech narsa olinmagan. «Sotib olinmadi»dan foydalaning.",
         "MARK_NOT_BOUGHT": "Nimadir allaqachon olingan. «Buyurtmani yakunlash»dan foydalaning.",
-        "CLOSE": "Yopishga tayyor emas: naqd pul qoldigʻi 0 emas, toʻlov bloki tasdiqlanmagan yoki rahbar ortiqcha xarajatni tasdiqlamagan."
+        "CLOSE": "Yopishga tayyor emas: naqd pul qoldigʻi 0 emas, toʻlov bloki tasdiqlanmagan yoki rahbar ortiqcha xarajatni tasdiqlamagan.",
+        "ACKNOWLEDGE_OVERSPEND": "Hozir ortiqcha xarajat chegarasidan yuqori emas yoki allaqachon tasdiqlangan."
       },
-      "closeConfirm": "Barcha mahsulotlar ushbu filial omboriga kelib tushganini tasdiqlayman."
+      "closeConfirm": "Barcha mahsulotlar ushbu filial omboriga kelib tushganini tasdiqlayman.",
+      "comment": "Izoh"
     },
     "overdue": "Muddati o'tgan",
     "copy": {
@@ -1668,7 +1677,11 @@
       "confirmTitle": "{count, plural, other {# ta buyurtma hisob-kitobini saqlaysizmi?}}",
       "confirmResult": "{count, plural, other {# ta buyurtma}}, {managers, plural, other {# ta menejer}}:",
       "done": "{count, plural, other {# ta buyurtma boʻyicha hisob-kitob saqlandi.}}",
-      "failedTitle": "{count, plural, other {# ta buyurtma saqlanmadi}}; hech narsa saqlanmadi."
+      "failedTitle": "{count, plural, other {# ta buyurtma saqlanmadi}}; hech narsa saqlanmadi.",
+      "overspend": {
+        "waits": "Rejadan {amount} ({percent}%) ortiq: Xaridlar rahbari tasdigʻini kutmoqda.",
+        "acknowledged": "Rejadan {amount} ({percent}%) ortiq: {name} tasdiqladi."
+      }
     }
   }
 }

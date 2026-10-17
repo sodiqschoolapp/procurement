@@ -46,6 +46,7 @@ export const ORDER_EVENT_TYPES = [
   "CANCEL_MONEY",
   "SETTLE_CASH",
   "CONFIRM_SETTLEMENT",
+  "ACKNOWLEDGE_OVERSPEND",
 ] as const;
 export type OrderEventType = (typeof ORDER_EVENT_TYPES)[number];
 

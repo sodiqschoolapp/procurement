@@ -1203,4 +1203,22 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - For 4.8: a reopened order is Open again and needs a new Close by Finance; clearing the acknowledgment makes an overspent order wait for the Head again.
 - A purchase line whose price or extra differs from the plan needs a comment (07): the test helper `buy()` of `close.db.test.ts` adds one.
 
-The next task is 4.7.
+## 4.7 Overspend guard (17.10.2026, pull request #87)
+
+**Built**
+- Migration `0031_overspend_ack`: `ACKNOWLEDGE_OVERSPEND` (order actions and events).
+- Domain (`money-ledger.ts`): `orderOverspend()` and `overspendNeedsAck()`; `readyToClose()` calls the latter.
+- `acknowledgeOverspend` (`src/features/money/actions/`): Head, Waiting for settlement, above the guard and not acknowledged, one comment (5 to 500) for all ticked orders, all or nothing; writes `overspend_ack_*`; `OVERSPEND_ACKNOWLEDGED` to the branch's active Finance. Page export `acknowledgeOverspendAction`.
+- `sendToSettlementOrders` also sends `OVERSPEND_ABOVE_GUARD` to the active Heads, counting only the orders above the guard.
+- `canAcknowledgeOverspend` on `tickedSummary()` and `getOrderPage()`; the button through `MoveButton` (kind `ACKNOWLEDGE_OVERSPEND`, label "Comment") on the list bar and the order page; `overspend` per order on `getSettlement()` and its line on the settlement screen.
+
+**Left out, and the task that brings it**
+- The Head's home list "overspends to acknowledge": Phase 6. Reopen, which clears the acknowledgment: 4.8.
+
+**What the next sessions must know**
+- For 4.8: Reopen clears `overspend_ack_*` with the confirmations (copy the update of `send-back-for-correction.ts`); the acknowledge test's "Send back for correction clears" case shows how to prove the Head is needed again.
+- A guard settings change sends no notice (decided item 5, Look first, waits for the owner on issue #9).
+- `acknowledge-overspend.db.test.ts` has `withGuard()`, which sets and restores both guard settings.
+- `overspend.spec.ts` signs in the shared `e2e_head` and finds labels in any language, leaving his locale alone.
+
+The next task is 4.8.

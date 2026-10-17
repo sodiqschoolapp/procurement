@@ -1707,6 +1707,24 @@ Choices made during the build:
 - `settlementFactsOf()` also returns each order's records, so readiness and the screen read one place.
 - The database test of S12's readiness writes `overspend_ack_*` straight into `order_settlements` (the button is 4.7) and sets the guard amount with an upsert of the `settings` row, restored afterwards.
 
+### 4.7 Overspend guard (17.10.2026)
+
+The plan's decisions as the plan review of 17.10.2026 confirmed them (corrections 1 to 3 applied: the above-the-guard notice is tested with an order under the guard beside one above it and with two branches; the matrix covers a Manager holding every right; a test proves that Send back for correction makes the Head needed again).
+
+1. **Look first** (approval order, money). The Head is told "Overspend above the guard" at Send to settlement, for the sent orders above the guard under the settings of that moment, one notice per branch to every active Head, never the actor; the link is the action's list, which also holds the sent orders under the guard.
+2. **Look first** (approval order). "Acknowledge overspend" is allowed only Waiting for settlement (`settlementAllows()`), on orders above the guard now and not yet acknowledged, all or nothing. It moves no status, like Confirm of 4.5.
+3. **Look first** (money). One rule, `overspendNeedsAck()` in `money-ledger.ts`, read by the button, the notice, the settlement line and `readyToClose()`.
+4. The comment is the action's reason, 5 to 500 characters (06 rule 3), also stored in `overspend_ack_comment`.
+5. **Look first** (money, approval order). A change of the guard settings sends no notice; an order that a lowered setting puts above the guard blocks Close and no Head is told (Finance's line names it). Proposed `/spec-change` for `10-notifications-analytics-reports.md`, Notifications, row "Overspend above the guard": "Overspend above the guard, at send to settlement or when a change of the guard settings puts a waiting order above it | Head".
+6. "Overspend acknowledged" goes to the active Finance users of each order's branch, one notice per branch.
+7. Finance's settlement screen shows the overspend line (amount, percent, and the Head's name once acknowledged); the Head's home list is Phase 6.
+
+Choices made during the build:
+
+- `orderOverspend()` beside `overspendNeedsAck()`: the settlement line needs the amount and percent of an acknowledged order too.
+- The settlement line shows "—" for the percent when the planned total is 0 (`overspend()` gives no percent then).
+- The browser test signs in the shared `e2e_head` without changing his language and finds the confirm button by its label in all three languages.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

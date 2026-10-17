@@ -375,7 +375,7 @@ Cash given, cash spent, the difference and the close, per order, with Finance wo
   - **Done when:** S2, S3, S9, S13 and S20 as tests, and the endings of S10 and S16.
   - From 4.5: "every block confirmed" is `blockConfirmed()` of `src/domain/money-ledger.ts` over `settlementFactsOf()` (`src/features/money/settlement-facts.ts`), read under the lock: a transfer ticked while it matched counts as not confirmed once the amounts differ without a note; the Cash block is confirmed by a count of 0. Close goes on the settlement screen (`/orders/settle`) and the list bar.
 
-- [ ] **4.7 Overspend guard**
+- [x] **4.7 Overspend guard**
   - **Read:** `08-money-and-settlement.md` (Overspend guard); `02-assumptions.md` (A10); `10-notifications-analytics-reports.md` (Notifications: "Overspend above the guard"; "Overspend acknowledged"); `15-quality-and-acceptance.md` (S12).
   - **Build:** An order above both the percent and the amount setting notifies the Head, who must click "Acknowledge overspend" with a comment, for one order or several ticked ones, before Finance can close; a 0 in either setting leaves only the other; both 0 means every overspend; off means none; Finance is notified when the Head acknowledges.
   - **Done when:** S12 as a test; with the guard off the same order closes without the Head.

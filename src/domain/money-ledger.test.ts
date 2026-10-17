@@ -20,6 +20,7 @@ import {
   paidBy,
   plannedCash,
   plannedCashOf,
+  overspendNeedsAck,
   readyToClose,
   settlementAllows,
   settlementBlocks,
@@ -783,5 +784,37 @@ describe("readyToClose() (08 Closing 3; Overspend guard; plan of 4.6, decided it
     expect(
       ready(pens, [record("50", 2_600n)], [row("CASH_GIVEN", 100_000n), row("PAID_BACK", 30_000n)]),
     ).toBe(true);
+  });
+});
+
+describe("overspendNeedsAck() (08 Overspend guard: \"must click 'Acknowledge overspend' … before Finance can close\"; plan of 4.7, decided item 3, Look first)", () => {
+  const TIGHT = { overspend_guard_percent: 10, overspend_guard_min_amount: 50_000n } as const;
+  const NONE: SettlementConfirmations = {
+    transferConfirmed: false,
+    transferNote: null,
+    cardConfirmed: false,
+    overspendAcknowledged: false,
+  };
+  // S12: planned 520 000, actual 600 000. The guard's own cases (0, both 0, off) are overspend.test.ts's.
+  const S12 = [record("100", 5_800n, [cash(20_000n)])];
+
+  it("above the guard and not acknowledged: the Head is needed", () => {
+    expect(overspendNeedsAck({ plan: NOTEBOOKS, records: S12, stored: null }, TIGHT)).toBe(true);
+    expect(overspendNeedsAck({ plan: NOTEBOOKS, records: S12, stored: NONE }, TIGHT)).toBe(true);
+  });
+
+  it("once acknowledged: no longer needed", () => {
+    const stored = { ...NONE, overspendAcknowledged: true };
+    expect(overspendNeedsAck({ plan: NOTEBOOKS, records: S12, stored }, TIGHT)).toBe(false);
+  });
+
+  it("under the guard (S12 at the amount 100 000): not needed", () => {
+    const guard = { ...TIGHT, overspend_guard_min_amount: 100_000n };
+    expect(overspendNeedsAck({ plan: NOTEBOOKS, records: S12, stored: null }, guard)).toBe(false);
+  });
+
+  it("a cancelled record does not count toward the actual total", () => {
+    const records = [record("100", 5_800n, [cash(20_000n)], { isCancelled: true })];
+    expect(overspendNeedsAck({ plan: NOTEBOOKS, records, stored: null }, TIGHT)).toBe(false);
   });
 });
