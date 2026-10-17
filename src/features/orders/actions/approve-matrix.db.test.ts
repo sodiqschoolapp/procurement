@@ -68,12 +68,13 @@ describePermissionMatrix("approveOrders with cash at PENDING_FINANCE", {
       orders: [{ id: order.id, version: order.version }],
       cash: { [order.id]: "50000" },
     });
-    asMatrixAnswer(result);
+    // An allowed call wrote its one cash action; a refused one wrote none (permission review).
     const given = await db
       .select({ id: moneyActions.id })
       .from(moneyActions)
       .where(eq(moneyActions.clientKey, clientKey));
-    expect(given).toHaveLength(1);
+    expect(given).toHaveLength(result.ok ? 1 : 0);
+    asMatrixAnswer(result);
   },
 });
 

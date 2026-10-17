@@ -146,6 +146,9 @@ function checkCash(context: OrdersContext<ApproveInput>): void {
     for (const { orderId } of block.rows) {
       const order = orderOf.get(orderId)!;
       const target = { branchId: order.branchId, ownerId: order.ownerId };
+      // money.record and request.approve.step3 are both Finance of the branch today (03 matrix),
+      // so the status half refuses every other role first; the permission review of 4.2 notes that
+      // this check is reached on its own only if the two rows ever differ.
       if (
         order.status !== "PENDING_FINANCE" ||
         decide("money.record", context.actor, target) !== "allow"
