@@ -274,7 +274,7 @@ describe("the settlement action (08 Closing 2, the Cash block)", () => {
     }
   });
 
-  it("two Managers: one action each, in one call; a Manager whose rows are all 0 gets no action and no notice, and its order's event names no money (edge case 'two Managers'; review of the plan, Should fix 2)", async () => {
+  it("two Managers: one action each, in one call; an order whose row is 0 is not part of the action: sent, the call is refused; left out, it gets no action, no notice, no event and keeps its version (edge case 'two Managers'; review of the plan, Should fix 2; review of 4.5, finding 1)", async () => {
     const { branch, manager, colleague, finance, o142 } = await workedExample();
     const theirs = await insertOrder({
       branchId: branch.id,
@@ -317,8 +317,15 @@ describe("the settlement action (08 Closing 2, the Cash block)", () => {
       [allZero.id]: receive("0"),
       [third.id]: receive("50000"),
     });
-    expect(await settle(finance.id, zero)).toMatchObject({ ok: true });
-    const written = await actionsOf(zero.clientKey);
+    expect(await settle(finance.id, zero)).toMatchObject({
+      ok: false,
+      error: { code: "invalid_input", fields: { rows: "errors.field.noAmount" } },
+    });
+    expect(await actionsOf(zero.clientKey)).toEqual([]);
+    // As the screen sends it: only the order with a row above 0.
+    const only = input([third], { [third.id]: receive("50000") });
+    expect(await settle(finance.id, only)).toMatchObject({ ok: true });
+    const written = await actionsOf(only.clientKey);
     expect(written.map((action) => action.managerId)).toEqual([colleague.id]);
     const after = await db
       .select({ id: notifications.id })
@@ -326,10 +333,20 @@ describe("the settlement action (08 Closing 2, the Cash block)", () => {
       .where(eq(notifications.userId, manager.id));
     expect(after).toHaveLength(before.length);
     const events = await db
-      .select({ payload: orderEvents.payload })
+      .select({ id: orderEvents.id })
       .from(orderEvents)
       .where(and(eq(orderEvents.orderId, allZero.id), eq(orderEvents.type, "SETTLE_CASH")));
-    expect(events.every((event) => event.payload === null)).toBe(true);
+    expect(events).toEqual([]);
+    const [kept] = await db
+      .select({ version: orders.version })
+      .from(orders)
+      .where(eq(orders.id, allZero.id));
+    expect(kept!.version).toBe(allZero.version);
+    const thirdEvents = await db
+      .select({ id: orderEvents.id })
+      .from(orderEvents)
+      .where(and(eq(orderEvents.orderId, third.id), eq(orderEvents.type, "SETTLE_CASH")));
+    expect(thirdEvents).toHaveLength(1);
   });
 
   it("no row above 0 is refused (08 Money ledger: an amount above 0)", async () => {

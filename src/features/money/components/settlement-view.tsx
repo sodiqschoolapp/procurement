@@ -97,6 +97,9 @@ export function SettlementView({ settlement }: { settlement: WireSettlement }) {
     });
   };
   const rowCount = blocks.reduce((sum, block) => sum + block.rows.length, 0);
+  // Only the orders with a row above 0 are settled; the others get no event (review of 4.5).
+  const settled = new Set(blocks.flatMap((block) => block.rows.map((row) => row.orderId)));
+  const sentOrders = cashOrders.filter((order) => settled.has(order.id));
   const oneManager = settlement.managers.length === 1;
   const ready =
     valid && rowCount > 0 && comment.trim() !== "" && date !== "" && !uploading && !pending;
@@ -124,15 +127,15 @@ export function SettlementView({ settlement }: { settlement: WireSettlement }) {
     try {
       const answer = await settleCashAction({
         clientKey: key.current,
-        orders: cashOrders.map(({ id, version }) => ({ id, version })),
+        orders: sentOrders.map(({ id, version }) => ({ id, version })),
         occurredOn: date,
         documentNo,
         fileId: oneManager ? (file?.id ?? null) : null,
         comment,
         rows: Object.fromEntries(
-          cashOrders.map((order) => [
+          sentOrders.map((order) => [
             order.id,
-            { kind: order.prefill!.kind, amount: (amountOf(order) ?? 0n).toString() },
+            { kind: order.prefill!.kind, amount: amountOf(order)!.toString() },
           ]),
         ),
       });

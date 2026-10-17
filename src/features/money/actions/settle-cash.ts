@@ -33,15 +33,15 @@ import { amountField, refuseFile, storedFields } from "./record-money";
 // src/server/order-action.ts: lock, repeat, authorize `request.settle` per order, version, then:
 //
 //   check    the comment, the date, the document number (as Record money, decided item 3, Look
-//            first); every order Waiting for settlement (`settlementAllows()`); at least one row
-//            above 0; the rows' orders in one branch, as the screen takes one branch (decided item
+//            first); every order Waiting for settlement (`settlementAllows()`); a row above 0 for
+//            every ticked order (review of 4.5, finding 1); the rows' orders in one branch, as the screen takes one branch (decided item
 //            4, Look first; permission review, Should fix 1); a file only for one Manager
 //   write    first no crossing over: each Receive (Cash returned) and Pay (Paid back) row against
 //            the order's count before the action, read under the orders' lock (08 Money ledger 3;
 //            decided items 1 and 2, Look first), refused `not_ready` with the field that says why;
 //            then the file; then one money action per Manager with this settlement's
 //            `order_actions` row and its rows of both kinds (08 Money ledger 2's exception). Rows
-//            of 0 write nothing; a Manager whose rows are all 0 gets no action (`settlementCashRows()`)
+//            of 0 are refused above, so a Manager whose rows are all 0 is not in the call at all
 //   notify   one CASH_SETTLED to each owner per branch with the net (`settlementNet()`; decided
 //            item 8, Look first)
 //
@@ -122,6 +122,16 @@ export const settleCash = defineOrdersAction<SettleCashInput>({
       .filter((order) => !settlementAllows(order.status))
       .map((order) => ({ orderId: order.id, code: "wrong_status" as const }));
     if (refused.length > 0) return refused;
+    // An order with no row above 0 is not part of the settlement: no event, no new version
+    // (review of 4.5, finding 1; CLAUDE.md rule 7). The screen sends only the orders it settles.
+    const moved = new Set(
+      Object.entries(context.input.rows)
+        .filter(([, row]) => row.amount > 0n)
+        .map(([id]) => id),
+    );
+    if (context.orders.some((order) => !moved.has(order.id))) {
+      throw new ActionError("invalid_input", { rows: "errors.field.noAmount" });
+    }
     const blocks = blocksOf(context);
     if (blocks.length === 0) {
       throw new ActionError("invalid_input", { rows: "errors.field.noAmount" });
