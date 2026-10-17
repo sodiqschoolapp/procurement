@@ -57,6 +57,16 @@ export type TickedWallOptions = {
   oneBranch?: { code: string; fields: Record<string, string> };
   /** Rows the action writes beyond the order tables, read before and after a refusal. */
   unchanged?: () => Promise<unknown>;
+  /**
+   * Sets each ticked order's scene after it is made, before anything is read (a record received,
+   * a finished progress: the buying actions of 3.5). It leaves the version as it is.
+   */
+  prepare?: (order: {
+    id: string;
+    branchId: string;
+    ownerId: string;
+    variantId: string;
+  }) => Promise<void>;
 };
 
 /** Every row an order action may write, counted, and the ticked orders as they stand. */
@@ -106,14 +116,14 @@ function named(ticked: readonly TickedOrder[], answers: readonly Answer[]) {
 }
 
 export function describeTickedWall(name: string, options: TickedWallOptions): void {
-  const { permission, status, owned, run, oneBranch, unchanged } = options;
+  const { permission, status, owned, run, oneBranch, unchanged, prepare } = options;
   const saved = options.saved ?? ((_user, ticked) => versionsRose(ticked));
 
-  const orderOf = (branchId: string, ownerId: string) =>
-    insertOrder({ ...options.order, branchId, ownerId, status }).then(({ id, version }) => ({
-      id,
-      version,
-    }));
+  const orderOf = async (branchId: string, ownerId: string) => {
+    const made = await insertOrder({ ...options.order, branchId, ownerId, status });
+    await prepare?.(made);
+    return { id: made.id, version: made.version };
+  };
 
   describe(`${name} at ${status}: ticked orders of two branches (03 rules 1 and 8; 06 rule 8; 15 Test layers)`, () => {
     for (const role of ROLES) {
