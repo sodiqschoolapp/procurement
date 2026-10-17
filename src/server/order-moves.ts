@@ -68,7 +68,7 @@ export function orderState(order: LockedOrder): OrderState {
 }
 
 /** Why a reason is refused, as the field error of `reason` (06 rule 3). */
-function reasonFields(reason: unknown): Record<string, FieldMessageKey> {
+export function reasonFields(reason: unknown): Record<string, FieldMessageKey> {
   if (typeof reason !== "string" || reason.trim() === "")
     return { reason: "errors.field.required" };
   if (Array.from(moveReason(reason)).length > MOVE_REASON_MAX) {

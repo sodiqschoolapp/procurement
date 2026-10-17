@@ -169,6 +169,18 @@ export const orders = pgTable(
     check("orders_actual_total_check", sql`${table.actualTotal} >= 0`),
     check("orders_stock_at_submit_check", sql`${table.stockAtSubmit} >= 0`),
     check("orders_comment_check", sql`char_length(${table.comment}) <= 1000`),
+    // 07 Order progress: Done short and Not bought carry their reason, stored trimmed by
+    // moveReason() (5 to 500, 06 rule 3), and no other progress holds one (plan of 3.5, decided
+    // item 5, Look first).
+    check(
+      "orders_finish_reason_check",
+      sql`(${table.progress} IN ('DONE_SHORT', 'NOT_BOUGHT')) = (${table.finishReason} IS NOT NULL) AND (${table.finishReason} IS NULL OR char_length(${table.finishReason}) BETWEEN 5 AND 500)`,
+    ),
+    // A finished progress exists only from Open on (06 Statuses; 07 Order progress).
+    check(
+      "orders_progress_status_check",
+      sql`${table.progress} = 'OPEN' OR ${table.status} IN ('PURCHASING', 'SETTLEMENT', 'CLOSED')`,
+    ),
     check(
       "orders_submitted_plan_check",
       sql`${table.status} = 'DRAFT' OR (${table.variantId} IS NOT NULL AND ${table.departmentId} IS NOT NULL AND ${table.neededBy} IS NOT NULL AND ${table.plannedQty} IS NOT NULL AND ${table.plannedPrice} IS NOT NULL AND ${table.plannedTotal} IS NOT NULL AND ${table.submittedAt} IS NOT NULL)`,

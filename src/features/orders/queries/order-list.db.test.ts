@@ -17,6 +17,7 @@ import {
   insertOrderExtra,
   setOrderStatus,
 } from "../../../../tests/helpers/orders";
+import { insertPurchaseRow, insertTrip } from "../../../../tests/helpers/purchases";
 import { insertUser } from "../../../../tests/helpers/users";
 import { type ListFilters, NO_FILTERS } from "../list-filters";
 import {
@@ -349,6 +350,68 @@ describe("tickedSummary: Record purchase on ticked orders (07 One trip, many ord
     expect((await tickedSummary(manager.id, [theirs.id, mine.id])).recordTrip).toBe(true);
     await setManagerRight(manager.id, "RECORD_PURCHASES", false);
     expect((await tickedSummary(manager.id, [theirs.id, mine.id])).recordTrip).toBe(false);
+  });
+});
+
+describe("tickedSummary: Finish order, Not bought, Reopen buying (07 Order progress; plan of 3.5)", () => {
+  /** A record of `qty` written straight into the table, for the received rule. */
+  async function received(
+    base: { branchId: string; ownerId: string },
+    orderId: string,
+    qty: string,
+  ) {
+    const [row] = await db
+      .select({ variantId: orders.variantId })
+      .from(orders)
+      .where(eq(orders.id, orderId));
+    const tripId = (await insertTrip(base.branchId, base.ownerId)).rows[0]!.id;
+    await insertPurchaseRow({
+      tripId,
+      orderId,
+      branchId: base.branchId,
+      variantId: row!.variantId!,
+      createdBy: base.ownerId,
+      qty,
+    });
+  }
+
+  it("the action every ticked order allows, from what each has received; nothing for Principal and Finance", async () => {
+    const own = await scene();
+    const head = await insertUser("HEAD");
+    const principal = await insertUser("PRINCIPAL", { branches: [own.branch.id] });
+    const finance = await insertUser("FINANCE", { branches: [own.branch.id] });
+    const part = await order({ ...own.base, status: "PURCHASING" });
+    const partToo = await order({ ...own.base, status: "PURCHASING" });
+    const empty = await order({ ...own.base, status: "PURCHASING" });
+    const short = await order({ ...own.base, status: "PURCHASING" });
+    await received(own.base, part.id, "1");
+    await received(own.base, partToo.id, "2");
+    await received(own.base, short.id, "1");
+    await db
+      .update(orders)
+      .set({ progress: "DONE_SHORT", finishReason: "Not in the shop" })
+      .where(eq(orders.id, short.id));
+
+    expect((await tickedSummary(own.manager.id, [part.id, partToo.id])).buying).toEqual([
+      "FINISH_ORDER",
+    ]);
+    expect((await tickedSummary(head.id, [empty.id])).buying).toEqual(["MARK_NOT_BOUGHT"]);
+    expect((await tickedSummary(head.id, [short.id])).buying).toEqual(["REOPEN_BUYING"]);
+    expect((await tickedSummary(head.id, [part.id, empty.id])).buying).toEqual([]);
+    expect((await tickedSummary(head.id, [part.id, short.id])).buying).toEqual([]);
+    expect((await tickedSummary(principal.id, [part.id])).buying).toEqual([]);
+    expect((await tickedSummary(finance.id, [part.id])).buying).toEqual([]);
+  });
+
+  it("a colleague's order or RECORD_PURCHASES off: nothing offered to the Manager", async () => {
+    const { branch, base } = await scene();
+    const manager = await insertUser("MANAGER", { branches: [branch.id] });
+    const theirs = await order({ ...base, status: "PURCHASING" });
+    const mine = await order({ ...base, ownerId: manager.id, status: "PURCHASING" });
+    expect((await tickedSummary(manager.id, [mine.id])).buying).toEqual(["MARK_NOT_BOUGHT"]);
+    expect((await tickedSummary(manager.id, [theirs.id, mine.id])).buying).toEqual([]);
+    await setManagerRight(manager.id, "RECORD_PURCHASES", false);
+    expect((await tickedSummary(manager.id, [mine.id])).buying).toEqual([]);
   });
 });
 

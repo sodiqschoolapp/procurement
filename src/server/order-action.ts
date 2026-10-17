@@ -33,6 +33,8 @@ import {
 //   authorize authorizeOrders(): branch and owner read under the lock, the draft wall
 //   version   each order's sent version against the locked one
 //   check     the status check (a move: the state machine)
+//   inspect   optional: what the check needs from other tables, read under the same lock (plan
+//             of 3.5, decided item 15, Look first); its failures join the check's
 //   write     the change; the wrapper raises every version and sets updated_at
 //   history   one order_actions row and one order_events row per order
 //   notify    the notifications
@@ -127,6 +129,12 @@ export type OrdersActionDefinition<Input extends OrdersInput> = {
    * reason) throws ActionError.
    */
   check(context: OrdersContext<Input>): readonly OrderFailure[];
+  /**
+   * A check that reads rows besides the locked orders (the purchase records of 3.5), inside the
+   * transaction after the lock and the status check, on the orders behind no wall. Its failures
+   * are named with the check's in one answer (06 rule 8).
+   */
+  inspect?(context: OrdersContext<Input>): Promise<readonly OrderFailure[]>;
   /** The change. Returns what each order's event adds (a note, a payload). */
   write(context: OrdersContext<Input>): Promise<ReadonlyMap<string, OrderEventExtra> | void>;
   notify?(context: OrdersContext<Input>, result: OrdersResult): Promise<void>;
@@ -360,6 +368,9 @@ export async function runOrdersAction<Input extends OrdersInput>(
       const context: OrdersContext<Input> = { tx, input, userId, actor, orders: visible };
       if (visible.length > 0) {
         for (const { orderId, code } of definition.check(context)) failures.add(orderId, code);
+        for (const { orderId, code } of (await definition.inspect?.(context)) ?? []) {
+          failures.add(orderId, code);
+        }
       }
       failures.throwIfAny(sent);
 

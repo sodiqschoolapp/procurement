@@ -1411,6 +1411,34 @@ Choices made during the build:
 - The trip's payment type defaults to the first order's in the split's order, the supplier to the company every order shares while active, else none.
 - The 3.3 tests were moved to the new input shape (the order's own fields into `lines[0]`, field paths `lines.0.<field>`); no assertion changed.
 
+### 3.5 Purchases tab, order progress and the actual columns of the download (17.10.2026)
+
+The plan's decisions as the plan review of 17.10.2026 confirmed them (corrections 1 to 4 applied), and those of the build. The Look first items come first.
+
+1. **Look first** (progress; a merged decision and its tests changed). Finish order on an Open order with something received gives Done short below the plan and Done at or above it; nothing received is refused (Not bought is the way). This changes decisions 3.2 item 4; `finishRefusal()` is replaced by `finishedProgress()` and its two `NOT_SHORT` assertions are now Done. Reason: a reopened Done order with no further record could otherwise never be finished. Proposed `/spec-change` of 07 Order progress: row Done "Received the planned quantity or more. Automatic; after a reopen with no further record, \"Finish order\" sets it."; row Open "Received less than planned and not finished by hand, or reopened."
+2. **Look first** (permission matrix). The three buying actions need `purchase.record`: the Head, the owner with `RECORD_PURCHASES` on (03 "Record purchases"; "the Head finishes it").
+3. **Look first** (progress). Reopen buying works on Done, Done short and Not bought while the status is Open, not after Send to settlement; no reason. Proposed `/spec-change` of 06 Rules 3: "Send back, reject, cancel and the Head's reopen of a Closed order need a reason of at least 5 characters. Reopening an order's buying (section 7) needs none."
+4. **Look first** (money rule, actual price). The download's actual price is round half up(actual goods ÷ actual quantity), divided exactly with `Exact`; empty with nothing received. Proposed `/spec-change` of 08 Numbers the system calculates, a new row: "Actual price | Actual goods ÷ actual quantity, rounded half up; shown only where one price per order is needed (the download)".
+5. **Look first** (database). `orders_finish_reason_check` (a trimmed reason of 5 to 500 exactly with Done short or Not bought) and `orders_progress_status_check` (a finished progress only from Open on).
+6. **Look first** (money, download). "From Open onward" is Open, Waiting for settlement and Closed; before, the five cells are empty; an Open order with nothing received shows 0, no price, 0, 0 and the planned total as difference. The difference is planned − actual, a signed number cell bounded at ±`MONEY_MAX` (`signedMoneyCellValue()`).
+7. One reason for every ticked order, 5 to 500 (`isMoveReason`), stored trimmed in `finish_reason` and the event.
+8. Refusals: `wrong_status` for the progress or status, `not_ready` for the received rule, every order named in one answer.
+9. No notification for the three actions.
+10. The totals under the download's rows stay those of 2.14 item 6.
+11. The Purchases tab exists from status Open on.
+12. Event names `FINISH_ORDER`, `MARK_NOT_BOUGHT`, `REOPEN_BUYING`, payload `progress: {from, to}`.
+13. The buttons reuse `MoveButton`; `ORDER_MOVES` is unchanged (progress is not a status).
+14. The progress label is on the order page only, not in the list rows.
+15. **Look first** (the wrapper). An optional `inspect()` step of the orders wrapper, inside the transaction after the lock and `check()`.
+16. Icons from the set built: `shopping_cart` (buying open), `done_all` (Done), `check_circle` (Done short), `block` (Not bought), `warning` (over plan), `cancel` (a cancelled record); info and muted tones only for the progress.
+
+Choices made during the build:
+
+- **Look first** (PDF layout). The PDF prints the measure beside each quantity instead of in its own column, in 6.5 pt, and lets the word "so'm" go to a second line in a narrow money cell while the digits stay on one line, so the five new columns fit A4 landscape. The Excel file keeps every column.
+- **Look first** (a defect found, not fixed here). A PDF made after a Russian-language PDF in the same server process loses letters (seen on `main`: "Orders" printed as "rdrs"). The S2 download test is its own file (`route-actual.db.test.ts`); the cause, inside @react-pdf/renderer 4.9.0, is not found yet. Proposed fix task after 3.5.
+- `ProgressLabel` lives beside the status labels in `src/components/status-label.tsx` (the one status-label component), not in a purchasing file as the plan said.
+- `insertOrder()` of `tests/helpers/orders.ts` takes `progress` and `finishReason`; `describeTickedWall()` takes `prepare` to set a ticked order's scene before anything is read.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

@@ -29,6 +29,11 @@ import { submitAgainOrders } from "@/features/orders/actions/submit-again";
 import { submitDrafts } from "@/features/orders/actions/submit";
 import { takeBackOrders } from "@/features/orders/actions/take-back";
 import { getDraft } from "@/features/orders/queries/drafts";
+import {
+  finishOrders,
+  markNotBought,
+  reopenBuying,
+} from "@/features/purchasing/actions/finish-buying";
 import { newestMoves } from "@/features/orders/queries/newest-moves";
 import { submittedNumbers } from "@/features/orders/queries/submitted";
 import { selectAllOnFilter, tickedSummary } from "@/features/orders/queries/order-list";
@@ -61,6 +66,9 @@ const cancel = ordersServerAction(cancelOrders);
 const takeBack = ordersServerAction(takeBackOrders);
 const submitAgain = ordersServerAction(submitAgainOrders);
 const copyAsNew = copyServerAction(copyOrdersAsNew);
+const finish = ordersServerAction(finishOrders);
+const notBought = ordersServerAction(markNotBought);
+const reopen = ordersServerAction(reopenBuying);
 
 /** A query as an answer: a refusal of authorize() or of the input is returned, never thrown. */
 async function asked<T>(read: (userId: string) => Promise<T>): Promise<ActionResult<T>> {
@@ -241,6 +249,21 @@ export async function takeBackOrdersAction(input: unknown): Promise<MoveAnswer> 
 /** Submits the ticked sent-back orders again: revision + 1, back to the Head (plan of 2.11). */
 export async function submitAgainOrdersAction(input: unknown): Promise<MoveAnswer> {
   return moveAnswer(submitAgain, input);
+}
+
+/** Finishes the buying of the ticked Open orders, with one reason (07 Order progress; plan of 3.5). */
+export async function finishOrdersAction(input: unknown): Promise<MoveAnswer> {
+  return moveAnswer(finish, input);
+}
+
+/** Marks the ticked Open orders Not bought, nothing received, with one reason (plan of 3.5). */
+export async function markNotBoughtAction(input: unknown): Promise<MoveAnswer> {
+  return moveAnswer(notBought, input);
+}
+
+/** Reopens the buying of the ticked finished Open orders (07 Order progress; plan of 3.5). */
+export async function reopenBuyingAction(input: unknown): Promise<MoveAnswer> {
+  return moveAnswer(reopen, input);
 }
 
 /** What Copy as new answers: each ticked order's draft, and for a merge the quantity after it. */

@@ -16,6 +16,7 @@ import { type StepEvent, isOverdue } from "@/domain/order-steps";
 import { type OrdersTotals, ordersTotals, priceHintPercent } from "@/domain/order-totals";
 import type { PaymentType } from "@/domain/payment-types";
 import { type Actor, decide } from "@/domain/permissions";
+import { type BuyingAction, actualQuantity, buyingActions } from "@/domain/purchases";
 import { type Executor, authorize, authorizeList, branchFilter } from "@/server/authorize";
 import { now } from "@/server/clock";
 import {
@@ -36,6 +37,8 @@ import { readSnapshot } from "@/server/read-snapshot";
 import { readSettings } from "@/server/settings";
 
 import { type ListFilters, NO_FILTERS, numberParts } from "../list-filters";
+
+import { recordsOfListed, recordsOfOrders } from "@/features/purchasing/order-records";
 
 import { createdByHeadSql, headStepAutoSql, ownerClosesAloneSql } from "../order-facts";
 
@@ -421,6 +424,12 @@ export type TickedSummary = {
    */
   recordTrip: boolean;
   /**
+   * The buying actions allowed on every ticked order (07 Order progress: "Finish order" and "Not
+   * bought" on ticked orders; plan of 3.5): buyingActions() of src/domain/purchases.ts, which the
+   * actions ask again.
+   */
+  buying: BuyingAction[];
+  /**
    * Each ticked order's number and payment type, for the approve dialog: Finance may change the
    * payment type there (06 rule 1; plan of 2.10). In the list's order of numbers.
    */
@@ -446,6 +455,7 @@ export async function tickedSummary(
     actions: [],
     canCopy: false,
     recordTrip: false,
+    buying: [],
     orders: [],
   };
   if (ids.length === 0) return none;
@@ -472,6 +482,10 @@ export async function tickedSummary(
       .innerJoin(branches, eq(branches.id, orders.branchId))
       .where(and(inArray(orders.id, ids), listWhere(actor, NO_FILTERS)));
     const extras = await extrasOf(
+      db,
+      found.map((row) => row.id),
+    );
+    const records = await recordsOfOrders(
       db,
       found.map((row) => row.id),
     );
@@ -504,6 +518,17 @@ export async function tickedSummary(
             decide("purchase.record", actor, { branchId: row.branchId, ownerId: row.ownerId }) ===
             "allow",
         ),
+      buying: buyingActions(
+        actor,
+        found.map((row) => ({
+          status: row.status,
+          progress: row.progress,
+          branchId: row.branchId,
+          ownerId: row.ownerId,
+          plannedQty: row.quantity!,
+          received: actualQuantity(records.get(row.id) ?? []),
+        })),
+      ),
       orders: found
         .map((row) => ({
           id: row.id,
@@ -572,7 +597,10 @@ export type DownloadOrder = {
   quantity: string;
   price: bigint;
   paymentType: PaymentType;
-  /** The extra costs, the planned total and who approved each step: orderDownloadRow(). */
+  /**
+   * The extra costs, the planned total, who approved each step and, from Open on, the actual
+   * numbers: orderDownloadRow().
+   */
   row: DownloadRow;
 };
 
@@ -667,6 +695,9 @@ export async function orderDownload(
       events.set(orderId, [...(events.get(orderId) ?? []), event]);
     }
 
+    // Every record of the listed orders, for the actual columns (05 Download 1; plan of 3.5).
+    const records = await recordsOfListed(db, listed);
+
     const [me] = await db
       .select({ name: users.fullName })
       .from(users)
@@ -695,7 +726,12 @@ export async function orderDownload(
         quantity: plainQuantity(row.quantity!),
         price: row.price!,
         paymentType: row.paymentType,
-        row: orderDownloadRow(row.status, plan, events.get(row.id) ?? []),
+        row: orderDownloadRow(
+          row.status,
+          plan,
+          events.get(row.id) ?? [],
+          records.get(row.id) ?? [],
+        ),
       };
     });
 

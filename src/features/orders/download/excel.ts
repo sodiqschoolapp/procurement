@@ -29,13 +29,32 @@ export function moneyCellValue(amount: bigint): number {
   return Number(amount);
 }
 
+/**
+ * A difference (planned − actual, 08) as the number Excel stores: it may be below 0, so its bound
+ * is ±MONEY_MAX (progress 2.14, "For 3.5"; plan of 3.5, decided item 6, Look first).
+ */
+export function signedMoneyCellValue(amount: bigint): number {
+  if (typeof amount !== "bigint" || amount < -MONEY_MAX || amount > MONEY_MAX) {
+    throw new RangeError(`An amount of ${String(amount)} so'm cannot be an exact Excel number`);
+  }
+  return Number(amount);
+}
+
 /** A quantity's numeric(14,3) text as the number Excel stores. */
 export function quantityCellValue(text: string): number {
   if (!QUANTITY.test(text)) throw new RangeError(`A quantity is "${text}": not numeric(14,3)`);
   return Number(text);
 }
 
-const MONEY_COLUMNS = new Set<DownloadColumn>(["price", "extras", "plannedTotal"]);
+const MONEY_COLUMNS = new Set<DownloadColumn>([
+  "price",
+  "extras",
+  "plannedTotal",
+  "actualPrice",
+  "actualExtras",
+  "actualTotal",
+  "difference",
+]);
 
 const WIDTHS: Record<DownloadColumn, number> = {
   number: 16,
@@ -51,6 +70,11 @@ const WIDTHS: Record<DownloadColumn, number> = {
   extras: 14,
   paymentType: 18,
   plannedTotal: 16,
+  actualQty: 10,
+  actualPrice: 14,
+  actualExtras: 14,
+  actualTotal: 16,
+  difference: 16,
 };
 
 /** The workbook of a download, as the bytes of an .xlsx file. */
@@ -66,7 +90,7 @@ export async function writeOrdersExcel(sheet: DownloadSheet): Promise<Uint8Array
       width: WIDTHS[column],
       style: MONEY_COLUMNS.has(column)
         ? { numFmt: MONEY_FORMAT }
-        : column === "quantity"
+        : column === "quantity" || column === "actualQty"
           ? { numFmt: QUANTITY_FORMAT }
           : {},
     })),
@@ -92,6 +116,12 @@ export async function writeOrdersExcel(sheet: DownloadSheet): Promise<Uint8Array
       extras: moneyCellValue(line.extras),
       paymentType: line.paymentType,
       plannedTotal: moneyCellValue(line.plannedTotal),
+      // Before Open, and a price while nothing is received: empty cells.
+      actualQty: line.actualQty === null ? null : quantityCellValue(line.actualQty),
+      actualPrice: line.actualPrice === null ? null : moneyCellValue(line.actualPrice),
+      actualExtras: line.actualExtras === null ? null : moneyCellValue(line.actualExtras),
+      actualTotal: line.actualTotal === null ? null : moneyCellValue(line.actualTotal),
+      difference: line.difference === null ? null : signedMoneyCellValue(line.difference),
       ...Object.fromEntries(
         APPROVAL_STEPS.flatMap((step) => [
           // A step not finished is an empty cell, not an empty text.

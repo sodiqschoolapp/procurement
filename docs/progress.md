@@ -956,4 +956,24 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - For 3.9: `PurchaseFormView` takes `backHref`; its line errors are `lines.<index in what was sent>.<field>`, mapped back through `sent`.
 - An e2e insert that uses one `pg` parameter in two places casts each use (`$5::numeric`, `$5::bigint`), or PostgreSQL refuses "inconsistent types deduced".
 
-The next task is 3.5.
+## 3.5 Purchases tab, order progress and the actual columns of the download (17.10.2026, pull request #69)
+
+**Built**
+- `finishOrders`, `markNotBought`, `reopenBuying` (`src/features/purchasing/actions/finish-buying.ts`) on `runOrdersAction` under `purchase.record`, events `FINISH_ORDER`, `MARK_NOT_BOUGHT`, `REOPEN_BUYING` (migration `0026_finish_buying`, payload `progress: {from, to}`); page exports in `src/app/(app)/orders/actions.ts`.
+- The wrapper's optional `inspect()` step (`src/server/order-action.ts`): a check that reads other tables under the lock, its failures named with `check()`'s.
+- Domain: `finishedProgress` (replaces `finishRefusal`), `BUYING_ACTIONS`, `buyingStatusAllows`, `buyingRefusal`, `buyingActions`, `actualUnitPrice`, `overPlan`, `BUYING_STATUSES`; `orderDownloadRow()` takes the records and returns `actual`.
+- CHECKs `orders_finish_reason_check`, `orders_progress_status_check`.
+- `/orders/[id]?tab=purchases` (`PurchasesTab`), `ProgressLabel` in `status-label.tsx`, the three buttons through `MoveButton` on the page and in the list bar (`tickedSummary().buying`); history line of the progress.
+- The five actual columns in Excel and PDF; the PDF prints the measure beside each quantity; `recordsOfOrders()` and `recordsOfListed()` in `order-records.ts`.
+
+**Left out, and the task that brings it**
+- Substitution: 3.6. Cancel and the cancelled count: 3.7. Colours and actual totals under the download: 3.8. Finished-orders summary, Send to settlement, Close: 4.4. Money tab: 4.3.
+
+**What the next sessions must know**
+- For 3.7: a cancel that takes Done short (or Not bought) back to Open clears `finish_reason` in the same update, or `orders_finish_reason_check` refuses it.
+- For 3.8: the Number colour's "Bought more" is `overPlan()`; build on it, not a second comparison.
+- For 4.4: "buying finished" is `progress <> 'OPEN'`; a reopened order is Open again until Finish order or a record that reaches the plan.
+- An action whose check needs rows besides the locked orders uses `inspect()`, not `write()`, so every failing order is named in one answer.
+- @react-pdf/renderer loses letters in a PDF made after a Russian one in the same process (reproduced on `main`; see the report of 3.5). `route-actual.db.test.ts` is its own file so its PDF is the process's first.
+
+The next task is 2.7b.

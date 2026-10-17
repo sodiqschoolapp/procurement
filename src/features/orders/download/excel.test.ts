@@ -9,6 +9,7 @@ import {
   QUANTITY_FORMAT,
   moneyCellValue,
   quantityCellValue,
+  signedMoneyCellValue,
   writeOrdersExcel,
 } from "./excel";
 
@@ -18,7 +19,25 @@ import {
 // reads back as the same decimal. Money cells carry `#,##0`, quantity cells General (spec review
 // of the plan, Should fix 1).
 
-function sheetWith(price: bigint, quantity: string, total: bigint): DownloadSheet {
+type Actual = Pick<
+  DownloadSheet["lines"][number],
+  "actualQty" | "actualPrice" | "actualExtras" | "actualTotal" | "difference"
+>;
+
+const NO_ACTUAL: Actual = {
+  actualQty: null,
+  actualPrice: null,
+  actualExtras: null,
+  actualTotal: null,
+  difference: null,
+};
+
+function sheetWith(
+  price: bigint,
+  quantity: string,
+  total: bigint,
+  actual: Actual = NO_ACTUAL,
+): DownloadSheet {
   const step = { name: "", at: "" };
   return {
     locale: "en",
@@ -42,6 +61,11 @@ function sheetWith(price: bigint, quantity: string, total: bigint): DownloadShee
       extras: "Extra costs",
       paymentType: "Payment type",
       plannedTotal: "Planned total",
+      actualQty: "Actual quantity",
+      actualPrice: "Actual price",
+      actualExtras: "Actual extra costs",
+      actualTotal: "Actual total",
+      difference: "Difference",
     },
     stepTitles: {
       HEAD: { name: "Head", at: "Head, time" },
@@ -64,6 +88,7 @@ function sheetWith(price: bigint, quantity: string, total: bigint): DownloadShee
         extras: 0n,
         paymentType: "Cash",
         plannedTotal: total,
+        ...actual,
         steps: { HEAD: step, PRINCIPAL: step, FINANCE: step },
       },
     ],
@@ -115,5 +140,40 @@ describe("the Excel money cell (CLAUDE.md rule 6; decided item 3)", () => {
     expect(row.getCell(11).numFmt).toBe(MONEY_FORMAT);
     expect(row.getCell(13).numFmt).toBe(MONEY_FORMAT);
     expect(row.getCell(8).numFmt ?? QUANTITY_FORMAT).toBe(QUANTITY_FORMAT);
+  });
+});
+
+describe("the actual columns (05 Download 1; plan of 3.5, decided item 6)", () => {
+  // Columns 14 to 18: actual quantity, actual price, actual extra costs, actual total, difference.
+  it("before Open the five cells are empty", async () => {
+    const { row } = await firstRow(await writeOrdersExcel(sheetWith(5_000n, "100", 520_000n)));
+    for (const column of [14, 15, 16, 17, 18]) expect(row.getCell(column).value).toBeNull();
+  });
+
+  it("from Open on they are number cells; a negative difference too (15 S3: over 30 000)", async () => {
+    const { row } = await firstRow(
+      await writeOrdersExcel(
+        sheetWith(5_000n, "100", 520_000n, {
+          actualQty: "100",
+          actualPrice: 5_200n,
+          actualExtras: 30_000n,
+          actualTotal: 550_000n,
+          difference: -30_000n,
+        }),
+      ),
+    );
+    expect(row.getCell(14).value).toBe(100);
+    expect(row.getCell(15).value).toBe(5_200);
+    expect(row.getCell(16).value).toBe(30_000);
+    expect(row.getCell(17).value).toBe(550_000);
+    expect(row.getCell(18).value).toBe(-30_000);
+    expect(row.getCell(18).numFmt).toBe(MONEY_FORMAT);
+  });
+
+  it("a signed money cell is bounded at ±MONEY_MAX (CLAUDE.md rule 6)", () => {
+    expect(signedMoneyCellValue(-MONEY_MAX)).toBe(-999_999_999_999_999);
+    expect(signedMoneyCellValue(MONEY_MAX)).toBe(999_999_999_999_999);
+    expect(() => signedMoneyCellValue(-MONEY_MAX - 1n)).toThrow(RangeError);
+    expect(() => signedMoneyCellValue(MONEY_MAX + 1n)).toThrow(RangeError);
   });
 });

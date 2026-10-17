@@ -562,7 +562,11 @@ describe("recordPurchase: the wrapper's rules (developer-rules.md rules 3, 8, 9;
     }
     for (const progress of ["DONE", "DONE_SHORT", "NOT_BOUGHT"] as const) {
       const opened = await openOrder();
-      await db.execute(sql`update orders set progress = ${progress} where id = ${opened.order.id}`);
+      // Done short and Not bought carry their reason (orders_finish_reason_check, 3.5).
+      const reason = progress === "DONE" ? null : "Invented finish reason";
+      await db.execute(
+        sql`update orders set progress = ${progress}, finish_reason = ${reason} where id = ${opened.order.id}`,
+      );
       expect(await record(opened, { qty: "10" })).toMatchObject({
         ok: false,
         error: { code: "wrong_status" },

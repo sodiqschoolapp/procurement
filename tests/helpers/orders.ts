@@ -82,6 +82,9 @@ export type OrderRow = {
   approvedAt?: Date | null;
   closedAt?: Date | null;
   createdAt?: Date;
+  /** 07 Order progress, Open unless given; its finish reason (plan of 3.5). */
+  progress?: "OPEN" | "DONE" | "DONE_SHORT" | "NOT_BOUGHT";
+  finishReason?: string | null;
 };
 
 /**
@@ -120,6 +123,8 @@ export async function insertOrder(row: OrderRow) {
       submittedAt: submitted ? (row.submittedAt ?? now()) : null,
       approvedAt: row.approvedAt ?? null,
       closedAt: row.closedAt ?? null,
+      progress: row.progress ?? "OPEN",
+      finishReason: row.finishReason ?? null,
       createdAt: row.createdAt ?? now(),
       updatedAt: now(),
     })

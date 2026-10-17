@@ -23,6 +23,7 @@ import {
   describeTickedWall,
 } from "../../../../tests/helpers/ticked-wall";
 import { insertOrder } from "../../../../tests/helpers/orders";
+import { insertPurchaseRow, insertTrip } from "../../../../tests/helpers/purchases";
 import { type InsertedUser, insertUser } from "../../../../tests/helpers/users";
 
 // Every order action on ticked orders, through the page's own export, with an order of the own
@@ -43,7 +44,10 @@ const {
   approveOrdersAction,
   cancelOrdersAction,
   copyOrdersAsNewAction,
+  finishOrdersAction,
+  markNotBoughtAction,
   rejectOrdersAction,
+  reopenBuyingAction,
   sendBackOrdersAction,
   setDraftsNeededByAction,
   submitAgainOrdersAction,
@@ -163,6 +167,61 @@ for (const status of ["PENDING_HEAD", "RETURNED"] as const) {
     },
   });
 }
+
+// The buying actions of 3.5 on Open orders (07 Order progress: "on ticked orders at once, with
+// one reason"; plan of 3.5, decided item 2, Look first): the Head and the owner. Finish needs
+// something received, Reopen a finished progress; each scene is set before anything is read.
+describeTickedWall("finishOrdersAction", {
+  permission: "purchase.record",
+  status: "PURCHASING",
+  owned: true,
+  async prepare(order) {
+    const tripId = (await insertTrip(order.branchId, order.ownerId)).rows[0]!.id;
+    await insertPurchaseRow({ tripId, ...order, orderId: order.id, createdBy: order.ownerId });
+  },
+  async run(user, ticked) {
+    signedIn(user);
+    return wall(
+      await finishOrdersAction({
+        clientKey: newClientKey(),
+        orders: versions(ticked),
+        reason: REASON,
+      }),
+    );
+  },
+});
+
+describeTickedWall("markNotBoughtAction", {
+  permission: "purchase.record",
+  status: "PURCHASING",
+  owned: true,
+  async run(user, ticked) {
+    signedIn(user);
+    return wall(
+      await markNotBoughtAction({
+        clientKey: newClientKey(),
+        orders: versions(ticked),
+        reason: REASON,
+      }),
+    );
+  },
+});
+
+describeTickedWall("reopenBuyingAction", {
+  permission: "purchase.record",
+  status: "PURCHASING",
+  owned: true,
+  async prepare(order) {
+    await db
+      .update(orders)
+      .set({ progress: "NOT_BOUGHT", finishReason: REASON })
+      .where(eq(orders.id, order.id));
+  },
+  async run(user, ticked) {
+    signedIn(user);
+    return wall(await reopenBuyingAction({ clientKey: newClientKey(), orders: versions(ticked) }));
+  },
+});
 
 describeTickedWall("takeBackOrdersAction", {
   permission: "request.edit",

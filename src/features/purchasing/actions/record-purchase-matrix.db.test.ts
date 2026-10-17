@@ -13,7 +13,9 @@ import {
   type MatrixCase,
   describePermissionMatrix,
 } from "../../../../tests/helpers/permission-matrix";
-import type { InsertedUser } from "../../../../tests/helpers/users";
+import { type InsertedUser, insertUser } from "../../../../tests/helpers/users";
+import { fileForDownload } from "@/features/files/queries/file-for-download";
+import { insertFileRow } from "../../../../tests/helpers/catalog";
 import { getPurchaseForm } from "../queries/purchase-form";
 import { recordPurchase } from "./record-purchase";
 
@@ -113,5 +115,24 @@ describePermissionMatrix("getPurchaseForm on a numbered Draft", {
     expect(await getPurchaseForm(each.user.id, [draft.id])).toBeNull();
     const form = await getPurchaseForm(each.user.id, [order.id]);
     if (!form) throw new AuthorizationError("not_found");
+  },
+});
+
+// A trip's receipt, linked from the Purchases tab since 3.5 (plan of 3.5; permission review of 3.5,
+// Must fix 1): it downloads under `data.view` of the trip's branch (`TRIP_FILES`), every role,
+// own branch and another branch.
+describePermissionMatrix("fileForDownload of a trip's receipt", {
+  permission: "data.view",
+  async run(each) {
+    // The trip is recorded by a Manager of the case's branch, whoever reads it.
+    const buyer = await insertUser("MANAGER", { branches: [each.branchId] });
+    const order = await openOrder({ ...each, ownerId: buyer.id });
+    const receipt = await insertFileRow(buyer.id);
+    const saved = await runOrdersAction(recordPurchase, buyer.id, {
+      ...input(order),
+      receiptFileIds: [receipt.id],
+    });
+    expect(saved).toMatchObject({ ok: true });
+    await fileForDownload(each.user.id, receipt.id);
   },
 });

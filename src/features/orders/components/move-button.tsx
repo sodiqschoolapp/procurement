@@ -7,7 +7,10 @@ import { useId, useRef, useState } from "react";
 import {
   type MoveAnswer,
   cancelOrdersAction,
+  finishOrdersAction,
+  markNotBoughtAction,
   rejectOrdersAction,
+  reopenBuyingAction,
   sendBackOrdersAction,
   submitAgainOrdersAction,
   takeBackOrdersAction,
@@ -19,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { FIELD_CLASSES } from "@/components/ui/input";
 import { cn } from "@/components/utils";
 import { MOVE_REASON_MAX, MOVE_REASON_MIN, isMoveReason } from "@/domain/order-moves";
+import type { BuyingAction } from "@/domain/purchases";
 import { moveFailureLines } from "@/features/orders/move-lines";
 import { useFormatters } from "@/i18n/use-formatters";
 
@@ -31,9 +35,13 @@ import { useFormatters } from "@/i18n/use-formatters";
 // optional note per order. A call is never retried by the screen; its client key is kept only
 // after a call with no answer (decisions 2.7 item 13). After every answer the page is refreshed
 // and the caller clears its ticks; a refusal names every order, "Already … by … at …" where the
-// server named who moved it meanwhile (decided item 7).
+// server named who moved it meanwhile (decided item 7). Since 3.5 also the buying actions Finish
+// order and Not bought (one reason) and Reopen buying, which move no status (07 Order progress;
+// plan of 3.5, decided item 13): shown when the server's buyingActions() names them.
 
-export type MoveKind = "SEND_BACK" | "REJECT" | "CANCEL" | "TAKE_BACK" | "SUBMIT_AGAIN";
+/** The state machine's moves this button makes. */
+export type StatusMoveKind = "SEND_BACK" | "REJECT" | "CANCEL" | "TAKE_BACK" | "SUBMIT_AGAIN";
+export type MoveKind = StatusMoveKind | BuyingAction;
 
 const RUN: Record<MoveKind, (input: unknown) => Promise<MoveAnswer>> = {
   SEND_BACK: sendBackOrdersAction,
@@ -41,10 +49,19 @@ const RUN: Record<MoveKind, (input: unknown) => Promise<MoveAnswer>> = {
   CANCEL: cancelOrdersAction,
   TAKE_BACK: takeBackOrdersAction,
   SUBMIT_AGAIN: submitAgainOrdersAction,
+  FINISH_ORDER: finishOrdersAction,
+  MARK_NOT_BOUGHT: markNotBoughtAction,
+  REOPEN_BUYING: reopenBuyingAction,
 };
 
-/** The moves that need a reason (06 rule 3). */
-const WITH_REASON: ReadonlySet<MoveKind> = new Set(["SEND_BACK", "REJECT", "CANCEL"]);
+/** The moves that need a reason (06 rule 3; 07 Order progress: Finish order and Not bought). */
+const WITH_REASON: ReadonlySet<MoveKind> = new Set([
+  "SEND_BACK",
+  "REJECT",
+  "CANCEL",
+  "FINISH_ORDER",
+  "MARK_NOT_BOUGHT",
+]);
 
 /** The moves that end an order for good: the danger button (design system, dialogs). */
 const FINAL: ReadonlySet<MoveKind> = new Set(["REJECT", "CANCEL"]);
@@ -118,7 +135,11 @@ export function MoveButton({
         (id) => numberOf.get(id) ?? "",
         {
           alreadyDecided: (verb, values) => t(`already.${verb}`, values),
-          refused: (code) => t(`refused.${code}`),
+          // A buying action's "not ready" is what the order has received (decided item 8).
+          refused: (code) =>
+            code === "not_ready" && (move === "FINISH_ORDER" || move === "MARK_NOT_BOUGHT")
+              ? t(`notReady.${move}`)
+              : t(`refused.${code}`),
           failedLine: (values) => t("failedLine", values),
         },
         format,

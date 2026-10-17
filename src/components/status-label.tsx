@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 
 import { Icon, type IconName } from "@/components/icon";
 import { cn } from "@/components/utils";
+import type { OrderProgress } from "@/domain/purchases";
 import type { RequestStatus } from "@/domain/request-status";
 import { useFormatters } from "@/i18n/use-formatters";
 
@@ -170,6 +171,33 @@ export function DraftGridLabel({
   return (
     <LabelBox tone={look.tone} icon={look.icon} className={className}>
       {t(label)}
+    </LabelBox>
+  );
+}
+
+/**
+ * The label of an order's buying progress (07-purchasing.md, Order progress; plan of 3.5). Like a
+ * status, only the info and muted tokens: Open buying is info, a finished one muted.
+ */
+export const PROGRESS_LOOK = {
+  OPEN: { tone: "info", icon: "shopping_cart" },
+  DONE: { tone: "muted", icon: "done_all" },
+  DONE_SHORT: { tone: "muted", icon: "check_circle" },
+  NOT_BOUGHT: { tone: "muted", icon: "block" },
+} as const satisfies Record<OrderProgress, { tone: "info" | "muted"; icon: IconName }>;
+
+export function ProgressLabel({
+  progress,
+  className,
+}: {
+  progress: OrderProgress;
+  className?: string;
+}) {
+  const t = useTranslations("orders.progress");
+  const look = PROGRESS_LOOK[progress];
+  return (
+    <LabelBox tone={look.tone} icon={look.icon} className={className}>
+      <span data-progress={progress}>{t(progress)}</span>
     </LabelBox>
   );
 }

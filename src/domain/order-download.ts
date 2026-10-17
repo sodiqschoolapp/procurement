@@ -6,6 +6,15 @@
 // disagree.
 
 import { type OrderPlan, extrasSum, orderTotal } from "./order-totals";
+import {
+  BUYING_STATUSES,
+  type PurchaseRecord,
+  actualExtra,
+  actualQuantity,
+  actualTotal,
+  actualUnitPrice,
+  difference,
+} from "./purchases";
 import { type StepEvent, orderSteps } from "./order-steps";
 import type { RequestStatus } from "./request-status";
 
@@ -20,10 +29,22 @@ export type DownloadRow = {
   plannedTotal: bigint;
   /** Who finished each step and when; null for a step not finished (15 S17). */
   approvals: Record<ApprovalStep, { name: string; at: Date } | null>;
+  /**
+   * From status Open on, the actual numbers over the records (05 Download 1; 08 Numbers the
+   * system calculates); null before. `unitPrice` is null while nothing is received.
+   */
+  actual: {
+    qty: string;
+    unitPrice: bigint | null;
+    extras: bigint;
+    total: bigint;
+    difference: bigint;
+  } | null;
 };
 
 /**
- * The numbers and the approvals of one order of the download. `events` are the order's events,
+ * The numbers and the approvals of one order of the download; `records` are its purchase records,
+ * cancelled ones included (the domain leaves them out). `events` are the order's events,
  * oldest first: only the moves after the newest Submit count (06 rule 4), a Head-created order's
  * Head step is its Submit (03 rule 6), and a Rejected or Cancelled order keeps the steps it
  * finished.
@@ -32,12 +53,25 @@ export function orderDownloadRow(
   status: RequestStatus,
   plan: OrderPlan,
   events: readonly StepEvent[],
+  records: readonly PurchaseRecord[],
 ): DownloadRow {
   const steps = orderSteps(status, events);
   const byOf = (step: ApprovalStep) => steps.find((view) => view.step === step)?.by ?? null;
+  const plannedTotal = orderTotal(plan);
+  const total = actualTotal(records);
   return {
     extras: extrasSum(plan.extras),
-    plannedTotal: orderTotal(plan),
+    plannedTotal,
     approvals: { HEAD: byOf("HEAD"), PRINCIPAL: byOf("PRINCIPAL"), FINANCE: byOf("FINANCE") },
+    // Plan of 3.5, decided item 6, Look first: Open, Waiting for settlement and Closed.
+    actual: BUYING_STATUSES.has(status)
+      ? {
+          qty: actualQuantity(records),
+          unitPrice: actualUnitPrice(records),
+          extras: actualExtra(records),
+          total,
+          difference: difference(plannedTotal, total),
+        }
+      : null,
   };
 }

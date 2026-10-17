@@ -9,10 +9,22 @@
 // (developer-rules.md rule 6).
 
 import { Exact, QUANTITY, extrasSum, quantityOf } from "./order-totals";
+import { type Actor, decide } from "./permissions";
+import type { RequestStatus } from "./request-status";
 
 /** 07 Order progress, in the order of its table. */
 export const ORDER_PROGRESS = ["OPEN", "DONE", "DONE_SHORT", "NOT_BOUGHT"] as const;
 export type OrderProgress = (typeof ORDER_PROGRESS)[number];
+
+/**
+ * The statuses from Open on (06 Statuses): those that can hold purchase records, and the ones
+ * whose download rows carry the actual columns (05 Download 1, "from Open onward").
+ */
+export const BUYING_STATUSES: ReadonlySet<RequestStatus> = new Set([
+  "PURCHASING",
+  "SETTLEMENT",
+  "CLOSED",
+]);
 
 /** One purchase record as these functions read it (07 Purchase record; 14 purchases). */
 export type PurchaseRecord = {
@@ -103,23 +115,112 @@ export function progressAfterBuying(
   return "OPEN";
 }
 
-/** Why an order cannot be finished by hand that way, or null when it can. */
-export type FinishRefusal = "NOTHING_RECEIVED" | "NOT_SHORT" | "SOMETHING_RECEIVED";
+/** Why an order cannot be finished by hand that way. */
+export type FinishRefusal = "NOTHING_RECEIVED" | "SOMETHING_RECEIVED";
 
 /**
- * 07 Order progress: "Finish order" gives Done short "with less than planned", and needs something
- * received (with nothing, it is "Not bought": decided item 4); "Not bought" needs nothing received.
+ * The progress "Finish order" or "Not bought" gives (07 Order progress), or why it is refused. The
+ * one place of the rule on what is received (review of the plan of 3.5, Should fix 2):
+ * - Not bought needs nothing received.
+ * - Finish order needs something received (with nothing, it is "Not bought"): Done short below the
+ *   plan; Done at the plan or more, which only a reopened Done order can be (plan of 3.5, decided
+ *   item 1, Look first: it changes decisions 3.2 item 4, so a reopened order is never stuck Open).
  */
-export function finishRefusal(
-  kind: "DONE_SHORT" | "NOT_BOUGHT",
+export function finishedProgress(
+  kind: "FINISH" | "NOT_BOUGHT",
   plannedQty: string,
   received: string,
-): FinishRefusal | null {
+): { progress: OrderProgress } | { refusal: FinishRefusal } {
   const planned = quantityOf(plannedQty);
   const got = receivedOf(received);
-  if (kind === "NOT_BOUGHT") return got.isZero() ? null : "SOMETHING_RECEIVED";
-  if (got.isZero()) return "NOTHING_RECEIVED";
-  return got.lt(planned) ? null : "NOT_SHORT";
+  if (kind === "NOT_BOUGHT") {
+    return got.isZero() ? { progress: "NOT_BOUGHT" } : { refusal: "SOMETHING_RECEIVED" };
+  }
+  if (got.isZero()) return { refusal: "NOTHING_RECEIVED" };
+  return { progress: got.lt(planned) ? "DONE_SHORT" : "DONE" };
+}
+
+/**
+ * The buying actions on an Open order (07 Order progress: "Finish order" and "Not bought" with one
+ * reason on ticked orders; reopening a finished order's buying while it is Open). They move no
+ * status (06 Statuses), so they are not rows of ORDER_MOVES (plan of 3.5, decided item 13).
+ */
+export const BUYING_ACTIONS = ["FINISH_ORDER", "MARK_NOT_BOUGHT", "REOPEN_BUYING"] as const;
+export type BuyingAction = (typeof BUYING_ACTIONS)[number];
+
+/** One order as the buying rule reads it, every fact from the database. */
+export type BuyingOrder = {
+  status: RequestStatus;
+  progress: OrderProgress;
+  branchId: string;
+  ownerId: string;
+  plannedQty: string;
+  /** The actual quantity, numeric(14,3) text, "0" when nothing is received. */
+  received: string;
+};
+
+/**
+ * The status part of the rule: Finish order and Not bought on an Open order whose buying is open;
+ * Reopen buying on an Open order whose buying is finished, never after Send to settlement (07
+ * "While the order is Open"; decided item 3, Look first). The actions' status check asks this.
+ */
+export function buyingStatusAllows(
+  kind: BuyingAction,
+  order: Pick<BuyingOrder, "status" | "progress">,
+): boolean {
+  if (order.status !== "PURCHASING") return false;
+  return kind === "REOPEN_BUYING" ? order.progress !== "OPEN" : order.progress === "OPEN";
+}
+
+/** Why one order refuses the buying action, in the wrapper's codes; null when it allows it. */
+export function buyingRefusal(
+  kind: BuyingAction,
+  order: BuyingOrder,
+): "wrong_status" | "not_ready" | null {
+  if (!buyingStatusAllows(kind, order)) return "wrong_status";
+  if (kind === "REOPEN_BUYING") return null;
+  const done = finishedProgress(
+    kind === "FINISH_ORDER" ? "FINISH" : "NOT_BOUGHT",
+    order.plannedQty,
+    order.received,
+  );
+  return "refusal" in done ? "not_ready" : null;
+}
+
+/**
+ * The buying actions this actor may take on every one of the orders now: the screens ask this,
+ * and the actions ask the same rule again (developer-rules.md rule 2). They need `purchase.record`
+ * (decided item 2, Look first: 03 "Record purchases", the Head or the owner with RECORD_PURCHASES).
+ */
+export function buyingActions(actor: Actor, list: readonly BuyingOrder[]): BuyingAction[] {
+  if (list.length === 0) return [];
+  return BUYING_ACTIONS.filter((kind) =>
+    list.every(
+      (order) =>
+        decide("purchase.record", actor, { branchId: order.branchId, ownerId: order.ownerId }) ===
+          "allow" && buyingRefusal(kind, order) === null,
+    ),
+  );
+}
+
+/**
+ * The actual price per unit of the download (05 Download 1, "actual price"; plan of 3.5, decided
+ * item 4, Look first): actual goods ÷ actual quantity, divided exactly and rounded once, half up
+ * (developer-rules.md rule 6); with one price it is that price. Null when nothing is received.
+ */
+export function actualUnitPrice(records: readonly PurchaseRecord[]): bigint | null {
+  const qty = new Exact(actualQuantity(records));
+  if (qty.isZero()) return null;
+  const price = new Exact(actualGoods(records).toString()).div(qty);
+  return BigInt(price.toDecimalPlaces(0, Exact.ROUND_HALF_UP).toFixed(0));
+}
+
+/**
+ * More was bought than approved (07 Order progress: "Buying more than planned … shows red"; edge
+ * case "More was bought than approved"). 3.8's Number red ("Bought more", 08) reads this.
+ */
+export function overPlan(plannedQty: string, received: string): boolean {
+  return receivedOf(received).gt(quantityOf(plannedQty));
 }
 
 /** One order of a group row, as the split reads it. */

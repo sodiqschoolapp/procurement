@@ -98,6 +98,10 @@ export const SERVER_ACTIONS: Record<string, Entry> = {
   "src/app/(app)/orders/actions.ts#tickedSummaryAction": "data.view",
   // Record purchases (03; plan of 3.3): the Head, the owner with RECORD_PURCHASES on.
   "src/app/(app)/orders/[id]/purchase/actions.ts#recordPurchaseAction": "purchase.record",
+  // Finish order, Not bought, Reopen buying (plan of 3.5, decided item 2, Look first): the same.
+  "src/app/(app)/orders/actions.ts#finishOrdersAction": "purchase.record",
+  "src/app/(app)/orders/actions.ts#markNotBoughtAction": "purchase.record",
+  "src/app/(app)/orders/actions.ts#reopenBuyingAction": "purchase.record",
 };
 
 /** Exports of `src/features/<area>/queries/`, as `<file>#<export>`. */
