@@ -282,13 +282,13 @@ verdict at the head whose checks have since passed on a re-run, when the last
 check run of that sha completed. Post it once: skip it when that comment is
 already there, newer than the start of the wait. Nothing else is started.
 Otherwise read .claude/skills/next-task/SKILL.md in this repository and follow it
-with no task id: the first unticked task. Follow it to the end of "The draft pull
-request": the branch task/<id>-<name>, the empty commit, the draft pull request
-with the plan. Then bind the pull request to this session with the bind_pr tool
-(named subscribe_pr_activity in some sessions; use whichever this session has) so
-that review comments and CI results reach it, and wait for the plan review as
-step 11 of the skill says; when it comes during the wait, go on from step 12 to
-the end of the skill. If the
+with no task id: the first unticked task. Follow it through step 10: the branch
+task/<id>-<name>, the empty commit, the draft pull request with the plan, bound
+to this session with the bind_pr tool (named subscribe_pr_activity in some
+sessions; use whichever this session has) so that review comments and CI
+results reach it; say that you bound it. Then wait for the plan review as step
+11 says; when it comes during the wait, go on from step 12 to the end of the
+skill. If the
 skill tells you to stop (a stop-list item, a task already started, a cloud
 session that is not ready, a gate line), stop there and say why. A task too
 large is no stop: the skill splits it and goes on.
