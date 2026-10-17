@@ -1150,4 +1150,22 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - For 4.8: a cancel on an action with a Closed order answers `wrong_status` with `fields.status = errors.field.closedReopenFirst`; after the reopen the same cancel passes.
 - For 4.9, 6.x: the Money tab's count is `getOrderMoney().count`; do not count again.
 
-The next task is 4.4.
+
+## 4.4 Close on an exact match (17.10.2026, pull request #84)
+
+**Built**
+- The orders wrapper's optional `facts` step (`src/server/order-action.ts`): facts other tables hold, read under the lock on the orders behind no wall, before the status check; `LockedOrder.exactMatch`, which `orderState()` reads (false without the step).
+- `exactMatchOf()` (`src/features/orders/exact-match.ts`): `isExactMatch()` with `orderCashCount()` for any number of orders in four statements; read by Close's `facts`, `tickedSummary()` (with `exactCount`) and `getOrderPage()`.
+- `closeExactOrders` (`CLOSE_EXACT`, sets `closed_at`, `REQUEST_CLOSED` to owners, active Heads and the branch's active Finance) and `sendToSettlementOrders` (`SEND_TO_SETTLEMENT`, `REQUEST_SENT_TO_SETTLEMENT` to the branch's active Finance); page exports `closeExactOrdersAction`, `sendToSettlementOrdersAction`; `financeOf()` in `notices.ts`.
+- Both buttons through `MoveButton` on the list bar and the order page; Close's dialog carries 08 Closing 1's sentence (`orders.moves.closeConfirm`); the bar's line "N of M match exactly" (`orders.list.bar.exact`).
+
+**Left out, and the task that brings it**
+- The Finance settlement screen and Send back for correction: 4.5. Finance's Close and readiness: 4.6. Overspend: 4.7. Reopen (and whether it clears `closed_at`): 4.8.
+
+**What the next sessions must know**
+- For 4.5: Send to settlement exists (action, buttons, the Finance notice); build the Finance screen and Send back only.
+- For 4.6: Finance's `CLOSE` needs `ready_to_close`; fill it with a `facts` step as Close fills `exactMatch` (never an `inspect` beside the machine), and set `closed_at` as `closeExactOrders` does.
+- For 4.6, 4.8: the notice of "Closed, reopened" goes to owners, active Heads and the branch's active Finance (`noticePerBranch` with `ownersAndHeads` and `financeOf`).
+- Tests that read notices filter by the branch code in `params` and the scene's users: every active Head of the test database is told of a Close.
+
+The next task is 4.5.
