@@ -1070,7 +1070,8 @@
         "countOf": "{count} of {matching} ticked",
         "clear": "Clear",
         "recordPurchase": "Record purchase",
-        "exact": "{exact} of {count} match exactly"
+        "exact": "{exact} of {count} match exactly",
+        "settle": "Settle"
       },
       "filters": {
         "label": "Filters",
@@ -1237,7 +1238,8 @@
         "done": "Submitted: {number}.",
         "failed": "Not submitted. Fix in the order list: {fields}.",
         "editInList": "Edit in the order list",
-        "recordPurchase": "Record purchase"
+        "recordPurchase": "Record purchase",
+        "settle": "Settle"
       },
       "changes": {
         "title": "What changed since rev {revision}",
@@ -1361,7 +1363,8 @@
         "MARK_NOT_BOUGHT": "Not bought",
         "REOPEN_BUYING": "Reopen buying",
         "CLOSE_EXACT": "Close",
-        "SEND_TO_SETTLEMENT": "Send to settlement"
+        "SEND_TO_SETTLEMENT": "Send to settlement",
+        "SEND_BACK_FOR_CORRECTION": "Send back for correction"
       },
       "buttonCount": "{label} ({count})",
       "title": {
@@ -1374,7 +1377,8 @@
         "MARK_NOT_BOUGHT": "{count, plural, one {Mark 1 order not bought?} other {Mark # orders not bought?}}",
         "REOPEN_BUYING": "{count, plural, one {Reopen the buying of 1 order?} other {Reopen the buying of # orders?}}",
         "CLOSE_EXACT": "{count, plural, one {Close 1 order?} other {Close # orders?}}",
-        "SEND_TO_SETTLEMENT": "{count, plural, one {Send 1 order to settlement?} other {Send # orders to settlement?}}"
+        "SEND_TO_SETTLEMENT": "{count, plural, one {Send 1 order to settlement?} other {Send # orders to settlement?}}",
+        "SEND_BACK_FOR_CORRECTION": "{count, plural, one {Send 1 order back for correction?} other {Send # orders back for correction?}}"
       },
       "result": {
         "SEND_BACK": "{count, plural, one {It goes} other {They go}} back to the owner for editing. The owner and the Head are told. After the next submit, approval starts again at the Head.",
@@ -1386,7 +1390,8 @@
         "MARK_NOT_BOUGHT": "Nothing is bought. In settlement any cash given is returned in full.",
         "REOPEN_BUYING": "{count, plural, one {Its buying is} other {Their buying is}} open again, so more purchases can be recorded.",
         "CLOSE_EXACT": "{count, plural, one {1 order will be Closed} other {# orders will be Closed}} and can no longer change. The owner, the Head and Finance are told.",
-        "SEND_TO_SETTLEMENT": "{count, plural, one {1 order goes} other {# orders go}} to Finance for settlement. Finance is told."
+        "SEND_TO_SETTLEMENT": "{count, plural, one {1 order goes} other {# orders go}} to Finance for settlement. Finance is told.",
+        "SEND_BACK_FOR_CORRECTION": "{count, plural, one {It goes} other {They go}} back to Open, so a wrong record can be corrected; its settlement confirmations are cleared. The owner and the Head are told."
       },
       "done": {
         "SEND_BACK": "{count, plural, one {Sent back 1 order.} other {Sent back # orders.}}",
@@ -1398,7 +1403,8 @@
         "MARK_NOT_BOUGHT": "{count, plural, one {Marked 1 order not bought.} other {Marked # orders not bought.}}",
         "REOPEN_BUYING": "{count, plural, one {Reopened the buying of 1 order.} other {Reopened the buying of # orders.}}",
         "CLOSE_EXACT": "{count, plural, one {Closed 1 order.} other {Closed # orders.}}",
-        "SEND_TO_SETTLEMENT": "{count, plural, one {Sent 1 order to settlement.} other {Sent # orders to settlement.}}"
+        "SEND_TO_SETTLEMENT": "{count, plural, one {Sent 1 order to settlement.} other {Sent # orders to settlement.}}",
+        "SEND_BACK_FOR_CORRECTION": "{count, plural, one {Sent back 1 order for correction.} other {Sent back # orders for correction.}}"
       },
       "failedTitle": "{count, plural, one {Nothing was saved: 1 order is named below.} other {Nothing was saved: # orders are named below.}}",
       "failedLine": "{number} — {problem}",
@@ -1599,6 +1605,65 @@
       "title": "Cancel this action of {total} on {count, plural, one {# order} other {# orders}}?",
       "result": "Orders {numbers}: the action stays in the list crossed out and is left out of every count. This cannot be undone; enter the right action again afterwards.",
       "done": "The action was cancelled on {count, plural, one {# order} other {# orders}}."
+    },
+    "settle": {
+      "title": "Settlement",
+      "subtitle": "{count, plural, one {# order} other {# orders}} of {managers, plural, one {# Manager} other {# Managers}} in {branch}",
+      "orders": "Orders",
+      "number": "Order",
+      "noReceipt": "No receipt",
+      "cancelled": "{count, plural, one {# cancelled record:} other {# cancelled records:}}",
+      "cancelledLink": "record {index}",
+      "cash": {
+        "title": "Cash",
+        "given": "Given",
+        "spent": "Spent",
+        "returned": "Returned",
+        "paidBack": "Paid back",
+        "count": "Count",
+        "CASH_RETURNED": "Receive from the Manager",
+        "PAID_BACK": "Pay the Manager",
+        "settled": "Nothing to settle: the count is 0."
+      },
+      "net": {
+        "TO_FINANCE": "{name} hands Finance {amount}.",
+        "TO_MANAGER": "Finance pays {name} {amount}.",
+        "NONE": "Nothing changes hands with {name}."
+      },
+      "amountInvalid": "Type whole so'm, 0 or more.",
+      "transfer": {
+        "title": "Bank transfer",
+        "planned": "Planned",
+        "transferred": "Transferred",
+        "received": "Value of goods received",
+        "note": "Note",
+        "noteRequired": "Note (required: transferred and received differ)",
+        "changed": "The amounts changed after the tick: add a note and confirm again."
+      },
+      "card": {
+        "title": "Corporate card",
+        "planned": "Planned",
+        "charged": "Actually charged",
+        "difference": "Difference",
+        "left": "Left {amount}",
+        "over": "Over {amount}",
+        "returned": "Card money returned"
+      },
+      "confirmed": "Confirmed",
+      "saveTitle": "Save the cash settlement",
+      "date": "Date",
+      "documentNo": "Document number (optional)",
+      "comment": "Comment",
+      "file": "File (optional)",
+      "chooseFile": "Choose a file",
+      "removeFile": "Remove",
+      "fileOneManager": "A file can be attached when the settlement is for one Manager.",
+      "back": "Back to orders",
+      "save": "Save settlement",
+      "confirmTitle": "{count, plural, one {Save the settlement of 1 order?} other {Save the settlement of # orders?}}",
+      "confirmResult": "{count, plural, one {# order} other {# orders}}, {managers, plural, one {# Manager} other {# Managers}}:",
+      "done": "{count, plural, one {Settlement saved for 1 order.} other {Settlement saved for # orders.}}",
+      "failedTitle": "{count, plural, one {1 order was not saved} other {# orders were not saved}}; nothing was saved."
     }
   }
 }

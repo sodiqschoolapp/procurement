@@ -13,6 +13,7 @@ import {
   rejectOrdersAction,
   reopenBuyingAction,
   sendBackOrdersAction,
+  sendBackForCorrectionOrdersAction,
   sendToSettlementOrdersAction,
   submitAgainOrdersAction,
   takeBackOrdersAction,
@@ -41,6 +42,7 @@ import { useFormatters } from "@/i18n/use-formatters";
 // order and Not bought (one reason) and Reopen buying, which move no status (07 Order progress;
 // plan of 3.5, decided item 13): shown when the server's buyingActions() names them. Since 4.4
 // Close of exact matches, whose dialog carries 08 Closing 1's sentence, and Send to settlement.
+// Since 4.5 Finance's Send back for correction, with one reason (06 Allowed moves; 08 Closing 4).
 
 /** The state machine's moves this button makes. */
 export type StatusMoveKind =
@@ -50,7 +52,8 @@ export type StatusMoveKind =
   | "TAKE_BACK"
   | "SUBMIT_AGAIN"
   | "CLOSE_EXACT"
-  | "SEND_TO_SETTLEMENT";
+  | "SEND_TO_SETTLEMENT"
+  | "SEND_BACK_FOR_CORRECTION";
 export type MoveKind = StatusMoveKind | BuyingAction;
 
 const RUN: Record<MoveKind, (input: unknown) => Promise<MoveAnswer>> = {
@@ -61,6 +64,7 @@ const RUN: Record<MoveKind, (input: unknown) => Promise<MoveAnswer>> = {
   SUBMIT_AGAIN: submitAgainOrdersAction,
   CLOSE_EXACT: closeExactOrdersAction,
   SEND_TO_SETTLEMENT: sendToSettlementOrdersAction,
+  SEND_BACK_FOR_CORRECTION: sendBackForCorrectionOrdersAction,
   FINISH_ORDER: finishOrdersAction,
   MARK_NOT_BOUGHT: markNotBoughtAction,
   REOPEN_BUYING: reopenBuyingAction,
@@ -71,6 +75,7 @@ const WITH_REASON: ReadonlySet<MoveKind> = new Set([
   "SEND_BACK",
   "REJECT",
   "CANCEL",
+  "SEND_BACK_FOR_CORRECTION",
   "FINISH_ORDER",
   "MARK_NOT_BOUGHT",
 ]);

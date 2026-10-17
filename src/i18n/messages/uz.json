@@ -1070,7 +1070,8 @@
         "countOf": "{matching} tadan {count} tasi belgilandi",
         "clear": "Tozalash",
         "recordPurchase": "Xaridni yozish",
-        "exact": "Farqsiz: {exact} / {count}"
+        "exact": "Farqsiz: {exact} / {count}",
+        "settle": "Hisob-kitob"
       },
       "filters": {
         "label": "Filtrlar",
@@ -1237,7 +1238,8 @@
         "done": "Yuborildi: {number}.",
         "failed": "Yuborilmadi. Buyurtmalar roʻyxatida tuzating: {fields}.",
         "editInList": "Buyurtmalar roʻyxatida tahrirlash",
-        "recordPurchase": "Xaridni yozish"
+        "recordPurchase": "Xaridni yozish",
+        "settle": "Hisob-kitob"
       },
       "changes": {
         "title": "{revision}-tahrirdan beri nima o'zgardi",
@@ -1361,7 +1363,8 @@
         "MARK_NOT_BOUGHT": "Sotib olinmadi",
         "REOPEN_BUYING": "Xaridni qayta ochish",
         "CLOSE_EXACT": "Yopish",
-        "SEND_TO_SETTLEMENT": "Hisob-kitobga"
+        "SEND_TO_SETTLEMENT": "Hisob-kitobga",
+        "SEND_BACK_FOR_CORRECTION": "Toʻgʻrilash uchun qaytarish"
       },
       "buttonCount": "{label} ({count})",
       "title": {
@@ -1374,7 +1377,8 @@
         "MARK_NOT_BOUGHT": "{count, plural, other {# ta buyurtmani sotib olinmadi deb belgilaysizmi?}}",
         "REOPEN_BUYING": "{count, plural, other {# ta buyurtma xaridini qayta ochasizmi?}}",
         "CLOSE_EXACT": "{count, plural, other {# ta buyurtma yopilsinmi?}}",
-        "SEND_TO_SETTLEMENT": "{count, plural, other {# ta buyurtma hisob-kitobga yuborilsinmi?}}"
+        "SEND_TO_SETTLEMENT": "{count, plural, other {# ta buyurtma hisob-kitobga yuborilsinmi?}}",
+        "SEND_BACK_FOR_CORRECTION": "{count, plural, other {# ta buyurtmani toʻgʻrilash uchun qaytarasizmi?}}"
       },
       "result": {
         "SEND_BACK": "{count, plural, other {Buyurtmalar}} tuzatish uchun egasiga qaytadi. Egasi va rahbarga xabar boradi. Keyingi yuborishdan so'ng tasdiqlash yana rahbardan boshlanadi.",
@@ -1386,7 +1390,8 @@
         "MARK_NOT_BOUGHT": "Hech narsa sotib olinmagan. Hisob-kitobda berilgan naqd pul toʻliq qaytariladi.",
         "REOPEN_BUYING": "Xarid yana ochiladi, yangi xaridlarni yozish mumkin.",
         "CLOSE_EXACT": "{count, plural, other {# ta buyurtma yopiladi}} va boshqa o'zgarmaydi. Egasi, rahbar va moliya bo'limiga xabar boradi.",
-        "SEND_TO_SETTLEMENT": "{count, plural, other {# ta buyurtma}} hisob-kitob uchun moliya bo'limiga o'tadi. Moliya bo'limiga xabar boradi."
+        "SEND_TO_SETTLEMENT": "{count, plural, other {# ta buyurtma}} hisob-kitob uchun moliya bo'limiga o'tadi. Moliya bo'limiga xabar boradi.",
+        "SEND_BACK_FOR_CORRECTION": "{count, plural, other {Buyurtmalar}} notoʻgʻri yozuvni tuzatish uchun «Ochiq» holatiga qaytadi; hisob-kitob tasdiqlari bekor qilinadi. Egasi va rahbarga xabar boradi."
       },
       "done": {
         "SEND_BACK": "{count, plural, other {# ta buyurtma qaytarildi.}}",
@@ -1398,7 +1403,8 @@
         "MARK_NOT_BOUGHT": "{count, plural, other {# ta buyurtma sotib olinmadi deb belgilandi.}}",
         "REOPEN_BUYING": "{count, plural, other {# ta buyurtma xaridi qayta ochildi.}}",
         "CLOSE_EXACT": "{count, plural, other {# ta buyurtma yopildi.}}",
-        "SEND_TO_SETTLEMENT": "{count, plural, other {# ta buyurtma hisob-kitobga yuborildi.}}"
+        "SEND_TO_SETTLEMENT": "{count, plural, other {# ta buyurtma hisob-kitobga yuborildi.}}",
+        "SEND_BACK_FOR_CORRECTION": "{count, plural, other {# ta buyurtma toʻgʻrilash uchun qaytarildi.}}"
       },
       "failedTitle": "{count, plural, other {Hech narsa saqlanmadi: # ta buyurtma quyida ko'rsatilgan.}}",
       "failedLine": "{number} — {problem}",
@@ -1599,6 +1605,65 @@
       "title": "{total} lik amal {count, plural, other {# ta buyurtma}} boʻyicha bekor qilinsinmi?",
       "result": "{numbers} buyurtmalari: amal roʻyxatda chizilgan holda qoladi va hech qaysi qoldiqqa kirmaydi. Buni qaytarib boʻlmaydi; soʻng toʻgʻri amalni qayta kiriting.",
       "done": "Amal {count, plural, other {# ta buyurtma}} boʻyicha bekor qilindi."
+    },
+    "settle": {
+      "title": "Hisob-kitob",
+      "subtitle": "{branch}: {managers, plural, other {# ta menejer}}ning {count, plural, other {# ta buyurtmasi}}",
+      "orders": "Buyurtmalar",
+      "number": "Buyurtma",
+      "noReceipt": "Chek yoʻq",
+      "cancelled": "{count, plural, other {# ta bekor qilingan yozuv:}}",
+      "cancelledLink": "{index}-yozuv",
+      "cash": {
+        "title": "Naqd pul",
+        "given": "Berilgan",
+        "spent": "Sarflangan",
+        "returned": "Qaytarilgan",
+        "paidBack": "Qoplangan",
+        "count": "Qoldiq",
+        "CASH_RETURNED": "Menejerdan olish",
+        "PAID_BACK": "Menejerga toʻlash",
+        "settled": "Hisob-kitob kerak emas: qoldiq 0."
+      },
+      "net": {
+        "TO_FINANCE": "{name} moliyaga {amount} topshiradi.",
+        "TO_MANAGER": "Moliya {name}ga {amount} toʻlaydi.",
+        "NONE": "{name} bilan pul berilmaydi."
+      },
+      "amountInvalid": "Butun soʻm kiriting, 0 yoki undan koʻp.",
+      "transfer": {
+        "title": "Bank oʻtkazmasi",
+        "planned": "Reja",
+        "transferred": "Oʻtkazilgan",
+        "received": "Olingan tovar qiymati",
+        "note": "Izoh",
+        "noteRequired": "Izoh (majburiy: oʻtkazilgan va olingan farq qiladi)",
+        "changed": "Belgilangandan keyin summalar oʻzgardi: izoh qoʻshing va qayta tasdiqlang."
+      },
+      "card": {
+        "title": "Korporativ karta",
+        "planned": "Reja",
+        "charged": "Haqiqatda yechilgan",
+        "difference": "Farq",
+        "left": "Qoldi {amount}",
+        "over": "Ortiqcha {amount}",
+        "returned": "Kartadan qaytarilgan pul"
+      },
+      "confirmed": "Tasdiqlangan",
+      "saveTitle": "Naqd pul hisob-kitobini saqlash",
+      "date": "Sana",
+      "documentNo": "Hujjat raqami (ixtiyoriy)",
+      "comment": "Izoh",
+      "file": "Fayl (ixtiyoriy)",
+      "chooseFile": "Fayl tanlash",
+      "removeFile": "Olib tashlash",
+      "fileOneManager": "Hisob-kitob bitta menejer uchun boʻlsa, fayl biriktirish mumkin.",
+      "back": "Buyurtmalarga",
+      "save": "Hisob-kitobni saqlash",
+      "confirmTitle": "{count, plural, other {# ta buyurtma hisob-kitobini saqlaysizmi?}}",
+      "confirmResult": "{count, plural, other {# ta buyurtma}}, {managers, plural, other {# ta menejer}}:",
+      "done": "{count, plural, other {# ta buyurtma boʻyicha hisob-kitob saqlandi.}}",
+      "failedTitle": "{count, plural, other {# ta buyurtma saqlanmadi}}; hech narsa saqlanmadi."
     }
   }
 }

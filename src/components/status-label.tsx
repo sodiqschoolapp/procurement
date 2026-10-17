@@ -301,3 +301,17 @@ export function ColourLabels({ colours, className }: { colours: WireColours; cla
     </span>
   );
 }
+
+/**
+ * "No receipt" (edge case "No receipt photo": "Finance sees a 'No receipt' label"; plan of 4.5,
+ * decided item 12): a live purchase record of the order has no receipt file. An alert, so amber,
+ * with its icon and word.
+ */
+export function NoReceiptLabel({ className }: { className?: string }) {
+  const t = useTranslations("money.settle");
+  return (
+    <LabelBox tone="amber" icon="receipt_long" className={className}>
+      <span data-no-receipt>{t("noReceipt")}</span>
+    </LabelBox>
+  );
+}

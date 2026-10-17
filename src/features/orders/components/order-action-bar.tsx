@@ -39,6 +39,7 @@ export function OrderActionBar({
   canCopy,
   recordPurchase,
   canRecordMoney = false,
+  settle = null,
   waitingLine,
 }: {
   orderId: string;
@@ -56,6 +57,8 @@ export function OrderActionBar({
   recordPurchase: string | null;
   /** Record money is offered (08 Money ledger; plan of 4.3): the server's `canRecordMoney`. */
   canRecordMoney?: boolean;
+  /** The settlement screen's address when the server's `canSettle` is set (plan of 4.5). */
+  settle?: string | null;
   /** Shown when the user has no allowed move; null otherwise. */
   waitingLine: string | null;
 }) {
@@ -136,7 +139,11 @@ export function OrderActionBar({
           {refused}
         </p>
       ) : null}
-      {approve || recordPurchase || canRecordMoney || ((moves.length > 0 || canCopy) && number) ? (
+      {approve ||
+      recordPurchase ||
+      canRecordMoney ||
+      settle ||
+      ((moves.length > 0 || canCopy) && number) ? (
         <div className="flex flex-wrap gap-3 sm:ml-auto">
           {recordPurchase ? (
             <Link
@@ -145,6 +152,15 @@ export function OrderActionBar({
               className={cn(buttonVariants({ variant: "default" }), "max-sm:h-11 max-sm:w-full")}
             >
               {t("recordPurchase")}
+            </Link>
+          ) : null}
+          {settle ? (
+            <Link
+              href={settle}
+              data-settle
+              className={cn(buttonVariants({ variant: "default" }), "max-sm:h-11 max-sm:w-full")}
+            >
+              {t("settle")}
             </Link>
           ) : null}
           {canRecordMoney ? (

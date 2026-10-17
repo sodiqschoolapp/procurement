@@ -34,6 +34,7 @@ const LIST_MOVES: readonly StatusMoveKind[] = [
   "TAKE_BACK",
   "CLOSE_EXACT",
   "SEND_TO_SETTLEMENT",
+  "SEND_BACK_FOR_CORRECTION",
 ];
 
 // The group rows of /orders (05-order-request-form.md, Group rows 1 to 3; Ticking and filters;
@@ -328,6 +329,17 @@ export function OrderList({
                     size="sm"
                     className="max-sm:flex-1"
                   />
+                ) : null}
+                {summary.canSettle ? (
+                  // Finance's settlement screen for the ticked orders (08 Closing 2; plan of
+                  // 4.5): the server's canSettle, asked again by the screen and its actions.
+                  <Link
+                    href={`/orders/settle?ids=${summary.orders.map((order) => order.id).join(",")}`}
+                    data-settle
+                    className={cn(buttonVariants({ size: "sm" }), "max-sm:flex-1")}
+                  >
+                    {t("bar.settle")}
+                  </Link>
                 ) : null}
                 {summary.canCopy ? (
                   <CopyButton
