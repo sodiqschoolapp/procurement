@@ -12,7 +12,9 @@ import { E2E_PAGE_USERS, e2eDatabaseUrl, serverDatabaseUrl } from "./global-setu
 // hands Finance …"), saves after the confirmation that names the orders, the Managers and the net
 // (11-screens-and-ux.md rule 6; review of the plan, Should fix 1), and both counts reach 0;
 // confirms a transfer that differs only after writing the note (08 Closing 2); sends an order back
-// for correction with a reason (08 Closing 4). Run at 375 px and at 1440 px by the two projects;
+// for correction with a reason (08 Closing 4). Build plan 4.6 (Finance closes): Close before the
+// settlement names both orders as not ready and closes nothing; after it, Close closes both
+// (08 Closing 3). Run at 375 px and at 1440 px by the two projects;
 // the users read English, as order-page.spec.ts sets them (it shares these users and runs beside
 // this one).
 
@@ -208,6 +210,22 @@ test("Finance settles two cash orders with one action and the net, confirms a tr
   await expect(net).toContainText("1 000");
   expect(await scrollsSideways(page)).toBe(false);
 
+  // Close before the settlement: nothing closes and both orders are named (08 Closing 3).
+  const closeButton = page.locator('[data-settle-close] [data-move="CLOSE"]');
+  const closeNow = async () => {
+    await closeButton.click();
+    const asked = page.getByRole("alertdialog");
+    await expect(asked).toBeVisible();
+    await asked.getByRole("button", { name: en.orders.moves.button.CLOSE, exact: true }).click();
+    await expect(asked).toBeHidden();
+  };
+  await closeNow();
+  const failed = page.locator("[data-settle-failed]");
+  await expect(failed).toContainText(en.orders.moves.notReady.CLOSE);
+  await expect(failed.locator("p")).toHaveCount(2);
+  expect(await statusOf(seeded.more.id)).toBe("SETTLEMENT");
+  expect(await statusOf(seeded.less.id)).toBe("SETTLEMENT");
+
   await page.locator("[data-settle-comment]").fill("Hisob-kitob sinovi");
   await page.locator("[data-settle-save]").click();
   const dialog = page.getByRole("alertdialog");
@@ -218,6 +236,12 @@ test("Finance settles two cash orders with one action and the net, confirms a tr
   await expect(page.getByText("Settlement saved for 2 orders.")).toBeVisible();
   expect(await countOf(seeded.more.id)).toBe(0);
   expect(await countOf(seeded.less.id)).toBe(0);
+
+  // Both counts are 0: Close closes both (08 Closing 3).
+  await closeNow();
+  await expect(page.getByText("Closed 2 orders.")).toBeVisible();
+  expect(await statusOf(seeded.more.id)).toBe("CLOSED");
+  expect(await statusOf(seeded.less.id)).toBe("CLOSED");
 
   // The transfer: 10 000 transferred, 9 000 received; Confirmed waits for the note (08 Closing 2).
   await page.goto(`/orders/settle?ids=${seeded.transfer.id}`);
