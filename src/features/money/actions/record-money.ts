@@ -22,6 +22,7 @@ import {
   type LockedOrder,
   type OrdersContext,
   type OrdersInput,
+  OrdersRefusal,
   type Transaction,
   defineOrdersAction,
   ordersInput,
@@ -40,11 +41,11 @@ import { moneyRowsOf } from "../money-rows";
 //            0; every order Open or Waiting for settlement (`moneyRecordAllows()`; decided item 1,
 //            Look first); one Manager's orders in one branch (decided item 4, Look first); a file
 //            only for one Manager (decided item 5, Look first)
-//   inspect  no crossing over: each Cash returned or Paid back row against the order's count
-//            before the action, read under the orders' lock (08 Money ledger 3; decided item 3,
-//            Look first); the file: uploaded by the actor, a stored type, held by no record, its
-//            row locked FOR UPDATE (the file contract of src/server/files/owners.ts)
-//   write    one money action per Manager (08 Money ledger 1), all with the browser id
+//   write    first no crossing over: each Cash returned or Paid back row against the order's
+//            count before the action, read under the orders' lock (08 Money ledger 3; decided item
+//            3, Look first), refused `not_ready` with the field that says why; then the file:
+//            uploaded by the actor, a stored type, held by no record, its row locked FOR UPDATE
+//            (the file contract of src/server/files/owners.ts); then one money action per Manager (08 Money ledger 1), all with the browser id
 //            (14: UNIQUE (client_key, manager_id)) and this action's `order_actions` row, and its
 //            rows of one kind (08 Money ledger 2); rows of 0 write nothing
 //   notify   one notice to each owner given a cash kind (10 Notifications, "Cash given, cash
@@ -216,15 +217,12 @@ export const recordMoney = defineOrdersAction<RecordMoneyInput>({
     }
     return [];
   },
-  async inspect(context) {
-    const blocks = blocksOf(context);
-    const refused = await crossings(context, blocks);
-    if (refused.length === 0 && context.input.fileId) {
-      await refuseFile(context.tx, context.userId, context.input.fileId);
-    }
-    return refused;
-  },
   async write(context) {
+    // After every check has passed, so a refusal here hides no other order's failure; a refusal
+    // rolls back the `order_actions` row with everything else (06 rule 8).
+    const refused = await crossings(context, blocksOf(context));
+    if (refused.length > 0) throw new OrdersRefusal("not_ready", refused);
+    if (context.input.fileId) await refuseFile(context.tx, context.userId, context.input.fileId);
     const { comment, documentNo, occurredOn } = storedFields(context.input);
     const at = now();
     const kind = context.input.kind;

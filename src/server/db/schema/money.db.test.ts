@@ -61,7 +61,7 @@ function insertActionWith(columns: string, values: string) {
 }
 
 describe("money_rows CHECK, enum and keys (14 money_rows; 08 Money ledger)", () => {
-  it("money_rows_amount_check refuses 0 and −1; 1 passes", async () => {
+  it("money_rows_amount_check refuses 0 and −1; 1 passes (build plan 4.3, Done when: an amount of 0 is refused by the database)", async () => {
     const actionId = await action();
     for (const amount of ["0", "-1"]) {
       const order = await openOrder();
@@ -121,7 +121,7 @@ describe("money_rows CHECK, enum and keys (14 money_rows; 08 Money ledger)", () 
 });
 
 describe("money_rows_one_manager (08 Money ledger 1; plan of 4.1, decided item 4, Look first)", () => {
-  it("a row on an order of another owner is refused; the Manager's own order beside it passes", async () => {
+  it("a row on an order of another owner is refused; the Manager's own order beside it passes (build plan 4.3, Done when: an action whose rows cover orders of two Managers is refused)", async () => {
     const actionId = await action();
     const own = await openOrder(managerId);
     const others = await openOrder(otherManagerId);

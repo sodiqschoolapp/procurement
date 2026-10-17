@@ -1,7 +1,7 @@
 import { createTranslator } from "next-intl";
 import { describe, expect, it } from "vitest";
 
-import { NOTIFICATION_PARAMS, type SendableType } from "@/domain/notifications";
+import { NOTIFICATION_PARAMS, PARAM_DEFAULTS, type SendableType } from "@/domain/notifications";
 import { MANAGER_RIGHTS, ROLES } from "@/domain/permissions";
 import { LOCALES } from "@/i18n/locale";
 
@@ -93,6 +93,22 @@ describe("notification texts by type (build-plan 0.11; rule 14)", () => {
         }
       });
     }
+
+    it(`${locale}: Cash given of the approval and of the Money tab differ; a stored one without \`via\` reads as the approval's (plan of 4.3, decided item 7)`, () => {
+      const t = createTranslator({ locale, messages: MESSAGES[locale] });
+      const stored = Object.fromEntries(
+        Object.entries(SAMPLE.CASH_GIVEN).filter(([key]) => key !== "via"),
+      );
+      const approval = t("notifications.types.CASH_GIVEN", {
+        ...SAMPLE.CASH_GIVEN,
+        via: "approval",
+      });
+      const money = t("notifications.types.CASH_GIVEN", { ...SAMPLE.CASH_GIVEN, via: "money" });
+      expect(money).not.toBe(approval);
+      expect(t("notifications.types.CASH_GIVEN", { ...PARAM_DEFAULTS.CASH_GIVEN, ...stored })).toBe(
+        approval,
+      );
+    });
 
     it(`${locale}: a submit of 15 orders says 15 (build-plan 2.1, Done when; 10, Notifications)`, () => {
       const t = createTranslator({ locale, messages: MESSAGES[locale] });
