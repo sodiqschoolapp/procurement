@@ -20,7 +20,12 @@ import {
 import { ORDER_ACTION_MAX, type OrderAction, allowedActions } from "@/domain/order-moves";
 import { type DownloadRow, orderDownloadRow } from "@/domain/order-download";
 import { type StepEvent, isOverdue } from "@/domain/order-steps";
-import { type OrdersTotals, ordersTotals, priceHintPercent } from "@/domain/order-totals";
+import {
+  type OrdersTotals,
+  orderTotal,
+  ordersTotals,
+  priceHintPercent,
+} from "@/domain/order-totals";
 import type { PaymentType } from "@/domain/payment-types";
 import { type Actor, decide } from "@/domain/permissions";
 import { type BuyingAction, actualQuantity, buyingActions } from "@/domain/purchases";
@@ -465,9 +470,18 @@ export type TickedSummary = {
   buying: BuyingAction[];
   /**
    * Each ticked order's number and payment type, for the approve dialog: Finance may change the
-   * payment type there (06 rule 1; plan of 2.10). In the list's order of numbers.
+   * payment type there (06 rule 1; plan of 2.10). Its planned total (orderTotal()) and owner, for
+   * the dialog's per-type totals and its cash table, one block per Manager (08 When Finance
+   * approves; plan of 4.2). In the list's order of numbers.
    */
-  orders: { id: string; number: string; status: ListStatus; paymentType: PaymentType }[];
+  orders: {
+    id: string;
+    number: string;
+    status: ListStatus;
+    paymentType: PaymentType;
+    plannedTotal: bigint;
+    owner: { id: string; name: string };
+  }[];
 };
 
 /**
@@ -512,9 +526,11 @@ export async function tickedSummary(
         price: orders.plannedPrice,
         paymentType: orders.paymentType,
         branchActive: branches.isActive,
+        ownerName: users.fullName,
       })
       .from(orders)
       .innerJoin(branches, eq(branches.id, orders.branchId))
+      .innerJoin(users, eq(users.id, orders.ownerId))
       .where(and(inArray(orders.id, ids), listWhere(actor, NO_FILTERS)));
     const extras = await extrasOf(
       db,
@@ -583,6 +599,13 @@ export async function tickedSummary(
           number: row.number!,
           status: row.status as ListStatus,
           paymentType: row.paymentType,
+          plannedTotal: orderTotal({
+            quantity: row.quantity!,
+            price: row.price!,
+            extras: extras.get(row.id) ?? [],
+            paymentType: row.paymentType,
+          }),
+          owner: { id: row.ownerId, name: row.ownerName },
         }))
         .sort((a, b) => (a.number < b.number ? -1 : a.number > b.number ? 1 : 0)),
     };

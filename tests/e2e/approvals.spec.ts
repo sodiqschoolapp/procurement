@@ -32,10 +32,11 @@ async function withDatabase<T>(work: (client: pg.Client) => Promise<T>): Promise
 }
 
 /**
- * Two orders of the owner at Waiting for Head in EA, 3 in stock when submitted and 7.5 now.
- * Returns the owner's id, the product's name and the order ids.
+ * Two Cash orders of 10 000 so'm of the owner at Waiting for Head (or the status given) in EA, 3
+ * in stock when submitted and 7.5 now. Returns the owner's id, the product's name and the order
+ * ids.
  */
-async function seedWaiting(owner: Person) {
+async function seedWaiting(owner: Person, status = "PENDING_HEAD") {
   return withDatabase(async (client) => {
     await client.query("begin");
     try {
@@ -81,11 +82,11 @@ async function seedWaiting(owner: Person) {
           `insert into orders (number, branch_id, owner_id, created_by, status, variant_id,
                                department_id, needed_by, planned_qty, planned_price, planned_total,
                                payment_type, stock_at_submit, submitted_at, created_at, updated_at)
-           select $1, b.id, $2, $2, 'PENDING_HEAD', $3, $4, '2031-05-01', 2, 5000, 10000,
+           select $1, b.id, $2, $2, $5, $3, $4, '2031-05-01', 2, 5000, 10000,
                   'CASH', 3, now(), now(), now()
              from branches b where b.code = 'EA'
            returning id`,
-          [number, ownerId, variant.rows[0]!.id, department.rows[0]!.id],
+          [number, ownerId, variant.rows[0]!.id, department.rows[0]!.id, status],
         );
         ids.push(order.rows[0]!.id);
       }
@@ -172,4 +173,77 @@ test("the Head approves two ticked orders; the stepper moves to the Principal; s
     head.locator("[data-order-bar]").getByRole("button", { name: t.approve.button }),
   ).toHaveCount(0);
   expect(await scrollsSideways(head)).toBe(false);
+});
+
+// Build plan 4.2 (Finance approval with cash): the dialog's per-type totals and the table "Cash
+// given to the Manager now", prefilled and changeable; a row set to 0 stays and can be typed again
+// (review of the plan, correction 1); an amount that is not whole so'm stops Approve; the result
+// line states the cash; one money action is saved with the approval (08 When Finance approves;
+// Money ledger 1; 11 rule 6). Run at 375 px and at 1440 px by the two projects.
+test("Finance approves two Cash orders with cash: the table is prefilled, a row set to 0 stays, one money action is saved (08 When Finance approves)", async ({
+  page,
+}, info) => {
+  const people = E2E_PAGE_USERS[info.project.name as keyof typeof E2E_PAGE_USERS];
+  const seeded = await seedWaiting(people.manager, "PENDING_FINANCE");
+  const [first, second] = seeded.ids as [string, string];
+
+  await signIn(page, people.finance);
+  await page.goto(`/orders?status=PENDING_FINANCE&owner=${seeded.ownerId}`);
+  const group = page.locator("tbody[data-group]").filter({ hasText: seeded.product });
+  await group.locator("input[type=checkbox]").first().check();
+  await page
+    .locator("[data-list-bar]")
+    .getByRole("button", { name: t.approve.buttonCount.replace("{count}", "2") })
+    .click();
+  const dialog = page.getByRole("alertdialog");
+  await expect(dialog).toBeVisible();
+
+  // The planned totals per payment type: both orders are Cash, 20 000 in all.
+  await expect(dialog.locator('[data-type-total="CASH"]')).toContainText(/20\s000/);
+  await expect(dialog.locator("[data-type-total]")).toHaveCount(1);
+  // One block for the one Manager, one prefilled row per order.
+  const table = dialog.locator("[data-cash-table]");
+  await expect(table.getByRole("heading", { name: t.approve.cashTitle })).toBeVisible();
+  await expect(table.locator("[data-cash-block]")).toHaveCount(1);
+  const firstAmount = table.locator(`[data-cash-row="${first}"] input`);
+  const secondAmount = table.locator(`[data-cash-row="${second}"] input`);
+  await expect(firstAmount).toHaveValue("10000");
+  await expect(secondAmount).toHaveValue("10000");
+  await expect(dialog).toContainText(/20\s000/);
+
+  // A row set to 0 stays and can be typed again; a wrong amount stops Approve.
+  await firstAmount.fill("0");
+  await expect(firstAmount).toBeVisible();
+  await firstAmount.fill("abc");
+  await expect(table.getByText(t.approve.cashInvalid)).toBeVisible();
+  const confirm = dialog.getByRole("button", { name: t.approve.button, exact: true });
+  await expect(confirm).toBeDisabled();
+  await firstAmount.fill("7000");
+  await expect(confirm).toBeEnabled();
+  // The result line: 17 000 in cash to one Manager.
+  await expect(dialog).toContainText(/17\s000/);
+  expect(await scrollsSideways(page)).toBe(false);
+  await confirm.click();
+  await expect(page.getByText("2 ta buyurtma tasdiqlandi.")).toBeVisible();
+
+  // One money action of the owner, rows 7 000 and 10 000, saved with the approval.
+  const saved = await withDatabase(async (client) => {
+    const rows = await client.query<{ manager_id: string; order_id: string; amount: string }>(
+      `select a.manager_id, r.order_id, r.amount::text as amount
+         from money_rows r join money_actions a on a.id = r.money_action_id
+        where r.order_id = any($1::uuid[]) and r.kind = 'CASH_GIVEN'
+        order by r.amount`,
+      [seeded.ids],
+    );
+    const statuses = await client.query<{ status: string }>(
+      "select status from orders where id = any($1::uuid[])",
+      [seeded.ids],
+    );
+    return { rows: rows.rows, statuses: statuses.rows.map((row) => row.status) };
+  });
+  expect(saved.rows).toEqual([
+    { manager_id: seeded.ownerId, order_id: first, amount: "7000" },
+    { manager_id: seeded.ownerId, order_id: second, amount: "10000" },
+  ]);
+  expect(saved.statuses).toEqual(["PURCHASING", "PURCHASING"]);
 });

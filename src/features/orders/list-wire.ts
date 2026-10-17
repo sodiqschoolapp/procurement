@@ -31,9 +31,10 @@ export type WireOrderGroup = Omit<OrderGroup, "summary" | "orders" | "colours"> 
   orders: WireListOrder[];
 };
 
-export type WireTickedSummary = Omit<TickedSummary, "totals" | "colours"> & {
+export type WireTickedSummary = Omit<TickedSummary, "totals" | "colours" | "orders"> & {
   totals: WireTotals;
   colours: WireColours | null;
+  orders: (Omit<TickedSummary["orders"][number], "plannedTotal"> & { plannedTotal: string })[];
 };
 
 function wireLabel(label: OrderLabel<string | bigint> | SetLabel): WireColourLabel {
@@ -84,5 +85,13 @@ export function wireGroup(group: OrderGroup): WireOrderGroup {
 }
 
 export function wireTickedSummary(summary: TickedSummary): WireTickedSummary {
-  return { ...summary, totals: wireTotals(summary.totals), colours: wireColours(summary.colours) };
+  return {
+    ...summary,
+    totals: wireTotals(summary.totals),
+    colours: wireColours(summary.colours),
+    orders: summary.orders.map((order) => ({
+      ...order,
+      plannedTotal: order.plannedTotal.toString(),
+    })),
+  };
 }
