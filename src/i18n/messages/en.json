@@ -73,7 +73,8 @@
       "inPast": "The date is in the past. Pick today or a later day.",
       "inFuture": "The date is in the future. Pick today or an earlier day.",
       "beforeApproval": "The date is before Finance approved the order. Pick that day or a later one.",
-      "tripOneOwner": "One purchase covers orders of one branch and one owner. Tick only those."
+      "tripOneOwner": "One purchase covers orders of one branch and one owner. Tick only those.",
+      "otherProduct": "Pick a subtype of the ordered product. For another product, mark the order Not bought and add a new order."
     },
     "file": {
       "tooLarge": "The file is larger than 10 MB. Choose a smaller file or take the photo again.",
@@ -1256,7 +1257,8 @@
         "cancelled": "Cancelled",
         "cancelReason": "Cancel reason: {text}",
         "none": "—",
-        "tripLine": "{payment} · {supplier}"
+        "tripLine": "{payment} · {supplier}",
+        "bought": "Bought: {subtype}"
       }
     },
     "approve": {
@@ -1410,7 +1412,8 @@
       "DONE": "Done",
       "DONE_SHORT": "Done, short",
       "NOT_BOUGHT": "Not bought"
-    }
+    },
+    "substituted": "Substituted"
   },
   "purchase": {
     "form": {
@@ -1449,6 +1452,7 @@
         "PRICE_CHANGED": "The price differs from the plan.",
         "GIFT": "The price is 0: say why the item was free.",
         "OVER_PLAN": "More than planned is bought.",
+        "SUBSTITUTED": "Another subtype than the ordered one is bought.",
         "PAYMENT_CHANGED": "The payment type differs from the order."
       },
       "back": "Back to the order",
@@ -1464,7 +1468,9 @@
       "splitNote": "Split over the orders, oldest first, each up to what it lacks. You can change each order's quantity below.",
       "noRecord": "0: gets no record",
       "backToList": "Back to orders",
-      "savedTrip": "{count, plural, one {Purchase saved for 1 order.} other {Purchase saved for # orders.}}"
+      "savedTrip": "{count, plural, one {Purchase saved for 1 order.} other {Purchase saved for # orders.}}",
+      "subtype": "Subtype bought",
+      "groupSubtype": "Subtype bought for the group"
     }
   }
 }

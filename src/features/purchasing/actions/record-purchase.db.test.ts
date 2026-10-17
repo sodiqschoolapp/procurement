@@ -86,7 +86,7 @@ function record(
   version = opened.order.version,
 ) {
   // The order's own fields go into its line (plan of 3.4: one line per ticked order).
-  const { qty, unitPrice, extras, comment, ...shared } = fields;
+  const { qty, unitPrice, variantId, extras, comment, ...shared } = fields;
   return runOrdersAction(recordPurchase, opened.owner.id, {
     clientKey: randomUUID(),
     orders: [{ id: opened.order.id, version }],
@@ -98,6 +98,7 @@ function record(
     lines: [
       {
         orderId: opened.order.id,
+        variantId: variantId ?? opened.order.variantId,
         qty: qty ?? "100",
         unitPrice: unitPrice ?? "5000",
         extras: extras ?? [],
@@ -591,7 +592,14 @@ describe("recordPurchase: the wrapper's rules (developer-rules.md rules 3, 8, 9;
       supplierId: null,
       receiptFileIds: [],
       lines: [
-        { orderId: opened.order.id, qty: "60", unitPrice: "5000", extras: [], comment: null },
+        {
+          orderId: opened.order.id,
+          variantId: opened.order.variantId,
+          qty: "60",
+          unitPrice: "5000",
+          extras: [],
+          comment: null,
+        },
       ],
     };
     const first = await runOrdersAction(recordPurchase, opened.owner.id, input);

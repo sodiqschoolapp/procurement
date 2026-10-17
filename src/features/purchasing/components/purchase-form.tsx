@@ -40,9 +40,9 @@ import { useFormatters } from "@/i18n/use-formatters";
 
 // The purchase form of one trip (07-purchasing.md, Purchase record; One trip, many orders;
 // 11-screens-and-ux.md, smooth feel 3; plans of 3.3 and 3.4). Shared once: date, payment type,
-// supplier, receipts. Per order: quantity, price, extra costs, comment, and "Same as planned"
-// (review of the plan of 3.4, correction 1). Orders of one subtype are a group row: one quantity
-// and one price for the group, split by splitGroupQuantity() of the domain into each order's
+// supplier, receipts. Per order: quantity, price, subtype bought (07 Substitution; plan of 3.6),
+// extra costs, comment, and "Same as planned" (review of the plan of 3.4, correction 1). Orders of
+// one subtype are a group row: one quantity, one price and one subtype bought for the group, split by splitGroupQuantity() of the domain into each order's
 // quantity, which can be changed before saving (07 One trip 2); an order left with 0 gets no
 // record. The Head with orders of several owners picks one (07 One trip; decided item 9). Which
 // lines need a comment is purchaseCommentNeeds() of the domain, the same function the server
@@ -51,7 +51,14 @@ import { useFormatters } from "@/i18n/use-formatters";
 
 type Extra = { extraCostTypeId: string; amount: string; paymentType: PaymentType };
 
-type Line = { qty: string; unitPrice: string; extras: Extra[]; comment: string };
+type Line = {
+  qty: string;
+  unitPrice: string;
+  /** The subtype bought, default the ordered one (07 Purchase record, Subtype bought). */
+  variantId: string;
+  extras: Extra[];
+  comment: string;
+};
 
 type Values = {
   purchasedOn: string;
@@ -87,6 +94,8 @@ function reasonsOf(
     plannedQty: order.plannedQty,
     plannedPrice: order.plannedPrice,
     plannedPaymentType: order.paymentType,
+    variantId: line.variantId,
+    plannedVariantId: order.variantId,
     received: order.received,
   });
 }
@@ -120,7 +129,13 @@ export function PurchaseFormView({
       purchasedOn: form.today,
       paymentType: shown[0]!.order.paymentType,
       supplierId: sharedSupplier(shown.map(({ order }) => order)),
-      lines: form.orders.map(() => ({ qty: "", unitPrice: "", extras: [], comment: "" })),
+      lines: form.orders.map((order) => ({
+        qty: "",
+        unitPrice: "",
+        variantId: order.variantId,
+        extras: [],
+        comment: "",
+      })),
     },
   });
   const [groups, setGroups] = useState<Record<string, { qty: string; price: string }>>({});
@@ -184,6 +199,13 @@ export function PurchaseFormView({
     }
   }
 
+  /** The group's subtype bought sets every line of the block; each can still be changed (decided 7). */
+  function pickGroupSubtype(block: (typeof blocks)[number], variantId: string) {
+    for (const { index } of block.members) {
+      setValue(`lines.${index}.variantId`, variantId, { shouldDirty: true });
+    }
+  }
+
   async function addReceipt(file: File | undefined, input: HTMLInputElement | null) {
     if (!file) return;
     setUploading(true);
@@ -208,6 +230,7 @@ export function PurchaseFormView({
       orderId: order.orderId,
       qty: current.lines[index]!.qty,
       unitPrice: current.lines[index]!.unitPrice,
+      variantId: current.lines[index]!.variantId,
       extras: current.lines[index]!.extras,
       comment: current.lines[index]!.comment,
     }));
@@ -423,6 +446,23 @@ export function PurchaseFormView({
                         />
                       </Field>
                     </div>
+                    {first.subtypes.length > 1 ? (
+                      <Field
+                        id={`purchase-group-subtype-${block.variantId}`}
+                        label={t("groupSubtype")}
+                      >
+                        <Select
+                          defaultValue={first.variantId}
+                          onChange={(event) => pickGroupSubtype(block, event.target.value)}
+                        >
+                          {first.subtypes.map((subtype) => (
+                            <option key={subtype.id} value={subtype.id}>
+                              {subtype.name}
+                            </option>
+                          ))}
+                        </Select>
+                      </Field>
+                    ) : null}
                     <p className="text-sm leading-5 text-muted-foreground">{t("splitNote")}</p>
                   </div>
                 ) : null}
@@ -585,6 +625,22 @@ function OrderLine({
         <Field id={id("price")} label={t("price")} error={errorOf("unitPrice")}>
           <Input inputMode="numeric" {...register(`lines.${index}.unitPrice`)} />
         </Field>
+        {order.subtypes.length > 1 ? (
+          <Field
+            id={id("subtype")}
+            label={t("subtype")}
+            error={errorOf("variantId")}
+            className="sm:col-span-2"
+          >
+            <Select {...register(`lines.${index}.variantId`)}>
+              {order.subtypes.map((subtype) => (
+                <option key={subtype.id} value={subtype.id}>
+                  {subtype.name}
+                </option>
+              ))}
+            </Select>
+          </Field>
+        ) : null}
       </div>
 
       <fieldset className="flex flex-col gap-3">

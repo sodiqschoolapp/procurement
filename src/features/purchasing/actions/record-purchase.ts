@@ -1,4 +1,4 @@
-import { eq, inArray } from "drizzle-orm";
+import { asc, eq, inArray } from "drizzle-orm";
 import * as z from "zod";
 
 import { businessDate, isBusinessDate } from "@/domain/business-date";
@@ -55,17 +55,19 @@ import { orderRecords } from "../order-records";
 // RECORD_PURCHASES on; 03 Permission matrix), version, then the status check: every order is Open
 // and its buying is not finished (3.3 decided item 3, Look first; 3.5 reopens it). The write step
 // first refuses a trip over two branches or two owners (3.4 decided item 2, Look first), then
-// checks under the lock what needs the database, as field errors that roll the whole transaction
+// locks every subtype bought and checks it: the ordered one, or an active subtype of the same
+// product (07 Substitution; plan of 3.6, decided items 4 and 5, Look first), then checks under
+// the lock what else needs the database, as field errors that roll the whole transaction
 // back, then writes in one transaction, all or nothing (07 One trip 4; developer-rules.md rule 3):
 //
 //   1  the trip (date, supplier, payment type, shared: never copied to a record; 14 purchases) and
 //      its receipt files once; then per order, oldest submit first and then the lower number (the
 //      split's order, never the browser's; 3.4 decided item 4), its record and extra costs
-//   2  for every product, a Receipt movement at the record's price, all through one
+//   2  for every product, a Receipt movement of the subtype bought at the record's price, all through one
 //      postMovements() for its fixed lock order (09 Stock value, first bullet: extra costs not
 //      included); a service changes no stock (A7)
-//   3  above price 0, a PURCHASE price row per record, and each subtype's last purchase price from
-//      its last record in that order, the subtypes updated in the order of their ids; a gift
+//   3  above price 0, a PURCHASE price row per record, and each subtype bought its last purchase
+//      price from its last record in that order (plan of 3.6, decided item 1, Look first), the subtypes updated in the order of their ids; a gift
 //      writes neither (3.3 decided item 2, Look first)
 //   4  each order's `actual_total` and `progress`, from every record of the order (progress 3.2,
 //      "For 3.3 and 3.5"); the wrapper raises its version
@@ -86,6 +88,8 @@ const unitPriceField = z
 /** One order's part of the trip (07 One trip, many orders: 1, "Per order"). */
 export type PurchaseLine = {
   orderId: string;
+  /** The subtype really bought: the ordered one, or another of the same product (07 Substitution). */
+  variantId: string;
   qty: string;
   unitPrice: bigint;
   extras: { extraCostTypeId: string; amount: bigint; paymentType: PaymentType }[];
@@ -103,6 +107,7 @@ export type RecordPurchaseInput = OrdersInput & {
 
 const line = z.object({
   orderId: z.uuid(),
+  variantId: z.uuid(),
   qty: z.string().trim().min(1).max(40),
   unitPrice: unitPriceField,
   extras: z
@@ -159,6 +164,7 @@ type Plan = {
   number: string;
   submittedAt: Date;
   variantId: string;
+  productId: string;
   plannedQty: string;
   plannedPrice: bigint;
   paymentType: PaymentType;
@@ -179,6 +185,7 @@ async function plansOf(tx: Executor, orderIds: readonly string[]): Promise<Plan[
       number: orders.number,
       submittedAt: orders.submittedAt,
       variantId: orders.variantId,
+      productId: products.id,
       plannedQty: orders.plannedQty,
       plannedPrice: orders.plannedPrice,
       paymentType: orders.paymentType,
@@ -198,6 +205,7 @@ async function plansOf(tx: Executor, orderIds: readonly string[]): Promise<Plan[
       number: row.number!,
       submittedAt: row.submittedAt!,
       variantId: row.variantId!,
+      productId: row.productId,
       plannedQty: row.plannedQty!,
       plannedPrice: row.plannedPrice!,
       paymentType: row.paymentType,
@@ -207,6 +215,66 @@ async function plansOf(tx: Executor, orderIds: readonly string[]): Promise<Plan[
       allowDecimal: row.allowDecimal,
     })),
   );
+}
+
+/**
+ * The products first, FOR SHARE in the order of their ids, then the subtypes bought: the catalog
+ * takes a product before its subtypes (addSubtype locks the product, then its default subtype),
+ * and postMovement() share-locks the product again later, so the subtype locked first would
+ * deadlock against a first subtype added at the same moment (review of 3.6, finding 1; 3.4
+ * decided item 4). The subtypes bought are then locked FOR UPDATE once in the order of their
+ * ids: the price step updates
+ * the same rows, so a share lock upgraded there would deadlock two trips of one subtype (review of
+ * the plan of 3.6, Must fix 1; 3.4 decided item 4), and the lock holds off a deactivation, which
+ * locks the row FOR UPDATE too (04 rule 2). Then each line's subtype is refused unless it is the
+ * ordered one, or an active subtype of the same active product (07 Substitution: "It must belong
+ * to the same product"; plan of 3.6, decided items 4 and 5, Look first). The ordered subtype stays
+ * allowed after a deactivation: the order was approved for it.
+ */
+async function refuseSubtypes(
+  tx: Executor,
+  plans: readonly Plan[],
+  lineOf: (orderId: string) => PurchaseLine,
+  path: (orderId: string, field: string) => string,
+) {
+  const ids = [...new Set(plans.map((plan) => lineOf(plan.orderId).variantId))].sort();
+  // A subtype's product never changes, so it is read without a lock before the product is locked.
+  const owners = await tx
+    .select({ productId: productVariants.productId })
+    .from(productVariants)
+    .where(inArray(productVariants.id, ids));
+  const productIds = [
+    ...new Set([...plans.map((plan) => plan.productId), ...owners.map((row) => row.productId)]),
+  ].sort();
+  await tx
+    .select({ id: products.id })
+    .from(products)
+    .where(inArray(products.id, productIds))
+    .orderBy(asc(products.id))
+    .for("share");
+  const rows = await tx
+    .select({
+      id: productVariants.id,
+      productId: productVariants.productId,
+      isActive: productVariants.isActive,
+      productActive: products.isActive,
+    })
+    .from(productVariants)
+    .innerJoin(products, eq(products.id, productVariants.productId))
+    .where(inArray(productVariants.id, ids))
+    .orderBy(asc(productVariants.id))
+    .for("update", { of: productVariants });
+  for (const plan of plans) {
+    const bought = lineOf(plan.orderId).variantId;
+    if (bought === plan.variantId) continue;
+    const row = rows.find((each) => each.id === bought);
+    if (!row || row.productId !== plan.productId) {
+      refuse(path(plan.orderId, "variantId"), "errors.field.otherProduct");
+    }
+    if (!row.isActive || !row.productActive) {
+      refuse(path(plan.orderId, "variantId"), "errors.field.inactive");
+    }
+  }
 }
 
 /** An active entry, read FOR SHARE so a deactivation and a pick cannot pass each other (04 rule 2). */
@@ -280,7 +348,9 @@ export const recordPurchase = defineOrdersAction<RecordPurchaseInput>({
     const lineOf = (orderId: string) => typed.lines[at.indexOf(orderId)]!;
     const path = (orderId: string, field: string) => `lines.${at.indexOf(orderId)}.${field}`;
 
-    // The fields the database decides, before anything is written. Per order first.
+    // The fields the database decides, before anything is written. The subtypes bought first, then
+    // per order.
+    await refuseSubtypes(tx, plans, lineOf, path);
     const before = new Map<string, PurchaseRecord[]>();
     for (const plan of plans) {
       const typedLine = lineOf(plan.orderId);
@@ -296,6 +366,8 @@ export const recordPurchase = defineOrdersAction<RecordPurchaseInput>({
         plannedQty: plan.plannedQty,
         plannedPrice: plan.plannedPrice,
         plannedPaymentType: plan.paymentType,
+        variantId: typedLine.variantId,
+        plannedVariantId: plan.variantId,
         received: actualQuantity(records),
       });
       if (needs.length > 0 && typedLine.comment === null) {
@@ -360,7 +432,13 @@ export const recordPurchase = defineOrdersAction<RecordPurchaseInput>({
           typed.receiptFileIds.map((fileId) => ({ tripId: trip!.id, fileId, createdAt: savedAt })),
         );
     }
-    const saved: { plan: Plan; recordId: string; qty: string; unitPrice: bigint }[] = [];
+    const saved: {
+      plan: Plan;
+      recordId: string;
+      variantId: string;
+      qty: string;
+      unitPrice: bigint;
+    }[] = [];
     for (const plan of plans) {
       const typedLine = lineOf(plan.orderId);
       const qty = typedLine.qty.trim();
@@ -370,7 +448,7 @@ export const recordPurchase = defineOrdersAction<RecordPurchaseInput>({
           tripId: trip!.id,
           orderId: plan.orderId,
           branchId,
-          variantId: plan.variantId,
+          variantId: typedLine.variantId,
           qty,
           unitPrice: typedLine.unitPrice,
           comment: typedLine.comment,
@@ -389,7 +467,13 @@ export const recordPurchase = defineOrdersAction<RecordPurchaseInput>({
           })),
         );
       }
-      saved.push({ plan, recordId: record!.id, qty, unitPrice: typedLine.unitPrice });
+      saved.push({
+        plan,
+        recordId: record!.id,
+        variantId: typedLine.variantId,
+        qty,
+        unitPrice: typedLine.unitPrice,
+      });
     }
 
     // 2  Stock for the products, in postMovements()'s fixed lock order (progress 3.1).
@@ -397,9 +481,9 @@ export const recordPurchase = defineOrdersAction<RecordPurchaseInput>({
       tx,
       saved
         .filter(({ plan }) => !plan.isService)
-        .map(({ plan, recordId, qty, unitPrice }) => ({
+        .map(({ variantId, recordId, qty, unitPrice }) => ({
           branchId,
-          variantId: plan.variantId,
+          variantId,
           type: "RECEIPT" as const,
           qtyDelta: qty,
           unitCost: unitPrice,
@@ -411,8 +495,8 @@ export const recordPurchase = defineOrdersAction<RecordPurchaseInput>({
     // 3  Prices: each subtype's last record above 0 in the split's order, the subtypes in the
     //    order of their ids so two trips cannot deadlock (3.4 decided item 4, Look first).
     const lastPrice = new Map<string, bigint>();
-    for (const { plan, unitPrice } of saved) {
-      if (unitPrice > 0n) lastPrice.set(plan.variantId, unitPrice);
+    for (const { variantId, unitPrice } of saved) {
+      if (unitPrice > 0n) lastPrice.set(variantId, unitPrice);
     }
     for (const variantId of [...lastPrice.keys()].sort()) {
       await tx
@@ -423,8 +507,8 @@ export const recordPurchase = defineOrdersAction<RecordPurchaseInput>({
     const priced = saved.filter(({ unitPrice }) => unitPrice > 0n);
     if (priced.length > 0) {
       await tx.insert(priceHistory).values(
-        priced.map(({ plan, recordId, unitPrice }) => ({
-          variantId: plan.variantId,
+        priced.map(({ variantId, recordId, unitPrice }) => ({
+          variantId,
           price: unitPrice,
           source: "PURCHASE" as const,
           setBy: userId,
@@ -436,7 +520,7 @@ export const recordPurchase = defineOrdersAction<RecordPurchaseInput>({
 
     // 4  Each order's actual total and progress, from its records.
     const extras = new Map<string, OrderEventExtra>();
-    for (const { plan, recordId, qty, unitPrice } of saved) {
+    for (const { plan, recordId, variantId, qty, unitPrice } of saved) {
       const after = await orderRecords(tx, plan.orderId);
       await tx
         .update(orders)
@@ -447,7 +531,7 @@ export const recordPurchase = defineOrdersAction<RecordPurchaseInput>({
         .where(eq(orders.id, plan.orderId));
       extras.set(plan.orderId, {
         note: lineOf(plan.orderId).comment,
-        payload: { purchase: { id: recordId, qty, unitPrice: unitPrice.toString() } },
+        payload: { purchase: { id: recordId, variantId, qty, unitPrice: unitPrice.toString() } },
       });
     }
     return extras;

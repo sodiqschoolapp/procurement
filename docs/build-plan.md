@@ -312,7 +312,7 @@ The Manager records what was really bought, one order or one whole shop visit at
   - **Done when:** S4 without the issue: 60 notebooks, then 40; stock 60, then 100; the order stays Open until the second record. A test reads the downloads of the Cheaper case and finds 470 000 and 50 000.
   - Merged with the former 4.11 by the owner on 17.10.2026 (D47).
 
-- [ ] **3.6 Substitution**
+- [x] **3.6 Substitution**
   - **Read:** `07-purchasing.md` (Substitution); `15-quality-and-acceptance.md` (S10); `edge-cases/purchasing-and-money.md` ("A different colour or size was bought"; "A completely different product is needed").
   - **Build:** The Manager picks the subtype really bought, inside the same product; stock rises for that subtype; the order shows "Substituted"; the closing rules of 4.4 read this.
   - **Done when:** Tests: a subtype of another product is refused; S10 up to the stock check (stock rises for black pens, not for blue).
@@ -361,6 +361,7 @@ Cash given, cash spent, the difference and the close, per order, with Finance wo
   - **Read:** `07-purchasing.md` (Finishing); `08-money-and-settlement.md` (Closing: 1; Exact match); `06-approval-workflow.md` (Allowed moves: the two rows that start from Open); `03-roles-and-permissions.md` (Manager rights: CLOSE_ALONE; Permission matrix: "Close an order that matches exactly"); `15-quality-and-acceptance.md` (S1, S10, S16).
   - **Build:** The Manager ticks finished orders and sees the summary of their differences; for exact matches "Close" with the confirmation text; with `CLOSE_ALONE` off, or with a substitution, the order goes to settlement; Finance and the Head get one grouped notification.
   - **Done when:** S1 as a test; S16 and S10 as tests up to the point where the order goes to Finance; ticking an exact match and an order with a difference offers "Close" for neither.
+  - From 3.6: `07-purchasing.md` (Substitution: "the order cannot be closed by the Manager alone; Finance reviews it"). "Substituted" is `isSubstituted()` of `src/domain/purchases.ts` (a record that is not cancelled bought another subtype); exact match reads it, never a second comparison.
 
 - [ ] **4.5 Settlement screen**
   - **Read:** `08-money-and-settlement.md` (Money ledger: 1 to 3; Closing: 2 with its table, 4, and the last paragraph); `06-approval-workflow.md` (Allowed moves: "Send to settlement" row; "Send back for correction" row); `02-assumptions.md` (A11); `10-notifications-analytics-reports.md` (Notifications: "Sent to settlement"); `edge-cases/purchasing-and-money.md` ("Cash was given but nothing was bought"; "No receipt photo"; "Finance finds an error during settlement"; "One order holds money and another of the same Manager is owed"; "The ticked orders in settlement belong to two Managers").

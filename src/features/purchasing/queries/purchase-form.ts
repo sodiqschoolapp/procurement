@@ -49,6 +49,12 @@ export type PurchaseFormOrder = {
   productName: string;
   /** The subtype's name, or null for a product's hidden default subtype (04 rule 1). */
   subtypeName: string | null;
+  /**
+   * What "Subtype bought" offers (07 Substitution; plan of 3.6, decided items 4 and 6): the
+   * ordered subtype first, even when inactive, then the product's other active subtypes by name
+   * while the product is active. One entry (a hidden default, or nothing else to pick): no select.
+   */
+  subtypes: PurchaseFormChoice[];
   unitShortName: string;
   allowDecimal: boolean;
   /** A service never enters stock and shows Used (A7). */
@@ -105,6 +111,8 @@ export async function getPurchaseForm(
         ownerName: users.fullName,
         branchCode: branches.code,
         variantId: orders.variantId,
+        productId: products.id,
+        productActive: products.isActive,
         productName: products.name,
         variantName: productVariants.name,
         variantIsDefault: productVariants.isDefault,
@@ -168,6 +176,27 @@ export async function getPurchaseForm(
       .where(eq(extraCostTypes.isActive, true))
       .orderBy(asc(extraCostTypes.name));
     const settings = await readSettings(db);
+    const productIds = [
+      ...new Set(recordable.filter((row) => row.productActive).map((row) => row.productId)),
+    ];
+    const others =
+      productIds.length === 0
+        ? []
+        : await db
+            .select({
+              id: productVariants.id,
+              productId: productVariants.productId,
+              name: productVariants.name,
+            })
+            .from(productVariants)
+            .where(
+              and(
+                inArray(productVariants.productId, productIds),
+                eq(productVariants.isActive, true),
+                eq(productVariants.isDefault, false),
+              ),
+            )
+            .orderBy(asc(productVariants.name), asc(productVariants.id));
 
     const formOrders: PurchaseFormOrder[] = [];
     for (const row of recordable) {
@@ -180,6 +209,12 @@ export async function getPurchaseForm(
         variantId: row.variantId!,
         productName: row.productName,
         subtypeName: row.variantIsDefault ? null : row.variantName,
+        subtypes: [
+          { id: row.variantId!, name: row.variantName },
+          ...others
+            .filter((other) => other.productId === row.productId && other.id !== row.variantId)
+            .map(({ id, name }) => ({ id, name })),
+        ],
         unitShortName: row.unitShortName,
         allowDecimal: row.allowDecimal,
         isService: row.productType === "SERVICE",
