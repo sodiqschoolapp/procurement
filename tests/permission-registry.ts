@@ -160,6 +160,9 @@ export const QUERIES: Record<string, Permission> = {
   "src/features/orders/queries/order-list.ts#selectAllOnFilter": "data.view",
   "src/features/orders/queries/order-list.ts#tickedSummary": "data.view",
   "src/features/orders/queries/order-list.ts#listOrderFilterChoices": "data.view",
+  // The order list's download, Excel and PDF (plan of 2.14, decided item 4, Look first): data.export
+  // with the list's own walls in the SQL (queries/order-download-matrix.db.test.ts).
+  "src/features/orders/queries/order-list.ts#orderDownload": "data.export",
   // The order page /orders/[id] (plan of 2.9): data.view with the branch and the draft wall in
   // the SQL (src/features/orders/queries/order-page.db.test.ts and its matrix test).
   "src/features/orders/queries/order-page.ts#getOrderPage": "data.view",
@@ -251,7 +254,8 @@ export function unlisted(files: readonly SourceFile[]): string[] {
     if (ROUTE_FILE.test(path)) {
       // Comments do not count as a check.
       const code = text.replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/g, "");
-      const checks = /\b(requireUser|authorize)\(/.test(code);
+      // authorizeList() is authorize() for a list, which names no branch (the order download, 2.14).
+      const checks = /\b(requireUser|authorize|authorizeList)\(/.test(code);
       if (!checks && !OPEN_ROUTES.includes(path)) missing.push(`open route ${path}`);
     }
   }

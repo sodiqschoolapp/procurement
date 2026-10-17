@@ -37,7 +37,7 @@ import { orderState } from "@/server/order-moves";
 import { readSnapshot } from "@/server/read-snapshot";
 import { readSettings } from "@/server/settings";
 
-import { createdByHeadSql, ownerClosesAloneSql } from "../order-facts";
+import { createdByHeadSql, headStepAutoSql, ownerClosesAloneSql } from "../order-facts";
 
 // The order page /orders/[id] (11-screens-and-ux.md, Order page layout 1 to 4; 06 rule 11; plan
 // of 2.9). Under `data.view` with the branch wall and the draft wall inside the SQL: another
@@ -261,7 +261,7 @@ async function readPage(db: Executor, actor: Actor, id: string): Promise<OrderPa
       at: orderEvents.createdAt,
       comment: orderEvents.comment,
       note: orderEvents.note,
-      headStepAuto: sql<boolean>`coalesce((${orderEvents.payload} ->> 'headStepAuto')::boolean, false)`,
+      headStepAuto: headStepAutoSql,
       paymentType: sql<OrderPageEvent["paymentType"]>`${orderEvents.payload} -> 'paymentType'`,
       othersSeen: sql<number>`(${othersSeen})`,
     })

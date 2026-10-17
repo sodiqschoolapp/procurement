@@ -1290,6 +1290,45 @@
         "forbidden": "You cannot add drafts in this order's branch.",
         "not_ready": "It cannot be copied: its branch is inactive, it has no product, department or quantity yet, or your draft would grow too large."
       }
+    },
+    "download": {
+      "excel": "Download Excel",
+      "pdf": "Download PDF",
+      "title": "Orders",
+      "sheet": "Orders",
+      "columns": {
+        "number": "Number",
+        "status": "Status",
+        "branch": "Branch",
+        "owner": "Owner",
+        "department": "Department",
+        "product": "Product",
+        "subtype": "Subtype",
+        "quantity": "Quantity",
+        "measure": "Measure",
+        "price": "Price per unit",
+        "extras": "Extra costs",
+        "paymentType": "Payment type",
+        "plannedTotal": "Planned total",
+        "step": "{role}",
+        "stepAt": "{role}, time"
+      },
+      "totals": "Totals",
+      "downloadedBy": "Downloaded by {name}, {at}",
+      "page": "Page {page} of {pages}",
+      "filters": {
+        "none": "No filters",
+        "label": "Filters: {list}",
+        "dateRange": "{kind}: {from} – {to}",
+        "dateFrom": "{kind}: from {from}",
+        "dateTo": "{kind}: to {to}",
+        "numberRange": "Numbers: {from} – {to}",
+        "numberFrom": "Numbers: from {from}",
+        "numberTo": "Numbers: to {to}",
+        "item": "{label}: {value}",
+        "unknown": "—",
+        "sort": "Sort: {sort}"
+      }
     }
   }
 }

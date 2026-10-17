@@ -30,6 +30,8 @@ ENV NODE_ENV=production \
 COPY --from=packages /app/node_modules ./node_modules
 COPY package.json next.config.ts ./
 COPY public ./public
+# The fonts of the order list PDF, read from disk at run time (plan of 2.14, decided item 9).
+COPY src/features/orders/download/fonts ./src/features/orders/download/fonts
 # Next.js writes its cache under .next/ while it runs, so the user `node` owns it.
 COPY --from=build --chown=node:node /app/.next ./.next
 # What the migration needs before the app starts.

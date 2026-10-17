@@ -848,4 +848,22 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - A test fixture that gives a submitted order plan fields or extras writes them while it is RETURNED, then sets the status (`orders_plan_frozen`): see `withPlan()` in `copy-as-new.db.test.ts`.
 - Every bar that counts its buttons in an e2e test now counts Copy as new for a user who may add drafts in the branch.
 
-The next task is 2.14.
+## 2.14 Download: Excel and PDF (17.10.2026, pull request #63)
+
+**Built**
+- `GET /orders/download/excel` and `/orders/download/pdf` (`src/app/(app)/orders/download/[format]/route.ts`): every order of the list's filters, in the list's order, in the downloader's language (`chooseLocale()`).
+- Query `orderDownload()` in `queries/order-list.ts` under `data.export`, through the list's own `listWhere()`; filter names read inside the walls. Domain `orderDownloadRow()` (`src/domain/order-download.ts`) over `orderSteps()` and order-totals.
+- `src/features/orders/download/`: `columns.ts` (the one table both files draw), `filters-text.ts`, `excel.ts` (money cells up to `MONEY_MAX`), `pdf.tsx` (letterhead, Golos Text from `fonts/`), `DownloadButtons` on `/orders`.
+- `headStepAutoSql` in `order-facts.ts`, shared by the order page and the download.
+
+**Left out, and the task that brings it**
+- The actual columns (actual quantity, price, extras, total, difference): 3.5.
+
+**What the next sessions must know**
+- For 3.5: add the actual columns to `DOWNLOAD_COLUMNS` and `DownloadLine` in `columns.ts`, the values from the domain functions of 3.x; both files follow. Money cells go through `moneyCellValue()`; a negative difference needs its own bound there.
+- For 5.4 and 6.7: reuse the PDF parts of `pdf.tsx` (fonts, letterhead, `logoPng()`); the Golos Text TTFs must keep distinct PostScript names, or react-pdf embeds one font copy per text run (641 copies, 1.2 MB, seen here).
+- Golos Text has no U+02BB: the PDF fonts map it to the glyph of U+2018 (decisions 2.14). On screen the browser falls back to another font for it.
+- PDF text in tests: `pdfPages()` of `tests/helpers/pdf-text.ts` (pdfjs-dist, dev only).
+- `next start` locally needs `BETTER_AUTH_SECRET` to sign in; a throwaway value in the shell is enough for a local check.
+
+The next task is 2.15.

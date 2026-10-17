@@ -1290,6 +1290,45 @@
         "forbidden": "Вы не можете добавлять черновики в филиале этого заказа.",
         "not_ready": "Его нельзя скопировать: филиал неактивен, у заказа ещё нет товара, отдела или количества, или ваш черновик стал бы слишком большим."
       }
+    },
+    "download": {
+      "excel": "Скачать Excel",
+      "pdf": "Скачать PDF",
+      "title": "Заказы",
+      "sheet": "Заказы",
+      "columns": {
+        "number": "Номер",
+        "status": "Статус",
+        "branch": "Филиал",
+        "owner": "Владелец",
+        "department": "Отдел",
+        "product": "Товар",
+        "subtype": "Подвид",
+        "quantity": "Количество",
+        "measure": "Ед. изм.",
+        "price": "Цена за единицу",
+        "extras": "Доп. расходы",
+        "paymentType": "Способ оплаты",
+        "plannedTotal": "Плановая сумма",
+        "step": "{role}",
+        "stepAt": "{role}, время"
+      },
+      "totals": "Итоги",
+      "downloadedBy": "Скачал(а) {name}, {at}",
+      "page": "Страница {page} из {pages}",
+      "filters": {
+        "none": "Без фильтров",
+        "label": "Фильтры: {list}",
+        "dateRange": "{kind}: {from} – {to}",
+        "dateFrom": "{kind}: с {from}",
+        "dateTo": "{kind}: по {to}",
+        "numberRange": "Номера: {from} – {to}",
+        "numberFrom": "Номера: с {from}",
+        "numberTo": "Номера: по {to}",
+        "item": "{label}: {value}",
+        "unknown": "—",
+        "sort": "Сортировка: {sort}"
+      }
     }
   }
 }
