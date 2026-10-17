@@ -1187,4 +1187,20 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - A checkbox of the screen is controlled by the server's answer: Playwright clicks it and waits for `toBeChecked()`, never `check()`.
 - `order-page.spec.ts` and `settlement.spec.ts` share the page users and set them to English; a spec that shares them reads English or no label.
 
-The next task is 4.6.
+## 4.6 Finance closes (17.10.2026, pull request #86)
+
+**Built**
+- `readyToClose()` (`src/domain/money-ledger.ts`): cash count 0, every used transfer and card block `blockConfirmed()`, and the Head's acknowledgment when `overspend().needsHead`; `SettlementConfirmations.overspendAcknowledged`.
+- `closeOrders` (`CLOSE`, `src/features/orders/actions/close.ts`): a `facts` step reads `settlementFactsOf()` (now with `records`) and `readSettings()` under the lock; sets `closed_at`; `REQUEST_CLOSED` to owners, active Heads and the branch's active Finance. Page export `closeOrdersAction`.
+- `LockedOrder.readyToClose`, read by `orderState()` (false when unread).
+- Close through `MoveButton` on the settlement screen (every order shown), the list bar and the order page; `orders.moves.notReady.CLOSE` names what readiness needs.
+
+**Left out, and the task that brings it**
+- The Head's "Acknowledge overspend", its notices and S12 through the button: 4.7. Reopen: 4.8.
+
+**What the next sessions must know**
+- For 4.7: readiness already reads `overspend_ack_at`; build only the acknowledgment action, its notices and S12 (see the From 4.6 line). `close.db.test.ts` shows how to set the guard amount (upsert of the `settings` row) and restore it.
+- For 4.8: a reopened order is Open again and needs a new Close by Finance; clearing the acknowledgment makes an overspent order wait for the Head again.
+- A purchase line whose price or extra differs from the plan needs a comment (07): the test helper `buy()` of `close.db.test.ts` adds one.
+
+The next task is 4.7.

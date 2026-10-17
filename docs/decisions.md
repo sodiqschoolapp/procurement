@@ -1689,6 +1689,24 @@ Choices made during the build:
 - `tests/e2e/catalog.spec.ts` looks for the page's own Activate button: its dialog's button of the same name failed the plan commit's CI once while closing.
 - `settlement.spec.ts` reads English, as `order-page.spec.ts` sets the users they share (the CI run of the screen's commit showed English to a test that expected Uzbek).
 
+### 4.6 Finance closes (17.10.2026)
+
+The plan's decisions as the plan review of 17.10.2026 confirmed them (corrections 1 and 2 applied: `readyToClose()` reads the actual total through `actualTotal()` over the records mapped by `asPurchaseRecord()`; the readiness test uses S12's numbers with the amount setting at 50 000 and the default 100 000).
+
+1. **Look first** (money). The overspend acknowledgment is part of readiness now (08 Closing 3, "any required Head acknowledgment"): `overspend().needsHead` with the guard settings read under the lock, and `order_settlements.overspend_ack_at` not null as the acknowledgment. The Head's button and its notices are 4.7; until then an order above the guard cannot close.
+2. **Look first** (money). One pure `readyToClose()` in `src/domain/money-ledger.ts`: cash count 0; a Bank transfer or Corporate card block, when `settlementBlocks()` returns it, `blockConfirmed()`; an unused type needs nothing.
+3. Close is offered to Finance on every order Waiting for settlement in their branches; readiness is the server's, and a refusal names each order that is not ready with one line, not one line per cause.
+4. On the settlement screen Close acts on every order the screen shows; fewer are closed by ticking fewer on the list.
+5. `closed_at` and the `REQUEST_CLOSED` notice as `closeExactOrders`: owners, active Heads and the branch's active Finance, one per branch, never the actor.
+6. Finance's Close dialog carries no warehouse sentence; that sentence is the Manager's (08 Closing 1).
+7. A "From 4.6" line under 4.7 in `docs/build-plan.md`, so 4.7 builds no second check.
+
+Choices made during the build:
+
+- `LockedOrder.readyToClose` is optional beside `exactMatch`, and `orderState()` reads it as false when no step read it.
+- `settlementFactsOf()` also returns each order's records, so readiness and the screen read one place.
+- The database test of S12's readiness writes `overspend_ack_*` straight into `order_settlements` (the button is 4.7) and sets the guard amount with an upsert of the `settings` row, restored afterwards.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.
