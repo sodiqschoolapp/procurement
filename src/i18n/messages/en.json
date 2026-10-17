@@ -1369,6 +1369,7 @@
         "SEND_TO_SETTLEMENT": "Send to settlement",
         "SEND_BACK_FOR_CORRECTION": "Send back for correction",
         "CLOSE": "Close",
+        "REOPEN": "Reopen",
         "ACKNOWLEDGE_OVERSPEND": "Acknowledge overspend"
       },
       "buttonCount": "{label} ({count})",
@@ -1385,6 +1386,7 @@
         "SEND_TO_SETTLEMENT": "{count, plural, one {Send 1 order to settlement?} other {Send # orders to settlement?}}",
         "SEND_BACK_FOR_CORRECTION": "{count, plural, one {Send 1 order back for correction?} other {Send # orders back for correction?}}",
         "CLOSE": "{count, plural, one {Close 1 order?} other {Close # orders?}}",
+        "REOPEN": "{count, plural, one {Reopen 1 order?} other {Reopen # orders?}}",
         "ACKNOWLEDGE_OVERSPEND": "{count, plural, one {Acknowledge the overspend of 1 order?} other {Acknowledge the overspend of # orders?}}"
       },
       "result": {
@@ -1400,6 +1402,7 @@
         "SEND_TO_SETTLEMENT": "{count, plural, one {1 order goes} other {# orders go}} to Finance for settlement. Finance is told.",
         "SEND_BACK_FOR_CORRECTION": "{count, plural, one {It goes} other {They go}} back to Open, so a wrong record can be corrected; its settlement confirmations are cleared. The owner and the Head are told.",
         "CLOSE": "{count, plural, one {1 order will be Closed} other {# orders will be Closed}} and can no longer change. If any order is not ready, nothing closes and the orders are named. The owner, the Head and Finance are told.",
+        "REOPEN": "{count, plural, one {It goes} other {They go}} back to Open, so a mistake can be corrected. Settlement confirmations and the overspend acknowledgment are cleared, and Finance settles {count, plural, one {it} other {them}} again. The owner, the Head and Finance are told.",
         "ACKNOWLEDGE_OVERSPEND": "Finance can then close {count, plural, one {this order} other {these orders}} with the actual total above the plan. Your comment is kept in each order's history, and Finance of the branch is told."
       },
       "done": {
@@ -1415,6 +1418,7 @@
         "SEND_TO_SETTLEMENT": "{count, plural, one {Sent 1 order to settlement.} other {Sent # orders to settlement.}}",
         "SEND_BACK_FOR_CORRECTION": "{count, plural, one {Sent back 1 order for correction.} other {Sent back # orders for correction.}}",
         "CLOSE": "{count, plural, one {Closed 1 order.} other {Closed # orders.}}",
+        "REOPEN": "{count, plural, one {Reopened 1 order.} other {Reopened # orders.}}",
         "ACKNOWLEDGE_OVERSPEND": "{count, plural, one {Acknowledged the overspend of 1 order.} other {Acknowledged the overspend of # orders.}}"
       },
       "failedTitle": "{count, plural, one {Nothing was saved: 1 order is named below.} other {Nothing was saved: # orders are named below.}}",

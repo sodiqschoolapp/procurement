@@ -27,6 +27,7 @@ import { copyOrdersAsNew } from "@/features/orders/actions/copy-as-new";
 import { rejectOrders } from "@/features/orders/actions/reject";
 import { sendBackOrders } from "@/features/orders/actions/send-back";
 import { closeOrders } from "@/features/orders/actions/close";
+import { reopenOrders } from "@/features/orders/actions/reopen";
 import { sendBackForCorrectionOrders } from "@/features/orders/actions/send-back-for-correction";
 import { sendToSettlementOrders } from "@/features/orders/actions/send-to-settlement";
 import { submitAgainOrders } from "@/features/orders/actions/submit-again";
@@ -91,6 +92,7 @@ const settleCashRun = ordersServerAction(settleCash);
 const confirmSettlementRun = ordersServerAction(confirmSettlement);
 const toCorrection = ordersServerAction(sendBackForCorrectionOrders);
 const close = ordersServerAction(closeOrders);
+const reopenClosed = ordersServerAction(reopenOrders);
 const acknowledge = ordersServerAction(acknowledgeOverspend);
 
 /** A query as an answer: a refusal of authorize() or of the input is returned, never thrown. */
@@ -337,6 +339,11 @@ export async function sendBackForCorrectionOrdersAction(input: unknown): Promise
 /** Finance closes the ticked settlement orders that are all ready (08 Closing 3; plan of 4.6). */
 export async function closeOrdersAction(input: unknown): Promise<MoveAnswer> {
   return moveAnswer(close, input);
+}
+
+/** The Head reopens the ticked Closed orders with one reason (06 Allowed moves; plan of 4.8). */
+export async function reopenOrdersAction(input: unknown): Promise<MoveAnswer> {
+  return moveAnswer(reopenClosed, input);
 }
 
 /** The Head acknowledges the overspend of the ticked orders with one comment (08; plan of 4.7). */

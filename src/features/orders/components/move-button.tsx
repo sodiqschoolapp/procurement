@@ -14,6 +14,7 @@ import {
   markNotBoughtAction,
   rejectOrdersAction,
   reopenBuyingAction,
+  reopenOrdersAction,
   sendBackOrdersAction,
   sendBackForCorrectionOrdersAction,
   sendToSettlementOrdersAction,
@@ -47,7 +48,8 @@ import { useFormatters } from "@/i18n/use-formatters";
 // Since 4.5 Finance's Send back for correction, with one reason (06 Allowed moves; 08 Closing 4).
 // Since 4.6 Finance's Close, whose "not ready" line says what readiness needs (08 Closing 3).
 // Since 4.7 the Head's Acknowledge overspend, which moves no status: one comment for every ticked
-// order (08 Overspend guard; plan of 4.7, decided item 4).
+// order (08 Overspend guard; plan of 4.7, decided item 4). Since 4.8 the Head's Reopen of Closed
+// orders, with one reason (06 Allowed moves, Closed row; rule 3).
 
 /** The state machine's moves this button makes. */
 export type StatusMoveKind =
@@ -59,7 +61,8 @@ export type StatusMoveKind =
   | "CLOSE_EXACT"
   | "SEND_TO_SETTLEMENT"
   | "SEND_BACK_FOR_CORRECTION"
-  | "CLOSE";
+  | "CLOSE"
+  | "REOPEN";
 export type MoveKind = StatusMoveKind | BuyingAction | "ACKNOWLEDGE_OVERSPEND";
 
 const RUN: Record<MoveKind, (input: unknown) => Promise<MoveAnswer>> = {
@@ -72,6 +75,7 @@ const RUN: Record<MoveKind, (input: unknown) => Promise<MoveAnswer>> = {
   SEND_TO_SETTLEMENT: sendToSettlementOrdersAction,
   SEND_BACK_FOR_CORRECTION: sendBackForCorrectionOrdersAction,
   CLOSE: closeOrdersAction,
+  REOPEN: reopenOrdersAction,
   FINISH_ORDER: finishOrdersAction,
   MARK_NOT_BOUGHT: markNotBoughtAction,
   REOPEN_BUYING: reopenBuyingAction,
@@ -84,6 +88,7 @@ const WITH_REASON: ReadonlySet<MoveKind> = new Set([
   "REJECT",
   "CANCEL",
   "SEND_BACK_FOR_CORRECTION",
+  "REOPEN",
   "FINISH_ORDER",
   "MARK_NOT_BOUGHT",
   "ACKNOWLEDGE_OVERSPEND",

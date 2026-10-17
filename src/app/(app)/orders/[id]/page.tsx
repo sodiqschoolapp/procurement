@@ -45,6 +45,7 @@ const PAGE_MOVES: readonly StatusMoveKind[] = [
   "SEND_TO_SETTLEMENT",
   "SEND_BACK_FOR_CORRECTION",
   "CLOSE",
+  "REOPEN",
 ];
 
 /** The waiting line, or null when the user has an allowed move (decided item 4, Look first). */
