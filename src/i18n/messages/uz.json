@@ -76,7 +76,7 @@
       "tripOneOwner": "Bitta xarid bitta filial va bitta egasining buyurtmalarini qamraydi. Faqat ularni belgilang.",
       "otherProduct": "Buyurtma qilingan mahsulotning turini tanlang. Boshqa mahsulot uchun buyurtmani «Sotib olinmadi» deb belgilang va yangi buyurtma qoʻshing.",
       "stockShort": "Bekor qilib boʻlmaydi: omborda yetarli emas, mahsulot allaqachon berilgan. Avval uni boʻlimdan qaytarib oling yoki hisobdan chiqaring.",
-      "cashOneBranch": "Bitta menejerga naqd pul bir vaqtda faqat bitta filial bo'yicha beriladi. Har bir filial buyurtmalarini alohida tasdiqlang yoki bitta filial naqd pulini 0 qiling."
+      "cashOneBranch": "Bitta menejerga naqd pul bir vaqtda faqat bitta filial boʻyicha beriladi. Har bir filial buyurtmalarini alohida tasdiqlang yoki bitta filial naqd pulini 0 qiling."
     },
     "file": {
       "tooLarge": "Fayl 10 MB dan katta. Kichikroq fayl tanlang yoki suratni qaytadan oling.",
@@ -1305,11 +1305,11 @@
       "result": "Jami {total}. {count, plural, other {Buyurtmalar}} keyingi bosqichga o'tadi va keyingi tasdiqlovchiga xabar boradi.",
       "resultFinance": "Jami {total}. {count, plural, other {Buyurtmalar}} xarid uchun ochiladi. Quyida har bir buyurtmaning to'lov turini o'zgartirishingiz mumkin; jami o'zgarmaydi.",
       "paymentOf": "{number} to'lov turi",
-      "totalsTitle": "To'lov turlari bo'yicha rejadagi summalar",
+      "totalsTitle": "Toʻlov turlari boʻyicha rejadagi summalar",
       "cashTitle": "Menejerga hozir beriladigan naqd pul",
-      "cashHint": "Har bir buyurtmaning rejadagi naqd puli bilan to'ldirilgan. Istalgan qatorni o'zgartiring yoki keyinroq berish uchun 0 qiling.",
+      "cashHint": "Har bir buyurtmaning rejadagi naqd puli bilan toʻldirilgan. Istalgan qatorni oʻzgartiring yoki keyinroq berish uchun 0 qiling.",
       "plannedCash": "Rejadagi naqd {amount}",
-      "cashInvalid": "Butun so'm kiriting: 0 yoki undan ko'p.",
+      "cashInvalid": "Butun so'm kiriting: 0 yoki undan koʻp.",
       "resultCash": "{managers, plural, other {# ta menejerga}} {amount} naqd pul beriladi.",
       "done": "{count, plural, other {# ta buyurtma tasdiqlandi.}}",
       "failedTitle": "{count, plural, other {Hech narsa tasdiqlanmadi: # ta buyurtma quyida ko'rsatilgan.}}",
