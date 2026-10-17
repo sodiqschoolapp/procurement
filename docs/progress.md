@@ -1093,4 +1093,23 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - For 5.x and any action that writes or cancels a purchase record: call `noticePriceDiffers(context, actionId, change)` from its notify step; it reads the action's records from `order_events.payload.purchase.id`.
 - `tests/helpers/purchases.ts` `insertTrip()` takes a trip date as its fourth argument.
 
-The next task is 4.1.
+## 4.1 Money schema and domain (17.10.2026, pull request #81)
+
+**Built**
+- Migration `0028_money`: `money_actions` (cancel-only trigger), `money_rows` (append-only; `money_rows_one_manager`; one row per order), `order_settlements` (pair CHECKs), the enum `money_row_kind`. Schema in `src/server/db/schema/money.ts`.
+- `src/domain/money-ledger.ts`: `orderCashCount()`, `cashSpent()`, `managerCashBalance()`, `isExactMatch()`, `plannedCash()`, `approvalCashRows()`, `settlementRows()`, `crossingRefusal()`, `settlementNet()`. `src/domain/overspend.ts`: `overspend()`.
+- `tests/helpers/money.ts`: `insertMoneyAction()`, `insertMoneyRow()`.
+
+**Left out, and the task that brings it**
+- Every writer: 4.2, 4.3, 4.5 to 4.8. The money-with-managers page: 4.9.
+
+**What the next sessions must know**
+- For 4.2, 4.3, 4.5: read records as `CashRecord` (trip payment type, each extra's own type) and money rows with their action's `is_cancelled`; never count cash a second way.
+- For 4.2, 4.3, 4.5: `money_actions` has no `branch_id` and nothing keeps one action's rows in one branch: refuse the whole action when any row's order is outside the caller's branches, and refuse a row on an order before Open (no database guard; a Draft must never reach a money list). Every read of actions joins `money_rows`→`orders` and filters by branch in the SQL (permission review of 4.1).
+- For 4.3: add the `FILE_OWNERS` owner of `money_actions.file_id` with its database test; its target must cover the branches of the action's rows (permission review of 4.1, Must fix 1).
+- For 4.3: the cancel of an action loads every row's order and refuses when any is outside the caller's branches or Closed.
+- For 4.4: exact match is `isExactMatch()` with the count from `orderCashCount()`.
+- For 4.5, 4.6, 4.7: the confirmations are Finance's (own branches) and the acknowledgment the Head's; authorise each column group with its own permission.
+- For 4.9 and 6.x: `managerCashBalance()` sums the orders it is given; pass only orders of the viewer's branches.
+
+The next task is 4.2.
