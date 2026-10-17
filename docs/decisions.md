@@ -1660,6 +1660,35 @@ Choices made during the build:
 - The permission-matrix test of Close counts `not_ready` as passing the permission: the generator's "HEAD still allowed" case ticks the order of the Manager whose `CLOSE_ALONE` is off, which the machine sends to settlement (item 2); `close-exact.db.test.ts` proves that refusal.
 - Send to settlement's notice goes to the Finance users only, no Head (10 Notifications, "Sent to settlement").
 
+### 4.5 Settlement screen (17.10.2026)
+
+The plan's decisions as the plan review of 17.10.2026 confirmed them (corrections 1 to 3 applied: a row of another kind is refused by a test; Send back for correction has its role, branch and version refusals tested; the net is `settlementNet()` over the typed rows).
+
+1. **Look first** (money). The settlement action holds only Cash returned and Paid back rows, on orders Waiting for settlement; other kinds in settlement go through Record money (4.3).
+2. **Look first** (money). Each row is checked with `crossingRefusal()` against the count before the action under the lock, so a Receive on an owed order or a Pay on a holding one is refused too.
+3. **Look first** (money). The settlement action needs a comment; date, document number and file as 4.3.
+4. **Look first** (branch wall). The screen and the action take one branch: `UNIQUE (client_key, manager_id)` allows one action per Manager per browser id. The action refuses rows of two branches whole, also across Managers (permission review, Should fix 1).
+5. **Look first** (a block's figures; spec text to make plain). A block exists for a payment type used by a live record, extra or money row of its kinds; a type only planned has none. Transfer and card "planned" are the planned total when the order's planned type is that type, else 0; "received" and "charged" are `paidBy()`; the card's difference shows Left or Over. Proposed `/spec-change` for 08 Closing 2: "a block for each payment type used in a purchase, an extra cost or a money row".
+6. **Look first** (approval order). Send back for correction clears the transfer and card confirmations, the transfer note and the overspend acknowledgment, and the order's event carries `settlementCleared: true` (permission review, Should fix 2). Proposed `/spec-change` for 08 Closing 4: "…with a reason; its settlement confirmations and the overspend acknowledgment are cleared".
+7. **Look first** (notification). Send back for correction tells owners and Heads with its own type and text.
+8. **Look first** (notification). The settlement action sends each owner one `CASH_SETTLED` with the net.
+9. **Look first** (money). A confirmation is read through `blockConfirmed()` from today's figures: a transfer ticked while it matched counts as not confirmed once it differs without a note. Accepted limit: a stored note still counts after a later row changes the difference.
+10. "Confirmed" can be unticked while the order is Waiting for settlement; the history keeps both.
+11. A transfer note may be given when the amounts are equal too.
+12. "No receipt" shows on an order with a live record whose trip has no file; a label only.
+13. The cancelled records link to `/orders/[id]?tab=purchases#purchase-<id>`; the Purchases tab gained the anchors.
+14. Card money returned reuses Record money with the kind preset.
+15. The screen's address is `/orders/settle`.
+
+Choices made during the build:
+
+- `getSettlement()` reads behind `data.view` first and then asks `request.settle` per order, as `getPurchaseForm()` does, so another branch's order is "not found" for every role and a role that sees but may not settle is "forbidden" (the matrix's expected answers).
+- One upsert statement writes the confirmations of every ticked order.
+- One Save writes the cash rows of every Manager of the screen (08 Money ledger 1: "saves one action per Manager, all in one transaction"); the date, document number, comment and file sit once under the Manager blocks.
+- The confirmation boxes show what the server holds and change after its answer.
+- `tests/e2e/catalog.spec.ts` looks for the page's own Activate button: its dialog's button of the same name failed the plan commit's CI once while closing.
+- `settlement.spec.ts` reads English, as `order-page.spec.ts` sets the users they share (the CI run of the screen's commit showed English to a test that expected Uzbek).
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.
