@@ -67,6 +67,16 @@ describe("getPurchaseForm for ticked orders (07 One trip, many orders; plan of 3
     expect(await getPurchaseForm(head.id, [here.id])).not.toBeNull();
   });
 
+  it("a Manager of two branches with own orders in both: Not found; one branch's: the form (07 One trip: one branch)", async () => {
+    const s = await scene();
+    const other = await insertBranch();
+    const manager = await insertUser("MANAGER", { branches: [s.branch.id, other.id] });
+    const here = await s.open(manager.id);
+    const there = await s.open(manager.id, other.id);
+    expect(await getPurchaseForm(manager.id, [here.id, there.id])).toBeNull();
+    expect(await getPurchaseForm(manager.id, [here.id])).not.toBeNull();
+  });
+
   it("another branch's id beside an own one is dropped and counted nowhere (03 rule 1)", async () => {
     const s = await scene();
     const other = await insertBranch();

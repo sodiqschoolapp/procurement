@@ -396,6 +396,48 @@ describe("recordPurchase: one trip, many orders (07 One trip, many orders; plan 
     await expectNothingSaved(before, ids, [s.pens.variantId]);
   });
 
+  it("a Manager of two branches with own Open orders in both: refused whole, nothing saved (07 One trip: one branch)", async () => {
+    const s = await scene();
+    const other = await insertBranch();
+    const manager = await insertUser("MANAGER", { branches: [s.branch.id, other.id] });
+    const open = (branchId: string) =>
+      insertOrder({
+        branchId,
+        ownerId: manager.id,
+        status: "PURCHASING",
+        variantId: s.pens.variantId,
+        plannedQty: "10",
+        plannedPrice: 5_000n,
+        paymentType: "CASH",
+        approvedAt: new Date("2031-05-05T07:00:00Z"),
+      });
+    const here = await open(s.branch.id);
+    const there = await open(other.id);
+    const ids = [here.id, there.id];
+    const before = await written(ids, [s.pens.variantId]);
+    expect(
+      await trip(manager, [
+        { ...here, qty: "10" },
+        { ...there, qty: "10" },
+      ]),
+    ).toEqual({
+      ok: false,
+      error: {
+        code: "invalid_input",
+        messageKey: "errors.invalidInput",
+        fields: { orders: "errors.field.tripOneOwner" },
+      },
+    });
+    await expectNothingSaved(before, ids, [s.pens.variantId]);
+    const hereToo = await open(s.branch.id);
+    expect(
+      await trip(manager, [
+        { ...here, qty: "10" },
+        { ...hereToo, qty: "10" },
+      ]),
+    ).toMatchObject({ ok: true });
+  });
+
   it("lines that do not match the ticked orders are refused and save nothing (developer-rules rule 4)", async () => {
     const s = await scene();
     const ids = [s.older.id, s.newer.id];

@@ -328,6 +328,17 @@ describe("tickedSummary: Record purchase on ticked orders (07 One trip, many ord
     expect((await tickedSummary(head.id, [a.id, waiting.id])).recordTrip).toBe(false);
   });
 
+  it("a Manager of two branches ticking own Open orders in both: not offered; in one of them: offered", async () => {
+    const own = await scene();
+    const other = await scene();
+    const manager = await insertUser("MANAGER", { branches: [own.branch.id, other.branch.id] });
+    const here = await order({ ...own.base, ownerId: manager.id, status: "PURCHASING" });
+    const there = await order({ ...other.base, ownerId: manager.id, status: "PURCHASING" });
+    const hereToo = await order({ ...own.base, ownerId: manager.id, status: "PURCHASING" });
+    expect((await tickedSummary(manager.id, [here.id, there.id])).recordTrip).toBe(false);
+    expect((await tickedSummary(manager.id, [here.id, hereToo.id])).recordTrip).toBe(true);
+  });
+
   it("a Manager ticking only a colleague's Open orders: not offered; with one own order added: offered; with RECORD_PURCHASES off: not offered", async () => {
     const { branch, base } = await scene();
     const manager = await insertUser("MANAGER", { branches: [branch.id] });
