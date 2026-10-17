@@ -75,6 +75,62 @@ describe("moveOwnerChoices: the active Managers of the ticked orders' branch (03
   });
 });
 
+describe("moveOwnerChoices: mixed ticks answer Not found alike (03 rule 1; permission review of 4.10, Must fix 1)", () => {
+  it.each(["MANAGER", "PRINCIPAL", "FINANCE"] as const)(
+    "%s: an own order with another branch's order, a colleague's draft or an unknown id is Not found; alone it is forbidden",
+    async (role) => {
+      const s = await scene();
+      const user =
+        role === "MANAGER" ? s.manager : await insertUser(role, { branches: [s.branch.id] });
+      const own = await insertOrder({
+        branchId: s.branch.id,
+        ownerId: s.next.id,
+        status: "PURCHASING",
+      });
+      const there = await insertOrder({
+        branchId: s.other.id,
+        ownerId: s.elsewhere.id,
+        status: "PURCHASING",
+      });
+      const draft = await insertOrder({
+        branchId: s.branch.id,
+        ownerId: s.next.id,
+        status: "DRAFT",
+      });
+      for (const second of [there.id, draft.id, randomUUID()]) {
+        for (const ticked of [
+          [own.id, second],
+          [second, own.id],
+        ]) {
+          await expect(moveOwnerChoices(user.id, ticked)).rejects.toEqual(
+            new AuthorizationError("not_found"),
+          );
+        }
+      }
+      await expect(moveOwnerChoices(user.id, [own.id])).rejects.toEqual(
+        new AuthorizationError("forbidden"),
+      );
+    },
+  );
+
+  it("HEAD: the same orders together are answered with the Managers of both branches", async () => {
+    const s = await scene();
+    const own = await insertOrder({
+      branchId: s.branch.id,
+      ownerId: s.next.id,
+      status: "PURCHASING",
+    });
+    const there = await insertOrder({
+      branchId: s.other.id,
+      ownerId: s.elsewhere.id,
+      status: "PURCHASING",
+    });
+    expect((await moveOwnerChoices(s.head.id, [own.id, there.id])).map((c) => c.id)).toEqual([
+      s.both.id,
+    ]);
+  });
+});
+
 describe("tickedSummary: canMoveOwner (03 rule 7; plan of 4.10, decided item 1)", () => {
   it("is offered to the Head on Open orders, not to a Manager, and not with a Closed order ticked", async () => {
     const s = await scene();
