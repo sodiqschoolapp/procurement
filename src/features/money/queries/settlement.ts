@@ -5,6 +5,7 @@ import {
   type SettlementBlocks,
   type SettlementRow,
   blockConfirmed,
+  orderOverspend,
   settlementRows,
   transferNeedsNote,
 } from "@/domain/money-ledger";
@@ -16,6 +17,7 @@ import { AuthorizationError, authorizeList, branchFilter } from "@/server/author
 import { today } from "@/server/clock";
 import { orders } from "@/server/db/schema";
 import { readSnapshot } from "@/server/read-snapshot";
+import { readSettings } from "@/server/settings";
 
 import { settlementFactsOf } from "../settlement-facts";
 
@@ -49,6 +51,12 @@ export type SettlementOrder = {
   noReceipt: boolean;
   /** Card money returned through Record money of 4.3 (decided item 14): `money.record`. */
   canRecordMoney: boolean;
+  /**
+   * 08 Overspend guard, when the order is above it under the settings of now: how much over, the
+   * percent, and the Head who acknowledged it (null while it waits for the Head); null when not
+   * above the guard (plan of 4.7, decided item 7).
+   */
+  overspend: { over: bigint; percent: string | null; acknowledgedBy: string | null } | null;
 };
 
 export type SettlementManager = { id: string; name: string; orders: SettlementOrder[] };
@@ -127,6 +135,16 @@ export async function getSettlement(
         sql`, `,
       )})
       order by p.created_at, p.id`);
+    const guard = await readSettings(db);
+    const acknowledged = await db.execute<{ order_id: string; full_name: string }>(sql`
+      select s.order_id, u.full_name
+      from order_settlements s
+      join users u on u.id = s.overspend_ack_by
+      where s.order_id in (${sql.join(
+        ids.map((id) => sql`${id}::uuid`),
+        sql`, `,
+      )})`);
+    const ackBy = new Map(acknowledged.rows.map((row) => [row.order_id, row.full_name]));
 
     const managers = new Map<string, SettlementManager>();
     for (const row of rows) {
@@ -160,7 +178,16 @@ export async function getSettlement(
         canRecordMoney:
           decide("money.record", actor, { branchId: row.branch_id, ownerId: row.owner_id }) ===
           "allow",
+        overspend: null,
       };
+      const over = orderOverspend(fact, guard);
+      if (over.needsHead) {
+        order.overspend = {
+          over: over.over,
+          percent: over.percent,
+          acknowledgedBy: ackBy.get(row.id) ?? null,
+        };
+      }
       const manager = managers.get(row.owner_id) ?? {
         id: row.owner_id,
         name: row.owner_name,

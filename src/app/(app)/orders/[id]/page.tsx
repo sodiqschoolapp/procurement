@@ -54,6 +54,7 @@ async function waitingLine(order: OrderPage): Promise<string | null> {
     order.canRecordPurchase ||
     order.canRecordMoney ||
     order.canSettle ||
+    order.canAcknowledgeOverspend ||
     order.buying.length > 0
   ) {
     return null;
@@ -371,7 +372,12 @@ export default async function OrderPageScreen({
               }
             : null
         }
-        moves={[...PAGE_MOVES.filter((move) => order.actions.includes(move)), ...order.buying]}
+        moves={[
+          ...PAGE_MOVES.filter((move) => order.actions.includes(move)),
+          ...order.buying,
+          // The Head's Acknowledge overspend (08 Overspend guard; plan of 4.7): the server's flag.
+          ...(order.canAcknowledgeOverspend ? (["ACKNOWLEDGE_OVERSPEND"] as const) : []),
+        ]}
         number={order.number}
         // Copy as new of a numbered order; a draft is edited in the drafts grid (decided item 11).
         canCopy={order.canCopy && order.status !== "DRAFT" && order.number !== null}

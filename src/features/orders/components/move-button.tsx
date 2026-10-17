@@ -6,6 +6,7 @@ import { useId, useRef, useState } from "react";
 
 import {
   type MoveAnswer,
+  acknowledgeOverspendAction,
   cancelOrdersAction,
   closeExactOrdersAction,
   closeOrdersAction,
@@ -45,6 +46,8 @@ import { useFormatters } from "@/i18n/use-formatters";
 // Close of exact matches, whose dialog carries 08 Closing 1's sentence, and Send to settlement.
 // Since 4.5 Finance's Send back for correction, with one reason (06 Allowed moves; 08 Closing 4).
 // Since 4.6 Finance's Close, whose "not ready" line says what readiness needs (08 Closing 3).
+// Since 4.7 the Head's Acknowledge overspend, which moves no status: one comment for every ticked
+// order (08 Overspend guard; plan of 4.7, decided item 4).
 
 /** The state machine's moves this button makes. */
 export type StatusMoveKind =
@@ -57,7 +60,7 @@ export type StatusMoveKind =
   | "SEND_TO_SETTLEMENT"
   | "SEND_BACK_FOR_CORRECTION"
   | "CLOSE";
-export type MoveKind = StatusMoveKind | BuyingAction;
+export type MoveKind = StatusMoveKind | BuyingAction | "ACKNOWLEDGE_OVERSPEND";
 
 const RUN: Record<MoveKind, (input: unknown) => Promise<MoveAnswer>> = {
   SEND_BACK: sendBackOrdersAction,
@@ -72,6 +75,7 @@ const RUN: Record<MoveKind, (input: unknown) => Promise<MoveAnswer>> = {
   FINISH_ORDER: finishOrdersAction,
   MARK_NOT_BOUGHT: markNotBoughtAction,
   REOPEN_BUYING: reopenBuyingAction,
+  ACKNOWLEDGE_OVERSPEND: acknowledgeOverspendAction,
 };
 
 /** The moves that need a reason (06 rule 3; 07 Order progress: Finish order and Not bought). */
@@ -82,6 +86,7 @@ const WITH_REASON: ReadonlySet<MoveKind> = new Set([
   "SEND_BACK_FOR_CORRECTION",
   "FINISH_ORDER",
   "MARK_NOT_BOUGHT",
+  "ACKNOWLEDGE_OVERSPEND",
 ]);
 
 /** The moves that end an order for good: the danger button (design system, dialogs). */
@@ -160,7 +165,10 @@ export function MoveButton({
           // is what readiness needs (08 Closing 3).
           refused: (code) =>
             code === "not_ready" &&
-            (move === "FINISH_ORDER" || move === "MARK_NOT_BOUGHT" || move === "CLOSE")
+            (move === "FINISH_ORDER" ||
+              move === "MARK_NOT_BOUGHT" ||
+              move === "CLOSE" ||
+              move === "ACKNOWLEDGE_OVERSPEND")
               ? t(`notReady.${move}`)
               : t(`refused.${code}`),
           failedLine: (values) => t("failedLine", values),
@@ -217,7 +225,7 @@ export function MoveButton({
         {needsReason ? (
           <div className="mt-4 flex flex-col gap-1.5">
             <label htmlFor={reasonId} className="text-sm leading-5 font-semibold">
-              {t("reason")}
+              {move === "ACKNOWLEDGE_OVERSPEND" ? t("comment") : t("reason")}
             </label>
             <textarea
               id={reasonId}

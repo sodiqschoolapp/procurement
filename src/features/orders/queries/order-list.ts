@@ -28,7 +28,7 @@ import {
 } from "@/domain/order-totals";
 import type { PaymentType } from "@/domain/payment-types";
 import { type Actor, decide } from "@/domain/permissions";
-import { moneyRecordAllows, settlementAllows } from "@/domain/money-ledger";
+import { moneyRecordAllows, overspendNeedsAck, settlementAllows } from "@/domain/money-ledger";
 import { type BuyingAction, actualQuantity, buyingActions } from "@/domain/purchases";
 import { type Executor, authorize, authorizeList, branchFilter } from "@/server/authorize";
 import { now } from "@/server/clock";
@@ -51,6 +51,7 @@ import { readSettings } from "@/server/settings";
 
 import { type ListFilters, NO_FILTERS, numberParts } from "../list-filters";
 
+import { settlementFactsOf } from "@/features/money/settlement-facts";
 import { recordsOfListed, recordsOfOrders } from "@/features/purchasing/order-records";
 
 import { exactMatchOf } from "../exact-match";
@@ -481,6 +482,12 @@ export type TickedSummary = {
    */
   canSettle: boolean;
   /**
+   * Acknowledge overspend is offered (08 Overspend guard; plan of 4.7, decided items 2 and 3, Look
+   * first): every ticked order Waiting for settlement, above the guard and not yet acknowledged
+   * (`overspendNeedsAck()`), and `request.acknowledge_overspend` on each. The action asks again.
+   */
+  canAcknowledgeOverspend: boolean;
+  /**
    * The buying actions allowed on every ticked order (07 Order progress: "Finish order" and "Not
    * bought" on ticked orders; plan of 3.5): buyingActions() of src/domain/purchases.ts, which the
    * actions ask again.
@@ -525,6 +532,7 @@ export async function tickedSummary(
     recordTrip: false,
     canRecordMoney: false,
     canSettle: false,
+    canAcknowledgeOverspend: false,
     buying: [],
     orders: [],
   };
@@ -565,6 +573,15 @@ export async function tickedSummary(
       db,
       found.map((row) => row.id),
     );
+    // The overspend facts only when every ticked order is in settlement (none is asked otherwise).
+    const inSettlement = found.length > 0 && found.every((row) => settlementAllows(row.status));
+    const settlement = inSettlement
+      ? await settlementFactsOf(
+          db,
+          found.map((row) => row.id),
+        )
+      : null;
+    const guard = settlement ? await readSettings(db) : null;
     const seen = new Set(found.map((row) => row.id));
     return {
       count: found.length,
@@ -630,6 +647,20 @@ export async function tickedSummary(
             decide("request.settle", actor, { branchId: row.branchId, ownerId: row.ownerId }) ===
               "allow",
         ),
+      canAcknowledgeOverspend:
+        settlement !== null &&
+        guard !== null &&
+        found.every((row) => {
+          const facts = settlement.get(row.id);
+          return (
+            facts !== undefined &&
+            overspendNeedsAck(facts, guard) &&
+            decide("request.acknowledge_overspend", actor, {
+              branchId: row.branchId,
+              ownerId: row.ownerId,
+            }) === "allow"
+          );
+        }),
       buying: buyingActions(
         actor,
         found.map((row) => ({

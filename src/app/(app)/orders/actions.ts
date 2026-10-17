@@ -40,6 +40,7 @@ import {
 } from "@/features/purchasing/actions/finish-buying";
 import { cancelPurchase, cancelTrip } from "@/features/purchasing/actions/cancel-purchase";
 import { cancelMoney } from "@/features/money/actions/cancel-money";
+import { acknowledgeOverspend } from "@/features/money/actions/acknowledge-overspend";
 import { confirmSettlement } from "@/features/money/actions/confirm-settlement";
 import { recordMoney } from "@/features/money/actions/record-money";
 import { settleCash } from "@/features/money/actions/settle-cash";
@@ -90,6 +91,7 @@ const settleCashRun = ordersServerAction(settleCash);
 const confirmSettlementRun = ordersServerAction(confirmSettlement);
 const toCorrection = ordersServerAction(sendBackForCorrectionOrders);
 const close = ordersServerAction(closeOrders);
+const acknowledge = ordersServerAction(acknowledgeOverspend);
 
 /** A query as an answer: a refusal of authorize() or of the input is returned, never thrown. */
 async function asked<T>(read: (userId: string) => Promise<T>): Promise<ActionResult<T>> {
@@ -335,6 +337,11 @@ export async function sendBackForCorrectionOrdersAction(input: unknown): Promise
 /** Finance closes the ticked settlement orders that are all ready (08 Closing 3; plan of 4.6). */
 export async function closeOrdersAction(input: unknown): Promise<MoveAnswer> {
   return moveAnswer(close, input);
+}
+
+/** The Head acknowledges the overspend of the ticked orders with one comment (08; plan of 4.7). */
+export async function acknowledgeOverspendAction(input: unknown): Promise<MoveAnswer> {
+  return moveAnswer(acknowledge, input);
 }
 
 /** One ticked order as the Record money dialog shows it; money as text of whole so'm. */

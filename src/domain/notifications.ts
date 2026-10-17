@@ -111,6 +111,13 @@ export type NotificationParamsOf = {
   REQUEST_SENT_BACK_FOR_CORRECTION: OrderActionParams;
   REQUEST_REJECTED: OrderActionParams;
   REQUEST_SENT_TO_SETTLEMENT: OrderActionParams;
+  /**
+   * The overspend guard (10 Notifications; plan of 4.7, decided items 1 and 6, Look first): above
+   * the guard at Send to settlement, to the Heads, `count` the sent orders above it in `branch`;
+   * acknowledged, to the branch's Finance, `count` the acknowledged orders.
+   */
+  OVERSPEND_ABOVE_GUARD: OrderActionParams;
+  OVERSPEND_ACKNOWLEDGED: OrderActionParams;
   REQUEST_CLOSED: OrderActionParams;
   REQUEST_REOPENED: OrderActionParams;
   /**
@@ -154,6 +161,8 @@ export const NOTIFICATION_PARAMS: {
   REQUEST_SENT_BACK_FOR_CORRECTION: ["actor", "count", "branch"],
   REQUEST_REJECTED: ["actor", "count", "branch"],
   REQUEST_SENT_TO_SETTLEMENT: ["actor", "count", "branch"],
+  OVERSPEND_ABOVE_GUARD: ["actor", "count", "branch"],
+  OVERSPEND_ACKNOWLEDGED: ["actor", "count", "branch"],
   REQUEST_CLOSED: ["actor", "count", "branch"],
   REQUEST_REOPENED: ["actor", "count", "branch"],
   PURCHASE_CANCELLED: ["actor", "count", "branch"],

@@ -12,6 +12,7 @@ import { uploadFile } from "@/components/files/upload";
 import { NoReceiptLabel } from "@/components/status-label";
 import { toast } from "@/components/toast";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { Icon } from "@/components/icon";
 import { FIELD_CLASSES, Input } from "@/components/ui/input";
 import { cn } from "@/components/utils";
 import { FILE_MIMES } from "@/domain/files";
@@ -259,6 +260,31 @@ export function SettlementView({ settlement }: { settlement: WireSettlement }) {
                         ? `${order.productName} · ${order.subtypeName}`
                         : order.productName}
                     </span>
+                    {order.overspend ? (
+                      <p
+                        data-overspend={order.overspend.acknowledgedBy ? "acknowledged" : "waits"}
+                        className={cn(
+                          "flex items-start gap-1.5 text-[13px] leading-[18px]",
+                          order.overspend.acknowledgedBy ? "text-muted-foreground" : "text-warning",
+                        )}
+                      >
+                        <Icon
+                          name={order.overspend.acknowledgedBy ? "check_circle" : "warning"}
+                          size={16}
+                          className="mt-px shrink-0"
+                        />
+                        {order.overspend.acknowledgedBy
+                          ? t("overspend.acknowledged", {
+                              amount: format.money(money(order.overspend.over)),
+                              percent: order.overspend.percent ?? "—",
+                              name: order.overspend.acknowledgedBy,
+                            })
+                          : t("overspend.waits", {
+                              amount: format.money(money(order.overspend.over)),
+                              percent: order.overspend.percent ?? "—",
+                            })}
+                      </p>
+                    ) : null}
                     <div className="flex flex-wrap items-center gap-2">
                       {order.noReceipt ? <NoReceiptLabel /> : null}
                       {order.cancelledRecords.length > 0 ? (
