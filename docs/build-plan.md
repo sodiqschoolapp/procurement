@@ -322,7 +322,7 @@ The Manager records what was really bought, one order or one whole shop visit at
   - **Build:** Cancel a record with a reason while its order is Open, and "Cancel trip" for every record of one trip, all or nothing; stock goes down by the same quantity and the average is recalculated; the cancel is blocked when stock would go below zero, and the message names the two ways out; cancelled records stay visible, crossed out; the Head is notified; the order shows how many of its records were cancelled.
   - **Done when:** Database tests: a cancel lowers stock; a cancel after stock was lowered by a test movement is blocked and nothing changes; "Cancel trip" with one blocked record cancels none; a Manager with `CANCEL_PURCHASES` off is refused.
 
-- [ ] **3.8 The three colours**
+- [x] **3.8 The three colours**
   - **Read:** `08-money-and-settlement.md` (The three colours; Worked example); `11-screens-and-ux.md` (Rules for a smooth feel: 11); `edge-cases/developer-rules.md` (rule 1).
   - **Build:** A domain function that returns Number, Price and Total for an order and for a set of orders (grey while in progress; Price green only when every record's unit price is the planned one; the worst colour wins; Total from the summed difference); the label component with icon, word and amount; the labels on orders, group rows and the ticked totals.
   - **Done when:** Unit tests of the four worked-example cases, of two records of 0.25 at the planned price 1 001 (Price green), and of "red beats orange, orange beats green" on a group row. By hand: the Cheaper case shows orange "Left 50 000".

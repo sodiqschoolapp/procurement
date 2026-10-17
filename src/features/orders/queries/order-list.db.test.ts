@@ -712,6 +712,19 @@ describe("the three colours of orders, group rows and ticked orders (08 The thre
       total: { colour: "amber", difference: 50_000n },
     });
     expect(byId.get(over.id)?.total).toEqual({ colour: "red", difference: -50_000n });
+    // Without a filter the branch wall alone keeps the other branch's dearer order out (03 rule 1).
+    const unfiltered = (await listOrderGroups(manager.id, NO_FILTERS)).groups.find(
+      (group) => group.key === open.key,
+    )!;
+    expect(unfiltered.orders.map((each) => each.id).sort()).toEqual(
+      [exact.id, fewer.id, over.id].sort(),
+    );
+    expect(unfiltered.colours).toEqual(open.colours);
+    expect(
+      (await listOrderGroups(manager.id, NO_FILTERS)).groups.flatMap((group) =>
+        group.orders.map((each) => each.id),
+      ),
+    ).not.toContain(theirs.id);
     const returned = groups.find((group) => group.status === "RETURNED")!;
     expect(returned.colours).toBeNull();
     expect(returned.orders[0]!.colours).toBeNull();
