@@ -1721,5 +1721,33 @@
         "line": "Yopilmagan har bir buyurtmaning naqd pul qoldig'i 0."
       }
     }
+  },
+  "warehouse": {
+    "stock": {
+      "title": "Ombordagi qoldiq",
+      "summary": "{count, plural, one {# ta mahsulot} other {# ta mahsulot}}",
+      "search": "Ombordan qidirish",
+      "searchHint": "Mahsulot yoki turi",
+      "filterCategory": "Toifa",
+      "allCategories": "Barcha toifalar",
+      "inactiveOption": "{name} (faol emas)",
+      "find": "Topish",
+      "clear": "Tozalash",
+      "columns": {
+        "photo": "Rasm",
+        "branch": "Filial",
+        "product": "Mahsulot",
+        "subtype": "Turi",
+        "quantity": "Miqdori",
+        "measure": "O'lchov",
+        "value": "Qiymati"
+      },
+      "photoAlt": "{name} rasmi",
+      "noPhoto": "Rasm yo'q",
+      "emptyTitle": "Omborda hozircha hech narsa yo'q",
+      "emptyText": "Xarid yozilib, mahsulot omborga qabul qilinganda bu yerda ko'rinadi.",
+      "noResultsTitle": "Hech narsa topilmadi",
+      "noResultsText": "Bu qidiruv yoki toifa bo'yicha qoldiq yo'q. Ularni o'zgartiring yoki tozalang."
+    }
   }
 }

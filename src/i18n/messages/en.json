@@ -1721,5 +1721,33 @@
         "line": "Every order that is not Closed has a cash count of 0."
       }
     }
+  },
+  "warehouse": {
+    "stock": {
+      "title": "Stock on hand",
+      "summary": "{count, plural, one {# item} other {# items}}",
+      "search": "Search stock",
+      "searchHint": "Product or subtype",
+      "filterCategory": "Category",
+      "allCategories": "All categories",
+      "inactiveOption": "{name} (inactive)",
+      "find": "Find",
+      "clear": "Clear",
+      "columns": {
+        "photo": "Photo",
+        "branch": "Branch",
+        "product": "Product",
+        "subtype": "Subtype",
+        "quantity": "Quantity",
+        "measure": "Measure",
+        "value": "Value"
+      },
+      "photoAlt": "Photo of {name}",
+      "noPhoto": "No photo",
+      "emptyTitle": "No stock yet",
+      "emptyText": "Items appear here when a purchase is recorded and its items are received into the warehouse.",
+      "noResultsTitle": "Nothing found",
+      "noResultsText": "No stock matches the search or the category. Change them or clear them."
+    }
   }
 }

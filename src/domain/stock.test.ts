@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { MOVEMENT_RULES, MOVEMENT_TYPES, type StockMovement, nextBalance } from "./stock";
+import {
+  MOVEMENT_RULES,
+  MOVEMENT_TYPES,
+  type StockMovement,
+  nextBalance,
+  stockValue,
+} from "./stock";
+import { MONEY_MAX } from "./money";
 
 // 09-warehouse.md, first paragraph ("Stock can never go below zero"), Movement types (the Stock
 // column) and Stock value (the moving average); developer-rules.md rules 1 and 6; plan of 3.1,
@@ -198,5 +205,31 @@ describe("nextBalance, the type table (09 Movement types; decided item 2)", () =
     expect(() => nextBalance(at("5", 100n), move("CORRECTION", "1e2"))).toThrow(RangeError);
     expect(() => nextBalance(at("5", 100n), move("CORRECTION", "1.0001"))).toThrow(RangeError);
     expect(() => nextBalance(at("5", 100n), move("RECEIPT", "1", -1n))).toThrow(RangeError);
+  });
+});
+
+describe("stockValue (09 Stock value; 08 Rounding: half up; plan of 5.2, decided item 1)", () => {
+  it("rounds quantity × average half up once, to whole so'm", () => {
+    expect(stockValue("2.5", 1001n)).toBe(2503n); // 2 502.5 up
+    expect(stockValue("1.250", 3999n)).toBe(4999n); // 4 998.75 up
+    expect(stockValue("0.001", 499n)).toBe(0n); // 0.499 down
+    expect(stockValue("0.001", 500n)).toBe(1n); // 0.5 up
+  });
+
+  it("is 0 at a stock of 0 or an average of 0", () => {
+    expect(stockValue("3", 0n)).toBe(0n);
+    expect(stockValue("0", 5000n)).toBe(0n);
+  });
+
+  it("is exact at the largest stock, with no float on the way (developer-rules rule 6)", () => {
+    const value = stockValue("99999999999.999", 9999n);
+    expect(value).toBe(999_899_999_999_990n); // 999 899 999 999 990.001 down
+    expect(value <= MONEY_MAX).toBe(true);
+  });
+
+  it("refuses a quantity that is not numeric(14,3) and a negative average", () => {
+    expect(() => stockValue("-1", 10n)).toThrow(RangeError);
+    expect(() => stockValue("1e2", 10n)).toThrow(RangeError);
+    expect(() => stockValue("1", -1n)).toThrow(RangeError);
   });
 });

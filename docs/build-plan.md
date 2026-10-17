@@ -406,7 +406,7 @@ Stock screens and every document that moves stock inside one branch.
   - **Build:** Migrations for both tables, with the foreign key from `stock_movements` to document lines; numbering for ISS, RET, TRF, WOF, CNT and ENT through `number_counters`; the document posting helper on top of `postMovement()`; the reverse helper.
   - **Done when:** Database tests: two documents posted at the same moment get different numbers; a reverse writes the opposite movement and marks the original Reversed.
 
-- [ ] **5.2 Stock on hand**
+- [x] **5.2 Stock on hand**
   - **Read:** `09-warehouse.md` (Stock screens: Stock on hand); `11-screens-and-ux.md` (Screens: Stock on hand; Rules for a smooth feel: 8); `03-roles-and-permissions.md` (Permission matrix: "See orders, stock and reports"); `15-quality-and-acceptance.md` (S7).
   - **Build:** `/warehouse/stock`: product, subtype, photo, quantity, measure, value; search and category filter (the minimum column and the "Low stock only" switch arrive in 5.10); services are never listed; the branch wall.
   - **Done when:** Database test: a Principal sees only their branch's stock. By hand: the stock from phase 3 purchases is listed. The stock part of S7 is green.

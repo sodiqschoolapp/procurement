@@ -189,3 +189,75 @@ test("S7: the Principal of EA gets Not found at an EB order's address, and a for
   // Nothing saved on either branch: every status, version and event as before (15 S7).
   expect(await stateOf(ids)).toEqual(before);
 });
+
+/** Two products of one tag, one with stock in EA and one in EB, written straight into the tables. */
+async function seedStock() {
+  return withDatabase(async (client) => {
+    await client.query("begin");
+    try {
+      const tag = randomUUID().slice(0, 8);
+      const unit = await client.query<{ id: string }>(
+        `insert into units (name, short_name, allow_decimal, is_active, created_at)
+         values ($1, $2, false, true, now()) returning id`,
+        [`O'lchov ${tag}`, `s${tag}`],
+      );
+      const category = await client.query<{ id: string }>(
+        `insert into categories (name, is_active, created_at) values ($1, true, now()) returning id`,
+        [`Toifa ${tag}`],
+      );
+      const names: Record<"EA" | "EB", string> = { EA: `Ombor ${tag} A`, EB: `Ombor ${tag} B` };
+      for (const code of ["EA", "EB"] as const) {
+        const product = await client.query<{ id: string }>(
+          `insert into products (name, type, category_id, unit_id, is_active, has_variants, created_at)
+           values ($1, 'GOODS', $2, $3, true, false, now()) returning id`,
+          [names[code], category.rows[0]!.id, unit.rows[0]!.id],
+        );
+        const variant = await client.query<{ id: string }>(
+          `insert into product_variants (product_id, name, is_default, is_active, created_at)
+           values ($1, 'default', true, true, now()) returning id`,
+          [product.rows[0]!.id],
+        );
+        await client.query(
+          `insert into stock_balances (branch_id, variant_id, qty, avg_cost, created_at, updated_at)
+           select id, $1, 7, 1500, now(), now() from branches where code = $2`,
+          [variant.rows[0]!.id, code],
+        );
+      }
+      const eb = await client.query<{ id: string }>("select id from branches where code = 'EB'");
+      await client.query("commit");
+      return { tag, names, ebId: eb.rows[0]!.id };
+    } catch (error) {
+      await client.query("rollback");
+      throw error;
+    }
+  });
+}
+
+test("S7, the stock part: the Principal of EA sees EA's stock only, and EB's branch in the address shows none of it", async ({
+  page,
+}) => {
+  const seeded = await seedStock();
+  await signIn(page, E2E_ROLES.PRINCIPAL);
+
+  // Stock on hand lists EA's item with its value, and nothing of EB's (03 matrix "See orders,
+  // stock and reports": Principal "Own branch"; 15 S7: "The same holds for stock").
+  await page.goto(`/warehouse/stock?q=${encodeURIComponent(seeded.tag)}`);
+  await expect(page.getByRole("heading", { name: uz.warehouse.stock.title })).toBeVisible();
+  const own = page.getByRole("row").filter({ hasText: seeded.names.EA });
+  await expect(own).toBeVisible();
+  // 7 × 1 500 = 10 500 so'm, from stockValue() (plan of 5.2, decided item 1).
+  await expect(own).toContainText(/10\s500/);
+  await expect(page.getByText(seeded.names.EB)).toHaveCount(0);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+    ),
+  ).toBe(false);
+
+  // EB's branch in the address: "Not found" is the empty list, with nothing of either item
+  // (03 rule 1; plan of 5.2, decided item 5).
+  await page.goto(`/warehouse/stock?branch=${seeded.ebId}&q=${encodeURIComponent(seeded.tag)}`);
+  await expect(page.getByText(uz.warehouse.stock.noResultsTitle)).toBeVisible();
+  await expect(page.getByText(seeded.names.EB)).toHaveCount(0);
+  await expect(page.getByText(seeded.names.EA)).toHaveCount(0);
+});
