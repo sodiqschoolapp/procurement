@@ -251,3 +251,51 @@ test("30 Tata pens recorded on a group row of 20 and 10 fill both orders (build 
     await expect(page.locator('[data-fact="received"] dd')).toHaveText(text);
   }
 });
+
+test("the Purchases tab lists the record; Finish order with a reason gives Done short; Reopen buying opens it again (07 Order progress; plan of 3.5)", async ({
+  page,
+}, info) => {
+  const owner = E2E_PURCHASE_USERS[info.project.name as keyof typeof E2E_PURCHASE_USERS];
+  const { orderId } = await seedOpenOrder(owner);
+  const m = en.orders.moves;
+
+  await signIn(page, owner);
+  await page.goto(`/orders/${orderId}/purchase`);
+  await page.getByRole("button", { name: f.sameAsPlanned }).click();
+  await page.locator(`#purchase-qty-${orderId}`).fill("1");
+  await page.getByRole("button", { name: f.save }).click();
+  await expect(page).toHaveURL(new RegExp(`/orders/${orderId}$`));
+
+  await page.getByRole("link", { name: p.tabs.purchases }).click();
+  await expect(page).toHaveURL(new RegExp(`/orders/${orderId}\\?tab=purchases$`));
+  await expect(page.locator("[data-purchase-record]")).toHaveCount(1);
+  await expect(page.locator('[data-fact="received"] dd')).toHaveText(/^1 of 2/);
+  await expect(page.locator('[data-fact="progress"] [data-progress]')).toHaveText(
+    en.orders.progress.OPEN,
+  );
+  expect(await scrollsSideways(page)).toBe(false);
+
+  // Finish order asks for one reason, then sets Done short with it.
+  await page.locator('[data-order-bar] [data-move="FINISH_ORDER"]').click();
+  const dialog = page.getByRole("alertdialog");
+  const confirm = dialog.getByRole("button", { name: m.button.FINISH_ORDER, exact: true });
+  await expect(confirm).toBeDisabled();
+  await dialog.locator("textarea[data-reason]").fill("The shop had only one");
+  await confirm.click();
+  await expect(page.locator('[data-fact="progress"] [data-progress]')).toHaveText(
+    en.orders.progress.DONE_SHORT,
+  );
+  await expect(page.locator("[data-finish-reason]")).toContainText("The shop had only one");
+  await expect(page.locator("[data-record-purchase]")).toHaveCount(0);
+
+  // Reopen buying: Open again, and Record purchase is back.
+  await page.locator('[data-order-bar] [data-move="REOPEN_BUYING"]').click();
+  await page
+    .getByRole("alertdialog")
+    .getByRole("button", { name: m.button.REOPEN_BUYING, exact: true })
+    .click();
+  await expect(page.locator('[data-fact="progress"] [data-progress]')).toHaveText(
+    en.orders.progress.OPEN,
+  );
+  await expect(page.locator("[data-record-purchase]")).toHaveCount(1);
+});
