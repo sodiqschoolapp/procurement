@@ -12,9 +12,12 @@ import { db } from "@/server/db/client";
 import { MIGRATIONS_FOLDER, applyMigrations } from "../../../../scripts/apply-migrations.mjs";
 import { insertPasswordUser } from "../../auth/password-user.mjs";
 import { insertProduct, insertSubtypes, priceSetter } from "../../../../tests/helpers/catalog";
+import { insertBranch } from "../../../../tests/helpers/branches";
 import { refusalOf } from "../../../../tests/helpers/database-error";
 import { inventedUser } from "../../../../tests/helpers/invented";
+import { insertPurchase } from "../../../../tests/helpers/purchases";
 import { createTestDatabase, dropTestDatabase } from "../../../../tests/helpers/test-database";
+import { insertUser } from "../../../../tests/helpers/users";
 
 // The constraints of migration 0014_price_history (developer-rules.md rule 5: "Database tests that
 // try the forbidden write directly"; rule 7; D39: every refused branch reached by plain SQL with
@@ -37,12 +40,29 @@ type Row = {
   clientKey?: string | null;
 };
 
+let purchase: Promise<string> | undefined;
+
+/** A real purchase record: a PURCHASE row names one since 3.2 (its foreign key). */
+function aPurchase(): Promise<string> {
+  purchase ??= (async () => {
+    const branchId = (await insertBranch()).id;
+    return (await insertPurchase(branchId, (await insertUser("HEAD")).id)).id;
+  })();
+  return purchase;
+}
+
 async function insertRow(row: Row) {
   const setBy = row.setBy ?? (await priceSetter());
+  const purchaseId =
+    row.source === "HEAD"
+      ? (row.purchaseId ?? null)
+      : row.purchaseId === undefined
+        ? await aPurchase()
+        : row.purchaseId;
   return db.execute<{ id: string }>(sql`insert into price_history
       (variant_id, price, source, note, set_by, purchase_id, client_key, created_at)
     values (${row.variantId}, ${row.price ?? "1000"}, ${row.source ?? "PURCHASE"},
-      ${row.note ?? null}, ${setBy}, ${row.source === "HEAD" ? (row.purchaseId ?? null) : row.purchaseId === undefined ? randomUUID() : row.purchaseId},
+      ${row.note ?? null}, ${setBy}, ${purchaseId},
       ${row.clientKey ?? null}, ${AT})
     returning id`);
 }
@@ -94,7 +114,7 @@ describe("price_history: columns (14-data-model.md, price_history; developer-rul
           variantId: defaultVariantId,
           source: "HEAD",
           price: "1000",
-          purchaseId: randomUUID(),
+          purchaseId: await aPurchase(),
         }),
       ),
     ).toMatchObject(refused);
@@ -104,7 +124,11 @@ describe("price_history: columns (14-data-model.md, price_history; developer-rul
       ),
     ).toMatchObject(refused);
     // Beside them: a PURCHASE row with its purchase and a HEAD row of the current price pass.
-    await insertRow({ variantId: defaultVariantId, source: "PURCHASE", purchaseId: randomUUID() });
+    await insertRow({
+      variantId: defaultVariantId,
+      source: "PURCHASE",
+      purchaseId: await aPurchase(),
+    });
     await insertRow({ variantId: defaultVariantId, source: "HEAD", price: "1000" });
   });
 

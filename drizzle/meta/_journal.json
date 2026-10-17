@@ -169,6 +169,13 @@
       "when": 1792202238249,
       "tag": "0023_stock_ledger",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1792205002622,
+      "tag": "0024_purchases",
+      "breakpoints": true
     }
   ]
 }

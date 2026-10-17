@@ -3,6 +3,7 @@ import {
   type AnyPgColumn,
   bigint,
   check,
+  foreignKey,
   index,
   numeric,
   pgEnum,
@@ -16,6 +17,7 @@ import { MOVEMENT_TYPES } from "@/domain/stock";
 
 import { productVariants } from "./catalogs";
 import { branches } from "./organisation";
+import { purchases } from "./purchasing";
 import { users } from "./users";
 
 // The "Warehouse" group of docs/spec/14-data-model.md. Task 2.4 makes `stock_balances` empty, so
@@ -74,7 +76,7 @@ export const stockMovements = pgTable(
     qtyDelta: quantity("qty_delta").notNull(),
     unitCost: som("unit_cost").notNull(),
     balanceAfter: quantity("balance_after").notNull(),
-    // Their foreign keys and indexes come with purchases (3.2) and document lines (5.1).
+    // The key of `purchase_id` is below (3.2); that of `document_line_id` comes with 5.1.
     purchaseId: uuid("purchase_id"),
     documentLineId: uuid("document_line_id"),
     reversesMovementId: uuid("reverses_movement_id").references(
@@ -102,5 +104,13 @@ export const stockMovements = pgTable(
     index("stock_movements_variant_id_idx").on(table.variantId),
     index("stock_movements_created_by_idx").on(table.createdBy),
     index("stock_movements_reverses_movement_id_idx").on(table.reversesMovementId),
+    // A purchase's receipt or reversal moves the subtype bought in the trip's branch (07, What
+    // saving a record does, 2; plan of 3.2, decided item 2, Look first).
+    foreignKey({
+      name: "stock_movements_purchase_fk",
+      columns: [table.purchaseId, table.branchId, table.variantId],
+      foreignColumns: [purchases.id, purchases.branchId, purchases.variantId],
+    }),
+    index("stock_movements_purchase_id_idx").on(table.purchaseId),
   ],
 );
