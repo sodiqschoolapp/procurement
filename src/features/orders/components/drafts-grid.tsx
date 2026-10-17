@@ -11,6 +11,7 @@ import {
   submitDraftsAction,
 } from "@/app/(app)/orders/actions";
 import { newClientKey } from "@/components/client-key";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { toast } from "@/components/toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -91,6 +92,9 @@ export function DraftsGrid({
   const [applying, setApplying] = useState(false);
   const [adding, setAdding] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  // The Submit or Submit again the dialog asks about, with the ids it shows the count of and
+  // sends: the count shown is the count sent (11 rule 6; plan of 2.7b, decided item 4).
+  const [asking, setAsking] = useState<{ ids: readonly string[]; again: boolean } | null>(null);
   const [submitMarks, setSubmitMarks] = useState<ReadonlyMap<string, Record<string, string>>>(
     new Map(),
   );
@@ -287,12 +291,12 @@ export function DraftsGrid({
    * 05 Drafts 5: ticked sent-back orders are submitted again the same way (plan of 2.11, decided
    * item 9). Pending saves land first, so the versions sent are the rows' own. A refusal marks the
    * exact cells of the exact orders, lists them on top and moves to the first one. Never retried
-   * automatically (progress 2.6, "For 2.7").
+   * automatically (progress 2.6, "For 2.7"). It runs only from the confirmation (11 rule 6; plan
+   * of 2.7b), with the ids the dialog was opened for.
    */
-  async function submit(again: boolean) {
-    if (submitting || ticked.size === 0) return;
+  async function submit(ids: readonly string[], again: boolean) {
+    if (submitting || ids.length === 0) return;
     setSubmitting(true);
-    const ids = rows.filter((row) => ticked.has(row.id)).map((row) => row.id);
     const held = ids.map((id) => queues.current.get(id)!);
     const released = new Set<number>();
     const release = (at: number, version?: number) => {
@@ -312,6 +316,7 @@ export function DraftsGrid({
       const submitted = again ? null : await submitDraftsAction(input);
       const result = submitted ?? (await submitAgainOrdersAction(input));
       answered = true;
+      setAsking(null);
       if (result.ok) {
         if (submitted?.ok) {
           const numbers = submitted.data.orders.flatMap((order) =>
@@ -383,6 +388,7 @@ export function DraftsGrid({
       if (answered) submitKey.current = null;
       held.forEach((_, at) => release(at));
       setSubmitting(false);
+      setAsking(null);
       refresh();
     }
   }
@@ -479,7 +485,9 @@ export function DraftsGrid({
                   variant="secondary"
                   size="sm"
                   pending={submitting}
-                  onClick={() => void submit(canSubmitAgain)}
+                  onClick={() =>
+                    setAsking({ ids: tickedRows.map((row) => row.id), again: canSubmitAgain })
+                  }
                 >
                   {t(canSubmitAgain ? "submit.againButton" : "submit.button", {
                     count: ticked.size,
@@ -572,6 +580,26 @@ export function DraftsGrid({
             onStartOver={refresh}
           />
         )}
+
+        <ConfirmDialog
+          open={asking !== null}
+          onOpenChange={(open) => !open && setAsking(null)}
+          pending={submitting}
+          text={
+            asking?.again
+              ? {
+                  title: t("moves.title.SUBMIT_AGAIN", { count: asking.ids.length }),
+                  result: t("moves.result.SUBMIT_AGAIN", { count: asking.ids.length }),
+                  confirm: t("moves.button.SUBMIT_AGAIN"),
+                }
+              : {
+                  title: t("submit.confirmTitle", { count: asking?.ids.length ?? 0 }),
+                  result: t("submit.confirmResult", { count: asking?.ids.length ?? 0 }),
+                  confirm: t("submit.confirm"),
+                }
+          }
+          onConfirm={() => asking && void submit(asking.ids, asking.again)}
+        />
 
         <TickedTotals
           drafts={tickedRows.map((row) => ({

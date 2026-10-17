@@ -990,7 +990,10 @@
         "not_ready": "This order cannot be submitted yet."
       },
       "failedLine": "{name} — {problem}",
-      "againButton": "Submit again ({count})"
+      "againButton": "Submit again ({count})",
+      "confirmTitle": "{count, plural, one {Submit # order?} other {Submit # orders?}}",
+      "confirmResult": "{count, plural, one {It gets its number and goes for approval. After that it is edited only if it is taken back or sent back.} other {Each gets its own number and goes for approval. After that they are edited only if they are taken back or sent back.}}",
+      "confirm": "Submit"
     },
     "list": {
       "title": "Order list",
