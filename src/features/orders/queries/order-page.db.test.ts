@@ -31,6 +31,8 @@ import {
   insertDepartment,
   insertExtraCostType,
   insertOrder,
+  insertOrderExtra,
+  setOrderStatus,
 } from "../../../../tests/helpers/orders";
 import { insertUser } from "../../../../tests/helpers/users";
 import { getOrderPage } from "./order-page";
@@ -760,6 +762,44 @@ describe("the Purchases tab (11 Order page layout 3; 07 Purchase record and Orde
       status: "PENDING_FINANCE",
     });
     const page = (await getOrderPage(manager.id, order.id))!;
-    expect(page).toMatchObject({ purchases: [], actual: null, received: null, buying: [] });
+    expect(page).toMatchObject({
+      purchases: [],
+      actual: null,
+      received: null,
+      buying: [],
+      colours: null,
+    });
+  });
+
+  it("the three colours of the Cheaper case: Number green, Price orange, Total orange Left 50 000 (08 Worked example; plan of 3.8)", async () => {
+    const branch = await insertBranch();
+    const manager = await insertUser("MANAGER", { branches: [branch.id] });
+    // 100 notebooks × 5 000 plus 20 000 delivery: the extra written while Sent back, where the
+    // plan may change (`order_extras_plan_frozen`), then Open with its buying Done.
+    const order = await insertOrder({
+      branchId: branch.id,
+      ownerId: manager.id,
+      status: "RETURNED",
+      plannedQty: "100",
+      plannedPrice: 5_000n,
+    });
+    await insertOrderExtra(order.id, 20_000n);
+    await setOrderStatus(order.id, "PURCHASING");
+    await db.update(orders).set({ progress: "DONE" }).where(eq(orders.id, order.id));
+    const bought = await record({ ...order, branchId: branch.id }, manager.id, {
+      qty: "100",
+      unitPrice: "4500",
+    });
+    const type = await insertExtraCostType();
+    await db.execute(sql`
+      insert into purchase_extras (purchase_id, extra_cost_type_id, amount, payment_type, created_at)
+      values (${bought.id}, ${type.id}, 20000, 'CASH', ${later()})`);
+
+    const page = (await getOrderPage(manager.id, order.id))!;
+    expect(page.colours).toEqual({
+      number: { colour: "green", difference: "0" },
+      price: { colour: "amber", difference: 50_000n },
+      total: { colour: "amber", difference: 50_000n },
+    });
   });
 });

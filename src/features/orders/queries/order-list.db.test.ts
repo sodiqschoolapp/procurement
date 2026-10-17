@@ -646,3 +646,127 @@ describe("the filter choices: only of the branches the user sees (03 rule 1; dec
     expect(departments).not.toContain(other.department.id);
   });
 });
+
+describe("the three colours of orders, group rows and ticked orders (08 The three colours; plan of 3.8)", () => {
+  /** One record of `qty` at `unitPrice` for the order, in a trip of its own. */
+  async function bought(
+    made: { id: string; branchId: string; variantId: string; ownerId: string },
+    qty: string,
+    unitPrice: string,
+  ) {
+    const tripId = (await insertTrip(made.branchId, made.ownerId)).rows[0]!.id;
+    await insertPurchaseRow({
+      tripId,
+      orderId: made.id,
+      branchId: made.branchId,
+      variantId: made.variantId,
+      createdBy: made.ownerId,
+      qty,
+      unitPrice,
+    });
+  }
+
+  const plan = { plannedQty: "100.000", plannedPrice: 5_000n } as const;
+
+  it("red beats orange, orange beats green on a group row; the ticked orders give the same; Total from the summed difference", async () => {
+    const { branch, manager, product, base } = await scene();
+    const exact = await order({ ...base, ...plan, status: "PURCHASING", progress: "DONE" });
+    await bought(exact, "100", "5000");
+    const fewer = await order({
+      ...base,
+      ...plan,
+      status: "PURCHASING",
+      progress: "DONE_SHORT",
+      finishReason: "The shop ran out",
+    });
+    await bought(fewer, "90", "5000");
+    const over = await order({ ...base, ...plan, status: "PURCHASING", progress: "DONE" });
+    await bought(over, "110", "5000");
+    // A Sent back order of the same subtype: its own group, no colours, and left out of a ticked
+    // set's sum (decided item 5).
+    const sentBack = await order({ ...base, ...plan, status: "RETURNED" });
+    // Another branch's Open order of the same product, bought dearer (D40): not in this list.
+    const elsewhere = await scene();
+    const theirs = await order({
+      ...elsewhere.base,
+      variantId: product.defaultVariantId,
+      ...plan,
+      status: "PURCHASING",
+      progress: "DONE",
+    });
+    await bought(theirs, "100", "9000");
+
+    const { groups } = await listOrderGroups(manager.id, filtered({ branch: branch.id }));
+    const open = groups.find((group) => group.status === "PURCHASING")!;
+    expect(open.orders.map((each) => each.id).sort()).toEqual([exact.id, fewer.id, over.id].sort());
+    expect(open.colours).toEqual({
+      number: { colour: "red", orders: 1 },
+      price: { colour: "green", orders: 3 },
+      total: { colour: "green", difference: 0n },
+    });
+    const byId = new Map(open.orders.map((each) => [each.id, each.colours]));
+    expect(byId.get(exact.id)?.number).toEqual({ colour: "green", difference: "0" });
+    expect(byId.get(fewer.id)).toEqual({
+      number: { colour: "amber", difference: "10" },
+      price: { colour: "green", difference: 0n },
+      total: { colour: "amber", difference: 50_000n },
+    });
+    expect(byId.get(over.id)?.total).toEqual({ colour: "red", difference: -50_000n });
+    // Without a filter the branch wall alone keeps the other branch's dearer order out (03 rule 1).
+    const unfiltered = (await listOrderGroups(manager.id, NO_FILTERS)).groups.find(
+      (group) => group.key === open.key,
+    )!;
+    expect(unfiltered.orders.map((each) => each.id).sort()).toEqual(
+      [exact.id, fewer.id, over.id].sort(),
+    );
+    expect(unfiltered.colours).toEqual(open.colours);
+    expect(
+      (await listOrderGroups(manager.id, NO_FILTERS)).groups.flatMap((group) =>
+        group.orders.map((each) => each.id),
+      ),
+    ).not.toContain(theirs.id);
+    const returned = groups.find((group) => group.status === "RETURNED")!;
+    expect(returned.colours).toBeNull();
+    expect(returned.orders[0]!.colours).toBeNull();
+
+    const ticked = await tickedSummary(manager.id, [exact.id, fewer.id, over.id, sentBack.id]);
+    expect(ticked.colours).toEqual(open.colours);
+    // Without the red order, orange wins over green.
+    expect((await tickedSummary(manager.id, [exact.id, fewer.id])).colours).toEqual({
+      number: { colour: "amber", orders: 1 },
+      price: { colour: "green", orders: 2 },
+      total: { colour: "amber", difference: 50_000n },
+    });
+    // Another branch's order is missing, never counted (03 rule 1).
+    const withTheirs = await tickedSummary(manager.id, [exact.id, theirs.id]);
+    expect(withTheirs.missing).toEqual([theirs.id]);
+    expect(withTheirs.colours).toEqual({
+      number: { colour: "green", orders: 1 },
+      price: { colour: "green", orders: 1 },
+      total: { colour: "green", difference: 0n },
+    });
+    // Only a Sent back order: no colours.
+    expect((await tickedSummary(manager.id, [sentBack.id])).colours).toBeNull();
+  });
+
+  it("an order still buying makes the group's Total grey; Number and Price come from the orders that have one (decided item 4)", async () => {
+    const { branch, manager, base } = await scene();
+    const done = await order({ ...base, ...plan, status: "PURCHASING", progress: "DONE" });
+    await bought(done, "100", "4500");
+    const buying = await order({ ...base, ...plan, status: "PURCHASING" });
+    await bought(buying, "40", "5200");
+
+    const { groups } = await listOrderGroups(manager.id, filtered({ branch: branch.id }));
+    expect(groups[0]!.colours).toEqual({
+      number: { colour: "green", orders: 1 },
+      price: { colour: "red", orders: 1 },
+      total: { colour: "grey" },
+    });
+    const still = groups[0]!.orders.find((each) => each.id === buying.id)!;
+    expect(still.colours).toEqual({
+      number: { colour: "grey" },
+      price: { colour: "red", difference: -8_000n },
+      total: { colour: "grey" },
+    });
+  });
+});

@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { type ReactNode, useState } from "react";
 
+import { ColourLabels } from "@/components/status-label";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/components/utils";
 import { PAYMENT_TYPES } from "@/domain/payment-types";
@@ -81,6 +82,8 @@ export function ListActionBar({
           </Button>
         </div>
       </div>
+      {/* 08 The three colours of the ticked orders, from Open on (plan of 3.8). */}
+      {summary?.colours && <ColourLabels colours={summary.colours} />}
       {summary && (
         <div className="grid gap-x-12 gap-y-4 sm:grid-cols-2">
           <dl className="flex flex-col gap-1 text-[15px] leading-[22px]">

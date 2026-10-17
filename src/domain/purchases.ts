@@ -41,7 +41,7 @@ export type PurchaseRecord = {
  * The records that count: not cancelled (08: "the order's purchase records that are not
  * cancelled"). Every record is checked first, so a broken row is never hidden by its cancel.
  */
-function live(records: readonly PurchaseRecord[]): PurchaseRecord[] {
+export function liveRecords(records: readonly PurchaseRecord[]): PurchaseRecord[] {
   for (const record of records) {
     quantityOf(record.qty);
     if (typeof record.unitPrice !== "bigint" || record.unitPrice < 0n) {
@@ -61,14 +61,14 @@ function receivedOf(text: string): InstanceType<typeof Exact> {
 /** 08 Actual quantity: the sum of the live records' quantities, whatever subtype each bought. */
 export function actualQuantity(records: readonly PurchaseRecord[]): string {
   let sum = new Exact(0);
-  for (const record of live(records)) sum = sum.plus(quantityOf(record.qty));
+  for (const record of liveRecords(records)) sum = sum.plus(quantityOf(record.qty));
   return sum.toFixed();
 }
 
 /** 08 Actual goods: the sum of round(quantity × price), half up, each record on its own. */
 export function actualGoods(records: readonly PurchaseRecord[]): bigint {
   let sum = 0n;
-  for (const record of live(records)) {
+  for (const record of liveRecords(records)) {
     const goods = quantityOf(record.qty).times(record.unitPrice.toString());
     sum += BigInt(goods.toDecimalPlaces(0, Exact.ROUND_HALF_UP).toFixed(0));
   }
@@ -77,7 +77,7 @@ export function actualGoods(records: readonly PurchaseRecord[]): bigint {
 
 /** 08 Actual extra: the sum of the live records' extra costs. */
 export function actualExtra(records: readonly PurchaseRecord[]): bigint {
-  return live(records).reduce((sum, record) => sum + extrasSum(record.extras), 0n);
+  return liveRecords(records).reduce((sum, record) => sum + extrasSum(record.extras), 0n);
 }
 
 /** 08 Actual total: actual goods + actual extra. */

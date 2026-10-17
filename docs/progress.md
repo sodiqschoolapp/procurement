@@ -1045,4 +1045,20 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - An action that reads child rows named by the browser filters them by the locked orders inside its SQL before locking them (`lockRecords()`).
 - `tsc` can keep stale message-file types in `tsconfig.tsbuildinfo`: delete it when a new key is reported missing.
 
-The next task is 3.8.
+## 3.8 The three colours (17.10.2026, pull request #78)
+
+**Built**
+- `src/domain/colours.ts`: `orderColours()` and `setColours()` (Number, Price, Total; grey while buying is Open; the worst colour among the orders that have one; Total from the summed difference, grey while any order is buying). `liveRecords()` exported from `purchases.ts`.
+- `ColourLabel` gains the set form (`orders`: a count) and Price orange at 0; `ColourLabels` shows the three from `WireColours`; `colourLabel.orders` in the three languages.
+- `listOrderGroups()`: `colours` per order and per group; `tickedSummary()`: `colours`; `getOrderPage()`: `colours`. Wire: `wireColours()` in `list-wire.ts`.
+- The labels on group rows, order rows, the list's action bar and the order page.
+
+**Left out, and the task that brings it**
+- Exact match and Close: 4.4. Settlement: 4.5. An actual-totals line under the download: no task asks for it (named in the report).
+
+**What the next sessions must know**
+- For 4.4: exact match starts from `orderColours()` (Number and Price green); add the other conditions beside it, not a second colour rule.
+- For 4.5 and 6.x: a screen that shows colours calls `orderColours()`/`setColours()` with the order's status, progress, plan (extras included) and records, and sends them through `wireColours()`.
+- A set's Number and Price have `orders`, an order's have `difference`; `ColourLabels` takes both.
+
+The next task is 3.9.

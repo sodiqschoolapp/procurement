@@ -1511,6 +1511,24 @@ Choices made during the build:
 - `lockRecords()` reads and locks only records on the sent orders behind no wall; for a trip, the trip's live records on other orders are counted without a lock, and any makes the trip `invalid_input` (permission review, Should fix 1 and 2). Another branch's record or trip is `not_found`, tested for both actions (Must fix 1; a check line in `.claude/rules/tests.md`).
 - Cancel trip has no ticked-wall test (`describeTickedWall`): a trip cannot hold orders of two branches (`purchases_trip_branch_fk`), and the cross-branch case is its own test.
 
+### 3.8 The three colours (17.10.2026)
+
+The plan's decisions as the plan review of 17.10.2026 confirmed them (corrections 1 and 2 applied), and those of the build. The Look first items come first.
+
+1. **Look first** (progress). "While an order's buying is still Open" is `progress = 'OPEN'`: Number and Total are grey then, coloured at Done, Done short and Not bought. A reopened Done order above its plan is grey again until finished (08 The three colours, bullet 1; 07 Order progress).
+2. **Look first** (money label). A set's Number and Price carry the count of orders with the worst colour ("More 2 orders"), on every group row and ticked set; Total carries the summed difference. Proposed `/spec-change` of 08 The three colours, third bullet, appended: "On a group row or ticked orders, Number and Price carry the count of orders with that colour; Total carries the summed difference."
+3. **Look first** (money formula). Price amount = round(planned price × actual quantity) − actual goods; green (every live record at the planned price) shows 0; orange can show 0 when prices cancel out. This replaces the 0.10a build choice "Price follows Total's sign rule … above 0 is Cheaper": the component now accepts Price orange at 0. Proposed `/spec-change` of 08, Price row: "Price amount = round(planned price × actual quantity) − actual goods; green shows 0; orange can show 0 when prices cancel out."
+4. **Look first** (money label in a set). Number and Price of a set take the worst colour among the orders that have one, grey only when none has; Total of a set is grey while any order's progress is Open.
+5. **Look first** (money label). Colours exist from Open on (`BUYING_STATUSES`); orders before Open are left out of a set and its summed difference; a set with none has no labels. Not bought: Number orange (planned quantity), Price grey, Total orange (planned total).
+6. Orange is drawn amber (0.10a decision 7; 11 rule 11).
+7. The labels sit under the total on a group row, under the price on an order row, at the top of the action bar's totals and under the totals on the order page.
+
+Choices made during the build:
+
+- `liveRecords()` of `src/domain/purchases.ts` is exported (was the private `live()`), so "not cancelled" stays written once.
+- The list reads its members' records with `recordsOfOrders()` (one parameter per id, as `extrasOf()` already does for the same ids) instead of a `recordsOfListed()` subquery: a page holds at most 25 groups, and the same ids already go to the extras.
+- The wire form of the colours (`WireColours`, money as decimal text) is shared by the list and the order page (`wireColours()` in `src/features/orders/list-wire.ts`).
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

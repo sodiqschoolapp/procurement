@@ -1,6 +1,13 @@
 import { type SQL, and, asc, count, desc, eq, gte, inArray, lt, ne, or, sql } from "drizzle-orm";
 import * as z from "zod";
 
+import {
+  type ColourOrder,
+  type OrderColours,
+  type SetColours,
+  orderColours,
+  setColours,
+} from "@/domain/colours";
 import { businessDate, businessDayStart, nextBusinessDate } from "@/domain/business-date";
 import { addsDraftsIn, inStock, plainQuantity } from "@/domain/drafts";
 import {
@@ -73,6 +80,8 @@ export type ListOrder = {
   priceHint: bigint | null;
   /** "Overdue", by isOverdue() (edge case "The needed-by date passes"; plan of 2.13). */
   overdue: boolean;
+  /** Number, Price and Total by orderColours(), from Open on; null before (plan of 3.8). */
+  colours: OrderColours | null;
 };
 
 export type OrderGroup = {
@@ -87,6 +96,8 @@ export type OrderGroup = {
   unitShortName: string;
   status: ListStatus;
   summary: GroupSummary;
+  /** The three colours of its orders by setColours(), from Open on; null before (plan of 3.8). */
+  colours: SetColours | null;
   orders: ListOrder[];
 };
 
@@ -321,12 +332,28 @@ async function readGroups(
     db,
     members.map((member) => member.id),
   );
+  // The members' purchase records, for the three colours (plan of 3.8).
+  const records = await recordsOfOrders(
+    db,
+    members.map((member) => member.id),
+  );
   const threshold = (await readSettings(db)).price_hint_percent;
   const today = businessDate(now());
 
-  const byGroup = new Map<string, { order: ListOrder; extras: bigint[] }[]>();
+  const byGroup = new Map<string, { order: ListOrder; extras: bigint[]; colour: ColourOrder }[]>();
   for (const member of members) {
     // Outside DRAFT the plan is complete (`orders_submitted_plan_check`).
+    const colour: ColourOrder = {
+      status: member.status,
+      progress: member.progress,
+      plan: {
+        quantity: member.quantity!,
+        price: member.price!,
+        extras: extras.get(member.id) ?? [],
+        paymentType: member.paymentType,
+      },
+      records: records.get(member.id) ?? [],
+    };
     const order: ListOrder = {
       id: member.id,
       number: member.number!,
@@ -344,9 +371,13 @@ async function readGroups(
       priority: member.priority,
       priceHint: priceHintPercent(member.price, member.referencePrice, threshold),
       overdue: isOverdue(member.status, member.progress, member.neededBy, today),
+      colours: orderColours(colour),
     };
     const key = groupKey(member.branchId, member.variantId!, member.status);
-    byGroup.set(key, [...(byGroup.get(key) ?? []), { order, extras: extras.get(member.id) ?? [] }]);
+    byGroup.set(key, [
+      ...(byGroup.get(key) ?? []),
+      { order, extras: extras.get(member.id) ?? [], colour },
+    ]);
   }
 
   const groups = heads.map((head): OrderGroup => {
@@ -373,6 +404,7 @@ async function readGroups(
           overdue: order.overdue,
         })),
       ),
+      colours: setColours(held.map(({ colour }) => colour)),
       orders: held.map(({ order }) => order),
     };
   });
@@ -410,6 +442,8 @@ export type TickedSummary = {
   /** Ticked ids the list no longer holds for this user: unknown, unseen or a Draft now. */
   missing: string[];
   totals: OrdersTotals;
+  /** The three colours of the ticked orders by setColours(); null before Open (plan of 3.8). */
+  colours: SetColours | null;
   /** The moves the state machine allows on every ticked order (06 rule 8; decided item 7). */
   actions: OrderAction[];
   /**
@@ -452,6 +486,7 @@ export async function tickedSummary(
     count: 0,
     missing: [],
     totals: ordersTotals([]),
+    colours: null,
     actions: [],
     canCopy: false,
     recordTrip: false,
@@ -499,6 +534,19 @@ export async function tickedSummary(
           price: row.price!,
           extras: extras.get(row.id) ?? [],
           paymentType: row.paymentType,
+        })),
+      ),
+      colours: setColours(
+        found.map((row) => ({
+          status: row.status,
+          progress: row.progress,
+          plan: {
+            quantity: row.quantity!,
+            price: row.price!,
+            extras: extras.get(row.id) ?? [],
+            paymentType: row.paymentType,
+          },
+          records: records.get(row.id) ?? [],
         })),
       ),
       actions: allowedActions(actor, found.map(orderState)),
