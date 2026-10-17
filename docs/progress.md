@@ -1305,4 +1305,20 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - For 6.x: a stock row's value is `stockValue()`; never multiply in SQL.
 - `quantity` comes back as stored ("2.500"); `format.quantity` drops the zeros.
 
-The next task is 5.3.
+## 5.3 Item card (18.10.2026, pull request #93)
+
+**Built**
+- `getItemCard()` (`src/features/warehouse/queries/item-card.ts`): `data.view` on the asked branch ("Not found" for another), the header, count and one page of movements newest first by `seq` in one `readSnapshot()`; the running balance is the stored `balance_after`; a purchase's order behind the draft wall in the SQL (the row stays, without the number).
+- `/warehouse/items/[id]?branch=` with `loading.tsx`; texts under `warehouse.item` (a label per movement type); Stock on hand's product names link to it. `ITEM_CARD_PAGE_SIZE` (50) in `src/domain/stock.ts`.
+
+**Left out, and the task that brings it**
+- The document number as a link: 5.12 (its "From 5.3" line). The minimum on the card: 5.10.
+
+**What the next sessions must know**
+- For 5.4 to 7.4: a document's movement shows its number on the card through `stock_movements.document_line_id`; a movement without line or purchase shows "—".
+- For 5.8: the "Direct entry" label exists (`warehouse.item.types.DIRECT_ENTRY`); S15 reads it from the card.
+- For 5.10: the minimum goes into the card's header beside "On hand".
+- For 5.12: link the card's document number (`item-card.ts` already returns `documentNumber`; add the id).
+- An e2e that needs a receipt writes the purchase, the movement and the balance straight into the tables (`tests/e2e/item-card.spec.ts`).
+
+The next task is 5.4.

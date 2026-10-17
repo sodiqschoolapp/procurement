@@ -1829,6 +1829,26 @@ Choices made during the build:
 - `stockCategoryChoices` has no branch, so its permission test is a test per role and an inactive user, not the own/other-branch matrix.
 - The by-hand Done-when check ("the stock from phase 3 purchases is listed") is also a database test: `recordPurchase` receives 40 at 5 000, and the branch's Principal and the Head see 40 worth 200 000.
 
+### 5.3 Item card (18.10.2026)
+
+The plan's decisions as the plan review of 18.10.2026 confirmed them (corrections 1 to 3 applied), and those of the build. The Look first items come first.
+
+1. **Look first** (stock reading). The running balance is the stored `stock_movements.balance_after`, written by `postMovement()` under the lock from the domain's arithmetic; it is never summed again in the query or the screen. A database test checks it equals the sum of every earlier change, and the newest equals the quantity on hand.
+2. **Look first** (part of a Build line handed on). A document's number is plain text on the card; the link to the document moves to 5.12, which gains a "From 5.3" line: 5.12 decides the address (a document page or the documents list filtered to that number). 11 Screens has no address for one document and no document is posted before 5.4. Proposed `/spec-change` of `11-screens-and-ux.md` (Screens): a row "Warehouse document | `/warehouse/documents/[id]` | All", or of 09 Stock screens: Item card: "a link to the source document (its row in Documents) or order".
+3. Newest first by `seq` descending; the moment shown is the movement's `created_at` in Tashkent time, not a document's `doc_date`.
+4. `[id]` is the subtype; the branch is `branch=` in the address, else the top bar's choice read as `/warehouse/stock` reads it, else the user's only branch, else "Not found". A visible branch that never held the subtype shows the card at 0 with "No movements yet". Another branch, an unknown id or a service: "Not found". A deactivated subtype's card opens.
+5. A purchase's movement (its receipt, or the reversal of a cancelled purchase) links to `/orders/<id>?tab=purchases`.
+6. 50 movements per page (`ITEM_CARD_PAGE_SIZE` in `src/domain/stock.ts`).
+7. A row shows moment, movement type, source, change and balance; who made it is left out.
+8. No value and no photo on the card (09 names value for Stock on hand and reports only; plan of 5.2, items 1 and 2).
+9. The draft wall on the order joined through a purchase hides only the order's number and link, never the row, so the running balance stays whole.
+10. Every movement type has its label now, "Direct entry" included (the card half of 5.8's Build line; 5.8 keeps S15). A unit test checks every type of `MOVEMENT_TYPES` has a label in uz, ru and en.
+
+Choices made during the build:
+
+- The draft-wall test turns a purchased order into a DRAFT by a direct update: the schema allows it, so the test stays (plan review, decision 9).
+- The movement's change is shown signed: "+3" in, "-3" out (the formatter's minus).
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

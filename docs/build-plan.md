@@ -411,7 +411,7 @@ Stock screens and every document that moves stock inside one branch.
   - **Build:** `/warehouse/stock`: product, subtype, photo, quantity, measure, value; search and category filter (the minimum column and the "Low stock only" switch arrive in 5.10); services are never listed; the branch wall.
   - **Done when:** Database test: a Principal sees only their branch's stock. By hand: the stock from phase 3 purchases is listed. The stock part of S7 is green.
 
-- [ ] **5.3 Item card**
+- [x] **5.3 Item card**
   - **Read:** `09-warehouse.md` (Stock screens: Item card); `11-screens-and-ux.md` (Screens: Item card).
   - **Build:** `/warehouse/items/[id]`: every movement of one subtype in one branch, newest first, with the running balance and a link to the source document or order.
   - **Done when:** A database test checks the order and the running balance. By hand: the card of a purchased item lists the receipt with a working link.
