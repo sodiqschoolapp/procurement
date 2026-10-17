@@ -866,4 +866,23 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - PDF text in tests: `pdfPages()` of `tests/helpers/pdf-text.ts` (pdfjs-dist, dev only).
 - `next start` locally needs `BETTER_AUTH_SECRET` to sign in; a throwaway value in the shell is enough for a local check.
 
-The next task is 2.15.
+## 2.15 Orders: branch wall and matrix (17.10.2026, pull request #64)
+
+**Built**
+- `describeTickedWall()` (`tests/helpers/ticked-wall.ts`): every order action on ticked orders, each role, an own and another branch's order ticked together; the answer each expects from `permission-matrix-expected.ts`; refused whole with nothing saved (orders, actions, events, revisions, draft adds, notices, number counters), or both saved. Used in `src/app/(app)/orders/branch-wall.db.test.ts`, with the ticked-id reads (`tickedSummaryAction`, `newestMoves`, `submittedNumbers`).
+- A repeat of `runOrdersAction` puts the sent ids through the branch and draft walls (`wallSent()` in `src/server/order-action.ts`): a known key with another branch's id was answered before.
+- `src/app/(app)/not-found.tsx`: "Not found" for every signed-in `notFound()`, `EmptyState`.
+- S7 for orders: `tests/e2e/branch-wall.spec.ts` (Not found at an EB address; the page's Approve request forged by `page.route`). E2E users `e2e_wall_phone`/`_desktop`, Managers of EA and EB.
+- Seed: seven orders (`scripts/seed-orders.mjs`), found again by fixed client keys; the seed test checks totals, numbers, dates, moves and copies against the domain.
+
+**Left out, and the task that brings it**
+- S7's stock part: 5.2. S7's report part: 6.8.
+
+**What the next sessions must know**
+- For 3.x, 4.x, 5.x: put every action on ticked orders through `describeTickedWall()`; pass `saved` when the action does not raise the ticked orders' version.
+- For 5.2 and 6.8: `tests/e2e/branch-wall.spec.ts` holds S7; add the stock and report parts there, the forged request through `page.route` as for Approve.
+- A move is refused behind the wall by `guardOrders()` and by the state machine's `judge()`: a mutation of one alone leaves the move cells green.
+- The seed's orders are data in `SEED_ORDERS`; an order whose product, subtype or department is not found as listed is left out.
+- `notifications.spec.ts` (its users are Heads, and every parallel Submit or Approve notifies all Heads) and `catalog.spec.ts` each failed once in the full local e2e run and passed alone; not fixed here.
+
+The next task is 3.1.

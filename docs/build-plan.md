@@ -264,7 +264,7 @@ From a draft on the branch's order list to fully approved orders, ticked and act
   - **Build:** The filtered order list downloads as Excel (ExcelJS) and as a plain PDF (@react-pdf/renderer, A4 landscape, fonts for Uzbek and Russian built in, the filters used and who downloaded it and when on every page, no signature lines), one row per order with the planned columns and who approved each step and when, in the language of the downloader, no product photos. Every number comes from the domain functions. The actual columns arrive in 3.5.
   - **Done when:** S17 as a test that reads the Excel file and the text of the PDF; a product name in Cyrillic is readable in the PDF.
 
-- [ ] **2.15 Orders: branch wall and matrix**
+- [x] **2.15 Orders: branch wall and matrix**
   - **Read:** `03-roles-and-permissions.md` (Permission matrix; Rules: 1, 8); `15-quality-and-acceptance.md` (Test layers: Database; S7).
   - **Build:** Every order action and query is in the permission-matrix test, for one order and for ticked orders that mix branches; S7 is a Playwright test; whatever the matrix finds is fixed. The seed gains a few orders in different approval statuses, two of them in one group row.
   - **Done when:** The matrix covers each order action × each role × own branch and other branch, alone and mixed, and is green; S7 is green for orders; its stock and report parts are added in 5.2 and 6.8.

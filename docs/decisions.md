@@ -1292,6 +1292,25 @@ Choices made during the build:
 - The Russian title of the files is "Заказы", the word of `orders.title`: "Заявки" is the word for requests, which `tests/notification-texts.test.ts` forbids in this flow.
 - A step not finished is an empty Excel cell, not an empty text.
 
+### 2.15 Orders: branch wall and matrix (17.10.2026)
+
+The plan's decisions as the plan review of 17.10.2026 confirmed them (corrections 1 to 4 applied), and those of the build. The Look first items come first.
+
+1. **Look first** (branch wall). The reads that take ticked ids (`tickedSummary`, `newestMoves`, `submittedNumbers`) leave another branch's order out as they leave out an unknown id; they do not refuse the read. The actions refuse the whole action (03 rules 1 and 8).
+2. **Look first** (branch wall). Every mixed case has an allowed counterpart, saved together: the Head over two branches where the Head acts (step 1, Cancel, Copy as new, and the owner's moves on his own orders), Finance of both branches at step 3, a Manager of both branches for the owner's moves, two own-branch orders for the Principal (03 rule 2). Where both orders are "allow" for a role, the mixed call itself is that case (review correction 2).
+3. **Look first** (S7). The forged action is the page's own Approve request, rewritten by Playwright's `page.route` (one of two ticked EA ids changed to an EB order's id): the Next.js 16 action body is JSON text and stays valid (review correction 3).
+4. **Look first** (S7, CLAUDE.md rule 13). A translated `not-found.tsx` under `src/app/(app)/`, the design system's full-page error built with `EmptyState`, for every `notFound()` of a signed-in page.
+5. **Look first** (money and numbers). The seed's totals are data; its numbers and needed-by dates are made in its SQL; `tests/seed.db.test.ts` checks each against `orderTotal()`, `orderNumber()`/`businessYear()` and `nextBusinessDate()`, every event against `ORDER_MOVES`, and each revision copy against `writeSnapshots()` (review correction 4). Fixed client keys make a re-run in any year add nothing. The seed prints no new line; `ci.yml` is unchanged. `scripts/seed-orders.mjs` is in the Dockerfile (review correction 1).
+6. **Look first** (permission matrix; found by this task). A repeat of an action of `runOrdersAction` (a known client key) answered the first result whatever ids were sent, also another branch's: now the sent ids pass the branch wall (`data.view`) and the draft wall first, or the repeat is "Not found" (`.claude/rules/server-actions.md`, last line; permission review, Should fix 2). Only seeing is asked, because the orders' status has moved since.
+7. The e2e setup gains one Manager per project of EA and EB (`e2e_wall_phone`, `e2e_wall_desktop`) instead of the plan's one Manager of EB: each project's orders stay apart under the owner filter, as in the other specs.
+8. Actions and queries on one record or on a filter have no mixed case; their alone matrix stays.
+
+Choices made during the build:
+
+- An order of the seed whose product, subtype or department is not found as listed is left out and the seed goes on: the existing test of a hand-made catalog has a "Ruchka" without subtypes.
+- Seed history: one hour between moves, the last an hour before the seed moment, so the events sort by time.
+- The seed's actors are not checked against the state machine at run time (permission review, Should fix 3): the seed creates its users with the roles and branches the moves need; a seed user changed by hand later is not a path the seed guards. Not fixed.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.
