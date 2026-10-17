@@ -632,6 +632,26 @@ describe("the Purchases tab (11 Order page layout 3; 07 Purchase record and Orde
     expect(seen.buying).toEqual([]);
   });
 
+  it("buying actions per reader: the owner and the Head; not a colleague, Finance, or the owner with RECORD_PURCHASES off (03 Record purchases)", async () => {
+    const branch = await insertBranch();
+    const owner = await insertUser("MANAGER", { branches: [branch.id] });
+    const colleague = await insertUser("MANAGER", { branches: [branch.id] });
+    const finance = await insertUser("FINANCE", { branches: [branch.id] });
+    const head = await insertUser("HEAD");
+    const order = await insertOrder({
+      branchId: branch.id,
+      ownerId: owner.id,
+      status: "PURCHASING",
+    });
+    const buying = async (userId: string) => (await getOrderPage(userId, order.id))!.buying;
+    expect(await buying(owner.id)).toEqual(["MARK_NOT_BOUGHT"]);
+    expect(await buying(head.id)).toEqual(["MARK_NOT_BOUGHT"]);
+    expect(await buying(colleague.id)).toEqual([]);
+    expect(await buying(finance.id)).toEqual([]);
+    await setManagerRight(owner.id, "RECORD_PURCHASES", false);
+    expect(await buying(owner.id)).toEqual([]);
+  });
+
   it("before Open there is no tab data: no records, no actual numbers, no buying actions", async () => {
     const branch = await insertBranch();
     const manager = await insertUser("MANAGER", { branches: [branch.id] });

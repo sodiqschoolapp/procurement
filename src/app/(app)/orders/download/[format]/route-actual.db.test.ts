@@ -25,6 +25,10 @@ import { GET } from "./route";
 // decided items 4 and 6, and review corrections 3 and 4). A file of its own, so its PDF is the
 // first one its test process renders (see the report of 3.5 on letters lost after a Russian PDF).
 
+async function orderBranch(orderId: string) {
+  return (await orderRow(orderId))?.branchId;
+}
+
 async function download(format: string, query: string, cookie?: { name: string; value: string }) {
   return GET(downloadRequest(`/orders/download/${format}?${query}`, cookie), {
     params: Promise.resolve({ format }),
@@ -142,5 +146,24 @@ describe("the actual columns of the download (build plan 3.5, Done when; 05 Down
     // "50 000 so'm" on its own, never the end of a larger amount such as 450 000.
     expect(line).toMatch(/(?<!\d)(?<!\d )50 000 so'm/);
     expect(line).toContain("4 500 so'm");
+  });
+
+  it("another branch's actual numbers are in no row of the file (03 rule 1; permission review of 3.5)", async () => {
+    const mine = await cheaper();
+    const theirs = await cheaper();
+    const principal = await insertUser("PRINCIPAL", {
+      branches: [(await orderBranch(mine.notebooks.id))!],
+      locale: "en",
+    });
+    for (const reader of [mine.manager, principal]) {
+      const rows = rowsByTitle(
+        await workbookOf(await download("excel", "", await signInAs(reader))),
+      );
+      const numbers = rows.map((row) => row.Number);
+      for (const id of [theirs.notebooks.id, theirs.nothing.id, theirs.waiting.id]) {
+        expect(numbers).not.toContain(theirs.numbers.get(id));
+      }
+      expect(numbers).toContain(mine.numbers.get(mine.notebooks.id));
+    }
   });
 });
