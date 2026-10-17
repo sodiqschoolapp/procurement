@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 
 import type { OrderAction } from "@/domain/order-moves";
@@ -19,9 +19,18 @@ import {
 } from "@/server/db/schema";
 
 import { insertBranch, setManagerRight } from "../../../../tests/helpers/branches";
-import { insertProduct, priceSetter } from "../../../../tests/helpers/catalog";
+import {
+  insertCompany,
+  insertFileRow,
+  insertProduct,
+  priceSetter,
+} from "../../../../tests/helpers/catalog";
 import { describePermissionMatrix } from "../../../../tests/helpers/permission-matrix";
-import { insertDepartment, insertOrder } from "../../../../tests/helpers/orders";
+import {
+  insertDepartment,
+  insertExtraCostType,
+  insertOrder,
+} from "../../../../tests/helpers/orders";
 import { insertUser } from "../../../../tests/helpers/users";
 import { getOrderPage } from "./order-page";
 
@@ -512,5 +521,126 @@ describe("What changed on a re-submitted order (06 rule 5)", () => {
     await copy(1, 1, { quantity: "100.000" }, "2026-10-16T09:00:00Z");
     await copy(1, 2, { quantity: "90.000" }, "2026-10-16T10:00:00Z");
     expect((await getOrderPage(head.id, order.id))!.changes).toBe(null);
+  });
+});
+
+describe("the Purchases tab (11 Order page layout 3; 07 Purchase record and Order progress; plan of 3.5)", () => {
+  /** A record in its own trip, written straight into the tables, at a moment after the last. */
+  async function record(
+    order: { id: string; branchId: string; variantId: string },
+    userId: string,
+    fields: { qty: string; unitPrice: string; supplierId?: string; cancelled?: boolean },
+  ) {
+    const at = later();
+    const [trip] = (
+      await db.execute<{ id: string }>(sql`
+        insert into purchase_trips (client_key, branch_id, purchased_on, supplier_id, payment_type,
+          created_by, created_at)
+        values (${randomUUID()}, ${order.branchId}, '2026-10-15', ${fields.supplierId ?? null},
+          'CARD', ${userId}, ${at})
+        returning id`)
+    ).rows;
+    const [made] = (
+      await db.execute<{ id: string }>(sql`
+        insert into purchases (trip_id, order_id, branch_id, variant_id, qty, unit_price, comment,
+          created_by, created_at)
+        values (${trip!.id}, ${order.id}, ${order.branchId}, ${order.variantId}, ${fields.qty},
+          ${fields.unitPrice}, 'Invented comment', ${userId}, ${at})
+        returning id`)
+    ).rows;
+    if (fields.cancelled) {
+      await db.execute(sql`
+        update purchases set is_cancelled = true, cancel_reason = 'A typo', cancelled_by = ${userId},
+          cancelled_at = ${at} where id = ${made!.id}`);
+    }
+    return { tripId: trip!.id, id: made!.id };
+  }
+
+  it("every record newest first, with its trip's date, supplier, payment type and receipts; a cancelled one marked and left out of the numbers", async () => {
+    const branch = await insertBranch();
+    const manager = await insertUser("MANAGER", { branches: [branch.id] });
+    const principal = await insertUser("PRINCIPAL", { branches: [branch.id] });
+    const order = await insertOrder({
+      branchId: branch.id,
+      ownerId: manager.id,
+      status: "PURCHASING",
+      plannedQty: "100",
+      plannedPrice: 5_000n,
+    });
+    // Another order's record of the same branch beside it (D40).
+    const other = await insertOrder({
+      branchId: branch.id,
+      ownerId: manager.id,
+      status: "PURCHASING",
+    });
+    await record({ ...other, branchId: branch.id }, manager.id, { qty: "7", unitPrice: "1" });
+
+    const supplier = await insertCompany();
+    const first = await record({ ...order, branchId: branch.id }, manager.id, {
+      qty: "60",
+      unitPrice: "4500",
+      supplierId: supplier.id,
+    });
+    const file = await insertFileRow(manager.id, "application/pdf");
+    await db.execute(sql`
+      insert into trip_files (trip_id, file_id, created_at) values (${first.tripId}, ${file.id}, ${later()})`);
+    const type = await insertExtraCostType();
+    await db.execute(sql`
+      insert into purchase_extras (purchase_id, extra_cost_type_id, amount, payment_type, created_at)
+      values (${first.id}, ${type.id}, 20000, 'CASH', ${later()})`);
+    const typo = await record({ ...order, branchId: branch.id }, manager.id, {
+      qty: "40",
+      unitPrice: "9999",
+      cancelled: true,
+    });
+    const second = await record({ ...order, branchId: branch.id }, manager.id, {
+      qty: "30",
+      unitPrice: "5000",
+    });
+
+    const page = (await getOrderPage(manager.id, order.id))!;
+    expect(page.purchases.map((each) => each.id)).toEqual([second.id, typo.id, first.id]);
+    expect(page.purchases[2]).toMatchObject({
+      purchasedOn: "2026-10-15",
+      qty: "60",
+      unitPrice: 4_500n,
+      goods: 270_000n,
+      paymentType: "CARD",
+      supplierName: supplier.name,
+      comment: "Invented comment",
+      recordedBy: manager.fullName,
+      receipts: [{ fileId: file.id, isImage: false }],
+      extras: [{ typeName: expect.any(String), amount: 20_000n, paymentType: "CASH" }],
+      isCancelled: false,
+    });
+    expect(page.purchases[1]).toMatchObject({ isCancelled: true, cancelReason: "A typo" });
+    // 08: the cancelled 40 counts for nothing; 60 × 4 500 + 20 000 + 30 × 5 000.
+    expect(page.received).toBe("90");
+    expect(page.actual).toEqual({
+      qty: "90",
+      goods: 420_000n,
+      extras: 20_000n,
+      total: 440_000n,
+      difference: 500_000n - 440_000n,
+    });
+    expect(page.overPlan).toBe(false);
+    expect(page.progress).toBe("OPEN");
+    expect(page.buying).toEqual(["FINISH_ORDER"]);
+    // The Principal sees the tab and acts on none of it (03 Permission matrix, Record purchases).
+    const seen = (await getOrderPage(principal.id, order.id))!;
+    expect(seen.purchases).toHaveLength(3);
+    expect(seen.buying).toEqual([]);
+  });
+
+  it("before Open there is no tab data: no records, no actual numbers, no buying actions", async () => {
+    const branch = await insertBranch();
+    const manager = await insertUser("MANAGER", { branches: [branch.id] });
+    const order = await insertOrder({
+      branchId: branch.id,
+      ownerId: manager.id,
+      status: "PENDING_FINANCE",
+    });
+    const page = (await getOrderPage(manager.id, order.id))!;
+    expect(page).toMatchObject({ purchases: [], actual: null, received: null, buying: [] });
   });
 });
