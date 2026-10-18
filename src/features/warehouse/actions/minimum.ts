@@ -98,7 +98,10 @@ export const setStockMinimum = defineAction({
       .select({ minQty: stockMinimums.minQty })
       .from(stockMinimums)
       .where(
-        and(eq(stockMinimums.branchId, typed.branchId), eq(stockMinimums.variantId, typed.variantId)),
+        and(
+          eq(stockMinimums.branchId, typed.branchId),
+          eq(stockMinimums.variantId, typed.variantId),
+        ),
       )
       .for("update");
     return {
