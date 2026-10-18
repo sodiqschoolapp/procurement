@@ -5,7 +5,9 @@ import {
   LIST_STATUSES,
   groupPriceHint,
   groupSummary,
+  REQUESTED_STATUSES,
   pinsUrgent,
+  requestedBySubtype,
   sumQuantities,
   tickFits,
 } from "./order-list";
@@ -146,5 +148,51 @@ describe("LIST_STATUSES (decided item 1, Look first)", () => {
     expect(LIST_STATUSES).not.toContain("DRAFT");
     expect(LIST_STATUSES[0]).toBe("PENDING_HEAD");
     expect(LIST_STATUSES).toHaveLength(9);
+  });
+});
+
+describe("requestedBySubtype (05 Group rows 5: 'Tata pens: 30 requested'; plan of 6.1, decided item 1)", () => {
+  const PENS = "pens";
+  const PAPER = "paper";
+
+  it("counts every stage from submit up to, not including, Closed", () => {
+    expect([...REQUESTED_STATUSES]).toEqual([
+      "PENDING_HEAD",
+      "PENDING_PRINCIPAL",
+      "PENDING_FINANCE",
+      "RETURNED",
+      "PURCHASING",
+      "SETTLEMENT",
+    ]);
+  });
+
+  it("sums the review's worked example to 30 and leaves Draft, Closed, Rejected and Cancelled out", () => {
+    const rows = requestedBySubtype([
+      { variantId: PENS, status: "PENDING_HEAD", quantity: "10" },
+      { variantId: PENS, status: "RETURNED", quantity: "5" },
+      { variantId: PENS, status: "PURCHASING", quantity: "10" },
+      { variantId: PENS, status: "SETTLEMENT", quantity: "5" },
+      { variantId: PENS, status: "DRAFT", quantity: "3" },
+      { variantId: PENS, status: "CLOSED", quantity: "20" },
+      { variantId: PENS, status: "REJECTED", quantity: "4" },
+      { variantId: PENS, status: "CANCELLED", quantity: "2" },
+    ]);
+    expect(rows).toEqual([{ variantId: PENS, quantity: "30", count: 4 }]);
+  });
+
+  it("keeps each subtype apart, sums decimals exactly, in the order they first appear", () => {
+    const rows = requestedBySubtype([
+      { variantId: PAPER, status: "PENDING_PRINCIPAL", quantity: "0.1" },
+      { variantId: PENS, status: "PENDING_FINANCE", quantity: "1" },
+      { variantId: PAPER, status: "PURCHASING", quantity: "0.2" },
+    ]);
+    expect(rows).toEqual([
+      { variantId: PAPER, quantity: "0.3", count: 2 },
+      { variantId: PENS, quantity: "1", count: 1 },
+    ]);
+  });
+
+  it("a subtype whose orders are all finished has no line", () => {
+    expect(requestedBySubtype([{ variantId: PENS, status: "CLOSED", quantity: "5" }])).toEqual([]);
   });
 });

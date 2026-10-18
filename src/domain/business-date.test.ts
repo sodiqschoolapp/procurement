@@ -4,6 +4,7 @@ import {
   BUSINESS_TIME_ZONE,
   businessDate,
   businessDayStart,
+  businessMonth,
   businessTime,
   businessYear,
   isBusinessDate,
@@ -124,5 +125,28 @@ describe("the business date after a day: the end of a date filter (plan of 2.8, 
 
   it("refuses a day that does not exist", () => {
     expect(() => nextBusinessDate("2026-02-30")).toThrow();
+  });
+});
+
+describe("businessMonth: 'this month' of the home pages (developer-rules.md rule 10; plan of 6.1, decided item 6)", () => {
+  it("gives the first and the last day of the month that holds the date", () => {
+    expect(businessMonth("2026-10-01")).toEqual({ first: "2026-10-01", last: "2026-10-31" });
+    expect(businessMonth("2026-10-31")).toEqual({ first: "2026-10-01", last: "2026-10-31" });
+    expect(businessMonth("2026-11-15")).toEqual({ first: "2026-11-01", last: "2026-11-30" });
+    expect(businessMonth("2026-12-31")).toEqual({ first: "2026-12-01", last: "2026-12-31" });
+  });
+
+  it("knows February of a leap year", () => {
+    expect(businessMonth("2028-02-10")).toEqual({ first: "2028-02-01", last: "2028-02-29" });
+    expect(businessMonth("2026-02-10")).toEqual({ first: "2026-02-01", last: "2026-02-28" });
+  });
+
+  it("reads the Tashkent day: 31 October 20:30 UTC is already 1 November", () => {
+    const date = businessDate(new Date("2026-10-31T20:30:00Z"));
+    expect(businessMonth(date)).toEqual({ first: "2026-11-01", last: "2026-11-30" });
+  });
+
+  it("refuses a day that does not exist", () => {
+    expect(() => businessMonth("2026-02-30")).toThrow();
   });
 });

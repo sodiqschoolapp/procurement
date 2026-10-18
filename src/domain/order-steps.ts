@@ -3,7 +3,7 @@
 // that says who the order is waiting for (Order page layout 4; 06-approval-workflow.md, Statuses,
 // "Who acts next"). Pure: the caller reads the order's status and events (plan of 2.9).
 
-import type { BusinessDate } from "./business-date";
+import { type BusinessDate, nextBusinessDate } from "./business-date";
 import type { OrderEventType } from "./order-moves";
 import type { RequestStatus } from "./request-status";
 
@@ -149,24 +149,56 @@ export function waitingFor(status: RequestStatus): WaitingFor {
  */
 export function isOverdue(
   status: RequestStatus,
-  progress: "OPEN" | "DONE" | "DONE_SHORT" | "NOT_BOUGHT",
+  progress: OrderProgress,
   neededBy: BusinessDate | null,
   today: BusinessDate,
 ): boolean {
   if (neededBy === null || neededBy >= today) return false;
-  switch (status) {
-    case "PENDING_HEAD":
-    case "PENDING_PRINCIPAL":
-    case "PENDING_FINANCE":
-    case "RETURNED":
-      return true;
-    case "PURCHASING":
-      return progress === "OPEN";
-    case "DRAFT":
-    case "SETTLEMENT":
-    case "CLOSED":
-    case "REJECTED":
-    case "CANCELLED":
-      return false;
-  }
+  return stillDue(status, progress);
+}
+
+type OrderProgress = "OPEN" | "DONE" | "DONE_SHORT" | "NOT_BOUGHT";
+
+/**
+ * The statuses in which an order still waits for its needed-by date: a Waiting step, Sent back, or
+ * Open while its buying is not finished (`progress` OPEN) (plan of 2.13, decided item 8). The SQL
+ * of the order list's `due=soon` filter reads the same lists (plan of 6.1, decided item 2).
+ */
+export const STILL_DUE_STATUSES = [
+  "PENDING_HEAD",
+  "PENDING_PRINCIPAL",
+  "PENDING_FINANCE",
+  "RETURNED",
+] as const satisfies readonly RequestStatus[];
+/** Open counts only while its buying is not finished. */
+export const STILL_DUE_OPEN = { status: "PURCHASING", progress: "OPEN" } as const;
+
+function stillDue(status: RequestStatus, progress: OrderProgress): boolean {
+  if ((STILL_DUE_STATUSES as readonly RequestStatus[]).includes(status)) return true;
+  return status === STILL_DUE_OPEN.status && progress === STILL_DUE_OPEN.progress;
+}
+
+/** How many days ahead an order is "due soon" (plan of 6.1, decided item 2: no setting). */
+export const DUE_SOON_DAYS = 7;
+
+/** The last needed-by date that is "due soon" on `today`: today + 7 days. */
+export function dueSoonUntil(today: BusinessDate): BusinessDate {
+  let date = today;
+  for (let day = 0; day < DUE_SOON_DAYS; day += 1) date = nextBusinessDate(date);
+  return date;
+}
+
+/**
+ * The Manager's home list "Orders due soon" (10-notifications-analytics-reports.md, Home page per
+ * role; plan of 6.1, decided item 2): an order that still waits (as isOverdue() reads it) whose
+ * needed-by is on or before today + 7 days. Overdue ones are in: they are the most due.
+ */
+export function isDueSoon(
+  status: RequestStatus,
+  progress: OrderProgress,
+  neededBy: BusinessDate | null,
+  today: BusinessDate,
+): boolean {
+  if (neededBy === null || neededBy > dueSoonUntil(today)) return false;
+  return stillDue(status, progress);
 }

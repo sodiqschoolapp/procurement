@@ -242,6 +242,25 @@ export function decideList(permission: Permission, actor: Actor): "allow" | "for
 }
 
 /**
+ * Whether the actor may use a branch permission in some branch: for a home page button that leads
+ * to the page where the action starts (plan of 6.1, decided item 3; review of the plan, decision 3,
+ * Look first). An "own requests" grant counts as allowed, since every Manager may act on their own
+ * orders; a switched-off Manager right takes it away. The target page and its action ask
+ * authorize() again; this protects nothing.
+ */
+export function mayInSomeBranch(permission: Permission, actor: Actor): boolean {
+  const rule: PermissionRule = PERMISSIONS[permission];
+  if (rule.scope !== "branch") {
+    throw new Error(`mayInSomeBranch(): the permission ${permission} has no branch.`);
+  }
+  if (rule.roles[actor.role] === "no") return false;
+  if (actor.role === "MANAGER" && rule.right && actor.disabledRights.includes(rule.right)) {
+    return false;
+  }
+  return actor.role === "HEAD" || actor.branchIds.length > 0;
+}
+
+/**
  * Whether a role may use a global permission: for a screen that shows a button only when it works
  * (11-screens-and-ux.md, "only the buttons that work right now"). The server asks authorize()
  * again; this protects nothing.

@@ -122,3 +122,18 @@ export function isBusinessDate(value: unknown): value is BusinessDate {
   const asUtc = new Date(Date.UTC(year, month - 1, day));
   return asUtc.toISOString().slice(0, 10) === value;
 }
+
+/**
+ * The calendar month in Tashkent that holds a business date: its first and last day, inclusive.
+ * For "this month" on the home pages (plan of 6.1, decided item 6); the date comes from `today()`
+ * of the injected clock (developer-rules.md rule 10).
+ */
+export function businessMonth(date: BusinessDate): { first: BusinessDate; last: BusinessDate } {
+  if (!isBusinessDate(date)) {
+    throw new Error(`Refused: "${date}" is not a business date (YYYY-MM-DD, a day that exists).`);
+  }
+  const [year, month] = date.split("-").map(Number) as [number, number];
+  // Day 0 of the next month is the last day of this one.
+  const last = new Date(Date.UTC(year, month, 0)).toISOString().slice(0, 10);
+  return { first: `${date.slice(0, 7)}-01`, last };
+}
