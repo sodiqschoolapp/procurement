@@ -776,3 +776,98 @@ describe("analytics_refresh, the rows of the Warehouse block (build-plan 6.4d)",
     ]);
   });
 });
+
+describe("analytics_refresh, the rows of the Principal's page (build-plan 6.5a)", () => {
+  type OrderRow = {
+    status: string;
+    progress: string;
+    submitted_on: string;
+    needed_by: string;
+    category_id: string;
+    department_id: string;
+    owner_id: string;
+  };
+  async function orderRowOf(orderId: string) {
+    const found = await db.execute<OrderRow>(sql`
+      select status, progress, submitted_on::text as submitted_on, needed_by::text as needed_by,
+             category_id, department_id, owner_id
+      from analytics_orders where order_id = ${orderId}`);
+    return found.rows;
+  }
+
+  it("writes each order that is not Draft with its status, progress, Tashkent first-submit day and needed-by; none for a Draft, a taken-back one included (plan of 6.5a, decided items 2 and 6)", async () => {
+    const scene = await spendingScene();
+    // 20:30 UTC is 01:30 on 2 May in Tashkent.
+    const open = await decided(scene, "PURCHASING", [], {
+      submittedAt: "2031-05-01T20:30:00Z",
+      neededBy: "2031-05-20",
+      progress: "DONE_SHORT",
+    });
+    const waiting = await decided(scene, "PENDING_PRINCIPAL", [], {
+      submittedAt: "2031-05-03T05:00:00Z",
+      neededBy: "2031-05-04",
+    });
+    const takenBack = await decided(scene, "PENDING_HEAD", [], {
+      submittedAt: "2031-05-03T05:00:00Z",
+    });
+    await setOrderStatus(takenBack.id, "DRAFT");
+    await refreshNow();
+    expect(await orderRowOf(open.id)).toEqual([
+      {
+        status: "PURCHASING",
+        progress: "DONE_SHORT",
+        submitted_on: "2031-05-02",
+        needed_by: "2031-05-20",
+        category_id: scene.category.id,
+        department_id: scene.department.id,
+        owner_id: scene.manager.id,
+      },
+    ]);
+    expect((await orderRowOf(waiting.id))[0]).toMatchObject({
+      status: "PENDING_PRINCIPAL",
+      progress: "OPEN",
+      submitted_on: "2031-05-03",
+      needed_by: "2031-05-04",
+    });
+    expect(await orderRowOf(takenBack.id)).toEqual([]);
+
+    // The next run follows the order's status (10 point 5).
+    await setOrderStatus(waiting.id, "PENDING_FINANCE");
+    await refreshNow();
+    expect((await orderRowOf(waiting.id))[0]).toMatchObject({ status: "PENDING_FINANCE" });
+  });
+
+  it("writes the decider of each decided stay, none on an open stay (plan of 6.5a, decided item 3)", async () => {
+    const scene = await spendingScene();
+    const head = await insertUser("HEAD");
+    const principal = await insertUser("PRINCIPAL", { branches: [scene.branch.id] });
+    const order = await decided(scene, "PENDING_HEAD", [
+      { type: "SUBMIT", from: "DRAFT", to: "PENDING_HEAD", at: "2031-05-01T05:00:00Z" },
+      {
+        type: "APPROVE",
+        from: "PENDING_HEAD",
+        to: "PENDING_PRINCIPAL",
+        at: "2031-05-01T06:00:00Z",
+        actorId: head.id,
+      },
+      {
+        type: "SEND_BACK",
+        from: "PENDING_PRINCIPAL",
+        to: "RETURNED",
+        at: "2031-05-01T08:00:00Z",
+        reason: "Narxni tekshiring",
+        actorId: principal.id,
+      },
+      { type: "SUBMIT_AGAIN", from: "RETURNED", to: "PENDING_HEAD", at: "2031-05-01T09:00:00Z" },
+    ]);
+    await refreshNow();
+    const found = await db.execute<{ step: string; decided_by: string | null }>(sql`
+      select step, decided_by from analytics_steps where order_id = ${order.id}
+      order by entered_at`);
+    expect(found.rows).toEqual([
+      { step: "PENDING_HEAD", decided_by: head.id },
+      { step: "PENDING_PRINCIPAL", decided_by: principal.id },
+      { step: "PENDING_HEAD", decided_by: null },
+    ]);
+  });
+});

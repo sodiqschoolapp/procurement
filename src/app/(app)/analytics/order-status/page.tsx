@@ -1,0 +1,194 @@
+import { notFound, redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
+import Link from "next/link";
+
+import { EmptyState } from "@/components/empty-state";
+import { Icon } from "@/components/icon";
+import { RequestStatusLabel } from "@/components/status-label";
+import {
+  RECORDS_PAGE_SIZE,
+  analyticsSearch,
+  parseAnalyticsParams,
+} from "@/features/analytics/period-params";
+import { getStatusOrders } from "@/features/analytics/queries/status-orders";
+import { PeriodRefusedError } from "@/features/analytics/resolve-period";
+import { getFormatters } from "@/i18n/get-formatters";
+import { requireUser } from "@/server/auth/session";
+import { AuthorizationError } from "@/server/authorize";
+
+import { PageLinks } from "../../catalog/page-links";
+
+// /analytics/order-status, the orders behind a number of the Principal's Orders block
+// (10-notifications-analytics-reports.md, Analytics page per role, point 3: "Clicking any bar,
+// slice or number opens the list of orders or records that make it up"; build-plan 6.5a; plan of
+// 6.5a, decided item 6): the orders first submitted in the period at one status now, or the orders
+// coming up or overdue now. Its count is the number clicked; 50 a page; each row opens its order;
+// the list exports to Excel (point 4). The address is the page's, with `key`; one the parser or
+// the query refuses goes back to /analytics, another branch is Not found. A table at 1440 px,
+// cards at 375 px, as /analytics/approvals.
+
+type Raw = Record<string, string | string[] | undefined>;
+
+async function readList(userId: string, raw: Raw) {
+  const params = parseAnalyticsParams(raw);
+  if (!params || params.otherOwners) return "refused" as const;
+  try {
+    const list = await getStatusOrders(
+      userId,
+      params.period,
+      params.filters,
+      params.key,
+      params.page,
+    );
+    return { params, list };
+  } catch (error) {
+    if (error instanceof PeriodRefusedError) return "refused" as const;
+    if (error instanceof AuthorizationError && error.kind === "not_found")
+      return "not_found" as const;
+    throw error;
+  }
+}
+
+export default async function AnalyticsOrderStatusPage({
+  searchParams,
+}: {
+  searchParams: Promise<Raw>;
+}) {
+  const user = await requireUser("/analytics/order-status");
+  const read = await readList(user.id, await searchParams);
+  if (read === "refused") redirect("/analytics");
+  if (read === "not_found") notFound();
+  const { params, list } = read;
+  const t = await getTranslations("analytics");
+  const tStatus = await getTranslations("requestStatus");
+  const tOrders = await getTranslations("orders");
+  const format = await getFormatters();
+  const { key } = list;
+  const what =
+    key.kind === "status"
+      ? t("principal.list.status", {
+          status: tStatus(key.status),
+          first: format.date(list.period.first),
+          last: format.date(list.period.last),
+        })
+      : key.due === "soon"
+        ? t("principal.orders.comingUpLine", { date: format.date(list.today) })
+        : t("principal.orders.overdueLine", { date: format.date(list.today) });
+  const pages = Math.max(1, Math.ceil(list.count / RECORDS_PAGE_SIZE));
+  const href = (page: number) =>
+    `/analytics/order-status?${analyticsSearch(params.period, params.filters, {
+      key: params.key,
+      page,
+    })}`;
+  const excel = `/analytics/download?${analyticsSearch(params.period, params.filters, {
+    key: params.key,
+    block: "statusOrders",
+  })}`;
+  const columns = ["order", "product", "department", "status", "submitted", "neededBy"] as const;
+
+  return (
+    <div className="mx-auto flex max-w-6xl flex-col gap-6">
+      <Link
+        href={`/analytics?${analyticsSearch(params.period, params.filters)}`}
+        className="inline-flex min-h-11 items-center self-start text-sm font-semibold underline-offset-2 hover:underline sm:min-h-0"
+      >
+        {t("approvals.back")}
+      </Link>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-[28px] leading-[34px] font-bold tracking-[-0.01em]">
+            {t("approvals.title")}
+          </h1>
+          <p className="text-[15px] leading-[22px] text-muted-foreground" data-status-what>
+            {what}
+          </p>
+          <p className="text-[15px] leading-[22px] font-semibold tabular-nums" data-status-summary>
+            {t("principal.list.summary", { count: list.count })}
+          </p>
+        </div>
+        <a
+          href={excel}
+          className="inline-flex min-h-11 items-center text-sm font-semibold underline-offset-2 hover:underline"
+          data-excel="statusOrders"
+        >
+          {t("excel")}
+        </a>
+      </div>
+
+      {list.rows.length === 0 ? (
+        <EmptyState title={t("approvals.title")} line={t("principal.list.empty")} />
+      ) : (
+        <section className="rounded-xl bg-card text-card-foreground">
+          <table className="w-full border-collapse text-left text-sm leading-5 max-sm:block">
+            <thead className="bg-muted text-[13px] leading-[18px] font-semibold text-muted-foreground max-sm:hidden">
+              <tr>
+                {columns.map((column) => (
+                  <th key={column} scope="col" className="px-4 py-3">
+                    {t(`principal.columns.${column}`)}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="max-sm:block">
+              {list.rows.map((row) => (
+                <tr
+                  key={row.orderId}
+                  className="border-t max-sm:flex max-sm:flex-col max-sm:gap-1 max-sm:px-4 max-sm:py-3"
+                  data-status-row={row.orderId}
+                >
+                  <td className="px-4 py-3 font-semibold whitespace-nowrap max-sm:p-0">
+                    <Link
+                      href={`/orders/${row.orderId}`}
+                      className="text-primary underline-offset-2 hover:underline"
+                    >
+                      {row.orderNumber}
+                    </Link>
+                  </td>
+                  <td className="px-4 py-3 max-sm:p-0">
+                    {row.subtypeName ? `${row.productName}, ${row.subtypeName}` : row.productName}
+                  </td>
+                  <td className="px-4 py-3 max-sm:p-0 max-sm:text-muted-foreground">
+                    {row.departmentName}
+                  </td>
+                  <td className="px-4 py-3 max-sm:p-0">
+                    <span className="flex flex-wrap items-center gap-2">
+                      <RequestStatusLabel status={row.status} />
+                      {row.overdue && (
+                        <span
+                          data-overdue
+                          className="inline-flex items-center gap-1 text-[13px] font-semibold text-warning"
+                        >
+                          <Icon name="schedule" size={16} />
+                          {tOrders("overdue")}
+                        </span>
+                      )}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap tabular-nums max-sm:p-0 max-sm:text-muted-foreground">
+                    <span className="sm:hidden">
+                      {t("principal.list.dated", {
+                        label: t("principal.columns.submitted"),
+                        date: format.date(row.submittedOn),
+                      })}
+                    </span>
+                    <span className="max-sm:hidden">{format.date(row.submittedOn)}</span>
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap tabular-nums max-sm:p-0">
+                    <span className="sm:hidden">
+                      {t("principal.list.dated", {
+                        label: t("principal.columns.neededBy"),
+                        date: format.date(row.neededBy),
+                      })}
+                    </span>
+                    <span className="max-sm:hidden">{format.date(row.neededBy)}</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      )}
+      {pages > 1 && <PageLinks page={list.page} pages={pages} href={href} />}
+    </div>
+  );
+}

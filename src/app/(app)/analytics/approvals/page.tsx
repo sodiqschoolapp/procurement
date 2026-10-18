@@ -62,26 +62,29 @@ export default async function AnalyticsApprovalsPage({
   const format = await getFormatters();
   const dates = { first: format.date(list.period.first), last: format.date(list.period.last) };
   const { key } = list;
-  const step = key.step ? t(`speed.step.${key.step}`) : t("approvals.allSteps");
+  const step =
+    key.kind !== "mine" && key.step ? t(`speed.step.${key.step}`) : t("approvals.allSteps");
   const what =
-    key.kind === "waiting"
-      ? t("approvals.waiting", {
-          step,
-          group: key.group ? t(`speed.group.${key.group}`) : t("approvals.allAges"),
-        })
-      : key.decision === null
-        ? t("approvals.stays", { step, ...dates })
-        : list.reason !== null
-          ? t("approvals.reason", {
-              decision: t(`approvals.decision.${key.decision}`),
-              reason: list.rows[0]?.reason ?? list.reason,
-              ...dates,
-            })
-          : t("approvals.decided", {
-              step,
-              decision: t(`approvals.decision.${key.decision}`),
-              ...dates,
-            });
+    key.kind === "mine"
+      ? t("approvals.mine", dates)
+      : key.kind === "waiting"
+        ? t("approvals.waiting", {
+            step,
+            group: key.group ? t(`speed.group.${key.group}`) : t("approvals.allAges"),
+          })
+        : key.decision === null
+          ? t("approvals.stays", { step, ...dates })
+          : list.reason !== null
+            ? t("approvals.reason", {
+                decision: t(`approvals.decision.${key.decision}`),
+                reason: list.rows[0]?.reason ?? list.reason,
+                ...dates,
+              })
+            : t("approvals.decided", {
+                step,
+                decision: t(`approvals.decision.${key.decision}`),
+                ...dates,
+              });
   const summary =
     key.kind === "waiting"
       ? t("approvals.summaryWaiting", { count: list.count })
@@ -148,7 +151,7 @@ export default async function AnalyticsApprovalsPage({
                     "branch",
                     "step",
                     "entered",
-                    ...(key.kind === "step" ? (["left", "decision", "reason"] as const) : []),
+                    ...(key.kind !== "waiting" ? (["left", "decision", "reason"] as const) : []),
                   ] as const
                 ).map((column) => (
                   <th key={column} scope="col" className="px-4 py-3">
@@ -187,7 +190,7 @@ export default async function AnalyticsApprovalsPage({
                   <td className="px-4 py-3 whitespace-nowrap tabular-nums max-sm:p-0 max-sm:text-muted-foreground">
                     {at(row.enteredAt)}
                   </td>
-                  {key.kind === "step" && (
+                  {key.kind !== "waiting" && (
                     <>
                       <td className="px-4 py-3 whitespace-nowrap tabular-nums max-sm:p-0 max-sm:text-muted-foreground">
                         {row.leftAt ? at(row.leftAt) : ""}

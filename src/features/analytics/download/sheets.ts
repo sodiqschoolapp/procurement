@@ -14,6 +14,8 @@ import type { ApprovalSpeed } from "../queries/approval-speed";
 import type { CancelledRecords } from "../queries/cancelled-records";
 import type { CashOrders } from "../queries/cash-orders";
 import type { Managers } from "../queries/managers";
+import type { MyApprovals } from "../queries/my-approvals";
+import type { OrderStatuses } from "../queries/order-statuses";
 import type { Prices, SubtypeName } from "../queries/prices";
 import type { AnalyticsFilterOptions } from "../queries/filters";
 import type { HeadSpending } from "../queries/head-spending";
@@ -22,8 +24,10 @@ import type { PlanVsActual, Tally } from "../queries/plan-vs-actual";
 import type { SpendingBlock } from "../queries/spending";
 import { OUTCOME_COLOURS } from "../period-params";
 import type { SpendingRecords } from "../queries/spending-records";
+import type { StatusOrders } from "../queries/status-orders";
 import type { StockLines } from "../queries/stock-lines";
 import type { StockMoves } from "../queries/stock-moves";
+import type { TopProducts } from "../queries/top-products";
 import type { Warehouse } from "../queries/warehouse";
 import type { AnalyticsSheet, CellValue } from "./excel";
 
@@ -884,5 +888,167 @@ export function movesSheet(
       { kind: "signedMoney", value: row.value },
     ]),
     total: { label: t("moves.columns.value"), amount: list.total, signed: true, column: 9 },
+  };
+}
+
+// The sheets of the Principal's page (build-plan 6.5a; plan of 6.5a, decided items 2 to 7): top
+// products, the Orders block and its list, My approvals. The numbers are the query's.
+
+/** The Principal's top 10 products, each with its change. */
+export function productsSheet(
+  block: TopProducts,
+  filters: AnalyticsFilters,
+  options: AnalyticsFilterOptions,
+  locale: Locale,
+): AnalyticsSheet {
+  const { t } = translators(locale);
+  const name = t("sheets.products");
+  return {
+    name,
+    heading: heading(locale, name, block.period, filters, options),
+    columns: [
+      t("principal.columns.product"),
+      t("spending.columns.amount"),
+      t("spending.columns.change"),
+      "%",
+    ],
+    rows: block.products.map((row) => [
+      { kind: "text", value: row.name },
+      { kind: "money", value: row.amount },
+      ...changeCells(row.change),
+    ]),
+    total: { label: t("spending.total"), amount: block.total.amount },
+  };
+}
+
+/** The Orders block: the counts by status with their change, then coming up and overdue now. */
+export function orderStatusesSheet(
+  block: OrderStatuses,
+  filters: AnalyticsFilters,
+  options: AnalyticsFilterOptions,
+  locale: Locale,
+): AnalyticsSheet {
+  const { t, tRoot, format } = translators(locale);
+  const name = t("sheets.orderStatuses");
+  const count = (label: string, value: number, change: Change | null): CellValue[] => [
+    { kind: "text", value: label },
+    { kind: "count", value },
+    { kind: "text", value: change === null ? "" : String(change.difference) },
+    { kind: "text", value: change?.percent == null ? "" : `${change.percent} %` },
+  ];
+  return {
+    name,
+    heading: heading(locale, name, block.period, filters, options),
+    columns: [
+      t("principal.columns.status"),
+      t("principal.columns.orders"),
+      t("spending.columns.change"),
+      "%",
+    ],
+    rows: [
+      ...block.statuses.map((row) =>
+        count(tRoot(`requestStatus.${row.status}`), row.count, row.change),
+      ),
+      count(t("principal.orders.total"), block.total.count, block.total.change),
+      count(
+        t("principal.orders.comingUpOn", { date: format.date(block.today) }),
+        block.comingUp,
+        null,
+      ),
+      count(
+        t("principal.orders.overdueOn", { date: format.date(block.today) }),
+        block.overdue,
+        null,
+      ),
+    ],
+  };
+}
+
+/** The list behind an Orders number, every row. */
+export function statusOrdersSheet(
+  list: StatusOrders,
+  filters: AnalyticsFilters,
+  options: AnalyticsFilterOptions,
+  locale: Locale,
+): AnalyticsSheet {
+  const { t, tRoot, format } = translators(locale);
+  const name = t("sheets.statusOrders");
+  return {
+    name,
+    // A coming-up or overdue list is of now: its line names today (decided item 2).
+    heading:
+      list.key.kind === "status"
+        ? heading(locale, name, list.period, filters, options)
+        : heading(
+            locale,
+            name,
+            null,
+            filters,
+            options,
+            t("principal.orders.nowLine", { date: format.date(list.today) }),
+          ),
+    columns: [
+      t("principal.columns.order"),
+      t("principal.columns.product"),
+      t("principal.columns.department"),
+      t("principal.columns.status"),
+      t("principal.columns.submitted"),
+      t("principal.columns.neededBy"),
+      t("principal.columns.overdue"),
+    ],
+    rows: list.rows.map((row) => [
+      { kind: "text", value: row.orderNumber },
+      {
+        kind: "text",
+        value: row.subtypeName ? `${row.productName}, ${row.subtypeName}` : row.productName,
+      },
+      { kind: "text", value: row.departmentName },
+      { kind: "text", value: tRoot(`requestStatus.${row.status}`) },
+      { kind: "date", value: row.submittedOn },
+      { kind: "date", value: row.neededBy },
+      { kind: "text", value: row.overdue ? t("principal.overdue") : "" },
+    ]),
+  };
+}
+
+/** My approvals: waiting now by age, then my average time to decide in the period. */
+export function myApprovalsSheet(
+  block: MyApprovals,
+  filters: AnalyticsFilters,
+  options: AnalyticsFilterOptions,
+  locale: Locale,
+): AnalyticsSheet {
+  const { t } = translators(locale);
+  const name = t("sheets.myApprovals");
+  return {
+    name,
+    heading: heading(locale, name, block.period, filters, options),
+    columns: [
+      t("principal.columns.what"),
+      t("principal.columns.value"),
+      t("prices.columns.change"),
+    ],
+    rows: [
+      ...[...WAITING_GROUP_KEYS, "all" as const].map((group): CellValue[] => [
+        {
+          kind: "text",
+          value: `${t("principal.approvals.waiting")}: ${
+            group === "all" ? t("speed.columns.all") : t(`speed.group.${group}`)
+          }`,
+        },
+        { kind: "count", value: block.waiting[group] },
+        { kind: "text", value: "" },
+      ]),
+      [
+        { kind: "text", value: t("principal.approvals.myHours") },
+        { kind: "text", value: block.mine.hours ?? "" },
+        { kind: "text", value: block.mine.change ?? "" },
+      ],
+      [
+        { kind: "text", value: t("principal.approvals.myDecisions") },
+        { kind: "count", value: block.mine.count },
+        { kind: "text", value: "" },
+      ],
+    ],
   };
 }

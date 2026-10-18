@@ -137,6 +137,25 @@ describe("parseAnalyticsParams", () => {
     },
   );
 
+  // The Principal's keys and blocks (build-plan 6.5a; 10 Analytics, Principal, points 3 and 4).
+  it.each([
+    [{ kind: "product", product: ID }, "products"],
+    [{ kind: "status", status: "PENDING_PRINCIPAL" }, "statusOrders"],
+    [{ kind: "due", due: "soon" }, "statusOrders"],
+    [{ kind: "due", due: "overdue" }, "orderStatuses"],
+    [{ kind: "mine" }, "myApprovals"],
+  ] as const)("reads the Principal's key %o and a block back", (key, block) => {
+    const text = analyticsSearch(
+      { choice: "this_month", from: null, to: null },
+      NO_ANALYTICS_FILTERS,
+      { key, block },
+    );
+    expect(parseAnalyticsParams(Object.fromEntries(new URLSearchParams(text)))).toMatchObject({
+      key,
+      block,
+    });
+  });
+
   it("treats empty form fields as no filter, `branch=all` as all, and drops dates beside another period", () => {
     expect(
       parseAnalyticsParams({
@@ -185,6 +204,11 @@ describe("parseAnalyticsParams", () => {
     ["an unknown stock view", { key: "stock:everything" }],
     ["a stock key without its view", { key: "stock" }],
     ["an unknown movement kind", { key: "moves:transfer" }],
+    ["a product that is not an id", { key: "product:chalk" }],
+    ["the Draft status (the draft wall; plan of 6.5a)", { key: "status:DRAFT" }],
+    ["an unknown status", { key: "status:WAITING" }],
+    ["an unknown due kind", { key: "due:later" }],
+    ["a mine key with a value", { key: "mine:PENDING_PRINCIPAL" }],
     ["a subtype that is not an id", { variant: "chalk" }],
     ["a reason beside an approve", { key: "step:all:APPROVE", reason: "narxi qimmat" }],
     ["a reason without a decision", { reason: "narxi qimmat" }],

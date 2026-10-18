@@ -13,8 +13,9 @@ function event(
   to: StayEvent["to"],
   time: string,
   reason: string | null = null,
+  actorId = "approver",
 ): StayEvent {
-  return { type, from, to, at: at(time), reason };
+  return { type, from, to, at: at(time), reason, actorId };
 }
 
 const SUBMIT = (time: string) => event("SUBMIT", "DRAFT", "PENDING_HEAD", time);
@@ -102,5 +103,31 @@ describe("approvalStays (06 Allowed moves; plan of 6.4b, decided item 6)", () =>
 
   it("no history, no stay", () => {
     expect(approvalStays([])).toEqual([]);
+  });
+});
+
+describe("approvalStays, the decider (10 Analytics, Principal, My approvals: 'my average time to decide'; 03 rule 3; plan of 6.5a, decided item 3)", () => {
+  it("a decided stay names the actor of the event that ended it, an open stay none", () => {
+    const stays = approvalStays([
+      event("SUBMIT", "DRAFT", "PENDING_HEAD", "09:00", null, "manager"),
+      event("APPROVE", "PENDING_HEAD", "PENDING_PRINCIPAL", "10:00", null, "head"),
+      event("SEND_BACK", "PENDING_PRINCIPAL", "RETURNED", "11:00", "Narx", "principal-1"),
+      event("SUBMIT_AGAIN", "RETURNED", "PENDING_HEAD", "12:00", null, "manager"),
+      event("APPROVE", "PENDING_HEAD", "PENDING_PRINCIPAL", "12:30", null, "head"),
+    ]);
+    expect(stays.map((stay) => [stay.step, stay.decidedBy])).toEqual([
+      ["PENDING_HEAD", "head"],
+      ["PENDING_PRINCIPAL", "principal-1"],
+      ["PENDING_HEAD", "head"],
+      ["PENDING_PRINCIPAL", null],
+    ]);
+  });
+
+  it("a stay entered under one Principal and decided by an acting one is the acting one's", () => {
+    const stays = approvalStays([
+      event("SUBMIT", "DRAFT", "PENDING_PRINCIPAL", "09:00", null, "head"),
+      event("APPROVE", "PENDING_PRINCIPAL", "PENDING_FINANCE", "15:00", null, "acting"),
+    ]);
+    expect(stays[0]).toMatchObject({ step: "PENDING_PRINCIPAL", decidedBy: "acting" });
   });
 });

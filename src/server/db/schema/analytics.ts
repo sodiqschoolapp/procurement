@@ -16,7 +16,7 @@ import {
 } from "drizzle-orm/pg-core";
 
 import { categories, companies, departments, productVariants } from "./catalogs";
-import { orderEventType, orders, paymentType, requestStatus } from "./orders";
+import { orderEventType, orderProgress, orders, paymentType, requestStatus } from "./orders";
 import { branches } from "./organisation";
 import { purchases } from "./purchasing";
 import { users } from "./users";
@@ -168,7 +168,8 @@ export const analyticsOutcomes = pgTable(
 // has none of them: "waiting now" reads its `entered_at` with the clock (review of the plan of
 // 6.4b, Must fix 3). The draft wall reads the order's live status, not a copy here (Must fix 4;
 // stepsWhere()); the category is the planned subtype's, department and owner the order's (decided
-// item 11). Task 6.4b.
+// item 11). Task 6.4b. Task 6.5a adds `decided_by`, the actor of the event that ended a decided
+// stay: the Principal's "my average time to decide" (plan of 6.5a, decided item 3, Look first).
 export const analyticsSteps = pgTable(
   "analytics_steps",
   {
@@ -186,6 +187,7 @@ export const analyticsSteps = pgTable(
     decision: orderEventType("decision"),
     reason: text("reason"),
     reasonKey: text("reason_key"),
+    decidedBy: uuid("decided_by").references(() => users.id),
     categoryId: uuid("category_id")
       .notNull()
       .references(() => categories.id),
@@ -208,8 +210,8 @@ export const analyticsSteps = pgTable(
     ),
     check(
       "analytics_steps_left_check",
-      sql`(${table.leftAt} IS NULL AND ${table.leftOn} IS NULL AND ${table.seconds} IS NULL AND ${table.decision} IS NULL)
-          OR (${table.leftAt} IS NOT NULL AND ${table.leftOn} IS NOT NULL AND ${table.seconds} IS NOT NULL AND ${table.decision} IS NOT NULL
+      sql`(${table.leftAt} IS NULL AND ${table.leftOn} IS NULL AND ${table.seconds} IS NULL AND ${table.decision} IS NULL AND ${table.decidedBy} IS NULL)
+          OR (${table.leftAt} IS NOT NULL AND ${table.leftOn} IS NOT NULL AND ${table.seconds} IS NOT NULL AND ${table.decision} IS NOT NULL AND ${table.decidedBy} IS NOT NULL
               AND ${table.leftAt} >= ${table.enteredAt} AND ${table.seconds} >= 0)`,
     ),
     check(
@@ -227,6 +229,7 @@ export const analyticsSteps = pgTable(
     index("analytics_steps_department_id_idx").on(table.departmentId),
     index("analytics_steps_owner_id_idx").on(table.ownerId),
     index("analytics_steps_decision_reason_key_idx").on(table.decision, table.reasonKey),
+    index("analytics_steps_decided_by_idx").on(table.decidedBy),
   ],
 );
 
@@ -418,5 +421,57 @@ export const analyticsStockMoves = pgTable(
     index("analytics_stock_moves_department_id_idx").on(table.departmentId),
     index("analytics_stock_moves_category_id_idx").on(table.categoryId),
     index("analytics_stock_moves_variant_id_idx").on(table.variantId),
+  ],
+);
+
+// One row per order that is not Draft at the refresh (10 Analytics, Principal, Orders: "By status;
+// needed-by dates coming up; overdue orders"; plan of 6.5a, decided items 2, 4 and 6, Look first):
+// its status and buying progress, the Tashkent date of its first submit (`submitted_at`, kept at a
+// re-submit) and its needed-by date. Every such order is numbered with a complete plan
+// (`orders_submitted_plan_check`). Category the planned subtype's product's, department and owner
+// the order's, as `analytics_outcomes`. The draft wall still reads the order's live status
+// (ordersWhere()). Task 6.5a.
+export const analyticsOrders = pgTable(
+  "analytics_orders",
+  {
+    orderId: uuid("order_id")
+      .primaryKey()
+      .references(() => orders.id),
+    branchId: uuid("branch_id")
+      .notNull()
+      .references(() => branches.id),
+    status: requestStatus("status").notNull(),
+    progress: orderProgress("progress").notNull(),
+    submittedOn: date("submitted_on").notNull(),
+    neededBy: date("needed_by").notNull(),
+    categoryId: uuid("category_id")
+      .notNull()
+      .references(() => categories.id),
+    departmentId: uuid("department_id")
+      .notNull()
+      .references(() => departments.id),
+    ownerId: uuid("owner_id")
+      .notNull()
+      .references(() => users.id),
+  },
+  (table) => [
+    foreignKey({
+      name: "analytics_orders_order_branch_fk",
+      columns: [table.orderId, table.branchId],
+      foreignColumns: [orders.id, orders.branchId],
+    }),
+    // The department is of the order's branch, as orders_department_branch_fk holds it (review of
+    // the plan of 6.5a, correction 3).
+    foreignKey({
+      name: "analytics_orders_department_branch_fk",
+      columns: [table.departmentId, table.branchId],
+      foreignColumns: [departments.id, departments.branchId],
+    }),
+    check("analytics_orders_status_check", sql`${table.status} <> 'DRAFT'`),
+    index("analytics_orders_branch_id_submitted_on_idx").on(table.branchId, table.submittedOn),
+    index("analytics_orders_branch_id_needed_by_idx").on(table.branchId, table.neededBy),
+    index("analytics_orders_category_id_idx").on(table.categoryId),
+    index("analytics_orders_department_id_idx").on(table.departmentId),
+    index("analytics_orders_owner_id_idx").on(table.ownerId),
   ],
 );

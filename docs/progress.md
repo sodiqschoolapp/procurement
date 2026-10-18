@@ -1578,4 +1578,23 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - Tests: `stocked()`, `stockDocument()` and `reverseNow()` in tests/helpers/analytics.ts make stock lines, issues, returns, write-offs and reversals at the clock's moment.
 - A browser run in a cold cloud session times out at sign-in: start the e2e dev server first (as `playwright.config.ts` does) and warm `/login`, or run with `--workers=1`.
 
-The next task is 6.5.
+## 6.5a Analytics: Principal (18.10.2026, pull request #109)
+
+**Built**
+- 6.5 split into 6.5a, 6.5b, 6.5c in `docs/build-plan.md` (phase 6 now 15 tasks, total 106).
+- Migration 0041: `analytics_orders` (each order not Draft: status, progress, Tashkent first-submit day, needed-by) and `analytics_steps.decided_by` (the actor who ended a decided stay), both written by `refreshAnalytics()`.
+- Domain: `isComingUp()` (order-steps.ts); stays carry `decidedBy`.
+- Queries `getTopProducts()`, `getOrderStatuses()`, `getStatusOrders()`, `getMyApprovals()`; `ordersWhere()`; drill keys `product:<id>`, `status:<STATUS>`, `due:soon|overdue`, `mine`; `/analytics/order-status`; download blocks `products`, `orderStatuses`, `statusOrders`, `myApprovals`; the Principal's four blocks on `/analytics` (`principal-blocks.tsx`, `WarehouseView principal`).
+
+**Left out, and the task that brings it**
+- The Manager's My orders, My estimates, My cash: 6.5b. Stock planning, "runs out in" and the suggested quantity (open question 15): 6.5c. Finance: 6.6. Page PDF: 6.7.
+
+**What the next sessions must know**
+- For 6.5b: "by status" of my orders can read `analytics_orders` under `ordersWhere()` with the Manager filter set to the user; "average time to full approval" needs a new number (Submit to Open), not `analytics_steps` sums of one step; "share sent back, with reasons" reads `analytics_steps` decisions as 6.4b does.
+- For 6.5b: My estimates compares the plan's price with `unitPriceOf(Σ goods, Σ qty)` of `analytics_spending` per product; My cash is `analytics_cash` under `cashWhere()`.
+- For 6.5c: "runs out in" reads issues from `analytics_stock_moves` (ISSUE net of RETURN) and stock from `analytics_stock`; the domain function and its unit test are the Done-when.
+- The page picks blocks by `user.role` in `src/app/(app)/analytics/page.tsx`: add a `role === "MANAGER"` tuple as the Principal's.
+- Tests: `decided()` takes `neededBy`, `submittedAt`, `progress`; a `Move` takes `actorId`. A test that runs `setClock()` in `beforeAll` sets it again in `beforeEach`: the setup puts the clock back before each test.
+- Never run two db test commands at once: the second's global setup drops the shared template database and the first fails all over.
+
+The next task is 6.5b.

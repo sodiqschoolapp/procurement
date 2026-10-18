@@ -20,7 +20,8 @@ import { stepsWhere } from "../steps-where";
 // reports.md, Analytics page per role, point 3: "Every number can be traced to its source";
 // build-plan 6.4b; plan of 6.4b, decided item 12). A `step` key lists the stays decided in the
 // period at a step (or every step), of one decision, of one reason key; a `waiting` key the orders
-// waiting now at a step in an age group. The rows are those of `analytics_steps` under the same
+// waiting now at a step in an age group; a `mine` key the stays the user decided in the period,
+// the Principal's "my average time to decide" (plan of 6.5a, decided item 3). The rows are those of `analytics_steps` under the same
 // stepsWhere() as the number, branch and draft walls in the SQL, so their count is the number
 // clicked and their average its hours. Names read live. 50 a page (developer-rules.md rule 12), or
 // every row for the export. Under `data.view`, in one snapshot.
@@ -43,7 +44,7 @@ export type ApprovalRow = {
 
 export type ApprovalOrders = {
   period: Period;
-  key: Extract<DrillKey, { kind: "step" | "waiting" }>;
+  key: Extract<DrillKey, { kind: "step" | "waiting" | "mine" }>;
   reason: string | null;
   count: number;
   /** The average hours of the stays listed (`averageHours()` of their sum and count). */
@@ -90,7 +91,9 @@ async function ordersIn(
   reason: string | null,
   page: number | "all",
 ): Promise<ApprovalOrders> {
-  if (key.kind !== "step" && key.kind !== "waiting") throw new PeriodRefusedError();
+  if (key.kind !== "step" && key.kind !== "waiting" && key.kind !== "mine") {
+    throw new PeriodRefusedError();
+  }
   if (
     reason !== null &&
     (key.kind !== "step" || key.decision === null || key.decision === "APPROVE")
@@ -101,8 +104,10 @@ async function ordersIn(
   const { period } = await resolvePeriod(db, input);
   const where = sql.join(
     [
-      stepsWhere(actor, key.kind === "step" ? period : "open", filters) ?? sql`true`,
-      key.step ? sql`analytics_steps.step = ${key.step}` : sql`true`,
+      stepsWhere(actor, key.kind === "waiting" ? "open" : period, filters) ?? sql`true`,
+      key.kind !== "mine" && key.step ? sql`analytics_steps.step = ${key.step}` : sql`true`,
+      // The stays the user decided: "my average time to decide" (plan of 6.5a, decided item 3).
+      key.kind === "mine" ? sql`analytics_steps.decided_by = ${userId}` : sql`true`,
       key.kind === "step" && key.decision
         ? sql`analytics_steps.decision = ${key.decision}`
         : sql`true`,

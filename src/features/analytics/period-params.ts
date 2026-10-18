@@ -9,6 +9,7 @@ import {
   isMonthKey,
 } from "@/domain/analytics";
 import { type ApprovalStep, STAY_DECISIONS, type StayDecision } from "@/domain/approval-stays";
+import { type ListStatus, isListStatus } from "@/domain/order-list";
 import { STUCK_STATUSES } from "@/domain/order-steps";
 import type { Colour } from "@/domain/colours";
 import { PAYMENT_TYPES, type PaymentType } from "@/domain/payment-types";
@@ -50,7 +51,10 @@ export type PeriodInput = { choice: PeriodChoice; from: string | null; to: strin
  * the orders waiting now at a step in an age group (`null`: every one). Of Warehouse
  * (/analytics/stock and /analytics/moves): the stock lines of a value, the Low lines, the lines
  * with no movement for 90 days, and the movements of use by department and of the written off
- * (plan of 6.4d, decided item 9). A breakdown by branch, department, supplier or Manager drills
+ * (plan of 6.4d, decided item 9). Of the Principal's page (plan of 6.5a): the records of one
+ * product (/analytics/records), the orders first submitted in the period at one status now and the
+ * orders coming up or overdue now (/analytics/order-status), the stays the user decided in the
+ * period (/analytics/approvals). A breakdown by branch, department, supplier or Manager drills
  * down with that filter set.
  */
 export type DrillKey =
@@ -65,7 +69,18 @@ export type DrillKey =
   | { kind: "step"; step: ApprovalStep | null; decision: StayDecision | null }
   | { kind: "waiting"; step: ApprovalStep | null; group: WaitingGroup | null }
   | { kind: "stock"; view: StockView }
-  | { kind: "moves"; move: MoveKind };
+  | { kind: "moves"; move: MoveKind }
+  | { kind: "product"; product: string }
+  | { kind: "status"; status: ListStatus }
+  | { kind: "due"; due: DueKind }
+  | { kind: "mine" };
+
+/** The orders behind the Orders block's numbers of now (plan of 6.5a, decided item 4). */
+export const DUE_KINDS = ["soon", "overdue"] as const;
+export type DueKind = (typeof DUE_KINDS)[number];
+
+/** The products of the Principal's "top 10 products" (10 Analytics, Principal, Spending). */
+export const TOP_PRODUCTS = 10;
 
 /** The stock lines behind a Warehouse number of now (plan of 6.4d, decided items 1, 3 and 7). */
 export const STOCK_VIEWS = ["value", "low", "still"] as const;
@@ -117,6 +132,10 @@ export const EXPORT_BLOCKS = [
   "departmentUse",
   "stock",
   "moves",
+  "products",
+  "orderStatuses",
+  "statusOrders",
+  "myApprovals",
 ] as const;
 export type ExportBlock = (typeof EXPORT_BLOCKS)[number];
 
@@ -144,7 +163,7 @@ const id = z.uuid().transform((value) => value.toLowerCase());
 const date = z.string().refine(isBusinessDate);
 
 const KEY =
-  /^(period|overspent|saved|month:\d{4}-\d{2}|category:[0-9a-fA-F-]{36}|payment:[A-Z]+|colour:[a-z]+|price:[0-9a-fA-F-]{36}(:\d{4}-\d{2}|:nosupplier)?|step:[A-Z_a-z]+(:[A-Z_]+)?|waiting:[A-Z_a-z]+:[A-Za-z]+|stock:[a-z]+|moves:[a-z]+)$/;
+  /^(period|overspent|saved|month:\d{4}-\d{2}|category:[0-9a-fA-F-]{36}|payment:[A-Z]+|colour:[a-z]+|price:[0-9a-fA-F-]{36}(:\d{4}-\d{2}|:nosupplier)?|step:[A-Z_a-z]+(:[A-Z_]+)?|waiting:[A-Z_a-z]+:[A-Za-z]+|stock:[a-z]+|moves:[a-z]+|product:[0-9a-fA-F-]{36}|status:[A-Z_]+|due:[a-z]+|mine)$/;
 
 /** A reason key as reasonKey() writes it: at most the 500 characters of a reason (06 rule 3). */
 const reason = z.string().min(1).max(500);
@@ -177,7 +196,8 @@ const stepOf = (text: string): ApprovalStep | null | undefined =>
   text === "all" ? null : STUCK_STATUSES.find((step) => step === text);
 
 function keyOf(text: string): DrillKey | null {
-  if (text === "period" || text === "overspent" || text === "saved") return { kind: text };
+  if (text === "period" || text === "overspent" || text === "saved" || text === "mine")
+    return { kind: text };
   const [kind, value] = text.split(/:(.*)/s) as [string, string];
   if (kind === "price") {
     const [variantText, rest] = value.split(/:(.*)/s) as [string, string | undefined];
@@ -214,6 +234,15 @@ function keyOf(text: string): DrillKey | null {
   if (kind === "moves") {
     const move = MOVE_KINDS.find((each) => each === value);
     return move ? { kind, move } : null;
+  }
+  if (kind === "product") {
+    const product = id.safeParse(value);
+    return product.success ? { kind, product: product.data } : null;
+  }
+  if (kind === "status") return isListStatus(value) ? { kind, status: value } : null;
+  if (kind === "due") {
+    const due = DUE_KINDS.find((each) => each === value);
+    return due ? { kind, due } : null;
   }
   if (kind === "month") return isMonthKey(value) ? { kind, month: value } : null;
   if (kind === "payment") {
@@ -306,6 +335,7 @@ function keyText(key: DrillKey): string {
     case "period":
     case "overspent":
     case "saved":
+    case "mine":
       return key.kind;
     case "month":
       return `month:${key.month}`;
@@ -325,5 +355,11 @@ function keyText(key: DrillKey): string {
       return `stock:${key.view}`;
     case "moves":
       return `moves:${key.move}`;
+    case "product":
+      return `product:${key.product}`;
+    case "status":
+      return `status:${key.status}`;
+    case "due":
+      return `due:${key.due}`;
   }
 }

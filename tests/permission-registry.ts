@@ -258,6 +258,12 @@ export const QUERIES: Record<string, Permission> = {
   "src/features/analytics/queries/warehouse.ts#getWarehouse": "data.view",
   "src/features/analytics/queries/stock-lines.ts#getStockLines": "data.view",
   "src/features/analytics/queries/stock-moves.ts#getStockMoves": "data.view",
+  // The Principal's blocks of 6.5a: data.view, the walls in spendingWhere(), ordersWhere() and
+  // stepsWhere().
+  "src/features/analytics/queries/top-products.ts#getTopProducts": "data.view",
+  "src/features/analytics/queries/order-statuses.ts#getOrderStatuses": "data.view",
+  "src/features/analytics/queries/status-orders.ts#getStatusOrders": "data.view",
+  "src/features/analytics/queries/my-approvals.ts#getMyApprovals": "data.view",
   // The order list's download, Excel and PDF (plan of 2.14, decided item 4, Look first): data.export
   // with the list's own walls in the SQL (queries/order-download-matrix.db.test.ts).
   "src/features/orders/queries/order-list.ts#orderDownload": "data.export",

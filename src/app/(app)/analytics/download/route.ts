@@ -11,13 +11,17 @@ import {
   headSpendingSheet,
   managersSheet,
   movesSheet,
+  myApprovalsSheet,
+  orderStatusesSheet,
   outcomeOrdersSheet,
   outcomesSheet,
   priceRisesSheet,
   priceSpreadSheet,
   priceTrendSheet,
+  productsSheet,
   recordsSheet,
   spendingSheet,
+  statusOrdersSheet,
   stockSheet,
   tallySheet,
   warehouseSheet,
@@ -30,13 +34,17 @@ import { getCashOrders } from "@/features/analytics/queries/cash-orders";
 import { getAnalyticsFilters } from "@/features/analytics/queries/filters";
 import { getHeadSpending } from "@/features/analytics/queries/head-spending";
 import { getManagers } from "@/features/analytics/queries/managers";
+import { getMyApprovals } from "@/features/analytics/queries/my-approvals";
+import { getOrderStatuses } from "@/features/analytics/queries/order-statuses";
 import { getOutcomeOrders } from "@/features/analytics/queries/outcome-orders";
 import { getPlanVsActual } from "@/features/analytics/queries/plan-vs-actual";
 import { getPrices } from "@/features/analytics/queries/prices";
 import { getSpending } from "@/features/analytics/queries/spending";
 import { getSpendingRecords } from "@/features/analytics/queries/spending-records";
+import { getStatusOrders } from "@/features/analytics/queries/status-orders";
 import { getStockLines } from "@/features/analytics/queries/stock-lines";
 import { getStockMoves } from "@/features/analytics/queries/stock-moves";
+import { getTopProducts } from "@/features/analytics/queries/top-products";
 import { getWarehouse } from "@/features/analytics/queries/warehouse";
 import { PeriodRefusedError } from "@/features/analytics/resolve-period";
 import { LOCALE_COOKIE, chooseLocale } from "@/i18n/locale";
@@ -48,7 +56,7 @@ import { now } from "@/server/clock";
 // categories, records; 6.4a: branches, departments, suppliers, payments, outcomes,
 // outcomeBranches, outcomeManagers, orders; 6.4b: priceTrend, priceRises, priceSpread, stepHours,
 // waiting, decisions, reasons, approvals; 6.4c: managers, cancelled, cash; 6.4d: warehouse,
-// departmentUse, stock, moves)
+// departmentUse, stock, moves; 6.5a: products, orderStatuses, statusOrders, myApprovals)
 // (10-notifications-analytics-reports.md, Analytics page per role, point 4; 03 Permission matrix
 // "Export to Excel, download PDF, print"; build-plan 6.3). A route that writes nothing, as the
 // order list's download (plan of 2.14, decided item 12). The address is the page's, checked by
@@ -217,6 +225,40 @@ export async function GET(request: NextRequest): Promise<Response> {
         if (key.kind !== "moves") return notFound();
         sheet = movesSheet(
           await getStockMoves(user.id, key.move, period, filters, "all"),
+          filters,
+          options,
+          locale,
+        );
+        break;
+      case "products":
+        sheet = productsSheet(
+          await getTopProducts(user.id, period, filters),
+          filters,
+          options,
+          locale,
+        );
+        break;
+      case "orderStatuses":
+        sheet = orderStatusesSheet(
+          await getOrderStatuses(user.id, period, filters),
+          filters,
+          options,
+          locale,
+        );
+        break;
+      case "statusOrders":
+        // The orders of one Orders number (plan of 6.5a, decided item 6); the query refuses
+        // another key.
+        sheet = statusOrdersSheet(
+          await getStatusOrders(user.id, period, filters, key, "all"),
+          filters,
+          options,
+          locale,
+        );
+        break;
+      case "myApprovals":
+        sheet = myApprovalsSheet(
+          await getMyApprovals(user.id, period, filters),
           filters,
           options,
           locale,

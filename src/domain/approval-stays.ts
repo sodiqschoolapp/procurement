@@ -35,6 +35,8 @@ export type StayEvent = {
   at: Date;
   /** The action's reason (06 rule 3), on a send back or a reject. */
   reason: string | null;
+  /** The user who made the move (plan of 6.5a, decided item 3, Look first). */
+  actorId: string;
 };
 
 export type Stay =
@@ -46,6 +48,8 @@ export type Stay =
       seconds: bigint;
       decision: StayDecision;
       reason: string | null;
+      /** The approver who decided: "my average time to decide" (plan of 6.5a, decided item 3). */
+      decidedBy: string;
     }
   | {
       step: ApprovalStep;
@@ -54,6 +58,7 @@ export type Stay =
       seconds: null;
       decision: null;
       reason: null;
+      decidedBy: null;
     };
 
 const isStep = (status: RequestStatus): status is ApprovalStep =>
@@ -105,6 +110,7 @@ export function approvalStays(events: readonly StayEvent[]): Stay[] {
         seconds: BigInt(Math.floor((event.at.getTime() - open.enteredAt.getTime()) / 1000)),
         decision: event.type,
         reason: event.type === "APPROVE" ? null : event.reason,
+        decidedBy: event.actorId,
       });
     }
     open = isStep(event.to) ? { step: event.to, enteredAt: event.at } : null;
@@ -117,6 +123,7 @@ export function approvalStays(events: readonly StayEvent[]): Stay[] {
       seconds: null,
       decision: null,
       reason: null,
+      decidedBy: null,
     });
   }
   return stays;
