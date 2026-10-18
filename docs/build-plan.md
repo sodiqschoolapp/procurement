@@ -432,7 +432,7 @@ Stock screens and every document that moves stock inside one branch.
   - **Build:** "Reverse" with a reason on a posted issue, by its creator or the Head; the opposite movement is written; the original is marked "Reversed". Who may reverse the other document types is answered in open question 19.
   - **Done when:** Database tests: reversing an issue brings the stock back and marks the issue Reversed; a reverse that would push stock below zero is refused; a Manager with `RETURN_REVERSE` off is refused.
 
-- [ ] **5.8 Direct entry by the Head**
+- [x] **5.8 Direct entry by the Head**
   - **Read:** `09-warehouse.md` (Direct entry by the Head); `03-roles-and-permissions.md` (Permission matrix: "Enter stock directly, without an order"); `15-quality-and-acceptance.md` (S15); `edge-cases/warehouse.md` ("The school already has stock on launch day"; "A gift or donation arrives without an order"); `open-questions.md` (question 12).
   - **Build:** The direct-entry form: branch, date, reason (stock we already had; gift or donation; other, with a comment), lines with product, subtype, quantity and a cost prefilled from the reference price; the number `ENT-CHL-26-0004`; an audit row; the item card marks the movement "Direct entry". A product's first direct entry locks its type and measure.
   - **Done when:** S15 as a test.

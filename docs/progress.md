@@ -1374,4 +1374,19 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - Reversing an issue more than the department holds is allowed (review of the plan, correction 1); `departmentReceived()` can then go below 0.
 - "Bekor qilish" is Uzbek for Cancel: never use it for another button in the same dialog.
 
-The next task is 5.8.
+## 5.8 Direct entry by the Head (18.10.2026, pull request #97)
+
+**Built**
+- `enterStockDirectly` (`src/features/warehouse/actions/direct-entry.ts`): `stock.enter_direct` (the Head, any active branch); the return's shape without a department; reason EXISTING_STOCK|GIFT|OTHER, "Other" needs a comment (`directEntryCommentRefusal()`); each line's cost typed as whole so'm, 0 or more; ENT number, DIRECT_ENTRY movements at the line's cost; audit row `direct_entry.create`.
+- Queries `directEntryBranchChoices`, `searchDirectEntryItems` (stock and reference price per subtype); `/warehouse/documents/new?type=DIRECT_ENTRY`; "Direct entry" on Stock on hand for the Head.
+- `reverseAllows()`: DIRECT_ENTRY for the Head only; the reverse action writes `direct_entry.reverse` for it.
+
+**Left out, and the task that brings it**
+- Direct entry from Excel: 5.9. The stock value report's own line for direct entries: 6.x. The document's own page: 5.12.
+
+**What the next sessions must know**
+- For 5.9: call `enterStockDirectly`'s checks (or the action itself per document) so the file follows the same rules; the cost is a typed text read by `parseSomOrZero()`, an empty one is `required`.
+- For 5.11, 7.2 and 7.4: a Head-only type in `reverseAllows()` is one line like DIRECT_ENTRY; test the item card's `canReverse` and `getReversePreview` too (permission review of 5.8).
+- For 5.12: the seed's direct entry can call `enterStockDirectly` as the Head.
+
+The next task is 5.9.
