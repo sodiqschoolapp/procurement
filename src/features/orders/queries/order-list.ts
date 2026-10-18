@@ -27,6 +27,7 @@ import { addsDraftsIn, inStock, plainQuantity } from "@/domain/drafts";
 import {
   type GroupSummary,
   ORDER_LIST_PAGE_SIZE,
+  LIST_STATUSES,
   type ListStatus,
   groupSummary,
   pinsUrgent,
@@ -54,7 +55,12 @@ import {
 import type { PaymentType } from "@/domain/payment-types";
 import { type Actor, decide } from "@/domain/permissions";
 import { moneyRecordAllows, overspendNeedsAck, settlementAllows } from "@/domain/money-ledger";
-import { type BuyingAction, actualQuantity, buyingActions } from "@/domain/purchases";
+import {
+  type BuyingAction,
+  type OrderProgress,
+  actualQuantity,
+  buyingActions,
+} from "@/domain/purchases";
 import { type Executor, authorize, authorizeList, branchFilter } from "@/server/authorize";
 import { now } from "@/server/clock";
 import {
@@ -107,9 +113,15 @@ export type ListOrder = {
   price: bigint;
   paymentType: PaymentType;
   neededBy: string;
+  ownerId: string;
   ownerName: string;
   submittedAt: Date;
   priority: "NORMAL" | "URGENT";
+  /** orderTotal() of the plan, as the ticked orders carry it (08 Planned total). */
+  plannedTotal: bigint;
+  /** 07 Order progress; and the received quantity, actualQuantity() of its live records. */
+  progress: OrderProgress;
+  received: string;
   priceHint: bigint | null;
   /** "Overdue", by isOverdue() (edge case "The needed-by date passes"; plan of 2.13). */
   overdue: boolean;
@@ -252,10 +264,28 @@ const groupKey = (branchId: string, variantId: string, status: string) =>
   `${branchId}:${variantId}:${status}`;
 
 /** Checks the `branch` filter: another branch is "Not found" (03 rule 1; decided item 12). */
-async function authorizeFilters(userId: string, filters: ListFilters): Promise<Actor> {
-  const actor = await authorizeList(userId, "data.view");
-  if (filters.branch) await authorize(userId, "data.view", { branchId: filters.branch });
+async function authorizeFilters(
+  userId: string,
+  filters: ListFilters,
+  executor?: Executor,
+): Promise<Actor> {
+  const actor = await authorizeList(userId, "data.view", executor);
+  if (filters.branch) {
+    await authorize(userId, "data.view", { branchId: filters.branch }, executor);
+  }
   return actor;
+}
+
+/**
+ * Runs `work` in the snapshot the caller holds, or in one of its own: a page that shows the list's
+ * numbers beside others of the same moment reads them all in one snapshot (the home pages; spec
+ * review of the plan of 6.1, Must fix 2).
+ */
+function inSnapshot<T>(
+  executor: Executor | undefined,
+  work: (executor: Executor) => Promise<T>,
+): Promise<T> {
+  return executor ? work(executor) : readSnapshot(work);
 }
 
 /** The extra costs of orders, by order. */
@@ -279,19 +309,82 @@ export async function listOrderGroups(
   userId: string,
   filters: ListFilters = NO_FILTERS,
   page = 1,
+  /** A snapshot the caller holds (inSnapshot()); without it, one of its own. */
+  executor?: Executor,
 ): Promise<OrderGroupPage> {
-  const actor = await authorizeFilters(userId, filters);
   // One snapshot: the count, the heads, their orders and extras of one moment (spec review of
   // 2.8, Must fix 1).
-  return readSnapshot((db) => readGroups(db, actor, filters, page));
+  return inSnapshot(executor, async (db) =>
+    readGroups(db, await authorizeFilters(userId, filters, db), filters, page),
+  );
 }
 
 /**
- * The list's group rows read inside a snapshot the caller holds: for a page that shows them beside
- * other numbers of the same moment (the home pages; spec review of 6.1, Must fix 2). The caller has
- * authorized `actor` for `data.view` and the `branch` filter, as listOrderGroups() does.
+ * How many orders the filter holds and their totals, ordersTotals() of every one of them, not of
+ * one page: the Principal home's "waiting for my approval, with the total amount" (10 Home page
+ * per role; plan of 6.1). The list's walls and filters.
  */
-export async function readGroups(
+export async function orderTotalsOnFilter(
+  userId: string,
+  filters: ListFilters,
+  executor?: Executor,
+): Promise<{ count: number; totals: OrdersTotals }> {
+  return inSnapshot(executor, async (db) => {
+    const actor = await authorizeFilters(userId, filters, db);
+    const found = await db
+      .select({
+        id: orders.id,
+        quantity: orders.plannedQty,
+        price: orders.plannedPrice,
+        paymentType: orders.paymentType,
+      })
+      .from(orders)
+      .where(listWhere(actor, filters));
+    const extras = await extrasOf(
+      db,
+      found.map((row) => row.id),
+    );
+    return {
+      count: found.length,
+      // Outside DRAFT the plan is complete (`orders_submitted_plan_check`).
+      totals: ordersTotals(
+        found.map((row) => ({
+          quantity: row.quantity!,
+          price: row.price!,
+          extras: extras.get(row.id) ?? [],
+          paymentType: row.paymentType,
+        })),
+      ),
+    };
+  });
+}
+
+/**
+ * How many orders of the filter stand in each status, in the table's order, a status without any
+ * left out: "my branch's orders by status" (10 Home page per role; plan of 6.1, decided item 8).
+ * Never Draft: the list's draft wall.
+ */
+export async function countOrdersByStatus(
+  userId: string,
+  filters: ListFilters,
+  executor?: Executor,
+): Promise<{ status: ListStatus; count: number }[]> {
+  return inSnapshot(executor, async (db) => {
+    const actor = await authorizeFilters(userId, filters, db);
+    const rows = await db
+      .select({ status: orders.status, count: count() })
+      .from(orders)
+      .where(listWhere(actor, filters))
+      .groupBy(orders.status);
+    const byStatus = new Map(rows.map((row) => [row.status, row.count]));
+    return LIST_STATUSES.flatMap((status) => {
+      const found = byStatus.get(status) ?? 0;
+      return found > 0 ? [{ status, count: found }] : [];
+    });
+  });
+}
+
+async function readGroups(
   db: Executor,
   actor: Actor,
   filters: ListFilters,
@@ -354,6 +447,7 @@ export async function readGroups(
       price: orders.plannedPrice,
       paymentType: orders.paymentType,
       neededBy: orders.neededBy,
+      ownerId: orders.ownerId,
       ownerName: owner.fullName,
       submittedAt: orders.submittedAt,
       priority: orders.priority,
@@ -418,9 +512,13 @@ export async function readGroups(
       price: member.price!,
       paymentType: member.paymentType,
       neededBy: member.neededBy!,
+      ownerId: member.ownerId,
       ownerName: member.ownerName,
       submittedAt: member.submittedAt!,
       priority: member.priority,
+      plannedTotal: orderTotal(colour.plan),
+      progress: member.progress,
+      received: actualQuantity(colour.records),
       priceHint: priceHintPercent(member.price, member.referencePrice, threshold),
       overdue: isOverdue(member.status, member.progress, member.neededBy, today),
       colours: orderColours(colour),
