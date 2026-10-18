@@ -12,9 +12,10 @@ import {
   type DrillKey,
   NO_ANALYTICS_FILTERS,
   type PeriodInput,
+  TOP_SUPPLIERS,
 } from "../period-params";
 
-import { TOP_SUPPLIERS, getHeadSpending } from "./head-spending";
+import { getHeadSpending } from "./head-spending";
 import { getSpending } from "./spending";
 import { getSpendingRecords } from "./spending-records";
 

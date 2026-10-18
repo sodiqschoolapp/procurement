@@ -9,7 +9,7 @@ import { type AnalyticsFilters, OUTCOME_COLOURS, type PeriodInput } from "../per
 import { authorizeAnalytics } from "../authorize-filters";
 import { outcomesWhere } from "../outcomes-where";
 import { resolvePeriod } from "../resolve-period";
-import { type Counted, counted } from "./spending";
+import { type Counted, counted } from "../counted";
 
 // The Plan vs actual block of the Head's Analytics page (10-notifications-analytics-reports.md,
 // Analytics page per role, Head: "Share of orders ending green, orange and red; total overspent

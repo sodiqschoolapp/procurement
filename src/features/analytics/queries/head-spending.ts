@@ -5,11 +5,11 @@ import { PAYMENT_TYPES, type PaymentType } from "@/domain/payment-types";
 import type { Executor } from "@/server/authorize";
 import { readSnapshot } from "@/server/read-snapshot";
 
-import type { AnalyticsFilters, PeriodInput } from "../period-params";
+import { type AnalyticsFilters, type PeriodInput, TOP_SUPPLIERS } from "../period-params";
 import { authorizeAnalytics } from "../authorize-filters";
 import { resolvePeriod } from "../resolve-period";
 import { spendingWhere } from "../spending-where";
-import { type Counted, counted } from "./spending";
+import { type Counted, counted } from "../counted";
 
 // The parts of the Head's Spending block beyond 6.3's months and categories
 // (10-notifications-analytics-reports.md, Analytics page per role, Head: "branches side by side;
@@ -34,8 +34,6 @@ export type HeadSpending = {
   /** In the order of PAYMENT_TYPES, each type with spending in either period. */
   payments: (Counted & { payment: PaymentType })[];
 };
-
-export const TOP_SUPPLIERS = 10;
 
 export async function getHeadSpending(
   userId: string,
