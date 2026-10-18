@@ -276,7 +276,8 @@
     "label": "Filial",
     "all": "Barcha filiallarim",
     "inactive": "(faol emas)",
-    "option": "{code} — {name}"
+    "option": "{code} — {name}",
+    "switchAnyway": "Filialni almashtirish"
   },
   "roles": {
     "HEAD": "Xaridlar rahbari",
@@ -1229,7 +1230,8 @@
         "paymentType": "To'lov turi: {from} → {to}",
         "purchase": "{qty} × {price}",
         "progress": "Xarid: {from} → {to}",
-        "owner": "{from} dan {to} ga"
+        "owner": "{from} dan {to} ga",
+        "issue": "To'g'ridan-to'g'ri so'rovchiga berildi: <note>{number}</note>"
       },
       "waiting": {
         "HEAD": "Rahbarni kutmoqda.",
@@ -1588,7 +1590,9 @@
       "step": "{current} / {total}",
       "next": "Keyingisi",
       "previous": "Oldingisi",
-      "steps": "Xarid safari buyurtmalari"
+      "steps": "Xarid safari buyurtmalari",
+      "giveToRequester": "To'g'ridan-to'g'ri so'rovchiga berish",
+      "giveToRequesterHint": "Mollar darhol buyurtma bo'limiga beriladi: xarid bilan birga berish hujjati saqlanadi."
     }
   },
   "money": {
@@ -1747,7 +1751,8 @@
       "emptyTitle": "Omborda hozircha hech narsa yo'q",
       "emptyText": "Xarid yozilib, mahsulot omborga qabul qilinganda bu yerda ko'rinadi.",
       "noResultsTitle": "Hech narsa topilmadi",
-      "noResultsText": "Bu qidiruv yoki toifa bo'yicha qoldiq yo'q. Ularni o'zgartiring yoki tozalang."
+      "noResultsText": "Bu qidiruv yoki toifa bo'yicha qoldiq yo'q. Ularni o'zgartiring yoki tozalang.",
+      "newIssue": "Yangi berish"
     },
     "item": {
       "back": "Ombordagi qoldiq",
@@ -1777,6 +1782,63 @@
         "DIRECT_ENTRY": "To'g'ridan-to'g'ri kiritish",
         "REVERSAL": "Bekor qilish"
       }
+    },
+    "issue": {
+      "title": "Yangi berish",
+      "whoAndWhen": "Kimga va qachon",
+      "branch": "Filial",
+      "chooseBranch": "Filialni tanlang",
+      "date": "Sana",
+      "department": "Bo'lim",
+      "chooseDepartment": "Bo'limni tanlang",
+      "receivedBy": "Qabul qildi",
+      "items": "Mollar",
+      "branchFirst": "Avval filialni tanlang: bu yerda uning ombori ko'rinadi.",
+      "noLines": "Hali mol yo'q. Yuqorida molni toping va qo'shing.",
+      "search": "Ombordan mol qidirish",
+      "searchHint": "Mol nomi",
+      "results": "Ombordagi mollar",
+      "nothingFound": "Omborda hech narsa topilmadi. Qidiruvni o'zgartiring.",
+      "full": "Bitta berishda ko'pi bilan {max} ta mol bo'ladi. Buni saqlang va yangisini boshlang.",
+      "inStock": "Omborda: {qty} {unit}",
+      "quantity": "Miqdori, {unit}",
+      "moreThanStock": "Ombordagidan ko'p.",
+      "short": "{item} dan faqat {available} {unit} qoldi. Miqdorni kamaytiring.",
+      "remove": "Olib tashlash",
+      "removeLine": "{name} ni olib tashlash",
+      "commentStep": "Izoh va saqlash",
+      "comment": "Izoh (ixtiyoriy)",
+      "steps": "Berish bosqichlari",
+      "previous": "Orqaga",
+      "next": "Keyingi",
+      "step": "{total} dan {current}-bosqich",
+      "cancel": "Bekor qilish",
+      "save": "Berishni saqlash",
+      "saved": "{number} berish saqlandi.",
+      "savedTitle": "{number} berish saqlandi, ombor yangilandi.",
+      "downloadNote": "Berish varaqasini yuklab olish",
+      "newIssue": "Yangi berish",
+      "toStock": "Ombordagi qoldiq",
+      "switchTitle": "Filial almashtirilsinmi?",
+      "switchResult": "Qo'shilgan mollar shu filial omboridan, ular formadan olib tashlanadi.",
+      "switchConfirm": "Filialni almashtirish"
+    },
+    "issueNote": {
+      "title": "{number} berish varaqasi",
+      "number": "Raqam",
+      "date": "Sana",
+      "branch": "Filial",
+      "department": "Bo'lim",
+      "givenBy": "Berdi",
+      "receivedBy": "Qabul qildi",
+      "status": "Holati",
+      "reversed": "Bekor qilingan",
+      "comment": "Izoh",
+      "product": "Mol",
+      "subtype": "Turi",
+      "quantity": "Miqdori",
+      "downloadedBy": "Yuklab oldi: {name}, {at}",
+      "page": "{pages} dan {page}-sahifa"
     }
   }
 }

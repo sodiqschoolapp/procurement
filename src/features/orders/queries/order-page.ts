@@ -91,6 +91,11 @@ export type OrderPageEvent = {
   paymentType: { from: PaymentType; to: PaymentType } | null;
   /** The record a Record purchase event saved: its quantity and price per unit (plan of 3.3). */
   purchase: { qty: string; unitPrice: string } | null;
+  /**
+   * The issue that record's "Give straight to requester" made (07 What saving a record does 5;
+   * plan of 5.4): its id for the note's download and its number. Of the order's own branch.
+   */
+  issue: { documentId: string; number: string } | null;
   /** The progress a buying action set (plan of 3.5): Finish order, Not bought, Reopen buying. */
   progress: { from: OrderProgress; to: OrderProgress } | null;
   /** The old and the new owner of a move to another Manager, by name (plan of 4.10). */
@@ -395,6 +400,7 @@ async function readPage(db: Executor, actor: Actor, id: string): Promise<OrderPa
       headStepAuto: headStepAutoSql,
       paymentType: sql<OrderPageEvent["paymentType"]>`${orderEvents.payload} -> 'paymentType'`,
       purchase: sql<OrderPageEvent["purchase"]>`${orderEvents.payload} -> 'purchase'`,
+      issue: sql<OrderPageEvent["issue"]>`${orderEvents.payload} -> 'issue'`,
       progress: sql<OrderPageEvent["progress"]>`${orderEvents.payload} -> 'progress'`,
       owner: sql<OrderPageEvent["owner"]>`case when ${orderEvents.payload} ? 'owner' then
         json_build_object(

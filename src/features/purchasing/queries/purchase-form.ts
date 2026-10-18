@@ -70,6 +70,12 @@ export type PurchaseFormOrder = {
   approvedOn: string | null;
   /** The order's company while it is active (07 Supplier; 3.3 spec review, Should fix 4). */
   companyId: string | null;
+  /**
+   * Whether the form offers "Give straight to requester" (07 Purchase record): goods only
+   * (Decided ahead, question 9), and only to a user who may issue in the branch (plan of 5.4,
+   * decided item 1, Look first). The server asks both again.
+   */
+  canGiveToRequester: boolean;
 };
 
 export type PurchaseForm = {
@@ -153,6 +159,7 @@ export async function getPurchaseForm(
     );
     if (recordable.length === 0) throw new AuthorizationError("forbidden");
 
+    const mayIssue = decide("stock.issue", actor, { branchId: rows[0]!.branchId }) === "allow";
     const ids = recordable.map((row) => row.id);
     const plannedExtras = await db
       .select({
@@ -227,6 +234,7 @@ export async function getPurchaseForm(
         received: actualQuantity(await orderRecords(db, row.id)),
         approvedOn: row.approvedAt ? businessDate(row.approvedAt) : null,
         companyId: row.companyId && row.companyActive ? row.companyId : null,
+        canGiveToRequester: mayIssue && row.productType !== "SERVICE",
       });
     }
 

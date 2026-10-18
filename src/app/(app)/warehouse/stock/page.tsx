@@ -7,8 +7,10 @@ import { EmptyState } from "@/components/empty-state";
 import { Icon } from "@/components/icon";
 import { buttonVariants } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
+import { cn } from "@/components/utils";
 import { BRANCH_COOKIE } from "@/features/catalog/branch-cookie";
 import { currentBranchChoice } from "@/features/catalog/queries/my-branches";
+import { issueBranchChoices } from "@/features/warehouse/queries/issue-form";
 import {
   type StockPage,
   listStockOnHand,
@@ -26,7 +28,8 @@ import { PageLinks } from "../../catalog/page-links";
 // page stay in the address. The list's branch is the address's `branch=`, else the top bar's
 // choice (decided item 5, as /orders). At phone width the table scrolls inside its panel, as the
 // catalog lists (decided item 9). Each product name links to its item card in the row's branch
-// (5.3). The minimum and "Low stock only" come with 5.10.
+// (5.3). "New issue" in the header for whoever may issue in some branch (plan of 5.4, decided
+// item 10). The minimum and "Low stock only" come with 5.10.
 
 const pageParam = z.coerce.number().int().min(1).catch(1);
 const searchParam = z.string().trim().max(200).catch("");
@@ -40,6 +43,16 @@ type Params = {
 };
 
 const first = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value);
+
+/** Whether the user may issue in any branch: the "New issue" button (the form asks again). */
+async function mayIssue(userId: string): Promise<boolean> {
+  try {
+    return (await issueBranchChoices(userId)).length > 0;
+  } catch (error) {
+    if (error instanceof AuthorizationError) return false;
+    throw error;
+  }
+}
 
 /** The page of stock, or an empty one when the `branch=` of the address is not the user's. */
 async function readStock(
@@ -75,6 +88,7 @@ export default async function StockOnHandPage({ searchParams }: { searchParams: 
     pageParam.parse(first(raw.page)),
   );
   const categories = await stockCategoryChoices(user.id);
+  const canIssue = await mayIssue(user.id);
   const t = await getTranslations("warehouse.stock");
   const format = await getFormatters();
   const filtered = q !== "" || category !== "";
@@ -90,14 +104,25 @@ export default async function StockOnHandPage({ searchParams }: { searchParams: 
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-6">
-      <h1 className="flex flex-wrap items-baseline gap-x-3 text-[28px] leading-[34px] font-bold tracking-[-0.01em]">
-        {t("title")}
-        {list.found > 0 && (
-          <span className="text-[15px] leading-[22px] font-normal tracking-normal text-muted-foreground">
-            {t("summary", { count: list.found })}
-          </span>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="flex flex-wrap items-baseline gap-x-3 text-[28px] leading-[34px] font-bold tracking-[-0.01em]">
+          {t("title")}
+          {list.found > 0 && (
+            <span className="text-[15px] leading-[22px] font-normal tracking-normal text-muted-foreground">
+              {t("summary", { count: list.found })}
+            </span>
+          )}
+        </h1>
+        {canIssue && (
+          <Link
+            href="/warehouse/documents/new?type=ISSUE"
+            className={cn(buttonVariants(), "max-sm:h-12")}
+          >
+            <Icon name="add" />
+            {t("newIssue")}
+          </Link>
         )}
-      </h1>
+      </div>
 
       {list.found === 0 && !filtered ? (
         <EmptyState title={t("emptyTitle")} line={t("emptyText")} />

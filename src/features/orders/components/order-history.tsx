@@ -60,6 +60,23 @@ export async function OrderHistory({ events }: { events: readonly OrderPageEvent
                 })}
               </p>
             ) : null}
+            {event.issue ? (
+              // The issue a ticked "Give straight to requester" made (07; plan of 5.4).
+              <p data-issue className="text-[15px] leading-[22px]">
+                {t.rich("issue", {
+                  number: event.issue.number,
+                  note: (chunks) => (
+                    <a
+                      href={`/warehouse/documents/${event.issue!.documentId}/note`}
+                      download
+                      className="font-semibold text-primary underline underline-offset-2"
+                    >
+                      {chunks}
+                    </a>
+                  ),
+                })}
+              </p>
+            ) : null}
             {event.progress ? (
               // The progress a buying action set (07 Order progress; plan of 3.5).
               <p data-progress-change className="text-[15px] leading-[22px]">

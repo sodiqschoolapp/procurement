@@ -14,6 +14,7 @@ import {
   users,
 } from "@/server/db/schema";
 import { readSnapshot } from "@/server/read-snapshot";
+import { readSettings } from "@/server/settings";
 
 // What the issue note PDF shows, GET /warehouse/documents/[id]/note (09-warehouse.md, Issue to a
 // department 2: "a PDF issue note naming who gave the items and who received them, as typed. There
@@ -44,6 +45,9 @@ export type IssueNote = {
   receivedBy: string | null;
   comment: string | null;
   lines: IssueNoteLine[];
+  /** Who downloads it, for the line on every page (05 Download 2, the style of the note). */
+  downloadedBy: string;
+  schoolName: string | null;
 };
 
 const idInput = z.uuid();
@@ -81,6 +85,8 @@ export async function getIssueNote(userId: string, documentId: string): Promise<
       );
     if (!document) return null;
     await authorize(userId, "data.export", { branchId: document.branchId }, tx);
+    const [me] = await tx.select({ name: users.fullName }).from(users).where(eq(users.id, userId));
+    const settings = await readSettings(tx);
     const lines = await tx
       .select({
         productName: products.name,
@@ -95,13 +101,22 @@ export async function getIssueNote(userId: string, documentId: string): Promise<
       .innerJoin(units, eq(units.id, products.unitId))
       .where(eq(stockDocumentLines.documentId, document.id))
       .orderBy(asc(products.name), asc(productVariants.name), asc(stockDocumentLines.id));
-    const { id: _id, branchId: _branch, ...shown } = document;
     return {
-      ...shown,
+      number: document.number,
+      status: document.status,
+      docDate: document.docDate,
+      branchCode: document.branchCode,
+      branchName: document.branchName,
+      departmentName: document.departmentName,
+      givenBy: document.givenBy,
+      receivedBy: document.receivedBy,
+      comment: document.comment,
       lines: lines.map(({ isDefault, subtypeName, ...line }) => ({
         ...line,
         subtypeName: isDefault ? null : subtypeName,
       })),
+      downloadedBy: me?.name ?? "",
+      schoolName: settings.school_name,
     };
   });
 }

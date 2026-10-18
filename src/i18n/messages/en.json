@@ -276,7 +276,8 @@
     "label": "Branch",
     "all": "All my branches",
     "inactive": "(inactive)",
-    "option": "{code} — {name}"
+    "option": "{code} — {name}",
+    "switchAnyway": "Switch branch"
   },
   "roles": {
     "HEAD": "Procurement Head",
@@ -1229,7 +1230,8 @@
         "paymentType": "Payment type: {from} → {to}",
         "purchase": "{qty} × {price}",
         "progress": "Buying: {from} → {to}",
-        "owner": "From {from} to {to}"
+        "owner": "From {from} to {to}",
+        "issue": "Given straight to the requester: <note>{number}</note>"
       },
       "waiting": {
         "HEAD": "Waiting for the Head.",
@@ -1588,7 +1590,9 @@
       "step": "{current} of {total}",
       "next": "Next",
       "previous": "Previous",
-      "steps": "Orders of the trip"
+      "steps": "Orders of the trip",
+      "giveToRequester": "Give straight to requester",
+      "giveToRequesterHint": "The items go to the order's department at once: an issue is saved with this purchase."
     }
   },
   "money": {
@@ -1747,7 +1751,8 @@
       "emptyTitle": "No stock yet",
       "emptyText": "Items appear here when a purchase is recorded and its items are received into the warehouse.",
       "noResultsTitle": "Nothing found",
-      "noResultsText": "No stock matches the search or the category. Change them or clear them."
+      "noResultsText": "No stock matches the search or the category. Change them or clear them.",
+      "newIssue": "New issue"
     },
     "item": {
       "back": "Stock on hand",
@@ -1777,6 +1782,63 @@
         "DIRECT_ENTRY": "Direct entry",
         "REVERSAL": "Reversal"
       }
+    },
+    "issue": {
+      "title": "New issue",
+      "whoAndWhen": "Who and when",
+      "branch": "Branch",
+      "chooseBranch": "Choose a branch",
+      "date": "Date",
+      "department": "Department",
+      "chooseDepartment": "Choose a department",
+      "receivedBy": "Received by",
+      "items": "Items",
+      "branchFirst": "Choose the branch first: its stock is listed here.",
+      "noLines": "No items yet. Find an item above and add it.",
+      "search": "Find an item in stock",
+      "searchHint": "Product name",
+      "results": "Items in stock",
+      "nothingFound": "Nothing in stock matches. Change the search.",
+      "full": "An issue holds at most {max} items. Save this one and start another.",
+      "inStock": "In stock: {qty} {unit}",
+      "quantity": "Quantity, {unit}",
+      "moreThanStock": "More than in stock.",
+      "short": "Only {available} {unit} of {item} left. Lower the quantity.",
+      "remove": "Remove",
+      "removeLine": "Remove {name}",
+      "commentStep": "Comment and save",
+      "comment": "Comment (optional)",
+      "steps": "Steps of the issue",
+      "previous": "Back",
+      "next": "Next",
+      "step": "Step {current} of {total}",
+      "cancel": "Cancel",
+      "save": "Save issue",
+      "saved": "Issue {number} saved.",
+      "savedTitle": "Issue {number} is saved and the stock is updated.",
+      "downloadNote": "Download issue note",
+      "newIssue": "New issue",
+      "toStock": "Stock on hand",
+      "switchTitle": "Change the branch?",
+      "switchResult": "The items you added are of this branch's stock and will be removed from the form.",
+      "switchConfirm": "Change branch"
+    },
+    "issueNote": {
+      "title": "Issue note {number}",
+      "number": "Number",
+      "date": "Date",
+      "branch": "Branch",
+      "department": "Department",
+      "givenBy": "Given by",
+      "receivedBy": "Received by",
+      "status": "Status",
+      "reversed": "Reversed",
+      "comment": "Comment",
+      "product": "Product",
+      "subtype": "Subtype",
+      "quantity": "Quantity",
+      "downloadedBy": "Downloaded by {name}, {at}",
+      "page": "Page {page} of {pages}"
     }
   }
 }
