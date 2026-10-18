@@ -8,12 +8,15 @@ import { ConfirmDialog } from "@/components/confirm-dialog";
 import { toast } from "@/components/toast";
 import { Button } from "@/components/ui/button";
 import { useAction } from "@/components/use-action";
+import type { ActionFailure } from "@/server/action-result";
 
 import { setBranchActiveAction } from "./actions";
 
 // Deactivate or Activate a branch (04-catalogs.md rule 2: "Entries are deactivated instead";
 // plan of 1.2, decision 6), behind the confirm dialog that states the result (11 rule 6).
-// Deactivate is the quiet danger action of docs/design-system.md, "Lists".
+// Deactivate is the quiet danger action of docs/design-system.md, "Lists". A refused
+// deactivation says what blocks it, with each count (edge-cases/requests-and-approval.md, "The
+// Head wants to close a branch"; plan of 5.12).
 
 export function BranchActiveButton({
   branch,
@@ -27,12 +30,24 @@ export function BranchActiveButton({
   const [open, setOpen] = useState(false);
   const deactivating = branch.isActive;
 
+  /** The block on closing, with its counts (plan of 5.12, decided items 1 and 2); else null. */
+  function blocked(error: ActionFailure): string | null {
+    const counts = error.available ?? {};
+    const reasons = [
+      error.fields?.orders ? t("blockedOrders", { count: Number(counts.orders) }) : null,
+      error.fields?.stock ? t("blockedStock", { count: Number(counts.stock) }) : null,
+    ].filter((reason) => reason !== null);
+    const [first, second] = reasons;
+    if (first === undefined) return null;
+    return t("blocked", { reasons: second ? t("blockedAnd", { first, second }) : first });
+  }
+
   async function confirm() {
     const result = await action.run({ id: branch.id, active: !deactivating });
     if (!result) return;
     setOpen(false);
     if (!result.ok) {
-      toast.error(tAll(result.error.messageKey));
+      toast.error(blocked(result.error) ?? tAll(result.error.messageKey));
       router.refresh();
       return;
     }

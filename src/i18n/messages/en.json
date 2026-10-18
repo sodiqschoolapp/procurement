@@ -91,7 +91,9 @@
       "movedSince": "This order was moved to another Manager after this was recorded, so it cannot be cancelled. Finance corrects the cash count with a new money action.",
       "overReturn": "More than this department received.",
       "overReturnComment": "A line is more than the department received: write a comment.",
-      "reverseStockShort": "Not enough in stock to reverse: the items have left again."
+      "reverseStockShort": "Not enough in stock to reverse: the items have left again.",
+      "unfinishedOrders": "The branch still has unfinished orders.",
+      "stockLeft": "The branch still has stock."
     },
     "file": {
       "tooLarge": "The file is larger than 10 MB. Choose a smaller file or take the photo again.",
@@ -461,6 +463,10 @@
     "activateTitle": "Activate {name}?",
     "activateResult": "The branch comes back to the lists where new records are made.",
     "deactivated": "Branch deactivated",
+    "blocked": "The branch cannot be deactivated while it has {reasons}. Finish or cancel the orders and issue or write off the stock first.",
+    "blockedOrders": "{count, plural, one {# unfinished order} other {# unfinished orders}}",
+    "blockedStock": "{count, plural, one {# item in stock} other {# items in stock}}",
+    "blockedAnd": "{first} and {second}",
     "activated": "Branch activated",
     "history": "Change history",
     "isActive": "Active",

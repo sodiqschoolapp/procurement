@@ -12,12 +12,13 @@ import {
   isBranchCode,
   isBranchName,
 } from "@/domain/branches";
+import { FINISHED_REQUEST_STATUSES } from "@/domain/request-status";
 import { GLOBAL_TARGET, ActionError, defineAction } from "@/server/action";
 import type { FieldMessageKey } from "@/server/action-result";
 import { audit } from "@/server/audit";
 import type { Executor } from "@/server/authorize";
 import { now } from "@/server/clock";
-import { auditLog, branches, orders } from "@/server/db/schema";
+import { auditLog, branches, orders, stockBalances } from "@/server/db/schema";
 
 // The Head's branches (build-plan 1.2; 04-catalogs.md, Catalogs table: Branches; rules 2, 3, 9).
 // "Manage catalogs, users, branches, settings": catalog.manage, Head only, global (03, Permission
@@ -269,10 +270,41 @@ export const setBranchActive = defineAction({
     const row = await lockBranch(tx, input.id);
     return row ? { target: GLOBAL_TARGET, rows: row } : null;
   },
-  // Deactivating refuses nothing and moves nothing: users, stock and records stay (decision 2,
-  // Look first; the block on closing a branch is 5.13). A second click of the same is refused.
-  check({ input, locked }) {
+  // A second click of the same is refused. Deactivating moves nothing: users, stock and records
+  // stay (decision 2, Look first). It is refused while the branch has unfinished orders or stock
+  // above 0, each named with its count (edge-cases/requests-and-approval.md, "The Head wants to
+  // close a branch"; plan of 5.12, decided items 1 and 2, Look first). Read under the branch row's
+  // FOR UPDATE lock: drafts, submit and the warehouse documents hold the branch FOR SHARE, so they
+  // queue behind it and then find it inactive (decided item 4, Look first).
+  async check({ tx, input, locked }) {
     if (locked!.rows.isActive === input.active) throw new ActionError("wrong_status");
+    if (input.active) return;
+    const [left] = await tx
+      .select({
+        // A draft never submitted (DRAFT without a number, isNeverSubmitted() of
+        // src/domain/drafts.ts) is no order of the approval flow yet and does not block.
+        orders: sql<number>`(select count(*)::int from ${orders}
+          where ${orders.branchId} = ${input.id}
+            and ${orders.status}::text not in (${sql.join(
+              FINISHED_REQUEST_STATUSES.map((status) => sql`${status}`),
+              sql`, `,
+            )})
+            and not (${orders.status} = 'DRAFT' and ${orders.number} is null))`,
+        stock: sql<number>`(select count(*)::int from ${stockBalances}
+          where ${stockBalances.branchId} = ${input.id} and ${stockBalances.qty} > 0)`,
+      })
+      .from(sql`(select 1) as one`);
+    const fields: Record<string, FieldMessageKey> = {};
+    const counts: Record<string, string> = {};
+    if (left!.orders > 0) {
+      fields.orders = "errors.field.unfinishedOrders";
+      counts.orders = String(left!.orders);
+    }
+    if (left!.stock > 0) {
+      fields.stock = "errors.field.stockLeft";
+      counts.stock = String(left!.stock);
+    }
+    if (Object.keys(fields).length > 0) throw new ActionError("invalid_input", fields, counts);
   },
   async write({ tx, input }): Promise<SavedBranch> {
     const [row] = await tx

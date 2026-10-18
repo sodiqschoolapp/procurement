@@ -124,6 +124,10 @@ export const FIELD_ERROR_KINDS = [
   "overReturnComment",
   // A reverse whose movement would take stock below 0 (09 intro; plan of 5.7).
   "reverseStockShort",
+  // A branch the Head deactivates while it has unfinished orders or stock above 0
+  // (edge-cases/requests-and-approval.md, "The Head wants to close a branch"; plan of 5.12).
+  "unfinishedOrders",
+  "stockLeft",
 ] as const;
 export type FieldErrorKind = (typeof FIELD_ERROR_KINDS)[number];
 export type FieldMessageKey = `errors.field.${FieldErrorKind}`;
@@ -165,8 +169,10 @@ export type ActionFailure = {
    * For a `stockShort` field: the amount left of that line's item, by the same path, numeric(14,3)
    * text (09 Issue to a department 1: the server "names the item and the available amount"; plan of
    * 5.4, decided item 2, Look first). For an `overReturn` field: the department's net received
-   * amount of that line's item (plan of 5.6, decided item 5). Set only after the action's
-   * authorize() passed on the branch.
+   * amount of that line's item (plan of 5.6, decided item 5). For the `orders` and `stock` fields
+   * of a branch's deactivation: counts, not quantities, the branch's unfinished orders and its
+   * subtypes with stock above 0, as whole-number text (plan of 5.12, decided items 1 and 2). Set
+   * only after the action's authorize() passed on the branch.
    */
   available?: Record<string, string>;
 };

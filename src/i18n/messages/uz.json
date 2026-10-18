@@ -91,7 +91,9 @@
       "movedSince": "Bu buyurtma ushbu yozuvdan keyin boshqa menejerga oʻtkazilgan, shuning uchun uni bekor qilib boʻlmaydi. Moliyachi naqd pul qoldigʻini yangi pul amali bilan tuzatadi.",
       "overReturn": "Bo'lim olganidan ko'p.",
       "overReturnComment": "Qatorda bo'lim olganidan ko'p: izoh yozing.",
-      "reverseStockShort": "Storno qilish uchun omborda yetarli emas: mahsulotlar yana chiqib ketgan."
+      "reverseStockShort": "Storno qilish uchun omborda yetarli emas: mahsulotlar yana chiqib ketgan.",
+      "unfinishedOrders": "Filialda tugallanmagan buyurtmalar bor.",
+      "stockLeft": "Filial omborida hali tovar bor."
     },
     "file": {
       "tooLarge": "Fayl 10 MB dan katta. Kichikroq fayl tanlang yoki suratni qaytadan oling.",
@@ -461,6 +463,10 @@
     "activateTitle": "{name} faollashtirilsinmi?",
     "activateResult": "Filial yangi yozuvlar yaratiladigan roʻyxatlarga qaytadi.",
     "deactivated": "Filial faolsizlantirildi",
+    "blocked": "Filialda {reasons} bor ekan, uni nofaol qilib bo'lmaydi. Avval buyurtmalarni yakunlang yoki bekor qiling, qoldiqni bering yoki hisobdan chiqaring.",
+    "blockedOrders": "{count, plural, other {# ta tugallanmagan buyurtma}}",
+    "blockedStock": "{count, plural, other {omborda # xil tovar}}",
+    "blockedAnd": "{first} va {second}",
     "activated": "Filial faollashtirildi",
     "history": "Oʻzgarishlar tarixi",
     "isActive": "Faol",
