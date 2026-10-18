@@ -138,7 +138,7 @@ describe("nextBalance, a return into empty stock (Decided ahead 11; plan of 5.6,
     });
   });
 
-  it("into free stock (above 0 at an average of 0) comes in at 0 (edge case \"The item was free\")", () => {
+  it('into free stock (above 0 at an average of 0) comes in at 0 (edge case "The item was free")', () => {
     expect(landed(nextBalance(at("4", 0n), back("1", 5000n)))).toMatchObject({
       qty: "5",
       avgCost: 0n,

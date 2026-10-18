@@ -105,8 +105,10 @@ export const SERVER_ACTIONS: Record<string, Entry> = {
   // Return from a department (plan of 5.6, decided item 4, Look first): stock.return_reverse on
   // the branch (return-matrix.db.test.ts).
   "src/app/(app)/warehouse/documents/new/actions.ts#returnStockAction": "stock.return_reverse",
-  "src/app/(app)/warehouse/documents/new/actions.ts#returnFormChoicesAction": "stock.return_reverse",
-  "src/app/(app)/warehouse/documents/new/actions.ts#searchReturnItemsAction": "stock.return_reverse",
+  "src/app/(app)/warehouse/documents/new/actions.ts#returnFormChoicesAction":
+    "stock.return_reverse",
+  "src/app/(app)/warehouse/documents/new/actions.ts#searchReturnItemsAction":
+    "stock.return_reverse",
   // Finish order, Not bought, Reopen buying (plan of 3.5, decided item 2, Look first): the same.
   "src/app/(app)/orders/actions.ts#finishOrdersAction": "purchase.record",
   "src/app/(app)/orders/actions.ts#markNotBoughtAction": "purchase.record",

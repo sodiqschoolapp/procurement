@@ -123,11 +123,7 @@ function returnInput(lines: ReturnInput["lines"], change: Partial<ReturnInput> =
 
 /** The over-return refusal names this amount as what the department received, or null. */
 async function receivedShown(variantId: string, qty = "1000"): Promise<string | null> {
-  const result = await runAction(
-    returnStock,
-    manager,
-    returnInput([{ variantId, qty }]),
-  );
+  const result = await runAction(returnStock, manager, returnInput([{ variantId, qty }]));
   expect(result.ok).toBe(false);
   return result.ok ? null : (result.error.available?.["lines.0.qty"] ?? null);
 }
@@ -251,11 +247,7 @@ describe("returnStock (09 Other documents, Return from a department)", () => {
     // Not counted: an issue reversed, a return reversed, another department of the branch, the
     // other branch, another subtype.
     await reverse(await issue(a, "7"));
-    const undone = await runAction(
-      returnStock,
-      manager,
-      returnInput([{ variantId: a, qty: "2" }]),
-    );
+    const undone = await runAction(returnStock, manager, returnInput([{ variantId: a, qty: "2" }]));
     expect(undone.ok).toBe(true);
     await reverse(undone.ok ? undone.data.documentId : "");
     await issue(a, "20", { to: neighbour });
@@ -403,7 +395,7 @@ describe("returnStock (09 Other documents, Return from a department)", () => {
     });
   });
 
-  it("refuses a service, an inactive subtype and half a piece (A7; 04 rule 2; edge case \"Half a piece\")", async () => {
+  it('refuses a service, an inactive subtype and half a piece (A7; 04 rule 2; edge case "Half a piece")', async () => {
     const service = (await insertProduct({ type: "SERVICE" })).defaultVariantId;
     const product = await insertProduct();
     const [, old] = await insertSubtypes(product.id, [
@@ -431,7 +423,11 @@ describe("returnStock (09 Other documents, Return from a department)", () => {
     const kg = await goods(true);
     await receive(branch.id, kg, "5", 4000n);
     await issue(kg, "2.5");
-    const result = await runAction(returnStock, manager, returnInput([{ variantId: kg, qty: "1.25" }]));
+    const result = await runAction(
+      returnStock,
+      manager,
+      returnInput([{ variantId: kg, qty: "1.25" }]),
+    );
     expect(result.ok).toBe(true);
     expect(await balanceOf(branch.id, kg)).toEqual({ qty: "3.750", avg_cost: "4000" });
   });
