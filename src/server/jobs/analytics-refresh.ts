@@ -3,6 +3,13 @@ import { sql } from "drizzle-orm";
 import { reasonKey } from "@/domain/analytics";
 import { type StayEvent, approvalStays } from "@/domain/approval-stays";
 import { orderOutcome } from "@/domain/colours";
+import {
+  type DatedCashRecord,
+  type DatedMoneyRow,
+  type MoneyRowKind,
+  cashSince,
+  orderCashCount,
+} from "@/domain/money-ledger";
 import type { PaymentType } from "@/domain/payment-types";
 import { type PurchaseRecord, actualGoods, actualTotal, paymentParts } from "@/domain/purchases";
 import type { OrderProgress } from "@/domain/purchases";
@@ -33,6 +40,13 @@ import type { Job } from "./job";
 // first), and `analytics_steps`, the stays of every order at the approval steps from
 // `approvalStays()` of src/domain/approval-stays.ts (decided items 6 to 10, Look first), the open
 // ones included (review of the plan, Must fix 3).
+//
+// Task 6.4c adds, in the same run (plan of 6.4c, decided items 4, 5 and 8, Look first):
+// `analytics_cancelled`, each cancelled record with its total as entered (`actualTotal()` of the
+// record read as live), and `analytics_cash`, each order's cash count `orderCashCount()` and its
+// date since when `cashSince()` of src/domain/money-ledger.ts, the functions Money with managers
+// calls (08 Money ledger; plan of 4.9). src/server does not import src/features, so the rows and
+// records are read here; a database test keeps this reader equal to that page's.
 
 type SpendingSource = {
   purchase_id: string;
@@ -76,7 +90,7 @@ export async function refreshAnalytics(executor: Executor): Promise<void> {
   // pages go on reading.
   await executor.execute(
     sql`lock table analytics_spending, analytics_spending_payments, analytics_outcomes,
-               analytics_steps in exclusive mode`,
+               analytics_steps, analytics_cancelled, analytics_cash in exclusive mode`,
   );
   const found = await executor.execute<SpendingSource>(sql`
     select p.id as purchase_id, p.order_id, p.branch_id, t.purchased_on::text as purchased_on,
@@ -141,9 +155,13 @@ export async function refreshAnalytics(executor: Executor): Promise<void> {
   await executor.execute(sql`delete from analytics_spending`);
   await executor.execute(sql`delete from analytics_outcomes`);
   await executor.execute(sql`delete from analytics_steps`);
+  await executor.execute(sql`delete from analytics_cancelled`);
+  await executor.execute(sql`delete from analytics_cash`);
   if (rows.length > 0) await insertSpending(executor, rows, parts);
   await writeOutcomes(executor);
   await writeSteps(executor);
+  await writeCancelled(executor);
+  await writeCash(executor);
 }
 
 async function insertSpending(executor: Executor, rows: object[], parts: object[]) {
@@ -313,6 +331,167 @@ async function writeSteps(executor: Executor) {
       order_id uuid, branch_id uuid, step text, entered_at timestamptz, left_at timestamptz,
       seconds text, decision text, reason text, reason_key text, category_id uuid,
       department_id uuid, owner_id uuid)`);
+}
+
+type CancelledSource = {
+  purchase_id: string;
+  order_id: string;
+  branch_id: string;
+  cancelled_on: string;
+  category_id: string;
+  department_id: string;
+  owner_id: string;
+  supplier_id: string | null;
+  qty: string;
+  unit_price: string;
+  extras: string[];
+};
+
+/**
+ * Every cancelled record (plan of 6.4c, decided item 5, Look first): the Tashkent date of its
+ * cancel, read by PostgreSQL as `left_on` above; its total as it was entered, `actualTotal()` of
+ * the record read as live, since `actualTotal()` leaves a cancelled record out (review of the
+ * plan, Must fix 1). Category the bought subtype's, supplier the trip's, as analytics_spending.
+ */
+async function writeCancelled(executor: Executor) {
+  const found = await executor.execute<CancelledSource>(sql`
+    select p.id as purchase_id, p.order_id, p.branch_id,
+           (p.cancelled_at at time zone 'Asia/Tashkent')::date::text as cancelled_on,
+           pr.category_id, o.department_id, o.owner_id, t.supplier_id, p.qty,
+           p.unit_price::text as unit_price,
+           coalesce((select array_agg(e.amount::text order by e.id)
+                     from purchase_extras e where e.purchase_id = p.id), '{}') as extras
+    from purchases p
+    join purchase_trips t on t.id = p.trip_id
+    join orders o on o.id = p.order_id
+    join product_variants v on v.id = p.variant_id
+    join products pr on pr.id = v.product_id
+    where p.is_cancelled`);
+  if (found.rows.length === 0) return;
+  const rows = found.rows.map(({ qty, unit_price, extras, ...row }) => ({
+    ...row,
+    amount: actualTotal([
+      {
+        qty,
+        unitPrice: BigInt(unit_price),
+        extras: extras.map((amount) => BigInt(amount)),
+        isCancelled: false,
+      },
+    ]).toString(),
+  }));
+  await executor.execute(sql`
+    insert into analytics_cancelled (purchase_id, order_id, branch_id, cancelled_on, category_id,
+                                     department_id, owner_id, supplier_id, amount)
+    select r.purchase_id, r.order_id, r.branch_id, r.cancelled_on, r.category_id,
+           r.department_id, r.owner_id, r.supplier_id, r.amount::bigint
+    from jsonb_to_recordset(${JSON.stringify(rows)}::jsonb) as r(
+      purchase_id uuid, order_id uuid, branch_id uuid, cancelled_on date, category_id uuid,
+      department_id uuid, owner_id uuid, supplier_id uuid, amount text)`);
+}
+
+type CashSource = {
+  order_id: string;
+  branch_id: string;
+  owner_id: string;
+  category_id: string;
+  department_id: string;
+  rows: { kind: MoneyRowKind; amount: string; is_cancelled: boolean; occurred_on: string }[];
+  records: {
+    variant_id: string;
+    qty: string;
+    unit_price: string;
+    payment_type: PaymentType;
+    purchased_on: string;
+    is_cancelled: boolean;
+    extras: { amount: string; payment_type: PaymentType }[];
+  }[];
+};
+
+/**
+ * Every order with a cash count away from 0 (plan of 6.4c, decided items 4 and 8, Look first):
+ * the orders Money with managers reads (not Draft, not Closed, with a money row or a record), each
+ * money row with its action's cancel mark and date, each record with its trip's payment type and
+ * date and each extra with its own type, as `datedMoneyRowsOf()` and `datedCashRecordsOf()` read
+ * them; the count and the date from the domain.
+ */
+async function writeCash(executor: Executor) {
+  const found = await executor.execute<CashSource>(sql`
+    select o.id as order_id, o.branch_id, o.owner_id, pr.category_id, o.department_id,
+           coalesce((select jsonb_agg(jsonb_build_object(
+                              'kind', r.kind, 'amount', r.amount::text,
+                              'is_cancelled', a.is_cancelled,
+                              'occurred_on', a.occurred_on::text) order by r.id)
+                     from money_rows r join money_actions a on a.id = r.money_action_id
+                     where r.order_id = o.id), '[]') as rows,
+           coalesce((select jsonb_agg(jsonb_build_object(
+                              'variant_id', p.variant_id, 'qty', p.qty,
+                              'unit_price', p.unit_price::text, 'payment_type', t.payment_type,
+                              'purchased_on', t.purchased_on::text,
+                              'is_cancelled', p.is_cancelled,
+                              'extras', coalesce((select jsonb_agg(jsonb_build_object(
+                                                           'amount', e.amount::text,
+                                                           'payment_type', e.payment_type)
+                                                         order by e.id)
+                                                  from purchase_extras e
+                                                  where e.purchase_id = p.id), '[]'))
+                            order by p.id)
+                     from purchases p join purchase_trips t on t.id = p.trip_id
+                     where p.order_id = o.id), '[]') as records
+    from orders o
+    join product_variants v on v.id = o.variant_id
+    join products pr on pr.id = v.product_id
+    where o.status not in ('DRAFT', 'CLOSED')
+      and (exists (select 1 from money_rows r where r.order_id = o.id)
+           or exists (select 1 from purchases p where p.order_id = o.id))`);
+
+  const rows = found.rows.flatMap((row) => {
+    const dated: DatedMoneyRow[] = row.rows.map((each) => ({
+      row: { kind: each.kind, amount: BigInt(each.amount), isCancelled: each.is_cancelled },
+      occurredOn: each.occurred_on,
+    }));
+    const bought: DatedCashRecord[] = row.records.map((each) => ({
+      record: {
+        variantId: each.variant_id,
+        qty: each.qty,
+        unitPrice: BigInt(each.unit_price),
+        paymentType: each.payment_type,
+        extras: each.extras.map((extra) => ({
+          amount: BigInt(extra.amount),
+          paymentType: extra.payment_type,
+        })),
+        isCancelled: each.is_cancelled,
+      },
+      purchasedOn: each.purchased_on,
+    }));
+    const cashCount = orderCashCount(
+      dated.map((each) => each.row),
+      bought.map((each) => each.record),
+    );
+    if (cashCount === 0n) return [];
+    const since = cashSince(dated, bought);
+    // A count away from 0 has a movement that made it so, as Money with managers says.
+    if (since === null) throw new Error(`Order ${row.order_id} has a cash count and no movement`);
+    return [
+      {
+        order_id: row.order_id,
+        branch_id: row.branch_id,
+        owner_id: row.owner_id,
+        category_id: row.category_id,
+        department_id: row.department_id,
+        cash_count: cashCount.toString(),
+        since,
+      },
+    ];
+  });
+  if (rows.length === 0) return;
+  await executor.execute(sql`
+    insert into analytics_cash (order_id, branch_id, owner_id, category_id, department_id,
+                                cash_count, since)
+    select r.order_id, r.branch_id, r.owner_id, r.category_id, r.department_id,
+           r.cash_count::bigint, r.since
+    from jsonb_to_recordset(${JSON.stringify(rows)}::jsonb) as r(
+      order_id uuid, branch_id uuid, owner_id uuid, category_id uuid, department_id uuid,
+      cash_count text, since date)`);
 }
 
 /** Every 5 minutes, at the same ticks on every server (src/domain/schedule.ts). */

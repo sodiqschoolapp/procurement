@@ -3,18 +3,22 @@ import { describe, expect, it } from "vitest";
 
 import { actualGoods, actualTotal } from "@/domain/purchases";
 import { db } from "@/server/db/client";
+import { getMoneyWithManagers } from "@/features/money/queries/money-with-managers";
 import { recordsWhere } from "@/features/purchasing/order-records";
 
 import {
   bought,
   buyingEvent,
   decided,
+  moneyOn,
   recordOn,
   refreshNow,
   spendingScene,
 } from "../../../tests/helpers/analytics";
 import { refusalOf } from "../../../tests/helpers/database-error";
 import { setClock } from "../../../tests/helpers/clock";
+import { setOrderStatus } from "../../../tests/helpers/orders";
+import { insertUser } from "../../../tests/helpers/users";
 import type { Job } from "./job";
 import { analyticsRefresh } from "./analytics-refresh";
 import { JOBS } from "./registry";
@@ -551,5 +555,113 @@ describe("analytics_refresh, the rows of Prices and Approval speed (build-plan 6
     expect(first).toHaveLength(2);
     await refreshNow();
     expect(await stepsOf(order.id)).toEqual(first);
+  });
+});
+
+describe("analytics_refresh, the rows of the Managers block (build-plan 6.4c)", () => {
+  type Cancelled = { purchase_id: string; cancelled_on: string; amount: string };
+  const cancelledOf = async (branchId: string) =>
+    (
+      await db.execute<Cancelled>(sql`
+        select purchase_id, cancelled_on::text as cancelled_on, amount::text as amount
+        from analytics_cancelled where branch_id = ${branchId} order by purchase_id`)
+    ).rows;
+  type Cash = { order_id: string; owner_id: string; cash_count: string; since: string };
+  const cashOf = async (branchId: string) =>
+    (
+      await db.execute<Cash>(sql`
+        select order_id, owner_id, cash_count::text as cash_count, since::text as since
+        from analytics_cash where branch_id = ${branchId} order by order_id`)
+    ).rows;
+
+  it("writes each cancelled record on its Tashkent cancel day with its total as entered, none for a live one (plan of 6.4c, decided item 5; Must fix 1)", async () => {
+    setClock("2031-05-15T05:00:00Z");
+    const scene = await spendingScene();
+    // 2.5 × 3 333 = 8 332.5 → 8 333, + 1 000 extra: 9 333, bought on 2 May, cancelled at 20:30
+    // UTC on 9 May, which is 01:30 on 10 May in Tashkent.
+    const cancelled = await bought(scene, {
+      purchasedOn: "2031-05-02",
+      qty: "2.500",
+      unitPrice: "3333",
+      extras: [1000n],
+      cancelled: true,
+      cancelledAt: "2031-05-09T20:30:00Z",
+    });
+    await bought(scene, { purchasedOn: "2031-05-03" });
+    await refreshNow();
+    expect(await cancelledOf(scene.branch.id)).toEqual([
+      { purchase_id: cancelled.purchaseId, cancelled_on: "2031-05-10", amount: "9333" },
+    ]);
+  });
+
+  it("writes each order's cash count and its date since when; none for a count of 0, a Draft or a Closed order (08 Money ledger; review correction 3)", async () => {
+    setClock("2031-05-15T05:00:00Z");
+    const scene = await spendingScene();
+    const finance = await insertUser("FINANCE", { branches: [scene.branch.id] });
+    // Held: 60 000 given on 3 May, 10 000 spent in cash on 2 May → 50 000 since 2 May.
+    const held = await bought(scene, { purchasedOn: "2031-05-02" });
+    await moneyOn(held, finance.id, { amount: 60_000n, occurredOn: "2031-05-03" });
+    // Given then returned in full: 0, no row.
+    const evened = await bought(scene, { purchasedOn: "2031-05-02", unitPrice: "0" });
+    await moneyOn(evened, finance.id, { amount: 20_000n, occurredOn: "2031-05-04" });
+    await moneyOn(evened, finance.id, {
+      kind: "CASH_RETURNED",
+      amount: 20_000n,
+      occurredOn: "2031-05-05",
+    });
+    // Closed and Draft orders with a count away from 0 are left out.
+    const closed = await bought(scene, { purchasedOn: "2031-05-02" });
+    await moneyOn(closed, finance.id, { amount: 30_000n, occurredOn: "2031-05-03" });
+    await setOrderStatus(closed.orderId, "CLOSED");
+    const draft = await bought(scene, { purchasedOn: "2031-05-02" });
+    await setOrderStatus(draft.orderId, "DRAFT");
+    await refreshNow();
+    expect(await cashOf(scene.branch.id)).toEqual([
+      { order_id: held.orderId, owner_id: scene.manager.id, cash_count: "50000", since: "2031-05-02" },
+    ]);
+  });
+
+  it("matches Money with managers on the same orders: each count, each since and each owner's held (Should fix 3)", async () => {
+    setClock("2031-05-15T05:00:00Z");
+    const scene = await spendingScene();
+    const finance = await insertUser("FINANCE", { branches: [scene.branch.id] });
+    const head = await insertUser("HEAD");
+    // A cancelled action does not count; the live one given later does.
+    const a = await bought(scene, { purchasedOn: "2031-05-06", unitPrice: "0" });
+    await moneyOn(a, finance.id, { amount: 90_000n, occurredOn: "2031-05-01", cancelled: true });
+    await moneyOn(a, finance.id, { amount: 40_000n, occurredOn: "2031-05-04" });
+    // A Transfer trip with a Cash extra: only the extra is cash spent (08 Cash spent).
+    const b = await bought(scene, {
+      purchasedOn: "2031-05-03",
+      paymentType: "TRANSFER",
+      extras: [{ amount: 7_000n, paymentType: "CASH" }],
+    });
+    await moneyOn(b, finance.id, { amount: 20_000n, occurredOn: "2031-05-07" });
+    // A cancelled cash record spends nothing; a live one of the same order is owed.
+    const c = await bought(scene, { purchasedOn: "2031-05-02", cancelled: true });
+    await recordOn(
+      scene,
+      { id: c.orderId, ownerId: c.ownerId, variantId: c.variantId },
+      { purchasedOn: "2031-05-05", unitPrice: "25000" },
+    );
+    await refreshNow();
+
+    const page = (await getMoneyWithManagers(head.id, scene.branch.id)).find(
+      (block) => block.ownerId === scene.manager.id,
+    );
+    expect(page).toBeDefined();
+    const rows = await cashOf(scene.branch.id);
+    expect(rows.map((row) => [row.order_id, BigInt(row.cash_count), row.since])).toEqual(
+      page!.orders
+        .map((order) => [order.id, order.cashCount, order.since])
+        .sort((x, y) => (String(x[0]) < String(y[0]) ? -1 : 1)),
+    );
+    // a: 40 000 since 4 May; b: 20 000 − 7 000 = 13 000 since 3 May; c: −25 000 since 5 May.
+    expect(page!.held).toBe(53_000n);
+    expect(page!.owed).toBe(25_000n);
+    const counts = new Map(rows.map((row) => [row.order_id, row.cash_count]));
+    expect(counts.get(a.orderId)).toBe("40000");
+    expect(counts.get(b.orderId)).toBe("13000");
+    expect(counts.get(c.orderId)).toBe("-25000");
   });
 });

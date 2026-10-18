@@ -226,3 +226,81 @@ export const analyticsSteps = pgTable(
     index("analytics_steps_decision_reason_key_idx").on(table.decision, table.reasonKey),
   ],
 );
+
+// One row per cancelled purchase record (10 Analytics, Head, Managers: "cancelled purchase
+// records"; plan of 6.4c, decided item 5, Look first): `cancelled_on` the Tashkent date of its
+// cancel; category the bought subtype's, department and owner the order's, supplier the trip's,
+// as `analytics_spending`. `amount` is the record's total as it was entered, `actualTotal()` of
+// the record read as live (`actualTotal()` leaves cancelled records out; review of the plan, Must
+// fix 1); the list shows it, the block counts. Task 6.4c.
+export const analyticsCancelled = pgTable(
+  "analytics_cancelled",
+  {
+    purchaseId: uuid("purchase_id")
+      .primaryKey()
+      .references(() => purchases.id),
+    orderId: uuid("order_id")
+      .notNull()
+      .references(() => orders.id),
+    branchId: uuid("branch_id")
+      .notNull()
+      .references(() => branches.id),
+    cancelledOn: date("cancelled_on").notNull(),
+    categoryId: uuid("category_id")
+      .notNull()
+      .references(() => categories.id),
+    departmentId: uuid("department_id")
+      .notNull()
+      .references(() => departments.id),
+    ownerId: uuid("owner_id")
+      .notNull()
+      .references(() => users.id),
+    supplierId: uuid("supplier_id").references(() => companies.id),
+    amount: som("amount").notNull(),
+  },
+  (table) => [
+    check("analytics_cancelled_amount_check", sql`${table.amount} >= 0`),
+    index("analytics_cancelled_branch_id_cancelled_on_idx").on(table.branchId, table.cancelledOn),
+    index("analytics_cancelled_order_id_idx").on(table.orderId),
+    index("analytics_cancelled_category_id_idx").on(table.categoryId),
+    index("analytics_cancelled_department_id_idx").on(table.departmentId),
+    index("analytics_cancelled_owner_id_idx").on(table.ownerId),
+    index("analytics_cancelled_supplier_id_idx").on(table.supplierId),
+  ],
+);
+
+// One row per order whose cash count is not 0 (10 Analytics, Head, Managers: "cash held and for
+// how long"; 08 Money ledger, Order's cash count; plan of 6.4c, decided items 4 and 8, Look
+// first): `orderCashCount()` and `cashSince()` of src/domain/money-ledger.ts, of the orders that
+// are neither Draft nor Closed, as Money with managers reads them (review of the plan, correction
+// 3). No status: the queries join `orders` for the live one. Category the planned subtype's,
+// department and owner the order's, as `analytics_outcomes`. Task 6.4c.
+export const analyticsCash = pgTable(
+  "analytics_cash",
+  {
+    orderId: uuid("order_id")
+      .primaryKey()
+      .references(() => orders.id),
+    branchId: uuid("branch_id")
+      .notNull()
+      .references(() => branches.id),
+    ownerId: uuid("owner_id")
+      .notNull()
+      .references(() => users.id),
+    categoryId: uuid("category_id")
+      .notNull()
+      .references(() => categories.id),
+    departmentId: uuid("department_id")
+      .notNull()
+      .references(() => departments.id),
+    cashCount: som("cash_count").notNull(),
+    since: date("since").notNull(),
+  },
+  (table) => [
+    check("analytics_cash_cash_count_check", sql`${table.cashCount} <> 0`),
+    index("analytics_cash_branch_id_idx").on(table.branchId),
+    index("analytics_cash_owner_id_idx").on(table.ownerId),
+    index("analytics_cash_category_id_idx").on(table.categoryId),
+    index("analytics_cash_department_id_idx").on(table.departmentId),
+  ],
+);
