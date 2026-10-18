@@ -1389,4 +1389,20 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - For 5.11, 7.2 and 7.4: a Head-only type in `reverseAllows()` is one line like DIRECT_ENTRY; test the item card's `canReverse` and `getReversePreview` too (permission review of 5.8).
 - For 5.12: the seed's direct entry can call `enterStockDirectly` as the Head.
 
-The next task is 5.9.
+## 5.9 Direct entry from Excel (18.10.2026, pull request #98)
+
+**Built**
+- Import kind `stock` on the 1.10 framework: `/catalog/import/stock` with a branch picker, its template (product, subtype, quantity, cost), the same preview and all-or-nothing save; "Import from Excel" on Stock on hand for the Head.
+- `importStock` (`src/features/warehouse/actions/import-stock.ts`): `stock.enter_direct` on the chosen branch; `checkStockImport()` (`features/warehouse/imports/check.ts`) finds and locks products, then subtypes, FOR SHARE in id order; documents of up to 100 lines in subtype-id order, EXISTING_STOCK, today; `direct_entry.create` per document.
+- Migration `0034_import_stock`: `STOCK` in `import_kind`, `catalog_imports.branch_id` (STOCK only), `stock_documents.import_id` (DIRECT_ENTRY only), each with its index.
+- `readStockRows()`, `cellQuantity()`, `cellCost()` (domain imports); `directEntryLineRefusal()` (domain stock-documents), shared by the form and the import; `lockDirectEntryBranch()`, `recordDirectEntry()` exported from `direct-entry.ts`; `authorizeImportKind()` for a page and template of any kind.
+
+**Left out, and the task that brings it**
+- Other reasons, dates and comments for an imported entry: the form of 5.8. The documents list and a document's page: 5.12. The stock value report's line for direct entries: 6.x.
+
+**What the next sessions must know**
+- For 5.12: a direct entry made by an import has `import_id`; the list can show it, and the seed may import through `importStock`.
+- A branch-scoped import kind passes `branchId` in the form; `upload()` of the page actions authorizes it before reading the file, and `previewImport()` takes it as its fourth argument.
+- A new enum value used in a CHECK of the same migration is compared as text (`kind::text = 'X'`): pending migrations apply in one transaction.
+
+The next task is 5.10.
