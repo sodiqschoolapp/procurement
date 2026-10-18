@@ -185,6 +185,10 @@
         "create": "Taklif yuborildi",
         "add": "Taklif katalogga qoʻshildi",
         "decline": "Taklif rad etildi"
+      },
+      "direct_entry": {
+        "create": "To'g'ridan-to'g'ri kiritish qilindi",
+        "reverse": "To'g'ridan-to'g'ri kiritish storno qilindi"
       }
     },
     "fields": {
@@ -1756,7 +1760,8 @@
       "noResultsTitle": "Hech narsa topilmadi",
       "noResultsText": "Bu qidiruv yoki toifa bo'yicha qoldiq yo'q. Ularni o'zgartiring yoki tozalang.",
       "newIssue": "Yangi berish",
-      "newReturn": "Yangi qaytarish"
+      "newReturn": "Yangi qaytarish",
+      "directEntry": "To'g'ridan-to'g'ri kiritish"
     },
     "item": {
       "back": "Ombordagi qoldiq",
@@ -1871,6 +1876,50 @@
       "departmentTitle": "Bo'lim almashtirilsinmi?",
       "departmentResult": "Ko'rsatilgan miqdorlar shu bo'limniki; qo'shilgan mollar formadan olib tashlanadi.",
       "departmentConfirm": "Bo'limni almashtirish"
+    },
+    "directEntry": {
+      "title": "To'g'ridan-to'g'ri kiritish",
+      "whatAndWhy": "Qayerga, qachon va nima uchun",
+      "branch": "Filial",
+      "chooseBranch": "Filialni tanlang",
+      "date": "Sana",
+      "reason": "Sabab",
+      "reasons": {
+        "EXISTING_STOCK": "Bizda avvaldan bor mol",
+        "GIFT": "Sovg'a yoki xayriya",
+        "OTHER": "Boshqa"
+      },
+      "items": "Mollar",
+      "branchFirst": "Avval filialni tanlang: bu yerda uning qoldig'i ko'rinadi.",
+      "noLines": "Hali mol yo'q. Yuqorida molni toping va qo'shing.",
+      "search": "Mol qidirish",
+      "searchHint": "Mol nomi",
+      "results": "Mollar",
+      "nothingFound": "Hech narsa topilmadi. Qidiruvni o'zgartiring.",
+      "full": "Bitta kiritishda ko'pi bilan {max} ta mol bo'ladi. Buni saqlang va yangisini boshlang.",
+      "inStock": "Omborda: {qty} {unit}",
+      "quantity": "Miqdori, {unit}",
+      "unitCost": "Birlik narxi, so'm",
+      "noReferencePrice": "Ma'lumotnoma narxi yo'q: narxni kiriting.",
+      "remove": "Olib tashlash",
+      "removeLine": "{name} ni olib tashlash",
+      "commentStep": "Izoh va saqlash",
+      "comment": "Izoh",
+      "commentOptional": "Izoh (ixtiyoriy)",
+      "commentNeeded": "Sabab «Boshqa»: izoh majburiy.",
+      "steps": "Kiritish bosqichlari",
+      "previous": "Orqaga",
+      "next": "Keyingi",
+      "step": "{total} dan {current}-bosqich",
+      "cancel": "Bekor qilish",
+      "save": "Kiritishni saqlash",
+      "saved": "{number} kiritish saqlandi.",
+      "savedTitle": "{number} kiritish saqlandi, ombor yangilandi.",
+      "newEntry": "Yangi kiritish",
+      "toStock": "Ombordagi qoldiq",
+      "switchTitle": "Filial almashtirilsinmi?",
+      "switchResult": "Qo'shilgan mollar formadan olib tashlanadi.",
+      "switchConfirm": "Filialni almashtirish"
     },
     "issueNote": {
       "title": "{number} berish varaqasi",

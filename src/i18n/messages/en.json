@@ -185,6 +185,10 @@
         "create": "Suggestion sent",
         "add": "Suggestion added to the catalog",
         "decline": "Suggestion declined"
+      },
+      "direct_entry": {
+        "create": "Direct entry made",
+        "reverse": "Direct entry reversed"
       }
     },
     "fields": {
@@ -1756,7 +1760,8 @@
       "noResultsTitle": "Nothing found",
       "noResultsText": "No stock matches the search or the category. Change them or clear them.",
       "newIssue": "New issue",
-      "newReturn": "New return"
+      "newReturn": "New return",
+      "directEntry": "Direct entry"
     },
     "item": {
       "back": "Stock on hand",
@@ -1871,6 +1876,50 @@
       "departmentTitle": "Change the department?",
       "departmentResult": "The amounts shown are of this department; the items you added will be removed from the form.",
       "departmentConfirm": "Change department"
+    },
+    "directEntry": {
+      "title": "Direct entry",
+      "whatAndWhy": "Where, when and why",
+      "branch": "Branch",
+      "chooseBranch": "Choose a branch",
+      "date": "Date",
+      "reason": "Reason",
+      "reasons": {
+        "EXISTING_STOCK": "Stock we already had",
+        "GIFT": "Gift or donation",
+        "OTHER": "Other"
+      },
+      "items": "Items",
+      "branchFirst": "Choose the branch first: its stock is shown here.",
+      "noLines": "No items yet. Find an item above and add it.",
+      "search": "Find an item",
+      "searchHint": "Product name",
+      "results": "Items",
+      "nothingFound": "No item matches. Change the search.",
+      "full": "A direct entry holds at most {max} items. Save this one and start another.",
+      "inStock": "In stock: {qty} {unit}",
+      "quantity": "Quantity, {unit}",
+      "unitCost": "Cost per unit, so'm",
+      "noReferencePrice": "No reference price: type the cost.",
+      "remove": "Remove",
+      "removeLine": "Remove {name}",
+      "commentStep": "Comment and save",
+      "comment": "Comment",
+      "commentOptional": "Comment (optional)",
+      "commentNeeded": "The reason is Other: the comment is required.",
+      "steps": "Steps of the direct entry",
+      "previous": "Back",
+      "next": "Next",
+      "step": "Step {current} of {total}",
+      "cancel": "Cancel",
+      "save": "Save direct entry",
+      "saved": "Direct entry {number} saved.",
+      "savedTitle": "Direct entry {number} is saved and the stock is updated.",
+      "newEntry": "New direct entry",
+      "toStock": "Stock on hand",
+      "switchTitle": "Change the branch?",
+      "switchResult": "The items you added will be removed from the form.",
+      "switchConfirm": "Change branch"
     },
     "issueNote": {
       "title": "Issue note {number}",

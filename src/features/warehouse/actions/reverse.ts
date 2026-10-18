@@ -4,6 +4,8 @@ import * as z from "zod";
 import { isMoveReason, moveReason } from "@/domain/order-moves";
 import { REVERSIBLE_STATUSES, reverseAllows } from "@/domain/stock-documents";
 import { ActionError, defineAction } from "@/server/action";
+import { audit } from "@/server/audit";
+import { now } from "@/server/clock";
 import { reasonFields } from "@/server/order-moves";
 import { type LockedDocument, lockDocument, reverseDocument } from "@/server/stock-documents";
 import { StockShortError } from "@/server/stock-ledger";
@@ -29,8 +31,9 @@ import { StockShortError } from "@/server/stock-ledger";
 //              below 0 refuses the whole reverse, naming the line and what is left.
 //
 // Reversing more than a department holds is allowed: the dialog warns, and the reason is its
-// comment (review of the plan, correction 1, Look first). No history event, notification or
-// audit row (decided item 5).
+// comment (review of the plan, correction 1, Look first). No history event or notification
+// (decided item 5); an issue and a return write no audit row, a direct entry one (plan of 5.8,
+// decided item 3: its making is in the audit log, so its undoing is too).
 
 export type ReverseInput = { documentId: string; reason: string };
 export type ReverseResult = { documentId: string; number: string };
@@ -96,5 +99,19 @@ export const reverseStockDocument = defineAction({
       sql`select number from stock_documents where id = ${document.id}`,
     );
     return { documentId: document.id, number: numbered.rows[0]!.number };
+  },
+  async history({ tx, input: typed, userId, locked }, result) {
+    if (locked!.rows.type !== "DIRECT_ENTRY") return;
+    await audit(
+      { tx, userId },
+      {
+        action: "direct_entry.reverse",
+        entity: "stock_documents",
+        entityId: result.documentId,
+        before: { number: result.number, status: "POSTED" },
+        after: { number: result.number, status: "REVERSED", reason: moveReason(typed.reason) },
+        at: now(),
+      },
+    );
   },
 });

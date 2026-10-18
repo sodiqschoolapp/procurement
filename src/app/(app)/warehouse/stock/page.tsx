@@ -10,6 +10,7 @@ import { Select } from "@/components/ui/select";
 import { cn } from "@/components/utils";
 import { BRANCH_COOKIE } from "@/features/catalog/branch-cookie";
 import { currentBranchChoice } from "@/features/catalog/queries/my-branches";
+import { directEntryBranchChoices } from "@/features/warehouse/queries/direct-entry-form";
 import { issueBranchChoices } from "@/features/warehouse/queries/issue-form";
 import { returnBranchChoices } from "@/features/warehouse/queries/return-form";
 import {
@@ -89,9 +90,10 @@ export default async function StockOnHandPage({ searchParams }: { searchParams: 
     pageParam.parse(first(raw.page)),
   );
   const categories = await stockCategoryChoices(user.id);
-  const [canIssue, canReturn] = await Promise.all([
+  const [canIssue, canReturn, canEnterDirectly] = await Promise.all([
     mayUse(issueBranchChoices, user.id),
     mayUse(returnBranchChoices, user.id),
+    mayUse(directEntryBranchChoices, user.id),
   ]);
   const t = await getTranslations("warehouse.stock");
   const format = await getFormatters();
@@ -134,6 +136,15 @@ export default async function StockOnHandPage({ searchParams }: { searchParams: 
             >
               <Icon name="undo" />
               {t("newReturn")}
+            </Link>
+          )}
+          {canEnterDirectly && (
+            <Link
+              href="/warehouse/documents/new?type=DIRECT_ENTRY"
+              className={cn(buttonVariants({ variant: "secondary" }), "max-sm:h-12")}
+            >
+              <Icon name="inventory_2" />
+              {t("directEntry")}
             </Link>
           )}
         </div>

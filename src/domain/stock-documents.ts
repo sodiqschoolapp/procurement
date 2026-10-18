@@ -79,17 +79,33 @@ export const REVERSIBLE_STATUSES: readonly DocumentStatus[] = ["POSTED", "RECEIV
 /**
  * Whether the actor may reverse a document of this type and maker (09 Issue to a department 3: "A
  * posted issue can be reversed by its creator or the Head"; Decided ahead, question 19; plan of
- * 5.7, decided item 1, Look first): an issue and a return by their creator or the Head. Every
- * other type is no until its task adds it, the Head only (5.8, 5.11, 7.2, 7.4). A Manager's right
- * RETURN_REVERSE and the branch are authorize()'s (`stock.return_reverse`), asked beside this.
+ * 5.7, decided item 1, Look first): an issue and a return by their creator or the Head; a direct
+ * entry by the Head only (plan of 5.8, decided item 2, Look first). Every other type is no until
+ * its task adds it, the Head only (5.11, 7.2, 7.4). A Manager's right RETURN_REVERSE and the
+ * branch are authorize()'s (`stock.return_reverse`), asked beside this.
  */
 export function reverseAllows(
   actor: Pick<Actor, "userId" | "role">,
   document: { type: DocumentType; createdBy: string },
 ): boolean {
+  if (document.type === "DIRECT_ENTRY") return actor.role === "HEAD";
   if (document.type !== "ISSUE" && document.type !== "RETURN") return false;
   if (actor.role === "HEAD") return true;
   return actor.role === "MANAGER" && document.createdBy === actor.userId;
+}
+
+export type DirectEntryReason = (typeof DIRECT_ENTRY_REASONS)[number];
+
+/**
+ * What is wrong with a direct entry's comment for its reason (09 Direct entry, Reason: "'Other'
+ * needs a comment"; Comment: "Optional, except for 'Other'"): `required` when the reason is OTHER
+ * and the comment is empty or blank; null otherwise. The form and the action both ask this.
+ */
+export function directEntryCommentRefusal(
+  reason: DirectEntryReason,
+  comment: string | null,
+): "required" | null {
+  return reason === "OTHER" && (comment ?? "").trim() === "" ? "required" : null;
 }
 
 /**
