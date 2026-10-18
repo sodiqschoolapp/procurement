@@ -1,7 +1,6 @@
 import { sql } from "drizzle-orm";
 
 import {
-  type Change,
   type MonthKey,
   type Period,
   changeAgainst,
@@ -11,6 +10,8 @@ import {
 import { businessMonth } from "@/domain/business-date";
 import type { Executor } from "@/server/authorize";
 import { readSnapshot } from "@/server/read-snapshot";
+
+import { type Counted, counted } from "../counted";
 
 import type { AnalyticsFilters, PeriodInput } from "../period-params";
 import { resolvePeriod } from "../resolve-period";
@@ -28,7 +29,7 @@ import { spendingWhere } from "../spending-where";
 //
 // Every sum is read as text into a bigint, never a JavaScript number (CLAUDE.md rule 6).
 
-export type Counted = { amount: bigint; change: Change };
+export type { Counted } from "../counted";
 
 export type SpendingBlock = {
   period: Period;
@@ -120,9 +121,4 @@ async function spendingIn(
       ...counted(row.now, row.before),
     })),
   };
-}
-
-function counted(now: string, before: string): Counted {
-  const amount = BigInt(now);
-  return { amount, change: changeAgainst(amount, BigInt(before)) };
 }

@@ -20,3 +20,39 @@ export function changeText(change: Change, t: Translate, format: Formatters): st
     ? t("change.down", { amount, percent: size })
     : t("change.up", { amount, percent: size });
 }
+
+type CountTranslate = (
+  key: "change.countUp" | "change.countDown" | "change.same" | "change.countUpFromNothing",
+  values?: Record<string, string>,
+) => string;
+
+/** A count's change, in orders (plan of 6.4, decided item 7): the same sentences, no so'm. */
+export function countChangeText(change: Change, t: CountTranslate, format: Formatters): string {
+  const { difference, percent } = change;
+  if (difference === 0n) return t("change.same");
+  const count = format.quantity((difference < 0n ? -difference : difference).toString());
+  if (percent === null) return t("change.countUpFromNothing", { count });
+  const size = percent.replace(/^-/, "");
+  return difference < 0n
+    ? t("change.countDown", { count, percent: size })
+    : t("change.countUp", { count, percent: size });
+}
+
+type ShareTranslate = (
+  key: "change.shareUp" | "change.shareDown" | "change.shareSame" | "change.shareNone",
+  values?: Record<string, string>,
+) => string;
+
+/** A share's change in percentage points, from shareChange() (plan of 6.4, decided item 7). */
+export function shareChangeText(
+  points: string | null,
+  t: ShareTranslate,
+  format: Formatters,
+): string {
+  if (points === null) return t("change.shareNone");
+  if (/^-?0(\.0)?$/.test(points)) return t("change.shareSame");
+  const size = format.quantity(points.replace(/^-/, ""));
+  return points.startsWith("-")
+    ? t("change.shareDown", { points: size })
+    : t("change.shareUp", { points: size });
+}

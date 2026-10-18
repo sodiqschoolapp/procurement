@@ -144,3 +144,33 @@ export function setColours(orders: readonly ColourOrder[]): SetColours | null {
     total,
   };
 }
+
+/** An order's Plan vs actual outcome (10 Analytics, Head, Plan vs actual; plan of 6.4). */
+export type OrderOutcome = {
+  colour: Colour;
+  /** orderTotal() of the plan. */
+  planned: bigint;
+  /** actualTotal() of the live records. */
+  actual: bigint;
+  /** planned − actual: above 0 saved, below 0 overspent (08 Difference). */
+  difference: bigint;
+};
+
+/**
+ * How an order ended against its plan, or null while it has not (plan of 6.4, decided items 3
+ * and 4, Look first): from Open on, buying Done or Done short, its colour the Total colour of
+ * orderColours(). An order marked Not bought is left out: nothing was bought, so its planned total
+ * would read as saved.
+ */
+export function orderOutcome(order: ColourOrder): OrderOutcome | null {
+  if (order.progress !== "DONE" && order.progress !== "DONE_SHORT") return null;
+  const colours = orderColours(order);
+  if (!colours || colours.total.colour === "grey") return null;
+  const planned = orderTotal(order.plan);
+  return {
+    colour: colours.total.colour,
+    planned,
+    actual: planned - colours.total.difference,
+    difference: colours.total.difference,
+  };
+}

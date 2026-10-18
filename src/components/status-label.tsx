@@ -313,6 +313,35 @@ export function ColourLabel(props: ColourLabelProps & { className?: string }) {
 }
 
 /**
+ * The Total label of a Plan vs actual outcome on the Analytics page (10 Analytics, Head; plan of
+ * 6.4): the colour's icon and word with the amount of its orders, without its sign: green 0,
+ * orange the money left, red the overspent. Unlike a set's label it may count no order, so its
+ * amount may be 0 in any colour.
+ */
+export function OutcomeLabel({
+  colour,
+  amount,
+  className,
+}: {
+  colour: LabelColour;
+  amount: bigint;
+  className?: string;
+}) {
+  const t = useTranslations("colourLabel");
+  const format = useFormatters();
+  if (amount < 0n || (colour === "green" && amount !== 0n)) {
+    throw new Error(`Refused: an outcome's amount is shown without its sign, not ${amount}.`);
+  }
+  return (
+    <LabelBox tone={colour} icon={COLOUR_ICONS[colour]} className={className}>
+      <span className="sr-only">{t("total.name")}</span>
+      {t(`total.${COLOUR_WORDS.total[colour]}`)}
+      <span className="tabular-nums">{format.money(amount)}</span>
+    </LabelBox>
+  );
+}
+
+/**
  * One label as the server sends it (plan of 3.8): money as decimal text, never a JavaScript number
  * (CLAUDE.md rule 6); a set's Number and Price as a count of orders.
  */

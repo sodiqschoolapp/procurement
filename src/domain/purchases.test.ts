@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { orderTotal } from "./order-totals";
 import type { Actor, ManagerRight, Role } from "./permissions";
 import {
+  paymentParts,
   type GroupOrder,
   type PurchaseRecord,
   actualExtra,
@@ -589,5 +590,65 @@ describe("receivedTogether: a group row's received quantity (07 Order progress; 
   it("refuses a value that is not numeric(14,3) text", () => {
     expect(() => receivedTogether(["-1"])).toThrow(RangeError);
     expect(() => receivedTogether(["1.2345"])).toThrow(RangeError);
+  });
+});
+
+describe("a record split by payment type (07 Purchase record; 10 Analytics, Head, Spending; plan of 6.4, item 2)", () => {
+  it("gives the goods to the trip's type and each extra to its own; the parts add up", () => {
+    // The plan review's example: 3 × 3 333 by card with a 5 000 cash delivery.
+    const parts = paymentParts({
+      qty: "3",
+      unitPrice: 3_333n,
+      paymentType: "CARD",
+      extras: [{ amount: 5_000n, paymentType: "CASH" }],
+    });
+    expect(parts).toEqual([
+      { paymentType: "CASH", amount: 5_000n },
+      { paymentType: "CARD", amount: 9_999n },
+    ]);
+    const total = actualTotal([
+      { qty: "3", unitPrice: 3_333n, extras: [5_000n], isCancelled: false },
+    ]);
+    expect(parts.reduce((sum, part) => sum + part.amount, 0n)).toBe(total);
+  });
+
+  it("adds extras of one type into one part", () => {
+    expect(
+      paymentParts({
+        qty: "1",
+        unitPrice: 10_000n,
+        paymentType: "TRANSFER",
+        extras: [
+          { amount: 5_000n, paymentType: "CASH" },
+          { amount: 2_000n, paymentType: "CASH" },
+          { amount: 1_000n, paymentType: "TRANSFER" },
+        ],
+      }),
+    ).toEqual([
+      { paymentType: "CASH", amount: 7_000n },
+      { paymentType: "TRANSFER", amount: 11_000n },
+    ]);
+  });
+
+  it("rounds the goods of the one record half up (08: each record on its own)", () => {
+    // 2.5 × 3 333 = 8 332.5 → 8 333.
+    expect(
+      paymentParts({ qty: "2.500", unitPrice: 3_333n, paymentType: "CASH", extras: [] }),
+    ).toEqual([{ paymentType: "CASH", amount: 8_333n }]);
+  });
+
+  it("gives no part for a gift with no extra cost (price 0)", () => {
+    expect(paymentParts({ qty: "4", unitPrice: 0n, paymentType: "CARD", extras: [] })).toEqual([]);
+  });
+
+  it("refuses an extra of 0 or below", () => {
+    expect(() =>
+      paymentParts({
+        qty: "1",
+        unitPrice: 1_000n,
+        paymentType: "CASH",
+        extras: [{ amount: 0n, paymentType: "CARD" }],
+      }),
+    ).toThrow(RangeError);
   });
 });

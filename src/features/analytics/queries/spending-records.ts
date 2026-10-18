@@ -87,11 +87,24 @@ async function recordsIn(
     if (filters.category && filters.category !== key.category) throw new PeriodRefusedError();
     scope = { ...filters, category: key.category };
   }
+  // The keys of Plan vs actual name no records (their list is /analytics/orders).
+  if (key.kind === "colour" || key.kind === "overspent" || key.kind === "saved") {
+    throw new PeriodRefusedError();
+  }
   const where = spendingWhere(actor, range, scope);
+  // A payment type's list holds the records with a part of that type, each with that part, so
+  // its total is the slice clicked (plan of 6.4, decided item 2, Look first).
+  const part =
+    key.kind === "payment"
+      ? sql`join analytics_spending_payments pp
+              on pp.purchase_id = analytics_spending.purchase_id
+             and pp.payment_type = ${key.payment}`
+      : sql``;
+  const amount = key.kind === "payment" ? sql`pp.amount` : sql`analytics_spending.amount`;
 
   const summary = await db.execute<{ count: string; total: string }>(sql`
-    select count(*)::text as count, coalesce(sum(amount), 0)::text as total
-    from analytics_spending where ${where}`);
+    select count(*)::text as count, coalesce(sum(${amount}), 0)::text as total
+    from analytics_spending ${part} where ${where}`);
   const category =
     key.kind === "category"
       ? await db.execute<{ name: string }>(
@@ -118,8 +131,9 @@ async function recordsIn(
            pr.name as product_name,
            case when v.is_default then null else v.name end as subtype_name,
            b.name as branch_name, analytics_spending.purchased_on::text as purchased_on,
-           co.name as supplier_name, analytics_spending.amount::text as amount
+           co.name as supplier_name, ${amount}::text as amount
     from analytics_spending
+    ${part}
     join orders o on o.id = analytics_spending.order_id
     join purchases p on p.id = analytics_spending.purchase_id
     join product_variants v on v.id = p.variant_id

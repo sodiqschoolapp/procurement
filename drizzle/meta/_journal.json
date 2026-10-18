@@ -260,6 +260,13 @@
       "when": 1792325245928,
       "tag": "0036_analytics_spending",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1792329948603,
+      "tag": "0037_analytics_head",
+      "breakpoints": true
     }
   ]
 }

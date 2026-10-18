@@ -27,7 +27,8 @@ type Raw = Record<string, string | string[] | undefined>;
 
 async function readList(userId: string, raw: Raw) {
   const params = parseAnalyticsParams(raw);
-  if (!params) return "refused" as const;
+  // "Other owners" names orders of Plan vs actual, no records (plan of 6.4).
+  if (!params || params.otherOwners) return "refused" as const;
   try {
     const list = await getSpendingRecords(
       userId,
@@ -57,6 +58,7 @@ export default async function AnalyticsRecordsPage({
   const { params, list } = read;
   const t = await getTranslations("analytics");
   const tMonths = await getTranslations("months");
+  const tPayment = await getTranslations("paymentTypes");
   const format = await getFormatters();
   const dates = { first: format.date(list.range.first), last: format.date(list.range.last) };
   const what =
@@ -70,7 +72,9 @@ export default async function AnalyticsRecordsPage({
         })
       : list.key.kind === "category"
         ? t("records.category", { name: list.categoryName ?? "", ...dates })
-        : t("records.period", dates);
+        : list.key.kind === "payment"
+          ? t("records.payment", { name: tPayment(list.key.payment), ...dates })
+          : t("records.period", dates);
   const pages = Math.max(1, Math.ceil(list.count / RECORDS_PAGE_SIZE));
   const href = (page: number) =>
     `/analytics/records?${analyticsSearch(params.period, params.filters, { key: params.key, page })}`;

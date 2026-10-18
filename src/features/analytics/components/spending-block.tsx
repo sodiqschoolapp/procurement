@@ -22,7 +22,8 @@ import { changeText } from "./change-text";
 // Every number, point, bar and row opens the records behind it (point 3); every number shows its
 // change (point 1). The page computes nothing: the amounts and changes are the query's.
 
-type Row = { key: DrillKey; label: string; counted: Counted };
+/** One row of a chart's table and one bar or point: what it shows and the list behind it. */
+export type ChartRow = { href: string; label: string; counted: Counted };
 
 export async function SpendingBlockView({
   block,
@@ -46,26 +47,17 @@ export async function SpendingBlockView({
       year: month.slice(0, 4),
     });
 
-  const monthRows: Row[] = block.months.map((point) => ({
-    key: { kind: "month", month: point.month },
+  const monthRows: ChartRow[] = block.months.map((point) => ({
+    href: records({ kind: "month", month: point.month }),
     label: monthLabel(point.month),
     counted: point,
   }));
-  const categoryRows: Row[] = block.categories.map((category) => ({
-    key: { kind: "category", category: category.id },
+  const categoryRows: ChartRow[] = block.categories.map((category) => ({
+    href: records({ kind: "category", category: category.id }),
     label: category.isActive ? category.name : t("inactive", { name: category.name }),
     counted: category,
   }));
-  const pointsOf = (rows: Row[]): ChartPoint[] =>
-    rows.map((row) => ({
-      key: row.label,
-      label: row.label,
-      // The drawing's height only (src/components/charts/chart-point.ts).
-      value: Number(row.counted.amount),
-      shown: format.money(row.counted.amount),
-      change: changeText(row.counted.change, t, format),
-      href: records(row.key),
-    }));
+  const pointsOf = (rows: ChartRow[]) => chartPoints(rows, t, format);
   const empty = block.total.amount === 0n && block.categories.length === 0;
 
   return (
@@ -104,7 +96,6 @@ export async function SpendingBlockView({
             excel={download("months")}
             firstColumn={t("spending.columns.month")}
             rows={monthRows}
-            records={records}
           >
             <LineChartBlock points={pointsOf(monthRows)} label={t("spending.byMonth")} />
           </ChartCard>
@@ -114,7 +105,6 @@ export async function SpendingBlockView({
             excel={download("categories")}
             firstColumn={t("spending.columns.category")}
             rows={categoryRows}
-            records={records}
           >
             <BarChartBlock points={pointsOf(categoryRows)} label={t("spending.byCategory")} />
           </ChartCard>
@@ -124,21 +114,37 @@ export async function SpendingBlockView({
   );
 }
 
-async function ChartCard({
+/** The points of a chart from the rows of its table: every text the server's. */
+export function chartPoints(
+  rows: readonly ChartRow[],
+  t: Parameters<typeof changeText>[1],
+  format: Awaited<ReturnType<typeof getFormatters>>,
+): ChartPoint[] {
+  return rows.map((row) => ({
+    key: row.href,
+    label: row.label,
+    // The drawing's height only (src/components/charts/chart-point.ts).
+    value: Number(row.counted.amount),
+    shown: format.money(row.counted.amount),
+    change: changeText(row.counted.change, t, format),
+    href: row.href,
+  }));
+}
+
+/** A chart with its title, its Excel link and its table under it (10 points 3 and 4). */
+export async function ChartCard({
   id,
   title,
   excel,
   firstColumn,
   rows,
-  records,
   children,
 }: {
   id: string;
   title: string;
   excel: string;
   firstColumn: string;
-  rows: Row[];
-  records: (key: DrillKey) => string;
+  rows: ChartRow[];
   children: React.ReactNode;
 }) {
   const t = await getTranslations("analytics");
@@ -179,12 +185,9 @@ async function ChartCard({
           </thead>
           <tbody>
             {rows.map((row) => (
-              <tr key={row.label} className="border-t" data-chart-row={row.label}>
+              <tr key={row.href} className="border-t" data-chart-row={row.label}>
                 <th scope="row" className="px-3 py-2 font-normal">
-                  <Link
-                    href={records(row.key)}
-                    className="text-primary underline-offset-2 hover:underline"
-                  >
+                  <Link href={row.href} className="text-primary underline-offset-2 hover:underline">
                     {row.label}
                   </Link>
                 </th>

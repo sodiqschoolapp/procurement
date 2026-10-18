@@ -9,6 +9,7 @@
 // (developer-rules.md rule 6).
 
 import { Exact, QUANTITY, extrasSum, quantityOf } from "./order-totals";
+import { PAYMENT_TYPES, type PaymentType } from "./payment-types";
 import { type Actor, decide } from "./permissions";
 import type { RequestStatus } from "./request-status";
 
@@ -94,6 +95,42 @@ export function actualExtra(records: readonly PurchaseRecord[]): bigint {
 /** 08 Actual total: actual goods + actual extra. */
 export function actualTotal(records: readonly PurchaseRecord[]): bigint {
   return actualGoods(records) + actualExtra(records);
+}
+
+/** One live record with the payment type of each of its parts (07 Purchase record). */
+export type PaidRecord = {
+  qty: string;
+  unitPrice: bigint;
+  /** The trip's payment type: the goods part is paid with it (07, "Payment type used"). */
+  paymentType: PaymentType;
+  /** Each extra cost with its own payment type (07, extra costs: type, amount, payment type). */
+  extras: readonly { amount: bigint; paymentType: PaymentType }[];
+};
+
+/**
+ * The Actual total of one record split by payment type (10 Analytics, Head, Spending: "split by
+ * payment type"; plan of 6.4, decided item 2, Look first): the goods part, round(quantity × price)
+ * of the record on its own, to the trip's type; each extra cost to its own; parts of one type
+ * added; no part of 0. In the order of PAYMENT_TYPES. The parts add up to actualTotal([record]).
+ */
+export function paymentParts(record: PaidRecord): { paymentType: PaymentType; amount: bigint }[] {
+  const plain: PurchaseRecord = {
+    qty: record.qty,
+    unitPrice: record.unitPrice,
+    extras: record.extras.map((extra) => extra.amount),
+    isCancelled: false,
+  };
+  const sums = new Map<PaymentType, bigint>();
+  const add = (type: PaymentType, amount: bigint) =>
+    sums.set(type, (sums.get(type) ?? 0n) + amount);
+  add(record.paymentType, actualGoods([{ ...plain, extras: [] }]));
+  // actualExtra() checks every amount (each more than 0) before any is added.
+  actualExtra([plain]);
+  for (const extra of record.extras) add(extra.paymentType, extra.amount);
+  return PAYMENT_TYPES.flatMap((paymentType) => {
+    const amount = sums.get(paymentType) ?? 0n;
+    return amount === 0n ? [] : [{ paymentType, amount }];
+  });
 }
 
 /**

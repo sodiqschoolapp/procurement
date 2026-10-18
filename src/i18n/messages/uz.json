@@ -2328,7 +2328,14 @@
       "up": "Oldingi davrga nisbatan +{amount} (+{percent} %)",
       "down": "Oldingi davrga nisbatan −{amount} (−{percent} %)",
       "same": "Oldingi davrga nisbatan oʻzgarish yoʻq",
-      "upFromNothing": "Oldingi davrga nisbatan +{amount}, unda hech narsa yoʻq edi"
+      "upFromNothing": "Oldingi davrga nisbatan +{amount}, unda hech narsa yoʻq edi",
+      "countUp": "Oldingi davrga nisbatan +{count} (+{percent} %)",
+      "countDown": "Oldingi davrga nisbatan −{count} (−{percent} %)",
+      "countUpFromNothing": "Oldingi davrga nisbatan +{count}, unda hech narsa yoʻq edi",
+      "shareUp": "Oldingi davrga nisbatan +{points} punkt",
+      "shareDown": "Oldingi davrga nisbatan −{points} punkt",
+      "shareSame": "Ulush oldingi davrdagidek",
+      "shareNone": "Oldingi davrda hech bir buyurtma yakunlanmagan"
     },
     "spending": {
       "title": "Xarajatlar",
@@ -2340,9 +2347,18 @@
         "month": "Oy",
         "category": "Turkum",
         "amount": "Sarflangan",
-        "change": "Oʻzgarish"
+        "change": "Oʻzgarish",
+        "branch": "Filial",
+        "department": "Boʻlim",
+        "supplier": "Yetkazib beruvchi",
+        "payment": "Toʻlov turi"
       },
-      "open": "Raqam ortidagi yozuvlarni koʻrsatish: {what}"
+      "open": "Raqam ortidagi yozuvlarni koʻrsatish: {what}",
+      "byBranch": "Filiallar boʻyicha",
+      "byDepartment": "Boʻlimlar boʻyicha",
+      "topSuppliers": "Eng yirik 10 yetkazib beruvchi",
+      "byPayment": "Toʻlov turi boʻyicha",
+      "none": "Bu davr uchun koʻrsatadigan narsa yoʻq."
     },
     "records": {
       "title": "Raqam ortidagi yozuvlar",
@@ -2360,12 +2376,76 @@
         "date": "Xarid sanasi",
         "supplier": "Yetkazib beruvchi",
         "amount": "Haqiqiy summa"
-      }
+      },
+      "payment": "{name}, {first} – {last}"
     },
     "sheets": {
       "months": "Oylar boʻyicha xarajatlar",
       "categories": "Turkumlar boʻyicha xarajatlar",
-      "records": "Yozuvlar"
+      "records": "Yozuvlar",
+      "branches": "Filiallar boʻyicha xarajatlar",
+      "departments": "Boʻlimlar boʻyicha xarajatlar",
+      "suppliers": "Eng yirik 10 yetkazib beruvchi",
+      "payments": "Toʻlov turi boʻyicha xarajatlar",
+      "outcomes": "Reja va haqiqat",
+      "outcomeBranches": "Filiallar boʻyicha reja va haqiqat",
+      "outcomeManagers": "Menejerlar boʻyicha reja va haqiqat",
+      "orders": "Buyurtmalar"
+    },
+    "plan": {
+      "title": "Reja va haqiqat",
+      "note": "Xaridi shu davrda toʻliq yoki qisman yakunlangan buyurtmalar. «Sotib olinmadi» deb belgilangan buyurtmalar hisoblanmaydi.",
+      "ended": "Yakunlangan buyurtmalar",
+      "share": "Yakunlangan buyurtmalarning {share} %",
+      "noShare": "Yakunlangan buyurtma yoʻq",
+      "overspent": "Jami ortiqcha sarf",
+      "saved": "Jami tejalgan",
+      "byOutcome": "Buyurtmalar natija boʻyicha",
+      "byBranch": "Filiallar boʻyicha",
+      "byManager": "Menejerlar boʻyicha",
+      "otherOwners": "Boshqa egalar",
+      "empty": "Bu davrda ham, oldingi davrda ham hech bir buyurtma yakunlanmagan.",
+      "outcome": {
+        "green": "Teng",
+        "amber": "Qoldi",
+        "red": "Oshdi"
+      },
+      "columns": {
+        "branch": "Filial",
+        "manager": "Menejer",
+        "orders": "Buyurtmalar",
+        "green": "Teng",
+        "amber": "Qoldi",
+        "red": "Oshdi",
+        "overspent": "Ortiqcha sarf",
+        "saved": "Tejalgan",
+        "outcome": "Natija",
+        "count": "Buyurtmalar",
+        "change": "Oʻzgarish"
+      }
+    },
+    "orders": {
+      "title": "Raqam ortidagi buyurtmalar",
+      "all": "Barcha yakunlangan buyurtmalar, {first} – {last}",
+      "colour": "{outcome}, {first} – {last}",
+      "overspent": "Ortiqcha sarflangan buyurtmalar, {first} – {last}",
+      "saved": "Pul qolgan buyurtmalar, {first} – {last}",
+      "otherOwners": "Menejer boʻlmagan egalar",
+      "summary": "{count} ta buyurtma, farq {sum}",
+      "summaryOverspent": "{count} ta buyurtma, ortiqcha sarf {sum}",
+      "summarySaved": "{count} ta buyurtma, tejalgan {sum}",
+      "empty": "Bu raqamga hech qanday buyurtma kirmaydi.",
+      "columns": {
+        "order": "Buyurtma",
+        "product": "Mahsulot",
+        "branch": "Filial",
+        "owner": "Egasi",
+        "ended": "Xarid yakunlandi",
+        "planned": "Rejadagi summa",
+        "actual": "Haqiqiy summa",
+        "difference": "Farq",
+        "outcome": "Natija"
+      }
     }
   }
 }

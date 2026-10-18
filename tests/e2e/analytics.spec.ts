@@ -207,3 +207,154 @@ test("another branch on the Analytics page and its records is Not found (03 rule
   await page.goto("/analytics?branch=all");
   await expect(page.getByRole("heading", { level: 1 })).toContainText(uz.analytics.title);
 });
+
+/**
+ * A red order of a new category in EA in February 2020, owned by the Head: planned 1 × 10 000,
+ * bought 1 × 12 000 by card, buying Done on 12 February (build plan 6.4a).
+ */
+async function seedRedOrder(): Promise<{ branch: string; category: string }> {
+  const tag = randomUUID().slice(0, 8);
+  return withDatabase(async (client) => {
+    await client.query("begin");
+    let ids;
+    try {
+      const headId = (
+        await client.query<{ id: string }>("select id from users where username = $1", [
+          E2E_ROLES.HEAD.username,
+        ])
+      ).rows[0]!.id;
+      const branch = (
+        await client.query<{ id: string }>("select id from branches where code = 'EA'")
+      ).rows[0]!.id;
+      const unit = await client.query<{ id: string }>(
+        `insert into units (name, short_name, allow_decimal, is_active, created_at)
+         values ($1, $2, true, true, now()) returning id`,
+        [`O'lchov ${tag}`, `r${tag}`],
+      );
+      const category = await client.query<{ id: string }>(
+        `insert into categories (name, is_active, created_at) values ($1, true, now()) returning id`,
+        [`Reja ${tag}`],
+      );
+      const department = await client.query<{ id: string }>(
+        `insert into departments (branch_id, name, is_active, created_at)
+         values ($1, $2, true, now()) returning id`,
+        [branch, `Bo'lim ${tag}`],
+      );
+      const product = await client.query<{ id: string }>(
+        `insert into products (name, type, category_id, unit_id, is_active, has_variants, created_at)
+         values ($1, 'GOODS', $2, $3, true, false, now()) returning id`,
+        [`Qalam ${tag}`, category.rows[0]!.id, unit.rows[0]!.id],
+      );
+      const variant = await client.query<{ id: string }>(
+        `insert into product_variants (product_id, name, is_default, is_active, created_at)
+         values ($1, 'default', true, true, now()) returning id`,
+        [product.rows[0]!.id],
+      );
+      const order = await client.query<{ id: string }>(
+        `insert into orders (number, branch_id, owner_id, created_by, status, variant_id,
+                             department_id, needed_by, planned_qty, planned_price, planned_total,
+                             payment_type, progress, submitted_at, created_at, updated_at)
+         values ($1, $2, $3, $3, 'PURCHASING', $4, $5, '2020-03-01', 1, 10000, 10000, 'CARD',
+                 'DONE', now(), now(), now())
+         returning id`,
+        [
+          `EA-20-${7_000_000 + Math.floor(Math.random() * 999_999)}`,
+          branch,
+          headId,
+          variant.rows[0]!.id,
+          department.rows[0]!.id,
+        ],
+      );
+      const trip = await client.query<{ id: string }>(
+        `insert into purchase_trips (client_key, branch_id, purchased_on, payment_type, created_by,
+                                     created_at)
+         values ($1, $2, '2020-02-12', 'CARD', $3, now()) returning id`,
+        [randomUUID(), branch, headId],
+      );
+      await client.query(
+        `insert into purchases (trip_id, order_id, branch_id, variant_id, qty, unit_price,
+                                created_by, created_at)
+         values ($1, $2, $3, $4, 1, 12000, $5, now())`,
+        [trip.rows[0]!.id, order.rows[0]!.id, branch, variant.rows[0]!.id, headId],
+      );
+      const action = await client.query<{ id: string }>(
+        `insert into order_actions (client_key, type, actor_id, order_count, created_at)
+         values ($1, 'RECORD_PURCHASE', $2, 1, '2020-02-12T05:00:00Z') returning id`,
+        [randomUUID(), headId],
+      );
+      await client.query(
+        `insert into order_events (order_id, action_id, type, from_status, to_status, actor_id,
+                                   created_at)
+         values ($1, $2, 'RECORD_PURCHASE', 'PURCHASING', 'PURCHASING', $3,
+                 '2020-02-12T05:00:00Z')`,
+        [order.rows[0]!.id, action.rows[0]!.id, headId],
+      );
+      await client.query("commit");
+      ids = { branch, category: category.rows[0]!.id };
+    } catch (error) {
+      await client.query("rollback");
+      throw error;
+    }
+    await drizzle(client, { schema }).transaction((tx) => refreshAnalytics(tx));
+    return ids;
+  });
+}
+
+test("Done when 6.4a: the Head clicks a branch bar and a Plan vs actual number and sees what is behind them (10 Head; 16 phase 6)", async ({
+  page,
+}) => {
+  const { branch, category } = await seedRedOrder();
+  await signIn(page);
+  await page.goto(
+    `/analytics?period=custom&from=2020-02-01&to=2020-02-29&branch=${branch}&category=${category}`,
+  );
+  await expect(page.locator('[data-analytics-block="plan"]')).toBeVisible();
+
+  // By branch: one bar of 12 000; it opens the records of that branch with the same total.
+  const branches = page.locator('[data-chart-card="spending-branches"]');
+  await expect(branches.locator("[data-amount]")).toHaveText([/12\s000/]);
+  await branches.locator(".recharts-bar-rectangle").first().click();
+  await expect(page).toHaveURL(/\/analytics\/records\?/);
+  await expect(page.locator("[data-records-summary]")).toContainText(/12\s000/);
+  expect(await scrollsSideways(page)).toBe(false);
+  await page.getByRole("link", { name: uz.analytics.records.back }).click();
+
+  // By payment type: card only.
+  await expect(page.locator('[data-chart-card="spending-payments"] [data-chart-row]')).toHaveText([
+    new RegExp(uz.paymentTypes.CARD),
+  ]);
+
+  // Plan vs actual: one red order, over 2 000; its number opens the order behind it.
+  const red = page.locator('[data-plan-tile="red"]');
+  await expect(red).toContainText(/2\s000/);
+  await expect(page.locator('[data-plan-tile="overspent"] [data-plan-number]')).toHaveText(
+    /2\s000/,
+  );
+  await red.locator("[data-plan-number]").click();
+  await expect(page).toHaveURL(/\/analytics\/orders\?.*key=colour%3Ared/);
+  await expect(page.locator("[data-order-row]")).toHaveCount(1);
+  await expect(page.locator("[data-orders-summary]")).toContainText(/2\s000/);
+  expect(await scrollsSideways(page)).toBe(false);
+
+  // The Head owns it, so the by-Manager table holds it under "Other owners" (review correction 1).
+  await page.getByRole("link", { name: uz.analytics.records.back }).click();
+  const others = page.locator('[data-chart-card="plan-managers"] [data-tally-row="other"]');
+  await expect(others).toContainText(uz.analytics.plan.otherOwners);
+  await others.locator('[data-cell="red"] a').click();
+  await expect(page).toHaveURL(/owner=other/);
+  await expect(page.locator("[data-order-row]")).toHaveCount(1);
+});
+
+test("a Manager's Analytics page has no Plan vs actual block (plan of 6.4, decided item 8)", async ({
+  page,
+}) => {
+  await page.goto("/login");
+  await page.locator("#username").fill(E2E_ROLES.MANAGER.username);
+  await page.locator("#password").fill(E2E_ROLES.MANAGER.password);
+  await page.locator("form button[type=submit]").click();
+  await expect(page).toHaveURL(/\/$/);
+  await page.goto("/analytics");
+  await expect(page.locator('[data-analytics-block="spending"]')).toBeVisible();
+  await expect(page.locator('[data-analytics-block="plan"]')).toHaveCount(0);
+  await expect(page.locator('[data-analytics-block="head-spending"]')).toHaveCount(0);
+});

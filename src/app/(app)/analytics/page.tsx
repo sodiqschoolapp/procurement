@@ -5,9 +5,13 @@ import { getTranslations } from "next-intl/server";
 import { BRANCH_COOKIE } from "@/features/catalog/branch-cookie";
 import { currentBranchChoice } from "@/features/catalog/queries/my-branches";
 import { AnalyticsFilterBar } from "@/features/analytics/components/filter-bar";
+import { HeadSpendingView } from "@/features/analytics/components/head-spending-block";
+import { PlanVsActualView } from "@/features/analytics/components/plan-vs-actual-block";
 import { SpendingBlockView } from "@/features/analytics/components/spending-block";
 import { parseAnalyticsParams } from "@/features/analytics/period-params";
 import { getAnalyticsFilters } from "@/features/analytics/queries/filters";
+import { getHeadSpending } from "@/features/analytics/queries/head-spending";
+import { getPlanVsActual } from "@/features/analytics/queries/plan-vs-actual";
 import { getSpending } from "@/features/analytics/queries/spending";
 import { PeriodRefusedError } from "@/features/analytics/resolve-period";
 import { getFormatters } from "@/i18n/get-formatters";
@@ -16,15 +20,17 @@ import { AuthorizationError } from "@/server/authorize";
 
 // /analytics, "what is happening and why" (10-notifications-analytics-reports.md, Analytics page
 // per role; 11-screens-and-ux.md, Screens: "Analytics | All, each role sees its own page"; build-
-// plan 6.3). The period picker and the filters above the blocks; until 6.4 to 6.6 every role sees
-// the shared Spending block (plan of 6.3, decided item 12). The branch filter starts at the top
+// plan 6.3). The period picker and the filters above the blocks; until 6.5 and 6.6 the other roles
+// see the shared Spending block (plan of 6.3, decided item 12). The Head's page adds the rest of
+// Spending and Plan vs actual (build-plan 6.4a; plan of 6.4, decided item 8); Prices, Approval
+// speed, Managers and Warehouse come in 6.4b and 6.4c. The branch filter starts at the top
 // bar's branch view (decided item 9). An address the parser refuses, or a school year not set,
 // falls back to this month (review of the plan, correction 2); another branch is Not found (03
 // rule 1). The line under the title says when the summary was last rebuilt (decided item 13).
 
 type Raw = Record<string, string | string[] | undefined>;
 
-async function readPage(userId: string, raw: Raw) {
+async function readPage(userId: string, isHead: boolean, raw: Raw) {
   const params = parseAnalyticsParams(raw);
   if (!params) return "refused" as const;
   const filters = params.branchGiven
@@ -34,11 +40,17 @@ async function readPage(userId: string, raw: Raw) {
         branch: await currentBranchChoice(userId, (await cookies()).get(BRANCH_COOKIE)?.value),
       };
   try {
-    const [options, block] = await Promise.all([
+    const [options, block, head] = await Promise.all([
       getAnalyticsFilters(userId),
       getSpending(userId, params.period, filters),
+      isHead
+        ? Promise.all([
+            getHeadSpending(userId, params.period, filters),
+            getPlanVsActual(userId, params.period, filters),
+          ])
+        : null,
     ]);
-    return { period: params.period, filters, options, block };
+    return { period: params.period, filters, options, block, head };
   } catch (error) {
     if (error instanceof PeriodRefusedError) return "refused" as const;
     if (error instanceof AuthorizationError && error.kind === "not_found")
@@ -49,10 +61,10 @@ async function readPage(userId: string, raw: Raw) {
 
 export default async function AnalyticsPage({ searchParams }: { searchParams: Promise<Raw> }) {
   const user = await requireUser("/analytics");
-  const read = await readPage(user.id, await searchParams);
+  const read = await readPage(user.id, user.role === "HEAD", await searchParams);
   if (read === "refused") redirect("/analytics");
   if (read === "not_found") notFound();
-  const { period, filters, options, block } = read;
+  const { period, filters, options, block, head } = read;
   const t = await getTranslations("analytics");
   const format = await getFormatters();
 
@@ -79,6 +91,12 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
       </div>
       <AnalyticsFilterBar action="/analytics" period={period} filters={filters} options={options} />
       <SpendingBlockView block={block} period={period} filters={filters} />
+      {head && (
+        <>
+          <HeadSpendingView block={head[0]} period={period} filters={filters} />
+          <PlanVsActualView block={head[1]} period={period} filters={filters} />
+        </>
+      )}
     </div>
   );
 }

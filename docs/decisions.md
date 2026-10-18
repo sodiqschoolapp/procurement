@@ -2116,6 +2116,32 @@ Choices made during the build:
 - The Excel file: the title, period and chosen filters above a header row with an auto-filter; money as number cells as in the order list download; a change as a signed number and its percent as text; a date as a date cell.
 - Permission review: a department or Manager filter id of a branch the user does not see is "Not found" (`authorizeAnalytics()`, Must fix 1; the rule was already in `.claude/rules/server-actions.md`, so no new line); a browser step for another branch on both pages (Should fix 1); a route matrix case without `branch=` (Should fix 2).
 
+### 6.4a Analytics: Head, Spending and Plan vs actual (18.10.2026)
+
+The plan's decisions as the plan review of 18.10.2026 confirmed them (corrections 1 to 3 applied: the owners who are not Managers in one "Other owners" row with `owner=other`; both cancel cases tested; the seed line corrected), and those of the build. The Look first items come first.
+
+1. **Look first** (a task split). 6.4 is split into 6.4a (Spending, Plan vs actual), 6.4b (Prices, Approval speed) and 6.4c (Managers, Warehouse), written into `docs/build-plan.md`; each part keeps 6.4's Read line.
+2. **Look first** (money). "Split by payment type" splits each record's Actual total into its goods, `actualGoods()` of the record, under its trip's payment type, and each extra cost under its own (`paymentParts()`); the parts add up to `actualTotal()` of the record. A gift with no extra has no part.
+3. **Look first** (money). An order counts in Plan vs actual once its buying is Done or Done short, from Open on; its colour is the Total colour of `orderColours()`. Overspent is the sum of −difference of the red orders, saved the sum of the difference of the orange ones. Closed is not waited for.
+4. **Look first** (money). Orders marked Not bought are left out of Plan vs actual (their whole plan would read as saved); the block says so. Proposed `/spec-change` of `10-notifications-analytics-reports.md`, Head, Plan vs actual: "Share of orders whose buying ended Done or Done short, green, orange and red (Not bought orders are not counted); …".
+5. **Look first** (period). An outcome falls on the Tashkent date of the order's newest RECORD_PURCHASE, FINISH_ORDER, MARK_NOT_BOUGHT or CANCEL_PURCHASE event.
+6. Category of the planned subtype, department and Manager of the order; the supplier filter keeps an order with a live record from that supplier.
+7. Every number shows its change; a share's change is in percentage points (`shareChange()`, half up to one decimal), none when the period before ended no orders.
+8. The blocks are on the Head's page only; the queries read the user's branches under `data.view`, for 6.5 and 6.6.
+9. Branch, department and supplier bars drill down by setting that filter; payment type has its own key; by-branch and by-Manager cells set that filter, "Other owners" sets `owner=other`.
+10. Top 10 suppliers by amount in the period; records with no supplier are left out of that chart only.
+11. Branches side by side lists every branch of the user with spending in either period, inactive ones marked.
+12. The new summary tables are rewritten in the same run and under the same lock as `analytics_spending`.
+13. A gift with no extra cost has no payment part.
+
+Choices made during the build:
+
+- The outcome colour is a PostgreSQL enum `outcome_colour` (green, amber, red), not a text with a CHECK as the plan said: `.claude/rules/database.md` asks enums for kinds; the database still refuses any other value (tested).
+- The three colour counts carry `OutcomeLabel` (icon, word, amount without its sign; 0 allowed, unlike a set's label): green 0, orange the saved, red the overspent.
+- `getHeadSpending()` reads the period's total in its own snapshot, so the Excel total line and the rows never come from two moments.
+- The Excel writer: a count cell kind; a total may be absent (top 10 suppliers, the Plan vs actual counts) or name its column (the orders list's signed difference, the records list); an empty table keeps the total's label in the first column (found by the 6.4a route matrix: the total was written over its label).
+- Permission review: the route matrix covers every 6.4a block (Must fix 1); the orders list keeps the draft wall in its SQL (Should fix 1); a matrix case for the payment key (Should fix 2).
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

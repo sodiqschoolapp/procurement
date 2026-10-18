@@ -201,3 +201,29 @@ export function changeAgainst(now: bigint, before: bigint): Change {
     .toFixed(1);
   return { difference, percent };
 }
+
+/**
+ * A count's share of a whole as a percent, half up to one decimal (10 Analytics, Head, Plan vs
+ * actual: "Share of orders ending green, orange and red"; plan of 6.4, decided item 7); `null`
+ * when the whole is 0.
+ */
+export function shareOf(part: number, whole: number): string | null {
+  if (!Number.isSafeInteger(part) || !Number.isSafeInteger(whole) || part < 0 || part > whole) {
+    throw new RangeError(`A share is a count of 0 to ${whole}, not ${part}.`);
+  }
+  if (whole === 0) return null;
+  return new Exact(part)
+    .times(100)
+    .dividedBy(whole)
+    .toDecimalPlaces(1, Exact.ROUND_HALF_UP)
+    .toFixed(1);
+}
+
+/**
+ * The change of a share against the period before, in percentage points, half up (away from
+ * zero) to one decimal (10 point 1; plan of 6.4, decided item 7); `null` when either has none.
+ */
+export function shareChange(now: string | null, before: string | null): string | null {
+  if (now === null || before === null) return null;
+  return new Exact(now).minus(before).toDecimalPlaces(1, Exact.ROUND_HALF_UP).toFixed(1);
+}
