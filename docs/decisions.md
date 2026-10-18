@@ -2084,6 +2084,37 @@ Choices made during the build:
 - The Uzbek empty line of the write-offs avoids "so'rov", which the built-text check refuses.
 - Permission review: a test of every role on both homes with no branch chosen (Must fix 1); a comment that the SQL is the wall of Finance's entries and the step's `decide()` only narrows (Should fix 1). Should fix 2 (a matrix variant of the wall for `getFinanceHome`) is covered by the plain test with Finance of one branch and orders of another, as for `getMoneyWithManagers`: the matrix helper expects "Not found" for a role refused before any branch is read.
 
+### 6.3 Analytics foundations (18.10.2026)
+
+The plan's decisions as the plan review of 18.10.2026 confirmed them (corrections 1 to 3 applied: no payment type in `analytics_spending`, as an extra cost has its own; every address value through Zod in `period-params.ts`; one WHERE builder, `spendingWhere()`, for a number, its list and its export), and those of the build. The Look first items come first.
+
+1. **Look first** (spec contradiction: `14-data-model.md` Notes, third bullet, and the 6.3 Build line say "materialized views"; developer-rules rule 1 says a formula lives once). The summary is a plain table, `analytics_spending`, rewritten every 5 minutes by the job `analytics_refresh`, each row's amount `actualTotal()` of one record; the pages sum stored whole so'm, which is addition, as 08 rounds each record on its own. Proposed `/spec-change` of `14-data-model.md`, Notes for the build, third bullet: "The analytics summary tables are tables rebuilt every 5 minutes by the scheduler from these tables, their amounts from the shared domain functions, and are not counted above."; and of the 6.3 Build line: "Summary tables, rebuilt every 5 minutes by the scheduler".
+2. **Look first** (open question 14). "This quarter" is the calendar quarter holding today in Tashkent.
+3. **Look first** (10 point 1). The period before is the whole period of the same kind just before; custom dates of n days compare with the n days just before. A running month is compared with all of the month before (on 18 October: 18 days against all of September).
+4. **Look first** (rounding). A change is the difference in so'm and the percent of the period before, half up (away from zero) to one decimal, by decimal.js in `src/domain/analytics.ts`; no percent when the period before is 0.
+5. **Look first** (money). Spending is 08's Actual total of the records not cancelled, by trip date (as 6.1 decided item 6); category of the record's own subtype; department and Manager the order's; supplier the trip's. No payment type (review correction 1).
+6. **Look first** (10 point 1 with point 3). A breakdown's number is compared with the same key in the period before; a month's point with the month before it (the first point with the whole month before the period); only the change is shown, so every shown number has its drill-down. A month's point counts its days inside the period.
+7. The Manager filter is the order's current owner; the list holds users of role MANAGER with a visible branch.
+8. The summary rows are derived and rewritten on each run; `CLAUDE.md` rule 11 protects records, not this table.
+9. The school year runs from its first day to the day before the next; "this school year" holds today.
+10. The branch filter starts at the top bar's branch view; `branch=all` in the address is all of the user's branches.
+11. The drill-down reads the summary rows under the same condition as the number; names are read live.
+12. Filter lists show inactive catalog entries too, marked; suppliers are companies of kind SUPPLIER or BOTH.
+13. Until 6.4 to 6.6, every role's page shows the shared Spending block.
+14. The page shows when the summary was last rebuilt (`scheduled_jobs.last_finished_at`), or that it is being prepared.
+15. Recharts 3.10.1 (MIT, on the stack line) is installed; `npm audit --omit=dev --audit-level=high` stays clean (the four moderate findings are drizzle-kit's, as before).
+16. Custom dates: both required, real dates, from ≤ to; nothing more.
+
+Choices made during the build:
+
+- 17. The chart marks are the theme's foreground colour (navy in light, light in dark): one series each, so no legend; the `--chart-*` tokens of `globals.css` are shadcn's greys, not the design system's, and orange stays for actions.
+- An address the parser refuses, a school year not set, or a month key outside the period sends the page back to `/analytics` (this month) and the download to 404; another branch's `branch=` is Not found.
+- `refreshAnalytics()` takes `lock table analytics_spending in exclusive mode` first: the scheduler's lock already stops a second instance, and this stops a second caller (the browser test's own refresh) from colliding on the primary key, while readers go on.
+- The chart wrappers take each amount as a number for the drawing only; every shown amount is the server's formatted text (`chart-point.ts`). The tables under the charts carry the numbers for the keyboard and screen readers; the drawing is `aria-hidden`.
+- Categories are listed by their amount in the period, largest first.
+- At phone width the filters fold behind a "Filters" button (`filter-fold.tsx`, a client toggle; from 640 px always shown).
+- The Excel file: the title, period and chosen filters above a header row with an auto-filter; money as number cells as in the order list download; a change as a signed number and its percent as text; a date as a date cell.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

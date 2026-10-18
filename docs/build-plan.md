@@ -472,7 +472,7 @@ What each role sees first, and the numbers behind the work.
   - **Build:** The Head's home in the spec's order: waiting for my approval; overspends to acknowledge; write-offs to approve (corrections join in 7.4); product suggestions; orders stuck over 48 hours; counts by status per branch; spending this month per branch. The Finance home: approvals and settlements with the exact amount to give or receive, each opening the order list filtered to those orders; money with managers.
   - **Done when:** By hand with the seed: each list holds the right orders, and a Finance entry opens the filtered order list ready to tick. A database test checks each list against the seed.
 
-- [ ] **6.3 Analytics foundations**
+- [x] **6.3 Analytics foundations**
   - **Read:** `10-notifications-analytics-reports.md` (Analytics page per role: the five numbered points); `13-technology.md` (Scheduled jobs; Charts); `edge-cases/developer-rules.md` (rule 12); `14-data-model.md` (Notes for the build: third bullet); `open-questions.md` (question 14).
   - **Build:** Summary tables as materialized views, refreshed every 5 minutes by the scheduler; the period picker (this month, last month, this quarter, this school year hidden until it is set, custom dates) with the change against the period before; filters inside the user's branches; the drill-down list behind any number; Excel export of a chart or a table; the Recharts wrappers.
   - **Done when:** Database tests: a number equals the sum of the rows in its drill-down list; no filter returns rows of another branch; the school-year choice is hidden while the setting is empty.
