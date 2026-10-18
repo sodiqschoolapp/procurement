@@ -612,3 +612,161 @@ test("6.4c: the Head opens the orders behind a cash held number of the Managers 
   await expect(page.getByText(uz.analytics.cancelled.empty)).toBeVisible();
   expect(await scrollsSideways(page)).toBe(false);
 });
+
+/**
+ * A stock line of the category in EA (build-plan 6.4d): 10 received at 1 000 on 10 January 2020,
+ * 2 issued to a department of its own on 15 January, so 8 left (8 000) and a use of 2 000. Written
+ * as postMovement() and createDocument() write them, then the job's refresh.
+ */
+async function seedWarehouse(category: string): Promise<{ branch: string; department: string }> {
+  const tag = randomUUID().slice(0, 8);
+  return withDatabase(async (client) => {
+    await client.query("begin");
+    let ids;
+    try {
+      const headId = (
+        await client.query<{ id: string }>("select id from users where username = $1", [
+          E2E_ROLES.HEAD.username,
+        ])
+      ).rows[0]!.id;
+      const branch = (
+        await client.query<{ id: string }>("select id from branches where code = 'EA'")
+      ).rows[0]!.id;
+      const categoryId = (
+        await client.query<{ id: string }>("select id from categories where name = $1", [category])
+      ).rows[0]!.id;
+      const unit = await client.query<{ id: string }>(
+        `insert into units (name, short_name, allow_decimal, is_active, created_at)
+         values ($1, $2, false, true, now()) returning id`,
+        [`Dona ${tag}`, `d${tag}`],
+      );
+      const department = `Ombor bo'limi ${tag}`;
+      const departmentId = (
+        await client.query<{ id: string }>(
+          `insert into departments (branch_id, name, is_active, created_at)
+           values ($1, $2, true, now()) returning id`,
+          [branch, department],
+        )
+      ).rows[0]!.id;
+      const product = await client.query<{ id: string }>(
+        `insert into products (name, type, category_id, unit_id, is_active, has_variants,
+                               created_at)
+         values ($1, 'GOODS', $2, $3, true, false, now()) returning id`,
+        [`Bo'r ${tag}`, categoryId, unit.rows[0]!.id],
+      );
+      const variant = (
+        await client.query<{ id: string }>(
+          `insert into product_variants (product_id, name, is_default, is_active, created_at)
+           values ($1, 'default', true, true, now()) returning id`,
+          [product.rows[0]!.id],
+        )
+      ).rows[0]!.id;
+      await client.query(
+        `insert into stock_balances (branch_id, variant_id, qty, avg_cost, created_at, updated_at)
+         values ($1, $2, 8, 1000, now(), now())`,
+        [branch, variant],
+      );
+      await client.query(
+        `insert into stock_movements (branch_id, variant_id, type, qty_delta, unit_cost,
+                                      balance_after, created_by, created_at)
+         values ($1, $2, 'RECEIPT', 10, 1000, 10, $3, '2020-01-10T05:00:00Z')`,
+        [branch, variant, headId],
+      );
+      const document = (
+        await client.query<{ id: string }>(
+          `insert into stock_documents (number, type, branch_id, department_id, received_by_name,
+                                        doc_date, status, client_key, created_by, created_at)
+           values ($1, 'ISSUE', $2, $3, 'Sinov Qabulqiluvchi', '2020-01-15', 'POSTED', $4, $5,
+                   '2020-01-15T05:00:00Z')
+           returning id`,
+          [
+            `ISS-EA-20-${1_000_000 + Math.floor(Math.random() * 8_999_999)}`,
+            branch,
+            departmentId,
+            randomUUID(),
+            headId,
+          ],
+        )
+      ).rows[0]!.id;
+      const line = (
+        await client.query<{ id: string }>(
+          `insert into stock_document_lines (document_id, variant_id, qty, created_at)
+           values ($1, $2, 2, now()) returning id`,
+          [document, variant],
+        )
+      ).rows[0]!.id;
+      await client.query(
+        `insert into stock_movements (branch_id, variant_id, type, qty_delta, unit_cost,
+                                      balance_after, document_line_id, created_by, created_at)
+         values ($1, $2, 'ISSUE', -2, 1000, 8, $3, $4, '2020-01-15T05:00:00Z')`,
+        [branch, variant, line, headId],
+      );
+      await client.query("commit");
+      ids = { branch, department };
+    } catch (error) {
+      await client.query("rollback");
+      throw error;
+    }
+    await drizzle(client, { schema }).transaction((tx) => refreshAnalytics(tx));
+    return ids;
+  });
+}
+
+test("6.4d, the phase 6 check on the whole Head page: every block, a Spending bar and the Warehouse numbers open what is behind them (10 Head; 16 phase 6; plan of 6.4d)", async ({
+  page,
+}) => {
+  const { category } = await seedRecords();
+  const { branch, department } = await seedWarehouse(category);
+  const categoryId = await withDatabase(
+    async (client) =>
+      (await client.query<{ id: string }>("select id from categories where name = $1", [category]))
+        .rows[0]!.id,
+  );
+  await signIn(page);
+  const address = `/analytics?period=custom&from=2020-01-01&to=2020-01-31&branch=${branch}&category=${categoryId}`;
+  await page.goto(address);
+
+  // The whole Head page: the six blocks of 10 Head, Spending in its two parts.
+  for (const block of [
+    "spending",
+    "head-spending",
+    "plan",
+    "prices",
+    "speed",
+    "managers",
+    "warehouse",
+  ]) {
+    await expect(page.locator(`[data-analytics-block="${block}"]`)).toBeVisible();
+  }
+  expect(await scrollsSideways(page)).toBe(false);
+
+  // A Spending bar: the records behind it (16 phase 6).
+  const card = page.locator('[data-chart-card="spending-categories"]');
+  await card.locator(".recharts-bar-rectangle").first().click();
+  await expect(page).toHaveURL(/\/analytics\/records\?.*key=category/);
+  await expect(page.locator("[data-records-summary]")).toContainText(/29\s333/);
+  await page.goto(address);
+
+  // The branch's stock value of now: 8 × 1 000, and the line behind it.
+  const warehouse = page.locator('[data-analytics-block="warehouse"]');
+  const row = warehouse.locator(`[data-table="warehouse"] [data-row="${branch}"]`);
+  await expect(row).toContainText(/8\s000/);
+  await row
+    .getByRole("link", { name: /8\s000/ })
+    .first()
+    .click();
+  await expect(page).toHaveURL(/\/analytics\/stock\?.*key=stock%3Avalue/);
+  await expect(page.locator("[data-stock-row]")).toHaveCount(1);
+  await expect(page.locator("[data-stock-summary]")).toContainText(/8\s000/);
+  expect(await scrollsSideways(page)).toBe(false);
+
+  // The department's use in January: its bar opens the issue behind it.
+  await page.getByRole("link", { name: uz.analytics.approvals.back }).click();
+  const use = page.locator('[data-chart-card="warehouse-use"]');
+  await expect(use.locator('[data-table="department-use"]')).toContainText(department);
+  await use.locator(".recharts-bar-rectangle").first().click();
+  await expect(page).toHaveURL(/\/analytics\/moves\?.*key=moves%3Ause/);
+  await expect(page.locator("[data-moves-row]")).toHaveCount(1);
+  await expect(page.locator("[data-moves-summary]")).toContainText(/2\s000/);
+  expect(await scrollsSideways(page)).toBe(false);
+});
