@@ -462,7 +462,7 @@ Stock screens and every document that moves stock inside one branch.
 
 What each role sees first, and the numbers behind the work.
 
-- [ ] **6.1 Home: Manager and Principal**
+- [x] **6.1 Home: Manager and Principal**
   - **Read:** `10-notifications-analytics-reports.md` (Home page per role); `11-screens-and-ux.md` (Interface per role: Manager, Principal).
   - **Build:** The Manager's home: three large buttons (New order, Record purchase, Issue from stock), then sent back to me, my drafts, my open orders with progress, cash I hold, low stock, orders due soon, as counts and group rows linking to the filtered order list. The Principal's home: waiting group rows as large cards with total, urgent label and price hints; tick all and approve, send back or reject in two taps on a phone; then the branch's orders by status and its spending this month.
   - **Done when:** Playwright at 375 px: the Principal approves a group row of two orders from the home page in two taps.

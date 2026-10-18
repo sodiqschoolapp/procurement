@@ -21,27 +21,45 @@ type RecordRow = {
 
 /** The records of the orders `orderIn` names (an SQL list or subquery in parentheses), by order. */
 async function recordsIn(executor: Executor, orderIn: SQL): Promise<Map<string, PurchaseRecord[]>> {
+  const byOrder = new Map<string, PurchaseRecord[]>();
+  for (const row of await recordRows(executor, sql`p.order_id in ${orderIn}`)) {
+    const list = byOrder.get(row.order_id) ?? [];
+    list.push(recordOf(row));
+    byOrder.set(row.order_id, list);
+  }
+  return byOrder;
+}
+
+/**
+ * The records a condition on the record `p` and its trip `t` names, cancelled ones included: the
+ * records of the visible branches bought in a month, for "spending this month" (plan of 6.1,
+ * decided item 6). The caller puts the branch wall into `where`.
+ */
+export async function recordsWhere(executor: Executor, where: SQL): Promise<PurchaseRecord[]> {
+  return (await recordRows(executor, where)).map(recordOf);
+}
+
+async function recordRows(executor: Executor, where: SQL): Promise<RecordRow[]> {
   const found = await executor.execute<RecordRow>(sql`
     select p.order_id, p.qty, p.unit_price, p.is_cancelled,
            coalesce(array_agg(e.amount::text order by e.id)
                     filter (where e.id is not null), '{}') as extras
     from purchases p
+    join purchase_trips t on t.id = p.trip_id
     left join purchase_extras e on e.purchase_id = p.id
-    where p.order_id in ${orderIn}
+    where ${where}
     group by p.id
     order by p.order_id, p.created_at, p.id`);
-  const byOrder = new Map<string, PurchaseRecord[]>();
-  for (const row of found.rows) {
-    const list = byOrder.get(row.order_id) ?? [];
-    list.push({
-      qty: row.qty,
-      unitPrice: BigInt(row.unit_price),
-      extras: row.extras.map((amount) => BigInt(amount)),
-      isCancelled: row.is_cancelled,
-    });
-    byOrder.set(row.order_id, list);
-  }
-  return byOrder;
+  return found.rows;
+}
+
+function recordOf(row: RecordRow): PurchaseRecord {
+  return {
+    qty: row.qty,
+    unitPrice: BigInt(row.unit_price),
+    extras: row.extras.map((amount) => BigInt(amount)),
+    isCancelled: row.is_cancelled,
+  };
 }
 
 export async function orderRecords(executor: Executor, orderId: string): Promise<PurchaseRecord[]> {

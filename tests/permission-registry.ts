@@ -222,6 +222,13 @@ export const QUERIES: Record<string, Permission> = {
   "src/features/orders/queries/order-list.ts#selectAllOnFilter": "data.view",
   "src/features/orders/queries/order-list.ts#tickedSummary": "data.view",
   "src/features/orders/queries/order-list.ts#listOrderFilterChoices": "data.view",
+  // The home pages' list numbers (plan of 6.1): the list's walls and filters in the SQL.
+  "src/features/orders/queries/order-list.ts#orderTotalsOnFilter": "data.view",
+  "src/features/orders/queries/order-list.ts#countOrdersByStatus": "data.view",
+  // The Manager's and the Principal's home (plan of 6.1): data.view, own orders or the branch,
+  // behind the order list's walls (src/features/home/queries/home-matrix.db.test.ts).
+  "src/features/home/queries/manager-home.ts#getManagerHome": "data.view",
+  "src/features/home/queries/principal-home.ts#getPrincipalHome": "data.view",
   // The order list's download, Excel and PDF (plan of 2.14, decided item 4, Look first): data.export
   // with the list's own walls in the SQL (queries/order-download-matrix.db.test.ts).
   "src/features/orders/queries/order-list.ts#orderDownload": "data.export",

@@ -1457,4 +1457,21 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - For 6.2: the Head's waiting write-offs open at `/warehouse/documents/[id]`.
 - A seed table counted by the seed tests (the audit total) grows when the seed writes a new row kind.
 
-The next task is 6.1.
+## 6.1 Home: Manager and Principal (18.10.2026, pull request #102)
+
+**Built**
+- `/` for the Manager: New order (drafts grid), Record purchase (my Open orders), Issue from stock, "Suggest a product"; Sent back to me, My drafts, My open orders with progress, Ordered every stage, Cash I hold, Low stock, Orders due soon. For the Principal: waiting cards with Approve, Send back, Reject on the whole group row; the waiting total; orders by status; spending this month. Head and Finance keep the empty state.
+- `getManagerHome()`, `getPrincipalHome()` (`features/home/queries/`), `branchSpending()` (`features/home/spending.ts`), one snapshot each; `listOrderGroups()` takes the caller's snapshot as a 4th argument; `orderTotalsOnFilter()`, `countOrdersByStatus()`; the list filter `due=soon` with its chip.
+- Domain: `isDueSoon()`, `dueSoonUntil()`, `STILL_DUE_STATUSES` (order-steps), `businessMonth()`, `REQUESTED_STATUSES`/`requestedBySubtype()`, `receivedTogether()`, `mayInSomeBranch()`. `ListOrder` carries `ownerId`, `plannedTotal`, `progress`, `received`.
+
+**Left out, and the task that brings it**
+- The Head's and Finance's homes: 6.2. The price prompts on the Head's home (handed to 6.1 by 3.10): 6.2.
+
+**What the next sessions must know**
+- For 6.2: spending per branch reads `branchSpending(executor, actor, branch, month)`; status counts `countOrdersByStatus()`; waiting totals `orderTotalsOnFilter()`; read them with `listOrderGroups(…, db)` inside one `readSnapshot()`. The Head's price prompts read `getPricePrompts()` (progress 3.10).
+- For 6.2: `HomeBlock` and `GroupLines` (`features/home/components/`) are the panels and group rows of a home list; `WaitingCards` is the Principal's; Finance's cards can reuse it with its own moves.
+- A query exported from `features/*/queries/` must be in the registry with a matrix test; a reader meant for another query's snapshot takes an optional `executor` instead of being exported bare.
+- A home section is labelled by its title: an e2e `getByLabel("Filial")` matched "Filialim …"; use `exact: true`.
+- `documents.db.test.ts` froze the clock and tied two `created_at`; a test that orders by time moves the clock between the rows.
+
+The next task is 6.2.

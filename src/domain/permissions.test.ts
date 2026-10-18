@@ -10,6 +10,7 @@ import {
   type Role,
   decide,
   decideList,
+  mayInSomeBranch,
   roleMay,
 } from "./permissions";
 
@@ -151,5 +152,54 @@ describe("roleMay(): a button shown only when it works (11-screens-and-ux.md)", 
 
   it("is never asked about a branch permission", () => {
     expect(() => roleMay("catalog.suggest", "HEAD")).toThrow();
+  });
+});
+
+describe("mayInSomeBranch(): the Manager home's three buttons (11 Interface per role; 03 Manager rights; plan of 6.1, decided item 3)", () => {
+  const BUTTONS = ["request.create", "purchase.record", "stock.issue"] as const;
+
+  it("the Manager and the Head may use each; the Principal and Finance none", () => {
+    for (const permission of BUTTONS) {
+      expect(mayInSomeBranch(permission, actor("MANAGER")), permission).toBe(true);
+      expect(mayInSomeBranch(permission, actor("HEAD")), permission).toBe(true);
+      expect(mayInSomeBranch(permission, actor("PRINCIPAL")), permission).toBe(false);
+      expect(mayInSomeBranch(permission, actor("FINANCE")), permission).toBe(false);
+    }
+  });
+
+  it("an 'own orders' grant counts, where decideList() throws", () => {
+    expect(() => decideList("purchase.record", actor("MANAGER"))).toThrow();
+    expect(mayInSomeBranch("purchase.record", actor("MANAGER"))).toBe(true);
+  });
+
+  it("each switched-off right takes its own button away, and only that one", () => {
+    const rights = {
+      "request.create": "CREATE_REQUESTS",
+      "purchase.record": "RECORD_PURCHASES",
+      "stock.issue": "ISSUE_STOCK",
+    } as const;
+    for (const permission of BUTTONS) {
+      const off = actor("MANAGER", { disabledRights: [rights[permission]] });
+      for (const other of BUTTONS) {
+        expect(mayInSomeBranch(other, off), `${rights[permission]} off, ${other}`).toBe(
+          other !== permission,
+        );
+      }
+    }
+  });
+
+  it("a switch never applies to the Head (03 Manager rights)", () => {
+    const head = actor("HEAD", { disabledRights: [...MANAGER_RIGHTS] });
+    for (const permission of BUTTONS) expect(mayInSomeBranch(permission, head)).toBe(true);
+  });
+
+  it("a Manager without a branch may use none", () => {
+    for (const permission of BUTTONS) {
+      expect(mayInSomeBranch(permission, actor("MANAGER", { branchIds: [] }))).toBe(false);
+    }
+  });
+
+  it("a global permission is a programming error", () => {
+    expect(() => mayInSomeBranch("catalog.manage", actor("HEAD"))).toThrow();
   });
 });

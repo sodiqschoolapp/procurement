@@ -117,3 +117,36 @@ export function pinsUrgent(role: Role): boolean {
 export function tickFits(ticked: readonly string[], adding: readonly string[]): boolean {
   return new Set([...ticked, ...adding]).size <= ORDER_ACTION_MAX;
 }
+
+/**
+ * The stages the Manager's "requested" counts (05 Group rows 5: "The Manager's own view counts
+ * every stage: 'Tata pens: 30 requested'"; plan of 6.1, decided item 1, Look first): every status
+ * from submit up to, not including, Closed. Draft, Closed, Rejected and Cancelled add nothing.
+ */
+export const REQUESTED_STATUSES = [
+  "PENDING_HEAD",
+  "PENDING_PRINCIPAL",
+  "PENDING_FINANCE",
+  "RETURNED",
+  "PURCHASING",
+  "SETTLEMENT",
+] as const satisfies readonly RequestStatus[];
+
+/**
+ * "Tata pens: 30 requested": the quantities of the orders in REQUESTED_STATUSES, summed exactly per
+ * subtype, in the order each subtype first appears. An order of another status is left out.
+ */
+export function requestedBySubtype(
+  orders: readonly { variantId: string; status: RequestStatus; quantity: string }[],
+): { variantId: string; quantity: string; count: number }[] {
+  const bySubtype = new Map<string, string[]>();
+  for (const order of orders) {
+    if (!(REQUESTED_STATUSES as readonly RequestStatus[]).includes(order.status)) continue;
+    bySubtype.set(order.variantId, [...(bySubtype.get(order.variantId) ?? []), order.quantity]);
+  }
+  return [...bySubtype].map(([variantId, quantities]) => ({
+    variantId,
+    quantity: sumQuantities(quantities),
+    count: quantities.length,
+  }));
+}

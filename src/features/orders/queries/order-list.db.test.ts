@@ -23,6 +23,7 @@ import { type ListFilters, NO_FILTERS } from "../list-filters";
 import {
   listOrderFilterChoices,
   listOrderGroups,
+  orderTotalsOnFilter,
   selectAllOnFilter,
   tickedSummary,
 } from "./order-list";
@@ -494,6 +495,45 @@ describe("each filter of 05 Ticking and filters", () => {
     );
   });
 
+  it("due=soon: still waiting, needed by today + 7 or earlier, by the Tashkent date (plan of 6.1, decided item 2)", async () => {
+    // 16 October 20:00 UTC is already 17 October in Tashkent: today + 7 is 24 October.
+    setClock("2026-10-16T20:00:00Z");
+    const { branch, manager, base } = await scene();
+    const lastDay = await order({ ...base, status: "PENDING_HEAD", neededBy: "2026-10-24" });
+    const overdue = await order({ ...base, status: "RETURNED", neededBy: "2026-10-01" });
+    const buying = await order({ ...base, status: "PURCHASING", neededBy: "2026-10-20" });
+    const pending = await order({ ...base, status: "PENDING_FINANCE", neededBy: "2026-10-17" });
+    // Kept out, each with every other value that would let it in.
+    await order({ ...base, status: "PENDING_HEAD", neededBy: "2026-10-25" });
+    await order({
+      ...base,
+      status: "PURCHASING",
+      progress: "DONE",
+      neededBy: "2026-10-20",
+      approvedAt: now(),
+    });
+    await order({ ...base, status: "SETTLEMENT", neededBy: "2026-10-20", approvedAt: now() });
+    await order({ ...base, status: "CLOSED", neededBy: "2026-10-20", closedAt: now() });
+    await order({ ...base, status: "REJECTED", neededBy: "2026-10-20" });
+    await order({ ...base, status: "DRAFT", number: "QQ-26-0001", neededBy: "2026-10-20" });
+    const other = await scene();
+    await order({
+      ...other.base,
+      ownerId: manager.id,
+      status: "PENDING_HEAD",
+      neededBy: "2026-10-20",
+    });
+    const ids = async (over: Partial<ListFilters>) =>
+      (await selectAllOnFilter(manager.id, filtered(over))).orders.map((each) => each.id).sort();
+    expect(await ids({ branch: branch.id, dueSoon: true })).toEqual(
+      [lastDay.id, overdue.id, buying.id, pending.id].sort(),
+    );
+    // Another branch's order of the same owner stays out: the branch wall, not the branch filter.
+    expect(await ids({ owner: manager.id, dueSoon: true })).toEqual(
+      [lastDay.id, overdue.id, buying.id, pending.id].sort(),
+    );
+  });
+
   it("a number range: one branch code and year, the counter as an integer (decided item 10)", async () => {
     const { branch, manager, base } = await scene();
     const numbered = async (number: string) =>
@@ -768,5 +808,26 @@ describe("the three colours of orders, group rows and ticked orders (08 The thre
       price: { colour: "red", difference: -8_000n },
       total: { colour: "grey" },
     });
+  });
+});
+
+describe("orderTotalsOnFilter: the list's draft wall (06 Statuses; .claude/rules/tests.md, a numbered Draft; permission review of 6.1)", () => {
+  it("counts every listed order with no status filter; a colleague's numbered Draft of the same branch stays out", async () => {
+    const { branch, manager, base } = await scene();
+    const colleague = await insertUser("MANAGER", { branches: [branch.id] });
+    await order({ ...base, status: "PENDING_HEAD", plannedQty: "2.000" });
+    await order({ ...base, status: "PENDING_PRINCIPAL", plannedQty: "3.000" });
+    // Taken back: a Draft that keeps its number and its whole plan, in the same branch.
+    await order({
+      ...base,
+      ownerId: colleague.id,
+      status: "DRAFT",
+      number: `${branch.code}-26-0997`,
+      plannedQty: "5.000",
+    });
+    const found = await orderTotalsOnFilter(manager.id, filtered({ branch: branch.id }));
+    expect(found.count).toBe(2);
+    // 2 and 3 at 5 000 so'm (the helper's price): 25 000.
+    expect(found.totals.grand).toBe(25_000n);
   });
 });

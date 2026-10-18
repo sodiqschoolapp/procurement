@@ -214,7 +214,8 @@ test("the Principal sees its branch's name and no select (11 rule 1)", async ({ 
   await expect(
     page.getByText(`${E2E_BRANCHES[0].code} — ${E2E_BRANCHES[0].name}`, { exact: true }),
   ).toBeVisible();
-  await expect(page.getByLabel(uz.branch.label)).toHaveCount(0);
+  // Exact: the home's "Filialim …" sections are labelled by their titles too (plan of 6.1).
+  await expect(page.getByLabel(uz.branch.label, { exact: true })).toHaveCount(0);
 });
 
 test("signed out, / goes to the sign-in page (plan of 0.10b)", async ({ page }) => {

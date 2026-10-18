@@ -108,6 +108,20 @@ export function ListFiltersBar({
             </Button>
           </span>
         )}
+        {filters.dueSoon && (
+          <span className="inline-flex items-center gap-1 rounded-md bg-muted py-1 pr-1 pl-3 text-sm font-semibold">
+            {t("dueSoon")}
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              aria-label={t("removeDueSoon")}
+              onClick={() => set("dueSoon", false)}
+            >
+              <Icon name="close" size={18} />
+            </Button>
+          </span>
+        )}
         {count > 0 && (
           <Button
             type="button"

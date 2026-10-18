@@ -7,8 +7,10 @@ import { describePermissionMatrix } from "../../../../tests/helpers/permission-m
 import { insertUser } from "../../../../tests/helpers/users";
 import { NO_FILTERS } from "../list-filters";
 import {
+  countOrdersByStatus,
   listOrderFilterChoices,
   listOrderGroups,
+  orderTotalsOnFilter,
   selectAllOnFilter,
   tickedSummary,
 } from "./order-list";
@@ -78,5 +80,30 @@ describePermissionMatrix("listOrderFilterChoices", {
     const seesOwner = choices.owners.some((each) => each.id === order.ownerId);
     expect(seesOwner).toBe(seesDepartment);
     if (!seesDepartment) throw new AuthorizationError("not_found");
+  },
+});
+
+// The home pages' list numbers (plan of 6.1): with the branch filter and without it.
+describePermissionMatrix("orderTotalsOnFilter", {
+  permission: "data.view",
+  async run({ user, branchId }) {
+    await waitingOrder(branchId);
+    expect((await orderTotalsOnFilter(user.id, { ...NO_FILTERS, branch: branchId })).count).toBe(1);
+    if ((await orderTotalsOnFilter(user.id, NO_FILTERS)).count === 0) {
+      throw new AuthorizationError("not_found");
+    }
+  },
+});
+
+describePermissionMatrix("countOrdersByStatus", {
+  permission: "data.view",
+  async run({ user, branchId }) {
+    await waitingOrder(branchId);
+    expect(await countOrdersByStatus(user.id, { ...NO_FILTERS, branch: branchId })).toEqual([
+      { status: "PENDING_HEAD", count: 1 },
+    ]);
+    if ((await countOrdersByStatus(user.id, NO_FILTERS)).length === 0) {
+      throw new AuthorizationError("not_found");
+    }
   },
 });

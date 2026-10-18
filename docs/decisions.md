@@ -2034,6 +2034,29 @@ Choices made during the build:
 - `scripts/seed-stock.mjs` is copied into the image's run stage beside the other seed scripts (`tests/image-files.test.ts`).
 - The seed tests' cleanup hook (`afterAll`, which drops every fresh database one by one) gets a 60 s limit: with the 27th fresh database it passed the default 10 s. It asserts nothing.
 
+### 6.1 Home: Manager and Principal (18.10.2026)
+
+The plan's decisions as the plan review of 18.10.2026 confirmed them (corrections 1 and 2 applied), and those of the build. The Look first items come first.
+
+1. **Look first** (spec wording; decisions 2.8 item 2). 05 Group rows 5 ("Tata pens: 30 requested") is the Manager home's block "Ordered, every stage": one line per subtype over my orders from submit up to, not including, Closed (Waiting, Sent back, Open, Settlement); Draft, Closed, Rejected and Cancelled add nothing (`REQUESTED_STATUSES`, `requestedBySubtype()`). The English text says "ordered": a built text never says "request" (build plan 2.1).
+2. **Look first** (money). "Spending this month" is 08's Actual total over the branch's purchase records that are not cancelled, whose trip date (`purchased_on`) lies in the current Tashkent calendar month (`businessMonth(today())`), summed with `actualTotal()` (`branchSpending()`). No link: no list filter matches "bought this month"; the drill-down is 6.3's.
+3. **Look first** (permission matrix). The three buttons show by `mayInSomeBranch()` (`src/domain/permissions.ts`): the role's grant is not "no", an "own orders" grant counts, a switched-off Manager right removes its button. It only hides a link; the target pages and actions authorize again.
+4. "Orders due soon": my orders that still wait (the statuses of `isOverdue()`, Open only while buying) with needed-by on or before today + 7 days, overdue ones included; 7 is the domain constant `DUE_SOON_DAYS`, not a setting. The list's `due=soon` filter reads the same lists.
+5. The buttons: New order opens the drafts grid (`/orders#drafts-title`); Record purchase opens my Open orders (`/orders?status=PURCHASING&owner=<me>`), since a purchase needs its orders; Issue from stock opens `/warehouse/documents/new?type=ISSUE`.
+6. Two taps: a card's Approve, Send back and Reject act on every order of its group row; tap one is the button, tap two the confirmation (11 rule 6); the reason of Send back and Reject is typed between them (06 rule 3). A card over 200 orders has no buttons and points to the list.
+7. Cash I hold shows held and owed apart over my orders that are not Closed (`orderCashCount()`, `managerCashBalance()`), with the number of orders whose count is not 0; it links to all my orders, since Open and Settlement orders both hold cash.
+8. The home lists follow the top bar's branch, as `/orders`; the Principal's counts by status leave Draft out (the draft wall); urgent cards first.
+9. The 3.10 hand-over of the Head's price prompts moves to 6.2 through progress, not through 6.2's build-plan line (review correction 1).
+
+Choices made during the build:
+
+- `readGroups()` stays private: an export of `features/*/queries/` needs a registry entry and a matrix test. `listOrderGroups()`, `orderTotalsOnFilter()` and `countOrdersByStatus()` take an optional executor, so the homes read every number in one snapshot (spec review, Must fix 2) and each still calls `authorize()`.
+- `ListOrder` gained `ownerId`, `plannedTotal` (`orderTotal()`), `progress` and `received` (`actualQuantity()`), computed in the list's one pass, so the cards and the open rows need no second read. A group's received sum is `receivedTogether()` (`sumQuantities()` refuses 0).
+- `recordsWhere()` (`order-records.ts`) reads records by a condition on the record and its trip, the branch wall in the caller's subquery; `recordsIn()` shares its statement.
+- The waiting cards ask `allowedActions()` with facts false: no move of a waiting order reads Close or settlement facts.
+- The e2e test of the Principal's branch name asks `getByLabel(…, { exact: true })`: the home's "Filialim …" sections are labelled by their titles, which the loose match found. It still proves the select is absent (**Look first**: a test changed because the page gained content).
+- `documents.db.test.ts` (5.12) failed about three runs in four on `main`: the clock was frozen and two documents tied on `created_at`. The direct entry is now made a minute later; the test asserts what it meant.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

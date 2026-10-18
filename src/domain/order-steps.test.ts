@@ -1,7 +1,16 @@
 import { describe, expect, it } from "vitest";
 
 import type { OrderAction } from "./order-moves";
-import { type StepEvent, type StepView, isOverdue, orderSteps, waitingFor } from "./order-steps";
+import {
+  DUE_SOON_DAYS,
+  type StepEvent,
+  type StepView,
+  dueSoonUntil,
+  isDueSoon,
+  isOverdue,
+  orderSteps,
+  waitingFor,
+} from "./order-steps";
 import { REQUEST_STATUSES, type RequestStatus } from "./request-status";
 
 // 11-screens-and-ux.md, Order page layout 2 ("Draft, Head, Principal, Finance, Open, Closed, with
@@ -307,5 +316,49 @@ describe("isOverdue (edge case 'The needed-by date passes while the order waits'
     for (const status of REQUEST_STATUSES) {
       expect(typeof isOverdue(status, "OPEN", yesterday, today)).toBe("boolean");
     }
+  });
+});
+
+describe("isDueSoon (10 Home page per role, Manager: 'orders due soon'; plan of 6.1, decided item 2)", () => {
+  const today = "2026-10-16";
+
+  it("the window is seven days: today + 7 is the last day in", () => {
+    expect(DUE_SOON_DAYS).toBe(7);
+    expect(dueSoonUntil(today)).toBe("2026-10-23");
+    expect(dueSoonUntil("2026-12-28")).toBe("2027-01-04");
+  });
+
+  it("a waiting, sent back or open order needed by today + 7 is due soon, today + 8 is not", () => {
+    for (const status of [
+      "PENDING_HEAD",
+      "PENDING_PRINCIPAL",
+      "PENDING_FINANCE",
+      "RETURNED",
+      "PURCHASING",
+    ] as const) {
+      expect(isDueSoon(status, "OPEN", "2026-10-23", today), status).toBe(true);
+      expect(isDueSoon(status, "OPEN", "2026-10-24", today), status).toBe(false);
+    }
+  });
+
+  it("today and an overdue date are due soon", () => {
+    expect(isDueSoon("PENDING_HEAD", "OPEN", today, today)).toBe(true);
+    expect(isDueSoon("RETURNED", "OPEN", "2026-09-01", today)).toBe(true);
+  });
+
+  it("no other status is due soon, also with a date in the window", () => {
+    for (const status of ["DRAFT", "SETTLEMENT", "CLOSED", "REJECTED", "CANCELLED"] as const) {
+      expect(isDueSoon(status, "OPEN", "2026-10-17", today), status).toBe(false);
+    }
+  });
+
+  it("an Open order whose buying is finished is not due soon", () => {
+    for (const progress of ["DONE", "DONE_SHORT", "NOT_BOUGHT"] as const) {
+      expect(isDueSoon("PURCHASING", progress, "2026-10-17", today), progress).toBe(false);
+    }
+  });
+
+  it("an order without a needed-by date is not due soon", () => {
+    expect(isDueSoon("PENDING_HEAD", "OPEN", null, today)).toBe(false);
   });
 });

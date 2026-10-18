@@ -25,6 +25,7 @@ import {
   isSubstituted,
   sameAsPlanned,
   splitGroupQuantity,
+  receivedTogether,
 } from "./purchases";
 
 // 08-money-and-settlement.md, Numbers the system calculates and Worked example; 07-purchasing.md,
@@ -574,5 +575,19 @@ describe("finishReasonAfter (orders_finish_reason_check; plan of 3.7, review cor
     expect(finishReasonAfter("NOT_BOUGHT", "Not in any shop")).toBe("Not in any shop");
     expect(finishReasonAfter("OPEN", "No more in the shop")).toBeNull();
     expect(finishReasonAfter("DONE", "No more in the shop")).toBeNull();
+  });
+});
+
+describe("receivedTogether: a group row's received quantity (07 Order progress; plan of 6.1)", () => {
+  it("adds the orders' received quantities exactly; nothing received is 0", () => {
+    expect(receivedTogether(["4", "0", "2.5"])).toBe("6.5");
+    expect(receivedTogether(["0.1", "0.2"])).toBe("0.3");
+    expect(receivedTogether(["0"])).toBe("0");
+    expect(receivedTogether([])).toBe("0");
+  });
+
+  it("refuses a value that is not numeric(14,3) text", () => {
+    expect(() => receivedTogether(["-1"])).toThrow(RangeError);
+    expect(() => receivedTogether(["1.2345"])).toThrow(RangeError);
   });
 });
