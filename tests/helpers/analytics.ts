@@ -192,6 +192,8 @@ export type Move = {
   to: RequestStatus;
   at: string;
   reason?: string;
+  /** Who made the move, the order's owner unless given (plan of 6.5a: "my average time to decide"). */
+  actorId?: string;
 };
 
 /**
@@ -202,13 +204,14 @@ export async function movesOf(orderId: string, actorId: string, moves: readonly 
   for (const move of moves) {
     const action = await db.execute<{ id: string }>(sql`
       insert into order_actions (client_key, type, actor_id, reason, order_count, created_at)
-      values (${randomUUID()}, ${move.type}, ${actorId}, ${move.reason ?? null}, 1, ${move.at})
+      values (${randomUUID()}, ${move.type}, ${move.actorId ?? actorId}, ${move.reason ?? null}, 1,
+        ${move.at})
       returning id`);
     await db.execute(sql`
       insert into order_events (order_id, action_id, type, from_status, to_status, actor_id,
         created_at)
       values (${orderId}, ${action.rows[0]!.id}, ${move.type}, ${move.from}, ${move.to},
-        ${actorId}, ${move.at})`);
+        ${move.actorId ?? actorId}, ${move.at})`);
   }
 }
 
@@ -217,7 +220,15 @@ export async function decided(
   scene: SpendingScene,
   status: RequestStatus,
   moves: readonly Move[],
-  row: { ownerId?: string; departmentId?: string; categoryId?: string } = {},
+  row: {
+    ownerId?: string;
+    departmentId?: string;
+    categoryId?: string;
+    /** The order's needed-by date, first submit and buying progress (plan of 6.5a, Orders). */
+    neededBy?: string;
+    submittedAt?: string;
+    progress?: OrderProgress;
+  } = {},
 ) {
   const product = await insertProduct({ categoryId: row.categoryId ?? scene.category.id });
   const ownerId = row.ownerId ?? scene.manager.id;
@@ -227,6 +238,13 @@ export async function decided(
     departmentId: row.departmentId ?? scene.department.id,
     variantId: product.defaultVariantId,
     status,
+    neededBy: row.neededBy,
+    submittedAt: row.submittedAt === undefined ? undefined : new Date(row.submittedAt),
+    progress: row.progress,
+    finishReason:
+      row.progress === "DONE_SHORT" || row.progress === "NOT_BOUGHT"
+        ? "Do'konda qolmagan"
+        : undefined,
   });
   await movesOf(order.id, ownerId, moves);
   return { id: order.id, number: order.number, variantId: product.defaultVariantId, ownerId };

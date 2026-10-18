@@ -7,6 +7,7 @@ import {
   type StepEvent,
   type StepView,
   dueSoonUntil,
+  isComingUp,
   isDueSoon,
   isOverdue,
   orderSteps,
@@ -362,6 +363,39 @@ describe("isDueSoon (10 Home page per role, Manager: 'orders due soon'; plan of 
 
   it("an order without a needed-by date is not due soon", () => {
     expect(isDueSoon("PENDING_HEAD", "OPEN", null, today)).toBe(false);
+  });
+});
+
+describe("isComingUp (10 Analytics page per role, Principal, Orders: 'needed-by dates coming up'; plan of 6.5a, decided item 4)", () => {
+  const today = "2026-10-16";
+
+  it("today and today + 7 are coming up, today + 8 is not", () => {
+    for (const status of [
+      "PENDING_HEAD",
+      "PENDING_PRINCIPAL",
+      "PENDING_FINANCE",
+      "RETURNED",
+      "PURCHASING",
+    ] as const) {
+      expect(isComingUp(status, "OPEN", today, today), status).toBe(true);
+      expect(isComingUp(status, "OPEN", "2026-10-23", today), status).toBe(true);
+      expect(isComingUp(status, "OPEN", "2026-10-24", today), status).toBe(false);
+    }
+  });
+
+  it("an overdue order is not coming up: the block shows it as overdue", () => {
+    expect(isComingUp("PENDING_HEAD", "OPEN", "2026-10-15", today)).toBe(false);
+    expect(isOverdue("PENDING_HEAD", "OPEN", "2026-10-15", today)).toBe(true);
+  });
+
+  it("no other status, a finished buying and no date are coming up", () => {
+    for (const status of ["DRAFT", "SETTLEMENT", "CLOSED", "REJECTED", "CANCELLED"] as const) {
+      expect(isComingUp(status, "OPEN", "2026-10-17", today), status).toBe(false);
+    }
+    for (const progress of ["DONE", "DONE_SHORT", "NOT_BOUGHT"] as const) {
+      expect(isComingUp("PURCHASING", progress, "2026-10-17", today), progress).toBe(false);
+    }
+    expect(isComingUp("PENDING_HEAD", "OPEN", null, today)).toBe(false);
   });
 });
 

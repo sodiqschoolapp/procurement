@@ -204,6 +204,22 @@ export function isDueSoon(
 }
 
 /**
+ * The Principal's Analytics "needed-by dates coming up" (10-notifications-analytics-reports.md,
+ * Analytics page per role, Principal, Orders; plan of 6.5a, decided item 4): an order that still
+ * waits (as isOverdue() reads it) needed by today to today + 7 days. Overdue ones are not in: the
+ * block shows them beside it.
+ */
+export function isComingUp(
+  status: RequestStatus,
+  progress: OrderProgress,
+  neededBy: BusinessDate | null,
+  today: BusinessDate,
+): boolean {
+  if (neededBy === null || neededBy < today) return false;
+  return isDueSoon(status, progress, neededBy, today);
+}
+
+/**
  * The statuses in which an order can be "stuck": the three Waiting steps, which wait for "the
  * approvers of their step" (06-approval-workflow.md rule 9; plan of 6.2, decided item 1, Look
  * first). Sent back, Open and Waiting for settlement are not approval steps.

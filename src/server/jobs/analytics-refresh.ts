@@ -54,6 +54,12 @@ import type { Job } from "./job";
 // src/domain/stock.ts, the functions Stock on hand calls, and the date of its newest movement; and
 // `analytics_stock_moves`, each issue, return and write-off movement of a document not Reversed,
 // on the document's date, its value `stockValue()` of its size at the cost it moved at.
+//
+// Task 6.5a adds, in the same run (plan of 6.5a, decided items 2, 3 and 6, Look first):
+// `analytics_orders`, each order that is not Draft with its status, buying progress, first submit
+// date and needed-by date, copied as they stand (no formula: coming up and overdue are read with
+// the clock by the queries, `isComingUp()` and `isOverdue()` of src/domain/order-steps.ts); and the
+// decider of each decided stay, the actor of the event that ended it.
 
 type SpendingSource = {
   purchase_id: string;
@@ -98,7 +104,7 @@ export async function refreshAnalytics(executor: Executor): Promise<void> {
   await executor.execute(
     sql`lock table analytics_spending, analytics_spending_payments, analytics_outcomes,
                analytics_steps, analytics_cancelled, analytics_cash, analytics_stock,
-               analytics_stock_moves in exclusive mode`,
+               analytics_stock_moves, analytics_orders in exclusive mode`,
   );
   const found = await executor.execute<SpendingSource>(sql`
     select p.id as purchase_id, p.order_id, p.branch_id, t.purchased_on::text as purchased_on,
@@ -167,6 +173,7 @@ export async function refreshAnalytics(executor: Executor): Promise<void> {
   await executor.execute(sql`delete from analytics_cash`);
   await executor.execute(sql`delete from analytics_stock`);
   await executor.execute(sql`delete from analytics_stock_moves`);
+  await executor.execute(sql`delete from analytics_orders`);
   if (rows.length > 0) await insertSpending(executor, rows, parts);
   await writeOutcomes(executor);
   await writeSteps(executor);
@@ -174,6 +181,25 @@ export async function refreshAnalytics(executor: Executor): Promise<void> {
   await writeCash(executor);
   await writeStock(executor);
   await writeStockMoves(executor);
+  await writeOrders(executor);
+}
+
+/**
+ * Every order that is not Draft as it stands (plan of 6.5a, decided items 2 and 6): the Tashkent
+ * date of its first submit, its needed-by date, the planned subtype's category. Nothing is worked
+ * out here: the queries read the dates with the clock.
+ */
+async function writeOrders(executor: Executor) {
+  await executor.execute(sql`
+    insert into analytics_orders (order_id, branch_id, status, progress, submitted_on, needed_by,
+                                  category_id, department_id, owner_id)
+    select o.id, o.branch_id, o.status, o.progress,
+           (o.submitted_at at time zone 'Asia/Tashkent')::date, o.needed_by, pr.category_id,
+           o.department_id, o.owner_id
+    from orders o
+    join product_variants v on v.id = o.variant_id
+    join products pr on pr.id = v.product_id
+    where o.status <> 'DRAFT'`);
 }
 
 async function insertSpending(executor: Executor, rows: object[], parts: object[]) {
@@ -282,6 +308,7 @@ type StepSource = {
     to: RequestStatus;
     at: string;
     reason: string | null;
+    actor: string;
   }[];
 };
 
@@ -295,7 +322,7 @@ async function writeSteps(executor: Executor) {
     select o.id as order_id, o.branch_id, pr.category_id, o.department_id, o.owner_id,
            jsonb_agg(jsonb_build_object('type', ev.type, 'from', ev.from_status,
                                         'to', ev.to_status, 'at', ev.created_at,
-                                        'reason', a.reason)
+                                        'reason', a.reason, 'actor', ev.actor_id)
                      order by ev.created_at) as events
     from orders o
     join product_variants v on v.id = o.variant_id
@@ -315,6 +342,7 @@ async function writeSteps(executor: Executor) {
         to: event.to,
         at: new Date(event.at),
         reason: event.reason,
+        actorId: event.actor,
       })),
     ).map((stay) => ({
       order_id: row.order_id,
@@ -326,6 +354,7 @@ async function writeSteps(executor: Executor) {
       decision: stay.decision,
       reason: stay.reason,
       reason_key: stay.reason === null ? null : reasonKey(stay.reason),
+      decided_by: stay.decidedBy,
       category_id: row.category_id,
       department_id: row.department_id,
       owner_id: row.owner_id,
@@ -334,15 +363,16 @@ async function writeSteps(executor: Executor) {
   if (rows.length === 0) return;
   await executor.execute(sql`
     insert into analytics_steps (order_id, branch_id, step, entered_at, left_at, left_on, seconds,
-                                 decision, reason, reason_key, category_id, department_id, owner_id)
+                                 decision, reason, reason_key, decided_by, category_id,
+                                 department_id, owner_id)
     select r.order_id, r.branch_id, r.step::request_status, r.entered_at, r.left_at,
            (r.left_at at time zone 'Asia/Tashkent')::date, r.seconds::bigint,
-           r.decision::order_event_type, r.reason, r.reason_key,
+           r.decision::order_event_type, r.reason, r.reason_key, r.decided_by,
            r.category_id, r.department_id, r.owner_id
     from jsonb_to_recordset(${JSON.stringify(rows)}::jsonb) as r(
       order_id uuid, branch_id uuid, step text, entered_at timestamptz, left_at timestamptz,
-      seconds text, decision text, reason text, reason_key text, category_id uuid,
-      department_id uuid, owner_id uuid)`);
+      seconds text, decision text, reason text, reason_key text, decided_by uuid,
+      category_id uuid, department_id uuid, owner_id uuid)`);
 }
 
 type CancelledSource = {
