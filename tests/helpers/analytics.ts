@@ -15,16 +15,14 @@ import { insertUser } from "./users";
 
 const AT = "2031-05-02T05:00:00Z";
 
-/** A branch with its Manager, Principal and Finance user, a department, a category and a supplier. */
-export async function spendingScene() {
-  const branch = await insertBranch();
+/** A branch (or the one given) with a Manager, a department, a category and a supplier. */
+export async function spendingScene(branchId?: string) {
+  const branch = branchId ? { id: branchId } : await insertBranch();
   const manager = await insertUser("MANAGER", { branches: [branch.id] });
-  const principal = await insertUser("PRINCIPAL", { branches: [branch.id] });
-  const finance = await insertUser("FINANCE", { branches: [branch.id] });
   const department = await insertDepartment(branch.id);
   const category = await insertCategory();
   const supplier = await insertCompany();
-  return { branch, manager, principal, finance, department, category, supplier };
+  return { branch, manager, department, category, supplier };
 }
 
 export type SpendingScene = Awaited<ReturnType<typeof spendingScene>>;
