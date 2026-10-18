@@ -766,7 +766,13 @@ describe("analytics_refresh, the rows of the Warehouse block (build-plan 6.4d)",
     expect(await movesOf(scene.branch.id)).toEqual([
       { document_id: issue, type: "ISSUE", moved_on: "2031-05-03", qty: "0.500", value: "1667" },
       { document_id: back, type: "RETURN", moved_on: "2031-05-04", qty: "0.500", value: "1667" },
-      { document_id: writeOff, type: "WRITE_OFF", moved_on: "2031-05-01", qty: "2.000", value: "6666" },
+      {
+        document_id: writeOff,
+        type: "WRITE_OFF",
+        moved_on: "2031-05-01",
+        qty: "2.000",
+        value: "6666",
+      },
     ]);
   });
 });

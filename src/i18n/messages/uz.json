@@ -2414,7 +2414,9 @@
       "approvals": "Buyurtmalar",
       "managers": "Menejerlar",
       "cancelled": "Bekor qilingan yozuvlar",
-      "cash": "Qo'ldagi naqd pul"
+      "cash": "Qo'ldagi naqd pul",
+      "warehouse": "Ombor filiallar bo'yicha",
+      "departmentUse": "Bo'limlar sarfi"
     },
     "plan": {
       "title": "Reja va haqiqat",
@@ -2626,6 +2628,79 @@
         "status": "Holat",
         "since": "Qachondan beri",
         "held": "Qo'lda"
+      }
+    },
+    "warehouse": {
+      "title": "Ombor",
+      "note": "Zaxira qiymati, kam qolgan va harakatsiz mahsulotlar hozirgi holatda; harakatsiz mahsulotda {date} dan beri harakat bo'lmagan. Sarf va hisobdan chiqarilganlar davr bo'yicha, har bir hujjat sanasida.",
+      "notApplied": "Menejer va yetkazib beruvchi filtrlari zaxiraga qo'llanilmaydi.",
+      "departmentOnly": "Bo'lim filtri faqat bo'limlar sarfiga qo'llaniladi.",
+      "perBranch": "Filiallar bo'yicha",
+      "empty": "Hech bir filialda zaxira yoki ombor harakati yo'q.",
+      "columns": {
+        "branch": "Filial",
+        "value": "Zaxira qiymati",
+        "low": "Kam qolganlar",
+        "still": "90 kun harakatsiz",
+        "stillValue": "Harakatsizlar qiymati",
+        "writtenOff": "Hisobdan chiqarilgan"
+      },
+      "use": {
+        "title": "Bo'limlar sarfi",
+        "note": "Berilgan minus qaytarilgan, har biri o'z tannarxida.",
+        "empty": "Davrda hech bir bo'lim mahsulot olmagan yoki qaytarmagan.",
+        "returned": "{amount} ko'proq qaytarilgan",
+        "columns": {
+          "department": "Bo'lim",
+          "used": "Sarf"
+        }
+      }
+    },
+    "stock": {
+      "title": {
+        "value": "Zaxira qiymati",
+        "low": "Kam qolgan mahsulotlar",
+        "still": "90 kun harakatsiz mahsulotlar"
+      },
+      "what": "Hozirgi zaxira",
+      "whatStill": "Hozirgi zaxira, {date} dan beri harakatsiz",
+      "summary": "{count, plural, other {# qator}}, {total}",
+      "empty": "Bu yerda qator yo'q.",
+      "quantity": "{qty} {unit}",
+      "minimum": "Minimum {qty}",
+      "noMinimum": "Minimum yo'q",
+      "columns": {
+        "product": "Mahsulot",
+        "branch": "Filial",
+        "quantity": "Miqdor",
+        "unit": "O'lchov",
+        "minimum": "Minimum",
+        "avgCost": "O'rtacha tannarx",
+        "lastMoved": "So'nggi harakat",
+        "value": "Qiymat"
+      }
+    },
+    "moves": {
+      "title": {
+        "use": "Bo'limlar sarfi",
+        "writeoff": "Hisobdan chiqarilgan"
+      },
+      "summary": "{count, plural, other {# harakat}}, {total}",
+      "empty": "Davrda harakat yo'q.",
+      "type": {
+        "ISSUE": "Berish",
+        "RETURN": "Qaytarish",
+        "WRITE_OFF": "Hisobdan chiqarish"
+      },
+      "columns": {
+        "date": "Sana",
+        "document": "Hujjat",
+        "type": "Turi",
+        "product": "Mahsulot",
+        "branch": "Filial",
+        "department": "Bo'lim",
+        "quantity": "Miqdor",
+        "value": "Qiymat"
       }
     }
   }

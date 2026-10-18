@@ -495,20 +495,23 @@ describePermissionMatrix("getWarehouse, getStockLines and getStockMoves with the
   },
 });
 
-describePermissionMatrix("getWarehouse, getStockLines and getStockMoves, the branch wall in the SQL", {
-  permission: "data.view",
-  async run({ user, branchId }) {
-    const { variant, issue } = await stockIn(branchId);
-    const block = await getWarehouse(user.id, THIS_MONTH, NO_ANALYTICS_FILTERS);
-    const lines = await getStockLines(user.id, "value", NO_ANALYTICS_FILTERS, "all");
-    const moves = await getStockMoves(user.id, "use", THIS_MONTH, NO_ANALYTICS_FILTERS, "all");
-    // The number and its lists keep to the same wall.
-    const listed = lines.rows.some((row) => row.variantId === variant);
-    expect(moves.rows.some((row) => row.documentId === issue)).toBe(listed);
-    expect(block.branches.some((row) => row.id === branchId)).toBe(listed);
-    if (!listed) throw new AuthorizationError("not_found");
+describePermissionMatrix(
+  "getWarehouse, getStockLines and getStockMoves, the branch wall in the SQL",
+  {
+    permission: "data.view",
+    async run({ user, branchId }) {
+      const { variant, issue } = await stockIn(branchId);
+      const block = await getWarehouse(user.id, THIS_MONTH, NO_ANALYTICS_FILTERS);
+      const lines = await getStockLines(user.id, "value", NO_ANALYTICS_FILTERS, "all");
+      const moves = await getStockMoves(user.id, "use", THIS_MONTH, NO_ANALYTICS_FILTERS, "all");
+      // The number and its lists keep to the same wall.
+      const listed = lines.rows.some((row) => row.variantId === variant);
+      expect(moves.rows.some((row) => row.documentId === issue)).toBe(listed);
+      expect(block.branches.some((row) => row.id === branchId)).toBe(listed);
+      if (!listed) throw new AuthorizationError("not_found");
+    },
   },
-});
+);
 
 // A department of the branch, sent to each Warehouse query without a branch filter (permission
 // review of 6.4c, Should fix 2).

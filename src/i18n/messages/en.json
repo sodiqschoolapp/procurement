@@ -2414,7 +2414,9 @@
       "approvals": "Orders",
       "managers": "Managers",
       "cancelled": "Cancelled records",
-      "cash": "Cash held"
+      "cash": "Cash held",
+      "warehouse": "Warehouse by branch",
+      "departmentUse": "Use by department"
     },
     "plan": {
       "title": "Plan vs actual",
@@ -2626,6 +2628,79 @@
         "status": "Status",
         "since": "Held since",
         "held": "Held"
+      }
+    },
+    "warehouse": {
+      "title": "Warehouse",
+      "note": "Stock value, low-stock items and items with no movement are of now; an item with no movement has had none since before {date}. Use and written off are of the period, on each document's date.",
+      "notApplied": "The Manager and supplier filters do not apply to stock.",
+      "departmentOnly": "The department filter applies to use by department only.",
+      "perBranch": "Per branch",
+      "empty": "No branch has stock or a warehouse movement.",
+      "columns": {
+        "branch": "Branch",
+        "value": "Stock value",
+        "low": "Low-stock items",
+        "still": "No movement for 90 days",
+        "stillValue": "Value with no movement",
+        "writtenOff": "Written off"
+      },
+      "use": {
+        "title": "Use by department",
+        "note": "Issued minus returned, each at the cost it moved at.",
+        "empty": "No department used or returned stock in the period.",
+        "returned": "{amount} more returned",
+        "columns": {
+          "department": "Department",
+          "used": "Used"
+        }
+      }
+    },
+    "stock": {
+      "title": {
+        "value": "Stock value",
+        "low": "Low-stock items",
+        "still": "Items with no movement for 90 days"
+      },
+      "what": "Stock now",
+      "whatStill": "Stock now, with no movement since before {date}",
+      "summary": "{count, plural, one {# line} other {# lines}}, {total}",
+      "empty": "No stock line here.",
+      "quantity": "{qty} {unit}",
+      "minimum": "Minimum {qty}",
+      "noMinimum": "No minimum",
+      "columns": {
+        "product": "Product",
+        "branch": "Branch",
+        "quantity": "Quantity",
+        "unit": "Measure",
+        "minimum": "Minimum",
+        "avgCost": "Average cost",
+        "lastMoved": "Last movement",
+        "value": "Value"
+      }
+    },
+    "moves": {
+      "title": {
+        "use": "Use by department",
+        "writeoff": "Written off"
+      },
+      "summary": "{count, plural, one {# movement} other {# movements}}, {total}",
+      "empty": "No movement in the period.",
+      "type": {
+        "ISSUE": "Issue",
+        "RETURN": "Return",
+        "WRITE_OFF": "Write-off"
+      },
+      "columns": {
+        "date": "Date",
+        "document": "Document",
+        "type": "Type",
+        "product": "Product",
+        "branch": "Branch",
+        "department": "Department",
+        "quantity": "Quantity",
+        "value": "Value"
       }
     }
   }

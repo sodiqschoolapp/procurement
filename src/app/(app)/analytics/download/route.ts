@@ -7,8 +7,10 @@ import {
   approvalSpeedSheet,
   cancelledSheet,
   cashSheet,
+  departmentUseSheet,
   headSpendingSheet,
   managersSheet,
+  movesSheet,
   outcomeOrdersSheet,
   outcomesSheet,
   priceRisesSheet,
@@ -16,7 +18,9 @@ import {
   priceTrendSheet,
   recordsSheet,
   spendingSheet,
+  stockSheet,
   tallySheet,
+  warehouseSheet,
 } from "@/features/analytics/download/sheets";
 import { parseAnalyticsParams } from "@/features/analytics/period-params";
 import { getApprovalOrders } from "@/features/analytics/queries/approval-orders";
@@ -31,6 +35,9 @@ import { getPlanVsActual } from "@/features/analytics/queries/plan-vs-actual";
 import { getPrices } from "@/features/analytics/queries/prices";
 import { getSpending } from "@/features/analytics/queries/spending";
 import { getSpendingRecords } from "@/features/analytics/queries/spending-records";
+import { getStockLines } from "@/features/analytics/queries/stock-lines";
+import { getStockMoves } from "@/features/analytics/queries/stock-moves";
+import { getWarehouse } from "@/features/analytics/queries/warehouse";
 import { PeriodRefusedError } from "@/features/analytics/resolve-period";
 import { LOCALE_COOKIE, chooseLocale } from "@/i18n/locale";
 import { userOfCookies } from "@/server/auth/session";
@@ -40,7 +47,8 @@ import { now } from "@/server/clock";
 // The Excel file of one Analytics table, GET /analytics/download?…&block=… (6.3: months,
 // categories, records; 6.4a: branches, departments, suppliers, payments, outcomes,
 // outcomeBranches, outcomeManagers, orders; 6.4b: priceTrend, priceRises, priceSpread, stepHours,
-// waiting, decisions, reasons, approvals; 6.4c: managers, cancelled, cash)
+// waiting, decisions, reasons, approvals; 6.4c: managers, cancelled, cash; 6.4d: warehouse,
+// departmentUse, stock, moves)
 // (10-notifications-analytics-reports.md, Analytics page per role, point 4; 03 Permission matrix
 // "Export to Excel, download PDF, print"; build-plan 6.3). A route that writes nothing, as the
 // order list's download (plan of 2.14, decided item 12). The address is the page's, checked by
@@ -181,6 +189,34 @@ export async function GET(request: NextRequest): Promise<Response> {
         sheet = cashSheet(
           await getCashOrders(user.id, filters, otherOwners, "all"),
           otherOwners,
+          filters,
+          options,
+          locale,
+        );
+        break;
+      case "warehouse":
+      case "departmentUse": {
+        const warehouse = await getWarehouse(user.id, period, filters);
+        sheet =
+          block === "warehouse"
+            ? warehouseSheet(warehouse, filters, options, locale)
+            : departmentUseSheet(warehouse, filters, options, locale);
+        break;
+      }
+      case "stock":
+        // The lines of one number of now (plan of 6.4d, decided item 9).
+        if (key.kind !== "stock") return notFound();
+        sheet = stockSheet(
+          await getStockLines(user.id, key.view, filters, "all"),
+          filters,
+          options,
+          locale,
+        );
+        break;
+      case "moves":
+        if (key.kind !== "moves") return notFound();
+        sheet = movesSheet(
+          await getStockMoves(user.id, key.move, period, filters, "all"),
           filters,
           options,
           locale,

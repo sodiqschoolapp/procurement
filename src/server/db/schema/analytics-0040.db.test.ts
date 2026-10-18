@@ -3,11 +3,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 
 import { db } from "@/server/db/client";
 
-import {
-  spendingScene,
-  stockDocument,
-  stocked,
-} from "../../../../tests/helpers/analytics";
+import { spendingScene, stockDocument, stocked } from "../../../../tests/helpers/analytics";
 import { setClock } from "../../../../tests/helpers/clock";
 import { refusalOf } from "../../../../tests/helpers/database-error";
 
@@ -90,20 +86,23 @@ describe("analytics_stock", () => {
     ["avg", "avg_cost", "-1", "analytics_stock_avg_cost_check"],
     ["value", "value", "-1", "analytics_stock_value_check"],
     ["min", "min_qty", "0", "analytics_stock_min_qty_check"],
-  ] as const)("refuses %s out of range on insert and on update", async (field, column, bad, constraint) => {
-    expect(await refusalOf(insert({ [field]: bad }))).toMatchObject({ code: CHECK, constraint });
-    await insert();
-    try {
-      expect(
-        await refusalOf(
-          db.execute(sql`update analytics_stock set ${sql.identifier(column)} = ${bad}
+  ] as const)(
+    "refuses %s out of range on insert and on update",
+    async (field, column, bad, constraint) => {
+      expect(await refusalOf(insert({ [field]: bad }))).toMatchObject({ code: CHECK, constraint });
+      await insert();
+      try {
+        expect(
+          await refusalOf(
+            db.execute(sql`update analytics_stock set ${sql.identifier(column)} = ${bad}
                          where branch_id = ${ids.branch} and variant_id = ${ids.variant}`),
-        ),
-      ).toMatchObject({ code: CHECK, constraint });
-    } finally {
-      await clear();
-    }
-  });
+          ),
+        ).toMatchObject({ code: CHECK, constraint });
+      } finally {
+        await clear();
+      }
+    },
+  );
 
   it("refuses a second row of the same line", async () => {
     await insert();
@@ -183,9 +182,10 @@ describe("analytics_stock_moves", () => {
       });
       await insert({ type: "WRITE_OFF", noDepartment: true });
       try {
-        expect(
-          await refusalOf(update(sql`type = ${type}::stock_movement_type`)),
-        ).toMatchObject({ code: CHECK, constraint: "analytics_stock_moves_type_check" });
+        expect(await refusalOf(update(sql`type = ${type}::stock_movement_type`))).toMatchObject({
+          code: CHECK,
+          constraint: "analytics_stock_moves_type_check",
+        });
       } finally {
         await clear();
       }
@@ -221,18 +221,21 @@ describe("analytics_stock_moves", () => {
   it.each([
     ["qty", "0", "analytics_stock_moves_qty_check"],
     ["value", "-1", "analytics_stock_moves_value_check"],
-  ] as const)("refuses %s out of range on insert and on update", async (column, bad, constraint) => {
-    expect(await refusalOf(insert({ [column]: bad }))).toMatchObject({ code: CHECK, constraint });
-    await insert();
-    try {
-      expect(await refusalOf(update(sql`${sql.identifier(column)} = ${bad}`))).toMatchObject({
-        code: CHECK,
-        constraint,
-      });
-    } finally {
-      await clear();
-    }
-  });
+  ] as const)(
+    "refuses %s out of range on insert and on update",
+    async (column, bad, constraint) => {
+      expect(await refusalOf(insert({ [column]: bad }))).toMatchObject({ code: CHECK, constraint });
+      await insert();
+      try {
+        expect(await refusalOf(update(sql`${sql.identifier(column)} = ${bad}`))).toMatchObject({
+          code: CHECK,
+          constraint,
+        });
+      } finally {
+        await clear();
+      }
+    },
+  );
 
   it.each([
     ["movement", "analytics_stock_moves_movement_id_stock_movements_id_fk"],
