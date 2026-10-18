@@ -90,7 +90,8 @@
       "alreadyOwner": "It already belongs to this Manager.",
       "movedSince": "This order was moved to another Manager after this was recorded, so it cannot be cancelled. Finance corrects the cash count with a new money action.",
       "overReturn": "More than this department received.",
-      "overReturnComment": "A line is more than the department received: write a comment."
+      "overReturnComment": "A line is more than the department received: write a comment.",
+      "reverseStockShort": "Not enough in stock to reverse: the items have left again."
     },
     "file": {
       "tooLarge": "The file is larger than 10 MB. Choose a smaller file or take the photo again.",
@@ -1768,7 +1769,8 @@
         "movement": "Movement",
         "source": "Source",
         "change": "Change",
-        "balance": "Balance"
+        "balance": "Balance",
+        "action": "Action"
       },
       "order": "Order {number}",
       "noSource": "—",
@@ -1784,7 +1786,8 @@
         "CORRECTION": "Correction after a count",
         "DIRECT_ENTRY": "Direct entry",
         "REVERSAL": "Reversal"
-      }
+      },
+      "reversed": "Reversed"
     },
     "issue": {
       "title": "New issue",
@@ -1885,6 +1888,19 @@
       "quantity": "Quantity",
       "downloadedBy": "Downloaded by {name}, {at}",
       "page": "Page {page} of {pages}"
+    },
+    "reverse": {
+      "button": "Reverse",
+      "title": "Reverse {number}?",
+      "department": "Department",
+      "result": {
+        "ISSUE": "These items go back into stock and the issue is marked Reversed. This cannot be undone.",
+        "RETURN": "These items leave stock again and the return is marked Reversed. This cannot be undone."
+      },
+      "held": "The department holds only {held} of it: say why in the reason.",
+      "short": "{item}: only {left} left in stock. Nothing was reversed.",
+      "done": "{number} reversed",
+      "reasonHint": "A reason is required: {min} to {max} characters. {count} / {max}."
     }
   }
 }

@@ -90,7 +90,8 @@
       "alreadyOwner": "U allaqachon shu menejerga tegishli.",
       "movedSince": "Bu buyurtma ushbu yozuvdan keyin boshqa menejerga oʻtkazilgan, shuning uchun uni bekor qilib boʻlmaydi. Moliyachi naqd pul qoldigʻini yangi pul amali bilan tuzatadi.",
       "overReturn": "Bo'lim olganidan ko'p.",
-      "overReturnComment": "Qatorda bo'lim olganidan ko'p: izoh yozing."
+      "overReturnComment": "Qatorda bo'lim olganidan ko'p: izoh yozing.",
+      "reverseStockShort": "Storno qilish uchun omborda yetarli emas: mahsulotlar yana chiqib ketgan."
     },
     "file": {
       "tooLarge": "Fayl 10 MB dan katta. Kichikroq fayl tanlang yoki suratni qaytadan oling.",
@@ -1768,7 +1769,8 @@
         "movement": "Harakat",
         "source": "Manba",
         "change": "O'zgarish",
-        "balance": "Qoldiq"
+        "balance": "Qoldiq",
+        "action": "Amal"
       },
       "order": "Buyurtma {number}",
       "noSource": "—",
@@ -1783,8 +1785,9 @@
         "WRITE_OFF": "Hisobdan chiqarish",
         "CORRECTION": "Sanoqdan keyingi tuzatish",
         "DIRECT_ENTRY": "To'g'ridan-to'g'ri kiritish",
-        "REVERSAL": "Bekor qilish"
-      }
+        "REVERSAL": "Storno"
+      },
+      "reversed": "Storno qilingan"
     },
     "issue": {
       "title": "Yangi berish",
@@ -1885,6 +1888,19 @@
       "quantity": "Miqdori",
       "downloadedBy": "Yuklab oldi: {name}, {at}",
       "page": "{pages} dan {page}-sahifa"
+    },
+    "reverse": {
+      "button": "Storno qilish",
+      "title": "{number} storno qilinsinmi?",
+      "department": "Bo'lim",
+      "result": {
+        "ISSUE": "Bu mahsulotlar omborga qaytadi va berish storno qilingan deb belgilanadi. Buni qaytarib bo'lmaydi.",
+        "RETURN": "Bu mahsulotlar ombordan yana chiqadi va qaytarish storno qilingan deb belgilanadi. Buni qaytarib bo'lmaydi."
+      },
+      "held": "Bo'limda faqat {held} bor: sababini yozing.",
+      "short": "{item}: omborda faqat {left} qoldi. Hech narsa storno qilinmadi.",
+      "done": "{number} storno qilindi",
+      "reasonHint": "Sabab majburiy: {min} dan {max} gacha belgi. {count} / {max}."
     }
   }
 }

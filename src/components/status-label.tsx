@@ -230,6 +230,16 @@ export function SubstitutedLabel({ className }: { className?: string }) {
   );
 }
 
+/** A warehouse document undone with Reverse (09 Issue to a department 3; plan of 5.7). */
+export function ReversedLabel({ className }: { className?: string }) {
+  const t = useTranslations("warehouse.item");
+  return (
+    <LabelBox tone="muted" icon="undo" className={className}>
+      <span data-reversed>{t("reversed")}</span>
+    </LabelBox>
+  );
+}
+
 /** One of the three colour labels of a line or a request: Number, Price or Total. */
 export function ColourLabel(props: ColourLabelProps & { className?: string }) {
   const t = useTranslations("colourLabel");

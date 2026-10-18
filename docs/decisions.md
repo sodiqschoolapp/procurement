@@ -1900,6 +1900,24 @@ Choices made during the build:
 - The server's `overReturn` field text is not shown under the quantity: the line's own warning names the amount.
 - The issue's same-moment helper moved to `tests/helpers/held-while.ts`.
 
+### 5.7 Reverse a document (18.10.2026)
+
+The plan's decisions as the plan review of 18.10.2026 confirmed or changed them (corrections 1 to 3 applied), and those of the build. The Look first items come first.
+
+1. **Look first** (permission matrix; Decided ahead, question 19). `reverseAllows()` in `src/domain/stock-documents.ts`: an issue and a return by their creator or the Head; a Manager also needs `RETURN_REVERSE` (`authorize("stock.return_reverse")` on the document's branch). Every other type answers no until 5.8, 5.11, 7.2 and 7.4 add theirs (the Head only).
+2. **Look first** (stock rule; changed by the plan review). Reversing an issue line that is more than the department's net received amount (`departmentReceived()`, `overReturn()`) is allowed: the dialog warns with the amount it holds and the reverse's reason serves as the comment, as for a return (09 Other documents, Return). The only refusal is stock below zero. Proposed `/spec-change` for `09-warehouse.md`, Issue to a department 3: "A posted issue can be reversed by its creator or the Head. The original is then marked "Reversed". Reversing more than the department holds of an item shows a warning, as a return does; the reason is the comment."
+3. **Look first** (lock order; changed by the plan review). The reverse takes the document's department FOR SHARE, then `lockDocument()`, then the ledger's balances; a return (department FOR UPDATE) and a reverse of the same department wait for each other.
+4. The reverse is not a create: no `client_key`; a second reverse is `wrong_status` under the document lock. The reason is 5 to 500 characters (`isMoveReason()`), stored trimmed.
+5. No notification, no history event, no audit row; the document keeps who, when and why.
+6. The Reverse button is on the item card's rows of an issue or return (the only place a document shows until 5.12); the dialog lists every line, since one press reverses all.
+7. A reverse is allowed in an inactive branch or for an inactive department or product; the ledger still refuses stock below 0.
+
+Choices made during the build:
+
+- A reverse refused for short stock names the line by its id (`lines.<lineId>.qty`, new field kind `reverseStockShort`) with what is left; the dialog turns it into the item's name from its preview.
+- Uzbek and Russian say "Storno qilish" / "Сторнировать" for Reverse: the first Uzbek wording, "Bekor qilish", is also the dialog's Cancel button. The item card's REVERSAL label in Uzbek became "Storno" to match.
+- The dialog has its own reason hint (`warehouse.reverse.reasonHint`): the orders' hint speaks of orders.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

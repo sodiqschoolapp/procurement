@@ -1357,4 +1357,21 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - For 5.8, 5.11 and 7.2: `/warehouse/documents/new` reads `type=ISSUE|RETURN` through `BRANCHES` in its page; add each type there.
 - A textarea inside `Field` needs `useFieldControl()` for its label (`CommentBox` in return-form.tsx); the issue form's comment is not tied to its label yet.
 
-The next task is 5.7.
+## 5.7 Reverse a document (18.10.2026, pull request #96)
+
+**Built**
+- `reverseStockDocument` (`src/features/warehouse/actions/reverse.ts`): `stock.return_reverse` on the document's branch, department FOR SHARE then `lockDocument()`, `reverseAllows()` (creator or Head; ISSUE and RETURN only) else `forbidden`, POSTED else `wrong_status`, reason 5 to 500, then `reverseDocument()`. Short stock: `invalid_input` on `lines.<lineId>.qty` with `errors.field.reverseStockShort` and `available`.
+- `reverseAllows()` in `src/domain/stock-documents.ts`; `getReversePreview()` (`queries/reverse-preview.ts`): number, department, lines, `held` on an issue line over what the department holds.
+- Item card: `documentId`, `documentStatus`, `canReverse` per movement; `ReversedLabel` (`src/components/status-label.tsx`); `ReverseDocumentButton`; page actions in `src/app/(app)/warehouse/items/[id]/actions.ts`.
+- `tests/helpers/stock-documents.ts`: `receive()` and `postDocument()` for warehouse scenes.
+
+**Left out, and the task that brings it**
+- Reverse of a direct entry, a write-off, a transfer, a count: 5.8, 5.11, 7.2, 7.4. The button on the document's own address: 5.12.
+
+**What the next sessions must know**
+- For 5.8, 5.11, 7.2 and 7.4: add your type to `reverseAllows()` (the Head only, question 19) with a test; the action, the preview and the card's button follow. 7.2 checks `reverseDocument()` for a transfer's two branches first.
+- For 5.12: put `ReverseDocumentButton` on the document's address; it needs only `documentId` and `number`, and `canReverse` as the card computes it.
+- Reversing an issue more than the department holds is allowed (review of the plan, correction 1); `departmentReceived()` can then go below 0.
+- "Bekor qilish" is Uzbek for Cancel: never use it for another button in the same dialog.
+
+The next task is 5.8.
