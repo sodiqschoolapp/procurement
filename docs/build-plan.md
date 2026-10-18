@@ -23,11 +23,11 @@ The whole project as ordered tasks. One task is one Claude Code session and one 
 | 3. Purchasing | 10 | The Manager records what was really bought, one order or one whole shop visit at a time. |
 | 4. Money and settlement | 10 | Cash given, cash spent, the difference, and the close, per order. |
 | 5. Warehouse | 11 | Stock screens and every document that moves stock inside one branch. |
-| 6. Home, analytics, reports | 10 | What each role sees first, and the numbers behind the work. |
+| 6. Home, analytics, reports | 12 | What each role sees first, and the numbers behind the work. |
 | 7. Transfers and counts | 4 | Stock moving between branches, and stock checked against the shelf. |
 | 8. Jobs and polish | 3 | The scheduled work, and the translation pass. |
 | 9. Before go-live | 6 | Proof that it works, then the real environment and the real data. |
-| **Total** | **101** | |
+| **Total** | **103** | |
 
 ## Phase 0: Foundations
 
@@ -477,10 +477,20 @@ What each role sees first, and the numbers behind the work.
   - **Build:** Summary tables as materialized views, refreshed every 5 minutes by the scheduler; the period picker (this month, last month, this quarter, this school year hidden until it is set, custom dates) with the change against the period before; filters inside the user's branches; the drill-down list behind any number; Excel export of a chart or a table; the Recharts wrappers.
   - **Done when:** Database tests: a number equals the sum of the rows in its drill-down list; no filter returns rows of another branch; the school-year choice is hidden while the setting is empty.
 
-- [ ] **6.4 Analytics: Head**
+- [ ] **6.4a Analytics: Head, Spending and Plan vs actual** (6.4 split in three by its plan, pull request #105)
   - **Read:** `10-notifications-analytics-reports.md` (Analytics page per role: Head, all branches); `16-build-order.md` (phase 6 row).
-  - **Build:** The six blocks: Spending, Plan vs actual, Prices, Approval speed, Managers, Warehouse.
-  - **Done when:** A test checks one number of each block against the seed. By hand: the spec's phase 6 check, click a bar and see the orders behind it.
+  - **Build:** The Head's Spending block (total by month and by category as built in 6.3; branches side by side; by department; top 10 suppliers; split by payment type) and the Plan vs actual block (share of orders ending green, orange and red; total overspent and total saved; by branch and by Manager), each number with its drill-down and Excel export.
+  - **Done when:** A database test checks one number of each of the two blocks against the seed. By hand: click a bar of the Head's page and see the orders behind it.
+
+- [ ] **6.4b Analytics: Head, Prices and Approval speed**
+  - **Read:** `10-notifications-analytics-reports.md` (Analytics page per role: Head, all branches); `16-build-order.md` (phase 6 row).
+  - **Build:** The Prices block (price trend of any product; biggest price rises in the last 90 days; the same product bought at different prices by different branches or suppliers) and the Approval speed block (average hours at each step per branch; orders waiting now, by age; share sent back or rejected, with the most common reasons).
+  - **Done when:** A database test checks one number of each of the two blocks against the seed.
+
+- [ ] **6.4c Analytics: Head, Managers and Warehouse**
+  - **Read:** `10-notifications-analytics-reports.md` (Analytics page per role: Head, all branches); `16-build-order.md` (phase 6 row).
+  - **Build:** The Managers block (per Manager: number of orders, average difference from plan, cancelled purchase records, cash held and for how long) and the Warehouse block (stock value per branch; low-stock items; use by department; items with no movement for 90 days; value written off).
+  - **Done when:** A database test checks one number of each of the two blocks against the seed. By hand: the spec's phase 6 check on the whole Head page.
 
 - [ ] **6.5 Analytics: Principal and Manager**
   - **Read:** `10-notifications-analytics-reports.md` (Analytics page per role: Principal, own branch; Manager, own branches; the "Runs out in" sentence); `open-questions.md` (question 15).

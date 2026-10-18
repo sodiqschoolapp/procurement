@@ -46,6 +46,12 @@ import { getMoneyWithManagers } from "@/features/money/queries/money-with-manage
 import { countPendingSuggestions, listSuggestions } from "@/features/catalog/queries/suggestions";
 import { getFinanceHome } from "@/features/home/queries/finance-home";
 import { getHeadHome } from "@/features/home/queries/head-home";
+import { NO_ANALYTICS_FILTERS } from "@/features/analytics/period-params";
+import { getHeadSpending } from "@/features/analytics/queries/head-spending";
+import { getOutcomeOrders } from "@/features/analytics/queries/outcome-orders";
+import { getPlanVsActual } from "@/features/analytics/queries/plan-vs-actual";
+import { recordsWhere } from "@/features/purchasing/order-records";
+import { refreshAnalytics } from "@/server/jobs/analytics-refresh";
 import { listOrderGroups } from "@/features/orders/queries/order-list";
 import { getStockDocument } from "@/features/warehouse/queries/document";
 import { listStockDocuments } from "@/features/warehouse/queries/documents";
@@ -1807,6 +1813,61 @@ describe("the seed's home lists (build plan 6.2, Done when: a database test chec
       expect(finance.settlements[0]!.net).toEqual({ direction: "TO_MANAGER", amount: 90_000n });
     } finally {
       resetClock();
+      client.release();
+    }
+  });
+});
+
+describe("the seed on the Head's Analytics page (build plan 6.4a, Done when: one number of each block against the seed)", () => {
+  it("shows seed_head the Cash spending of CHL this month and the service order overspent 150 000", async () => {
+    const client = await db.$client.connect();
+    try {
+      await seed(client, ENV, MOMENT);
+      setClock(MOMENT);
+      await db.transaction((tx) => refreshAnalytics(tx));
+      const head = (
+        await client.query<{ id: string }>("select id from users where username = 'seed_head'")
+      ).rows[0]!.id;
+      const chl = (await client.query<{ id: string }>("select id from branches where code = 'CHL'"))
+        .rows[0]!.id;
+      const thisMonth = { choice: "this_month", from: null, to: null } as const;
+      const filters = { ...NO_ANALYTICS_FILTERS, branch: chl };
+
+      // Spending: every seed record is a Cash trip with no extra, so Cash is actualTotal() of the
+      // live records of CHL bought this month (07 Purchase record; 08 Actual total).
+      const records = await recordsWhere(
+        db,
+        sql`p.branch_id = ${chl} and not p.is_cancelled and t.purchased_on >= ${businessMonth(businessDate(MOMENT)).first}`,
+      );
+      const spending = await getHeadSpending(head, thisMonth, filters);
+      expect(records.length).toBeGreaterThan(0);
+      expect(spending.payments).toEqual([
+        expect.objectContaining({ payment: "CASH", amount: actualTotal(records) }),
+      ]);
+
+      // Plan vs actual: the service bought for 250 000 against 100 000 is red, over 150 000; the
+      // seed's Not bought orders are not counted (plan of 6.4, decided item 4).
+      const service = (
+        await client.query<{ id: string }>("select id from orders where client_key = $1", [
+          SEED_ORDERS[11]!.clientKey,
+        ])
+      ).rows[0]!.id;
+      const plan = await getPlanVsActual(head, thisMonth, filters);
+      const list = await getOutcomeOrders(
+        head,
+        thisMonth,
+        filters,
+        { kind: "overspent" },
+        false,
+        "all",
+      );
+      expect(list.rows.map((row) => [row.orderId, row.difference])).toContainEqual([
+        service,
+        -150_000n,
+      ]);
+      expect(plan.total.overspent.amount).toBe(list.sum);
+      expect(list.sum).toBeGreaterThanOrEqual(150_000n);
+    } finally {
       client.release();
     }
   });

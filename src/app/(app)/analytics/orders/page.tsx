@@ -177,11 +177,15 @@ export default async function AnalyticsOrdersPage({
                     {format.date(row.endedOn)}
                   </td>
                   <td className="px-4 py-3 text-right whitespace-nowrap tabular-nums max-sm:p-0 max-sm:text-left">
-                    <span className="sm:hidden">{t("orders.columns.planned")}: </span>
+                    <span className="mr-1 text-muted-foreground sm:hidden">
+                      {t("orders.columns.planned")}
+                    </span>
                     {format.money(row.planned)}
                   </td>
                   <td className="px-4 py-3 text-right whitespace-nowrap tabular-nums max-sm:p-0 max-sm:text-left">
-                    <span className="sm:hidden">{t("orders.columns.actual")}: </span>
+                    <span className="mr-1 text-muted-foreground sm:hidden">
+                      {t("orders.columns.actual")}
+                    </span>
                     {format.money(row.actual)}
                   </td>
                   <td className="px-4 py-3 max-sm:p-0" data-difference={signed(row.difference)}>
