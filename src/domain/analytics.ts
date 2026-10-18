@@ -1,7 +1,8 @@
 import { type BusinessDate, businessMonth, isBusinessDate } from "./business-date";
-import { Exact, quantityOf } from "./order-totals";
+import { Exact, QUANTITY, quantityOf } from "./order-totals";
 import { actualGoods, unitPriceOf } from "./purchases";
 import type { MonthDay } from "./settings";
+import { isLow } from "./stock";
 
 // The period of the Analytics pages and the change of a number against the period before
 // (10-notifications-analytics-reports.md, Analytics page per role, point 1; build-plan 6.3).
@@ -399,4 +400,84 @@ export function estimateGap(lines: readonly EstimateLine[]): EstimateGap {
     difference: plannedPrice === null || actualPrice === null ? null : plannedPrice - actualPrice,
     percent,
   };
+}
+
+// The Manager's Stock planning block (10 Analytics, Manager: "Use of each item per month; 'runs
+// out in about 12 days' at the current rate; low stock; suggested order quantity"; build-plan
+// 6.5c). Quantities are numeric(14,3) text in the item's own measure; a use is issues − returns,
+// which can be below 0 when returns of earlier issues pass the issues.
+
+/** numeric(14,3) with a sign: a use, Σ issues − Σ returns (plan of 6.5c, decided item 2). */
+const USE = /^-?[0-9]{1,14}(\.[0-9]{1,3})?$/;
+
+function useOf(text: string): InstanceType<typeof Exact> {
+  if (!USE.test(text)) throw new RangeError(`A use is "${text}": not a signed numeric(14,3)`);
+  return new Exact(text);
+}
+
+function onHandOf(text: string): InstanceType<typeof Exact> {
+  if (!QUANTITY.test(text)) throw new RangeError(`A stock is "${text}": not numeric(14,3)`);
+  return new Exact(text);
+}
+
+/** The days of the rate behind "runs out in" and the suggested quantity (10: "the last 90 days"). */
+export const RATE_DAYS = NINETY_DAYS;
+
+/** The days of use a suggested order covers on top of the minimum (plan of 6.5c, decided item 1). */
+export const COVER_DAYS = 30;
+
+/**
+ * "Runs out in" (00-definitions: "Current stock divided by the average daily issues of the last
+ * 90 days"; plan of 6.5c, decided item 2, Look first): on hand ÷ (the use of the 90 days that end
+ * today ÷ 90), in whole days half up (CLAUDE.md rule 6). `null` while that use is 0 or below: at
+ * no rate the stock never runs out, stock 0 included; 0 when on hand is 0 and there is use.
+ */
+export function runsOutIn(onHand: string, used: string): number | null {
+  const stock = onHandOf(onHand);
+  const use = useOf(used);
+  if (use.lte(0)) return null;
+  return stock.times(RATE_DAYS).dividedBy(use).toDecimalPlaces(0, Exact.ROUND_HALF_UP).toNumber();
+}
+
+/**
+ * The suggested order quantity (open question 15; plan of 6.5c, decided item 1, Look first; review
+ * of the plan, correction 1): what lasts 30 days at the rate of the last 90 days, on top of the
+ * minimum, less the stock on hand, `rate × 30 + (minimum ?? 0) − on hand`, half up to a whole unit;
+ * a net rate below 0 counts as 0; never below 0, and at least 1 for a Low item (`isLow()`, 09 Low
+ * stock: "at its minimum or below"), so the order lifts it above its minimum. Whole units as text.
+ */
+export function suggestedQuantity(onHand: string, minimum: string | null, used: string): string {
+  const stock = onHandOf(onHand);
+  const use = Exact.max(useOf(used), 0);
+  const floor = minimum === null ? new Exact(0) : onHandOf(minimum);
+  const wanted = use
+    .times(COVER_DAYS)
+    .dividedBy(RATE_DAYS)
+    .plus(floor)
+    .minus(stock)
+    .toDecimalPlaces(0, Exact.ROUND_HALF_UP);
+  const least = isLow(onHand, minimum) ? 1 : 0;
+  return Exact.max(wanted, least).toFixed(0);
+}
+
+/** A use's change: the difference in the item's measure, and its percent while before is above 0. */
+export type QtyChange = {
+  /** Now − before, numeric(14,3) text with a sign. */
+  difference: string;
+  /** The difference as a percent of before, one decimal, half up; `null` unless before > 0. */
+  percent: string | null;
+};
+
+/**
+ * The change of an item's use against the month or the period before (10 point 1; plan of 6.5c,
+ * decided item 3, Look first): as `useChange()` for so'm, a percent only on a base above 0 (a
+ * percent reads backwards on a base below 0), else the difference only.
+ */
+export function qtyChange(now: string, before: string): QtyChange {
+  const was = useOf(before);
+  const difference = useOf(now).minus(was);
+  const percent = was.gt(0)
+    ? difference.times(100).dividedBy(was).toDecimalPlaces(1, Exact.ROUND_HALF_UP).toFixed(1)
+    : null;
+  return { difference: difference.toFixed(), percent };
 }

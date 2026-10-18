@@ -16,6 +16,9 @@ import {
   averageHours,
   averageSom,
   ninetyDaysSince,
+  qtyChange,
+  runsOutIn,
+  suggestedQuantity,
   useChange,
   reasonKey,
   waitingGroup,
@@ -393,5 +396,100 @@ describe("My estimates (plan of 6.5b, decided item 4)", () => {
   it("refuses a broken line", () => {
     expect(() => estimateGap([{ ...line("1", 5n, 5n), plannedPrice: 0n }])).toThrow(RangeError);
     expect(() => estimateGap([{ ...line("1", 5n, 5n), goods: -1n }])).toThrow(RangeError);
+  });
+});
+
+describe('"runs out in" (00-definitions; 10 Manager, Stock planning; plan of 6.5c, decided item 2)', () => {
+  it("is on hand ÷ the average daily issues of the last 90 days: 24 on hand, 180 issued → 12 days", () => {
+    // 10: "runs out in about 12 days" at the current rate; 180 ÷ 90 = 2 a day.
+    expect(runsOutIn("24", "180")).toBe(12);
+  });
+
+  it("rounds to whole days half up (CLAUDE.md rule 6)", () => {
+    expect(runsOutIn("24", "179")).toBe(12); // 12.07
+    expect(runsOutIn("1", "36")).toBe(3); // 2.5 → 3
+    expect(runsOutIn("1", "36.1")).toBe(2); // 2.49 → 2
+  });
+
+  it("reads fractions of a measure: 1.5 kg on hand, 13.5 kg issued → 10 days", () => {
+    expect(runsOutIn("1.5", "13.5")).toBe(10);
+  });
+
+  it("is 0 when the stock is empty and there is use", () => {
+    expect(runsOutIn("0", "9")).toBe(0);
+  });
+
+  it("has none with no use, stock 0 included: at no rate the stock never runs out", () => {
+    expect(runsOutIn("50", "0")).toBeNull();
+    expect(runsOutIn("0", "0")).toBeNull();
+  });
+
+  it("has none when returns pass issues (a use below 0)", () => {
+    expect(runsOutIn("50", "-4")).toBeNull();
+  });
+
+  it("refuses a stock or a use that is not numeric(14,3)", () => {
+    expect(() => runsOutIn("-1", "9")).toThrow(RangeError);
+    expect(() => runsOutIn("1e2", "9")).toThrow(RangeError);
+    expect(() => runsOutIn("5", "1.0001")).toThrow(RangeError);
+    expect(() => runsOutIn("5", "Infinity")).toThrow(RangeError);
+  });
+});
+
+describe("the suggested order quantity (open question 15; plan of 6.5c, decided item 1)", () => {
+  it("lasts 30 days at the 90-day rate on top of the minimum: 2 a day, minimum 10, 24 on hand → 46", () => {
+    expect(suggestedQuantity("24", "10", "180")).toBe("46");
+  });
+
+  it("rounds half up to a whole unit (CLAUDE.md rule 6)", () => {
+    // 1.5 a month: 0.05 a day × 30 = 1.5 → 2; 1.49 → 1.
+    expect(suggestedQuantity("0", null, "4.5")).toBe("2");
+    expect(suggestedQuantity("0", null, "4.47")).toBe("1");
+  });
+
+  it("is 0 when the stock on hand already covers it", () => {
+    expect(suggestedQuantity("100", "10", "180")).toBe("0");
+  });
+
+  it("counts an unset minimum as 0", () => {
+    expect(suggestedQuantity("4", null, "180")).toBe("56");
+  });
+
+  it("is 0 with no use and no Low", () => {
+    expect(suggestedQuantity("3", null, "0")).toBe("0");
+    expect(suggestedQuantity("12", "10", "0")).toBe("0");
+  });
+
+  it("is minimum − on hand for a Low line with no use", () => {
+    expect(suggestedQuantity("5", "10", "0")).toBe("5");
+  });
+
+  it("counts a net rate below 0 as 0", () => {
+    // Issues 10 and returns 20 in the 90 days: the suggestion is minimum − on hand.
+    expect(suggestedQuantity("5", "10", "-10")).toBe("5");
+  });
+
+  it("is at least 1 for a Low line (09 Low stock: at its minimum or below; review correction 1)", () => {
+    expect(suggestedQuantity("10", "10", "0")).toBe("1"); // at its minimum
+    expect(suggestedQuantity("9.6", "10", "0")).toBe("1"); // 0.4 → 0, still Low
+    expect(suggestedQuantity("10", "10", "0.9")).toBe("1"); // 0.01 a day: 0.3 → 0
+  });
+
+  it("refuses a stock, a minimum or a use that is not numeric(14,3)", () => {
+    expect(() => suggestedQuantity("-1", null, "9")).toThrow(RangeError);
+    expect(() => suggestedQuantity("1", "1e2", "9")).toThrow(RangeError);
+    expect(() => suggestedQuantity("1", null, "x")).toThrow(RangeError);
+  });
+});
+
+describe("the change of a use (10 point 1; plan of 6.5c, decided item 3)", () => {
+  it("is the difference in the item's measure and its percent of before, half up", () => {
+    expect(qtyChange("12.5", "10")).toEqual({ difference: "2.5", percent: "25.0" });
+    expect(qtyChange("2", "3")).toEqual({ difference: "-1", percent: "-33.3" });
+  });
+
+  it("has no percent unless before is above 0", () => {
+    expect(qtyChange("4", "0")).toEqual({ difference: "4", percent: null });
+    expect(qtyChange("4", "-2")).toEqual({ difference: "6", percent: null });
   });
 });
