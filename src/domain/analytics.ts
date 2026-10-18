@@ -481,3 +481,29 @@ export function qtyChange(now: string, before: string): QtyChange {
     : null;
   return { difference: difference.toFixed(), percent };
 }
+
+/**
+ * The age bands of Finance's "money with managers by age" (10 Finance, Cash: "up to 7 days, 8 to
+ * 30 days, over 30 days"; plan of 6.6a, decided item 3, Look first). `upTo` is the band's last day.
+ */
+export const CASH_AGE_BANDS = [
+  { band: "week", upTo: 7 },
+  { band: "month", upTo: 30 },
+  { band: "older", upTo: null },
+] as const;
+export type CashAgeBand = (typeof CASH_AGE_BANDS)[number]["band"];
+export const CASH_AGE_BAND_KEYS = CASH_AGE_BANDS.map((each) => each.band) as CashAgeBand[];
+
+/**
+ * The band of an order whose cash has been out `days` days (`daysOf({ first: since, last: today })
+ * − 1`, as 6.4c counts "held for"): 0 to 7 is "up to 7 days", 8 to 30, then "over 30 days". A
+ * `since` after today (an action dated ahead) is below 0 days and lands in the first band (review
+ * of the plan, Should fix 4).
+ */
+export function cashAgeBand(days: number): CashAgeBand {
+  if (!Number.isSafeInteger(days)) throw new RangeError(`Days are a whole number, not ${days}.`);
+  for (const { band, upTo } of CASH_AGE_BANDS) {
+    if (upTo === null || days <= upTo) return band;
+  }
+  return "older";
+}

@@ -22,6 +22,7 @@ import {
   useChange,
   reasonKey,
   waitingGroup,
+  cashAgeBand,
 } from "./analytics";
 import { actualGoods } from "./purchases";
 
@@ -491,5 +492,25 @@ describe("the change of a use (10 point 1; plan of 6.5c, decided item 3)", () =>
   it("has no percent unless before is above 0", () => {
     expect(qtyChange("4", "0")).toEqual({ difference: "4", percent: null });
     expect(qtyChange("4", "-2")).toEqual({ difference: "6", percent: null });
+  });
+});
+
+describe("money with managers by age (10 Finance, Cash: up to 7 days, 8 to 30 days, over 30 days; plan of 6.6a, decided item 3)", () => {
+  it("puts 0 to 7 days in the first band, 8 to 30 in the second, 31 and more in the third", () => {
+    expect(cashAgeBand(0)).toBe("week");
+    expect(cashAgeBand(7)).toBe("week");
+    expect(cashAgeBand(8)).toBe("month");
+    expect(cashAgeBand(30)).toBe("month");
+    expect(cashAgeBand(31)).toBe("older");
+    expect(cashAgeBand(400)).toBe("older");
+  });
+
+  it("puts a since after today (an action dated ahead) in the first band (review Should fix 4)", () => {
+    expect(cashAgeBand(-1)).toBe("week");
+  });
+
+  it("refuses days that are not a whole number", () => {
+    expect(() => cashAgeBand(1.5)).toThrow(RangeError);
+    expect(() => cashAgeBand(Number.NaN)).toThrow(RangeError);
   });
 });
