@@ -122,6 +122,8 @@ export const FIELD_ERROR_KINDS = [
   // decided items 2 and 5, Look first): the line over, and the comment it needs.
   "overReturn",
   "overReturnComment",
+  // A reverse whose movement would take stock below 0 (09 intro; plan of 5.7).
+  "reverseStockShort",
 ] as const;
 export type FieldErrorKind = (typeof FIELD_ERROR_KINDS)[number];
 export type FieldMessageKey = `errors.field.${FieldErrorKind}`;

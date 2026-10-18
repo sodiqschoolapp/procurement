@@ -1,8 +1,13 @@
 import { and, count, desc, eq, sql } from "drizzle-orm";
 import * as z from "zod";
 
-import type { Actor } from "@/domain/permissions";
+import { type Actor, decide } from "@/domain/permissions";
 import { ITEM_CARD_PAGE_SIZE, type MovementType } from "@/domain/stock";
+import {
+  type DocumentStatus,
+  REVERSIBLE_STATUSES,
+  reverseAllows,
+} from "@/domain/stock-documents";
 import { AuthorizationError, authorize } from "@/server/authorize";
 import {
   branches,
@@ -26,7 +31,10 @@ import { readSnapshot } from "@/server/read-snapshot";
 // matrix "See orders, stock and reports"); another branch is "Not found" (03 rule 1). A
 // purchase's movement names its order behind the draft wall, in the SQL: a hidden order leaves
 // the row with no number, never out of the card (decided item 9). A document's number is text
-// until 5.12 gives a document an address (decided item 4, Look first).
+// until 5.12 gives a document an address (decided item 4, Look first). A document's movement
+// carries its status and whether the user may reverse it now (plan of 5.7): `stock.return_reverse`
+// on the card's branch, reverseAllows(), a reversible status, and not a REVERSAL row; the server
+// asks again.
 
 export type ItemMovement = {
   id: string;
@@ -40,6 +48,10 @@ export type ItemMovement = {
   order: { id: string; number: string } | null;
   /** The number of a document's movement. */
   documentNumber: string | null;
+  documentId: string | null;
+  documentStatus: DocumentStatus | null;
+  /** Whether the Reverse button is offered on this row (plan of 5.7). */
+  canReverse: boolean;
 };
 
 export type ItemCard = {
@@ -130,6 +142,10 @@ export async function getItemCard(
         orderId: orders.id,
         orderNumber: orders.number,
         documentNumber: stockDocuments.number,
+        documentId: stockDocuments.id,
+        documentType: stockDocuments.type,
+        documentStatus: stockDocuments.status,
+        documentCreatedBy: stockDocuments.createdBy,
       })
       .from(stockMovements)
       .leftJoin(purchases, eq(purchases.id, stockMovements.purchaseId))
@@ -149,6 +165,8 @@ export async function getItemCard(
       .limit(ITEM_CARD_PAGE_SIZE)
       .offset((shown - 1) * ITEM_CARD_PAGE_SIZE);
 
+    const reversesHere =
+      decide("stock.return_reverse", actor, { branchId: branch.data }) === "allow";
     return {
       branchId: branch.data,
       branchCode: head.branchCode,
@@ -167,6 +185,16 @@ export async function getItemCard(
         balanceAfter: row.balanceAfter,
         order: row.orderId && row.orderNumber ? { id: row.orderId, number: row.orderNumber } : null,
         documentNumber: row.documentNumber,
+        documentId: row.documentId,
+        documentStatus: row.documentStatus,
+        canReverse:
+          reversesHere &&
+          row.type !== "REVERSAL" &&
+          row.documentType !== null &&
+          row.documentStatus !== null &&
+          row.documentCreatedBy !== null &&
+          REVERSIBLE_STATUSES.includes(row.documentStatus) &&
+          reverseAllows(actor, { type: row.documentType, createdBy: row.documentCreatedBy }),
       })),
       page: shown,
       pages,

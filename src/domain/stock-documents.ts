@@ -9,6 +9,7 @@ import Decimal from "decimal.js";
 import { type QuantityRefusal, quantityRefusal } from "./drafts";
 import { orderNumber } from "./order-numbers";
 import { QUANTITY } from "./order-totals";
+import type { Actor } from "./permissions";
 import type { StockMovement } from "./stock";
 
 /** 14-data-model.md, stock_documents.type, in its order. */
@@ -74,6 +75,22 @@ export const DOCUMENT_PREFIX = {
  * item 8). Who may reverse which type is the reverse action's (Decided ahead, question 19).
  */
 export const REVERSIBLE_STATUSES: readonly DocumentStatus[] = ["POSTED", "RECEIVED"];
+
+/**
+ * Whether the actor may reverse a document of this type and maker (09 Issue to a department 3: "A
+ * posted issue can be reversed by its creator or the Head"; Decided ahead, question 19; plan of
+ * 5.7, decided item 1, Look first): an issue and a return by their creator or the Head. Every
+ * other type is no until its task adds it, the Head only (5.8, 5.11, 7.2, 7.4). A Manager's right
+ * RETURN_REVERSE and the branch are authorize()'s (`stock.return_reverse`), asked beside this.
+ */
+export function reverseAllows(
+  actor: Pick<Actor, "userId" | "role">,
+  document: { type: DocumentType; createdBy: string },
+): boolean {
+  if (document.type !== "ISSUE" && document.type !== "RETURN") return false;
+  if (actor.role === "HEAD") return true;
+  return actor.role === "MANAGER" && document.createdBy === actor.userId;
+}
 
 /**
  * The number of a document: `documentNumber("ISSUE", "CHL", 2026, 31)` is `ISS-CHL-26-0031`

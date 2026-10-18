@@ -90,7 +90,8 @@
       "alreadyOwner": "It already belongs to this Manager.",
       "movedSince": "This order was moved to another Manager after this was recorded, so it cannot be cancelled. Finance corrects the cash count with a new money action.",
       "overReturn": "More than this department received.",
-      "overReturnComment": "A line is more than the department received: write a comment."
+      "overReturnComment": "A line is more than the department received: write a comment.",
+      "reverseStockShort": "Not enough in stock to reverse: the items have left again."
     },
     "file": {
       "tooLarge": "The file is larger than 10 MB. Choose a smaller file or take the photo again.",

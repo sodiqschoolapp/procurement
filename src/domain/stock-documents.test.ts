@@ -9,6 +9,7 @@ import {
   departmentHolds,
   overReturn,
   reversalOf,
+  reverseAllows,
 } from "./stock-documents";
 
 // The warehouse documents (09-warehouse.md, Movement types; Issue to a department 2; Direct entry
@@ -165,5 +166,46 @@ describe("departmentHolds (plan of 5.6: the items a department holds come first 
     expect(departmentHolds("0.001")).toBe(true);
     expect(departmentHolds("0.000")).toBe(false);
     expect(departmentHolds("-2.000")).toBe(false);
+  });
+});
+
+describe("reverseAllows (09 Issue to a department 3; Decided ahead, question 19; plan of 5.7, decided item 1)", () => {
+  const maker = "00000000-0000-4000-8000-000000000001";
+  const colleague = "00000000-0000-4000-8000-000000000002";
+
+  it("lets the Head and the creating Manager reverse an issue and a return", () => {
+    for (const type of ["ISSUE", "RETURN"] as const) {
+      expect(reverseAllows({ userId: colleague, role: "HEAD" }, { type, createdBy: maker })).toBe(
+        true,
+      );
+      expect(reverseAllows({ userId: maker, role: "MANAGER" }, { type, createdBy: maker })).toBe(
+        true,
+      );
+    }
+  });
+
+  it("refuses another Manager, a Principal and Finance, even as the recorded creator", () => {
+    for (const type of ["ISSUE", "RETURN"] as const) {
+      expect(
+        reverseAllows({ userId: colleague, role: "MANAGER" }, { type, createdBy: maker }),
+      ).toBe(false);
+      expect(reverseAllows({ userId: maker, role: "PRINCIPAL" }, { type, createdBy: maker })).toBe(
+        false,
+      );
+      expect(reverseAllows({ userId: maker, role: "FINANCE" }, { type, createdBy: maker })).toBe(
+        false,
+      );
+    }
+  });
+
+  it("refuses every other type, to the Head and its creator too, until its task adds it", () => {
+    for (const type of DOCUMENT_TYPES.filter((each) => each !== "ISSUE" && each !== "RETURN")) {
+      expect(reverseAllows({ userId: maker, role: "HEAD" }, { type, createdBy: maker })).toBe(
+        false,
+      );
+      expect(reverseAllows({ userId: maker, role: "MANAGER" }, { type, createdBy: maker })).toBe(
+        false,
+      );
+    }
   });
 });
