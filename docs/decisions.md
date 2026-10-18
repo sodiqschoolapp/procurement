@@ -1876,6 +1876,30 @@ Choices made during the build:
 - `/warehouse/documents/new` answers only `type=ISSUE`; any other type is "Not found" until its task.
 - `issueBranchChoices` is tested by hand rather than by the matrix generator: a list without a branch is refused before any branch is read, so the generator's "other branch: Not found" does not apply.
 
+### 5.6 Return from a department (18.10.2026)
+
+The plan's decisions as the plan review of 18.10.2026 confirmed them (corrections 1 to 3 applied), and those of the build. The Look first items come first.
+
+1. **Look first** (stock rule; Decided ahead 4, question 11, left it to this task). A return into a stock whose quantity under the lock is 0 comes in at the unit cost of that department's newest ISSUE movement of the subtype in the branch that no REVERSAL undid; none: 0. Into a stock above 0 (an average of 0 included, free items) it comes in at the current average, unchanged. Built as `StockMovement.emptyCost`, stored in the RETURN line's `unit_cost`. Proposed `/spec-change` for `09-warehouse.md`, Stock value: "A return from a department comes back at the average of that moment. Into an empty stock it comes back at the cost of that department's newest issue of the item, or 0 when there is none."
+2. **Look first** (stock rule). "More than that department ever received" is more than its net received amount of the subtype in the branch: the signed sum of every movement on the lines of its ISSUE and RETURN documents, REVERSAL rows included, negated (`departmentReceived()`). "Give straight" issues count.
+3. **Look first** (permission matrix). A return needs `stock.return_reverse` (Manager right `RETURN_REVERSE`); `ISSUE_STOCK` off does not stop it.
+4. `returnStock` takes the department FOR UPDATE before reading the received amount; two returns of one department serialize. Lock order: branch, department, products, subtypes, balances, number counter.
+5. One over line without a comment refuses the whole return; the comment is the document's; each over line is named with its received amount.
+6. Date default today, not in the future; branch prefilled when one.
+7. No "Received by" on a return.
+8. Active departments and active subtypes of active goods products only.
+9. No PDF, no notification, no audit row.
+10. At most 100 lines (`DOCUMENT_LINES_MAX`, shared with the issue), each subtype once.
+11. No confirmation dialog on save.
+12. `/warehouse/documents/new` reads `type=ISSUE|RETURN`; the phone step helper is `document-steps.ts`.
+
+Choices made during the build:
+
+- The search lists every active goods subtype, the stock 0 when none, and puts the products the department holds first within the page of 20.
+- Changing the department with lines in the form asks first and clears the lines (their received amounts are the old department's).
+- The server's `overReturn` field text is not shown under the quantity: the line's own warning names the amount.
+- The issue's same-moment helper moved to `tests/helpers/held-while.ts`.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.
