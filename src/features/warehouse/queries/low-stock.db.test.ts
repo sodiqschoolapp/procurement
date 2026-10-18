@@ -96,9 +96,10 @@ describe("Stock on hand: the minimum column and 'Low stock only' (09 Stock scree
   it("says who may set the minimum and add a draft, per role and right (04 rule 5; 03 matrix)", async () => {
     const row = await item("5", "5");
     const manager = await insertUser("MANAGER", { branches: [branch.id] });
-    const limited = await insertUser("MANAGER", { branches: [branch.id] });
-    await setManagerRight(limited.id, "SET_MINIMUMS", false);
-    await setManagerRight(limited.id, "CREATE_REQUESTS", false);
+    const noMinimums = await insertUser("MANAGER", { branches: [branch.id] });
+    await setManagerRight(noMinimums.id, "SET_MINIMUMS", false);
+    const noOrders = await insertUser("MANAGER", { branches: [branch.id] });
+    await setManagerRight(noOrders.id, "CREATE_REQUESTS", false);
     const principal = await insertUser("PRINCIPAL", { branches: [branch.id] });
     const finance = await insertUser("FINANCE", { branches: [branch.id] });
 
@@ -109,13 +110,32 @@ describe("Stock on hand: the minimum column and 'Low stock only' (09 Stock scree
     };
     expect(await rights(head)).toEqual([true, true]);
     expect(await rights(manager.id)).toEqual([true, true]);
-    expect(await rights(limited.id)).toEqual([false, false]);
+    expect(await rights(noMinimums.id)).toEqual([false, true]);
+    expect(await rights(noOrders.id)).toEqual([true, false]);
     expect(await rights(principal.id)).toEqual([false, false]);
     expect(await rights(finance.id)).toEqual([false, false]);
   });
 });
 
 describe("the item card's header: minimum and Low (09 Low stock: 'on the item card')", () => {
+  it("says who may set the minimum and add a draft, per role and right (04 rule 5; 03 matrix)", async () => {
+    const row = await item("5", "5");
+    const manager = await insertUser("MANAGER", { branches: [branch.id] });
+    const noMinimums = await insertUser("MANAGER", { branches: [branch.id] });
+    await setManagerRight(noMinimums.id, "SET_MINIMUMS", false);
+    const noOrders = await insertUser("MANAGER", { branches: [branch.id] });
+    await setManagerRight(noOrders.id, "CREATE_REQUESTS", false);
+    const finance = await insertUser("FINANCE", { branches: [branch.id] });
+    const rights = async (userId: string) => {
+      const card = (await getItemCard(userId, row.variantId, branch.id))!;
+      return [card.canSetMinimum, card.canAddDraft];
+    };
+    expect(await rights(manager.id)).toEqual([true, true]);
+    expect(await rights(noMinimums.id)).toEqual([false, true]);
+    expect(await rights(noOrders.id)).toEqual([true, false]);
+    expect(await rights(finance.id)).toEqual([false, false]);
+  });
+
   it("shows the minimum and Low at the minimum, not 0.001 above, never with none", async () => {
     const at = await item("5", "5");
     const above = await item("5.001", "5");
