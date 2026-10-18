@@ -134,7 +134,7 @@ export function recordsSheet(
       { kind: "text", value: row.supplierName ?? t("records.noSupplier") },
       { kind: "money", value: row.amount },
     ]),
-    total: { label: t("spending.total"), amount: list.total },
+    total: { label: t("spending.total"), amount: list.total, column: 6 },
   };
 }
 

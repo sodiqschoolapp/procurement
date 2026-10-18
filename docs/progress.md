@@ -1508,4 +1508,22 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - For 6.7: the page's data is `getSpending()` with the parsed address; the sheets of `download/sheets.ts` already hold the heading lines.
 - Tests: `tests/helpers/analytics.ts` (`spendingScene()`, `bought()`, `refreshNow()`); the summary holds every branch of the test file's database, so read your own branch. A browser test calls `refreshAnalytics()` itself (see `tests/e2e/analytics.spec.ts`).
 
-The next task is 6.4.
+## 6.4a Analytics: Head, Spending and Plan vs actual (18.10.2026, pull request #105)
+
+**Built**
+- 6.4 split into 6.4a, 6.4b, 6.4c in `docs/build-plan.md` (phase 6 now 12 tasks, total 103).
+- Migration 0037: `analytics_spending_payments` (each record's parts by payment type, `paymentParts()`) and `analytics_outcomes` (each order whose buying ended Done or Done short, `orderOutcome()`), both rewritten by `refreshAnalytics()`.
+- Domain: `paymentParts()` (purchases.ts), `orderOutcome()` (colours.ts), `shareOf()`, `shareChange()` (analytics.ts).
+- Queries `getHeadSpending()`, `getPlanVsActual()`, `getOutcomeOrders()`; `outcomesWhere()`; the drill key `payment:<type>` on `/analytics/records`; `/analytics/orders`; eight new download blocks; `OutcomeLabel` in status-label.tsx.
+
+**Left out, and the task that brings it**
+- Prices and Approval speed: 6.4b. Managers and Warehouse: 6.4c.
+
+**What the next sessions must know**
+- For 6.4b, 6.4c: add a block as 6.4a did: a summary table filled in `refreshAnalytics()` (its lock statement lists every summary table), one WHERE builder, a drill-down page or key, a sheet in `sheets.ts`, a case in the route's `switch`, a matrix case in `analytics-matrix.db.test.ts` and in the route test's 6.4a matrix.
+- For 6.6: Finance's Plan vs actual can call `getPlanVsActual()`; "purchases without a receipt" is not in it.
+- Breakdowns by branch, department, supplier or Manager drill down by setting that filter, not by a new key (`ChartRow.href`).
+- Tests: `bought()` takes `progress`, `paymentType`, typed extras and the plan; `recordOn()` adds a record to an order; `buyingEvent()` writes the event an outcome's day is read from.
+- An Excel total names its column when the money column is not the last plain money one (`total.column`); an empty table keeps its label.
+
+The next task is 6.4b.

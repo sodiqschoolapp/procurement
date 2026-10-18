@@ -477,7 +477,7 @@ What each role sees first, and the numbers behind the work.
   - **Build:** Summary tables as materialized views, refreshed every 5 minutes by the scheduler; the period picker (this month, last month, this quarter, this school year hidden until it is set, custom dates) with the change against the period before; filters inside the user's branches; the drill-down list behind any number; Excel export of a chart or a table; the Recharts wrappers.
   - **Done when:** Database tests: a number equals the sum of the rows in its drill-down list; no filter returns rows of another branch; the school-year choice is hidden while the setting is empty.
 
-- [ ] **6.4a Analytics: Head, Spending and Plan vs actual** (6.4 split in three by its plan, pull request #105)
+- [x] **6.4a Analytics: Head, Spending and Plan vs actual** (6.4 split in three by its plan, pull request #105)
   - **Read:** `10-notifications-analytics-reports.md` (Analytics page per role: Head, all branches); `16-build-order.md` (phase 6 row).
   - **Build:** The Head's Spending block (total by month and by category as built in 6.3; branches side by side; by department; top 10 suppliers; split by payment type) and the Plan vs actual block (share of orders ending green, orange and red; total overspent and total saved; by branch and by Manager), each number with its drill-down and Excel export.
   - **Done when:** A database test checks one number of each of the two blocks against the seed. By hand: click a bar of the Head's page and see the orders behind it.

@@ -121,7 +121,9 @@ async function ordersIn(
            analytics_outcomes.planned::text as planned, analytics_outcomes.actual::text as actual,
            analytics_outcomes.difference::text as difference
     from analytics_outcomes
-    join orders o on o.id = analytics_outcomes.order_id
+    -- The draft wall in the SQL (permission review of 2.7 and of 6.4a): an ended order is never a
+    -- Draft today, and a later refresh must not let one through.
+    join orders o on o.id = analytics_outcomes.order_id and o.status <> 'DRAFT'
     join product_variants v on v.id = o.variant_id
     join products pr on pr.id = v.product_id
     join branches b on b.id = analytics_outcomes.branch_id

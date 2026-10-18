@@ -193,3 +193,23 @@ describePermissionMatrix("getOutcomeOrders with the branch filter", {
     expect(list.sum).toBe(2_000n);
   },
 });
+
+describePermissionMatrix("getSpendingRecords by payment type, the branch wall in the SQL", {
+  permission: "data.view",
+  async run({ user, branchId }) {
+    const record = await recordIn(branchId);
+    const list = await getSpendingRecords(
+      user.id,
+      THIS_MONTH,
+      NO_ANALYTICS_FILTERS,
+      { kind: "payment", payment: "CASH" },
+      "all",
+    );
+    const block = await getHeadSpending(user.id, THIS_MONTH, NO_ANALYTICS_FILTERS);
+    // The slice and its list keep to the same wall.
+    expect(block.payments.find((row) => row.payment === "CASH")?.amount ?? 0n).toBe(list.total);
+    if (!list.rows.some((row) => row.purchaseId === record.purchaseId)) {
+      throw new AuthorizationError("not_found");
+    }
+  },
+});

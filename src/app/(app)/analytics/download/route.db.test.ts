@@ -1,7 +1,11 @@
 import ExcelJS from "exceljs";
 import { describe, expect, it } from "vitest";
 
-import { NO_ANALYTICS_FILTERS, analyticsSearch } from "@/features/analytics/period-params";
+import {
+  type ExportBlock,
+  NO_ANALYTICS_FILTERS,
+  analyticsSearch,
+} from "@/features/analytics/period-params";
 import { AuthorizationError } from "@/server/authorize";
 import { getSpending } from "@/features/analytics/queries/spending";
 
@@ -16,6 +20,10 @@ import { setClock } from "../../../../../tests/helpers/clock";
 import { downloadRequest } from "../../../../../tests/helpers/files";
 import { describePermissionMatrix } from "../../../../../tests/helpers/permission-matrix";
 import { insertUser, signInAs } from "../../../../../tests/helpers/users";
+import { getHeadSpending } from "@/features/analytics/queries/head-spending";
+import { getPlanVsActual } from "@/features/analytics/queries/plan-vs-actual";
+import { db } from "@/server/db/client";
+import { sql } from "drizzle-orm";
 import { GET } from "./route";
 
 // The Analytics download through its route (build-plan 6.3: "Excel export of a chart or a table";
@@ -192,7 +200,7 @@ describePermissionMatrix("GET /analytics/download, the branch wall in the SQL", 
     });
     await refreshNow();
     const cookie = await signInAs(user);
-    for (const block of ["records", "months", "payments", "orders"] as const) {
+    for (const block of ["records", "months"] as const) {
       const query = analyticsSearch(THIS_MONTH, NO_ANALYTICS_FILTERS, { block });
       const rows = await sheetOf(
         await GET(downloadRequest(`/analytics/download?${query}`, cookie)),
@@ -201,5 +209,68 @@ describePermissionMatrix("GET /analytics/download, the branch wall in the SQL", 
         throw new AuthorizationError("not_found");
       }
     }
+  },
+});
+
+// The blocks of 6.4a (permission review of 6.4a, Must fix 1): each table the route writes for the
+// user, with no branch filter, holds the branch's own row only behind the wall; the totals of the
+// whole-of-period tables are the query's for that same user.
+describePermissionMatrix("GET /analytics/download, the blocks of 6.4a behind the wall", {
+  permission: "data.export",
+  async run({ user, branchId }) {
+    setClock(AT);
+    const scene = await spendingScene(branchId);
+    const order = await bought(scene, {
+      purchasedOn: "2031-10-04",
+      qty: "10.000",
+      unitPrice: "5200",
+      progress: "DONE",
+    });
+    await buyingEvent(order.orderId, order.ownerId, "RECORD_PURCHASE", "2031-10-04T05:00:00Z");
+    await refreshNow();
+    const names = (
+      await db.execute<{
+        branch: string;
+        department: string;
+        supplier: string;
+        manager: string;
+      }>(sql`
+        select b.name as branch, d.name as department, c.name as supplier, u.full_name as manager
+        from branches b, departments d, companies c, users u
+        where b.id = ${branchId} and d.id = ${scene.department.id}
+          and c.id = ${scene.supplier.id} and u.id = ${scene.manager.id}`)
+    ).rows[0]!;
+    const cookie = await signInAs(user);
+    const get = async (block: ExportBlock) =>
+      sheetOf(
+        await GET(
+          downloadRequest(
+            `/analytics/download?${analyticsSearch(THIS_MONTH, NO_ANALYTICS_FILTERS, { block })}`,
+            cookie,
+          ),
+        ),
+      );
+    const firsts = async (block: ExportBlock) => (await get(block)).map((row) => String(row[0]));
+
+    const seen = [
+      (await firsts("branches")).includes(names.branch),
+      (await firsts("departments")).some((first) => first.startsWith(names.department)),
+      (await firsts("suppliers")).includes(names.supplier),
+      (await firsts("outcomeBranches")).includes(names.branch),
+      (await firsts("outcomeManagers")).includes(names.manager),
+      (await firsts("orders")).includes(order.number!),
+    ];
+    // The same wall for every table.
+    expect(new Set(seen).size).toBe(1);
+
+    const spending = await getHeadSpending(user.id, THIS_MONTH, NO_ANALYTICS_FILTERS);
+    expect((await get("payments")).at(-1)).toEqual([
+      expect.any(String),
+      Number(spending.total.amount),
+    ]);
+    const plan = await getPlanVsActual(user.id, THIS_MONTH, NO_ANALYTICS_FILTERS);
+    const red = (await get("outcomes")).find((row) => row[1] === plan.total.colours.red.count);
+    expect(red).toBeDefined();
+    if (!seen[0]) throw new AuthorizationError("not_found");
   },
 });

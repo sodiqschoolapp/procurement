@@ -67,21 +67,23 @@ export async function writeAnalyticsExcel(sheet: AnalyticsSheet): Promise<Uint8A
     from: { row: headerRow.number, column: 1 },
     to: { row: headerRow.number, column: sheet.columns.length },
   };
-  let moneyColumn = 1;
+  // The total's column: the one it names, else the last plain money column of the rows, else the
+  // second (an empty table keeps its label in the first; review of 6.4a's download test).
+  let moneyColumn = sheet.total?.column ?? 0;
+  const named = moneyColumn > 0;
   for (const cells of sheet.rows) {
     const row = worksheet.addRow(cells.map(cellOf));
     cells.forEach((cell, index) => {
       if (cell.kind === "money" || cell.kind === "signedMoney") {
         row.getCell(index + 1).numFmt = MONEY_FORMAT;
-        if (cell.kind === "money") moneyColumn = index + 1;
+        if (cell.kind === "money" && !named) moneyColumn = index + 1;
       }
       if (cell.kind === "date") row.getCell(index + 1).numFmt = DATE_FORMAT;
     });
   }
   if (sheet.total) {
+    if (moneyColumn === 0) moneyColumn = 2;
     const totalRow = worksheet.addRow([sheet.total.label]);
-    // A signed total (a difference) names its column, 1-based.
-    if (sheet.total.column) moneyColumn = sheet.total.column;
     totalRow.getCell(moneyColumn).value = sheet.total.signed
       ? signedMoneyCellValue(sheet.total.amount)
       : moneyCellValue(sheet.total.amount);
