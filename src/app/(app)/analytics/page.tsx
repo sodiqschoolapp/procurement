@@ -7,6 +7,7 @@ import { currentBranchChoice } from "@/features/catalog/queries/my-branches";
 import { ApprovalSpeedView } from "@/features/analytics/components/approval-speed-block";
 import { AnalyticsFilterBar } from "@/features/analytics/components/filter-bar";
 import { HeadSpendingView } from "@/features/analytics/components/head-spending-block";
+import { ManagersView } from "@/features/analytics/components/managers-block";
 import { PlanVsActualView } from "@/features/analytics/components/plan-vs-actual-block";
 import { PricesView } from "@/features/analytics/components/prices-block";
 import { SpendingBlockView } from "@/features/analytics/components/spending-block";
@@ -14,6 +15,7 @@ import { parseAnalyticsParams } from "@/features/analytics/period-params";
 import { getApprovalSpeed } from "@/features/analytics/queries/approval-speed";
 import { getAnalyticsFilters } from "@/features/analytics/queries/filters";
 import { getHeadSpending } from "@/features/analytics/queries/head-spending";
+import { getManagers } from "@/features/analytics/queries/managers";
 import { getPlanVsActual } from "@/features/analytics/queries/plan-vs-actual";
 import { getPriceChoices, getPrices } from "@/features/analytics/queries/prices";
 import { getSpending } from "@/features/analytics/queries/spending";
@@ -27,7 +29,7 @@ import { AuthorizationError } from "@/server/authorize";
 // plan 6.3). The period picker and the filters above the blocks; until 6.5 and 6.6 the other roles
 // see the shared Spending block (plan of 6.3, decided item 12). The Head's page adds the rest of
 // Spending and Plan vs actual (build-plan 6.4a; plan of 6.4, decided item 8), Prices and Approval
-// speed (build-plan 6.4b); Managers and Warehouse come in 6.4c. The branch filter starts at the top
+// speed (build-plan 6.4b), Managers (build-plan 6.4c); Warehouse comes in 6.4d. The branch filter starts at the top
 // bar's branch view (decided item 9). An address the parser refuses, or a school year not set,
 // falls back to this month (review of the plan, correction 2); another branch is Not found (03
 // rule 1). The line under the title says when the summary was last rebuilt (decided item 13).
@@ -54,6 +56,7 @@ async function readPage(userId: string, isHead: boolean, raw: Raw) {
             getPrices(userId, params.period, filters, params.variant),
             getPriceChoices(userId),
             getApprovalSpeed(userId, params.period, filters),
+            getManagers(userId, params.period, filters),
           ])
         : null,
     ]);
@@ -110,6 +113,7 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
             filters={filters}
           />
           <ApprovalSpeedView block={head[4]} period={period} filters={filters} />
+          <ManagersView block={head[5]} period={period} filters={filters} />
         </>
       )}
     </div>

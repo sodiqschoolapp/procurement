@@ -97,6 +97,9 @@ export const EXPORT_BLOCKS = [
   "decisions",
   "reasons",
   "approvals",
+  "managers",
+  "cancelled",
+  "cash",
 ] as const;
 export type ExportBlock = (typeof EXPORT_BLOCKS)[number];
 
@@ -109,7 +112,7 @@ export type AnalyticsParams = {
   /**
    * The orders of owners who are not Managers (an order the Head created, 03 rule 6): the by-Manager
    * row "Other owners" of Plan vs actual and its drill-down (review of the plan of 6.4, correction
-   * 1). Never with a Manager filter.
+   * 1), and of the Managers block's lists (build-plan 6.4c). Never with a Manager filter.
    */
   otherOwners: boolean;
   /** The subtype of the price trend (plan of 6.4b, decided item 3); `null`: the most bought. */

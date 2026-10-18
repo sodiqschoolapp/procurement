@@ -310,9 +310,6 @@ export function averageSom(total: bigint, count: number): bigint | null {
   }
   if (count === 0) return null;
   return BigInt(
-    new Exact(total.toString())
-      .dividedBy(count)
-      .toDecimalPlaces(0, Exact.ROUND_HALF_UP)
-      .toFixed(0),
+    new Exact(total.toString()).dividedBy(count).toDecimalPlaces(0, Exact.ROUND_HALF_UP).toFixed(0),
   );
 }

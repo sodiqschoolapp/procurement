@@ -11,6 +11,9 @@ import uz from "@/i18n/messages/uz.json";
 import type { AnalyticsFilters } from "../period-params";
 import type { ApprovalOrders } from "../queries/approval-orders";
 import type { ApprovalSpeed } from "../queries/approval-speed";
+import type { CancelledRecords } from "../queries/cancelled-records";
+import type { CashOrders } from "../queries/cash-orders";
+import type { Managers } from "../queries/managers";
 import type { Prices, SubtypeName } from "../queries/prices";
 import type { AnalyticsFilterOptions } from "../queries/filters";
 import type { HeadSpending } from "../queries/head-spending";
@@ -34,18 +37,23 @@ function translators(locale: Locale) {
   return { t, tRoot, format: bindFormatters(locale, tRoot("format.currency")) };
 }
 
-/** The lines above every table: its name, the period and the filters chosen. */
+/**
+ * The lines above every table: its name, the period and the filters chosen. A number of now (cash
+ * held, plan of 6.4c, decided item 4) has no period: `null` names it as of now.
+ */
 function heading(
   locale: Locale,
   name: string,
-  period: { first: string; last: string },
+  period: { first: string; last: string } | null,
   filters: AnalyticsFilters,
   options: AnalyticsFilterOptions,
 ): string[] {
   const { t, format } = translators(locale);
   const lines = [
     name,
-    `${t("period")}: ${t("periodLine", { first: format.date(period.first), last: format.date(period.last) })}`,
+    period
+      ? `${t("period")}: ${t("periodLine", { first: format.date(period.first), last: format.date(period.last) })}`
+      : t("cash.what"),
   ];
   const named = (list: readonly { id: string; name: string }[], id: string | null) =>
     list.find((option) => option.id === id)?.name ?? null;
@@ -594,5 +602,127 @@ export function approvalOrdersSheet(
       { kind: "text", value: row.reason ?? "" },
       { kind: "text", value: row.hours },
     ]),
+  };
+}
+
+// The sheets of the Managers block (build-plan 6.4c; plan of 6.4c, decided items 2 to 7): the
+// table, and the two lists behind its cancelled records and cash held. The numbers are the query's.
+
+/** The Managers table, one row per Manager, "Other owners" last. */
+export function managersSheet(
+  block: Managers,
+  filters: AnalyticsFilters,
+  options: AnalyticsFilterOptions,
+  locale: Locale,
+): AnalyticsSheet {
+  const { t, format } = translators(locale);
+  const name = t("sheets.managers");
+  return {
+    name,
+    heading: heading(locale, name, block.period, filters, options),
+    columns: [
+      t("managers.columns.manager"),
+      t("managers.columns.orders"),
+      t("managers.columns.average"),
+      t("managers.columns.cancelled"),
+      t("managers.columns.held"),
+      t("managers.columns.heldFor"),
+      t("managers.columns.since"),
+    ],
+    rows: block.rows.map((row) => [
+      { kind: "text", value: row.name ?? t("plan.otherOwners") },
+      { kind: "count", value: row.orders.count },
+      row.average === null
+        ? { kind: "text", value: "" }
+        : { kind: "signedMoney", value: row.average },
+      { kind: "count", value: row.cancelled.count },
+      { kind: "money", value: row.held },
+      row.heldDays === null ? { kind: "text", value: "" } : { kind: "count", value: row.heldDays },
+      { kind: "text", value: row.heldSince === null ? "" : format.date(row.heldSince) },
+    ]),
+  };
+}
+
+/** The cancelled records behind a count, every row. */
+export function cancelledSheet(
+  list: CancelledRecords,
+  otherOwners: boolean,
+  filters: AnalyticsFilters,
+  options: AnalyticsFilterOptions,
+  locale: Locale,
+): AnalyticsSheet {
+  const { t } = translators(locale);
+  const name = t("sheets.cancelled");
+  const lines = heading(locale, name, list.period, filters, options);
+  if (otherOwners) lines.push(t("orders.otherOwners"));
+  return {
+    name,
+    heading: lines,
+    columns: [
+      t("cancelled.columns.order"),
+      t("cancelled.columns.product"),
+      t("cancelled.columns.branch"),
+      t("cancelled.columns.bought"),
+      t("cancelled.columns.supplier"),
+      t("cancelled.columns.cancelledOn"),
+      t("cancelled.columns.cancelledBy"),
+      t("cancelled.columns.reason"),
+      t("cancelled.columns.amount"),
+    ],
+    rows: list.rows.map((row) => [
+      { kind: "text", value: row.orderNumber },
+      {
+        kind: "text",
+        value: row.subtypeName ? `${row.productName}, ${row.subtypeName}` : row.productName,
+      },
+      { kind: "text", value: row.branchName },
+      { kind: "date", value: row.purchasedOn },
+      { kind: "text", value: row.supplierName ?? t("cancelled.noSupplier") },
+      { kind: "date", value: row.cancelledOn },
+      { kind: "text", value: row.cancelledByName },
+      { kind: "text", value: row.reason },
+      { kind: "money", value: row.amount },
+    ]),
+    total: { label: t("cancelled.columns.amount"), amount: list.total },
+  };
+}
+
+/** The orders behind a cash held number, oldest first, every row. */
+export function cashSheet(
+  list: CashOrders,
+  otherOwners: boolean,
+  filters: AnalyticsFilters,
+  options: AnalyticsFilterOptions,
+  locale: Locale,
+): AnalyticsSheet {
+  const { t, tRoot } = translators(locale);
+  const name = t("sheets.cash");
+  const lines = heading(locale, name, null, filters, options);
+  if (otherOwners) lines.push(t("orders.otherOwners"));
+  return {
+    name,
+    heading: lines,
+    columns: [
+      t("cash.columns.order"),
+      t("cash.columns.product"),
+      t("cash.columns.branch"),
+      t("cash.columns.owner"),
+      t("cash.columns.status"),
+      t("cash.columns.since"),
+      t("cash.columns.held"),
+    ],
+    rows: list.rows.map((row) => [
+      { kind: "text", value: row.orderNumber },
+      {
+        kind: "text",
+        value: row.subtypeName ? `${row.productName}, ${row.subtypeName}` : row.productName,
+      },
+      { kind: "text", value: row.branchName },
+      { kind: "text", value: row.ownerName },
+      { kind: "text", value: tRoot(`requestStatus.${row.status}`) },
+      { kind: "date", value: row.since },
+      { kind: "money", value: row.cashCount },
+    ]),
+    total: { label: t("cash.columns.held"), amount: list.held },
   };
 }

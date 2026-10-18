@@ -13,6 +13,7 @@ import {
   bought,
   buyingEvent,
   decided,
+  moneyOn,
   recordOn,
   refreshNow,
   spendingScene,
@@ -423,6 +424,90 @@ describe("GET /analytics/download, the 6.4b sheets (10 point 4; plan of 6.4b)", 
     const response = await GET(
       downloadRequest(
         "/analytics/download?period=this_month&block=approvals&key=step:all:APPROVE&reason=narxi",
+        await signInAs(head),
+      ),
+    );
+    expect(response.status).toBe(404);
+  });
+});
+
+// The blocks of 6.4c (plan of 6.4c, Tests: "the three new blocks in the route matrix"): the
+// Managers table, the cancelled records and the cash held behind the wall, the same wall for each.
+describePermissionMatrix("GET /analytics/download, the blocks of 6.4c behind the wall", {
+  permission: "data.export",
+  async run({ user, branchId }) {
+    setClock(AT);
+    const scene = await spendingScene(branchId);
+    const cancelled = await bought(scene, {
+      purchasedOn: "2031-10-02",
+      cancelled: true,
+      cancelledAt: "2031-10-03T05:00:00Z",
+    });
+    const held = await bought(scene, { purchasedOn: "2031-10-02", unitPrice: "0" });
+    await moneyOn(held, scene.manager.id, { amount: 30_000n, occurredOn: "2031-10-04" });
+    await refreshNow();
+    const cookie = await signInAs(user);
+    const own = { ...NO_ANALYTICS_FILTERS, category: scene.category.id };
+    const texts = async (block: ExportBlock, extra: Parameters<typeof analyticsSearch>[2] = {}) =>
+      (
+        await sheetOf(
+          await GET(
+            downloadRequest(
+              `/analytics/download?${analyticsSearch(THIS_MONTH, own, { ...extra, block })}`,
+              cookie,
+            ),
+          ),
+        )
+      )
+        .flat()
+        .map((cell) => String(cell));
+    const seen = [
+      (await texts("managers")).includes(scene.manager.fullName),
+      (await texts("cancelled")).includes(cancelled.number!),
+      (await texts("cash")).includes(held.number!),
+    ];
+    expect(seen).toEqual(seen.map(() => seen[0]));
+    // "Other owners" keeps the Manager's rows out of both lists.
+    expect((await texts("cancelled", { otherOwners: true })).includes(cancelled.number!)).toBe(
+      false,
+    );
+    expect((await texts("cash", { otherOwners: true })).includes(held.number!)).toBe(false);
+    if (!seen[0]) throw new AuthorizationError("not_found");
+  },
+});
+
+describe("GET /analytics/download, the 6.4c sheets (10 point 4; plan of 6.4c)", () => {
+  it("writes a Manager's cash held and its days as number cells, and the list's held total", async () => {
+    setClock(AT);
+    const scene = await spendingScene();
+    const head = await insertUser("HEAD");
+    const held = await bought(scene, { purchasedOn: "2031-10-02", unitPrice: "0" });
+    await moneyOn(held, head.id, { amount: 30_000n, occurredOn: "2031-10-05" });
+    await refreshNow();
+    const filters = { ...NO_ANALYTICS_FILTERS, branch: scene.branch.id };
+    const get = async (block: ExportBlock) =>
+      sheetOf(
+        await GET(
+          downloadRequest(
+            `/analytics/download?${analyticsSearch(THIS_MONTH, filters, { block })}`,
+            await signInAs(head),
+          ),
+        ),
+      );
+    const managers = await get("managers");
+    const row = managers.find((each) => each[0] === scene.manager.fullName)!;
+    // Held 30 000 since 5 October: 10 days on 15 October.
+    expect([row[4], row[5]]).toEqual([30_000, 10]);
+    const cash = await get("cash");
+    expect(cash.some((each) => each.includes(held.number!) && each.includes(30_000))).toBe(true);
+    expect(cash.at(-1)!.includes(30_000)).toBe(true);
+  });
+
+  it("answers 404 for Other owners beside the Managers table", async () => {
+    const head = await insertUser("HEAD");
+    const response = await GET(
+      downloadRequest(
+        "/analytics/download?period=this_month&block=managers&owner=other",
         await signInAs(head),
       ),
     );
