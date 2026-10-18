@@ -71,6 +71,21 @@ describe("parseAnalyticsParams", () => {
     });
   });
 
+  // The blocks of 6.4c (plan of 6.4c, decided item 7): the Managers table and its two lists, with
+  // "Other owners" beside the lists.
+  it.each(["managers", "cancelled", "cash"] as const)("reads the block %s back", (block) => {
+    const text = analyticsSearch(
+      { choice: "last_month", from: null, to: null },
+      NO_ANALYTICS_FILTERS,
+      { otherOwners: block !== "managers", block },
+    );
+    expect(parseAnalyticsParams(Object.fromEntries(new URLSearchParams(text)))).toMatchObject({
+      key: { kind: "period" },
+      otherOwners: block !== "managers",
+      block,
+    });
+  });
+
   it("reads a reason key back beside a send back or reject key", () => {
     const key = { kind: "step", step: null, decision: "SEND_BACK" } as const;
     const text = analyticsSearch(

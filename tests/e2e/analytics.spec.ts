@@ -505,3 +505,110 @@ test("6.4b: the Head picks a product's price trend and opens the stay behind an 
   await expect(page.locator("[data-approvals-summary]")).toContainText(twoHours);
   expect(await scrollsSideways(page)).toBe(false);
 });
+
+/**
+ * Build plan 6.4c: an Open order of a new category in EA that the Head owns, holding 70 000 given
+ * on 1 March 2020, so the Managers block's "Other owners" row holds it (plan of 6.4c, decided
+ * items 4 and 6).
+ */
+async function seedCashHeld(): Promise<{ branch: string; category: string }> {
+  const tag = randomUUID().slice(0, 8);
+  return withDatabase(async (client) => {
+    await client.query("begin");
+    let ids;
+    try {
+      const headId = (
+        await client.query<{ id: string }>("select id from users where username = $1", [
+          E2E_ROLES.HEAD.username,
+        ])
+      ).rows[0]!.id;
+      const branch = (
+        await client.query<{ id: string }>("select id from branches where code = 'EA'")
+      ).rows[0]!.id;
+      const unit = await client.query<{ id: string }>(
+        `insert into units (name, short_name, allow_decimal, is_active, created_at)
+         values ($1, $2, true, true, now()) returning id`,
+        [`O'lchov ${tag}`, `c${tag}`],
+      );
+      const category = await client.query<{ id: string }>(
+        `insert into categories (name, is_active, created_at) values ($1, true, now()) returning id`,
+        [`Naqd ${tag}`],
+      );
+      const department = await client.query<{ id: string }>(
+        `insert into departments (branch_id, name, is_active, created_at)
+         values ($1, $2, true, now()) returning id`,
+        [branch, `Bo'lim ${tag}`],
+      );
+      const product = await client.query<{ id: string }>(
+        `insert into products (name, type, category_id, unit_id, is_active, has_variants, created_at)
+         values ($1, 'GOODS', $2, $3, true, false, now()) returning id`,
+        [`Daftar ${tag}`, category.rows[0]!.id, unit.rows[0]!.id],
+      );
+      const variant = await client.query<{ id: string }>(
+        `insert into product_variants (product_id, name, is_default, is_active, created_at)
+         values ($1, 'default', true, true, now()) returning id`,
+        [product.rows[0]!.id],
+      );
+      const order = await client.query<{ id: string }>(
+        `insert into orders (number, branch_id, owner_id, created_by, status, variant_id,
+                             department_id, needed_by, planned_qty, planned_price, planned_total,
+                             payment_type, progress, submitted_at, created_at, updated_at)
+         values ($1, $2, $3, $3, 'PURCHASING', $4, $5, '2020-04-01', 1, 70000, 70000, 'CASH',
+                 'OPEN', now(), now(), now())
+         returning id`,
+        [
+          `EA-20-${8_000_000 + Math.floor(Math.random() * 999_999)}`,
+          branch,
+          headId,
+          variant.rows[0]!.id,
+          department.rows[0]!.id,
+        ],
+      );
+      const action = await client.query<{ id: string }>(
+        `insert into money_actions (client_key, manager_id, occurred_on, created_by, created_at)
+         values ($1, $2, '2020-03-01', $2, now()) returning id`,
+        [randomUUID(), headId],
+      );
+      await client.query(
+        `insert into money_rows (money_action_id, order_id, kind, amount, created_at)
+         values ($1, $2, 'CASH_GIVEN', 70000, now())`,
+        [action.rows[0]!.id, order.rows[0]!.id],
+      );
+      await client.query("commit");
+      ids = { branch, category: category.rows[0]!.id };
+    } catch (error) {
+      await client.query("rollback");
+      throw error;
+    }
+    await drizzle(client, { schema }).transaction((tx) => refreshAnalytics(tx));
+    return ids;
+  });
+}
+
+test("6.4c: the Head opens the orders behind a cash held number of the Managers block (10 Head; plan of 6.4c)", async ({
+  page,
+}) => {
+  const { branch, category } = await seedCashHeld();
+  await signIn(page);
+  await page.goto(
+    `/analytics?period=custom&from=2020-03-01&to=2020-03-31&branch=${branch}&category=${category}`,
+  );
+  const managers = page.locator('[data-analytics-block="managers"]');
+  await expect(managers).toBeVisible();
+  const others = managers.locator('[data-table="managers"] [data-row="other"]');
+  await expect(others).toContainText(/70\s000/);
+  expect(await scrollsSideways(page)).toBe(false);
+
+  await others.getByRole("link", { name: /70\s000/ }).click();
+  await expect(page).toHaveURL(/\/analytics\/cash\?.*owner=other/);
+  await expect(page.locator("[data-cash-row]")).toHaveCount(1);
+  await expect(page.locator("[data-cash-summary]")).toContainText(/70\s000/);
+  expect(await scrollsSideways(page)).toBe(false);
+
+  // The cancelled records of the same row: none in March 2020, its empty line, no sideways scroll.
+  await page.getByRole("link", { name: uz.analytics.approvals.back }).click();
+  await others.locator('a[href^="/analytics/cancelled"]').click();
+  await expect(page).toHaveURL(/\/analytics\/cancelled\?.*owner=other/);
+  await expect(page.getByText(uz.analytics.cancelled.empty)).toBeVisible();
+  expect(await scrollsSideways(page)).toBe(false);
+});

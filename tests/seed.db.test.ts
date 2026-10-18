@@ -12,6 +12,7 @@ import {
   isTaxId,
 } from "@/domain/catalogs";
 import { businessDate, businessYear, nextBusinessDate } from "@/domain/business-date";
+import { daysOf } from "@/domain/analytics";
 import {
   actionTotal,
   approvalCashRows,
@@ -50,6 +51,7 @@ import { NO_ANALYTICS_FILTERS } from "@/features/analytics/period-params";
 import { getApprovalOrders } from "@/features/analytics/queries/approval-orders";
 import { getApprovalSpeed } from "@/features/analytics/queries/approval-speed";
 import { getHeadSpending } from "@/features/analytics/queries/head-spending";
+import { getManagers } from "@/features/analytics/queries/managers";
 import { getOutcomeOrders } from "@/features/analytics/queries/outcome-orders";
 import { getPlanVsActual } from "@/features/analytics/queries/plan-vs-actual";
 import { getPrices } from "@/features/analytics/queries/prices";
@@ -1937,6 +1939,45 @@ describe("the seed on the Head's Analytics page (build plan 6.4b, Done when: one
       expect(waiting.rows.map((row) => [row.orderId, row.hours])).toEqual([
         [await idOf(2), "73.0"],
       ]);
+    } finally {
+      client.release();
+    }
+  });
+});
+
+describe("the seed on the Head's Analytics page (build plan 6.4c, Done when: one number of the block against the seed)", () => {
+  it("shows seed_head that seed_manager holds 180 000, held for the days since the oldest held order, equal to Money with managers", async () => {
+    const client = await db.$client.connect();
+    try {
+      await seed(client, ENV, MOMENT);
+      setClock(MOMENT);
+      await db.transaction((tx) => refreshAnalytics(tx));
+      const idOf = async (username: string) =>
+        (await client.query<{ id: string }>("select id from users where username = $1", [username]))
+          .rows[0]!.id;
+      const head = await idOf("seed_head");
+      const manager = await idOf("seed_manager");
+      const thisMonth = { choice: "this_month", from: null, to: null } as const;
+
+      // Cash held (plan of 6.4c, decided item 4): two Open orders and one Not bought order in
+      // Waiting for settlement, 60 000 each given at Finance's approval; the 150 000 owed on the
+      // service (SEED_ORDERS[11]) is not netted against it (08 Manager's cash balance).
+      const block = await getManagers(head, thisMonth, NO_ANALYTICS_FILTERS);
+      const row = block.rows.find((each) => each.id === manager)!;
+      expect(row.held).toBe(180_000n);
+
+      // The same number as the 4.9 page, and "held for" from the oldest of the held orders only.
+      const page = (await getMoneyWithManagers(head, null)).find(
+        (each) => each.ownerId === manager,
+      )!;
+      expect(row.held).toBe(page.held);
+      const heldSince = page.orders
+        .filter((order) => order.cashCount > 0n)
+        .map((order) => order.since)
+        .sort()[0]!;
+      expect(row.heldSince).toBe(heldSince);
+      expect(row.heldDays).toBe(daysOf({ first: heldSince, last: businessDate(MOMENT) }) - 1);
+      expect(row.heldDays).toBeGreaterThan(0);
     } finally {
       client.release();
     }
