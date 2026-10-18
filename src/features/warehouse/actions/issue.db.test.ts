@@ -122,7 +122,11 @@ describe("issueStock (09 Issue to a department)", () => {
       reason: null,
       to_branch_id: null,
     });
-    const movements = await db.execute<{ variant_id: string; qty_delta: string; unit_cost: string }>(
+    const movements = await db.execute<{
+      variant_id: string;
+      qty_delta: string;
+      unit_cost: string;
+    }>(
       sql`
       select m.variant_id, m.qty_delta::text as qty_delta, m.unit_cost::text as unit_cost
       from stock_movements m join stock_document_lines l on l.id = m.document_line_id
@@ -208,7 +212,7 @@ describe("issueStock (09 Issue to a department)", () => {
     expect(await balanceOf(branch.id, a)).toEqual({ qty: "0.000", avg_cost: "0" });
   });
 
-  it("refuses half a piece and takes 0.5 kg (edge case \"Half a piece\")", async () => {
+  it('refuses half a piece and takes 0.5 kg (edge case "Half a piece")', async () => {
     const pieces = await goods(false);
     const kilos = await goods(true);
     await stock(branch.id, pieces, "5", 1000n);
@@ -219,7 +223,11 @@ describe("issueStock (09 Issue to a department)", () => {
       issueInput([{ variantId: pieces, qty: "0.5" }]),
     );
     expect(half.ok ? null : half.error.fields).toEqual({ "lines.0.qty": "errors.field.wholeOnly" });
-    const kilo = await runAction(issueStock, manager, issueInput([{ variantId: kilos, qty: "0.5" }]));
+    const kilo = await runAction(
+      issueStock,
+      manager,
+      issueInput([{ variantId: kilos, qty: "0.5" }]),
+    );
     expect(kilo.ok).toBe(true);
     expect(await balanceOf(branch.id, pieces)).toEqual({ qty: "5.000", avg_cost: "1000" });
     expect(await balanceOf(branch.id, kilos)).toEqual({ qty: "4.500", avg_cost: "1000" });
@@ -247,9 +255,9 @@ describe("issueStock (09 Issue to a department)", () => {
       departmentId: "errors.field.inactive",
     });
     expect(await documentCount()).toBe(0);
-    expect((await runAction(issueStock, manager, issueInput([{ variantId: a, qty: "1" }]))).ok).toBe(
-      true,
-    );
+    expect(
+      (await runAction(issueStock, manager, issueInput([{ variantId: a, qty: "1" }]))).ok,
+    ).toBe(true);
   });
 
   it("refuses an inactive subtype, a service and a subtype twice (04 rule 2; A7; plan decided items 3 and 7)", async () => {
