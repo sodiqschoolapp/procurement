@@ -2416,7 +2416,11 @@
       "cancelled": "Cancelled records",
       "cash": "Cash held",
       "warehouse": "Warehouse by branch",
-      "departmentUse": "Use by department"
+      "departmentUse": "Use by department",
+      "products": "Top 10 products",
+      "orderStatuses": "Orders by status",
+      "statusOrders": "Orders",
+      "myApprovals": "My approvals"
     },
     "plan": {
       "title": "Plan vs actual",
@@ -2571,7 +2575,8 @@
         "hours": "Hours",
         "decision": "Decision",
         "reason": "Reason"
-      }
+      },
+      "mine": "Decided by me: {first} – {last}"
     },
     "joined": "{first} · {second}",
     "managers": {
@@ -2654,7 +2659,8 @@
           "department": "Department",
           "used": "Used"
         }
-      }
+      },
+      "principalNote": "Stock value and low stock are of now; use by department is of the period."
     },
     "stock": {
       "title": {
@@ -2701,6 +2707,50 @@
         "department": "Department",
         "quantity": "Quantity",
         "value": "Value"
+      }
+    },
+    "principal": {
+      "topProducts": "Top 10 products",
+      "overdue": "Overdue",
+      "columns": {
+        "product": "Product",
+        "status": "Status",
+        "orders": "Orders",
+        "order": "Order",
+        "department": "Department",
+        "submitted": "Submitted",
+        "neededBy": "Needed by",
+        "overdue": "Overdue",
+        "what": "What",
+        "value": "Value"
+      },
+      "orders": {
+        "title": "Orders",
+        "note": "By status: the orders first submitted in the period, as they stand now. Coming up and overdue: the orders that still wait, as of today.",
+        "comingUp": "Needed-by dates coming up",
+        "overdue": "Overdue orders",
+        "comingUpLine": "Needed from {date} to 7 days later",
+        "overdueLine": "Needed before {date}",
+        "byStatus": "By status",
+        "total": "All orders",
+        "empty": "No order was submitted in the period.",
+        "comingUpOn": "Coming up on {date}",
+        "overdueOn": "Overdue on {date}",
+        "nowLine": "As of {date}"
+      },
+      "approvals": {
+        "title": "My approvals",
+        "myHours": "My average time to decide",
+        "myDecisions": "My decisions",
+        "waiting": "Waiting for me now",
+        "noDecision": "No decision of mine in the period",
+        "age": "Waiting for"
+      },
+      "list": {
+        "status": "{status}: submitted {first} – {last}",
+        "summary": "{count, plural, one {# order} other {# orders}}",
+        "empty": "No order behind this number.",
+        "dated": "{label}: {date}"
       }
     }
   }

@@ -2416,7 +2416,11 @@
       "cancelled": "Bekor qilingan yozuvlar",
       "cash": "Qo'ldagi naqd pul",
       "warehouse": "Ombor filiallar bo'yicha",
-      "departmentUse": "Bo'limlar sarfi"
+      "departmentUse": "Bo'limlar sarfi",
+      "products": "Eng ko'p xarid qilingan 10 mahsulot",
+      "orderStatuses": "Holat bo'yicha buyurtmalar",
+      "statusOrders": "Buyurtmalar",
+      "myApprovals": "Mening tasdiqlarim"
     },
     "plan": {
       "title": "Reja va haqiqat",
@@ -2571,7 +2575,8 @@
         "hours": "Soat",
         "decision": "Qaror",
         "reason": "Sabab"
-      }
+      },
+      "mine": "Mening qarorlarim: {first} – {last}"
     },
     "joined": "{first} · {second}",
     "managers": {
@@ -2654,7 +2659,8 @@
           "department": "Bo'lim",
           "used": "Sarf"
         }
-      }
+      },
+      "principalNote": "Zaxira qiymati va kam qolganlar hozirgi holat; bo'limlar sarfi davr bo'yicha."
     },
     "stock": {
       "title": {
@@ -2701,6 +2707,50 @@
         "department": "Bo'lim",
         "quantity": "Miqdor",
         "value": "Qiymat"
+      }
+    },
+    "principal": {
+      "topProducts": "Eng ko'p xarid qilingan 10 mahsulot",
+      "overdue": "Muddati o'tgan",
+      "columns": {
+        "product": "Mahsulot",
+        "status": "Holat",
+        "orders": "Buyurtmalar",
+        "order": "Buyurtma",
+        "department": "Bo'lim",
+        "submitted": "Yuborilgan",
+        "neededBy": "Kerakli sana",
+        "overdue": "Muddati o'tgan",
+        "what": "Ko'rsatkich",
+        "value": "Qiymat"
+      },
+      "orders": {
+        "title": "Buyurtmalar",
+        "note": "Holat bo'yicha: davrda birinchi marta yuborilgan buyurtmalar, hozirgi holatida. Yaqinlashayotgan va muddati o'tganlar: hali kutayotgan buyurtmalar, bugungi holat.",
+        "comingUp": "Kerakli sanasi yaqinlashayotganlar",
+        "overdue": "Muddati o'tgan buyurtmalar",
+        "comingUpLine": "{date} dan 7 kun ichida kerak",
+        "overdueLine": "{date} dan oldin kerak edi",
+        "byStatus": "Holat bo'yicha",
+        "total": "Barcha buyurtmalar",
+        "empty": "Davrda birorta buyurtma yuborilmagan.",
+        "comingUpOn": "{date} holatiga yaqinlashayotganlar",
+        "overdueOn": "{date} holatiga muddati o'tganlar",
+        "nowLine": "{date} holatiga"
+      },
+      "approvals": {
+        "title": "Mening tasdiqlarim",
+        "myHours": "Qaror qabul qilishga o'rtacha vaqtim",
+        "myDecisions": "Mening qarorlarim",
+        "waiting": "Hozir meni kutayotganlar",
+        "noDecision": "Davrda mening qarorim yo'q",
+        "age": "Kutish vaqti"
+      },
+      "list": {
+        "status": "{status}: {first} – {last} da yuborilgan",
+        "summary": "{count, plural, other {# ta buyurtma}}",
+        "empty": "Bu raqam ortida buyurtma yo'q.",
+        "dated": "{label}: {date}"
       }
     }
   }

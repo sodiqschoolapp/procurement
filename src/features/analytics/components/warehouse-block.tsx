@@ -25,15 +25,20 @@ import { Card, Table } from "./prices-block";
 // the department's movements. Stock is of now and has no change (decided item 2); written off and
 // use show theirs (point 1). A Manager or supplier filter, and a department beside the numbers it
 // does not filter, are named in one line (decided item 6). The page computes nothing.
+// The Principal's Warehouse (10 Analytics, Principal: "Stock value; low stock; what each
+// department used"; plan of 6.5a, decided item 9) shows the same block for the one branch, without
+// the items with no movement and the value written off, which stay on the Head's page.
 
 export async function WarehouseView({
   block,
   period,
   filters,
+  principal = false,
 }: {
   block: Warehouse;
   period: PeriodInput;
   filters: AnalyticsFilters;
+  principal?: boolean;
 }) {
   const t = await getTranslations("analytics");
   const format = await getFormatters();
@@ -54,9 +59,15 @@ export async function WarehouseView({
   const under = (text: string) => (
     <span className="block text-[13px] leading-[18px] text-muted-foreground">{text}</span>
   );
-  const cells = (branch: string | null, row: WarehouseTotals) => [
+  const nowCells = (branch: string | null, row: WarehouseTotals) => [
     link(stock(branch, { kind: "stock", view: "value" }), format.money(row.value)),
     link(stock(branch, { kind: "stock", view: "low" }), format.quantity(String(row.low))),
+  ];
+  const cells = (branch: string | null, row: WarehouseTotals) => [
+    ...nowCells(branch, row),
+    ...(principal ? [] : headCells(branch, row)),
+  ];
+  const headCells = (branch: string | null, row: WarehouseTotals) => [
     <>
       {link(stock(branch, { kind: "stock", view: "still" }), format.quantity(String(row.still)))}
       {under(format.money(row.stillValue))}
@@ -102,7 +113,9 @@ export async function WarehouseView({
           {t("warehouse.title")}
         </h2>
         <p className="text-sm leading-5 text-muted-foreground">
-          {t("warehouse.note", { date: format.date(block.stillSince) })}
+          {principal
+            ? t("warehouse.principalNote")
+            : t("warehouse.note", { date: format.date(block.stillSince) })}
         </p>
         {notApplied && (
           <p className="text-sm leading-5 text-muted-foreground" data-warehouse-filters>
@@ -125,8 +138,9 @@ export async function WarehouseView({
               t("warehouse.columns.branch"),
               t("warehouse.columns.value"),
               t("warehouse.columns.low"),
-              t("warehouse.columns.still"),
-              t("warehouse.columns.writtenOff"),
+              ...(principal
+                ? []
+                : [t("warehouse.columns.still"), t("warehouse.columns.writtenOff")]),
             ]}
             rows={[
               ...block.branches.map((row) => ({
@@ -136,7 +150,7 @@ export async function WarehouseView({
                   ...cells(row.id, row),
                 ],
               })),
-              ...(block.branches.length > 1 || filters.branch === null
+              ...(!principal && (block.branches.length > 1 || filters.branch === null)
                 ? [{ key: "all", cells: [t("allBranches"), ...cells(null, block.all)] }]
                 : []),
             ]}

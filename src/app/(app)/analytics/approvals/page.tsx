@@ -151,7 +151,7 @@ export default async function AnalyticsApprovalsPage({
                     "branch",
                     "step",
                     "entered",
-                    ...(key.kind === "step" ? (["left", "decision", "reason"] as const) : []),
+                    ...(key.kind !== "waiting" ? (["left", "decision", "reason"] as const) : []),
                   ] as const
                 ).map((column) => (
                   <th key={column} scope="col" className="px-4 py-3">
@@ -190,7 +190,7 @@ export default async function AnalyticsApprovalsPage({
                   <td className="px-4 py-3 whitespace-nowrap tabular-nums max-sm:p-0 max-sm:text-muted-foreground">
                     {at(row.enteredAt)}
                   </td>
-                  {key.kind === "step" && (
+                  {key.kind !== "waiting" && (
                     <>
                       <td className="px-4 py-3 whitespace-nowrap tabular-nums max-sm:p-0 max-sm:text-muted-foreground">
                         {row.leftAt ? at(row.leftAt) : ""}
