@@ -54,8 +54,10 @@ export type PeriodInput = { choice: PeriodChoice; from: string | null; to: strin
  * (plan of 6.4d, decided item 9). Of the Principal's page (plan of 6.5a): the records of one
  * product (/analytics/records), the orders first submitted in the period at one status now and the
  * orders coming up or overdue now (/analytics/order-status), the stays the user decided in the
- * period (/analytics/approvals). A breakdown by branch, department, supplier or Manager drills
- * down with that filter set.
+ * period (/analytics/approvals). Of the Manager's page (plan of 6.5b, decided item 8): the orders
+ * that reached Open in the period (/analytics/order-status) and the priced records of one product
+ * or of all (/analytics/records), the set an estimate reads. A breakdown by branch, department,
+ * supplier or Manager drills down with that filter set.
  */
 export type DrillKey =
   | { kind: "period" }
@@ -73,7 +75,9 @@ export type DrillKey =
   | { kind: "product"; product: string }
   | { kind: "status"; status: ListStatus }
   | { kind: "due"; due: DueKind }
-  | { kind: "mine" };
+  | { kind: "mine" }
+  | { kind: "approved" }
+  | { kind: "priced"; product: string | null };
 
 /** The orders behind the Orders block's numbers of now (plan of 6.5a, decided item 4). */
 export const DUE_KINDS = ["soon", "overdue"] as const;
@@ -103,6 +107,9 @@ export const TOP_PRICES = 10;
 
 /** The most common reasons of send backs and of rejections shown (plan of 6.4b, decided item 10). */
 export const TOP_REASONS = 5;
+
+/** The products of My estimates shown on the page; the export holds all (plan of 6.5b, item 4). */
+export const TOP_ESTIMATES = 10;
 
 /** What the download writes (point 4): a chart's table, or the drill-down list. */
 export const EXPORT_BLOCKS = [
@@ -136,6 +143,10 @@ export const EXPORT_BLOCKS = [
   "orderStatuses",
   "statusOrders",
   "myApprovals",
+  "myOrders",
+  "myReasons",
+  "myEstimates",
+  "myCash",
 ] as const;
 export type ExportBlock = (typeof EXPORT_BLOCKS)[number];
 
@@ -163,7 +174,7 @@ const id = z.uuid().transform((value) => value.toLowerCase());
 const date = z.string().refine(isBusinessDate);
 
 const KEY =
-  /^(period|overspent|saved|month:\d{4}-\d{2}|category:[0-9a-fA-F-]{36}|payment:[A-Z]+|colour:[a-z]+|price:[0-9a-fA-F-]{36}(:\d{4}-\d{2}|:nosupplier)?|step:[A-Z_a-z]+(:[A-Z_]+)?|waiting:[A-Z_a-z]+:[A-Za-z]+|stock:[a-z]+|moves:[a-z]+|product:[0-9a-fA-F-]{36}|status:[A-Z_]+|due:[a-z]+|mine)$/;
+  /^(period|overspent|saved|month:\d{4}-\d{2}|category:[0-9a-fA-F-]{36}|payment:[A-Z]+|colour:[a-z]+|price:[0-9a-fA-F-]{36}(:\d{4}-\d{2}|:nosupplier)?|step:[A-Z_a-z]+(:[A-Z_]+)?|waiting:[A-Z_a-z]+:[A-Za-z]+|stock:[a-z]+|moves:[a-z]+|product:[0-9a-fA-F-]{36}|status:[A-Z_]+|due:[a-z]+|mine|approved|priced:(all|[0-9a-fA-F-]{36}))$/;
 
 /** A reason key as reasonKey() writes it: at most the 500 characters of a reason (06 rule 3). */
 const reason = z.string().min(1).max(500);
@@ -196,7 +207,13 @@ const stepOf = (text: string): ApprovalStep | null | undefined =>
   text === "all" ? null : STUCK_STATUSES.find((step) => step === text);
 
 function keyOf(text: string): DrillKey | null {
-  if (text === "period" || text === "overspent" || text === "saved" || text === "mine")
+  if (
+    text === "period" ||
+    text === "overspent" ||
+    text === "saved" ||
+    text === "mine" ||
+    text === "approved"
+  )
     return { kind: text };
   const [kind, value] = text.split(/:(.*)/s) as [string, string];
   if (kind === "price") {
@@ -236,6 +253,11 @@ function keyOf(text: string): DrillKey | null {
     return move ? { kind, move } : null;
   }
   if (kind === "product") {
+    const product = id.safeParse(value);
+    return product.success ? { kind, product: product.data } : null;
+  }
+  if (kind === "priced") {
+    if (value === "all") return { kind, product: null };
     const product = id.safeParse(value);
     return product.success ? { kind, product: product.data } : null;
   }
@@ -336,6 +358,7 @@ function keyText(key: DrillKey): string {
     case "overspent":
     case "saved":
     case "mine":
+    case "approved":
       return key.kind;
     case "month":
       return `month:${key.month}`;
@@ -361,5 +384,7 @@ function keyText(key: DrillKey): string {
       return `status:${key.status}`;
     case "due":
       return `due:${key.due}`;
+    case "priced":
+      return `priced:${key.product ?? "all"}`;
   }
 }

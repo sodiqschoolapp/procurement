@@ -20,12 +20,14 @@ import type { AnalyticsFilters, DueKind } from "./period-params";
 // - `range`: the orders first submitted on those Tashkent dates; a `due` kind: the orders of now
 //   that still wait, coming up (`isComingUp()`) or overdue (`isOverdue()`) on `today`, mirroring
 //   src/domain/order-steps.ts through its lists and `dueSoonUntil()` (developer-rules.md rule 1);
+// - `opened`: the orders that first entered Open on those Tashkent dates, the Manager's time to
+//   full approval (plan of 6.5b, decided item 1, Look first);
 // - the filters of point 2; the supplier filter keeps an order with a record not cancelled from
 //   that supplier, as stepsWhere() reads it.
 
 export function ordersWhere(
   actor: Actor,
-  scope: DateRange | { due: DueKind; today: BusinessDate },
+  scope: DateRange | { due: DueKind; today: BusinessDate } | { opened: DateRange },
   filters: AnalyticsFilters,
 ): SQL {
   return (
@@ -43,7 +45,9 @@ export function ordersWhere(
               ? sql`${analyticsOrders.neededBy} < ${scope.today}`
               : between(analyticsOrders.neededBy, scope.today, dueSoonUntil(scope.today)),
           )
-        : between(analyticsOrders.submittedOn, scope.first, scope.last),
+        : "opened" in scope
+          ? between(analyticsOrders.openedOn, scope.opened.first, scope.opened.last)
+          : between(analyticsOrders.submittedOn, scope.first, scope.last),
       filters.branch ? eq(analyticsOrders.branchId, filters.branch) : undefined,
       filters.category ? eq(analyticsOrders.categoryId, filters.category) : undefined,
       filters.department ? eq(analyticsOrders.departmentId, filters.department) : undefined,

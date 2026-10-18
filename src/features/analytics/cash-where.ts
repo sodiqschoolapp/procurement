@@ -15,13 +15,20 @@ import type { AnalyticsFilters } from "./period-params";
 // 0, never netted with what is owed (08 Manager's cash balance). The filters of point 2: category
 // the planned subtype's, Manager the order's current owner, and the supplier filter keeps an order
 // with a record not cancelled from that supplier, as Plan vs actual reads it (6.4b decided item
-// 11). `otherOwners` keeps the orders whose owner is not a Manager, as outcomesWhere().
+// 11). `otherOwners` keeps the orders whose owner is not a Manager, as outcomesWhere(). `owed`
+// keeps what the school owes too, a count below 0, for the Manager's My cash, whose held and owed
+// are shown apart, never netted (08 Manager's cash balance; plan of 6.5b, decided item 5).
 
-export function cashWhere(actor: Actor, filters: AnalyticsFilters, otherOwners = false): SQL {
+export function cashWhere(
+  actor: Actor,
+  filters: AnalyticsFilters,
+  otherOwners = false,
+  owed = false,
+): SQL {
   return (
     and(
       branchFilter(actor, analyticsCash.branchId),
-      sql`${analyticsCash.cashCount} > 0`,
+      owed ? undefined : sql`${analyticsCash.cashCount} > 0`,
       sql`exists (select 1 from orders live
                   where live.id = ${analyticsCash.orderId}
                     and live.status not in ('DRAFT', 'CLOSED'))`,
