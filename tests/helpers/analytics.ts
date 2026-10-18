@@ -8,10 +8,12 @@ import type { RequestStatus } from "@/domain/request-status";
 import type { OrderProgress } from "@/domain/purchases";
 import { db } from "@/server/db/client";
 import { refreshAnalytics } from "@/server/jobs/analytics-refresh";
+import { createDocument, reverseDocument } from "@/server/stock-documents";
 
 import { insertBranch } from "./branches";
-import { insertCategory, insertCompany, insertProduct } from "./catalog";
+import { insertCategory, insertCompany, insertProduct, insertUnit } from "./catalog";
 import { insertDepartment, insertExtraCostType, insertOrder } from "./orders";
+import { receive } from "./stock-documents";
 import { insertUser } from "./users";
 
 // Purchase records written straight into the tables for the analytics tests (build-plan 6.3), and
@@ -228,4 +230,74 @@ export async function decided(
   });
   await movesOf(order.id, ownerId, moves);
   return { id: order.id, number: order.number, variantId: product.defaultVariantId, ownerId };
+}
+
+/**
+ * A product of the scene's category (or the one given), in a measure with decimals, with `qty` received at `unitCost` into the
+ * scene's branch at the clock's moment, and its minimum when given (build-plan 6.4d). Returns
+ * the subtype.
+ */
+export async function stocked(
+  scene: SpendingScene,
+  row: { qty: string; unitCost: bigint; minimum?: string; categoryId?: string },
+): Promise<string> {
+  // A measure with decimals, so a test can move 2.5 (04 Measures).
+  const unit = await insertUnit({ allowDecimal: true });
+  const product = await insertProduct({
+    categoryId: row.categoryId ?? scene.category.id,
+    unitId: unit.id,
+  });
+  await receive(scene.branch.id, product.defaultVariantId, row.qty, row.unitCost, scene.manager.id);
+  if (row.minimum !== undefined) {
+    await db.execute(sql`
+      insert into stock_minimums (branch_id, variant_id, min_qty, created_at, updated_at)
+      values (${scene.branch.id}, ${product.defaultVariantId}, ${row.minimum}, now(), now())`);
+  }
+  return product.defaultVariantId;
+}
+
+/**
+ * A POSTED issue or return to the scene's department (or the one given), or a write-off already
+ * approved by `decidedBy`, on `docDate`, at the clock's moment (build-plan 6.4d). A return's line
+ * comes in at 1 000 so'm into an empty stock.
+ */
+export async function stockDocument(
+  scene: SpendingScene,
+  row: {
+    type: "ISSUE" | "RETURN" | "WRITE_OFF";
+    docDate: string;
+    lines: { variantId: string; qty: string }[];
+    departmentId?: string;
+    decidedBy?: string;
+    status?: "POSTED" | "PENDING_APPROVAL";
+  },
+): Promise<string> {
+  const writeOff = row.type === "WRITE_OFF";
+  const created = await db.transaction((tx) =>
+    createDocument(tx, {
+      type: row.type,
+      branchId: scene.branch.id,
+      departmentId: writeOff ? null : (row.departmentId ?? scene.department.id),
+      receivedByName: row.type === "ISSUE" ? "Sinov Qabulqiluvchi" : null,
+      docDate: row.docDate,
+      status: row.status ?? "POSTED",
+      reason: writeOff ? "DAMAGED" : null,
+      comment: writeOff ? "Sinov" : null,
+      clientKey: randomUUID(),
+      createdBy: scene.manager.id,
+      decidedBy: writeOff && row.status !== "PENDING_APPROVAL" ? (row.decidedBy ?? null) : null,
+      lines: row.lines.map((line) => ({
+        ...line,
+        unitCost: row.type === "RETURN" ? 1000n : null,
+      })),
+    }),
+  );
+  return created.documentId;
+}
+
+/** Reverses one document, as the reverse action does after its checks (09 Movement types). */
+export async function reverseNow(documentId: string, reversedBy: string): Promise<void> {
+  await db.transaction((tx) =>
+    reverseDocument(tx, { documentId, reason: "Sinov xato", reversedBy }),
+  );
 }

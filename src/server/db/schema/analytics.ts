@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
   bigint,
+  boolean,
   check,
   date,
   foreignKey,
@@ -19,6 +20,7 @@ import { orderEventType, orders, paymentType, requestStatus } from "./orders";
 import { branches } from "./organisation";
 import { purchases } from "./purchasing";
 import { users } from "./users";
+import { stockBalances, stockDocuments, stockMovementType, stockMovements } from "./warehouse";
 
 // The analytics summary tables (10-notifications-analytics-reports.md, Analytics page per role,
 // point 5; developer-rules.md rule 12). Task 6.3. Each is a plain table that the scheduler job
@@ -314,5 +316,100 @@ export const analyticsCash = pgTable(
     index("analytics_cash_owner_id_idx").on(table.ownerId),
     index("analytics_cash_category_id_idx").on(table.categoryId),
     index("analytics_cash_department_id_idx").on(table.departmentId),
+  ],
+);
+
+// One row per stock line of a product, `stock_balances` copied with what the Warehouse block reads
+// (10 Analytics, Head, Warehouse: "stock value per branch; low-stock items; items with no movement
+// for 90 days"; plan of 6.4d, decided items 1, 3 and 7, Look first): `value` is `stockValue()` of
+// src/domain/stock.ts, `low` is `isLow()` against `min_qty` (null: no minimum), `last_moved_on`
+// the Tashkent date of the newest movement of the subtype in the branch (null: none). Numbers of
+// now: no dates. Category the product's. Task 6.4d.
+export const analyticsStock = pgTable(
+  "analytics_stock",
+  {
+    branchId: uuid("branch_id")
+      .notNull()
+      .references(() => branches.id),
+    variantId: uuid("variant_id")
+      .notNull()
+      .references(() => productVariants.id),
+    categoryId: uuid("category_id")
+      .notNull()
+      .references(() => categories.id),
+    qty: quantity("qty").notNull(),
+    avgCost: som("avg_cost").notNull(),
+    value: som("value").notNull(),
+    minQty: quantity("min_qty"),
+    low: boolean("low").notNull(),
+    lastMovedOn: date("last_moved_on"),
+  },
+  (table) => [
+    primaryKey({ name: "analytics_stock_pkey", columns: [table.branchId, table.variantId] }),
+    foreignKey({
+      name: "analytics_stock_balance_fk",
+      columns: [table.branchId, table.variantId],
+      foreignColumns: [stockBalances.branchId, stockBalances.variantId],
+    }),
+    check("analytics_stock_qty_check", sql`${table.qty} >= 0`),
+    check("analytics_stock_avg_cost_check", sql`${table.avgCost} >= 0`),
+    check("analytics_stock_value_check", sql`${table.value} >= 0`),
+    check("analytics_stock_min_qty_check", sql`${table.minQty} > 0`),
+    index("analytics_stock_variant_id_idx").on(table.variantId),
+    index("analytics_stock_category_id_idx").on(table.categoryId),
+  ],
+);
+
+// One row per ISSUE, RETURN or WRITE_OFF movement of a warehouse document that is not Reversed
+// (10 Analytics, Head, Warehouse: "use by department; value written off"; plan of 6.4d, decided
+// items 4 and 5, Look first): `moved_on` the document's date, `qty` the movement's size and
+// `value` `stockValue(qty, unit_cost)` of the movement, at the cost it moved at (09 Stock value).
+// Department the document's (none for a write-off), category the product's. The branch the wall
+// filters on is the document's (as 6.4c's order key). Task 6.4d.
+export const analyticsStockMoves = pgTable(
+  "analytics_stock_moves",
+  {
+    movementId: uuid("movement_id")
+      .primaryKey()
+      .references(() => stockMovements.id),
+    documentId: uuid("document_id")
+      .notNull()
+      .references(() => stockDocuments.id),
+    branchId: uuid("branch_id")
+      .notNull()
+      .references(() => branches.id),
+    departmentId: uuid("department_id").references(() => departments.id),
+    categoryId: uuid("category_id")
+      .notNull()
+      .references(() => categories.id),
+    variantId: uuid("variant_id")
+      .notNull()
+      .references(() => productVariants.id),
+    type: stockMovementType("type").notNull(),
+    movedOn: date("moved_on").notNull(),
+    qty: quantity("qty").notNull(),
+    value: som("value").notNull(),
+  },
+  (table) => [
+    foreignKey({
+      name: "analytics_stock_moves_document_branch_fk",
+      columns: [table.documentId, table.branchId],
+      foreignColumns: [stockDocuments.id, stockDocuments.branchId],
+    }),
+    check(
+      "analytics_stock_moves_type_check",
+      sql`${table.type} IN ('ISSUE', 'RETURN', 'WRITE_OFF')`,
+    ),
+    check(
+      "analytics_stock_moves_department_check",
+      sql`(${table.type} IN ('ISSUE', 'RETURN')) = (${table.departmentId} IS NOT NULL)`,
+    ),
+    check("analytics_stock_moves_qty_check", sql`${table.qty} > 0`),
+    check("analytics_stock_moves_value_check", sql`${table.value} >= 0`),
+    index("analytics_stock_moves_branch_id_moved_on_idx").on(table.branchId, table.movedOn),
+    index("analytics_stock_moves_document_id_idx").on(table.documentId),
+    index("analytics_stock_moves_department_id_idx").on(table.departmentId),
+    index("analytics_stock_moves_category_id_idx").on(table.categoryId),
+    index("analytics_stock_moves_variant_id_idx").on(table.variantId),
   ],
 );

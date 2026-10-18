@@ -8,7 +8,7 @@ import {
   changeAgainst,
   monthBefore,
   monthsOf,
-  priceRiseSince,
+  ninetyDaysSince,
 } from "@/domain/analytics";
 import { type BusinessDate, businessMonth } from "@/domain/business-date";
 import { Exact } from "@/domain/order-totals";
@@ -148,7 +148,7 @@ async function pricesIn(
   }
   const trend = variantId ? await trendOf(db, actor, period, filters, variantId) : null;
 
-  const window = { first: priceRiseSince(today()), last: today() };
+  const window = { first: ninetyDaysSince(today()), last: today() };
   const rises = await risesOf(db, actor, window, filters);
   const spreads = await spreadsOf(db, actor, period, filters);
   return { period, trend, riseWindow: window, rises, spreads };

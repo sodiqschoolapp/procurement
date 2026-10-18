@@ -14,7 +14,7 @@ import {
   WAITING_GROUP_KEYS,
   averageHours,
   averageSom,
-  priceRiseSince,
+  ninetyDaysSince,
   reasonKey,
   waitingGroup,
 } from "./analytics";
@@ -246,9 +246,15 @@ describe("the change of a share (10 point 1; plan of 6.4, item 7)", () => {
 });
 
 describe("the 6.4b numbers (10 Analytics, Head, Prices and Approval speed; plan of 6.4b)", () => {
-  it("priceRiseSince: today and the 89 days before it (decided item 4)", () => {
-    expect(priceRiseSince("2031-05-02")).toBe("2031-02-02");
-    expect(daysOf({ first: priceRiseSince("2031-05-02"), last: "2031-05-02" })).toBe(90);
+  it("ninetyDaysSince: today and the 89 days before it (decided item 4)", () => {
+    expect(ninetyDaysSince("2031-05-02")).toBe("2031-02-02");
+    expect(daysOf({ first: ninetyDaysSince("2031-05-02"), last: "2031-05-02" })).toBe(90);
+  });
+
+  it("ninetyDaysSince is also the first day of 'no movement for 90 days', across a year end (plan of 6.4d, decided item 7)", () => {
+    // Worked in the plan review: 2031-01-03 is 89 days before 2031-04-02, inside the 90 days.
+    expect(ninetyDaysSince("2031-04-02")).toBe("2031-01-03");
+    expect(ninetyDaysSince("2031-01-15")).toBe("2030-10-18");
   });
 
   it("averageHours: Σ seconds ÷ count in hours, half up to one decimal (decided item 7)", () => {
