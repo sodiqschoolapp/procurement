@@ -132,14 +132,17 @@ function findImport<Entry>() {
         id: catalogImports.id,
         rows: catalogImports.rowCount,
         userId: catalogImports.createdBy,
+        branchId: catalogImports.branchId,
       })
       .from(catalogImports)
       .where(eq(catalogImports.clientKey, clientKey));
     if (!row) return null;
+    // A stock import's key has its branch, so the wrapper refuses it here (permission review of
+    // 5.9, should fix 1).
     return {
       result: { importId: row.id, rows: row.rows, written: [] },
       userId: row.userId,
-      branchId: null,
+      branchId: row.branchId,
     };
   };
 }
