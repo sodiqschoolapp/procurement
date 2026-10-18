@@ -329,7 +329,7 @@
       },
       "sentBack": {
         "title": "Menga qaytarilganlar",
-        "empty": "Sizga qaytarilgan buyurtma yoʻq. Tasdiqlovchining oʻzgartirish soʻrovi shu yerda chiqadi."
+        "empty": "Sizga qaytarilgan buyurtma yoʻq. Tasdiqlovchi oʻzgartirish uchun qaytargan buyurtma shu yerda chiqadi."
       },
       "drafts": {
         "title": "Qoralamalarim",

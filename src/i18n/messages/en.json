@@ -329,7 +329,7 @@
       },
       "sentBack": {
         "title": "Sent back to me",
-        "empty": "No order is sent back to you. An approver's request for changes appears here."
+        "empty": "No order is sent back to you. An order an approver returns for changes appears here."
       },
       "drafts": {
         "title": "My drafts",
@@ -344,9 +344,9 @@
         "finished": "{finished} of {count} finished"
       },
       "requested": {
-        "title": "Requested, every stage",
-        "line": "{product}: {quantity} {unit} requested",
-        "empty": "Nothing requested. Your submitted orders, until they close, add up here."
+        "title": "Ordered, every stage",
+        "line": "{product}: {quantity} {unit} ordered",
+        "empty": "Nothing ordered. Your submitted orders, until they close, add up here."
       },
       "cash": {
         "title": "Cash I hold",

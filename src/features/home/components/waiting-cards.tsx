@@ -30,7 +30,7 @@ type Failed = { title: string; lines: { orderId: string; line: string }[] } | nu
 
 export function WaitingCards({ cards, listHref }: { cards: WaitingCardData[]; listHref: string }) {
   return (
-    <ul className="grid gap-4 lg:grid-cols-2">
+    <ul className="grid grid-cols-1 gap-4 lg:grid-cols-2">
       {cards.map((card) => (
         <WaitingCard key={card.group.key} card={card} listHref={listHref} />
       ))}
@@ -65,10 +65,13 @@ function WaitingCard({ card, listHref }: { card: WaitingCardData; listHref: stri
   }));
 
   return (
-    <li data-waiting-card={group.key} className="flex flex-col gap-4 rounded-xl bg-card p-4 sm:p-6">
+    <li
+      data-waiting-card={group.key}
+      className="flex min-w-0 flex-col gap-4 rounded-xl bg-card p-4 sm:p-6"
+    >
       <div className="flex flex-col gap-2">
         <div className="flex items-start justify-between gap-3">
-          <h3 className="text-[17px] leading-6 font-bold">
+          <h3 className="min-w-0 text-[17px] leading-6 font-bold break-words">
             {product}{" "}
             <span className="text-[13px] font-normal text-muted-foreground">
               {group.branchCode}
@@ -118,7 +121,7 @@ function WaitingCard({ card, listHref }: { card: WaitingCardData; listHref: stri
         aria-expanded={open}
         aria-controls={ordersId}
         onClick={() => setOpen((shown) => !shown)}
-        className="self-start"
+        className="h-auto min-h-11 self-start text-left whitespace-normal sm:min-h-10"
       >
         {open ? t("hideOrders", { product }) : t("showOrders", { product })}
       </Button>
