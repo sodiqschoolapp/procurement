@@ -2,12 +2,14 @@ import { asc, eq, inArray } from "drizzle-orm";
 import * as z from "zod";
 
 import { businessDate, isBusinessDate } from "@/domain/business-date";
-import { draftComment, isDraftComment, quantityRefusal } from "@/domain/drafts";
+import { draftComment, isDraftComment } from "@/domain/drafts";
 import { parseSomOrZero } from "@/domain/money";
 import {
   DIRECT_ENTRY_REASONS,
   DOCUMENT_LINES_MAX,
+  type DirectEntryReason,
   directEntryCommentRefusal,
+  directEntryLineRefusal,
 } from "@/domain/stock-documents";
 import { ActionError, defineAction } from "@/server/action";
 import type { FieldMessageKey } from "@/server/action-result";
@@ -37,7 +39,9 @@ import { createDocument } from "@/server/stock-documents";
 //
 // One lock order with the issue, the return and Record purchase: branch, products, subtypes,
 // balances, then the number counter. The history step writes the audit row (09 Direct entry 2;
-// decided item 4). No notification (decided item 9).
+// decided item 4). No notification (decided item 9). The Excel import of ./import-stock.ts takes
+// the branch through lockDirectEntryBranch(), checks its lines by directEntryLineRefusal() and
+// writes its audit rows through recordDirectEntry() (plan of 5.9).
 
 export type DirectEntryInput = {
   clientKey: string;
@@ -88,15 +92,20 @@ function refuse(field: string, kind: FieldMessageKey): never {
   throw new ActionError("invalid_input", { [field]: kind });
 }
 
-/** Step 1: the branch, the date and the comment of "other". */
-async function refuseHeader(tx: Executor, typed: DirectEntryInput) {
+/** The branch of a direct entry, held FOR SHARE (decided item 5): unknown or inactive is refused. */
+export async function lockDirectEntryBranch(tx: Executor, branchId: string): Promise<void> {
   const [branch] = await tx
     .select({ isActive: branches.isActive })
     .from(branches)
-    .where(eq(branches.id, typed.branchId))
+    .where(eq(branches.id, branchId))
     .for("share");
   if (!branch) refuse("branchId", "errors.field.notAllowed");
   if (!branch.isActive) refuse("branchId", "errors.field.branchInactive");
+}
+
+/** Step 1: the branch, the date and the comment of "other". */
+async function refuseHeader(tx: Executor, typed: DirectEntryInput) {
+  await lockDirectEntryBranch(tx, typed.branchId);
 
   if (typed.docDate > businessDate(now())) refuse("docDate", "errors.field.inFuture");
 
@@ -127,7 +136,7 @@ async function refuseLines(tx: Executor, typed: DirectEntryInput): Promise<bigin
       isActive: productVariants.isActive,
       productActive: products.isActive,
       type: products.type,
-      allowDecimal: units.allowDecimal,
+      allowsDecimals: units.allowDecimal,
     })
     .from(productVariants)
     .innerJoin(products, eq(products.id, productVariants.productId))
@@ -137,14 +146,11 @@ async function refuseLines(tx: Executor, typed: DirectEntryInput): Promise<bigin
     .for("share", { of: productVariants });
   const costs: bigint[] = [];
   for (const [at, line] of typed.lines.entries()) {
-    const row = rows.find((each) => each.id === line.variantId);
-    // A service never enters stock (A7).
-    if (!row || row.type !== "GOODS") refuse(`lines.${at}.variantId`, "errors.field.notAllowed");
-    if (!row.isActive || !row.productActive) {
-      refuse(`lines.${at}.variantId`, "errors.field.inactive");
-    }
-    const refusal = quantityRefusal(line.qty, row.allowDecimal);
-    if (refusal) refuse(`lines.${at}.qty`, `errors.field.${refusal}`);
+    const refusal = directEntryLineRefusal(
+      rows.find((each) => each.id === line.variantId),
+      line.qty,
+    );
+    if (refusal) refuse(`lines.${at}.${refusal.field}`, `errors.field.${refusal.kind}`);
     if (line.unitCost.trim() === "") refuse(`lines.${at}.unitCost`, "errors.field.required");
     const cost = parseSomOrZero(line.unitCost);
     if (cost === null) refuse(`lines.${at}.unitCost`, "errors.field.wrongFormat");
@@ -203,33 +209,62 @@ export const enterStockDirectly = defineAction({
     return { documentId: created.documentId, number: created.number };
   },
   async history({ tx, input: typed, userId }, result) {
-    const [branch] = await tx
-      .select({ code: branches.code })
-      .from(branches)
-      .where(eq(branches.id, typed.branchId));
-    await audit(
-      { tx, userId },
-      {
-        action: "direct_entry.create",
-        entity: "stock_documents",
-        entityId: result.documentId,
-        before: null,
-        after: {
-          number: result.number,
-          branchId: typed.branchId,
-          branch: branch!.code,
-          docDate: typed.docDate,
-          reason: typed.reason,
-          comment: typed.comment,
-          status: "POSTED",
-          lines: typed.lines.map((line) => ({
-            variantId: line.variantId,
-            qty: line.qty.trim(),
-            unitCost: parseSomOrZero(line.unitCost)!.toString(),
-          })),
-        },
-        at: now(),
-      },
-    );
+    await recordDirectEntry(tx, userId, {
+      ...result,
+      branchId: typed.branchId,
+      docDate: typed.docDate,
+      reason: typed.reason,
+      comment: typed.comment,
+      lines: typed.lines.map((line) => ({
+        variantId: line.variantId,
+        qty: line.qty.trim(),
+        unitCost: parseSomOrZero(line.unitCost)!,
+      })),
+    });
   },
 });
+
+/** What the audit row of one direct entry holds (09 Direct entry 2; decided item 4). */
+export type RecordedDirectEntry = DirectEntryResult & {
+  branchId: string;
+  docDate: string;
+  reason: DirectEntryReason;
+  comment: string | null;
+  lines: { variantId: string; qty: string; unitCost: bigint }[];
+};
+
+/** The `direct_entry.create` audit row of one document, typed in the form or imported. */
+export async function recordDirectEntry(
+  tx: Executor,
+  userId: string,
+  entry: RecordedDirectEntry,
+): Promise<void> {
+  const [branch] = await tx
+    .select({ code: branches.code })
+    .from(branches)
+    .where(eq(branches.id, entry.branchId));
+  await audit(
+    { tx, userId },
+    {
+      action: "direct_entry.create",
+      entity: "stock_documents",
+      entityId: entry.documentId,
+      before: null,
+      after: {
+        number: entry.number,
+        branchId: entry.branchId,
+        branch: branch!.code,
+        docDate: entry.docDate,
+        reason: entry.reason,
+        comment: entry.comment,
+        status: "POSTED",
+        lines: entry.lines.map((line) => ({
+          variantId: line.variantId,
+          qty: line.qty,
+          unitCost: line.unitCost.toString(),
+        })),
+      },
+      at: now(),
+    },
+  );
+}

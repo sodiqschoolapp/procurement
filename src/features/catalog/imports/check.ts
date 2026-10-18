@@ -19,12 +19,12 @@ import type { Executor } from "@/server/authorize";
 // under the tables' advisory locks, and every entry it names is held FOR SHARE until the commit, so
 // a deactivation (FOR UPDATE) waits or is seen (as refuseInactive in products.ts).
 
-/** The text as the unique indexes compare it. */
-function compared(value: SQL) {
+/** The text as the unique indexes compare it; the stock import compares with it too. */
+export function compared(value: SQL) {
   return sql`lower(regexp_replace(btrim(${value}), '\\s+', ' ', 'g'))`;
 }
 
-function textArray(values: readonly string[]) {
+export function textArray(values: readonly string[]) {
   return sql`array[${sql.join(
     values.map((value) => sql`${value}`),
     sql`, `,

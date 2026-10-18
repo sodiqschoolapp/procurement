@@ -1,9 +1,10 @@
 import type { NextRequest } from "next/server";
 
-import { IMPORT_PERMISSIONS, isImportKind } from "@/domain/imports";
+import { isImportKind } from "@/domain/imports";
 import { importSheetName, importTitles } from "@/features/catalog/imports/titles";
+import { authorizeImportKind } from "@/features/catalog/queries/imports";
 import { userOfCookies } from "@/server/auth/session";
-import { AuthorizationError, authorize } from "@/server/authorize";
+import { AuthorizationError } from "@/server/authorize";
 import { writeTemplate } from "@/server/excel";
 
 // The template of an import, GET /catalog/import/<kind>/template (build-plan 1.10: "template
@@ -26,7 +27,7 @@ export async function GET(
   const { kind } = await context.params;
   if (!isImportKind(kind)) return notFound();
   try {
-    await authorize(user.id, IMPORT_PERMISSIONS[kind]);
+    await authorizeImportKind(user.id, kind);
   } catch (error) {
     if (error instanceof AuthorizationError) return notFound();
     throw error;

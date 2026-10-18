@@ -1,5 +1,6 @@
 import { catalogName, isCatalogName } from "./catalogs";
-import { parseSom } from "./money";
+import { quantityRefusal } from "./drafts";
+import { parseSom, parseSomOrZero } from "./money";
 import type { Permission } from "./permissions";
 import { isPriceNote, priceNote } from "./prices";
 import { DEFAULT_PRODUCT_TYPE, PRODUCT_TYPES, type ProductType, isDescription } from "./products";
@@ -21,8 +22,8 @@ import { fullName, isFullName, isPhone, phone } from "./users";
 // - The column titles and the type words come from the message files, passed in by the server;
 //   none is written here (CLAUDE.md rule 13).
 
-/** What can be imported (phase 5 adds existing stock). */
-export const IMPORT_KINDS = ["products", "departments", "prices"] as const;
+/** What can be imported: catalogs, and existing stock as direct entries (build-plan 5.9). */
+export const IMPORT_KINDS = ["products", "departments", "prices", "stock"] as const;
 export type ImportKind = (typeof IMPORT_KINDS)[number];
 
 export function isImportKind(value: unknown): value is ImportKind {
@@ -37,6 +38,9 @@ export const IMPORT_PERMISSIONS = {
   products: "catalog.manage",
   departments: "catalog.manage",
   prices: "price.add",
+  // "Enter stock directly, without an order" (03 Permission matrix; plan of 5.9): a branch
+  // permission, asked of the branch the page names.
+  stock: "stock.enter_direct",
 } as const satisfies Record<ImportKind, Permission>;
 
 /** The columns of each template, in order (plans of 1.10 and 1.11, "What will exist"). */
@@ -44,6 +48,7 @@ export const IMPORT_COLUMNS = {
   products: ["name", "type", "category", "measure", "company", "description", "subtype", "price"],
   departments: ["branch", "name", "responsibleName", "responsiblePhone"],
   prices: ["name", "subtype", "price", "note"],
+  stock: ["name", "subtype", "qty", "cost"],
 } as const satisfies Record<ImportKind, readonly string[]>;
 
 export type ImportColumn = (typeof IMPORT_COLUMNS)[ImportKind][number];
@@ -89,7 +94,12 @@ export type ImportErrorKind =
   | "notTemplate"
   | "fileTooLarge"
   | "tooManyRows"
-  | "noRows";
+  | "noRows"
+  // A stock row's quantity (plan of 5.9: the quantity rules of ./drafts.ts).
+  | "tooSmall"
+  | "tooLarge"
+  | "tooManyDecimals"
+  | "wholeOnly";
 
 /**
  * One error. `row` 0 and column `file` is the file as a whole. `firstRow`: the row the value
@@ -519,6 +529,116 @@ export function readPriceRows(sheet: ImportSheet): {
     prices.push({ row: row.row, product, subtype: subtype === "" ? null : subtype, price, note });
   }
   return { prices, named, errors: sorted(read.errors, IMPORT_COLUMNS.prices) };
+}
+
+/**
+ * One row of existing stock (09 Direct entry by the Head 1; plan of 5.9): the product and subtype
+ * as typed, matched in the database (src/features/warehouse/imports/check.ts); `subtype` null is
+ * the hidden default of a product without subtypes; the quantity as text; the cost in whole so'm,
+ * or null when the cell is empty and the subtype's reference price stands (decided item 1).
+ */
+export type ImportedStock = {
+  row: number;
+  product: string;
+  subtype: string | null;
+  qty: string;
+  cost: bigint | null;
+};
+
+const STOCK_AT = Object.fromEntries(IMPORT_COLUMNS.stock.map((column, at) => [column, at])) as Record<
+  (typeof IMPORT_COLUMNS.stock)[number],
+  number
+>;
+
+/**
+ * A quantity cell as text (edge case "Half a piece"; review of the plan of 5.9, should fix 3): a
+ * text trimmed; a number as JavaScript writes it, never rounded, so 2.5 is "2.5" and 1e21 is
+ * "1e+21", which the quantity rules refuse; `null` for a cell that is neither.
+ */
+export function cellQuantity(cell: ImportCell | undefined): string | null {
+  if (!cell || cell.kind === "empty") return "";
+  if (cell.kind === "text") return cell.text.trim();
+  if (cell.kind === "number") return Number.isFinite(cell.value) ? String(cell.value) : null;
+  return null;
+}
+
+/**
+ * A cost cell (plan of 5.9, decided item 1, Look first): empty is no cost, the reference price
+ * stands; a text goes through parseSomOrZero(); a number only when a safe whole number 0 or more,
+ * then parseSomOrZero() of its digits, so MONEY_MAX holds and no float touches the amount. Anything
+ * else is "wrong": never rounded.
+ */
+export function cellCost(cell: ImportCell | undefined): bigint | null | "wrong" {
+  if (!cell || cell.kind === "empty") return null;
+  if (cell.kind === "text") {
+    if (cell.text.trim() === "") return null;
+    return parseSomOrZero(cell.text) ?? "wrong";
+  }
+  if (cell.kind === "number") {
+    if (!Number.isSafeInteger(cell.value) || cell.value < 0) return "wrong";
+    return parseSomOrZero(String(cell.value)) ?? "wrong";
+  }
+  return "wrong";
+}
+
+/**
+ * The existing stock of a sheet (04 rule 7; 09 Direct entry, Lines; plan of 5.9). Each row: the
+ * product's name, the subtype's name or nothing, the quantity (required, the rules of ./drafts.ts;
+ * whole units only is checked against the measure in the database check), the cost per unit or
+ * nothing. The same product and subtype twice is an error naming the first row (decided item 6);
+ * the database check refuses two rows that land on one subtype as well. `named` as in
+ * readPriceRows(): every row whose names could be read, for the preview's database check.
+ */
+export function readStockRows(sheet: ImportSheet): {
+  stock: ImportedStock[];
+  named: ImportedStock[];
+  errors: ImportError[];
+} {
+  const { rows, error } = dataRows(sheet);
+  if (error) return { stock: [], named: [], errors: [error] };
+  const read = reader();
+  const stock: ImportedStock[] = [];
+  const named: ImportedStock[] = [];
+  const seen = new Map<string, number>();
+  for (const row of rows) {
+    const before = read.errors.length;
+    const product = readName(read, row, STOCK_AT.name, "name");
+    const subtypeText = read.text(row, STOCK_AT.subtype, "subtype");
+    const subtype = subtypeText === null ? null : catalogName(subtypeText);
+    if (subtype !== null && subtype !== "" && !isCatalogName(subtype)) {
+      read.errors.push({ row: row.row, column: "subtype", kind: "tooLong" });
+    }
+    const qty = cellQuantity(row.cells[STOCK_AT.qty]);
+    // The measure is the database check's: here every rule but whole units.
+    const qtyRefusal = qty === null ? "wrongFormat" : quantityRefusal(qty, true);
+    if (qtyRefusal) read.errors.push({ row: row.row, column: "qty", kind: qtyRefusal });
+    const cost = cellCost(row.cells[STOCK_AT.cost]);
+    if (cost === "wrong") read.errors.push({ row: row.row, column: "cost", kind: "wrongFormat" });
+    if (product === null || subtype === null) continue;
+    const entry: ImportedStock = {
+      row: row.row,
+      product,
+      subtype: subtype === "" ? null : subtype,
+      qty: qty ?? "",
+      cost: cost === "wrong" ? null : cost,
+    };
+    const key = `${folded(product)}\u0000${folded(subtype)}`;
+    const earlier = seen.get(key);
+    if (earlier !== undefined) {
+      read.errors.push({
+        row: row.row,
+        column: subtype === "" ? "name" : "subtype",
+        kind: "duplicateInFile",
+        firstRow: earlier,
+      });
+      continue;
+    }
+    seen.set(key, row.row);
+    named.push(entry);
+    if (read.errors.length > before) continue;
+    stock.push(entry);
+  }
+  return { stock, named, errors: sorted(read.errors, IMPORT_COLUMNS.stock) };
 }
 
 /** Errors in the order of the sheet: by row, then by column. */

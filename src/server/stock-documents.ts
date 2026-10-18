@@ -77,6 +77,8 @@ export type DocumentInput = {
   createdBy: string;
   /** The Head who approved it, when a write-off or count is created already approved. */
   decidedBy?: string | null;
+  /** The Excel import a direct entry comes from (plan of 5.9). */
+  importId?: string | null;
   lines: readonly DocumentLineInput[];
 };
 
@@ -116,12 +118,12 @@ export async function createDocument(tx: Executor, input: DocumentInput): Promis
   const inserted = await tx.execute<{ id: string }>(sql`
     insert into stock_documents (number, type, branch_id, to_branch_id, department_id,
       received_by_name, doc_date, status, reason, comment, client_key, created_by, decided_by,
-      decided_at, created_at)
+      decided_at, import_id, created_at)
     values (${number}, ${input.type}, ${input.branchId}, ${input.toBranchId ?? null},
       ${input.departmentId ?? null}, ${input.receivedByName ?? null}, ${input.docDate},
       ${input.status}, ${input.reason ?? null}, ${input.comment ?? null}, ${input.clientKey},
       ${input.createdBy}, ${input.decidedBy ?? null}, ${input.decidedBy ? moment : null},
-      ${moment})
+      ${input.importId ?? null}, ${moment})
     returning id`);
   const documentId = inserted.rows[0]!.id;
 

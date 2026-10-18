@@ -773,18 +773,21 @@
     "title": {
       "products": "Mahsulot va xizmatlarni import qilish",
       "departments": "Boʻlimlarni import qilish",
-      "prices": "Narxlarni import qilish"
+      "prices": "Narxlarni import qilish",
+      "stock": "Mavjud qoldiqni import qilish"
     },
     "description": {
       "products": "Bitta Excel faylidan koʻplab yangi mahsulot va xizmatlarni, ularning turlari va narxlari bilan qoʻshing.",
       "departments": "Bitta Excel faylidan istalgan filialning koʻplab boʻlimlarini qoʻshing.",
-      "prices": "Bitta Excel faylidan koʻplab turlarning yangi narxlarini birdaniga yuklang. Har bir yangi narx izohi bilan narxlar tarixida saqlanadi."
+      "prices": "Bitta Excel faylidan koʻplab turlarning yangi narxlarini birdaniga yuklang. Har bir yangi narx izohi bilan narxlar tarixida saqlanadi.",
+      "stock": "Filialda bor qoldiqni bitta Excel faylidan uning omboriga kiriting. Har bir qator “Bizda avvaldan bor mol” sababli, bugungi sanadagi to'g'ridan-to'g'ri kiritishning bir qatori bo'ladi."
     },
     "templateHeading": "Shablon",
     "templateText": {
       "products": "Turlari yoʻq har bir mahsulot uchun bitta qator yoki har bir tur uchun mahsulot nomi takrorlangan bitta qator. Toifa, oʻlchov birligi va kompaniya maʼlumotnomada boʻlishi kerak.",
       "departments": "Har bir boʻlim uchun bitta qator. Filial qisqa kodi bilan yoziladi, masalan TSH.",
-      "prices": "Har bir tur uchun bitta qator. Turlari yoʻq mahsulot uchun tur katagini boʻsh qoldiring. Mahsulot va tur maʼlumotnomada boʻlishi kerak; izohda narx nega oʻzgarishi yoziladi."
+      "prices": "Har bir tur uchun bitta qator. Turlari yoʻq mahsulot uchun tur katagini boʻsh qoldiring. Mahsulot va tur maʼlumotnomada boʻlishi kerak; izohda narx nega oʻzgarishi yoziladi.",
+      "stock": "Har bir tur uchun bitta qator. Turi yo'q mahsulot uchun turni bo'sh qoldiring. Ma'lumotnoma narxini olish uchun narxni bo'sh qoldiring. Mahsulot va turlar katalogda bo'lishi kerak."
     },
     "download": "Shablonni yuklab olish",
     "fileHeading": "Fayl",
@@ -804,7 +807,8 @@
     "sheet": {
       "products": "Mahsulotlar",
       "departments": "Boʻlimlar",
-      "prices": "Narxlar"
+      "prices": "Narxlar",
+      "stock": "Qoldiq"
     },
     "columns": {
       "products": {
@@ -828,8 +832,17 @@
         "subtype": "Tur",
         "price": "Yangi narx",
         "note": "Izoh"
+      },
+      "stock": {
+        "name": "Mahsulot nomi",
+        "subtype": "Tur",
+        "qty": "Miqdor",
+        "cost": "Birlik narxi"
       }
-    }
+    },
+    "branch": "Filial",
+    "savedDocuments": "To'g'ridan-to'g'ri kiritishlar: {numbers}.",
+    "chooseBranch": "Filialni tanlang"
   },
   "suggestions": {
     "title": "Tovar takliflari",
@@ -1761,7 +1774,8 @@
       "noResultsText": "Bu qidiruv yoki toifa bo'yicha qoldiq yo'q. Ularni o'zgartiring yoki tozalang.",
       "newIssue": "Yangi berish",
       "newReturn": "Yangi qaytarish",
-      "directEntry": "To'g'ridan-to'g'ri kiritish"
+      "directEntry": "To'g'ridan-to'g'ri kiritish",
+      "importStock": "Excel'dan import"
     },
     "item": {
       "back": "Ombordagi qoldiq",

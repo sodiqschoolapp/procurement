@@ -147,6 +147,16 @@ export default async function StockOnHandPage({ searchParams }: { searchParams: 
               {t("directEntry")}
             </Link>
           )}
+          {/* Existing stock from an Excel file (build-plan 5.9), for the Head as Direct entry. */}
+          {canEnterDirectly && (
+            <Link
+              href="/catalog/import/stock"
+              className={cn(buttonVariants({ variant: "secondary" }), "max-sm:h-12")}
+            >
+              <Icon name="description" />
+              {t("importStock")}
+            </Link>
+          )}
         </div>
       </div>
 
