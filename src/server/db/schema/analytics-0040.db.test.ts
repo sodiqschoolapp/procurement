@@ -267,3 +267,30 @@ describe("analytics_stock_moves", () => {
     }
   });
 });
+
+describe("analytics_stock_moves: the department is of the document's branch (permission review of 6.4d, Should fix 1)", () => {
+  it("refuses a department of another branch, on insert and on update", async () => {
+    const otherDepartment = (await spendingScene(otherBranch)).department.id;
+    const insert = (department: string) =>
+      db.execute(sql`
+        insert into analytics_stock_moves (movement_id, document_id, branch_id, department_id,
+          category_id, variant_id, type, moved_on, qty, value)
+        values (${ids.movement}, ${ids.document}, ${ids.branch}, ${department}, ${ids.category},
+          ${ids.variant}, 'ISSUE', '2031-05-03', 1, 1000)`);
+    expect(await refusalOf(insert(otherDepartment))).toMatchObject({
+      code: FOREIGN,
+      constraint: "analytics_stock_moves_department_branch_fk",
+    });
+    await insert(ids.department);
+    try {
+      expect(
+        await refusalOf(
+          db.execute(sql`update analytics_stock_moves set department_id = ${otherDepartment}
+                         where movement_id = ${ids.movement}`),
+        ),
+      ).toMatchObject({ code: FOREIGN, constraint: "analytics_stock_moves_department_branch_fk" });
+    } finally {
+      await db.execute(sql`delete from analytics_stock_moves where movement_id = ${ids.movement}`);
+    }
+  });
+});

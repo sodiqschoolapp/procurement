@@ -1,5 +1,5 @@
 {
-  "id": "5157f1d0-ba96-4388-a844-3deda5af38e9",
+  "id": "faee9816-e73e-45df-b234-ca230fbc8e58",
   "prevId": "bbecd06e-9b61-4097-af9d-c9826880a312",
   "version": "7",
   "dialect": "postgresql",
@@ -1825,6 +1825,21 @@
           "tableTo": "stock_documents",
           "columnsFrom": [
             "document_id",
+            "branch_id"
+          ],
+          "columnsTo": [
+            "id",
+            "branch_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "analytics_stock_moves_department_branch_fk": {
+          "name": "analytics_stock_moves_department_branch_fk",
+          "tableFrom": "analytics_stock_moves",
+          "tableTo": "departments",
+          "columnsFrom": [
+            "department_id",
             "branch_id"
           ],
           "columnsTo": [

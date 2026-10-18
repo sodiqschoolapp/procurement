@@ -500,7 +500,7 @@ describePermissionMatrix(
   {
     permission: "data.view",
     async run({ user, branchId }) {
-      const { variant, issue } = await stockIn(branchId);
+      const { scene, variant, issue } = await stockIn(branchId);
       const block = await getWarehouse(user.id, THIS_MONTH, NO_ANALYTICS_FILTERS);
       const lines = await getStockLines(user.id, "value", NO_ANALYTICS_FILTERS, "all");
       const moves = await getStockMoves(user.id, "use", THIS_MONTH, NO_ANALYTICS_FILTERS, "all");
@@ -508,6 +508,9 @@ describePermissionMatrix(
       const listed = lines.rows.some((row) => row.variantId === variant);
       expect(moves.rows.some((row) => row.documentId === issue)).toBe(listed);
       expect(block.branches.some((row) => row.id === branchId)).toBe(listed);
+      // Use by department is a statement of its own: its wall is checked on its own (permission
+      // review of 6.4d, Must fix 1).
+      expect(block.departments.some((row) => row.id === scene.department.id)).toBe(listed);
       if (!listed) throw new AuthorizationError("not_found");
     },
   },

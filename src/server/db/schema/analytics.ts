@@ -396,6 +396,13 @@ export const analyticsStockMoves = pgTable(
       columns: [table.documentId, table.branchId],
       foreignColumns: [stockDocuments.id, stockDocuments.branchId],
     }),
+    // The department is of the document's branch, as stock_documents_department_branch_fk holds
+    // it (permission review of 6.4d, Should fix 1).
+    foreignKey({
+      name: "analytics_stock_moves_department_branch_fk",
+      columns: [table.departmentId, table.branchId],
+      foreignColumns: [departments.id, departments.branchId],
+    }),
     check(
       "analytics_stock_moves_type_check",
       sql`${table.type} IN ('ISSUE', 'RETURN', 'WRITE_OFF')`,

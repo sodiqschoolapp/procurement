@@ -2191,6 +2191,28 @@ Choices made during the build:
 - Both new tables carry a composite foreign key `(order_id, branch_id)` to `orders(id, branch_id)`, so the branch the wall filters on is the order's (permission review, Should fix 3).
 - The Managers block and its two lists are reachable by address by every `data.view` role inside its own branches, as 6.4a's and 6.4b's lists are (plan of 6.4, decided item 8); only the Head's page shows the block (permission review, Should fix 1, not changed).
 
+### 6.4d Analytics: Head, Warehouse (18.10.2026)
+
+The plan's decisions as the plan review of 18.10.2026 confirmed them (correction 1 applied: the lock statement of `refreshAnalytics()` names both new tables), and those of the build. The Look first items come first.
+
+1. **Look first** (stock value). Stock value per branch is Σ `stockValue(qty, average)` of its lines now, from `analytics_stock`, the same per-line formula as Stock on hand (5.2 decided item 1). The stock value report's own line for direct entries (09 Direct entry rule 5) is 6.9's.
+2. **Look first** (spec contradiction; proposed `/spec-change`). Stock value, low-stock items and items with no movement are numbers of now with no change against the period before, against 10 point 1: a balance and an average at a past date are kept nowhere. Proposed wording of 10 point 1, replacing 6.4c decided item 5's: "Every number of a period shows its change against the period before; a number of now (orders waiting now, cash held, stock value, low stock, items with no movement) has none."
+3. **Look first** (stock). Low-stock items are the lines `isLow()` (at or below the minimum, none never), the set of Stock on hand's "Low stock only"; a count per branch.
+4. **Look first** (stock value). Use by department is the value of issues minus the value of returns of each department in the period, each movement at its own cost (`stockValue(|qty|, unit_cost)`), on the document's date; a reversed document is left out with its reversal, so a past period's number can change after a later reversal. Its change is `changeAgainst()` while the period before is above 0, else in so'm only (`useChange()`).
+5. **Look first** (stock value). Value written off is Σ `stockValue(|qty|, unit_cost)` of the approved write-offs' movements in the period, on the write-off document's date (the typed date kept at approval, 5.11 decided item 8), as `/warehouse/documents` dates it; a reversed write-off is left out; a count correction is not a write-off.
+6. **Look first** (filters). Branch and category filter every number; department filters use by department only; Manager and supplier do not apply to stock. The block says so in one line when such a filter is set.
+7. **Look first** (stock). Items with no movement for 90 days hold stock and have no movement of any type in the 90 Tashkent days ending today (`ninetyDaysSince()`, 6.4b's `priceRiseSince()` renamed, one function for both); a movement's day here is the Tashkent date of its `created_at`, since receipts and purchase reversals have no document date.
+8. Rows: every branch of the user with a stock line or a counted movement in either period, inactive marked, and "All branches" from the set's own sums; departments with a movement in either period, largest use first.
+9. Two summary tables rewritten by `refreshAnalytics()` under its lock with `stockValue()` and `isLow()`; drill keys `stock:<view>` and `moves:<move>` and the two list pages `/analytics/stock` and `/analytics/moves`; `analytics_stock_moves` carries a composite key `(document_id, branch_id)` to the document, as 6.4c's order key.
+
+Choices made during the build:
+
+- `useChange()` lives in `src/domain/analytics.ts`, not in the query file: the permission registry counts every export of a query file as a query, and the rule is a formula (developer-rules.md rule 1).
+- `analytics_stock` has a composite foreign key `(branch_id, variant_id)` to `stock_balances`, so a summary line is always a real stock line of its branch.
+- A department's negative use is written "N so'm more returned" in its table.
+- The stock list links each line to its item card (`/warehouse/items/<subtype>?branch=`), the movements list each row to its document.
+- Permission review: use by department, a statement of its own, has its wall checked in the matrix without a filter (Must fix 1); `analytics_stock_moves` has a composite key `(department_id, branch_id)` to `departments`, so a row's department is of its branch (Should fix 1), added to 0040 before the merge. The movement keeps a single-column key: a transfer's TRANSFER_IN lands in another branch than its document, and such movements are not in the table.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

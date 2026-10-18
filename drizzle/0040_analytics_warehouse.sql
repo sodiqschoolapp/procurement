@@ -51,6 +51,7 @@ ALTER TABLE "analytics_stock_moves" ADD CONSTRAINT "analytics_stock_moves_depart
 ALTER TABLE "analytics_stock_moves" ADD CONSTRAINT "analytics_stock_moves_category_id_categories_id_fk" FOREIGN KEY ("category_id") REFERENCES "public"."categories"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "analytics_stock_moves" ADD CONSTRAINT "analytics_stock_moves_variant_id_product_variants_id_fk" FOREIGN KEY ("variant_id") REFERENCES "public"."product_variants"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "analytics_stock_moves" ADD CONSTRAINT "analytics_stock_moves_document_branch_fk" FOREIGN KEY ("document_id","branch_id") REFERENCES "public"."stock_documents"("id","branch_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "analytics_stock_moves" ADD CONSTRAINT "analytics_stock_moves_department_branch_fk" FOREIGN KEY ("department_id","branch_id") REFERENCES "public"."departments"("id","branch_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "analytics_stock_variant_id_idx" ON "analytics_stock" USING btree ("variant_id");--> statement-breakpoint
 CREATE INDEX "analytics_stock_category_id_idx" ON "analytics_stock" USING btree ("category_id");--> statement-breakpoint
 CREATE INDEX "analytics_stock_moves_branch_id_moved_on_idx" ON "analytics_stock_moves" USING btree ("branch_id","moved_on");--> statement-breakpoint
