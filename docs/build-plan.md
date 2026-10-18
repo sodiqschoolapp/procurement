@@ -23,11 +23,11 @@ The whole project as ordered tasks. One task is one Claude Code session and one 
 | 3. Purchasing | 10 | The Manager records what was really bought, one order or one whole shop visit at a time. |
 | 4. Money and settlement | 10 | Cash given, cash spent, the difference, and the close, per order. |
 | 5. Warehouse | 11 | Stock screens and every document that moves stock inside one branch. |
-| 6. Home, analytics, reports | 13 | What each role sees first, and the numbers behind the work. |
+| 6. Home, analytics, reports | 15 | What each role sees first, and the numbers behind the work. |
 | 7. Transfers and counts | 4 | Stock moving between branches, and stock checked against the shelf. |
 | 8. Jobs and polish | 3 | The scheduled work, and the translation pass. |
 | 9. Before go-live | 6 | Proof that it works, then the real environment and the real data. |
-| **Total** | **104** | |
+| **Total** | **106** | |
 
 ## Phase 0: Foundations
 
@@ -497,10 +497,20 @@ What each role sees first, and the numbers behind the work.
   - **Build:** The Warehouse block (stock value per branch; low-stock items; use by department; items with no movement for 90 days; value written off), each number with its drill-down and Excel export.
   - **Done when:** A database test checks one number of the block against the seed. By hand: the spec's phase 6 check on the whole Head page.
 
-- [ ] **6.5 Analytics: Principal and Manager**
-  - **Read:** `10-notifications-analytics-reports.md` (Analytics page per role: Principal, own branch; Manager, own branches; the "Runs out in" sentence); `open-questions.md` (question 15).
-  - **Build:** The four Principal blocks and the four Manager blocks; "runs out in" is current stock divided by the average daily issues of the last 90 days.
-  - **Done when:** A unit test of "runs out in"; a database test: the Principal's page holds only the Principal's branch.
+- [ ] **6.5a Analytics: Principal** (6.5 split in three by its plan, pull request #109)
+  - **Read:** `10-notifications-analytics-reports.md` (Analytics page per role: Principal, own branch).
+  - **Build:** The four Principal blocks: Spending (my branch by month against the period before; by category and department; top 10 products), Orders (by status; needed-by dates coming up; overdue orders), My approvals (waiting now; my average time to decide), Warehouse (stock value; low stock; what each department used), each number with its drill-down and Excel export.
+  - **Done when:** A database test: the Principal's page holds only the Principal's branch.
+
+- [ ] **6.5b Analytics: Manager, My orders, My estimates, My cash**
+  - **Read:** `10-notifications-analytics-reports.md` (Analytics page per role: Manager, own branches).
+  - **Build:** My orders (by status; average time to full approval; share sent back, with reasons), My estimates (difference between planned and actual price per product), My cash (count per open order), each number with its drill-down and Excel export.
+  - **Done when:** A database test: the Manager's blocks hold only the Manager's own orders in the Manager's branches.
+
+- [ ] **6.5c Analytics: Manager, Stock planning**
+  - **Read:** `10-notifications-analytics-reports.md` (Analytics page per role: Manager, own branches; the "Runs out in" sentence); `open-questions.md` (question 15).
+  - **Build:** Stock planning: use of each item per month; "runs out in" is current stock divided by the average daily issues of the last 90 days; low stock; suggested order quantity.
+  - **Done when:** A unit test of "runs out in".
 
 - [ ] **6.6 Analytics: Finance**
   - **Read:** `10-notifications-analytics-reports.md` (Analytics page per role: Finance, own branches).
