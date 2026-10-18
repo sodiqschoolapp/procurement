@@ -2213,6 +2213,28 @@ Choices made during the build:
 - The stock list links each line to its item card (`/warehouse/items/<subtype>?branch=`), the movements list each row to its document.
 - Permission review: use by department, a statement of its own, has its wall checked in the matrix without a filter (Must fix 1); `analytics_stock_moves` has a composite key `(department_id, branch_id)` to `departments`, so a row's department is of its branch (Should fix 1), added to 0040 before the merge. The movement keeps a single-column key: a transfer's TRANSFER_IN lands in another branch than its document, and such movements are not in the table.
 
+### 6.5a Analytics: Principal (18.10.2026)
+
+The plan's decisions as the plan review of 18.10.2026 confirmed them (corrections 1 to 3 applied), and those of the build. The Look first items come first.
+
+1. **Look first** (task split). 6.5 is split into 6.5a (Principal), 6.5b (Manager: My orders, My estimates, My cash) and 6.5c (Manager: Stock planning); phase 6 now 15 tasks, total 106. The Principal's branch test went to 6.5a, the "runs out in" unit test to 6.5c; 6.5b's Done-when (the Manager's own orders in the Manager's branches) is a test of the walls.
+2. **Look first** (spec contradiction; proposed `/spec-change`). The Orders block's "by status" counts the orders first submitted in the period (`submitted_at`, kept at a re-submit) by their status now, against the same count of the period before. "Needed-by coming up", "overdue" and My approvals' "waiting now" are numbers of now with no change, against 10 point 1. Proposed wording of 10 point 1, extending 6.4d decided item 2's: "Every number of a period shows its change against the period before; a number of now (orders waiting now, orders needed-by coming up, overdue orders, cash held, stock value, low stock, items with no movement) has none."
+3. **Look first** (approval order, history). "My average time to decide" is over the stays decided by this user, the actor of the Approve, Send back or Reject event, stored as `analytics_steps.decided_by`; an earlier or acting Principal's decisions are theirs (03 rule 3), and a stay entered under the old Principal and decided by the new one is the new one's. `averageHours()` of Σ seconds and count, its change in hours.
+4. **Look first** (money). A product's spending in "top 10 products" is 08's Actual total of its records from `analytics_spending`, every subtype bought added to its product (07 Substitution); a product with spending only in the period before is left out.
+5. "Coming up" is `isComingUp()` (new in `src/domain/order-steps.ts`): still waiting (`isOverdue()`'s statuses, Open only while buying), needed by today to `dueSoonUntil(today)`, overdue left out because the block shows it beside; "overdue" is `isOverdue()`. `ordersWhere()` mirrors both through the domain's lists and `dueSoonUntil()`.
+6. "Waiting now" is the orders at Waiting for Principal of the user's branches by `waitingGroup()`, ignoring the period (6.4b decided item 8).
+7. The Orders block reads the new summary `analytics_orders` (no Draft, a CHECK holds it) under `ordersWhere()`, with the draft wall on the live status as well; its numbers drill down to `/analytics/order-status`, which reads the same table and condition. `analytics_orders` has composite keys `(order_id, branch_id)` to `orders` and `(department_id, branch_id)` to `departments` (review correction 3).
+8. "My branch by month against the period before" is 6.3's block as built; "by department" is 6.4a's `getHeadSpending()` breakdown.
+9. The Principal's Warehouse shows stock value, low stock and use by department from `getWarehouse()`; no movement and written off stay on the Head's page; 6.4d's note on the Manager and supplier filters stays.
+10. One branch: no per-branch rows; the filters of point 2 apply within it.
+
+Choices made during the build:
+
+- Migration 0041 drops and adds `analytics_steps_left_check` again with `decided_by` in it (Drizzle writes a changed CHECK so); the new check refuses everything the old one refused. The migration clears `analytics_steps` first, as 0038 did with its rows. The 0038 constraint test now writes a decider on its decided stays (**Look first**: a test changed because a requirement changed; nothing it checks was weakened).
+- `movesOf()` of the test helpers takes an actor per move; `decided()` takes needed-by, first submit and progress.
+- The `mine` key lists the stays the user decided at any step; only a Principal's page links to it. The Excel sheet `warehouse` of the Principal still holds the two Head-only columns (both are of the Principal's own branch).
+- Permission review: the live draft wall of `ordersWhere()` is tested for a colleague Manager and Finance (hidden) and the Head (shown) (Should fix 1); the no-filter wall test also checks waiting now, the total and overdue (Should fix 2).
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

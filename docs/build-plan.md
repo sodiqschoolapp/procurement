@@ -497,7 +497,7 @@ What each role sees first, and the numbers behind the work.
   - **Build:** The Warehouse block (stock value per branch; low-stock items; use by department; items with no movement for 90 days; value written off), each number with its drill-down and Excel export.
   - **Done when:** A database test checks one number of the block against the seed. By hand: the spec's phase 6 check on the whole Head page.
 
-- [ ] **6.5a Analytics: Principal** (6.5 split in three by its plan, pull request #109)
+- [x] **6.5a Analytics: Principal** (6.5 split in three by its plan, pull request #109)
   - **Read:** `10-notifications-analytics-reports.md` (Analytics page per role: Principal, own branch).
   - **Build:** The four Principal blocks: Spending (my branch by month against the period before; by category and department; top 10 products), Orders (by status; needed-by dates coming up; overdue orders), My approvals (waiting now; my average time to decide), Warehouse (stock value; low stock; what each department used), each number with its drill-down and Excel export.
   - **Done when:** A database test: the Principal's page holds only the Principal's branch.
