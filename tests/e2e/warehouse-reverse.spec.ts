@@ -145,7 +145,10 @@ test("the Manager reverses their issue from the item card with a reason: the iss
   ).toBeVisible();
   await expect(issueRow.locator("[data-reversed]")).toHaveText(uz.warehouse.item.reversed);
   await expect(issueRow.getByRole("button", { name: uz.warehouse.reverse.button })).toHaveCount(0);
-  const reversal = page.getByRole("row").filter({ hasText: uz.warehouse.item.types.REVERSAL });
+  // The movement cell, exactly: "Storno" is also the start of the label "Storno qilingan".
+  const reversal = page.getByRole("row").filter({
+    has: page.getByRole("cell", { name: uz.warehouse.item.types.REVERSAL, exact: true }),
+  });
   await expect(reversal).toHaveCount(1);
   await expect(reversal).toContainText("+2");
   await expect(reversal).toContainText("5");
