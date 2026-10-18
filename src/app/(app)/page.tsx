@@ -389,8 +389,11 @@ function LinkRow({
 }) {
   return (
     <li className="py-3 first:pt-0 last:pb-0">
-      <Link href={href} className="flex min-h-11 items-center justify-between gap-3">
-        <span className="flex min-w-0 flex-col gap-1">
+      <Link
+        href={href}
+        className="flex min-h-11 flex-wrap items-center justify-between gap-x-3 gap-y-1"
+      >
+        <span className="flex min-w-48 flex-1 flex-col gap-1">
           <span className="text-[15px] leading-[22px] font-semibold">{title}</span>
           <span className="text-[13px] leading-4 text-muted-foreground tabular-nums">{line}</span>
         </span>
