@@ -3,8 +3,16 @@
 import { revalidatePath } from "next/cache";
 import * as z from "zod";
 
+import {
+  type DirectEntryResult,
+  enterStockDirectly,
+} from "@/features/warehouse/actions/direct-entry";
 import { type IssueResult, issueStock } from "@/features/warehouse/actions/issue";
 import { type ReturnResult, returnStock } from "@/features/warehouse/actions/return";
+import {
+  type DirectEntryItem,
+  searchDirectEntryItems,
+} from "@/features/warehouse/queries/direct-entry-form";
 import {
   type IssueDepartment,
   type IssueItem,
@@ -25,10 +33,12 @@ import { AuthorizationError } from "@/server/authorize";
 // The page actions of the issue form (09-warehouse.md, Issue to a department; plan of 5.4) and of
 // the return form (09 Other documents, Return from a department; plan of 5.6). The definition's
 // wrapper and the queries check everything again: `stock.issue` or `stock.return_reverse` on the
-// branch, the fields, the stock under the lock, the amount the department received.
+// branch, the fields, the stock under the lock, the amount the department received. The direct
+// entry's (09 Direct entry by the Head; plan of 5.8) under `stock.enter_direct`, the Head only.
 
 const issue = serverAction(issueStock);
 const giveBack = serverAction(returnStock);
+const enter = serverAction(enterStockDirectly);
 
 /** A query as an answer: a refusal of authorize() or of the input is returned, never thrown. */
 async function asked<T>(read: (userId: string) => Promise<T>): Promise<ActionResult<T>> {
@@ -91,5 +101,24 @@ export async function searchReturnItemsAction(input: {
       departmentId: input?.departmentId,
       q: input?.q,
     }),
+  );
+}
+
+/** Posts one direct entry (09 Direct entry by the Head); safe to repeat with the same browser id. */
+export async function enterStockDirectlyAction(
+  input: unknown,
+): Promise<ActionResult<DirectEntryResult>> {
+  const result = await enter(input);
+  if (result.ok) revalidatePath("/warehouse", "layout");
+  return result;
+}
+
+/** The items whose name holds `q`, with the stock and the reference price of each subtype. */
+export async function searchDirectEntryItemsAction(input: {
+  branchId: string;
+  q: string;
+}): Promise<ActionResult<DirectEntryItem[]>> {
+  return asked((userId) =>
+    searchDirectEntryItems(userId, { branchId: input?.branchId, q: input?.q }),
   );
 }

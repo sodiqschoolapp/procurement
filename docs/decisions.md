@@ -1918,6 +1918,28 @@ Choices made during the build:
 - Uzbek and Russian say "Storno qilish" / "Сторнировать" for Reverse: the first Uzbek wording, "Bekor qilish", is also the dialog's Cancel button. The item card's REVERSAL label in Uzbek became "Storno" to match.
 - The dialog has its own reason hint (`warehouse.reverse.reasonHint`): the orders' hint speaks of orders.
 
+### 5.8 Direct entry by the Head (18.10.2026)
+
+The plan's decisions as the plan review of 18.10.2026 confirmed them (corrections 1 and 2 applied), and those of the build. The Look first items come first.
+
+1. **Look first** (money: the cost of a line). The cost per unit is required, whole so'm, 0 or more (a gift may be free); it is prefilled with the subtype's own reference price, and with none the field starts empty and must be typed (no fallback to the last purchase price, as decisions 1.8 item 4). Worked: 10 at 1 000 in stock and a gift of 10 at 0 give an average of 500.
+2. **Look first** (permission matrix; Decided ahead, question 19). The reverse of a direct entry stays in `reverseStockDocument` (`stock.return_reverse` on the document's branch); `reverseAllows()` says yes for DIRECT_ENTRY to the Head only, whoever is recorded as its creator. No new permission name.
+3. Reversing a direct entry writes an audit row `direct_entry.reverse` (entity `stock_documents`) from the reverse action's history step; an issue and a return still write none (5.7 item 5).
+4. The entry's audit row is `direct_entry.create` with the number, branch, date, reason, comment, status and lines (subtype, quantity, unit cost).
+5. Any active branch; an inactive one is refused (`branchInactive`).
+6. Date: today by default, any past day, never a future one; the number's year is the Tashkent year of the moment of saving.
+7. Lines: at most 100, one per subtype, active goods products and subtypes only, quantity by the measure.
+8. Comment: at most 1 000 characters, required and not blank for "Other" (`directEntryCommentRefusal()` in `src/domain/stock-documents.ts`, asked by the form and the action: plan review, correction 1).
+9. No confirmation before saving (a direct entry is reversible) and no notification.
+10. The form lists every active goods subtype, in stock or not, with the branch's stock beside it.
+
+Choices made during the build:
+
+- The reason starts at "Stock we already had", the main use at launch (09 Direct entry intro); it is a segmented control of the three reasons.
+- A refused `reason` opens the form's first step (`document-steps.ts` counts it as a header field).
+- The 5.7 test "the Head is refused on a posted direct entry" became "the Head reverses a direct entry": it stood for "no type but an issue or a return yet", which this task's Build changes (Decided ahead, question 19).
+- The Stock on hand button uses the existing `inventory_2` icon; no new icon.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

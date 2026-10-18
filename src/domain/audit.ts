@@ -50,6 +50,8 @@ export const AUDIT_ACTIONS = [
   "suggestion.add",
   "suggestion.decline",
   "settings.change",
+  "direct_entry.create",
+  "direct_entry.reverse",
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 

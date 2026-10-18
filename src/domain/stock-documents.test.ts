@@ -7,6 +7,7 @@ import {
   issueQuantityRefusal,
   lineMovement,
   departmentHolds,
+  directEntryCommentRefusal,
   overReturn,
   reversalOf,
   reverseAllows,
@@ -198,8 +199,24 @@ describe("reverseAllows (09 Issue to a department 3; Decided ahead, question 19;
     }
   });
 
+  it("lets only the Head reverse a direct entry, never a Manager, even as its recorded creator (question 19)", () => {
+    expect(
+      reverseAllows(
+        { userId: colleague, role: "HEAD" },
+        { type: "DIRECT_ENTRY", createdBy: maker },
+      ),
+    ).toBe(true);
+    for (const role of ["MANAGER", "PRINCIPAL", "FINANCE"] as const) {
+      expect(
+        reverseAllows({ userId: maker, role }, { type: "DIRECT_ENTRY", createdBy: maker }),
+      ).toBe(false);
+    }
+  });
+
   it("refuses every other type, to the Head and its creator too, until its task adds it", () => {
-    for (const type of DOCUMENT_TYPES.filter((each) => each !== "ISSUE" && each !== "RETURN")) {
+    for (const type of DOCUMENT_TYPES.filter(
+      (each) => each !== "ISSUE" && each !== "RETURN" && each !== "DIRECT_ENTRY",
+    )) {
       expect(reverseAllows({ userId: maker, role: "HEAD" }, { type, createdBy: maker })).toBe(
         false,
       );
@@ -207,5 +224,16 @@ describe("reverseAllows (09 Issue to a department 3; Decided ahead, question 19;
         false,
       );
     }
+  });
+});
+
+describe('directEntryCommentRefusal (09 Direct entry: Reason and Comment, "Other" needs a comment)', () => {
+  it("asks a comment for Other only", () => {
+    expect(directEntryCommentRefusal("OTHER", null)).toBe("required");
+    expect(directEntryCommentRefusal("OTHER", "   ")).toBe("required");
+    expect(directEntryCommentRefusal("OTHER", "Found in the old store room")).toBeNull();
+    expect(directEntryCommentRefusal("EXISTING_STOCK", null)).toBeNull();
+    expect(directEntryCommentRefusal("GIFT", null)).toBeNull();
+    expect(directEntryCommentRefusal("GIFT", "From the parents' committee")).toBeNull();
   });
 });
