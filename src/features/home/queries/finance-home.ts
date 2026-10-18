@@ -70,7 +70,11 @@ function byOwnerAndBranch(found: readonly FilterOrder[], base: ListFilters) {
   return [...entries.values()];
 }
 
-/** The orders of the filter that the user may act on with `permission` (03 matrix). */
+/**
+ * The orders of the filter that the user may act on with `permission` (03 matrix). The wall is the
+ * list's SQL (`data.view`, which gives Finance the same own branches as its steps); the decide()
+ * here only narrows to the step's rows and is never the wall (permission review of 6.2).
+ */
 async function ordersFor(
   userId: string,
   permission: Permission,

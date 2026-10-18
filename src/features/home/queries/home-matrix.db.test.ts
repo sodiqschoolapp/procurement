@@ -128,6 +128,26 @@ describe("getHeadHome and getFinanceHome with no branch chosen: the wall in the 
   });
 });
 
+describe("getHeadHome and getFinanceHome with no branch chosen, every role (03 Permission matrix, steps 1 and 3; permission review of 6.2, Must fix 1)", () => {
+  it("only the Head opens the Head's home and only Finance the Finance home on 'All my branches'", async () => {
+    const branch = await insertBranch();
+    const users = {
+      HEAD: await insertUser("HEAD"),
+      MANAGER: await insertUser("MANAGER", { branches: [branch.id] }),
+      PRINCIPAL: await insertUser("PRINCIPAL", { branches: [branch.id] }),
+      FINANCE: await insertUser("FINANCE", { branches: [branch.id] }),
+    };
+    for (const [role, user] of Object.entries(users)) {
+      const head = getHeadHome(user.id, null);
+      const finance = getFinanceHome(user.id, null);
+      if (role === "HEAD") await expect(head).resolves.toBeDefined();
+      else await expect(head).rejects.toBeInstanceOf(AuthorizationError);
+      if (role === "FINANCE") await expect(finance).resolves.toBeDefined();
+      else await expect(finance).rejects.toBeInstanceOf(AuthorizationError);
+    }
+  });
+});
+
 describePermissionMatrix("ordersOnFilter", {
   permission: "data.view",
   async run({ user, branchId }) {
