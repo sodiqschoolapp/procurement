@@ -1,11 +1,7 @@
 import { sql } from "drizzle-orm";
 import * as z from "zod";
 
-import {
-  type DocumentStatus,
-  type DocumentType,
-  overReturn,
-} from "@/domain/stock-documents";
+import { type DocumentStatus, type DocumentType, overReturn } from "@/domain/stock-documents";
 import { AuthorizationError, authorize } from "@/server/authorize";
 import { departmentReceived } from "@/server/department-received";
 import { readSnapshot } from "@/server/read-snapshot";

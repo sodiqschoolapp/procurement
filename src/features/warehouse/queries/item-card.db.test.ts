@@ -10,11 +10,15 @@ import { db } from "@/server/db/client";
 import { createDocument } from "@/server/stock-documents";
 import { postMovement } from "@/server/stock-ledger";
 
-import { insertBranch } from "../../../../tests/helpers/branches";
+import { runAction } from "@/server/action";
+
+import { reverseStockDocument } from "../actions/reverse";
+import { insertBranch, setManagerRight } from "../../../../tests/helpers/branches";
 import { insertProduct, insertSubtypes, insertUnit } from "../../../../tests/helpers/catalog";
 import { setClock } from "../../../../tests/helpers/clock";
 import { insertDepartment, insertOrder } from "../../../../tests/helpers/orders";
 import { insertPurchaseRow, insertTrip } from "../../../../tests/helpers/purchases";
+import { postDocument, receive } from "../../../../tests/helpers/stock-documents";
 import { type InsertedUser, insertUser } from "../../../../tests/helpers/users";
 import { getItemCard } from "./item-card";
 
@@ -233,5 +237,85 @@ describe("getItemCard: what has no card, and pages (plan of 5.3, decided items 3
     expect(second!.movements.map((row) => row.balanceAfter)).toEqual(["1.000"]);
     const past = await getItemCard(head.id, variantId, branch.id, 9);
     expect(past!.page).toBe(2);
+  });
+});
+
+describe("getItemCard: the Reverse button (plan of 5.7; 09 Issue to a department 3; Decided ahead, question 19)", () => {
+  it("is offered to the Head and the creating Manager only, on a posted issue's own row; a reversed one shows Reversed and no button", async () => {
+    setClock(AT);
+    const branch = await insertBranch();
+    const maker = await insertUser("MANAGER", { branches: [branch.id] });
+    const colleague = await insertUser("MANAGER", { branches: [branch.id] });
+    const switchedOff = await insertUser("MANAGER", { branches: [branch.id] });
+    const principal = await insertUser("PRINCIPAL", { branches: [branch.id] });
+    const finance = await insertUser("FINANCE", { branches: [branch.id] });
+    const department = await insertDepartment(branch.id);
+    const variantId = await goods();
+    await receive(branch.id, variantId, "10", 5000n, maker.id);
+    const kept = await postDocument({
+      type: "ISSUE",
+      branchId: branch.id,
+      departmentId: department.id,
+      createdBy: maker.id,
+      lines: [{ variantId, qty: "2" }],
+    });
+    const undone = await postDocument({
+      type: "ISSUE",
+      branchId: branch.id,
+      departmentId: department.id,
+      createdBy: maker.id,
+      lines: [{ variantId, qty: "1" }],
+    });
+    const reversed = await runAction(reverseStockDocument, maker.id, {
+      documentId: undone.documentId,
+      reason: "Sinov sababi",
+    });
+    expect(reversed.ok).toBe(true);
+    // The maker's own issue, the right off: authorize() would refuse, so no button (D40).
+    const madeOff = await postDocument({
+      type: "ISSUE",
+      branchId: branch.id,
+      departmentId: department.id,
+      createdBy: switchedOff.id,
+      lines: [{ variantId, qty: "1" }],
+    });
+    await setManagerRight(switchedOff.id, "RETURN_REVERSE", false);
+
+    const rows = async (userId: string) => {
+      const card = await getItemCard(userId, variantId, branch.id);
+      return card!.movements.map((row) => ({
+        type: row.type,
+        documentId: row.documentId,
+        documentStatus: row.documentStatus,
+        canReverse: row.canReverse,
+      }));
+    };
+    const offered = async (userId: string) =>
+      (await rows(userId)).filter((row) => row.canReverse).map((row) => row.documentId);
+
+    // Newest first: the switched-off Manager's issue, the reversal, the reversed issue, the kept
+    // issue, the receipt.
+    expect(await rows(head.id)).toEqual([
+      { type: "ISSUE", documentId: madeOff.documentId, documentStatus: "POSTED", canReverse: true },
+      {
+        type: "REVERSAL",
+        documentId: undone.documentId,
+        documentStatus: "REVERSED",
+        canReverse: false,
+      },
+      {
+        type: "ISSUE",
+        documentId: undone.documentId,
+        documentStatus: "REVERSED",
+        canReverse: false,
+      },
+      { type: "ISSUE", documentId: kept.documentId, documentStatus: "POSTED", canReverse: true },
+      { type: "RECEIPT", documentId: null, documentStatus: null, canReverse: false },
+    ]);
+    expect(await offered(maker.id)).toEqual([kept.documentId]);
+    expect(await offered(colleague.id)).toEqual([]);
+    expect(await offered(switchedOff.id)).toEqual([]);
+    expect(await offered(principal.id)).toEqual([]);
+    expect(await offered(finance.id)).toEqual([]);
   });
 });
