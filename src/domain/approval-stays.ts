@@ -96,6 +96,17 @@ function inOrder(events: readonly StayEvent[]): StayEvent[] {
   return ordered;
 }
 
+/**
+ * The whole seconds from `from` to `to`, rounded down: a stay's length, and the Manager's time to
+ * full approval, first submit to the first entry into Open (plan of 6.5b, decided item 1, Look
+ * first). One formula for both (developer-rules.md rule 1).
+ */
+export function secondsBetween(from: Date, to: Date): bigint {
+  const ms = to.getTime() - from.getTime();
+  if (!Number.isFinite(ms) || ms < 0) throw new RangeError("A length of time runs forwards.");
+  return BigInt(Math.floor(ms / 1000));
+}
+
 /** The stays of one order, oldest first; the last may be open. */
 export function approvalStays(events: readonly StayEvent[]): Stay[] {
   const stays: Stay[] = [];
@@ -107,7 +118,7 @@ export function approvalStays(events: readonly StayEvent[]): Stay[] {
         step: open.step,
         enteredAt: open.enteredAt,
         leftAt: event.at,
-        seconds: BigInt(Math.floor((event.at.getTime() - open.enteredAt.getTime()) / 1000)),
+        seconds: secondsBetween(open.enteredAt, event.at),
         decision: event.type,
         reason: event.type === "APPROVE" ? null : event.reason,
         decidedBy: event.actorId,

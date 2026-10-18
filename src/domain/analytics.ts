@@ -1,5 +1,6 @@
 import { type BusinessDate, businessMonth, isBusinessDate } from "./business-date";
-import { Exact } from "./order-totals";
+import { Exact, quantityOf } from "./order-totals";
+import { actualGoods, unitPriceOf } from "./purchases";
 import type { MonthDay } from "./settings";
 
 // The period of the Analytics pages and the change of a number against the period before
@@ -327,4 +328,75 @@ export function averageSom(total: bigint, count: number): bigint | null {
  */
 export function useChange(used: bigint, before: bigint): Change | null {
   return before > 0n ? changeAgainst(used, before) : null;
+}
+
+// The Manager's My estimates block (10 Analytics, Manager: "Difference between planned and actual
+// price per product, to help estimate better next time"; build-plan 6.5b).
+
+/** One purchase record of an order: its quantity, its price, its stored `actualGoods()`. */
+export type EstimateLine = { qty: string; unitPrice: bigint; goods: bigint; plannedPrice: bigint };
+
+export type EstimateGap = {
+  /** The records counted: a gift (price 0) is left out. */
+  records: number;
+  qty: string;
+  plannedGoods: bigint;
+  goods: bigint;
+  plannedPrice: bigint | null;
+  actualPrice: bigint | null;
+  /** The shown planned price − the shown actual price, 08's sign: above 0 is paid less. */
+  difference: bigint | null;
+  /** (Σ planned goods − Σ goods) ÷ Σ planned goods, half up to one decimal; `null` for none. */
+  percent: string | null;
+};
+
+/**
+ * The plan's price against the price paid over one set of records (plan of 6.5b, decided item 4,
+ * Look first; review of the plan, correction 1). A record's planned goods are its quantity at its
+ * order's planned price, rounded once per record as 08 rounds goods (`actualGoods()`); both prices
+ * are `unitPriceOf()` of the sums on the same quantities, never an average of averages; the
+ * difference has the sign of 08's Difference (planned − actual); the percent is of the sums, never
+ * of the rounded prices. A gift is left out of every price number (plan of 6.4b, decided item 1).
+ */
+export function estimateGap(lines: readonly EstimateLine[]): EstimateGap {
+  let records = 0;
+  let qty = new Exact(0);
+  let plannedGoods = 0n;
+  let goods = 0n;
+  for (const line of lines) {
+    if (typeof line.goods !== "bigint" || line.goods < 0n) {
+      throw new RangeError("Goods are whole so'm (bigint), 0 or more.");
+    }
+    if (typeof line.plannedPrice !== "bigint" || line.plannedPrice <= 0n) {
+      throw new RangeError("A planned price is whole so'm (bigint), above 0.");
+    }
+    if (line.unitPrice === 0n) continue;
+    records += 1;
+    qty = qty.plus(quantityOf(line.qty));
+    plannedGoods += actualGoods([
+      { qty: line.qty, unitPrice: line.plannedPrice, extras: [], isCancelled: false },
+    ]);
+    goods += line.goods;
+  }
+  const units = qty.toFixed();
+  const plannedPrice = unitPriceOf(plannedGoods, units);
+  const actualPrice = unitPriceOf(goods, units);
+  const percent =
+    plannedGoods === 0n
+      ? null
+      : new Exact((plannedGoods - goods).toString())
+          .times(100)
+          .dividedBy(plannedGoods.toString())
+          .toDecimalPlaces(1, Exact.ROUND_HALF_UP)
+          .toFixed(1);
+  return {
+    records,
+    qty: units,
+    plannedGoods,
+    goods,
+    plannedPrice,
+    actualPrice,
+    difference: plannedPrice === null || actualPrice === null ? null : plannedPrice - actualPrice,
+    percent,
+  };
 }

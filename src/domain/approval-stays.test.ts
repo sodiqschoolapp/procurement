@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { type StayEvent, approvalStays } from "./approval-stays";
+import { type StayEvent, approvalStays, secondsBetween } from "./approval-stays";
 
 // The stays of the Approval speed block (10 Analytics, Head, Approval speed; 06 Allowed moves;
 // plan of 6.4b, decided items 6 to 8; review of the plan, decision 6 worked through).
@@ -129,5 +129,24 @@ describe("approvalStays, the decider (10 Analytics, Principal, My approvals: 'my
       event("APPROVE", "PENDING_PRINCIPAL", "PENDING_FINANCE", "15:00", null, "acting"),
     ]);
     expect(stays[0]).toMatchObject({ step: "PENDING_PRINCIPAL", decidedBy: "acting" });
+  });
+});
+
+// 10 Analytics, Manager, My orders: "average time to full approval"; plan of 6.5b, decided item 1
+// (Look first): one formula for a stay and for first submit to Open.
+describe("secondsBetween (plan of 6.5b, decided item 1)", () => {
+  it("counts whole seconds, rounded down", () => {
+    // The review's worked case: submitted 1.10 10:00, approved by Finance 4.10 10:00 → 72 h.
+    expect(
+      secondsBetween(new Date("2031-10-01T05:00:00Z"), new Date("2031-10-04T05:00:00Z")),
+    ).toBe(259_200n);
+    expect(
+      secondsBetween(new Date("2031-10-01T05:00:00.000Z"), new Date("2031-10-01T05:00:01.999Z")),
+    ).toBe(1n);
+    expect(secondsBetween(new Date(0), new Date(0))).toBe(0n);
+  });
+
+  it("refuses a length that runs backwards", () => {
+    expect(() => secondsBetween(new Date(1000), new Date(0))).toThrow(RangeError);
   });
 });
