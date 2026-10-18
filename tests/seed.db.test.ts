@@ -89,9 +89,11 @@ const TABLES = [
 const serverUrl = inject("databaseServerUrl");
 const made: string[] = [];
 
+// The cleanup drops every fresh database one after another; with 27 of them (5.12 added one) it
+// needs more than the default 10 s hook limit. It asserts nothing.
 afterAll(async () => {
   for (const name of made) await dropTestDatabase(serverUrl, name);
-});
+}, 60_000);
 
 /** Runs `work` with clients of a new database of its own, closed afterwards. */
 async function withFreshDatabase<T>(

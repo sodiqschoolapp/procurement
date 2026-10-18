@@ -7,7 +7,7 @@ import { runAction } from "@/server/action";
 import { AuthorizationError } from "@/server/authorize";
 import { db } from "@/server/db/client";
 
-import { insertBranch } from "../../../../tests/helpers/branches";
+import { insertBranch, setManagerRight } from "../../../../tests/helpers/branches";
 import { setClock } from "../../../../tests/helpers/clock";
 import { insertDepartment, insertItem } from "../../../../tests/helpers/orders";
 import { describePermissionMatrix } from "../../../../tests/helpers/permission-matrix";
@@ -97,7 +97,14 @@ describe("getStockDocument: a write-off (plan of 5.11)", () => {
       decidedBy: head.fullName,
       decidedAt: new Date("2031-05-04T09:00:00Z"),
       canDecide: false,
+      canReverse: true,
       lines: [{ inStock: "3.000" }],
+    });
+    // An approved write-off is reversed by the Head only, not by its asker (Decided ahead,
+    // question 19; permission review of 5.12, must fix 2).
+    expect(await getStockDocument(w.asker.id, w.documentId)).toMatchObject({
+      status: "POSTED",
+      canReverse: false,
     });
   });
 
@@ -258,6 +265,24 @@ describe("getStockDocument: every type (plan of 5.12, decided item 3)", () => {
       canReverse: true,
       canDownloadNote: false,
     });
+    // Another Manager of the branch did not make it (09 Issue 3; question 19).
+    const other = await insertUser("MANAGER", { branches: [branch.id] });
+    expect(await getStockDocument(other.id, made.data.documentId)).toMatchObject({
+      type: "RETURN",
+      canReverse: false,
+    });
+  });
+
+  it("the maker with RETURN_REVERSE switched off may not reverse their issue; the Head still may (03 Manager rights; permission review of 5.12, must fix 1)", async () => {
+    const branch = await insertBranch();
+    const head = await insertUser("HEAD");
+    const doc = await issued(branch.id);
+    await setManagerRight(doc.maker.id, "RETURN_REVERSE", false);
+    expect(await getStockDocument(doc.maker.id, doc.documentId)).toMatchObject({
+      status: "POSTED",
+      canReverse: false,
+    });
+    expect(await getStockDocument(head.id, doc.documentId)).toMatchObject({ canReverse: true });
   });
 
   it("another branch's issue is Not found, an own one beside it is read (03 rule 1; D40)", async () => {
@@ -268,5 +293,19 @@ describe("getStockDocument: every type (plan of 5.12, decided item 3)", () => {
     const mine = await issued(own.id);
     expect(await getStockDocument(manager.id, theirs.documentId)).toBeNull();
     expect((await getStockDocument(manager.id, mine.documentId))?.type).toBe("ISSUE");
+    // Another branch's direct entry too: the query reads every type (permission review, should fix 2).
+    const head = await insertUser("HEAD");
+    const item = await insertItem();
+    const entry = await runAction(enterStockDirectly, head.id, {
+      clientKey: randomUUID(),
+      branchId: other.id,
+      docDate: "2031-05-03",
+      reason: "GIFT",
+      comment: null,
+      lines: [{ variantId: item.variantId, qty: "1", unitCost: "1000" }],
+    });
+    if (!entry.ok) throw new Error(`fixture: ${entry.error.code}`);
+    expect(await getStockDocument(manager.id, entry.data.documentId)).toBeNull();
+    expect(await getStockDocument(head.id, entry.data.documentId)).not.toBeNull();
   });
 });
