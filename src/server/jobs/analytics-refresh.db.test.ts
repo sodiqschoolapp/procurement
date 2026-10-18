@@ -1,13 +1,14 @@
 import { sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 
-import { actualTotal } from "@/domain/purchases";
+import { actualGoods, actualTotal } from "@/domain/purchases";
 import { db } from "@/server/db/client";
 import { recordsWhere } from "@/features/purchasing/order-records";
 
 import {
   bought,
   buyingEvent,
+  decided,
   recordOn,
   refreshNow,
   spendingScene,
@@ -394,5 +395,155 @@ describe("the outcomes of Plan vs actual (08 The three colours; plan of 6.4, dec
       constraint: "analytics_outcomes_colour_check",
     });
     expect(await insert("grey", 100n, 100n, 0n)).toMatchObject({ code: "22P02" });
+  });
+});
+
+// Task 6.4b (plan of 6.4b, Database changes; decided items 1, 6 to 10 and 13).
+describe("analytics_refresh, the rows of Prices and Approval speed (build-plan 6.4b)", () => {
+  it("writes each record's subtype bought, quantity, unit price, entry time and goods actualGoods()", async () => {
+    const scene = await spendingScene();
+    const a = await bought(scene, {
+      purchasedOn: "2031-05-02",
+      qty: "2.500",
+      unitPrice: "3333",
+      extras: [1_000n],
+    });
+    await refreshNow();
+    const found = await db.execute<{
+      variant_id: string;
+      qty: string;
+      unit_price: string;
+      goods: string;
+      created_at: Date;
+    }>(sql`select variant_id, qty::text as qty, unit_price::text as unit_price,
+             goods::text as goods, created_at
+           from analytics_spending where purchase_id = ${a.purchaseId}`);
+    const records = await recordsWhere(db, sql`p.id = ${a.purchaseId}`);
+    // 2.5 × 3 333 = 8 332.5 → 8 333: the goods without the 1 000 extra (08 rounding).
+    expect(found.rows[0]).toMatchObject({
+      variant_id: a.variantId,
+      qty: "2.500",
+      unit_price: "3333",
+      goods: actualGoods(records).toString(),
+    });
+    expect(found.rows[0]!.goods).toBe("8333");
+    expect(new Date(found.rows[0]!.created_at).toISOString()).toBe("2031-05-02T05:00:00.000Z");
+  });
+
+  it("a substituted record counts under the subtype bought, not the order's (07 Substitution; Should fix 2)", async () => {
+    const scene = await spendingScene();
+    const order = await bought(scene, { purchasedOn: "2031-05-02" });
+    const other = await bought(scene, { purchasedOn: "2031-05-02" });
+    // The second record of the first order bought the other order's subtype.
+    const { purchaseId } = await recordOn(
+      scene,
+      { id: order.orderId, ownerId: order.ownerId, variantId: other.variantId },
+      { purchasedOn: "2031-05-03" },
+    );
+    await refreshNow();
+    const found = await db.execute<{ variant_id: string }>(
+      sql`select variant_id from analytics_spending where purchase_id = ${purchaseId}`,
+    );
+    expect(found.rows[0]!.variant_id).toBe(other.variantId);
+  });
+
+  type StepRow = {
+    step: string;
+    entered_at: Date;
+    left_at: Date | null;
+    left_on: string | null;
+    seconds: string | null;
+    decision: string | null;
+    reason: string | null;
+    reason_key: string | null;
+    status: string;
+  };
+  async function stepsOf(orderId: string) {
+    const found = await db.execute<StepRow>(sql`
+      select step, entered_at, left_at, left_on::text as left_on, seconds::text as seconds,
+             decision, reason, reason_key, status
+      from analytics_steps where order_id = ${orderId} order by entered_at`);
+    return found.rows;
+  }
+
+  it("writes one row per decided and per open stay, with its Tashkent end date and reason key", async () => {
+    const scene = await spendingScene();
+    const order = await decided(scene, "PENDING_HEAD", [
+      { type: "SUBMIT", from: "DRAFT", to: "PENDING_HEAD", at: "2031-05-01T17:00:00Z" },
+      // 20:30 UTC is 01:30 on 2 May in Tashkent.
+      {
+        type: "SEND_BACK",
+        from: "PENDING_HEAD",
+        to: "RETURNED",
+        at: "2031-05-01T20:30:00Z",
+        reason: "  Narxni   TEKSHIRING ",
+      },
+      { type: "SUBMIT_AGAIN", from: "RETURNED", to: "PENDING_HEAD", at: "2031-05-02T08:00:00Z" },
+    ]);
+    await refreshNow();
+    const rows = await stepsOf(order.id);
+    expect(rows.map(({ entered_at, left_at, ...rest }) => rest)).toEqual([
+      {
+        step: "PENDING_HEAD",
+        left_on: "2031-05-02",
+        seconds: "12600",
+        decision: "SEND_BACK",
+        reason: "  Narxni   TEKSHIRING ",
+        reason_key: "narxni tekshiring",
+        status: "PENDING_HEAD",
+      },
+      {
+        step: "PENDING_HEAD",
+        left_on: null,
+        seconds: null,
+        decision: null,
+        reason: null,
+        reason_key: null,
+        status: "PENDING_HEAD",
+      },
+    ]);
+    expect(new Date(rows[1]!.entered_at).toISOString()).toBe("2031-05-02T08:00:00.000Z");
+    expect(rows[1]!.left_at).toBeNull();
+  });
+
+  it("writes no row for a stay ended by Take back or Cancel, nor for a draft never submitted", async () => {
+    const scene = await spendingScene();
+    const takenBack = await decided(scene, "DRAFT", [
+      { type: "SUBMIT", from: "DRAFT", to: "PENDING_HEAD", at: "2031-05-01T05:00:00Z" },
+      { type: "TAKE_BACK", from: "PENDING_HEAD", to: "DRAFT", at: "2031-05-01T06:00:00Z" },
+    ]);
+    const cancelled = await decided(scene, "CANCELLED", [
+      { type: "SUBMIT", from: "DRAFT", to: "PENDING_HEAD", at: "2031-05-01T05:00:00Z" },
+      {
+        type: "CANCEL",
+        from: "PENDING_HEAD",
+        to: "CANCELLED",
+        at: "2031-05-01T06:00:00Z",
+        reason: "Endi kerak emas",
+      },
+    ]);
+    const draft = await decided(scene, "DRAFT", []);
+    await refreshNow();
+    expect(await stepsOf(takenBack.id)).toEqual([]);
+    expect(await stepsOf(cancelled.id)).toEqual([]);
+    expect(await stepsOf(draft.id)).toEqual([]);
+  });
+
+  it("a second run gives the same stays", async () => {
+    const scene = await spendingScene();
+    const order = await decided(scene, "PENDING_PRINCIPAL", [
+      { type: "SUBMIT", from: "DRAFT", to: "PENDING_HEAD", at: "2031-05-01T05:00:00Z" },
+      {
+        type: "APPROVE",
+        from: "PENDING_HEAD",
+        to: "PENDING_PRINCIPAL",
+        at: "2031-05-01T06:00:00Z",
+      },
+    ]);
+    await refreshNow();
+    const first = await stepsOf(order.id);
+    expect(first).toHaveLength(2);
+    await refreshNow();
+    expect(await stepsOf(order.id)).toEqual(first);
   });
 });

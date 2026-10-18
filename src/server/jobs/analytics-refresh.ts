@@ -1,8 +1,10 @@
 import { sql } from "drizzle-orm";
 
+import { reasonKey } from "@/domain/analytics";
+import { type StayEvent, approvalStays } from "@/domain/approval-stays";
 import { orderOutcome } from "@/domain/colours";
 import type { PaymentType } from "@/domain/payment-types";
-import { type PurchaseRecord, actualTotal, paymentParts } from "@/domain/purchases";
+import { type PurchaseRecord, actualGoods, actualTotal, paymentParts } from "@/domain/purchases";
 import type { OrderProgress } from "@/domain/purchases";
 import type { RequestStatus } from "@/domain/request-status";
 import type { Executor } from "@/server/authorize";
@@ -25,6 +27,12 @@ import type { Job } from "./job";
 // `analytics_spending_payments`, each record's parts by payment type from `paymentParts()`
 // (decided item 2, Look first), and `analytics_outcomes`, each order's Plan vs actual outcome from
 // `orderOutcome()` of src/domain/colours.ts (decided items 3 to 6, Look first).
+//
+// Task 6.4b adds, in the same run (plan of 6.4b): each spending row's subtype bought, quantity,
+// unit price, entry time and goods `actualGoods()` of the one record (decided items 1 and 13, Look
+// first), and `analytics_steps`, the stays of every order at the approval steps from
+// `approvalStays()` of src/domain/approval-stays.ts (decided items 6 to 10, Look first), the open
+// ones included (review of the plan, Must fix 3).
 
 type SpendingSource = {
   purchase_id: string;
@@ -35,6 +43,8 @@ type SpendingSource = {
   department_id: string;
   owner_id: string;
   supplier_id: string | null;
+  variant_id: string;
+  created_at: string;
   qty: string;
   unit_price: string;
   payment_type: PaymentType;
@@ -65,12 +75,13 @@ export async function refreshAnalytics(executor: Executor): Promise<void> {
   // holds back any other caller (a browser test's own refresh) until the first commits, while the
   // pages go on reading.
   await executor.execute(
-    sql`lock table analytics_spending, analytics_spending_payments, analytics_outcomes in exclusive mode`,
+    sql`lock table analytics_spending, analytics_spending_payments, analytics_outcomes,
+               analytics_steps in exclusive mode`,
   );
   const found = await executor.execute<SpendingSource>(sql`
     select p.id as purchase_id, p.order_id, p.branch_id, t.purchased_on::text as purchased_on,
-           pr.category_id, o.department_id, o.owner_id, t.supplier_id, p.qty, p.unit_price,
-           t.payment_type,
+           pr.category_id, o.department_id, o.owner_id, t.supplier_id, p.variant_id,
+           to_json(p.created_at)#>>'{}' as created_at, p.qty, p.unit_price, t.payment_type,
            coalesce(jsonb_agg(jsonb_build_object('amount', e.amount::text,
                                                  'payment_type', e.payment_type) order by e.id)
                     filter (where e.id is not null), '[]') as extras
@@ -118,25 +129,35 @@ export async function refreshAnalytics(executor: Executor): Promise<void> {
       supplier_id: row.supplier_id,
       // Text, so no JavaScript number holds the so'm (CLAUDE.md rule 6).
       amount: actualTotal([record]).toString(),
+      variant_id: row.variant_id,
+      qty: row.qty,
+      unit_price: record.unitPrice.toString(),
+      goods: actualGoods([record]).toString(),
+      created_at: row.created_at,
     };
   });
 
   await executor.execute(sql`delete from analytics_spending_payments`);
   await executor.execute(sql`delete from analytics_spending`);
   await executor.execute(sql`delete from analytics_outcomes`);
+  await executor.execute(sql`delete from analytics_steps`);
   if (rows.length > 0) await insertSpending(executor, rows, parts);
   await writeOutcomes(executor);
+  await writeSteps(executor);
 }
 
 async function insertSpending(executor: Executor, rows: object[], parts: object[]) {
   await executor.execute(sql`
     insert into analytics_spending (purchase_id, order_id, branch_id, purchased_on, category_id,
-                                    department_id, owner_id, supplier_id, amount)
+                                    department_id, owner_id, supplier_id, amount, variant_id, qty,
+                                    unit_price, goods, created_at)
     select r.purchase_id, r.order_id, r.branch_id, r.purchased_on, r.category_id,
-           r.department_id, r.owner_id, r.supplier_id, r.amount::bigint
+           r.department_id, r.owner_id, r.supplier_id, r.amount::bigint, r.variant_id,
+           r.qty::numeric, r.unit_price::bigint, r.goods::bigint, r.created_at
     from jsonb_to_recordset(${JSON.stringify(rows)}::jsonb) as r(
       purchase_id uuid, order_id uuid, branch_id uuid, purchased_on date, category_id uuid,
-      department_id uuid, owner_id uuid, supplier_id uuid, amount text)`);
+      department_id uuid, owner_id uuid, supplier_id uuid, amount text, variant_id uuid, qty text,
+      unit_price text, goods text, created_at timestamptz)`);
   if (parts.length === 0) return;
   await executor.execute(sql`
     insert into analytics_spending_payments (purchase_id, payment_type, amount)
@@ -217,6 +238,84 @@ async function writeOutcomes(executor: Executor) {
     from jsonb_to_recordset(${JSON.stringify(rows)}::jsonb) as r(
       order_id uuid, branch_id uuid, ended_on date, category_id uuid, department_id uuid,
       owner_id uuid, colour text, planned text, actual text, difference text)`);
+}
+
+type StepSource = {
+  order_id: string;
+  branch_id: string;
+  status: RequestStatus;
+  category_id: string;
+  department_id: string;
+  owner_id: string;
+  events: {
+    type: StayEvent["type"];
+    from: RequestStatus;
+    to: RequestStatus;
+    at: string;
+    reason: string | null;
+  }[];
+};
+
+/**
+ * The stays of every order that has reached an approval step (plan of 6.4b, decided items 6 to
+ * 10). The Tashkent date a stay ended on is read by PostgreSQL from its end, as `ended_on` above;
+ * the seconds, the decision and the reason key come from the domain.
+ */
+async function writeSteps(executor: Executor) {
+  const found = await executor.execute<StepSource>(sql`
+    select o.id as order_id, o.branch_id, o.status, pr.category_id, o.department_id, o.owner_id,
+           jsonb_agg(jsonb_build_object('type', ev.type, 'from', ev.from_status,
+                                        'to', ev.to_status, 'at', ev.created_at,
+                                        'reason', a.reason)
+                     order by ev.created_at) as events
+    from orders o
+    join product_variants v on v.id = o.variant_id
+    join products pr on pr.id = v.product_id
+    join order_events ev on ev.order_id = o.id
+    join order_actions a on a.id = ev.action_id
+    where exists (select 1 from order_events s
+                  where s.order_id = o.id
+                    and s.to_status in ('PENDING_HEAD', 'PENDING_PRINCIPAL', 'PENDING_FINANCE'))
+    group by o.id, pr.id`);
+
+  const rows = found.rows.flatMap((row) =>
+    approvalStays(
+      row.events.map((event) => ({
+        type: event.type,
+        from: event.from,
+        to: event.to,
+        at: new Date(event.at),
+        reason: event.reason,
+      })),
+    ).map((stay) => ({
+      order_id: row.order_id,
+      branch_id: row.branch_id,
+      step: stay.step,
+      entered_at: stay.enteredAt.toISOString(),
+      left_at: stay.leftAt?.toISOString() ?? null,
+      seconds: stay.seconds?.toString() ?? null,
+      decision: stay.decision,
+      reason: stay.reason,
+      reason_key: stay.reason === null ? null : reasonKey(stay.reason),
+      status: row.status,
+      category_id: row.category_id,
+      department_id: row.department_id,
+      owner_id: row.owner_id,
+    })),
+  );
+  if (rows.length === 0) return;
+  await executor.execute(sql`
+    insert into analytics_steps (order_id, branch_id, step, entered_at, left_at, left_on, seconds,
+                                 decision, reason, reason_key, status, category_id, department_id,
+                                 owner_id)
+    select r.order_id, r.branch_id, r.step::request_status, r.entered_at, r.left_at,
+           (r.left_at at time zone 'Asia/Tashkent')::date, r.seconds::bigint,
+           r.decision::order_event_type, r.reason, r.reason_key, r.status::request_status,
+           r.category_id, r.department_id, r.owner_id
+    from jsonb_to_recordset(${JSON.stringify(rows)}::jsonb) as r(
+      order_id uuid, branch_id uuid, step text, entered_at timestamptz, left_at timestamptz,
+      seconds text, decision text, reason text, reason_key text, status text, category_id uuid,
+      department_id uuid, owner_id uuid)`);
 }
 
 /** Every 5 minutes, at the same ticks on every server (src/domain/schedule.ts). */

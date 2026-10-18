@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { sql } from "drizzle-orm";
 
 import type { PaymentType } from "@/domain/payment-types";
+import type { RequestStatus } from "@/domain/request-status";
 import type { OrderProgress } from "@/domain/purchases";
 import { db } from "@/server/db/client";
 import { refreshAnalytics } from "@/server/jobs/analytics-refresh";
@@ -144,4 +145,59 @@ export async function buyingEvent(
 /** The refresh of the scheduler job, in a transaction of its own. */
 export function refreshNow() {
   return db.transaction((tx) => refreshAnalytics(tx));
+}
+
+/** One status move of an order's history, as the order actions of 2.4 write it (06 Allowed moves). */
+export type Move = {
+  type:
+    | "SUBMIT"
+    | "APPROVE"
+    | "SEND_BACK"
+    | "REJECT"
+    | "TAKE_BACK"
+    | "SUBMIT_AGAIN"
+    | "CANCEL"
+    | "MOVE_OWNER";
+  from: RequestStatus;
+  to: RequestStatus;
+  at: string;
+  reason?: string;
+};
+
+/**
+ * The approval history of an order (build-plan 6.4b: the stays of Approval speed), each move with
+ * its own action, as the order actions write them. The order's status is the caller's.
+ */
+export async function movesOf(orderId: string, actorId: string, moves: readonly Move[]) {
+  for (const move of moves) {
+    const action = await db.execute<{ id: string }>(sql`
+      insert into order_actions (client_key, type, actor_id, reason, order_count, created_at)
+      values (${randomUUID()}, ${move.type}, ${actorId}, ${move.reason ?? null}, 1, ${move.at})
+      returning id`);
+    await db.execute(sql`
+      insert into order_events (order_id, action_id, type, from_status, to_status, actor_id,
+        created_at)
+      values (${orderId}, ${action.rows[0]!.id}, ${move.type}, ${move.from}, ${move.to},
+        ${actorId}, ${move.at})`);
+  }
+}
+
+/** An order of the scene at `status` with the given approval history. Returns the order. */
+export async function decided(
+  scene: SpendingScene,
+  status: RequestStatus,
+  moves: readonly Move[],
+  row: { ownerId?: string; departmentId?: string; categoryId?: string } = {},
+) {
+  const product = await insertProduct({ categoryId: row.categoryId ?? scene.category.id });
+  const ownerId = row.ownerId ?? scene.manager.id;
+  const order = await insertOrder({
+    branchId: scene.branch.id,
+    ownerId,
+    departmentId: row.departmentId ?? scene.department.id,
+    variantId: product.defaultVariantId,
+    status,
+  });
+  await movesOf(order.id, ownerId, moves);
+  return { id: order.id, number: order.number, variantId: product.defaultVariantId, ownerId };
 }

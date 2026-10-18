@@ -1,8 +1,20 @@
 import { sql } from "drizzle-orm";
-import { bigint, check, date, index, pgEnum, pgTable, primaryKey, uuid } from "drizzle-orm/pg-core";
+import {
+  bigint,
+  check,
+  date,
+  index,
+  numeric,
+  pgEnum,
+  pgTable,
+  primaryKey,
+  text,
+  timestamp,
+  uuid,
+} from "drizzle-orm/pg-core";
 
-import { categories, companies, departments } from "./catalogs";
-import { orders, paymentType } from "./orders";
+import { categories, companies, departments, productVariants } from "./catalogs";
+import { orderEventType, orders, paymentType, requestStatus } from "./orders";
 import { branches } from "./organisation";
 import { purchases } from "./purchasing";
 import { users } from "./users";
@@ -15,12 +27,18 @@ import { users } from "./users";
 // job only; the pages sum them and never read raw rows.
 
 const som = (name: string) => bigint(name, { mode: "bigint" });
+const moment = (name: string) => timestamp(name, { withTimezone: true });
+const quantity = (name: string) => numeric(name, { precision: 14, scale: 3 });
 
 // One row per purchase record that is not cancelled: its Actual total, `actualTotal()` of the one
 // record (08: each record rounded on its own, so the rows add up to the total of any set). The
 // category is the record's own subtype's (07 Substitution); department and owner the order's;
 // supplier the trip's (decided item 5, Look first). No payment type: an extra cost has its own
-// (review of the plan, correction 1).
+// (review of the plan, correction 1). Task 6.4b adds what the Prices block reads (plan of 6.4b,
+// decided items 1 and 13, Look first): the subtype the record bought (07 Substitution), its
+// quantity and unit price, its goods `actualGoods()` of the one record (so a price is
+// `unitPriceOf(Σ goods, Σ qty)`, no division in SQL), and its entry time for the tie-break of
+// decided item 4.
 export const analyticsSpending = pgTable(
   "analytics_spending",
   {
@@ -45,9 +63,20 @@ export const analyticsSpending = pgTable(
       .references(() => users.id),
     supplierId: uuid("supplier_id").references(() => companies.id),
     amount: som("amount").notNull(),
+    variantId: uuid("variant_id")
+      .notNull()
+      .references(() => productVariants.id),
+    qty: quantity("qty").notNull(),
+    unitPrice: som("unit_price").notNull(),
+    goods: som("goods").notNull(),
+    createdAt: moment("created_at").notNull(),
   },
   (table) => [
     check("analytics_spending_amount_check", sql`${table.amount} >= 0`),
+    check("analytics_spending_qty_check", sql`${table.qty} > 0`),
+    check("analytics_spending_unit_price_check", sql`${table.unitPrice} >= 0`),
+    check("analytics_spending_goods_check", sql`${table.goods} >= 0`),
+    index("analytics_spending_variant_id_purchased_on_idx").on(table.variantId, table.purchasedOn),
     index("analytics_spending_branch_id_purchased_on_idx").on(table.branchId, table.purchasedOn),
     index("analytics_spending_order_id_idx").on(table.orderId),
     index("analytics_spending_category_id_idx").on(table.categoryId),
@@ -126,5 +155,75 @@ export const analyticsOutcomes = pgTable(
     index("analytics_outcomes_category_id_idx").on(table.categoryId),
     index("analytics_outcomes_department_id_idx").on(table.departmentId),
     index("analytics_outcomes_owner_id_idx").on(table.ownerId),
+  ],
+);
+
+// One row per stay of an order at an approval step (10 Analytics, Head, Approval speed; plan of
+// 6.4b, decided items 6 to 10, Look first): `approvalStays()` of src/domain/approval-stays.ts. A
+// decided stay has its end, its whole seconds and the decision of the step's approver; a send
+// back or a reject also its reason and `reasonKey()`. An open stay (the order waits there now)
+// has none of them: "waiting now" reads its `entered_at` with the clock (review of the plan of
+// 6.4b, Must fix 3). `status` is the order's status now, for the draft wall (Must fix 4); the
+// category is the planned subtype's, department and owner the order's (decided item 11). Task
+// 6.4b.
+export const analyticsSteps = pgTable(
+  "analytics_steps",
+  {
+    orderId: uuid("order_id")
+      .notNull()
+      .references(() => orders.id),
+    branchId: uuid("branch_id")
+      .notNull()
+      .references(() => branches.id),
+    step: requestStatus("step").notNull(),
+    enteredAt: moment("entered_at").notNull(),
+    leftAt: moment("left_at"),
+    leftOn: date("left_on"),
+    seconds: bigint("seconds", { mode: "bigint" }),
+    decision: orderEventType("decision"),
+    reason: text("reason"),
+    reasonKey: text("reason_key"),
+    status: requestStatus("status").notNull(),
+    categoryId: uuid("category_id")
+      .notNull()
+      .references(() => categories.id),
+    departmentId: uuid("department_id")
+      .notNull()
+      .references(() => departments.id),
+    ownerId: uuid("owner_id")
+      .notNull()
+      .references(() => users.id),
+  },
+  (table) => [
+    primaryKey({ columns: [table.orderId, table.step, table.enteredAt] }),
+    check(
+      "analytics_steps_step_check",
+      sql`${table.step} IN ('PENDING_HEAD', 'PENDING_PRINCIPAL', 'PENDING_FINANCE')`,
+    ),
+    check(
+      "analytics_steps_decision_check",
+      sql`${table.decision} IS NULL OR ${table.decision} IN ('APPROVE', 'SEND_BACK', 'REJECT')`,
+    ),
+    check(
+      "analytics_steps_left_check",
+      sql`(${table.leftAt} IS NULL AND ${table.leftOn} IS NULL AND ${table.seconds} IS NULL AND ${table.decision} IS NULL)
+          OR (${table.leftAt} IS NOT NULL AND ${table.leftOn} IS NOT NULL AND ${table.seconds} IS NOT NULL AND ${table.decision} IS NOT NULL
+              AND ${table.leftAt} >= ${table.enteredAt} AND ${table.seconds} >= 0)`,
+    ),
+    check(
+      "analytics_steps_reason_check",
+      sql`CASE WHEN ${table.decision} IN ('SEND_BACK', 'REJECT')
+        THEN ${table.reason} IS NOT NULL AND ${table.reasonKey} IS NOT NULL
+        ELSE ${table.reason} IS NULL AND ${table.reasonKey} IS NULL
+      END`,
+    ),
+    index("analytics_steps_branch_id_left_on_idx").on(table.branchId, table.leftOn),
+    index("analytics_steps_open_idx")
+      .on(table.branchId, table.step)
+      .where(sql`${table.leftAt} IS NULL`),
+    index("analytics_steps_category_id_idx").on(table.categoryId),
+    index("analytics_steps_department_id_idx").on(table.departmentId),
+    index("analytics_steps_owner_id_idx").on(table.ownerId),
+    index("analytics_steps_decision_reason_key_idx").on(table.decision, table.reasonKey),
   ],
 );

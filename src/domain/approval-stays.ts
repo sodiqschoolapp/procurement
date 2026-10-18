@@ -20,7 +20,11 @@ import type { RequestStatus } from "./request-status";
 export type ApprovalStep = (typeof STUCK_STATUSES)[number];
 
 /** The approvers' decisions that end a stay (06 Allowed moves, "Any Waiting for step"). */
-export const STAY_DECISIONS = ["APPROVE", "SEND_BACK", "REJECT"] as const satisfies readonly OrderEventType[];
+export const STAY_DECISIONS = [
+  "APPROVE",
+  "SEND_BACK",
+  "REJECT",
+] as const satisfies readonly OrderEventType[];
 export type StayDecision = (typeof STAY_DECISIONS)[number];
 
 /** One event of an order's history, as the stays read it. */
