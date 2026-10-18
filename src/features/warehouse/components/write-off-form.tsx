@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import Link from "next/link";
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { type ComponentProps, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useFieldArray, useForm, useWatch } from "react-hook-form";
 
 import {
@@ -15,7 +15,7 @@ import { toast } from "@/components/toast";
 import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard";
 import { useAction } from "@/components/use-action";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Field } from "@/components/ui/field";
+import { Field, useFieldControl } from "@/components/ui/field";
 import { FIELD_CLASSES, Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { cn } from "@/components/utils";
@@ -447,12 +447,7 @@ export function WriteOffForm({
           </Select>
         </Field>
         <Field id="write-off-comment" label={t("comment")} error={commentError}>
-          <textarea
-            {...register("comment")}
-            rows={3}
-            maxLength={1000}
-            className={cn(FIELD_CLASSES, "min-h-24 py-2")}
-          />
+          <CommentBox {...register("comment")} />
         </Field>
       </section>
 
@@ -503,6 +498,20 @@ export function WriteOffForm({
         </Button>
       </div>
     </form>
+  );
+}
+
+/** The comment, tied to its label through the field (progress 5.6). */
+function CommentBox(props: ComponentProps<"textarea">) {
+  return (
+    <textarea
+      {...props}
+      {...useFieldControl()}
+      rows={3}
+      maxLength={1000}
+      aria-required
+      className={cn(FIELD_CLASSES, "min-h-24 py-2")}
+    />
   );
 }
 
