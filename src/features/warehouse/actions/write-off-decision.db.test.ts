@@ -321,3 +321,24 @@ describe("decideWriteOff: the decision goes back to the Manager (10 Notification
     }
   });
 });
+
+describe("decideWriteOff: an asker who left the branch is not told (03 rule 1; notify() of 0.11)", () => {
+  it("a Manager taken off the branch while it waits gets no notice of the decision", async () => {
+    const { variantId: a } = await insertItem();
+    await receive(branch.id, a, "10", 1000n, manager.id);
+    const writeOff = await asked([{ variantId: a, qty: "1" }]);
+    await db.execute(sql`delete from user_branches where user_id = ${manager.id}`);
+    expect(
+      (
+        await runAction(decideWriteOff, head.id, {
+          documentId: writeOff.documentId,
+          outcome: "REFUSE",
+        })
+      ).ok,
+    ).toBe(true);
+    const told = await db.execute<{ n: number }>(sql`
+      select count(*)::int as n from notifications
+      where user_id = ${manager.id} and type = 'STOCK_CHANGE_DECIDED'`);
+    expect(told.rows[0]!.n).toBe(0);
+  });
+});

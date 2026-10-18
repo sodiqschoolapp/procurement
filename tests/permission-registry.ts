@@ -124,7 +124,7 @@ export const SERVER_ACTIONS: Record<string, Entry> = {
   "src/app/(app)/warehouse/documents/new/actions.ts#askWriteOffAction": "stock.ask_write_off",
   "src/app/(app)/warehouse/documents/new/actions.ts#searchWriteOffItemsAction":
     "stock.ask_write_off",
-  // Approve or refuse a write-off (plan of 5.11): the Head (write-off-decision-matrix.db.test.ts).
+  // Approve or refuse a write-off (plan of 5.11): the Head (write-off-matrix.db.test.ts).
   "src/app/(app)/warehouse/documents/[id]/actions.ts#decideWriteOffAction":
     "stock.approve_write_off",
   // Set or clear a minimum (plan of 5.10): stock.set_minimums on the branch

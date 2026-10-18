@@ -174,6 +174,18 @@ describe("askWriteOff by a Manager (09 Other documents, Write-off: stock changes
     expect(await documentCount()).toBe(1);
   });
 
+  it("answers Not found to a Manager of another branch who sends a known key with their own branch, never the first answer (rule 8; permission review of 2.13)", async () => {
+    const a = await inStock("5");
+    const input = writeOffInput([{ variantId: a, qty: "1" }]);
+    const first = await runAction(askWriteOff, manager.id, input);
+    expect(first.ok).toBe(true);
+    const stranger = await insertUser("MANAGER", { branches: [other.id] });
+    const again = await runAction(askWriteOff, stranger.id, { ...input, branchId: other.id });
+    expect(again).toMatchObject({ ok: false, error: { code: "not_found" } });
+    expect(JSON.stringify(again)).not.toContain(first.ok ? first.data.number : "");
+    expect(await documentCount()).toBe(1);
+  });
+
   it('accepts every reason of the fixed list, "Returned to supplier" and "Other" among them (Decided ahead, question 13)', async () => {
     const a = await inStock("10");
     for (const reason of [
