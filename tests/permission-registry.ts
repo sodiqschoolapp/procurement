@@ -98,6 +98,10 @@ export const SERVER_ACTIONS: Record<string, Entry> = {
   "src/app/(app)/orders/actions.ts#tickedSummaryAction": "data.view",
   // Record purchases (03; plan of 3.3): the Head, the owner with RECORD_PURCHASES on.
   "src/app/(app)/orders/[id]/purchase/actions.ts#recordPurchaseAction": "purchase.record",
+  // Issue to a department (plan of 5.4): stock.issue on the branch (issue-matrix.db.test.ts).
+  "src/app/(app)/warehouse/documents/new/actions.ts#issueStockAction": "stock.issue",
+  "src/app/(app)/warehouse/documents/new/actions.ts#issueFormChoicesAction": "stock.issue",
+  "src/app/(app)/warehouse/documents/new/actions.ts#searchIssueItemsAction": "stock.issue",
   // Finish order, Not bought, Reopen buying (plan of 3.5, decided item 2, Look first): the same.
   "src/app/(app)/orders/actions.ts#finishOrdersAction": "purchase.record",
   "src/app/(app)/orders/actions.ts#markNotBoughtAction": "purchase.record",
@@ -217,6 +221,13 @@ export const QUERIES: Record<string, Permission> = {
   "src/features/warehouse/queries/item-card.ts#getItemCard": "data.view",
   "src/features/warehouse/queries/stock-on-hand.ts#listStockOnHand": "data.view",
   "src/features/warehouse/queries/stock-on-hand.ts#stockCategoryChoices": "data.view",
+  // The issue form's choices (plan of 5.4): stock.issue on the branch; the branches in the SQL.
+  "src/features/warehouse/queries/issue-form.ts#issueBranchChoices": "stock.issue",
+  "src/features/warehouse/queries/issue-form.ts#issueFormChoices": "stock.issue",
+  "src/features/warehouse/queries/issue-form.ts#searchIssueItems": "stock.issue",
+  // The issue note PDF (plan of 5.4, decided item 8): data.view's branch filter in the SQL, then
+  // data.export on the document's branch.
+  "src/features/warehouse/queries/issue-note.ts#getIssueNote": "data.export",
 };
 
 /**

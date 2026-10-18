@@ -48,6 +48,8 @@ export class ActionError extends Error {
   constructor(
     readonly code: Exclude<ServerErrorCode, "signed_out">,
     readonly fields?: Record<string, FieldMessageKey>,
+    /** With a `stockShort` field: the amount left, by the same path (plan of 5.4, decided item 2). */
+    readonly stockLeft?: Record<string, string>,
   ) {
     super(`Action refused: ${code}.`);
     this.name = "ActionError";
@@ -245,7 +247,9 @@ export async function runAction<Schema extends z.ZodType, Rows, Result>(
     return { ok: true, data };
   } catch (error) {
     if (error instanceof Refusal) return failure(error.code);
-    if (error instanceof ActionError) return failure(error.code, error.fields);
+    if (error instanceof ActionError) {
+      return failure(error.code, error.fields, undefined, error.stockLeft);
+    }
     if (error instanceof AuthorizationError) return failure(error.kind);
     console.error(`Action ${definition.name} failed: ${describeForLog(error)}`);
     return failure("unexpected");

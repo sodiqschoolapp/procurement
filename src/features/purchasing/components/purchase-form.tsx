@@ -63,6 +63,8 @@ type Line = {
   variantId: string;
   extras: Extra[];
   comment: string;
+  /** 07 Purchase record, "Give straight to requester"; offered only where the form says so. */
+  giveToRequester: boolean;
 };
 
 type Values = {
@@ -140,6 +142,7 @@ export function PurchaseFormView({
         variantId: order.variantId,
         extras: [],
         comment: "",
+        giveToRequester: false,
       })),
     },
   });
@@ -262,6 +265,7 @@ export function PurchaseFormView({
       variantId: current.lines[index]!.variantId,
       extras: current.lines[index]!.extras,
       comment: current.lines[index]!.comment,
+      giveToRequester: order.canGiveToRequester && current.lines[index]!.giveToRequester,
     }));
     setSent(lines.map((line) => line.orderId));
     const result = await action.run({
@@ -792,6 +796,23 @@ function OrderLine({
           {t("addExtra")}
         </Button>
       </fieldset>
+
+      {order.canGiveToRequester ? (
+        // 07 Purchase record: the items go straight to the order's department (plan of 5.4).
+        <label className="flex min-h-11 items-start gap-3 rounded-lg bg-muted p-3 text-[15px] leading-[22px]">
+          <input
+            type="checkbox"
+            {...register(`lines.${index}.giveToRequester`)}
+            className="mt-0.5 size-5 shrink-0 accent-foreground"
+          />
+          <span className="flex flex-col gap-0.5">
+            {t("giveToRequester")}
+            <span className="text-sm leading-5 text-muted-foreground">
+              {t("giveToRequesterHint")}
+            </span>
+          </span>
+        </label>
+      ) : null}
 
       <Field
         id={id("comment")}

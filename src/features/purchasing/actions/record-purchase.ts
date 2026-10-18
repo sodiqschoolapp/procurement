@@ -18,10 +18,11 @@ import {
 } from "@/domain/purchases";
 import { ActionError } from "@/server/action";
 import type { FieldMessageKey } from "@/server/action-result";
-import type { Executor } from "@/server/authorize";
+import { type Executor, authorize } from "@/server/authorize";
 import { now } from "@/server/clock";
 import {
   companies,
+  departments,
   extraCostTypes,
   files,
   orders,
@@ -43,6 +44,7 @@ import {
   ordersInput,
 } from "@/server/order-action";
 import { readSettings } from "@/server/settings";
+import { createDocument } from "@/server/stock-documents";
 import { postMovements } from "@/server/stock-ledger";
 
 import { requiredPriceField } from "../../catalog/actions/catalog-fields";
@@ -70,6 +72,14 @@ import { noticePriceDiffers } from "../price-prompts";
 //   3  above price 0, a PURCHASE price row per record, and each subtype bought its last purchase
 //      price from its last record in that order (plan of 3.6, decided item 1, Look first), the subtypes updated in the order of their ids; a gift
 //      writes neither (3.3 decided item 2, Look first)
+//   5  for every record whose "Give straight to requester" is ticked, one ISSUE of its quantity
+//      and subtype bought to the order's department, dated the date bought, received by the
+//      order's requester, else the department's responsible person, with the record's id as its
+//      client key (07 What saving a record does 5; plan of 5.4, decided items 4 and 6), in the
+//      split's order, after every receipt; it needs `stock.issue` on the branch too (decided item
+//      1, Look first), and is never made on a service (Decided ahead, question 9). After the
+//      receipts it takes the ISS number counter, then the balances it already holds (issue.ts of
+//      src/features/warehouse/actions, the one lock order; decided item 15, Look first)
 //   4  each order's `actual_total` and `progress`, from every record of the order (progress 3.2,
 //      "For 3.3 and 3.5"); the wrapper raises its version
 //   6  one history event per order, by the wrapper; its note is the order's comment
@@ -97,6 +107,8 @@ export type PurchaseLine = {
   unitPrice: bigint;
   extras: { extraCostTypeId: string; amount: bigint; paymentType: PaymentType }[];
   comment: string | null;
+  /** 07 Purchase record: "Also creates an issue to the order's department". Goods only. */
+  giveToRequester: boolean;
 };
 
 export type RecordPurchaseInput = OrdersInput & {
@@ -129,6 +141,7 @@ const line = z.object({
     .refine((value) => value === null || isDraftComment(value), {
       params: { fieldError: "tooLong" },
     }),
+  giveToRequester: z.boolean().default(false),
 });
 
 const input = ordersInput({
@@ -175,6 +188,8 @@ type Plan = {
   progress: "OPEN" | "DONE" | "DONE_SHORT" | "NOT_BOUGHT";
   isService: boolean;
   allowDecimal: boolean;
+  departmentId: string;
+  requesterName: string | null;
 };
 
 /**
@@ -196,6 +211,8 @@ async function plansOf(tx: Executor, orderIds: readonly string[]): Promise<Plan[
       progress: orders.progress,
       productType: products.type,
       allowDecimal: units.allowDecimal,
+      departmentId: orders.departmentId,
+      requesterName: orders.requesterName,
     })
     .from(orders)
     .innerJoin(productVariants, eq(productVariants.id, orders.variantId))
@@ -216,6 +233,8 @@ async function plansOf(tx: Executor, orderIds: readonly string[]): Promise<Plan[
       progress: row.progress,
       isService: row.productType === "SERVICE",
       allowDecimal: row.allowDecimal,
+      departmentId: row.departmentId!,
+      requesterName: row.requesterName,
     })),
   );
 }
@@ -350,6 +369,17 @@ export const recordPurchase = defineOrdersAction<RecordPurchaseInput>({
     const at = typed.lines.map((each) => each.orderId);
     const lineOf = (orderId: string) => typed.lines[at.indexOf(orderId)]!;
     const path = (orderId: string, field: string) => `lines.${at.indexOf(orderId)}.${field}`;
+
+    // 5  "Give straight to requester": goods only (Decided ahead, question 9), and an issue, so
+    //    the right to issue in the branch as well (decided item 1, Look first).
+    for (const plan of plans) {
+      if (plan.isService && lineOf(plan.orderId).giveToRequester) {
+        refuse(path(plan.orderId, "giveToRequester"), "errors.field.notAllowed");
+      }
+    }
+    if (typed.lines.some((each) => each.giveToRequester)) {
+      await authorize(userId, "stock.issue", { branchId }, tx);
+    }
 
     // The fields the database decides, before anything is written. The subtypes bought first, then
     // per order.
@@ -495,6 +525,33 @@ export const recordPurchase = defineOrdersAction<RecordPurchaseInput>({
         })),
     );
 
+    // 5  The issues of the ticked records, after every receipt, in the split's order.
+    const issues = new Map<string, { documentId: string; number: string }>();
+    const given = saved.filter(({ plan }) => lineOf(plan.orderId).giveToRequester);
+    if (given.length > 0) {
+      const responsible = await tx
+        .select({ id: departments.id, name: departments.responsibleName })
+        .from(departments)
+        .where(inArray(departments.id, [...new Set(given.map(({ plan }) => plan.departmentId))]));
+      for (const { plan, recordId, variantId, qty } of given) {
+        const created = await createDocument(tx, {
+          type: "ISSUE",
+          branchId,
+          departmentId: plan.departmentId,
+          receivedByName:
+            plan.requesterName ??
+            responsible.find((each) => each.id === plan.departmentId)?.name ??
+            null,
+          docDate: typed.purchasedOn,
+          status: "POSTED",
+          clientKey: recordId,
+          createdBy: userId,
+          lines: [{ variantId, qty }],
+        });
+        issues.set(plan.orderId, { documentId: created.documentId, number: created.number });
+      }
+    }
+
     // 3  Prices: each subtype's last record above 0 in the split's order, the subtypes in the
     //    order of their ids so two trips cannot deadlock (3.4 decided item 4, Look first).
     const lastPrice = new Map<string, bigint>();
@@ -534,7 +591,10 @@ export const recordPurchase = defineOrdersAction<RecordPurchaseInput>({
         .where(eq(orders.id, plan.orderId));
       extras.set(plan.orderId, {
         note: lineOf(plan.orderId).comment,
-        payload: { purchase: { id: recordId, variantId, qty, unitPrice: unitPrice.toString() } },
+        payload: {
+          purchase: { id: recordId, variantId, qty, unitPrice: unitPrice.toString() },
+          ...(issues.has(plan.orderId) ? { issue: issues.get(plan.orderId) } : {}),
+        },
       });
     }
     return extras;
