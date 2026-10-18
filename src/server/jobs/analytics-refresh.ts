@@ -1,7 +1,7 @@
 import { sql } from "drizzle-orm";
 
 import { reasonKey } from "@/domain/analytics";
-import { type StayEvent, approvalStays } from "@/domain/approval-stays";
+import { type StayEvent, approvalStays, secondsBetween } from "@/domain/approval-stays";
 import { orderOutcome } from "@/domain/colours";
 import {
   type DatedCashRecord,
@@ -60,6 +60,10 @@ import type { Job } from "./job";
 // date and needed-by date, copied as they stand (no formula: coming up and overdue are read with
 // the clock by the queries, `isComingUp()` and `isOverdue()` of src/domain/order-steps.ts); and the
 // decider of each decided stay, the actor of the event that ended it.
+//
+// Task 6.5b adds to `analytics_orders` each order's first entry into Open and the whole seconds
+// from its first submit, `secondsBetween()` of src/domain/approval-stays.ts (plan of 6.5b, decided
+// item 1, Look first).
 
 type SpendingSource = {
   purchase_id: string;
@@ -184,22 +188,61 @@ export async function refreshAnalytics(executor: Executor): Promise<void> {
   await writeOrders(executor);
 }
 
+type OrderSource = {
+  order_id: string;
+  branch_id: string;
+  status: RequestStatus;
+  progress: OrderProgress;
+  submitted_at: string;
+  needed_by: string;
+  category_id: string;
+  department_id: string;
+  owner_id: string;
+  opened_at: string | null;
+};
+
 /**
  * Every order that is not Draft as it stands (plan of 6.5a, decided items 2 and 6): the Tashkent
  * date of its first submit, its needed-by date, the planned subtype's category. Nothing is worked
- * out here: the queries read the dates with the clock.
+ * out here: the queries read the dates with the clock. Task 6.5b adds its first entry into Open,
+ * the earliest move into `PURCHASING` from another status (Finance's approve; a later send back
+ * from Settlement for correction or a Reopen does not move it), with its Tashkent date and the
+ * whole seconds from the first submit by `secondsBetween()` (plan of 6.5b, decided item 1, Look
+ * first; review of the plan, Should fix 5).
  */
 async function writeOrders(executor: Executor) {
-  await executor.execute(sql`
-    insert into analytics_orders (order_id, branch_id, status, progress, submitted_on, needed_by,
-                                  category_id, department_id, owner_id)
-    select o.id, o.branch_id, o.status, o.progress,
-           (o.submitted_at at time zone 'Asia/Tashkent')::date, o.needed_by, pr.category_id,
-           o.department_id, o.owner_id
+  const found = await executor.execute<OrderSource>(sql`
+    select o.id as order_id, o.branch_id, o.status, o.progress,
+           to_json(o.submitted_at)#>>'{}' as submitted_at, o.needed_by::text as needed_by,
+           pr.category_id, o.department_id, o.owner_id,
+           (select to_json(ev.created_at)#>>'{}' from order_events ev
+            where ev.order_id = o.id and ev.to_status = 'PURCHASING'
+              and ev.from_status <> 'PURCHASING'
+            order by ev.created_at, ev.id limit 1) as opened_at
     from orders o
     join product_variants v on v.id = o.variant_id
     join products pr on pr.id = v.product_id
     where o.status <> 'DRAFT'`);
+  if (found.rows.length === 0) return;
+  const rows = found.rows.map((row) => ({
+    ...row,
+    approval_seconds:
+      row.opened_at === null
+        ? null
+        : secondsBetween(new Date(row.submitted_at), new Date(row.opened_at)).toString(),
+  }));
+  await executor.execute(sql`
+    insert into analytics_orders (order_id, branch_id, status, progress, submitted_on, needed_by,
+                                  category_id, department_id, owner_id, opened_at, opened_on,
+                                  approval_seconds)
+    select r.order_id, r.branch_id, r.status::request_status, r.progress::order_progress,
+           (r.submitted_at at time zone 'Asia/Tashkent')::date, r.needed_by, r.category_id,
+           r.department_id, r.owner_id, r.opened_at,
+           (r.opened_at at time zone 'Asia/Tashkent')::date, r.approval_seconds::bigint
+    from jsonb_to_recordset(${JSON.stringify(rows)}::jsonb) as r(
+      order_id uuid, branch_id uuid, status text, progress text, submitted_at timestamptz,
+      needed_by date, category_id uuid, department_id uuid, owner_id uuid, opened_at timestamptz,
+      approval_seconds text)`);
 }
 
 async function insertSpending(executor: Executor, rows: object[], parts: object[]) {

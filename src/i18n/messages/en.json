@@ -2420,7 +2420,11 @@
       "products": "Top 10 products",
       "orderStatuses": "Orders by status",
       "statusOrders": "Orders",
-      "myApprovals": "My approvals"
+      "myApprovals": "My approvals",
+      "myOrders": "My orders",
+      "myReasons": "Sent back, reasons",
+      "myEstimates": "My estimates",
+      "myCash": "My cash"
     },
     "plan": {
       "title": "Plan vs actual",
@@ -2751,6 +2755,62 @@
         "summary": "{count, plural, one {# order} other {# orders}}",
         "empty": "No order behind this number.",
         "dated": "{label}: {date}"
+      }
+    },
+    "my": {
+      "orders": {
+        "title": "My orders",
+        "note": "By status: my orders first submitted in the period, as they stand now. Full approval: from the first submit to Open, of my orders that reached Open in the period. Sent back: of the approvers' decisions on my orders in the period.",
+        "approvalHours": "Average time to full approval",
+        "noApproval": "None of my orders reached Open in the period",
+        "approved": "Orders that reached Open",
+        "sentBack": "Sent back",
+        "noDecision": "No decision on my orders in the period",
+        "share": "{share} % ({count} of {decisions})",
+        "noDecisionBefore": "No decision in the period before",
+        "decisions": "Decisions on my orders",
+        "reasons": "Why my orders were sent back"
+      },
+      "estimates": {
+        "title": "My estimates",
+        "note": "My planned price against the price I paid, per product, over my purchase records of the period. Gifts and extra costs are not counted.",
+        "byProduct": "Planned and paid price per product",
+        "empty": "No priced purchase record of mine in the period.",
+        "all": "All products",
+        "records": "{count, plural, one {# record} other {# records}}",
+        "even": "As planned",
+        "less": "{amount} less ({percent} %)",
+        "more": "{amount} more ({percent} %)",
+        "noBefore": "Not bought in the period before",
+        "same": "Same as in the period before",
+        "pointsUp": "+{points} points against the period before",
+        "pointsDown": "−{points} points against the period before"
+      },
+      "cash": {
+        "title": "My cash",
+        "note": "Now, whatever the period: each of my orders that is not Closed and whose cash count is not 0.",
+        "held": "I hold",
+        "owed": "The school owes me",
+        "perOrder": "Count per open order",
+        "empty": "No open order of mine holds or is owed money.",
+        "holds": "Holds {amount}",
+        "isOwed": "Owed {amount}"
+      },
+      "columns": {
+        "opened": "Reached Open",
+        "hours": "Hours to approval",
+        "records": "Records",
+        "planned": "Planned price",
+        "actual": "Paid price",
+        "difference": "Difference",
+        "count": "Cash count"
+      },
+      "list": {
+        "approved": "Reached Open {first} – {last}",
+        "approvedSummary": "{count, plural, one {# order} other {# orders}}, on average {hours} h",
+        "priced": "{name}: priced records {first} – {last}",
+        "pricedAll": "All products: priced records {first} – {last}",
+        "pricedSummary": "{count, plural, one {# record} other {# records}}, quantity {qty}, goods {goods}"
       }
     }
   }

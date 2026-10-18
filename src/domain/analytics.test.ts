@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  estimateGap,
   shareChange,
   shareOf,
   changeAgainst,
@@ -19,6 +20,7 @@ import {
   reasonKey,
   waitingGroup,
 } from "./analytics";
+import { actualGoods } from "./purchases";
 
 // 10-notifications-analytics-reports.md, Analytics page per role, point 1 ("This month, last month,
 // this quarter, this school year, or custom dates. … until it is set, the school-year choice is
@@ -322,5 +324,74 @@ describe("the Managers block (plan of 6.4c)", () => {
     expect(averageSom(0n, 0)).toBeNull();
     expect(() => averageSom(1n, -1)).toThrow(RangeError);
     expect(() => averageSom(1 as unknown as bigint, 1)).toThrow(RangeError);
+  });
+});
+
+// 10 Analytics, Manager, My estimates: "Difference between planned and actual price per product";
+// 08 Numbers the system calculates (Difference = planned − actual: "a positive difference means
+// money is left"; goods rounded per record, half up); plan of 6.5b, decided item 4 (Look first)
+// and the review's correction 1.
+describe("My estimates (plan of 6.5b, decided item 4)", () => {
+  const line = (qty: string, unitPrice: bigint, plannedPrice: bigint) => ({
+    qty,
+    unitPrice,
+    goods: actualGoods([{ qty, unitPrice, extras: [], isCancelled: false }]),
+    plannedPrice,
+  });
+
+  it("the review's worked case: both prices from the sums, the percent from the sums", () => {
+    // Order A planned 5 000, records 10 at 4 500; order B planned 6 000, records 4 at 6 500.
+    const gap = estimateGap([line("10", 4_500n, 5_000n), line("4", 6_500n, 6_000n)]);
+    expect(gap).toEqual({
+      records: 2,
+      qty: "14",
+      plannedGoods: 74_000n,
+      goods: 71_000n,
+      plannedPrice: 5_286n,
+      actualPrice: 5_071n,
+      difference: 215n,
+      // 3 000 ÷ 74 000 = 4.054…%, not (215 ÷ 5 286 = 4.067…) of the rounded prices.
+      percent: "4.1",
+    });
+  });
+
+  it("paid more than planned: the difference and the percent are below 0", () => {
+    const gap = estimateGap([line("3", 12_000n, 10_000n)]);
+    expect(gap.difference).toBe(-2_000n);
+    expect(gap.percent).toBe("-20.0");
+  });
+
+  it("rounds each record's planned goods half up, as 08 rounds goods", () => {
+    // 0.5 × 3 = 1.5 → 2 so'm planned; 0.5 × 1 = 0.5 → 1 so'm paid.
+    const gap = estimateGap([line("0.5", 1n, 3n)]);
+    expect(gap.plannedGoods).toBe(2n);
+    expect(gap.goods).toBe(1n);
+    expect(gap.plannedPrice).toBe(4n);
+    expect(gap.actualPrice).toBe(2n);
+    expect(gap.difference).toBe(2n);
+    expect(gap.percent).toBe("50.0");
+  });
+
+  it("leaves a gift out of every number (plan of 6.4b, decided item 1)", () => {
+    const gap = estimateGap([line("2", 0n, 9_000n), line("1", 8_000n, 9_000n)]);
+    expect(gap).toMatchObject({ records: 1, qty: "1", plannedGoods: 9_000n, goods: 8_000n });
+  });
+
+  it("has no price and no percent without a priced record", () => {
+    expect(estimateGap([line("2", 0n, 9_000n)])).toEqual({
+      records: 0,
+      qty: "0",
+      plannedGoods: 0n,
+      goods: 0n,
+      plannedPrice: null,
+      actualPrice: null,
+      difference: null,
+      percent: null,
+    });
+  });
+
+  it("refuses a broken line", () => {
+    expect(() => estimateGap([{ ...line("1", 5n, 5n), plannedPrice: 0n }])).toThrow(RangeError);
+    expect(() => estimateGap([{ ...line("1", 5n, 5n), goods: -1n }])).toThrow(RangeError);
   });
 });

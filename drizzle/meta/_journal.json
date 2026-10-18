@@ -295,6 +295,13 @@
       "when": 1792352067507,
       "tag": "0041_analytics_principal",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1792357108344,
+      "tag": "0042_analytics_manager",
+      "breakpoints": true
     }
   ]
 }

@@ -1,12 +1,10 @@
 import { sql } from "drizzle-orm";
 
 import {
-  type Change,
   type Period,
   WAITING_GROUP_KEYS,
   type WaitingGroup,
   averageHours,
-  changeAgainst,
   shareChange,
   shareOf,
   waitingGroup,
@@ -17,10 +15,11 @@ import type { Executor } from "@/server/authorize";
 import { now } from "@/server/clock";
 import { readSnapshot } from "@/server/read-snapshot";
 
-import { type AnalyticsFilters, type PeriodInput, TOP_REASONS } from "../period-params";
+import type { AnalyticsFilters, PeriodInput } from "../period-params";
 import { authorizeAnalytics } from "../authorize-filters";
 import { resolvePeriod } from "../resolve-period";
 import { stepsWhere } from "../steps-where";
+import { type Reason, type ReasonDecision, topReasonsIn } from "../top-reasons";
 
 // The Approval speed block of the Head's Analytics page (10-notifications-analytics-reports.md,
 // Analytics page per role, Head: "Average hours at each step per branch; orders waiting now, by
@@ -51,14 +50,6 @@ export type DecisionShares = {
   rejected: { count: number; share: string | null; change: string | null };
 };
 
-export type Reason = {
-  key: string;
-  /** The newest spelling of the reason (decided item 10). */
-  text: string;
-  count: number;
-  change: Change;
-};
-
 export type ApprovalSpeed = {
   period: Period;
   before: Period;
@@ -69,7 +60,7 @@ export type ApprovalSpeed = {
   /** Per step, then every step together (`all`). */
   waiting: Record<ApprovalStep | "all", Record<WaitingGroup | "all", number>>;
   shares: Record<ApprovalStep | "all", DecisionShares>;
-  reasons: Record<"SEND_BACK" | "REJECT", Reason[]>;
+  reasons: Record<ReasonDecision, Reason[]>;
 };
 
 export async function getApprovalSpeed(
@@ -209,41 +200,8 @@ async function speedIn(
     return { decisions: whole, sentBack: part("SEND_BACK"), rejected: part("REJECT") };
   };
 
-  // The most common reasons (decided item 10): per decision and key, the count in the period, the
-  // count before for its change, and the newest spelling.
-  const reasonRows = await db.execute<{
-    decision: "SEND_BACK" | "REJECT";
-    key: string;
-    text: string;
-    count: string;
-    before: string;
-  }>(sql`
-    with chosen as (
-      select analytics_steps.decision, analytics_steps.reason_key, analytics_steps.reason,
-             analytics_steps.left_at, (${nowWhere}) as within
-      from analytics_steps
-      where analytics_steps.decision in ('SEND_BACK', 'REJECT')
-        and ((${nowWhere}) or (${beforeWhere})))
-    select decision, reason_key as key,
-           (array_agg(reason order by left_at desc) filter (where within))[1] as text,
-           count(*) filter (where within)::text as count,
-           count(*) filter (where not within)::text as before,
-           max(left_at) filter (where within) as newest
-    from chosen
-    group by decision, reason_key
-    having count(*) filter (where within) > 0
-    order by count(*) filter (where within) desc, newest desc, reason_key`);
-  const reasons: ApprovalSpeed["reasons"] = { SEND_BACK: [], REJECT: [] };
-  for (const row of reasonRows.rows) {
-    const list = reasons[row.decision];
-    if (list.length >= TOP_REASONS) continue;
-    list.push({
-      key: row.key,
-      text: row.text,
-      count: Number(row.count),
-      change: changeAgainst(BigInt(row.count), BigInt(row.before)),
-    });
-  }
+  // The most common reasons (decided item 10).
+  const reasons = await topReasonsIn(db, nowWhere, beforeWhere);
 
   return {
     period,

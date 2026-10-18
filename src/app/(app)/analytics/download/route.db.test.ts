@@ -741,3 +741,103 @@ describe("GET /analytics/download, the 6.5a sheets (10 point 4; plan of 6.5a)", 
     expect(response.status).toBe(404);
   });
 });
+
+/**
+ * The Manager's rows owned by `ownerId` (build-plan 6.5b): an order submitted on 1 October, sent
+ * back once, Open on 3 October (48 hours); a record of 23 456 so'm paid in cash on an order planned
+ * at 5 000 (owed 23 456). The summary refreshed.
+ */
+async function ownRowsIn(ownerId: string, branchId?: string) {
+  setClock(AT);
+  const scene = await spendingScene(branchId);
+  await decided(
+    scene,
+    "PURCHASING",
+    [
+      { type: "SUBMIT", from: "DRAFT", to: "PENDING_HEAD", at: "2031-10-01T05:00:00Z" },
+      {
+        type: "SEND_BACK",
+        from: "PENDING_HEAD",
+        to: "RETURNED",
+        at: "2031-10-01T06:00:00Z",
+        reason: "Boshqa do'kondan oling",
+      },
+      { type: "SUBMIT_AGAIN", from: "RETURNED", to: "PENDING_FINANCE", at: "2031-10-02T05:00:00Z" },
+      { type: "APPROVE", from: "PENDING_FINANCE", to: "PURCHASING", at: "2031-10-03T05:00:00Z" },
+    ],
+    { ownerId, submittedAt: "2031-10-01T05:00:00Z" },
+  );
+  const record = await bought(scene, { ownerId, purchasedOn: "2031-10-03", unitPrice: "23456" });
+  await refreshNow();
+  const found = await db.execute<{ name: string; number: string }>(sql`
+    select pr.name, o.number from purchases p
+    join orders o on o.id = p.order_id
+    join product_variants v on v.id = p.variant_id join products pr on pr.id = v.product_id
+    where p.id = ${record.purchaseId}`);
+  return { scene, product: found.rows[0]!.name, number: found.rows[0]!.number };
+}
+
+// The blocks of 6.5b (plan of 6.5b, Tests: the route matrix for the four new download blocks):
+// My orders, its reasons, My estimates and My cash behind the wall, the same wall for each.
+describePermissionMatrix("GET /analytics/download, the blocks of 6.5b behind the wall", {
+  permission: "data.export",
+  async run({ user, branchId }) {
+    const { scene, product, number } = await ownRowsIn(user.id, branchId);
+    const cookie = await signInAs(user);
+    const own = { ...NO_ANALYTICS_FILTERS, category: scene.category.id };
+    const texts = async (block: ExportBlock, extra: Parameters<typeof analyticsSearch>[2] = {}) =>
+      (
+        await sheetOf(
+          await GET(
+            downloadRequest(
+              `/analytics/download?${analyticsSearch(THIS_MONTH, own, { ...extra, block })}`,
+              cookie,
+            ),
+          ),
+        )
+      )
+        .flat()
+        .map((cell) => String(cell));
+    const seen = [
+      (await texts("myOrders")).includes("48.0"),
+      (await texts("myReasons")).includes("Boshqa do'kondan oling"),
+      (await texts("myEstimates")).includes(product),
+      (await texts("myCash")).includes(number),
+      // The lists of the two new keys (permission review, Must fix 2).
+      (await texts("statusOrders", { key: { kind: "approved" } })).includes("48.0"),
+      (await texts("records", { key: { kind: "priced", product: null } })).includes(number),
+    ];
+    expect(seen).toEqual(seen.map(() => seen[0]));
+    if (!seen[0]) throw new AuthorizationError("not_found");
+  },
+});
+
+describe("GET /analytics/download, the 6.5b sheets (10 point 4; plan of 6.5b)", () => {
+  it("writes my hours and share, the reason, the estimate as money cells and the cash count signed", async () => {
+    const { manager, branch } = await spendingScene();
+    const { product, number } = await ownRowsIn(manager.id, branch.id);
+    const get = async (block: ExportBlock) =>
+      sheetOf(
+        await GET(
+          downloadRequest(
+            `/analytics/download?${analyticsSearch(THIS_MONTH, NO_ANALYTICS_FILTERS, { block })}`,
+            await signInAs(manager),
+          ),
+        ),
+      );
+    const orders = await get("myOrders");
+    // The last four lines: hours to full approval, orders that reached Open, decisions, sent back.
+    expect(orders.slice(-4).map((row) => row[1])).toEqual(["48.0", 1, 2, 1]);
+    expect(orders.at(-1)![3]).toBe("50.0 %");
+    expect((await get("myReasons")).at(-1)!.slice(0, 2)).toEqual(["Boshqa do'kondan oling", 1]);
+    const estimates = await get("myEstimates");
+    // Planned 5 000, paid 23 456: 18 456 more.
+    expect(estimates.find((row) => row[0] === product)!.slice(3, 6)).toEqual([
+      5_000, 23_456, -18_456,
+    ]);
+    const cash = await get("myCash");
+    expect(cash.find((row) => row[0] === number)!.at(-1)).toBe(-23_456);
+    // Held, then owed, never netted.
+    expect(cash.slice(-2).map((row) => row.at(-1))).toEqual([0, 23_456]);
+  });
+});

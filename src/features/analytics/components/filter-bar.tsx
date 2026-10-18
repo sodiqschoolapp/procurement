@@ -13,18 +13,21 @@ import { FilterFold } from "./filter-fold";
 // Analytics page per role, points 1 and 2; build-plan 6.3), one row above the blocks. A plain GET
 // form: the choice stays in the address, so a link reopens the same view (11 rule 8). At phone
 // width the fields fold behind "Filters" (filter-fold.tsx) (plan of 6.3, Screens). The custom dates count only with
-// "Custom dates" (period-params.ts).
+// "Custom dates" (period-params.ts). `noManager` leaves the Manager filter out: the Manager's page,
+// whose blocks are the user's own orders (plan of 6.5b, decided item 6, Look first).
 
 export async function AnalyticsFilterBar({
   action,
   period,
   filters,
   options,
+  noManager = false,
 }: {
   action: string;
   period: PeriodInput;
   filters: AnalyticsFilters;
   options: AnalyticsFilterOptions;
+  noManager?: boolean;
 }) {
   const t = await getTranslations("analytics");
   const named = (option: FilterOption, name = option.name) =>
@@ -125,22 +128,24 @@ export async function AnalyticsFilterBar({
             ))}
           </Select>
         </label>
-        <label className={field}>
-          {t("manager")}
-          <Select
-            name="manager"
-            defaultValue={filters.manager ?? ""}
-            className="w-full sm:w-48"
-            data-filter-manager
-          >
-            <option value="">{t("allManagers")}</option>
-            {options.managers.map((option) => (
-              <option key={option.id} value={option.id}>
-                {named(option)}
-              </option>
-            ))}
-          </Select>
-        </label>
+        {!noManager && (
+          <label className={field}>
+            {t("manager")}
+            <Select
+              name="manager"
+              defaultValue={filters.manager ?? ""}
+              className="w-full sm:w-48"
+              data-filter-manager
+            >
+              <option value="">{t("allManagers")}</option>
+              {options.managers.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {named(option)}
+                </option>
+              ))}
+            </Select>
+          </label>
+        )}
         <label className={field}>
           {t("supplier")}
           <Select

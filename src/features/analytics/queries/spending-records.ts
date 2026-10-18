@@ -25,7 +25,9 @@ import { spendingWhere } from "../spending-where";
 // (developer-rules.md rule 12), or every row for the export. A price key of 6.4b lists the priced
 // records of one subtype (a gift is no price), with their quantity and unit price, and its summary
 // is the price `unitPriceOf()` of their goods and quantity, the number clicked (plan of 6.4b,
-// decided items 1 and 12).
+// decided items 1 and 12). A `priced` key of 6.5b lists the priced records of one product (every
+// subtype bought) or of all, the set My estimates reads, and its summary carries their Σ quantity
+// and Σ goods (plan of 6.5b, decided items 4 and 8; review of the plan, Should fix 2).
 
 export type SpendingRecord = {
   purchaseId: string;
@@ -53,6 +55,8 @@ export type SpendingRecords = {
   productName: string | null;
   count: number;
   total: bigint;
+  /** Of a priced key: the quantity and the goods of the records listed. */
+  priced: { qty: string; goods: bigint } | null;
   /** Of a price key: the subtype, the quantity and the price of the records listed. */
   price: {
     productName: string;
@@ -113,7 +117,8 @@ async function recordsIn(
     key.kind === "waiting" ||
     key.kind === "status" ||
     key.kind === "due" ||
-    key.kind === "mine"
+    key.kind === "mine" ||
+    key.kind === "approved"
   ) {
     throw new PeriodRefusedError();
   }
@@ -132,12 +137,15 @@ async function recordsIn(
             and analytics_spending.variant_id = ${key.variant}
             and analytics_spending.unit_price > 0
             ${key.noSupplier ? sql`and analytics_spending.supplier_id is null` : sql``}`
-      : key.kind === "product"
+      : key.kind === "product" || (key.kind === "priced" && key.product)
         ? // Every subtype of the product, as "top 10 products" adds them (decided item 7).
           sql`${spendingWhere(actor, range, scope)}
             and analytics_spending.variant_id in
-              (select id from product_variants where product_id = ${key.product})`
-        : spendingWhere(actor, range, scope);
+              (select id from product_variants where product_id = ${key.product})
+            ${key.kind === "priced" ? sql`and analytics_spending.unit_price > 0` : sql``}`
+        : key.kind === "priced"
+          ? sql`${spendingWhere(actor, range, scope)} and analytics_spending.unit_price > 0`
+          : spendingWhere(actor, range, scope);
   // A payment type's list holds the records with a part of that type, each with that part, so
   // its total is the slice clicked (plan of 6.4, decided item 2, Look first).
   const part =
@@ -173,9 +181,11 @@ async function recordsIn(
           sql`select name from categories where id = ${key.category}`,
         )
       : null;
+  const productId =
+    key.kind === "product" ? key.product : key.kind === "priced" ? key.product : null;
   const product =
-    key.kind === "product"
-      ? await db.execute<{ name: string }>(sql`select name from products where id = ${key.product}`)
+    productId !== null
+      ? await db.execute<{ name: string }>(sql`select name from products where id = ${productId}`)
       : null;
   if (product && !product.rows[0]) throw new PeriodRefusedError();
   const pageNumber = page === "all" ? 1 : page;
@@ -220,6 +230,10 @@ async function recordsIn(
     key,
     categoryName: category?.rows[0]?.name ?? null,
     productName: product?.rows[0]?.name ?? null,
+    priced:
+      key.kind === "priced"
+        ? { qty: summary.rows[0]!.qty, goods: BigInt(summary.rows[0]!.goods) }
+        : null,
     count: Number(summary.rows[0]!.count),
     total: BigInt(summary.rows[0]!.total),
     price: subtype?.rows[0]

@@ -345,7 +345,9 @@ test("Done when 6.4a: the Head clicks a branch bar and a Plan vs actual number a
   await expect(page.locator("[data-order-row]")).toHaveCount(1);
 });
 
-test("a Manager's Analytics page has no Plan vs actual block (plan of 6.4, decided item 8)", async ({
+// Changed by 6.5b (plan of 6.5b, decided item 7): the Manager's page shows the Manager's blocks
+// only, so the shared Spending block of 6.3 is no longer on it.
+test("a Manager's Analytics page has no Plan vs actual block (plan of 6.4, decided item 8) and no Spending block (plan of 6.5b, decided item 7)", async ({
   page,
 }) => {
   await page.goto("/login");
@@ -354,7 +356,8 @@ test("a Manager's Analytics page has no Plan vs actual block (plan of 6.4, decid
   await page.locator("form button[type=submit]").click();
   await expect(page).toHaveURL(/\/$/);
   await page.goto("/analytics");
-  await expect(page.locator('[data-analytics-block="spending"]')).toBeVisible();
+  await expect(page.locator('[data-analytics-block="my-orders"]')).toBeVisible();
+  await expect(page.locator('[data-analytics-block="spending"]')).toHaveCount(0);
   await expect(page.locator('[data-analytics-block="plan"]')).toHaveCount(0);
   await expect(page.locator('[data-analytics-block="head-spending"]')).toHaveCount(0);
 });
@@ -776,16 +779,16 @@ test("6.4d, the phase 6 check on the whole Head page: every block, a Spending ba
  * 10 February 2020 and waiting at Waiting for Principal, the summary refreshed. Returns its number
  * and the category.
  */
-async function seedPrincipalOrder(): Promise<{ number: string; category: string }> {
+async function seedPrincipalOrder(
+  owner: string = E2E_ROLES.HEAD.username,
+): Promise<{ number: string; category: string }> {
   const tag = randomUUID().slice(0, 8);
   return withDatabase(async (client) => {
     await client.query("begin");
     let ids;
     try {
       const headId = (
-        await client.query<{ id: string }>("select id from users where username = $1", [
-          E2E_ROLES.HEAD.username,
-        ])
+        await client.query<{ id: string }>("select id from users where username = $1", [owner])
       ).rows[0]!.id;
       const branch = (
         await client.query<{ id: string }>("select id from branches where code = 'EA'")
@@ -859,5 +862,33 @@ test("6.5a: the Principal sees the four blocks of the own branch and opens the o
   await expect(page.locator("[data-status-row]")).toHaveCount(1);
   await expect(page.locator("[data-status-row]")).toContainText(number);
   await expect(page.locator("[data-status-summary]")).toHaveText(/^1\D/);
+  expect(await scrollsSideways(page)).toBe(false);
+});
+
+test("6.5b: the Manager sees My orders, My estimates and My cash and opens the orders behind a status count (10 Manager; plan of 6.5b)", async ({
+  page,
+}) => {
+  // The Manager's own order of a new category in EA, first submitted on 10 February 2020.
+  const { number, category } = await seedPrincipalOrder(E2E_ROLES.MANAGER.username);
+  await page.goto("/login");
+  await page.locator("#username").fill(E2E_ROLES.MANAGER.username);
+  await page.locator("#password").fill(E2E_ROLES.MANAGER.password);
+  await page.locator("form button[type=submit]").click();
+  await expect(page).toHaveURL(/\/$/);
+  await page.goto(`/analytics?period=custom&from=2020-02-01&to=2020-02-29&category=${category}`);
+  for (const block of ["my-orders", "my-estimates", "my-cash"]) {
+    await expect(page.locator(`[data-analytics-block="${block}"]`)).toBeVisible();
+  }
+  // No Manager filter on the Manager's page (decided item 6), no other role's block.
+  await expect(page.locator("[data-filter-manager]")).toHaveCount(0);
+  await expect(page.locator('[data-analytics-block="orders"]')).toHaveCount(0);
+  expect(await scrollsSideways(page)).toBe(false);
+
+  const status = page.locator('[data-table="my-statuses"] [data-row="PENDING_PRINCIPAL"] a');
+  await expect(status).toHaveText("1");
+  await status.click();
+  await expect(page).toHaveURL(/\/analytics\/order-status\?.*manager=/);
+  await expect(page.locator("[data-status-row]")).toHaveCount(1);
+  await expect(page.locator("[data-status-row]")).toContainText(number);
   expect(await scrollsSideways(page)).toBe(false);
 });

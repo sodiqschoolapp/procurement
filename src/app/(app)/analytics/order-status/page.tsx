@@ -22,7 +22,9 @@ import { PageLinks } from "../../catalog/page-links";
 // (10-notifications-analytics-reports.md, Analytics page per role, point 3: "Clicking any bar,
 // slice or number opens the list of orders or records that make it up"; build-plan 6.5a; plan of
 // 6.5a, decided item 6): the orders first submitted in the period at one status now, or the orders
-// coming up or overdue now. Its count is the number clicked; 50 a page; each row opens its order;
+// coming up or overdue now; of the Manager's My orders (build-plan 6.5b; plan of 6.5b, decided
+// items 1 and 8), the orders that first entered Open in the period, each with its hours from the
+// first submit, and their average, the number clicked. Its count is the number clicked; 50 a page; each row opens its order;
 // the list exports to Excel (point 4). The address is the page's, with `key`; one the parser or
 // the query refuses goes back to /analytics, another branch is Not found. A table at 1440 px,
 // cards at 375 px, as /analytics/approvals.
@@ -71,9 +73,14 @@ export default async function AnalyticsOrderStatusPage({
           first: format.date(list.period.first),
           last: format.date(list.period.last),
         })
-      : key.due === "soon"
-        ? t("principal.orders.comingUpLine", { date: format.date(list.today) })
-        : t("principal.orders.overdueLine", { date: format.date(list.today) });
+      : key.kind === "approved"
+        ? t("my.list.approved", {
+            first: format.date(list.period.first),
+            last: format.date(list.period.last),
+          })
+        : key.due === "soon"
+          ? t("principal.orders.comingUpLine", { date: format.date(list.today) })
+          : t("principal.orders.overdueLine", { date: format.date(list.today) });
   const pages = Math.max(1, Math.ceil(list.count / RECORDS_PAGE_SIZE));
   const href = (page: number) =>
     `/analytics/order-status?${analyticsSearch(params.period, params.filters, {
@@ -84,7 +91,14 @@ export default async function AnalyticsOrderStatusPage({
     key: params.key,
     block: "statusOrders",
   })}`;
-  const columns = ["order", "product", "department", "status", "submitted", "neededBy"] as const;
+  const approved = key.kind === "approved";
+  const columns = approved
+    ? (["order", "product", "department", "status", "submitted", "opened", "hours"] as const)
+    : (["order", "product", "department", "status", "submitted", "neededBy"] as const);
+  const columnLabel = (column: (typeof columns)[number]) =>
+    column === "opened" || column === "hours"
+      ? t(`my.columns.${column}`)
+      : t(`principal.columns.${column}`);
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6">
@@ -103,7 +117,12 @@ export default async function AnalyticsOrderStatusPage({
             {what}
           </p>
           <p className="text-[15px] leading-[22px] font-semibold tabular-nums" data-status-summary>
-            {t("principal.list.summary", { count: list.count })}
+            {approved
+              ? t("my.list.approvedSummary", {
+                  count: list.count,
+                  hours: list.hours === null ? "—" : format.quantity(list.hours),
+                })
+              : t("principal.list.summary", { count: list.count })}
           </p>
         </div>
         <a
@@ -124,7 +143,7 @@ export default async function AnalyticsOrderStatusPage({
               <tr>
                 {columns.map((column) => (
                   <th key={column} scope="col" className="px-4 py-3">
-                    {t(`principal.columns.${column}`)}
+                    {columnLabel(column)}
                   </th>
                 ))}
               </tr>
@@ -173,15 +192,40 @@ export default async function AnalyticsOrderStatusPage({
                     </span>
                     <span className="max-sm:hidden">{format.date(row.submittedOn)}</span>
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap tabular-nums max-sm:p-0">
-                    <span className="sm:hidden">
-                      {t("principal.list.dated", {
-                        label: t("principal.columns.neededBy"),
-                        date: format.date(row.neededBy),
-                      })}
-                    </span>
-                    <span className="max-sm:hidden">{format.date(row.neededBy)}</span>
-                  </td>
+                  {approved ? (
+                    <>
+                      <td className="px-4 py-3 whitespace-nowrap tabular-nums max-sm:p-0 max-sm:text-muted-foreground">
+                        <span className="sm:hidden">
+                          {t("principal.list.dated", {
+                            label: t("my.columns.opened"),
+                            date: row.openedOn ? format.date(row.openedOn) : "—",
+                          })}
+                        </span>
+                        <span className="max-sm:hidden">
+                          {row.openedOn ? format.date(row.openedOn) : "—"}
+                        </span>
+                      </td>
+                      <td
+                        className="px-4 py-3 whitespace-nowrap tabular-nums max-sm:p-0"
+                        data-hours
+                      >
+                        {t("speed.hours", {
+                          hours:
+                            row.approvalHours === null ? "—" : format.quantity(row.approvalHours),
+                        })}
+                      </td>
+                    </>
+                  ) : (
+                    <td className="px-4 py-3 whitespace-nowrap tabular-nums max-sm:p-0">
+                      <span className="sm:hidden">
+                        {t("principal.list.dated", {
+                          label: t("principal.columns.neededBy"),
+                          date: format.date(row.neededBy),
+                        })}
+                      </span>
+                      <span className="max-sm:hidden">{format.date(row.neededBy)}</span>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>

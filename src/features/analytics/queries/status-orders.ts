@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 
-import type { Period } from "@/domain/analytics";
+import { type Period, averageHours } from "@/domain/analytics";
 import type { BusinessDate } from "@/domain/business-date";
 import type { ListStatus } from "@/domain/order-list";
 import { isOverdue } from "@/domain/order-steps";
@@ -23,7 +23,9 @@ import { PeriodRefusedError, resolvePeriod } from "../resolve-period";
 // (10-notifications-analytics-reports.md, Analytics page per role, point 3: "Every number can be
 // traced to its source"; build-plan 6.5a; plan of 6.5a, decided item 6). A `status` key lists the
 // orders first submitted in the period at that status now; a `due` key the orders coming up or
-// overdue now. The rows are those of `analytics_orders` under the same ordersWhere() as the
+// overdue now; the Manager's `approved` key (build-plan 6.5b; plan of 6.5b, decided items 1 and 8)
+// the orders that first entered Open in the period, each with its hours from the first submit,
+// and their average `averageHours()` of Σ seconds and count, the number clicked. The rows are those of `analytics_orders` under the same ordersWhere() as the
 // number, branch and draft walls in the SQL, so their count is the number clicked. Names read
 // live. 50 a page (developer-rules.md rule 12), or every row for the export. Under `data.view`, in
 // one snapshot.
@@ -40,13 +42,18 @@ export type StatusOrderRow = {
   neededBy: BusinessDate;
   /** The order shows "Overdue" (isOverdue() on the clock's today). */
   overdue: boolean;
+  /** Of the `approved` key: the day it first entered Open and its hours from the first submit. */
+  openedOn: BusinessDate | null;
+  approvalHours: string | null;
 };
 
 export type StatusOrders = {
   period: Period;
   today: BusinessDate;
-  key: Extract<DrillKey, { kind: "status" | "due" }>;
+  key: Extract<DrillKey, { kind: "status" | "due" | "approved" }>;
   count: number;
+  /** Of the `approved` key: the average hours of the listed orders. */
+  hours: string | null;
   page: number;
   rows: StatusOrderRow[];
 };
@@ -76,6 +83,8 @@ type Row = {
   progress: OrderProgress;
   submitted_on: string;
   needed_by: string;
+  opened_on: string | null;
+  approval_seconds: string | null;
 };
 
 async function statusOrdersIn(
@@ -86,17 +95,23 @@ async function statusOrdersIn(
   key: DrillKey,
   page: number | "all",
 ): Promise<StatusOrders> {
-  if (key.kind !== "status" && key.kind !== "due") throw new PeriodRefusedError();
+  if (key.kind !== "status" && key.kind !== "due" && key.kind !== "approved") {
+    throw new PeriodRefusedError();
+  }
   const actor = await authorizeAnalytics(db, userId, filters);
   const { period } = await resolvePeriod(db, input);
   const day = today();
   const where =
     key.kind === "status"
       ? sql`${ordersWhere(actor, period, filters)} and analytics_orders.status = ${key.status}`
-      : ordersWhere(actor, { due: key.due, today: day }, filters);
+      : key.kind === "approved"
+        ? ordersWhere(actor, { opened: period }, filters)
+        : ordersWhere(actor, { due: key.due, today: day }, filters);
 
-  const summary = await db.execute<{ count: string }>(sql`
-    select count(*)::text as count from analytics_orders where ${where}`);
+  const summary = await db.execute<{ count: string; seconds: string }>(sql`
+    select count(*)::text as count, coalesce(sum(approval_seconds), 0)::text as seconds
+    from analytics_orders where ${where}`);
+  const count = Number(summary.rows[0]!.count);
   const pageNumber = page === "all" ? 1 : page;
   const limit =
     page === "all"
@@ -107,7 +122,9 @@ async function statusOrdersIn(
            case when v.is_default then null else v.name end as subtype_name,
            d.name as department_name, b.name as branch_name, analytics_orders.status,
            analytics_orders.progress, analytics_orders.submitted_on::text as submitted_on,
-           analytics_orders.needed_by::text as needed_by
+           analytics_orders.needed_by::text as needed_by,
+           analytics_orders.opened_on::text as opened_on,
+           analytics_orders.approval_seconds::text as approval_seconds
     from analytics_orders
     join orders o on o.id = analytics_orders.order_id
     join product_variants v on v.id = o.variant_id
@@ -115,14 +132,16 @@ async function statusOrdersIn(
     join departments d on d.id = analytics_orders.department_id
     join branches b on b.id = analytics_orders.branch_id
     where ${where}
-    order by analytics_orders.needed_by, o.number, analytics_orders.order_id
+    order by ${key.kind === "approved" ? sql`analytics_orders.opened_on desc,` : sql``}
+             analytics_orders.needed_by, o.number, analytics_orders.order_id
     ${limit}`);
 
   return {
     period,
     today: day,
     key,
-    count: Number(summary.rows[0]!.count),
+    count,
+    hours: key.kind === "approved" ? averageHours(BigInt(summary.rows[0]!.seconds), count) : null,
     page: pageNumber,
     rows: found.rows.map((row) => ({
       orderId: row.order_id,
@@ -135,6 +154,11 @@ async function statusOrdersIn(
       submittedOn: row.submitted_on,
       neededBy: row.needed_by,
       overdue: isOverdue(row.status, row.progress, row.needed_by, day),
+      openedOn: key.kind === "approved" ? row.opened_on : null,
+      approvalHours:
+        key.kind === "approved" && row.approval_seconds !== null
+          ? averageHours(BigInt(row.approval_seconds), 1)
+          : null,
     })),
   };
 }

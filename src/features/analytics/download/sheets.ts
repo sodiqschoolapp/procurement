@@ -15,6 +15,9 @@ import type { CancelledRecords } from "../queries/cancelled-records";
 import type { CashOrders } from "../queries/cash-orders";
 import type { Managers } from "../queries/managers";
 import type { MyApprovals } from "../queries/my-approvals";
+import type { MyCash } from "../queries/my-cash";
+import type { MyEstimates } from "../queries/my-estimates";
+import type { MyOrders } from "../queries/my-orders";
 import type { OrderStatuses } from "../queries/order-statuses";
 import type { Prices, SubtypeName } from "../queries/prices";
 import type { AnalyticsFilterOptions } from "../queries/filters";
@@ -131,19 +134,31 @@ export function recordsSheet(
   options: AnalyticsFilterOptions,
   locale: Locale,
 ): AnalyticsSheet {
-  const { t } = translators(locale);
+  const { t, format } = translators(locale);
   const name = t("sheets.records");
+  const lines = heading(locale, name, list.range, filters, options);
+  // A priced key's list names the quantity and the goods My estimates reads (6.5b).
+  if (list.priced) {
+    lines.push(
+      t("my.list.pricedSummary", {
+        count: list.count,
+        qty: format.quantity(list.priced.qty),
+        goods: format.money(list.priced.goods),
+      }),
+    );
+  }
+  const priced = list.price !== null || list.priced !== null;
   return {
     name,
-    heading: heading(locale, name, list.range, filters, options),
+    heading: lines,
     columns: [
       t("records.columns.order"),
       t("records.columns.product"),
       t("records.columns.branch"),
       t("records.columns.date"),
       t("records.columns.supplier"),
-      // A price key's list carries each record's quantity and unit price (6.4b).
-      ...(list.price ? [t("records.columnsQty"), t("records.columnsUnitPrice")] : []),
+      // A price key's list carries each record's quantity and unit price (6.4b), as a priced one.
+      ...(priced ? [t("records.columnsQty"), t("records.columnsUnitPrice")] : []),
       t("records.columns.amount"),
     ],
     rows: list.rows.map((row) => [
@@ -155,7 +170,7 @@ export function recordsSheet(
       { kind: "text", value: row.branchName },
       { kind: "date", value: row.purchasedOn },
       { kind: "text", value: row.supplierName ?? t("records.noSupplier") },
-      ...(list.price
+      ...(priced
         ? ([
             { kind: "text", value: row.qty },
             { kind: "money", value: row.unitPrice },
@@ -163,7 +178,7 @@ export function recordsSheet(
         : []),
       { kind: "money", value: row.amount },
     ]),
-    total: { label: t("spending.total"), amount: list.total, column: list.price ? 8 : 6 },
+    total: { label: t("spending.total"), amount: list.total, column: priced ? 8 : 6 },
   };
 }
 
@@ -977,7 +992,7 @@ export function statusOrdersSheet(
     name,
     // A coming-up or overdue list is of now: its line names today (decided item 2).
     heading:
-      list.key.kind === "status"
+      list.key.kind !== "due"
         ? heading(locale, name, list.period, filters, options)
         : heading(
             locale,
@@ -995,8 +1010,10 @@ export function statusOrdersSheet(
       t("principal.columns.submitted"),
       t("principal.columns.neededBy"),
       t("principal.columns.overdue"),
+      // The Manager's `approved` list carries each order's day into Open and its hours (6.5b).
+      ...(list.key.kind === "approved" ? [t("my.columns.opened"), t("my.columns.hours")] : []),
     ],
-    rows: list.rows.map((row) => [
+    rows: list.rows.map((row): CellValue[] => [
       { kind: "text", value: row.orderNumber },
       {
         kind: "text",
@@ -1007,6 +1024,14 @@ export function statusOrdersSheet(
       { kind: "date", value: row.submittedOn },
       { kind: "date", value: row.neededBy },
       { kind: "text", value: row.overdue ? t("principal.overdue") : "" },
+      ...(list.key.kind === "approved"
+        ? [
+            row.openedOn
+              ? ({ kind: "date", value: row.openedOn } as const)
+              : ({ kind: "text", value: "" } as const),
+            { kind: "text", value: row.approvalHours ?? "" } as const,
+          ]
+        : []),
     ]),
   };
 }
@@ -1048,6 +1073,186 @@ export function myApprovalsSheet(
         { kind: "text", value: t("principal.approvals.myDecisions") },
         { kind: "count", value: block.mine.count },
         { kind: "text", value: "" },
+      ],
+    ],
+  };
+}
+
+// The sheets of the Manager's blocks (build-plan 6.5b; plan of 6.5b, decided items 1 to 5). The
+// numbers are the query's.
+
+/** My orders: by status with the change, the total, the hours to full approval, the share sent back. */
+export function myOrdersSheet(
+  block: MyOrders,
+  filters: AnalyticsFilters,
+  options: AnalyticsFilterOptions,
+  locale: Locale,
+): AnalyticsSheet {
+  const { t, tRoot } = translators(locale);
+  const name = t("sheets.myOrders");
+  const count = (label: string, value: number, change: Change): CellValue[] => [
+    { kind: "text", value: label },
+    { kind: "count", value },
+    { kind: "text", value: String(change.difference) },
+    { kind: "text", value: change.percent === null ? "" : `${change.percent} %` },
+  ];
+  return {
+    name,
+    heading: heading(locale, name, block.period, filters, options),
+    columns: [
+      t("principal.columns.what"),
+      t("principal.columns.value"),
+      t("spending.columns.change"),
+      "%",
+    ],
+    rows: [
+      ...block.statuses.map((row) =>
+        count(tRoot(`requestStatus.${row.status}`), row.count, row.change),
+      ),
+      count(t("principal.orders.total"), block.total.count, block.total.change),
+      [
+        { kind: "text", value: t("my.orders.approvalHours") },
+        { kind: "text", value: block.approval.hours ?? "" },
+        { kind: "text", value: block.approval.change ?? "" },
+        { kind: "text", value: "" },
+      ],
+      [
+        { kind: "text", value: t("my.orders.approved") },
+        { kind: "count", value: block.approval.count },
+        { kind: "text", value: "" },
+        { kind: "text", value: "" },
+      ],
+      [
+        { kind: "text", value: t("my.orders.decisions") },
+        { kind: "count", value: block.decisions },
+        { kind: "text", value: "" },
+        { kind: "text", value: "" },
+      ],
+      [
+        { kind: "text", value: t("my.orders.sentBack") },
+        { kind: "count", value: block.sentBack.count },
+        { kind: "text", value: signedText(block.sentBack.change) },
+        { kind: "text", value: signedText(block.sentBack.share) },
+      ],
+    ],
+  };
+}
+
+/** The most common reasons my orders were sent back for. */
+export function myReasonsSheet(
+  block: MyOrders,
+  filters: AnalyticsFilters,
+  options: AnalyticsFilterOptions,
+  locale: Locale,
+): AnalyticsSheet {
+  const { t } = translators(locale);
+  const name = t("sheets.myReasons");
+  return {
+    name,
+    heading: heading(locale, name, block.period, filters, options),
+    columns: [
+      t("approvals.columns.reason"),
+      t("speed.columns.decisions"),
+      t("prices.columns.change"),
+    ],
+    rows: block.reasons.map((reason): CellValue[] => [
+      { kind: "text", value: reason.text },
+      { kind: "count", value: reason.count },
+      { kind: "count", value: Number(reason.change.difference) },
+    ]),
+  };
+}
+
+/** My estimates: every product, then all products together. */
+export function myEstimatesSheet(
+  block: MyEstimates,
+  filters: AnalyticsFilters,
+  options: AnalyticsFilterOptions,
+  locale: Locale,
+): AnalyticsSheet {
+  const { t } = translators(locale);
+  const name = t("sheets.myEstimates");
+  const price = (value: bigint | null): CellValue =>
+    value === null ? { kind: "text", value: "" } : { kind: "money", value };
+  const row = (label: string, each: MyEstimates["all"]): CellValue[] => [
+    { kind: "text", value: label },
+    { kind: "count", value: each.records },
+    { kind: "text", value: each.qty },
+    price(each.plannedPrice),
+    price(each.actualPrice),
+    each.difference === null
+      ? { kind: "text", value: "" }
+      : { kind: "signedMoney", value: each.difference },
+    { kind: "text", value: signedText(each.percent) },
+    { kind: "text", value: signedText(each.change) },
+  ];
+  return {
+    name,
+    heading: heading(locale, name, block.period, filters, options),
+    columns: [
+      t("principal.columns.product"),
+      t("my.columns.records"),
+      t("records.columnsQty"),
+      t("my.columns.planned"),
+      t("my.columns.actual"),
+      t("my.columns.difference"),
+      "%",
+      t("prices.columns.change"),
+    ],
+    rows: [
+      ...block.products.map((each) =>
+        row(each.isActive ? each.name : t("inactive", { name: each.name }), each),
+      ),
+      row(t("my.estimates.all"), block.all),
+    ],
+  };
+}
+
+/** My cash: each order with its count, held and owed apart, never netted (08). */
+export function myCashSheet(
+  block: MyCash,
+  filters: AnalyticsFilters,
+  options: AnalyticsFilterOptions,
+  locale: Locale,
+): AnalyticsSheet {
+  const { t, tRoot } = translators(locale);
+  const name = t("sheets.myCash");
+  const blank: CellValue = { kind: "text", value: "" };
+  return {
+    name,
+    heading: heading(locale, name, null, filters, options),
+    columns: [
+      t("cash.columns.order"),
+      t("cash.columns.product"),
+      t("cash.columns.branch"),
+      t("cash.columns.status"),
+      t("cash.columns.since"),
+      t("my.columns.count"),
+    ],
+    rows: [
+      ...block.rows.map((row): CellValue[] => [
+        { kind: "text", value: row.orderNumber },
+        { kind: "text", value: productText(row) },
+        { kind: "text", value: row.branchName },
+        { kind: "text", value: tRoot(`requestStatus.${row.status}`) },
+        { kind: "date", value: row.since },
+        { kind: "signedMoney", value: row.cashCount },
+      ]),
+      [
+        { kind: "text", value: t("my.cash.held") },
+        blank,
+        blank,
+        blank,
+        blank,
+        { kind: "money", value: block.held },
+      ],
+      [
+        { kind: "text", value: t("my.cash.owed") },
+        blank,
+        blank,
+        blank,
+        blank,
+        { kind: "money", value: block.owed },
       ],
     ],
   };

@@ -12,6 +12,10 @@ import {
   managersSheet,
   movesSheet,
   myApprovalsSheet,
+  myCashSheet,
+  myEstimatesSheet,
+  myOrdersSheet,
+  myReasonsSheet,
   orderStatusesSheet,
   outcomeOrdersSheet,
   outcomesSheet,
@@ -35,6 +39,9 @@ import { getAnalyticsFilters } from "@/features/analytics/queries/filters";
 import { getHeadSpending } from "@/features/analytics/queries/head-spending";
 import { getManagers } from "@/features/analytics/queries/managers";
 import { getMyApprovals } from "@/features/analytics/queries/my-approvals";
+import { getMyCash } from "@/features/analytics/queries/my-cash";
+import { getMyEstimates } from "@/features/analytics/queries/my-estimates";
+import { getMyOrders } from "@/features/analytics/queries/my-orders";
 import { getOrderStatuses } from "@/features/analytics/queries/order-statuses";
 import { getOutcomeOrders } from "@/features/analytics/queries/outcome-orders";
 import { getPlanVsActual } from "@/features/analytics/queries/plan-vs-actual";
@@ -56,7 +63,8 @@ import { now } from "@/server/clock";
 // categories, records; 6.4a: branches, departments, suppliers, payments, outcomes,
 // outcomeBranches, outcomeManagers, orders; 6.4b: priceTrend, priceRises, priceSpread, stepHours,
 // waiting, decisions, reasons, approvals; 6.4c: managers, cancelled, cash; 6.4d: warehouse,
-// departmentUse, stock, moves; 6.5a: products, orderStatuses, statusOrders, myApprovals)
+// departmentUse, stock, moves; 6.5a: products, orderStatuses, statusOrders, myApprovals; 6.5b:
+// myOrders, myReasons, myEstimates, myCash)
 // (10-notifications-analytics-reports.md, Analytics page per role, point 4; 03 Permission matrix
 // "Export to Excel, download PDF, print"; build-plan 6.3). A route that writes nothing, as the
 // order list's download (plan of 2.14, decided item 12). The address is the page's, checked by
@@ -260,6 +268,34 @@ export async function GET(request: NextRequest): Promise<Response> {
         sheet = myApprovalsSheet(
           await getMyApprovals(user.id, period, filters),
           filters,
+          options,
+          locale,
+        );
+        break;
+      // The Manager's blocks read the user's own orders, whatever Manager the address names
+      // (plan of 6.5b, decided item 6): the heading names none.
+      case "myOrders":
+      case "myReasons": {
+        const mine = await getMyOrders(user.id, period, filters);
+        const shown = { ...filters, manager: null };
+        sheet =
+          block === "myOrders"
+            ? myOrdersSheet(mine, shown, options, locale)
+            : myReasonsSheet(mine, shown, options, locale);
+        break;
+      }
+      case "myEstimates":
+        sheet = myEstimatesSheet(
+          await getMyEstimates(user.id, period, filters),
+          { ...filters, manager: null },
+          options,
+          locale,
+        );
+        break;
+      case "myCash":
+        sheet = myCashSheet(
+          await getMyCash(user.id, filters),
+          { ...filters, manager: null },
           options,
           locale,
         );

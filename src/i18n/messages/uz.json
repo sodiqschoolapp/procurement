@@ -2420,7 +2420,11 @@
       "products": "Eng ko'p xarid qilingan 10 mahsulot",
       "orderStatuses": "Holat bo'yicha buyurtmalar",
       "statusOrders": "Buyurtmalar",
-      "myApprovals": "Mening tasdiqlarim"
+      "myApprovals": "Mening tasdiqlarim",
+      "myOrders": "Mening buyurtmalarim",
+      "myReasons": "Qaytarilganlar sabablari",
+      "myEstimates": "Mening hisob-kitobim",
+      "myCash": "Mening pulim"
     },
     "plan": {
       "title": "Reja va haqiqat",
@@ -2751,6 +2755,62 @@
         "summary": "{count, plural, other {# ta buyurtma}}",
         "empty": "Bu raqam ortida buyurtma yo'q.",
         "dated": "{label}: {date}"
+      }
+    },
+    "my": {
+      "orders": {
+        "title": "Mening buyurtmalarim",
+        "note": "Holat bo'yicha: davrda birinchi marta yuborilgan buyurtmalarim, hozirgi holatida. To'liq tasdiq: birinchi yuborishdan «Ochiq»gacha, davrda ochilgan buyurtmalarim bo'yicha. Qaytarilgan: davrda buyurtmalarim bo'yicha tasdiqlovchilar qarorlaridan.",
+        "approvalHours": "To'liq tasdiqgacha o'rtacha vaqt",
+        "noApproval": "Davrda birorta buyurtmam ochilmagan",
+        "approved": "«Ochiq»ga yetgan buyurtmalar",
+        "sentBack": "Qaytarilgan",
+        "noDecision": "Davrda buyurtmalarim bo'yicha qaror yo'q",
+        "share": "{share} % ({decisions} tadan {count})",
+        "noDecisionBefore": "Oldingi davrda qaror yo'q",
+        "decisions": "Buyurtmalarim bo'yicha qarorlar",
+        "reasons": "Buyurtmalarim nega qaytarilgan"
+      },
+      "estimates": {
+        "title": "Mening hisob-kitobim",
+        "note": "Rejadagi narxim to'langan narxga qarshi, mahsulot bo'yicha, davrdagi xarid yozuvlarim asosida. Sovg'alar va qo'shimcha xarajatlar hisobga olinmaydi.",
+        "byProduct": "Mahsulot bo'yicha reja va to'langan narx",
+        "empty": "Davrda narxli xarid yozuvim yo'q.",
+        "all": "Barcha mahsulotlar",
+        "records": "{count, plural, other {# yozuv}}",
+        "even": "Rejadagidek",
+        "less": "{amount} kam ({percent} %)",
+        "more": "{amount} ko'p ({percent} %)",
+        "noBefore": "Oldingi davrda sotib olinmagan",
+        "same": "Oldingi davrdagidek",
+        "pointsUp": "Oldingi davrga nisbatan +{points} punkt",
+        "pointsDown": "Oldingi davrga nisbatan −{points} punkt"
+      },
+      "cash": {
+        "title": "Mening pulim",
+        "note": "Hozir, davrdan qat'i nazar: «Yopilgan» bo'lmagan va pul hisobi 0 emas har bir buyurtmam.",
+        "held": "Qo'limda",
+        "owed": "Maktab menga qarzdor",
+        "perOrder": "Ochiq buyurtmalar bo'yicha hisob",
+        "empty": "Ochiq buyurtmalarimning birortasida qo'lda pul yoki qarz yo'q.",
+        "holds": "Qo'lda {amount}",
+        "isOwed": "Qarz {amount}"
+      },
+      "columns": {
+        "opened": "Ochilgan",
+        "hours": "Tasdiqgacha soat",
+        "records": "Yozuvlar",
+        "planned": "Rejadagi narx",
+        "actual": "To'langan narx",
+        "difference": "Farq",
+        "count": "Pul hisobi"
+      },
+      "list": {
+        "approved": "Ochilgan {first} – {last}",
+        "approvedSummary": "{count, plural, other {# buyurtma}}, o'rtacha {hours} soat",
+        "priced": "{name}: narxli yozuvlar {first} – {last}",
+        "pricedAll": "Barcha mahsulotlar: narxli yozuvlar {first} – {last}",
+        "pricedSummary": "{count, plural, other {# yozuv}}, miqdor {qty}, tovar {goods}"
       }
     }
   }

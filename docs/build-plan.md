@@ -502,7 +502,7 @@ What each role sees first, and the numbers behind the work.
   - **Build:** The four Principal blocks: Spending (my branch by month against the period before; by category and department; top 10 products), Orders (by status; needed-by dates coming up; overdue orders), My approvals (waiting now; my average time to decide), Warehouse (stock value; low stock; what each department used), each number with its drill-down and Excel export.
   - **Done when:** A database test: the Principal's page holds only the Principal's branch.
 
-- [ ] **6.5b Analytics: Manager, My orders, My estimates, My cash**
+- [x] **6.5b Analytics: Manager, My orders, My estimates, My cash**
   - **Read:** `10-notifications-analytics-reports.md` (Analytics page per role: Manager, own branches).
   - **Build:** My orders (by status; average time to full approval; share sent back, with reasons), My estimates (difference between planned and actual price per product), My cash (count per open order), each number with its drill-down and Excel export.
   - **Done when:** A database test: the Manager's blocks hold only the Manager's own orders in the Manager's branches.
