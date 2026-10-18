@@ -12,10 +12,12 @@ import { getSpending } from "@/features/analytics/queries/spending";
 import {
   bought,
   buyingEvent,
+  decided,
+  recordOn,
   refreshNow,
   spendingScene,
 } from "../../../../../tests/helpers/analytics";
-import { insertCategory } from "../../../../../tests/helpers/catalog";
+import { insertCategory, insertCompany } from "../../../../../tests/helpers/catalog";
 import { setClock } from "../../../../../tests/helpers/clock";
 import { downloadRequest } from "../../../../../tests/helpers/files";
 import { describePermissionMatrix } from "../../../../../tests/helpers/permission-matrix";
@@ -273,4 +275,139 @@ describePermissionMatrix("GET /analytics/download, the blocks of 6.4a behind the
     expect(red).toBeDefined();
     if (!seen[0]) throw new AuthorizationError("not_found");
   },
+});
+
+// The blocks of 6.4b (plan of 6.4b, Server actions and queries; Tests: "every new block in the
+// route matrix"): each table the route writes for the user, with no branch filter, holds the
+// branch's own rows only behind the wall, the same wall for every table.
+describePermissionMatrix("GET /analytics/download, the blocks of 6.4b behind the wall", {
+  permission: "data.export",
+  async run({ user, branchId }) {
+    setClock(AT);
+    const scene = await spendingScene(branchId);
+    const other = await insertCompany();
+    // A subtype bought at 5 000 in September, then 6 000 from another supplier and 6 500 in
+    // October: a trend point of 6 250, a rise and a spread.
+    const item = await bought(scene, { purchasedOn: "2031-09-20", unitPrice: "5000" });
+    await recordOn(
+      scene,
+      { id: item.orderId, ownerId: item.ownerId, variantId: item.variantId },
+      { purchasedOn: "2031-10-04", unitPrice: "6000", supplierId: other.id },
+    );
+    await recordOn(
+      scene,
+      { id: item.orderId, ownerId: item.ownerId, variantId: item.variantId },
+      { purchasedOn: "2031-10-05", unitPrice: "6500" },
+    );
+    // A send back after an hour, and an order waiting at Principal.
+    const back = await decided(scene, "RETURNED", [
+      { type: "SUBMIT", from: "DRAFT", to: "PENDING_HEAD", at: "2031-10-02T04:00:00Z" },
+      {
+        type: "SEND_BACK",
+        from: "PENDING_HEAD",
+        to: "RETURNED",
+        at: "2031-10-02T05:00:00Z",
+        reason: `Narxni tekshiring ${branchId}`,
+      },
+    ]);
+    await decided(scene, "PENDING_PRINCIPAL", [
+      { type: "SUBMIT", from: "DRAFT", to: "PENDING_HEAD", at: "2031-10-14T04:00:00Z" },
+      {
+        type: "APPROVE",
+        from: "PENDING_HEAD",
+        to: "PENDING_PRINCIPAL",
+        at: "2031-10-14T05:00:00Z",
+      },
+    ]);
+    await refreshNow();
+    const names = (
+      await db.execute<{ branch: string; product: string }>(sql`
+        select b.name as branch, pr.name as product
+        from branches b, product_variants v join products pr on pr.id = v.product_id
+        where b.id = ${branchId} and v.id = ${item.variantId}`)
+    ).rows[0]!;
+    const cookie = await signInAs(user);
+    const get = async (block: ExportBlock, extra: Parameters<typeof analyticsSearch>[2] = {}) =>
+      sheetOf(
+        await GET(
+          downloadRequest(
+            `/analytics/download?${analyticsSearch(THIS_MONTH, NO_ANALYTICS_FILTERS, {
+              ...extra,
+              block,
+            })}`,
+            cookie,
+          ),
+        ),
+      );
+    const texts = async (block: ExportBlock, extra: Parameters<typeof analyticsSearch>[2] = {}) =>
+      (await get(block, extra)).flat().map((cell) => String(cell));
+
+    const trend = await get("priceTrend", { variant: item.variantId });
+    const seen = [
+      trend.some((row) => row[1] === 6_250),
+      (await texts("priceRises")).includes(names.product),
+      (await texts("priceSpread")).includes(names.product),
+      (await texts("stepHours")).includes(names.branch),
+      (await texts("reasons")).includes(`Narxni tekshiring ${branchId}`),
+      (await texts("approvals", { key: { kind: "step", step: null, decision: null } })).includes(
+        back.number!,
+      ),
+      (
+        await texts("records", {
+          key: { kind: "price", variant: item.variantId, month: null, noSupplier: false },
+        })
+      ).includes(item.number!),
+    ];
+    // The same wall for every table.
+    expect(seen).toEqual(seen.map(() => seen[0]));
+    // "Waiting now" and the decisions count the branch's own rows only behind it too.
+    const waiting = await get("waiting");
+    const decisions = await get("decisions");
+    expect(waiting.some((row) => typeof row[1] === "number")).toBe(true);
+    expect(decisions.some((row) => typeof row[1] === "number")).toBe(true);
+    if (!seen[0]) throw new AuthorizationError("not_found");
+  },
+});
+
+describe("GET /analytics/download, the 6.4b sheets (10 point 4; plan of 6.4b)", () => {
+  it("writes every price rise with both prices as number cells and the rise", async () => {
+    setClock(AT);
+    const scene = await spendingScene();
+    const head = await insertUser("HEAD");
+    const item = await bought(scene, { purchasedOn: "2031-09-20", unitPrice: "5000" });
+    await recordOn(
+      scene,
+      { id: item.orderId, ownerId: item.ownerId, variantId: item.variantId },
+      { purchasedOn: "2031-10-04", unitPrice: "6000" },
+    );
+    await refreshNow();
+    const filters = { ...NO_ANALYTICS_FILTERS, category: scene.category.id };
+    const rows = await sheetOf(
+      await GET(
+        downloadRequest(
+          `/analytics/download?${analyticsSearch(THIS_MONTH, filters, { block: "priceRises" })}`,
+          await signInAs(head),
+        ),
+      ),
+    );
+    const body = rows.filter((row) => typeof row[1] === "number");
+    expect(body).toHaveLength(1);
+    expect([body[0]![1], body[0]![3], body[0]![5], body[0]![6]]).toEqual([
+      5_000,
+      6_000,
+      1_000,
+      "20.0 %",
+    ]);
+  });
+
+  it("answers 404 for a reason beside a key that is not a send back or reject", async () => {
+    const head = await insertUser("HEAD");
+    const response = await GET(
+      downloadRequest(
+        "/analytics/download?period=this_month&block=approvals&key=step:all:APPROVE&reason=narxi",
+        await signInAs(head),
+      ),
+    );
+    expect(response.status).toBe(404);
+  });
 });

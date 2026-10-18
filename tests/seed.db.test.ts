@@ -47,9 +47,12 @@ import { countPendingSuggestions, listSuggestions } from "@/features/catalog/que
 import { getFinanceHome } from "@/features/home/queries/finance-home";
 import { getHeadHome } from "@/features/home/queries/head-home";
 import { NO_ANALYTICS_FILTERS } from "@/features/analytics/period-params";
+import { getApprovalOrders } from "@/features/analytics/queries/approval-orders";
+import { getApprovalSpeed } from "@/features/analytics/queries/approval-speed";
 import { getHeadSpending } from "@/features/analytics/queries/head-spending";
 import { getOutcomeOrders } from "@/features/analytics/queries/outcome-orders";
 import { getPlanVsActual } from "@/features/analytics/queries/plan-vs-actual";
+import { getPrices } from "@/features/analytics/queries/prices";
 import { recordsWhere } from "@/features/purchasing/order-records";
 import { refreshAnalytics } from "@/server/jobs/analytics-refresh";
 import { listOrderGroups } from "@/features/orders/queries/order-list";
@@ -1867,6 +1870,73 @@ describe("the seed on the Head's Analytics page (build plan 6.4a, Done when: one
       ]);
       expect(plan.total.overspent.amount).toBe(list.sum);
       expect(list.sum).toBeGreaterThanOrEqual(150_000n);
+    } finally {
+      client.release();
+    }
+  });
+});
+
+describe("the seed on the Head's Analytics page (build plan 6.4b, Done when: one number of each block against the seed)", () => {
+  it("shows seed_head the service's price 250 000 this month and CHL's Finance step at 1.0 h", async () => {
+    const client = await db.$client.connect();
+    try {
+      await seed(client, ENV, MOMENT);
+      setClock(MOMENT);
+      await db.transaction((tx) => refreshAnalytics(tx));
+      const head = (
+        await client.query<{ id: string }>("select id from users where username = 'seed_head'")
+      ).rows[0]!.id;
+      const chl = (await client.query<{ id: string }>("select id from branches where code = 'CHL'"))
+        .rows[0]!.id;
+      const idOf = async (index: number) =>
+        (
+          await client.query<{ id: string }>("select id from orders where client_key = $1", [
+            SEED_ORDERS[index]!.clientKey,
+          ])
+        ).rows[0]!.id;
+      const thisMonth = { choice: "this_month", from: null, to: null } as const;
+      const filters = { ...NO_ANALYTICS_FILTERS, branch: chl };
+
+      // Prices: the seed's one priced record this month is the service "Santexnika ta'miri", 1 ×
+      // 250 000 (SEED_ORDERS[11]), so its trend point is unitPriceOf(250 000, 1) = 250 000 and it is
+      // the subtype shown when none is chosen (plan of 6.4b, decided item 3).
+      const prices = await getPrices(head, thisMonth, filters, null);
+      expect(prices.trend).toMatchObject({ productName: "Santexnika ta'miri", subtypeName: null });
+      expect(prices.trend!.points).toEqual([
+        { month: "2031-04", price: 250_000n, count: 1, change: null },
+      ]);
+
+      // Approval speed, worked out from the seed's order_events (review of the plan, correction
+      // 3): the seed writes one action per move key, its time the earliest of its orders; April in
+      // Tashkent starts at 19:00 UTC on 31 March. The Finance stays decided in April are those of
+      // SEED_ORDERS[10] and [11], each from 01:00 to 02:00 UTC on 2 April: 2 stays, 7 200 s, 1.0 h.
+      // SEED_ORDERS[7]'s Finance stay ended on 30 March, in March. SEED_ORDERS[2] has waited at
+      // Principal since 04:00 UTC on 30 March, 73 hours at the seed moment: "2 to 7 days".
+      const speed = await getApprovalSpeed(head, thisMonth, filters);
+      expect(speed.all.PENDING_FINANCE).toMatchObject({ hours: "1.0", count: 2 });
+      const finance = await getApprovalOrders(
+        head,
+        thisMonth,
+        filters,
+        { kind: "step", step: "PENDING_FINANCE", decision: null },
+        null,
+        "all",
+      );
+      expect(new Set(finance.rows.map((row) => row.orderId))).toEqual(
+        new Set([await idOf(10), await idOf(11)]),
+      );
+      expect(speed.waiting.PENDING_PRINCIPAL).toMatchObject({ week: 1, all: 1 });
+      const waiting = await getApprovalOrders(
+        head,
+        thisMonth,
+        filters,
+        { kind: "waiting", step: "PENDING_PRINCIPAL", group: "week" },
+        null,
+        "all",
+      );
+      expect(waiting.rows.map((row) => [row.orderId, row.hours])).toEqual([
+        [await idOf(2), "73.0"],
+      ]);
     } finally {
       client.release();
     }
