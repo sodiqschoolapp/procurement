@@ -53,6 +53,12 @@ describe("parseAnalyticsParams", () => {
     [{ kind: "step", step: null, decision: "APPROVE" }, "decisions"],
     [{ kind: "waiting", step: "PENDING_HEAD", group: "twoDays" }, "waiting"],
     [{ kind: "waiting", step: null, group: null }, "approvals"],
+    // The keys and blocks of 6.4d (plan of 6.4d, decided item 9).
+    [{ kind: "stock", view: "value" }, "warehouse"],
+    [{ kind: "stock", view: "low" }, "stock"],
+    [{ kind: "stock", view: "still" }, "stock"],
+    [{ kind: "moves", move: "use" }, "departmentUse"],
+    [{ kind: "moves", move: "writeoff" }, "moves"],
   ] as const)("reads the key %o and the block %s back", (key, block) => {
     const text = analyticsSearch(
       { choice: "this_month", from: null, to: null },
@@ -176,6 +182,9 @@ describe("parseAnalyticsParams", () => {
     ["a decision that is not the approver's", { key: "step:all:CANCEL" }],
     ["an unknown age group", { key: "waiting:all:month" }],
     ["a waiting key without its group", { key: "waiting:all" }],
+    ["an unknown stock view", { key: "stock:everything" }],
+    ["a stock key without its view", { key: "stock" }],
+    ["an unknown movement kind", { key: "moves:transfer" }],
     ["a subtype that is not an id", { variant: "chalk" }],
     ["a reason beside an approve", { key: "step:all:APPROVE", reason: "narxi qimmat" }],
     ["a reason without a decision", { reason: "narxi qimmat" }],
