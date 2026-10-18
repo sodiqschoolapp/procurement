@@ -487,7 +487,7 @@ What each role sees first, and the numbers behind the work.
   - **Build:** The Prices block (price trend of any product; biggest price rises in the last 90 days; the same product bought at different prices by different branches or suppliers) and the Approval speed block (average hours at each step per branch; orders waiting now, by age; share sent back or rejected, with the most common reasons).
   - **Done when:** A database test checks one number of each of the two blocks against the seed.
 
-- [ ] **6.4c Analytics: Head, Managers** (6.4c split in two by its plan, pull request #107)
+- [x] **6.4c Analytics: Head, Managers** (6.4c split in two by its plan, pull request #107)
   - **Read:** `10-notifications-analytics-reports.md` (Analytics page per role: Head, all branches); `16-build-order.md` (phase 6 row).
   - **Build:** The Managers block (per Manager: number of orders, average difference from plan, cancelled purchase records, cash held and for how long), each number with its drill-down and Excel export.
   - **Done when:** A database test checks one number of the block against the seed.

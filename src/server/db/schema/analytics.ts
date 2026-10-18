@@ -3,6 +3,7 @@ import {
   bigint,
   check,
   date,
+  foreignKey,
   index,
   numeric,
   pgEnum,
@@ -259,6 +260,12 @@ export const analyticsCancelled = pgTable(
     amount: som("amount").notNull(),
   },
   (table) => [
+    // The branch the wall filters on is the order's (permission review of 6.4c, Should fix 3).
+    foreignKey({
+      name: "analytics_cancelled_order_branch_fk",
+      columns: [table.orderId, table.branchId],
+      foreignColumns: [orders.id, orders.branchId],
+    }),
     check("analytics_cancelled_amount_check", sql`${table.amount} >= 0`),
     index("analytics_cancelled_branch_id_cancelled_on_idx").on(table.branchId, table.cancelledOn),
     index("analytics_cancelled_order_id_idx").on(table.orderId),
@@ -297,6 +304,11 @@ export const analyticsCash = pgTable(
     since: date("since").notNull(),
   },
   (table) => [
+    foreignKey({
+      name: "analytics_cash_order_branch_fk",
+      columns: [table.orderId, table.branchId],
+      foreignColumns: [orders.id, orders.branchId],
+    }),
     check("analytics_cash_cash_count_check", sql`${table.cashCount} <> 0`),
     index("analytics_cash_branch_id_idx").on(table.branchId),
     index("analytics_cash_owner_id_idx").on(table.ownerId),

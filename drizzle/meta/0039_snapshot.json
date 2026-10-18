@@ -1,5 +1,5 @@
 {
-  "id": "9283c5b7-84e0-48dc-9ae3-1605d02b5e27",
+  "id": "bbecd06e-9b61-4097-af9d-c9826880a312",
   "prevId": "8b89cdcb-9d9e-48ca-b68f-9289ba39cb13",
   "version": "7",
   "dialect": "postgresql",
@@ -252,6 +252,21 @@
           ],
           "onDelete": "no action",
           "onUpdate": "no action"
+        },
+        "analytics_cancelled_order_branch_fk": {
+          "name": "analytics_cancelled_order_branch_fk",
+          "tableFrom": "analytics_cancelled",
+          "tableTo": "orders",
+          "columnsFrom": [
+            "order_id",
+            "branch_id"
+          ],
+          "columnsTo": [
+            "id",
+            "branch_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -436,6 +451,21 @@
           ],
           "columnsTo": [
             "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "analytics_cash_order_branch_fk": {
+          "name": "analytics_cash_order_branch_fk",
+          "tableFrom": "analytics_cash",
+          "tableTo": "orders",
+          "columnsFrom": [
+            "order_id",
+            "branch_id"
+          ],
+          "columnsTo": [
+            "id",
+            "branch_id"
           ],
           "onDelete": "no action",
           "onUpdate": "no action"

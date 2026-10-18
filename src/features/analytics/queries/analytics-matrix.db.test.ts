@@ -1,6 +1,8 @@
+import { sql } from "drizzle-orm";
 import { expect } from "vitest";
 
 import { AuthorizationError } from "@/server/authorize";
+import { db } from "@/server/db/client";
 
 import {
   bought,
@@ -425,6 +427,34 @@ describePermissionMatrix(
       expect(records.rows.some((row) => row.purchaseId === cancelled.purchaseId)).toBe(listed);
       expect(block.rows.some((row) => row.id === manager.id)).toBe(listed);
       if (!listed) throw new AuthorizationError("not_found");
+    },
+  },
+);
+
+// The ids of the filters (.claude/rules/server-actions.md: every id from the browser is checked to
+// belong to a branch the user may use; permission review of 6.4c, Should fix 2): a department or a
+// Manager of the branch, sent to each Managers query without a branch filter.
+describePermissionMatrix(
+  "getManagers, getCancelledRecords and getCashOrders with a department or a Manager of the branch",
+  {
+    permission: "data.view",
+    async run({ user, branchId }) {
+      const { manager, held } = await managerIn(branchId);
+      const department = (
+        await db.execute<{ department_id: string }>(
+          sql`select department_id from orders where id = ${held.orderId}`,
+        )
+      ).rows[0]!.department_id;
+      for (const filters of [
+        { ...NO_ANALYTICS_FILTERS, department },
+        { ...NO_ANALYTICS_FILTERS, manager: manager.id },
+      ]) {
+        const block = await getManagers(user.id, THIS_MONTH, filters);
+        await getCancelledRecords(user.id, THIS_MONTH, filters, false, "all");
+        const cash = await getCashOrders(user.id, filters, false, "all");
+        expect(block.rows.find((row) => row.id === manager.id)?.held).toBe(30_000n);
+        expect(cash.rows.map((row) => row.orderId)).toEqual([held.orderId]);
+      }
     },
   },
 );

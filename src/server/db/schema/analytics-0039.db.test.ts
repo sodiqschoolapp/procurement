@@ -26,6 +26,8 @@ type Ids = {
   purchase: string;
 };
 let ids: Ids;
+/** A branch that is not the order's, with every other value of the row valid (D40). */
+let otherBranch: string;
 
 beforeAll(async () => {
   const scene = await spendingScene();
@@ -39,6 +41,7 @@ beforeAll(async () => {
     supplier: scene.supplier.id,
     purchase: record.purchaseId,
   };
+  otherBranch = (await spendingScene()).branch.id;
 });
 
 describe("analytics_cancelled", () => {
@@ -91,6 +94,66 @@ describe("analytics_cancelled", () => {
       code: FOREIGN,
       constraint,
     });
+  });
+});
+
+describe("analytics_cancelled and analytics_cash: the branch is the order's (permission review of 6.4c, Should fix 3)", () => {
+  it.each([
+    [
+      "analytics_cancelled",
+      () =>
+        db.execute(sql`
+          insert into analytics_cancelled (purchase_id, order_id, branch_id, cancelled_on,
+            category_id, department_id, owner_id, amount)
+          values (${ids.purchase}, ${ids.order}, ${otherBranch}, '2031-05-02', ${ids.category},
+            ${ids.department}, ${ids.owner}, 0)`),
+      "analytics_cancelled_order_branch_fk",
+    ],
+    [
+      "analytics_cash",
+      () =>
+        db.execute(sql`
+          insert into analytics_cash (order_id, branch_id, owner_id, category_id, department_id,
+            cash_count, since)
+          values (${ids.order}, ${otherBranch}, ${ids.owner}, ${ids.category}, ${ids.department},
+            1, '2031-05-02')`),
+      "analytics_cash_order_branch_fk",
+    ],
+  ] as const)(
+    "%s refuses a branch that is not its order's, on insert",
+    async (_, insert, constraint) => {
+      expect(await refusalOf(insert())).toMatchObject({ code: FOREIGN, constraint });
+    },
+  );
+
+  it("refuses moving a row to another branch, on update", async () => {
+    await db.execute(sql`
+      insert into analytics_cash (order_id, branch_id, owner_id, category_id, department_id,
+        cash_count, since)
+      values (${ids.order}, ${ids.branch}, ${ids.owner}, ${ids.category}, ${ids.department}, 1,
+        '2031-05-02')`);
+    await db.execute(sql`
+      insert into analytics_cancelled (purchase_id, order_id, branch_id, cancelled_on,
+        category_id, department_id, owner_id, amount)
+      values (${ids.purchase}, ${ids.order}, ${ids.branch}, '2031-05-02', ${ids.category},
+        ${ids.department}, ${ids.owner}, 0)`);
+    try {
+      expect(
+        await refusalOf(
+          db.execute(sql`update analytics_cash set branch_id = ${otherBranch}
+                         where order_id = ${ids.order}`),
+        ),
+      ).toMatchObject({ code: FOREIGN, constraint: "analytics_cash_order_branch_fk" });
+      expect(
+        await refusalOf(
+          db.execute(sql`update analytics_cancelled set branch_id = ${otherBranch}
+                         where purchase_id = ${ids.purchase}`),
+        ),
+      ).toMatchObject({ code: FOREIGN, constraint: "analytics_cancelled_order_branch_fk" });
+    } finally {
+      await db.execute(sql`delete from analytics_cash where order_id = ${ids.order}`);
+      await db.execute(sql`delete from analytics_cancelled where purchase_id = ${ids.purchase}`);
+    }
   });
 });
 

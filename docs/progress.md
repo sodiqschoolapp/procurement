@@ -1543,4 +1543,21 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - Tests: `decided()` and `movesOf()` in `tests/helpers/analytics.ts` write an order's approval history as the actions do.
 - The quantity formatter writes 2.0 as "2": hours read "2 soat", "2,3 soat".
 
-The next task is 6.4c.
+## 6.4c Analytics: Head, Managers (18.10.2026, pull request #107)
+
+**Built**
+- 6.4c split into 6.4c (Managers) and 6.4d (Warehouse) in `docs/build-plan.md` (phase 6 now 13 tasks, total 104).
+- Migration 0039: `analytics_cancelled` (each cancelled record, its cancel day and its total as entered) and `analytics_cash` (each order's `orderCashCount()` and `cashSince()`, not Draft, not Closed), both rewritten by `refreshAnalytics()`.
+- Domain: `averageSom()` (analytics.ts). Queries `getManagers()`, `getCancelledRecords()`, `getCashOrders()`; `cancelledWhere()`, `cashWhere()`; `/analytics/cancelled`, `/analytics/cash`; download blocks `managers`, `cancelled`, `cash`; `amountChangeText()`.
+
+**Left out, and the task that brings it**
+- Warehouse block and the phase 6 check by hand on the whole Head page: 6.4d. The Manager's "My cash": 6.5. Finance's money with managers by age: 6.6. Page PDF: 6.7.
+
+**What the next sessions must know**
+- For 6.4d: add the block as 6.4c did (summary tables in `refreshAnalytics()` and its lock statement, one WHERE builder per table, a list page, sheets, route cases, matrix and route-matrix cases, a migration that clears the job's `last_tick`/`last_finished_at`). Stock value per line is `stockValue()` of src/domain/stock.ts.
+- For 6.5 and 6.6: cash per order is `analytics_cash` under `cashWhere()` (held only, `cash_count > 0`); owed rows are in the table too (negative counts). Days held: `daysOf({ first: since, last: today }) − 1`. The test "matches Money with managers" in analytics-refresh.db.test.ts keeps the job's reader equal to the 4.9 page's.
+- A signed money average changes in so'm only (`amountChangeText()`); `changeAgainst()`'s percent reads backwards on a negative base.
+- `src/server` does not import `src/features`: the job reads its own rows. `tsconfig.tsbuildinfo` can hold a stale message type after the JSON files change: delete it when typecheck flags keys that exist.
+- Tests: `moneyOn()` in tests/helpers/analytics.ts writes a money action of one row (cancelled when asked); `bought()` takes `cancelledAt`.
+
+The next task is 6.4d.

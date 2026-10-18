@@ -35,11 +35,13 @@ ALTER TABLE "analytics_cancelled" ADD CONSTRAINT "analytics_cancelled_category_i
 ALTER TABLE "analytics_cancelled" ADD CONSTRAINT "analytics_cancelled_department_id_departments_id_fk" FOREIGN KEY ("department_id") REFERENCES "public"."departments"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "analytics_cancelled" ADD CONSTRAINT "analytics_cancelled_owner_id_users_id_fk" FOREIGN KEY ("owner_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "analytics_cancelled" ADD CONSTRAINT "analytics_cancelled_supplier_id_companies_id_fk" FOREIGN KEY ("supplier_id") REFERENCES "public"."companies"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "analytics_cancelled" ADD CONSTRAINT "analytics_cancelled_order_branch_fk" FOREIGN KEY ("order_id","branch_id") REFERENCES "public"."orders"("id","branch_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "analytics_cash" ADD CONSTRAINT "analytics_cash_order_id_orders_id_fk" FOREIGN KEY ("order_id") REFERENCES "public"."orders"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "analytics_cash" ADD CONSTRAINT "analytics_cash_branch_id_branches_id_fk" FOREIGN KEY ("branch_id") REFERENCES "public"."branches"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "analytics_cash" ADD CONSTRAINT "analytics_cash_owner_id_users_id_fk" FOREIGN KEY ("owner_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "analytics_cash" ADD CONSTRAINT "analytics_cash_category_id_categories_id_fk" FOREIGN KEY ("category_id") REFERENCES "public"."categories"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "analytics_cash" ADD CONSTRAINT "analytics_cash_department_id_departments_id_fk" FOREIGN KEY ("department_id") REFERENCES "public"."departments"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "analytics_cash" ADD CONSTRAINT "analytics_cash_order_branch_fk" FOREIGN KEY ("order_id","branch_id") REFERENCES "public"."orders"("id","branch_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "analytics_cancelled_branch_id_cancelled_on_idx" ON "analytics_cancelled" USING btree ("branch_id","cancelled_on");--> statement-breakpoint
 CREATE INDEX "analytics_cancelled_order_id_idx" ON "analytics_cancelled" USING btree ("order_id");--> statement-breakpoint
 CREATE INDEX "analytics_cancelled_category_id_idx" ON "analytics_cancelled" USING btree ("category_id");--> statement-breakpoint
