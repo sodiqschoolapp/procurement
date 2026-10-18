@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   DOCUMENT_PREFIX,
+  DOCUMENT_STATUSES,
   DOCUMENT_TYPES,
   documentNumber,
   issueQuantityRefusal,
@@ -12,6 +13,9 @@ import {
   overReturn,
   reversalOf,
   reverseAllows,
+  WRITE_OFF_OUTCOMES,
+  writeOffCommentRefusal,
+  writeOffDecisionMove,
 } from "./stock-documents";
 
 // The warehouse documents (09-warehouse.md, Movement types; Issue to a department 2; Direct entry
@@ -214,9 +218,21 @@ describe("reverseAllows (09 Issue to a department 3; Decided ahead, question 19;
     }
   });
 
+  it("lets only the Head reverse an approved write-off, never a Manager, even its asker (question 19; plan of 5.11)", () => {
+    expect(
+      reverseAllows({ userId: colleague, role: "HEAD" }, { type: "WRITE_OFF", createdBy: maker }),
+    ).toBe(true);
+    for (const role of ["MANAGER", "PRINCIPAL", "FINANCE"] as const) {
+      expect(
+        reverseAllows({ userId: maker, role }, { type: "WRITE_OFF", createdBy: maker }),
+      ).toBe(false);
+    }
+  });
+
   it("refuses every other type, to the Head and its creator too, until its task adds it", () => {
     for (const type of DOCUMENT_TYPES.filter(
-      (each) => each !== "ISSUE" && each !== "RETURN" && each !== "DIRECT_ENTRY",
+      (each) =>
+        each !== "ISSUE" && each !== "RETURN" && each !== "DIRECT_ENTRY" && each !== "WRITE_OFF",
     )) {
       expect(reverseAllows({ userId: maker, role: "HEAD" }, { type, createdBy: maker })).toBe(
         false,
@@ -271,5 +287,29 @@ describe("directEntryLineRefusal: one rule for the form and the Excel import (09
     expect(directEntryLineRefusal({ ...goods, allowsDecimals: true }, "2.5")).toBeNull();
     expect(directEntryLineRefusal(goods, "0")).toEqual({ field: "qty", kind: "tooSmall" });
     expect(directEntryLineRefusal(goods, "200")).toBeNull();
+  });
+});
+
+describe("writeOffCommentRefusal (09 Other documents, Write-off: a reason plus a comment; Decided ahead, question 13)", () => {
+  it("asks a comment for every write-off", () => {
+    expect(writeOffCommentRefusal(null)).toBe("required");
+    expect(writeOffCommentRefusal("")).toBe("required");
+    expect(writeOffCommentRefusal("  \n ")).toBe("required");
+    expect(writeOffCommentRefusal("Broken in the storeroom")).toBeNull();
+  });
+});
+
+describe("writeOffDecisionMove (09 Other documents, Write-off; plan of 5.11, decided item 4; developer-rules rule 2)", () => {
+  it("moves a waiting write-off to POSTED on approval and to REJECTED on refusal", () => {
+    expect(writeOffDecisionMove("PENDING_APPROVAL", "APPROVE")).toBe("POSTED");
+    expect(writeOffDecisionMove("PENDING_APPROVAL", "REFUSE")).toBe("REJECTED");
+  });
+
+  it("allows no decision from any other status, so a second decision is refused", () => {
+    for (const status of DOCUMENT_STATUSES.filter((each) => each !== "PENDING_APPROVAL")) {
+      for (const outcome of WRITE_OFF_OUTCOMES) {
+        expect(writeOffDecisionMove(status, outcome)).toBeNull();
+      }
+    }
   });
 });

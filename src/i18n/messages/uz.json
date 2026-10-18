@@ -354,6 +354,8 @@
       "PURCHASE_CANCELLED": "{branch}: {actor} {count, plural, other {# ta xarid yozuvini}} bekor qildi.",
       "PRICE_DIFFERS": "{branch}: {count, plural, other {# ta mahsulotning}} so'nggi xaridlari joriy narxdan 20% dan ko'proq farq qiladi.",
       "MINIMUM_STOCK_REACHED": "{branch}: {item} minimal qoldiqqa yetdi.",
+      "STOCK_CHANGE_ASKED": "{branch}: {actor} {number} {kind, select, WRITE_OFF {hisobdan chiqarishni} other {qoldiq oʻzgarishini}} soʻradi.",
+      "STOCK_CHANGE_DECIDED": "{branch}: {number} {kind, select, WRITE_OFF {hisobdan chiqarish} other {qoldiq oʻzgarishi}} {outcome, select, approved {tasdiqlandi} other {rad etildi}}.",
       "REQUEST_WAITING_24H": "{count, plural, other {# ta buyurtma}} tasdiqingizni {hours, plural, other {# soatdan}} ortiq kutmoqda.",
       "REQUEST_WAITING_48H": "{count, plural, other {# ta buyurtma}} tasdiqlashni {hours, plural, other {# soatdan}} ortiq kutmoqda.",
       "BRANCH_ROLE_VACANT": "{branch} filialida faol {role, select, HEAD {xaridlar rahbari} MANAGER {menejer} PRINCIPAL {direktor} FINANCE {moliya xodimi} other {foydalanuvchi}} yoʻq.",

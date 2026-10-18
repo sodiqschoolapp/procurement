@@ -62,6 +62,15 @@ export type OrderActionParams = { actor: string; count: number; branch: string }
 export type CashGivenVia = "approval" | "money";
 
 /** The direction of a settlement action's net (`SettlementNet` of ./money-ledger.ts). */
+/**
+ * What a stock change asked of the Head is (10 Notifications, "Write-off or correction asked";
+ * plan of 5.11, decided item 5, Look first): a write-off now; 7.4 adds its correction as a word.
+ */
+export type StockChangeKind = "WRITE_OFF";
+
+/** The Head's answer to it, as the notice's `select` reads it. */
+export type StockChangeOutcome = "approved" | "refused";
+
 export type SettlementDirection = "TO_FINANCE" | "TO_MANAGER" | "NONE";
 
 /**
@@ -136,6 +145,18 @@ export type NotificationParamsOf = {
    * 1), and `branch` the branch's code. No quantity.
    */
   MINIMUM_STOCK_REACHED: { item: string; branch: string };
+  /**
+   * "Write-off or correction asked" (plan of 5.11, decided item 5, Look first): to every active
+   * Head; `number` is the document's (WOF-…), `branch` its branch's code. "The decision goes back
+   * to the Manager": to the one who asked, with the outcome.
+   */
+  STOCK_CHANGE_ASKED: { actor: string; number: string; branch: string; kind: StockChangeKind };
+  STOCK_CHANGE_DECIDED: {
+    number: string;
+    branch: string;
+    kind: StockChangeKind;
+    outcome: StockChangeOutcome;
+  };
   REQUEST_WAITING_24H: OrdersWaitingParams;
   REQUEST_WAITING_48H: OrdersWaitingParams;
   /** "Branch has no active user for a role": the branch's code and the role's code. */
@@ -174,6 +195,8 @@ export const NOTIFICATION_PARAMS: {
   PURCHASE_CANCELLED: ["actor", "count", "branch"],
   PRICE_DIFFERS: ["count", "branch"],
   MINIMUM_STOCK_REACHED: ["item", "branch"],
+  STOCK_CHANGE_ASKED: ["actor", "number", "branch", "kind"],
+  STOCK_CHANGE_DECIDED: ["number", "branch", "kind", "outcome"],
   REQUEST_WAITING_24H: ["count", "hours"],
   REQUEST_WAITING_48H: ["count", "hours"],
   BRANCH_ROLE_VACANT: ["branch", "role"],

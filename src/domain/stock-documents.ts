@@ -80,15 +80,17 @@ export const REVERSIBLE_STATUSES: readonly DocumentStatus[] = ["POSTED", "RECEIV
  * Whether the actor may reverse a document of this type and maker (09 Issue to a department 3: "A
  * posted issue can be reversed by its creator or the Head"; Decided ahead, question 19; plan of
  * 5.7, decided item 1, Look first): an issue and a return by their creator or the Head; a direct
- * entry by the Head only (plan of 5.8, decided item 2, Look first). Every other type is no until
- * its task adds it, the Head only (5.11, 7.2, 7.4). A Manager's right RETURN_REVERSE and the
+ * entry and an approved write-off by the Head only (plans of 5.8 and 5.11). Every other type is no
+ * until its task adds it, the Head only (7.2, 7.4). A Manager's right RETURN_REVERSE and the
  * branch are authorize()'s (`stock.return_reverse`), asked beside this.
  */
 export function reverseAllows(
   actor: Pick<Actor, "userId" | "role">,
   document: { type: DocumentType; createdBy: string },
 ): boolean {
-  if (document.type === "DIRECT_ENTRY") return actor.role === "HEAD";
+  if (document.type === "DIRECT_ENTRY" || document.type === "WRITE_OFF") {
+    return actor.role === "HEAD";
+  }
   if (document.type !== "ISSUE" && document.type !== "RETURN") return false;
   if (actor.role === "HEAD") return true;
   return actor.role === "MANAGER" && document.createdBy === actor.userId;
@@ -106,6 +108,37 @@ export function directEntryCommentRefusal(
   comment: string | null,
 ): "required" | null {
   return reason === "OTHER" && (comment ?? "").trim() === "" ? "required" : null;
+}
+
+export type WriteOffReason = (typeof WRITE_OFF_REASONS)[number];
+
+/**
+ * What is wrong with a write-off's comment (09 Other documents, Write-off: "a reason from a fixed
+ * list plus a comment"; Decided ahead, question 13: "Every write-off still has its comment"):
+ * `required` when it is empty or blank, whatever the reason. The form and the action both ask this.
+ */
+export function writeOffCommentRefusal(comment: string | null): "required" | null {
+  return (comment ?? "").trim() === "" ? "required" : null;
+}
+
+/** The Head's two answers to a waiting write-off (09 Other documents, Write-off). */
+export const WRITE_OFF_OUTCOMES = ["APPROVE", "REFUSE"] as const;
+export type WriteOffOutcome = (typeof WRITE_OFF_OUTCOMES)[number];
+
+/**
+ * The status a write-off's decision moves it to (09 Other documents, Write-off: "Stock changes
+ * only after the Head approves"; plan of 5.11, decided item 4, Look first): from PENDING_APPROVAL,
+ * APPROVE to POSTED and REFUSE to REJECTED; from any other status no move (null), so a second
+ * decision is refused. The one place for these moves (developer-rules.md rule 2): the decision
+ * action asks it under the lock, the write-off's page asks it for its buttons. Who decides (the
+ * Head) is the permission `stock.approve_write_off`.
+ */
+export function writeOffDecisionMove(
+  status: DocumentStatus,
+  outcome: WriteOffOutcome,
+): Extract<DocumentStatus, "POSTED" | "REJECTED"> | null {
+  if (status !== "PENDING_APPROVAL") return null;
+  return outcome === "APPROVE" ? "POSTED" : "REJECTED";
 }
 
 /** A subtype of a direct-entry line as it was read under its lock. */
@@ -193,7 +226,10 @@ export function reversalOf(movement: { qtyDelta: string; unitCost: bigint }): St
   return { type: "REVERSAL", qtyDelta, unitCost: movement.unitCost };
 }
 
-/** At most this many lines on one issue or return (plan of 5.4, decided item 7; 5.6, item 10). */
+/**
+ * At most this many lines on one issue, return or write-off (plan of 5.4, decided item 7; 5.6,
+ * item 10; 5.11, item 9).
+ */
 export const DOCUMENT_LINES_MAX = 100;
 
 /** A stock as stored, compared exactly (numeric(14,3) text, 0 or more). */
