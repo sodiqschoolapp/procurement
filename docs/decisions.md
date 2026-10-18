@@ -2031,6 +2031,8 @@ Choices made during the build:
 - `getWriteOff` became `getStockDocument` (`queries/document.ts`); `WriteOffStatusLabel` became `DocumentStatusLabel`, which keeps a write-off's own words ("Approved", "Refused") and says "Posted" for the other types; its attribute is `data-document-status`.
 - The seed's audit total grows by one (79 to 80): the direct entry's own `direct_entry.create` row. The seed tests that count every audit row were changed for that reason, and only by that row (**Look first**: a test changed because a requirement changed).
 - The seed's stock is left out when CHL already holds either item, so hand-made stock never meets literal balances.
+- `scripts/seed-stock.mjs` is copied into the image's run stage beside the other seed scripts (`tests/image-files.test.ts`).
+- The seed tests' cleanup hook (`afterAll`, which drops every fresh database one by one) gets a 60 s limit: with the 27th fresh database it passed the default 10 s. It asserts nothing.
 
 ## Process changes
 
