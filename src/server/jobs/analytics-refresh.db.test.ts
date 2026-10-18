@@ -617,7 +617,12 @@ describe("analytics_refresh, the rows of the Managers block (build-plan 6.4c)", 
     await setOrderStatus(draft.orderId, "DRAFT");
     await refreshNow();
     expect(await cashOf(scene.branch.id)).toEqual([
-      { order_id: held.orderId, owner_id: scene.manager.id, cash_count: "50000", since: "2031-05-02" },
+      {
+        order_id: held.orderId,
+        owner_id: scene.manager.id,
+        cash_count: "50000",
+        since: "2031-05-02",
+      },
     ]);
   });
 
