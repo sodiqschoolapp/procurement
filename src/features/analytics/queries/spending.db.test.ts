@@ -207,14 +207,11 @@ describe("no filter returns rows of another branch (Done when 2; 03 rule 1; D40)
     const { mine, theirs, kept } = await twoBranches();
     const principal = await insertUser("PRINCIPAL", { branches: [mine.branch.id] });
     const finance = await insertUser("FINANCE", { branches: [mine.branch.id] });
-    // The other branch's Manager is listed as a filter value too: the wall, not the filter, keeps
-    // his record out.
+    // The category and the supplier are the other branch's too: only the wall keeps its record out.
     const filterSets: AnalyticsFilters[] = [
       NO_ANALYTICS_FILTERS,
       { ...NO_ANALYTICS_FILTERS, category: mine.category.id },
       { ...NO_ANALYTICS_FILTERS, supplier: mine.supplier.id },
-      { ...NO_ANALYTICS_FILTERS, department: theirs.department.id },
-      { ...NO_ANALYTICS_FILTERS, manager: theirs.manager.id },
       {
         branch: null,
         category: mine.category.id,
@@ -238,7 +235,7 @@ describe("no filter returns rows of another branch (Done when 2; 03 rule 1; D40)
       }
     }
     // The filters of the own branch keep its record.
-    const own = await getSpending(principal.id, THIS_MONTH, filterSets[5]!);
+    const own = await getSpending(principal.id, THIS_MONTH, filterSets[3]!);
     expect(own.total.amount).toBe(11_000n);
   });
 
@@ -260,6 +257,43 @@ describe("no filter returns rows of another branch (Done when 2; 03 rule 1; D40)
       branch: theirs.branch.id,
     });
     expect(one.total.amount).toBe(77_000n);
+  });
+
+  it("another branch's department or Manager as a filter is Not found (permission review, Must fix 1)", async () => {
+    const { mine, theirs } = await twoBranches();
+    const principal = await insertUser("PRINCIPAL", { branches: [mine.branch.id] });
+    const finance = await insertUser("FINANCE", { branches: [mine.branch.id] });
+    for (const user of [principal, finance]) {
+      for (const filters of [
+        { ...NO_ANALYTICS_FILTERS, department: theirs.department.id },
+        { ...NO_ANALYTICS_FILTERS, manager: theirs.manager.id },
+      ]) {
+        await expect(getSpending(user.id, THIS_MONTH, filters)).rejects.toEqual(
+          new AuthorizationError("not_found"),
+        );
+        await expect(
+          getSpendingRecords(user.id, THIS_MONTH, filters, { kind: "period" }, 1),
+        ).rejects.toEqual(new AuthorizationError("not_found"));
+      }
+      // The own branch's department and Manager pass (D40).
+      const own = await getSpending(user.id, THIS_MONTH, {
+        ...NO_ANALYTICS_FILTERS,
+        department: mine.department.id,
+        manager: mine.manager.id,
+      });
+      expect(own.total.amount).toBe(11_000n);
+    }
+    // A Head user is no Manager filter, nor is an unknown department.
+    const head = await insertUser("HEAD");
+    await expect(
+      getSpending(head.id, THIS_MONTH, { ...NO_ANALYTICS_FILTERS, manager: head.id }),
+    ).rejects.toEqual(new AuthorizationError("not_found"));
+    await expect(
+      getSpending(head.id, THIS_MONTH, {
+        ...NO_ANALYTICS_FILTERS,
+        department: "0b6f3c1e-2a4d-4e5f-8a9b-1c2d3e4f5a6b",
+      }),
+    ).rejects.toEqual(new AuthorizationError("not_found"));
   });
 
   it("another branch's branch filter is Not found, for the number and its list", async () => {

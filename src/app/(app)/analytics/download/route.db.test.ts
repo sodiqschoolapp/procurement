@@ -94,6 +94,7 @@ describe("GET /analytics/download (10 point 4)", () => {
       "block=records&key=month:2031-01",
       "block=months&category=not-an-id",
       `block=months&branch=${theirs.branch.id}`,
+      `block=months&department=${theirs.department.id}`,
     ]) {
       const response = await GET(downloadRequest(`/analytics/download?${query}`, cookie));
       expect(response.status, query).toBe(404);
@@ -122,5 +123,27 @@ describePermissionMatrix("GET /analytics/download", {
     }
     const rows = await sheetOf(response);
     expect(rows.at(-1)).toEqual([expect.any(String), 6_000]);
+  },
+});
+
+describePermissionMatrix("GET /analytics/download, the branch wall in the SQL", {
+  permission: "data.export",
+  async run({ user, branchId }) {
+    setClock(AT);
+    const record = await bought(await spendingScene(branchId), {
+      purchasedOn: "2031-10-04",
+      unitPrice: "6000",
+    });
+    await refreshNow();
+    const cookie = await signInAs(user);
+    for (const block of ["records", "months"] as const) {
+      const query = analyticsSearch(THIS_MONTH, NO_ANALYTICS_FILTERS, { block });
+      const rows = await sheetOf(
+        await GET(downloadRequest(`/analytics/download?${query}`, cookie)),
+      );
+      if (block === "records" && !rows.some((row) => row[0] === record.number)) {
+        throw new AuthorizationError("not_found");
+      }
+    }
   },
 });

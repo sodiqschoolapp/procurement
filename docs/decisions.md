@@ -2114,6 +2114,7 @@ Choices made during the build:
 - Categories are listed by their amount in the period, largest first.
 - At phone width the filters fold behind a "Filters" button (`filter-fold.tsx`, a client toggle; from 640 px always shown).
 - The Excel file: the title, period and chosen filters above a header row with an auto-filter; money as number cells as in the order list download; a change as a signed number and its percent as text; a date as a date cell.
+- Permission review: a department or Manager filter id of a branch the user does not see is "Not found" (`authorizeAnalytics()`, Must fix 1; the rule was already in `.claude/rules/server-actions.md`, so no new line); a browser step for another branch on both pages (Should fix 1); a route matrix case without `branch=` (Should fix 2).
 
 ## Process changes
 

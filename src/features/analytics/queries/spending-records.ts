@@ -2,7 +2,7 @@ import { sql } from "drizzle-orm";
 
 import { type DateRange, type Period, monthInside } from "@/domain/analytics";
 import type { BusinessDate } from "@/domain/business-date";
-import { type Executor, authorize, authorizeList } from "@/server/authorize";
+import type { Executor } from "@/server/authorize";
 import { readSnapshot } from "@/server/read-snapshot";
 
 import {
@@ -12,6 +12,7 @@ import {
   RECORDS_PAGE_SIZE,
 } from "../period-params";
 import { PeriodRefusedError, resolvePeriod } from "../resolve-period";
+import { authorizeAnalytics } from "../authorize-filters";
 import { spendingWhere } from "../spending-where";
 
 // The drill-down list behind a Spending number (10-notifications-analytics-reports.md, Analytics
@@ -71,8 +72,7 @@ async function recordsIn(
   key: DrillKey,
   page: number | "all",
 ): Promise<SpendingRecords> {
-  const actor = await authorizeList(userId, "data.view", db);
-  if (filters.branch) await authorize(userId, "data.view", { branchId: filters.branch }, db);
+  const actor = await authorizeAnalytics(db, userId, filters);
   const { period } = await resolvePeriod(db, input);
 
   let range: DateRange = period;

@@ -9,11 +9,12 @@ import {
   monthsOf,
 } from "@/domain/analytics";
 import { businessMonth } from "@/domain/business-date";
-import { type Executor, authorize, authorizeList } from "@/server/authorize";
+import type { Executor } from "@/server/authorize";
 import { readSnapshot } from "@/server/read-snapshot";
 
 import type { AnalyticsFilters, PeriodInput } from "../period-params";
 import { resolvePeriod } from "../resolve-period";
+import { authorizeAnalytics } from "../authorize-filters";
 import { spendingWhere } from "../spending-where";
 
 // The Spending block every role's Analytics page shows until 6.4 to 6.6 bring their own
@@ -55,8 +56,7 @@ async function spendingIn(
   input: PeriodInput,
   filters: AnalyticsFilters,
 ): Promise<SpendingBlock> {
-  const actor = await authorizeList(userId, "data.view", db);
-  if (filters.branch) await authorize(userId, "data.view", { branchId: filters.branch }, db);
+  const actor = await authorizeAnalytics(db, userId, filters);
   const { period, before } = await resolvePeriod(db, input);
 
   const totals = await db.execute<{ now: string; before: string }>(sql`

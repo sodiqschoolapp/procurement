@@ -183,3 +183,27 @@ test("Done when: the Head chooses a period and a category, clicks a bar and sees
   await monthRow.getByRole("link").click();
   await expect(page.locator("[data-records-summary]")).toContainText(/29\s333/);
 });
+
+test("another branch on the Analytics page and its records is Not found (03 rule 1; permission review of 6.3, Should fix 1)", async ({
+  page,
+}) => {
+  // The Principal of EA asks for EB.
+  const otherBranch = await withDatabase(async (client) => {
+    const found = await client.query<{ id: string }>("select id from branches where code = 'EB'");
+    return found.rows[0]!.id;
+  });
+  await page.goto("/login");
+  await page.locator("#username").fill(E2E_ROLES.PRINCIPAL.username);
+  await page.locator("#password").fill(E2E_ROLES.PRINCIPAL.password);
+  await page.locator("form button[type=submit]").click();
+  await expect(page).toHaveURL(/\/$/);
+  // A streamed page answers before notFound(), so the page itself is read, as branch-wall.spec.ts
+  // does.
+  for (const path of ["/analytics", "/analytics/records"]) {
+    await page.goto(`${path}?branch=${otherBranch}`);
+    await expect(page.getByRole("heading", { name: uz.notFoundPage.title })).toBeVisible();
+  }
+  // Its own branch opens.
+  await page.goto("/analytics?branch=all");
+  await expect(page.getByRole("heading", { level: 1 })).toContainText(uz.analytics.title);
+});
