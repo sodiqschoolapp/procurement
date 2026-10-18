@@ -2,6 +2,7 @@ import { and, asc, eq, exists, gt, ilike, inArray } from "drizzle-orm";
 import * as z from "zod";
 
 import { DRAFT_PICKER_MAX } from "@/domain/drafts";
+import type { Permission } from "@/domain/permissions";
 import { authorize, authorizeList, branchFilter } from "@/server/authorize";
 import {
   branches,
@@ -17,7 +18,9 @@ import {
 // plan of 5.4). All under `stock.issue` (03 Permission matrix, "Issue, return, transfer stock":
 // the Head any branch, a Manager own branches with ISSUE_STOCK), so a branch the user may not issue
 // in is refused as authorize() refuses it. Active entries only: inactive ones leave the pickers
-// (04 rule 2; decided item 3, Look first).
+// (04 rule 2; decided item 3, Look first). The write-off form (09 Other documents, Write-off; plan
+// of 5.11) picks from the same items in stock under `stock.ask_write_off` (the Head any branch, a
+// Manager own branches with WRITE_OFF_COUNT): one reader, asked with either permission.
 
 export type IssueBranch = { id: string; code: string; name: string };
 
@@ -49,7 +52,19 @@ function containing(text: string): string {
 
 /** The active branches where the user may issue, by code; the branch filter is in the SQL. */
 export async function issueBranchChoices(userId: string): Promise<IssueBranch[]> {
-  const actor = await authorizeList(userId, "stock.issue");
+  return branchChoices(userId, "stock.issue");
+}
+
+/** The active branches where the user may ask for a write-off (plan of 5.11). */
+export async function writeOffBranchChoices(userId: string): Promise<IssueBranch[]> {
+  return branchChoices(userId, "stock.ask_write_off");
+}
+
+async function branchChoices(
+  userId: string,
+  permission: "stock.issue" | "stock.ask_write_off",
+): Promise<IssueBranch[]> {
+  const actor = await authorizeList(userId, permission);
   // Loaded here, not at the top: `next build` has no DATABASE_URL (progress 0.6).
   const { db } = await import("@/server/db/client");
   return db
@@ -86,8 +101,24 @@ export async function searchIssueItems(
   userId: string,
   options: { branchId: string; q?: string },
 ): Promise<IssueItem[]> {
+  return itemsInStock(userId, "stock.issue", options);
+}
+
+/** The same items, for a write-off (plan of 5.11): nothing beyond the stock is written off. */
+export async function searchWriteOffItems(
+  userId: string,
+  options: { branchId: string; q?: string },
+): Promise<IssueItem[]> {
+  return itemsInStock(userId, "stock.ask_write_off", options);
+}
+
+async function itemsInStock(
+  userId: string,
+  permission: Extract<Permission, "stock.issue" | "stock.ask_write_off">,
+  options: { branchId: string; q?: string },
+): Promise<IssueItem[]> {
   const branchId = branchInput.parse(options.branchId);
-  await authorize(userId, "stock.issue", { branchId });
+  await authorize(userId, permission, { branchId });
   const q = searchInput.parse(options.q ?? "");
   const { db } = await import("@/server/db/client");
   const inStock = db

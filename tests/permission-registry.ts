@@ -119,6 +119,14 @@ export const SERVER_ACTIONS: Record<string, Entry> = {
   "src/app/(app)/warehouse/items/[id]/actions.ts#reverseStockDocumentAction":
     "stock.return_reverse",
   "src/app/(app)/warehouse/items/[id]/actions.ts#reversePreviewAction": "stock.return_reverse",
+  // Ask for a write-off (plan of 5.11): stock.ask_write_off on the branch
+  // (write-off-matrix.db.test.ts).
+  "src/app/(app)/warehouse/documents/new/actions.ts#askWriteOffAction": "stock.ask_write_off",
+  "src/app/(app)/warehouse/documents/new/actions.ts#searchWriteOffItemsAction":
+    "stock.ask_write_off",
+  // Approve or refuse a write-off (plan of 5.11): the Head (write-off-decision-matrix.db.test.ts).
+  "src/app/(app)/warehouse/documents/[id]/actions.ts#decideWriteOffAction":
+    "stock.approve_write_off",
   // Set or clear a minimum (plan of 5.10): stock.set_minimums on the branch
   // (minimum-matrix.db.test.ts).
   "src/app/(app)/warehouse/items/[id]/actions.ts#setStockMinimumAction": "stock.set_minimums",
@@ -247,6 +255,11 @@ export const QUERIES: Record<string, Permission> = {
   "src/features/warehouse/queries/issue-form.ts#issueBranchChoices": "stock.issue",
   "src/features/warehouse/queries/issue-form.ts#issueFormChoices": "stock.issue",
   "src/features/warehouse/queries/issue-form.ts#searchIssueItems": "stock.issue",
+  // The write-off form (plan of 5.11): stock.ask_write_off; the branches in the SQL.
+  "src/features/warehouse/queries/issue-form.ts#writeOffBranchChoices": "stock.ask_write_off",
+  "src/features/warehouse/queries/issue-form.ts#searchWriteOffItems": "stock.ask_write_off",
+  // A write-off's page (plan of 5.11): data.view with the branch wall in the SQL.
+  "src/features/warehouse/queries/write-off.ts#getWriteOff": "data.view",
   "src/features/warehouse/queries/direct-entry-form.ts#directEntryBranchChoices":
     "stock.enter_direct",
   "src/features/warehouse/queries/direct-entry-form.ts#searchDirectEntryItems":
