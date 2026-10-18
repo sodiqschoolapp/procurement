@@ -19,7 +19,8 @@ import { PageLinks } from "../../catalog/page-links";
 // /analytics/records, the list behind a number (10-notifications-analytics-reports.md, Analytics
 // page per role, point 3: "Clicking any bar, slice or number opens the list of orders or records
 // that make it up"; build-plan 6.3). Its total is the number clicked (plan of 6.3, decided item
-// 10); 50 a page; each row opens its order; the list exports to Excel (point 4). The address is
+// 10), and of a price key (6.4b) its price per unit, with each record's quantity and unit price
+// (plan of 6.4b, decided item 12); 50 a page; each row opens its order; the list exports to Excel (point 4). The address is
 // the page's, with `key`; one the parser refuses goes back to /analytics, another branch is Not
 // found. A table at 1440 px, cards at 375 px.
 
@@ -61,20 +62,38 @@ export default async function AnalyticsRecordsPage({
   const tPayment = await getTranslations("paymentTypes");
   const format = await getFormatters();
   const dates = { first: format.date(list.range.first), last: format.date(list.range.last) };
+  const priceName = list.price
+    ? list.price.subtypeName
+      ? `${list.price.productName}, ${list.price.subtypeName}`
+      : list.price.productName
+    : "";
   const what =
-    list.key.kind === "month"
-      ? t("records.month", {
-          month: t("monthLabel", {
-            month: tMonths(String(Number(list.key.month.slice(5))) as "1"),
-            year: list.key.month.slice(0, 4),
-          }),
-          ...dates,
-        })
-      : list.key.kind === "category"
-        ? t("records.category", { name: list.categoryName ?? "", ...dates })
-        : list.key.kind === "payment"
-          ? t("records.payment", { name: tPayment(list.key.payment), ...dates })
-          : t("records.period", dates);
+    list.key.kind === "price"
+      ? list.key.month
+        ? t("records.priceMonth", {
+            name: priceName,
+            month: t("monthLabel", {
+              month: tMonths(String(Number(list.key.month.slice(5))) as "1"),
+              year: list.key.month.slice(0, 4),
+            }),
+            ...dates,
+          })
+        : list.key.noSupplier
+          ? t("records.priceNoSupplier", { name: priceName, ...dates })
+          : t("records.price", { name: priceName, ...dates })
+      : list.key.kind === "month"
+        ? t("records.month", {
+            month: t("monthLabel", {
+              month: tMonths(String(Number(list.key.month.slice(5))) as "1"),
+              year: list.key.month.slice(0, 4),
+            }),
+            ...dates,
+          })
+        : list.key.kind === "category"
+          ? t("records.category", { name: list.categoryName ?? "", ...dates })
+          : list.key.kind === "payment"
+            ? t("records.payment", { name: tPayment(list.key.payment), ...dates })
+            : t("records.period", dates);
   const pages = Math.max(1, Math.ceil(list.count / RECORDS_PAGE_SIZE));
   const href = (page: number) =>
     `/analytics/records?${analyticsSearch(params.period, params.filters, { key: params.key, page })}`;
@@ -100,7 +119,13 @@ export default async function AnalyticsRecordsPage({
             {what}
           </p>
           <p className="text-[15px] leading-[22px] font-semibold tabular-nums" data-records-summary>
-            {t("records.summary", { count: list.count, total: format.money(list.total) })}
+            {list.price
+              ? t("records.priceSummary", {
+                  count: list.count,
+                  qty: format.quantity(list.price.qty),
+                  price: list.price.price === null ? "—" : format.money(list.price.price),
+                })
+              : t("records.summary", { count: list.count, total: format.money(list.total) })}
           </p>
         </div>
         <a
@@ -134,6 +159,16 @@ export default async function AnalyticsRecordsPage({
                 <th scope="col" className="px-4 py-3">
                   {t("records.columns.supplier")}
                 </th>
+                {list.price && (
+                  <>
+                    <th scope="col" className="px-4 py-3 text-right">
+                      {t("records.columnsQty")}
+                    </th>
+                    <th scope="col" className="px-4 py-3 text-right">
+                      {t("records.columnsUnitPrice")}
+                    </th>
+                  </>
+                )}
                 <th scope="col" className="px-4 py-3 text-right">
                   {t("records.columns.amount")}
                 </th>
@@ -166,6 +201,19 @@ export default async function AnalyticsRecordsPage({
                   <td className="px-4 py-3 max-sm:p-0 max-sm:text-muted-foreground">
                     {row.supplierName ?? t("records.noSupplier")}
                   </td>
+                  {list.price && (
+                    <>
+                      <td className="px-4 py-3 text-right whitespace-nowrap tabular-nums max-sm:p-0 max-sm:text-left">
+                        {format.quantity(row.qty)}
+                      </td>
+                      <td
+                        className="px-4 py-3 text-right whitespace-nowrap tabular-nums max-sm:p-0 max-sm:text-left"
+                        data-unit-price
+                      >
+                        {format.money(row.unitPrice)}
+                      </td>
+                    </>
+                  )}
                   <td
                     className="px-4 py-3 text-right whitespace-nowrap tabular-nums max-sm:p-0 max-sm:text-left max-sm:font-semibold"
                     data-amount

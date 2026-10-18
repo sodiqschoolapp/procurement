@@ -481,7 +481,16 @@ describe("analytics_refresh, the rows of Prices and Approval speed (build-plan 6
     ]);
     await refreshNow();
     const rows = await stepsOf(order.id);
-    expect(rows.map(({ entered_at, left_at, ...rest }) => rest)).toEqual([
+    expect(
+      rows.map((row) => ({
+        step: row.step,
+        left_on: row.left_on,
+        seconds: row.seconds,
+        decision: row.decision,
+        reason: row.reason,
+        reason_key: row.reason_key,
+      })),
+    ).toEqual([
       {
         step: "PENDING_HEAD",
         left_on: "2031-05-02",

@@ -2335,7 +2335,11 @@
       "shareUp": "+{points} points against the period before",
       "shareDown": "−{points} points against the period before",
       "shareSame": "Same share as in the period before",
-      "shareNone": "No orders ended in the period before"
+      "shareNone": "No orders ended in the period before",
+      "hoursUp": "+{hours} h against the period before",
+      "hoursDown": "−{hours} h against the period before",
+      "hoursSame": "Same as in the period before",
+      "hoursNone": "No stay in the period before"
     },
     "spending": {
       "title": "Spending",
@@ -2377,7 +2381,13 @@
         "supplier": "Supplier",
         "amount": "Actual total"
       },
-      "payment": "{name}, {first} – {last}"
+      "payment": "{name}, {first} – {last}",
+      "price": "{name}: {first} – {last}",
+      "priceMonth": "{name}, {month}: {first} – {last}",
+      "priceNoSupplier": "{name}, no supplier: {first} – {last}",
+      "priceSummary": "{count, plural, one {# record} other {# records}}, {qty} bought, {price} per unit",
+      "columnsQty": "Quantity",
+      "columnsUnitPrice": "Price per unit"
     },
     "sheets": {
       "months": "Spending by month",
@@ -2390,7 +2400,15 @@
       "outcomes": "Plan vs actual",
       "outcomeBranches": "Plan vs actual by branch",
       "outcomeManagers": "Plan vs actual by Manager",
-      "orders": "Orders"
+      "orders": "Orders",
+      "priceTrend": "Price trend",
+      "priceRises": "Biggest price rises",
+      "priceSpread": "Same product, different prices",
+      "stepHours": "Average hours at each step",
+      "waiting": "Orders waiting now",
+      "decisions": "Sent back or rejected",
+      "reasons": "Most common reasons",
+      "approvals": "Orders"
     },
     "plan": {
       "title": "Plan vs actual",
@@ -2446,6 +2464,107 @@
         "difference": "Difference",
         "outcome": "Outcome"
       }
-    }
+    },
+    "prices": {
+      "title": "Prices",
+      "note": "Unit prices actually paid: goods ÷ quantity, without extra costs. Gifts are not counted.",
+      "trend": "Price trend",
+      "product": "Product",
+      "choose": "Choose a product",
+      "show": "Show",
+      "trendEmpty": "{name} was not bought in this period.",
+      "noRecords": "Nothing was bought in this period.",
+      "noPrice": "Not bought",
+      "rises": "Biggest price rises, last 90 days",
+      "risesWindow": "Bought {first} – {last}, against the price paid before",
+      "risesEmpty": "No price rose in the last 90 days.",
+      "spread": "Same product, different prices",
+      "spreadEmpty": "Every product was bought at one price in this period.",
+      "riseBy": "+{amount} (+{percent} %)",
+      "columns": {
+        "month": "Month",
+        "price": "Price per unit",
+        "change": "Change",
+        "product": "Product",
+        "earlier": "Earlier price",
+        "newest": "Newest price",
+        "rise": "Rise",
+        "cheapest": "Cheapest",
+        "dearest": "Dearest",
+        "difference": "Difference"
+      }
+    },
+    "speed": {
+      "title": "Approval speed",
+      "note": "Hours an order waited at a step until its approver approved, sent back or rejected it, by the day it was decided. Cancelled and taken-back orders are not counted.",
+      "byBranch": "Average hours at each step",
+      "noStay": "—",
+      "hours": "{hours} h",
+      "stays": "{count, plural, one {# order} other {# orders}}",
+      "step": {
+        "PENDING_HEAD": "Head",
+        "PENDING_PRINCIPAL": "Principal",
+        "PENDING_FINANCE": "Finance"
+      },
+      "allBranches": "All branches",
+      "allSteps": "All steps",
+      "waiting": "Orders waiting now, by age",
+      "waitingNote": "Now, whatever the period.",
+      "group": {
+        "day": "Up to 24 h",
+        "twoDays": "24 to 48 h",
+        "week": "2 to 7 days",
+        "older": "Over 7 days"
+      },
+      "decisions": "Sent back or rejected",
+      "noDecision": "No decision",
+      "share": "{share} % ({count})",
+      "reasons": "Most common reasons",
+      "reasonsOf": {
+        "SEND_BACK": "Sent back",
+        "REJECT": "Rejected"
+      },
+      "noReasons": "None in this period.",
+      "times": "{count, plural, one {# time} other {# times}}",
+      "columns": {
+        "branch": "Branch",
+        "step": "Step",
+        "all": "All",
+        "decisions": "Decisions",
+        "sentBack": "Sent back",
+        "rejected": "Rejected"
+      }
+    },
+    "approvals": {
+      "title": "Orders behind the number",
+      "back": "Back to Analytics",
+      "stays": "{step}: decided {first} – {last}",
+      "decided": "{step}, {decision}: {first} – {last}",
+      "reason": "{decision}: “{reason}”, {first} – {last}",
+      "waiting": "{step}, waiting now: {group}",
+      "allSteps": "All steps",
+      "allAges": "any age",
+      "summary": "{count, plural, one {# decision} other {# decisions}}, on average {hours} h",
+      "summaryNone": "No decision",
+      "summaryWaiting": "{count, plural, one {# order} other {# orders}} waiting",
+      "empty": "No order makes up this number.",
+      "decision": {
+        "APPROVE": "Approved",
+        "SEND_BACK": "Sent back",
+        "REJECT": "Rejected"
+      },
+      "columns": {
+        "order": "Order",
+        "product": "Product",
+        "branch": "Branch",
+        "step": "Step",
+        "entered": "Waiting since",
+        "left": "Decided",
+        "hours": "Hours",
+        "decision": "Decision",
+        "reason": "Reason"
+      }
+    },
+    "joined": "{first} · {second}"
   }
 }

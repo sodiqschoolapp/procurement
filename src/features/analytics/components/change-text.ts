@@ -56,3 +56,22 @@ export function shareChangeText(
     ? t("change.shareDown", { points: size })
     : t("change.shareUp", { points: size });
 }
+
+type HoursTranslate = (
+  key: "change.hoursUp" | "change.hoursDown" | "change.hoursSame" | "change.hoursNone",
+  values?: Record<string, string>,
+) => string;
+
+/** An average's change in hours, the difference of two one-decimal averages (plan of 6.4b, decided item 7). */
+export function hoursChangeText(
+  hours: string | null,
+  t: HoursTranslate,
+  format: Formatters,
+): string {
+  if (hours === null) return t("change.hoursNone");
+  if (/^-?0(\.0)?$/.test(hours)) return t("change.hoursSame");
+  const size = format.quantity(hours.replace(/^-/, ""));
+  return hours.startsWith("-")
+    ? t("change.hoursDown", { hours: size })
+    : t("change.hoursUp", { hours: size });
+}

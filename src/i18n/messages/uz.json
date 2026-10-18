@@ -2335,7 +2335,11 @@
       "shareUp": "Oldingi davrga nisbatan +{points} punkt",
       "shareDown": "Oldingi davrga nisbatan −{points} punkt",
       "shareSame": "Ulush oldingi davrdagidek",
-      "shareNone": "Oldingi davrda hech bir buyurtma yakunlanmagan"
+      "shareNone": "Oldingi davrda hech bir buyurtma yakunlanmagan",
+      "hoursUp": "Oldingi davrga nisbatan +{hours} soat",
+      "hoursDown": "Oldingi davrga nisbatan −{hours} soat",
+      "hoursSame": "Oldingi davrdagidek",
+      "hoursNone": "Oldingi davrda qaror bo'lmagan"
     },
     "spending": {
       "title": "Xarajatlar",
@@ -2377,7 +2381,13 @@
         "supplier": "Yetkazib beruvchi",
         "amount": "Haqiqiy summa"
       },
-      "payment": "{name}, {first} – {last}"
+      "payment": "{name}, {first} – {last}",
+      "price": "{name}: {first} – {last}",
+      "priceMonth": "{name}, {month}: {first} – {last}",
+      "priceNoSupplier": "{name}, yetkazib beruvchisiz: {first} – {last}",
+      "priceSummary": "{count, plural, other {# ta yozuv}}, {qty} sotib olingan, birligi {price}",
+      "columnsQty": "Miqdor",
+      "columnsUnitPrice": "Birlik narxi"
     },
     "sheets": {
       "months": "Oylar boʻyicha xarajatlar",
@@ -2390,7 +2400,15 @@
       "outcomes": "Reja va haqiqat",
       "outcomeBranches": "Filiallar boʻyicha reja va haqiqat",
       "outcomeManagers": "Menejerlar boʻyicha reja va haqiqat",
-      "orders": "Buyurtmalar"
+      "orders": "Buyurtmalar",
+      "priceTrend": "Narx o'zgarishi",
+      "priceRises": "Eng katta narx o'sishlari",
+      "priceSpread": "Bitta mahsulot, turli narxlar",
+      "stepHours": "Har bir bosqichdagi o'rtacha soat",
+      "waiting": "Hozir kutayotgan buyurtmalar",
+      "decisions": "Qaytarilgan yoki rad etilgan",
+      "reasons": "Eng ko'p uchraydigan sabablar",
+      "approvals": "Buyurtmalar"
     },
     "plan": {
       "title": "Reja va haqiqat",
@@ -2446,6 +2464,107 @@
         "difference": "Farq",
         "outcome": "Natija"
       }
-    }
+    },
+    "prices": {
+      "title": "Narxlar",
+      "note": "Haqiqatda to'langan birlik narxlari: tovar ÷ miqdor, qo'shimcha xarajatlarsiz. Sovg'alar hisobga olinmaydi.",
+      "trend": "Narx o'zgarishi",
+      "product": "Mahsulot",
+      "choose": "Mahsulotni tanlang",
+      "show": "Ko'rsatish",
+      "trendEmpty": "{name} bu davrda sotib olinmagan.",
+      "noRecords": "Bu davrda hech narsa sotib olinmagan.",
+      "noPrice": "Sotib olinmagan",
+      "rises": "So'nggi 90 kundagi eng katta narx o'sishlari",
+      "risesWindow": "{first} – {last} sotib olingan, avval to'langan narxga nisbatan",
+      "risesEmpty": "So'nggi 90 kunda narx o'smagan.",
+      "spread": "Bitta mahsulot, turli narxlar",
+      "spreadEmpty": "Bu davrda har bir mahsulot bitta narxda sotib olingan.",
+      "riseBy": "+{amount} (+{percent} %)",
+      "columns": {
+        "month": "Oy",
+        "price": "Birlik narxi",
+        "change": "O'zgarish",
+        "product": "Mahsulot",
+        "earlier": "Avvalgi narx",
+        "newest": "Oxirgi narx",
+        "rise": "O'sish",
+        "cheapest": "Eng arzon",
+        "dearest": "Eng qimmat",
+        "difference": "Farq"
+      }
+    },
+    "speed": {
+      "title": "Tasdiqlash tezligi",
+      "note": "Buyurtma bosqichda tasdiqlovchi uni tasdiqlaguncha, qaytarguncha yoki rad etguncha necha soat kutgani; qaror kuni bo'yicha. Bekor qilingan va qaytarib olingan buyurtmalar hisobga olinmaydi.",
+      "byBranch": "Har bir bosqichdagi o'rtacha soat",
+      "noStay": "—",
+      "hours": "{hours} soat",
+      "stays": "{count, plural, other {# ta buyurtma}}",
+      "step": {
+        "PENDING_HEAD": "Rahbar",
+        "PENDING_PRINCIPAL": "Direktor",
+        "PENDING_FINANCE": "Moliya"
+      },
+      "allBranches": "Barcha filiallar",
+      "allSteps": "Barcha bosqichlar",
+      "waiting": "Hozir kutayotgan buyurtmalar, muddati bo'yicha",
+      "waitingNote": "Hozir, davrdan qat'i nazar.",
+      "group": {
+        "day": "24 soatgacha",
+        "twoDays": "24–48 soat",
+        "week": "2–7 kun",
+        "older": "7 kundan ortiq"
+      },
+      "decisions": "Qaytarilgan yoki rad etilgan",
+      "noDecision": "Qaror yo'q",
+      "share": "{share} % ({count})",
+      "reasons": "Eng ko'p uchraydigan sabablar",
+      "reasonsOf": {
+        "SEND_BACK": "Qaytarilgan",
+        "REJECT": "Rad etilgan"
+      },
+      "noReasons": "Bu davrda yo'q.",
+      "times": "{count, plural, other {# marta}}",
+      "columns": {
+        "branch": "Filial",
+        "step": "Bosqich",
+        "all": "Jami",
+        "decisions": "Qarorlar",
+        "sentBack": "Qaytarilgan",
+        "rejected": "Rad etilgan"
+      }
+    },
+    "approvals": {
+      "title": "Raqam ortidagi buyurtmalar",
+      "back": "Analitikaga qaytish",
+      "stays": "{step}: {first} – {last} qarorlari",
+      "decided": "{step}, {decision}: {first} – {last}",
+      "reason": "{decision}: “{reason}”, {first} – {last}",
+      "waiting": "{step}, hozir kutmoqda: {group}",
+      "allSteps": "Barcha bosqichlar",
+      "allAges": "istalgan muddat",
+      "summary": "{count, plural, other {# ta qaror}}, o'rtacha {hours} soat",
+      "summaryNone": "Qaror yo'q",
+      "summaryWaiting": "{count, plural, other {# ta buyurtma}} kutmoqda",
+      "empty": "Bu raqam ortida buyurtma yo'q.",
+      "decision": {
+        "APPROVE": "Tasdiqlangan",
+        "SEND_BACK": "Qaytarilgan",
+        "REJECT": "Rad etilgan"
+      },
+      "columns": {
+        "order": "Buyurtma",
+        "product": "Mahsulot",
+        "branch": "Filial",
+        "step": "Bosqich",
+        "entered": "Kutmoqda",
+        "left": "Qaror",
+        "hours": "Soat",
+        "decision": "Qaror",
+        "reason": "Sabab"
+      }
+    },
+    "joined": "{first} · {second}"
   }
 }
