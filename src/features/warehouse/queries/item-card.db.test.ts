@@ -319,3 +319,35 @@ describe("getItemCard: the Reverse button (plan of 5.7; 09 Issue to a department
     expect(await offered(finance.id)).toEqual([]);
   });
 });
+
+describe("getItemCard: the Reverse button on a direct entry (plan of 5.8, decided item 2; Decided ahead, question 19)", () => {
+  it("is offered to the Head only, never to a Manager of the branch with every right on, even as its recorded creator", async () => {
+    setClock(AT);
+    const branch = await insertBranch();
+    const manager = await insertUser("MANAGER", { branches: [branch.id] });
+    const variantId = await goods();
+    const entered = async (createdBy: string) =>
+      db.transaction((tx) =>
+        createDocument(tx, {
+          type: "DIRECT_ENTRY",
+          branchId: branch.id,
+          docDate: "2031-05-03",
+          status: "POSTED",
+          reason: "EXISTING_STOCK",
+          clientKey: randomUUID(),
+          createdBy,
+          lines: [{ variantId, qty: "4", unitCost: 2000n }],
+        }),
+      );
+    const byHead = await entered(head.id);
+    // Made in the Manager's name straight through the helper: the creator test of an issue (D40).
+    const byManager = await entered(manager.id);
+
+    const offered = async (userId: string) =>
+      (await getItemCard(userId, variantId, branch.id))!.movements
+        .filter((row) => row.canReverse)
+        .map((row) => row.documentId);
+    expect(await offered(head.id)).toEqual([byManager.documentId, byHead.documentId]);
+    expect(await offered(manager.id)).toEqual([]);
+  });
+});

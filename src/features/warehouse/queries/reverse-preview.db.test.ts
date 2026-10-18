@@ -1,4 +1,9 @@
+import { randomUUID } from "node:crypto";
+
 import { beforeEach, describe, expect, it } from "vitest";
+
+import { db } from "@/server/db/client";
+import { createDocument } from "@/server/stock-documents";
 
 import { insertBranch } from "../../../../tests/helpers/branches";
 import { insertProduct, insertSubtypes, insertUnit } from "../../../../tests/helpers/catalog";
@@ -129,5 +134,39 @@ describe("getReversePreview", () => {
       kind: "forbidden",
     });
     expect((await getReversePreview(maker.id, issue.documentId)).number).toBe(issue.number);
+  });
+});
+
+describe("getReversePreview of a direct entry (plan of 5.8, decided item 2; Decided ahead, question 19)", () => {
+  it("the Head gets it; a Manager of the branch with RETURN_REVERSE on is refused, even as its recorded creator", async () => {
+    const branch = await insertBranch();
+    const head = await insertUser("HEAD");
+    const manager = await insertUser("MANAGER", { branches: [branch.id] });
+    const pens = (await insertItem()).variantId;
+    const entry = await db.transaction((tx) =>
+      createDocument(tx, {
+        type: "DIRECT_ENTRY",
+        branchId: branch.id,
+        docDate: "2031-05-03",
+        status: "POSTED",
+        reason: "GIFT",
+        clientKey: randomUUID(),
+        createdBy: manager.id,
+        lines: [{ variantId: pens, qty: "3", unitCost: 0n }],
+      }),
+    );
+    const preview = await getReversePreview(head.id, entry.documentId);
+    expect(preview).toMatchObject({
+      number: entry.number,
+      type: "DIRECT_ENTRY",
+      status: "POSTED",
+      departmentName: null,
+    });
+    expect(preview.lines).toEqual([
+      expect.objectContaining({ variantId: pens, qty: "3.000", held: null }),
+    ]);
+    await expect(getReversePreview(manager.id, entry.documentId)).rejects.toMatchObject({
+      kind: "forbidden",
+    });
   });
 });

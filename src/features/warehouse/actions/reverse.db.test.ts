@@ -307,6 +307,17 @@ describe("reverseStockDocument (09 Movement types, last paragraph; Issue to a de
     expect(await reverse(own.documentId, manager)).toMatchObject({ ok: true });
   });
 
+  it("a Manager of another branch is Not found on a direct entry, nothing saved (03 rule 1)", async () => {
+    const pens = await goods();
+    const entry = await enteredDirectly(pens, "3");
+    const away = await insertBranch();
+    const stranger = (await insertUser("MANAGER", { branches: [away.id] })).id;
+    const result = await reverse(entry.documentId, stranger);
+    expect(result.ok ? null : result.error.code).toBe("not_found");
+    expect((await documentOf(entry.documentId)).status).toBe("POSTED");
+    expect((await balanceOf(pens))!.qty).toBe("3.000");
+  });
+
   it("reversing an issue writes no audit row (plan of 5.7, decided item 5)", async () => {
     const pens = await goods();
     await receive(branch.id, pens, "3", 1000n, head);
