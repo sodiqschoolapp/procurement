@@ -7,6 +7,7 @@ import * as z from "zod";
 import { EmptyState } from "@/components/empty-state";
 import { Icon } from "@/components/icon";
 import { LowLabel, ReversedLabel } from "@/components/status-label";
+import { plainQuantity } from "@/domain/drafts";
 import { BRANCH_COOKIE } from "@/features/catalog/branch-cookie";
 import { currentBranchChoice, listMyBranches } from "@/features/catalog/queries/my-branches";
 import { AddToDraftButton } from "@/features/warehouse/components/add-to-draft-button";
@@ -129,7 +130,7 @@ export default async function ItemCardPage({
                   branchId={card.branchId}
                   variantId={card.variantId}
                   itemName={itemName}
-                  minimum={card.minimum === null ? "" : format.quantity(card.minimum)}
+                  minimum={card.minimum === null ? "" : plainQuantity(card.minimum)}
                   unitShortName={card.unitShortName}
                   save={setStockMinimumAction}
                 />

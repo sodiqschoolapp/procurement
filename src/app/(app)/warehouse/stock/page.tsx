@@ -9,6 +9,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { LowLabel } from "@/components/status-label";
 import { cn } from "@/components/utils";
+import { plainQuantity } from "@/domain/drafts";
 import { BRANCH_COOKIE } from "@/features/catalog/branch-cookie";
 import { currentBranchChoice } from "@/features/catalog/queries/my-branches";
 import { AddToDraftButton } from "@/features/warehouse/components/add-to-draft-button";
@@ -321,7 +322,7 @@ export default async function StockOnHandPage({ searchParams }: { searchParams: 
                                 branchId={row.branchId}
                                 variantId={row.variantId}
                                 itemName={itemName}
-                                minimum={row.minimum === null ? "" : format.quantity(row.minimum)}
+                                minimum={row.minimum === null ? "" : plainQuantity(row.minimum)}
                                 unitShortName={row.unitShortName}
                                 save={setStockMinimumAction}
                               />

@@ -142,3 +142,36 @@ test("the Head sets a minimum, sees Low, filters Low stock only and adds the ite
   );
   expect(drafts.rows).toEqual([{ planned_qty: "2.000", status: "DRAFT" }]);
 });
+
+test("the Head saves a minimum of 1250 unchanged from its own pencil (09 Low stock: typed on the item card or in the Stock on hand list; review of 5.10, finding 1)", async ({
+  page,
+}) => {
+  const seeded = await seedStock();
+  await withDatabase((client) =>
+    client.query(
+      `insert into stock_minimums (branch_id, variant_id, min_qty, created_at, updated_at)
+       select id, $1, 1250, now(), now() from branches where code = 'EA'`,
+      [seeded.variantId],
+    ),
+  );
+  await signIn(page, E2E_ROLES.HEAD);
+
+  await page.goto(`/warehouse/stock?q=${encodeURIComponent(seeded.tag)}`);
+  const row = page.locator("tr[data-stock-row]").filter({ hasText: seeded.name });
+  await expect(row).toHaveCount(1);
+
+  await row.locator("[data-set-minimum]").click();
+  const dialog = page.getByRole("alertdialog");
+  // The field holds the stored value, not the display text "1 250" (a non-breaking space).
+  await expect(dialog.locator("[data-minimum-input]")).toHaveValue("1250");
+  await dialog.getByRole("button", { name: uz.warehouse.minimum.save }).click();
+  await expect(page.getByText(uz.warehouse.minimum.saved)).toBeVisible();
+
+  const minimums = await withDatabase((client) =>
+    client.query<{ min_qty: string }>(
+      `select min_qty::text as min_qty from stock_minimums where variant_id = $1`,
+      [seeded.variantId],
+    ),
+  );
+  expect(minimums.rows).toEqual([{ min_qty: "1250.000" }]);
+});
