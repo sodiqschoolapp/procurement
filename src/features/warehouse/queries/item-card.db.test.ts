@@ -13,6 +13,8 @@ import { postMovement } from "@/server/stock-ledger";
 import { runAction } from "@/server/action";
 
 import { reverseStockDocument } from "../actions/reverse";
+import { askWriteOff } from "../actions/write-off";
+import { decideWriteOff } from "../actions/write-off-decision";
 import { insertBranch, setManagerRight } from "../../../../tests/helpers/branches";
 import { insertProduct, insertSubtypes, insertUnit } from "../../../../tests/helpers/catalog";
 import { setClock } from "../../../../tests/helpers/clock";
@@ -348,6 +350,37 @@ describe("getItemCard: the Reverse button on a direct entry (plan of 5.8, decide
         .filter((row) => row.canReverse)
         .map((row) => row.documentId);
     expect(await offered(head.id)).toEqual([byManager.documentId, byHead.documentId]);
+    expect(await offered(manager.id)).toEqual([]);
+  });
+});
+
+describe("getItemCard: the Reverse button on an approved write-off (plan of 5.11; Decided ahead, question 19)", () => {
+  it("is offered to the Head only, never to the Manager who asked with every right on", async () => {
+    setClock(AT);
+    const branch = await insertBranch();
+    const manager = await insertUser("MANAGER", { branches: [branch.id] });
+    const variantId = await goods();
+    await receive(branch.id, variantId, "5", 1000n, head.id);
+    const asked = await runAction(askWriteOff, manager.id, {
+      clientKey: randomUUID(),
+      branchId: branch.id,
+      docDate: "2031-05-03",
+      reason: "LOST",
+      comment: "Sinov izoh",
+      lines: [{ variantId, qty: "2" }],
+    });
+    if (!asked.ok) throw new Error(`fixture: ${asked.error.code}`);
+    const decided = await runAction(decideWriteOff, head.id, {
+      documentId: asked.data.documentId,
+      outcome: "APPROVE",
+    });
+    expect(decided.ok).toBe(true);
+
+    const offered = async (userId: string) =>
+      (await getItemCard(userId, variantId, branch.id))!.movements
+        .filter((row) => row.canReverse)
+        .map((row) => row.documentId);
+    expect(await offered(head.id)).toEqual([asked.data.documentId]);
     expect(await offered(manager.id)).toEqual([]);
   });
 });

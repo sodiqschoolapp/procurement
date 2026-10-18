@@ -39,7 +39,11 @@ import { StockShortError } from "@/server/stock-ledger";
 // their own write-off had it posted at once and never comes here.
 
 export type WriteOffDecisionInput = { documentId: string; outcome: WriteOffOutcome };
-export type WriteOffDecisionResult = { documentId: string; number: string; outcome: WriteOffOutcome };
+export type WriteOffDecisionResult = {
+  documentId: string;
+  number: string;
+  outcome: WriteOffOutcome;
+};
 
 const input = z.object({
   documentId: z.uuid(),

@@ -223,9 +223,9 @@ describe("reverseAllows (09 Issue to a department 3; Decided ahead, question 19;
       reverseAllows({ userId: colleague, role: "HEAD" }, { type: "WRITE_OFF", createdBy: maker }),
     ).toBe(true);
     for (const role of ["MANAGER", "PRINCIPAL", "FINANCE"] as const) {
-      expect(
-        reverseAllows({ userId: maker, role }, { type: "WRITE_OFF", createdBy: maker }),
-      ).toBe(false);
+      expect(reverseAllows({ userId: maker, role }, { type: "WRITE_OFF", createdBy: maker })).toBe(
+        false,
+      );
     }
   });
 

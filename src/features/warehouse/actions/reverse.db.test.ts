@@ -16,6 +16,8 @@ import { insertDepartment, insertItem, insertOrder } from "../../../../tests/hel
 import { postDocument, receive } from "../../../../tests/helpers/stock-documents";
 import { insertUser } from "../../../../tests/helpers/users";
 import { reverseStockDocument } from "./reverse";
+import { askWriteOff } from "./write-off";
+import { decideWriteOff } from "./write-off-decision";
 
 // Reverse a document (build plan 5.7; plan of 5.7, Tests). Spec: 09-warehouse.md (Movement
 // types, last paragraph: "A wrong document is fixed with 'Reverse', which writes the opposite
@@ -426,5 +428,76 @@ describe('a "Give straight to requester" issue (07 What saving a record does 5)'
     const kept = await db.execute<{ n: number }>(sql`
       select count(*)::int as n from purchases where order_id = ${made.id} and cancelled_at is null`);
     expect(kept.rows[0]!.n).toBe(1);
+  });
+});
+
+describe("reverseStockDocument of a write-off (Decided ahead, question 19: the Head only; plan of 5.11)", () => {
+  /** A Manager's write-off of `qty`, asked; approved by the Head when `approve`. */
+  async function writtenOff(variantId: string, qty: string, approve: boolean) {
+    const asked = await runAction(askWriteOff, manager, {
+      clientKey: randomUUID(),
+      branchId: branch.id,
+      docDate: "2031-05-03",
+      reason: "DAMAGED",
+      comment: "Sinov izoh",
+      lines: [{ variantId, qty }],
+    });
+    if (!asked.ok) throw new Error(`fixture: ${asked.error.code}`);
+    if (approve) {
+      const decided = await runAction(decideWriteOff, head, {
+        documentId: asked.data.documentId,
+        outcome: "APPROVE",
+      });
+      expect(decided.ok).toBe(true);
+    }
+    return asked.data;
+  }
+
+  it("the Head reverses an approved write-off: the stock comes back at its own cost and it is Reversed", async () => {
+    const pens = await goods();
+    await receive(branch.id, pens, "10", 1000n, head);
+    const writeOff = await writtenOff(pens, "4", true);
+    expect(await balanceOf(pens)).toEqual({ qty: "6.000", avg_cost: "1000" });
+    const result = await reverse(writeOff.documentId, head);
+    expect(result).toEqual({
+      ok: true,
+      data: { documentId: writeOff.documentId, number: writeOff.number },
+    });
+    expect(await balanceOf(pens)).toEqual({ qty: "10.000", avg_cost: "1000" });
+    expect(await reversalsOf(writeOff.documentId)).toEqual([
+      expect.objectContaining({ variant_id: pens, qty_delta: "4.000", unit_cost: "1000" }),
+    ]);
+    expect((await documentOf(writeOff.documentId)).status).toBe("REVERSED");
+  });
+
+  it("the Manager who asked, with RETURN_REVERSE on, is refused: forbidden, nothing saved", async () => {
+    const pens = await goods();
+    await receive(branch.id, pens, "10", 1000n, head);
+    const writeOff = await writtenOff(pens, "4", true);
+    const result = await reverse(writeOff.documentId, manager);
+    expect(result.ok ? null : result.error.code).toBe("forbidden");
+    expect((await documentOf(writeOff.documentId)).status).toBe("POSTED");
+    expect((await balanceOf(pens))!.qty).toBe("6.000");
+  });
+
+  it("a waiting or a refused write-off is not reversed: wrong_status, nothing moves", async () => {
+    const pens = await goods();
+    await receive(branch.id, pens, "10", 1000n, head);
+    const pending = await writtenOff(pens, "2", false);
+    expect(await reverse(pending.documentId, head)).toMatchObject({
+      ok: false,
+      error: { code: "wrong_status" },
+    });
+    const refused = await writtenOff(pens, "3", false);
+    const decided = await runAction(decideWriteOff, head, {
+      documentId: refused.documentId,
+      outcome: "REFUSE",
+    });
+    expect(decided.ok).toBe(true);
+    expect(await reverse(refused.documentId, head)).toMatchObject({
+      ok: false,
+      error: { code: "wrong_status" },
+    });
+    expect((await balanceOf(pens))!.qty).toBe("10.000");
   });
 });
