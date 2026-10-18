@@ -20,7 +20,7 @@ import { Field } from "@/components/ui/field";
 import { FIELD_CLASSES, Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { cn } from "@/components/utils";
-import { ISSUE_LINES_MAX, issueQuantityRefusal } from "@/domain/stock-documents";
+import { DOCUMENT_LINES_MAX, issueQuantityRefusal } from "@/domain/stock-documents";
 import type {
   IssueBranch,
   IssueDepartment,
@@ -351,7 +351,7 @@ export function IssueForm({
         {branchChosen ? (
           <ItemSearch
             branchId={values.branchId}
-            full={values.lines.length >= ISSUE_LINES_MAX}
+            full={values.lines.length >= DOCUMENT_LINES_MAX}
             onPick={addLine}
           />
         ) : (
@@ -540,7 +540,7 @@ function ItemSearch({
       </Field>
       {full ? (
         <p className="text-sm leading-5 text-muted-foreground">
-          {t("full", { max: ISSUE_LINES_MAX })}
+          {t("full", { max: DOCUMENT_LINES_MAX })}
         </p>
       ) : answered && answer.items.length === 0 ? (
         <p data-nothing-found className="text-sm leading-5 text-muted-foreground">

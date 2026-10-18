@@ -3,7 +3,7 @@ import * as z from "zod";
 
 import { businessDate, isBusinessDate } from "@/domain/business-date";
 import { draftComment, isDraftComment, quantityRefusal } from "@/domain/drafts";
-import { ISSUE_LINES_MAX } from "@/domain/stock-documents";
+import { DOCUMENT_LINES_MAX } from "@/domain/stock-documents";
 import { fullName, isFullName } from "@/domain/users";
 import { ActionError, defineAction } from "@/server/action";
 import type { FieldMessageKey } from "@/server/action-result";
@@ -76,7 +76,7 @@ const input = z
     lines: z
       .array(z.object({ variantId: z.uuid(), qty: z.string().trim().min(1).max(40) }))
       .min(1)
-      .max(ISSUE_LINES_MAX),
+      .max(DOCUMENT_LINES_MAX),
   })
   .refine(
     (value) => new Set(value.lines.map((line) => line.variantId)).size === value.lines.length,

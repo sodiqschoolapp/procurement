@@ -106,6 +106,70 @@ describe("nextBalance, movements at the average (09 Stock value, second bullet; 
   });
 });
 
+describe("nextBalance, a return into empty stock (Decided ahead 11; plan of 5.6, decided item 1)", () => {
+  const back = (qtyDelta: string, emptyCost: bigint): StockMovement => ({
+    type: "RETURN",
+    qtyDelta,
+    unitCost: null,
+    emptyCost,
+  });
+
+  it("into a stock of 0 comes in at its empty-stock cost, which becomes the average", () => {
+    expect(nextBalance(at("0", 0n), back("3", 5000n))).toEqual({
+      ok: true,
+      qty: "3",
+      avgCost: 5000n,
+      unitCost: 5000n,
+    });
+  });
+
+  it("the reviewer's worked case: 3 back at 5 000, then 7 received at 6 000 → 5 700", () => {
+    const returned = landed(nextBalance(at("0", 0n), back("3", 5000n)));
+    const received = landed(nextBalance(returned, move("RECEIPT", "7", 6000n)));
+    expect(received).toMatchObject({ qty: "10", avgCost: 5700n });
+  });
+
+  it("into a stock above 0 comes in at the average and leaves it, the empty-stock cost unused", () => {
+    expect(nextBalance(at("6", 1200n), back("2", 5000n))).toEqual({
+      ok: true,
+      qty: "8",
+      avgCost: 1200n,
+      unitCost: 1200n,
+    });
+  });
+
+  it("into free stock (above 0 at an average of 0) comes in at 0 (edge case \"The item was free\")", () => {
+    expect(landed(nextBalance(at("4", 0n), back("1", 5000n)))).toMatchObject({
+      qty: "5",
+      avgCost: 0n,
+      unitCost: 0n,
+    });
+  });
+
+  it("an empty-stock cost of 0 brings the return in at 0", () => {
+    expect(landed(nextBalance(at("0", 0n), back("2", 0n)))).toMatchObject({
+      avgCost: 0n,
+      unitCost: 0n,
+    });
+  });
+
+  it("refuses an empty-stock cost on another type, beside a unit cost, or below 0", () => {
+    const issue: StockMovement = { type: "ISSUE", qtyDelta: "-1", unitCost: null, emptyCost: 1n };
+    expect(() => nextBalance(at("3", 100n), issue)).toThrow(RangeError);
+    const correction: StockMovement = {
+      type: "CORRECTION",
+      qtyDelta: "1",
+      unitCost: null,
+      emptyCost: 1n,
+    };
+    expect(() => nextBalance(at("0", 0n), correction)).toThrow(RangeError);
+    expect(() =>
+      nextBalance(at("0", 0n), { type: "RETURN", qtyDelta: "1", unitCost: 5n, emptyCost: 5n }),
+    ).toThrow(RangeError);
+    expect(() => nextBalance(at("0", 0n), back("1", -1n))).toThrow(RangeError);
+  });
+});
+
 describe("nextBalance, the reset at 0 (09 Stock value, third bullet; decided item 4)", () => {
   it("an issue that empties the stock resets the average to 0, and is written at the old average", () => {
     expect(nextBalance(at("5", 800n), move("ISSUE", "-5"))).toEqual({
