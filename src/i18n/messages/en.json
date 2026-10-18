@@ -773,18 +773,21 @@
     "title": {
       "products": "Import products and services",
       "departments": "Import departments",
-      "prices": "Import prices"
+      "prices": "Import prices",
+      "stock": "Import existing stock"
     },
     "description": {
       "products": "Add many new products and services, with their subtypes and prices, from one Excel file.",
       "departments": "Add many departments of any branch from one Excel file.",
-      "prices": "Load new prices for many subtypes at once from one Excel file. Every new price is kept in the price history with its note."
+      "prices": "Load new prices for many subtypes at once from one Excel file. Every new price is kept in the price history with its note.",
+      "stock": "Put the stock a branch already holds into its warehouse from one Excel file. Each row becomes a line of a direct entry with the reason “Stock we already had”, dated today."
     },
     "templateHeading": "Template",
     "templateText": {
       "products": "One row per product without subtypes, or one row per subtype with the product's name repeated. Category, measure and company must already be in the catalog.",
       "departments": "One row per department. The branch is its short code, such as TSH.",
-      "prices": "One row per subtype. Leave the subtype empty for a product without subtypes. The product and subtype must already be in the catalog; the note says why the price changes."
+      "prices": "One row per subtype. Leave the subtype empty for a product without subtypes. The product and subtype must already be in the catalog; the note says why the price changes.",
+      "stock": "One row per subtype. Leave the subtype empty for a product without subtypes. Leave the cost empty to use the reference price. Products and subtypes must already be in the catalog."
     },
     "download": "Download template",
     "fileHeading": "File",
@@ -804,7 +807,8 @@
     "sheet": {
       "products": "Products",
       "departments": "Departments",
-      "prices": "Prices"
+      "prices": "Prices",
+      "stock": "Stock"
     },
     "columns": {
       "products": {
@@ -828,8 +832,17 @@
         "subtype": "Subtype",
         "price": "New price",
         "note": "Note"
+      },
+      "stock": {
+        "name": "Product name",
+        "subtype": "Subtype",
+        "qty": "Quantity",
+        "cost": "Cost per unit"
       }
-    }
+    },
+    "branch": "Branch",
+    "savedDocuments": "Direct entries: {numbers}.",
+    "chooseBranch": "Choose a branch"
   },
   "suggestions": {
     "title": "Product suggestions",
@@ -1761,7 +1774,8 @@
       "noResultsText": "No stock matches the search or the category. Change them or clear them.",
       "newIssue": "New issue",
       "newReturn": "New return",
-      "directEntry": "Direct entry"
+      "directEntry": "Direct entry",
+      "importStock": "Import from Excel"
     },
     "item": {
       "back": "Stock on hand",

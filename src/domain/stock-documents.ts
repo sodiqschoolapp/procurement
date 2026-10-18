@@ -108,6 +108,31 @@ export function directEntryCommentRefusal(
   return reason === "OTHER" && (comment ?? "").trim() === "" ? "required" : null;
 }
 
+/** A subtype of a direct-entry line as it was read under its lock. */
+export type DirectEntrySubtype = {
+  isActive: boolean;
+  productActive: boolean;
+  type: "GOODS" | "SERVICE";
+  allowsDecimals: boolean;
+};
+
+/**
+ * What is wrong with one direct-entry line's subtype and quantity (09 Direct entry, Lines; plan of
+ * 5.8, decided item 7; edge case "Half a piece"): an unknown subtype or a service, which never
+ * enters stock (A7), is `notAllowed` on `variantId`; an inactive subtype or product `inactive`
+ * (04 rule 2); then the quantity rules of ./drafts.ts by the measure. The form's action and the
+ * Excel import (plan of 5.9) both ask this of the rows they locked; each reads its cost itself.
+ */
+export function directEntryLineRefusal(
+  subtype: DirectEntrySubtype | undefined,
+  qty: string,
+): { field: "variantId" | "qty"; kind: "notAllowed" | "inactive" | QuantityRefusal } | null {
+  if (!subtype || subtype.type !== "GOODS") return { field: "variantId", kind: "notAllowed" };
+  if (!subtype.isActive || !subtype.productActive) return { field: "variantId", kind: "inactive" };
+  const refusal = quantityRefusal(qty, subtype.allowsDecimals);
+  return refusal ? { field: "qty", kind: refusal } : null;
+}
+
 /**
  * The number of a document: `documentNumber("ISSUE", "CHL", 2026, 31)` is `ISS-CHL-26-0031`
  * (09 Issue 2). The branch code, year and counter are written as an order number's

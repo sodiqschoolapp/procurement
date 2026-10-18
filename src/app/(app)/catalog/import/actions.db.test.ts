@@ -201,8 +201,8 @@ describe("the import page actions (plan of 1.10; plan review, correction 1)", ()
       ok: false,
       error: { code: "invalid_input", fields: { file: "errors.field.notTemplate" } },
     });
-    // An unknown kind ("prices" was one until 1.11 made it a kind).
-    expect(await previewImportAction(formOf(file, "stock"))).toMatchObject({
+    // An unknown kind ("prices" until 1.11 and "stock" until 5.9 made them kinds).
+    expect(await previewImportAction(formOf(file, "counts"))).toMatchObject({
       ok: false,
       error: { code: "invalid_input", fields: { kind: "errors.field.notAllowed" } },
     });

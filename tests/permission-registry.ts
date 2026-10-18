@@ -182,7 +182,8 @@ export const QUERIES: Record<string, Permission> = {
   "src/features/catalog/queries/suggestions.ts#listSuggestions": "catalog.suggest",
   "src/features/catalog/queries/suggestions.ts#getSuggestion": "catalog.suggest",
   "src/features/catalog/queries/suggestions.ts#countPendingSuggestions": "catalog.manage",
-  // The preview of an Excel import (plan of 1.10).
+  // The preview of an Excel import (plan of 1.10); each kind asks its own permission
+  // (IMPORT_PERMISSIONS): prices price.add (1.11), stock stock.enter_direct on its branch (5.9).
   "src/features/catalog/queries/imports.ts#previewImport": "catalog.manage",
   // The Head's users, the vacancy warning and the form's branches (plan of 1.3).
   "src/features/users/queries/users.ts#listUsers": "catalog.manage",

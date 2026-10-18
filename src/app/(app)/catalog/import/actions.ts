@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import * as z from "zod";
 
 import {
   IMPORT_FILE_MAX_BYTES,
@@ -16,6 +17,7 @@ import {
   importProducts,
 } from "@/features/catalog/actions/imports";
 import { type ImportPreview, previewImport } from "@/features/catalog/queries/imports";
+import { importStock } from "@/features/warehouse/actions/import-stock";
 import { runAction } from "@/server/action";
 import { type ActionResult, failure } from "@/server/action-result";
 import { getCurrentUser } from "@/server/auth/session";
@@ -28,9 +30,18 @@ import { ImportFileError, readSheet } from "@/server/excel";
 // the Head makes the server unpack a file (plan review of 1.10, correction 1; developer-rules.md
 // rules 4 and 13). Then the file is read by its content
 // (src/server/excel.ts) and the preview query or the import action runs; the action checks every
-// row again in its transaction (decision 5).
+// row again in its transaction (decision 5). A stock import's form carries `branchId` too, and
+// its permission is asked of that branch, still before the file is read (plan of 5.9).
 
-type Upload = { kind: ImportKind; fileName: string; sheet: ImportSheet; userId: string };
+type Upload = {
+  kind: ImportKind;
+  fileName: string;
+  sheet: ImportSheet;
+  userId: string;
+  branchId?: string;
+};
+
+const branchInput = z.uuid();
 
 /** The signed-in Head and the sheet of the uploaded file, or the refusal. */
 async function upload(form: FormData): Promise<Upload | { refusal: ActionResult<never> }> {
@@ -39,8 +50,17 @@ async function upload(form: FormData): Promise<Upload | { refusal: ActionResult<
   const kind = form.get("kind");
   if (!isImportKind(kind))
     return { refusal: failure("invalid_input", { kind: "errors.field.notAllowed" }) };
+  let branchId: string | undefined;
+  if (kind === "stock") {
+    const parsed = branchInput.safeParse(form.get("branchId"));
+    if (!parsed.success) {
+      return { refusal: failure("invalid_input", { branchId: "errors.field.required" }) };
+    }
+    branchId = parsed.data;
+  }
   try {
-    await authorize(user.id, IMPORT_PERMISSIONS[kind]);
+    if (branchId) await authorize(user.id, IMPORT_PERMISSIONS.stock, { branchId });
+    else await authorize(user.id, IMPORT_PERMISSIONS[kind]);
   } catch (error) {
     if (error instanceof AuthorizationError) return { refusal: failure(error.kind) };
     throw error;
@@ -54,7 +74,7 @@ async function upload(form: FormData): Promise<Upload | { refusal: ActionResult<
   }
   try {
     const sheet = await readSheet(new Uint8Array(await file.arrayBuffer()));
-    return { kind, fileName: file.name, sheet, userId: user.id };
+    return { kind, fileName: file.name, sheet, userId: user.id, branchId };
   } catch (error) {
     if (error instanceof ImportFileError) {
       return { refusal: failure("invalid_input", { file: `errors.field.${error.kind}` }) };
@@ -68,7 +88,10 @@ export async function previewImportAction(form: FormData): Promise<ActionResult<
   const read = await upload(form);
   if ("refusal" in read) return read.refusal;
   try {
-    return { ok: true, data: await previewImport(read.userId, read.kind, read.sheet) };
+    return {
+      ok: true,
+      data: await previewImport(read.userId, read.kind, read.sheet, read.branchId),
+    };
   } catch (error) {
     if (error instanceof AuthorizationError) return failure(error.kind);
     throw error;
@@ -80,6 +103,15 @@ export async function saveImportAction(form: FormData): Promise<ActionResult<Sav
   const read = await upload(form);
   if ("refusal" in read) return read.refusal;
   const input = { clientKey: form.get("clientKey"), fileName: read.fileName, sheet: read.sheet };
+  if (read.kind === "stock") {
+    const saved = await runAction(importStock, read.userId, { ...input, branchId: read.branchId });
+    if (!saved.ok) return saved;
+    revalidatePath("/warehouse", "layout");
+    return {
+      ok: true,
+      data: { importId: saved.data.importId, rows: saved.data.rows, numbers: saved.data.numbers },
+    };
+  }
   const result =
     read.kind === "products"
       ? await runAction(importProducts, read.userId, input)

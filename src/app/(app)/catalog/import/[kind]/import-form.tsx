@@ -8,6 +8,8 @@ import { newClientKey } from "@/components/client-key";
 import { Icon } from "@/components/icon";
 import { toast } from "@/components/toast";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { Field } from "@/components/ui/field";
+import { Select } from "@/components/ui/select";
 import { useAction } from "@/components/use-action";
 import {
   IMPORT_COLUMNS,
@@ -16,6 +18,7 @@ import {
   importErrorKey,
 } from "@/domain/imports";
 import type { ImportPreview } from "@/features/catalog/queries/imports";
+import type { DirectEntryBranch } from "@/features/warehouse/queries/direct-entry-form";
 import type { FieldErrorKind } from "@/server/action-result";
 
 import { previewImportAction, saveImportAction } from "../actions";
@@ -25,13 +28,16 @@ import { previewImportAction, saveImportAction } from "../actions";
 // file shows its preview at once; Save is enabled only when the preview found no error, and the
 // server checks every row again. One client key per chosen file, kept across retries, so a lost
 // answer never imports twice (developer-rules.md rule 8). At phone width the errors read as plain
-// lines above the table, which scrolls inside its panel.
+// lines above the table, which scrolls inside its panel. Existing stock is one branch's (plan of
+// 5.9, decided item 2, Look first): the branch is chosen first, and a new branch drops the file
+// chosen, so a preview never stands for another branch than the one saved.
 
-function formOf(kind: ImportKind, file: File, clientKey?: string): FormData {
+function formOf(kind: ImportKind, file: File, clientKey?: string, branchId?: string): FormData {
   const form = new FormData();
   form.set("kind", kind);
   form.set("file", file);
   if (clientKey) form.set("clientKey", clientKey);
+  if (branchId) form.set("branchId", branchId);
   return form;
 }
 
@@ -52,11 +58,17 @@ export function ImportForm({
   kind,
   columns,
   listHref,
+  branches,
+  initialBranchId = "",
 }: {
   kind: ImportKind;
   /** The column titles, in the order of IMPORT_COLUMNS. */
   columns: string[];
   listHref: string;
+  /** A stock import's branches to choose from; none for a catalog import. */
+  branches?: readonly DirectEntryBranch[];
+  /** The branch prefilled: the only one, or empty when the Head must choose. */
+  initialBranchId?: string;
 }) {
   const t = useTranslations("imports");
   const tAll = useTranslations();
@@ -64,14 +76,17 @@ export function ImportForm({
   const [chosen, setChosen] = useState<Chosen | null>(null);
   const [preview, setPreview] = useState<ImportPreview | null>(null);
   const [errors, setErrors] = useState<ImportError[]>([]);
+  const [branchId, setBranchId] = useState(initialBranchId);
+  const needsBranch = branches !== undefined;
 
   const previewCall = useCallback(
-    (input: { file: File }) => previewImportAction(formOf(kind, input.file)),
+    (input: { file: File; branchId: string }) =>
+      previewImportAction(formOf(kind, input.file, undefined, input.branchId || undefined)),
     [kind],
   );
   const saveCall = useCallback(
-    (input: { file: File; clientKey: string }) =>
-      saveImportAction(formOf(kind, input.file, input.clientKey)),
+    (input: { file: File; clientKey: string; branchId: string }) =>
+      saveImportAction(formOf(kind, input.file, input.clientKey, input.branchId || undefined)),
     [kind],
   );
   const reading = useAction(previewCall);
@@ -90,7 +105,7 @@ export function ImportForm({
       return;
     }
     setChosen({ file, clientKey: newClientKey() });
-    const result = await reading.run({ file });
+    const result = await reading.run({ file, branchId });
     if (!result) return;
     if (!result.ok) {
       if (result.error.fields) setErrors(errorsOf(result.error.fields));
@@ -103,14 +118,19 @@ export function ImportForm({
 
   async function save() {
     if (!chosen) return;
-    const result = await saving.run({ file: chosen.file, clientKey: chosen.clientKey });
+    const result = await saving.run({ file: chosen.file, clientKey: chosen.clientKey, branchId });
     if (!result) return;
     if (!result.ok) {
       toast.error(tAll(result.error.messageKey));
       if (result.error.fields) setErrors(errorsOf(result.error.fields));
       return;
     }
-    toast.success(t("saved", { rows: result.data.rows }));
+    const numbers = result.data.numbers;
+    toast.success(
+      numbers && numbers.length > 0
+        ? `${t("saved", { rows: result.data.rows })} ${t("savedDocuments", { numbers: numbers.join(", ") })}`
+        : t("saved", { rows: result.data.rows }),
+    );
     router.push(listHref);
     router.refresh();
   }
@@ -121,8 +141,39 @@ export function ImportForm({
   const rows = preview?.rows ?? [];
   const canSave = preview !== null && errors.length === 0 && rows.length > 0;
 
+  /** A new branch: the file chosen for the old one leaves with its preview. */
+  function chooseBranch(next: string) {
+    setBranchId(next);
+    setChosen(null);
+    setPreview(null);
+    setErrors([]);
+  }
+
+  const fileLocked = needsBranch && branchId === "";
+
   return (
     <div className="flex flex-col gap-6">
+      {needsBranch && (
+        <section
+          aria-label={t("branch")}
+          className="flex flex-col gap-3 rounded-xl bg-card p-6 text-card-foreground"
+        >
+          <Field id="import-branch" label={t("branch")}>
+            <Select
+              value={branchId}
+              disabled={reading.pending || saving.pending}
+              onChange={(event) => chooseBranch(event.target.value)}
+            >
+              <option value="">{t("chooseBranch")}</option>
+              {branches.map((branch) => (
+                <option key={branch.id} value={branch.id}>
+                  {tAll("branch.option", { code: branch.code, name: branch.name })}
+                </option>
+              ))}
+            </Select>
+          </Field>
+        </section>
+      )}
       <section
         aria-labelledby="import-template"
         className="flex flex-col gap-3 rounded-xl bg-card p-6 text-card-foreground"
@@ -158,11 +209,12 @@ export function ImportForm({
             hidden and this label, from the message files, opens it (CLAUDE.md rule 13). */}
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
           <input
+            key={branchId}
             id="import-file-input"
             type="file"
             accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             aria-describedby="import-file-hint"
-            disabled={reading.pending || saving.pending}
+            disabled={fileLocked || reading.pending || saving.pending}
             onChange={(event) => void choose(event.target.files?.[0])}
             className="peer sr-only"
           />

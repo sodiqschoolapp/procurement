@@ -21,6 +21,7 @@ import { MOVEMENT_TYPES } from "@/domain/stock";
 import { DOCUMENT_REASONS, DOCUMENT_STATUSES, DOCUMENT_TYPES } from "@/domain/stock-documents";
 
 import { departments, productVariants } from "./catalogs";
+import { catalogImports } from "./imports";
 import { branches } from "./organisation";
 import { purchases } from "./purchasing";
 import { users } from "./users";
@@ -170,6 +171,8 @@ export const stockDocuments = pgTable(
     reversedBy: uuid("reversed_by").references(() => users.id),
     reversedAt: moment("reversed_at"),
     reverseReason: text("reverse_reason"),
+    // The Excel import a direct entry came from (build-plan 5.9); empty for one typed in a form.
+    importId: uuid("import_id").references(() => catalogImports.id),
     createdAt: moment("created_at").notNull(),
   },
   (table) => [
@@ -213,6 +216,10 @@ export const stockDocuments = pgTable(
           AND ${table.reverseReason} IS NULL
       END`,
     ),
+    check(
+      "stock_documents_import_check",
+      sql`${table.importId} IS NULL OR ${table.type} = 'DIRECT_ENTRY'`,
+    ),
     // 09 Issue: "Department … from this branch" (the way orders hold theirs, plan of 2.4).
     foreignKey({
       name: "stock_documents_department_branch_fk",
@@ -227,6 +234,7 @@ export const stockDocuments = pgTable(
     index("stock_documents_created_by_idx").on(table.createdBy),
     index("stock_documents_decided_by_idx").on(table.decidedBy),
     index("stock_documents_reversed_by_idx").on(table.reversedBy),
+    index("stock_documents_import_id_idx").on(table.importId),
   ],
 );
 

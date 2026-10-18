@@ -437,7 +437,7 @@ Stock screens and every document that moves stock inside one branch.
   - **Build:** The direct-entry form: branch, date, reason (stock we already had; gift or donation; other, with a comment), lines with product, subtype, quantity and a cost prefilled from the reference price; the number `ENT-CHL-26-0004`; an audit row; the item card marks the movement "Direct entry". A product's first direct entry locks its type and measure.
   - **Done when:** S15 as a test.
 
-- [ ] **5.9 Direct entry from Excel**
+- [x] **5.9 Direct entry from Excel**
   - **Read:** `09-warehouse.md` (Direct entry by the Head: 1); `04-catalogs.md` (Rules: 7).
   - **Build:** Existing stock is imported from an Excel template through the import framework, as direct-entry documents.
   - **Done when:** Tests: a file with one unknown product saves nothing; a valid file of 20 rows raises 20 balances.

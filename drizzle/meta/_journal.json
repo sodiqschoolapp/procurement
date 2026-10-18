@@ -239,6 +239,13 @@
       "when": 1792275582750,
       "tag": "0033_stock_documents",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1792297218793,
+      "tag": "0034_import_stock",
+      "breakpoints": true
     }
   ]
 }

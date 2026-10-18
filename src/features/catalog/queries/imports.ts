@@ -9,7 +9,9 @@ import {
   readDepartmentRows,
   readPriceRows,
   readProductRows,
+  readStockRows,
 } from "@/domain/imports";
+import { checkStockImport } from "@/features/warehouse/imports/check";
 import { authorize } from "@/server/authorize";
 import { db } from "@/server/db/client";
 
@@ -21,7 +23,9 @@ import { PRODUCT_TYPE_WORDS, everyImportTitles } from "../imports/titles";
 // and departments, price.add for prices (Head only; 03 Permission matrix; plan of 1.11, decision 4,
 // Look first). It reads the rows with the same domain functions and checks them against the
 // catalog with the same queries as the save, without locks, and writes nothing. The save checks
-// everything again (plan of 1.10, decision 5): the preview is advice, the save the gate.
+// everything again (plan of 1.10, decision 5): the preview is advice, the save the gate. Existing
+// stock (plan of 5.9) is one branch's: its preview is asked of that branch, under
+// stock.enter_direct, the permission of its save.
 
 /** A row as the preview shows it: its number and each column's text as typed. */
 export type PreviewRow = { row: number; texts: string[] };
@@ -40,13 +44,19 @@ function shown(cell: ImportCell | undefined): string {
   return "";
 }
 
-/** The preview of one sheet for the Head. */
+/** The preview of one sheet for the Head; a stock import names its branch. */
 export async function previewImport(
   userId: string,
   kind: ImportKind,
   sheet: ImportSheet,
+  branchId?: string,
 ): Promise<ImportPreview> {
-  await authorize(userId, IMPORT_PERMISSIONS[kind]);
+  if (kind === "stock") {
+    if (!branchId) throw new RangeError("A stock import names its branch.");
+    await authorize(userId, IMPORT_PERMISSIONS.stock, { branchId });
+  } else {
+    await authorize(userId, IMPORT_PERMISSIONS[kind]);
+  }
   const width = IMPORT_COLUMNS[kind].length;
   const rows = sheet.rows
     .map((row) => ({
@@ -65,6 +75,17 @@ export async function previewImport(
     }
     const checked = await checkProductImport(db, read.products, { lock: false });
     return { kind, rows, errors: ordered([...read.errors, ...checked.errors], kind) };
+  }
+  if (kind === "stock") {
+    const read = readStockRows(sheet);
+    if (read.errors.some((error) => error.column === "file")) {
+      return { kind, rows: [], errors: read.errors };
+    }
+    const checked = await checkStockImport(db, read.named, { lock: false });
+    // A cell the reader refused is not reported twice by the line rules.
+    const known = new Set(read.errors.map((error) => `${error.row}:${error.column}`));
+    const more = checked.errors.filter((error) => !known.has(`${error.row}:${error.column}`));
+    return { kind, rows, errors: ordered([...read.errors, ...more], kind) };
   }
   if (kind === "prices") {
     const read = readPriceRows(sheet);

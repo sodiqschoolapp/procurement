@@ -60,7 +60,8 @@ const sheetInput = z.object({
     .max(5_000),
 });
 
-const baseInput = z.object({
+/** The input every import takes; the stock import adds its branch (plan of 5.9). */
+export const importBaseInput = z.object({
   clientKey: z.string().refine(isClientKey),
   fileName: z
     .string()
@@ -72,7 +73,7 @@ const baseInput = z.object({
 type Context = z.core.$RefinementCtx;
 
 /** Each error as an issue that names its kind (src/server/action-input.ts). */
-function addErrors(context: Context, errors: readonly ImportError[], input: unknown) {
+export function addImportErrors(context: Context, errors: readonly ImportError[], input: unknown) {
   for (const error of errors) {
     context.addIssue({
       code: "custom",
@@ -89,14 +90,14 @@ function importInput<Entry>(
   kind: ImportKind,
   read: (sheet: ImportSheet) => { entries: Entry[]; errors: ImportError[] },
 ) {
-  return baseInput.transform((input, context) => {
+  return importBaseInput.transform((input, context) => {
     if (!headerMatches(input.sheet.header, everyImportTitles(kind))) {
-      addErrors(context, [{ row: 0, column: "file", kind: "notTemplate" }], input);
+      addImportErrors(context, [{ row: 0, column: "file", kind: "notTemplate" }], input);
       return z.NEVER;
     }
     const { entries, errors } = read(input.sheet as ImportSheet);
     if (errors.length > 0) {
-      addErrors(context, errors, input);
+      addImportErrors(context, errors, input);
       return z.NEVER;
     }
     return { clientKey: input.clientKey, fileName: input.fileName, entries };
@@ -104,7 +105,7 @@ function importInput<Entry>(
 }
 
 /** The check's errors as the wrapper's field errors. */
-function refused(errors: readonly ImportError[]): ActionError {
+export function refusedImport(errors: readonly ImportError[]): ActionError {
   const fields: Record<string, FieldMessageKey> = {};
   for (const error of errors) {
     const key = importErrorKey(error);
@@ -113,8 +114,11 @@ function refused(errors: readonly ImportError[]): ActionError {
   return new ActionError("invalid_input", fields);
 }
 
-/** What a saved import gives back: its record and how many rows it had. */
-export type SavedImport = { importId: string; rows: number };
+/**
+ * What a saved import gives back: its record and how many rows it had; a stock import also the
+ * numbers of its direct entries (plan of 5.9, decided item 9).
+ */
+export type SavedImport = { importId: string; rows: number; numbers?: string[] };
 
 type Written<Entry> = SavedImport & { written: Entry[] };
 
@@ -128,14 +132,17 @@ function findImport<Entry>() {
         id: catalogImports.id,
         rows: catalogImports.rowCount,
         userId: catalogImports.createdBy,
+        branchId: catalogImports.branchId,
       })
       .from(catalogImports)
       .where(eq(catalogImports.clientKey, clientKey));
     if (!row) return null;
+    // A stock import's key has its branch, so the wrapper refuses it here (permission review of
+    // 5.9, should fix 1).
     return {
       result: { importId: row.id, rows: row.rows, written: [] },
       userId: row.userId,
-      branchId: null,
+      branchId: row.branchId,
     };
   };
 }
@@ -166,7 +173,7 @@ export const importProducts = defineAction({
     await lockProducts(tx);
     await lockSubtypes(tx);
     const { errors, refs } = await checkProductImport(tx, input.entries, { lock: true });
-    if (errors.length > 0) throw refused(errors);
+    if (errors.length > 0) throw refusedImport(errors);
     const written: WrittenProduct[] = [];
     for (const [at, entry] of input.entries.entries()) {
       const ref = refs[at]!;
@@ -246,7 +253,7 @@ export const importDepartments = defineAction({
   async write({ tx, input, userId }): Promise<Written<WrittenDepartment>> {
     await lockDepartments(tx);
     const { errors, branchIds } = await checkDepartmentImport(tx, input.entries, { lock: true });
-    if (errors.length > 0) throw refused(errors);
+    if (errors.length > 0) throw refusedImport(errors);
     const written: WrittenDepartment[] = [];
     for (const [at, entry] of input.entries.entries()) {
       written.push(
@@ -316,7 +323,7 @@ export const importPrices = defineAction({
   },
   async write({ tx, input, userId }): Promise<Written<WrittenPrice>> {
     const { errors, targets } = await checkPriceImport(tx, input.entries, { lock: true });
-    if (errors.length > 0) throw refused(errors);
+    if (errors.length > 0) throw refusedImport(errors);
     const written: WrittenPrice[] = [];
     for (const [at, entry] of input.entries.entries()) {
       const target = targets[at]!;

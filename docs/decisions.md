@@ -1940,6 +1940,29 @@ Choices made during the build:
 - The 5.7 test "the Head is refused on a posted direct entry" became "the Head reverses a direct entry": it stood for "no type but an issue or a return yet", which this task's Build changes (Decided ahead, question 19).
 - The Stock on hand button uses the existing `inventory_2` icon; no new icon.
 
+### 5.9 Direct entry from Excel (18.10.2026)
+
+The plan's decisions as the plan review of 18.10.2026 confirmed them (corrections 1 to 3 applied), and those of the build. The Look first items come first.
+
+1. **Look first** (money: the cost of an imported row). An empty cost cell takes the subtype's own `reference_price`, read from the subtype row locked FOR SHARE; empty with no reference price is `required`; a typed 0 is allowed. A cell is read without a float: a text by `parseSomOrZero()`, a number cell only as a safe whole number 0 or more, by its digits (`cellCost()` in `src/domain/imports.ts`). Worked: 10 at 10 000 in stock and an import of 10 with an empty cost and a reference price of 12 000 give an average of 11 000.
+2. **Look first** (permission matrix, branch wall). One file is one branch, chosen on the page; the action is authorized on that branch under `stock.enter_direct`. `catalog_imports.branch_id` is set for STOCK only (CHECK `catalog_imports_branch_check`), so the repeat answers only its maker in that branch.
+3. The reason is EXISTING_STOCK (edge case "The school already has stock on launch day"), the date `businessDate(now())`, no comment. Other reasons go through the form.
+4. More than 100 rows become several documents of up to `DOCUMENT_LINES_MAX` lines, the lines in the order of their subtype ids, in one transaction: one ascending lock order for the balances.
+5. Each document's `client_key` is made on the server (`crypto.randomUUID()`); the browser's key is on the `catalog_imports` row, and `stock_documents.import_id` links the documents to it, so a repeat answers with the same numbers.
+6. The same subtype twice in one file is `duplicateInFile` naming the first row.
+7. Names are matched as in the prices import, in the query that locks the rows: the products FOR SHARE in id order by name, then the subtypes of those products FOR SHARE in id order. A product renamed before the save makes its row `unknown`.
+8. The page is `/catalog/import/stock`, on the one import page, with a back link to Stock on hand and no Admin nav.
+9. The saved message names the document numbers.
+
+Choices made during the build:
+
+- `catalog_imports_branch_check` compares `kind::text = 'STOCK'`: the migrator applies every pending migration in one transaction, and PostgreSQL refuses a new enum value in the transaction that added it ("unsafe use of new value"). One migration, `0034_import_stock`, instead of two.
+- `directEntryLineRefusal()` (`src/domain/stock-documents.ts`) holds the line rules of the form's action and the import alike; each reads its cost itself. `lockDirectEntryBranch()` and `recordDirectEntry()` of `direct-entry.ts` are shared the same way.
+- A quantity cell typed as a number is read as JavaScript writes it (`String(value)`), never rounded: 2.5 is read, 2.5555 is `tooManyDecimals`, 1e21 `wrongFormat`. Whole units are checked against the measure in the database check.
+- The page and the template of a branch-scoped kind are checked with `authorizeList()` (`authorizeImportKind()` in `src/features/catalog/imports/permission.ts`; the template route asks the same two calls itself, as the permission registry wants a route to), since they name no branch yet; the preview and the save with the branch.
+- The tests that used `stock` as the unknown import kind use `counts` now: `stock` became a kind.
+- The Stock on hand button "Import from Excel" uses the existing `description` icon; no new icon.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

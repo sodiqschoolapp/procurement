@@ -390,6 +390,23 @@ describe("importProducts: a safe repeat (developer-rules.md rule 8)", () => {
       error: { code: "not_found" },
     });
   });
+  it("the key of a stock import is not found for a products import, and nothing is saved (permission review of 5.9, should fix 1)", async () => {
+    const head = await insertUser("HEAD");
+    const branch = await insertBranch();
+    const refs = await catalogRefs();
+    const name = `Mahsulot ${tag()}`;
+    const input = productsInput([productRow(name, refs)]);
+    await db.execute(sql`
+      insert into catalog_imports (kind, file_name, row_count, created_by, client_key, branch_id,
+        created_at)
+      values ('STOCK', 'qoldiq.xlsx', 1, ${head.id}, ${input.clientKey}, ${branch.id},
+        '2031-05-03T06:00:00Z')`);
+    expect(await runAction(importProducts, head.id, input)).toMatchObject({
+      ok: false,
+      error: { code: "not_found" },
+    });
+    expect(await productsNamed([name])).toHaveLength(0);
+  });
 });
 
 describe("previewImport (04 rule 7: a preview with errors per row)", () => {

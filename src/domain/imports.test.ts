@@ -4,7 +4,9 @@ import {
   IMPORT_ROWS_MAX,
   type ImportCell,
   type ImportSheet,
+  cellCost,
   cellPrice,
+  cellQuantity,
   cellText,
   headerMatches,
   importErrorKey,
@@ -12,6 +14,7 @@ import {
   readDepartmentRows,
   readPriceRows,
   readProductRows,
+  readStockRows,
 } from "./imports";
 import { MONEY_MAX } from "./money";
 
@@ -397,5 +400,119 @@ describe("importErrorKey", () => {
   it("a row's error is <row>:<column>; the file's is file", () => {
     expect(importErrorKey({ row: 7, column: "category" })).toBe("7:category");
     expect(importErrorKey({ row: 0, column: "file" })).toBe("file");
+  });
+});
+
+describe('cellQuantity: a quantity cell, never rounded (edge case "Half a piece"; plan of 5.9, review should fix 3)', () => {
+  it("a text trimmed, a number as written, empty as nothing; a date or an error cell is no quantity", () => {
+    expect(cellQuantity(t(" 12,5 "))).toBe("12,5");
+    expect(cellQuantity(n(2.5))).toBe("2.5");
+    expect(cellQuantity(n(2.5555))).toBe("2.5555");
+    expect(cellQuantity(n(1e21))).toBe("1e+21");
+    expect(cellQuantity(empty)).toBe("");
+    expect(cellQuantity(undefined)).toBe("");
+    expect(cellQuantity(n(Number.NaN))).toBeNull();
+    expect(cellQuantity({ kind: "other" })).toBeNull();
+  });
+});
+
+describe("cellCost: whole so'm, 0 or more, no float (09 Direct entry, Lines; plan of 5.9, decided item 1, Look first)", () => {
+  it("empty is no cost; 0 is allowed; a text by parseSomOrZero(); a fraction, a negative, a word or a date is wrong", () => {
+    expect(cellCost(empty)).toBeNull();
+    expect(cellCost(t("  "))).toBeNull();
+    expect(cellCost(n(0))).toBe(0n);
+    expect(cellCost(t("0"))).toBe(0n);
+    expect(cellCost(n(150000))).toBe(150000n);
+    expect(cellCost(t("12 000"))).toBe(12000n);
+    expect(cellCost(n(1500.5))).toBe("wrong");
+    expect(cellCost(n(-1))).toBe("wrong");
+    expect(cellCost(t("-1"))).toBe("wrong");
+    expect(cellCost(t("bir ming"))).toBe("wrong");
+    expect(cellCost({ kind: "other" })).toBe("wrong");
+    expect(cellCost(t(String(MONEY_MAX)))).toBe(MONEY_MAX);
+    expect(cellCost(t(String(MONEY_MAX + 1n)))).toBe("wrong");
+  });
+});
+
+describe("readStockRows (09 Direct entry by the Head 1; 04 rule 7; plan of 5.9)", () => {
+  it("reads product, subtype, quantity and cost; an empty subtype is the default, an empty cost is left to the reference price", () => {
+    const { stock, errors } = readStockRows(
+      sheetOf([
+        ["Stul", "", 200, 150000],
+        ["Qog'oz", "A4", "2.5", ""],
+        ["Qog'oz", "A3", n(3), n(0)],
+      ]),
+    );
+    expect(errors).toEqual([]);
+    expect(stock).toEqual([
+      { row: 2, product: "Stul", subtype: null, qty: "200", cost: 150000n },
+      { row: 3, product: "Qog'oz", subtype: "A4", qty: "2.5", cost: null },
+      { row: 4, product: "Qog'oz", subtype: "A3", qty: "3", cost: 0n },
+    ]);
+  });
+
+  it("the quantity rules: empty is required, 0 too small, 4 decimals too many, an exponent wrong; whole units are left to the measure", () => {
+    const { stock, errors } = readStockRows(
+      sheetOf([
+        ["Stul", "", null, 1],
+        ["Stol", "", 0, 1],
+        ["Ruchka", "", 2.5555, 1],
+        ["Daftar", "", 1e21, 1],
+        ["Un", "", 2.5, 1],
+      ]),
+    );
+    expect(errors).toEqual([
+      { row: 2, column: "qty", kind: "required" },
+      { row: 3, column: "qty", kind: "tooSmall" },
+      { row: 4, column: "qty", kind: "tooManyDecimals" },
+      { row: 5, column: "qty", kind: "wrongFormat" },
+    ]);
+    expect(stock.map((entry) => entry.row)).toEqual([6]);
+  });
+
+  it("a wrong cost, a missing product name and a too long subtype are each their row's error", () => {
+    const { stock, errors } = readStockRows(
+      sheetOf([
+        ["Stul", "", 1, 10.5],
+        ["", "A4", 1, 1],
+        ["Qog'oz", "x".repeat(121), 1, 1],
+      ]),
+    );
+    expect(errors).toEqual([
+      { row: 2, column: "cost", kind: "wrongFormat" },
+      { row: 3, column: "name", kind: "required" },
+      { row: 4, column: "subtype", kind: "tooLong" },
+    ]);
+    expect(stock).toEqual([]);
+  });
+
+  it("the same product and subtype twice, in any case and spacing, names the first row (decided item 6)", () => {
+    const { stock, errors } = readStockRows(
+      sheetOf([
+        ["Qog'oz", "A4", 1, 1],
+        ["qog'oz ", " a4", 2, 1],
+        ["Stul", "", 1, 1],
+        ["STUL", "", 1, 1],
+      ]),
+    );
+    expect(errors).toEqual([
+      { row: 3, column: "subtype", kind: "duplicateInFile", firstRow: 2 },
+      { row: 5, column: "name", kind: "duplicateInFile", firstRow: 4 },
+    ]);
+    expect(stock.map((entry) => entry.row)).toEqual([2, 4]);
+  });
+
+  it("no rows, or more than the limit, is the file's error", () => {
+    expect(readStockRows(sheetOf([])).errors).toEqual([{ row: 0, column: "file", kind: "noRows" }]);
+    const many = Array.from({ length: IMPORT_ROWS_MAX + 1 }, (_, at) => [`Stul ${at}`, "", 1, 1]);
+    expect(readStockRows(sheetOf(many)).errors).toEqual([
+      { row: 0, column: "file", kind: "tooManyRows" },
+    ]);
+  });
+
+  it("named keeps a row with a wrong quantity or cost for the preview's database check", () => {
+    const { stock, named } = readStockRows(sheetOf([["Stul", "", 0, "x"]]));
+    expect(stock).toEqual([]);
+    expect(named).toEqual([{ row: 2, product: "Stul", subtype: null, qty: "0", cost: null }]);
   });
 });
