@@ -167,3 +167,8 @@ export function issueQuantityRefusal(
 export function overReturn(qty: string, received: string): boolean {
   return new Stock(qty.trim()).gt(new Stock(received));
 }
+
+/** Whether the department holds some of an item: its net received amount is above 0. */
+export function departmentHolds(received: string): boolean {
+  return new Stock(received).gt(0);
+}

@@ -6,6 +6,7 @@ import {
   documentNumber,
   issueQuantityRefusal,
   lineMovement,
+  departmentHolds,
   overReturn,
   reversalOf,
 } from "./stock-documents";
@@ -156,5 +157,13 @@ describe("overReturn (09 Other documents, Return: more than the department ever 
 
   it("is true on anything once the department returned more than it received (net below 0)", () => {
     expect(overReturn("1", "-2")).toBe(true);
+  });
+});
+
+describe("departmentHolds (plan of 5.6: the items a department holds come first in the search)", () => {
+  it("is true above 0 only", () => {
+    expect(departmentHolds("0.001")).toBe(true);
+    expect(departmentHolds("0.000")).toBe(false);
+    expect(departmentHolds("-2.000")).toBe(false);
   });
 });

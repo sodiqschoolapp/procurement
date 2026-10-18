@@ -28,7 +28,7 @@ import type {
 } from "@/features/warehouse/queries/issue-form";
 import { useFormatters } from "@/i18n/use-formatters";
 
-import { ISSUE_STEPS, firstIssueStepWithError } from "./issue-steps";
+import { DOCUMENT_STEPS, firstDocumentStepWithError } from "./document-steps";
 
 // The issue form (09-warehouse.md, Issue to a department: Branch, Date, Department, Received by,
 // Lines with the current stock beside each, Comment; plan of 5.4, Screens). The branch is
@@ -202,7 +202,7 @@ export function IssueForm({
       return;
     }
     const keys = Object.keys(result.error.fields ?? {});
-    const next = firstIssueStepWithError(keys, step);
+    const next = firstDocumentStepWithError(keys, step);
     if (next !== step) goTo(next);
     if (keys.length === 0) toast.error(tAll(result.error.messageKey));
   });
@@ -458,9 +458,9 @@ export function IssueForm({
           <span />
         )}
         <span data-step-count className="text-[15px] leading-[22px] tabular-nums">
-          {t("step", { current: step + 1, total: ISSUE_STEPS })}
+          {t("step", { current: step + 1, total: DOCUMENT_STEPS })}
         </span>
-        {step < ISSUE_STEPS - 1 ? (
+        {step < DOCUMENT_STEPS - 1 ? (
           <Button size="lg" onClick={() => goTo(step + 1)}>
             {t("next")}
           </Button>
@@ -480,7 +480,7 @@ export function IssueForm({
           type="submit"
           pending={action.pending}
           disabled={!hydrated || lines.fields.length === 0}
-          className={cn("h-12 sm:h-10", step !== ISSUE_STEPS - 1 && "max-sm:hidden")}
+          className={cn("h-12 sm:h-10", step !== DOCUMENT_STEPS - 1 && "max-sm:hidden")}
         >
           {t("save")}
         </Button>
