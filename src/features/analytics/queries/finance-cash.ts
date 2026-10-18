@@ -18,6 +18,7 @@ import { readSnapshot } from "@/server/read-snapshot";
 import { type Counted, counted } from "../counted";
 import { authorizeAnalytics } from "../authorize-filters";
 import { cashWhere } from "../cash-where";
+import { daysOut } from "../days-out";
 import { moneyWhere } from "../money-where";
 import {
   type AnalyticsFilters,
@@ -27,7 +28,6 @@ import {
   type PeriodInput,
 } from "../period-params";
 import { resolvePeriod } from "../resolve-period";
-import { daysOut } from "./cash-orders";
 
 // Finance's Cash block (10-notifications-analytics-reports.md, Analytics page per role, Finance,
 // Cash: "Given, returned and paid back by month; money with managers by age: up to 7 days, 8 to 30

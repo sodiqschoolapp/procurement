@@ -1,16 +1,16 @@
 import { sql } from "drizzle-orm";
 
-import { type CashAgeBand, cashAgeBand, daysOf } from "@/domain/analytics";
+import { type CashAgeBand, cashAgeBand } from "@/domain/analytics";
 import type { BusinessDate } from "@/domain/business-date";
 import { managerCashBalance } from "@/domain/money-ledger";
 import type { RequestStatus } from "@/domain/request-status";
 import type { Executor } from "@/server/authorize";
-import { today } from "@/server/clock";
 import { readSnapshot } from "@/server/read-snapshot";
 
 import { type AnalyticsFilters, type CashSide, RECORDS_PAGE_SIZE } from "../period-params";
 import { authorizeAnalytics } from "../authorize-filters";
 import { cashWhere } from "../cash-where";
+import { daysOut } from "../days-out";
 
 // /analytics/cash, the orders behind a "cash held" number of the Managers block (10-notifications-
 // analytics-reports.md, Analytics page per role, point 3; build-plan 6.4c; plan of 6.4c, decided
@@ -70,12 +70,6 @@ export async function getCashOrders(
   age: CashAge | null = null,
 ): Promise<CashOrders> {
   return readSnapshot((db) => ordersIn(db, userId, filters, otherOwners, page, age));
-}
-
-/** The days an order's cash has been out on the clock's Tashkent day, as "held for" counts them. */
-export function daysOut(since: BusinessDate): number {
-  // daysOf() counts both ends: the same day is 0 days.
-  return daysOf({ first: since, last: today() }) - 1;
 }
 
 async function ordersIn(
