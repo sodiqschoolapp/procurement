@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { sql } from "drizzle-orm";
 
 import type { MoneyRowKind } from "@/domain/money-ledger";
+import type { OrderAction } from "@/domain/order-moves";
 import type { PaymentType } from "@/domain/payment-types";
 import type { RequestStatus } from "@/domain/request-status";
 import type { OrderProgress } from "@/domain/purchases";
@@ -179,15 +180,8 @@ export function refreshNow() {
 
 /** One status move of an order's history, as the order actions of 2.4 write it (06 Allowed moves). */
 export type Move = {
-  type:
-    | "SUBMIT"
-    | "APPROVE"
-    | "SEND_BACK"
-    | "REJECT"
-    | "TAKE_BACK"
-    | "SUBMIT_AGAIN"
-    | "CANCEL"
-    | "MOVE_OWNER";
+  /** A move of 06's table, or a move of the owner (4.10). */
+  type: OrderAction | "MOVE_OWNER";
   from: RequestStatus;
   to: RequestStatus;
   at: string;

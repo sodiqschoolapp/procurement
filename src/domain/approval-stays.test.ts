@@ -137,9 +137,9 @@ describe("approvalStays, the decider (10 Analytics, Principal, My approvals: 'my
 describe("secondsBetween (plan of 6.5b, decided item 1)", () => {
   it("counts whole seconds, rounded down", () => {
     // The review's worked case: submitted 1.10 10:00, approved by Finance 4.10 10:00 → 72 h.
-    expect(
-      secondsBetween(new Date("2031-10-01T05:00:00Z"), new Date("2031-10-04T05:00:00Z")),
-    ).toBe(259_200n);
+    expect(secondsBetween(new Date("2031-10-01T05:00:00Z"), new Date("2031-10-04T05:00:00Z"))).toBe(
+      259_200n,
+    );
     expect(
       secondsBetween(new Date("2031-10-01T05:00:00.000Z"), new Date("2031-10-01T05:00:01.999Z")),
     ).toBe(1n);

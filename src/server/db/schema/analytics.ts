@@ -453,6 +453,11 @@ export const analyticsOrders = pgTable(
     ownerId: uuid("owner_id")
       .notNull()
       .references(() => users.id),
+    // The first entry into Open, its Tashkent date and the whole seconds from the first submit
+    // (plan of 6.5b, decided item 1, Look first); all null until the order is fully approved.
+    openedAt: moment("opened_at"),
+    openedOn: date("opened_on"),
+    approvalSeconds: bigint("approval_seconds", { mode: "bigint" }),
   },
   (table) => [
     foreignKey({
@@ -468,8 +473,15 @@ export const analyticsOrders = pgTable(
       foreignColumns: [departments.id, departments.branchId],
     }),
     check("analytics_orders_status_check", sql`${table.status} <> 'DRAFT'`),
+    check(
+      "analytics_orders_opened_check",
+      sql`(${table.openedAt} IS NULL AND ${table.openedOn} IS NULL AND ${table.approvalSeconds} IS NULL)
+          OR (${table.openedAt} IS NOT NULL AND ${table.openedOn} IS NOT NULL AND ${table.approvalSeconds} IS NOT NULL
+              AND ${table.approvalSeconds} >= 0)`,
+    ),
     index("analytics_orders_branch_id_submitted_on_idx").on(table.branchId, table.submittedOn),
     index("analytics_orders_branch_id_needed_by_idx").on(table.branchId, table.neededBy),
+    index("analytics_orders_branch_id_opened_on_idx").on(table.branchId, table.openedOn),
     index("analytics_orders_category_id_idx").on(table.categoryId),
     index("analytics_orders_department_id_idx").on(table.departmentId),
     index("analytics_orders_owner_id_idx").on(table.ownerId),

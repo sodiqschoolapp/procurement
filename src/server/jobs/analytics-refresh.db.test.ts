@@ -870,4 +870,89 @@ describe("analytics_refresh, the rows of the Principal's page (build-plan 6.5a)"
       { step: "PENDING_HEAD", decided_by: null },
     ]);
   });
+
+  it("writes each order's first entry into Open and the whole seconds from its first submit; a send back for correction and a Reopen do not move it; none before Open (plan of 6.5b, decided item 1; review of the plan, Should fix 5)", async () => {
+    const scene = await spendingScene();
+    const finance = await insertUser("FINANCE", { branches: [scene.branch.id] });
+    // The review's worked case: submitted 1.10 10:00 Tashkent, sent back, submitted again, Finance
+    // approves 4.10 10:00 → 72 hours, counted on 4.10.
+    const order = await decided(
+      scene,
+      "PURCHASING",
+      [
+        { type: "SUBMIT", from: "DRAFT", to: "PENDING_HEAD", at: "2031-10-01T05:00:00Z" },
+        {
+          type: "SEND_BACK",
+          from: "PENDING_HEAD",
+          to: "RETURNED",
+          at: "2031-10-02T05:00:00Z",
+          reason: "Miqdorni tekshiring",
+        },
+        { type: "SUBMIT_AGAIN", from: "RETURNED", to: "PENDING_HEAD", at: "2031-10-03T05:00:00Z" },
+        {
+          type: "APPROVE",
+          from: "PENDING_HEAD",
+          to: "PENDING_PRINCIPAL",
+          at: "2031-10-03T06:00:00Z",
+        },
+        {
+          type: "APPROVE",
+          from: "PENDING_PRINCIPAL",
+          to: "PENDING_FINANCE",
+          at: "2031-10-03T07:00:00Z",
+        },
+        {
+          type: "APPROVE",
+          from: "PENDING_FINANCE",
+          to: "PURCHASING",
+          at: "2031-10-04T05:00:00Z",
+          actorId: finance.id,
+        },
+        // A write on the Open order that moves no status, then a send back from Settlement for
+        // correction and a Reopen after Closed (06 Allowed moves).
+        { type: "MOVE_OWNER", from: "PURCHASING", to: "PURCHASING", at: "2031-10-05T05:00:00Z" },
+        {
+          type: "SEND_TO_SETTLEMENT",
+          from: "PURCHASING",
+          to: "SETTLEMENT",
+          at: "2031-10-06T05:00:00Z",
+        },
+        {
+          type: "SEND_BACK_FOR_CORRECTION",
+          from: "SETTLEMENT",
+          to: "PURCHASING",
+          at: "2031-10-07T05:00:00Z",
+          actorId: finance.id,
+        },
+        {
+          type: "SEND_TO_SETTLEMENT",
+          from: "PURCHASING",
+          to: "SETTLEMENT",
+          at: "2031-10-08T05:00:00Z",
+        },
+        { type: "CLOSE", from: "SETTLEMENT", to: "CLOSED", at: "2031-10-09T05:00:00Z" },
+        { type: "REOPEN", from: "CLOSED", to: "PURCHASING", at: "2031-10-10T05:00:00Z" },
+      ],
+      { submittedAt: "2031-10-01T05:00:00Z" },
+    );
+    const waiting = await decided(
+      scene,
+      "PENDING_FINANCE",
+      [{ type: "SUBMIT", from: "DRAFT", to: "PENDING_HEAD", at: "2031-10-01T05:00:00Z" }],
+      { submittedAt: "2031-10-01T05:00:00Z" },
+    );
+    await refreshNow();
+    const opened = (orderId: string) =>
+      db.execute<{ opened_at: string | null; opened_on: string | null; seconds: string | null }>(
+        sql`select to_json(opened_at)#>>'{}' as opened_at, opened_on::text as opened_on,
+                   approval_seconds::text as seconds
+            from analytics_orders where order_id = ${orderId}`,
+      );
+    expect((await opened(order.id)).rows).toEqual([
+      { opened_at: "2031-10-04T05:00:00+00:00", opened_on: "2031-10-04", seconds: "259200" },
+    ]);
+    expect((await opened(waiting.id)).rows).toEqual([
+      { opened_at: null, opened_on: null, seconds: null },
+    ]);
+  });
 });
