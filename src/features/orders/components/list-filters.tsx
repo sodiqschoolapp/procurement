@@ -122,6 +122,20 @@ export function ListFiltersBar({
             </Button>
           </span>
         )}
+        {filters.stuck && (
+          <span className="inline-flex items-center gap-1 rounded-md bg-muted py-1 pr-1 pl-3 text-sm font-semibold">
+            {t("stuck")}
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              aria-label={t("removeStuck")}
+              onClick={() => set("stuck", false)}
+            >
+              <Icon name="close" size={18} />
+            </Button>
+          </span>
+        )}
         {count > 0 && (
           <Button
             type="button"

@@ -3,12 +3,14 @@ import { describe, expect, it } from "vitest";
 import type { OrderAction } from "./order-moves";
 import {
   DUE_SOON_DAYS,
+  STUCK_STATUSES,
   type StepEvent,
   type StepView,
   dueSoonUntil,
   isDueSoon,
   isOverdue,
   orderSteps,
+  stuckBefore,
   waitingFor,
 } from "./order-steps";
 import { REQUEST_STATUSES, type RequestStatus } from "./request-status";
@@ -360,5 +362,30 @@ describe("isDueSoon (10 Home page per role, Manager: 'orders due soon'; plan of 
 
   it("an order without a needed-by date is not due soon", () => {
     expect(isDueSoon("PENDING_HEAD", "OPEN", null, today)).toBe(false);
+  });
+});
+
+describe("stuckBefore and STUCK_STATUSES (06 rule 9; 10 Notifications 'Orders waiting more than 48 hours'; plan of 6.2, decided items 1 and 2)", () => {
+  const now = new Date("2026-10-21T05:00:00Z");
+  const entered = (hoursAgo: number, minutes = 0) =>
+    new Date(now.getTime() - (hoursAgo * 60 + minutes) * 60 * 1000);
+
+  it("is strict: exactly 48 hours is not before the instant, 48 hours and 1 minute is", () => {
+    const edge = stuckBefore(now, 48);
+    expect(edge.toISOString()).toBe("2026-10-19T05:00:00.000Z");
+    expect(entered(48) < edge).toBe(false);
+    expect(entered(48, 1) < edge).toBe(true);
+  });
+
+  it("moves with the setting: 24 hours puts an entry 25 hours old past it", () => {
+    expect(entered(25) < stuckBefore(now, 24)).toBe(true);
+    expect(entered(25) < stuckBefore(now, 48)).toBe(false);
+  });
+
+  it("holds the three Waiting steps only, not Sent back, Open or Waiting for settlement", () => {
+    expect([...STUCK_STATUSES]).toEqual(["PENDING_HEAD", "PENDING_PRINCIPAL", "PENDING_FINANCE"]);
+    for (const status of ["RETURNED", "PURCHASING", "SETTLEMENT"] as const) {
+      expect((STUCK_STATUSES as readonly string[]).includes(status)).toBe(false);
+    }
   });
 });

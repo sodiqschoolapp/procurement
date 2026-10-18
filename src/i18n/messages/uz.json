@@ -1220,7 +1220,9 @@
         "action": "Bitta amaldagi buyurtmalar",
         "removeAction": "Faqat bitta amaldagini emas, barcha buyurtmalarni ko'rsatish",
         "dueSoon": "Muddati 7 kun ichida",
-        "removeDueSoon": "Faqat muddati yaqinlarini emas, barcha buyurtmalarni ko'rsatish"
+        "removeDueSoon": "Faqat muddati yaqinlarini emas, barcha buyurtmalarni ko'rsatish",
+        "stuck": "Tasdiqlash bosqichida qotib qolgan",
+        "removeStuck": "Faqat qotib qolganlarini emas, barcha buyurtmalarni ko'rsatish"
       },
       "noStock": "–",
       "refusedMark": "Tasdiqlanmadi"

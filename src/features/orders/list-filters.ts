@@ -34,6 +34,12 @@ export type ListFilters = {
    * earlier (isDueSoon(); plan of 6.1, decided item 2). In the address as `due=soon`.
    */
   dueSoon: boolean;
+  /**
+   * The Head home's "Orders stuck over 48 hours": at a Waiting step for more than the setting
+   * `escalation_hours` (stuckBefore(); plan of 6.2, decided items 1 and 2). In the address as
+   * `stuck=1`.
+   */
+  stuck: boolean;
   sort: ListSort;
 };
 
@@ -52,6 +58,7 @@ export const NO_FILTERS: ListFilters = {
   numberTo: null,
   action: null,
   dueSoon: false,
+  stuck: false,
   sort: "neededBy",
 };
 
@@ -109,6 +116,7 @@ export function parseListFilters(raw: Raw): { filters: ListFilters; ignored: "nu
       numberTo,
       action: uuidOf(first(raw.action)),
       dueSoon: first(raw.due) === "soon",
+      stuck: first(raw.stuck) === "1",
       sort: oneOf(LIST_SORTS, first(raw.sort)) ?? NO_FILTERS.sort,
     },
     ignored,
@@ -137,6 +145,7 @@ export function listFiltersParams(filters: ListFilters): URLSearchParams {
   put("numberTo", filters.numberTo);
   put("action", filters.action);
   put("due", filters.dueSoon ? "soon" : null);
+  put("stuck", filters.stuck ? "1" : null);
   put("sort", filters.sort === NO_FILTERS.sort ? null : filters.sort);
   return params;
 }

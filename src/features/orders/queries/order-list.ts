@@ -42,9 +42,11 @@ import { type DownloadRow, orderDownloadRow } from "@/domain/order-download";
 import {
   STILL_DUE_OPEN,
   STILL_DUE_STATUSES,
+  STUCK_STATUSES,
   type StepEvent,
   dueSoonUntil,
   isOverdue,
+  stuckBefore,
 } from "@/domain/order-steps";
 import {
   type OrdersTotals,
@@ -165,8 +167,18 @@ const DATE_COLUMNS = {
 const counter = sql`split_part(${orders.number}, '-', 3)::bigint`;
 const prefix = sql`split_part(${orders.number}, '-', 1) || '-' || split_part(${orders.number}, '-', 2)`;
 
-/** The walls and the filters of the list, inside the SQL. */
-function listWhere(actor: Actor, filters: ListFilters): SQL | undefined {
+/**
+ * The walls and the filters of the list, inside the SQL. `escalationHours` is the setting the
+ * `stuck` filter compares with (whereOf() reads it); a filter without `stuck` needs none.
+ */
+function listWhere(
+  actor: Actor,
+  filters: ListFilters,
+  escalationHours: number | null = null,
+): SQL | undefined {
+  if (filters.stuck && escalationHours === null) {
+    throw new Error("The stuck filter needs the setting escalation_hours");
+  }
   const dateColumn = DATE_COLUMNS[filters.dates];
   const from = filters.numberFrom ? numberParts(filters.numberFrom) : null;
   const to = filters.numberTo ? numberParts(filters.numberTo) : null;
@@ -214,7 +226,31 @@ function listWhere(actor: Actor, filters: ListFilters): SQL | undefined {
           ),
         )
       : undefined,
+    // "Orders stuck over 48 hours" (plan of 6.2, decided items 1 and 2, Look first): at a Waiting
+    // step, entered by its newest event into the current status more than `escalation_hours` ago
+    // by the injected clock. An event that moves no status (Move to another Manager) is not an
+    // entry; a Submit again after Sent back is.
+    filters.stuck
+      ? and(
+          inArray(orders.status, [...STUCK_STATUSES]),
+          sql`(select max(${orderEvents.createdAt}) from ${orderEvents}
+                where ${orderEvents.orderId} = ${orders.id}
+                  and ${orderEvents.toStatus} = ${orders.status}
+                  and ${orderEvents.fromStatus} <> ${orderEvents.toStatus})
+              < ${stuckBefore(now(), escalationHours!).toISOString()}::timestamptz`,
+        )
+      : undefined,
   );
+}
+
+/** listWhere() with the setting its filters need, read in the caller's snapshot. */
+async function whereOf(
+  executor: Executor,
+  actor: Actor,
+  filters: ListFilters,
+): Promise<SQL | undefined> {
+  const hours = filters.stuck ? (await readSettings(executor)).escalation_hours : null;
+  return listWhere(actor, filters, hours);
 }
 
 const GROUP_BY = [
@@ -339,7 +375,7 @@ export async function orderTotalsOnFilter(
         paymentType: orders.paymentType,
       })
       .from(orders)
-      .where(listWhere(actor, filters));
+      .where(await whereOf(db, actor, filters));
     const extras = await extrasOf(
       db,
       found.map((row) => row.id),
@@ -374,7 +410,7 @@ export async function countOrdersByStatus(
     const rows = await db
       .select({ status: orders.status, count: count() })
       .from(orders)
-      .where(listWhere(actor, filters))
+      .where(await whereOf(db, actor, filters))
       .groupBy(orders.status);
     const byStatus = new Map(rows.map((row) => [row.status, row.count]));
     return LIST_STATUSES.flatMap((status) => {
@@ -390,7 +426,7 @@ async function readGroups(
   filters: ListFilters,
   page: number,
 ): Promise<OrderGroupPage> {
-  const where = listWhere(actor, filters);
+  const where = await whereOf(db, actor, filters);
 
   const grouped = db
     .select({ branchId: orders.branchId })
@@ -570,9 +606,9 @@ export async function selectAllOnFilter(
   filters: ListFilters = NO_FILTERS,
 ): Promise<{ orders: { id: string; version: number }[]; matching: number }> {
   const actor = await authorizeFilters(userId, filters);
-  const where = listWhere(actor, filters);
   // One snapshot, so "200 of N" counts the orders it ticks (spec review of 2.8, Should fix 2).
   return readSnapshot(async (db) => {
+    const where = await whereOf(db, actor, filters);
     const [counted] = await db.select({ total: count() }).from(orders).where(where);
     const rows = await db
       .select({ id: orders.id, version: orders.version })
@@ -942,10 +978,10 @@ export async function orderDownload(
 ): Promise<OrderDownload> {
   const actor = await authorizeList(userId, "data.export");
   if (filters.branch) await authorize(userId, "data.export", { branchId: filters.branch });
-  const where = listWhere(actor, filters);
-  // The orders of the filter as a subquery, so a long list never meets a bound-parameter limit.
-  const listed = listedIds(where);
   return readSnapshot(async (db) => {
+    const where = await whereOf(db, actor, filters);
+    // The orders of the filter as a subquery, so a long list never meets a bound-parameter limit.
+    const listed = listedIds(where);
     const owner = users;
     const rows = await db
       .select({

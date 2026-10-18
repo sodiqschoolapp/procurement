@@ -1220,7 +1220,9 @@
         "action": "Orders of one action",
         "removeAction": "Show all orders, not only those of one action",
         "dueSoon": "Due within 7 days",
-        "removeDueSoon": "Show all orders, not only those due soon"
+        "removeDueSoon": "Show all orders, not only those due soon",
+        "stuck": "Stuck at a waiting step",
+        "removeStuck": "Show all orders, not only the stuck ones"
       },
       "noStock": "–",
       "refusedMark": "Not approved"

@@ -103,6 +103,18 @@ describe("the address of the list (05 Ticking and filters; 11 rule 8)", () => {
     expect(activeFilterCount({ ...NO_FILTERS, dueSoon: true })).toBe(1);
   });
 
+  it("`stuck=1` is the Head home's 'Orders stuck over 48 hours' (plan of 6.2, decided item 2); another value is dropped", () => {
+    expect(parseListFilters({ stuck: "1" }).filters.stuck).toBe(true);
+    expect(parseListFilters({ stuck: "yes" }).filters).toEqual(NO_FILTERS);
+    const params = listFiltersParams({ ...NO_FILTERS, stuck: true });
+    expect(params.toString()).toBe("stuck=1");
+    expect(parseListFilters(Object.fromEntries(params)).filters).toEqual({
+      ...NO_FILTERS,
+      stuck: true,
+    });
+    expect(activeFilterCount({ ...NO_FILTERS, stuck: true })).toBe(1);
+  });
+
   it("counts the filters that are on, not the sort", () => {
     expect(activeFilterCount({ ...NO_FILTERS, sort: "product" })).toBe(0);
     expect(activeFilterCount({ ...NO_FILTERS, urgent: true, from: "2026-10-01" })).toBe(2);
