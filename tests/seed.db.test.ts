@@ -23,6 +23,8 @@ import {
 import type { Role } from "@/domain/permissions";
 import { orderNumber } from "@/domain/order-numbers";
 import { orderTotal } from "@/domain/order-totals";
+import { nextBalance } from "@/domain/stock";
+import { documentNumber } from "@/domain/stock-documents";
 import { isDescription, isProductType } from "@/domain/products";
 import { fullName, isFullName, isPhone, phone } from "@/domain/users";
 import { createCompany } from "@/features/catalog/actions/companies";
@@ -33,6 +35,8 @@ import { listProducts } from "@/features/catalog/queries/products";
 import { writeSnapshots } from "@/features/orders/actions/submit-steps";
 import { getMoneyWithManagers } from "@/features/money/queries/money-with-managers";
 import { listOrderGroups } from "@/features/orders/queries/order-list";
+import { getStockDocument } from "@/features/warehouse/queries/document";
+import { listStockDocuments } from "@/features/warehouse/queries/documents";
 import { runAction } from "@/server/action";
 import { db } from "@/server/db/client";
 import { signIn } from "@/server/auth/sign-in";
@@ -48,6 +52,7 @@ import {
   SEED_PRODUCTS,
 } from "../scripts/seed-catalogs.mjs";
 import { SEED_ORDERS } from "../scripts/seed-orders.mjs";
+import { SEED_STOCK } from "../scripts/seed-stock.mjs";
 import { SEED_PASSWORD_VARIABLES, seed } from "../scripts/seed.mjs";
 import { runTogether } from "./helpers/together";
 import { createTestDatabase, dropTestDatabase } from "./helpers/test-database";
@@ -365,7 +370,7 @@ describe("npm run db:seed (build-plan 0.14; developer-rules.md rule 14)", () => 
       expect(lines).toContainEqual(CREATED_LINES);
       expect(lines).toContainEqual(CREATED_LINES.map((line) => line.replace("created", "kept")));
       const total = await counts(first);
-      expect(total).toMatchObject({ branches: 2, users: 4, audit_log: 79, products: 30 });
+      expect(total).toMatchObject({ branches: 2, users: 4, audit_log: 80, products: 30 });
     });
   });
 
@@ -488,7 +493,8 @@ describe("npm run db:seed: the catalogs (build-plan 1.13; developer-rules.md rul
         // 24 hidden defaults and 16 real subtypes, each with one HEAD row.
         product_variants: 40,
         price_history: 40,
-        audit_log: 6 + 5 + 6 + 3 + 6 + 7 + 30 + 16,
+        // The last 1: the direct entry of the warehouse documents (build-plan 5.12).
+        audit_log: 6 + 5 + 6 + 3 + 6 + 7 + 30 + 16 + 1,
       });
     });
   });
@@ -617,8 +623,9 @@ describe("npm run db:seed: the catalogs (build-plan 1.13; developer-rules.md rul
           ["user.create", 4],
         ].map(([action, count]) => ({ action, count, actors: ["seed_head"] })),
       );
+      // Beside these, the direct entry's own row of build-plan 5.12, at its document's moment.
       const total = await client.query("select count(*)::int as count from audit_log");
-      expect(total.rows[0].count).toBe(79);
+      expect(total.rows[0].count).toBe(80);
     });
   });
 
@@ -1411,3 +1418,145 @@ class Rollback extends Error {
     super("rollback");
   }
 }
+
+describe("npm run db:seed: the warehouse documents (build-plan 5.12; plan of 5.12, decided item 9)", () => {
+  it("makes a direct entry and an issue of CHL, numbered by documentNumber(), each movement and balance what nextBalance() gives, and a second run adds nothing", async () => {
+    await withFreshDatabase(async (connect) => {
+      const client = await connect();
+      await seed(client, ENV, MOMENT);
+      const documents = await client.query<{
+        id: string;
+        number: string;
+        type: "DIRECT_ENTRY" | "ISSUE";
+        status: string;
+        doc_date: string;
+        code: string;
+        department: string | null;
+        received_by_name: string | null;
+        reason: string | null;
+        username: string;
+      }>(
+        `select d.id, d.number, d.type, d.status, d.doc_date::text, b.code, dep.name as department,
+           d.received_by_name, d.reason, u.username
+         from stock_documents d join branches b on b.id = d.branch_id
+         join users u on u.id = d.created_by
+         left join departments dep on dep.id = d.department_id and dep.branch_id = d.branch_id
+         where d.client_key = any($1::uuid[]) order by d.created_at`,
+        [[SEED_STOCK.directEntry.clientKey, SEED_STOCK.issue.clientKey]],
+      );
+      const year = businessYear(MOMENT);
+      expect(documents.rows).toEqual([
+        expect.objectContaining({
+          number: documentNumber("DIRECT_ENTRY", "CHL", year, 1),
+          type: "DIRECT_ENTRY",
+          status: "POSTED",
+          doc_date: businessDate(MOMENT),
+          code: "CHL",
+          department: null,
+          reason: "EXISTING_STOCK",
+          username: "seed_head",
+        }),
+        expect.objectContaining({
+          number: documentNumber("ISSUE", "CHL", year, 1),
+          type: "ISSUE",
+          status: "POSTED",
+          doc_date: businessDate(MOMENT),
+          code: "CHL",
+          department: SEED_STOCK.issue.department,
+          received_by_name: SEED_STOCK.issue.receivedByName,
+          reason: null,
+          username: "seed_manager",
+        }),
+      ]);
+
+      // Every movement, in order, against the domain's arithmetic from an empty stock.
+      const movements = await client.query<{
+        variant_id: string;
+        type: "DIRECT_ENTRY" | "ISSUE";
+        qty_delta: string;
+        unit_cost: string;
+        balance_after: string;
+      }>(
+        `select m.variant_id, m.type, m.qty_delta::text, m.unit_cost::text,
+           m.balance_after::text
+         from stock_movements m join stock_document_lines l on l.id = m.document_line_id
+         where l.document_id = any($1::uuid[]) order by m.seq`,
+        [documents.rows.map((row) => row.id)],
+      );
+      expect(movements.rows).toHaveLength(4);
+      const balances = new Map<string, { qty: string; avgCost: bigint }>();
+      for (const movement of movements.rows) {
+        const before = balances.get(movement.variant_id) ?? { qty: "0", avgCost: 0n };
+        const lineCost = movement.type === "DIRECT_ENTRY" ? BigInt(movement.unit_cost) : null;
+        const next = nextBalance(before, {
+          type: movement.type,
+          qtyDelta: movement.qty_delta,
+          unitCost: lineCost,
+        });
+        expect(next.ok).toBe(true);
+        if (!next.ok) continue;
+        expect(Number(movement.balance_after)).toBe(Number(next.qty));
+        expect(BigInt(movement.unit_cost)).toBe(next.unitCost);
+        balances.set(movement.variant_id, { qty: next.qty, avgCost: next.avgCost });
+      }
+      const stored = await client.query<{ variant_id: string; qty: string; avg_cost: string }>(
+        `select sb.variant_id, sb.qty::text, sb.avg_cost::text from stock_balances sb
+           join branches b on b.id = sb.branch_id where b.code = 'CHL'`,
+      );
+      expect(stored.rows).toHaveLength(balances.size);
+      for (const row of stored.rows) {
+        const expected = balances.get(row.variant_id)!;
+        expect(Number(row.qty)).toBe(Number(expected.qty));
+        expect(BigInt(row.avg_cost)).toBe(expected.avgCost);
+      }
+
+      const audits = await client.query<{ action: string; entity_id: string }>(
+        "select action, entity_id from audit_log where entity = 'stock_documents'",
+      );
+      expect(audits.rows).toEqual([
+        { action: "direct_entry.create", entity_id: documents.rows[0]!.id },
+      ]);
+
+      const counts = async () =>
+        (
+          await client.query<{ documents: number; movements: number; counters: number }>(
+            `select (select count(*)::int from stock_documents) as documents,
+               (select count(*)::int from stock_movements) as movements,
+               (select sum(last_value)::int from number_counters
+                 where scope in ('ENT', 'ISS')) as counters`,
+          )
+        ).rows[0];
+      const first = await counts();
+      expect(first).toEqual({ documents: 2, movements: 4, counters: 2 });
+      await seed(client, ENV, MOMENT);
+      expect(await counts()).toEqual(first);
+    });
+  });
+});
+
+describe("the seed's warehouse documents in the app (build-plan 5.12)", () => {
+  it("lists both for seed_manager, the issue under its department, and opens each", async () => {
+    const client = await db.$client.connect();
+    try {
+      await seed(client, ENV, MOMENT);
+      const [manager] = (
+        await client.query<{ id: string }>("select id from users where username = 'seed_manager'")
+      ).rows;
+      const page = await listStockDocuments(manager!.id, {}, 1);
+      const types = page.rows
+        .filter((row) => row.branchCode === "CHL")
+        .map((row) => [row.type, row.departmentName]);
+      expect(types).toEqual(
+        expect.arrayContaining([
+          ["ISSUE", SEED_STOCK.issue.department],
+          ["DIRECT_ENTRY", null],
+        ]),
+      );
+      for (const row of page.rows) {
+        expect((await getStockDocument(manager!.id, row.id))?.number).toBe(row.number);
+      }
+    } finally {
+      client.release();
+    }
+  });
+});
