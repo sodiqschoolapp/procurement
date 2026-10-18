@@ -6,8 +6,10 @@ import * as z from "zod";
 
 import { EmptyState } from "@/components/empty-state";
 import { Icon } from "@/components/icon";
+import { ReversedLabel } from "@/components/status-label";
 import { BRANCH_COOKIE } from "@/features/catalog/branch-cookie";
 import { currentBranchChoice, listMyBranches } from "@/features/catalog/queries/my-branches";
+import { ReverseDocumentButton } from "@/features/warehouse/components/reverse-document-button";
 import { type ItemCard, getItemCard } from "@/features/warehouse/queries/item-card";
 import { getFormatters } from "@/i18n/get-formatters";
 import { requireUser } from "@/server/auth/session";
@@ -22,7 +24,9 @@ import { PageLinks } from "../../../catalog/page-links";
 // the user's only branch; otherwise, and for another branch, an unknown id or a service, the "Not
 // found" page (decided item 3; 03 rule 1; 15 S7). A purchase's movement links to its order's
 // Purchases tab (decided item 5); a document's number is text until 5.12 (decided item 4, Look
-// first). At phone width the table scrolls inside its panel, as Stock on hand.
+// first). A reversed document's number carries the "Reversed" label, and a row the server offers
+// it on (`canReverse`) has the Reverse button (plan of 5.7). At phone width the table scrolls
+// inside its panel, as Stock on hand.
 
 const pageParam = z.coerce.number().int().min(1).catch(1);
 const idParam = z.uuid().catch("");
@@ -114,7 +118,7 @@ export default async function ItemCardPage({
         <EmptyState title={t("emptyTitle")} line={t("emptyText")} />
       ) : (
         <section className="overflow-x-auto rounded-xl bg-card text-card-foreground">
-          <table className="w-full min-w-[40rem] border-collapse text-left text-sm leading-5">
+          <table className="w-full min-w-[46rem] border-collapse text-left text-sm leading-5">
             <caption className="sr-only">{t("summary", { count: card.found })}</caption>
             <thead className="bg-muted text-[13px] leading-[18px] font-semibold text-muted-foreground">
               <tr>
@@ -132,6 +136,9 @@ export default async function ItemCardPage({
                 </th>
                 <th scope="col" className="px-4 py-3 text-right">
                   {t("columns.balance")}
+                </th>
+                <th scope="col" className="relative px-4 py-3">
+                  <span className="sr-only">{t("columns.action")}</span>
                 </th>
               </tr>
             </thead>
@@ -151,7 +158,10 @@ export default async function ItemCardPage({
                         {t("order", { number: movement.order.number })}
                       </Link>
                     ) : (
-                      (movement.documentNumber ?? t("noSource"))
+                      <span className="inline-flex items-center gap-2">
+                        {movement.documentNumber ?? t("noSource")}
+                        {movement.documentStatus === "REVERSED" && <ReversedLabel />}
+                      </span>
                     )}
                   </td>
                   <td className="px-4 py-3 text-right whitespace-nowrap tabular-nums">
@@ -159,6 +169,14 @@ export default async function ItemCardPage({
                   </td>
                   <td className="px-4 py-3 text-right font-semibold whitespace-nowrap tabular-nums">
                     {format.quantity(movement.balanceAfter)}
+                  </td>
+                  <td className="px-4 py-2 text-right whitespace-nowrap">
+                    {movement.canReverse && movement.documentId && movement.documentNumber && (
+                      <ReverseDocumentButton
+                        documentId={movement.documentId}
+                        number={movement.documentNumber}
+                      />
+                    )}
                   </td>
                 </tr>
               ))}

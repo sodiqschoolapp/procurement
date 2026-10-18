@@ -1769,7 +1769,8 @@
         "movement": "Movement",
         "source": "Source",
         "change": "Change",
-        "balance": "Balance"
+        "balance": "Balance",
+        "action": "Action"
       },
       "order": "Order {number}",
       "noSource": "—",
@@ -1785,7 +1786,8 @@
         "CORRECTION": "Correction after a count",
         "DIRECT_ENTRY": "Direct entry",
         "REVERSAL": "Reversal"
-      }
+      },
+      "reversed": "Reversed"
     },
     "issue": {
       "title": "New issue",
@@ -1886,6 +1888,19 @@
       "quantity": "Quantity",
       "downloadedBy": "Downloaded by {name}, {at}",
       "page": "Page {page} of {pages}"
+    },
+    "reverse": {
+      "button": "Reverse",
+      "title": "Reverse {number}?",
+      "department": "Department",
+      "result": {
+        "ISSUE": "These items go back into stock and the issue is marked Reversed. This cannot be undone.",
+        "RETURN": "These items leave stock again and the return is marked Reversed. This cannot be undone."
+      },
+      "held": "The department holds only {held} of it: say why in the reason.",
+      "short": "{item}: only {left} left in stock. Nothing was reversed.",
+      "done": "{number} reversed",
+      "reasonHint": "A reason is required: {min} to {max} characters. {count} / {max}."
     }
   }
 }
