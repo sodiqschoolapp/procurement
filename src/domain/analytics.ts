@@ -317,3 +317,14 @@ export function averageSom(total: bigint, count: number): bigint | null {
     new Exact(total.toString()).dividedBy(count).toDecimalPlaces(0, Exact.ROUND_HALF_UP).toFixed(0),
   );
 }
+
+/**
+ * The change of a department's use, issued − returned, which can be below 0 when returns of
+ * earlier issues pass the period's issues (10 Head, Warehouse: "use by department"; plan of 6.4d,
+ * decided item 4, Look first): `changeAgainst()` while the period before is above 0; `null`
+ * otherwise, and the page writes the difference in so'm only, as a signed average's
+ * (`changeAgainst()`'s percent reads backwards on a base below 0).
+ */
+export function useChange(used: bigint, before: bigint): Change | null {
+  return before > 0n ? changeAgainst(used, before) : null;
+}

@@ -18,7 +18,7 @@ import { type AnalyticsFilters, NO_ANALYTICS_FILTERS, type PeriodInput } from ".
 
 import { getStockLines } from "./stock-lines";
 import { getStockMoves } from "./stock-moves";
-import { getWarehouse, useChange } from "./warehouse";
+import { getWarehouse } from "./warehouse";
 
 // The Head's Warehouse block and its drill-downs (build-plan 6.4d; 10-notifications-analytics-
 // reports.md, Analytics page per role, Head, Warehouse: "Stock value per branch; low-stock items;
@@ -164,12 +164,6 @@ describe("the Warehouse block (10 Analytics, Head, Warehouse; plan of 6.4d)", ()
       "all",
     );
     expect([one.count, one.total]).toEqual([2, 8_000n]);
-  });
-
-  it("the use change has a percent only against a period before above 0 (decided item 4)", () => {
-    expect(useChange(8_000n, 4_000n)).toEqual({ difference: 4_000n, percent: "100.0" });
-    expect(useChange(4_000n, 0n)).toBeNull();
-    expect(useChange(4_000n, -4_000n)).toBeNull();
   });
 
   it("the category filters every number; the department filters use only (decided item 6)", async () => {

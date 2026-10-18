@@ -1,6 +1,12 @@
 import { sql } from "drizzle-orm";
 
-import { type Change, type Period, changeAgainst, ninetyDaysSince } from "@/domain/analytics";
+import {
+  type Change,
+  type Period,
+  changeAgainst,
+  ninetyDaysSince,
+  useChange,
+} from "@/domain/analytics";
 import type { BusinessDate } from "@/domain/business-date";
 import type { Executor } from "@/server/authorize";
 import { today } from "@/server/clock";
@@ -21,7 +27,7 @@ import { stillOf, stockWhere } from "../stock-where";
 // - written off is of the period, the Σ of the write-off movements' values under movesWhere(),
 //   with its change (decided item 5).
 // Use by department: Σ issues − Σ returns of each department in the period (decided item 4), its
-// change `changeAgainst()` while the period before is above 0, else in so'm only. Under
+// change `useChange()`: a percent while the period before is above 0, else in so'm only. Under
 // `data.view`, the branch wall in the SQL, in one snapshot.
 
 export type WarehouseBranchRow = {
@@ -68,11 +74,6 @@ export async function getWarehouse(
   filters: AnalyticsFilters,
 ): Promise<Warehouse> {
   return readSnapshot((db) => warehouseIn(db, userId, input, filters));
-}
-
-/** Use's change (decided item 4): a percent only against a period before above 0. */
-export function useChange(used: bigint, before: bigint): Change | null {
-  return before > 0n ? changeAgainst(used, before) : null;
 }
 
 type BranchSource = {
