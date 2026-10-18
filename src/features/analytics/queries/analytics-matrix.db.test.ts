@@ -301,6 +301,33 @@ describePermissionMatrix("getApprovalSpeed with the branch filter", {
     });
     expect(speed.all.PENDING_HEAD).toMatchObject({ hours: "1.0", count: 1 });
     expect(speed.waiting.PENDING_PRINCIPAL.all).toBe(1);
+    expect(speed.shares.all.decisions).toBe(1);
+  },
+});
+
+describePermissionMatrix("getApprovalOrders with the branch filter", {
+  permission: "data.view",
+  async run({ user, branchId }) {
+    const order = await stayIn(branchId);
+    const filters = { ...NO_ANALYTICS_FILTERS, branch: branchId };
+    const stays = await getApprovalOrders(
+      user.id,
+      THIS_MONTH,
+      filters,
+      { kind: "step", step: "PENDING_HEAD", decision: null },
+      null,
+      "all",
+    );
+    const waiting = await getApprovalOrders(
+      user.id,
+      THIS_MONTH,
+      filters,
+      { kind: "waiting", step: "PENDING_PRINCIPAL", group: null },
+      null,
+      "all",
+    );
+    expect(stays.rows.map((row) => row.orderId)).toContain(order.id);
+    expect(waiting.rows.map((row) => row.orderId)).toContain(order.id);
   },
 });
 
@@ -327,6 +354,7 @@ describePermissionMatrix("getApprovalSpeed and getApprovalOrders, the branch wal
     );
     // The numbers and their lists keep to the same wall.
     expect(speed.all.PENDING_HEAD.count).toBe(stays.count);
+    expect(speed.shares.all.decisions).toBe(stays.count);
     expect(speed.waiting.all.all).toBe(waiting.count);
     const listed = stays.rows.some((row) => row.orderId === order.id);
     expect(waiting.rows.some((row) => row.orderId === order.id)).toBe(listed);

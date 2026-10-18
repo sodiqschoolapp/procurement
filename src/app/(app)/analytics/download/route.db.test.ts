@@ -310,7 +310,7 @@ describePermissionMatrix("GET /analytics/download, the blocks of 6.4b behind the
         reason: `Narxni tekshiring ${branchId}`,
       },
     ]);
-    await decided(scene, "PENDING_PRINCIPAL", [
+    const waitingOrder = await decided(scene, "PENDING_PRINCIPAL", [
       { type: "SUBMIT", from: "DRAFT", to: "PENDING_HEAD", at: "2031-10-14T04:00:00Z" },
       {
         type: "APPROVE",
@@ -327,11 +327,14 @@ describePermissionMatrix("GET /analytics/download, the blocks of 6.4b behind the
         where b.id = ${branchId} and v.id = ${item.variantId}`)
     ).rows[0]!;
     const cookie = await signInAs(user);
+    // The scene's own category, so the counts hold this case's rows only; no branch filter, so
+    // the wall in the SQL decides what the user sees.
+    const own = { ...NO_ANALYTICS_FILTERS, category: scene.category.id };
     const get = async (block: ExportBlock, extra: Parameters<typeof analyticsSearch>[2] = {}) =>
       sheetOf(
         await GET(
           downloadRequest(
-            `/analytics/download?${analyticsSearch(THIS_MONTH, NO_ANALYTICS_FILTERS, {
+            `/analytics/download?${analyticsSearch(THIS_MONTH, own, {
               ...extra,
               block,
             })}`,
@@ -353,6 +356,15 @@ describePermissionMatrix("GET /analytics/download, the blocks of 6.4b behind the
         back.number!,
       ),
       (
+        await texts("approvals", {
+          key: { kind: "step", step: null, decision: "SEND_BACK" },
+          reason: `narxni tekshiring ${branchId}`,
+        })
+      ).includes(back.number!),
+      (await texts("approvals", { key: { kind: "waiting", step: null, group: null } })).includes(
+        waitingOrder.number!,
+      ),
+      (
         await texts("records", {
           key: { kind: "price", variant: item.variantId, month: null, noSupplier: false },
         })
@@ -360,11 +372,17 @@ describePermissionMatrix("GET /analytics/download, the blocks of 6.4b behind the
     ];
     // The same wall for every table.
     expect(seen).toEqual(seen.map(() => seen[0]));
-    // "Waiting now" and the decisions count the branch's own rows only behind it too.
-    const waiting = await get("waiting");
-    const decisions = await get("decisions");
-    expect(waiting.some((row) => typeof row[1] === "number")).toBe(true);
-    expect(decisions.some((row) => typeof row[1] === "number")).toBe(true);
+    // "Waiting now" and the decisions count the branch's own rows only behind it too: the rows
+    // are Head, Principal, Finance, all; one order waits at Principal, one of the two Head
+    // decisions sent back.
+    const counted = (rows: unknown[][]) => rows.filter((row) => typeof row[1] === "number");
+    const waiting = counted(await get("waiting"));
+    const decisions = counted(await get("decisions"));
+    const one = seen[0] ? 1 : 0;
+    expect(waiting[1]!.at(-1)).toBe(one);
+    expect(waiting[3]!.at(-1)).toBe(one);
+    // The Head step decided twice: the send back and the approval of the waiting order.
+    expect([decisions[0]![1], decisions[0]![2]]).toEqual([2 * one, one]);
     if (!seen[0]) throw new AuthorizationError("not_found");
   },
 });

@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
+import { sql } from "drizzle-orm";
+
 import { averageHours } from "@/domain/analytics";
+import { db } from "@/server/db/client";
 
 import {
   type Move,
@@ -358,6 +361,38 @@ describe("the walls (03 rule 1; 06 Statuses; review of the plan, Must fix 4; D40
     );
     expect(principalList.count).toBe(1);
     expect(principalList.rows.map((row) => row.orderId)).not.toContain(draft.id);
+  });
+
+  it("an open stay of an order taken back to Draft since the last refresh counts for its owner and the Head only (permission review, Must fix 2)", async () => {
+    setClock("2031-10-15T05:00:00Z");
+    const scene = await spendingScene();
+    const head = await insertUser("HEAD");
+    const principal = await insertUser("PRINCIPAL", { branches: [scene.branch.id] });
+    const order = await decided(scene, "PENDING_HEAD", [
+      { type: "SUBMIT", from: "DRAFT", to: "PENDING_HEAD", at: "2031-10-15T04:00:00Z" },
+    ]);
+    // The same open stay on an order still waiting: it stays in everyone's numbers.
+    const kept = await decided(scene, "PENDING_HEAD", [
+      { type: "SUBMIT", from: "DRAFT", to: "PENDING_HEAD", at: "2031-10-15T04:00:00Z" },
+    ]);
+    await refreshNow();
+    // Taken back after the refresh: the summary still holds its open stay.
+    await movesOf(order.id, order.ownerId, [
+      { type: "TAKE_BACK", from: "PENDING_HEAD", to: "DRAFT", at: "2031-10-15T04:30:00Z" },
+    ]);
+    await db.execute(sql`update orders set status = 'DRAFT' where id = ${order.id}`);
+
+    const key = { kind: "waiting", step: null, group: null } as const;
+    for (const [user, expected] of [
+      [head.id, [order.id, kept.id]],
+      [scene.manager.id, [order.id, kept.id]],
+      [principal.id, [kept.id]],
+    ] as const) {
+      const speed = await getApprovalSpeed(user, THIS_MONTH, only(scene));
+      expect(speed.waiting.all.all).toBe(expected.length);
+      const list = await getApprovalOrders(user, THIS_MONTH, only(scene), key, null, "all");
+      expect(new Set(list.rows.map((row) => row.orderId))).toEqual(new Set(expected));
+    }
   });
 
   it("a key of another block names no Approval speed list", async () => {
