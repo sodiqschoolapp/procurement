@@ -12,7 +12,11 @@ import type { AnalyticsFilters } from "../period-params";
 import type { ApprovalOrders } from "../queries/approval-orders";
 import type { ApprovalSpeed } from "../queries/approval-speed";
 import type { CancelledRecords } from "../queries/cancelled-records";
-import type { CashOrders } from "../queries/cash-orders";
+import type { CashNeeded } from "../queries/cash-needed";
+import type { CashAge, CashOrders } from "../queries/cash-orders";
+import type { FinanceCash } from "../queries/finance-cash";
+import type { MoneyRowList } from "../queries/money-rows";
+import type { NeededOrders } from "../queries/needed-orders";
 import type { Managers } from "../queries/managers";
 import type { MyApprovals } from "../queries/my-approvals";
 import type { MyCash } from "../queries/my-cash";
@@ -25,7 +29,7 @@ import type { HeadSpending } from "../queries/head-spending";
 import type { OutcomeOrders } from "../queries/outcome-orders";
 import type { PlanVsActual, Tally } from "../queries/plan-vs-actual";
 import type { SpendingBlock } from "../queries/spending";
-import { OUTCOME_COLOURS } from "../period-params";
+import { CASH_KIND_KEYS, OUTCOME_COLOURS } from "../period-params";
 import type { SpendingRecords } from "../queries/spending-records";
 import type { StatusOrders } from "../queries/status-orders";
 import type { StockLines } from "../queries/stock-lines";
@@ -719,11 +723,21 @@ export function cashSheet(
   filters: AnalyticsFilters,
   options: AnalyticsFilterOptions,
   locale: Locale,
+  age: CashAge | null = null,
 ): AnalyticsSheet {
   const { t, tRoot } = translators(locale);
   const name = t("sheets.cash");
   const lines = heading(locale, name, null, filters, options);
   if (otherOwners) lines.push(t("orders.otherOwners"));
+  // One amount of Finance's money with managers by age (plan of 6.6a, decided item 3).
+  if (age) {
+    lines.push(
+      t("finance.ageLine", {
+        band: t(`finance.cash.bands.${age.band}`),
+        side: t(`finance.columns.${age.side}`),
+      }),
+    );
+  }
   return {
     name,
     heading: lines,
@@ -734,7 +748,7 @@ export function cashSheet(
       t("cash.columns.owner"),
       t("cash.columns.status"),
       t("cash.columns.since"),
-      t("cash.columns.held"),
+      t(age?.side === "owed" ? "cash.columns.owed" : "cash.columns.held"),
     ],
     rows: list.rows.map((row) => [
       { kind: "text", value: row.orderNumber },
@@ -746,9 +760,14 @@ export function cashSheet(
       { kind: "text", value: row.ownerName },
       { kind: "text", value: tRoot(`requestStatus.${row.status}`) },
       { kind: "date", value: row.since },
-      { kind: "money", value: row.cashCount },
+      age?.side === "owed"
+        ? { kind: "money", value: -row.cashCount }
+        : { kind: "money", value: row.cashCount },
     ]),
-    total: { label: t("cash.columns.held"), amount: list.held },
+    total:
+      age?.side === "owed"
+        ? { label: t("cash.columns.owed"), amount: list.owed }
+        : { label: t("cash.columns.held"), amount: list.held },
   };
 }
 
@@ -1320,5 +1339,194 @@ export function stockPlanningSheet(
         : { kind: "count", value: line.runsOutIn },
       qty(line.suggested),
     ]),
+  };
+}
+
+// The sheets of Finance's blocks (build-plan 6.6a; plan of 6.6a, decided items 2 to 10): Cash by
+// month, money with managers by age, Cash needed soon, and the lists behind them. The numbers are
+// the queries'.
+
+const monthText = (
+  t: ReturnType<typeof translators>["t"],
+  tRoot: ReturnType<typeof translators>["tRoot"],
+  month: string,
+) =>
+  t("monthLabel", {
+    month: tRoot(`months.${Number(month.slice(5))}` as "months.1"),
+    year: month.slice(0, 4),
+  });
+
+/** Given, returned and paid back by month, each with its change, and the period's three. */
+export function financeCashSheet(
+  block: FinanceCash,
+  filters: AnalyticsFilters,
+  options: AnalyticsFilterOptions,
+  locale: Locale,
+): AnalyticsSheet {
+  const { t, tRoot } = translators(locale);
+  const name = t("sheets.financeCash");
+  return {
+    name,
+    heading: heading(locale, name, block.period, filters, options),
+    columns: [
+      t("finance.columns.month"),
+      ...CASH_KIND_KEYS.flatMap((kind) => [
+        t(`finance.cash.kinds.${kind}`),
+        t("spending.columns.change"),
+        "%",
+      ]),
+    ],
+    rows: [
+      ...block.months.map((row): CellValue[] => [
+        { kind: "text", value: monthText(t, tRoot, row.month) },
+        ...CASH_KIND_KEYS.flatMap((kind): CellValue[] => [
+          { kind: "money", value: row[kind].amount },
+          ...changeCells(row[kind].change),
+        ]),
+      ]),
+      [
+        { kind: "text", value: t("finance.cash.period") },
+        ...CASH_KIND_KEYS.flatMap((kind): CellValue[] => [
+          { kind: "money", value: block.totals[kind].amount },
+          ...changeCells(block.totals[kind].change),
+        ]),
+      ],
+    ],
+  };
+}
+
+/** Money with managers by age: each band's held and owed, apart, with their order counts. */
+export function cashAgesSheet(
+  block: FinanceCash,
+  filters: AnalyticsFilters,
+  options: AnalyticsFilterOptions,
+  locale: Locale,
+): AnalyticsSheet {
+  const { t } = translators(locale);
+  const name = t("sheets.cashAges");
+  return {
+    name,
+    heading: heading(locale, name, null, filters, options, t("finance.cash.ageNote")),
+    columns: [
+      t("finance.columns.age"),
+      t("finance.columns.held"),
+      t("finance.columns.orders"),
+      t("finance.columns.owed"),
+      t("finance.columns.orders"),
+    ],
+    rows: block.ages.map((row): CellValue[] => [
+      { kind: "text", value: t(`finance.cash.bands.${row.band}`) },
+      { kind: "money", value: row.held },
+      { kind: "count", value: row.heldCount },
+      { kind: "money", value: row.owed },
+      { kind: "count", value: row.owedCount },
+    ]),
+  };
+}
+
+/** Cash needed soon: approved not yet given, each step in approval, in approval, and all. */
+export function cashNeededSheet(
+  block: CashNeeded,
+  filters: AnalyticsFilters,
+  options: AnalyticsFilterOptions,
+  locale: Locale,
+): AnalyticsSheet {
+  const { t, tRoot } = translators(locale);
+  const name = t("sheets.cashNeeded");
+  const line = (label: string, amount: { amount: bigint; count: number }): CellValue[] => [
+    { kind: "text", value: label },
+    { kind: "money", value: amount.amount },
+    { kind: "count", value: amount.count },
+  ];
+  return {
+    name,
+    heading: heading(locale, name, null, filters, options, t("finance.needed.note")),
+    columns: [t("finance.columns.stage"), t("finance.columns.needed"), t("finance.columns.orders")],
+    rows: [
+      line(t("finance.needed.open"), block.open),
+      ...block.steps.map((step) => line(`  ${tRoot(`requestStatus.${step.step}`)}`, step)),
+      line(t("finance.needed.approval"), block.approval),
+    ],
+    total: { label: t("finance.needed.all"), amount: block.all.amount, column: 1 },
+  };
+}
+
+/** The money rows behind a Cash amount, every row. */
+export function moneyRowsSheet(
+  list: MoneyRowList,
+  filters: AnalyticsFilters,
+  options: AnalyticsFilterOptions,
+  locale: Locale,
+): AnalyticsSheet {
+  const { t, tRoot } = translators(locale);
+  const name = t("sheets.moneyRows");
+  const lines = heading(locale, name, list.period, filters, options);
+  lines.push(
+    list.month
+      ? `${t(`finance.cash.kinds.${list.money}`)}, ${monthText(t, tRoot, list.month)}`
+      : t(`finance.cash.kinds.${list.money}`),
+  );
+  return {
+    name,
+    heading: lines,
+    columns: [
+      t("finance.money.columns.date"),
+      t("finance.money.columns.document"),
+      t("cash.columns.order"),
+      t("cash.columns.product"),
+      t("cash.columns.branch"),
+      t("finance.money.columns.manager"),
+      t("finance.money.columns.amount"),
+    ],
+    rows: list.rows.map((row): CellValue[] => [
+      { kind: "date", value: row.occurredOn },
+      { kind: "text", value: row.documentNo ?? "" },
+      { kind: "text", value: row.orderNumber },
+      { kind: "text", value: productText(row) },
+      { kind: "text", value: row.branchName },
+      { kind: "text", value: row.managerName },
+      { kind: "money", value: row.amount },
+    ]),
+    total: { label: t(`finance.cash.kinds.${list.money}`), amount: list.total },
+  };
+}
+
+/** The orders behind a Cash needed soon number, every row. */
+export function neededOrdersSheet(
+  list: NeededOrders,
+  filters: AnalyticsFilters,
+  options: AnalyticsFilterOptions,
+  locale: Locale,
+): AnalyticsSheet {
+  const { t, tRoot } = translators(locale);
+  const name = t("sheets.neededOrders");
+  const lines = heading(locale, name, null, filters, options, t("finance.needed.note"));
+  lines.push(list.step ? tRoot(`requestStatus.${list.step}`) : t(`finance.needed.${list.stage}`));
+  return {
+    name,
+    heading: lines,
+    columns: [
+      t("cash.columns.order"),
+      t("cash.columns.product"),
+      t("cash.columns.branch"),
+      t("cash.columns.owner"),
+      t("cash.columns.status"),
+      t("finance.neededList.columns.neededBy"),
+      t("finance.neededList.columns.planned"),
+      t("finance.neededList.columns.handed"),
+      t("finance.columns.needed"),
+    ],
+    rows: list.rows.map((row): CellValue[] => [
+      { kind: "text", value: row.orderNumber },
+      { kind: "text", value: productText(row) },
+      { kind: "text", value: row.branchName },
+      { kind: "text", value: row.ownerName },
+      { kind: "text", value: tRoot(`requestStatus.${row.status}`) },
+      { kind: "date", value: row.neededBy },
+      { kind: "money", value: row.plannedCash },
+      { kind: "signedMoney", value: row.handed },
+      { kind: "money", value: row.needed },
+    ]),
+    total: { label: t("finance.columns.needed"), amount: list.total },
   };
 }

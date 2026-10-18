@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 
-import { daysOf } from "@/domain/analytics";
+import { type CashAgeBand, cashAgeBand, daysOf } from "@/domain/analytics";
 import type { BusinessDate } from "@/domain/business-date";
 import { managerCashBalance } from "@/domain/money-ledger";
 import type { RequestStatus } from "@/domain/request-status";
@@ -8,7 +8,7 @@ import type { Executor } from "@/server/authorize";
 import { today } from "@/server/clock";
 import { readSnapshot } from "@/server/read-snapshot";
 
-import { type AnalyticsFilters, RECORDS_PAGE_SIZE } from "../period-params";
+import { type AnalyticsFilters, type CashSide, RECORDS_PAGE_SIZE } from "../period-params";
 import { authorizeAnalytics } from "../authorize-filters";
 import { cashWhere } from "../cash-where";
 
@@ -19,6 +19,10 @@ import { cashWhere } from "../cash-where";
 // "held for" from the oldest since, so the summary is the number clicked. A number of now: no
 // period. Under `data.view`, the branch wall and the live status in the SQL, in one snapshot; the
 // rows are few (open orders holding cash), so they are read whole and paged here, 50 a page.
+// Task 6.6a adds the orders behind one amount of Finance's "money with managers by age" (plan of
+// 6.6a, decided item 3, Look first): held (a count above 0) or owed (below 0), never netted, of one
+// age band by `cashAgeBand()` of the days since; `held` and `owed` are `managerCashBalance()` of
+// the rows, so the summary is the amount clicked.
 
 export type CashOrder = {
   orderId: string;
@@ -32,9 +36,13 @@ export type CashOrder = {
   since: BusinessDate;
 };
 
+/** One amount of "money with managers by age" (plan of 6.6a, decided item 3). */
+export type CashAge = { band: CashAgeBand; side: CashSide };
+
 export type CashOrders = {
   count: number;
   held: bigint;
+  owed: bigint;
   heldSince: BusinessDate | null;
   heldDays: number | null;
   page: number;
@@ -59,8 +67,15 @@ export async function getCashOrders(
   filters: AnalyticsFilters,
   otherOwners: boolean,
   page: number | "all",
+  age: CashAge | null = null,
 ): Promise<CashOrders> {
-  return readSnapshot((db) => ordersIn(db, userId, filters, otherOwners, page));
+  return readSnapshot((db) => ordersIn(db, userId, filters, otherOwners, page, age));
+}
+
+/** The days an order's cash has been out on the clock's Tashkent day, as "held for" counts them. */
+export function daysOut(since: BusinessDate): number {
+  // daysOf() counts both ends: the same day is 0 days.
+  return daysOf({ first: since, last: today() }) - 1;
 }
 
 async function ordersIn(
@@ -69,6 +84,7 @@ async function ordersIn(
   filters: AnalyticsFilters,
   otherOwners: boolean,
   page: number | "all",
+  age: CashAge | null,
 ): Promise<CashOrders> {
   const actor = await authorizeAnalytics(db, userId, filters);
   const found = await db.execute<Row>(sql`
@@ -82,9 +98,9 @@ async function ordersIn(
     join products pr on pr.id = v.product_id
     join branches b on b.id = analytics_cash.branch_id
     join users u on u.id = analytics_cash.owner_id
-    where ${cashWhere(actor, filters, otherOwners)}
+    where ${cashWhere(actor, filters, otherOwners, age !== null)}
     order by analytics_cash.since, o.number, analytics_cash.order_id`);
-  const rows = found.rows.map((row) => ({
+  const all = found.rows.map((row) => ({
     orderId: row.order_id,
     orderNumber: row.number,
     productName: row.product_name,
@@ -95,13 +111,22 @@ async function ordersIn(
     cashCount: BigInt(row.cash_count),
     since: row.since,
   }));
+  const rows =
+    age === null
+      ? all
+      : all.filter(
+          (row) =>
+            (age.side === "held" ? row.cashCount > 0n : row.cashCount < 0n) &&
+            cashAgeBand(daysOut(row.since)) === age.band,
+        );
+  const balance = managerCashBalance(rows);
   const heldSince = rows[0]?.since ?? null;
   return {
     count: rows.length,
-    held: managerCashBalance(rows).held,
+    held: balance.held,
+    owed: balance.owed,
     heldSince,
-    // daysOf() counts both ends: the same day is 0 days held.
-    heldDays: heldSince === null ? null : daysOf({ first: heldSince, last: today() }) - 1,
+    heldDays: heldSince === null ? null : daysOut(heldSince),
     page: page === "all" ? 1 : page,
     rows:
       page === "all" ? rows : rows.slice((page - 1) * RECORDS_PAGE_SIZE, page * RECORDS_PAGE_SIZE),

@@ -2425,7 +2425,12 @@
       "myReasons": "Qaytarilganlar sabablari",
       "myEstimates": "Mening hisob-kitobim",
       "myCash": "Mening pulim",
-      "stockPlanning": "Zaxirani rejalashtirish"
+      "stockPlanning": "Zaxirani rejalashtirish",
+      "financeCash": "Oylar bo'yicha naqd",
+      "cashAges": "Muddat bo'yicha naqd",
+      "cashNeeded": "Tez orada kerak naqd",
+      "moneyRows": "Pul qatorlari",
+      "neededOrders": "Naqd kutayotgan buyurtmalar"
     },
     "plan": {
       "title": "Reja va haqiqat",
@@ -2637,8 +2642,11 @@
         "owner": "Egasi",
         "status": "Holat",
         "since": "Qachondan beri",
-        "held": "Qo'lda"
-      }
+        "held": "Qo'lda",
+        "owed": "Maktab qarzi"
+      },
+      "summaryAge": "{count, plural, other {# ta buyurtma}}, {amount}",
+      "ageWhat": "{band}, {side}"
     },
     "warehouse": {
       "title": "Ombor",
@@ -2841,6 +2849,67 @@
           "runsOut": "Tugashiga",
           "runsOutDays": "Tugashiga, kun",
           "suggested": "Tavsiya etilgan buyurtma"
+        }
+      }
+    },
+    "finance": {
+      "orders": "{count, plural, other {# ta buyurtma}}",
+      "ageLine": "{band}, {side}",
+      "cash": {
+        "title": "Naqd pul",
+        "note": "Menejerlarga berilgan, ular qaytargan va ularga qoplangan naqd pul, har bir pul amalining sanasi bo'yicha; bekor qilingan amallar hisobga olinmaydi.",
+        "kinds": {
+          "given": "Berilgan",
+          "returned": "Qaytarilgan",
+          "paidBack": "Qoplangan"
+        },
+        "byMonth": "Oylar bo'yicha",
+        "period": "Davr bo'yicha",
+        "byAge": "Menejerlardagi pul muddati bo'yicha",
+        "ageNote": "Hozir, davrdan qat'i nazar: menejerlar qo'lidagi va ularga qarz bo'lgan pul, buyurtmaning birinchi naqd harakatidan beri o'tgan kunlar bo'yicha.",
+        "bands": {
+          "week": "7 kungacha",
+          "month": "8 dan 30 kungacha",
+          "older": "30 kundan ortiq"
+        }
+      },
+      "needed": {
+        "title": "Tez orada kerak naqd",
+        "note": "Hozir, davrdan qat'i nazar: naqd kerak bo'ladigan buyurtmalarning rejadagi naqdi.",
+        "open": "Tasdiqlangan, hali berilmagan",
+        "approval": "Hali tasdiqlanmoqda",
+        "all": "Jami tez orada kerak",
+        "bySteps": "Tasdiqlashda, bosqichlar bo'yicha"
+      },
+      "columns": {
+        "month": "Oy",
+        "age": "Muddat",
+        "held": "Qo'lda",
+        "owed": "Maktab qarzi",
+        "step": "Bosqich",
+        "needed": "Kerak",
+        "orders": "Buyurtmalar",
+        "stage": "Holat"
+      },
+      "money": {
+        "title": "Pul qatorlari",
+        "empty": "Bu davrda pul qatori yo'q.",
+        "summary": "{count, plural, other {# ta qator}}, {amount}",
+        "columns": {
+          "date": "Sana",
+          "document": "Hujjat raqami",
+          "manager": "Menejer",
+          "amount": "Summa"
+        }
+      },
+      "neededList": {
+        "title": "Naqd kutayotgan buyurtmalar",
+        "empty": "Hozir hech bir buyurtmaga naqd kerak emas.",
+        "summary": "{count, plural, other {# ta buyurtma}}, {amount} kerak",
+        "columns": {
+          "neededBy": "Qachongacha",
+          "planned": "Rejadagi naqd",
+          "handed": "Qo'lga berilgan"
         }
       }
     }

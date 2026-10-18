@@ -2425,7 +2425,12 @@
       "myReasons": "Sent back, reasons",
       "myEstimates": "My estimates",
       "myCash": "My cash",
-      "stockPlanning": "Stock planning"
+      "stockPlanning": "Stock planning",
+      "financeCash": "Cash by month",
+      "cashAges": "Cash by age",
+      "cashNeeded": "Cash needed soon",
+      "moneyRows": "Money rows",
+      "neededOrders": "Orders needing cash"
     },
     "plan": {
       "title": "Plan vs actual",
@@ -2637,8 +2642,11 @@
         "owner": "Owner",
         "status": "Status",
         "since": "Held since",
-        "held": "Held"
-      }
+        "held": "Held",
+        "owed": "Owed"
+      },
+      "summaryAge": "{count, plural, one {# order} other {# orders}}, {amount}",
+      "ageWhat": "{band}, {side}"
     },
     "warehouse": {
       "title": "Warehouse",
@@ -2841,6 +2849,67 @@
           "runsOut": "Runs out in",
           "runsOutDays": "Runs out in, days",
           "suggested": "Suggested order"
+        }
+      }
+    },
+    "finance": {
+      "orders": "{count, plural, one {# order} other {# orders}}",
+      "ageLine": "{band}, {side}",
+      "cash": {
+        "title": "Cash",
+        "note": "Cash given to Managers, returned by them and paid back to them, by the date of each money action; cancelled actions are left out.",
+        "kinds": {
+          "given": "Cash given",
+          "returned": "Cash returned",
+          "paidBack": "Paid back"
+        },
+        "byMonth": "By month",
+        "period": "The period",
+        "byAge": "Money with managers by age",
+        "ageNote": "Now, whatever the period: what Managers hold and what they are owed, by days since the order's first cash movement.",
+        "bands": {
+          "week": "Up to 7 days",
+          "month": "8 to 30 days",
+          "older": "Over 30 days"
+        }
+      },
+      "needed": {
+        "title": "Cash needed soon",
+        "note": "Now, whatever the period: the planned cash of orders that will need it.",
+        "open": "Approved, not yet given",
+        "approval": "Still in approval",
+        "all": "Needed soon in all",
+        "bySteps": "In approval, by step"
+      },
+      "columns": {
+        "month": "Month",
+        "age": "Age",
+        "held": "Held",
+        "owed": "Owed",
+        "step": "Step",
+        "needed": "Needed",
+        "orders": "Orders",
+        "stage": "Stage"
+      },
+      "money": {
+        "title": "Money rows",
+        "empty": "No money row in this period.",
+        "summary": "{count, plural, one {# row} other {# rows}}, {amount}",
+        "columns": {
+          "date": "Date",
+          "document": "Document No.",
+          "manager": "Manager",
+          "amount": "Amount"
+        }
+      },
+      "neededList": {
+        "title": "Orders needing cash",
+        "empty": "No order needs cash now.",
+        "summary": "{count, plural, one {# order} other {# orders}}, {amount} needed",
+        "columns": {
+          "neededBy": "Needed by",
+          "planned": "Planned cash",
+          "handed": "Handed so far"
         }
       }
     }

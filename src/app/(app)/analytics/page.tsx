@@ -6,6 +6,7 @@ import { BRANCH_COOKIE } from "@/features/catalog/branch-cookie";
 import { currentBranchChoice } from "@/features/catalog/queries/my-branches";
 import { ApprovalSpeedView } from "@/features/analytics/components/approval-speed-block";
 import { AnalyticsFilterBar } from "@/features/analytics/components/filter-bar";
+import { CashNeededView, FinanceCashView } from "@/features/analytics/components/finance-blocks";
 import { HeadSpendingView } from "@/features/analytics/components/head-spending-block";
 import {
   MyCashView,
@@ -25,6 +26,8 @@ import { SpendingBlockView } from "@/features/analytics/components/spending-bloc
 import { WarehouseView } from "@/features/analytics/components/warehouse-block";
 import { parseAnalyticsParams } from "@/features/analytics/period-params";
 import { getApprovalSpeed } from "@/features/analytics/queries/approval-speed";
+import { getCashNeeded } from "@/features/analytics/queries/cash-needed";
+import { getFinanceCash } from "@/features/analytics/queries/finance-cash";
 import { getAnalyticsFilters } from "@/features/analytics/queries/filters";
 import { getHeadSpending } from "@/features/analytics/queries/head-spending";
 import { getManagers } from "@/features/analytics/queries/managers";
@@ -53,7 +56,9 @@ import { AuthorizationError } from "@/server/authorize";
 // Principal's page adds the rest of Spending, Orders, My approvals and Warehouse (build-plan
 // 6.5a). The Manager's page shows My orders, My estimates and My cash (build-plan 6.5b; plan of
 // 6.5b, decided items 6 and 7) and Stock planning (build-plan 6.5c), and nothing else: the spec's Manager table has no Spending block, and its blocks
-// are the user's own orders, so it has no Manager filter. The branch
+// are the user's own orders, so it has no Manager filter. Finance's page adds Cash and Cash needed
+// soon under the shared Spending block, which stays until 6.6b (build-plan 6.6a; plan of 6.6a,
+// decided item 9). The branch
 // filter starts at the top bar's branch view (decided item 9). An address the parser refuses, or a school year not set,
 // falls back to this month (review of the plan, correction 2); another branch is Not found (03
 // rule 1). The line under the title says when the summary was last rebuilt (decided item 13).
@@ -70,7 +75,7 @@ async function readPage(userId: string, role: string, raw: Raw) {
         branch: await currentBranchChoice(userId, (await cookies()).get(BRANCH_COOKIE)?.value),
       };
   try {
-    const [options, block, head, principal, manager] = await Promise.all([
+    const [options, block, head, principal, manager, finance] = await Promise.all([
       getAnalyticsFilters(userId),
       role === "MANAGER" ? null : getSpending(userId, params.period, filters),
       role === "HEAD"
@@ -101,6 +106,12 @@ async function readPage(userId: string, role: string, raw: Raw) {
             getStockPlanning(userId, params.period, filters),
           ])
         : null,
+      role === "FINANCE"
+        ? Promise.all([
+            getFinanceCash(userId, params.period, filters),
+            getCashNeeded(userId, filters),
+          ])
+        : null,
     ]);
     return {
       period: params.period,
@@ -111,6 +122,7 @@ async function readPage(userId: string, role: string, raw: Raw) {
       head,
       principal,
       manager,
+      finance,
     };
   } catch (error) {
     if (error instanceof PeriodRefusedError) return "refused" as const;
@@ -125,7 +137,7 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
   const read = await readPage(user.id, user.role, await searchParams);
   if (read === "refused") redirect("/analytics");
   if (read === "not_found") notFound();
-  const { period, filters, variant, options, block, head, principal, manager } = read;
+  const { period, filters, variant, options, block, head, principal, manager, finance } = read;
   // The period resolved by a query: the Manager's page reads no Spending block.
   const shownPeriod = manager ? manager[0].period : block!.period;
   const t = await getTranslations("analytics");
@@ -195,6 +207,12 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
           <MyEstimatesView block={manager[1]} period={period} filters={filters} userId={user.id} />
           <MyCashView block={manager[2]} filters={filters} userId={user.id} />
           <StockPlanningView block={manager[3]} period={period} filters={filters} />
+        </>
+      )}
+      {finance && (
+        <>
+          <FinanceCashView block={finance[0]} period={period} filters={filters} />
+          <CashNeededView block={finance[1]} filters={filters} />
         </>
       )}
     </div>

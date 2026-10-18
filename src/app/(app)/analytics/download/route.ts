@@ -6,10 +6,14 @@ import {
   approvalOrdersSheet,
   approvalSpeedSheet,
   cancelledSheet,
+  cashAgesSheet,
+  cashNeededSheet,
   cashSheet,
   departmentUseSheet,
+  financeCashSheet,
   headSpendingSheet,
   managersSheet,
+  moneyRowsSheet,
   movesSheet,
   myApprovalsSheet,
   myCashSheet,
@@ -17,6 +21,7 @@ import {
   stockPlanningSheet,
   myOrdersSheet,
   myReasonsSheet,
+  neededOrdersSheet,
   orderStatusesSheet,
   outcomeOrdersSheet,
   outcomesSheet,
@@ -35,14 +40,18 @@ import { parseAnalyticsParams } from "@/features/analytics/period-params";
 import { getApprovalOrders } from "@/features/analytics/queries/approval-orders";
 import { getApprovalSpeed } from "@/features/analytics/queries/approval-speed";
 import { getCancelledRecords } from "@/features/analytics/queries/cancelled-records";
+import { getCashNeeded } from "@/features/analytics/queries/cash-needed";
 import { getCashOrders } from "@/features/analytics/queries/cash-orders";
+import { getFinanceCash } from "@/features/analytics/queries/finance-cash";
 import { getAnalyticsFilters } from "@/features/analytics/queries/filters";
 import { getHeadSpending } from "@/features/analytics/queries/head-spending";
 import { getManagers } from "@/features/analytics/queries/managers";
+import { getMoneyRows } from "@/features/analytics/queries/money-rows";
 import { getMyApprovals } from "@/features/analytics/queries/my-approvals";
 import { getMyCash } from "@/features/analytics/queries/my-cash";
 import { getMyEstimates } from "@/features/analytics/queries/my-estimates";
 import { getMyOrders } from "@/features/analytics/queries/my-orders";
+import { getNeededOrders } from "@/features/analytics/queries/needed-orders";
 import { getOrderStatuses } from "@/features/analytics/queries/order-statuses";
 import { getOutcomeOrders } from "@/features/analytics/queries/outcome-orders";
 import { getPlanVsActual } from "@/features/analytics/queries/plan-vs-actual";
@@ -66,7 +75,8 @@ import { now } from "@/server/clock";
 // outcomeBranches, outcomeManagers, orders; 6.4b: priceTrend, priceRises, priceSpread, stepHours,
 // waiting, decisions, reasons, approvals; 6.4c: managers, cancelled, cash; 6.4d: warehouse,
 // departmentUse, stock, moves; 6.5a: products, orderStatuses, statusOrders, myApprovals; 6.5b:
-// myOrders, myReasons, myEstimates, myCash; 6.5c: stockPlanning)
+// myOrders, myReasons, myEstimates, myCash; 6.5c: stockPlanning; 6.6a: financeCash, moneyRows,
+// cashAges, cashNeeded, neededOrders, and cash with an age band)
 // (10-notifications-analytics-reports.md, Analytics page per role, point 4; 03 Permission matrix
 // "Export to Excel, download PDF, print"; build-plan 6.3). A route that writes nothing, as the
 // order list's download (plan of 2.14, decided item 12). The address is the page's, checked by
@@ -203,15 +213,20 @@ export async function GET(request: NextRequest): Promise<Response> {
           locale,
         );
         break;
-      case "cash":
+      case "cash": {
+        // All cash held, or one amount of Finance's money with managers by age (plan of 6.6a).
+        if (key.kind !== "period" && key.kind !== "age") return notFound();
+        const age = key.kind === "age" ? { band: key.band, side: key.side } : null;
         sheet = cashSheet(
-          await getCashOrders(user.id, filters, otherOwners, "all"),
+          await getCashOrders(user.id, filters, otherOwners, "all", age),
           otherOwners,
           filters,
           options,
           locale,
+          age,
         );
         break;
+      }
       case "warehouse":
       case "departmentUse": {
         const warehouse = await getWarehouse(user.id, period, filters);
@@ -298,6 +313,36 @@ export async function GET(request: NextRequest): Promise<Response> {
         sheet = myCashSheet(
           await getMyCash(user.id, filters),
           { ...filters, manager: null },
+          options,
+          locale,
+        );
+        break;
+      case "financeCash":
+      case "cashAges": {
+        const cash = await getFinanceCash(user.id, period, filters);
+        sheet =
+          block === "financeCash"
+            ? financeCashSheet(cash, filters, options, locale)
+            : cashAgesSheet(cash, filters, options, locale);
+        break;
+      }
+      case "cashNeeded":
+        sheet = cashNeededSheet(await getCashNeeded(user.id, filters), filters, options, locale);
+        break;
+      case "moneyRows":
+        if (key.kind !== "money") return notFound();
+        sheet = moneyRowsSheet(
+          await getMoneyRows(user.id, key.money, key.month, period, filters, "all"),
+          filters,
+          options,
+          locale,
+        );
+        break;
+      case "neededOrders":
+        if (key.kind !== "needed") return notFound();
+        sheet = neededOrdersSheet(
+          await getNeededOrders(user.id, filters, key.stage, key.step, "all"),
+          filters,
           options,
           locale,
         );
