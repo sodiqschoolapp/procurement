@@ -7,6 +7,7 @@ import { cn } from "@/components/utils";
 import type { Colour } from "@/domain/colours";
 import type { OrderProgress } from "@/domain/purchases";
 import type { RequestStatus } from "@/domain/request-status";
+import type { DocumentStatus } from "@/domain/stock-documents";
 import { useFormatters } from "@/i18n/use-formatters";
 
 // The one status-label component (docs/design-system.md, "This app, Status labels";
@@ -236,6 +237,32 @@ export function ReversedLabel({ className }: { className?: string }) {
   return (
     <LabelBox tone="muted" icon="undo" className={className}>
       <span data-reversed>{t("reversed")}</span>
+    </LabelBox>
+  );
+}
+
+/** A write-off's status (plan of 5.11): the request statuses' tones, never a colour label's. */
+const WRITE_OFF_STATUS_LOOK = {
+  PENDING_APPROVAL: { tone: "info", icon: "schedule" },
+  POSTED: { tone: "muted", icon: "check_circle" },
+  REJECTED: { tone: "muted", icon: "block" },
+  REVERSED: { tone: "muted", icon: "undo" },
+} as const satisfies Partial<Record<DocumentStatus, { tone: "info" | "muted"; icon: IconName }>>;
+
+export type WriteOffStatus = keyof typeof WRITE_OFF_STATUS_LOOK;
+
+export function WriteOffStatusLabel({
+  status,
+  className,
+}: {
+  status: WriteOffStatus;
+  className?: string;
+}) {
+  const t = useTranslations("warehouse.writeOff.page.status");
+  const look = WRITE_OFF_STATUS_LOOK[status];
+  return (
+    <LabelBox tone={look.tone} icon={look.icon} className={className}>
+      <span data-write-off-status={status}>{t(status)}</span>
     </LabelBox>
   );
 }

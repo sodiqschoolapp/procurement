@@ -8,20 +8,25 @@ import { currentBranchChoice } from "@/features/catalog/queries/my-branches";
 import { DirectEntryForm } from "@/features/warehouse/components/direct-entry-form";
 import { IssueForm } from "@/features/warehouse/components/issue-form";
 import { ReturnForm } from "@/features/warehouse/components/return-form";
+import { WriteOffForm } from "@/features/warehouse/components/write-off-form";
 import { directEntryBranchChoices } from "@/features/warehouse/queries/direct-entry-form";
-import { issueBranchChoices, issueFormChoices } from "@/features/warehouse/queries/issue-form";
+import {
+  issueBranchChoices,
+  issueFormChoices,
+  writeOffBranchChoices,
+} from "@/features/warehouse/queries/issue-form";
 import { returnBranchChoices, returnFormChoices } from "@/features/warehouse/queries/return-form";
 import { requireUser } from "@/server/auth/session";
 import { AuthorizationError } from "@/server/authorize";
 import { now } from "@/server/clock";
 
-// /warehouse/documents/new?type=ISSUE|RETURN|DIRECT_ENTRY, the new issue, the new return and the
-// direct entry (11-screens-and-ux.md, Screens: "New issue, return, transfer, write-off | Manager,
-// Head"; 09-warehouse.md, Issue to a department; Other documents: Return from a department; Direct
-// entry by the Head; plans of 5.4, 5.6 and 5.8). The transfer and the write-off come with 7.2 and
-// 5.11: any other `type=` is "Not found", and so is the page for a user who may use the type in no
-// branch (Principal, Finance, a Manager with ISSUE_STOCK or RETURN_REVERSE off, any Manager for a
-// direct entry; 03 rule 1). The branch is prefilled when the user may use one branch, else
+// /warehouse/documents/new?type=ISSUE|RETURN|DIRECT_ENTRY|WRITE_OFF, the new issue, the new
+// return, the direct entry and the write-off (11-screens-and-ux.md, Screens: "New issue, return,
+// transfer, write-off | Manager, Head"; 09-warehouse.md, Issue to a department; Other documents:
+// Return from a department, Write-off; Direct entry by the Head; plans of 5.4, 5.6, 5.8 and 5.11).
+// The transfer comes with 7.2: any other `type=` is "Not found", and so is the page for a user who
+// may use the type in no branch (Principal, Finance, a Manager with ISSUE_STOCK, RETURN_REVERSE or
+// WRITE_OFF_COUNT off, any Manager for a direct entry; 03 rule 1). The branch is prefilled when the user may use one branch, else
 // from the branch view; the form is keyed by it, so a change of the branch view (BranchSelect,
 // which asks first while the form has unsaved changes) brings a fresh form without the old
 // branch's lines.
@@ -35,6 +40,7 @@ const BRANCHES = {
   ISSUE: issueBranchChoices,
   RETURN: returnBranchChoices,
   DIRECT_ENTRY: directEntryBranchChoices,
+  WRITE_OFF: writeOffBranchChoices,
 } as const;
 
 const isType = (value: string | undefined): value is keyof typeof BRANCHES =>
@@ -71,6 +77,24 @@ export default async function NewDocumentPage({ searchParams }: { searchParams: 
           branches={branches}
           initialBranchId={initialBranchId}
           today={today}
+        />
+      </div>
+    );
+  }
+
+  if (raw === "WRITE_OFF") {
+    const t = await getTranslations("warehouse.writeOff");
+    return (
+      <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
+        <h1 className="text-[28px] leading-[34px] font-bold tracking-[-0.01em]">{t("title")}</h1>
+        <WriteOffForm
+          key={initialBranchId}
+          branches={branches}
+          initialBranchId={initialBranchId}
+          today={today}
+          // The Head's own write-off is posted at once (plan of 5.11, decided item 1); the server
+          // decides it the same way, this only words the confirmation.
+          postsAtOnce={user.role === "HEAD"}
         />
       </div>
     );

@@ -27,6 +27,12 @@ import { useFormatters } from "@/i18n/use-formatters";
 // comment (review of the plan, correction 1). The confirm button is the danger kind: a reverse
 // cannot be undone. Not a create, so no client key: a second press is refused as `wrong_status`.
 
+/** The sentence of the result: a return leaves stock again, a write-off comes back (plan of 5.11). */
+function resultKey(type: ReversePreview["type"]): "ISSUE" | "RETURN" | "WRITE_OFF" {
+  if (type === "RETURN" || type === "WRITE_OFF") return type;
+  return "ISSUE";
+}
+
 export function ReverseDocumentButton({
   documentId,
   number,
@@ -107,7 +113,7 @@ export function ReverseDocumentButton({
         confirmDisabled={preview === null || !isMoveReason(reason)}
         text={{
           title: t("title", { number }),
-          result: preview ? t(`result.${preview.type === "RETURN" ? "RETURN" : "ISSUE"}`) : "",
+          result: preview ? t(`result.${resultKey(preview.type)}`) : "",
           confirm: t("button"),
           danger: true,
         }}
