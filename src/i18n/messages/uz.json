@@ -2291,5 +2291,81 @@
         "actions": "Amallar"
       }
     }
+  },
+  "analytics": {
+    "title": "Tahlil",
+    "refreshed": "Jamlanma {time} da yangilandi",
+    "refreshing": "Jamlanma tayyorlanmoqda. Raqamlar 5 daqiqa ichida chiqadi.",
+    "filters": "Filtrlar",
+    "apply": "Koʻrsatish",
+    "reset": "Tozalash",
+    "period": "Davr",
+    "periods": {
+      "this_month": "Shu oy",
+      "last_month": "Oʻtgan oy",
+      "this_quarter": "Shu chorak",
+      "school_year": "Shu oʻquv yili",
+      "custom": "Oʻz sanalarim"
+    },
+    "from": "Dan",
+    "to": "Gacha",
+    "branch": "Filial",
+    "allBranches": "Barcha filiallarim",
+    "category": "Turkum",
+    "allCategories": "Barcha turkumlar",
+    "department": "Boʻlim",
+    "allDepartments": "Barcha boʻlimlar",
+    "manager": "Menejer",
+    "allManagers": "Barcha menejerlar",
+    "supplier": "Yetkazib beruvchi",
+    "allSuppliers": "Barcha yetkazib beruvchilar",
+    "inactive": "{name} (nofaol)",
+    "departmentOption": "{name}, {branch}",
+    "periodLine": "{first} – {last}",
+    "monthLabel": "{month} {year}",
+    "excel": "Excel",
+    "change": {
+      "up": "Oldingi davrga nisbatan +{amount} (+{percent} %)",
+      "down": "Oldingi davrga nisbatan −{amount} (−{percent} %)",
+      "same": "Oldingi davrga nisbatan oʻzgarish yoʻq",
+      "upFromNothing": "Oldingi davrga nisbatan +{amount}, unda hech narsa yoʻq edi"
+    },
+    "spending": {
+      "title": "Xarajatlar",
+      "total": "Davrda sarflangan",
+      "byMonth": "Oylar boʻyicha",
+      "byCategory": "Turkumlar boʻyicha",
+      "empty": "Bu davrda ham, oldingi davrda ham hech narsa sotib olinmagan.",
+      "columns": {
+        "month": "Oy",
+        "category": "Turkum",
+        "amount": "Sarflangan",
+        "change": "Oʻzgarish"
+      },
+      "open": "Raqam ortidagi yozuvlarni koʻrsatish: {what}"
+    },
+    "records": {
+      "title": "Raqam ortidagi yozuvlar",
+      "back": "Tahlilga qaytish",
+      "period": "Barcha xarajatlar, {first} – {last}",
+      "month": "{month}: {first} – {last}",
+      "category": "{name}, {first} – {last}",
+      "summary": "{count} ta yozuv, jami {total}",
+      "empty": "Bu raqamga hech qanday yozuv kirmaydi.",
+      "noSupplier": "Yetkazib beruvchisiz",
+      "columns": {
+        "order": "Buyurtma",
+        "product": "Mahsulot",
+        "branch": "Filial",
+        "date": "Xarid sanasi",
+        "supplier": "Yetkazib beruvchi",
+        "amount": "Haqiqiy summa"
+      }
+    },
+    "sheets": {
+      "months": "Oylar boʻyicha xarajatlar",
+      "categories": "Turkumlar boʻyicha xarajatlar",
+      "records": "Yozuvlar"
+    }
   }
 }

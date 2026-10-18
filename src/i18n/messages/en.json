@@ -2291,5 +2291,81 @@
         "actions": "Actions"
       }
     }
+  },
+  "analytics": {
+    "title": "Analytics",
+    "refreshed": "Summary updated at {time}",
+    "refreshing": "The summary is being prepared. Numbers appear within 5 minutes.",
+    "filters": "Filters",
+    "apply": "Show",
+    "reset": "Reset",
+    "period": "Period",
+    "periods": {
+      "this_month": "This month",
+      "last_month": "Last month",
+      "this_quarter": "This quarter",
+      "school_year": "This school year",
+      "custom": "Custom dates"
+    },
+    "from": "From",
+    "to": "To",
+    "branch": "Branch",
+    "allBranches": "All my branches",
+    "category": "Category",
+    "allCategories": "All categories",
+    "department": "Department",
+    "allDepartments": "All departments",
+    "manager": "Manager",
+    "allManagers": "All Managers",
+    "supplier": "Supplier",
+    "allSuppliers": "All suppliers",
+    "inactive": "{name} (inactive)",
+    "departmentOption": "{name}, {branch}",
+    "periodLine": "{first} – {last}",
+    "monthLabel": "{month} {year}",
+    "excel": "Excel",
+    "change": {
+      "up": "+{amount} (+{percent} %) against the period before",
+      "down": "−{amount} (−{percent} %) against the period before",
+      "same": "No change against the period before",
+      "upFromNothing": "+{amount} against the period before, which had none"
+    },
+    "spending": {
+      "title": "Spending",
+      "total": "Spent in the period",
+      "byMonth": "By month",
+      "byCategory": "By category",
+      "empty": "Nothing was bought in this period, and nothing in the period before.",
+      "columns": {
+        "month": "Month",
+        "category": "Category",
+        "amount": "Spent",
+        "change": "Change"
+      },
+      "open": "Show the records behind {what}"
+    },
+    "records": {
+      "title": "Records behind the number",
+      "back": "Back to Analytics",
+      "period": "All spending, {first} – {last}",
+      "month": "{month}: {first} – {last}",
+      "category": "{name}, {first} – {last}",
+      "summary": "{count, plural, one {# record} other {# records}}, total {total}",
+      "empty": "No record makes up this number.",
+      "noSupplier": "No supplier",
+      "columns": {
+        "order": "Order",
+        "product": "Product",
+        "branch": "Branch",
+        "date": "Bought on",
+        "supplier": "Supplier",
+        "amount": "Actual total"
+      }
+    },
+    "sheets": {
+      "months": "Spending by month",
+      "categories": "Spending by category",
+      "records": "Records"
+    }
   }
 }

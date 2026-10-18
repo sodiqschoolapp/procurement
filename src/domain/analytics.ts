@@ -163,7 +163,7 @@ export function monthBefore(month: MonthKey): MonthKey {
 export function monthsOf(range: DateRange): MonthKey[] {
   const months: MonthKey[] = [];
   const last = monthOf(range.last);
-  for (let month = monthOf(range.first); month <= last; ) {
+  for (let month = monthOf(range.first); month <= last;) {
     months.push(month);
     month = monthOf(shiftDays(businessMonth(`${month}-01`).last, 1));
   }

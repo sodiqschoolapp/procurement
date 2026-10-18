@@ -72,8 +72,7 @@ const schema = z
   })
   .refine(
     (value) => value.period !== "custom" || (value.from && value.to && value.from <= value.to),
-  )
-  .refine((value) => value.period === "custom" || (!value.from && !value.to));
+  );
 
 function keyOf(text: string): DrillKey | null {
   if (text === "period") return { kind: "period" };
@@ -90,8 +89,10 @@ export function parseAnalyticsParams(raw: Raw): AnalyticsParams | null {
   const single: Record<string, string> = {};
   for (const [name, value] of Object.entries(raw)) {
     // A name given twice is refused, not read one way here and another in a link.
-    if (Array.isArray(value) || value === undefined) return null;
-    single[name] = value;
+    if (Array.isArray(value)) return null;
+    // An empty field of the filter form is no filter.
+    if (value === undefined || value.trim() === "") continue;
+    single[name] = value.trim();
   }
   const parsed = schema.safeParse(single);
   if (!parsed.success) return null;
@@ -99,7 +100,11 @@ export function parseAnalyticsParams(raw: Raw): AnalyticsParams | null {
   const key = keyOf(value.key);
   if (!key) return null;
   return {
-    period: { choice: value.period, from: value.from ?? null, to: value.to ?? null },
+    // Dates left in the form beside another choice are not part of that period.
+    period:
+      value.period === "custom"
+        ? { choice: value.period, from: value.from ?? null, to: value.to ?? null }
+        : { choice: value.period, from: null, to: null },
     filters: {
       branch: value.branch === undefined || value.branch === "all" ? null : value.branch,
       category: value.category ?? null,
