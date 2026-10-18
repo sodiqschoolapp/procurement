@@ -62,26 +62,29 @@ export default async function AnalyticsApprovalsPage({
   const format = await getFormatters();
   const dates = { first: format.date(list.period.first), last: format.date(list.period.last) };
   const { key } = list;
-  const step = key.step ? t(`speed.step.${key.step}`) : t("approvals.allSteps");
+  const step =
+    key.kind !== "mine" && key.step ? t(`speed.step.${key.step}`) : t("approvals.allSteps");
   const what =
-    key.kind === "waiting"
-      ? t("approvals.waiting", {
-          step,
-          group: key.group ? t(`speed.group.${key.group}`) : t("approvals.allAges"),
-        })
-      : key.decision === null
-        ? t("approvals.stays", { step, ...dates })
-        : list.reason !== null
-          ? t("approvals.reason", {
-              decision: t(`approvals.decision.${key.decision}`),
-              reason: list.rows[0]?.reason ?? list.reason,
-              ...dates,
-            })
-          : t("approvals.decided", {
-              step,
-              decision: t(`approvals.decision.${key.decision}`),
-              ...dates,
-            });
+    key.kind === "mine"
+      ? t("approvals.mine", dates)
+      : key.kind === "waiting"
+        ? t("approvals.waiting", {
+            step,
+            group: key.group ? t(`speed.group.${key.group}`) : t("approvals.allAges"),
+          })
+        : key.decision === null
+          ? t("approvals.stays", { step, ...dates })
+          : list.reason !== null
+            ? t("approvals.reason", {
+                decision: t(`approvals.decision.${key.decision}`),
+                reason: list.rows[0]?.reason ?? list.reason,
+                ...dates,
+              })
+            : t("approvals.decided", {
+                step,
+                decision: t(`approvals.decision.${key.decision}`),
+                ...dates,
+              });
   const summary =
     key.kind === "waiting"
       ? t("approvals.summaryWaiting", { count: list.count })

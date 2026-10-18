@@ -49,6 +49,8 @@ export type SpendingRecords = {
   key: DrillKey;
   /** The category of a category key, by name. */
   categoryName: string | null;
+  /** The product of a product key, by name (plan of 6.5a, decided item 7). */
+  productName: string | null;
   count: number;
   total: bigint;
   /** Of a price key: the subtype, the quantity and the price of the records listed. */
@@ -100,14 +102,18 @@ async function recordsIn(
     if (filters.category && filters.category !== key.category) throw new PeriodRefusedError();
     scope = { ...filters, category: key.category };
   }
-  // The keys of Plan vs actual and Approval speed name no records (their lists are
-  // /analytics/orders and /analytics/approvals).
+  // The keys of Plan vs actual, Approval speed and the Principal's Orders and My approvals name
+  // no records (their lists are /analytics/orders, /analytics/approvals and
+  // /analytics/order-status).
   if (
     key.kind === "colour" ||
     key.kind === "overspent" ||
     key.kind === "saved" ||
     key.kind === "step" ||
-    key.kind === "waiting"
+    key.kind === "waiting" ||
+    key.kind === "status" ||
+    key.kind === "due" ||
+    key.kind === "mine"
   ) {
     throw new PeriodRefusedError();
   }
@@ -126,7 +132,12 @@ async function recordsIn(
             and analytics_spending.variant_id = ${key.variant}
             and analytics_spending.unit_price > 0
             ${key.noSupplier ? sql`and analytics_spending.supplier_id is null` : sql``}`
-      : spendingWhere(actor, range, scope);
+      : key.kind === "product"
+        ? // Every subtype of the product, as "top 10 products" adds them (decided item 7).
+          sql`${spendingWhere(actor, range, scope)}
+            and analytics_spending.variant_id in
+              (select id from product_variants where product_id = ${key.product})`
+        : spendingWhere(actor, range, scope);
   // A payment type's list holds the records with a part of that type, each with that part, so
   // its total is the slice clicked (plan of 6.4, decided item 2, Look first).
   const part =
@@ -162,6 +173,11 @@ async function recordsIn(
           sql`select name from categories where id = ${key.category}`,
         )
       : null;
+  const product =
+    key.kind === "product"
+      ? await db.execute<{ name: string }>(sql`select name from products where id = ${key.product}`)
+      : null;
+  if (product && !product.rows[0]) throw new PeriodRefusedError();
   const pageNumber = page === "all" ? 1 : page;
   const limit =
     page === "all"
@@ -203,6 +219,7 @@ async function recordsIn(
     range,
     key,
     categoryName: category?.rows[0]?.name ?? null,
+    productName: product?.rows[0]?.name ?? null,
     count: Number(summary.rows[0]!.count),
     total: BigInt(summary.rows[0]!.total),
     price: subtype?.rows[0]
