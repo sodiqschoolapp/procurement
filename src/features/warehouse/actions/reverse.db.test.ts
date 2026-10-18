@@ -101,6 +101,22 @@ async function issued(lines: { variantId: string; qty: string }[], createdBy = m
   });
 }
 
+/** A POSTED direct entry by the Head at 2 000 so'm a unit. */
+async function enteredDirectly(variantId: string, qty: string) {
+  return db.transaction((tx) =>
+    createDocument(tx, {
+      type: "DIRECT_ENTRY",
+      branchId: branch.id,
+      docDate: "2031-05-03",
+      status: "POSTED",
+      reason: "EXISTING_STOCK",
+      clientKey: randomUUID(),
+      createdBy: head,
+      lines: [{ variantId, qty, unitCost: 2000n }],
+    }),
+  );
+}
+
 describe("reverseStockDocument (09 Movement types, last paragraph; Issue to a department 3)", () => {
   it("reversing an issue brings the stock back, one REVERSAL per line at its own cost, and marks it Reversed with who, when and why (Done when 1)", async () => {
     const pens = await goods();
@@ -238,25 +254,68 @@ describe("reverseStockDocument (09 Movement types, last paragraph; Issue to a de
     expect((await balanceOf(pens))!.qty).toBe("5.000");
   });
 
-  it("the Head is refused on a posted direct entry: no type but an issue or a return yet (Decided ahead, question 19; permission review of 5.7, should-fix 2)", async () => {
+  it("the Head reverses a direct entry: the stock goes back, it is Reversed, and one audit row is written (09 Direct entry 3; question 19; plan of 5.8, decided item 3)", async () => {
     const pens = await goods();
-    const entry = await db.transaction((tx) =>
-      createDocument(tx, {
-        type: "DIRECT_ENTRY",
-        branchId: branch.id,
-        docDate: "2031-05-03",
-        status: "POSTED",
-        reason: "EXISTING_STOCK",
-        clientKey: randomUUID(),
-        createdBy: head,
-        lines: [{ variantId: pens, qty: "3", unitCost: 2000n }],
-      }),
-    );
-    expect((await balanceOf(pens))!.qty).toBe("3.000");
+    await receive(branch.id, pens, "2", 1000n, head);
+    const entry = await enteredDirectly(pens, "3");
+    expect(await balanceOf(pens)).toEqual({ qty: "5.000", avg_cost: "1600" });
+
     const result = await reverse(entry.documentId, head);
+    expect(result).toEqual({
+      ok: true,
+      data: { documentId: entry.documentId, number: entry.number },
+    });
+    expect(await balanceOf(pens)).toEqual({ qty: "2.000", avg_cost: "1000" });
+    expect(await documentOf(entry.documentId)).toMatchObject({
+      status: "REVERSED",
+      reversed_by: head,
+      reverse_reason: REASON,
+    });
+    const audits = await db.execute<{ action: string; actor_id: string; after: unknown }>(sql`
+      select action, actor_id, after from audit_log
+      where entity_id = ${entry.documentId} and action = 'direct_entry.reverse'`);
+    expect(audits.rows).toEqual([
+      {
+        action: "direct_entry.reverse",
+        actor_id: head,
+        after: { number: entry.number, status: "REVERSED", reason: REASON },
+      },
+    ]);
+  });
+
+  it("a direct entry whose items were issued meanwhile is not reversed below zero; nothing saved", async () => {
+    const pens = await goods();
+    const entry = await enteredDirectly(pens, "3");
+    await issued([{ variantId: pens, qty: "2" }]);
+    expect((await balanceOf(pens))!.qty).toBe("1.000");
+    const result = await reverse(entry.documentId, head);
+    expect(result).toMatchObject({ ok: false, error: { code: "invalid_input" } });
+    expect((await documentOf(entry.documentId)).status).toBe("POSTED");
+    expect((await balanceOf(pens))!.qty).toBe("1.000");
+    expect(await reversalsOf(entry.documentId)).toEqual([]);
+  });
+
+  it("a Manager of the branch with RETURN_REVERSE on is refused on a direct entry: forbidden, nothing saved (question 19: the Head only)", async () => {
+    const pens = await goods();
+    const entry = await enteredDirectly(pens, "3");
+    const result = await reverse(entry.documentId, manager);
     expect(result.ok ? null : result.error.code).toBe("forbidden");
     expect((await documentOf(entry.documentId)).status).toBe("POSTED");
     expect((await balanceOf(pens))!.qty).toBe("3.000");
+    // The same Manager reverses an issue of their own beside it: the right is on.
+    const own = await issued([{ variantId: pens, qty: "1" }]);
+    expect(await reverse(own.documentId, manager)).toMatchObject({ ok: true });
+  });
+
+  it("reversing an issue writes no audit row (plan of 5.7, decided item 5)", async () => {
+    const pens = await goods();
+    await receive(branch.id, pens, "3", 1000n, head);
+    const own = await issued([{ variantId: pens, qty: "1" }]);
+    expect(await reverse(own.documentId, manager)).toMatchObject({ ok: true });
+    const audits = await db.execute(
+      sql`select 1 from audit_log where entity_id = ${own.documentId}`,
+    );
+    expect(audits.rows).toEqual([]);
   });
 
   it("an unknown document is Not found", async () => {

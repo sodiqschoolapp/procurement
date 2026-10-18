@@ -109,6 +109,12 @@ export const SERVER_ACTIONS: Record<string, Entry> = {
     "stock.return_reverse",
   "src/app/(app)/warehouse/documents/new/actions.ts#searchReturnItemsAction":
     "stock.return_reverse",
+  // Direct entry by the Head (plan of 5.8): stock.enter_direct on the branch
+  // (direct-entry-matrix.db.test.ts).
+  "src/app/(app)/warehouse/documents/new/actions.ts#enterStockDirectlyAction":
+    "stock.enter_direct",
+  "src/app/(app)/warehouse/documents/new/actions.ts#searchDirectEntryItemsAction":
+    "stock.enter_direct",
   // Reverse an issue or a return (plan of 5.7): stock.return_reverse on the document's branch,
   // then its creator or the Head (reverse-matrix.db.test.ts).
   "src/app/(app)/warehouse/items/[id]/actions.ts#reverseStockDocumentAction":
@@ -237,6 +243,10 @@ export const QUERIES: Record<string, Permission> = {
   "src/features/warehouse/queries/issue-form.ts#issueBranchChoices": "stock.issue",
   "src/features/warehouse/queries/issue-form.ts#issueFormChoices": "stock.issue",
   "src/features/warehouse/queries/issue-form.ts#searchIssueItems": "stock.issue",
+  "src/features/warehouse/queries/direct-entry-form.ts#directEntryBranchChoices":
+    "stock.enter_direct",
+  "src/features/warehouse/queries/direct-entry-form.ts#searchDirectEntryItems":
+    "stock.enter_direct",
   "src/features/warehouse/queries/return-form.ts#returnBranchChoices": "stock.return_reverse",
   "src/features/warehouse/queries/return-form.ts#returnFormChoices": "stock.return_reverse",
   "src/features/warehouse/queries/return-form.ts#searchReturnItems": "stock.return_reverse",
