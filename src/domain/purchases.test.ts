@@ -11,6 +11,7 @@ import {
   actualQuantity,
   actualTotal,
   actualUnitPrice,
+  unitPriceOf,
   buyingActions,
   buyingRefusal,
   type BuyingOrder,
@@ -310,6 +311,32 @@ describe("actualUnitPrice (05 Download 1, actual price; plan of 3.5, decided ite
     expect(actualUnitPrice([record("1", 4_501n), record("1", 9_999n, [], true)])).toBe(4_501n);
     expect(actualUnitPrice([])).toBeNull();
     expect(actualUnitPrice([record("10", 5_000n, [], true)])).toBeNull();
+  });
+});
+
+describe("unitPriceOf (plan of 6.4b, decided item 1; review of the plan, correction 1)", () => {
+  it("is goods ÷ quantity, rounded once half up: 12 000 for 2 is 6 000, 9 001 for 2 is 4 501", () => {
+    expect(unitPriceOf(12_000n, "2")).toBe(6_000n);
+    expect(unitPriceOf(9_001n, "2")).toBe(4_501n);
+    expect(unitPriceOf(9_000n, "2.5")).toBe(3_600n);
+  });
+
+  it("divides exactly: 10 000 for 3 is 3 333, 20 000 for 3 is 6 667", () => {
+    expect(unitPriceOf(10_000n, "3")).toBe(3_333n);
+    expect(unitPriceOf(20_000n, "3")).toBe(6_667n);
+  });
+
+  it("is null for no quantity and refuses a negative or a non-bigint", () => {
+    expect(unitPriceOf(0n, "0")).toBeNull();
+    expect(() => unitPriceOf(-1n, "1")).toThrow(RangeError);
+    expect(() => unitPriceOf(1n, "-1")).toThrow(RangeError);
+    expect(() => unitPriceOf(1 as unknown as bigint, "1")).toThrow(RangeError);
+  });
+
+  it("gives actualUnitPrice() its result: 60 × 4 500 + 40 × 4 600 is 454 000 for 100", () => {
+    expect(unitPriceOf(454_000n, "100")).toBe(
+      actualUnitPrice([record("60", 4_500n), record("40", 4_600n)]),
+    );
   });
 });
 

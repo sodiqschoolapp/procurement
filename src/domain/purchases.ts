@@ -257,9 +257,24 @@ export function buyingActions(actor: Actor, list: readonly BuyingOrder[]): Buyin
  * (developer-rules.md rule 6); with one price it is that price. Null when nothing is received.
  */
 export function actualUnitPrice(records: readonly PurchaseRecord[]): bigint | null {
-  const qty = new Exact(actualQuantity(records));
-  if (qty.isZero()) return null;
-  const price = new Exact(actualGoods(records).toString()).div(qty);
+  return unitPriceOf(actualGoods(records), actualQuantity(records));
+}
+
+/**
+ * The price per unit of goods worth `goods` whole so'm for `qty` units: goods ÷ quantity, divided
+ * exactly and rounded once, half up (developer-rules.md rule 6). The one division of a unit price:
+ * actualUnitPrice() above and the Prices block of the Head's Analytics page, which adds the stored
+ * `actualGoods()` of each record and its quantity (plan of 6.4b, decided item 1, Look first;
+ * review of the plan, correction 1). Null for no quantity.
+ */
+export function unitPriceOf(goods: bigint, qty: string): bigint | null {
+  if (typeof goods !== "bigint" || goods < 0n) {
+    throw new RangeError("Goods are whole so'm (bigint), 0 or more.");
+  }
+  const units = new Exact(qty);
+  if (units.isNegative()) throw new RangeError(`A quantity is 0 or more, not ${qty}.`);
+  if (units.isZero()) return null;
+  const price = new Exact(goods.toString()).div(units);
   return BigInt(price.toDecimalPlaces(0, Exact.ROUND_HALF_UP).toFixed(0));
 }
 
