@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { eq, sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 
+import { getOrderPage } from "@/features/orders/queries/order-page";
 import { db } from "@/server/db/client";
 import { orderEvents, purchases } from "@/server/db/schema";
 import { runOrdersAction } from "@/server/order-action";
@@ -142,6 +143,29 @@ describe('recordPurchase with "Give straight to requester" (07 What saving a rec
       purchase: { id: record!.id },
       issue: { documentId: issues[0]!.id, number: issues[0]!.number },
     });
+  });
+
+  it("the order page's History reads the issue by its event: number and document, for the Principal of the branch too", async () => {
+    const scene = await opened();
+    const made = await order(scene);
+    expect((await trip(scene, [{ made, give: true }])).ok).toBe(true);
+    const [issue] = await issuesOf(scene.branch.id);
+    const principal = await insertUser("PRINCIPAL", { branches: [scene.branch.id] });
+    for (const reader of [scene.owner.id, principal.id]) {
+      const page = await getOrderPage(reader, made.id);
+      const event = page?.events.find((each) => each.type === "RECORD_PURCHASE");
+      expect(event?.issue).toEqual({ documentId: issue!.id, number: issue!.number });
+    }
+  });
+
+  it("the Head records a ticked trip, even on the order of a Manager with ISSUE_STOCK off; the issue is the Head's (03 matrix: Head any branch; rights never bind the Head)", async () => {
+    const scene = await opened();
+    await setManagerRight(scene.owner.id, "ISSUE_STOCK", false);
+    const made = await order(scene);
+    const head = await insertUser("HEAD");
+    expect((await trip(scene, [{ made, give: true }], head.id)).ok).toBe(true);
+    expect(await balanceOf(scene.branch.id, made.variantId)).toBe("0.000");
+    expect((await issuesOf(scene.branch.id)).map((each) => each.created_by)).toEqual([head.id]);
   });
 
   it("takes the order's requester name before the department's responsible person (decided item 4)", async () => {

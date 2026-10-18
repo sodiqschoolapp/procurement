@@ -9,7 +9,7 @@ import { db } from "@/server/db/client";
 import { runOrdersAction } from "@/server/order-action";
 import { postMovement } from "@/server/stock-ledger";
 
-import { insertBranch } from "../../../../../../../tests/helpers/branches";
+import { insertBranch, setManagerRight } from "../../../../../../../tests/helpers/branches";
 import {
   insertProduct,
   insertSubtypes,
@@ -179,11 +179,21 @@ describe("GET /warehouse/documents/[id]/note (09 Issue to a department 2)", () =
     const s = await scene();
     const principal = await insertUser("PRINCIPAL", { branches: [s.branch.id] });
     expect((await download(s.documentId, await signInAs(principal))).status).toBe(200);
+    // Export needs no Manager right (03 matrix "Export to Excel, download PDF, print").
+    const finance = await insertUser("FINANCE", { branches: [s.branch.id] });
+    expect((await download(s.documentId, await signInAs(finance))).status).toBe(200);
+    const switchedOff = await insertUser("MANAGER", { branches: [s.branch.id] });
+    await setManagerRight(switchedOff.id, "ISSUE_STOCK", false);
+    expect((await download(s.documentId, await signInAs(switchedOff))).status).toBe(200);
 
     expect((await download(s.documentId)).status).toBe(401);
     const elsewhere = await insertBranch();
     const stranger = await insertUser("MANAGER", { branches: [elsewhere.id] });
     expect((await download(s.documentId, await signInAs(stranger))).status).toBe(404);
+    for (const role of ["PRINCIPAL", "FINANCE"] as const) {
+      const outsider = await insertUser(role, { branches: [elsewhere.id] });
+      expect((await download(s.documentId, await signInAs(outsider))).status).toBe(404);
+    }
     expect((await download(randomUUID(), await signInAs(s.manager))).status).toBe(404);
     expect((await download("not-an-id", await signInAs(s.manager))).status).toBe(404);
   });

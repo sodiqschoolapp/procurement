@@ -1321,4 +1321,22 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - For 5.12: link the card's document number (`item-card.ts` already returns `documentNumber`; add the id).
 - An e2e that needs a receipt writes the purchase, the movement and the balance straight into the tables (`tests/e2e/item-card.spec.ts`).
 
-The next task is 5.4.
+## 5.4 Issue to a department and the issue note PDF (18.10.2026, pull request #94)
+
+**Built**
+- `issueStock` (`src/features/warehouse/actions/issue.ts`): `stock.issue` on the input's branch; branch active, date up to today, department active of the branch, active goods subtypes (products then subtypes FOR SHARE in id order), then `createDocument()` POSTED. A short line: `invalid_input`, `lines.<i>.qty: errors.field.stockShort` and `available` (new optional part of `ActionFailure`, `ActionError`'s third argument `stockLeft`).
+- "Give straight to requester": `giveToRequester` per line of `recordPurchase`; goods only, `stock.issue` too; one ISSUE per ticked record after the receipts, `client_key` = the record's id, receiver = requester name, else the department's responsible person; event payload `issue: { documentId, number }`, shown on the History tab with the note's link.
+- Queries `issueBranchChoices`, `issueFormChoices`, `searchIssueItems` (issue-form.ts), `getIssueNote` (issue-note.ts). `/warehouse/documents/new?type=ISSUE` (three phone steps), `GET /warehouse/documents/[id]/note` (A4 portrait PDF). "New issue" on Stock on hand.
+- `src/server/pdf.tsx`: fonts, logo, colours, `Letterhead`, shared by both PDFs. `BranchSelect` asks first while a form has unsaved changes.
+
+**Left out, and the task that brings it**
+- Reverse of an issue: 5.7. Return: 5.6. Documents list and the card's number as a link: 5.12. Manager home's "Issue from stock": 6.1.
+
+**What the next sessions must know**
+- For 5.6, 5.8, 5.11 and 7.2: copy `issue.ts`'s shape (create, `repeat` on `stock_documents.client_key`, refusals before `createDocument()`, `StockShortError` turned into the line's field with `stockLeft`).
+- For 5.6 to 7.2: `/warehouse/documents/new` answers only `type=ISSUE`; add each type there. The note route reads ISSUE only; a transfer note (7.2) reuses `src/server/pdf.tsx`.
+- For 5.7: the note already prints "Reversed" for a REVERSED issue.
+- For 5.10: an issue is where "Item reached its minimum stock" will be sent.
+- The texts say "department", never "requester" (`tests/notification-texts.test.ts` refuses "request").
+
+The next task is 5.6.

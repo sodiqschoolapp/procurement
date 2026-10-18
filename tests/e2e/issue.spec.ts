@@ -156,3 +156,17 @@ test("a Manager issues 3 of 10 to a department, downloads the issue note, and 7 
   await page.goto(`/warehouse/stock?q=${encodeURIComponent(seeded.tag)}`);
   await expect(page.getByRole("row").filter({ hasText: seeded.name })).toContainText("7");
 });
+
+test("the issue form is Not found for the Principal and Finance, and their Stock on hand has no New issue (03 matrix: Issue, return, transfer stock)", async ({
+  page,
+}) => {
+  for (const person of [E2E_ROLES.PRINCIPAL, E2E_ROLES.FINANCE]) {
+    await page.context().clearCookies();
+    await signIn(page, person);
+    await page.goto("/warehouse/stock");
+    await expect(page.getByRole("link", { name: uz.warehouse.stock.newIssue })).toHaveCount(0);
+    await page.goto("/warehouse/documents/new?type=ISSUE");
+    await expect(page.getByRole("heading", { name: uz.notFoundPage.title })).toBeVisible();
+    await expect(page.getByRole("heading", { name: texts.title })).toHaveCount(0);
+  }
+});

@@ -1849,6 +1849,33 @@ Choices made during the build:
 - The draft-wall test turns a purchased order into a DRAFT by a direct update: the schema allows it, so the test stays (plan review, decision 9).
 - The movement's change is shown signed: "+3" in, "-3" out (the formatter's minus).
 
+### 5.4 Issue to a department and the issue note PDF (18.10.2026)
+
+The plan's decisions as the plan review of 18.10.2026 confirmed them (corrections 1 to 3 applied), and those of the build. The Look first items come first.
+
+1. **Look first** (permission matrix). "Give straight to requester" needs `stock.issue` on the trip's branch as well as `purchase.record`: a Manager with `ISSUE_STOCK` off sees no tick, and a ticked save is `forbidden` with nothing saved (03 Manager rights: with it off "the Manager can view stock but not give items out").
+2. **Look first** (stock rule). A short line is refused as that line's field (`errors.field.stockShort`) with the amount left (`available`, set only after `authorize()` passed on the branch); the screen names the item from its own line. Several short lines: the first the ledger meets is named (09 Issue 1).
+3. **Look first** (stock rule). An issue takes only active subtypes of active goods products (04 rule 2); the tick's issue uses the subtype bought, which the purchase already checked.
+4. **Look first** (lock order). `issueStock` takes products FOR SHARE, then subtypes FOR SHARE in id order, before the ISS number; a ticked purchase takes subtypes FOR UPDATE, balances, then the ISS number. Two same-moment tests (same subtype; different subtypes, held at the counter) prove no deadlock.
+5. Received by is required on the form; the tick's receiver is the order's "Requested by", else the department's responsible person, else empty (the note prints "—").
+6. The date is any day up to today in Tashkent.
+7. One ISSUE per ticked record: dated the date bought, the record's quantity and subtype bought, the order's department (even if deactivated since), `created_by` the recorder, `client_key` the purchase record's id.
+8. At most 100 lines (`ISSUE_LINES_MAX`); each subtype once.
+9. The note is `GET /warehouse/documents/[id]/note`: `data.view`'s branch filter in the SQL, then `data.export` on its branch; a Principal or Finance user of the branch may download it.
+10. No confirmation dialog for an issue (11 rule 6 does not list it; 5.7 reverses).
+11. "New issue" is a button in the header of Stock on hand; the Manager home button is 6.1's.
+12. The PDF parts moved to `src/server/pdf.tsx`; the fonts stay in `src/features/orders/download/fonts` (the Dockerfile copies that folder).
+13. No notification and no audit row for an issue (the minimum notice is 5.10's).
+14. An issue in an inactive branch is refused (`branchInactive`).
+15. The note is A4 portrait: five columns, a few lines.
+
+Choices made during the build:
+
+- The tick's texts say "department" ("Give straight to the department"), not "requester": the text rule of build plan 2.1 (`tests/notification-texts.test.ts`) refuses the word "request" in every language; Russian keeps "заказчику".
+- `BranchSelect` asks before a switch while any form on the page has unsaved changes (`hasUnsavedChanges()`); the issue form is keyed by the branch, so the old branch's lines leave on the switch.
+- `/warehouse/documents/new` answers only `type=ISSUE`; any other type is "Not found" until its task.
+- `issueBranchChoices` is tested by hand rather than by the matrix generator: a list without a branch is refused before any branch is read, so the generator's "other branch: Not found" does not apply.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.
