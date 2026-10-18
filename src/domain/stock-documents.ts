@@ -4,6 +4,9 @@
 // line writes and the movement that reverses it; the arithmetic of a movement stays in ./stock.ts
 // (developer-rules.md rule 1).
 
+import Decimal from "decimal.js";
+
+import { type QuantityRefusal, quantityRefusal } from "./drafts";
 import { orderNumber } from "./order-numbers";
 import { QUANTITY } from "./order-totals";
 import type { StockMovement } from "./stock";
@@ -126,4 +129,26 @@ export function reversalOf(movement: { qtyDelta: string; unitCost: bigint }): St
     ? movement.qtyDelta.slice(1)
     : `-${movement.qtyDelta}`;
   return { type: "REVERSAL", qtyDelta, unitCost: movement.unitCost };
+}
+
+/** At most this many lines on one issue (plan of 5.4, decided item 7). */
+export const ISSUE_LINES_MAX = 100;
+
+/** A stock as stored, compared exactly (numeric(14,3) text, 0 or more). */
+const Stock = Decimal.clone({ precision: 64, rounding: Decimal.ROUND_HALF_UP });
+
+/**
+ * What is wrong with a typed issue quantity (09 Issue to a department 1: "Quantity cannot be more
+ * than the stock"; edge case "Half a piece"): the quantity rules of ./drafts.ts, then more than
+ * the stock shown (`stockShort`). Equal to the stock is allowed. The screen asks this as it types;
+ * the server's own check is the ledger's, under the lock (src/server/stock-ledger.ts).
+ */
+export function issueQuantityRefusal(
+  text: string | null | undefined,
+  allowsDecimals: boolean,
+  inStock: string,
+): QuantityRefusal | "stockShort" | null {
+  const refusal = quantityRefusal(text, allowsDecimals);
+  if (refusal) return refusal;
+  return new Stock((text ?? "").trim()).gt(new Stock(inStock)) ? "stockShort" : null;
 }

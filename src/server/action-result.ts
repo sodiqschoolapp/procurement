@@ -155,6 +155,12 @@ export type ActionFailure = {
    * order of ORDER_REFUSAL_CODES, that any order has.
    */
   orders?: readonly OrderFailure[];
+  /**
+   * For a `stockShort` field: the amount left of that line's item, by the same path, numeric(14,3)
+   * text (09 Issue to a department 1: the server "names the item and the available amount"; plan of
+   * 5.4, decided item 2, Look first). Set only after the action's authorize() passed on the branch.
+   */
+  available?: Record<string, string>;
 };
 
 export type ActionResult<T> = { ok: true; data: T } | { ok: false; error: ActionFailure };
@@ -163,10 +169,12 @@ export function failure(
   code: ActionErrorCode,
   fields?: Record<string, FieldMessageKey>,
   orders?: readonly OrderFailure[],
+  available?: Record<string, string>,
 ): { ok: false; error: ActionFailure } {
   const error: ActionFailure = { code, messageKey: ERROR_MESSAGE_KEYS[code] };
   if (fields) error.fields = fields;
   if (orders) error.orders = orders;
+  if (available) error.available = available;
   return { ok: false, error };
 }
 

@@ -4,6 +4,7 @@ import {
   DOCUMENT_PREFIX,
   DOCUMENT_TYPES,
   documentNumber,
+  issueQuantityRefusal,
   lineMovement,
   reversalOf,
 } from "./stock-documents";
@@ -108,5 +109,26 @@ describe("reversalOf (09 Movement types, last paragraph; plan of 5.1, decided it
       qtyDelta: "-5.250",
       unitCost: 300n,
     });
+  });
+});
+
+describe('issueQuantityRefusal (09 Issue to a department 1; edge case "Half a piece")', () => {
+  it("allows up to the stock shown, the stock itself included", () => {
+    expect(issueQuantityRefusal("3", false, "10")).toBeNull();
+    expect(issueQuantityRefusal("10", false, "10.000")).toBeNull();
+    expect(issueQuantityRefusal("2.5", true, "2.500")).toBeNull();
+  });
+
+  it("refuses one past the stock", () => {
+    expect(issueQuantityRefusal("11", false, "10")).toBe("stockShort");
+    expect(issueQuantityRefusal("2.501", true, "2.5")).toBe("stockShort");
+    expect(issueQuantityRefusal("1", false, "0")).toBe("stockShort");
+  });
+
+  it("asks the quantity rules first: half a piece, 0, empty, too many decimals", () => {
+    expect(issueQuantityRefusal("0.5", false, "10")).toBe("wholeOnly");
+    expect(issueQuantityRefusal("0", false, "10")).toBe("tooSmall");
+    expect(issueQuantityRefusal(" ", false, "10")).toBe("required");
+    expect(issueQuantityRefusal("1.2345", true, "10")).toBe("tooManyDecimals");
   });
 });
