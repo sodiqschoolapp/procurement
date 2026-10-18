@@ -1526,4 +1526,21 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - Tests: `bought()` takes `progress`, `paymentType`, typed extras and the plan; `recordOn()` adds a record to an order; `buyingEvent()` writes the event an outcome's day is read from.
 - An Excel total names its column when the money column is not the last plain money one (`total.column`); an empty table keeps its label.
 
-The next task is 6.4b.
+## 6.4b Analytics: Head, Prices and Approval speed (18.10.2026, pull request #106)
+
+**Built**
+- Migration 0038: `analytics_spending` gains `variant_id` (the subtype bought), `qty`, `unit_price`, `goods` (`actualGoods()` of the record) and `created_at`; `analytics_steps`, one row per stay at an approval step (decided or open), both rewritten by `refreshAnalytics()`. The migration clears the derived rows and the job's `last_finished_at`.
+- Domain: `unitPriceOf()` (purchases.ts, shared with `actualUnitPrice()`), `approvalStays()` (approval-stays.ts), `averageHours()`, `WAITING_GROUPS`/`waitingGroup()`, `reasonKey()`, `priceRiseSince()` (analytics.ts).
+- Queries `getPrices()`, `getPriceChoices()`, `getApprovalSpeed()`, `getApprovalOrders()`; `stepsWhere()` with the branch and draft walls; the price key on `/analytics/records`; `/analytics/approvals`; eight download blocks; the Prices and Approval speed blocks on the Head's page.
+
+**Left out, and the task that brings it**
+- Managers and Warehouse: 6.4c. The Principal's "my average time to decide" and the Manager's "share sent back, with reasons": 6.5. Page PDF: 6.7.
+
+**What the next sessions must know**
+- For 6.5: "My approvals" and "share sent back, with reasons" read `analytics_steps` under `stepsWhere()` (decisions by `decision`, reasons by `reason_key`); averages are `averageHours()` of a set's own Σ seconds and count, never a mean of means.
+- For 6.4c and 6.5: a price is `unitPriceOf(Σ goods, Σ qty)` of `analytics_spending` rows with `unit_price > 0`; SQL adds, the domain divides.
+- `spendingWhere()` and `stepsWhere()` always return SQL (`true` when nothing filters); `spendingWhere(actor, null, …)` leaves the dates to the caller.
+- Tests: `decided()` and `movesOf()` in `tests/helpers/analytics.ts` write an order's approval history as the actions do.
+- The quantity formatter writes 2.0 as "2": hours read "2 soat", "2,3 soat".
+
+The next task is 6.4c.

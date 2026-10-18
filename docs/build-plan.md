@@ -482,7 +482,7 @@ What each role sees first, and the numbers behind the work.
   - **Build:** The Head's Spending block (total by month and by category as built in 6.3; branches side by side; by department; top 10 suppliers; split by payment type) and the Plan vs actual block (share of orders ending green, orange and red; total overspent and total saved; by branch and by Manager), each number with its drill-down and Excel export.
   - **Done when:** A database test checks one number of each of the two blocks against the seed. By hand: click a bar of the Head's page and see the orders behind it.
 
-- [ ] **6.4b Analytics: Head, Prices and Approval speed**
+- [x] **6.4b Analytics: Head, Prices and Approval speed**
   - **Read:** `10-notifications-analytics-reports.md` (Analytics page per role: Head, all branches); `16-build-order.md` (phase 6 row).
   - **Build:** The Prices block (price trend of any product; biggest price rises in the last 90 days; the same product bought at different prices by different branches or suppliers) and the Approval speed block (average hours at each step per branch; orders waiting now, by age; share sent back or rejected, with the most common reasons).
   - **Done when:** A database test checks one number of each of the two blocks against the seed.
