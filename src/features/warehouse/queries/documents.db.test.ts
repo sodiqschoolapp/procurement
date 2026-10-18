@@ -6,7 +6,7 @@ import { runAction } from "@/server/action";
 import { AuthorizationError } from "@/server/authorize";
 
 import { insertBranch } from "../../../../tests/helpers/branches";
-import { setClock } from "../../../../tests/helpers/clock";
+import { advanceClock, setClock } from "../../../../tests/helpers/clock";
 import { insertDepartment, insertItem } from "../../../../tests/helpers/orders";
 import { postDocument, receive } from "../../../../tests/helpers/stock-documents";
 import { insertUser } from "../../../../tests/helpers/users";
@@ -112,6 +112,9 @@ describe("listStockDocuments: the filters (09 Stock screens: Documents)", () => 
     const s = await scene();
     const issue = await issueOn(s, "2031-05-10", s.science.id);
     const head = await insertUser("HEAD");
+    // The clock is frozen by issueOn(): the entry is made a minute later, so "the later made
+    // first" is decided by created_at, not by the random ids of a tie.
+    advanceClock({ minutes: 1 });
     const entry = await runAction(enterStockDirectly, head.id, {
       clientKey: randomUUID(),
       branchId: s.branch.id,
