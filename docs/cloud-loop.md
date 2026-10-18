@@ -162,8 +162,15 @@ needed: the loop may not loosen its own rules. The three exceptions are in the
 skill's Rules: added check lines in .claude/agents and .claude/rules, added
 Commands lines of CLAUDE.md, and a CI workflow the task's Build line on main asks
 for (never routines.yml, never a loosening).
-Post the verdict as a comment that starts with [review] and names the head sha
-you read ([review] approved at <sha>), and set the label. A verdict that needs
+Before reviewing a plan or code, claim the commit as the skill says: post nothing
+and stop when a "Reviewing <sha>." for this head sha is younger than 30 minutes
+with no [review] after it; otherwise post "Reviewing <sha>." and stop when an
+earlier claim for the same sha appears. Post the verdict as a comment that starts
+with [review] and names the head sha you read ([review] approved at <sha>), and
+set the label. When another run's verdict at the same sha came first, post yours
+only when it is stricter (changes needed or owner decision needed after approved
+or ready to merge); after a merge, post it as [review] changes needed after the
+merge at <sha> @abbosc. A verdict that needs
 the owner ([review] owner decision needed, [review] stuck after three rounds)
 carries @abbosc at the end of its first line, after the sha, and the label
 needs-owner. Count the [review] changes needed comments on the plan (posted
