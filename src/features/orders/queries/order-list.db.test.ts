@@ -23,6 +23,7 @@ import { type ListFilters, NO_FILTERS } from "../list-filters";
 import {
   listOrderFilterChoices,
   listOrderGroups,
+  orderTotalsOnFilter,
   selectAllOnFilter,
   tickedSummary,
 } from "./order-list";
@@ -807,5 +808,26 @@ describe("the three colours of orders, group rows and ticked orders (08 The thre
       price: { colour: "red", difference: -8_000n },
       total: { colour: "grey" },
     });
+  });
+});
+
+describe("orderTotalsOnFilter: the list's draft wall (06 Statuses; .claude/rules/tests.md, a numbered Draft; permission review of 6.1)", () => {
+  it("counts every listed order with no status filter; a colleague's numbered Draft of the same branch stays out", async () => {
+    const { branch, manager, base } = await scene();
+    const colleague = await insertUser("MANAGER", { branches: [branch.id] });
+    await order({ ...base, status: "PENDING_HEAD", plannedQty: "2.000" });
+    await order({ ...base, status: "PENDING_PRINCIPAL", plannedQty: "3.000" });
+    // Taken back: a Draft that keeps its number and its whole plan, in the same branch.
+    await order({
+      ...base,
+      ownerId: colleague.id,
+      status: "DRAFT",
+      number: `${branch.code}-26-0997`,
+      plannedQty: "5.000",
+    });
+    const found = await orderTotalsOnFilter(manager.id, filtered({ branch: branch.id }));
+    expect(found.count).toBe(2);
+    // 2 and 3 at 5 000 so'm (the helper's price): 25 000.
+    expect(found.totals.grand).toBe(25_000n);
   });
 });

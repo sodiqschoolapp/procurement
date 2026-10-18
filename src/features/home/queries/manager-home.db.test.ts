@@ -209,20 +209,27 @@ describe("cash I hold (08 Manager's cash balance; decided item 5)", () => {
 });
 
 describe("the three large buttons (11 Interface per role: Manager; 03 Manager rights; decided item 3)", () => {
-  it("the Manager's home loads with all three; RECORD_PURCHASES off takes Record purchase away", async () => {
+  it("the Manager's home loads with all three; each right switched off takes its own button away", async () => {
     setClock(AT);
-    const { me } = await scene();
-    expect((await getManagerHome(me.id, null)).buttons).toEqual({
-      newOrder: true,
-      recordPurchase: true,
-      issue: true,
-    });
-    await setManagerRight(me.id, "RECORD_PURCHASES", false);
-    expect((await getManagerHome(me.id, null)).buttons).toEqual({
-      newOrder: true,
-      recordPurchase: false,
-      issue: true,
-    });
+    const rights = [
+      ["CREATE_REQUESTS", "newOrder"],
+      ["RECORD_PURCHASES", "recordPurchase"],
+      ["ISSUE_STOCK", "issue"],
+    ] as const;
+    for (const [right, button] of rights) {
+      const { me } = await scene();
+      expect((await getManagerHome(me.id, null)).buttons).toEqual({
+        newOrder: true,
+        recordPurchase: true,
+        issue: true,
+      });
+      await setManagerRight(me.id, right, false);
+      expect((await getManagerHome(me.id, null)).buttons, right).toEqual({
+        newOrder: button !== "newOrder",
+        recordPurchase: button !== "recordPurchase",
+        issue: button !== "issue",
+      });
+    }
   });
 
   it("another branch's address is Not found (03 rule 1)", async () => {

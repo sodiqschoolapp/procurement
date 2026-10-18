@@ -188,6 +188,11 @@ describe("mayInSomeBranch(): the Manager home's three buttons (11 Interface per 
     }
   });
 
+  it("a switch never applies to the Head (03 Manager rights)", () => {
+    const head = actor("HEAD", { disabledRights: [...MANAGER_RIGHTS] });
+    for (const permission of BUTTONS) expect(mayInSomeBranch(permission, head)).toBe(true);
+  });
+
   it("a Manager without a branch may use none", () => {
     for (const permission of BUTTONS) {
       expect(mayInSomeBranch(permission, actor("MANAGER", { branchIds: [] }))).toBe(false);
