@@ -1,10 +1,16 @@
-import { expect } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import { AuthorizationError } from "@/server/authorize";
 
+import { insertBranch } from "../../../../tests/helpers/branches";
 import { insertOrder } from "../../../../tests/helpers/orders";
 import { describePermissionMatrix } from "../../../../tests/helpers/permission-matrix";
 import { insertUser } from "../../../../tests/helpers/users";
+import { ordersOnFilter } from "@/features/orders/queries/order-list";
+import { NO_FILTERS } from "@/features/orders/list-filters";
+
+import { getFinanceHome } from "./finance-home";
+import { getHeadHome } from "./head-home";
 import { getManagerHome } from "./manager-home";
 import { getPrincipalHome } from "./principal-home";
 
@@ -62,5 +68,80 @@ describePermissionMatrix("getPrincipalHome, the branch wall in the SQL", {
     expect(home.waiting.count).toBe(ids.length);
     expect(counted).toBe(ids.length);
     if (!ids.includes(order.id)) throw new AuthorizationError("not_found");
+  },
+});
+
+// The Head's and Finance's homes (plan of 6.2): each read under its own approval step, with the
+// order list's walls in the SQL.
+
+async function orderAt(branchId: string, status: "PENDING_HEAD" | "PENDING_FINANCE") {
+  const owner = await insertUser("MANAGER", { branches: [branchId] });
+  return insertOrder({ branchId, ownerId: owner.id, status });
+}
+
+describePermissionMatrix("getHeadHome", {
+  permission: "request.approve_step1",
+  async run({ user, branchId }) {
+    const order = await orderAt(branchId, "PENDING_HEAD");
+    const home = await getHeadHome(user.id, branchId);
+    const ids = home.waiting.groups.groups.flatMap((group) => group.orders.map((each) => each.id));
+    expect(ids).toEqual([order.id]);
+  },
+});
+
+describePermissionMatrix("getFinanceHome", {
+  permission: "request.approve_step3",
+  async run({ user, branchId }) {
+    const order = await orderAt(branchId, "PENDING_FINANCE");
+    const home = await getFinanceHome(user.id, branchId);
+    expect(home.approvals.map((entry) => [entry.ownerId, entry.count])).toEqual([
+      [order.ownerId, 1],
+    ]);
+  },
+});
+
+describe("getHeadHome and getFinanceHome with no branch chosen: the wall in the SQL (03 rule 1)", () => {
+  it("Finance of one branch sees nothing of another branch's waiting or settling orders; the Head sees both", async () => {
+    const a = await insertBranch();
+    const b = await insertBranch();
+    const finance = await insertUser("FINANCE", { branches: [a.id] });
+    const head = await insertUser("HEAD");
+    const mine = await orderAt(a.id, "PENDING_FINANCE");
+    const theirs = await orderAt(b.id, "PENDING_FINANCE");
+    const owner = await insertUser("MANAGER", { branches: [b.id] });
+    await insertOrder({ branchId: b.id, ownerId: owner.id, status: "SETTLEMENT" });
+    const home = await getFinanceHome(finance.id, null);
+    expect(home.approvals.map((entry) => entry.ownerId)).toEqual([mine.ownerId]);
+    expect(home.settlements).toEqual([]);
+    expect(theirs.ownerId).not.toBe(mine.ownerId);
+
+    const headA = await orderAt(a.id, "PENDING_HEAD");
+    const headB = await orderAt(b.id, "PENDING_HEAD");
+    const headHome = await getHeadHome(head.id, null);
+    const lines = headHome.waiting.lines.map((line) => line.branchId);
+    expect(lines).toEqual(expect.arrayContaining([a.id, b.id]));
+    expect(headA.id).not.toBe(headB.id);
+    for (const user of [finance, await insertUser("MANAGER", { branches: [a.id] })]) {
+      await expect(getHeadHome(user.id, null)).rejects.toBeInstanceOf(AuthorizationError);
+    }
+    await expect(getFinanceHome(head.id, null)).rejects.toBeInstanceOf(AuthorizationError);
+  });
+});
+
+describePermissionMatrix("ordersOnFilter", {
+  permission: "data.view",
+  async run({ user, branchId }) {
+    const order = await orderAt(branchId, "PENDING_HEAD");
+    const found = await ordersOnFilter(user.id, { ...NO_FILTERS, branch: branchId });
+    expect(found.map((each) => each.id)).toEqual([order.id]);
+  },
+});
+
+describePermissionMatrix("ordersOnFilter, the branch wall in the SQL", {
+  permission: "data.view",
+  async run({ user, branchId }) {
+    const order = await orderAt(branchId, "PENDING_HEAD");
+    const found = await ordersOnFilter(user.id, NO_FILTERS);
+    if (!found.some((each) => each.id === order.id)) throw new AuthorizationError("not_found");
   },
 });

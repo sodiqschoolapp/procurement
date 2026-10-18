@@ -225,10 +225,16 @@ export const QUERIES: Record<string, Permission> = {
   // The home pages' list numbers (plan of 6.1): the list's walls and filters in the SQL.
   "src/features/orders/queries/order-list.ts#orderTotalsOnFilter": "data.view",
   "src/features/orders/queries/order-list.ts#countOrdersByStatus": "data.view",
+  // The orders of a filter with their plans, for the Head's and Finance's homes (plan of 6.2).
+  "src/features/orders/queries/order-list.ts#ordersOnFilter": "data.view",
   // The Manager's and the Principal's home (plan of 6.1): data.view, own orders or the branch,
   // behind the order list's walls (src/features/home/queries/home-matrix.db.test.ts).
   "src/features/home/queries/manager-home.ts#getManagerHome": "data.view",
   "src/features/home/queries/principal-home.ts#getPrincipalHome": "data.view",
+  // The Head's and Finance's home (plan of 6.2): each under its own approval step, the overspends,
+  // write-offs and settlements also under their own rights, behind the list's walls.
+  "src/features/home/queries/head-home.ts#getHeadHome": "request.approve_step1",
+  "src/features/home/queries/finance-home.ts#getFinanceHome": "request.approve_step3",
   // The order list's download, Excel and PDF (plan of 2.14, decided item 4, Look first): data.export
   // with the list's own walls in the SQL (queries/order-download-matrix.db.test.ts).
   "src/features/orders/queries/order-list.ts#orderDownload": "data.export",

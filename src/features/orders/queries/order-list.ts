@@ -49,6 +49,7 @@ import {
   stuckBefore,
 } from "@/domain/order-steps";
 import {
+  type OrderPlan,
   type OrdersTotals,
   orderTotal,
   ordersTotals,
@@ -355,6 +356,89 @@ export async function listOrderGroups(
   );
 }
 
+/** One order of a filter with its plan: the home pages' entries (plan of 6.2). */
+export type FilterOrder = {
+  id: string;
+  number: string;
+  branchId: string;
+  branchCode: string;
+  branchIsActive: boolean;
+  ownerId: string;
+  ownerName: string;
+  productName: string;
+  /** The subtype's name; null for the hidden default subtype. */
+  subtypeName: string | null;
+  plan: OrderPlan;
+};
+
+/** Every order of the filter, no page, in the list's walls (the caller has authorized). */
+async function readFilterOrders(
+  db: Executor,
+  actor: Actor,
+  filters: ListFilters,
+): Promise<FilterOrder[]> {
+  const found = await db
+    .select({
+      id: orders.id,
+      number: orders.number,
+      branchId: orders.branchId,
+      branchCode: branches.code,
+      branchIsActive: branches.isActive,
+      ownerId: orders.ownerId,
+      ownerName: users.fullName,
+      productName: products.name,
+      variantName: productVariants.name,
+      variantIsDefault: productVariants.isDefault,
+      quantity: orders.plannedQty,
+      price: orders.plannedPrice,
+      paymentType: orders.paymentType,
+    })
+    .from(orders)
+    .innerJoin(branches, eq(branches.id, orders.branchId))
+    .innerJoin(users, eq(users.id, orders.ownerId))
+    .innerJoin(productVariants, eq(productVariants.id, orders.variantId))
+    .innerJoin(products, eq(products.id, productVariants.productId))
+    .where(await whereOf(db, actor, filters))
+    .orderBy(asc(branches.code), asc(users.fullName), asc(orders.ownerId), asc(counter));
+  const extras = await extrasOf(
+    db,
+    found.map((row) => row.id),
+  );
+  return found.map((row) => ({
+    id: row.id,
+    // Outside DRAFT the number and the plan are complete (`orders_submitted_plan_check`).
+    number: row.number!,
+    branchId: row.branchId,
+    branchCode: row.branchCode,
+    branchIsActive: row.branchIsActive,
+    ownerId: row.ownerId,
+    ownerName: row.ownerName,
+    productName: row.productName,
+    subtypeName: row.variantIsDefault ? null : row.variantName,
+    plan: {
+      quantity: row.quantity!,
+      price: row.price!,
+      extras: extras.get(row.id) ?? [],
+      paymentType: row.paymentType,
+    },
+  }));
+}
+
+/**
+ * Every order of the filter with its owner, branch and plan, no page: the Finance home's entries
+ * by owner and branch and the Head home's overspends (plan of 6.2). The list's walls and filters,
+ * under `data.view`.
+ */
+export async function ordersOnFilter(
+  userId: string,
+  filters: ListFilters,
+  executor?: Executor,
+): Promise<FilterOrder[]> {
+  return inSnapshot(executor, async (db) =>
+    readFilterOrders(db, await authorizeFilters(userId, filters, db), filters),
+  );
+}
+
 /**
  * How many orders the filter holds and their totals, ordersTotals() of every one of them, not of
  * one page: the Principal home's "waiting for my approval, with the total amount" (10 Home page
@@ -366,32 +450,8 @@ export async function orderTotalsOnFilter(
   executor?: Executor,
 ): Promise<{ count: number; totals: OrdersTotals }> {
   return inSnapshot(executor, async (db) => {
-    const actor = await authorizeFilters(userId, filters, db);
-    const found = await db
-      .select({
-        id: orders.id,
-        quantity: orders.plannedQty,
-        price: orders.plannedPrice,
-        paymentType: orders.paymentType,
-      })
-      .from(orders)
-      .where(await whereOf(db, actor, filters));
-    const extras = await extrasOf(
-      db,
-      found.map((row) => row.id),
-    );
-    return {
-      count: found.length,
-      // Outside DRAFT the plan is complete (`orders_submitted_plan_check`).
-      totals: ordersTotals(
-        found.map((row) => ({
-          quantity: row.quantity!,
-          price: row.price!,
-          extras: extras.get(row.id) ?? [],
-          paymentType: row.paymentType,
-        })),
-      ),
-    };
+    const found = await readFilterOrders(db, await authorizeFilters(userId, filters, db), filters);
+    return { count: found.length, totals: ordersTotals(found.map((row) => row.plan)) };
   });
 }
 
