@@ -244,6 +244,11 @@ export const QUERIES: Record<string, Permission> = {
   "src/features/analytics/queries/head-spending.ts#getHeadSpending": "data.view",
   "src/features/analytics/queries/plan-vs-actual.ts#getPlanVsActual": "data.view",
   "src/features/analytics/queries/outcome-orders.ts#getOutcomeOrders": "data.view",
+  // The Head's blocks of 6.4b: data.view, the walls in spendingWhere() and stepsWhere().
+  "src/features/analytics/queries/prices.ts#getPrices": "data.view",
+  "src/features/analytics/queries/prices.ts#getPriceChoices": "data.view",
+  "src/features/analytics/queries/approval-speed.ts#getApprovalSpeed": "data.view",
+  "src/features/analytics/queries/approval-orders.ts#getApprovalOrders": "data.view",
   // The order list's download, Excel and PDF (plan of 2.14, decided item 4, Look first): data.export
   // with the list's own walls in the SQL (queries/order-download-matrix.db.test.ts).
   "src/features/orders/queries/order-list.ts#orderDownload": "data.export",
