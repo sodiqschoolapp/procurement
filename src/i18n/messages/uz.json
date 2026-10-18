@@ -385,7 +385,7 @@
       "writeOffs": {
         "title": "Tasdiqlanadigan hisobdan chiqarishlar",
         "row": "{date} · {reason} · {name}",
-        "empty": "Hisobdan chiqarish so'rovi yo'q. Menejer so'ragan hisobdan chiqarish shu yerda chiqadi."
+        "empty": "Tasdiqlanadigan hisobdan chiqarish yo'q. Menejer yuborgan hisobdan chiqarish shu yerda chiqadi."
       },
       "suggestions": {
         "title": "Mahsulot takliflari",
