@@ -172,8 +172,8 @@ the label. When another run's verdict at the same sha came first, post yours onl
 on a ready pull request and only when it is stricter (changes needed or owner
 decision needed after ready to merge); after the merge, post it as
 [review] after the merge at <sha> @abbosc with the label needs-owner. A verdict
-that needs the owner ([review] owner decision needed, [review] stuck after three rounds)
-carries @abbosc at the end of its first line, after the sha, and the label
+that needs the owner ([review] owner decision needed, [review] stuck after three
+rounds) carries @abbosc at the end of its first line, after the sha, and the label
 needs-owner. Count the [review] changes needed comments on the plan (posted
 before the pull request was first marked ready) and on the code (posted after,
 leaving out the CI red ones) apart, by distinct head sha: when three of the same
