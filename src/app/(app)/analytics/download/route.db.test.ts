@@ -926,3 +926,121 @@ describe("GET /analytics/download, the Stock planning sheet (10 point 4; plan of
     expect(response.status).toBe(404);
   });
 });
+
+/**
+ * Finance's rows of a branch (build-plan 6.6a): an Open order given 30 000 on 4 October (held 11
+ * days: 8 to 30; 20 000 of its 50 000 still needed) and an order waiting at Finance (50 000 in
+ * approval), the summary refreshed.
+ */
+async function financeRowsIn(branchId?: string) {
+  setClock(AT);
+  const scene = await spendingScene(branchId);
+  const held = await bought(scene, { purchasedOn: "2031-10-02", unitPrice: "0" });
+  await moneyOn(held, scene.manager.id, { amount: 30_000n, occurredOn: "2031-10-04" });
+  const waiting = await decided(scene, "PENDING_FINANCE", []);
+  await refreshNow();
+  return { scene, held, waiting };
+}
+
+// The blocks of 6.6a (plan of 6.6a, Tests): every sheet of Finance's Cash and Cash needed soon,
+// and the lists behind them, behind the same wall.
+describePermissionMatrix("GET /analytics/download, the blocks of 6.6a behind the wall", {
+  permission: "data.export",
+  async run({ user, branchId }) {
+    const { scene, held, waiting } = await financeRowsIn(branchId);
+    const cookie = await signInAs(user);
+    const own = { ...NO_ANALYTICS_FILTERS, category: scene.category.id };
+    const texts = async (block: ExportBlock, extra: Parameters<typeof analyticsSearch>[2] = {}) =>
+      (
+        await sheetOf(
+          await GET(
+            downloadRequest(
+              `/analytics/download?${analyticsSearch(THIS_MONTH, own, { ...extra, block })}`,
+              cookie,
+            ),
+          ),
+        )
+      ).flat();
+    const seen = [
+      (await texts("financeCash")).includes(30_000),
+      (await texts("cashAges")).includes(30_000),
+      (await texts("cashNeeded")).includes(50_000),
+      (await texts("moneyRows", { key: { kind: "money", money: "given", month: null } })).includes(
+        held.number,
+      ),
+      (
+        await texts("neededOrders", {
+          key: { kind: "needed", stage: "approval", step: "PENDING_FINANCE" },
+        })
+      ).includes(waiting.number),
+      (await texts("cash", { key: { kind: "age", band: "month", side: "held" } })).includes(
+        held.number,
+      ),
+    ];
+    expect(seen).toEqual(seen.map(() => seen[0]));
+    if (!seen[0]) throw new AuthorizationError("not_found");
+  },
+});
+
+describe("GET /analytics/download, the 6.6a sheets (10 point 4; plan of 6.6a)", () => {
+  const get = async (
+    user: Parameters<typeof signInAs>[0],
+    filters: typeof NO_ANALYTICS_FILTERS,
+    block: ExportBlock,
+    extra: Parameters<typeof analyticsSearch>[2] = {},
+  ) =>
+    GET(
+      downloadRequest(
+        `/analytics/download?${analyticsSearch(THIS_MONTH, filters, { ...extra, block })}`,
+        await signInAs(user),
+      ),
+    );
+
+  it("writes the months, the bands, the needs and the lists with their totals", async () => {
+    const { scene, held, waiting } = await financeRowsIn();
+    const finance = await insertUser("FINANCE", { branches: [scene.branch.id] });
+    const own = { ...NO_ANALYTICS_FILTERS, branch: scene.branch.id };
+    const months = await sheetOf(await get(finance, own, "financeCash"));
+    // October: given 30 000, its change against September (nothing before), then returned and
+    // paid back 0; the period's line repeats it.
+    expect(months.at(-2)!.slice(1)).toEqual([30_000, 30_000, "", 0, 0, "", 0, 0, ""]);
+    expect(months.at(-1)!.slice(1)).toEqual([30_000, 30_000, "", 0, 0, "", 0, 0, ""]);
+    const ages = await sheetOf(await get(finance, own, "cashAges"));
+    expect(ages.slice(-3).map((row) => row.slice(1))).toEqual([
+      [0, 0, 0, 0],
+      [30_000, 1, 0, 0],
+      [0, 0, 0, 0],
+    ]);
+    const needed = await sheetOf(await get(finance, own, "cashNeeded"));
+    // Approved, the three steps, in approval, and the total of all.
+    expect(needed.slice(-6).map((row) => row[1])).toEqual([20_000, 0, 0, 50_000, 50_000, 70_000]);
+    const rows = await sheetOf(
+      await get(finance, own, "moneyRows", { key: { kind: "money", money: "given", month: null } }),
+    );
+    expect(rows.flat()).toContain(held.number);
+    expect(rows.at(-1)!.at(-1)).toBe(30_000);
+    const orders = await sheetOf(
+      await get(finance, own, "neededOrders", {
+        key: { kind: "needed", stage: "all", step: null },
+      }),
+    );
+    expect(orders.flat()).toEqual(expect.arrayContaining([held.number, waiting.number]));
+    expect(orders.at(-1)!.at(-1)).toBe(70_000);
+  });
+
+  it("is Not found for a list without its key, or another branch's filter (03 rule 1)", async () => {
+    const { scene } = await financeRowsIn();
+    const finance = await insertUser("FINANCE", { branches: [scene.branch.id] });
+    const other = await spendingScene();
+    const elsewhere = { ...NO_ANALYTICS_FILTERS, branch: other.branch.id };
+    for (const response of [
+      await get(finance, NO_ANALYTICS_FILTERS, "moneyRows"),
+      await get(finance, NO_ANALYTICS_FILTERS, "neededOrders"),
+      await get(finance, NO_ANALYTICS_FILTERS, "cash", { key: { kind: "mine" } }),
+      await get(finance, elsewhere, "financeCash"),
+      await get(finance, elsewhere, "cashNeeded"),
+    ]) {
+      expect(response.status).toBe(404);
+    }
+  });
+});

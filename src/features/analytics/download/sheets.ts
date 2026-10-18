@@ -1447,7 +1447,7 @@ export function cashNeededSheet(
       ...block.steps.map((step) => line(`  ${tRoot(`requestStatus.${step.step}`)}`, step)),
       line(t("finance.needed.approval"), block.approval),
     ],
-    total: { label: t("finance.needed.all"), amount: block.all.amount, column: 1 },
+    total: { label: t("finance.needed.all"), amount: block.all.amount },
   };
 }
 

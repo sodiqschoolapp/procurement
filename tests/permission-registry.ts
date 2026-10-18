@@ -269,6 +269,12 @@ export const QUERIES: Record<string, Permission> = {
   "src/features/analytics/queries/my-cash.ts#getMyCash": "data.view",
   // The Manager's Stock planning of 6.5c: data.view, the walls in stockWhere() and movesWhere().
   "src/features/analytics/queries/stock-planning.ts#getStockPlanning": "data.view",
+  // Finance's Cash and Cash needed soon of 6.6a and their lists: data.view, the walls in
+  // moneyWhere(), neededWhere() and cashWhere().
+  "src/features/analytics/queries/finance-cash.ts#getFinanceCash": "data.view",
+  "src/features/analytics/queries/cash-needed.ts#getCashNeeded": "data.view",
+  "src/features/analytics/queries/money-rows.ts#getMoneyRows": "data.view",
+  "src/features/analytics/queries/needed-orders.ts#getNeededOrders": "data.view",
   // The order list's download, Excel and PDF (plan of 2.14, decided item 4, Look first): data.export
   // with the list's own walls in the SQL (queries/order-download-matrix.db.test.ts).
   "src/features/orders/queries/order-list.ts#orderDownload": "data.export",
