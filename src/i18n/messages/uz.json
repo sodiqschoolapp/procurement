@@ -317,7 +317,77 @@
         "line": "Bu yerda tasdiqingizni kutayotgan buyurtmalar, hisob-kitob kutayotgan buyurtmalar va menejerlardagi pul chiqadi."
       }
     },
-    "suggest": "Tovar taklif qilish"
+    "suggest": "Tovar taklif qilish",
+    "showAll": "Hammasini koʻrsatish ({count})",
+    "openList": "Buyurtmalar roʻyxatida ochish",
+    "orders": "{count, plural, other {# ta buyurtma}}",
+    "manager": {
+      "buttons": {
+        "newOrder": "Yangi buyurtma",
+        "recordPurchase": "Xaridni yozish",
+        "issue": "Ombordan berish"
+      },
+      "sentBack": {
+        "title": "Menga qaytarilganlar",
+        "empty": "Sizga qaytarilgan buyurtma yoʻq. Tasdiqlovchining oʻzgartirish soʻrovi shu yerda chiqadi."
+      },
+      "drafts": {
+        "title": "Qoralamalarim",
+        "count": "{count, plural, =0 {Qoralama yoʻq} other {# ta qoralama}}",
+        "open": "Qoralamalarimni ochish",
+        "empty": "Qoralama yoʻq. Yangi buyurtma qoralamalar jadvalida qoralama boʻlib boshlanadi."
+      },
+      "open": {
+        "title": "Ochiq buyurtmalarim",
+        "empty": "Ochiq buyurtma yoʻq. Moliyachi tasdiqlagan, xaridga tayyor buyurtmalar shu yerda chiqadi.",
+        "progress": "{planned} {unit} dan {received} olindi",
+        "finished": "{count} tadan {finished} tasi tugadi"
+      },
+      "requested": {
+        "title": "Soʻralgan, barcha bosqichlarda",
+        "line": "{product}: {quantity} {unit} soʻralgan",
+        "empty": "Hech narsa soʻralmagan. Yuborilgan buyurtmalaringiz yopilguncha shu yerda jamlanadi."
+      },
+      "cash": {
+        "title": "Qoʻlimdagi pul",
+        "held": "Qoʻlimda",
+        "owed": "Menga qarzdor",
+        "orders": "{count, plural, =0 {Hech bir buyurtmada qoldiq yoʻq} other {# ta buyurtma boʻyicha}}"
+      },
+      "low": {
+        "title": "Kam qolgan",
+        "count": "{count, plural, other {# ta tovar minimumda yoki undan kam}}",
+        "row": "{quantity} {unit}, minimum {minimum}",
+        "empty": "Kam qolgan tovar yoʻq. Minimumda yoki undan kam tovar shu yerda chiqadi."
+      },
+      "dueSoon": {
+        "title": "Muddati yaqin buyurtmalar",
+        "hint": "7 kun ichida kerak yoki muddati oʻtgan",
+        "empty": "7 kun ichida kerak boʻladigan buyurtma yoʻq."
+      }
+    },
+    "principal": {
+      "waiting": {
+        "title": "Tasdiqimni kutayotganlar",
+        "total": "{count, plural, other {# ta buyurtma}}, jami {total}",
+        "empty": "Tasdiqingizni kutayotgan buyurtma yoʻq. Xarid boshligʻi tasdiqlagan buyurtmalar shu yerda chiqadi."
+      },
+      "card": {
+        "neededBy": "{date} gacha kerak",
+        "showOrders": "{product} buyurtmalarini koʻrsatish",
+        "hideOrders": "{product} buyurtmalarini yashirish",
+        "tooMany": "200 dan ortiq buyurtma: ularni buyurtmalar roʻyxatida, bir safarda 200 tagacha tasdiqlang."
+      },
+      "byStatus": {
+        "title": "Filialim buyurtmalari holat boʻyicha",
+        "empty": "Hozircha buyurtma yoʻq."
+      },
+      "spending": {
+        "title": "Filialimning shu oydagi xarajati",
+        "period": "{from} – {to}",
+        "hint": "Shu oyda xarid qilingan, xarid yozuvlari boʻyicha"
+      }
+    }
   },
   "profile": {
     "title": "Profil",

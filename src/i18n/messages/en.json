@@ -317,7 +317,77 @@
         "line": "Orders waiting for your approval, orders waiting for settlement and money with managers will appear here."
       }
     },
-    "suggest": "Suggest a product"
+    "suggest": "Suggest a product",
+    "showAll": "Show all ({count})",
+    "openList": "Open in the order list",
+    "orders": "{count, plural, one {# order} other {# orders}}",
+    "manager": {
+      "buttons": {
+        "newOrder": "New order",
+        "recordPurchase": "Record purchase",
+        "issue": "Issue from stock"
+      },
+      "sentBack": {
+        "title": "Sent back to me",
+        "empty": "No order is sent back to you. An approver's request for changes appears here."
+      },
+      "drafts": {
+        "title": "My drafts",
+        "count": "{count, plural, =0 {No drafts} one {# draft} other {# drafts}}",
+        "open": "Open my drafts",
+        "empty": "No drafts. A new order starts as a draft in the drafts grid."
+      },
+      "open": {
+        "title": "My open orders",
+        "empty": "No open orders. Orders appear here once Finance approves them, ready to buy.",
+        "progress": "Received {received} of {planned} {unit}",
+        "finished": "{finished} of {count} finished"
+      },
+      "requested": {
+        "title": "Requested, every stage",
+        "line": "{product}: {quantity} {unit} requested",
+        "empty": "Nothing requested. Your submitted orders, until they close, add up here."
+      },
+      "cash": {
+        "title": "Cash I hold",
+        "held": "I hold",
+        "owed": "I am owed",
+        "orders": "{count, plural, =0 {No order has a cash count} one {On # order} other {On # orders}}"
+      },
+      "low": {
+        "title": "Low stock",
+        "count": "{count, plural, one {# item at or below its minimum} other {# items at or below their minimum}}",
+        "row": "{quantity} {unit}, minimum {minimum}",
+        "empty": "No item is low. An item at or below its minimum appears here."
+      },
+      "dueSoon": {
+        "title": "Orders due soon",
+        "hint": "Needed within 7 days, or overdue",
+        "empty": "No order is needed within 7 days."
+      }
+    },
+    "principal": {
+      "waiting": {
+        "title": "Waiting for my approval",
+        "total": "{count, plural, one {# order} other {# orders}}, total {total}",
+        "empty": "No order waits for your approval. Orders the Head approves appear here."
+      },
+      "card": {
+        "neededBy": "Needed by {date}",
+        "showOrders": "Show the orders of {product}",
+        "hideOrders": "Hide the orders of {product}",
+        "tooMany": "Over 200 orders: approve them from the order list, up to 200 at a time."
+      },
+      "byStatus": {
+        "title": "My branch's orders by status",
+        "empty": "No orders yet."
+      },
+      "spending": {
+        "title": "My branch's spending this month",
+        "period": "{from} – {to}",
+        "hint": "Bought in this month, by the purchase records"
+      }
+    }
   },
   "profile": {
     "title": "Profile",
