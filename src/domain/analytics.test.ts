@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  shareChange,
+  shareOf,
   changeAgainst,
   daysOf,
   monthBefore,
@@ -199,5 +201,40 @@ describe("the change against the period before (decided item 4)", () => {
 
   it("refuses a number that is not whole so'm", () => {
     expect(() => changeAgainst(1 as unknown as bigint, 0n)).toThrow(RangeError);
+  });
+});
+
+describe("the share of a count (10 Analytics, Head, Plan vs actual; plan of 6.4, item 7)", () => {
+  it("is a percent of the whole, half up to one decimal", () => {
+    expect(shareOf(1, 3)).toBe("33.3");
+    expect(shareOf(2, 3)).toBe("66.7");
+    // 1 of 8 is 12.5 exactly; 1 of 16 is 6.25 → 6.3 (half up).
+    expect(shareOf(1, 8)).toBe("12.5");
+    expect(shareOf(1, 16)).toBe("6.3");
+    expect(shareOf(0, 4)).toBe("0.0");
+    expect(shareOf(4, 4)).toBe("100.0");
+  });
+
+  it("has none when the whole is 0", () => {
+    expect(shareOf(0, 0)).toBeNull();
+  });
+
+  it("refuses a part below 0, above the whole, or not whole", () => {
+    expect(() => shareOf(-1, 3)).toThrow(RangeError);
+    expect(() => shareOf(4, 3)).toThrow(RangeError);
+    expect(() => shareOf(0.5, 3)).toThrow(RangeError);
+  });
+});
+
+describe("the change of a share (10 point 1; plan of 6.4, item 7)", () => {
+  it("is in percentage points", () => {
+    expect(shareChange("33.3", "25.0")).toBe("8.3");
+    expect(shareChange("25.0", "33.3")).toBe("-8.3");
+    expect(shareChange("50.0", "50.0")).toBe("0.0");
+  });
+
+  it("has none when either period has no share", () => {
+    expect(shareChange("50.0", null)).toBeNull();
+    expect(shareChange(null, "50.0")).toBeNull();
   });
 });

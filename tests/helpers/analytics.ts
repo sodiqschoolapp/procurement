@@ -2,6 +2,8 @@ import { randomUUID } from "node:crypto";
 
 import { sql } from "drizzle-orm";
 
+import type { PaymentType } from "@/domain/payment-types";
+import type { OrderProgress } from "@/domain/purchases";
 import { db } from "@/server/db/client";
 import { refreshAnalytics } from "@/server/jobs/analytics-refresh";
 
@@ -31,13 +33,21 @@ export type Bought = {
   purchasedOn: string;
   qty?: string;
   unitPrice?: string;
-  extras?: readonly bigint[];
+  /** Each extra cost, paid in cash unless its type is given (07 Purchase record). */
+  extras?: readonly (bigint | { amount: bigint; paymentType: PaymentType })[];
+  /** The trip's payment type, cash by default. */
+  paymentType?: PaymentType;
   cancelled?: boolean;
   /** Defaults: the scene's own. */
   categoryId?: string;
   departmentId?: string;
   supplierId?: string | null;
   ownerId?: string;
+  /** The order's buying progress, Open by default. */
+  progress?: OrderProgress;
+  /** The order's plan: quantity and price (no planned extra), 10 × 5 000 by default. */
+  plannedQty?: string;
+  plannedPrice?: bigint;
 };
 
 /** One Open order of the scene's branch with one record on its own trip. Returns the record. */
@@ -50,33 +60,85 @@ export async function bought(scene: SpendingScene, row: Bought) {
     departmentId: row.departmentId ?? scene.department.id,
     variantId: product.defaultVariantId,
     status: "PURCHASING",
+    progress: row.progress ?? "OPEN",
+    // A short or not-bought finish carries its reason (07 Finishing).
+    finishReason:
+      row.progress === "DONE_SHORT" || row.progress === "NOT_BOUGHT"
+        ? "Do'konda qolmagan"
+        : undefined,
+    plannedQty: row.plannedQty,
+    plannedPrice: row.plannedPrice,
   });
+  const { purchaseId } = await recordOn(
+    scene,
+    { id: order.id, ownerId, variantId: product.defaultVariantId },
+    row,
+  );
+  return {
+    purchaseId,
+    orderId: order.id,
+    number: order.number,
+    productId: product.id,
+    variantId: product.defaultVariantId,
+    ownerId,
+  };
+}
+
+/** One more record, on a trip of its own, of an order `bought()` made. Returns the record. */
+export async function recordOn(
+  scene: SpendingScene,
+  order: { id: string; ownerId: string; variantId: string },
+  row: Bought,
+) {
+  const ownerId = order.ownerId;
   const supplierId = row.supplierId === undefined ? scene.supplier.id : row.supplierId;
   const trip = await db.execute<{ id: string }>(sql`
     insert into purchase_trips (client_key, branch_id, purchased_on, supplier_id, payment_type,
       created_by, created_at)
-    values (${randomUUID()}, ${scene.branch.id}, ${row.purchasedOn}, ${supplierId}, 'CASH',
-      ${ownerId}, ${AT})
+    values (${randomUUID()}, ${scene.branch.id}, ${row.purchasedOn}, ${supplierId},
+      ${row.paymentType ?? "CASH"}, ${ownerId}, ${AT})
     returning id`);
   const purchase = await db.execute<{ id: string }>(sql`
     insert into purchases (trip_id, order_id, branch_id, variant_id, qty, unit_price, created_by,
       created_at)
-    values (${trip.rows[0]!.id}, ${order.id}, ${scene.branch.id}, ${product.defaultVariantId},
+    values (${trip.rows[0]!.id}, ${order.id}, ${scene.branch.id}, ${order.variantId},
       ${row.qty ?? "1.000"}, ${row.unitPrice ?? "10000"}, ${ownerId}, ${AT})
     returning id`);
   const purchaseId = purchase.rows[0]!.id;
-  for (const amount of row.extras ?? []) {
+  for (const extra of row.extras ?? []) {
+    const { amount, paymentType } =
+      typeof extra === "bigint" ? { amount: extra, paymentType: "CASH" } : extra;
     const type = await insertExtraCostType();
     await db.execute(sql`
       insert into purchase_extras (purchase_id, extra_cost_type_id, amount, payment_type,
         created_at)
-      values (${purchaseId}, ${type.id}, ${amount}, 'CASH', ${AT})`);
+      values (${purchaseId}, ${type.id}, ${amount}, ${paymentType}, ${AT})`);
   }
   if (row.cancelled) {
     await db.execute(sql`update purchases set is_cancelled = true, cancel_reason = 'Xato kiritildi',
       cancelled_by = ${ownerId}, cancelled_at = ${AT} where id = ${purchaseId}`);
   }
-  return { purchaseId, orderId: order.id, number: order.number, productId: product.id };
+  return { purchaseId };
+}
+
+/**
+ * One event of an order's buying at a moment (07; plan of 6.4, decided item 5: an outcome falls
+ * on the Tashkent date of the newest one), with its action, as the buying actions write them.
+ */
+export async function buyingEvent(
+  orderId: string,
+  actorId: string,
+  type: "RECORD_PURCHASE" | "FINISH_ORDER" | "MARK_NOT_BOUGHT" | "CANCEL_PURCHASE",
+  at: string,
+) {
+  const action = await db.execute<{ id: string }>(sql`
+    insert into order_actions (client_key, type, actor_id, order_count, created_at)
+    values (${randomUUID()}, ${type}, ${actorId}, 1, ${at}) returning id`);
+  await db.execute(sql`
+    insert into order_events (order_id, action_id, type, from_status, to_status, actor_id,
+      created_at)
+    values (${orderId}, ${action.rows[0]!.id}, ${type}, 'PURCHASING', 'PURCHASING', ${actorId},
+      ${at})`);
 }
 
 /** The refresh of the scheduler job, in a transaction of its own. */

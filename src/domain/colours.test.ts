@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { type ColourOrder, orderColours, setColours } from "./colours";
+import { type ColourOrder, orderColours, orderOutcome, setColours } from "./colours";
 import type { OrderPlan } from "./order-totals";
 import { type OrderProgress, type PurchaseRecord, actualGoods } from "./purchases";
 import type { RequestStatus } from "./request-status";
@@ -226,5 +226,52 @@ describe("a set of orders (08 The three colours, bullet 2; decided items 2 and 4
   it("no order from Open on: no colours", () => {
     expect(setColours([order([], "OPEN", NOTEBOOKS, "PENDING_HEAD")])).toBeNull();
     expect(setColours([])).toBeNull();
+  });
+});
+
+describe("how an order ended against its plan (10 Analytics, Head, Plan vs actual; plan of 6.4, items 3 and 4)", () => {
+  it("is the Total colour with the planned and actual totals (08 Worked example: Dearer)", () => {
+    // 100 × 5 200 + 30 000 = 550 000 against 520 000: −30 000, red.
+    expect(orderOutcome(order([record("100", 5_200n, [30_000n])]))).toEqual({
+      colour: "red",
+      planned: 520_000n,
+      actual: 550_000n,
+      difference: -30_000n,
+    });
+  });
+
+  it("is orange with the money left (08 Worked example: Cheaper) and green at an exact total", () => {
+    expect(orderOutcome(order([record("100", 4_500n, [20_000n])]))).toMatchObject({
+      colour: "amber",
+      difference: 50_000n,
+    });
+    expect(orderOutcome(order([record("100", 5_000n, [20_000n])]))).toMatchObject({
+      colour: "green",
+      difference: 0n,
+    });
+  });
+
+  it("counts Done short as ended (08 Worked example: Fewer)", () => {
+    expect(orderOutcome(order([record("90", 5_000n, [20_000n])], "DONE_SHORT"))).toMatchObject({
+      colour: "amber",
+      actual: 470_000n,
+      difference: 50_000n,
+    });
+  });
+
+  it("is none while buying is Open, though the records would give a colour", () => {
+    expect(orderOutcome(order([record("100", 5_200n, [30_000n])], "OPEN"))).toBeNull();
+  });
+
+  it("leaves a Not bought order out, where orderColours() gives orange (decided item 4)", () => {
+    const notBought = order([], "NOT_BOUGHT");
+    expect(orderColours(notBought)?.total).toMatchObject({ colour: "amber" });
+    expect(orderOutcome(notBought)).toBeNull();
+  });
+
+  it("is none before Open, though buying reads Done", () => {
+    expect(
+      orderOutcome(order([record("100", 5_200n)], "DONE", NOTEBOOKS, "PENDING_FINANCE")),
+    ).toBeNull();
   });
 });

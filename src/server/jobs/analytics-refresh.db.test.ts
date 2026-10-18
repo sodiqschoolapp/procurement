@@ -5,7 +5,14 @@ import { actualTotal } from "@/domain/purchases";
 import { db } from "@/server/db/client";
 import { recordsWhere } from "@/features/purchasing/order-records";
 
-import { bought, refreshNow, spendingScene } from "../../../tests/helpers/analytics";
+import {
+  bought,
+  buyingEvent,
+  recordOn,
+  refreshNow,
+  spendingScene,
+} from "../../../tests/helpers/analytics";
+import { refusalOf } from "../../../tests/helpers/database-error";
 import { setClock } from "../../../tests/helpers/clock";
 import type { Job } from "./job";
 import { analyticsRefresh } from "./analytics-refresh";
@@ -129,5 +136,263 @@ describe("analytics_refresh (10 point 5; developer-rules rule 12)", () => {
     setClock("2031-05-15T06:05:00Z");
     expect(await runDueJobs([analyticsRefresh])).toEqual({ analytics_refresh: "ran" });
     expect(await rowsOf(scene.branch.id)).toHaveLength(2);
+  });
+});
+
+async function partsOf(purchaseId: string) {
+  const found = await db.execute<{ payment_type: string; amount: string }>(sql`
+    select payment_type, amount::text as amount from analytics_spending_payments
+    where purchase_id = ${purchaseId} order by payment_type`);
+  return found.rows;
+}
+
+async function outcomeOf(orderId: string) {
+  const found = await db.execute<{
+    ended_on: string;
+    colour: string;
+    planned: string;
+    actual: string;
+    difference: string;
+    category_id: string;
+    department_id: string;
+    owner_id: string;
+    branch_id: string;
+  }>(sql`
+    select ended_on::text as ended_on, colour, planned::text as planned, actual::text as actual,
+           difference::text as difference, category_id, department_id, owner_id, branch_id
+    from analytics_outcomes where order_id = ${orderId}`);
+  return found.rows[0] ?? null;
+}
+
+describe("the parts by payment type (07 Purchase record; plan of 6.4, decided item 2)", () => {
+  it("gives the goods to the trip's type and each extra to its own, adding up to the amount", async () => {
+    const scene = await spendingScene();
+    // 3 × 3 333 by card with a 5 000 cash delivery (the plan review's example).
+    const card = await bought(scene, {
+      purchasedOn: "2031-05-02",
+      qty: "3.000",
+      unitPrice: "3333",
+      paymentType: "CARD",
+      extras: [{ amount: 5_000n, paymentType: "CASH" }],
+    });
+    // Two cash extras on a transfer: one cash part of 7 000.
+    const transfer = await bought(scene, {
+      purchasedOn: "2031-05-02",
+      unitPrice: "10000",
+      paymentType: "TRANSFER",
+      extras: [5_000n, 2_000n],
+    });
+    // A cancelled record with every other value the same as `card` writes no part (D40).
+    const cancelled = await bought(scene, {
+      purchasedOn: "2031-05-02",
+      qty: "3.000",
+      unitPrice: "3333",
+      paymentType: "CARD",
+      extras: [{ amount: 5_000n, paymentType: "CASH" }],
+      cancelled: true,
+    });
+    await refreshNow();
+
+    expect(await partsOf(card.purchaseId)).toEqual([
+      { payment_type: "CASH", amount: "5000" },
+      { payment_type: "CARD", amount: "9999" },
+    ]);
+    expect(await partsOf(transfer.purchaseId)).toEqual([
+      { payment_type: "CASH", amount: "7000" },
+      { payment_type: "TRANSFER", amount: "10000" },
+    ]);
+    expect(await partsOf(cancelled.purchaseId)).toEqual([]);
+    for (const row of await rowsOf(scene.branch.id)) {
+      const parts = await partsOf(row.purchase_id);
+      expect(parts.reduce((sum, part) => sum + BigInt(part.amount), 0n)).toBe(BigInt(row.amount));
+    }
+  });
+
+  it("refuses a part of 0 or below in the database (CLAUDE.md rule 5; D39)", async () => {
+    const scene = await spendingScene();
+    const gift = await bought(scene, { purchasedOn: "2031-05-02", unitPrice: "0" });
+    await refreshNow();
+    expect(await partsOf(gift.purchaseId)).toEqual([]);
+    for (const amount of [0n, -1n]) {
+      expect(
+        await refusalOf(
+          db.execute(sql`insert into analytics_spending_payments (purchase_id, payment_type, amount)
+            values (${gift.purchaseId}, 'CASH', ${amount})`),
+        ),
+      ).toMatchObject({ constraint: "analytics_spending_payments_amount_check" });
+    }
+  });
+});
+
+describe("the outcomes of Plan vs actual (08 The three colours; plan of 6.4, decided items 3 to 6)", () => {
+  it("writes the colour and difference of orderOutcome() for Done and Done short", async () => {
+    const scene = await spendingScene();
+    // Planned 10 × 5 000 = 50 000 each.
+    const red = await bought(scene, {
+      purchasedOn: "2031-05-02",
+      qty: "10.000",
+      unitPrice: "5200",
+      progress: "DONE",
+    });
+    const amber = await bought(scene, {
+      purchasedOn: "2031-05-02",
+      qty: "9.000",
+      unitPrice: "5000",
+      progress: "DONE_SHORT",
+    });
+    const green = await bought(scene, {
+      purchasedOn: "2031-05-02",
+      qty: "10.000",
+      unitPrice: "5000",
+      progress: "DONE",
+    });
+    for (const order of [red, amber, green]) {
+      await buyingEvent(order.orderId, order.ownerId, "RECORD_PURCHASE", "2031-05-02T05:00:00Z");
+    }
+    await refreshNow();
+
+    expect(await outcomeOf(red.orderId)).toEqual({
+      ended_on: "2031-05-02",
+      colour: "red",
+      planned: "50000",
+      actual: "52000",
+      difference: "-2000",
+      category_id: scene.category.id,
+      department_id: scene.department.id,
+      owner_id: scene.manager.id,
+      branch_id: scene.branch.id,
+    });
+    expect(await outcomeOf(amber.orderId)).toMatchObject({ colour: "amber", difference: "5000" });
+    expect(await outcomeOf(green.orderId)).toMatchObject({ colour: "green", difference: "0" });
+  });
+
+  it("writes none while buying is Open, nor for Not bought (decided item 4)", async () => {
+    const scene = await spendingScene();
+    // Open with records that would give red once finished.
+    const open = await bought(scene, {
+      purchasedOn: "2031-05-02",
+      qty: "10.000",
+      unitPrice: "5200",
+    });
+    await buyingEvent(open.orderId, open.ownerId, "RECORD_PURCHASE", "2031-05-02T05:00:00Z");
+    const notBought = await bought(scene, {
+      purchasedOn: "2031-05-02",
+      cancelled: true,
+      progress: "NOT_BOUGHT",
+    });
+    await buyingEvent(
+      notBought.orderId,
+      notBought.ownerId,
+      "MARK_NOT_BOUGHT",
+      "2031-05-02T05:00:00Z",
+    );
+    await refreshNow();
+    expect(await outcomeOf(open.orderId)).toBeNull();
+    expect(await outcomeOf(notBought.orderId)).toBeNull();
+  });
+
+  it("falls on the Tashkent date of the newest buying event (CLAUDE.md rule 10)", async () => {
+    const scene = await spendingScene();
+    const order = await bought(scene, {
+      purchasedOn: "2031-05-02",
+      qty: "10.000",
+      unitPrice: "5000",
+      progress: "DONE",
+    });
+    await buyingEvent(order.orderId, order.ownerId, "RECORD_PURCHASE", "2031-05-02T05:00:00Z");
+    // 19:30 UTC on 5 May is 00:30 on 6 May in Tashkent.
+    await buyingEvent(order.orderId, order.ownerId, "FINISH_ORDER", "2031-05-05T19:30:00Z");
+    await refreshNow();
+    expect(await outcomeOf(order.orderId)).toMatchObject({ ended_on: "2031-05-06" });
+  });
+
+  it("a record cancelled that reopens buying removes the outcome (07 Fixing a mistake)", async () => {
+    const scene = await spendingScene();
+    const order = await bought(scene, {
+      purchasedOn: "2031-05-02",
+      qty: "10.000",
+      unitPrice: "5000",
+      progress: "DONE",
+    });
+    await buyingEvent(order.orderId, order.ownerId, "RECORD_PURCHASE", "2031-05-02T05:00:00Z");
+    await refreshNow();
+    expect(await outcomeOf(order.orderId)).toMatchObject({ colour: "green" });
+
+    // The cancel, as cancelPurchase writes it: the record cancelled, buying Open again.
+    await db.execute(sql`update purchases set is_cancelled = true, cancel_reason = 'Xato kiritildi',
+      cancelled_by = ${order.ownerId}, cancelled_at = '2031-05-03T05:00:00Z'
+      where id = ${order.purchaseId}`);
+    await db.execute(sql`update orders set progress = 'OPEN' where id = ${order.orderId}`);
+    await buyingEvent(order.orderId, order.ownerId, "CANCEL_PURCHASE", "2031-05-03T05:00:00Z");
+    await refreshNow();
+    expect(await outcomeOf(order.orderId)).toBeNull();
+  });
+
+  it("a record cancelled that leaves buying Done rewrites the outcome on the cancel's day", async () => {
+    const scene = await spendingScene();
+    const order = await bought(scene, {
+      purchasedOn: "2031-05-02",
+      qty: "10.000",
+      unitPrice: "5000",
+      progress: "DONE",
+    });
+    // Two more over the plan: 12 × 5 000 = 60 000, red −10 000.
+    const extra = await recordOn(
+      scene,
+      { id: order.orderId, ownerId: order.ownerId, variantId: order.variantId },
+      {
+        purchasedOn: "2031-05-02",
+        qty: "2.000",
+        unitPrice: "5000",
+      },
+    );
+    await buyingEvent(order.orderId, order.ownerId, "RECORD_PURCHASE", "2031-05-02T05:00:00Z");
+    await refreshNow();
+    expect(await outcomeOf(order.orderId)).toMatchObject({ colour: "red", difference: "-10000" });
+
+    // The cancel leaves 10 received, still Done (progressAfterBuying()).
+    await db.execute(sql`update purchases set is_cancelled = true, cancel_reason = 'Xato kiritildi',
+      cancelled_by = ${order.ownerId}, cancelled_at = '2031-05-04T05:00:00Z'
+      where id = ${extra.purchaseId}`);
+    await buyingEvent(order.orderId, order.ownerId, "CANCEL_PURCHASE", "2031-05-04T05:00:00Z");
+    await refreshNow();
+    expect(await outcomeOf(order.orderId)).toMatchObject({
+      colour: "green",
+      difference: "0",
+      actual: "50000",
+      ended_on: "2031-05-04",
+    });
+  });
+
+  it("refuses in the database what orderOutcome() never writes (CLAUDE.md rule 5; D39)", async () => {
+    const scene = await spendingScene();
+    const order = await bought(scene, { purchasedOn: "2031-05-02" });
+    const insert = (colour: string, planned: bigint, actual: bigint, difference: bigint) =>
+      refusalOf(
+        db.execute(sql`insert into analytics_outcomes (order_id, branch_id, ended_on, category_id,
+            department_id, owner_id, colour, planned, actual, difference)
+          values (${order.orderId}, ${scene.branch.id}, '2031-05-02', ${scene.category.id},
+            ${scene.department.id}, ${scene.manager.id}, ${colour}, ${planned}, ${actual},
+            ${difference})`),
+      );
+    expect(await insert("red", -1n, 0n, -1n)).toMatchObject({
+      constraint: "analytics_outcomes_planned_check",
+    });
+    expect(await insert("amber", 0n, -1n, 1n)).toMatchObject({
+      constraint: "analytics_outcomes_actual_check",
+    });
+    expect(await insert("red", 100n, 150n, -40n)).toMatchObject({
+      constraint: "analytics_outcomes_difference_check",
+    });
+    expect(await insert("green", 100n, 150n, -50n)).toMatchObject({
+      constraint: "analytics_outcomes_colour_check",
+    });
+    expect(await insert("amber", 100n, 100n, 0n)).toMatchObject({
+      constraint: "analytics_outcomes_colour_check",
+    });
+    expect(await insert("red", 150n, 100n, 50n)).toMatchObject({
+      constraint: "analytics_outcomes_colour_check",
+    });
+    expect(await insert("grey", 100n, 100n, 0n)).toMatchObject({ code: "22P02" });
   });
 });
