@@ -1959,7 +1959,7 @@ Choices made during the build:
 - `catalog_imports_branch_check` compares `kind::text = 'STOCK'`: the migrator applies every pending migration in one transaction, and PostgreSQL refuses a new enum value in the transaction that added it ("unsafe use of new value"). One migration, `0034_import_stock`, instead of two.
 - `directEntryLineRefusal()` (`src/domain/stock-documents.ts`) holds the line rules of the form's action and the import alike; each reads its cost itself. `lockDirectEntryBranch()` and `recordDirectEntry()` of `direct-entry.ts` are shared the same way.
 - A quantity cell typed as a number is read as JavaScript writes it (`String(value)`), never rounded: 2.5 is read, 2.5555 is `tooManyDecimals`, 1e21 `wrongFormat`. Whole units are checked against the measure in the database check.
-- The page and the template of a branch-scoped kind are checked with `authorizeList()` (`authorizeImportKind()` in `src/features/catalog/queries/imports.ts`), since they name no branch yet; the preview and the save with the branch.
+- The page and the template of a branch-scoped kind are checked with `authorizeList()` (`authorizeImportKind()` in `src/features/catalog/imports/permission.ts`; the template route asks the same two calls itself, as the permission registry wants a route to), since they name no branch yet; the preview and the save with the branch.
 - The tests that used `stock` as the unknown import kind use `counts` now: `stock` became a kind.
 - The Stock on hand button "Import from Excel" uses the existing `description` icon; no new icon.
 

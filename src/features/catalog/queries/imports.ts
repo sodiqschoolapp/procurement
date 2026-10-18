@@ -11,9 +11,8 @@ import {
   readProductRows,
   readStockRows,
 } from "@/domain/imports";
-import { PERMISSIONS } from "@/domain/permissions";
 import { checkStockImport } from "@/features/warehouse/imports/check";
-import { authorize, authorizeList } from "@/server/authorize";
+import { authorize } from "@/server/authorize";
 import { db } from "@/server/db/client";
 
 import { checkDepartmentImport, checkPriceImport, checkProductImport } from "../imports/check";
@@ -27,17 +26,6 @@ import { PRODUCT_TYPE_WORDS, everyImportTitles } from "../imports/titles";
 // everything again (plan of 1.10, decision 5): the preview is advice, the save the gate. Existing
 // stock (plan of 5.9) is one branch's: its preview is asked of that branch, under
 // stock.enter_direct, the permission of its save.
-
-/**
- * Whether the user may open an import of this kind at all, for its page and its template: a
- * global permission by authorize(), a branch one (stock) by authorizeList(), since the page names
- * no branch yet (plan of 5.9). Throws AuthorizationError otherwise.
- */
-export async function authorizeImportKind(userId: string, kind: ImportKind): Promise<void> {
-  const permission = IMPORT_PERMISSIONS[kind];
-  if (PERMISSIONS[permission].scope === "branch") await authorizeList(userId, permission);
-  else await authorize(userId, permission);
-}
 
 /** A row as the preview shows it: its number and each column's text as typed. */
 export type PreviewRow = { row: number; texts: string[] };

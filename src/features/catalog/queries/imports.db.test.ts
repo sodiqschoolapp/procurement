@@ -10,7 +10,8 @@ import { insertCategory, insertUnit } from "../../../../tests/helpers/catalog";
 import { importSheet, productRow } from "../../../../tests/helpers/imports";
 import { describePermissionMatrix } from "../../../../tests/helpers/permission-matrix";
 import { insertUser } from "../../../../tests/helpers/users";
-import { authorizeImportKind, previewImport } from "./imports";
+import { authorizeImportKind } from "../imports/permission";
+import { previewImport } from "./imports";
 
 // The preview query of an Excel import, called directly (permission review of 1.10, Must fix 3):
 // 03-roles-and-permissions.md, "Manage catalogs, users, branches, settings": the Head only. It

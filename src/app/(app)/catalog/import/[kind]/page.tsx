@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import { AdminNav } from "@/components/admin-nav";
 import { Icon } from "@/components/icon";
 import { IMPORT_COLUMNS, isImportKind } from "@/domain/imports";
-import { authorizeImportKind } from "@/features/catalog/queries/imports";
+import { authorizeImportKind } from "@/features/catalog/imports/permission";
 import { directEntryBranchChoices } from "@/features/warehouse/queries/direct-entry-form";
 import { requireUser } from "@/server/auth/session";
 

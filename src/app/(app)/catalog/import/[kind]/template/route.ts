@@ -1,10 +1,10 @@
 import type { NextRequest } from "next/server";
 
-import { isImportKind } from "@/domain/imports";
+import { IMPORT_PERMISSIONS, isImportKind } from "@/domain/imports";
+import { PERMISSIONS } from "@/domain/permissions";
 import { importSheetName, importTitles } from "@/features/catalog/imports/titles";
-import { authorizeImportKind } from "@/features/catalog/queries/imports";
 import { userOfCookies } from "@/server/auth/session";
-import { AuthorizationError } from "@/server/authorize";
+import { AuthorizationError, authorize, authorizeList } from "@/server/authorize";
 import { writeTemplate } from "@/server/excel";
 
 // The template of an import, GET /catalog/import/<kind>/template (build-plan 1.10: "template
@@ -27,7 +27,10 @@ export async function GET(
   const { kind } = await context.params;
   if (!isImportKind(kind)) return notFound();
   try {
-    await authorizeImportKind(user.id, kind);
+    // A branch permission (stock) names no branch here, so it is asked as a list (plan of 5.9).
+    const permission = IMPORT_PERMISSIONS[kind];
+    if (PERMISSIONS[permission].scope === "branch") await authorizeList(user.id, permission);
+    else await authorize(user.id, permission);
   } catch (error) {
     if (error instanceof AuthorizationError) return notFound();
     throw error;
