@@ -27,8 +27,8 @@ import { setStockMinimumAction } from "./actions";
 // branch is the address's `branch=`, else the top bar's choice as /warehouse/stock reads it, else
 // the user's only branch; otherwise, and for another branch, an unknown id or a service, the "Not
 // found" page (decided item 3; 03 rule 1; 15 S7). A purchase's movement links to its order's
-// Purchases tab (decided item 5); a document's number is text until 5.12 (decided item 4, Look
-// first). A reversed document's number carries the "Reversed" label, and a row the server offers
+// Purchases tab (decided item 5); a document's number links to its page (decided item 4, Look
+// first; plan of 5.12, decided item 3). A reversed document's number carries the "Reversed" label, and a row the server offers
 // it on (`canReverse`) has the Reverse button (plan of 5.7). At phone width the table scrolls
 // inside its panel, as Stock on hand. The header shows the minimum beside "On hand" with its
 // pencil, "Low", and "Add to draft" where the query offers them (plan of 5.10).
@@ -195,7 +195,17 @@ export default async function ItemCardPage({
                       </Link>
                     ) : (
                       <span className="inline-flex items-center gap-2">
-                        {movement.documentNumber ?? t("noSource")}
+                        {movement.documentId && movement.documentNumber ? (
+                          // The document's own page (plan of 5.12, decided item 3, Look first).
+                          <Link
+                            href={`/warehouse/documents/${movement.documentId}`}
+                            className="font-semibold text-primary underline-offset-2 hover:underline"
+                          >
+                            {movement.documentNumber}
+                          </Link>
+                        ) : (
+                          t("noSource")
+                        )}
                         {movement.documentStatus === "REVERSED" && <ReversedLabel />}
                       </span>
                     )}

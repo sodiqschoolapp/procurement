@@ -452,7 +452,7 @@ Stock screens and every document that moves stock inside one branch.
   - **Build:** The Manager asks for a write-off with items, quantities, a reason from the fixed list and a comment; stock changes only when the Head approves; the Head approves or refuses; the decision goes back to the Manager.
   - **Done when:** Database tests: stock is unchanged while the write-off waits; approval lowers it; a refusal changes nothing.
 
-- [ ] **5.12 Warehouse documents list and closing a branch**
+- [x] **5.12 Warehouse documents list and closing a branch**
   - **Read:** `09-warehouse.md` (Stock screens: Documents); `11-screens-and-ux.md` (Screens: Warehouse documents; New issue, return, transfer, write-off). From the former 5.13: `04-catalogs.md` (Rules: 2); `edge-cases/requests-and-approval.md` ("The Head wants to close a branch").
   - **Build:** `/warehouse/documents` with filters by type, date and department; `/warehouse/documents/new?type=` opens the right form. The seed gains an issue and a direct entry. From the former 5.13 (Closing a branch): Deactivating a branch is blocked while it has unfinished orders or stock above 0, and the message says which. From 5.3 (`09-warehouse.md`, Stock screens: Item card, "a link to the source document"): the item card's document number links to that document; 5.12 decides its address (a document page or the documents list filtered to that number).
   - **Done when:** A database test for the branch wall. By hand: filter to the issues of one department. Database tests for both blocks and for the free case.
@@ -521,21 +521,25 @@ Stock moving between branches, and stock checked against the shelf.
   - **Read:** `09-warehouse.md` (Movement types: Transfer row; Other documents: Transfer); `03-roles-and-permissions.md` (Manager rights: TRANSFER_STOCK); `10-notifications-analytics-reports.md` (Notifications: "Transfer sent"); `05-order-request-form.md` (Download: 2, 3).
   - **Build:** The sender picks the other branch and the items; stock leaves the sender at once; the transfer shows "In transit"; the Managers of the receiving branch are notified; the transfer note as a PDF without signature lines.
   - **Done when:** Database test: the sender's stock falls at once and the receiver's does not change yet.
+  - From 5.12 (`09-warehouse.md`, Stock screens: Documents, "All issues, returns, transfers, write-offs and counts, with filters by type, date and department"; `11-screens-and-ux.md`, Screens: "New issue, return, transfer, write-off | `/warehouse/documents/new?type=`"): `?type=TRANSFER` opens the send form (the page answers "Not found" for it until then), and a sent transfer appears in `/warehouse/documents` and its type filter, and opens at `/warehouse/documents/[id]`, of the sending branch.
 
 - [ ] **7.2 Transfer: receive**
   - **Read:** `09-warehouse.md` (Other documents: Transfer; Stock value: second bullet); `16-build-order.md` (phase 7 row); `edge-cases/warehouse.md` ("A transfer arrives short").
   - **Build:** The receiving Manager enters what really arrived; stock rises there with the sender's average cost; a shortage becomes a write-off request "Lost in transfer" on the sending branch for the Head.
   - **Done when:** The spec's phase 7 check as a test: send 10, receive 8, and a write-off request for 2 exists.
+  - From 5.12 (`09-warehouse.md`, Stock screens: Documents): the receiving branch sees the transfer in its `/warehouse/documents` and on the transfer's page (`listStockDocuments()` and `getStockDocument()` filter by `branch_id` only until then), and receives it from there.
 
 - [ ] **7.3 Stock count**
   - **Read:** `09-warehouse.md` (Other documents: Stock count); `11-screens-and-ux.md` (Screens: Stock counts); `03-roles-and-permissions.md` (Manager rights: WRITE_OFF_COUNT).
   - **Build:** `/warehouse/counts`: the Manager starts a count for a branch or a category and types the counted quantities; the system shows the differences.
   - **Done when:** Database test: each difference equals the counted quantity minus the stock at the start.
+  - From 5.12 (`09-warehouse.md`, Stock screens: Documents, "… write-offs and counts, with filters by type …"): a count appears in `/warehouse/documents` and its type filter ("Stock count") and opens at `/warehouse/documents/[id]`, which shows its lines with the counted quantities.
 
 - [ ] **7.4 Count approval**
   - **Read:** `09-warehouse.md` (Movement types: Correction row; Other documents: Stock count); `03-roles-and-permissions.md` (Permission matrix: "Approve a write-off or stock correction"); `10-notifications-analytics-reports.md` (Notifications: "Write-off or correction asked").
   - **Build:** The Head approves the differences as corrections; an item that moved between the start of the count and the approval goes back to the Manager to be counted again; the Head is notified when a correction is asked, the decision goes back to the Manager, and corrections join the Head's home list.
   - **Done when:** Database tests: approval writes Correction movements; an item issued during the count is not corrected and is flagged.
+  - From 5.12 (`09-warehouse.md`, Stock screens: Documents): the Head approves a count from its page `/warehouse/documents/[id]` (as a write-off is approved there), and Reverse of an approved count is offered there when `reverseAllows()` gains the type.
 
 
 ## Phase 8: Jobs and polish

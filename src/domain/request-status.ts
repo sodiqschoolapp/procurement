@@ -16,3 +16,14 @@ export const REQUEST_STATUSES = [
   "CANCELLED",
 ] as const;
 export type RequestStatus = (typeof REQUEST_STATUSES)[number];
+
+/**
+ * The statuses nobody acts on next (06 Statuses: "Who acts next" is Nobody): an order in any other
+ * status is unfinished, and blocks closing its branch (edge-cases/requests-and-approval.md, "The
+ * Head wants to close a branch"; plan of 5.12, decided item 1, Look first).
+ */
+export const FINISHED_REQUEST_STATUSES = [
+  "CLOSED",
+  "REJECTED",
+  "CANCELLED",
+] as const satisfies readonly RequestStatus[];

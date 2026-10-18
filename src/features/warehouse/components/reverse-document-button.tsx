@@ -18,7 +18,7 @@ import { MOVE_REASON_MAX, MOVE_REASON_MIN, isMoveReason } from "@/domain/order-m
 import type { ReversePreview } from "@/features/warehouse/queries/reverse-preview";
 import { useFormatters } from "@/i18n/use-formatters";
 
-// Reverse on a row of the item card (09-warehouse.md, Movement types, last paragraph: "A wrong
+// Reverse on a row of the item card and on a document's page (09-warehouse.md, Movement types, last paragraph: "A wrong
 // document is fixed with 'Reverse', which writes the opposite movement and needs a reason"; Issue
 // to a department 3; 11-screens-and-ux.md rule 6: "ask for confirmation and state the result";
 // plan of 5.7, decided item 6). Shown only where getItemCard() offers it (`canReverse`); the
@@ -27,9 +27,14 @@ import { useFormatters } from "@/i18n/use-formatters";
 // comment (review of the plan, correction 1). The confirm button is the danger kind: a reverse
 // cannot be undone. Not a create, so no client key: a second press is refused as `wrong_status`.
 
-/** The sentence of the result: a return leaves stock again, a write-off comes back (plan of 5.11). */
-function resultKey(type: ReversePreview["type"]): "ISSUE" | "RETURN" | "WRITE_OFF" {
-  if (type === "RETURN" || type === "WRITE_OFF") return type;
+/**
+ * The sentence of the result: a return and a direct entry leave stock, a write-off comes back
+ * (plans of 5.11 and 5.12).
+ */
+function resultKey(
+  type: ReversePreview["type"],
+): "ISSUE" | "RETURN" | "WRITE_OFF" | "DIRECT_ENTRY" {
+  if (type === "RETURN" || type === "WRITE_OFF" || type === "DIRECT_ENTRY") return type;
   return "ISSUE";
 }
 

@@ -232,6 +232,9 @@ export function reversalOf(movement: { qtyDelta: string; unitCost: bigint }): St
  */
 export const DOCUMENT_LINES_MAX = 100;
 
+/** Rows on one page of the documents list (11-screens-and-ux.md rule 8; plan of 5.12). */
+export const DOCUMENTS_PAGE_SIZE = 25;
+
 /** A stock as stored, compared exactly (numeric(14,3) text, 0 or more). */
 const Stock = Decimal.clone({ precision: 64, rounding: Decimal.ROUND_HALF_UP });
 

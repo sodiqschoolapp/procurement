@@ -91,7 +91,9 @@
       "movedSince": "Bu buyurtma ushbu yozuvdan keyin boshqa menejerga oʻtkazilgan, shuning uchun uni bekor qilib boʻlmaydi. Moliyachi naqd pul qoldigʻini yangi pul amali bilan tuzatadi.",
       "overReturn": "Bo'lim olganidan ko'p.",
       "overReturnComment": "Qatorda bo'lim olganidan ko'p: izoh yozing.",
-      "reverseStockShort": "Storno qilish uchun omborda yetarli emas: mahsulotlar yana chiqib ketgan."
+      "reverseStockShort": "Storno qilish uchun omborda yetarli emas: mahsulotlar yana chiqib ketgan.",
+      "unfinishedOrders": "Filialda tugallanmagan buyurtmalar bor.",
+      "stockLeft": "Filial omborida hali tovar bor."
     },
     "file": {
       "tooLarge": "Fayl 10 MB dan katta. Kichikroq fayl tanlang yoki suratni qaytadan oling.",
@@ -461,6 +463,10 @@
     "activateTitle": "{name} faollashtirilsinmi?",
     "activateResult": "Filial yangi yozuvlar yaratiladigan roʻyxatlarga qaytadi.",
     "deactivated": "Filial faolsizlantirildi",
+    "blocked": "Filialda {reasons} bor ekan, uni nofaol qilib bo'lmaydi. Avval buyurtmalarni yakunlang yoki bekor qiling, qoldiqni bering yoki hisobdan chiqaring.",
+    "blockedOrders": "{count, plural, other {# ta tugallanmagan buyurtma}}",
+    "blockedStock": "{count, plural, other {omborda # xil tovar}}",
+    "blockedAnd": "{first} va {second}",
     "activated": "Filial faollashtirildi",
     "history": "Oʻzgarishlar tarixi",
     "isActive": "Faol",
@@ -2056,7 +2062,8 @@
       "result": {
         "ISSUE": "Bu mahsulotlar omborga qaytadi va berish storno qilingan deb belgilanadi. Buni qaytarib bo'lmaydi.",
         "RETURN": "Bu mahsulotlar ombordan yana chiqadi va qaytarish storno qilingan deb belgilanadi. Buni qaytarib bo'lmaydi.",
-        "WRITE_OFF": "Bu mollar omborga qaytadi, hisobdan chiqarish esa storno deb belgilanadi. Buni bekor qilib bo'lmaydi."
+        "WRITE_OFF": "Bu mollar omborga qaytadi, hisobdan chiqarish esa storno deb belgilanadi. Buni bekor qilib bo'lmaydi.",
+        "DIRECT_ENTRY": "Bu tovarlar ombordan chiqadi va to'g'ridan-to'g'ri kiritish bekor qilingan deb belgilanadi. Buni qaytarib bo'lmaydi."
       },
       "held": "Bo'limda faqat {held} bor: sababini yozing.",
       "short": "{item}: omborda faqat {left} qoldi. Hech narsa storno qilinmadi.",
@@ -2087,6 +2094,76 @@
       "added": "Qoralama qo'shildi",
       "merged": "Qoralamangizga qo'shildi: endi {quantity}",
       "noDepartments": "Bu filialda faol bo'lim yo'q."
+    },
+    "documents": {
+      "title": "Ombor hujjatlari",
+      "tabs": {
+        "label": "Ombor",
+        "stock": "Ombordagi qoldiq",
+        "documents": "Hujjatlar"
+      },
+      "summary": "{count, plural, other {# ta hujjat}}",
+      "filterType": "Turi",
+      "allTypes": "Barcha turlar",
+      "from": "Dan",
+      "to": "Gacha",
+      "filterDepartment": "Bo'lim",
+      "allDepartments": "Barcha bo'limlar",
+      "departmentOption": "{name} ({branch})",
+      "inactiveOption": "{name} (nofaol)",
+      "find": "Topish",
+      "clear": "Tozalash",
+      "types": {
+        "ISSUE": "Berish",
+        "RETURN": "Qaytarish",
+        "TRANSFER": "Ko'chirish",
+        "WRITE_OFF": "Hisobdan chiqarish",
+        "COUNT": "Inventarizatsiya",
+        "DIRECT_ENTRY": "To'g'ridan-to'g'ri kiritish"
+      },
+      "status": {
+        "PENDING_APPROVAL": "Rahbarni kutmoqda",
+        "POSTED": "O'tkazilgan",
+        "IN_TRANSIT": "Yo'lda",
+        "RECEIVED": "Qabul qilingan",
+        "REJECTED": "Rad etilgan",
+        "REVERSED": "Bekor qilingan"
+      },
+      "columns": {
+        "number": "Raqam",
+        "type": "Turi",
+        "date": "Sana",
+        "branch": "Filial",
+        "department": "Bo'lim",
+        "status": "Holat",
+        "createdBy": "Kim yaratgan"
+      },
+      "emptyTitle": "Hozircha hujjat yo'q",
+      "emptyText": "Berish, qaytarish, hisobdan chiqarish va to'g'ridan-to'g'ri kiritishlar saqlangach shu yerda ko'rinadi.",
+      "noResultsTitle": "Hech narsa topilmadi",
+      "noResultsText": "Filtrlarga mos hujjat yo'q. Ularni o'zgartiring yoki tozalang.",
+      "page": {
+        "title": "{type} {number}",
+        "branch": "Filial",
+        "date": "Sana",
+        "department": "Bo'lim",
+        "receivedBy": "Qabul qilgan",
+        "reason": "Sabab",
+        "comment": "Izoh",
+        "createdBy": "Kim yaratgan",
+        "decidedBy": "Kim qaror qilgan",
+        "reversedBy": "Kim bekor qilgan",
+        "reverseReason": "Bekor qilish sababi",
+        "byAt": "{name}, {at}",
+        "imported": "Excel'dan yuklangan",
+        "lines": "Tovarlar",
+        "product": "Tovar",
+        "quantity": "Miqdor",
+        "inStock": "Hozir omborda",
+        "labelled": "{label}: {value}",
+        "downloadNote": "Berish varaqasi (PDF)",
+        "actions": "Amallar"
+      }
     }
   }
 }

@@ -1440,4 +1440,21 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - For 5.12: `/warehouse/documents/[id]` answers WRITE_OFF only (`getWriteOff`); widen it, add Reverse there, and fix the reverse dialog's sentence for a direct entry (decisions 5.11, build).
 - For 6.2: the waiting ones are `type = 'WRITE_OFF' and status = 'PENDING_APPROVAL'`.
 
-The next task is 5.12.
+## 5.12 Warehouse documents list and closing a branch (18.10.2026, pull request #101)
+
+**Built**
+- `/warehouse/documents` (`listStockDocuments`, `documentDepartmentChoices` in `features/warehouse/queries/documents.ts`, `data.view`): every type, newest first, filters type, from/to, department; `WarehouseTabs`, `NewDocumentButtons` shared with Stock on hand.
+- `/warehouse/documents/[id]` for every type (`getStockDocument`, `queries/document.ts`): header by type, lines, Approve/Refuse, Reverse, issue note; `DocumentStatusLabel`. The item card's number links there.
+- `setBranchActive` refuses a deactivation while the branch has unfinished orders (not a never-submitted draft) or stock above 0: fields `orders`, `stock`, counts in `available`; `FINISHED_REQUEST_STATUSES` in `domain/request-status.ts`.
+- Seed: a direct entry and an issue of CHL (`scripts/seed-stock.mjs`); "From 5.12" lines on 7.1 to 7.4.
+
+**Left out, and the task that brings it**
+- Transfers in the list and `?type=TRANSFER`: 7.1; the receiving branch's view: 7.2; counts: 7.3, 7.4. Search for numbers: its own task.
+
+**What the next sessions must know**
+- For 7.1 and 7.2: `listStockDocuments()` and `getStockDocument()` filter by `branch_id` only; add `to_branch_id` for the receiver, and the type's fields to the page's header.
+- For 7.3 and 7.4: the page shows `qty` only; a count's `counted_qty` needs its column; `canDecide` is write-off only.
+- For 6.2: the Head's waiting write-offs open at `/warehouse/documents/[id]`.
+- A seed table counted by the seed tests (the audit total) grows when the seed writes a new row kind.
+
+The next task is 6.1.

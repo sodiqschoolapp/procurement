@@ -9,12 +9,12 @@ import { ConfirmDialog } from "@/components/confirm-dialog";
 import { toast } from "@/components/toast";
 import { Button } from "@/components/ui/button";
 import type { WriteOffOutcome } from "@/domain/stock-documents";
-import type { WriteOffLine } from "@/features/warehouse/queries/write-off";
+import type { DocumentLine } from "@/features/warehouse/queries/document";
 import { useFormatters } from "@/i18n/use-formatters";
 
 // Approve and Refuse on a waiting write-off (09-warehouse.md, Other documents, Write-off: "Stock
 // changes only after the Head approves"; 11-screens-and-ux.md rule 6: ask for confirmation, say
-// what it covers and state the result; plan of 5.11). Shown only where getWriteOff() offers it
+// what it covers and state the result; plan of 5.11). Shown only where getStockDocument() offers it
 // (`canDecide`); the server asks again under the lock. A line the stock no longer covers is named
 // with what is left, and the write-off keeps waiting (decided item 2). Not a create: a second
 // press, or another Head's at the same moment, is refused as `wrong_status`.
@@ -26,7 +26,7 @@ export function WriteOffDecision({
 }: {
   documentId: string;
   number: string;
-  lines: readonly WriteOffLine[];
+  lines: readonly DocumentLine[];
 }) {
   const t = useTranslations("warehouse.writeOff.page");
   const tAll = useTranslations();
