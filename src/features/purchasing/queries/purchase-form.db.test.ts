@@ -170,3 +170,31 @@ describe("getPurchaseForm: what Subtype bought offers (07 Substitution; plan of 
     ]);
   });
 });
+
+describe('getPurchaseForm: "Give straight to requester" is offered (plan of 5.4, decided item 1)', () => {
+  it("for goods to a Manager who may issue and to the Head; never on a service; never to a Manager with ISSUE_STOCK off", async () => {
+    const s = await scene();
+    const goods = await s.open(s.manager.id);
+    const service = await insertOrder({
+      branchId: s.branch.id,
+      ownerId: s.manager.id,
+      status: "PURCHASING",
+      variantId: (await insertItem({ type: "SERVICE" })).variantId,
+      plannedQty: "1",
+      approvedAt: new Date("2031-05-05T07:00:00Z"),
+    });
+    const offered = async (userId: string) =>
+      Object.fromEntries(
+        ((await getPurchaseForm(userId, [goods.id, service.id]))?.orders ?? []).map((order) => [
+          order.orderId,
+          order.canGiveToRequester,
+        ]),
+      );
+    expect(await offered(s.manager.id)).toEqual({ [goods.id]: true, [service.id]: false });
+    const head = await insertUser("HEAD");
+    expect(await offered(head.id)).toEqual({ [goods.id]: true, [service.id]: false });
+
+    await setManagerRight(s.manager.id, "ISSUE_STOCK", false);
+    expect(await offered(s.manager.id)).toEqual({ [goods.id]: false, [service.id]: false });
+  });
+});
