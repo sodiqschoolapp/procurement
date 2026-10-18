@@ -650,6 +650,15 @@ describePermissionMatrix("the Principal's blocks and lists, the branch wall in t
     expect(product.rows.some((row) => row.purchaseId === record.purchaseId)).toBe(listed);
     if (top.products.some((row) => row.id === record.productId)) expect(listed).toBe(true);
     expect(mine.mine.count).toBe(listed ? 1 : 0);
-    if (!listed) throw new AuthorizationError("not_found");
+    // The other numbers keep to it too (permission review, Should fix 2): a user of another branch
+    // sees only that fresh branch, which holds nothing.
+    if (!listed) {
+      expect(mine.waiting.all).toBe(0);
+      expect(orders.total.count).toBe(0);
+      expect(orders.overdue).toBe(0);
+      throw new AuthorizationError("not_found");
+    }
+    expect(mine.waiting.all).toBeGreaterThanOrEqual(1);
+    expect(orders.total.count).toBeGreaterThanOrEqual(3);
   },
 });

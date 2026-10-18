@@ -182,6 +182,24 @@ describe("the draft wall on the live status (06 Statuses; .claude/rules/server-a
       "all",
     );
     expect(owners.rows.map((row) => row.orderId)).toContain(order.id);
+    // Another Manager and Finance of the branch do not see it; the Head does (permission review,
+    // Should fix 1).
+    const seenBy = async (userId: string) =>
+      (
+        await getStatusOrders(
+          userId,
+          THIS_MONTH,
+          filters,
+          { kind: "status", status: "PENDING_HEAD" },
+          "all",
+        )
+      ).rows.some((row) => row.orderId === order.id);
+    const colleague = await insertUser("MANAGER", { branches: [scene.branch.id] });
+    const finance = await insertUser("FINANCE", { branches: [scene.branch.id] });
+    const head = await insertUser("HEAD");
+    expect(await seenBy(colleague.id)).toBe(false);
+    expect(await seenBy(finance.id)).toBe(false);
+    expect(await seenBy(head.id)).toBe(true);
     // Put back for the other tests.
     await setOrderStatus(order.id, "CANCELLED");
     await refreshNow();
