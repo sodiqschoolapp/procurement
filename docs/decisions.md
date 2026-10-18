@@ -2009,6 +2009,29 @@ Choices made during the build:
 - The reverse dialog has its own result sentence for a write-off (items come back). It still says "go back into stock" for a direct entry, which is wrong there (a direct entry's reverse takes stock out); left for 5.12, which puts Reverse on the document page.
 - The asker taken off the branch, or deactivated, is not told of the decision: `notify()` already sends nothing outside the event's branch (permission review, Should fix 2; a test pins it).
 
+### 5.12 Warehouse documents list and closing a branch (18.10.2026)
+
+The plan's decisions as the plan review of 18.10.2026 confirmed them (corrections 1 to 4 applied), and those of the build. The Look first items come first.
+
+1. **Look first** (approval-order reading). "Unfinished orders" that block closing a branch are those not Closed, Rejected or Cancelled, except a draft never submitted (DRAFT without a number, `isNeverSubmitted()`): it is outside the approval flow and only its owner can delete it. A taken-back draft keeps its number and counts. Proposed `/spec-change` of `edge-cases/requests-and-approval.md`: "Blocked while it has unfinished orders (any order not Closed, Rejected or Cancelled; a draft never submitted does not count) or stock above 0."
+2. **Look first** (stock reading). "Stock above 0" is every `stock_balances` row of the branch with `qty > 0`, counted in subtypes (2.500 kg and 10 pcs do not add up). A waiting write-off holds no stock and does not block.
+3. **Look first** (the address handed from 5.3). The item card's number links to `/warehouse/documents/[id]`, the document's own page, now open to every type. Proposed `/spec-change` of `11-screens-and-ux.md` (Screens): a row "Warehouse document | `/warehouse/documents/[id]` | All".
+4. **Look first** (lock reading). The block is read under the branch row's FOR UPDATE lock of `setBranchActive`; drafts, submit, issue, return, write-off, direct entry and the stock import hold the branch FOR SHARE and queue behind it. Copy as new reads the branch without a lock, but makes only never-submitted drafts. A Reverse or the Head's Reopen can still put stock or an Open order into a closed branch later; the spec says nothing of what a closed branch allows, so nothing more is refused. Proposed `/spec-change` for the owner, if wanted: "Once closed, no stock moves into it and no order of it is reopened."
+5. Direct entries are listed with the other documents and are a type of the filter.
+6. The date filter is a from/to range on the document's Tashkent business date; the department filter lists the departments of the branches shown, inactive ones included, with the branch code when several branches are shown.
+7. No money on the list or the document page, not even a direct entry's cost per unit (09 Stock value).
+8. No status filter and no number search.
+9. The seed writes its direct entry and issue in SQL (`scripts/seed-stock.mjs`) with literal quantities, balances and averages; `tests/seed.db.test.ts` checks them against `nextBalance()` and `documentNumber()`.
+10. The New buttons of the documents list are those of Stock on hand, from the same choices functions (`NewDocumentButtons`).
+11. Tabs "Stock on hand | Documents" above both lists: the one Warehouse (Stock) menu item leaves no other way between them.
+
+Choices made during the build:
+
+- The refusal is `invalid_input` with the fields `orders` (`errors.field.unfinishedOrders`) and `stock` (`errors.field.stockLeft`); the counts travel in `available`, whose comment now names them. The branch page's toast words both with their counts.
+- `getWriteOff` became `getStockDocument` (`queries/document.ts`); `WriteOffStatusLabel` became `DocumentStatusLabel`, which keeps a write-off's own words ("Approved", "Refused") and says "Posted" for the other types; its attribute is `data-document-status`.
+- The seed's audit total grows by one (79 to 80): the direct entry's own `direct_entry.create` row. The seed tests that count every audit row were changed for that reason, and only by that row (**Look first**: a test changed because a requirement changed).
+- The seed's stock is left out when CHL already holds either item, so hand-made stock never meets literal balances.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

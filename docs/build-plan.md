@@ -452,7 +452,7 @@ Stock screens and every document that moves stock inside one branch.
   - **Build:** The Manager asks for a write-off with items, quantities, a reason from the fixed list and a comment; stock changes only when the Head approves; the Head approves or refuses; the decision goes back to the Manager.
   - **Done when:** Database tests: stock is unchanged while the write-off waits; approval lowers it; a refusal changes nothing.
 
-- [ ] **5.12 Warehouse documents list and closing a branch**
+- [x] **5.12 Warehouse documents list and closing a branch**
   - **Read:** `09-warehouse.md` (Stock screens: Documents); `11-screens-and-ux.md` (Screens: Warehouse documents; New issue, return, transfer, write-off). From the former 5.13: `04-catalogs.md` (Rules: 2); `edge-cases/requests-and-approval.md` ("The Head wants to close a branch").
   - **Build:** `/warehouse/documents` with filters by type, date and department; `/warehouse/documents/new?type=` opens the right form. The seed gains an issue and a direct entry. From the former 5.13 (Closing a branch): Deactivating a branch is blocked while it has unfinished orders or stock above 0, and the message says which. From 5.3 (`09-warehouse.md`, Stock screens: Item card, "a link to the source document"): the item card's document number links to that document; 5.12 decides its address (a document page or the documents list filtered to that number).
   - **Done when:** A database test for the branch wall. By hand: filter to the issues of one department. Database tests for both blocks and for the free case.
