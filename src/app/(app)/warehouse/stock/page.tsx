@@ -25,8 +25,8 @@ import { PageLinks } from "../../catalog/page-links";
 // quantity, measure and value, searched and filtered by category; search, category, branch and
 // page stay in the address. The list's branch is the address's `branch=`, else the top bar's
 // choice (decided item 5, as /orders). At phone width the table scrolls inside its panel, as the
-// catalog lists (decided item 9). The minimum and "Low stock only" come with 5.10, the link to the
-// item card with 5.3.
+// catalog lists (decided item 9). Each product name links to its item card in the row's branch
+// (5.3). The minimum and "Low stock only" come with 5.10.
 
 const pageParam = z.coerce.number().int().min(1).catch(1);
 const searchParam = z.string().trim().max(200).catch("");
@@ -198,7 +198,14 @@ export default async function StockOnHandPage({ searchParams }: { searchParams: 
                           </span>
                         )}
                       </td>
-                      <td className="px-4 py-3 font-semibold">{row.productName}</td>
+                      <td className="px-4 py-3 font-semibold">
+                        <Link
+                          href={`/warehouse/items/${row.variantId}?branch=${row.branchId}`}
+                          className="text-primary underline-offset-2 hover:underline"
+                        >
+                          {row.productName}
+                        </Link>
+                      </td>
                       <td className="px-4 py-3">{row.subtypeName ?? ""}</td>
                       <td className="px-4 py-3">{row.branchCode}</td>
                       <td className="px-4 py-3 text-right whitespace-nowrap tabular-nums">

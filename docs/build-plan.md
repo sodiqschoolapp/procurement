@@ -411,7 +411,7 @@ Stock screens and every document that moves stock inside one branch.
   - **Build:** `/warehouse/stock`: product, subtype, photo, quantity, measure, value; search and category filter (the minimum column and the "Low stock only" switch arrive in 5.10); services are never listed; the branch wall.
   - **Done when:** Database test: a Principal sees only their branch's stock. By hand: the stock from phase 3 purchases is listed. The stock part of S7 is green.
 
-- [ ] **5.3 Item card**
+- [x] **5.3 Item card**
   - **Read:** `09-warehouse.md` (Stock screens: Item card); `11-screens-and-ux.md` (Screens: Item card).
   - **Build:** `/warehouse/items/[id]`: every movement of one subtype in one branch, newest first, with the running balance and a link to the source document or order.
   - **Done when:** A database test checks the order and the running balance. By hand: the card of a purchased item lists the receipt with a working link.
@@ -454,7 +454,7 @@ Stock screens and every document that moves stock inside one branch.
 
 - [ ] **5.12 Warehouse documents list and closing a branch**
   - **Read:** `09-warehouse.md` (Stock screens: Documents); `11-screens-and-ux.md` (Screens: Warehouse documents; New issue, return, transfer, write-off). From the former 5.13: `04-catalogs.md` (Rules: 2); `edge-cases/requests-and-approval.md` ("The Head wants to close a branch").
-  - **Build:** `/warehouse/documents` with filters by type, date and department; `/warehouse/documents/new?type=` opens the right form. The seed gains an issue and a direct entry. From the former 5.13 (Closing a branch): Deactivating a branch is blocked while it has unfinished orders or stock above 0, and the message says which.
+  - **Build:** `/warehouse/documents` with filters by type, date and department; `/warehouse/documents/new?type=` opens the right form. The seed gains an issue and a direct entry. From the former 5.13 (Closing a branch): Deactivating a branch is blocked while it has unfinished orders or stock above 0, and the message says which. From 5.3 (`09-warehouse.md`, Stock screens: Item card, "a link to the source document"): the item card's document number links to that document; 5.12 decides its address (a document page or the documents list filtered to that number).
   - **Done when:** A database test for the branch wall. By hand: filter to the issues of one department. Database tests for both blocks and for the free case.
   - Merged with the former 5.13 by the owner on 17.10.2026 (D47).
 

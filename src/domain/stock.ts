@@ -158,3 +158,6 @@ export function stockValue(qty: string, avgCost: bigint): bigint {
 
 /** Stock on hand shows 25 rows per page (11-screens-and-ux.md rule 8). */
 export const STOCK_PAGE_SIZE = 25;
+
+/** The item card shows 50 movements per page (developer-rules.md rule 12; plan of 5.3, item 6). */
+export const ITEM_CARD_PAGE_SIZE = 50;

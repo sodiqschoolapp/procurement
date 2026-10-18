@@ -206,6 +206,7 @@ async function seedStock() {
         [`Toifa ${tag}`],
       );
       const names: Record<"EA" | "EB", string> = { EA: `Ombor ${tag} A`, EB: `Ombor ${tag} B` };
+      const variants: Partial<Record<"EA" | "EB", string>> = {};
       for (const code of ["EA", "EB"] as const) {
         const product = await client.query<{ id: string }>(
           `insert into products (name, type, category_id, unit_id, is_active, has_variants, created_at)
@@ -217,6 +218,7 @@ async function seedStock() {
            values ($1, 'default', true, true, now()) returning id`,
           [product.rows[0]!.id],
         );
+        variants[code] = variant.rows[0]!.id;
         await client.query(
           `insert into stock_balances (branch_id, variant_id, qty, avg_cost, created_at, updated_at)
            select id, $1, 7, 1500, now(), now() from branches where code = $2`,
@@ -225,7 +227,12 @@ async function seedStock() {
       }
       const eb = await client.query<{ id: string }>("select id from branches where code = 'EB'");
       await client.query("commit");
-      return { tag, names, ebId: eb.rows[0]!.id };
+      return {
+        tag,
+        names,
+        variants: variants as Record<"EA" | "EB", string>,
+        ebId: eb.rows[0]!.id,
+      };
     } catch (error) {
       await client.query("rollback");
       throw error;
@@ -260,4 +267,17 @@ test("S7, the stock part: the Principal of EA sees EA's stock only, and EB's bra
   await expect(page.getByText(uz.warehouse.stock.noResultsTitle)).toBeVisible();
   await expect(page.getByText(seeded.names.EB)).toHaveCount(0);
   await expect(page.getByText(seeded.names.EA)).toHaveCount(0);
+
+  // The item card (5.3; progress 5.2 "For 5.3"): EA's item opens from its row; the card of EB's
+  // item, and of EA's item with EB's branch in the address, is the "Not found" page with nothing
+  // of either item (03 rule 1; 15 S7).
+  await page.goto(`/warehouse/stock?q=${encodeURIComponent(seeded.tag)}`);
+  await page.getByRole("link", { name: seeded.names.EA }).click();
+  await expect(page.getByRole("heading", { name: seeded.names.EA })).toBeVisible();
+  for (const variant of [seeded.variants.EB, seeded.variants.EA]) {
+    await page.goto(`/warehouse/items/${variant}?branch=${seeded.ebId}`);
+    await expect(page.getByRole("heading", { name: uz.notFoundPage.title })).toBeVisible();
+    await expect(page.getByText(seeded.names.EB)).toHaveCount(0);
+    await expect(page.getByText(seeded.names.EA)).toHaveCount(0);
+  }
 });

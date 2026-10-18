@@ -1748,6 +1748,35 @@
       "emptyText": "Items appear here when a purchase is recorded and its items are received into the warehouse.",
       "noResultsTitle": "Nothing found",
       "noResultsText": "No stock matches the search or the category. Change them or clear them."
+    },
+    "item": {
+      "back": "Stock on hand",
+      "branch": "Branch",
+      "subtype": "Subtype",
+      "onHand": "On hand",
+      "summary": "{count, plural, one {# movement} other {# movements}}",
+      "columns": {
+        "moment": "Date",
+        "movement": "Movement",
+        "source": "Source",
+        "change": "Change",
+        "balance": "Balance"
+      },
+      "order": "Order {number}",
+      "noSource": "—",
+      "emptyTitle": "No movements yet",
+      "emptyText": "Movements appear here when this item is received, issued, returned or moved in this branch.",
+      "types": {
+        "RECEIPT": "Receipt",
+        "ISSUE": "Issue to a department",
+        "RETURN": "Return from a department",
+        "TRANSFER_OUT": "Transfer out",
+        "TRANSFER_IN": "Transfer in",
+        "WRITE_OFF": "Write-off",
+        "CORRECTION": "Correction after a count",
+        "DIRECT_ENTRY": "Direct entry",
+        "REVERSAL": "Reversal"
+      }
     }
   }
 }

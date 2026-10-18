@@ -1748,6 +1748,35 @@
       "emptyText": "Xarid yozilib, mahsulot omborga qabul qilinganda bu yerda ko'rinadi.",
       "noResultsTitle": "Hech narsa topilmadi",
       "noResultsText": "Bu qidiruv yoki toifa bo'yicha qoldiq yo'q. Ularni o'zgartiring yoki tozalang."
+    },
+    "item": {
+      "back": "Ombordagi qoldiq",
+      "branch": "Filial",
+      "subtype": "Turi",
+      "onHand": "Qoldiq",
+      "summary": "{count, plural, one {# ta harakat} other {# ta harakat}}",
+      "columns": {
+        "moment": "Sana",
+        "movement": "Harakat",
+        "source": "Manba",
+        "change": "O'zgarish",
+        "balance": "Qoldiq"
+      },
+      "order": "Buyurtma {number}",
+      "noSource": "—",
+      "emptyTitle": "Hozircha harakat yo'q",
+      "emptyText": "Bu mahsulot shu filialda qabul qilinganda, berilganda, qaytarilganda yoki ko'chirilganda harakatlar shu yerda ko'rinadi.",
+      "types": {
+        "RECEIPT": "Qabul",
+        "ISSUE": "Bo'limga berish",
+        "RETURN": "Bo'limdan qaytarish",
+        "TRANSFER_OUT": "Ko'chirish (chiqim)",
+        "TRANSFER_IN": "Ko'chirish (kirim)",
+        "WRITE_OFF": "Hisobdan chiqarish",
+        "CORRECTION": "Sanoqdan keyingi tuzatish",
+        "DIRECT_ENTRY": "To'g'ridan-to'g'ri kiritish",
+        "REVERSAL": "Bekor qilish"
+      }
     }
   }
 }
