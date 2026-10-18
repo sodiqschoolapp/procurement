@@ -344,6 +344,23 @@ describe("returnStock (09 Other documents, Return from a department)", () => {
     expect(await returnCount()).toBe(1);
   });
 
+  it("answers a known browser id sent by another user, or with another branch, Not found (developer-rules.md rule 8)", async () => {
+    const a = await goods();
+    await receive(branch.id, a, "10", 1000n);
+    await issue(a, "5");
+    // The maker and a colleague work in both branches, so only the stored maker and branch decide.
+    const maker = (await insertUser("MANAGER", { branches: [branch.id, other.id] })).id;
+    const colleague = (await insertUser("MANAGER", { branches: [branch.id, other.id] })).id;
+    const sent = returnInput([{ variantId: a, qty: "2" }]);
+    expect((await runAction(returnStock, maker, sent)).ok).toBe(true);
+    const byColleague = await runAction(returnStock, colleague, sent);
+    expect(byColleague.ok ? null : byColleague.error.code).toBe("not_found");
+    const elsewhere = await runAction(returnStock, maker, { ...sent, branchId: other.id });
+    expect(elsewhere.ok ? null : elsewhere.error.code).toBe("not_found");
+    expect(await balanceOf(branch.id, a)).toEqual({ qty: "7.000", avg_cost: "1000" });
+    expect(await returnCount()).toBe(1);
+  });
+
   it("refuses tomorrow, allows today (decided item 6)", async () => {
     const a = await goods();
     await receive(branch.id, a, "10", 1000n);
@@ -371,9 +388,11 @@ describe("returnStock (09 Other documents, Return from a department)", () => {
     expect(inactive.ok ? null : inactive.error.fields).toEqual({
       departmentId: "errors.field.inactive",
     });
+    // A Manager of both branches: only the department's branch keeps it out (permission review).
+    const both = (await insertUser("MANAGER", { branches: [branch.id, other.id] })).id;
     const foreign = await runAction(
       returnStock,
-      manager,
+      both,
       returnInput([{ variantId: a, qty: "1" }], { departmentId: away, comment: "Sinov izoh" }),
     );
     expect(foreign.ok ? null : foreign.error.fields).toEqual({
