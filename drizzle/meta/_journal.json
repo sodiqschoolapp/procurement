@@ -253,6 +253,13 @@
       "when": 1792300747856,
       "tag": "0035_stock_minimums",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1792325245928,
+      "tag": "0036_analytics_spending",
+      "breakpoints": true
     }
   ]
 }

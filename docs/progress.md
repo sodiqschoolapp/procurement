@@ -1491,4 +1491,21 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - `listWhere()` takes the setting the `stuck` filter needs; callers go through `whereOf()`, which reads it in their snapshot.
 - The seed now holds purchases: a seed test that counts purchases, trips, money rows or audit rows counts these too (`purchase` move of `seed-orders.mjs`).
 
-The next task is 6.3.
+## 6.3 Analytics foundations (18.10.2026, pull request #104)
+
+**Built**
+- `analytics_spending` (migration 0036): one row per record not cancelled, its amount `actualTotal()` of the record; rewritten every 5 minutes by the job `analytics_refresh` (`src/server/jobs/analytics-refresh.ts`, `refreshAnalytics()`).
+- Domain `src/domain/analytics.ts`: `periodOf()`, `periodBefore()`, `periodChoices()`, `monthsOf()`, `monthInside()`, `monthBefore()`, `changeAgainst()`.
+- `features/analytics`: `period-params.ts` (Zod parser and `analyticsSearch()`), `spendingWhere()`, `resolvePeriod()`; queries `getAnalyticsFilters()`, `getSpending()`, `getSpendingRecords()`; `/analytics`, `/analytics/records`, `GET /analytics/download?block=months|categories|records`.
+- `src/components/charts/`: `BarChartBlock`, `LineChartBlock`, `ChartPoint`.
+
+**Left out, and the task that brings it**
+- The role blocks: 6.4, 6.5, 6.6. The page PDF: 6.7. Payment type in the summary (each extra has its own): the task that splits by payment type.
+
+**What the next sessions must know**
+- For 6.4 to 6.6: a new summary table is filled in `refreshAnalytics()` (same transaction, amounts from `src/domain/`), read with a WHERE builder like `spendingWhere()` shared by the number, its drill-down and its export; extend `DrillKey` and `EXPORT_BLOCKS` in `period-params.ts`.
+- For 6.4 to 6.6: every number carries `changeAgainst(now, before)`; write it with `changeText()`; each chart has its table under it (`ChartCard` in `spending-block.tsx`).
+- For 6.7: the page's data is `getSpending()` with the parsed address; the sheets of `download/sheets.ts` already hold the heading lines.
+- Tests: `tests/helpers/analytics.ts` (`spendingScene()`, `bought()`, `refreshNow()`); the summary holds every branch of the test file's database, so read your own branch. A browser test calls `refreshAnalytics()` itself (see `tests/e2e/analytics.spec.ts`).
+
+The next task is 6.4.

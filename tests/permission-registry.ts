@@ -235,6 +235,11 @@ export const QUERIES: Record<string, Permission> = {
   // write-offs and settlements also under their own rights, behind the list's walls.
   "src/features/home/queries/head-home.ts#getHeadHome": "request.approve_step1",
   "src/features/home/queries/finance-home.ts#getFinanceHome": "request.approve_step3",
+  // The Analytics page (plan of 6.3): data.view, the branch wall and the filters in the SQL of
+  // spendingWhere() (src/features/analytics/queries/analytics-matrix.db.test.ts).
+  "src/features/analytics/queries/filters.ts#getAnalyticsFilters": "data.view",
+  "src/features/analytics/queries/spending.ts#getSpending": "data.view",
+  "src/features/analytics/queries/spending-records.ts#getSpendingRecords": "data.view",
   // The order list's download, Excel and PDF (plan of 2.14, decided item 4, Look first): data.export
   // with the list's own walls in the SQL (queries/order-download-matrix.db.test.ts).
   "src/features/orders/queries/order-list.ts#orderDownload": "data.export",

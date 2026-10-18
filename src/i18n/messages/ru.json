@@ -2291,5 +2291,81 @@
         "actions": "Действия"
       }
     }
+  },
+  "analytics": {
+    "title": "Аналитика",
+    "refreshed": "Сводка обновлена в {time}",
+    "refreshing": "Сводка готовится. Цифры появятся в течение 5 минут.",
+    "filters": "Фильтры",
+    "apply": "Показать",
+    "reset": "Сбросить",
+    "period": "Период",
+    "periods": {
+      "this_month": "Этот месяц",
+      "last_month": "Прошлый месяц",
+      "this_quarter": "Этот квартал",
+      "school_year": "Этот учебный год",
+      "custom": "Свои даты"
+    },
+    "from": "С",
+    "to": "По",
+    "branch": "Филиал",
+    "allBranches": "Все мои филиалы",
+    "category": "Категория",
+    "allCategories": "Все категории",
+    "department": "Отдел",
+    "allDepartments": "Все отделы",
+    "manager": "Менеджер",
+    "allManagers": "Все менеджеры",
+    "supplier": "Поставщик",
+    "allSuppliers": "Все поставщики",
+    "inactive": "{name} (неактивен)",
+    "departmentOption": "{name}, {branch}",
+    "periodLine": "{first} – {last}",
+    "monthLabel": "{month} {year}",
+    "excel": "Excel",
+    "change": {
+      "up": "+{amount} (+{percent} %) к прошлому периоду",
+      "down": "−{amount} (−{percent} %) к прошлому периоду",
+      "same": "Без изменений к прошлому периоду",
+      "upFromNothing": "+{amount} к прошлому периоду, в котором ничего не было"
+    },
+    "spending": {
+      "title": "Расходы",
+      "total": "Потрачено за период",
+      "byMonth": "По месяцам",
+      "byCategory": "По категориям",
+      "empty": "В этом периоде ничего не куплено, и в прошлом тоже.",
+      "columns": {
+        "month": "Месяц",
+        "category": "Категория",
+        "amount": "Потрачено",
+        "change": "Изменение"
+      },
+      "open": "Показать записи за числом: {what}"
+    },
+    "records": {
+      "title": "Записи за числом",
+      "back": "Назад к аналитике",
+      "period": "Все расходы, {first} – {last}",
+      "month": "{month}: {first} – {last}",
+      "category": "{name}, {first} – {last}",
+      "summary": "{count, plural, one {# запись} few {# записи} many {# записей} other {# записи}}, итого {total}",
+      "empty": "Ни одна запись не входит в это число.",
+      "noSupplier": "Без поставщика",
+      "columns": {
+        "order": "Заказ",
+        "product": "Товар",
+        "branch": "Филиал",
+        "date": "Дата покупки",
+        "supplier": "Поставщик",
+        "amount": "Фактическая сумма"
+      }
+    },
+    "sheets": {
+      "months": "Расходы по месяцам",
+      "categories": "Расходы по категориям",
+      "records": "Записи"
+    }
   }
 }
