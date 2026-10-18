@@ -122,7 +122,7 @@ async function spendingIn(
   };
 }
 
-function counted(now: string, before: string): Counted {
+export function counted(now: string, before: string): Counted {
   const amount = BigInt(now);
   return { amount, change: changeAgainst(amount, BigInt(before)) };
 }

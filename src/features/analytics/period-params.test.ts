@@ -15,6 +15,7 @@ describe("parseAnalyticsParams", () => {
       filters: NO_ANALYTICS_FILTERS,
       branchGiven: false,
       key: { kind: "period" },
+      otherOwners: false,
       page: 1,
       block: null,
     });
@@ -33,10 +34,38 @@ describe("parseAnalyticsParams", () => {
       filters,
       branchGiven: true,
       key: { kind: "category", category: ID },
+      otherOwners: false,
       page: 3,
       block: "records",
     });
   });
+
+  // The keys and blocks of 6.4a (plan of 6.4, decided item 9; review of the plan, correction 1).
+  it.each([
+    [{ kind: "payment", payment: "CARD" }, "payments"],
+    [{ kind: "colour", colour: "amber" }, "orders"],
+    [{ kind: "overspent" }, "outcomeBranches"],
+    [{ kind: "saved" }, "outcomeManagers"],
+  ] as const)("reads the key %o and the block %s back", (key, block) => {
+    const filters = { ...NO_ANALYTICS_FILTERS, branch: ID };
+    const text = analyticsSearch({ choice: "this_month", from: null, to: null }, filters, {
+      key,
+      otherOwners: true,
+      block,
+    });
+    expect(parseAnalyticsParams(Object.fromEntries(new URLSearchParams(text)))).toMatchObject({
+      key,
+      otherOwners: true,
+      block,
+    });
+  });
+
+  it.each(["branches", "departments", "suppliers", "payments", "outcomes"] as const)(
+    "reads the export block %s",
+    (block) => {
+      expect(parseAnalyticsParams({ block })).toMatchObject({ block });
+    },
+  );
 
   it("treats empty form fields as no filter, `branch=all` as all, and drops dates beside another period", () => {
     expect(
@@ -71,6 +100,11 @@ describe("parseAnalyticsParams", () => {
     ["a page that is not a number", { page: "two" }],
     ["an unknown export block", { block: "everything" }],
     ["a value given twice", { category: [ID, ID] }],
+    ["an unknown payment type", { key: "payment:CHEQUE" }],
+    ["a payment type in small letters", { key: "payment:cash" }],
+    ["an unknown colour", { key: "colour:grey" }],
+    ["an owner other than `other`", { owner: "all" }],
+    ["other owners beside a Manager filter", { owner: "other", manager: ID }],
   ])("refuses %s", (_, raw) => {
     expect(parseAnalyticsParams(raw)).toBeNull();
   });

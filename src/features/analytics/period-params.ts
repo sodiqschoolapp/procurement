@@ -2,6 +2,8 @@ import * as z from "zod";
 
 import { isBusinessDate } from "@/domain/business-date";
 import { PERIOD_CHOICES, type PeriodChoice, isMonthKey } from "@/domain/analytics";
+import type { Colour } from "@/domain/colours";
+import { PAYMENT_TYPES, type PaymentType } from "@/domain/payment-types";
 
 // The address of the Analytics pages (10-notifications-analytics-reports.md, Analytics page per
 // role, points 1 to 4; build-plan 6.3): the period, the filters, the number a drill-down opens,
@@ -30,15 +32,40 @@ export const NO_ANALYTICS_FILTERS: AnalyticsFilters = {
 
 export type PeriodInput = { choice: PeriodChoice; from: string | null; to: string | null };
 
-/** The number behind a drill-down (point 3): the whole period, one month of it, one category. */
+/**
+ * The number behind a drill-down (point 3). Of Spending (/analytics/records): the whole period,
+ * one month of it, one category, one payment type (plan of 6.4, decided item 9). Of Plan vs actual
+ * (/analytics/orders): every ended order (`period`), one colour, the overspent, the saved. A
+ * breakdown by branch, department, supplier or Manager drills down with that filter set.
+ */
 export type DrillKey =
-  { kind: "period" } | { kind: "month"; month: string } | { kind: "category"; category: string };
+  | { kind: "period" }
+  | { kind: "month"; month: string }
+  | { kind: "category"; category: string }
+  | { kind: "payment"; payment: PaymentType }
+  | { kind: "colour"; colour: Colour }
+  | { kind: "overspent" }
+  | { kind: "saved" };
+
+export const OUTCOME_COLOURS = ["green", "amber", "red"] as const satisfies readonly Colour[];
 
 /** The rows of a drill-down page (developer-rules.md rule 12: lists use server paging). */
 export const RECORDS_PAGE_SIZE = 50;
 
 /** What the download writes (point 4): a chart's table, or the drill-down list. */
-export const EXPORT_BLOCKS = ["months", "categories", "records"] as const;
+export const EXPORT_BLOCKS = [
+  "months",
+  "categories",
+  "records",
+  "branches",
+  "departments",
+  "suppliers",
+  "payments",
+  "outcomes",
+  "outcomeBranches",
+  "outcomeManagers",
+  "orders",
+] as const;
 export type ExportBlock = (typeof EXPORT_BLOCKS)[number];
 
 export type AnalyticsParams = {
@@ -47,6 +74,12 @@ export type AnalyticsParams = {
   /** False when the address has no `branch`: the page starts at the branch view (decided item 9). */
   branchGiven: boolean;
   key: DrillKey;
+  /**
+   * The orders of owners who are not Managers (an order the Head created, 03 rule 6): the by-Manager
+   * row "Other owners" of Plan vs actual and its drill-down (review of the plan of 6.4, correction
+   * 1). Never with a Manager filter.
+   */
+  otherOwners: boolean;
   page: number;
   block: ExportBlock | null;
 };
@@ -54,7 +87,8 @@ export type AnalyticsParams = {
 const id = z.uuid().transform((value) => value.toLowerCase());
 const date = z.string().refine(isBusinessDate);
 
-const KEY = /^(period|month:\d{4}-\d{2}|category:[0-9a-fA-F-]{36})$/;
+const KEY =
+  /^(period|overspent|saved|month:\d{4}-\d{2}|category:[0-9a-fA-F-]{36}|payment:[A-Z]+|colour:[a-z]+)$/;
 
 const schema = z
   .object({
@@ -67,17 +101,27 @@ const schema = z
     manager: id.optional(),
     supplier: id.optional(),
     key: z.string().regex(KEY).default("period"),
+    owner: z.literal("other").optional(),
     page: z.coerce.number().int().min(1).max(100_000).default(1),
     block: z.enum(EXPORT_BLOCKS).optional(),
   })
   .refine(
     (value) => value.period !== "custom" || (value.from && value.to && value.from <= value.to),
-  );
+  )
+  .refine((value) => !(value.owner && value.manager));
 
 function keyOf(text: string): DrillKey | null {
-  if (text === "period") return { kind: "period" };
+  if (text === "period" || text === "overspent" || text === "saved") return { kind: text };
   const [kind, value] = text.split(/:(.*)/s) as [string, string];
   if (kind === "month") return isMonthKey(value) ? { kind, month: value } : null;
+  if (kind === "payment") {
+    const payment = PAYMENT_TYPES.find((type) => type === value);
+    return payment ? { kind, payment } : null;
+  }
+  if (kind === "colour") {
+    const colour = OUTCOME_COLOURS.find((each) => each === value);
+    return colour ? { kind, colour } : null;
+  }
   const category = id.safeParse(value);
   return category.success ? { kind: "category", category: category.data } : null;
 }
@@ -114,6 +158,7 @@ export function parseAnalyticsParams(raw: Raw): AnalyticsParams | null {
     },
     branchGiven: value.branch !== undefined,
     key,
+    otherOwners: value.owner === "other",
     page: value.page,
     block: value.block ?? null,
   };
@@ -123,7 +168,7 @@ export function parseAnalyticsParams(raw: Raw): AnalyticsParams | null {
 export function analyticsSearch(
   period: PeriodInput,
   filters: AnalyticsFilters,
-  extra: { key?: DrillKey; page?: number; block?: ExportBlock } = {},
+  extra: { key?: DrillKey; otherOwners?: boolean; page?: number; block?: ExportBlock } = {},
 ): string {
   const params = new URLSearchParams();
   params.set("period", period.choice);
@@ -136,13 +181,26 @@ export function analyticsSearch(
     const chosen = filters[name];
     if (chosen) params.set(name, chosen);
   }
-  if (extra.key && extra.key.kind !== "period") {
-    params.set(
-      "key",
-      extra.key.kind === "month" ? `month:${extra.key.month}` : `category:${extra.key.category}`,
-    );
-  }
+  if (extra.key && extra.key.kind !== "period") params.set("key", keyText(extra.key));
+  if (extra.otherOwners) params.set("owner", "other");
   if (extra.page && extra.page > 1) params.set("page", String(extra.page));
   if (extra.block) params.set("block", extra.block);
   return params.toString();
+}
+
+function keyText(key: DrillKey): string {
+  switch (key.kind) {
+    case "period":
+    case "overspent":
+    case "saved":
+      return key.kind;
+    case "month":
+      return `month:${key.month}`;
+    case "category":
+      return `category:${key.category}`;
+    case "payment":
+      return `payment:${key.payment}`;
+    case "colour":
+      return `colour:${key.colour}`;
+  }
 }
