@@ -70,6 +70,8 @@ export type OrderRow = {
   number?: string | null;
   variantId?: string;
   departmentId?: string;
+  /** 05 field 7, "Requested by"; empty unless given. */
+  requesterName?: string | null;
   version?: number;
   revision?: number;
   priority?: "NORMAL" | "URGENT";
@@ -106,6 +108,7 @@ export async function insertOrder(row: OrderRow) {
       number: row.number === undefined ? (submitted ? inventedNumber() : null) : row.number,
       variantId,
       departmentId,
+      requesterName: row.requesterName ?? null,
       neededBy: row.neededBy ?? "2031-05-01",
       plannedQty: row.plannedQty ?? "10.000",
       plannedPrice: row.plannedPrice ?? 5000n,
