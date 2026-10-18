@@ -249,6 +249,11 @@ export const QUERIES: Record<string, Permission> = {
   "src/features/analytics/queries/prices.ts#getPriceChoices": "data.view",
   "src/features/analytics/queries/approval-speed.ts#getApprovalSpeed": "data.view",
   "src/features/analytics/queries/approval-orders.ts#getApprovalOrders": "data.view",
+  // The Head's Managers block of 6.4c: data.view, the walls in outcomesWhere(), cancelledWhere()
+  // and cashWhere().
+  "src/features/analytics/queries/managers.ts#getManagers": "data.view",
+  "src/features/analytics/queries/cancelled-records.ts#getCancelledRecords": "data.view",
+  "src/features/analytics/queries/cash-orders.ts#getCashOrders": "data.view",
   // The order list's download, Excel and PDF (plan of 2.14, decided item 4, Look first): data.export
   // with the list's own walls in the SQL (queries/order-download-matrix.db.test.ts).
   "src/features/orders/queries/order-list.ts#orderDownload": "data.export",
