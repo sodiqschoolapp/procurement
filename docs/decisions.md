@@ -2142,6 +2142,33 @@ Choices made during the build:
 - The Excel writer: a count cell kind; a total may be absent (top 10 suppliers, the Plan vs actual counts) or name its column (the orders list's signed difference, the records list); an empty table keeps the total's label in the first column (found by the 6.4a route matrix: the total was written over its label).
 - Permission review: the route matrix covers every 6.4a block (Must fix 1); the orders list keeps the draft wall in its SQL (Should fix 1); a matrix case for the payment key (Should fix 2).
 
+### 6.4b Analytics: Head, Prices and Approval speed (18.10.2026)
+
+The plan's decisions as the plan review of 18.10.2026 confirmed them (corrections 1 to 3 applied: one price formula, `unitPriceOf()`, for the trend, the rises and the spread; "All branches" and "in all" from the set's own sums; the seed numbers worked out from the seed's events), and those of the build. The Look first items come first.
+
+1. **Look first** (money). The price of a set of records is goods ÷ quantity, rounded once half up: `unitPriceOf()`, pulled out of 3.5's `actualUnitPrice()`, which keeps its results. Each `analytics_spending` row stores `actualGoods()` of its record, so SQL only adds whole so'm and quantities. Extra costs are not part of a price; a gift (price 0) is left out of every price number.
+2. **Look first** (money). A price is per subtype, the subtype the record bought (07 Substitution); a product without subtypes is its default subtype; services count.
+3. **Look first** (money). The price trend: one point per month of the period, the month's `unitPriceOf()`, with its change against the month before (the first point against the whole month before the period); a month with no record has no point. The subtype is the one picked (`variant=`), else the one with the most records in the period.
+4. **Look first** (money). Biggest rises: the 90 Tashkent days ending today, whatever the period, the filters applied. Earlier price: the newest record before the 90 days, else the oldest in them; newest: the newest in them; records by trip date, entry time, id. Rise `changeAgainst(newest, earlier)`, only above 0, the 10 largest by percent (ties by so'm, name) on the page, all in the export. No change against a period before.
+5. **Look first** (money). Different prices: per subtype in the period, `unitPriceOf()` of each branch-and-supplier pair (no supplier a pair of its own); listed when the pairs differ; cheapest against dearest by `changeAgainst()`. No change against a period before.
+6. **Look first** (approval order). A stay runs from entering Waiting for Head, Principal or Finance to that step's Approve, Send back or Reject; a stay ended by Cancel or Take back is left out; a move with from = to neither starts nor ends one; a Head-created order has no Head stay. `approvalStays()` reads them; the open one is "waiting now".
+7. **Look first** (approval order). Clock hours; a stay counts on the Tashkent date it ended; `averageHours(Σ seconds, count)` half up to one decimal for any set, "All branches" included; the change is the difference in hours.
+8. **Look first** (approval order). Waiting now: the open stays, grouped by fixed analytics edges (24 h, 48 h, 7 days, strict as `stuckBefore()`), not the reminder settings, read from `analytics_steps` with the injected clock; no period, no change.
+9. **Look first** (approval order; proposed `/spec-change`). The shares are of the approvers' decisions in the period, per step and in all, with the change in points. Proposed wording of `10-notifications-analytics-reports.md`, Head, Approval speed: "…; of the approvers' decisions, the share that sent back or rejected, with the most common reasons".
+10. **Look first** (approval order). Reasons are grouped by `reasonKey()` (trimmed, one space, lower case), each with its newest spelling and its count of decisions; the 5 largest of send backs and of rejections. A send back's per-order note is not a reason.
+11. The supplier filter keeps an order with a live record from that supplier, as Plan vs actual; so "waiting now" is empty with a supplier chosen. Manager the current owner, category the planned subtype's, department the order's.
+12. Drill-down keys: `price:<subtype>[:<YYYY-MM>|:nosupplier]` on `/analytics/records` (a pair sets the branch and supplier filters; a rise opens custom dates from the earlier record to today); `step:<status|all>[:<decision>]` with `reason=` and `waiting:<status|all>:<group|all>` on `/analytics/approvals`.
+13. `analytics_spending` gains the subtype, quantity, price, goods and entry time rather than a new table. The migration clears its derived rows and the job's `last_finished_at` and `last_tick`, so the page says "being prepared" until the next run rewrites them.
+14. Every list keeps the branch wall and the draft wall in its SQL (`stepsWhere()`).
+
+Choices made during the build:
+
+- The draft wall reads the order's live status and owner, not a copy in `analytics_steps` (the plan named a `status` column for it): a Draft taken back after a refresh is hidden at once, as 6.4a's orders list joins `orders`. The column was dropped before the migration was merged.
+- "Waiting now" and its list are grouped in TypeScript by `waitingGroup()`, never by a copy of its edges in SQL; the open stays are few.
+- `spendingWhere()` and `stepsWhere()` return SQL `true` when nothing filters (the Head with no filter), so a caller can always `and` them.
+- The 6.3 constraint test of `analytics_spending` writes the five new columns in its direct insert (a requirement changed: the columns are NOT NULL); nothing it checks changed.
+- The separator "·" between two texts is the message `analytics.joined` in the three languages (no text in a screen).
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

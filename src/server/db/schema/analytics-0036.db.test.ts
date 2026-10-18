@@ -48,10 +48,11 @@ beforeAll(async () => {
 function insertRow(row: Row) {
   return db.execute(sql`
     insert into analytics_spending (purchase_id, order_id, branch_id, purchased_on, category_id,
-      department_id, owner_id, supplier_id, amount)
+      department_id, owner_id, supplier_id, amount, variant_id, qty, unit_price, goods, created_at)
     values (${row.purchase_id}, ${row.order_id}, ${row.branch_id}, '2031-05-02',
       ${row.category_id}, ${row.department_id}, ${row.owner_id}, ${row.supplier_id},
-      ${row.amount})`);
+      ${row.amount}, (select variant_id from purchases where id = ${valid.purchase_id}), 1, 0, 0,
+      '2031-05-02T05:00:00Z')`);
 }
 
 describe("analytics_spending", () => {

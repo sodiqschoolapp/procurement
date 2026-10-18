@@ -11,6 +11,11 @@ import {
   periodBefore,
   periodChoices,
   periodOf,
+  WAITING_GROUP_KEYS,
+  averageHours,
+  priceRiseSince,
+  reasonKey,
+  waitingGroup,
 } from "./analytics";
 
 // 10-notifications-analytics-reports.md, Analytics page per role, point 1 ("This month, last month,
@@ -236,5 +241,48 @@ describe("the change of a share (10 point 1; plan of 6.4, item 7)", () => {
   it("has none when either period has no share", () => {
     expect(shareChange("50.0", null)).toBeNull();
     expect(shareChange(null, "50.0")).toBeNull();
+  });
+});
+
+describe("the 6.4b numbers (10 Analytics, Head, Prices and Approval speed; plan of 6.4b)", () => {
+  it("priceRiseSince: today and the 89 days before it (decided item 4)", () => {
+    expect(priceRiseSince("2031-05-02")).toBe("2031-02-02");
+    expect(daysOf({ first: priceRiseSince("2031-05-02"), last: "2031-05-02" })).toBe(90);
+  });
+
+  it("averageHours: Σ seconds ÷ count in hours, half up to one decimal (decided item 7)", () => {
+    expect(averageHours(16_200n, 2)).toBe("2.3");
+    expect(averageHours(3_600n, 1)).toBe("1.0");
+    expect(averageHours(0n, 3)).toBe("0.0");
+    expect(averageHours(0n, 0)).toBeNull();
+    expect(() => averageHours(-1n, 1)).toThrow(RangeError);
+    expect(() => averageHours(1n, -1)).toThrow(RangeError);
+  });
+
+  it("averageHours of all branches is of the whole set, not a mean of branch means (review correction 2)", () => {
+    // CHL: 1 h and 3 h; another branch: 8 h. All branches: 12 h ÷ 3 = 4.0, not (2.0 + 8.0) ÷ 2.
+    expect(averageHours(3_600n + 10_800n, 2)).toBe("2.0");
+    expect(averageHours(28_800n, 1)).toBe("8.0");
+    expect(averageHours(3_600n + 10_800n + 28_800n, 3)).toBe("4.0");
+  });
+
+  it("waitingGroup: strict edges at 24 h, 48 h and 7 days (decided item 8)", () => {
+    const now = new Date("2031-05-10T12:00:00Z");
+    const ago = (ms: number) => new Date(now.getTime() - ms);
+    const hour = 3_600_000;
+    expect(waitingGroup(ago(0), now)).toBe("day");
+    expect(waitingGroup(ago(24 * hour), now)).toBe("day");
+    expect(waitingGroup(ago(24 * hour + 1000), now)).toBe("twoDays");
+    expect(waitingGroup(ago(48 * hour), now)).toBe("twoDays");
+    expect(waitingGroup(ago(48 * hour + 1000), now)).toBe("week");
+    expect(waitingGroup(ago(168 * hour), now)).toBe("week");
+    expect(waitingGroup(ago(168 * hour + 1000), now)).toBe("older");
+    expect(WAITING_GROUP_KEYS).toEqual(["day", "twoDays", "week", "older"]);
+  });
+
+  it("reasonKey: trimmed, one space, lower case (decided item 10)", () => {
+    expect(reasonKey("  Narxi  juda\tqimmat ")).toBe("narxi juda qimmat");
+    expect(reasonKey("NARXI JUDA QIMMAT")).toBe(reasonKey("narxi juda qimmat"));
+    expect(reasonKey("Цена высокая")).toBe("цена высокая");
   });
 });

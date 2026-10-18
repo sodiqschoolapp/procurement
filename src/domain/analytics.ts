@@ -227,3 +227,70 @@ export function shareChange(now: string | null, before: string | null): string |
   if (now === null || before === null) return null;
   return new Exact(now).minus(before).toDecimalPlaces(1, Exact.ROUND_HALF_UP).toFixed(1);
 }
+
+// The Prices and Approval speed blocks of the Head's page (10 Analytics, Head; build-plan 6.4b).
+
+/** "Biggest price rises in the last 90 days" (10 Head, Prices): fixed by the spec, not the period. */
+export const PRICE_RISE_DAYS = 90;
+
+/**
+ * The first trip date of the 90 days: today − 89, so today and the 89 days before it, as
+ * `recentPurchaseSince()` of ./prices.ts counts 90 days (plan of 6.4b, decided item 4, Look first).
+ */
+export function priceRiseSince(today: BusinessDate): BusinessDate {
+  return shiftDays(today, -(PRICE_RISE_DAYS - 1));
+}
+
+/**
+ * The average of `count` stays of `totalSeconds` together, in clock hours, half up to one decimal
+ * (10 Head, Approval speed: "Average hours at each step"; plan of 6.4b, decided item 7, Look
+ * first); `null` for no stay. Any set of stays (one branch's, all branches') is averaged from its
+ * own sum and count, never as a mean of means (review of the plan, correction 2).
+ */
+export function averageHours(totalSeconds: bigint, count: number): string | null {
+  if (typeof totalSeconds !== "bigint" || totalSeconds < 0n) {
+    throw new RangeError("Seconds are a whole number (bigint), 0 or more.");
+  }
+  if (!Number.isSafeInteger(count) || count < 0) {
+    throw new RangeError(`A count of stays is 0 or more, not ${count}.`);
+  }
+  if (count === 0) return null;
+  return new Exact(totalSeconds.toString())
+    .dividedBy(count * 3600)
+    .toDecimalPlaces(1, Exact.ROUND_HALF_UP)
+    .toFixed(1);
+}
+
+/**
+ * The age groups of "Orders waiting now, by age" (10 Head, Approval speed; plan of 6.4b, decided
+ * item 8, Look first): fixed analytics groups, not the reminder settings. `upTo` is the group's
+ * last age in hours, its edge strict as `stuckBefore()` counts: exactly 48 hours is still "24 to
+ * 48 hours", 48 hours and one second is "2 to 7 days".
+ */
+export const WAITING_GROUPS = [
+  { group: "day", upTo: 24 },
+  { group: "twoDays", upTo: 48 },
+  { group: "week", upTo: 7 * 24 },
+  { group: "older", upTo: null },
+] as const;
+export type WaitingGroup = (typeof WAITING_GROUPS)[number]["group"];
+export const WAITING_GROUP_KEYS = WAITING_GROUPS.map((each) => each.group) as WaitingGroup[];
+
+const HOUR_MS = 3_600_000;
+
+/** The group of an order that entered its Waiting step at `enteredAt`, at `now` of the clock. */
+export function waitingGroup(enteredAt: Date, now: Date): WaitingGroup {
+  const waited = now.getTime() - enteredAt.getTime();
+  for (const { group, upTo } of WAITING_GROUPS) {
+    if (upTo === null || waited <= upTo * HOUR_MS) return group;
+  }
+  return "older";
+}
+
+/**
+ * The key a free-text reason is grouped by (06 rule 3: a reason is free text; plan of 6.4b,
+ * decided item 10, Look first): trimmed, every run of white space made one space, lower case.
+ */
+export function reasonKey(reason: string): string {
+  return reason.trim().replace(/\s+/gu, " ").toLowerCase();
+}

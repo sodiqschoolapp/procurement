@@ -2335,7 +2335,11 @@
       "shareUp": "+{points} п. п. к прошлому периоду",
       "shareDown": "−{points} п. п. к прошлому периоду",
       "shareSame": "Доля как в прошлом периоде",
-      "shareNone": "В прошлом периоде заказы не завершались"
+      "shareNone": "В прошлом периоде заказы не завершались",
+      "hoursUp": "+{hours} ч к прошлому периоду",
+      "hoursDown": "−{hours} ч к прошлому периоду",
+      "hoursSame": "Как в прошлом периоде",
+      "hoursNone": "В прошлом периоде решений не было"
     },
     "spending": {
       "title": "Расходы",
@@ -2377,7 +2381,13 @@
         "supplier": "Поставщик",
         "amount": "Фактическая сумма"
       },
-      "payment": "{name}, {first} – {last}"
+      "payment": "{name}, {first} – {last}",
+      "price": "{name}: {first} – {last}",
+      "priceMonth": "{name}, {month}: {first} – {last}",
+      "priceNoSupplier": "{name}, без поставщика: {first} – {last}",
+      "priceSummary": "{count, plural, one {# запись} few {# записи} many {# записей} other {# записи}}, куплено {qty}, {price} за единицу",
+      "columnsQty": "Количество",
+      "columnsUnitPrice": "Цена за единицу"
     },
     "sheets": {
       "months": "Расходы по месяцам",
@@ -2390,7 +2400,15 @@
       "outcomes": "План и факт",
       "outcomeBranches": "План и факт по филиалам",
       "outcomeManagers": "План и факт по менеджерам",
-      "orders": "Заказы"
+      "orders": "Заказы",
+      "priceTrend": "Динамика цены",
+      "priceRises": "Самый большой рост цен",
+      "priceSpread": "Один товар, разные цены",
+      "stepHours": "Среднее время на каждом шаге",
+      "waiting": "Ожидают сейчас",
+      "decisions": "Возвращено или отклонено",
+      "reasons": "Частые причины",
+      "approvals": "Заказы"
     },
     "plan": {
       "title": "План и факт",
@@ -2446,6 +2464,107 @@
         "difference": "Разница",
         "outcome": "Итог"
       }
-    }
+    },
+    "prices": {
+      "title": "Цены",
+      "note": "Фактически уплаченные цены за единицу: товар ÷ количество, без доп. расходов. Подарки не учитываются.",
+      "trend": "Динамика цены",
+      "product": "Товар",
+      "choose": "Выберите товар",
+      "show": "Показать",
+      "trendEmpty": "{name} не покупали в этом периоде.",
+      "noRecords": "В этом периоде ничего не покупали.",
+      "noPrice": "Не покупали",
+      "rises": "Самый большой рост цен за 90 дней",
+      "risesWindow": "Куплено {first} – {last}, к цене, уплаченной ранее",
+      "risesEmpty": "За последние 90 дней цены не выросли.",
+      "spread": "Один товар, разные цены",
+      "spreadEmpty": "В этом периоде каждый товар купили по одной цене.",
+      "riseBy": "+{amount} (+{percent} %)",
+      "columns": {
+        "month": "Месяц",
+        "price": "Цена за единицу",
+        "change": "Изменение",
+        "product": "Товар",
+        "earlier": "Прежняя цена",
+        "newest": "Последняя цена",
+        "rise": "Рост",
+        "cheapest": "Дешевле всего",
+        "dearest": "Дороже всего",
+        "difference": "Разница"
+      }
+    },
+    "speed": {
+      "title": "Скорость согласования",
+      "note": "Сколько часов заказ ждал на шаге, пока согласующий не одобрил, не вернул или не отклонил его; по дню решения. Отменённые и отозванные заказы не учитываются.",
+      "byBranch": "Среднее время на каждом шаге",
+      "noStay": "—",
+      "hours": "{hours} ч",
+      "stays": "{count, plural, one {# заказ} few {# заказа} many {# заказов} other {# заказа}}",
+      "step": {
+        "PENDING_HEAD": "Руководитель",
+        "PENDING_PRINCIPAL": "Директор",
+        "PENDING_FINANCE": "Финансы"
+      },
+      "allBranches": "Все филиалы",
+      "allSteps": "Все шаги",
+      "waiting": "Ожидают сейчас, по сроку",
+      "waitingNote": "Сейчас, независимо от периода.",
+      "group": {
+        "day": "До 24 ч",
+        "twoDays": "24–48 ч",
+        "week": "2–7 дней",
+        "older": "Более 7 дней"
+      },
+      "decisions": "Возвращено или отклонено",
+      "noDecision": "Нет решений",
+      "share": "{share} % ({count})",
+      "reasons": "Частые причины",
+      "reasonsOf": {
+        "SEND_BACK": "Возвращено",
+        "REJECT": "Отклонено"
+      },
+      "noReasons": "В этом периоде нет.",
+      "times": "{count, plural, one {# раз} few {# раза} many {# раз} other {# раза}}",
+      "columns": {
+        "branch": "Филиал",
+        "step": "Шаг",
+        "all": "Всего",
+        "decisions": "Решения",
+        "sentBack": "Возвращено",
+        "rejected": "Отклонено"
+      }
+    },
+    "approvals": {
+      "title": "Заказы за этим числом",
+      "back": "Назад к аналитике",
+      "stays": "{step}: решения {first} – {last}",
+      "decided": "{step}, {decision}: {first} – {last}",
+      "reason": "{decision}: «{reason}», {first} – {last}",
+      "waiting": "{step}, ожидают сейчас: {group}",
+      "allSteps": "Все шаги",
+      "allAges": "любой срок",
+      "summary": "{count, plural, one {# решение} few {# решения} many {# решений} other {# решения}}, в среднем {hours} ч",
+      "summaryNone": "Нет решений",
+      "summaryWaiting": "Ожидают: {count, plural, one {# заказ} few {# заказа} many {# заказов} other {# заказа}}",
+      "empty": "За этим числом нет заказов.",
+      "decision": {
+        "APPROVE": "Одобрено",
+        "SEND_BACK": "Возвращено",
+        "REJECT": "Отклонено"
+      },
+      "columns": {
+        "order": "Заказ",
+        "product": "Товар",
+        "branch": "Филиал",
+        "step": "Шаг",
+        "entered": "Ждёт с",
+        "left": "Решение",
+        "hours": "Часы",
+        "decision": "Решение",
+        "reason": "Причина"
+      }
+    },
+    "joined": "{first} · {second}"
   }
 }

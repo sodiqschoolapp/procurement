@@ -1,6 +1,7 @@
 import { createTranslator } from "next-intl";
 
-import type { Change } from "@/domain/analytics";
+import { type Change, WAITING_GROUP_KEYS } from "@/domain/analytics";
+import { STUCK_STATUSES } from "@/domain/order-steps";
 import { bindFormatters } from "@/i18n/format";
 import type { Locale } from "@/i18n/locale";
 import en from "@/i18n/messages/en.json";
@@ -8,6 +9,9 @@ import ru from "@/i18n/messages/ru.json";
 import uz from "@/i18n/messages/uz.json";
 
 import type { AnalyticsFilters } from "../period-params";
+import type { ApprovalOrders } from "../queries/approval-orders";
+import type { ApprovalSpeed } from "../queries/approval-speed";
+import type { Prices, SubtypeName } from "../queries/prices";
 import type { AnalyticsFilterOptions } from "../queries/filters";
 import type { HeadSpending } from "../queries/head-spending";
 import type { OutcomeOrders } from "../queries/outcome-orders";
@@ -121,6 +125,8 @@ export function recordsSheet(
       t("records.columns.branch"),
       t("records.columns.date"),
       t("records.columns.supplier"),
+      // A price key's list carries each record's quantity and unit price (6.4b).
+      ...(list.price ? [t("records.columnsQty"), t("records.columnsUnitPrice")] : []),
       t("records.columns.amount"),
     ],
     rows: list.rows.map((row) => [
@@ -132,9 +138,15 @@ export function recordsSheet(
       { kind: "text", value: row.branchName },
       { kind: "date", value: row.purchasedOn },
       { kind: "text", value: row.supplierName ?? t("records.noSupplier") },
+      ...(list.price
+        ? ([
+            { kind: "text", value: row.qty },
+            { kind: "money", value: row.unitPrice },
+          ] as const)
+        : []),
       { kind: "money", value: row.amount },
     ]),
-    total: { label: t("spending.total"), amount: list.total, column: 6 },
+    total: { label: t("spending.total"), amount: list.total, column: list.price ? 8 : 6 },
   };
 }
 
@@ -323,5 +335,264 @@ export function outcomeOrdersSheet(
       signed: true,
       column: 8,
     },
+  };
+}
+
+// The sheets of Prices and Approval speed (build-plan 6.4b): every rise and spread, not only the
+// 10 the page shows (plan of 6.4b, decided items 4 and 5). Hours and shares are the query's
+// one-decimal texts.
+
+const nameText = (name: SubtypeName) =>
+  name.subtypeName ? `${name.productName}, ${name.subtypeName}` : name.productName;
+
+/** The price trend of one subtype by month. */
+export function priceTrendSheet(
+  block: Prices,
+  filters: AnalyticsFilters,
+  options: AnalyticsFilterOptions,
+  locale: Locale,
+): AnalyticsSheet {
+  const { t, tRoot } = translators(locale);
+  const name = t("sheets.priceTrend");
+  const lines = heading(locale, name, block.period, filters, options);
+  if (block.trend) lines.push(`${t("prices.product")}: ${nameText(block.trend)}`);
+  return {
+    name,
+    heading: lines,
+    columns: [
+      t("prices.columns.month"),
+      t("prices.columns.price"),
+      t("prices.columns.change"),
+      "%",
+    ],
+    rows: (block.trend?.points ?? []).map((point) => [
+      {
+        kind: "text",
+        value: t("monthLabel", {
+          month: tRoot(`months.${Number(point.month.slice(5))}` as "months.1"),
+          year: point.month.slice(0, 4),
+        }),
+      },
+      point.price === null ? { kind: "text", value: "" } : { kind: "money", value: point.price },
+      ...(point.change
+        ? changeCells(point.change)
+        : [
+            { kind: "text" as const, value: "" },
+            { kind: "text" as const, value: "" },
+          ]),
+    ]),
+  };
+}
+
+/** Every price rise of the last 90 days. */
+export function priceRisesSheet(
+  block: Prices,
+  filters: AnalyticsFilters,
+  options: AnalyticsFilterOptions,
+  locale: Locale,
+): AnalyticsSheet {
+  const { t } = translators(locale);
+  const name = t("sheets.priceRises");
+  return {
+    name,
+    heading: heading(locale, name, block.riseWindow, filters, options),
+    columns: [
+      t("prices.columns.product"),
+      t("prices.columns.earlier"),
+      t("records.columns.date"),
+      t("prices.columns.newest"),
+      t("records.columns.date"),
+      t("prices.columns.rise"),
+      "%",
+    ],
+    rows: block.rises.map((rise) => [
+      { kind: "text", value: nameText(rise) },
+      { kind: "money", value: rise.earlier.price },
+      { kind: "date", value: rise.earlier.purchasedOn },
+      { kind: "money", value: rise.newest.price },
+      { kind: "date", value: rise.newest.purchasedOn },
+      ...changeCells(rise.rise),
+    ]),
+  };
+}
+
+/** Every subtype bought at different prices in the period. */
+export function priceSpreadSheet(
+  block: Prices,
+  filters: AnalyticsFilters,
+  options: AnalyticsFilterOptions,
+  locale: Locale,
+): AnalyticsSheet {
+  const { t } = translators(locale);
+  const name = t("sheets.priceSpread");
+  const where = (pair: Prices["spreads"][number]["cheapest"]) =>
+    t("joined", { first: pair.branchName, second: pair.supplierName ?? t("records.noSupplier") });
+  return {
+    name,
+    heading: heading(locale, name, block.period, filters, options),
+    columns: [
+      t("prices.columns.product"),
+      t("prices.columns.cheapest"),
+      t("records.columns.branch"),
+      t("prices.columns.dearest"),
+      t("records.columns.branch"),
+      t("prices.columns.difference"),
+      "%",
+    ],
+    rows: block.spreads.map((spread) => [
+      { kind: "text", value: nameText(spread) },
+      { kind: "money", value: spread.cheapest.price },
+      { kind: "text", value: where(spread.cheapest) },
+      { kind: "money", value: spread.dearest.price },
+      { kind: "text", value: where(spread.dearest) },
+      ...changeCells(spread.spread),
+    ]),
+  };
+}
+
+/** The table of Approval speed: one sheet of each (6.4b). */
+export function approvalSpeedSheet(
+  block: ApprovalSpeed,
+  which: "stepHours" | "waiting" | "decisions" | "reasons",
+  filters: AnalyticsFilters,
+  options: AnalyticsFilterOptions,
+  locale: Locale,
+): AnalyticsSheet {
+  const { t } = translators(locale);
+  const name = t(`sheets.${which}`);
+  const lines = heading(locale, name, block.period, filters, options);
+  const stepName = (step: (typeof STUCK_STATUSES)[number] | null) =>
+    step ? t(`speed.step.${step}`) : t("speed.allSteps");
+  switch (which) {
+    case "stepHours":
+      return {
+        name,
+        heading: lines,
+        columns: [
+          t("speed.columns.branch"),
+          ...STUCK_STATUSES.flatMap((step) => [
+            stepName(step),
+            t("speed.columns.decisions"),
+            t("prices.columns.change"),
+          ]),
+        ],
+        rows: [
+          ...block.branches.map((row) => ({ label: row.name, steps: row.steps })),
+          { label: t("speed.allBranches"), steps: block.all },
+        ].map((row) => [
+          { kind: "text", value: row.label },
+          ...STUCK_STATUSES.flatMap((step): CellValue[] => [
+            { kind: "text", value: row.steps[step].hours ?? "" },
+            { kind: "count", value: row.steps[step].count },
+            { kind: "text", value: row.steps[step].change ?? "" },
+          ]),
+        ]),
+      };
+    case "waiting":
+      lines.splice(1, 1);
+      return {
+        name,
+        heading: lines,
+        columns: [
+          t("speed.columns.step"),
+          ...WAITING_GROUP_KEYS.map((group) => t(`speed.group.${group}`)),
+          t("speed.columns.all"),
+        ],
+        rows: [...STUCK_STATUSES, null].map((step) => [
+          { kind: "text", value: stepName(step) },
+          ...[...WAITING_GROUP_KEYS, "all" as const].map((group): CellValue => ({
+            kind: "count",
+            value: block.waiting[step ?? "all"][group],
+          })),
+        ]),
+      };
+    case "decisions":
+      return {
+        name,
+        heading: lines,
+        columns: [
+          t("speed.columns.step"),
+          t("speed.columns.decisions"),
+          t("speed.columns.sentBack"),
+          "%",
+          t("prices.columns.change"),
+          t("speed.columns.rejected"),
+          "%",
+          t("prices.columns.change"),
+        ],
+        rows: [...STUCK_STATUSES, null].map((step) => {
+          const shares = block.shares[step ?? "all"];
+          return [
+            { kind: "text", value: stepName(step) },
+            { kind: "count", value: shares.decisions },
+            { kind: "count", value: shares.sentBack.count },
+            { kind: "text", value: signedText(shares.sentBack.share) },
+            { kind: "text", value: signedText(shares.sentBack.change) },
+            { kind: "count", value: shares.rejected.count },
+            { kind: "text", value: signedText(shares.rejected.share) },
+            { kind: "text", value: signedText(shares.rejected.change) },
+          ];
+        }),
+      };
+    case "reasons":
+      return {
+        name,
+        heading: lines,
+        columns: [
+          t("approvals.columns.decision"),
+          t("approvals.columns.reason"),
+          t("speed.columns.decisions"),
+          t("prices.columns.change"),
+        ],
+        rows: (["SEND_BACK", "REJECT"] as const).flatMap((decision) =>
+          block.reasons[decision].map((reason): CellValue[] => [
+            { kind: "text", value: t(`approvals.decision.${decision}`) },
+            { kind: "text", value: reason.text },
+            { kind: "count", value: reason.count },
+            { kind: "count", value: Number(reason.change.difference) },
+          ]),
+        ),
+      };
+  }
+}
+
+/** The stays or waiting orders behind an Approval speed number, every row (6.4b). */
+export function approvalOrdersSheet(
+  list: ApprovalOrders,
+  filters: AnalyticsFilters,
+  options: AnalyticsFilterOptions,
+  locale: Locale,
+): AnalyticsSheet {
+  const { t, format } = translators(locale);
+  const name = t("sheets.approvals");
+  const at = (moment: Date) => `${format.date(moment)} ${format.time(moment)}`;
+  return {
+    name,
+    heading: heading(locale, name, list.period, filters, options),
+    columns: [
+      t("approvals.columns.order"),
+      t("approvals.columns.product"),
+      t("approvals.columns.branch"),
+      t("approvals.columns.step"),
+      t("approvals.columns.entered"),
+      t("approvals.columns.left"),
+      t("approvals.columns.decision"),
+      t("approvals.columns.reason"),
+      t("approvals.columns.hours"),
+    ],
+    rows: list.rows.map((row) => [
+      { kind: "text", value: row.orderNumber },
+      {
+        kind: "text",
+        value: row.subtypeName ? `${row.productName}, ${row.subtypeName}` : row.productName,
+      },
+      { kind: "text", value: row.branchName },
+      { kind: "text", value: t(`speed.step.${row.step}`) },
+      { kind: "text", value: at(row.enteredAt) },
+      { kind: "text", value: row.leftAt ? at(row.leftAt) : "" },
+      { kind: "text", value: row.decision ? t(`approvals.decision.${row.decision}`) : "" },
+      { kind: "text", value: row.reason ?? "" },
+      { kind: "text", value: row.hours },
+    ]),
   };
 }

@@ -5,6 +5,8 @@ import { AuthorizationError } from "@/server/authorize";
 import {
   bought,
   buyingEvent,
+  decided,
+  recordOn,
   refreshNow,
   spendingScene,
 } from "../../../../tests/helpers/analytics";
@@ -12,10 +14,13 @@ import { setClock } from "../../../../tests/helpers/clock";
 import { describePermissionMatrix } from "../../../../tests/helpers/permission-matrix";
 import { NO_ANALYTICS_FILTERS, type PeriodInput } from "../period-params";
 
+import { getApprovalOrders } from "./approval-orders";
+import { getApprovalSpeed } from "./approval-speed";
 import { getAnalyticsFilters } from "./filters";
 import { getHeadSpending } from "./head-spending";
 import { getOutcomeOrders } from "./outcome-orders";
 import { getPlanVsActual } from "./plan-vs-actual";
+import { getPriceChoices, getPrices } from "./prices";
 import { getSpending } from "./spending";
 import { getSpendingRecords } from "./spending-records";
 
@@ -211,5 +216,149 @@ describePermissionMatrix("getSpendingRecords by payment type, the branch wall in
     if (!list.rows.some((row) => row.purchaseId === record.purchaseId)) {
       throw new AuthorizationError("not_found");
     }
+  },
+});
+
+// Task 6.4b: Prices and Approval speed (plan of 6.4b, Server actions and queries).
+
+/** A subtype bought at 5 000 then 6 000 in the branch this month, and the summary refreshed. */
+async function pricedIn(branchId: string) {
+  setClock("2031-05-15T05:00:00Z");
+  const scene = await spendingScene(branchId);
+  const order = await bought(scene, { purchasedOn: "2031-05-02", unitPrice: "5000" });
+  await recordOn(
+    scene,
+    { id: order.orderId, ownerId: order.ownerId, variantId: order.variantId },
+    {
+      purchasedOn: "2031-05-03",
+      unitPrice: "6000",
+    },
+  );
+  await refreshNow();
+  return order;
+}
+
+describePermissionMatrix("getPrices with the branch filter", {
+  permission: "data.view",
+  async run({ user, branchId }) {
+    const order = await pricedIn(branchId);
+    const prices = await getPrices(
+      user.id,
+      THIS_MONTH,
+      { ...NO_ANALYTICS_FILTERS, branch: branchId },
+      order.variantId,
+    );
+    expect(prices.trend!.points.at(-1)!.price).toBe(5500n);
+  },
+});
+
+describePermissionMatrix(
+  "getPrices, getPriceChoices and the price records, the branch wall in the SQL",
+  {
+    permission: "data.view",
+    async run({ user, branchId }) {
+      const order = await pricedIn(branchId);
+      const prices = await getPrices(user.id, THIS_MONTH, NO_ANALYTICS_FILTERS, order.variantId);
+      const list = await getSpendingRecords(
+        user.id,
+        THIS_MONTH,
+        NO_ANALYTICS_FILTERS,
+        { kind: "price", variant: order.variantId, month: null, noSupplier: false },
+        "all",
+      );
+      const choices = await getPriceChoices(user.id);
+      const risen = prices.rises.some((rise) => rise.variantId === order.variantId);
+      const chosen = choices.some((choice) => choice.variantId === order.variantId);
+      // The trend, the rise, the choices and the list keep to the same wall: a subtype id never
+      // opens another branch's records.
+      expect(prices.trend!.points.at(-1)!.price === 5500n).toBe(list.rows.length === 2);
+      expect(risen).toBe(list.rows.length === 2);
+      expect(chosen).toBe(list.rows.length === 2);
+      if (list.rows.length === 0) throw new AuthorizationError("not_found");
+    },
+  },
+);
+
+/** An order of the branch the Head approved after an hour this month, waiting at Principal now. */
+async function stayIn(branchId: string) {
+  setClock("2031-05-15T05:00:00Z");
+  const scene = await spendingScene(branchId);
+  const order = await decided(scene, "PENDING_PRINCIPAL", [
+    { type: "SUBMIT", from: "DRAFT", to: "PENDING_HEAD", at: "2031-05-02T04:00:00Z" },
+    { type: "APPROVE", from: "PENDING_HEAD", to: "PENDING_PRINCIPAL", at: "2031-05-02T05:00:00Z" },
+  ]);
+  await refreshNow();
+  return order;
+}
+
+describePermissionMatrix("getApprovalSpeed with the branch filter", {
+  permission: "data.view",
+  async run({ user, branchId }) {
+    await stayIn(branchId);
+    const speed = await getApprovalSpeed(user.id, THIS_MONTH, {
+      ...NO_ANALYTICS_FILTERS,
+      branch: branchId,
+    });
+    expect(speed.all.PENDING_HEAD).toMatchObject({ hours: "1.0", count: 1 });
+    expect(speed.waiting.PENDING_PRINCIPAL.all).toBe(1);
+    expect(speed.shares.all.decisions).toBe(1);
+  },
+});
+
+describePermissionMatrix("getApprovalOrders with the branch filter", {
+  permission: "data.view",
+  async run({ user, branchId }) {
+    const order = await stayIn(branchId);
+    const filters = { ...NO_ANALYTICS_FILTERS, branch: branchId };
+    const stays = await getApprovalOrders(
+      user.id,
+      THIS_MONTH,
+      filters,
+      { kind: "step", step: "PENDING_HEAD", decision: null },
+      null,
+      "all",
+    );
+    const waiting = await getApprovalOrders(
+      user.id,
+      THIS_MONTH,
+      filters,
+      { kind: "waiting", step: "PENDING_PRINCIPAL", group: null },
+      null,
+      "all",
+    );
+    expect(stays.rows.map((row) => row.orderId)).toContain(order.id);
+    expect(waiting.rows.map((row) => row.orderId)).toContain(order.id);
+  },
+});
+
+describePermissionMatrix("getApprovalSpeed and getApprovalOrders, the branch wall in the SQL", {
+  permission: "data.view",
+  async run({ user, branchId }) {
+    const order = await stayIn(branchId);
+    const speed = await getApprovalSpeed(user.id, THIS_MONTH, NO_ANALYTICS_FILTERS);
+    const stays = await getApprovalOrders(
+      user.id,
+      THIS_MONTH,
+      NO_ANALYTICS_FILTERS,
+      { kind: "step", step: "PENDING_HEAD", decision: null },
+      null,
+      "all",
+    );
+    const waiting = await getApprovalOrders(
+      user.id,
+      THIS_MONTH,
+      NO_ANALYTICS_FILTERS,
+      { kind: "waiting", step: null, group: null },
+      null,
+      "all",
+    );
+    // The numbers and their lists keep to the same wall.
+    expect(speed.all.PENDING_HEAD.count).toBe(stays.count);
+    expect(speed.shares.all.decisions).toBe(stays.count);
+    expect(speed.waiting.all.all).toBe(waiting.count);
+    const listed = stays.rows.some((row) => row.orderId === order.id);
+    expect(waiting.rows.some((row) => row.orderId === order.id)).toBe(listed);
+    expect(speed.branches.some((row) => row.branchId === branchId)).toBe(listed);
+    if (!listed) throw new AuthorizationError("not_found");
   },
 });

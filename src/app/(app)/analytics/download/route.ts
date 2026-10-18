@@ -3,18 +3,26 @@ import type { NextRequest } from "next/server";
 import { businessDate } from "@/domain/business-date";
 import { writeAnalyticsExcel } from "@/features/analytics/download/excel";
 import {
+  approvalOrdersSheet,
+  approvalSpeedSheet,
   headSpendingSheet,
   outcomeOrdersSheet,
   outcomesSheet,
+  priceRisesSheet,
+  priceSpreadSheet,
+  priceTrendSheet,
   recordsSheet,
   spendingSheet,
   tallySheet,
 } from "@/features/analytics/download/sheets";
 import { parseAnalyticsParams } from "@/features/analytics/period-params";
+import { getApprovalOrders } from "@/features/analytics/queries/approval-orders";
+import { getApprovalSpeed } from "@/features/analytics/queries/approval-speed";
 import { getAnalyticsFilters } from "@/features/analytics/queries/filters";
 import { getHeadSpending } from "@/features/analytics/queries/head-spending";
 import { getOutcomeOrders } from "@/features/analytics/queries/outcome-orders";
 import { getPlanVsActual } from "@/features/analytics/queries/plan-vs-actual";
+import { getPrices } from "@/features/analytics/queries/prices";
 import { getSpending } from "@/features/analytics/queries/spending";
 import { getSpendingRecords } from "@/features/analytics/queries/spending-records";
 import { PeriodRefusedError } from "@/features/analytics/resolve-period";
@@ -25,7 +33,8 @@ import { now } from "@/server/clock";
 
 // The Excel file of one Analytics table, GET /analytics/download?…&block=… (6.3: months,
 // categories, records; 6.4a: branches, departments, suppliers, payments, outcomes,
-// outcomeBranches, outcomeManagers, orders)
+// outcomeBranches, outcomeManagers, orders; 6.4b: priceTrend, priceRises, priceSpread, stepHours,
+// waiting, decisions, reasons, approvals)
 // (10-notifications-analytics-reports.md, Analytics page per role, point 4; 03 Permission matrix
 // "Export to Excel, download PDF, print"; build-plan 6.3). A route that writes nothing, as the
 // order list's download (plan of 2.14, decided item 12). The address is the page's, checked by
@@ -41,7 +50,7 @@ export async function GET(request: NextRequest): Promise<Response> {
   if (!user) return new Response(null, { status: 401 });
   const params = parseAnalyticsParams(Object.fromEntries(request.nextUrl.searchParams));
   if (!params?.block) return notFound();
-  const { period, filters, key, block, otherOwners } = params;
+  const { period, filters, key, block, otherOwners, variant, reason } = params;
   // "Other owners" names only the orders list (plan of 6.4).
   if (otherOwners && block !== "orders") return notFound();
   const locale = chooseLocale({
@@ -106,6 +115,38 @@ export async function GET(request: NextRequest): Promise<Response> {
       case "orders":
         sheet = outcomeOrdersSheet(
           await getOutcomeOrders(user.id, period, filters, key, otherOwners, "all"),
+          filters,
+          options,
+          locale,
+        );
+        break;
+      case "priceTrend":
+      case "priceRises":
+      case "priceSpread": {
+        const prices = await getPrices(user.id, period, filters, variant);
+        sheet =
+          block === "priceTrend"
+            ? priceTrendSheet(prices, filters, options, locale)
+            : block === "priceRises"
+              ? priceRisesSheet(prices, filters, options, locale)
+              : priceSpreadSheet(prices, filters, options, locale);
+        break;
+      }
+      case "stepHours":
+      case "waiting":
+      case "decisions":
+      case "reasons":
+        sheet = approvalSpeedSheet(
+          await getApprovalSpeed(user.id, period, filters),
+          block,
+          filters,
+          options,
+          locale,
+        );
+        break;
+      case "approvals":
+        sheet = approvalOrdersSheet(
+          await getApprovalOrders(user.id, period, filters, key, reason, "all"),
           filters,
           options,
           locale,

@@ -267,6 +267,13 @@
       "when": 1792329948603,
       "tag": "0037_analytics_head",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1792335622690,
+      "tag": "0038_analytics_prices_steps",
+      "breakpoints": true
     }
   ]
 }
