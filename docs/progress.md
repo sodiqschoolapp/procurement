@@ -1405,4 +1405,22 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - A branch-scoped import kind passes `branchId` in the form; `upload()` of the page actions authorizes it before reading the file, and `previewImport()` takes it as its fourth argument.
 - A new enum value used in a CHECK of the same migration is compared as text (`kind::text = 'X'`): pending migrations apply in one transaction.
 
-The next task is 5.10.
+## 5.10 Minimum stock and low stock (18.10.2026, pull request #99)
+
+**Built**
+- `stock_minimums` (migration `0035_stock_minimums`): `min_qty` > 0 or null (none), `low_notified_at`; `isLow()`, `minimumStep()` in `src/domain/stock.ts`.
+- `checkMinimum()` (`src/server/stock-minimums.ts`), called by `postMovement()` after its balance update: sends MINIMUM_STOCK_REACHED to the branch's active Managers once until restocked; `holdBalance()` exported from `stock-ledger.ts`.
+- `setStockMinimum` (`features/warehouse/actions/minimum.ts`, `stock.set_minimums`), audit `stock_minimum.set`; `MINIMUM_USES` in `product-uses.ts`.
+- Stock on hand: Minimum column with its pencil, `LowLabel`, "Low stock only" (`low=1`), "Add to draft"; the item card's header the same. `MinimumButton`, `AddToDraftButton` (reuses `createDraftAction`, `listDraftChoicesAction`).
+
+**Left out, and the task that brings it**
+- The Manager's home list of low items: 6.1. The low-stock report and stock planning: 6.x.
+
+**What the next sessions must know**
+- For 5.11, 7.2 and 7.4: nothing to add for the notice; every movement through `postMovement()` checks the minimum.
+- For 6.1: a Low item is `stock_minimums.min_qty is not null and stock_balances.qty <= min_qty`; read `minimum` and `low` from `listStockOnHand()` or keep the same SQL beside `isLow()`.
+- For 6.x: the minimum lives in `stock_minimums`; null is none, never 0.
+- A notice about an item's state is sent with `notify({ tx, userId: null })`, so the actor is told too.
+- Confirm dialogs are `role="alertdialog"` in Playwright.
+
+The next task is 5.11.

@@ -442,7 +442,7 @@ Stock screens and every document that moves stock inside one branch.
   - **Build:** Existing stock is imported from an Excel template through the import framework, as direct-entry documents.
   - **Done when:** Tests: a file with one unknown product saves nothing; a valid file of 20 rows raises 20 balances.
 
-- [ ] **5.10 Minimum stock and low stock**
+- [x] **5.10 Minimum stock and low stock**
   - **Read:** `09-warehouse.md` (Low stock); `04-catalogs.md` (Rules: 5); `14-data-model.md` (stock_minimums); `03-roles-and-permissions.md` (Manager rights: SET_MINIMUMS); `10-notifications-analytics-reports.md` (Notifications: "Item reached its minimum stock").
   - **Build:** The minimum is typed per subtype per branch on the item card or in the stock list, which gains its minimum column and the "Low stock only" switch; the "Low" label; the Managers of the branch are notified once per item until it is restocked; one button adds the item to a new or an existing draft of that branch.
   - **Done when:** Database tests: at the minimum the item is Low and one notification exists; a second issue sends none; after the item is restocked and falls to its minimum again, one more is sent; an item with no minimum is never Low.
