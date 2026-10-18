@@ -200,3 +200,74 @@ async function writeDocument(query, input) {
   }
   return { id, number, docDate };
 }
+
+/**
+ * The Manager's write-off of CHL waiting for the Head (build plan 6.2: the Head's home list
+ * "write-offs to approve"; plan of 6.2, decided item 9): written as askWriteOff writes it, a
+ * PENDING_APPROVAL document numbered from the branch's counter with its line, and no movement until
+ * the Head approves (09 Write-off). askWriteOff writes no audit row. Left out when it exists, when
+ * the catalog lacks the item, or when the branch holds less than its quantity.
+ */
+export const SEED_WRITE_OFF = {
+  clientKey: "0e5d7a4e-4a51-4c1e-9a10-000000000103",
+  actor: "seed_manager",
+  reason: "DAMAGED",
+  comment: "Suv tegib buzilgan (demo)",
+  line: { product: "Daftar", subtype: "48 varaq", qty: "2" },
+};
+
+export async function seedWriteOff(query, { userIds, branchIds, moment }) {
+  const found = await query("select 1 from stock_documents where client_key = $1", [
+    SEED_WRITE_OFF.clientKey,
+  ]);
+  if (found.rows.length > 0) return;
+  const branchId = branchIds.get(SEED_STOCK.branch);
+  const { product, subtype, qty } = SEED_WRITE_OFF.line;
+  const variant = await query(
+    `select pv.id from product_variants pv join products p on p.id = pv.product_id
+      where p.name = $1 and ($2::text is null and pv.is_default or pv.name = $2)`,
+    [product, subtype],
+  );
+  if (!variant.rows[0]) return;
+  const stock = await query(
+    "select 1 from stock_balances where branch_id = $1 and variant_id = $2 and qty >= $3::numeric",
+    [branchId, variant.rows[0].id, qty],
+  );
+  if (stock.rows.length === 0) return;
+
+  const at = moment;
+  const counter = await query(
+    `insert into number_counters (scope, branch_id, year, last_value, created_at)
+     values ('WOF', $1, extract(year from $2::timestamptz at time zone 'Asia/Tashkent'), 1, $2)
+     on conflict (scope, branch_id, year) do update
+       set last_value = number_counters.last_value + 1
+     returning last_value, year`,
+    [branchId, at],
+  );
+  const { last_value: value, year } = counter.rows[0];
+  const inserted = await query(
+    `insert into stock_documents (number, type, branch_id, doc_date, status, reason, comment,
+       client_key, created_by, created_at)
+     values ('WOF-' || $1 || '-' || lpad(($2::int % 100)::text, 2, '0') || '-'
+         || lpad($3::text, greatest(4, length($3::text)), '0'),
+       'WRITE_OFF', $4, ($5::timestamptz at time zone 'Asia/Tashkent')::date, 'PENDING_APPROVAL',
+       $6, $7, $8, $9, $5)
+     returning id`,
+    [
+      SEED_STOCK.branch,
+      year,
+      value,
+      branchId,
+      at,
+      SEED_WRITE_OFF.reason,
+      SEED_WRITE_OFF.comment,
+      SEED_WRITE_OFF.clientKey,
+      userIds.get(SEED_WRITE_OFF.actor),
+    ],
+  );
+  await query(
+    `insert into stock_document_lines (document_id, variant_id, qty, created_at)
+     values ($1, $2, $3::numeric, $4)`,
+    [inserted.rows[0].id, variant.rows[0].id, qty, at],
+  );
+}

@@ -1474,4 +1474,21 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - A home section is labelled by its title: an e2e `getByLabel("Filial")` matched "Filialim …"; use `exact: true`.
 - `documents.db.test.ts` froze the clock and tied two `created_at`; a test that orders by time moves the clock between the rows.
 
-The next task is 6.2.
+## 6.2 Home: Head and Finance (18.10.2026, pull request #103)
+
+**Built**
+- `/` for the Head: waiting for my approval by branch (lines and group rows), overspends to acknowledge, write-offs to approve, product suggestions, price prompts, orders stuck over `escalation_hours`, counts by status and spending this month per branch (inactive ones marked). For Finance: approvals and settlements, one entry per owner and branch with cash to give or the net to receive or pay, each linking to `/orders?status=…&owner=…&branch=…`; money with managers.
+- `getHeadHome()`, `getFinanceHome()` (`features/home/queries/`); `ordersOnFilter()` (every order of a filter with its plan, `order-list.ts`); the list filter `stuck=1` with its chip; `OwnerEntries`.
+- Domain: `STUCK_STATUSES`, `stuckBefore()` (`order-steps.ts`).
+- Seed: two Settlement orders of CHL (Receive 60 000; a service bought for 250 000 against 100 000, Pay 150 000 and above the overspend guard), a pending write-off, a pending suggestion, the Waiting for Principal order three days old.
+
+**Left out, and the task that brings it**
+- Corrections in the write-off list: 7.4. Escalation notices: 8.1. Drill-down: 6.3 to 6.5.
+
+**What the next sessions must know**
+- For 8.1: "waiting more than N hours" is `stuckBefore(now(), hours)` over the newest event into the current status (`to_status = status and from_status <> to_status`), the statuses `STUCK_STATUSES`; the list's `stuck=1` SQL in `listWhere()` is the reading to share. Add `isStuck()` there.
+- For 7.4: the Head's write-off list is the select in `getHeadHome()` (`type = 'WRITE_OFF'`); add COUNT there.
+- `listWhere()` takes the setting the `stuck` filter needs; callers go through `whereOf()`, which reads it in their snapshot.
+- The seed now holds purchases: a seed test that counts purchases, trips, money rows or audit rows counts these too (`purchase` move of `seed-orders.mjs`).
+
+The next task is 6.3.

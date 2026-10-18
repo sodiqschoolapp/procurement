@@ -202,3 +202,27 @@ export function isDueSoon(
   if (neededBy === null || neededBy > dueSoonUntil(today)) return false;
   return stillDue(status, progress);
 }
+
+/**
+ * The statuses in which an order can be "stuck": the three Waiting steps, which wait for "the
+ * approvers of their step" (06-approval-workflow.md rule 9; plan of 6.2, decided item 1, Look
+ * first). Sent back, Open and Waiting for settlement are not approval steps.
+ */
+export const STUCK_STATUSES = [
+  "PENDING_HEAD",
+  "PENDING_PRINCIPAL",
+  "PENDING_FINANCE",
+] as const satisfies readonly RequestStatus[];
+
+const HOUR_MS = 60 * 60 * 1000;
+
+/**
+ * The instant before which an order that entered its Waiting step is waiting "more than `hours`"
+ * (06 rule 9; 10 Notifications, "Orders waiting more than 48 hours"; the setting
+ * `escalation_hours`). Strict: an entry exactly `hours` ago is not before it. `now` is the injected
+ * clock's (developer-rules.md rule 10). The Head home's "stuck" list and the order list's
+ * `stuck=1` compare with it (plan of 6.2, decided item 2, Look first); 8.1 reads it too.
+ */
+export function stuckBefore(now: Date, hours: number): Date {
+  return new Date(now.getTime() - hours * HOUR_MS);
+}

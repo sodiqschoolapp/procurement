@@ -42,11 +42,14 @@ import { type DownloadRow, orderDownloadRow } from "@/domain/order-download";
 import {
   STILL_DUE_OPEN,
   STILL_DUE_STATUSES,
+  STUCK_STATUSES,
   type StepEvent,
   dueSoonUntil,
   isOverdue,
+  stuckBefore,
 } from "@/domain/order-steps";
 import {
+  type OrderPlan,
   type OrdersTotals,
   orderTotal,
   ordersTotals,
@@ -165,8 +168,18 @@ const DATE_COLUMNS = {
 const counter = sql`split_part(${orders.number}, '-', 3)::bigint`;
 const prefix = sql`split_part(${orders.number}, '-', 1) || '-' || split_part(${orders.number}, '-', 2)`;
 
-/** The walls and the filters of the list, inside the SQL. */
-function listWhere(actor: Actor, filters: ListFilters): SQL | undefined {
+/**
+ * The walls and the filters of the list, inside the SQL. `escalationHours` is the setting the
+ * `stuck` filter compares with (whereOf() reads it); a filter without `stuck` needs none.
+ */
+function listWhere(
+  actor: Actor,
+  filters: ListFilters,
+  escalationHours: number | null = null,
+): SQL | undefined {
+  if (filters.stuck && escalationHours === null) {
+    throw new Error("The stuck filter needs the setting escalation_hours");
+  }
   const dateColumn = DATE_COLUMNS[filters.dates];
   const from = filters.numberFrom ? numberParts(filters.numberFrom) : null;
   const to = filters.numberTo ? numberParts(filters.numberTo) : null;
@@ -214,7 +227,31 @@ function listWhere(actor: Actor, filters: ListFilters): SQL | undefined {
           ),
         )
       : undefined,
+    // "Orders stuck over 48 hours" (plan of 6.2, decided items 1 and 2, Look first): at a Waiting
+    // step, entered by its newest event into the current status more than `escalation_hours` ago
+    // by the injected clock. An event that moves no status (Move to another Manager) is not an
+    // entry; a Submit again after Sent back is.
+    filters.stuck
+      ? and(
+          inArray(orders.status, [...STUCK_STATUSES]),
+          sql`(select max(${orderEvents.createdAt}) from ${orderEvents}
+                where ${orderEvents.orderId} = ${orders.id}
+                  and ${orderEvents.toStatus} = ${orders.status}
+                  and ${orderEvents.fromStatus} <> ${orderEvents.toStatus})
+              < ${stuckBefore(now(), escalationHours!).toISOString()}::timestamptz`,
+        )
+      : undefined,
   );
+}
+
+/** listWhere() with the setting its filters need, read in the caller's snapshot. */
+async function whereOf(
+  executor: Executor,
+  actor: Actor,
+  filters: ListFilters,
+): Promise<SQL | undefined> {
+  const hours = filters.stuck ? (await readSettings(executor)).escalation_hours : null;
+  return listWhere(actor, filters, hours);
 }
 
 const GROUP_BY = [
@@ -319,6 +356,89 @@ export async function listOrderGroups(
   );
 }
 
+/** One order of a filter with its plan: the home pages' entries (plan of 6.2). */
+export type FilterOrder = {
+  id: string;
+  number: string;
+  branchId: string;
+  branchCode: string;
+  branchIsActive: boolean;
+  ownerId: string;
+  ownerName: string;
+  productName: string;
+  /** The subtype's name; null for the hidden default subtype. */
+  subtypeName: string | null;
+  plan: OrderPlan;
+};
+
+/** Every order of the filter, no page, in the list's walls (the caller has authorized). */
+async function readFilterOrders(
+  db: Executor,
+  actor: Actor,
+  filters: ListFilters,
+): Promise<FilterOrder[]> {
+  const found = await db
+    .select({
+      id: orders.id,
+      number: orders.number,
+      branchId: orders.branchId,
+      branchCode: branches.code,
+      branchIsActive: branches.isActive,
+      ownerId: orders.ownerId,
+      ownerName: users.fullName,
+      productName: products.name,
+      variantName: productVariants.name,
+      variantIsDefault: productVariants.isDefault,
+      quantity: orders.plannedQty,
+      price: orders.plannedPrice,
+      paymentType: orders.paymentType,
+    })
+    .from(orders)
+    .innerJoin(branches, eq(branches.id, orders.branchId))
+    .innerJoin(users, eq(users.id, orders.ownerId))
+    .innerJoin(productVariants, eq(productVariants.id, orders.variantId))
+    .innerJoin(products, eq(products.id, productVariants.productId))
+    .where(await whereOf(db, actor, filters))
+    .orderBy(asc(branches.code), asc(users.fullName), asc(orders.ownerId), asc(counter));
+  const extras = await extrasOf(
+    db,
+    found.map((row) => row.id),
+  );
+  return found.map((row) => ({
+    id: row.id,
+    // Outside DRAFT the number and the plan are complete (`orders_submitted_plan_check`).
+    number: row.number!,
+    branchId: row.branchId,
+    branchCode: row.branchCode,
+    branchIsActive: row.branchIsActive,
+    ownerId: row.ownerId,
+    ownerName: row.ownerName,
+    productName: row.productName,
+    subtypeName: row.variantIsDefault ? null : row.variantName,
+    plan: {
+      quantity: row.quantity!,
+      price: row.price!,
+      extras: extras.get(row.id) ?? [],
+      paymentType: row.paymentType,
+    },
+  }));
+}
+
+/**
+ * Every order of the filter with its owner, branch and plan, no page: the Finance home's entries
+ * by owner and branch and the Head home's overspends (plan of 6.2). The list's walls and filters,
+ * under `data.view`.
+ */
+export async function ordersOnFilter(
+  userId: string,
+  filters: ListFilters,
+  executor?: Executor,
+): Promise<FilterOrder[]> {
+  return inSnapshot(executor, async (db) =>
+    readFilterOrders(db, await authorizeFilters(userId, filters, db), filters),
+  );
+}
+
 /**
  * How many orders the filter holds and their totals, ordersTotals() of every one of them, not of
  * one page: the Principal home's "waiting for my approval, with the total amount" (10 Home page
@@ -330,32 +450,8 @@ export async function orderTotalsOnFilter(
   executor?: Executor,
 ): Promise<{ count: number; totals: OrdersTotals }> {
   return inSnapshot(executor, async (db) => {
-    const actor = await authorizeFilters(userId, filters, db);
-    const found = await db
-      .select({
-        id: orders.id,
-        quantity: orders.plannedQty,
-        price: orders.plannedPrice,
-        paymentType: orders.paymentType,
-      })
-      .from(orders)
-      .where(listWhere(actor, filters));
-    const extras = await extrasOf(
-      db,
-      found.map((row) => row.id),
-    );
-    return {
-      count: found.length,
-      // Outside DRAFT the plan is complete (`orders_submitted_plan_check`).
-      totals: ordersTotals(
-        found.map((row) => ({
-          quantity: row.quantity!,
-          price: row.price!,
-          extras: extras.get(row.id) ?? [],
-          paymentType: row.paymentType,
-        })),
-      ),
-    };
+    const found = await readFilterOrders(db, await authorizeFilters(userId, filters, db), filters);
+    return { count: found.length, totals: ordersTotals(found.map((row) => row.plan)) };
   });
 }
 
@@ -374,7 +470,7 @@ export async function countOrdersByStatus(
     const rows = await db
       .select({ status: orders.status, count: count() })
       .from(orders)
-      .where(listWhere(actor, filters))
+      .where(await whereOf(db, actor, filters))
       .groupBy(orders.status);
     const byStatus = new Map(rows.map((row) => [row.status, row.count]));
     return LIST_STATUSES.flatMap((status) => {
@@ -390,7 +486,7 @@ async function readGroups(
   filters: ListFilters,
   page: number,
 ): Promise<OrderGroupPage> {
-  const where = listWhere(actor, filters);
+  const where = await whereOf(db, actor, filters);
 
   const grouped = db
     .select({ branchId: orders.branchId })
@@ -570,9 +666,9 @@ export async function selectAllOnFilter(
   filters: ListFilters = NO_FILTERS,
 ): Promise<{ orders: { id: string; version: number }[]; matching: number }> {
   const actor = await authorizeFilters(userId, filters);
-  const where = listWhere(actor, filters);
   // One snapshot, so "200 of N" counts the orders it ticks (spec review of 2.8, Should fix 2).
   return readSnapshot(async (db) => {
+    const where = await whereOf(db, actor, filters);
     const [counted] = await db.select({ total: count() }).from(orders).where(where);
     const rows = await db
       .select({ id: orders.id, version: orders.version })
@@ -942,10 +1038,10 @@ export async function orderDownload(
 ): Promise<OrderDownload> {
   const actor = await authorizeList(userId, "data.export");
   if (filters.branch) await authorize(userId, "data.export", { branchId: filters.branch });
-  const where = listWhere(actor, filters);
-  // The orders of the filter as a subquery, so a long list never meets a bound-parameter limit.
-  const listed = listedIds(where);
   return readSnapshot(async (db) => {
+    const where = await whereOf(db, actor, filters);
+    // The orders of the filter as a subquery, so a long list never meets a bound-parameter limit.
+    const listed = listedIds(where);
     const owner = users;
     const rows = await db
       .select({

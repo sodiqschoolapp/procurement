@@ -5,11 +5,11 @@ import { describe, expect, it } from "vitest";
 
 import { now } from "@/server/clock";
 import { db } from "@/server/db/client";
-import { orderActions, orderEvents, orders } from "@/server/db/schema";
+import { orderActions, orderEvents, orders, settings } from "@/server/db/schema";
 
 import { insertBranch, setManagerRight } from "../../../../tests/helpers/branches";
 import { insertCategory, insertProduct, insertSubtypes } from "../../../../tests/helpers/catalog";
-import { setClock } from "../../../../tests/helpers/clock";
+import { advanceClock, setClock } from "../../../../tests/helpers/clock";
 import {
   type OrderRow,
   insertDepartment,
@@ -553,6 +553,101 @@ describe("each filter of 05 Ticking and filters", () => {
     );
     expect(await ids({ numberFrom: "RNG-26-9999" })).toEqual([n9999, n10000].sort());
     expect(await ids({ numberTo: "RNG-26-0001" })).toEqual([n1]);
+  });
+
+  it("stuck=1: at a Waiting step, entered more than escalation_hours ago by the injected clock (06 rule 9; plan of 6.2, decided items 1 and 2; review correction 2)", async () => {
+    setClock("2026-10-10T05:00:00Z");
+    const { branch, manager, base } = await scene();
+    const enter = async (
+      orderId: string,
+      type: (typeof orderEvents.$inferInsert)["type"],
+      fromStatus: (typeof orderEvents.$inferInsert)["fromStatus"],
+      toStatus: (typeof orderEvents.$inferInsert)["toStatus"],
+    ) => {
+      const [action] = await db
+        .insert(orderActions)
+        .values({
+          clientKey: randomUUID(),
+          type,
+          actorId: manager.id,
+          orderCount: 1,
+          createdAt: now(),
+        })
+        .returning({ id: orderActions.id });
+      await db.insert(orderEvents).values({
+        orderId,
+        actionId: action!.id,
+        type,
+        fromStatus,
+        toStatus,
+        actorId: manager.id,
+        createdAt: now(),
+      });
+    };
+    // Entered 48 h + 1 min before the clock below: stuck at each Waiting step.
+    const head = await order({ ...base, status: "PENDING_HEAD" });
+    await enter(head.id, "SUBMIT", "DRAFT", "PENDING_HEAD");
+    const finance = await order({ ...base, status: "PENDING_FINANCE" });
+    await enter(finance.id, "APPROVE", "PENDING_PRINCIPAL", "PENDING_FINANCE");
+    // A move that changes no status does not restart the count (decided item 1).
+    advanceClock({ hours: 30 });
+    await enter(finance.id, "MOVE_OWNER", "PENDING_FINANCE", "PENDING_FINANCE");
+    // Sent back by the Principal and submitted again: counted from the newest Submit (correction 3),
+    // although its first Waiting for Head entry is older.
+    const resubmitted = await order({ ...base, status: "PENDING_HEAD" });
+    setClock("2026-10-10T05:00:00Z");
+    await enter(resubmitted.id, "SUBMIT", "DRAFT", "PENDING_HEAD");
+    advanceClock({ hours: 40 });
+    await enter(resubmitted.id, "SEND_BACK", "PENDING_PRINCIPAL", "RETURNED");
+    await enter(resubmitted.id, "SUBMIT_AGAIN", "RETURNED", "PENDING_HEAD");
+    // Entered exactly 48 h before: not stuck. Sent back, Open and Waiting for settlement entered
+    // as long ago: not Waiting steps.
+    setClock("2026-10-10T05:01:00Z");
+    const edge = await order({ ...base, status: "PENDING_PRINCIPAL" });
+    await enter(edge.id, "APPROVE", "PENDING_HEAD", "PENDING_PRINCIPAL");
+    setClock("2026-10-10T05:00:00Z");
+    const returned = await order({ ...base, status: "RETURNED" });
+    await enter(returned.id, "SEND_BACK", "PENDING_HEAD", "RETURNED");
+    const open = await order({ ...base, status: "PURCHASING", approvedAt: now() });
+    await enter(open.id, "APPROVE", "PENDING_FINANCE", "PURCHASING");
+    const settling = await order({ ...base, status: "SETTLEMENT", approvedAt: now() });
+    await enter(settling.id, "SEND_TO_SETTLEMENT", "PURCHASING", "SETTLEMENT");
+    // Another branch's stuck order of the same owner: only the branch wall keeps it out.
+    const other = await scene();
+    const elsewhere = await order({ ...other.base, ownerId: manager.id, status: "PENDING_HEAD" });
+    await enter(elsewhere.id, "SUBMIT", "DRAFT", "PENDING_HEAD");
+
+    setClock("2026-10-12T05:01:00Z");
+    const ids = async (over: Partial<ListFilters>) =>
+      (await selectAllOnFilter(manager.id, filtered(over))).orders.map((each) => each.id).sort();
+    expect(await ids({ branch: branch.id, stuck: true })).toEqual([head.id, finance.id].sort());
+    const groups = await listOrderGroups(manager.id, filtered({ branch: branch.id, stuck: true }));
+    expect(groups.groups.flatMap((group) => group.orders.map((each) => each.id)).sort()).toEqual(
+      [head.id, finance.id].sort(),
+    );
+    const finance1 = await insertUser("FINANCE", { branches: [branch.id] });
+    expect(
+      (await selectAllOnFilter(finance1.id, filtered({ stuck: true }))).orders
+        .map((each) => each.id)
+        .sort(),
+    ).toEqual([head.id, finance.id].sort());
+
+    // The setting moves the edge: at 24 hours the resubmitted order (8 h ago) is still out, the
+    // exact-edge order is in.
+    await db
+      .insert(settings)
+      .values({ key: "escalation_hours", value: 24, createdAt: now() })
+      .onConflictDoUpdate({ target: settings.key, set: { value: 24 } });
+    try {
+      expect(await ids({ branch: branch.id, stuck: true })).toEqual(
+        [head.id, finance.id, edge.id].sort(),
+      );
+    } finally {
+      await db
+        .insert(settings)
+        .values({ key: "escalation_hours", value: 48, createdAt: now() })
+        .onConflictDoUpdate({ target: settings.key, set: { value: 48 } });
+    }
   });
 
   it('the orders of one action: the notification\'s link (progress 2.7, "For 2.8")', async () => {

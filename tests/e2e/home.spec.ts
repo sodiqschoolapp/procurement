@@ -7,7 +7,9 @@ import uz from "../../src/i18n/messages/uz.json" with { type: "json" };
 import { connectionOptions } from "../../src/server/db/connection-options.mjs";
 import { E2E_PAGE_USERS, E2E_ROLES, e2eDatabaseUrl, serverDatabaseUrl } from "./global-setup";
 
-// Build plan 6.1 (Home: Manager and Principal), its Done when: "Playwright at 375 px: the
+// Build plan 6.2 (Home: Head and Finance), its Done when: "a Finance entry opens the filtered
+// order list ready to tick" (11 Interface per role: Finance; plan of 6.2, decided item 3), and the
+// Head's waiting line of a branch. Build plan 6.1 (Home: Manager and Principal), its Done when: "Playwright at 375 px: the
 // Principal approves a group row of two orders from the home page in two taps"
 // (11-screens-and-ux.md, Interface per role: Principal; 06-approval-workflow.md rules 8 and 11
 // rule 6; plan of 6.1, decided item 4); and the Manager's home with its three buttons and a list
@@ -176,5 +178,65 @@ test("the Manager's home: three large buttons, and My open orders opens the filt
 
   await open.getByRole("link", { name: /^Hammasini/ }).click();
   await expect(page).toHaveURL(new RegExp(`/orders\\?status=PURCHASING&owner=${seeded.ownerId}$`));
+  await expect(page.locator("tbody[data-group]").filter({ hasText: seeded.product })).toBeVisible();
+});
+
+test("Done when: a Finance entry opens the order list filtered to its orders, ready to tick (11 Interface per role: Finance; plan of 6.2, decided item 3)", async ({
+  page,
+}) => {
+  const people = E2E_PAGE_USERS[test.info().project.name as keyof typeof E2E_PAGE_USERS];
+  const seeded = await seedOrders(people.manager, "PENDING_FINANCE", "NORMAL");
+
+  await signIn(page, people.finance);
+  const approvals = page.locator('[data-home-block="approvals"]');
+  const entry = approvals.getByRole("link", {
+    name: uz.home.finance.openOrders
+      .replace("{name}", people.manager.fullName)
+      .replace("{branch}", "EA"),
+  });
+  await expect(entry).toBeVisible();
+  // The exact cash to give: at least the two seeded Cash orders of 10 000 (other specs may add
+  // orders of the same owner).
+  await expect(entry).toContainText(/Naqd|naqd/);
+  expect(await scrollsSideways(page)).toBe(false);
+
+  await entry.click();
+  await expect(page).toHaveURL(
+    new RegExp(`/orders\\?branch=[0-9a-f-]+&status=PENDING_FINANCE&owner=${seeded.ownerId}$`),
+  );
+  const tick = page.getByRole("checkbox", {
+    name: uz.orders.list.tickGroup.replace("{product}", seeded.product),
+  });
+  await tick.check();
+  await expect(page.locator("[data-list-bar] [data-ticked-count]")).toHaveText("2 ta buyurtma");
+});
+
+test("the Head's home: Waiting for my approval shows the branch's line, which opens that branch's waiting orders (10 Home page per role, Head)", async ({
+  page,
+}) => {
+  const owner = E2E_PAGE_USERS[test.info().project.name as keyof typeof E2E_PAGE_USERS].manager;
+  const seeded = await seedOrders(owner, "PENDING_HEAD", "URGENT");
+
+  await signIn(page, E2E_ROLES.HEAD);
+  const waiting = page.locator('[data-home-block="waiting"]');
+  await expect(waiting.locator('[data-waiting-branch="EA"]')).toBeVisible();
+  await expect(
+    waiting.locator("[data-home-group]").filter({ hasText: seeded.product }),
+  ).toBeVisible();
+  for (const block of [
+    "overspends",
+    "write-offs",
+    "suggestions",
+    "prompts",
+    "stuck",
+    "by-status",
+    "spending",
+  ]) {
+    await expect(page.locator(`[data-home-block="${block}"]`)).toBeVisible();
+  }
+  expect(await scrollsSideways(page)).toBe(false);
+
+  await waiting.locator('[data-waiting-branch="EA"]').click();
+  await expect(page).toHaveURL(/\/orders\?branch=[0-9a-f-]+&status=PENDING_HEAD$/);
   await expect(page.locator("tbody[data-group]").filter({ hasText: seeded.product })).toBeVisible();
 });

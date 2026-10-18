@@ -3,7 +3,6 @@ import { cookies } from "next/headers";
 import Link from "next/link";
 import { Suspense } from "react";
 
-import { EmptyState } from "@/components/empty-state";
 import { Skeleton } from "@/components/skeleton";
 import { LowLabel, RequestStatusLabel } from "@/components/status-label";
 import { buttonVariants } from "@/components/ui/button";
@@ -12,12 +11,19 @@ import { BRANCH_COOKIE } from "@/features/catalog/branch-cookie";
 import { currentBranchChoice } from "@/features/catalog/queries/my-branches";
 import { GroupLines } from "@/features/home/components/group-lines";
 import { HomeBlock } from "@/features/home/components/home-block";
+import { OwnerEntries } from "@/features/home/components/owner-entries";
 import { WaitingCards } from "@/features/home/components/waiting-cards";
+import { getFinanceHome } from "@/features/home/queries/finance-home";
+import { getHeadHome } from "@/features/home/queries/head-home";
 import { getManagerHome } from "@/features/home/queries/manager-home";
+import { getMoneyWithManagers } from "@/features/money/queries/money-with-managers";
+import { getPricePrompts } from "@/features/catalog/queries/price-prompts";
+import { countPendingSuggestions, listSuggestions } from "@/features/catalog/queries/suggestions";
 import { getPrincipalHome } from "@/features/home/queries/principal-home";
-import { type ListFilters, listFiltersParams } from "@/features/orders/list-filters";
+import { type ListFilters, NO_FILTERS, listFiltersParams } from "@/features/orders/list-filters";
 import { wireGroup } from "@/features/orders/list-wire";
 import { listStockOnHand } from "@/features/warehouse/queries/stock-on-hand";
+import type { WriteOffReason } from "@/domain/stock-documents";
 import { getFormatters } from "@/i18n/get-formatters";
 import { requireUser } from "@/server/auth/session";
 
@@ -27,10 +33,19 @@ import { requireUser } from "@/server/auth/session";
 // low stock and orders due soon. The Principal: the waiting group rows as large cards, then the
 // branch's orders by status and its spending this month. Every list follows the top bar's branch
 // (decided item 7) and links to the filtered order list; every number is the server's. The Head
-// and Finance keep the empty state until 6.2. A Manager keeps the way in to the product
+// and Finance get theirs in 6.2 (plan of 6.2): the Head every decision waiting across the
+// branches, Finance its approvals and settlements by owner with the exact amount. A Manager keeps the way in to the product
 // suggestions beside the three buttons (plan of 1.12, decision 4, Look first).
 
 /** The order list behind a home list; without `branch=` the list follows the top bar too. */
+const HOME_ROWS = 5;
+
+/** The order list of exactly the filters, a chosen branch kept (the per-branch and owner links). */
+function exactHref(filters: ListFilters): string {
+  const query = listFiltersParams(filters).toString();
+  return `/orders${query ? `?${query}` : ""}`;
+}
+
 function listHref(filters: ListFilters): string {
   const query = listFiltersParams({ ...filters, branch: null }).toString();
   return `/orders${query ? `?${query}` : ""}`;
@@ -55,20 +70,27 @@ export default async function HomePage() {
       </div>
     );
   }
-  if (user.role === "PRINCIPAL") {
+  if (user.role === "HEAD" || user.role === "FINANCE") {
     return (
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
         {title}
         <Suspense fallback={<HomeLoading />}>
-          <PrincipalHome userId={user.id} branch={branch} />
+          {user.role === "HEAD" ? (
+            <HeadHome userId={user.id} branch={branch} />
+          ) : (
+            <FinanceHome userId={user.id} branch={branch} />
+          )}
         </Suspense>
       </div>
     );
   }
+  // The Principal.
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-6">
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
       {title}
-      <EmptyState title={t(`empty.${user.role}.title`)} line={t(`empty.${user.role}.line`)} />
+      <Suspense fallback={<HomeLoading />}>
+        <PrincipalHome userId={user.id} branch={branch} />
+      </Suspense>
     </div>
   );
 }
@@ -350,5 +372,370 @@ async function PrincipalHome({ userId, branch }: { userId: string; branch: strin
         </HomeBlock>
       </div>
     </>
+  );
+}
+
+/** A plain list row with a link: the documents, suggestions and prompts of the Head's home. */
+function LinkRow({
+  href,
+  title,
+  line,
+  aside,
+}: {
+  href: string;
+  title: string;
+  line: string;
+  aside?: string;
+}) {
+  return (
+    <li className="py-3 first:pt-0 last:pb-0">
+      <Link
+        href={href}
+        className="flex min-h-11 flex-wrap items-center justify-between gap-x-3 gap-y-1"
+      >
+        <span className="flex min-w-48 flex-1 flex-col gap-1">
+          <span className="text-[15px] leading-[22px] font-semibold">{title}</span>
+          <span className="text-[13px] leading-4 text-muted-foreground tabular-nums">{line}</span>
+        </span>
+        {aside && (
+          <span className="shrink-0 text-[15px] leading-[22px] font-semibold tabular-nums">
+            {aside}
+          </span>
+        )}
+      </Link>
+    </li>
+  );
+}
+
+async function HeadHome({ userId, branch }: { userId: string; branch: string | null }) {
+  const t = await getTranslations("home");
+  const tReasons = await getTranslations("warehouse.writeOff.reasons");
+  const format = await getFormatters();
+  const home = await getHeadHome(userId, branch);
+  // The Head's catalog lists: global, not of the top bar's branch (decided item 10).
+  const suggestionCount = await countPendingSuggestions(userId);
+  const suggestions = (await listSuggestions(userId)).rows
+    .filter((row) => row.status === "PENDING")
+    .slice(0, HOME_ROWS);
+  const prompts = await getPricePrompts(userId);
+  const product = (name: string, subtype: string | null) =>
+    subtype ? `${name}, ${subtype}` : name;
+  const code = (figures: { branchCode: string; isActive: boolean }) =>
+    figures.isActive ? figures.branchCode : t("head.inactive", { code: figures.branchCode });
+
+  return (
+    <div className="grid gap-6 lg:grid-cols-2">
+      <HomeBlock
+        id="waiting"
+        title={t("head.waiting.title")}
+        count={home.waiting.count}
+        empty={home.waiting.count === 0 ? t("head.waiting.empty") : null}
+        link={{
+          href: listHref(home.filters.waiting),
+          label: t("showAll", { count: home.waiting.count }),
+        }}
+        className="lg:col-span-2"
+      >
+        <ul className="flex flex-col divide-y divide-border">
+          {home.waiting.lines.map((line) => (
+            <li key={line.branchId}>
+              <Link
+                href={exactHref({ ...home.filters.waiting, branch: line.branchId })}
+                data-waiting-branch={line.branchCode}
+                className="flex min-h-11 items-center justify-between gap-3 py-2"
+              >
+                <span className="text-[15px] leading-[22px] font-semibold">{line.branchCode}</span>
+                <span className="text-[15px] leading-[22px] tabular-nums">
+                  {t("head.waiting.line", {
+                    count: line.count,
+                    total: format.money(line.totals.grand),
+                  })}
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+        <GroupLines groups={home.waiting.groups.groups.map(wireGroup)} />
+      </HomeBlock>
+
+      <HomeBlock
+        id="overspends"
+        title={t("head.overspends.title")}
+        count={home.overspends.length}
+        empty={home.overspends.length === 0 ? t("head.overspends.empty") : null}
+        link={{
+          href: listHref(home.filters.settlement),
+          label: t("openList"),
+        }}
+      >
+        <ul className="flex flex-col divide-y divide-border">
+          {home.overspends.slice(0, HOME_ROWS).map((row) => (
+            <LinkRow
+              key={row.id}
+              href={`/orders/${row.id}`}
+              title={t("head.pair", {
+                first: row.number,
+                second: product(row.productName, row.subtypeName),
+              })}
+              line={row.branchCode}
+              aside={
+                row.percent === null
+                  ? t("head.overspends.rowNoPercent", { over: format.money(row.over) })
+                  : t("head.overspends.row", { over: format.money(row.over), percent: row.percent })
+              }
+            />
+          ))}
+        </ul>
+      </HomeBlock>
+
+      <HomeBlock
+        id="write-offs"
+        title={t("head.writeOffs.title")}
+        count={home.writeOffs.count}
+        empty={home.writeOffs.count === 0 ? t("head.writeOffs.empty") : null}
+        link={{
+          href: "/warehouse/documents?type=WRITE_OFF",
+          label: t("showAll", { count: home.writeOffs.count }),
+        }}
+      >
+        <ul className="flex flex-col divide-y divide-border">
+          {home.writeOffs.lines.map((row) => (
+            <LinkRow
+              key={row.id}
+              href={`/warehouse/documents/${row.id}`}
+              title={t("head.pair", { first: row.number, second: row.branchCode })}
+              line={t("head.writeOffs.row", {
+                date: format.date(row.docDate),
+                reason: row.reason ? tReasons(row.reason as WriteOffReason) : "",
+                name: row.askedBy,
+              })}
+            />
+          ))}
+        </ul>
+      </HomeBlock>
+
+      <HomeBlock
+        id="suggestions"
+        title={t("head.suggestions.title")}
+        count={suggestionCount}
+        empty={suggestionCount === 0 ? t("head.suggestions.empty") : null}
+        link={{ href: "/suggestions", label: t("showAll", { count: suggestionCount }) }}
+      >
+        <ul className="flex flex-col divide-y divide-border">
+          {suggestions.map((row) => (
+            <LinkRow
+              key={row.id}
+              href={`/suggestions/${row.id}`}
+              title={row.name}
+              line={t("head.suggestions.row", {
+                name: row.branchCode,
+                person: row.suggestedByName,
+              })}
+            />
+          ))}
+        </ul>
+      </HomeBlock>
+
+      <HomeBlock
+        id="prompts"
+        title={t("head.prompts.title")}
+        count={prompts.length}
+        empty={prompts.length === 0 ? t("head.prompts.empty") : null}
+        link={{ href: "/prices", label: t("showAll", { count: prompts.length }) }}
+      >
+        <ul className="flex flex-col divide-y divide-border">
+          {prompts.slice(0, HOME_ROWS).map((row) => (
+            <LinkRow
+              key={`${row.branchId}:${row.variantId}`}
+              href="/prices"
+              title={t("head.pair", {
+                first: product(row.productName, row.subtypeName),
+                second: row.branchCode,
+              })}
+              line={t("head.prompts.row", {
+                price: format.money(row.referencePrice ?? 0n),
+                average: format.money(row.average),
+                percent: Number(row.percent),
+              })}
+            />
+          ))}
+        </ul>
+      </HomeBlock>
+
+      <HomeBlock
+        id="stuck"
+        title={t("head.stuck.title", { hours: home.escalationHours })}
+        count={home.stuck.total}
+        empty={home.stuck.total === 0 ? t("head.stuck.empty") : null}
+        link={{
+          href: listHref(home.filters.stuck),
+          label: t("showAll", { count: home.stuck.total }),
+        }}
+      >
+        <p className="text-[13px] leading-4 text-muted-foreground">{t("head.stuck.hint")}</p>
+        <GroupLines groups={home.stuck.groups.map(wireGroup)} />
+      </HomeBlock>
+
+      <HomeBlock id="by-status" title={t("head.byStatus.title")} className="lg:col-span-2">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {home.branches.map((figures) => (
+            <div
+              key={figures.branchId}
+              data-branch-counts={figures.branchCode}
+              className="flex flex-col gap-2"
+            >
+              <h3 className="text-[15px] leading-[22px] font-bold">{code(figures)}</h3>
+              {figures.byStatus.length === 0 ? (
+                <p className="text-[13px] leading-4 text-muted-foreground">
+                  {t("head.byStatus.empty")}
+                </p>
+              ) : (
+                <ul className="flex flex-col divide-y divide-border">
+                  {figures.byStatus.map((row) => (
+                    <li key={row.status}>
+                      <Link
+                        href={exactHref({
+                          ...NO_FILTERS,
+                          status: row.status,
+                          branch: figures.branchId,
+                        })}
+                        data-status-count={`${figures.branchCode}:${row.status}`}
+                        className="flex min-h-11 items-center justify-between gap-3 py-2"
+                      >
+                        <RequestStatusLabel status={row.status} />
+                        <span className="text-[15px] leading-[22px] font-semibold tabular-nums">
+                          {row.count}
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          ))}
+        </div>
+      </HomeBlock>
+
+      <HomeBlock id="spending" title={t("head.spending.title")} className="lg:col-span-2">
+        <p className="text-[13px] leading-4 text-muted-foreground">
+          {t("head.spending.period", {
+            from: format.date(home.month.first),
+            to: format.date(home.month.last),
+          })}
+        </p>
+        <p className="text-[13px] leading-4 text-muted-foreground">{t("head.spending.hint")}</p>
+        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {home.branches.map((figures) => (
+            <li key={figures.branchId} className="flex flex-col gap-1">
+              <span className="text-[13px] leading-4 text-muted-foreground">{code(figures)}</span>
+              <span
+                data-spending={figures.branchCode}
+                className="text-[20px] leading-7 font-bold tabular-nums"
+              >
+                {format.money(figures.spending)}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </HomeBlock>
+    </div>
+  );
+}
+
+async function FinanceHome({ userId, branch }: { userId: string; branch: string | null }) {
+  const t = await getTranslations("home");
+  const format = await getFormatters();
+  const home = await getFinanceHome(userId, branch);
+  const money = await getMoneyWithManagers(userId, branch);
+  const approvalCount = home.approvals.reduce((sum, entry) => sum + entry.count, 0);
+  const settlementCount = home.settlements.reduce((sum, entry) => sum + entry.count, 0);
+
+  return (
+    <div className="grid gap-6 lg:grid-cols-2">
+      <HomeBlock
+        id="approvals"
+        title={t("finance.approvals.title")}
+        count={approvalCount}
+        empty={approvalCount === 0 ? t("finance.approvals.empty") : null}
+        link={{
+          href: listHref(home.filters.approvals),
+          label: t("showAll", { count: approvalCount }),
+        }}
+      >
+        <OwnerEntries
+          entries={home.approvals.map((entry) => ({
+            key: `${entry.ownerId}:${entry.branchId}`,
+            ownerName: entry.ownerName,
+            branchCode: entry.branchCode,
+            href: exactHref(entry.filters),
+            line: t("finance.approvals.entry", {
+              count: entry.count,
+              total: format.money(entry.planned),
+            }),
+            amount:
+              entry.cashToGive > 0n
+                ? t("finance.approvals.give", { amount: format.money(entry.cashToGive) })
+                : t("finance.approvals.noCash"),
+          }))}
+        />
+      </HomeBlock>
+
+      <HomeBlock
+        id="settlements"
+        title={t("finance.settlements.title")}
+        count={settlementCount}
+        empty={settlementCount === 0 ? t("finance.settlements.empty") : null}
+        link={{
+          href: listHref(home.filters.settlements),
+          label: t("showAll", { count: settlementCount }),
+        }}
+      >
+        <OwnerEntries
+          entries={home.settlements.map((entry) => ({
+            key: `${entry.ownerId}:${entry.branchId}`,
+            ownerName: entry.ownerName,
+            branchCode: entry.branchCode,
+            href: exactHref(entry.filters),
+            line: t("finance.settlements.entry", { count: entry.count }),
+            amount:
+              entry.net.direction === "TO_FINANCE"
+                ? t("finance.settlements.receive", { amount: format.money(entry.net.amount) })
+                : entry.net.direction === "TO_MANAGER"
+                  ? t("finance.settlements.pay", { amount: format.money(entry.net.amount) })
+                  : t("finance.settlements.none"),
+          }))}
+        />
+      </HomeBlock>
+
+      <HomeBlock
+        id="money"
+        title={t("finance.money.title")}
+        count={money.length}
+        empty={money.length === 0 ? t("finance.money.empty") : null}
+        link={{ href: "/money", label: t("finance.money.open") }}
+        className="lg:col-span-2"
+      >
+        <ul className="flex flex-col divide-y divide-border">
+          {money.slice(0, HOME_ROWS).map((block) => (
+            <LinkRow
+              key={block.ownerId}
+              href="/money"
+              title={block.ownerName}
+              line={[
+                block.held > 0n
+                  ? t("finance.money.held", { amount: format.money(block.held) })
+                  : null,
+                block.owed > 0n
+                  ? t("finance.money.owed", { amount: format.money(block.owed) })
+                  : null,
+                t("finance.money.since", { date: format.date(block.since) }),
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            />
+          ))}
+        </ul>
+      </HomeBlock>
+    </div>
   );
 }

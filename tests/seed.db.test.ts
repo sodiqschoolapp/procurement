@@ -12,7 +12,16 @@ import {
   isTaxId,
 } from "@/domain/catalogs";
 import { businessDate, businessYear, nextBusinessDate } from "@/domain/business-date";
-import { orderCashCount } from "@/domain/money-ledger";
+import {
+  actionTotal,
+  approvalCashRows,
+  orderCashCount,
+  plannedCash,
+  settlementNet,
+  settlementRows,
+} from "@/domain/money-ledger";
+import { actualTotal } from "@/domain/purchases";
+import { businessMonth } from "@/domain/business-date";
 import {
   ORDER_ACTIONS,
   ORDER_EVENT_TYPES,
@@ -34,6 +43,9 @@ import { createSubtype } from "@/features/catalog/actions/subtypes";
 import { listProducts } from "@/features/catalog/queries/products";
 import { writeSnapshots } from "@/features/orders/actions/submit-steps";
 import { getMoneyWithManagers } from "@/features/money/queries/money-with-managers";
+import { countPendingSuggestions, listSuggestions } from "@/features/catalog/queries/suggestions";
+import { getFinanceHome } from "@/features/home/queries/finance-home";
+import { getHeadHome } from "@/features/home/queries/head-home";
 import { listOrderGroups } from "@/features/orders/queries/order-list";
 import { getStockDocument } from "@/features/warehouse/queries/document";
 import { listStockDocuments } from "@/features/warehouse/queries/documents";
@@ -52,8 +64,10 @@ import {
   SEED_PRODUCTS,
 } from "../scripts/seed-catalogs.mjs";
 import { SEED_ORDERS } from "../scripts/seed-orders.mjs";
-import { SEED_STOCK } from "../scripts/seed-stock.mjs";
+import { SEED_SUGGESTION } from "../scripts/seed-catalogs.mjs";
+import { SEED_STOCK, SEED_WRITE_OFF } from "../scripts/seed-stock.mjs";
 import { SEED_PASSWORD_VARIABLES, seed } from "../scripts/seed.mjs";
+import { resetClock, setClock } from "./helpers/clock";
 import { runTogether } from "./helpers/together";
 import { createTestDatabase, dropTestDatabase } from "./helpers/test-database";
 
@@ -372,7 +386,7 @@ describe("npm run db:seed (build-plan 0.14; developer-rules.md rule 14)", () => 
       expect(lines).toContainEqual(CREATED_LINES);
       expect(lines).toContainEqual(CREATED_LINES.map((line) => line.replace("created", "kept")));
       const total = await counts(first);
-      expect(total).toMatchObject({ branches: 2, users: 4, audit_log: 80, products: 30 });
+      expect(total).toMatchObject({ branches: 2, users: 4, audit_log: 81, products: 30 });
     });
   });
 
@@ -495,8 +509,9 @@ describe("npm run db:seed: the catalogs (build-plan 1.13; developer-rules.md rul
         // 24 hidden defaults and 16 real subtypes, each with one HEAD row.
         product_variants: 40,
         price_history: 40,
-        // The last 1: the direct entry of the warehouse documents (build-plan 5.12).
-        audit_log: 6 + 5 + 6 + 3 + 6 + 7 + 30 + 16 + 1,
+        // Then the direct entry of the warehouse documents (build-plan 5.12) and the product
+        // suggestion of build plan 6.2.
+        audit_log: 6 + 5 + 6 + 3 + 6 + 7 + 30 + 16 + 1 + 1,
       });
     });
   });
@@ -623,11 +638,15 @@ describe("npm run db:seed: the catalogs (build-plan 1.13; developer-rules.md rul
           ["subtype.create", 16],
           ["unit.create", 5],
           ["user.create", 4],
-        ].map(([action, count]) => ({ action, count, actors: ["seed_head"] })),
+        ]
+          .map(([action, count]) => ({ action, count, actors: ["seed_head"] }))
+          // The Manager's product suggestion of build plan 6.2, as suggestProduct writes it.
+          .concat([{ action: "suggestion.create", count: 1, actors: ["seed_manager"] }])
+          .sort((a, b) => String(a.action).localeCompare(String(b.action))),
       );
       // Beside these, the direct entry's own row of build-plan 5.12, at its document's moment.
       const total = await client.query("select count(*)::int as count from audit_log");
-      expect(total.rows[0].count).toBe(80);
+      expect(total.rows[0].count).toBe(81);
     });
   });
 
@@ -1108,7 +1127,7 @@ async function seededOrders(client: pg.Client): Promise<SeededOrder[]> {
 }
 
 describe("npm run db:seed: the orders (build-plan 2.15; plan of 2.15, decided item 5)", () => {
-  it("makes ten orders in the planned statuses, each total equal to orderTotal()", async () => {
+  it("makes twelve orders in the planned statuses, each total equal to orderTotal()", async () => {
     await withFreshDatabase(async (connect) => {
       const client = await connect();
       await seed(client, ENV, MOMENT);
@@ -1141,6 +1160,8 @@ describe("npm run db:seed: the orders (build-plan 2.15; plan of 2.15, decided it
           // Money with managers (build plan 4.9).
           "PURCHASING",
           "CLOSED",
+          // Finance's settlement entries and the Head's overspends (build plan 6.2).
+          "SETTLEMENT",
         ]),
       );
     });
@@ -1188,8 +1209,8 @@ describe("npm run db:seed: the orders (build-plan 2.15; plan of 2.15, decided it
              from order_events where order_id = $1 order by created_at, id`,
           [row.id],
         );
-        const owner = await client.query<{ owner_id: string; branch_id: string }>(
-          "select owner_id, branch_id from orders where id = $1",
+        const owner = await client.query<{ owner_id: string; branch_id: string; progress: string }>(
+          "select owner_id, branch_id, progress from orders where id = $1",
           [row.id],
         );
         let at = "DRAFT";
@@ -1201,6 +1222,10 @@ describe("npm run db:seed: the orders (build-plan 2.15; plan of 2.15, decided it
             expect(ORDER_EVENT_TYPES as readonly string[]).toContain(event.type);
             expect(event.to).toBe(at);
             if (event.type === "MARK_NOT_BOUGHT") buyingFinished = true;
+            // The seed's one purchase buys the whole plan (build plan 6.2): its record finishes
+            // the buying, as recordPurchase's progress rule does.
+            if (event.type === "RECORD_PURCHASE")
+              buyingFinished = owner.rows[0]!.progress === "DONE";
             continue;
           }
           expect(
@@ -1249,7 +1274,8 @@ describe("npm run db:seed: the orders (build-plan 2.15; plan of 2.15, decided it
                 buyingFinished,
                 exactMatch: false,
                 ownerClosesAlone: true,
-                // 08 Closing 3: the seed has no purchase, no transfer or card block, no overspend.
+                // 08 Closing 3: the seed closes only an order with no purchase, no transfer or card
+                // block and no overspend.
                 readyToClose: count === 0n,
               },
             ],
@@ -1292,7 +1318,8 @@ describe("npm run db:seed: the orders (build-plan 2.15; plan of 2.15, decided it
            join money_rows r on r.money_action_id = a.id
            join orders o on o.id = r.order_id`,
       );
-      expect(money.rows).toHaveLength(4);
+      // Four of build plan 4.9, and the cash given to the two Settlement orders of 6.2.
+      expect(money.rows).toHaveLength(6);
       for (const row of money.rows) {
         expect(row.occurred_on).toBe(businessDate(row.acted_at));
         expect(row.manager_ok).toBe(true);
@@ -1385,8 +1412,8 @@ describe("the seed's orders in the app (build-plan 2.15)", () => {
   });
 });
 
-describe("the seed's money in the app (build plan 4.9, Done when: the seed shows one Manager holding money)", () => {
-  it("shows seed_head seed_manager holding the cash of the two Open orders since the older approval; the Closed one is not behind it", async () => {
+describe("the seed's money in the app (build plan 4.9, Done when: the seed shows one Manager holding money; build plan 6.2)", () => {
+  it("shows seed_head seed_manager holding the cash of the two Open orders and the Not bought settlement, owed the overspent one, since the oldest approval; the Closed one is not behind it", async () => {
     const client = await db.$client.connect();
     try {
       await seed(client, ENV, MOMENT);
@@ -1396,18 +1423,28 @@ describe("the seed's money in the app (build plan 4.9, Done when: the seed shows
       const idOf = (name: string) => users.rows.find((row) => row.username === name)!.id;
       const blocks = await getMoneyWithManagers(idOf("seed_head"), null);
       const block = blocks.find((each) => each.ownerId === idOf("seed_manager"))!;
-      const open = await client.query<{ id: string; approved_at: Date }>(
-        `select id, approved_at from orders
-          where client_key = any($1::uuid[]) and status = 'PURCHASING' order by approved_at`,
+      const behind = await client.query<{ id: string; status: string; approved_at: Date }>(
+        `select id, status, approved_at from orders
+          where client_key = any($1::uuid[]) and status in ('PURCHASING', 'SETTLEMENT')
+          order by approved_at`,
         [SEED_ORDERS.map((order) => order.clientKey)],
       );
-      expect(open.rows).toHaveLength(2);
+      // Two Open orders of build plan 4.9, two Waiting for settlement of 6.2.
+      expect(behind.rows.map((row) => row.status).sort()).toEqual([
+        "PURCHASING",
+        "PURCHASING",
+        "SETTLEMENT",
+        "SETTLEMENT",
+      ]);
+      // Held: 60 000 + 60 000 (Open) + 60 000 (not bought); owed: 250 000 spent − 100 000 given.
       expect(block).toMatchObject({
-        held: 120_000n,
-        owed: 0n,
-        since: businessDate(open.rows[0]!.approved_at),
+        held: 180_000n,
+        owed: 150_000n,
+        since: businessDate(behind.rows[0]!.approved_at),
       });
-      expect(block.orders.map((order) => order.id)).toEqual(open.rows.map((row) => row.id));
+      expect(block.orders.map((order) => order.id).sort()).toEqual(
+        behind.rows.map((row) => row.id).sort(),
+      );
     } finally {
       client.release();
     }
@@ -1525,11 +1562,12 @@ describe("npm run db:seed: the warehouse documents (build-plan 5.12; plan of 5.1
             `select (select count(*)::int from stock_documents) as documents,
                (select count(*)::int from stock_movements) as movements,
                (select sum(last_value)::int from number_counters
-                 where scope in ('ENT', 'ISS')) as counters`,
+                 where scope in ('ENT', 'ISS', 'WOF')) as counters`,
           )
         ).rows[0];
       const first = await counts();
-      expect(first).toEqual({ documents: 2, movements: 4, counters: 2 });
+      // Beside them, the pending write-off of build plan 6.2: a document and a counter, no movement.
+      expect(first).toEqual({ documents: 3, movements: 4, counters: 3 });
       await seed(client, ENV, MOMENT);
       expect(await counts()).toEqual(first);
     });
@@ -1558,6 +1596,217 @@ describe("the seed's warehouse documents in the app (build-plan 5.12)", () => {
         expect((await getStockDocument(manager!.id, row.id))?.number).toBe(row.number);
       }
     } finally {
+      client.release();
+    }
+  });
+});
+
+describe("npm run db:seed: what waits for the Head (build plan 6.2; plan of 6.2, decided item 9)", () => {
+  it("writes a pending write-off of CHL with its line and no movement, and a pending suggestion with its audit row; a second run adds nothing", async () => {
+    await withFreshDatabase(async (connect) => {
+      const client = await connect();
+      await seed(client, ENV, MOMENT);
+      const writeOff = await client.query(
+        `select d.number, d.type, d.status, d.reason, d.comment, d.doc_date::text, u.username,
+           (select count(*)::int from stock_document_lines l where l.document_id = d.id) as lines,
+           (select count(*)::int from stock_movements m join stock_document_lines l
+              on l.id = m.document_line_id where l.document_id = d.id) as movements
+         from stock_documents d join users u on u.id = d.created_by where d.client_key = $1`,
+        [SEED_WRITE_OFF.clientKey],
+      );
+      expect(writeOff.rows).toEqual([
+        {
+          number: documentNumber("WRITE_OFF", "CHL", businessYear(MOMENT), 1),
+          type: "WRITE_OFF",
+          status: "PENDING_APPROVAL",
+          reason: SEED_WRITE_OFF.reason,
+          comment: SEED_WRITE_OFF.comment,
+          doc_date: businessDate(MOMENT),
+          username: "seed_manager",
+          lines: 1,
+          movements: 0,
+        },
+      ]);
+      const suggestion = await client.query(
+        `select s.status, s.name, u.username,
+           (select count(*)::int from audit_log a
+             where a.entity_id = s.id::text and a.action = 'suggestion.create') as audits
+         from catalog_suggestions s join users u on u.id = s.suggested_by where s.client_key = $1`,
+        [SEED_SUGGESTION.clientKey],
+      );
+      expect(suggestion.rows).toEqual([
+        { status: "PENDING", name: SEED_SUGGESTION.name, username: "seed_manager", audits: 1 },
+      ]);
+      const total = async () =>
+        (
+          await client.query(
+            `select (select count(*)::int from stock_documents) as documents,
+               (select count(*)::int from catalog_suggestions) as suggestions,
+               (select count(*)::int from purchases) as purchases`,
+          )
+        ).rows[0];
+      const first = await total();
+      await seed(client, ENV, MOMENT);
+      expect(await total()).toEqual(first);
+    });
+  });
+});
+
+describe("the seed's home lists (build plan 6.2, Done when: a database test checks each list against the seed)", () => {
+  it("gives seed_head and seed_finance each list with the seed's own orders, documents and amounts", async () => {
+    const client = await db.$client.connect();
+    try {
+      await seed(client, ENV, MOMENT);
+      setClock(MOMENT);
+      const ids = new Map(
+        (
+          await client.query<{ username: string; id: string }>(
+            "select username, id from users where username like 'seed\\_%'",
+          )
+        ).rows.map((row) => [row.username, row.id]),
+      );
+      const branches = new Map(
+        (
+          await client.query<{ code: string; id: string }>(
+            "select code, id from branches where code in ('CHL', 'YUN')",
+          )
+        ).rows.map((row) => [row.code, row.id]),
+      );
+      const orders = new Map(
+        (
+          await client.query<{ client_key: string; id: string }>(
+            "select client_key, id from orders where client_key = any($1::uuid[])",
+            [SEED_ORDERS.map((order) => order.clientKey)],
+          )
+        ).rows.map((row) => [row.client_key, row.id]),
+      );
+      const seedOrder = (at: number) => orders.get(SEED_ORDERS[at]!.clientKey)!;
+      const seedBranches = [branches.get("CHL")!, branches.get("YUN")!];
+
+      const head = await getHeadHome(ids.get("seed_head")!, null);
+      // Waiting for Head: the two pen orders of CHL in one group row, and YUN's one.
+      expect(
+        head.waiting.lines
+          .filter((line) => seedBranches.includes(line.branchId))
+          .map((line) => [line.branchCode, line.count]),
+      ).toEqual([
+        ["CHL", 2],
+        ["YUN", 1],
+      ]);
+      const pens = head.waiting.groups.groups.find((group) =>
+        group.orders.some((order) => order.id === seedOrder(0)),
+      )!;
+      expect(pens.orders.map((order) => order.id).sort()).toEqual(
+        [seedOrder(0), seedOrder(1)].sort(),
+      );
+      // Overspends: the service bought for 250 000 against 100 000 (08 Overspend guard).
+      expect(head.overspends.filter((row) => row.id === seedOrder(11))).toEqual([
+        expect.objectContaining({
+          id: seedOrder(11),
+          branchCode: "CHL",
+          over: 150_000n,
+          percent: "150.0",
+        }),
+      ]);
+      expect(head.overspends.map((row) => row.id)).not.toContain(seedOrder(10));
+      // Write-offs and suggestions: the seed's own.
+      const writeOff = await client.query<{ id: string }>(
+        "select id from stock_documents where client_key = $1",
+        [SEED_WRITE_OFF.clientKey],
+      );
+      expect(head.writeOffs.lines.map((line) => line.id)).toContain(writeOff.rows[0]!.id);
+      expect(await countPendingSuggestions(ids.get("seed_head")!)).toBeGreaterThanOrEqual(1);
+      expect(
+        (await listSuggestions(ids.get("seed_head")!)).rows
+          .filter((row) => row.status === "PENDING")
+          .map((row) => row.name),
+      ).toContain(SEED_SUGGESTION.name);
+      // Stuck: only the Waiting for Principal order, three days old; the others are hours old.
+      expect(
+        head.stuck.groups
+          .flatMap((group) => group.orders.map((order) => order.id))
+          .filter((id) => [...orders.values()].includes(id)),
+      ).toEqual([seedOrder(2)]);
+      // Counts per branch: the seed's statuses, Draft left out.
+      for (const code of ["CHL", "YUN"]) {
+        const expected = new Map<string, number>();
+        for (const order of SEED_ORDERS.filter((each) => each.branch === code)) {
+          const status = order.moves.at(-1)?.to ?? "DRAFT";
+          if (status !== "DRAFT") expected.set(status, (expected.get(status) ?? 0) + 1);
+        }
+        const figures = head.branches.find((each) => each.branchCode === code)!;
+        expect(new Map(figures.byStatus.map((row) => [row.status, row.count]))).toEqual(expected);
+      }
+      // Spending this month: actualTotal() of the seed's live records of this Tashkent month
+      // (review of the plan, correction 1).
+      const month = businessMonth(businessDate(MOMENT));
+      expect(head.month).toEqual(month);
+      const records = await client.query<{
+        code: string;
+        qty: string;
+        unit_price: string;
+        is_cancelled: boolean;
+      }>(
+        `select b.code, p.qty::text, p.unit_price::text, p.is_cancelled
+           from purchases p join purchase_trips t on t.id = p.trip_id
+           join branches b on b.id = p.branch_id
+          where t.purchased_on between $1::date and $2::date`,
+        [month.first, month.last],
+      );
+      for (const code of ["CHL", "YUN"]) {
+        const spent = actualTotal(
+          records.rows
+            .filter((row) => row.code === code)
+            .map((row) => ({
+              qty: row.qty,
+              unitPrice: BigInt(row.unit_price),
+              extras: [],
+              isCancelled: row.is_cancelled,
+            })),
+        );
+        expect(head.branches.find((each) => each.branchCode === code)!.spending).toBe(spent);
+      }
+      expect(head.branches.find((each) => each.branchCode === "CHL")!.spending).toBe(250_000n);
+
+      const finance = await getFinanceHome(ids.get("seed_finance")!, null);
+      // Approvals: seed_manager in CHL with the one Waiting for Finance order, its cash prefill.
+      const pending = SEED_ORDERS[3]!;
+      expect(
+        finance.approvals.map((entry) => [entry.ownerName, entry.branchCode, entry.count]),
+      ).toEqual([[expect.any(String), "CHL", 1]]);
+      expect(finance.approvals[0]!.ownerId).toBe(ids.get("seed_manager"));
+      expect(finance.approvals[0]!.cashToGive).toBe(
+        actionTotal(
+          approvalCashRows([
+            {
+              id: seedOrder(3),
+              ownerId: ids.get("seed_manager")!,
+              amount: plannedCash({
+                quantity: pending.quantity,
+                price: pending.price,
+                extras: pending.extras.map((extra) => extra.amount),
+                paymentType: "CASH",
+              }),
+            },
+          ]).flatMap((block) => block.rows),
+        ),
+      );
+      // Settlements: the two Waiting for settlement orders, Receive 60 000 and Pay 150 000.
+      expect(finance.settlements).toHaveLength(1);
+      expect(finance.settlements[0]).toMatchObject({
+        ownerId: ids.get("seed_manager"),
+        branchCode: "CHL",
+        count: 2,
+        net: settlementNet(
+          settlementRows([
+            { id: seedOrder(10), cashCount: 60_000n },
+            { id: seedOrder(11), cashCount: -150_000n },
+          ]),
+        ),
+      });
+      expect(finance.settlements[0]!.net).toEqual({ direction: "TO_MANAGER", amount: 90_000n });
+    } finally {
+      resetClock();
       client.release();
     }
   });

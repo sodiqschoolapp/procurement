@@ -44,13 +44,16 @@ function approvedWithCash(prefix, cash) {
 }
 
 /**
- * The ten orders, all owned by the seed Manager. `moves` are the history oldest first; orders
+ * The twelve orders, all owned by the seed Manager. `moves` are the history oldest first; orders
  * that name the same `submitKey` were submitted in one action, as were the two of the group row.
  * `total` is round(quantity × price) + extras (08-money-and-settlement.md, Planned total), checked
  * against orderTotal() by the seed test. `neededInDays` counts from the seed's Tashkent date. `daysAgo` moves the
  * whole history of an order that many days back, so its money has an age (build plan 4.9; plan of
  * 4.9, decided item 9). A move with `cash` gives that much at Finance's approval; `money` records
- * a money action as the Money tab does; `finish` marks the buying finished with a reason.
+ * a money action as the Money tab does; `finish` marks the buying finished with a reason;
+ * `purchase` records one Cash trip of today as recordPurchase does, with the order's actual total
+ * and progress after it written as data (the seed computes no formula; the seed test checks them
+ * against actualTotal() and the progress rule).
  */
 export const SEED_ORDERS = [
   // The group row: one subtype at one status in CHL, two departments (05 Group rows).
@@ -91,6 +94,9 @@ export const SEED_ORDERS = [
     extras: [],
     total: 400000n,
     neededInDays: 21,
+    // Waiting for Principal for three days: stuck over 48 hours on the Head's home (build plan
+    // 6.2; plan of 6.2, decided item 9).
+    daysAgo: 3,
     moves: [
       { ...SUBMIT, key: "0e5d7a4e-4a51-4c1e-9a10-0000000000b1" },
       { ...HEAD_APPROVES, key: "0e5d7a4e-4a51-4c1e-9a10-0000000000b2" },
@@ -230,6 +236,78 @@ export const SEED_ORDERS = [
         to: "CLOSED",
         actor: "seed_finance",
         key: "0e5d7a4e-4a51-4c1e-9a10-0000000001b8",
+      },
+    ],
+  },
+  // Waiting for settlement (build plan 6.2: Finance's settlement entries and the Head's
+  // overspends). The Manager holds the 60 000 given: not bought, so Receive 60 000.
+  {
+    clientKey: "0e5d7a4e-4a51-4c1e-9a10-000000000011",
+    branch: "CHL",
+    product: "Daftar",
+    subtype: "48 varaq",
+    department: "Oshxona",
+    quantity: "15",
+    price: 4000n,
+    extras: [],
+    total: 60000n,
+    neededInDays: 7,
+    moves: [
+      ...approvedWithCash("0e5d7a4e-4a51-4c1e-9a10-0000000001c", 60000n),
+      {
+        type: "MARK_NOT_BOUGHT",
+        from: "PURCHASING",
+        to: "PURCHASING",
+        actor: "seed_manager",
+        key: "0e5d7a4e-4a51-4c1e-9a10-0000000001c5",
+        reason: "Do'konda topilmadi (demo)",
+        finish: "NOT_BOUGHT",
+      },
+      {
+        type: "SEND_TO_SETTLEMENT",
+        from: "PURCHASING",
+        to: "SETTLEMENT",
+        actor: "seed_manager",
+        key: "0e5d7a4e-4a51-4c1e-9a10-0000000001c6",
+      },
+    ],
+  },
+  // A service bought for 250 000 in cash against a plan of 100 000 with 100 000 given: the school
+  // owes the Manager 150 000 (Pay), and it is 150 000 and 150 % over, above the guard, waiting for
+  // the Head's acknowledgment (08 Overspend guard). A service moves no stock.
+  {
+    clientKey: "0e5d7a4e-4a51-4c1e-9a10-000000000012",
+    branch: "CHL",
+    product: "Santexnika ta'miri",
+    subtype: null,
+    department: "Xo'jalik bo'limi",
+    quantity: "1",
+    price: 100000n,
+    extras: [],
+    total: 100000n,
+    neededInDays: 7,
+    moves: [
+      ...approvedWithCash("0e5d7a4e-4a51-4c1e-9a10-0000000001d", 100000n),
+      {
+        type: "RECORD_PURCHASE",
+        from: "PURCHASING",
+        to: "PURCHASING",
+        actor: "seed_manager",
+        key: "0e5d7a4e-4a51-4c1e-9a10-0000000001d5",
+        purchase: {
+          tripKey: "0e5d7a4e-4a51-4c1e-9a10-0000000001d9",
+          qty: "1",
+          unitPrice: 250000n,
+          actualTotal: 250000n,
+          progress: "DONE",
+        },
+      },
+      {
+        type: "SEND_TO_SETTLEMENT",
+        from: "PURCHASING",
+        to: "SETTLEMENT",
+        actor: "seed_manager",
+        key: "0e5d7a4e-4a51-4c1e-9a10-0000000001d6",
       },
     ],
   },
@@ -384,7 +462,14 @@ export async function seedOrders(query, { userIds, branchIds, moment }) {
     );
     const actionId = action.rows[0].id;
     for (const orderId of orders) {
-      const payload = await seedOrderWrite(query, { move, orderId, actionId, actorId, when });
+      const payload = await seedOrderWrite(query, {
+        move,
+        orderId,
+        actionId,
+        actorId,
+        when,
+        moment,
+      });
       await query(
         `insert into order_events (order_id, action_id, type, from_status, to_status, actor_id,
            comment, payload, created_at)
@@ -410,9 +495,10 @@ export async function seedOrders(query, { userIds, branchIds, moment }) {
  * cash of Finance's approval (approve.ts giveCash: one money action naming the approval, dated
  * that day in Tashkent, no comment) and `approved_at`; a money action of the Money tab
  * (record-money.ts); the buying finished with its reason (finish-buying.ts); `closed_at` of
- * Finance's Close (close.ts). Returns the event's payload, or null.
+ * Finance's Close (close.ts); a purchase record (record-purchase.ts). Returns the event's payload,
+ * or null.
  */
-async function seedOrderWrite(query, { move, orderId, actionId, actorId, when }) {
+async function seedOrderWrite(query, { move, orderId, actionId, actorId, when, moment }) {
   const money = async (kind, amount, comment) => {
     const owner = await query("select owner_id from orders where id = $1", [orderId]);
     const inserted = await query(
@@ -445,6 +531,40 @@ async function seedOrderWrite(query, { move, orderId, actionId, actorId, when })
       move.reason,
     ]);
     return { progress: { from: "OPEN", to: move.finish } };
+  }
+  if (move.purchase) {
+    // The trip is of the seed's Tashkent today, so the record counts in "spending this month"
+    // whatever day the seed runs (review of the plan of 6.2, correction 1).
+    const { tripKey, qty, unitPrice, actualTotal, progress } = move.purchase;
+    const trip = await query(
+      `insert into purchase_trips (client_key, branch_id, purchased_on, payment_type, created_by,
+         created_at)
+       select $1, branch_id, ($2::timestamptz at time zone 'Asia/Tashkent')::date, 'CASH', $3, $4
+       from orders where id = $5
+       returning id`,
+      [tripKey, moment, actorId, when, orderId],
+    );
+    const record = await query(
+      `insert into purchases (trip_id, order_id, branch_id, variant_id, qty, unit_price,
+         created_by, created_at)
+       select $1, id, branch_id, variant_id, $2::numeric, $3::bigint, $4, $5 from orders
+       where id = $6
+       returning id, variant_id`,
+      [trip.rows[0].id, qty, unitPrice, actorId, when, orderId],
+    );
+    await query("update orders set actual_total = $2::bigint, progress = $3 where id = $1", [
+      orderId,
+      actualTotal,
+      progress,
+    ]);
+    return {
+      purchase: {
+        id: record.rows[0].id,
+        variantId: record.rows[0].variant_id,
+        qty,
+        unitPrice: unitPrice.toString(),
+      },
+    };
   }
   if (move.type === "CLOSE") {
     await query("update orders set closed_at = $2 where id = $1", [orderId, when]);
