@@ -260,7 +260,8 @@ export default async function StockOnHandPage({ searchParams }: { searchParams: 
                     <th scope="col" className="px-4 py-3 text-right">
                       {t("columns.value")}
                     </th>
-                    <th scope="col" className="px-4 py-3">
+                    {/* `relative`: the hidden label stays inside the scrolling panel (as the item card). */}
+                    <th scope="col" className="relative px-4 py-3">
                       <span className="sr-only">{t("columns.actions")}</span>
                     </th>
                   </tr>
