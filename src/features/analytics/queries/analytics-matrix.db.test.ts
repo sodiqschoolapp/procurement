@@ -674,7 +674,7 @@ describePermissionMatrix("the Principal's blocks and lists, the branch wall in t
 async function ownOrdersIn(branchId: string, ownerId: string) {
   setClock("2031-05-15T05:00:00Z");
   const scene = await spendingScene(branchId);
-  await decided(
+  const opened = await decided(
     scene,
     "PURCHASING",
     [
@@ -693,7 +693,7 @@ async function ownOrdersIn(branchId: string, ownerId: string) {
   );
   const record = await bought(scene, { ownerId, purchasedOn: "2031-05-02", unitPrice: "12345" });
   await refreshNow();
-  return { record };
+  return { record, opened: opened.id };
 }
 
 describePermissionMatrix(
@@ -701,7 +701,7 @@ describePermissionMatrix(
   {
     permission: "data.view",
     async run({ user, branchId }) {
-      const { record } = await ownOrdersIn(branchId, user.id);
+      const { record, opened } = await ownOrdersIn(branchId, user.id);
       const filters = { ...NO_ANALYTICS_FILTERS, branch: branchId };
       const orders = await getMyOrders(user.id, THIS_MONTH, filters);
       expect(orders.approval).toMatchObject({ hours: "48.0", count: 1 });
@@ -712,15 +712,20 @@ describePermissionMatrix(
       ]);
       const cash = await getMyCash(user.id, filters);
       expect([cash.held, cash.owed]).toEqual([0n, 12_345n]);
-      // The lists take the user as their Manager filter, which only a Manager can be.
-      if (user.role !== "MANAGER") return;
-      const mine = { ...filters, manager: user.id };
-      const approved = await getStatusOrders(user.id, THIS_MONTH, mine, { kind: "approved" }, 1);
-      expect(approved.count).toBe(1);
+      // The two new lists, for every role, without a Manager filter (permission review, Must
+      // fix 1): the branch filter holds this case's rows only.
+      const approved = await getStatusOrders(
+        user.id,
+        THIS_MONTH,
+        filters,
+        { kind: "approved" },
+        "all",
+      );
+      expect(approved.rows.map((row) => row.orderId)).toEqual([opened]);
       const priced = await getSpendingRecords(
         user.id,
         THIS_MONTH,
-        mine,
+        filters,
         { kind: "priced", product: null },
         "all",
       );
@@ -732,7 +737,7 @@ describePermissionMatrix(
 describePermissionMatrix("the Manager's blocks and lists, the branch wall in the SQL", {
   permission: "data.view",
   async run({ user, branchId }) {
-    const { record } = await ownOrdersIn(branchId, user.id);
+    const { record, opened } = await ownOrdersIn(branchId, user.id);
     const orders = await getMyOrders(user.id, THIS_MONTH, NO_ANALYTICS_FILTERS);
     const estimates = await getMyEstimates(user.id, THIS_MONTH, NO_ANALYTICS_FILTERS);
     const cash = await getMyCash(user.id, NO_ANALYTICS_FILTERS);
@@ -743,20 +748,24 @@ describePermissionMatrix("the Manager's blocks and lists, the branch wall in the
     expect(orders.total.count).toBe(seen ? 2 : 0);
     expect(estimates.all.records).toBe(seen ? 1 : 0);
     expect(cash.owed).toBe(seen ? 12_345n : 0n);
-    // The lists take the user as their Manager filter, which only a Manager can be.
-    if (user.role === "MANAGER") {
-      const mine = { ...NO_ANALYTICS_FILTERS, manager: user.id };
-      const approved = await getStatusOrders(user.id, THIS_MONTH, mine, { kind: "approved" }, 1);
-      const priced = await getSpendingRecords(
-        user.id,
-        THIS_MONTH,
-        mine,
-        { kind: "priced", product: record.productId },
-        "all",
-      );
-      expect(approved.count).toBe(seen ? 1 : 0);
-      expect(priced.count).toBe(seen ? 1 : 0);
-    }
+    // The two new lists, for every role, without a Manager filter (permission review, Must fix
+    // 1): this case's rows are listed only where the user sees the branch.
+    const approved = await getStatusOrders(
+      user.id,
+      THIS_MONTH,
+      NO_ANALYTICS_FILTERS,
+      { kind: "approved" },
+      "all",
+    );
+    const priced = await getSpendingRecords(
+      user.id,
+      THIS_MONTH,
+      NO_ANALYTICS_FILTERS,
+      { kind: "priced", product: record.productId },
+      "all",
+    );
+    expect(approved.rows.some((row) => row.orderId === opened)).toBe(seen);
+    expect(priced.rows.map((row) => row.purchaseId)).toEqual(seen ? [record.purchaseId] : []);
     if (!seen) throw new AuthorizationError("not_found");
   },
 });

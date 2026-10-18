@@ -785,12 +785,12 @@ describePermissionMatrix("GET /analytics/download, the blocks of 6.5b behind the
     const { scene, product, number } = await ownRowsIn(user.id, branchId);
     const cookie = await signInAs(user);
     const own = { ...NO_ANALYTICS_FILTERS, category: scene.category.id };
-    const texts = async (block: ExportBlock) =>
+    const texts = async (block: ExportBlock, extra: Parameters<typeof analyticsSearch>[2] = {}) =>
       (
         await sheetOf(
           await GET(
             downloadRequest(
-              `/analytics/download?${analyticsSearch(THIS_MONTH, own, { block })}`,
+              `/analytics/download?${analyticsSearch(THIS_MONTH, own, { ...extra, block })}`,
               cookie,
             ),
           ),
@@ -803,6 +803,9 @@ describePermissionMatrix("GET /analytics/download, the blocks of 6.5b behind the
       (await texts("myReasons")).includes("Boshqa do'kondan oling"),
       (await texts("myEstimates")).includes(product),
       (await texts("myCash")).includes(number),
+      // The lists of the two new keys (permission review, Must fix 2).
+      (await texts("statusOrders", { key: { kind: "approved" } })).includes("48.0"),
+      (await texts("records", { key: { kind: "priced", product: null } })).includes(number),
     ];
     expect(seen).toEqual(seen.map(() => seen[0]));
     if (!seen[0]) throw new AuthorizationError("not_found");
