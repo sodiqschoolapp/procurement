@@ -573,9 +573,32 @@ describePermissionMatrix("getStockPlanning, the branch wall in the SQL", {
     );
     const listed = block.lines.some((line) => line.variantId === variant);
     expect(moves.rows.some((row) => row.documentId === issue)).toBe(listed);
+    // The Low tile keeps to the same wall as the Low list it opens, and counts this branch's line
+    // only where the line is listed (permission review of 6.5c, Should fix 1).
+    const low = await getStockLines(user.id, "low", NO_ANALYTICS_FILTERS, "all");
+    expect(block.low).toBe(low.count);
+    expect(low.rows.some((row) => row.variantId === variant)).toBe(listed);
     if (!listed) throw new AuthorizationError("not_found");
   },
 });
+
+// A department of the branch, sent to Stock planning and the variant's moves without a branch
+// filter: a value read in a new way is tested at every reader (permission review of 6.5c, Must
+// fix 1).
+describePermissionMatrix(
+  "getStockPlanning and the variant's moves with a department of the branch",
+  {
+    permission: "data.view",
+    async run({ user, branchId }) {
+      const { scene, variant } = await stockIn(branchId);
+      const filters = { ...NO_ANALYTICS_FILTERS, department: scene.department.id };
+      const block = await getStockPlanning(user.id, THIS_MONTH, filters);
+      const moves = await getStockMoves(user.id, "use", THIS_MONTH, filters, "all", variant);
+      expect(block.lines.find((line) => line.variantId === variant)?.used).toBe("2.000");
+      expect(moves.quantity).toBe("2.000");
+    },
+  },
+);
 
 /**
  * The Principal's rows of a branch (build-plan 6.5a): an order submitted this month and waiting
