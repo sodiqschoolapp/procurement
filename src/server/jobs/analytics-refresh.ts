@@ -32,6 +32,10 @@ type SpendingSource = {
 };
 
 export async function refreshAnalytics(executor: Executor): Promise<void> {
+  // One rewrite at a time: the scheduler's lock already holds a second instance back, and this
+  // holds back any other caller (a browser test's own refresh) until the first commits, while the
+  // pages go on reading.
+  await executor.execute(sql`lock table analytics_spending in exclusive mode`);
   const found = await executor.execute<SpendingSource>(sql`
     select p.id as purchase_id, p.order_id, p.branch_id, t.purchased_on::text as purchased_on,
            pr.category_id, o.department_id, o.owner_id, t.supplier_id, p.qty, p.unit_price,

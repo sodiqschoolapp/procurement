@@ -7,11 +7,12 @@ import { Select } from "@/components/ui/select";
 
 import type { AnalyticsFilterOptions, FilterOption } from "../queries/filters";
 import type { AnalyticsFilters, PeriodInput } from "../period-params";
+import { FilterFold } from "./filter-fold";
 
 // The period picker and the filters of an Analytics page (10-notifications-analytics-reports.md,
 // Analytics page per role, points 1 and 2; build-plan 6.3), one row above the blocks. A plain GET
 // form: the choice stays in the address, so a link reopens the same view (11 rule 8). At phone
-// width the fields fold behind "Filters" (plan of 6.3, Screens). The custom dates count only with
+// width the fields fold behind "Filters" (filter-fold.tsx) (plan of 6.3, Screens). The custom dates count only with
 // "Custom dates" (period-params.ts).
 
 export async function AnalyticsFilterBar({
@@ -30,14 +31,11 @@ export async function AnalyticsFilterBar({
     option.isActive ? name : t("inactive", { name });
   const field = "flex flex-col gap-1 text-sm leading-5 font-semibold";
   return (
-    <details open className="group rounded-xl bg-card p-4 sm:[&>summary]:hidden" data-filter-bar>
-      <summary className="flex min-h-11 cursor-pointer items-center text-sm font-semibold">
-        {t("filters")}
-      </summary>
+    <FilterFold label={t("filters")}>
       <form
         role="search"
         action={action}
-        className="flex flex-wrap items-end gap-3 max-sm:mt-3 max-sm:flex-col max-sm:items-stretch"
+        className="flex flex-wrap items-end gap-3 max-sm:flex-col max-sm:items-stretch"
       >
         <label className={field}>
           {t("period")}
@@ -166,6 +164,6 @@ export async function AnalyticsFilterBar({
           {t("reset")}
         </Link>
       </form>
-    </details>
+    </FilterFold>
   );
 }
