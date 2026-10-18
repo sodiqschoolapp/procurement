@@ -447,7 +447,7 @@ Stock screens and every document that moves stock inside one branch.
   - **Build:** The minimum is typed per subtype per branch on the item card or in the stock list, which gains its minimum column and the "Low stock only" switch; the "Low" label; the Managers of the branch are notified once per item until it is restocked; one button adds the item to a new or an existing draft of that branch.
   - **Done when:** Database tests: at the minimum the item is Low and one notification exists; a second issue sends none; after the item is restocked and falls to its minimum again, one more is sent; an item with no minimum is never Low.
 
-- [ ] **5.11 Write-off**
+- [x] **5.11 Write-off**
   - **Read:** `09-warehouse.md` (Movement types: Write-off row; Other documents: Write-off); `03-roles-and-permissions.md` (Permission matrix: the two write-off rows; Manager rights: WRITE_OFF_COUNT); `10-notifications-analytics-reports.md` (Notifications: "Write-off or correction asked"); `edge-cases/purchasing-and-money.md` ("Faulty goods go back to the supplier"); `open-questions.md` (question 13).
   - **Build:** The Manager asks for a write-off with items, quantities, a reason from the fixed list and a comment; stock changes only when the Head approves; the Head approves or refuses; the decision goes back to the Manager.
   - **Done when:** Database tests: stock is unchanged while the write-off waits; approval lowers it; a refusal changes nothing.

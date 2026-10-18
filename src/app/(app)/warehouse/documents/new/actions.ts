@@ -9,6 +9,7 @@ import {
 } from "@/features/warehouse/actions/direct-entry";
 import { type IssueResult, issueStock } from "@/features/warehouse/actions/issue";
 import { type ReturnResult, returnStock } from "@/features/warehouse/actions/return";
+import { type WriteOffResult, askWriteOff } from "@/features/warehouse/actions/write-off";
 import {
   type DirectEntryItem,
   searchDirectEntryItems,
@@ -18,6 +19,7 @@ import {
   type IssueItem,
   issueFormChoices,
   searchIssueItems,
+  searchWriteOffItems,
 } from "@/features/warehouse/queries/issue-form";
 import {
   type ReturnDepartment,
@@ -35,10 +37,12 @@ import { AuthorizationError } from "@/server/authorize";
 // wrapper and the queries check everything again: `stock.issue` or `stock.return_reverse` on the
 // branch, the fields, the stock under the lock, the amount the department received. The direct
 // entry's (09 Direct entry by the Head; plan of 5.8) under `stock.enter_direct`, the Head only.
+// The write-off's (09 Other documents, Write-off; plan of 5.11) under `stock.ask_write_off`.
 
 const issue = serverAction(issueStock);
 const giveBack = serverAction(returnStock);
 const enter = serverAction(enterStockDirectly);
+const writeOff = serverAction(askWriteOff);
 
 /** A query as an answer: a refusal of authorize() or of the input is returned, never thrown. */
 async function asked<T>(read: (userId: string) => Promise<T>): Promise<ActionResult<T>> {
@@ -121,4 +125,19 @@ export async function searchDirectEntryItemsAction(input: {
   return asked((userId) =>
     searchDirectEntryItems(userId, { branchId: input?.branchId, q: input?.q }),
   );
+}
+
+/** Asks for one write-off, or posts the Head's own; safe to repeat with the same browser id. */
+export async function askWriteOffAction(input: unknown): Promise<ActionResult<WriteOffResult>> {
+  const result = await writeOff(input);
+  if (result.ok) revalidatePath("/warehouse", "layout");
+  return result;
+}
+
+/** The items in stock in the branch whose name holds `q` (09 Write-off: items and quantities). */
+export async function searchWriteOffItemsAction(input: {
+  branchId: string;
+  q: string;
+}): Promise<ActionResult<IssueItem[]>> {
+  return asked((userId) => searchWriteOffItems(userId, { branchId: input?.branchId, q: input?.q }));
 }

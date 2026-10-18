@@ -1423,4 +1423,21 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - A notice about an item's state is sent with `notify({ tx, userId: null })`, so the actor is told too.
 - Confirm dialogs are `role="alertdialog"` in Playwright.
 
-The next task is 5.11.
+## 5.11 Write-off (18.10.2026, pull request #100)
+
+**Built**
+- `askWriteOff` (`features/warehouse/actions/write-off.ts`, `stock.ask_write_off`): the issue's shape; reason of WRITE_OFF_REASONS, comment required (`writeOffCommentRefusal()`), quantity not above the stock; a Manager's is PENDING_APPROVAL and tells every active Head (STOCK_CHANGE_ASKED); the Head's is POSTED at once with `decided_by`.
+- `decideWriteOff` (`write-off-decision.ts`, `stock.approve_write_off`): `lockDocument()`, `writeOffDecisionMove()` (domain), status and `decided_*`, then `postLines()` by the Head; short stock refuses all on `lines.<lineId>.qty`; STOCK_CHANGE_DECIDED to the asker.
+- `getWriteOff` (`queries/write-off.ts`); `/warehouse/documents/[id]` for write-offs, with Approve and Refuse; `/warehouse/documents/new?type=WRITE_OFF` (`WriteOffForm`); "Write-off" on Stock on hand; `WriteOffStatusLabel`.
+- `reverseAllows()`: WRITE_OFF for the Head only; the reverse dialog's sentence for it.
+
+**Left out, and the task that brings it**
+- The Head's home list of write-offs to approve: 6.2. The documents list and the page for the other types: 5.12. "Lost in transfer" from a short transfer: 7.2. Corrections: 7.4.
+
+**What the next sessions must know**
+- For 7.2: a shortage is `createDocument()` WRITE_OFF, PENDING_APPROVAL, reason LOST_IN_TRANSFER, on the sending branch, with a client key from the receipt; send STOCK_CHANGE_ASKED as `askWriteOff`'s notify step does; `decideWriteOff` then decides it unchanged.
+- For 7.4: add your kind to `StockChangeKind` and a word to both notices' `select`; reuse `writeOffDecisionMove()`'s shape for a count.
+- For 5.12: `/warehouse/documents/[id]` answers WRITE_OFF only (`getWriteOff`); widen it, add Reverse there, and fix the reverse dialog's sentence for a direct entry (decisions 5.11, build).
+- For 6.2: the waiting ones are `type = 'WRITE_OFF' and status = 'PENDING_APPROVAL'`.
+
+The next task is 5.12.

@@ -15,7 +15,7 @@ import { currentBranchChoice } from "@/features/catalog/queries/my-branches";
 import { AddToDraftButton } from "@/features/warehouse/components/add-to-draft-button";
 import { MinimumButton } from "@/features/warehouse/components/minimum-button";
 import { directEntryBranchChoices } from "@/features/warehouse/queries/direct-entry-form";
-import { issueBranchChoices } from "@/features/warehouse/queries/issue-form";
+import { issueBranchChoices, writeOffBranchChoices } from "@/features/warehouse/queries/issue-form";
 import { returnBranchChoices } from "@/features/warehouse/queries/return-form";
 import {
   type StockPage,
@@ -99,10 +99,11 @@ export default async function StockOnHandPage({ searchParams }: { searchParams: 
     pageParam.parse(first(raw.page)),
   );
   const categories = await stockCategoryChoices(user.id);
-  const [canIssue, canReturn, canEnterDirectly] = await Promise.all([
+  const [canIssue, canReturn, canEnterDirectly, canWriteOff] = await Promise.all([
     mayUse(issueBranchChoices, user.id),
     mayUse(returnBranchChoices, user.id),
     mayUse(directEntryBranchChoices, user.id),
+    mayUse(writeOffBranchChoices, user.id),
   ]);
   const t = await getTranslations("warehouse.stock");
   const format = await getFormatters();
@@ -146,6 +147,16 @@ export default async function StockOnHandPage({ searchParams }: { searchParams: 
             >
               <Icon name="undo" />
               {t("newReturn")}
+            </Link>
+          )}
+          {/* Ask for a write-off (build-plan 5.11), for whoever may ask in some branch. */}
+          {canWriteOff && (
+            <Link
+              href="/warehouse/documents/new?type=WRITE_OFF"
+              className={cn(buttonVariants({ variant: "secondary" }), "max-sm:h-12")}
+            >
+              <Icon name="delete" />
+              {t("writeOff")}
             </Link>
           )}
           {canEnterDirectly && (

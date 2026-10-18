@@ -1986,6 +1986,29 @@ Choices made during the build:
 - The Low label uses the warning tokens with the `warning` icon (design system: "needs attention").
 - The notice's item name joins product and subtype with " — "; the screens join them with ", " as the reverse dialog does.
 
+### 5.11 Write-off (18.10.2026)
+
+The plan's decisions as the plan review of 18.10.2026 confirmed them (corrections 1 and 2 applied), and those of the build. The Look first items come first.
+
+1. **Look first** (approval rule; permission matrix). A write-off the Head makes is posted at once, `decided_by` the Head, and tells nobody: the Head is the one who approves (03 rule 6 for an order the Head creates; `createDocument()`'s `decidedBy`).
+2. **Look first** (stock rule). Approval re-checks every line under the ledger's locks; a line the stock no longer covers refuses the whole approval, naming the line and what is left, and the write-off keeps waiting. A waiting write-off holds no stock.
+3. **Look first** (stock rule). Asking for more than the stock of that moment is refused (`issueQuantityRefusal()`); equal is allowed. The check that counts is the approval's.
+4. **Look first** (status move). PENDING_APPROVAL → POSTED (approve) and → REJECTED (refuse), the Head only, in one function `writeOffDecisionMove()` asked by the action and by the page's `canDecide`; POSTED → REVERSED by the Head only (question 19). REJECTED is final; the asker cannot withdraw.
+5. **Look first** (notification params). STOCK_CHANGE_ASKED `{ actor, number, branch, kind }` to every active Head; STOCK_CHANGE_DECIDED `{ number, branch, kind, outcome }` to the asker; `kind` is WRITE_OFF, which 7.4 extends with a word. Both link to the write-off's page.
+6. Refuse takes no reason; the document records who refused and when.
+7. The comment is required for every reason (question 13), up to 1 000 characters.
+8. The date is a field as on the issue: today by default, never in the future, kept at approval; the movements carry the approval moment and its average.
+9. Lines: active goods subtypes of active products, at most 100, one per subtype. Approval does not ask again whether the branch, product or subtype is still active (review correction 2; as a reverse): only the stock-below-zero refusal applies.
+10. No audit row: the document holds who asked, who decided and when.
+11. `/warehouse/documents/[id]` is built for write-offs only; 5.12 opens it to every type.
+
+Choices made during the build:
+
+- The search of items in stock is one reader in `queries/issue-form.ts`, asked with `stock.issue` or `stock.ask_write_off`; the write-off's branch choices live beside the issue's for the same reason.
+- The ask's `available` is the stored stock ("4.000"); the approval's is the ledger's StockShortError ("7"), as the issue's and the reverse's. The screens format both.
+- The reverse dialog has its own result sentence for a write-off (items come back). It still says "go back into stock" for a direct entry, which is wrong there (a direct entry's reverse takes stock out); left for 5.12, which puts Reverse on the document page.
+- The asker taken off the branch, or deactivated, is not told of the decision: `notify()` already sends nothing outside the event's branch (permission review, Should fix 2; a test pins it).
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

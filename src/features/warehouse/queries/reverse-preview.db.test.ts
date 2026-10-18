@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import { beforeEach, describe, expect, it } from "vitest";
 
+import { runAction } from "@/server/action";
 import { db } from "@/server/db/client";
 import { createDocument } from "@/server/stock-documents";
 
@@ -11,6 +12,8 @@ import { setClock } from "../../../../tests/helpers/clock";
 import { insertDepartment, insertItem } from "../../../../tests/helpers/orders";
 import { postDocument, receive } from "../../../../tests/helpers/stock-documents";
 import { insertUser } from "../../../../tests/helpers/users";
+import { askWriteOff } from "../actions/write-off";
+import { decideWriteOff } from "../actions/write-off-decision";
 import { getReversePreview } from "./reverse-preview";
 
 // The Reverse dialog's preview (plan of 5.7, decided item 6; 11-screens-and-ux.md rule 6, "state
@@ -166,6 +169,43 @@ describe("getReversePreview of a direct entry (plan of 5.8, decided item 2; Deci
       expect.objectContaining({ variantId: pens, qty: "3.000", held: null }),
     ]);
     await expect(getReversePreview(manager.id, entry.documentId)).rejects.toMatchObject({
+      kind: "forbidden",
+    });
+  });
+});
+
+describe("getReversePreview of an approved write-off (plan of 5.11; Decided ahead, question 19)", () => {
+  it("the Head gets it; the Manager who asked, with RETURN_REVERSE on, is refused", async () => {
+    const branch = await insertBranch();
+    const head = await insertUser("HEAD");
+    const manager = await insertUser("MANAGER", { branches: [branch.id] });
+    const pens = (await insertItem()).variantId;
+    await receive(branch.id, pens, "5", 1000n, head.id);
+    const asked = await runAction(askWriteOff, manager.id, {
+      clientKey: randomUUID(),
+      branchId: branch.id,
+      docDate: "2031-05-03",
+      reason: "EXPIRED",
+      comment: "Sinov izoh",
+      lines: [{ variantId: pens, qty: "3" }],
+    });
+    if (!asked.ok) throw new Error(`fixture: ${asked.error.code}`);
+    const decided = await runAction(decideWriteOff, head.id, {
+      documentId: asked.data.documentId,
+      outcome: "APPROVE",
+    });
+    expect(decided.ok).toBe(true);
+    const preview = await getReversePreview(head.id, asked.data.documentId);
+    expect(preview).toMatchObject({
+      number: asked.data.number,
+      type: "WRITE_OFF",
+      status: "POSTED",
+      departmentName: null,
+    });
+    expect(preview.lines).toEqual([
+      expect.objectContaining({ variantId: pens, qty: "3.000", held: null }),
+    ]);
+    await expect(getReversePreview(manager.id, asked.data.documentId)).rejects.toMatchObject({
       kind: "forbidden",
     });
   });
