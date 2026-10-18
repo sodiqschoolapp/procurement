@@ -52,6 +52,7 @@ export const AUDIT_ACTIONS = [
   "settings.change",
   "direct_entry.create",
   "direct_entry.reverse",
+  "stock_minimum.set",
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 

@@ -189,6 +189,9 @@
       "direct_entry": {
         "create": "Прямой ввод сделан",
         "reverse": "Прямой ввод сторнирован"
+      },
+      "stock_minimum": {
+        "set": "Минимальный остаток изменён"
       }
     },
     "fields": {
@@ -350,6 +353,7 @@
       "REQUEST_REOPENED": "Открыто заново ({actor}): {count, plural, one {# заказ} few {# заказа} many {# заказов} other {# заказа}}, {branch}.",
       "PURCHASE_CANCELLED": "Отменено ({actor}): {count, plural, one {# запись о покупке} few {# записи о покупке} many {# записей о покупке} other {# записи о покупке}}, {branch}.",
       "PRICE_DIFFERS": "{branch}: недавние покупки {count, plural, one {# позиции} other {# позиций}} отличаются от текущей цены более чем на 20%.",
+      "MINIMUM_STOCK_REACHED": "{branch}: {item} — достигнут минимальный остаток.",
       "REQUEST_WAITING_24H": "Ждут вашего согласования дольше {hours, plural, one {# часа} few {# часов} many {# часов} other {# часа}}: {count, plural, one {# заказ} few {# заказа} many {# заказов} other {# заказа}}.",
       "REQUEST_WAITING_48H": "Ждут согласования дольше {hours, plural, one {# часа} few {# часов} many {# часов} other {# часа}}: {count, plural, one {# заказ} few {# заказа} many {# заказов} other {# заказа}}.",
       "BRANCH_ROLE_VACANT": "В филиале {branch} нет активного {role, select, HEAD {руководителя закупок} MANAGER {менеджера} PRINCIPAL {директора} FINANCE {сотрудника финансов} other {пользователя}}.",
@@ -1764,7 +1768,9 @@
         "subtype": "Вид",
         "quantity": "Количество",
         "measure": "Ед. изм.",
-        "value": "Стоимость"
+        "value": "Стоимость",
+        "minimum": "Минимум",
+        "actions": "Действия"
       },
       "photoAlt": "Фото: {name}",
       "noPhoto": "Нет фото",
@@ -1775,7 +1781,8 @@
       "newIssue": "Новая выдача",
       "newReturn": "Новый возврат",
       "directEntry": "Прямой ввод",
-      "importStock": "Импорт из Excel"
+      "importStock": "Импорт из Excel",
+      "lowOnly": "Только с малым остатком"
     },
     "item": {
       "back": "Остатки на складе",
@@ -1806,7 +1813,8 @@
         "DIRECT_ENTRY": "Прямой ввод",
         "REVERSAL": "Сторно"
       },
-      "reversed": "Сторнировано"
+      "reversed": "Сторнировано",
+      "minimum": "Минимум"
     },
     "issue": {
       "title": "Новая выдача",
@@ -1964,6 +1972,31 @@
       "short": "{item}: на складе осталось только {left}. Ничего не сторнировано.",
       "done": "{number} сторнирован",
       "reasonHint": "Причина обязательна: от {min} до {max} символов. {count} / {max}."
+    },
+    "low": {
+      "label": "Мало"
+    },
+    "minimum": {
+      "column": "Минимум",
+      "set": "Задать минимум для {item}",
+      "title": "Минимум: {item}",
+      "result": "При этом количестве или ниже товар помечается «Мало», и менеджеры филиала получают одно уведомление. Оставьте пустым, чтобы убрать минимум.",
+      "field": "Минимум, {unit}",
+      "save": "Сохранить",
+      "saved": "Минимум сохранён",
+      "cleared": "Минимум убран"
+    },
+    "addToDraft": {
+      "button": "В черновик",
+      "title": "Добавить {item} в черновик",
+      "result": "Для отдела создаётся новый черновик, или ваш черновик этого товара и отдела увеличивается на это количество.",
+      "department": "Отдел",
+      "chooseDepartment": "Выберите отдел",
+      "quantity": "Количество, {unit}",
+      "confirm": "Добавить",
+      "added": "Черновик добавлен",
+      "merged": "Добавлено в ваш черновик: теперь {quantity}",
+      "noDepartments": "В этом филиале нет активных отделов."
     }
   }
 }

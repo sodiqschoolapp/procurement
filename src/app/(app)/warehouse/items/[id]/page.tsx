@@ -6,9 +6,12 @@ import * as z from "zod";
 
 import { EmptyState } from "@/components/empty-state";
 import { Icon } from "@/components/icon";
-import { ReversedLabel } from "@/components/status-label";
+import { LowLabel, ReversedLabel } from "@/components/status-label";
+import { plainQuantity } from "@/domain/drafts";
 import { BRANCH_COOKIE } from "@/features/catalog/branch-cookie";
 import { currentBranchChoice, listMyBranches } from "@/features/catalog/queries/my-branches";
+import { AddToDraftButton } from "@/features/warehouse/components/add-to-draft-button";
+import { MinimumButton } from "@/features/warehouse/components/minimum-button";
 import { ReverseDocumentButton } from "@/features/warehouse/components/reverse-document-button";
 import { type ItemCard, getItemCard } from "@/features/warehouse/queries/item-card";
 import { getFormatters } from "@/i18n/get-formatters";
@@ -16,6 +19,7 @@ import { requireUser } from "@/server/auth/session";
 import { AuthorizationError } from "@/server/authorize";
 
 import { PageLinks } from "../../../catalog/page-links";
+import { setStockMinimumAction } from "./actions";
 
 // /warehouse/items/[id], the item card (09-warehouse.md, Stock screens: Item card; 11-screens-
 // and-ux.md, Screens: every role; rules 5 and 8; plan of 5.3): every movement of one subtype in
@@ -26,7 +30,8 @@ import { PageLinks } from "../../../catalog/page-links";
 // Purchases tab (decided item 5); a document's number is text until 5.12 (decided item 4, Look
 // first). A reversed document's number carries the "Reversed" label, and a row the server offers
 // it on (`canReverse`) has the Reverse button (plan of 5.7). At phone width the table scrolls
-// inside its panel, as Stock on hand.
+// inside its panel, as Stock on hand. The header shows the minimum beside "On hand" with its
+// pencil, "Low", and "Add to draft" where the query offers them (plan of 5.10).
 
 const pageParam = z.coerce.number().int().min(1).catch(1);
 const idParam = z.uuid().catch("");
@@ -75,6 +80,7 @@ export default async function ItemCardPage({
     if (to > 1) query.set("page", String(to));
     return `/warehouse/items/${card.variantId}?${query.toString()}`;
   };
+  const itemName = card.subtypeName ? `${card.productName}, ${card.subtypeName}` : card.productName;
   const change = (delta: string) =>
     delta.startsWith("-") ? format.quantity(delta) : `+${format.quantity(delta)}`;
 
@@ -106,12 +112,42 @@ export default async function ItemCardPage({
           </div>
           <div className="flex gap-1">
             <dt className="text-muted-foreground">{t("onHand")}</dt>
-            <dd className="font-semibold tabular-nums">
-              {format.quantity(card.quantity)}{" "}
-              <span title={card.unitName}>{card.unitShortName}</span>
+            <dd className="inline-flex items-center gap-2 font-semibold tabular-nums">
+              <span>
+                {format.quantity(card.quantity)}{" "}
+                <span title={card.unitName}>{card.unitShortName}</span>
+              </span>
+              {card.low && <LowLabel />}
+            </dd>
+          </div>
+          {/* The minimum beside "On hand" (plan of 5.10; progress of 5.3). */}
+          <div className="flex items-center gap-1">
+            <dt className="text-muted-foreground">{t("minimum")}</dt>
+            <dd className="inline-flex items-center gap-1 font-semibold tabular-nums" data-minimum>
+              {card.minimum === null ? "—" : format.quantity(card.minimum)}
+              {card.canSetMinimum && (
+                <MinimumButton
+                  branchId={card.branchId}
+                  variantId={card.variantId}
+                  itemName={itemName}
+                  minimum={card.minimum === null ? "" : plainQuantity(card.minimum)}
+                  unitShortName={card.unitShortName}
+                  save={setStockMinimumAction}
+                />
+              )}
             </dd>
           </div>
         </dl>
+        {card.low && card.canAddDraft && (
+          <div className="max-sm:[&>*]:w-full">
+            <AddToDraftButton
+              branchId={card.branchId}
+              variantId={card.variantId}
+              itemName={itemName}
+              unitShortName={card.unitShortName}
+            />
+          </div>
+        )}
       </div>
 
       {card.found === 0 ? (

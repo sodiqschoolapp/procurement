@@ -269,3 +269,31 @@ export const stockDocumentLines = pgTable(
     index("stock_document_lines_variant_id_idx").on(table.variantId),
   ],
 );
+
+// The minimum of a subtype in a branch (04-catalogs.md rule 5; 09 Low stock; 14 stock_minimums;
+// plan of 5.10). `min_qty` null is "no minimum": clearing keeps the row (CLAUDE.md rule 11; the
+// audit log holds the history; decided item 6, Look first). `low_notified_at` is when "Item
+// reached its minimum stock" was sent, cleared at restock (10 Notifications: "once per item until
+// restocked"; decided item 2, Look first); written only by checkMinimum() of
+// src/server/stock-minimums.ts.
+export const stockMinimums = pgTable(
+  "stock_minimums",
+  {
+    branchId: uuid("branch_id")
+      .notNull()
+      .references(() => branches.id),
+    variantId: uuid("variant_id")
+      .notNull()
+      .references(() => productVariants.id),
+    minQty: quantity("min_qty"),
+    lowNotifiedAt: moment("low_notified_at"),
+    createdAt: moment("created_at").notNull(),
+    updatedAt: moment("updated_at").notNull(),
+  },
+  (table) => [
+    primaryKey({ name: "stock_minimums_pkey", columns: [table.branchId, table.variantId] }),
+    // A minimum is above 0; none is null (decided item 1, Look first).
+    check("stock_minimums_min_qty_check", sql`${table.minQty} > 0`),
+    index("stock_minimums_variant_id_idx").on(table.variantId),
+  ],
+);

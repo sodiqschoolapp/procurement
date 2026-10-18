@@ -189,6 +189,9 @@
       "direct_entry": {
         "create": "Direct entry made",
         "reverse": "Direct entry reversed"
+      },
+      "stock_minimum": {
+        "set": "Minimum stock set"
       }
     },
     "fields": {
@@ -350,6 +353,7 @@
       "REQUEST_REOPENED": "{actor} reopened {count, plural, one {# order} other {# orders}} in {branch}.",
       "PURCHASE_CANCELLED": "{actor} cancelled {count, plural, one {# purchase record} other {# purchase records}} in {branch}.",
       "PRICE_DIFFERS": "Recent purchases of {count, plural, one {# item} other {# items}} in {branch} differ from the current price by more than 20%.",
+      "MINIMUM_STOCK_REACHED": "{item} in {branch} has reached its minimum stock.",
       "REQUEST_WAITING_24H": "{count, plural, one {# order has} other {# orders have}} waited more than {hours, plural, one {# hour} other {# hours}} for your approval.",
       "REQUEST_WAITING_48H": "{count, plural, one {# order has} other {# orders have}} waited more than {hours, plural, one {# hour} other {# hours}} for approval.",
       "BRANCH_ROLE_VACANT": "Branch {branch} has no active {role, select, HEAD {Procurement Head} MANAGER {Manager} PRINCIPAL {Principal} FINANCE {Finance user} other {user}}.",
@@ -1764,7 +1768,9 @@
         "subtype": "Subtype",
         "quantity": "Quantity",
         "measure": "Measure",
-        "value": "Value"
+        "value": "Value",
+        "minimum": "Minimum",
+        "actions": "Actions"
       },
       "photoAlt": "Photo of {name}",
       "noPhoto": "No photo",
@@ -1775,7 +1781,8 @@
       "newIssue": "New issue",
       "newReturn": "New return",
       "directEntry": "Direct entry",
-      "importStock": "Import from Excel"
+      "importStock": "Import from Excel",
+      "lowOnly": "Low stock only"
     },
     "item": {
       "back": "Stock on hand",
@@ -1806,7 +1813,8 @@
         "DIRECT_ENTRY": "Direct entry",
         "REVERSAL": "Reversal"
       },
-      "reversed": "Reversed"
+      "reversed": "Reversed",
+      "minimum": "Minimum"
     },
     "issue": {
       "title": "New issue",
@@ -1964,6 +1972,31 @@
       "short": "{item}: only {left} left in stock. Nothing was reversed.",
       "done": "{number} reversed",
       "reasonHint": "A reason is required: {min} to {max} characters. {count} / {max}."
+    },
+    "low": {
+      "label": "Low"
+    },
+    "minimum": {
+      "column": "Minimum",
+      "set": "Set the minimum of {item}",
+      "title": "Minimum of {item}",
+      "result": "At this quantity or below the item is marked Low and the Managers of the branch are told once. Leave it empty for no minimum.",
+      "field": "Minimum, {unit}",
+      "save": "Save",
+      "saved": "Minimum saved",
+      "cleared": "Minimum removed"
+    },
+    "addToDraft": {
+      "button": "Add to draft",
+      "title": "Add {item} to a draft",
+      "result": "A new draft is made for the department, or your draft of this item and department grows by this quantity.",
+      "department": "Department",
+      "chooseDepartment": "Choose a department",
+      "quantity": "Quantity, {unit}",
+      "confirm": "Add",
+      "added": "Draft added",
+      "merged": "Added to your draft: now {quantity}",
+      "noDepartments": "This branch has no active department."
     }
   }
 }

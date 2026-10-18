@@ -130,6 +130,12 @@ export type NotificationParamsOf = {
    * item 8, Look first): `count` is the subtypes a purchase action made prompt in `branch`.
    */
   PRICE_DIFFERS: { count: number; branch: string };
+  /**
+   * "Item reached its minimum stock" (plan of 5.10, decided item 9): one per item and Manager;
+   * `item` is the product's name, with the subtype's when it is not the hidden default (04 rule
+   * 1), and `branch` the branch's code. No quantity.
+   */
+  MINIMUM_STOCK_REACHED: { item: string; branch: string };
   REQUEST_WAITING_24H: OrdersWaitingParams;
   REQUEST_WAITING_48H: OrdersWaitingParams;
   /** "Branch has no active user for a role": the branch's code and the role's code. */
@@ -167,6 +173,7 @@ export const NOTIFICATION_PARAMS: {
   REQUEST_REOPENED: ["actor", "count", "branch"],
   PURCHASE_CANCELLED: ["actor", "count", "branch"],
   PRICE_DIFFERS: ["count", "branch"],
+  MINIMUM_STOCK_REACHED: ["item", "branch"],
   REQUEST_WAITING_24H: ["count", "hours"],
   REQUEST_WAITING_48H: ["count", "hours"],
   BRANCH_ROLE_VACANT: ["branch", "role"],

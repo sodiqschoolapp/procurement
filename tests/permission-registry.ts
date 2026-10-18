@@ -119,6 +119,10 @@ export const SERVER_ACTIONS: Record<string, Entry> = {
   "src/app/(app)/warehouse/items/[id]/actions.ts#reverseStockDocumentAction":
     "stock.return_reverse",
   "src/app/(app)/warehouse/items/[id]/actions.ts#reversePreviewAction": "stock.return_reverse",
+  // Set or clear a minimum (plan of 5.10): stock.set_minimums on the branch
+  // (minimum-matrix.db.test.ts).
+  "src/app/(app)/warehouse/items/[id]/actions.ts#setStockMinimumAction": "stock.set_minimums",
+  "src/app/(app)/warehouse/stock/actions.ts#setStockMinimumAction": "stock.set_minimums",
   // Finish order, Not bought, Reopen buying (plan of 3.5, decided item 2, Look first): the same.
   "src/app/(app)/orders/actions.ts#finishOrdersAction": "purchase.record",
   "src/app/(app)/orders/actions.ts#markNotBoughtAction": "purchase.record",

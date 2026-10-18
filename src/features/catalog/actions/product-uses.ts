@@ -52,8 +52,25 @@ export const STOCK_USES: ProductUse = {
   },
 };
 
-/** Every kind of row that is a use of a product: orders from 2.5, stock from 3.1; minimums later. */
-export const PRODUCT_USES: readonly ProductUse[] = [ORDER_USES, STOCK_USES];
+/**
+ * A minimum of any of the product's subtypes in any branch, typed in its measure (plan of 5.10);
+ * a cleared one (`min_qty` null) holds no quantity. setStockMinimum takes the product row FOR
+ * SHARE before it writes.
+ */
+export const MINIMUM_USES: ProductUse = {
+  name: "stock_minimums.variant_id",
+  async holds(tx, productId) {
+    const found = await tx.execute(sql`
+      select 1 from stock_minimums s
+      join product_variants v on v.id = s.variant_id
+      where v.product_id = ${productId} and s.min_qty is not null
+      limit 1`);
+    return found.rows.length > 0;
+  },
+};
+
+/** Every kind of row that is a use of a product: orders from 2.5, stock from 3.1, minimums 5.10. */
+export const PRODUCT_USES: readonly ProductUse[] = [ORDER_USES, STOCK_USES, MINIMUM_USES];
 
 export async function productInUse(
   tx: Executor,

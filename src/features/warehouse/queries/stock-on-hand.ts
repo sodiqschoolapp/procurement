@@ -1,7 +1,9 @@
 import { and, asc, count, eq, ilike, or, sql } from "drizzle-orm";
 import * as z from "zod";
 
-import { STOCK_PAGE_SIZE, stockValue } from "@/domain/stock";
+import { addsDraftsIn } from "@/domain/drafts";
+import { decide } from "@/domain/permissions";
+import { STOCK_PAGE_SIZE, isLow, stockValue } from "@/domain/stock";
 import { authorize, authorizeList, branchFilter } from "@/server/authorize";
 import {
   branches,
@@ -9,6 +11,7 @@ import {
   productVariants,
   products,
   stockBalances,
+  stockMinimums,
   units,
 } from "@/server/db/schema";
 import { readSnapshot } from "@/server/read-snapshot";
@@ -19,7 +22,10 @@ import { readSnapshot } from "@/server/read-snapshot";
 // branch, Finance own branches; developer-rules.md rule 4). One row per branch and subtype with a
 // balance row, at 0 too (decided items 3 and 4); services are never listed (09, Definitions
 // "Stock"). Each row's value is stockValue() (decided item 1, Look first), never computed in SQL.
-// The minimum and "Low stock only" come with 5.10.
+// Each row carries its minimum and isLow() (plan of 5.10); "Low stock only" filters in the SQL
+// with the same "at or below" (paging needs it there; its test puts the boundary rows side by
+// side, review of the plan, should fix 3), and each row says whether the user may set its minimum
+// or add a draft of it; the server asks again.
 
 export type StockRow = {
   branchId: string;
@@ -35,11 +41,25 @@ export type StockRow = {
   unitShortName: string;
   /** Whole so'm: stockValue() of the quantity and the moving average cost. */
   value: bigint;
+  /** The minimum as stored ("5.000"), null for none (plan of 5.10). */
+  minimum: string | null;
+  /** isLow() of the quantity and the minimum (09 Low stock). */
+  low: boolean;
+  /** `stock.set_minimums` on the row's branch. */
+  canSetMinimum: boolean;
+  /** addsDraftsIn() of the row's branch, for "Add to draft" (plan of 5.10, decided item 8). */
+  canAddDraft: boolean;
 };
 
 export type StockPage = { rows: StockRow[]; page: number; pages: number; found: number };
 
-export type StockFilters = { branch?: string | null; q?: string; category?: string | null };
+export type StockFilters = {
+  branch?: string | null;
+  q?: string;
+  category?: string | null;
+  /** "Low stock only" (09 Stock screens). */
+  low?: boolean;
+};
 
 export type StockCategoryChoice = { id: string; name: string; isActive: boolean };
 
@@ -81,6 +101,14 @@ export async function listStockOnHand(
           ilike(products.name, pattern),
           and(eq(productVariants.isDefault, false), ilike(productVariants.name, pattern)),
         ),
+    // Low: at or below the minimum, none never (09 Low stock; isLow() of src/domain/stock.ts).
+    filters.low === true
+      ? sql`${stockMinimums.minQty} is not null and ${stockBalances.qty} <= ${stockMinimums.minQty}`
+      : undefined,
+  );
+  const minimumJoin = and(
+    eq(stockMinimums.branchId, stockBalances.branchId),
+    eq(stockMinimums.variantId, stockBalances.variantId),
   );
 
   return readSnapshot(async (db) => {
@@ -89,6 +117,7 @@ export async function listStockOnHand(
       .from(stockBalances)
       .innerJoin(productVariants, eq(productVariants.id, stockBalances.variantId))
       .innerJoin(products, eq(products.id, productVariants.productId))
+      .leftJoin(stockMinimums, minimumJoin)
       .where(where);
     const found = total?.found ?? 0;
     const pages = Math.max(1, Math.ceil(found / STOCK_PAGE_SIZE));
@@ -97,6 +126,7 @@ export async function listStockOnHand(
       .select({
         branchId: stockBalances.branchId,
         branchCode: branches.code,
+        branchIsActive: branches.isActive,
         variantId: stockBalances.variantId,
         productName: products.name,
         variantName: productVariants.name,
@@ -104,6 +134,7 @@ export async function listStockOnHand(
         photoFileId: products.photoFileId,
         qty: stockBalances.qty,
         avgCost: stockBalances.avgCost,
+        minimum: stockMinimums.minQty,
         unitName: units.name,
         unitShortName: units.shortName,
       })
@@ -112,6 +143,7 @@ export async function listStockOnHand(
       .innerJoin(productVariants, eq(productVariants.id, stockBalances.variantId))
       .innerJoin(products, eq(products.id, productVariants.productId))
       .innerJoin(units, eq(units.id, products.unitId))
+      .leftJoin(stockMinimums, minimumJoin)
       .where(where)
       .orderBy(
         asc(products.name),
@@ -136,6 +168,10 @@ export async function listStockOnHand(
         unitName: row.unitName,
         unitShortName: row.unitShortName,
         value: stockValue(row.qty, row.avgCost),
+        minimum: row.minimum,
+        low: isLow(row.qty, row.minimum),
+        canSetMinimum: decide("stock.set_minimums", actor, { branchId: row.branchId }) === "allow",
+        canAddDraft: addsDraftsIn(actor, { id: row.branchId, isActive: row.branchIsActive }),
       })),
       page: shown,
       pages,

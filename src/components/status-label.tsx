@@ -325,3 +325,16 @@ export function NoReceiptLabel({ className }: { className?: string }) {
     </LabelBox>
   );
 }
+
+/**
+ * "Low" (09-warehouse.md, Low stock: "the item gets a 'Low' label"; 00-definitions, Low; plan of
+ * 5.10): at or below its minimum. Needs attention, so the warning tokens, with its icon and word.
+ */
+export function LowLabel({ className }: { className?: string }) {
+  const t = useTranslations("warehouse.low");
+  return (
+    <LabelBox tone="amber" icon="warning" className={className}>
+      <span data-low>{t("label")}</span>
+    </LabelBox>
+  );
+}

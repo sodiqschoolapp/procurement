@@ -7,9 +7,13 @@ import { EmptyState } from "@/components/empty-state";
 import { Icon } from "@/components/icon";
 import { buttonVariants } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
+import { LowLabel } from "@/components/status-label";
 import { cn } from "@/components/utils";
+import { plainQuantity } from "@/domain/drafts";
 import { BRANCH_COOKIE } from "@/features/catalog/branch-cookie";
 import { currentBranchChoice } from "@/features/catalog/queries/my-branches";
+import { AddToDraftButton } from "@/features/warehouse/components/add-to-draft-button";
+import { MinimumButton } from "@/features/warehouse/components/minimum-button";
 import { directEntryBranchChoices } from "@/features/warehouse/queries/direct-entry-form";
 import { issueBranchChoices } from "@/features/warehouse/queries/issue-form";
 import { returnBranchChoices } from "@/features/warehouse/queries/return-form";
@@ -23,6 +27,7 @@ import { requireUser } from "@/server/auth/session";
 import { AuthorizationError } from "@/server/authorize";
 
 import { PageLinks } from "../../catalog/page-links";
+import { setStockMinimumAction } from "./actions";
 
 // /warehouse/stock, Stock on hand (09-warehouse.md, Stock screens; 11-screens-and-ux.md, Screens:
 // every role; rules 5, 8 and 12; plan of 5.2): one row per branch and subtype with its photo,
@@ -31,7 +36,9 @@ import { PageLinks } from "../../catalog/page-links";
 // choice (decided item 5, as /orders). At phone width the table scrolls inside its panel, as the
 // catalog lists (decided item 9). Each product name links to its item card in the row's branch
 // (5.3). "New issue" in the header for whoever may issue in some branch (plan of 5.4, decided
-// item 10), "New return" for whoever may take returns in some branch (plan of 5.6). The minimum and "Low stock only" come with 5.10.
+// item 10), "New return" for whoever may take returns in some branch (plan of 5.6). The minimum
+// column, "Low" and the "Low stock only" switch (`low=1` in the address), with the minimum's
+// pencil and "Add to draft" on the rows the query offers them (plan of 5.10).
 
 const pageParam = z.coerce.number().int().min(1).catch(1);
 const searchParam = z.string().trim().max(200).catch("");
@@ -42,6 +49,7 @@ type Params = {
   q?: string | string[];
   category?: string | string[];
   branch?: string | string[];
+  low?: string | string[];
 };
 
 const first = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value);
@@ -84,9 +92,10 @@ export default async function StockOnHandPage({ searchParams }: { searchParams: 
     (await cookies()).get(BRANCH_COOKIE)?.value,
   );
   const branch = addressBranch || cookieBranch;
+  const low = first(raw.low) === "1";
   const list = await readStock(
     user.id,
-    { q, category: category || null, branch: branch || null },
+    { q, category: category || null, branch: branch || null, low },
     pageParam.parse(first(raw.page)),
   );
   const categories = await stockCategoryChoices(user.id);
@@ -97,12 +106,13 @@ export default async function StockOnHandPage({ searchParams }: { searchParams: 
   ]);
   const t = await getTranslations("warehouse.stock");
   const format = await getFormatters();
-  const filtered = q !== "" || category !== "";
+  const filtered = q !== "" || category !== "" || low;
   const href = (to: number) => {
     const query = new URLSearchParams();
     if (q) query.set("q", q);
     if (category) query.set("category", category);
     if (addressBranch) query.set("branch", addressBranch);
+    if (low) query.set("low", "1");
     if (to > 1) query.set("page", String(to));
     const text = query.toString();
     return `/warehouse/stock${text ? `?${text}` : ""}`;
@@ -194,6 +204,17 @@ export default async function StockOnHandPage({ searchParams }: { searchParams: 
                 </option>
               ))}
             </Select>
+            <label className="flex h-11 items-center gap-2 px-1 text-sm leading-5 sm:h-10">
+              <input
+                type="checkbox"
+                name="low"
+                value="1"
+                defaultChecked={low}
+                className="size-5 accent-primary"
+                data-low-only
+              />
+              {t("lowOnly")}
+            </label>
             <button type="submit" className={buttonVariants({ variant: "secondary" })}>
               {t("find")}
             </button>
@@ -213,7 +234,7 @@ export default async function StockOnHandPage({ searchParams }: { searchParams: 
             <EmptyState title={t("noResultsTitle")} line={t("noResultsText")} />
           ) : (
             <section className="overflow-x-auto rounded-xl bg-card text-card-foreground">
-              <table className="w-full min-w-[44rem] border-collapse text-left text-sm leading-5">
+              <table className="w-full min-w-[56rem] border-collapse text-left text-sm leading-5">
                 <thead className="bg-muted text-[13px] leading-[18px] font-semibold text-muted-foreground">
                   <tr>
                     <th scope="col" className="w-16 px-4 py-3">
@@ -235,51 +256,95 @@ export default async function StockOnHandPage({ searchParams }: { searchParams: 
                       {t("columns.measure")}
                     </th>
                     <th scope="col" className="px-4 py-3 text-right">
+                      {t("columns.minimum")}
+                    </th>
+                    <th scope="col" className="px-4 py-3 text-right">
                       {t("columns.value")}
+                    </th>
+                    {/* `relative`: the hidden label stays inside the scrolling panel (as the item card). */}
+                    <th scope="col" className="relative px-4 py-3">
+                      <span className="sr-only">{t("columns.actions")}</span>
                     </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {list.rows.map((row) => (
-                    <tr key={`${row.branchId}-${row.variantId}`} className="border-t">
-                      <td className="px-4 py-2">
-                        {row.photoFileId ? (
-                          // eslint-disable-next-line @next/next/no-img-element -- a private file route, not an asset
-                          <img
-                            src={`/files/${row.photoFileId}/small`}
-                            alt={t("photoAlt", { name: row.productName })}
-                            width={40}
-                            height={40}
-                            loading="lazy"
-                            className="size-10 rounded-lg bg-muted object-cover"
-                          />
-                        ) : (
-                          <span className="flex size-10 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-                            <Icon name="inventory_2" size={18} label={t("noPhoto")} />
+                  {list.rows.map((row) => {
+                    const itemName = row.subtypeName
+                      ? `${row.productName}, ${row.subtypeName}`
+                      : row.productName;
+                    return (
+                      <tr
+                        key={`${row.branchId}-${row.variantId}`}
+                        className="border-t"
+                        data-stock-row={`${row.branchId}:${row.variantId}`}
+                      >
+                        <td className="px-4 py-2">
+                          {row.photoFileId ? (
+                            // eslint-disable-next-line @next/next/no-img-element -- a private file route, not an asset
+                            <img
+                              src={`/files/${row.photoFileId}/small`}
+                              alt={t("photoAlt", { name: row.productName })}
+                              width={40}
+                              height={40}
+                              loading="lazy"
+                              className="size-10 rounded-lg bg-muted object-cover"
+                            />
+                          ) : (
+                            <span className="flex size-10 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                              <Icon name="inventory_2" size={18} label={t("noPhoto")} />
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 font-semibold">
+                          <Link
+                            href={`/warehouse/items/${row.variantId}?branch=${row.branchId}`}
+                            className="text-primary underline-offset-2 hover:underline"
+                          >
+                            {row.productName}
+                          </Link>
+                        </td>
+                        <td className="px-4 py-3">{row.subtypeName ?? ""}</td>
+                        <td className="px-4 py-3">{row.branchCode}</td>
+                        <td className="px-4 py-3 text-right whitespace-nowrap tabular-nums">
+                          <span className="inline-flex items-center gap-2">
+                            {row.low && <LowLabel />}
+                            {format.quantity(row.quantity)}
                           </span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 font-semibold">
-                        <Link
-                          href={`/warehouse/items/${row.variantId}?branch=${row.branchId}`}
-                          className="text-primary underline-offset-2 hover:underline"
-                        >
-                          {row.productName}
-                        </Link>
-                      </td>
-                      <td className="px-4 py-3">{row.subtypeName ?? ""}</td>
-                      <td className="px-4 py-3">{row.branchCode}</td>
-                      <td className="px-4 py-3 text-right whitespace-nowrap tabular-nums">
-                        {format.quantity(row.quantity)}
-                      </td>
-                      <td className="px-4 py-3" title={row.unitName}>
-                        {row.unitShortName}
-                      </td>
-                      <td className="px-4 py-3 text-right whitespace-nowrap tabular-nums">
-                        {format.money(row.value)}
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                        <td className="px-4 py-3" title={row.unitName}>
+                          {row.unitShortName}
+                        </td>
+                        <td className="px-4 py-3 text-right whitespace-nowrap tabular-nums">
+                          <span className="inline-flex items-center gap-1" data-minimum>
+                            {row.minimum === null ? "—" : format.quantity(row.minimum)}
+                            {row.canSetMinimum && (
+                              <MinimumButton
+                                branchId={row.branchId}
+                                variantId={row.variantId}
+                                itemName={itemName}
+                                minimum={row.minimum === null ? "" : plainQuantity(row.minimum)}
+                                unitShortName={row.unitShortName}
+                                save={setStockMinimumAction}
+                              />
+                            )}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right whitespace-nowrap tabular-nums">
+                          {format.money(row.value)}
+                        </td>
+                        <td className="px-4 py-2 text-right">
+                          {row.low && row.canAddDraft && (
+                            <AddToDraftButton
+                              branchId={row.branchId}
+                              variantId={row.variantId}
+                              itemName={itemName}
+                              unitShortName={row.unitShortName}
+                            />
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </section>

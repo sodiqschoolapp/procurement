@@ -189,6 +189,9 @@
       "direct_entry": {
         "create": "To'g'ridan-to'g'ri kiritish qilindi",
         "reverse": "To'g'ridan-to'g'ri kiritish storno qilindi"
+      },
+      "stock_minimum": {
+        "set": "Minimal qoldiq o'rnatildi"
       }
     },
     "fields": {
@@ -350,6 +353,7 @@
       "REQUEST_REOPENED": "{branch}: {actor} {count, plural, other {# ta buyurtmani}} qayta ochdi.",
       "PURCHASE_CANCELLED": "{branch}: {actor} {count, plural, other {# ta xarid yozuvini}} bekor qildi.",
       "PRICE_DIFFERS": "{branch}: {count, plural, other {# ta mahsulotning}} so'nggi xaridlari joriy narxdan 20% dan ko'proq farq qiladi.",
+      "MINIMUM_STOCK_REACHED": "{branch}: {item} minimal qoldiqqa yetdi.",
       "REQUEST_WAITING_24H": "{count, plural, other {# ta buyurtma}} tasdiqingizni {hours, plural, other {# soatdan}} ortiq kutmoqda.",
       "REQUEST_WAITING_48H": "{count, plural, other {# ta buyurtma}} tasdiqlashni {hours, plural, other {# soatdan}} ortiq kutmoqda.",
       "BRANCH_ROLE_VACANT": "{branch} filialida faol {role, select, HEAD {xaridlar rahbari} MANAGER {menejer} PRINCIPAL {direktor} FINANCE {moliya xodimi} other {foydalanuvchi}} yoʻq.",
@@ -1764,7 +1768,9 @@
         "subtype": "Turi",
         "quantity": "Miqdori",
         "measure": "O'lchov",
-        "value": "Qiymati"
+        "value": "Qiymati",
+        "minimum": "Minimum",
+        "actions": "Amallar"
       },
       "photoAlt": "{name} rasmi",
       "noPhoto": "Rasm yo'q",
@@ -1775,7 +1781,8 @@
       "newIssue": "Yangi berish",
       "newReturn": "Yangi qaytarish",
       "directEntry": "To'g'ridan-to'g'ri kiritish",
-      "importStock": "Excel'dan import"
+      "importStock": "Excel'dan import",
+      "lowOnly": "Faqat kam qolganlar"
     },
     "item": {
       "back": "Ombordagi qoldiq",
@@ -1806,7 +1813,8 @@
         "DIRECT_ENTRY": "To'g'ridan-to'g'ri kiritish",
         "REVERSAL": "Storno"
       },
-      "reversed": "Storno qilingan"
+      "reversed": "Storno qilingan",
+      "minimum": "Minimum"
     },
     "issue": {
       "title": "Yangi berish",
@@ -1964,6 +1972,31 @@
       "short": "{item}: omborda faqat {left} qoldi. Hech narsa storno qilinmadi.",
       "done": "{number} storno qilindi",
       "reasonHint": "Sabab majburiy: {min} dan {max} gacha belgi. {count} / {max}."
+    },
+    "low": {
+      "label": "Kam"
+    },
+    "minimum": {
+      "column": "Minimum",
+      "set": "{item} uchun minimumni belgilash",
+      "title": "Minimum: {item}",
+      "result": "Shu miqdorda yoki undan kamida mahsulot «Kam» deb belgilanadi va filial menejerlariga bir marta xabar boriladi. Minimum kerak bo'lmasa, bo'sh qoldiring.",
+      "field": "Minimum, {unit}",
+      "save": "Saqlash",
+      "saved": "Minimum saqlandi",
+      "cleared": "Minimum olib tashlandi"
+    },
+    "addToDraft": {
+      "button": "Qoralamaga qo'shish",
+      "title": "{item}ni qoralamaga qo'shish",
+      "result": "Bo'lim uchun yangi qoralama yaratiladi yoki shu mahsulot va bo'lim bo'yicha qoralamangiz shu miqdorga oshadi.",
+      "department": "Bo'lim",
+      "chooseDepartment": "Bo'limni tanlang",
+      "quantity": "Miqdor, {unit}",
+      "confirm": "Qo'shish",
+      "added": "Qoralama qo'shildi",
+      "merged": "Qoralamangizga qo'shildi: endi {quantity}",
+      "noDepartments": "Bu filialda faol bo'lim yo'q."
     }
   }
 }

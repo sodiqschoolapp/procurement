@@ -1963,6 +1963,29 @@ Choices made during the build:
 - The tests that used `stock` as the unknown import kind use `counts` now: `stock` became a kind.
 - The Stock on hand button "Import from Excel" uses the existing `description` icon; no new icon.
 
+### 5.10 Minimum stock and low stock (18.10.2026)
+
+The plan's decisions as the plan review of 18.10.2026 confirmed or changed them (corrections 1 to 4 applied), and those of the build. The Look first items come first.
+
+1. **Look first** (stock rule). "Low" is quantity ≤ minimum (`00-definitions`: "At or below it"). A minimum is above 0 (`stock_minimums_min_qty_check`, `quantityRefusal()`); "no minimum" (`min_qty` null or no row) is never Low. Setting a minimum makes the balance row at 0 when there is none, so the item is listed on Stock on hand.
+2. **Look first** (stock rule; "until restocked"). Restocked = the quantity is above the minimum after a movement or a change of the minimum. `low_notified_at` is set when the notice is sent and cleared at restock; the next movement or change that leaves the item Low sends one again. A receipt that keeps it at or below the minimum is no restock.
+3. **Look first** (stock rule). The notice is sent from `postMovement()` through `checkMinimum()`, in the write step of the same transaction: one place covers every movement that lowers stock, now and in 5.11, 7.2 and 7.4.
+4. **Look first** (who is told). "Managers of the branch" = active users of role Manager assigned to it, whatever their rights; not the Head, Principal or Finance. The actor is told too (`notify()` with `userId: null`): the notice is about the item's state, and left out the branch's only Manager would use up the one notice on nobody.
+5. **Look first** (permission matrix). Setting a minimum is `stock.set_minimums` on the branch: the Head anywhere, a Manager in their branches with `SET_MINIMUMS`. Typing one for an inactive branch, an inactive subtype or a service is refused; clearing is always allowed (`04` rule 2).
+6. **Look first** (data model; spec change). `stock_minimums` gains `low_notified_at`, `created_at`, `updated_at`; `min_qty` is nullable and clearing keeps the row (rule 11). Proposed `/spec-change` for `14-data-model.md`: `stock_minimums branch_id, variant_id, min_qty (null = none), low_notified_at KEY (branch_id, variant_id)`.
+7. **Look first** (a reading of `CLAUDE.md` rule 8). A minimum has no client key and no version: it is a value that is set, the same value twice is the same state; two at once queue on the locks and the later stays, each with its audit row.
+8. "Add to draft" reuses `createDraft` (`request.create`, `CREATE_REQUESTS`): the Head and such a Manager see it. The dialog asks a department of the branch (`listDraftChoices()`) and a quantity, empty at first; a merge shows the draft's new quantity (05 Drafts 2).
+9. One notice per item and recipient; params the item's name (the subtype's only when it is real) and the branch code; it links to the item card of that branch; no quantity.
+10. The minimum is shown and set on Stock on hand rows and on the item card, in the item's measure.
+11. Lock order: product FOR SHARE, balance FOR UPDATE (`holdBalance()`, made at 0 when missing), then the minimum row; `postMovement()` takes the minimum after its balance, item by item in `postMovements()`' order.
+
+Choices made during the build:
+
+- The subtype and quantity rules of a typed minimum are `directEntryLineRefusal()` (an active subtype of an active product of goods, the quantity by the measure, above 0), as for a direct entry's line; no second copy.
+- The audit row's `entity_id` is `<branch id>:<subtype id>`, the minimum's key; a clear with no minimum held writes nothing.
+- The Low label uses the warning tokens with the `warning` icon (design system: "needs attention").
+- The notice's item name joins product and subtype with " — "; the screens join them with ", " as the reverse dialog does.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

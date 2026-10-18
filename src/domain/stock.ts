@@ -180,3 +180,29 @@ export const STOCK_PAGE_SIZE = 25;
 
 /** The item card shows 50 movements per page (developer-rules.md rule 12; plan of 5.3, item 6). */
 export const ITEM_CARD_PAGE_SIZE = 50;
+
+/**
+ * Whether an item is "Low": its quantity at or below its minimum (09 Low stock: "falls to its
+ * minimum or below"; 00-definitions, Minimum stock: "No minimum means never low"; plan of 5.10,
+ * decided item 1, Look first). `minimum` null: no minimum.
+ */
+export function isLow(qty: string, minimum: string | null): boolean {
+  if (minimum === null) return false;
+  return stockOf(qty).lessThanOrEqualTo(stockOf(minimum));
+}
+
+/**
+ * What a change of stock or of the minimum does to "Item reached its minimum stock" (10
+ * Notifications: "once per item until restocked"; plan of 5.10, decided item 2, Look first):
+ * Low and not yet told, "send"; no longer Low with the mark set, "clear" (restocked, or the
+ * minimum lowered or removed); otherwise nothing.
+ */
+export function minimumStep(
+  qty: string,
+  minimum: string | null,
+  notified: boolean,
+): "send" | "clear" | "none" {
+  const low = isLow(qty, minimum);
+  if (low) return notified ? "none" : "send";
+  return notified ? "clear" : "none";
+}

@@ -6,6 +6,7 @@ import { type MovementType, nextBalance } from "@/domain/stock";
 import { ActionError } from "./action";
 import type { Executor } from "./authorize";
 import { now } from "./clock";
+import { checkMinimum } from "./stock-minimums";
 
 // The one way stock changes (09-warehouse.md, first paragraph: "its stock is the sum of every
 // movement ever recorded for that branch"; 14-data-model.md, Notes for the build, first bullet:
@@ -21,7 +22,11 @@ import { now } from "./clock";
 // two first movements waits on the first's insert of the balance row, then its FOR UPDATE reads
 // the committed row. Under REPEATABLE READ (src/server/read-snapshot.ts) the FOR UPDATE after a
 // concurrent insert or update ends in a serialization failure instead of waiting, so a stock
-// write never runs in a read snapshot (review of the plan of 3.1, correction 1).
+// write never runs in a read snapshot (review of the plan of 3.1, correction 1). After its balance
+// update a movement takes the subtype's minimum row FOR UPDATE (checkMinimum() of
+// ./stock-minimums.ts, which sends "Item reached its minimum stock"): balance then minimum, item by
+// item, in postMovements()' fixed order; setStockMinimum takes them in the same order (plan of 5.10,
+// decided items 3 and 11, review of the plan, correction 2).
 //
 // The caller's contract (permission review of 3.1): `branchId` comes from the record the caller
 // locked (its document, purchase or order), never from the input; `createdBy` is the wrapper's
@@ -99,17 +104,7 @@ export async function postMovement(
   if (refusal) throw new ActionError("invalid_input", { qty: `errors.field.${refusal}` });
 
   const moment = now();
-  let held = await lockBalance(tx, movement);
-  if (!held) {
-    // The first movement of a subtype in a branch makes its balance row; a second first movement
-    // at the same moment waits here on the primary key, then locks the committed row (decided
-    // item 9).
-    await tx.execute(sql`
-      insert into stock_balances (branch_id, variant_id, qty, avg_cost, created_at, updated_at)
-      values (${movement.branchId}, ${movement.variantId}, 0, 0, ${moment}, ${moment})
-      on conflict do nothing`);
-    held = (await lockBalance(tx, movement))!;
-  }
+  const held = await holdBalance(tx, movement);
 
   const next = nextBalance(
     { qty: held.qty, avgCost: BigInt(held.avg_cost) },
@@ -134,21 +129,41 @@ export async function postMovement(
     update stock_balances
     set qty = ${next.qty}, avg_cost = ${next.avgCost.toString()}, updated_at = ${moment}
     where branch_id = ${movement.branchId} and variant_id = ${movement.variantId}`);
+  await checkMinimum(tx, {
+    branchId: movement.branchId,
+    variantId: movement.variantId,
+    qty: next.qty,
+  });
 
   return { movementId: inserted.rows[0]!.id, qty: next.qty, avgCost: next.avgCost };
 }
 
+/** A branch's stock of one subtype: the key of its balance row. */
+export type StockKey = { branchId: string; variantId: string };
+
 /**
- * The balance row FOR UPDATE, or null when there is none yet. An existing row is locked here
- * before anything writes it, so this lock alone puts two movements of it one after the other.
+ * The balance row FOR UPDATE, made at 0 when there is none yet. An existing row is locked here
+ * before anything writes it, so this lock alone puts two movements of it one after the other. The
+ * first movement of a subtype in a branch makes its balance row; a second first movement at the
+ * same moment waits on the primary key, then locks the committed row (decided item 9). Used by
+ * postMovement() and by setStockMinimum (plan of 5.10, review of the plan, must fix 1: a minimum
+ * and a first movement queue on this row). The caller has taken the product FOR SHARE first.
  */
-async function lockBalance(
-  tx: Executor,
-  movement: PostedMovementInput,
-): Promise<BalanceRow | null> {
+export async function holdBalance(tx: Executor, key: StockKey): Promise<BalanceRow> {
+  const held = await lockBalance(tx, key);
+  if (held) return held;
+  const moment = now();
+  await tx.execute(sql`
+    insert into stock_balances (branch_id, variant_id, qty, avg_cost, created_at, updated_at)
+    values (${key.branchId}, ${key.variantId}, 0, 0, ${moment}, ${moment})
+    on conflict do nothing`);
+  return (await lockBalance(tx, key))!;
+}
+
+async function lockBalance(tx: Executor, key: StockKey): Promise<BalanceRow | null> {
   const balance = await tx.execute<BalanceRow>(sql`
     select qty::text as qty, avg_cost::text as avg_cost from stock_balances
-    where branch_id = ${movement.branchId} and variant_id = ${movement.variantId}
+    where branch_id = ${key.branchId} and variant_id = ${key.variantId}
     for update`);
   return balance.rows[0] ?? null;
 }

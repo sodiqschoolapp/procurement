@@ -1,8 +1,9 @@
 import { and, count, desc, eq, sql } from "drizzle-orm";
 import * as z from "zod";
 
+import { addsDraftsIn } from "@/domain/drafts";
 import { type Actor, decide } from "@/domain/permissions";
-import { ITEM_CARD_PAGE_SIZE, type MovementType } from "@/domain/stock";
+import { ITEM_CARD_PAGE_SIZE, type MovementType, isLow } from "@/domain/stock";
 import { type DocumentStatus, REVERSIBLE_STATUSES, reverseAllows } from "@/domain/stock-documents";
 import { AuthorizationError, authorize } from "@/server/authorize";
 import {
@@ -14,6 +15,7 @@ import {
   stockBalances,
   stockDocumentLines,
   stockDocuments,
+  stockMinimums,
   stockMovements,
   units,
 } from "@/server/db/schema";
@@ -30,7 +32,8 @@ import { readSnapshot } from "@/server/read-snapshot";
 // until 5.12 gives a document an address (decided item 4, Look first). A document's movement
 // carries its status and whether the user may reverse it now (plan of 5.7): `stock.return_reverse`
 // on the card's branch, reverseAllows(), a reversible status, and not a REVERSAL row; the server
-// asks again.
+// asks again. The header carries the minimum, Low and who may set it or add a draft (plan of
+// 5.10).
 
 export type ItemMovement = {
   id: string;
@@ -62,6 +65,14 @@ export type ItemCard = {
   quantity: string;
   unitName: string;
   unitShortName: string;
+  /** The minimum as stored ("5.000"), null for none (plan of 5.10). */
+  minimum: string | null;
+  /** isLow() of the quantity and the minimum (09 Low stock). */
+  low: boolean;
+  /** `stock.set_minimums` on the card's branch; the server asks again. */
+  canSetMinimum: boolean;
+  /** addsDraftsIn() of the card's branch, for "Add to draft" (plan of 5.10, decided item 8). */
+  canAddDraft: boolean;
   movements: ItemMovement[];
   page: number;
   pages: number;
@@ -99,10 +110,12 @@ export async function getItemCard(
       .select({
         branchCode: branches.code,
         branchName: branches.name,
+        branchIsActive: branches.isActive,
         productName: products.name,
         variantName: productVariants.name,
         variantIsDefault: productVariants.isDefault,
         qty: stockBalances.qty,
+        minimum: stockMinimums.minQty,
         unitName: units.name,
         unitShortName: units.shortName,
       })
@@ -115,6 +128,13 @@ export async function getItemCard(
         and(
           eq(stockBalances.branchId, branches.id),
           eq(stockBalances.variantId, productVariants.id),
+        ),
+      )
+      .leftJoin(
+        stockMinimums,
+        and(
+          eq(stockMinimums.branchId, branches.id),
+          eq(stockMinimums.variantId, productVariants.id),
         ),
       )
       .where(and(eq(productVariants.id, variant.data), eq(products.type, "GOODS")));
@@ -173,6 +193,10 @@ export async function getItemCard(
       quantity: head.qty ?? "0",
       unitName: head.unitName,
       unitShortName: head.unitShortName,
+      minimum: head.minimum,
+      low: isLow(head.qty ?? "0", head.minimum),
+      canSetMinimum: decide("stock.set_minimums", actor, { branchId: branch.data }) === "allow",
+      canAddDraft: addsDraftsIn(actor, { id: branch.data, isActive: head.branchIsActive }),
       movements: rows.map((row) => ({
         id: row.id,
         at: row.at,
