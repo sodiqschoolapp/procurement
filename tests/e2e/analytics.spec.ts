@@ -345,9 +345,9 @@ test("Done when 6.4a: the Head clicks a branch bar and a Plan vs actual number a
   await expect(page.locator("[data-order-row]")).toHaveCount(1);
 });
 
-// Changed by 6.5b (plan of 6.5b, decided item 6): the Manager's page shows the Manager's blocks
+// Changed by 6.5b (plan of 6.5b, decided item 7): the Manager's page shows the Manager's blocks
 // only, so the shared Spending block of 6.3 is no longer on it.
-test("a Manager's Analytics page has no Plan vs actual block (plan of 6.4, decided item 8) and no Spending block (plan of 6.5b, decided item 6)", async ({
+test("a Manager's Analytics page has no Plan vs actual block (plan of 6.4, decided item 8) and no Spending block (plan of 6.5b, decided item 7)", async ({
   page,
 }) => {
   await page.goto("/login");
@@ -879,7 +879,7 @@ test("6.5b: the Manager sees My orders, My estimates and My cash and opens the o
   for (const block of ["my-orders", "my-estimates", "my-cash"]) {
     await expect(page.locator(`[data-analytics-block="${block}"]`)).toBeVisible();
   }
-  // No Manager filter on the Manager's page (decided item 7), no other role's block.
+  // No Manager filter on the Manager's page (decided item 6), no other role's block.
   await expect(page.locator("[data-filter-manager]")).toHaveCount(0);
   await expect(page.locator('[data-analytics-block="orders"]')).toHaveCount(0);
   expect(await scrollsSideways(page)).toBe(false);

@@ -17,7 +17,7 @@ import type { Hours } from "./approval-speed";
 
 // The Manager's My orders block (10-notifications-analytics-reports.md, Analytics page per role,
 // Manager, My orders: "By status; average time to full approval; share sent back, with reasons";
-// build-plan 6.5b). The user's own orders only (plan of 6.5b, decided item 7, Look first):
+// build-plan 6.5b). The user's own orders only (plan of 6.5b, decided item 6, Look first):
 // - by status: my orders first submitted in the period by their status now, each against the
 //   period before, read as the Principal's Orders block reads it (`statusCountsIn()`; decided
 //   item 3);

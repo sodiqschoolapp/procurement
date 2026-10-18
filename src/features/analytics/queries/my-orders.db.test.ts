@@ -28,7 +28,7 @@ import { getStatusOrders } from "./status-orders";
 // Build-plan 6.5b, Done when: "A database test: the Manager's blocks hold only the Manager's own
 // orders in the Manager's branches" (10-notifications-analytics-reports.md, Analytics page per
 // role, "Manager, own branches"; 03-roles-and-permissions.md rules 1 and 7; developer-rules.md
-// rule 4; plan of 6.5b, decided item 7, Look first). The same scene is built four times: for the
+// rule 4; plan of 6.5b, decided item 6, Look first). The same scene is built four times: for the
 // Manager in the Manager's branch, for a colleague in that branch, for another branch's Manager,
 // and for the Manager as owner of orders in a branch the Manager does not hold. Each copy carries
 // orders that are sent back, Open, bought, holding and owed cash, so a block that let one copy in
@@ -319,7 +319,7 @@ describe("the Manager's blocks hold only the Manager's own orders in the Manager
     ]);
   });
 
-  it("a Manager filter of a colleague in the address changes none of the three (decided item 7)", async () => {
+  it("a Manager filter of a colleague in the address changes none of the three (decided item 6)", async () => {
     const theirs: AnalyticsFilters = { ...NO_ANALYTICS_FILTERS, manager: colleague };
     expect(await getMyOrders(manager, THIS_MONTH, theirs)).toMatchObject(MY_ORDERS);
     expect(await getMyEstimates(manager, THIS_MONTH, theirs)).toEqual(

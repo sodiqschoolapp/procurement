@@ -2235,6 +2235,28 @@ Choices made during the build:
 - The `mine` key lists the stays the user decided at any step; only a Principal's page links to it. The Excel sheet `warehouse` of the Principal still holds the two Head-only columns (both are of the Principal's own branch).
 - Permission review: the live draft wall of `ordersWhere()` is tested for a colleague Manager and Finance (hidden) and the Head (shown) (Should fix 1); the no-filter wall test also checks waiting now, the total and overdue (Should fix 2).
 
+### 6.5b Analytics: Manager, My orders, My estimates, My cash (18.10.2026)
+
+The plan's decisions as the plan review of 18.10.2026 confirmed them (corrections 1 to 3 applied: the estimate's prices and percent from the sums, the difference of the shown prices; every number tested against its list; decided item 5 given its `/spec-change` wording), and those of the build. The Look first items come first.
+
+1. **Look first** (approval order). "Average time to full approval" runs from the first submit (`submitted_at`, kept at a re-submit) to the first entry into Open (`PURCHASING` from another status, by time then id), so time sent back to the Manager counts; counted on the Tashkent date it reached Open; `averageHours(Σ seconds, count)`, its change in hours. A later send back for correction or a Reopen does not move it; a rejected or cancelled order never counts.
+2. **Look first** (approval order). "Share sent back" is of the approvers' decisions on my orders decided in the period (`analytics_steps`), its change in points; the 5 most common reasons by `reasonKey()`, as 6.4b decided items 9 and 10. Rejections are not in this block.
+3. **Look first** (spec contradiction). "By status" counts my orders first submitted in the period by their status now, with the change, the reading and proposed wording of 6.5a decided item 2.
+4. **Look first** (money). My estimates per product, over my priced records bought in the period (trip date): planned goods of a record = its quantity at its order's planned price, rounded once per record (`actualGoods()`); planned and actual price = `unitPriceOf()` of the sums on the same quantities; difference = shown planned price − shown actual price (08's sign: above 0 is paid less); percent = (Σ planned goods − Σ goods) ÷ Σ planned goods, half up to one decimal, from the sums; its change in points, none when either period has no record. Gifts and extras out; every subtype under its product; services count. Largest miss either way first; the page shows 10, the export all.
+5. **Look first** (money; spec contradiction; proposed `/spec-change`). My cash is each of my orders not Draft and not Closed whose cash count is not 0, held and owed alike, with held and owed totals by `managerCashBalance()`, never netted; a number of now, no change. Proposed wording of 10, Manager, My cash: "The cash count of each of my orders that is not Closed and not 0, held and owed apart (08 Manager's cash balance)."
+6. **Look first** (spec contradiction; proposed `/spec-change`). The three blocks read the user's own orders (current owner) whatever `manager=` the address holds; the Manager's page has no Manager filter. Proposed wording of 10 point 2: "Filters. Branch (within the user's branches), category, department, Manager (not on the Manager's page, whose blocks are the Manager's own orders), supplier."
+7. The Manager's page shows only the Manager's blocks: the shared Spending block of 6.3 left it (the spec's Manager table has no Spending).
+8. Drill-downs reuse the list pages with `manager=<me>`; new keys `approved` (`/analytics/order-status`) and `priced:<product|all>` (`/analytics/records`); My cash's own table is the list behind its totals, the held total also opens `/analytics/cash`.
+9. `status-counts.ts` and `top-reasons.ts` hold the SQL two queries share; each takes conditions from a query that has already authorized the user.
+
+Choices made during the build:
+
+- The page's messages are under `analytics.my`, since `analytics.manager` is the Manager filter's label.
+- The approved list adds the day into Open and the hours as two columns; its summary line is the count and the average of the listed orders.
+- The sheet of reasons is named "Sent back, reasons": ExcelJS refuses a colon in a sheet name.
+- **Look first** (a test changed because a decision changed). The browser test "a Manager's Analytics page has no Plan vs actual block" expected the shared Spending block on the Manager's page; decided item 7 removes it, so the test now expects My orders and no Spending block. Nothing it checked about Plan vs actual was weakened.
+- `tests/helpers/analytics.ts`: a `Move` takes any action of 06's table (`OrderAction`), for the Settlement and Reopen moves of the refresh test.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

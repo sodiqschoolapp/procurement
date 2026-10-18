@@ -19,7 +19,7 @@ import { spendingWhere } from "../spending-where";
 // The Manager's My estimates block (10-notifications-analytics-reports.md, Analytics page per
 // role, Manager, My estimates: "Difference between planned and actual price per product, to help
 // estimate better next time"; build-plan 6.5b). Read from `analytics_spending` under
-// spendingWhere() with the user's own orders (plan of 6.5b, decided item 7, Look first): each
+// spendingWhere() with the user's own orders (plan of 6.5b, decided item 6, Look first): each
 // priced record bought in the period (trip date) with its quantity, its stored `actualGoods()` and
 // its order's planned price, read as they are; `estimateGap()` of src/domain/analytics.ts works out
 // the planned goods and both prices (decided item 4, Look first; review of the plan, correction

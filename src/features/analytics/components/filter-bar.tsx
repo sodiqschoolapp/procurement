@@ -14,7 +14,7 @@ import { FilterFold } from "./filter-fold";
 // form: the choice stays in the address, so a link reopens the same view (11 rule 8). At phone
 // width the fields fold behind "Filters" (filter-fold.tsx) (plan of 6.3, Screens). The custom dates count only with
 // "Custom dates" (period-params.ts). `noManager` leaves the Manager filter out: the Manager's page,
-// whose blocks are the user's own orders (plan of 6.5b, decided item 7, Look first).
+// whose blocks are the user's own orders (plan of 6.5b, decided item 6, Look first).
 
 export async function AnalyticsFilterBar({
   action,

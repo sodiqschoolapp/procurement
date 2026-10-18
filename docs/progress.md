@@ -1597,4 +1597,21 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - Tests: `decided()` takes `neededBy`, `submittedAt`, `progress`; a `Move` takes `actorId`. A test that runs `setClock()` in `beforeAll` sets it again in `beforeEach`: the setup puts the clock back before each test.
 - Never run two db test commands at once: the second's global setup drops the shared template database and the first fails all over.
 
-The next task is 6.5b.
+## 6.5b Analytics: Manager, My orders, My estimates, My cash (18.10.2026, pull request #110)
+
+**Built**
+- Migration 0042: `analytics_orders.opened_at`, `opened_on`, `approval_seconds` (first entry into Open, first submit to Open), written by `refreshAnalytics()`.
+- Domain: `estimateGap()` (analytics.ts), `secondsBetween()` (approval-stays.ts, now also behind `approvalStays()`).
+- Queries `getMyOrders()`, `getMyEstimates()`, `getMyCash()`; helpers `status-counts.ts`, `top-reasons.ts` (shared with 6.5a's and 6.4b's queries), `mine.ts`; drill keys `approved`, `priced:<product|all>`; `cashWhere(…, owed)`; download blocks `myOrders`, `myReasons`, `myEstimates`, `myCash`; the Manager's three blocks on `/analytics` (`manager-blocks.tsx`), no Spending block and no Manager filter there.
+
+**Left out, and the task that brings it**
+- Stock planning, "runs out in", suggested quantity (open question 15): 6.5c. Finance: 6.6. Page PDF: 6.7.
+
+**What the next sessions must know**
+- For 6.5c: add the block to the `role === "MANAGER"` tuple of `src/app/(app)/analytics/page.tsx` and to `manager-blocks.tsx`; read the user's own scope with `mineOf()`/`withoutManager()` only if the block is "my" (stock is the branch's, not the Manager's).
+- For 6.5c: messages of the Manager's page are under `analytics.my` (`analytics.manager` is the filter's label).
+- A list page that takes `manager=` checks the id is a Manager (`authorizeAnalytics()`): a non-Manager cannot open the "my" drill-downs with themself as the filter, so the matrix runs those lists for MANAGER only.
+- An Excel sheet name may not hold `* ? : \ / [ ]` (ExcelJS throws); the route test catches it.
+- The seed needs the four seed passwords in the local `.env`; a cloud session has none, so CI runs it.
+
+The next task is 6.5c.

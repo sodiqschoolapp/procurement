@@ -273,7 +273,7 @@ export async function GET(request: NextRequest): Promise<Response> {
         );
         break;
       // The Manager's blocks read the user's own orders, whatever Manager the address names
-      // (plan of 6.5b, decided item 7): the heading names none.
+      // (plan of 6.5b, decided item 6): the heading names none.
       case "myOrders":
       case "myReasons": {
         const mine = await getMyOrders(user.id, period, filters);
