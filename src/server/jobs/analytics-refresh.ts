@@ -14,6 +14,7 @@ import type { PaymentType } from "@/domain/payment-types";
 import { type PurchaseRecord, actualGoods, actualTotal, paymentParts } from "@/domain/purchases";
 import type { OrderProgress } from "@/domain/purchases";
 import type { RequestStatus } from "@/domain/request-status";
+import { isLow, stockValue } from "@/domain/stock";
 import type { Executor } from "@/server/authorize";
 
 import type { Job } from "./job";
@@ -47,6 +48,12 @@ import type { Job } from "./job";
 // date since when `cashSince()` of src/domain/money-ledger.ts, the functions Money with managers
 // calls (08 Money ledger; plan of 4.9). src/server does not import src/features, so the rows and
 // records are read here; a database test keeps this reader equal to that page's.
+//
+// Task 6.4d adds, in the same run (plan of 6.4d, decided items 1 to 7 and 9, Look first):
+// `analytics_stock`, each stock line of a product with its value `stockValue()` and `isLow()` of
+// src/domain/stock.ts, the functions Stock on hand calls, and the date of its newest movement; and
+// `analytics_stock_moves`, each issue, return and write-off movement of a document not Reversed,
+// on the document's date, its value `stockValue()` of its size at the cost it moved at.
 
 type SpendingSource = {
   purchase_id: string;
@@ -90,7 +97,8 @@ export async function refreshAnalytics(executor: Executor): Promise<void> {
   // pages go on reading.
   await executor.execute(
     sql`lock table analytics_spending, analytics_spending_payments, analytics_outcomes,
-               analytics_steps, analytics_cancelled, analytics_cash in exclusive mode`,
+               analytics_steps, analytics_cancelled, analytics_cash, analytics_stock,
+               analytics_stock_moves in exclusive mode`,
   );
   const found = await executor.execute<SpendingSource>(sql`
     select p.id as purchase_id, p.order_id, p.branch_id, t.purchased_on::text as purchased_on,
@@ -157,11 +165,15 @@ export async function refreshAnalytics(executor: Executor): Promise<void> {
   await executor.execute(sql`delete from analytics_steps`);
   await executor.execute(sql`delete from analytics_cancelled`);
   await executor.execute(sql`delete from analytics_cash`);
+  await executor.execute(sql`delete from analytics_stock`);
+  await executor.execute(sql`delete from analytics_stock_moves`);
   if (rows.length > 0) await insertSpending(executor, rows, parts);
   await writeOutcomes(executor);
   await writeSteps(executor);
   await writeCancelled(executor);
   await writeCash(executor);
+  await writeStock(executor);
+  await writeStockMoves(executor);
 }
 
 async function insertSpending(executor: Executor, rows: object[], parts: object[]) {
@@ -492,6 +504,94 @@ async function writeCash(executor: Executor) {
     from jsonb_to_recordset(${JSON.stringify(rows)}::jsonb) as r(
       order_id uuid, branch_id uuid, owner_id uuid, category_id uuid, department_id uuid,
       cash_count text, since date)`);
+}
+
+type StockSource = {
+  branch_id: string;
+  variant_id: string;
+  category_id: string;
+  qty: string;
+  avg_cost: string;
+  min_qty: string | null;
+  last_moved_on: string | null;
+};
+
+/**
+ * Every stock line of a product, the rows Stock on hand lists (plan of 6.4d, decided items 1, 3
+ * and 7, Look first): its value by `stockValue()`, Low by `isLow()` against its minimum, and the
+ * Tashkent date of its newest movement of any type, read by PostgreSQL as `left_on` above.
+ */
+async function writeStock(executor: Executor) {
+  const found = await executor.execute<StockSource>(sql`
+    select sb.branch_id, sb.variant_id, pr.category_id, sb.qty::text as qty,
+           sb.avg_cost::text as avg_cost, sm.min_qty::text as min_qty,
+           (select (max(m.created_at) at time zone 'Asia/Tashkent')::date::text
+            from stock_movements m
+            where m.branch_id = sb.branch_id and m.variant_id = sb.variant_id) as last_moved_on
+    from stock_balances sb
+    join product_variants v on v.id = sb.variant_id
+    join products pr on pr.id = v.product_id
+    left join stock_minimums sm on sm.branch_id = sb.branch_id and sm.variant_id = sb.variant_id
+    where pr.type = 'GOODS'`);
+  if (found.rows.length === 0) return;
+  const rows = found.rows.map((row) => ({
+    ...row,
+    value: stockValue(row.qty, BigInt(row.avg_cost)).toString(),
+    low: isLow(row.qty, row.min_qty),
+  }));
+  await executor.execute(sql`
+    insert into analytics_stock (branch_id, variant_id, category_id, qty, avg_cost, value, min_qty,
+                                 low, last_moved_on)
+    select r.branch_id, r.variant_id, r.category_id, r.qty::numeric, r.avg_cost::bigint,
+           r.value::bigint, r.min_qty::numeric, r.low, r.last_moved_on
+    from jsonb_to_recordset(${JSON.stringify(rows)}::jsonb) as r(
+      branch_id uuid, variant_id uuid, category_id uuid, qty text, avg_cost text, value text,
+      min_qty text, low boolean, last_moved_on date)`);
+}
+
+type StockMoveSource = {
+  movement_id: string;
+  document_id: string;
+  branch_id: string;
+  department_id: string | null;
+  category_id: string;
+  variant_id: string;
+  type: "ISSUE" | "RETURN" | "WRITE_OFF";
+  moved_on: string;
+  qty: string;
+  unit_cost: string;
+};
+
+/**
+ * Every issue, return and approved write-off movement of a document that is not Reversed (plan of
+ * 6.4d, decided items 4 and 5, Look first): a Reversed document is left out with its reversal (a
+ * REVERSAL movement, never read here), on the document's date; its size and its value at the cost
+ * it moved at, `stockValue()` (09 Stock value: the average at that moment).
+ */
+async function writeStockMoves(executor: Executor) {
+  const found = await executor.execute<StockMoveSource>(sql`
+    select m.id as movement_id, d.id as document_id, d.branch_id, d.department_id,
+           pr.category_id, m.variant_id, m.type, d.doc_date::text as moved_on,
+           abs(m.qty_delta)::text as qty, m.unit_cost::text as unit_cost
+    from stock_movements m
+    join stock_document_lines l on l.id = m.document_line_id
+    join stock_documents d on d.id = l.document_id
+    join product_variants v on v.id = m.variant_id
+    join products pr on pr.id = v.product_id
+    where m.type in ('ISSUE', 'RETURN', 'WRITE_OFF') and d.status <> 'REVERSED'`);
+  if (found.rows.length === 0) return;
+  const rows = found.rows.map(({ unit_cost, ...row }) => ({
+    ...row,
+    value: stockValue(row.qty, BigInt(unit_cost)).toString(),
+  }));
+  await executor.execute(sql`
+    insert into analytics_stock_moves (movement_id, document_id, branch_id, department_id,
+                                       category_id, variant_id, type, moved_on, qty, value)
+    select r.movement_id, r.document_id, r.branch_id, r.department_id, r.category_id,
+           r.variant_id, r.type::stock_movement_type, r.moved_on, r.qty::numeric, r.value::bigint
+    from jsonb_to_recordset(${JSON.stringify(rows)}::jsonb) as r(
+      movement_id uuid, document_id uuid, branch_id uuid, department_id uuid, category_id uuid,
+      variant_id uuid, type text, moved_on date, qty text, value text)`);
 }
 
 /** Every 5 minutes, at the same ticks on every server (src/domain/schedule.ts). */

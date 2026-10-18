@@ -13,7 +13,10 @@ import {
   moneyOn,
   recordOn,
   refreshNow,
+  reverseNow,
   spendingScene,
+  stockDocument,
+  stocked,
 } from "../../../tests/helpers/analytics";
 import { refusalOf } from "../../../tests/helpers/database-error";
 import { setClock } from "../../../tests/helpers/clock";
@@ -668,5 +671,108 @@ describe("analytics_refresh, the rows of the Managers block (build-plan 6.4c)", 
     expect(counts.get(a.orderId)).toBe("40000");
     expect(counts.get(b.orderId)).toBe("13000");
     expect(counts.get(c.orderId)).toBe("-25000");
+  });
+});
+
+describe("analytics_refresh, the rows of the Warehouse block (build-plan 6.4d)", () => {
+  type Line = {
+    variant_id: string;
+    qty: string;
+    value: string;
+    min_qty: string | null;
+    low: boolean;
+    last_moved_on: string | null;
+  };
+  const stockOf = async (branchId: string) =>
+    new Map(
+      (
+        await db.execute<Line>(sql`
+          select variant_id, qty::text as qty, value::text as value, min_qty::text as min_qty,
+                 low, last_moved_on::text as last_moved_on
+          from analytics_stock where branch_id = ${branchId}`)
+      ).rows.map((row) => [row.variant_id, row]),
+    );
+  type Moved = { document_id: string; type: string; moved_on: string; qty: string; value: string };
+  const movesOf = async (branchId: string) =>
+    (
+      await db.execute<Moved>(sql`
+        select document_id, type::text as type, moved_on::text as moved_on, qty::text as qty,
+               value::text as value
+        from analytics_stock_moves where branch_id = ${branchId} order by type, moved_on`)
+    ).rows;
+
+  it("writes each stock line with its value stockValue(), Low by isLow() and the Tashkent day of its newest movement (plan of 6.4d, decided items 1, 3 and 7)", async () => {
+    // 20:30 UTC on 9 May is 01:30 on 10 May in Tashkent (CLAUDE.md rule 10).
+    setClock("2031-05-09T20:30:00Z");
+    const scene = await spendingScene();
+    // 2.5 × 3 333 = 8 332.5 → 8 333, half up once (09 Stock value; 08 Rounding).
+    const fractional = await stocked(scene, { qty: "2.500", unitCost: 3333n });
+    const atMinimum = await stocked(scene, { qty: "5", unitCost: 1000n, minimum: "5" });
+    const above = await stocked(scene, { qty: "5", unitCost: 1000n, minimum: "4.999" });
+    const below = await stocked(scene, { qty: "5", unitCost: 1000n, minimum: "6" });
+    await refreshNow();
+    const lines = await stockOf(scene.branch.id);
+    expect(lines.size).toBe(4);
+    expect(lines.get(fractional)).toEqual({
+      variant_id: fractional,
+      qty: "2.500",
+      value: "8333",
+      min_qty: null,
+      low: false,
+      last_moved_on: "2031-05-10",
+    });
+    expect(lines.get(atMinimum)?.low).toBe(true);
+    expect(lines.get(above)?.low).toBe(false);
+    expect(lines.get(below)?.low).toBe(true);
+    expect(lines.get(below)?.value).toBe("5000");
+  });
+
+  it("writes each issue, return and approved write-off on its document's date at the cost it moved at; none for a receipt, a pending write-off, a reversed issue or its reversal (decided items 4 and 5)", async () => {
+    setClock("2031-05-15T05:00:00Z");
+    const scene = await spendingScene();
+    const head = await insertUser("HEAD");
+    const item = await stocked(scene, { qty: "10", unitCost: 3333n });
+    // 0.5 × 3 333 = 1 666.5 → 1 667.
+    const issue = await stockDocument(scene, {
+      type: "ISSUE",
+      docDate: "2031-05-03",
+      lines: [{ variantId: item, qty: "0.5" }],
+    });
+    const back = await stockDocument(scene, {
+      type: "RETURN",
+      docDate: "2031-05-04",
+      lines: [{ variantId: item, qty: "0.5" }],
+    });
+    // Asked on 1 May, approved today: it falls on its document's date (decided item 5).
+    const writeOff = await stockDocument(scene, {
+      type: "WRITE_OFF",
+      docDate: "2031-05-01",
+      lines: [{ variantId: item, qty: "2" }],
+      decidedBy: head.id,
+    });
+    await stockDocument(scene, {
+      type: "WRITE_OFF",
+      docDate: "2031-05-02",
+      lines: [{ variantId: item, qty: "1" }],
+      status: "PENDING_APPROVAL",
+    });
+    const wrong = await stockDocument(scene, {
+      type: "ISSUE",
+      docDate: "2031-05-05",
+      lines: [{ variantId: item, qty: "3" }],
+    });
+    await reverseNow(wrong, head.id);
+    await refreshNow();
+    expect(await movesOf(scene.branch.id)).toEqual([
+      { document_id: issue, type: "ISSUE", moved_on: "2031-05-03", qty: "0.500", value: "1667" },
+      { document_id: back, type: "RETURN", moved_on: "2031-05-04", qty: "0.500", value: "1667" },
+      {
+        document_id: writeOff,
+        type: "WRITE_OFF",
+        moved_on: "2031-05-01",
+        qty: "2.000",
+        value: "6666",
+      },
+    ]);
   });
 });

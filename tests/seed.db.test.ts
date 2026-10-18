@@ -52,6 +52,8 @@ import { getApprovalOrders } from "@/features/analytics/queries/approval-orders"
 import { getApprovalSpeed } from "@/features/analytics/queries/approval-speed";
 import { getHeadSpending } from "@/features/analytics/queries/head-spending";
 import { getManagers } from "@/features/analytics/queries/managers";
+import { getWarehouse } from "@/features/analytics/queries/warehouse";
+import { listStockOnHand } from "@/features/warehouse/queries/stock-on-hand";
 import { getOutcomeOrders } from "@/features/analytics/queries/outcome-orders";
 import { getPlanVsActual } from "@/features/analytics/queries/plan-vs-actual";
 import { getPrices } from "@/features/analytics/queries/prices";
@@ -1978,6 +1980,43 @@ describe("the seed on the Head's Analytics page (build plan 6.4c, Done when: one
       expect(row.heldSince).toBe(heldSince);
       expect(row.heldDays).toBe(daysOf({ first: heldSince, last: businessDate(MOMENT) }) - 1);
       expect(row.heldDays).toBeGreaterThan(0);
+    } finally {
+      client.release();
+    }
+  });
+});
+
+describe("the seed on the Head's Analytics page (build plan 6.4d, Done when: one number of the block against the seed)", () => {
+  it("shows seed_head CHL's stock value of 575 000, equal to Stock on hand, and the library's use of 125 000", async () => {
+    const client = await db.$client.connect();
+    try {
+      await seed(client, ENV, MOMENT);
+      setClock(MOMENT);
+      await db.transaction((tx) => refreshAnalytics(tx));
+      const head = (
+        await client.query<{ id: string }>("select id from users where username = 'seed_head'")
+      ).rows[0]!.id;
+      const branch = (
+        await client.query<{ id: string }>("select id from branches where code = $1", [
+          SEED_STOCK.branch,
+        ])
+      ).rows[0]!.id;
+      const thisMonth = { choice: "this_month", from: null, to: null } as const;
+      const block = await getWarehouse(head, thisMonth, NO_ANALYTICS_FILTERS);
+      const row = block.branches.find((each) => each.id === branch)!;
+
+      // The direct entry less the issue (scripts/seed-stock.mjs): Daftar 80 × 4 000 + Qalam
+      // 170 × 1 500 (plan of 6.4d, decided item 1); the seed's write-off still waits for the Head.
+      expect(row.value).toBe(320_000n + 255_000n);
+      expect(row.writtenOff).toBe(0n);
+      const stock = await listStockOnHand(head, { branch }, 1);
+      expect(stock.rows.reduce((sum, line) => sum + line.value, 0n)).toBe(row.value);
+
+      // The issue to Kutubxona: 20 × 4 000 + 30 × 1 500 (decided item 4).
+      const library = block.departments.find(
+        (each) => each.name === SEED_STOCK.issue.department && each.branchCode === "CHL",
+      )!;
+      expect(library.used).toBe(125_000n);
     } finally {
       client.release();
     }

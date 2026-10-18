@@ -17,6 +17,8 @@ import {
   recordOn,
   refreshNow,
   spendingScene,
+  stockDocument,
+  stocked,
 } from "../../../../../tests/helpers/analytics";
 import { insertCategory, insertCompany } from "../../../../../tests/helpers/catalog";
 import { setClock } from "../../../../../tests/helpers/clock";
@@ -512,5 +514,102 @@ describe("GET /analytics/download, the 6.4c sheets (10 point 4; plan of 6.4c)", 
       ),
     );
     expect(response.status).toBe(404);
+  });
+});
+
+/**
+ * A branch's warehouse for the 6.4d blocks: 10 × 1 000 of an item with a minimum of 9, 2 of it
+ * issued to the department on 3 October (so 8 left, Low), and the summary refreshed.
+ */
+async function warehouseIn(branchId?: string) {
+  setClock(AT);
+  const scene = await spendingScene(branchId);
+  const variant = await stocked(scene, { qty: "10", unitCost: 1_000n, minimum: "9" });
+  const issue = await stockDocument(scene, {
+    type: "ISSUE",
+    docDate: "2031-10-03",
+    lines: [{ variantId: variant, qty: "2" }],
+  });
+  const number = (
+    await db.execute<{ number: string }>(
+      sql`select number from stock_documents where id = ${issue}`,
+    )
+  ).rows[0]!.number;
+  await refreshNow();
+  return { scene, number };
+}
+
+// The blocks of 6.4d (plan of 6.4d, Tests: "the four new blocks in the route matrix"): the table
+// per branch, use by department and the two lists behind the wall, the same wall for each.
+describePermissionMatrix("GET /analytics/download, the blocks of 6.4d behind the wall", {
+  permission: "data.export",
+  async run({ user, branchId }) {
+    const { scene, number } = await warehouseIn(branchId);
+    const cookie = await signInAs(user);
+    const own = { ...NO_ANALYTICS_FILTERS, category: scene.category.id };
+    const texts = async (block: ExportBlock, extra: Parameters<typeof analyticsSearch>[2] = {}) =>
+      (
+        await sheetOf(
+          await GET(
+            downloadRequest(
+              `/analytics/download?${analyticsSearch(THIS_MONTH, own, { ...extra, block })}`,
+              cookie,
+            ),
+          ),
+        )
+      )
+        .flat()
+        .map((cell) => String(cell));
+    const branchName = (
+      await db.execute<{ name: string }>(sql`select name from branches where id = ${branchId}`)
+    ).rows[0]!.name;
+    const seen = [
+      (await texts("warehouse")).includes(branchName),
+      (await texts("departmentUse")).includes(scene.department.name),
+      (await texts("stock", { key: { kind: "stock", view: "low" } })).includes(branchName),
+      (await texts("moves", { key: { kind: "moves", move: "use" } })).includes(number),
+    ];
+    expect(seen).toEqual(seen.map(() => seen[0]));
+    if (!seen[0]) throw new AuthorizationError("not_found");
+  },
+});
+
+describe("GET /analytics/download, the 6.4d sheets (10 point 4; plan of 6.4d)", () => {
+  it("writes the stock value and the use as number cells, and each list's total", async () => {
+    const { scene, number } = await warehouseIn();
+    const head = await insertUser("HEAD");
+    const filters = { ...NO_ANALYTICS_FILTERS, branch: scene.branch.id };
+    const get = async (block: ExportBlock, extra: Parameters<typeof analyticsSearch>[2] = {}) =>
+      sheetOf(
+        await GET(
+          downloadRequest(
+            `/analytics/download?${analyticsSearch(THIS_MONTH, filters, { ...extra, block })}`,
+            await signInAs(head),
+          ),
+        ),
+      );
+    const branches = await get("warehouse");
+    // The branch's row, then "All branches": value 8 000, 1 Low, nothing still, nothing off.
+    expect(branches.at(-2)!.slice(1, 6)).toEqual([8_000, 1, 0, 0, 0]);
+    const use = await get("departmentUse");
+    expect(use.find((row) => row[0] === scene.department.name)?.[2]).toBe(2_000);
+    const lines = await get("stock", { key: { kind: "stock", view: "value" } });
+    expect(lines.at(-1)!.includes(8_000)).toBe(true);
+    const moves = await get("moves", { key: { kind: "moves", move: "use" } });
+    expect(moves.some((row) => row.includes(number) && row.includes(2_000))).toBe(true);
+    expect(moves.at(-1)!.includes(2_000)).toBe(true);
+  });
+
+  it("answers 404 for a list of stock or movements without its key", async () => {
+    const head = await insertUser("HEAD");
+    for (const block of ["stock", "moves"]) {
+      const response = await GET(
+        downloadRequest(
+          `/analytics/download?period=this_month&block=${block}`,
+          await signInAs(head),
+        ),
+      );
+      expect(response.status).toBe(404);
+    }
   });
 });

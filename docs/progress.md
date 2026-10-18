@@ -1560,4 +1560,22 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - `src/server` does not import `src/features`: the job reads its own rows. `tsconfig.tsbuildinfo` can hold a stale message type after the JSON files change: delete it when typecheck flags keys that exist.
 - Tests: `moneyOn()` in tests/helpers/analytics.ts writes a money action of one row (cancelled when asked); `bought()` takes `cancelledAt`.
 
-The next task is 6.4d.
+## 6.4d Analytics: Head, Warehouse (18.10.2026, pull request #108)
+
+**Built**
+- Migration 0040: `analytics_stock` (each stock line of a product: `stockValue()`, `isLow()`, the Tashkent day of its newest movement) and `analytics_stock_moves` (each issue, return and approved write-off of a document not Reversed, on the document's date, its `stockValue()` at the cost it moved at), both rewritten by `refreshAnalytics()`; a unique `(id, branch_id)` on `stock_documents` for the moves' branch key.
+- Domain: `priceRiseSince()` became `ninetyDaysSince()` (one 90-day function for Prices and Warehouse); `useChange()`.
+- Queries `getWarehouse()`, `getStockLines()`, `getStockMoves()`; `stockWhere()`, `movesWhere()`; drill keys `stock:value|low|still` and `moves:use|writeoff`; `/analytics/stock`, `/analytics/moves`; download blocks `warehouse`, `departmentUse`, `stock`, `moves`; the Warehouse block on the Head's page.
+
+**Left out, and the task that brings it**
+- The Principal's Warehouse block: 6.5, on these queries. The stock value report with direct entries as their own line: 6.9. Page PDF: 6.7.
+
+**What the next sessions must know**
+- For 6.5: the Principal's "stock value; low stock; what each department used" is `getWarehouse()` under the Principal's branch (`branches[0]`, `departments`); "runs out in" reads issues from `analytics_stock_moves` (type ISSUE, net of returns as use is) or a new summary, not raw movements.
+- For 6.9: "use by department" is issued − returned at each movement's own cost, a reversed document left out with its reversal (plan of 6.4d, decided item 4); the report should read the same rows so screen and report agree.
+- For 7.1 to 7.4: transfers and count corrections are not counted by this block (types TRANSFER_OUT/IN, CORRECTION); a "lost in transfer" write-off counts as a write-off once approved.
+- Stock numbers are of now: no change against the period before (decided item 2, Look first).
+- Tests: `stocked()`, `stockDocument()` and `reverseNow()` in tests/helpers/analytics.ts make stock lines, issues, returns, write-offs and reversals at the clock's moment.
+- A browser run in a cold cloud session times out at sign-in: start the e2e dev server first (as `playwright.config.ts` does) and warm `/login`, or run with `--workers=1`.
+
+The next task is 6.5.

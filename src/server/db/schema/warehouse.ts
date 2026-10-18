@@ -178,6 +178,8 @@ export const stockDocuments = pgTable(
   (table) => [
     unique("stock_documents_number_key").on(table.number),
     unique("stock_documents_client_key_key").on(table.clientKey),
+    // The target of analytics_stock_moves' key (document_id, branch_id) (plan of 6.4d).
+    unique("stock_documents_id_branch_id_key").on(table.id, table.branchId),
     check(
       "stock_documents_number_check",
       sql`${table.number} ~ ('^' || CASE ${table.type}

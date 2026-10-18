@@ -230,15 +230,19 @@ export function shareChange(now: string | null, before: string | null): string |
 
 // The Prices and Approval speed blocks of the Head's page (10 Analytics, Head; build-plan 6.4b).
 
-/** "Biggest price rises in the last 90 days" (10 Head, Prices): fixed by the spec, not the period. */
-export const PRICE_RISE_DAYS = 90;
+/**
+ * The 90 days of "biggest price rises in the last 90 days" (10 Head, Prices) and of "items with no
+ * movement for 90 days" (10 Head, Warehouse): fixed by the spec, not the period.
+ */
+export const NINETY_DAYS = 90;
 
 /**
- * The first trip date of the 90 days: today − 89, so today and the 89 days before it, as
- * `recentPurchaseSince()` of ./prices.ts counts 90 days (plan of 6.4b, decided item 4, Look first).
+ * The first day of the 90: today − 89, so today and the 89 days before it, as
+ * `recentPurchaseSince()` of ./prices.ts counts 90 days (plan of 6.4b, decided item 4; plan of
+ * 6.4d, decided item 7; both Look first). One function for both blocks (developer-rules.md rule 1).
  */
-export function priceRiseSince(today: BusinessDate): BusinessDate {
-  return shiftDays(today, -(PRICE_RISE_DAYS - 1));
+export function ninetyDaysSince(today: BusinessDate): BusinessDate {
+  return shiftDays(today, -(NINETY_DAYS - 1));
 }
 
 /**
@@ -312,4 +316,15 @@ export function averageSom(total: bigint, count: number): bigint | null {
   return BigInt(
     new Exact(total.toString()).dividedBy(count).toDecimalPlaces(0, Exact.ROUND_HALF_UP).toFixed(0),
   );
+}
+
+/**
+ * The change of a department's use, issued − returned, which can be below 0 when returns of
+ * earlier issues pass the period's issues (10 Head, Warehouse: "use by department"; plan of 6.4d,
+ * decided item 4, Look first): `changeAgainst()` while the period before is above 0; `null`
+ * otherwise, and the page writes the difference in so'm only, as a signed average's
+ * (`changeAgainst()`'s percent reads backwards on a base below 0).
+ */
+export function useChange(used: bigint, before: bigint): Change | null {
+  return before > 0n ? changeAgainst(used, before) : null;
 }

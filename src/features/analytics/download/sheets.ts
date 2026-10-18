@@ -22,6 +22,9 @@ import type { PlanVsActual, Tally } from "../queries/plan-vs-actual";
 import type { SpendingBlock } from "../queries/spending";
 import { OUTCOME_COLOURS } from "../period-params";
 import type { SpendingRecords } from "../queries/spending-records";
+import type { StockLines } from "../queries/stock-lines";
+import type { StockMoves } from "../queries/stock-moves";
+import type { Warehouse } from "../queries/warehouse";
 import type { AnalyticsSheet, CellValue } from "./excel";
 
 // The sheets of the Analytics downloads (10-notifications-analytics-reports.md, Analytics page per
@@ -39,7 +42,8 @@ function translators(locale: Locale) {
 
 /**
  * The lines above every table: its name, the period and the filters chosen. A number of now (cash
- * held, plan of 6.4c, decided item 4) has no period: `null` names it as of now.
+ * held, plan of 6.4c, decided item 4; stock, plan of 6.4d, decided item 2) has no period: `null`
+ * names it as of now, by `now` (cash held's line unless given).
  */
 function heading(
   locale: Locale,
@@ -47,13 +51,14 @@ function heading(
   period: { first: string; last: string } | null,
   filters: AnalyticsFilters,
   options: AnalyticsFilterOptions,
+  now?: string,
 ): string[] {
   const { t, format } = translators(locale);
   const lines = [
     name,
     period
       ? `${t("period")}: ${t("periodLine", { first: format.date(period.first), last: format.date(period.last) })}`
-      : t("cash.what"),
+      : (now ?? t("cash.what")),
   ];
   const named = (list: readonly { id: string; name: string }[], id: string | null) =>
     list.find((option) => option.id === id)?.name ?? null;
@@ -724,5 +729,160 @@ export function cashSheet(
       { kind: "money", value: row.cashCount },
     ]),
     total: { label: t("cash.columns.held"), amount: list.held },
+  };
+}
+
+// The sheets of the Warehouse block (build-plan 6.4d; plan of 6.4d, decided items 1 to 8): the
+// table per branch, use by department, and the two lists behind them. The numbers are the query's.
+
+const productText = (row: { productName: string; subtypeName: string | null }) =>
+  row.subtypeName ? `${row.productName}, ${row.subtypeName}` : row.productName;
+
+/** The table per branch, "All branches" last: stock of now, written off of the period. */
+export function warehouseSheet(
+  block: Warehouse,
+  filters: AnalyticsFilters,
+  options: AnalyticsFilterOptions,
+  locale: Locale,
+): AnalyticsSheet {
+  const { t } = translators(locale);
+  const name = t("sheets.warehouse");
+  const cells = (row: Warehouse["all"]): CellValue[] => [
+    { kind: "money", value: row.value },
+    { kind: "count", value: row.low },
+    { kind: "count", value: row.still },
+    { kind: "money", value: row.stillValue },
+    { kind: "money", value: row.writtenOff },
+    ...changeCells(row.writtenOffChange),
+  ];
+  return {
+    name,
+    heading: heading(locale, name, block.period, filters, options),
+    columns: [
+      t("warehouse.columns.branch"),
+      t("warehouse.columns.value"),
+      t("warehouse.columns.low"),
+      t("warehouse.columns.still"),
+      t("warehouse.columns.stillValue"),
+      t("warehouse.columns.writtenOff"),
+      t("spending.columns.change"),
+      "%",
+    ],
+    rows: [
+      ...block.branches.map((row): CellValue[] => [
+        { kind: "text", value: row.name },
+        ...cells(row),
+      ]),
+      [{ kind: "text", value: t("allBranches") }, ...cells(block.all)],
+    ],
+  };
+}
+
+/** Use by department in the period: issued − returned, with its change. */
+export function departmentUseSheet(
+  block: Warehouse,
+  filters: AnalyticsFilters,
+  options: AnalyticsFilterOptions,
+  locale: Locale,
+): AnalyticsSheet {
+  const { t } = translators(locale);
+  const name = t("sheets.departmentUse");
+  return {
+    name,
+    heading: heading(locale, name, block.period, filters, options),
+    columns: [
+      t("warehouse.use.columns.department"),
+      t("warehouse.columns.branch"),
+      t("warehouse.use.columns.used"),
+      t("spending.columns.change"),
+      "%",
+    ],
+    rows: block.departments.map((row) => [
+      { kind: "text", value: row.name },
+      { kind: "text", value: row.branchCode },
+      { kind: "signedMoney", value: row.used },
+      { kind: "signedMoney", value: row.used - row.before },
+      { kind: "text", value: row.change?.percent == null ? "" : `${row.change.percent} %` },
+    ]),
+  };
+}
+
+/** The stock lines behind a number of now, every row. */
+export function stockSheet(
+  list: StockLines,
+  filters: AnalyticsFilters,
+  options: AnalyticsFilterOptions,
+  locale: Locale,
+): AnalyticsSheet {
+  const { t, format } = translators(locale);
+  const name = t(`stock.title.${list.view}`);
+  const now =
+    list.view === "still"
+      ? t("stock.whatStill", { date: format.date(list.stillSince) })
+      : t("stock.what");
+  return {
+    name,
+    heading: heading(locale, name, null, filters, options, now),
+    columns: [
+      t("stock.columns.product"),
+      t("stock.columns.branch"),
+      t("stock.columns.quantity"),
+      t("stock.columns.unit"),
+      t("stock.columns.minimum"),
+      t("stock.columns.avgCost"),
+      t("stock.columns.lastMoved"),
+      t("stock.columns.value"),
+    ],
+    rows: list.rows.map((row) => [
+      { kind: "text", value: productText(row) },
+      { kind: "text", value: row.branchName },
+      { kind: "text", value: format.quantity(row.quantity) },
+      { kind: "text", value: row.unitShortName },
+      { kind: "text", value: row.minimum === null ? "" : format.quantity(row.minimum) },
+      { kind: "money", value: row.avgCost },
+      row.lastMovedOn === null
+        ? { kind: "text", value: "" }
+        : { kind: "date", value: row.lastMovedOn },
+      { kind: "money", value: row.value },
+    ]),
+    total: { label: t("stock.columns.value"), amount: list.total },
+  };
+}
+
+/** The movements behind use or written off, every row; a return below 0 in use. */
+export function movesSheet(
+  list: StockMoves,
+  filters: AnalyticsFilters,
+  options: AnalyticsFilterOptions,
+  locale: Locale,
+): AnalyticsSheet {
+  const { t, format } = translators(locale);
+  const name = t(`moves.title.${list.move}`);
+  return {
+    name,
+    heading: heading(locale, name, list.period, filters, options),
+    columns: [
+      t("moves.columns.date"),
+      t("moves.columns.document"),
+      t("moves.columns.type"),
+      t("moves.columns.product"),
+      t("moves.columns.branch"),
+      t("moves.columns.department"),
+      t("moves.columns.quantity"),
+      t("stock.columns.unit"),
+      t("moves.columns.value"),
+    ],
+    rows: list.rows.map((row) => [
+      { kind: "date", value: row.movedOn },
+      { kind: "text", value: row.documentNumber },
+      { kind: "text", value: t(`moves.type.${row.type}`) },
+      { kind: "text", value: productText(row) },
+      { kind: "text", value: row.branchName },
+      { kind: "text", value: row.departmentName ?? "" },
+      { kind: "text", value: format.quantity(row.quantity) },
+      { kind: "text", value: row.unitShortName },
+      { kind: "signedMoney", value: row.value },
+    ]),
+    total: { label: t("moves.columns.value"), amount: list.total, signed: true, column: 9 },
   };
 }

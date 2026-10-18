@@ -281,6 +281,13 @@
       "when": 1792344314835,
       "tag": "0039_analytics_managers",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1792346725751,
+      "tag": "0040_analytics_warehouse",
+      "breakpoints": true
     }
   ]
 }

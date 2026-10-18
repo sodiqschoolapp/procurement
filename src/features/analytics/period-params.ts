@@ -47,8 +47,11 @@ export type PeriodInput = { choice: PeriodChoice; from: string | null; to: strin
  * Prices (/analytics/records): the priced records of one subtype, in one month of the period or of
  * the records with no supplier (plan of 6.4b, decided item 12). Of Approval speed
  * (/analytics/approvals): the stays decided at a step (`null`: every step), of one decision, and
- * the orders waiting now at a step in an age group (`null`: every one). A breakdown by branch,
- * department, supplier or Manager drills down with that filter set.
+ * the orders waiting now at a step in an age group (`null`: every one). Of Warehouse
+ * (/analytics/stock and /analytics/moves): the stock lines of a value, the Low lines, the lines
+ * with no movement for 90 days, and the movements of use by department and of the written off
+ * (plan of 6.4d, decided item 9). A breakdown by branch, department, supplier or Manager drills
+ * down with that filter set.
  */
 export type DrillKey =
   | { kind: "period" }
@@ -60,7 +63,17 @@ export type DrillKey =
   | { kind: "saved" }
   | { kind: "price"; variant: string; month: string | null; noSupplier: boolean }
   | { kind: "step"; step: ApprovalStep | null; decision: StayDecision | null }
-  | { kind: "waiting"; step: ApprovalStep | null; group: WaitingGroup | null };
+  | { kind: "waiting"; step: ApprovalStep | null; group: WaitingGroup | null }
+  | { kind: "stock"; view: StockView }
+  | { kind: "moves"; move: MoveKind };
+
+/** The stock lines behind a Warehouse number of now (plan of 6.4d, decided items 1, 3 and 7). */
+export const STOCK_VIEWS = ["value", "low", "still"] as const;
+export type StockView = (typeof STOCK_VIEWS)[number];
+
+/** The movements behind a Warehouse number of the period (plan of 6.4d, decided items 4 and 5). */
+export const MOVE_KINDS = ["use", "writeoff"] as const;
+export type MoveKind = (typeof MOVE_KINDS)[number];
 
 export const OUTCOME_COLOURS = ["green", "amber", "red"] as const satisfies readonly Colour[];
 
@@ -100,6 +113,10 @@ export const EXPORT_BLOCKS = [
   "managers",
   "cancelled",
   "cash",
+  "warehouse",
+  "departmentUse",
+  "stock",
+  "moves",
 ] as const;
 export type ExportBlock = (typeof EXPORT_BLOCKS)[number];
 
@@ -127,7 +144,7 @@ const id = z.uuid().transform((value) => value.toLowerCase());
 const date = z.string().refine(isBusinessDate);
 
 const KEY =
-  /^(period|overspent|saved|month:\d{4}-\d{2}|category:[0-9a-fA-F-]{36}|payment:[A-Z]+|colour:[a-z]+|price:[0-9a-fA-F-]{36}(:\d{4}-\d{2}|:nosupplier)?|step:[A-Z_a-z]+(:[A-Z_]+)?|waiting:[A-Z_a-z]+:[A-Za-z]+)$/;
+  /^(period|overspent|saved|month:\d{4}-\d{2}|category:[0-9a-fA-F-]{36}|payment:[A-Z]+|colour:[a-z]+|price:[0-9a-fA-F-]{36}(:\d{4}-\d{2}|:nosupplier)?|step:[A-Z_a-z]+(:[A-Z_]+)?|waiting:[A-Z_a-z]+:[A-Za-z]+|stock:[a-z]+|moves:[a-z]+)$/;
 
 /** A reason key as reasonKey() writes it: at most the 500 characters of a reason (06 rule 3). */
 const reason = z.string().min(1).max(500);
@@ -189,6 +206,14 @@ function keyOf(text: string): DrillKey | null {
       groupText === "all" ? null : WAITING_GROUP_KEYS.find((each) => each === groupText);
     if (step === undefined || group === undefined) return null;
     return { kind, step, group };
+  }
+  if (kind === "stock") {
+    const view = STOCK_VIEWS.find((each) => each === value);
+    return view ? { kind, view } : null;
+  }
+  if (kind === "moves") {
+    const move = MOVE_KINDS.find((each) => each === value);
+    return move ? { kind, move } : null;
   }
   if (kind === "month") return isMonthKey(value) ? { kind, month: value } : null;
   if (kind === "payment") {
@@ -296,5 +321,9 @@ function keyText(key: DrillKey): string {
       return `step:${key.step ?? "all"}${key.decision ? `:${key.decision}` : ""}`;
     case "waiting":
       return `waiting:${key.step ?? "all"}:${key.group ?? "all"}`;
+    case "stock":
+      return `stock:${key.view}`;
+    case "moves":
+      return `moves:${key.move}`;
   }
 }
