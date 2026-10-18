@@ -4,6 +4,8 @@ import {
   MOVEMENT_RULES,
   MOVEMENT_TYPES,
   type StockMovement,
+  isLow,
+  minimumStep,
   nextBalance,
   stockValue,
 } from "./stock";
@@ -295,5 +297,43 @@ describe("stockValue (09 Stock value; 08 Rounding: half up; plan of 5.2, decided
     expect(() => stockValue("-1", 10n)).toThrow(RangeError);
     expect(() => stockValue("1e2", 10n)).toThrow(RangeError);
     expect(() => stockValue("1", -1n)).toThrow(RangeError);
+  });
+});
+
+describe('isLow (09 Low stock: "falls to its minimum or below"; 00-definitions, Minimum stock; plan of 5.10, decided item 1)', () => {
+  it("is Low at the minimum and below it", () => {
+    expect(isLow("5", "5")).toBe(true);
+    expect(isLow("5.000", "5")).toBe(true);
+    expect(isLow("4.999", "5")).toBe(true);
+    expect(isLow("0", "5")).toBe(true);
+  });
+
+  it("is not Low 0.001 above the minimum", () => {
+    expect(isLow("5.001", "5")).toBe(false);
+  });
+
+  it('is never Low with no minimum (00-definitions: "No minimum means never low")', () => {
+    expect(isLow("0", null)).toBe(false);
+    expect(isLow("5", null)).toBe(false);
+  });
+});
+
+describe('minimumStep (10 Notifications: "once per item until restocked"; plan of 5.10, decided item 2)', () => {
+  it("Low and not yet told: send", () => {
+    expect(minimumStep("5", "5", false)).toBe("send");
+  });
+
+  it("Low and already told: none", () => {
+    expect(minimumStep("4", "5", true)).toBe("none");
+  });
+
+  it("no longer Low with the mark set: clear (restocked, or the minimum lowered or removed)", () => {
+    expect(minimumStep("5.001", "5", true)).toBe("clear");
+    expect(minimumStep("4", null, true)).toBe("clear");
+  });
+
+  it("not Low and not told: none", () => {
+    expect(minimumStep("6", "5", false)).toBe("none");
+    expect(minimumStep("0", null, false)).toBe("none");
   });
 });
