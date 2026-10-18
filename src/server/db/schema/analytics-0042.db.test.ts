@@ -38,10 +38,11 @@ const insert = (opened: Opened) => {
   const value = (column: keyof typeof OPENED) => sql.raw(opened[column] ?? "null");
   return db.execute(sql`
     insert into analytics_orders (order_id, branch_id, status, progress, submitted_on, needed_by,
-      category_id, department_id, owner_id, opened_at, opened_on, approval_seconds)
+      category_id, department_id, owner_id, opened_at, opened_on, approval_seconds, planned_cash,
+      cash_handed, cash_needed)
     values (${order.id}, ${order.branch}, 'PURCHASING', 'OPEN', '2031-10-01', '2031-10-20',
       ${order.category}, ${order.department}, ${order.owner}, ${value("opened_at")},
-      ${value("opened_on")}, ${value("approval_seconds")})`);
+      ${value("opened_on")}, ${value("approval_seconds")}, 0, 0, 0)`);
 };
 const clear = () => db.execute(sql`delete from analytics_orders where order_id = ${order.id}`);
 

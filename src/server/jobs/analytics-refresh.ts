@@ -7,8 +7,11 @@ import {
   type DatedCashRecord,
   type DatedMoneyRow,
   type MoneyRowKind,
+  cashHanded,
+  cashNeeded,
   cashSince,
   orderCashCount,
+  plannedCashOf,
 } from "@/domain/money-ledger";
 import type { PaymentType } from "@/domain/payment-types";
 import { type PurchaseRecord, actualGoods, actualTotal, paymentParts } from "@/domain/purchases";
@@ -64,6 +67,11 @@ import type { Job } from "./job";
 // Task 6.5b adds to `analytics_orders` each order's first entry into Open and the whole seconds
 // from its first submit, `secondsBetween()` of src/domain/approval-stays.ts (plan of 6.5b, decided
 // item 1, Look first).
+//
+// Task 6.6a adds `analytics_money`, each Cash given, Cash returned and Paid back row of an action
+// not cancelled, and to `analytics_orders` each order's planned cash, the cash handed to its
+// Manager and its Cash needed soon, `plannedCashOf()`, `cashHanded()` and `cashNeeded()` of
+// src/domain/money-ledger.ts (plan of 6.6a, decided items 2, 4 and 5, Look first).
 
 type SpendingSource = {
   purchase_id: string;
@@ -108,7 +116,7 @@ export async function refreshAnalytics(executor: Executor): Promise<void> {
   await executor.execute(
     sql`lock table analytics_spending, analytics_spending_payments, analytics_outcomes,
                analytics_steps, analytics_cancelled, analytics_cash, analytics_stock,
-               analytics_stock_moves, analytics_orders in exclusive mode`,
+               analytics_stock_moves, analytics_orders, analytics_money in exclusive mode`,
   );
   const found = await executor.execute<SpendingSource>(sql`
     select p.id as purchase_id, p.order_id, p.branch_id, t.purchased_on::text as purchased_on,
@@ -178,6 +186,7 @@ export async function refreshAnalytics(executor: Executor): Promise<void> {
   await executor.execute(sql`delete from analytics_stock`);
   await executor.execute(sql`delete from analytics_stock_moves`);
   await executor.execute(sql`delete from analytics_orders`);
+  await executor.execute(sql`delete from analytics_money`);
   if (rows.length > 0) await insertSpending(executor, rows, parts);
   await writeOutcomes(executor);
   await writeSteps(executor);
@@ -186,6 +195,7 @@ export async function refreshAnalytics(executor: Executor): Promise<void> {
   await writeStock(executor);
   await writeStockMoves(executor);
   await writeOrders(executor);
+  await writeMoney(executor);
 }
 
 type OrderSource = {
@@ -199,6 +209,9 @@ type OrderSource = {
   department_id: string;
   owner_id: string;
   opened_at: string | null;
+  payment_type: PaymentType;
+  planned_total: string;
+  rows: { kind: MoneyRowKind; amount: string; is_cancelled: boolean }[];
 };
 
 /**
@@ -208,7 +221,9 @@ type OrderSource = {
  * the earliest move into `PURCHASING` from another status (Finance's approve; a later send back
  * from Settlement for correction or a Reopen does not move it), with its Tashkent date and the
  * whole seconds from the first submit by `secondsBetween()` (plan of 6.5b, decided item 1, Look
- * first; review of the plan, Should fix 5).
+ * first; review of the plan, Should fix 5). Task 6.6a adds its planned cash, the cash handed to
+ * its Manager over its money rows and its Cash needed soon, from the domain (plan of 6.6a, decided
+ * items 4 and 5, Look first).
  */
 async function writeOrders(executor: Executor) {
   const found = await executor.execute<OrderSource>(sql`
@@ -218,31 +233,76 @@ async function writeOrders(executor: Executor) {
            (select to_json(ev.created_at)#>>'{}' from order_events ev
             where ev.order_id = o.id and ev.to_status = 'PURCHASING'
               and ev.from_status <> 'PURCHASING'
-            order by ev.created_at, ev.id limit 1) as opened_at
+            order by ev.created_at, ev.id limit 1) as opened_at,
+           o.payment_type, o.planned_total::text as planned_total,
+           coalesce((select jsonb_agg(jsonb_build_object(
+                              'kind', r.kind, 'amount', r.amount::text,
+                              'is_cancelled', a.is_cancelled) order by r.id)
+                     from money_rows r join money_actions a on a.id = r.money_action_id
+                     where r.order_id = o.id), '[]') as rows
     from orders o
     join product_variants v on v.id = o.variant_id
     join products pr on pr.id = v.product_id
     where o.status <> 'DRAFT'`);
   if (found.rows.length === 0) return;
-  const rows = found.rows.map((row) => ({
-    ...row,
-    approval_seconds:
-      row.opened_at === null
-        ? null
-        : secondsBetween(new Date(row.submitted_at), new Date(row.opened_at)).toString(),
-  }));
+  const rows = found.rows.map(({ payment_type, planned_total, rows: money, ...row }) => {
+    const plannedCash = plannedCashOf(payment_type, BigInt(planned_total));
+    const handed = cashHanded(
+      money.map((each) => ({
+        kind: each.kind,
+        amount: BigInt(each.amount),
+        isCancelled: each.is_cancelled,
+      })),
+    );
+    return {
+      ...row,
+      approval_seconds:
+        row.opened_at === null
+          ? null
+          : secondsBetween(new Date(row.submitted_at), new Date(row.opened_at)).toString(),
+      // Text, so no JavaScript number holds the so'm (CLAUDE.md rule 6).
+      planned_cash: plannedCash.toString(),
+      cash_handed: handed.toString(),
+      cash_needed: cashNeeded({
+        status: row.status,
+        progress: row.progress,
+        plannedCash,
+        handed,
+      }).toString(),
+    };
+  });
   await executor.execute(sql`
     insert into analytics_orders (order_id, branch_id, status, progress, submitted_on, needed_by,
                                   category_id, department_id, owner_id, opened_at, opened_on,
-                                  approval_seconds)
+                                  approval_seconds, planned_cash, cash_handed, cash_needed)
     select r.order_id, r.branch_id, r.status::request_status, r.progress::order_progress,
            (r.submitted_at at time zone 'Asia/Tashkent')::date, r.needed_by, r.category_id,
            r.department_id, r.owner_id, r.opened_at,
-           (r.opened_at at time zone 'Asia/Tashkent')::date, r.approval_seconds::bigint
+           (r.opened_at at time zone 'Asia/Tashkent')::date, r.approval_seconds::bigint,
+           r.planned_cash::bigint, r.cash_handed::bigint, r.cash_needed::bigint
     from jsonb_to_recordset(${JSON.stringify(rows)}::jsonb) as r(
       order_id uuid, branch_id uuid, status text, progress text, submitted_at timestamptz,
       needed_by date, category_id uuid, department_id uuid, owner_id uuid, opened_at timestamptz,
-      approval_seconds text)`);
+      approval_seconds text, planned_cash text, cash_handed text, cash_needed text)`);
+}
+
+/**
+ * Every Cash given, Cash returned and Paid back row whose action is not cancelled (plan of 6.6a,
+ * decided item 2, Look first): its amount as written, its action's date and Manager. Nothing is
+ * worked out: a row's amount is the money that moved.
+ */
+async function writeMoney(executor: Executor) {
+  await executor.execute(sql`
+    insert into analytics_money (money_row_id, order_id, branch_id, manager_id, category_id,
+                                 department_id, kind, amount, occurred_on)
+    select r.id, o.id, o.branch_id, a.manager_id, pr.category_id, o.department_id, r.kind,
+           r.amount, a.occurred_on
+    from money_rows r
+    join money_actions a on a.id = r.money_action_id
+    join orders o on o.id = r.order_id
+    join product_variants v on v.id = o.variant_id
+    join products pr on pr.id = v.product_id
+    where not a.is_cancelled and r.kind in ('CASH_GIVEN', 'CASH_RETURNED', 'PAID_BACK')`);
 }
 
 async function insertSpending(executor: Executor, rows: object[], parts: object[]) {

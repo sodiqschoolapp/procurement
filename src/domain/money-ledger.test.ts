@@ -977,7 +977,7 @@ describe("Cash needed soon (10 Finance; 08 When Finance approves, Money ledger t
   });
 
   it("is 0 for a bank-transfer order: its planned cash is 0", () => {
-    const plannedCashOfTransfer = plannedCash({ ...NOTEBOOKS, paymentType: "BANK_TRANSFER" });
+    const plannedCashOfTransfer = plannedCash({ ...NOTEBOOKS, paymentType: "TRANSFER" });
     expect(
       cashNeeded({
         status: "PENDING_FINANCE",

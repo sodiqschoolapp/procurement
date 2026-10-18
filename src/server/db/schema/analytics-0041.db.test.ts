@@ -55,13 +55,13 @@ describe("analytics_orders", () => {
   const insert = (row: Row = {}) =>
     db.execute(sql`
       insert into analytics_orders (order_id, branch_id, status, progress, submitted_on,
-        needed_by, category_id, department_id, owner_id)
+        needed_by, category_id, department_id, owner_id, planned_cash, cash_handed, cash_needed)
       values (${row.order ?? ids.order}, ${row.branch ?? ids.branch},
         ${row.status ?? "PENDING_HEAD"}, 'OPEN',
         ${row.submittedOn === undefined ? "2031-05-02" : row.submittedOn},
         ${row.neededBy === undefined ? "2031-05-10" : row.neededBy},
         ${row.category ?? ids.category}, ${row.department ?? ids.department},
-        ${row.owner ?? ids.owner})`);
+        ${row.owner ?? ids.owner}, 0, 0, 0)`);
   const clear = () => db.execute(sql`delete from analytics_orders where order_id = ${ids.order}`);
   const updated = async (set: string) => {
     await insert();
