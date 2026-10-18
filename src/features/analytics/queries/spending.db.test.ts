@@ -204,7 +204,7 @@ async function twoBranches() {
 
 describe("no filter returns rows of another branch (Done when 2; 03 rule 1; D40)", () => {
   it("a Principal and a Finance user of one branch, for every filter alone and all together", async () => {
-    const { mine, theirs, kept } = await twoBranches();
+    const { mine, kept } = await twoBranches();
     const principal = await insertUser("PRINCIPAL", { branches: [mine.branch.id] });
     const finance = await insertUser("FINANCE", { branches: [mine.branch.id] });
     // The category and the supplier are the other branch's too: only the wall keeps its record out.
