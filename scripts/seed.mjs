@@ -7,9 +7,9 @@ import { parse } from "pg-connection-string";
 import { insertAuditRow } from "../src/server/audit-row.mjs";
 import { insertPasswordUser } from "../src/server/auth/password-user.mjs";
 import { FIRST_HEAD_LOCK } from "./first-head.mjs";
-import { seedCatalogs } from "./seed-catalogs.mjs";
+import { seedCatalogs, seedSuggestion } from "./seed-catalogs.mjs";
 import { seedOrders } from "./seed-orders.mjs";
-import { seedStock } from "./seed-stock.mjs";
+import { seedStock, seedWriteOff } from "./seed-stock.mjs";
 
 /** The variable of the local .env that holds each seed user's password (plan of 0.14, decision 3). */
 export const SEED_PASSWORD_VARIABLES = /** @type {const} */ ({
@@ -237,6 +237,9 @@ export async function seed(client, env, moment) {
     // The demo warehouse documents (build-plan 5.12), after the orders, so the orders' stock at
     // submit stays as their test reads it; they print no line either.
     await seedStock(query, { userIds, branchIds, moment });
+    // What waits for the Head's decision (build plan 6.2): a write-off and a product suggestion.
+    await seedWriteOff(query, { userIds, branchIds, moment });
+    await seedSuggestion(query, { userIds, branchIds, moment });
 
     await client.query("commit");
     return {

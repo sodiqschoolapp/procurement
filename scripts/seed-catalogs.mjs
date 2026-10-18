@@ -566,3 +566,60 @@ async function keepOrCreateNamed(query, audit, counts, table, action, names, mom
   }
   return entries;
 }
+
+/**
+ * The Manager's product suggestion of CHL waiting for the Head (build plan 6.2: the Head's home
+ * list "product suggestions"; plan of 6.2, decided item 9), written as suggestProduct writes it,
+ * with its `suggestion.create` audit row; no photo. Left out when its client key exists. Not
+ * counted in the catalog lines: it is no catalog entry until the Head adds it.
+ */
+export const SEED_SUGGESTION = {
+  clientKey: "0e5d7a4e-4a51-4c1e-9a10-000000000201",
+  actor: "seed_manager",
+  branch: "CHL",
+  name: "Doska markeri",
+  unitText: "dona",
+  note: "Sinf doskalari uchun (demo)",
+};
+
+export async function seedSuggestion(query, { userIds, branchIds, moment }) {
+  const found = await query("select 1 from catalog_suggestions where client_key = $1", [
+    SEED_SUGGESTION.clientKey,
+  ]);
+  if (found.rows.length > 0) return;
+  const branchId = branchIds.get(SEED_SUGGESTION.branch);
+  const actorId = userIds.get(SEED_SUGGESTION.actor);
+  const inserted = await query(
+    `insert into catalog_suggestions (branch_id, suggested_by, name, unit_text, note, status,
+       client_key, created_at)
+     values ($1, $2, $3, $4, $5, 'PENDING', $6, $7)
+     returning id`,
+    [
+      branchId,
+      actorId,
+      SEED_SUGGESTION.name,
+      SEED_SUGGESTION.unitText,
+      SEED_SUGGESTION.note,
+      SEED_SUGGESTION.clientKey,
+      moment,
+    ],
+  );
+  await insertAuditRow(query, {
+    actorId,
+    action: "suggestion.create",
+    entity: "catalog_suggestions",
+    entityId: inserted.rows[0].id,
+    before: null,
+    after: {
+      branchId,
+      branch: SEED_SUGGESTION.branch,
+      name: SEED_SUGGESTION.name,
+      unitText: SEED_SUGGESTION.unitText,
+      note: SEED_SUGGESTION.note,
+      photoFileId: null,
+      photo: null,
+      status: "PENDING",
+    },
+    at: moment,
+  });
+}
