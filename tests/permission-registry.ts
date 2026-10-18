@@ -111,8 +111,7 @@ export const SERVER_ACTIONS: Record<string, Entry> = {
     "stock.return_reverse",
   // Direct entry by the Head (plan of 5.8): stock.enter_direct on the branch
   // (direct-entry-matrix.db.test.ts).
-  "src/app/(app)/warehouse/documents/new/actions.ts#enterStockDirectlyAction":
-    "stock.enter_direct",
+  "src/app/(app)/warehouse/documents/new/actions.ts#enterStockDirectlyAction": "stock.enter_direct",
   "src/app/(app)/warehouse/documents/new/actions.ts#searchDirectEntryItemsAction":
     "stock.enter_direct",
   // Reverse an issue or a return (plan of 5.7): stock.return_reverse on the document's branch,
