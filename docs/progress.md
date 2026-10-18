@@ -1614,4 +1614,21 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - An Excel sheet name may not hold `* ? : \ / [ ]` (ExcelJS throws); the route test catches it.
 - The seed needs the four seed passwords in the local `.env`; a cloud session has none, so CI runs it.
 
-The next task is 6.5c.
+## 6.5c Analytics: Manager, Stock planning (18.10.2026, pull request #112)
+
+**Built**
+- Domain: `runsOutIn()`, `suggestedQuantity()`, `qtyChange()`, `RATE_DAYS`, `COVER_DAYS` (analytics.ts).
+- Query `getStockPlanning()` (stock-planning.ts): one row per stock line of `analytics_stock` that holds stock, is Low or moved; use per month (`to_char` of `analytics_stock_moves.moved_on`), period, period before, the month before the first month, and the 90-day rate of every department.
+- `movesWhere(…, variant)`, `SIGNED_QTY`; `getStockMoves(…, variant)` with `quantity` (Σ issue − return) when a subtype is given; `/analytics/moves` honours `variant=`.
+- Download block `stockPlanning`; the Stock planning block on the Manager's `/analytics` (`StockPlanningView` in manager-blocks.tsx), 10 lines shown (`TOP_PLANNING`).
+
+**Left out, and the task that brings it**
+- Finance: 6.6. Page PDF: 6.7. Transfers are not use; no transfer exists until 7.1, so no test has one yet.
+
+**What the next sessions must know**
+- For 6.7: the Manager's page now has four blocks; Stock planning's month columns grow with the period (up to 12).
+- For 7.1: `TRANSFER_OUT` never enters `analytics_stock_moves` (its CHECK refuses it), so a transfer never counts as use in Stock planning or Warehouse.
+- A use is signed numeric text (`-?\d+(\.\d{1,3})?`), not `quantityOf()` (which refuses 0 and below).
+- A Head's `getStockPlanning()` without a branch filter covers every branch: compare its Low count with `getStockLines("low")`, not with a fixed number.
+
+The next task is 6.6.
