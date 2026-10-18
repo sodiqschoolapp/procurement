@@ -545,10 +545,9 @@ export type ImportedStock = {
   cost: bigint | null;
 };
 
-const STOCK_AT = Object.fromEntries(IMPORT_COLUMNS.stock.map((column, at) => [column, at])) as Record<
-  (typeof IMPORT_COLUMNS.stock)[number],
-  number
->;
+const STOCK_AT = Object.fromEntries(
+  IMPORT_COLUMNS.stock.map((column, at) => [column, at]),
+) as Record<(typeof IMPORT_COLUMNS.stock)[number], number>;
 
 /**
  * A quantity cell as text (edge case "Half a piece"; review of the plan of 5.9, should fix 3): a

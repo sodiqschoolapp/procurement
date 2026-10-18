@@ -62,9 +62,9 @@ describe("the template (plan of 1.10, decisions 10 and 16)", () => {
 
   it("an unknown kind is 404, for a Manager too; signed out is 401", async () => {
     const head = await insertUser("HEAD");
-    // "prices" was the unknown kind here until 1.11 made it one.
-    expect((await get("stock", await signInAs(head))).status).toBe(404);
-    expect((await get("stock", await signInAs(await insertUser("MANAGER")))).status).toBe(404);
+    // "prices" was the unknown kind here until 1.11, "stock" until 5.9 made them kinds.
+    expect((await get("counts", await signInAs(head))).status).toBe(404);
+    expect((await get("counts", await signInAs(await insertUser("MANAGER")))).status).toBe(404);
     expect((await get("products")).status).toBe(401);
   });
 });

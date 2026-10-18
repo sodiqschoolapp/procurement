@@ -8,6 +8,7 @@ import {
   lineMovement,
   departmentHolds,
   directEntryCommentRefusal,
+  directEntryLineRefusal,
   overReturn,
   reversalOf,
   reverseAllows,
@@ -235,5 +236,40 @@ describe('directEntryCommentRefusal (09 Direct entry: Reason and Comment, "Other
     expect(directEntryCommentRefusal("EXISTING_STOCK", null)).toBeNull();
     expect(directEntryCommentRefusal("GIFT", null)).toBeNull();
     expect(directEntryCommentRefusal("GIFT", "From the parents' committee")).toBeNull();
+  });
+});
+
+describe("directEntryLineRefusal: one rule for the form and the Excel import (09 Direct entry, Lines; A7; 04 rule 2; plan of 5.9)", () => {
+  const goods = {
+    isActive: true,
+    productActive: true,
+    type: "GOODS" as const,
+    allowsDecimals: false,
+  };
+
+  it("an unknown subtype and a service are not allowed; an inactive subtype or product is inactive", () => {
+    expect(directEntryLineRefusal(undefined, "1")).toEqual({
+      field: "variantId",
+      kind: "notAllowed",
+    });
+    expect(directEntryLineRefusal({ ...goods, type: "SERVICE" }, "1")).toEqual({
+      field: "variantId",
+      kind: "notAllowed",
+    });
+    expect(directEntryLineRefusal({ ...goods, isActive: false }, "1")).toEqual({
+      field: "variantId",
+      kind: "inactive",
+    });
+    expect(directEntryLineRefusal({ ...goods, productActive: false }, "1")).toEqual({
+      field: "variantId",
+      kind: "inactive",
+    });
+  });
+
+  it('the quantity by the measure: whole units only where it allows no decimals (edge case "Half a piece")', () => {
+    expect(directEntryLineRefusal(goods, "2.5")).toEqual({ field: "qty", kind: "wholeOnly" });
+    expect(directEntryLineRefusal({ ...goods, allowsDecimals: true }, "2.5")).toBeNull();
+    expect(directEntryLineRefusal(goods, "0")).toEqual({ field: "qty", kind: "tooSmall" });
+    expect(directEntryLineRefusal(goods, "200")).toBeNull();
   });
 });
