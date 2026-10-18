@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import Link from "next/link";
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { type ComponentProps, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useFieldArray, useForm, useWatch } from "react-hook-form";
 
 import {
@@ -16,7 +16,7 @@ import { toast } from "@/components/toast";
 import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard";
 import { useAction } from "@/components/use-action";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Field } from "@/components/ui/field";
+import { Field, useFieldControl } from "@/components/ui/field";
 import { FIELD_CLASSES, Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { cn } from "@/components/utils";
@@ -460,13 +460,7 @@ export function ReturnForm({
           label={anyOver ? t("comment") : t("commentOptional")}
           error={fieldTexts.comment}
         >
-          <textarea
-            {...register("comment")}
-            rows={3}
-            maxLength={1000}
-            aria-required={anyOver}
-            className={cn(FIELD_CLASSES, "min-h-24 py-2")}
-          />
+          <CommentBox required={anyOver} {...register("comment")} />
         </Field>
         {commentMissing && !fieldTexts.comment ? (
           <p data-comment-needed className="text-sm leading-5 text-muted-foreground">
@@ -522,6 +516,20 @@ export function ReturnForm({
         </Button>
       </div>
     </form>
+  );
+}
+
+/** The comment, tied to its label and error line by the field (aria-required over a line). */
+function CommentBox({ required, ...props }: { required: boolean } & ComponentProps<"textarea">) {
+  return (
+    <textarea
+      {...props}
+      {...useFieldControl()}
+      rows={3}
+      maxLength={1000}
+      aria-required={required}
+      className={cn(FIELD_CLASSES, "min-h-24 py-2")}
+    />
   );
 }
 
