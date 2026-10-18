@@ -8,6 +8,7 @@ import { runAction } from "@/server/action";
 import { db } from "@/server/db/client";
 import { departmentReceived } from "@/server/department-received";
 import { runOrdersAction } from "@/server/order-action";
+import { createDocument } from "@/server/stock-documents";
 
 import { insertBranch, setManagerRight } from "../../../../tests/helpers/branches";
 import { setClock } from "../../../../tests/helpers/clock";
@@ -235,6 +236,27 @@ describe("reverseStockDocument (09 Movement types, last paragraph; Issue to a de
     expect(again.ok ? null : again.error.code).toBe("wrong_status");
     expect(await reversalsOf(made.documentId)).toHaveLength(1);
     expect((await balanceOf(pens))!.qty).toBe("5.000");
+  });
+
+  it("the Head is refused on a posted direct entry: no type but an issue or a return yet (Decided ahead, question 19; permission review of 5.7, should-fix 2)", async () => {
+    const pens = await goods();
+    const entry = await db.transaction((tx) =>
+      createDocument(tx, {
+        type: "DIRECT_ENTRY",
+        branchId: branch.id,
+        docDate: "2031-05-03",
+        status: "POSTED",
+        reason: "EXISTING_STOCK",
+        clientKey: randomUUID(),
+        createdBy: head,
+        lines: [{ variantId: pens, qty: "3", unitCost: 2000n }],
+      }),
+    );
+    expect((await balanceOf(pens))!.qty).toBe("3.000");
+    const result = await reverse(entry.documentId, head);
+    expect(result.ok ? null : result.error.code).toBe("forbidden");
+    expect((await documentOf(entry.documentId)).status).toBe("POSTED");
+    expect((await balanceOf(pens))!.qty).toBe("3.000");
   });
 
   it("an unknown document is Not found", async () => {

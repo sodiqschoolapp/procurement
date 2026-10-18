@@ -110,4 +110,24 @@ describe("getReversePreview", () => {
     });
     expect((await getReversePreview(theirs.id, issue.documentId)).number).toBe(issue.number);
   });
+
+  it("a Manager who did not make the issue is refused, as the action would (permission review of 5.7, should-fix 1)", async () => {
+    const branch = await insertBranch();
+    const maker = await insertUser("MANAGER", { branches: [branch.id] });
+    const colleague = await insertUser("MANAGER", { branches: [branch.id] });
+    const department = await insertDepartment(branch.id);
+    const pens = (await insertItem()).variantId;
+    await receive(branch.id, pens, "5", 1000n, maker.id);
+    const issue = await postDocument({
+      type: "ISSUE",
+      branchId: branch.id,
+      departmentId: department.id,
+      createdBy: maker.id,
+      lines: [{ variantId: pens, qty: "1" }],
+    });
+    await expect(getReversePreview(colleague.id, issue.documentId)).rejects.toMatchObject({
+      kind: "forbidden",
+    });
+    expect((await getReversePreview(maker.id, issue.documentId)).number).toBe(issue.number);
+  });
 });

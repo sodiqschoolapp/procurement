@@ -1,7 +1,12 @@
 import { sql } from "drizzle-orm";
 import * as z from "zod";
 
-import { type DocumentStatus, type DocumentType, overReturn } from "@/domain/stock-documents";
+import {
+  type DocumentStatus,
+  type DocumentType,
+  overReturn,
+  reverseAllows,
+} from "@/domain/stock-documents";
 import { AuthorizationError, authorize } from "@/server/authorize";
 import { departmentReceived } from "@/server/department-received";
 import { readSnapshot } from "@/server/read-snapshot";
@@ -10,7 +15,7 @@ import { readSnapshot } from "@/server/read-snapshot";
 // 11-screens-and-ux.md rule 6, "state the result"; plan of 5.7, decided item 6): the document's
 // number, department and every line, since one press reverses them all. Under
 // `stock.return_reverse` on the document's branch, read from the database; another branch or an
-// unknown id is "Not found" (03 rule 1). On an issue, a line more than the department now holds
+// unknown id is "Not found" (03 rule 1); a document reverseAllows() refuses is "forbidden". On an issue, a line more than the department now holds
 // carries that amount: the dialog warns, as a return over what was received does (09 Other
 // documents, Return; review of the plan, correction 1, Look first), and the reason is the comment.
 
@@ -54,15 +59,26 @@ export async function getReversePreview(
       branch_id: string;
       department_id: string | null;
       department_name: string | null;
+      created_by: string;
     }>(sql`
-      select d.number, d.type, d.status, d.branch_id, d.department_id,
+      select d.number, d.type, d.status, d.branch_id, d.department_id, d.created_by,
         dep.name as department_name
       from stock_documents d
       left join departments dep on dep.id = d.department_id
       where d.id = ${id.data}`);
     const document = found.rows[0];
     if (!document) throw new AuthorizationError("not_found");
-    await authorize(userId, "stock.return_reverse", { branchId: document.branch_id }, db);
+    const actor = await authorize(
+      userId,
+      "stock.return_reverse",
+      { branchId: document.branch_id },
+      db,
+    );
+    // The action's own who (reverseAllows()): no preview of a reverse it would refuse
+    // (permission review of 5.7, should-fix 1).
+    if (!reverseAllows(actor, { type: document.type, createdBy: document.created_by })) {
+      throw new AuthorizationError("forbidden");
+    }
 
     const lines = await db.execute<{
       id: string;
