@@ -5,7 +5,10 @@ import { writeAnalyticsExcel } from "@/features/analytics/download/excel";
 import {
   approvalOrdersSheet,
   approvalSpeedSheet,
+  cancelledSheet,
+  cashSheet,
   headSpendingSheet,
+  managersSheet,
   outcomeOrdersSheet,
   outcomesSheet,
   priceRisesSheet,
@@ -18,8 +21,11 @@ import {
 import { parseAnalyticsParams } from "@/features/analytics/period-params";
 import { getApprovalOrders } from "@/features/analytics/queries/approval-orders";
 import { getApprovalSpeed } from "@/features/analytics/queries/approval-speed";
+import { getCancelledRecords } from "@/features/analytics/queries/cancelled-records";
+import { getCashOrders } from "@/features/analytics/queries/cash-orders";
 import { getAnalyticsFilters } from "@/features/analytics/queries/filters";
 import { getHeadSpending } from "@/features/analytics/queries/head-spending";
+import { getManagers } from "@/features/analytics/queries/managers";
 import { getOutcomeOrders } from "@/features/analytics/queries/outcome-orders";
 import { getPlanVsActual } from "@/features/analytics/queries/plan-vs-actual";
 import { getPrices } from "@/features/analytics/queries/prices";
@@ -34,7 +40,7 @@ import { now } from "@/server/clock";
 // The Excel file of one Analytics table, GET /analytics/download?…&block=… (6.3: months,
 // categories, records; 6.4a: branches, departments, suppliers, payments, outcomes,
 // outcomeBranches, outcomeManagers, orders; 6.4b: priceTrend, priceRises, priceSpread, stepHours,
-// waiting, decisions, reasons, approvals)
+// waiting, decisions, reasons, approvals; 6.4c: managers, cancelled, cash)
 // (10-notifications-analytics-reports.md, Analytics page per role, point 4; 03 Permission matrix
 // "Export to Excel, download PDF, print"; build-plan 6.3). A route that writes nothing, as the
 // order list's download (plan of 2.14, decided item 12). The address is the page's, checked by
@@ -51,8 +57,10 @@ export async function GET(request: NextRequest): Promise<Response> {
   const params = parseAnalyticsParams(Object.fromEntries(request.nextUrl.searchParams));
   if (!params?.block) return notFound();
   const { period, filters, key, block, otherOwners, variant, reason } = params;
-  // "Other owners" names only the orders list (plan of 6.4).
-  if (otherOwners && block !== "orders") return notFound();
+  // "Other owners" names only the lists of orders and records (plan of 6.4; plan of 6.4c).
+  if (otherOwners && block !== "orders" && block !== "cancelled" && block !== "cash") {
+    return notFound();
+  }
   const locale = chooseLocale({
     userLocale: user.locale,
     cookieLocale: request.cookies.get(LOCALE_COOKIE)?.value,
@@ -147,6 +155,32 @@ export async function GET(request: NextRequest): Promise<Response> {
       case "approvals":
         sheet = approvalOrdersSheet(
           await getApprovalOrders(user.id, period, filters, key, reason, "all"),
+          filters,
+          options,
+          locale,
+        );
+        break;
+      case "managers":
+        sheet = managersSheet(
+          await getManagers(user.id, period, filters),
+          filters,
+          options,
+          locale,
+        );
+        break;
+      case "cancelled":
+        sheet = cancelledSheet(
+          await getCancelledRecords(user.id, period, filters, otherOwners, "all"),
+          otherOwners,
+          filters,
+          options,
+          locale,
+        );
+        break;
+      case "cash":
+        sheet = cashSheet(
+          await getCashOrders(user.id, filters, otherOwners, "all"),
+          otherOwners,
           filters,
           options,
           locale,

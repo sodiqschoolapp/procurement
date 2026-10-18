@@ -75,3 +75,24 @@ export function hoursChangeText(
     ? t("change.hoursDown", { hours: size })
     : t("change.hoursUp", { hours: size });
 }
+
+type AmountTranslate = (
+  key: "change.amountUp" | "change.amountDown" | "change.same" | "change.amountNone",
+  values?: Record<string, string>,
+) => string;
+
+/**
+ * The change of a signed average in so'm only, no percent: a percent of a negative number reads
+ * backwards (plan of 6.4c, decided item 3, Look first; review of the plan, Should fix 1); `null`
+ * when either period has no amount.
+ */
+export function amountChangeText(
+  difference: bigint | null,
+  t: AmountTranslate,
+  format: Formatters,
+): string {
+  if (difference === null) return t("change.amountNone");
+  if (difference === 0n) return t("change.same");
+  const amount = format.money(difference < 0n ? -difference : difference);
+  return difference < 0n ? t("change.amountDown", { amount }) : t("change.amountUp", { amount });
+}

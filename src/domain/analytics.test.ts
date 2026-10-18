@@ -13,6 +13,7 @@ import {
   periodOf,
   WAITING_GROUP_KEYS,
   averageHours,
+  averageSom,
   priceRiseSince,
   reasonKey,
   waitingGroup,
@@ -284,5 +285,29 @@ describe("the 6.4b numbers (10 Analytics, Head, Prices and Approval speed; plan 
     expect(reasonKey("  Narxi  juda\tqimmat ")).toBe("narxi juda qimmat");
     expect(reasonKey("NARXI JUDA QIMMAT")).toBe(reasonKey("narxi juda qimmat"));
     expect(reasonKey("Цена высокая")).toBe("цена высокая");
+  });
+});
+
+// 10 Analytics, Head, Managers: "average difference from plan"; 08 Rounding ("always half up, to
+// whole so'm"); plan of 6.4c, decided item 3 (Look first) and the review's decision 3.
+describe("the Managers block (plan of 6.4c)", () => {
+  it("averageSom: Σ ÷ count, rounded once half up to whole so'm", () => {
+    // The review's worked example: differences 1 and 2 → 1.5 → 2.
+    expect(averageSom(3n, 2)).toBe(2n);
+    expect(averageSom(5n, 2)).toBe(3n);
+    expect(averageSom(10n, 3)).toBe(3n);
+    expect(averageSom(0n, 4)).toBe(0n);
+  });
+
+  it("averageSom: half up away from zero on a negative mean (−5 ÷ 2 → −3)", () => {
+    expect(averageSom(-5n, 2)).toBe(-3n);
+    expect(averageSom(-10n, 3)).toBe(-3n);
+    expect(averageSom(-150_000n, 1)).toBe(-150_000n);
+  });
+
+  it("averageSom: no order, no average", () => {
+    expect(averageSom(0n, 0)).toBeNull();
+    expect(() => averageSom(1n, -1)).toThrow(RangeError);
+    expect(() => averageSom(1 as unknown as bigint, 1)).toThrow(RangeError);
   });
 });

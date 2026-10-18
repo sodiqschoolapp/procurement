@@ -1,11 +1,14 @@
+import { sql } from "drizzle-orm";
 import { expect } from "vitest";
 
 import { AuthorizationError } from "@/server/authorize";
+import { db } from "@/server/db/client";
 
 import {
   bought,
   buyingEvent,
   decided,
+  moneyOn,
   recordOn,
   refreshNow,
   spendingScene,
@@ -16,8 +19,11 @@ import { NO_ANALYTICS_FILTERS, type PeriodInput } from "../period-params";
 
 import { getApprovalOrders } from "./approval-orders";
 import { getApprovalSpeed } from "./approval-speed";
+import { getCancelledRecords } from "./cancelled-records";
+import { getCashOrders } from "./cash-orders";
 import { getAnalyticsFilters } from "./filters";
 import { getHeadSpending } from "./head-spending";
+import { getManagers } from "./managers";
 import { getOutcomeOrders } from "./outcome-orders";
 import { getPlanVsActual } from "./plan-vs-actual";
 import { getPriceChoices, getPrices } from "./prices";
@@ -362,3 +368,93 @@ describePermissionMatrix("getApprovalSpeed and getApprovalOrders, the branch wal
     if (!listed) throw new AuthorizationError("not_found");
   },
 });
+
+/**
+ * The Managers block's rows of a branch (build-plan 6.4c): a Manager's record cancelled this month
+ * and an order holding 30 000 given this month, the summary refreshed.
+ */
+async function managerIn(branchId: string) {
+  setClock("2031-05-15T05:00:00Z");
+  const scene = await spendingScene(branchId);
+  const cancelled = await bought(scene, {
+    purchasedOn: "2031-05-02",
+    cancelled: true,
+    cancelledAt: "2031-05-03T05:00:00Z",
+  });
+  const held = await bought(scene, { purchasedOn: "2031-05-02", unitPrice: "0" });
+  await moneyOn(held, scene.manager.id, { amount: 30_000n, occurredOn: "2031-05-04" });
+  await refreshNow();
+  return { manager: scene.manager, cancelled, held };
+}
+
+describePermissionMatrix(
+  "getManagers, getCancelledRecords and getCashOrders with the branch filter",
+  {
+    permission: "data.view",
+    async run({ user, branchId }) {
+      const { manager, cancelled, held } = await managerIn(branchId);
+      const filters = { ...NO_ANALYTICS_FILTERS, branch: branchId };
+      const block = await getManagers(user.id, THIS_MONTH, filters);
+      const records = await getCancelledRecords(user.id, THIS_MONTH, filters, false, "all");
+      const cash = await getCashOrders(user.id, filters, false, "all");
+      expect(block.rows.find((row) => row.id === manager.id)).toMatchObject({
+        cancelled: { count: 1 },
+        held: 30_000n,
+      });
+      expect(records.rows.map((row) => row.purchaseId)).toContain(cancelled.purchaseId);
+      expect(cash.rows.map((row) => row.orderId)).toContain(held.orderId);
+    },
+  },
+);
+
+describePermissionMatrix(
+  "getManagers, getCancelledRecords and getCashOrders, the branch wall in the SQL",
+  {
+    permission: "data.view",
+    async run({ user, branchId }) {
+      const { manager, cancelled, held } = await managerIn(branchId);
+      const block = await getManagers(user.id, THIS_MONTH, NO_ANALYTICS_FILTERS);
+      const records = await getCancelledRecords(
+        user.id,
+        THIS_MONTH,
+        NO_ANALYTICS_FILTERS,
+        false,
+        "all",
+      );
+      const cash = await getCashOrders(user.id, NO_ANALYTICS_FILTERS, false, "all");
+      // The number and its lists keep to the same wall.
+      const listed = cash.rows.some((row) => row.orderId === held.orderId);
+      expect(records.rows.some((row) => row.purchaseId === cancelled.purchaseId)).toBe(listed);
+      expect(block.rows.some((row) => row.id === manager.id)).toBe(listed);
+      if (!listed) throw new AuthorizationError("not_found");
+    },
+  },
+);
+
+// The ids of the filters (.claude/rules/server-actions.md: every id from the browser is checked to
+// belong to a branch the user may use; permission review of 6.4c, Should fix 2): a department or a
+// Manager of the branch, sent to each Managers query without a branch filter.
+describePermissionMatrix(
+  "getManagers, getCancelledRecords and getCashOrders with a department or a Manager of the branch",
+  {
+    permission: "data.view",
+    async run({ user, branchId }) {
+      const { manager, held } = await managerIn(branchId);
+      const department = (
+        await db.execute<{ department_id: string }>(
+          sql`select department_id from orders where id = ${held.orderId}`,
+        )
+      ).rows[0]!.department_id;
+      for (const filters of [
+        { ...NO_ANALYTICS_FILTERS, department },
+        { ...NO_ANALYTICS_FILTERS, manager: manager.id },
+      ]) {
+        const block = await getManagers(user.id, THIS_MONTH, filters);
+        await getCancelledRecords(user.id, THIS_MONTH, filters, false, "all");
+        const cash = await getCashOrders(user.id, filters, false, "all");
+        expect(block.rows.find((row) => row.id === manager.id)?.held).toBe(30_000n);
+        expect(cash.rows.map((row) => row.orderId)).toEqual([held.orderId]);
+      }
+    },
+  },
+);

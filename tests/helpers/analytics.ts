@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import { sql } from "drizzle-orm";
 
+import type { MoneyRowKind } from "@/domain/money-ledger";
 import type { PaymentType } from "@/domain/payment-types";
 import type { RequestStatus } from "@/domain/request-status";
 import type { OrderProgress } from "@/domain/purchases";
@@ -39,6 +40,8 @@ export type Bought = {
   /** The trip's payment type, cash by default. */
   paymentType?: PaymentType;
   cancelled?: boolean;
+  /** The moment of the cancel, the record's entry moment unless given (plan of 6.4c, item 5). */
+  cancelledAt?: string;
   /** Defaults: the scene's own. */
   categoryId?: string;
   departmentId?: string;
@@ -117,7 +120,7 @@ export async function recordOn(
   }
   if (row.cancelled) {
     await db.execute(sql`update purchases set is_cancelled = true, cancel_reason = 'Xato kiritildi',
-      cancelled_by = ${ownerId}, cancelled_at = ${AT} where id = ${purchaseId}`);
+      cancelled_by = ${ownerId}, cancelled_at = ${row.cancelledAt ?? AT} where id = ${purchaseId}`);
   }
   return { purchaseId };
 }
@@ -140,6 +143,31 @@ export async function buyingEvent(
       created_at)
     values (${orderId}, ${action.rows[0]!.id}, ${type}, 'PURCHASING', 'PURCHASING', ${actorId},
       ${at})`);
+}
+
+/**
+ * One money action of one row for an order, as Finance's actions write them (08 Money ledger),
+ * cancelled when asked (Decided ahead, question 3: the cancel fields filled once). Plan of 6.4c.
+ */
+export async function moneyOn(
+  order: { orderId: string; ownerId: string },
+  createdBy: string,
+  row: { kind?: MoneyRowKind; amount: bigint; occurredOn: string; cancelled?: boolean },
+) {
+  const action = await db.execute<{ id: string }>(sql`
+    insert into money_actions (client_key, manager_id, occurred_on, created_by, created_at)
+    values (${randomUUID()}, ${order.ownerId}, ${row.occurredOn}, ${createdBy}, ${AT})
+    returning id`);
+  const actionId = action.rows[0]!.id;
+  await db.execute(sql`
+    insert into money_rows (money_action_id, order_id, kind, amount, created_at)
+    values (${actionId}, ${order.orderId}, ${row.kind ?? "CASH_GIVEN"}, ${row.amount.toString()}, ${AT})`);
+  if (row.cancelled) {
+    await db.execute(sql`update money_actions set is_cancelled = true,
+      cancel_reason = 'Xato kiritildi', cancelled_by = ${createdBy}, cancelled_at = ${AT}
+      where id = ${actionId}`);
+  }
+  return { actionId };
 }
 
 /** The refresh of the scheduler job, in a transaction of its own. */

@@ -294,3 +294,22 @@ export function waitingGroup(enteredAt: Date, now: Date): WaitingGroup {
 export function reasonKey(reason: string): string {
   return reason.trim().replace(/\s+/gu, " ").toLowerCase();
 }
+
+// The Managers block of the Head's page (10 Analytics, Head; build-plan 6.4c).
+
+/**
+ * The mean of `count` amounts that add up to `total`, rounded once half up to whole so'm (10 Head,
+ * Managers: "average difference from plan"; 08 Rounding; plan of 6.4c, decided item 3, Look
+ * first): half up is away from zero, so −2.5 is −3, as 08's round and changeAgainst() do. `null`
+ * for no amount. SQL adds the stored whole so'm; the one division is here.
+ */
+export function averageSom(total: bigint, count: number): bigint | null {
+  if (typeof total !== "bigint") throw new RangeError("An average is of whole so'm (bigint).");
+  if (!Number.isSafeInteger(count) || count < 0) {
+    throw new RangeError(`A count of amounts is 0 or more, not ${count}.`);
+  }
+  if (count === 0) return null;
+  return BigInt(
+    new Exact(total.toString()).dividedBy(count).toDecimalPlaces(0, Exact.ROUND_HALF_UP).toFixed(0),
+  );
+}

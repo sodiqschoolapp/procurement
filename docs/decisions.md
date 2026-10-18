@@ -2169,6 +2169,28 @@ Choices made during the build:
 - The 6.3 constraint test of `analytics_spending` writes the five new columns in its direct insert (a requirement changed: the columns are NOT NULL); nothing it checks changed.
 - The separator "·" between two texts is the message `analytics.joined` in the three languages (no text in a screen).
 
+### 6.4c Analytics: Head, Managers (18.10.2026)
+
+The plan's decisions as the plan review of 18.10.2026 confirmed them (corrections 1 to 3 applied: no `daysHeld()`, `daysOf() − 1`; cash held with no change marked Look first as a spec contradiction; the job skips Draft and Closed orders as Money with managers does), and those of the build. The Look first items come first.
+
+1. **Look first** (a task split). 6.4c is split into 6.4c (Managers) and 6.4d (Warehouse), written into `docs/build-plan.md`; 6.4d keeps the Read line and takes the Warehouse block, its Done-when number and the phase 6 check by hand on the whole Head page. Phase 6 now has 13 tasks, the plan 104.
+2. **Look first** (money). "Number of orders" and "average difference from plan" are of one set: the owner's orders whose buying ended (Done or Done short) in the period, the `analytics_outcomes` rows of Plan vs actual; a Not bought order is in neither.
+3. **Look first** (money). The average is `averageSom(Σ difference, count)`, rounded once half up (away from zero: −2.5 → −3), signed; its change against the period before is in so'm only, none when either period has no ended order.
+4. **Look first** (money). Cash held is the held half of 08's Manager's cash balance (`managerCashBalance()`, positive counts of orders not Closed), now; owed is not netted and not shown here. Held for: whole Tashkent days from the oldest `cashSince()` of the held orders to today, `daysOf() − 1`. The supplier filter keeps an order with a live record from that supplier.
+5. **Look first** (spec contradiction; proposed `/spec-change`). Cash held has no change against the period before, against `10-notifications-analytics-reports.md` point 1 ("Every number shows its change against the period before"): a balance on a past date is kept nowhere. Proposed wording of point 1: "Every number of a period shows its change against the period before; a number of now (orders waiting now, cash held) has none."
+6. **Look first** (money). A cancelled record counts on the Tashkent day of its cancel, under the order's current owner, whoever cancelled it; category the bought subtype's, supplier the trip's. Its total in the list is `actualTotal()` of the record read as live (`actualTotal()` leaves cancelled records out).
+7. Rows: every Manager with an ended order or a cancelled record in either period, or cash held now, inactive ones marked; owners who are not Managers in one "Other owners" row, last.
+8. Drill-down: orders and average open `/analytics/orders` with `manager=` or `owner=other`; cancelled records and cash held open the new `/analytics/cancelled` and `/analytics/cash`; no new `DrillKey`.
+9. Two summary tables rewritten by `refreshAnalytics()`; `src/server` does not import `src/features`, so the job reads the money rows and records itself and calls the same domain functions; a database test keeps `analytics_cash` equal to `getMoneyWithManagers()`.
+
+Choices made during the build:
+
+- Migration 0039 clears the job's `last_tick` and `last_finished_at`, as 0038 does, so the page says "being prepared" instead of a rebuild time over the empty new tables until the next run.
+- `/analytics/cash` reads its rows whole and pages them in TypeScript: the held total is `managerCashBalance()` of all of them, and the rows are few (open orders holding cash).
+- The Excel heading of the cash list names it as "held now" instead of a period.
+- Both new tables carry a composite foreign key `(order_id, branch_id)` to `orders(id, branch_id)`, so the branch the wall filters on is the order's (permission review, Should fix 3).
+- The Managers block and its two lists are reachable by address by every `data.view` role inside its own branches, as 6.4a's and 6.4b's lists are (plan of 6.4, decided item 8); only the Head's page shows the block (permission review, Should fix 1, not changed).
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

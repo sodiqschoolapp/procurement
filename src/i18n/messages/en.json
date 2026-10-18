@@ -2339,7 +2339,10 @@
       "hoursUp": "+{hours} h against the period before",
       "hoursDown": "−{hours} h against the period before",
       "hoursSame": "Same as in the period before",
-      "hoursNone": "No stay in the period before"
+      "hoursNone": "No stay in the period before",
+      "amountUp": "+{amount} against the period before",
+      "amountDown": "−{amount} against the period before",
+      "amountNone": "No ended order in one of the two periods"
     },
     "spending": {
       "title": "Spending",
@@ -2408,7 +2411,10 @@
       "waiting": "Orders waiting now",
       "decisions": "Sent back or rejected",
       "reasons": "Most common reasons",
-      "approvals": "Orders"
+      "approvals": "Orders",
+      "managers": "Managers",
+      "cancelled": "Cancelled records",
+      "cash": "Cash held"
     },
     "plan": {
       "title": "Plan vs actual",
@@ -2565,6 +2571,62 @@
         "reason": "Reason"
       }
     },
-    "joined": "{first} · {second}"
+    "joined": "{first} · {second}",
+    "managers": {
+      "title": "Managers",
+      "note": "Orders and the average difference are of the orders whose buying ended in the period; cancelled records are counted on the day of the cancel. Cash held is what each Manager holds now.",
+      "perManager": "Per Manager",
+      "empty": "No Manager has an ended order, a cancelled record or cash held.",
+      "noOrder": "No ended order",
+      "noCash": "Holds nothing",
+      "even": "Even",
+      "left": "{amount} left",
+      "over": "{amount} over",
+      "days": "{count, plural, =0 {Since today} one {# day} other {# days}}",
+      "since": "since {date}",
+      "columns": {
+        "manager": "Manager",
+        "orders": "Orders ended",
+        "average": "Average difference from plan",
+        "cancelled": "Cancelled purchase records",
+        "held": "Cash held",
+        "heldFor": "Held for",
+        "since": "Held since"
+      }
+    },
+    "cancelled": {
+      "title": "Cancelled purchase records",
+      "what": "Cancelled {first} – {last}",
+      "summary": "{count, plural, one {# record} other {# records}}, {total} as entered",
+      "empty": "No purchase record was cancelled in this period.",
+      "noSupplier": "No supplier",
+      "columns": {
+        "order": "Order",
+        "product": "Product",
+        "branch": "Branch",
+        "bought": "Bought",
+        "supplier": "Supplier",
+        "cancelledOn": "Cancelled",
+        "cancelledBy": "Cancelled by",
+        "reason": "Reason",
+        "amount": "Amount"
+      }
+    },
+    "cash": {
+      "title": "Cash held",
+      "what": "Held now, by order",
+      "summary": "{count, plural, one {# order} other {# orders}}, {held} held, {days, plural, =0 {since today} one {for # day} other {for # days}} (since {date})",
+      "summaryNone": "Nothing is held",
+      "empty": "No order holds school money now.",
+      "columns": {
+        "order": "Order",
+        "product": "Product",
+        "branch": "Branch",
+        "owner": "Owner",
+        "status": "Status",
+        "since": "Held since",
+        "held": "Held"
+      }
+    }
   }
 }

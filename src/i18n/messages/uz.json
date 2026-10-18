@@ -2339,7 +2339,10 @@
       "hoursUp": "Oldingi davrga nisbatan +{hours} soat",
       "hoursDown": "Oldingi davrga nisbatan −{hours} soat",
       "hoursSame": "Oldingi davrdagidek",
-      "hoursNone": "Oldingi davrda qaror bo'lmagan"
+      "hoursNone": "Oldingi davrda qaror bo'lmagan",
+      "amountUp": "Oldingi davrga nisbatan +{amount}",
+      "amountDown": "Oldingi davrga nisbatan −{amount}",
+      "amountNone": "Ikki davrdan birida tugagan buyurtma yo'q"
     },
     "spending": {
       "title": "Xarajatlar",
@@ -2408,7 +2411,10 @@
       "waiting": "Hozir kutayotgan buyurtmalar",
       "decisions": "Qaytarilgan yoki rad etilgan",
       "reasons": "Eng ko'p uchraydigan sabablar",
-      "approvals": "Buyurtmalar"
+      "approvals": "Buyurtmalar",
+      "managers": "Menejerlar",
+      "cancelled": "Bekor qilingan yozuvlar",
+      "cash": "Qo'ldagi naqd pul"
     },
     "plan": {
       "title": "Reja va haqiqat",
@@ -2565,6 +2571,62 @@
         "reason": "Sabab"
       }
     },
-    "joined": "{first} · {second}"
+    "joined": "{first} · {second}",
+    "managers": {
+      "title": "Menejerlar",
+      "note": "Buyurtmalar va o'rtacha farq davr ichida xaridi tugagan buyurtmalar bo'yicha; bekor qilingan yozuvlar bekor qilingan kuni bo'yicha sanaladi. Qo'ldagi naqd pul — har bir menejerda hozir bor pul.",
+      "perManager": "Menejerlar bo'yicha",
+      "empty": "Hech bir menejerda tugagan buyurtma, bekor qilingan yozuv yoki qo'ldagi naqd pul yo'q.",
+      "noOrder": "Tugagan buyurtma yo'q",
+      "noCash": "Qo'lida hech narsa yo'q",
+      "even": "Teng",
+      "left": "{amount} qoldi",
+      "over": "{amount} oshib ketdi",
+      "days": "{count, plural, =0 {Bugundan} other {# kun}}",
+      "since": "{date} dan",
+      "columns": {
+        "manager": "Menejer",
+        "orders": "Tugagan buyurtmalar",
+        "average": "Rejadan o'rtacha farq",
+        "cancelled": "Bekor qilingan xarid yozuvlari",
+        "held": "Qo'ldagi naqd pul",
+        "heldFor": "Qancha vaqtdan beri",
+        "since": "Qachondan beri"
+      }
+    },
+    "cancelled": {
+      "title": "Bekor qilingan xarid yozuvlari",
+      "what": "Bekor qilingan {first} – {last}",
+      "summary": "{count, plural, other {# yozuv}}, kiritilganidek {total}",
+      "empty": "Bu davrda hech bir xarid yozuvi bekor qilinmagan.",
+      "noSupplier": "Yetkazib beruvchisiz",
+      "columns": {
+        "order": "Buyurtma",
+        "product": "Mahsulot",
+        "branch": "Filial",
+        "bought": "Sotib olingan",
+        "supplier": "Yetkazib beruvchi",
+        "cancelledOn": "Bekor qilingan",
+        "cancelledBy": "Kim bekor qildi",
+        "reason": "Sabab",
+        "amount": "Summa"
+      }
+    },
+    "cash": {
+      "title": "Qo'ldagi naqd pul",
+      "what": "Hozir qo'lda, buyurtmalar bo'yicha",
+      "summary": "{count, plural, other {# buyurtma}}, qo'lda {held}, {days, plural, =0 {bugundan} other {# kundan beri}} ({date} dan)",
+      "summaryNone": "Qo'lda hech narsa yo'q",
+      "empty": "Hozir hech bir buyurtmada maktab puli yo'q.",
+      "columns": {
+        "order": "Buyurtma",
+        "product": "Mahsulot",
+        "branch": "Filial",
+        "owner": "Egasi",
+        "status": "Holat",
+        "since": "Qachondan beri",
+        "held": "Qo'lda"
+      }
+    }
   }
 }
