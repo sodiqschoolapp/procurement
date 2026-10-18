@@ -2,6 +2,7 @@ import { and, count, eq, inArray, notInArray } from "drizzle-orm";
 
 import { type CashBalance, managerCashBalance, orderCashCount } from "@/domain/money-ledger";
 import { REQUESTED_STATUSES, requestedBySubtype } from "@/domain/order-list";
+import { receivedTogether } from "@/domain/purchases";
 import { mayInSomeBranch } from "@/domain/permissions";
 import { authorize, authorizeList, branchFilter } from "@/server/authorize";
 import { orders, productVariants, products, units } from "@/server/db/schema";
@@ -42,6 +43,12 @@ export type ManagerHome = {
   /** My drafts, never submitted or taken back: they stand in the drafts grid, not the list. */
   drafts: number;
   open: OrderGroupPage;
+  /**
+   * The progress of each open group row, by its key: the received quantity summed over its orders
+   * (each actualQuantity() of live records) and how many of them have finished buying (07 Order
+   * progress). A screen adds nothing up.
+   */
+  openProgress: Record<string, { received: string; finished: number }>;
   requested: RequestedLine[];
   /** 08 Manager's cash balance over my orders that are not Closed, and how many have a count. */
   cash: CashBalance & { orders: number };
@@ -121,6 +128,17 @@ export async function getManagerHome(userId: string, branch: string | null): Pro
       cashCount: orderCashCount(rows.get(row.id) ?? [], records.get(row.id) ?? []),
     }));
 
+    const open = await listOrderGroups(userId, filters.open, 1, db);
+    const openProgress = Object.fromEntries(
+      open.groups.map((group) => [
+        group.key,
+        {
+          received: receivedTogether(group.orders.map((order) => order.received)),
+          finished: group.orders.filter((order) => order.progress !== "OPEN").length,
+        },
+      ]),
+    );
+
     return {
       buttons: {
         newOrder: mayInSomeBranch("request.create", actor),
@@ -130,7 +148,8 @@ export async function getManagerHome(userId: string, branch: string | null): Pro
       filters,
       sentBack: await listOrderGroups(userId, filters.sentBack, 1, db),
       drafts: drafts?.count ?? 0,
-      open: await listOrderGroups(userId, filters.open, 1, db),
+      open,
+      openProgress,
       requested,
       cash: {
         ...managerCashBalance(counts),

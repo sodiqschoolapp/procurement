@@ -137,6 +137,8 @@ describe("the group blocks are the order list's own rows for their links (spec r
       progress: "DONE",
       received: "0",
     });
+    // Both orders are of one subtype: one group row, 4 received, one of two finished.
+    expect(Object.values(home.openProgress)).toEqual([{ received: "4", finished: 1 }]);
   });
 });
 

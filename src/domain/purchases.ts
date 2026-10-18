@@ -58,6 +58,17 @@ function receivedOf(text: string): InstanceType<typeof Exact> {
   return new Exact(text);
 }
 
+/**
+ * The received quantities of a group row's orders added up (each actualQuantity() of its order),
+ * for the Manager home's "my open orders with progress" (07 Order progress; plan of 6.1). Plain
+ * decimal text; "0" when nothing is received.
+ */
+export function receivedTogether(received: readonly string[]): string {
+  let sum = new Exact(0);
+  for (const each of received) sum = sum.plus(receivedOf(each));
+  return sum.toFixed();
+}
+
 /** 08 Actual quantity: the sum of the live records' quantities, whatever subtype each bought. */
 export function actualQuantity(records: readonly PurchaseRecord[]): string {
   let sum = new Exact(0);
