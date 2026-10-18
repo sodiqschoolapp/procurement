@@ -841,3 +841,88 @@ describe("GET /analytics/download, the 6.5b sheets (10 point 4; plan of 6.5b)", 
     expect(cash.slice(-2).map((row) => row.at(-1))).toEqual([0, 23_456]);
   });
 });
+
+/**
+ * A stock line of the branch (build-plan 6.5c): 30 received, minimum 5; 9 issued on 3 October and
+ * 3 on 10 September. On hand 18; the 90 days 12, so 18 × 90 ÷ 12 = 135 days and nothing to order.
+ * The summary refreshed.
+ */
+async function planningIn(branchId?: string) {
+  setClock(AT);
+  const scene = await spendingScene(branchId);
+  const variant = await stocked(scene, { qty: "30", unitCost: 1_000n, minimum: "5" });
+  const line = (qty: string) => [{ variantId: variant, qty }];
+  await stockDocument(scene, { type: "ISSUE", docDate: "2031-10-03", lines: line("9") });
+  await stockDocument(scene, { type: "ISSUE", docDate: "2031-09-10", lines: line("3") });
+  await refreshNow();
+  const found = await db.execute<{ name: string }>(sql`
+    select pr.name from product_variants v join products pr on pr.id = v.product_id
+    where v.id = ${variant}`);
+  return { scene, variant, product: found.rows[0]!.name };
+}
+
+// The block of 6.5c (plan of 6.5c, Tests): Stock planning and the moves of one subtype behind the
+// wall, the same wall for each.
+describePermissionMatrix("GET /analytics/download, the Stock planning sheet behind the wall", {
+  permission: "data.export",
+  async run({ user, branchId }) {
+    const { scene, variant, product } = await planningIn(branchId);
+    const cookie = await signInAs(user);
+    const own = { ...NO_ANALYTICS_FILTERS, category: scene.category.id };
+    const texts = async (block: ExportBlock, extra: Parameters<typeof analyticsSearch>[2] = {}) =>
+      (
+        await sheetOf(
+          await GET(
+            downloadRequest(
+              `/analytics/download?${analyticsSearch(THIS_MONTH, own, { ...extra, block })}`,
+              cookie,
+            ),
+          ),
+        )
+      )
+        .flat()
+        .map((cell) => String(cell));
+    const seen = [
+      (await texts("stockPlanning")).includes(product),
+      (await texts("moves", { key: { kind: "moves", move: "use" }, variant })).includes(product),
+    ];
+    expect(seen).toEqual(seen.map(() => seen[0]));
+    if (!seen[0]) throw new AuthorizationError("not_found");
+  },
+});
+
+describe("GET /analytics/download, the Stock planning sheet (10 point 4; plan of 6.5c)", () => {
+  it("writes every line with its use per month, its change, the 90 days, runs out in and the suggestion", async () => {
+    const { scene, product } = await planningIn();
+    const response = await GET(
+      downloadRequest(
+        `/analytics/download?${analyticsSearch(THIS_MONTH, NO_ANALYTICS_FILTERS, {
+          block: "stockPlanning",
+        })}`,
+        await signInAs(scene.manager),
+      ),
+    );
+    expect(response.status).toBe(200);
+    const rows = await sheetOf(response);
+    const row = rows.find((each) => each[0] === product)!;
+    // Product, branch, measure, on hand, minimum, Low, October, the period, before, change, the 90
+    // days, runs out in, suggested.
+    expect(row.slice(3)).toEqual(["18", "5", "", "9", "9", "3", "200.0 %", "12", 135, "0"]);
+  });
+
+  it("is Not found with another branch's filter (03 rule 1)", async () => {
+    const { scene } = await planningIn();
+    const other = await spendingScene();
+    const response = await GET(
+      downloadRequest(
+        `/analytics/download?${analyticsSearch(
+          THIS_MONTH,
+          { ...NO_ANALYTICS_FILTERS, branch: other.branch.id },
+          { block: "stockPlanning" },
+        )}`,
+        await signInAs(scene.manager),
+      ),
+    );
+    expect(response.status).toBe(404);
+  });
+});

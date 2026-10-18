@@ -40,6 +40,7 @@ import { getStockLines } from "./stock-lines";
 import { getStatusOrders } from "./status-orders";
 import { getStockMoves } from "./stock-moves";
 import { getTopProducts } from "./top-products";
+import { getStockPlanning } from "./stock-planning";
 import { getWarehouse } from "./warehouse";
 
 // The Analytics queries in the permission matrix (15-quality-and-acceptance.md, Test layers: "each
@@ -540,6 +541,41 @@ describePermissionMatrix(
     },
   },
 );
+
+// The Manager's Stock planning (build-plan 6.5c): its line, its variant's moves and the Low tile
+// keep to the same walls as the Warehouse block, asked with and without the branch filter.
+describePermissionMatrix("getStockPlanning and the variant's moves with the branch filter", {
+  permission: "data.view",
+  async run({ user, branchId }) {
+    const { variant, issue } = await stockIn(branchId);
+    const filters = { ...NO_ANALYTICS_FILTERS, branch: branchId };
+    const block = await getStockPlanning(user.id, THIS_MONTH, filters);
+    const moves = await getStockMoves(user.id, "use", THIS_MONTH, filters, "all", variant);
+    expect(block.lines.find((line) => line.variantId === variant)?.used).toBe("2.000");
+    expect(block.low).toBe(1);
+    expect(moves.rows.map((row) => row.documentId)).toEqual([issue]);
+    expect(moves.quantity).toBe("2.000");
+  },
+});
+
+describePermissionMatrix("getStockPlanning, the branch wall in the SQL", {
+  permission: "data.view",
+  async run({ user, branchId }) {
+    const { variant, issue } = await stockIn(branchId);
+    const block = await getStockPlanning(user.id, THIS_MONTH, NO_ANALYTICS_FILTERS);
+    const moves = await getStockMoves(
+      user.id,
+      "use",
+      THIS_MONTH,
+      NO_ANALYTICS_FILTERS,
+      "all",
+      variant,
+    );
+    const listed = block.lines.some((line) => line.variantId === variant);
+    expect(moves.rows.some((row) => row.documentId === issue)).toBe(listed);
+    if (!listed) throw new AuthorizationError("not_found");
+  },
+});
 
 /**
  * The Principal's rows of a branch (build-plan 6.5a): an order submitted this month and waiting
