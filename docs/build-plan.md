@@ -422,7 +422,7 @@ Stock screens and every document that moves stock inside one branch.
   - **Done when:** S4 in full, S11 and the second half of S8 as tests. A test reads the number and both names from the file and finds no signature line. By hand: the spec's phase 5 check, download an issue note.
   - Merged with the former 5.5 by the owner on 17.10.2026 (D47).
 
-- [ ] **5.6 Return from a department**
+- [x] **5.6 Return from a department**
   - **Read:** `09-warehouse.md` (Other documents: Return from a department; Movement types: Return row); `open-questions.md` (question 11).
   - **Build:** The return form: department, items and quantities; stock goes up; returning more than that department ever received shows a warning and needs a comment.
   - **Done when:** Database tests: a return raises stock; an over-return without a comment is refused.

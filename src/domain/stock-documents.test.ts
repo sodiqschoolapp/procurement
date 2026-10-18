@@ -6,6 +6,8 @@ import {
   documentNumber,
   issueQuantityRefusal,
   lineMovement,
+  departmentHolds,
+  overReturn,
   reversalOf,
 } from "./stock-documents";
 
@@ -57,12 +59,18 @@ describe("lineMovement (09 Movement types; Stock value; decisions 3.1 item 2)", 
     });
   });
 
-  it("a return comes in at the average (Decided ahead, question 11)", () => {
-    expect(lineMovement("RETURN", { qty: "2", unitCost: null })).toEqual({
+  it("a return comes in at the average, its line's cost kept for an empty stock (Decided ahead 11; plan of 5.6, decided item 1)", () => {
+    expect(lineMovement("RETURN", { qty: "2", unitCost: 4_500n })).toEqual({
       type: "RETURN",
       qtyDelta: "2",
       unitCost: null,
+      emptyCost: 4_500n,
     });
+    expect(lineMovement("RETURN", { qty: "2", unitCost: 0n })).toMatchObject({ emptyCost: 0n });
+  });
+
+  it("refuses a return line without its empty-stock cost (plan of 5.6, correction 1)", () => {
+    expect(() => lineMovement("RETURN", { qty: "2", unitCost: null })).toThrow(RangeError);
   });
 
   it("a transfer leaves the sender at its average (09 Stock value, second bullet)", () => {
@@ -84,6 +92,8 @@ describe("lineMovement (09 Movement types; Stock value; decisions 3.1 item 2)", 
   it("refuses a direct-entry line without a cost and another line with one (09 Direct entry, Lines)", () => {
     expect(() => lineMovement("DIRECT_ENTRY", { qty: "5", unitCost: null })).toThrow(RangeError);
     expect(() => lineMovement("ISSUE", { qty: "5", unitCost: 100n })).toThrow(RangeError);
+    expect(() => lineMovement("WRITE_OFF", { qty: "5", unitCost: 100n })).toThrow(RangeError);
+    expect(() => lineMovement("TRANSFER", { qty: "5", unitCost: 100n })).toThrow(RangeError);
   });
 
   it("refuses a line of 0 or not numeric(14,3), and a count line (7.4)", () => {
@@ -130,5 +140,30 @@ describe('issueQuantityRefusal (09 Issue to a department 1; edge case "Half a pi
     expect(issueQuantityRefusal("0", false, "10")).toBe("tooSmall");
     expect(issueQuantityRefusal(" ", false, "10")).toBe("required");
     expect(issueQuantityRefusal("1.2345", true, "10")).toBe("tooManyDecimals");
+  });
+});
+
+describe("overReturn (09 Other documents, Return: more than the department ever received; plan of 5.6, decided item 2)", () => {
+  it("is false up to the amount received, that amount included", () => {
+    expect(overReturn("3", "5")).toBe(false);
+    expect(overReturn("5", "5.000")).toBe(false);
+  });
+
+  it("is true one past it, on decimals too, and on anything when nothing was received", () => {
+    expect(overReturn("6", "5")).toBe(true);
+    expect(overReturn("2.501", "2.5")).toBe(true);
+    expect(overReturn("1", "0")).toBe(true);
+  });
+
+  it("is true on anything once the department returned more than it received (net below 0)", () => {
+    expect(overReturn("1", "-2")).toBe(true);
+  });
+});
+
+describe("departmentHolds (plan of 5.6: the items a department holds come first in the search)", () => {
+  it("is true above 0 only", () => {
+    expect(departmentHolds("0.001")).toBe(true);
+    expect(departmentHolds("0.000")).toBe(false);
+    expect(departmentHolds("-2.000")).toBe(false);
   });
 });

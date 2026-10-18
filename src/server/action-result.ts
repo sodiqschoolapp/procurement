@@ -118,6 +118,10 @@ export const FIELD_ERROR_KINDS = [
   "cashNotZero",
   "alreadyOwner",
   "movedSince",
+  // A return of more than the department received (09 Other documents, Return; plan of 5.6,
+  // decided items 2 and 5, Look first): the line over, and the comment it needs.
+  "overReturn",
+  "overReturnComment",
 ] as const;
 export type FieldErrorKind = (typeof FIELD_ERROR_KINDS)[number];
 export type FieldMessageKey = `errors.field.${FieldErrorKind}`;
@@ -158,7 +162,9 @@ export type ActionFailure = {
   /**
    * For a `stockShort` field: the amount left of that line's item, by the same path, numeric(14,3)
    * text (09 Issue to a department 1: the server "names the item and the available amount"; plan of
-   * 5.4, decided item 2, Look first). Set only after the action's authorize() passed on the branch.
+   * 5.4, decided item 2, Look first). For an `overReturn` field: the department's net received
+   * amount of that line's item (plan of 5.6, decided item 5). Set only after the action's
+   * authorize() passed on the branch.
    */
   available?: Record<string, string>;
 };

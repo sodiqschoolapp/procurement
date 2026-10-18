@@ -5,13 +5,13 @@ import { describe, expect, it } from "vitest";
 
 import { recordPurchase } from "@/features/purchasing/actions/record-purchase";
 import { runAction } from "@/server/action";
-import type { ActionResult } from "@/server/action-result";
 import { db } from "@/server/db/client";
 import { runOrdersAction } from "@/server/order-action";
 import { postMovement } from "@/server/stock-ledger";
 
 import { insertBranch } from "../../../../tests/helpers/branches";
 import { setClock } from "../../../../tests/helpers/clock";
+import { heldWhile } from "../../../../tests/helpers/held-while";
 import { insertDepartment, insertItem, insertOrder } from "../../../../tests/helpers/orders";
 import { insertUser } from "../../../../tests/helpers/users";
 import { issueStock } from "./issue";
@@ -27,47 +27,6 @@ import { issueStock } from "./issue";
 // pg_stat_activity, never timed.
 
 const DAY = "2031-05-05";
-
-/**
- * Holds `lock` in a transaction of its own; starts each action only once every earlier one waits
- * on a lock, then commits the hold and returns every outcome in order.
- */
-async function heldWhile(
-  lock: string,
-  values: unknown[],
-  actions: ReadonlyArray<() => Promise<ActionResult<unknown>>>,
-): Promise<ActionResult<unknown>[]> {
-  const client = await db.$client.connect();
-  const waiting = async (count: number) => {
-    for (let tries = 0; ; tries += 1) {
-      await client.query("select pg_stat_clear_snapshot()");
-      const found = await client.query<{ n: number }>(
-        `select count(*)::int as n from pg_stat_activity
-         where datname = current_database() and wait_event_type = 'Lock' and pid <> pg_backend_pid()`,
-      );
-      if (found.rows[0]!.n >= count) return;
-      if (tries > 5_000) throw new Error(`heldWhile: only ${found.rows[0]!.n} of ${count} waited.`);
-    }
-  };
-  try {
-    await client.query("begin");
-    await client.query(lock, values);
-    const running: Promise<ActionResult<unknown>>[] = [];
-    for (const [at, action] of actions.entries()) {
-      const started = action();
-      started.catch(() => undefined);
-      running.push(started);
-      await waiting(at + 1);
-    }
-    await client.query("commit");
-    return await Promise.all(running);
-  } catch (error) {
-    await client.query("rollback").catch(() => undefined);
-    throw error;
-  } finally {
-    client.release();
-  }
-}
 
 async function scene() {
   setClock(`${DAY}T07:00:00Z`);

@@ -1339,4 +1339,22 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - For 5.10: an issue is where "Item reached its minimum stock" will be sent.
 - The texts say "department", never "requester" (`tests/notification-texts.test.ts` refuses "request").
 
-The next task is 5.6.
+## 5.6 Return from a department (18.10.2026, pull request #95)
+
+**Built**
+- `returnStock` (`src/features/warehouse/actions/return.ts`): `stock.return_reverse` on the input's branch; the issue's shape, with the department FOR UPDATE; an over-return without a comment is `invalid_input` with `lines.<i>.qty: errors.field.overReturn` (+ `available` = received) and `comment: errors.field.overReturnComment`.
+- `departmentReceived()` and `departmentIssueCost()` (`src/server/department-received.ts`): the one reader of a department's net received amount and its newest unreversed issue cost.
+- `StockMovement.emptyCost` (`src/domain/stock.ts`): a RETURN into a stock of 0 comes in at it; a RETURN line's `unit_cost` holds it. `overReturn()`, `departmentHolds()`, `DOCUMENT_LINES_MAX` in `src/domain/stock-documents.ts`.
+- Queries `returnBranchChoices`, `returnFormChoices`, `searchReturnItems` (return-form.ts); `/warehouse/documents/new?type=RETURN`; "New return" on Stock on hand. `document-steps.ts` (was issue-steps) and `tests/helpers/held-while.ts` are shared.
+
+**Left out, and the task that brings it**
+- Reverse of a return: 5.7. Documents list: 5.12. A return note: not in the spec.
+
+**What the next sessions must know**
+- For 5.7: a reverse of an ISSUE or a RETURN takes the department FOR SHARE before `lockDocument()`, so a return's received count cannot miss an issue being reversed (plan of 5.6, decided item 3).
+- For 5.7: reversing a return writes its REVERSAL on the return's line; `departmentReceived()` then nets it to 0 with no status filter.
+- For 6.x: a RETURN line's `unit_cost` is the empty-stock cost, not what it entered at; read the movement's `unit_cost`.
+- For 5.8, 5.11 and 7.2: `/warehouse/documents/new` reads `type=ISSUE|RETURN` through `BRANCHES` in its page; add each type there.
+- A textarea inside `Field` needs `useFieldControl()` for its label (`CommentBox` in return-form.tsx); the issue form's comment is not tied to its label yet.
+
+The next task is 5.7.

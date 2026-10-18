@@ -42,6 +42,8 @@ export type PostedMovementInput = {
   qtyDelta: string;
   /** Whole so'm for a priced movement, `null` for one at the average (src/domain/stock.ts). */
   unitCost: bigint | null;
+  /** A RETURN's cost into an empty stock (src/domain/stock.ts; plan of 5.6, decided item 1). */
+  emptyCost?: bigint;
   createdBy: string;
   purchaseId?: string | null;
   documentLineId?: string | null;
@@ -111,7 +113,12 @@ export async function postMovement(
 
   const next = nextBalance(
     { qty: held.qty, avgCost: BigInt(held.avg_cost) },
-    { type: movement.type, qtyDelta: movement.qtyDelta, unitCost: movement.unitCost },
+    {
+      type: movement.type,
+      qtyDelta: movement.qtyDelta,
+      unitCost: movement.unitCost,
+      ...(movement.emptyCost === undefined ? {} : { emptyCost: movement.emptyCost }),
+    },
   );
   if (!next.ok) throw new StockShortError(movement.branchId, movement.variantId, next.available);
 

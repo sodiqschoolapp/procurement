@@ -40,6 +40,9 @@ import { type PostedMovement, postMovements } from "./stock-ledger";
 //   the browser: the caller checks the branch against the user's branches (and that it is active)
 //   and each id against what the user may use; the database ties the department to the branch.
 // - `createdBy`, `decidedBy` and `reversedBy` are the wrapper's `userId`.
+// - A line's `unit_cost` is a direct entry's own cost, and on a return the cost it comes in at if
+//   the stock under the lock is 0 (plan of 5.6, decided item 1); what a line really moved at is
+//   its movement's `unit_cost`, the one a report reads.
 // postLines() locks the document and reads its type and branch itself, and posts a document only
 // once (a line that already moved is `wrong_status`). A StockShortError leaves the caller's
 // transaction to save nothing (rule 3).
@@ -50,7 +53,11 @@ export type DocumentLineInput = {
   qty: string;
   countedQty?: string | null;
   receivedQty?: string | null;
-  /** Whole so'm: a direct entry's own cost (09 Direct entry, Lines); empty for the others. */
+  /**
+   * Whole so'm: a direct entry's own cost (09 Direct entry, Lines); a return's cost into an empty
+   * stock, required (plan of 5.6, decided item 1, Look first: not the cost it entered at, which is
+   * its movement's `unit_cost`); empty for the others.
+   */
   unitCost?: bigint | null;
 };
 

@@ -48,7 +48,10 @@ export class ActionError extends Error {
   constructor(
     readonly code: Exclude<ServerErrorCode, "signed_out">,
     readonly fields?: Record<string, FieldMessageKey>,
-    /** With a `stockShort` field: the amount left, by the same path (plan of 5.4, decided item 2). */
+    /**
+     * With a `stockShort` field: the amount left, by the same path (plan of 5.4, decided item 2);
+     * with an `overReturn` field: the amount the department received (plan of 5.6, decided item 5).
+     */
     readonly stockLeft?: Record<string, string>,
   ) {
     super(`Action refused: ${code}.`);
