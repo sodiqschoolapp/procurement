@@ -26,13 +26,17 @@ import { getCashOrders } from "./cash-orders";
 import { getAnalyticsFilters } from "./filters";
 import { getHeadSpending } from "./head-spending";
 import { getManagers } from "./managers";
+import { getMyApprovals } from "./my-approvals";
+import { getOrderStatuses } from "./order-statuses";
 import { getOutcomeOrders } from "./outcome-orders";
 import { getPlanVsActual } from "./plan-vs-actual";
 import { getPriceChoices, getPrices } from "./prices";
 import { getSpending } from "./spending";
 import { getSpendingRecords } from "./spending-records";
 import { getStockLines } from "./stock-lines";
+import { getStatusOrders } from "./status-orders";
 import { getStockMoves } from "./stock-moves";
+import { getTopProducts } from "./top-products";
 import { getWarehouse } from "./warehouse";
 
 // The Analytics queries in the permission matrix (15-quality-and-acceptance.md, Test layers: "each
@@ -533,3 +537,119 @@ describePermissionMatrix(
     },
   },
 );
+
+/**
+ * The Principal's rows of a branch (build-plan 6.5a): an order submitted this month and waiting
+ * at Waiting for Principal, needed by tomorrow (coming up); one decided by `deciderId` at the
+ * Principal step in 2 hours; a record of 12 345 so'm. The summary refreshed.
+ */
+async function principalIn(branchId: string, deciderId: string) {
+  setClock("2031-05-15T05:00:00Z");
+  const scene = await spendingScene(branchId);
+  const record = await bought(scene, {
+    purchasedOn: "2031-05-02",
+    unitPrice: "12345",
+    progress: "DONE",
+  });
+  const waiting = await decided(
+    scene,
+    "PENDING_PRINCIPAL",
+    [{ type: "SUBMIT", from: "DRAFT", to: "PENDING_PRINCIPAL", at: "2031-05-02T05:00:00Z" }],
+    { submittedAt: "2031-05-02T05:00:00Z", neededBy: "2031-05-16" },
+  );
+  await decided(
+    scene,
+    "PENDING_FINANCE",
+    [
+      { type: "SUBMIT", from: "DRAFT", to: "PENDING_PRINCIPAL", at: "2031-05-03T05:00:00Z" },
+      {
+        type: "APPROVE",
+        from: "PENDING_PRINCIPAL",
+        to: "PENDING_FINANCE",
+        at: "2031-05-03T07:00:00Z",
+        actorId: deciderId,
+      },
+    ],
+    { submittedAt: "2031-05-03T05:00:00Z", neededBy: "2031-06-30" },
+  );
+  await refreshNow();
+  return { record, waiting };
+}
+
+describePermissionMatrix(
+  "getTopProducts, getOrderStatuses and getMyApprovals with the branch filter",
+  {
+    permission: "data.view",
+    async run({ user, branchId }) {
+      const { record } = await principalIn(branchId, user.id);
+      const filters = { ...NO_ANALYTICS_FILTERS, branch: branchId };
+      const top = await getTopProducts(user.id, THIS_MONTH, filters);
+      expect(top.products.map((row) => [row.id, row.amount])).toEqual([
+        [record.productId, 12_345n],
+      ]);
+      const orders = await getOrderStatuses(user.id, THIS_MONTH, filters);
+      expect(orders.total.count).toBe(3);
+      expect(orders.comingUp).toBe(1);
+      const mine = await getMyApprovals(user.id, THIS_MONTH, filters);
+      expect(mine.waiting.all).toBe(1);
+      expect(mine.mine).toMatchObject({ hours: "2.0", count: 1 });
+    },
+  },
+);
+
+describePermissionMatrix("getStatusOrders with the branch filter", {
+  permission: "data.view",
+  async run({ user, branchId }) {
+    const { waiting } = await principalIn(branchId, user.id);
+    const list = await getStatusOrders(
+      user.id,
+      THIS_MONTH,
+      { ...NO_ANALYTICS_FILTERS, branch: branchId },
+      { kind: "due", due: "soon" },
+      "all",
+    );
+    expect(list.rows.map((row) => row.orderId)).toEqual([waiting.id]);
+  },
+});
+
+describePermissionMatrix("the Principal's blocks and lists, the branch wall in the SQL", {
+  permission: "data.view",
+  async run({ user, branchId }) {
+    const { record, waiting } = await principalIn(branchId, user.id);
+    // The Head sees every branch of the file's database, whose top 10 ties at 12 345: the
+    // product's own list is read beside it.
+    const top = await getTopProducts(user.id, THIS_MONTH, NO_ANALYTICS_FILTERS);
+    const product = await getSpendingRecords(
+      user.id,
+      THIS_MONTH,
+      NO_ANALYTICS_FILTERS,
+      { kind: "product", product: record.productId },
+      "all",
+    );
+    const orders = await getOrderStatuses(user.id, THIS_MONTH, NO_ANALYTICS_FILTERS);
+    const soon = await getStatusOrders(
+      user.id,
+      THIS_MONTH,
+      NO_ANALYTICS_FILTERS,
+      { kind: "due", due: "soon" },
+      "all",
+    );
+    const mine = await getMyApprovals(user.id, THIS_MONTH, NO_ANALYTICS_FILTERS);
+    const myList = await getApprovalOrders(
+      user.id,
+      THIS_MONTH,
+      NO_ANALYTICS_FILTERS,
+      { kind: "mine" },
+      null,
+      "all",
+    );
+    // The numbers and their lists keep to the same wall.
+    expect(orders.comingUp).toBe(soon.count);
+    expect(mine.mine.count).toBe(myList.count);
+    const listed = soon.rows.some((row) => row.orderId === waiting.id);
+    expect(product.rows.some((row) => row.purchaseId === record.purchaseId)).toBe(listed);
+    if (top.products.some((row) => row.id === record.productId)) expect(listed).toBe(true);
+    expect(mine.mine.count).toBe(listed ? 1 : 0);
+    if (!listed) throw new AuthorizationError("not_found");
+  },
+});

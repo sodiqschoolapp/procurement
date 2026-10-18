@@ -613,3 +613,131 @@ describe("GET /analytics/download, the 6.4d sheets (10 point 4; plan of 6.4d)", 
     }
   });
 });
+
+/**
+ * A branch's rows for the 6.5a blocks: a record of 23 456 so'm bought on 3 October, its order Open
+ * with buying Done; an order submitted on 10 October waiting at Waiting for Principal, needed by
+ * 17 October (coming up); one decided by `deciderId` at the Principal step in 3 hours. The summary
+ * refreshed.
+ */
+async function principalRowsIn(deciderId: string, branchId?: string) {
+  setClock(AT);
+  const scene = await spendingScene(branchId);
+  const record = await bought(scene, {
+    purchasedOn: "2031-10-03",
+    unitPrice: "23456",
+    progress: "DONE",
+  });
+  const waiting = await decided(
+    scene,
+    "PENDING_PRINCIPAL",
+    [{ type: "SUBMIT", from: "DRAFT", to: "PENDING_PRINCIPAL", at: "2031-10-10T05:00:00Z" }],
+    { submittedAt: "2031-10-10T05:00:00Z", neededBy: "2031-10-17" },
+  );
+  await decided(
+    scene,
+    "PENDING_FINANCE",
+    [
+      { type: "SUBMIT", from: "DRAFT", to: "PENDING_PRINCIPAL", at: "2031-10-04T05:00:00Z" },
+      {
+        type: "APPROVE",
+        from: "PENDING_PRINCIPAL",
+        to: "PENDING_FINANCE",
+        at: "2031-10-04T08:00:00Z",
+        actorId: deciderId,
+      },
+    ],
+    { submittedAt: "2031-10-04T05:00:00Z", neededBy: "2031-12-30" },
+  );
+  await refreshNow();
+  const product = (
+    await db.execute<{ name: string }>(sql`
+      select pr.name from purchases p
+      join product_variants v on v.id = p.variant_id join products pr on pr.id = v.product_id
+      where p.id = ${record.purchaseId}`)
+  ).rows[0]!.name;
+  const number = (
+    await db.execute<{ number: string }>(sql`select number from orders where id = ${waiting.id}`)
+  ).rows[0]!.number;
+  return { scene, product, number };
+}
+
+// The blocks of 6.5a (plan of 6.5a, Tests: "the four new blocks in the route test's matrix"): the
+// top products, the Orders block, its list and My approvals behind the wall, the same wall for
+// each.
+describePermissionMatrix("GET /analytics/download, the blocks of 6.5a behind the wall", {
+  permission: "data.export",
+  async run({ user, branchId }) {
+    const { scene, product, number } = await principalRowsIn(user.id, branchId);
+    const cookie = await signInAs(user);
+    const own = { ...NO_ANALYTICS_FILTERS, category: scene.category.id };
+    const sheet = async (block: ExportBlock, extra: Parameters<typeof analyticsSearch>[2] = {}) =>
+      sheetOf(
+        await GET(
+          downloadRequest(
+            `/analytics/download?${analyticsSearch(THIS_MONTH, own, { ...extra, block })}`,
+            cookie,
+          ),
+        ),
+      );
+    const texts = async (block: ExportBlock, extra: Parameters<typeof analyticsSearch>[2] = {}) =>
+      (await sheet(block, extra)).flat().map((cell) => String(cell));
+    // The count of a row by its first cell.
+    const countOf = (rows: unknown[][], index: number) => rows.at(index)?.[1];
+    const statuses = await sheet("orderStatuses");
+    const approvals = await sheet("myApprovals");
+    const seen = [
+      (await texts("products")).includes(product),
+      (await texts("statusOrders", { key: { kind: "due", due: "soon" } })).includes(number),
+      // The coming-up line is the third from the end, after the total.
+      countOf(statuses, -2) === 1,
+      // "My decisions" is the last line.
+      countOf(approvals, -1) === 1,
+    ];
+    expect(seen).toEqual(seen.map(() => seen[0]));
+    if (!seen[0]) throw new AuthorizationError("not_found");
+  },
+});
+
+describe("GET /analytics/download, the 6.5a sheets (10 point 4; plan of 6.5a)", () => {
+  it("writes the top products as money cells, the counts by status, coming up and overdue, and my hours", async () => {
+    const principal = await insertUser("PRINCIPAL");
+    const branchId = (
+      await db.execute<{ branch_id: string }>(
+        sql`select branch_id from user_branches where user_id = ${principal.id}`,
+      )
+    ).rows[0]!.branch_id;
+    const { product, number } = await principalRowsIn(principal.id, branchId);
+    const filters = { ...NO_ANALYTICS_FILTERS, branch: branchId };
+    const get = async (block: ExportBlock, extra: Parameters<typeof analyticsSearch>[2] = {}) =>
+      sheetOf(
+        await GET(
+          downloadRequest(
+            `/analytics/download?${analyticsSearch(THIS_MONTH, filters, { ...extra, block })}`,
+            await signInAs(principal),
+          ),
+        ),
+      );
+    const products = await get("products");
+    expect(products.find((row) => row[0] === product)?.[1]).toBe(23_456);
+    expect(products.at(-1)!.includes(23_456)).toBe(true);
+    const statuses = await get("orderStatuses");
+    // PENDING_PRINCIPAL 1, PENDING_FINANCE 1, PURCHASING 1, the total 3, coming up 1, overdue 0.
+    expect(statuses.slice(-6).map((row) => row[1])).toEqual([1, 1, 1, 3, 1, 0]);
+    const list = await get("statusOrders", { key: { kind: "due", due: "soon" } });
+    expect(list.at(-1)![0]).toBe(number);
+    const approvals = await get("myApprovals");
+    expect(approvals.at(-2)!.slice(1, 2)).toEqual(["3.0"]);
+  });
+
+  it("answers 404 for the Orders list without its key", async () => {
+    const head = await insertUser("HEAD");
+    const response = await GET(
+      downloadRequest(
+        "/analytics/download?period=this_month&block=statusOrders",
+        await signInAs(head),
+      ),
+    );
+    expect(response.status).toBe(404);
+  });
+});
