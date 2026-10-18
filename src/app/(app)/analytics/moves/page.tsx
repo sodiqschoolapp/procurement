@@ -18,7 +18,8 @@ import { PageLinks } from "../../catalog/page-links";
 
 // /analytics/moves, the movements behind a Warehouse number of the period (10-notifications-
 // analytics-reports.md, Analytics page per role, point 3; build-plan 6.4d; plan of 6.4d, decided
-// items 4, 5 and 9): `key=moves:use|writeoff`, with the department filter of a department's use.
+// items 4, 5 and 9): `key=moves:use|writeoff`, with the department filter of a department's use,
+// and `variant=` for the use of one Stock planning line, whose summary adds its quantity (6.5c).
 // Its count and total are the number clicked, a return counted against in use; 50 a page; each
 // row opens its document; the list exports to Excel (point 4). An address the parser refuses, or
 // a school year not set, goes back to /analytics; another branch is Not found. A table at 1440
@@ -38,6 +39,7 @@ async function readList(userId: string, raw: Raw) {
       params.period,
       params.filters,
       params.page,
+      params.variant,
     );
     return { params, key: params.key, list };
   } catch (error) {
@@ -58,10 +60,15 @@ export default async function AnalyticsMovesPage({ searchParams }: { searchParam
   const format = await getFormatters();
   const pages = Math.max(1, Math.ceil(list.count / RECORDS_PAGE_SIZE));
   const href = (page: number) =>
-    `/analytics/moves?${analyticsSearch(params.period, params.filters, { key, page })}`;
+    `/analytics/moves?${analyticsSearch(params.period, params.filters, {
+      key,
+      page,
+      variant: params.variant,
+    })}`;
   const excel = `/analytics/download?${analyticsSearch(params.period, params.filters, {
     key,
     block: "moves",
+    variant: params.variant,
   })}`;
 
   return (
@@ -87,6 +94,17 @@ export default async function AnalyticsMovesPage({ searchParams }: { searchParam
           <p className="text-[15px] leading-[22px] font-semibold tabular-nums" data-moves-summary>
             {t("moves.summary", { count: list.count, total: format.money(list.total) })}
           </p>
+          {list.quantity !== null && (
+            <p
+              className="text-[15px] leading-[22px] font-semibold tabular-nums"
+              data-moves-quantity
+            >
+              {t("moves.quantity", {
+                qty: format.quantity(list.quantity),
+                unit: list.rows[0]?.unitShortName ?? "",
+              })}
+            </p>
+          )}
         </div>
         <a
           href={excel}

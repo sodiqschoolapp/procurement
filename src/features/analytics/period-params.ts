@@ -111,6 +111,9 @@ export const TOP_REASONS = 5;
 /** The products of My estimates shown on the page; the export holds all (plan of 6.5b, item 4). */
 export const TOP_ESTIMATES = 10;
 
+/** The stock lines of Stock planning shown on the page; the export holds all (plan of 6.5c, item 6). */
+export const TOP_PLANNING = 10;
+
 /** What the download writes (point 4): a chart's table, or the drill-down list. */
 export const EXPORT_BLOCKS = [
   "months",
@@ -147,6 +150,7 @@ export const EXPORT_BLOCKS = [
   "myReasons",
   "myEstimates",
   "myCash",
+  "stockPlanning",
 ] as const;
 export type ExportBlock = (typeof EXPORT_BLOCKS)[number];
 

@@ -13,13 +13,16 @@ import type { AnalyticsFilters, MoveKind } from "./period-params";
 // first): the branch wall inside the SQL (developer-rules.md rule 4), the document's date in the
 // period, and the filters of point 2 that a movement has: branch, category (the product's), and,
 // for use only, department; a write-off has no department, and Manager and supplier are not read
-// (decided item 6). `use` keeps issues and returns, `writeoff` the approved write-offs.
+// (decided item 6). `use` keeps issues and returns, `writeoff` the approved write-offs. The
+// Stock planning block of the Manager's page (build-plan 6.5c; plan of 6.5c, point 3) adds the
+// subtype of one stock line to `use`, so a line's numbers open its own movements.
 
 export function movesWhere(
   actor: Actor,
   range: DateRange,
   filters: AnalyticsFilters,
   move: MoveKind,
+  variant: string | null = null,
 ): SQL {
   return (
     and(
@@ -33,6 +36,7 @@ export function movesWhere(
       move === "use" && filters.department
         ? eq(analyticsStockMoves.departmentId, filters.department)
         : undefined,
+      move === "use" && variant ? eq(analyticsStockMoves.variantId, variant) : undefined,
     ) ?? sql`true`
   );
 }
@@ -40,3 +44,7 @@ export function movesWhere(
 /** A movement's part of use: an issue adds its value, a return takes it away (decided item 4). */
 export const SIGNED_VALUE = sql`case when ${analyticsStockMoves.type} = 'RETURN'
   then -${analyticsStockMoves.value} else ${analyticsStockMoves.value} end`;
+
+/** A movement's part of a use in its measure: an issue adds its size, a return takes it away. */
+export const SIGNED_QTY = sql`case when ${analyticsStockMoves.type} = 'RETURN'
+  then -${analyticsStockMoves.qty} else ${analyticsStockMoves.qty} end`;

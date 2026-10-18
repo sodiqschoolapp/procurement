@@ -410,7 +410,7 @@ export function estimateGap(lines: readonly EstimateLine[]): EstimateGap {
 /** numeric(14,3) with a sign: a use, Σ issues − Σ returns (plan of 6.5c, decided item 2). */
 const USE = /^-?[0-9]{1,14}(\.[0-9]{1,3})?$/;
 
-function useOf(text: string): InstanceType<typeof Exact> {
+function signedUseOf(text: string): InstanceType<typeof Exact> {
   if (!USE.test(text)) throw new RangeError(`A use is "${text}": not a signed numeric(14,3)`);
   return new Exact(text);
 }
@@ -434,7 +434,7 @@ export const COVER_DAYS = 30;
  */
 export function runsOutIn(onHand: string, used: string): number | null {
   const stock = onHandOf(onHand);
-  const use = useOf(used);
+  const use = signedUseOf(used);
   if (use.lte(0)) return null;
   return stock.times(RATE_DAYS).dividedBy(use).toDecimalPlaces(0, Exact.ROUND_HALF_UP).toNumber();
 }
@@ -448,7 +448,7 @@ export function runsOutIn(onHand: string, used: string): number | null {
  */
 export function suggestedQuantity(onHand: string, minimum: string | null, used: string): string {
   const stock = onHandOf(onHand);
-  const use = Exact.max(useOf(used), 0);
+  const use = Exact.max(signedUseOf(used), 0);
   const floor = minimum === null ? new Exact(0) : onHandOf(minimum);
   const wanted = use
     .times(COVER_DAYS)
@@ -474,8 +474,8 @@ export type QtyChange = {
  * percent reads backwards on a base below 0), else the difference only.
  */
 export function qtyChange(now: string, before: string): QtyChange {
-  const was = useOf(before);
-  const difference = useOf(now).minus(was);
+  const was = signedUseOf(before);
+  const difference = signedUseOf(now).minus(was);
   const percent = was.gt(0)
     ? difference.times(100).dividedBy(was).toDecimalPlaces(1, Exact.ROUND_HALF_UP).toFixed(1)
     : null;

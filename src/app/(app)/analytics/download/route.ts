@@ -14,6 +14,7 @@ import {
   myApprovalsSheet,
   myCashSheet,
   myEstimatesSheet,
+  stockPlanningSheet,
   myOrdersSheet,
   myReasonsSheet,
   orderStatusesSheet,
@@ -51,6 +52,7 @@ import { getSpendingRecords } from "@/features/analytics/queries/spending-record
 import { getStatusOrders } from "@/features/analytics/queries/status-orders";
 import { getStockLines } from "@/features/analytics/queries/stock-lines";
 import { getStockMoves } from "@/features/analytics/queries/stock-moves";
+import { getStockPlanning } from "@/features/analytics/queries/stock-planning";
 import { getTopProducts } from "@/features/analytics/queries/top-products";
 import { getWarehouse } from "@/features/analytics/queries/warehouse";
 import { PeriodRefusedError } from "@/features/analytics/resolve-period";
@@ -64,7 +66,7 @@ import { now } from "@/server/clock";
 // outcomeBranches, outcomeManagers, orders; 6.4b: priceTrend, priceRises, priceSpread, stepHours,
 // waiting, decisions, reasons, approvals; 6.4c: managers, cancelled, cash; 6.4d: warehouse,
 // departmentUse, stock, moves; 6.5a: products, orderStatuses, statusOrders, myApprovals; 6.5b:
-// myOrders, myReasons, myEstimates, myCash)
+// myOrders, myReasons, myEstimates, myCash; 6.5c: stockPlanning)
 // (10-notifications-analytics-reports.md, Analytics page per role, point 4; 03 Permission matrix
 // "Export to Excel, download PDF, print"; build-plan 6.3). A route that writes nothing, as the
 // order list's download (plan of 2.14, decided item 12). The address is the page's, checked by
@@ -232,7 +234,7 @@ export async function GET(request: NextRequest): Promise<Response> {
       case "moves":
         if (key.kind !== "moves") return notFound();
         sheet = movesSheet(
-          await getStockMoves(user.id, key.move, period, filters, "all"),
+          await getStockMoves(user.id, key.move, period, filters, "all", variant),
           filters,
           options,
           locale,
@@ -296,6 +298,14 @@ export async function GET(request: NextRequest): Promise<Response> {
         sheet = myCashSheet(
           await getMyCash(user.id, filters),
           { ...filters, manager: null },
+          options,
+          locale,
+        );
+        break;
+      case "stockPlanning":
+        sheet = stockPlanningSheet(
+          await getStockPlanning(user.id, period, filters),
+          filters,
           options,
           locale,
         );

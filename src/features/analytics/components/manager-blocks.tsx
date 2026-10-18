@@ -1,17 +1,21 @@
 import { getTranslations } from "next-intl/server";
 import Link from "next/link";
 
+import { LowLabel } from "@/components/status-label";
+import type { QtyChange } from "@/domain/analytics";
 import { getFormatters } from "@/i18n/get-formatters";
 
 import type { MyCash } from "../queries/my-cash";
 import type { MyEstimates } from "../queries/my-estimates";
 import type { MyOrders } from "../queries/my-orders";
+import type { PlanningLine, StockPlanning } from "../queries/stock-planning";
 import {
   type AnalyticsFilters,
   type DrillKey,
   type ExportBlock,
   type PeriodInput,
   TOP_ESTIMATES,
+  TOP_PLANNING,
   analyticsSearch,
 } from "../period-params";
 import { countChangeText, hoursChangeText, shareChangeText } from "./change-text";
@@ -24,7 +28,10 @@ import { Card, Table } from "./prices-block";
 // largest misses, and all products together) and My cash (the count of each open order, held and
 // owed apart). Every number opens the list behind it with the user as the Manager filter, the
 // orders the blocks read (point 3; decided item 8); My cash's table is the list behind its totals.
-// The page computes nothing: the numbers are the query's. Stock planning: 6.5c.
+// The page computes nothing: the numbers are the query's. Stock planning (build-plan 6.5c; plan of
+// 6.5c, decided items 1 to 7): the Low tile, and the 10 stock lines of the user's branches that run
+// out soonest, each with its use per month, its use in the period, "runs out in" and the suggested
+// quantity; each number opens the movements it is made of, the line's branch and subtype set.
 
 type Common = { period: PeriodInput; filters: AnalyticsFilters; userId: string };
 
@@ -368,6 +375,183 @@ export async function MyCashView({
             }))}
             data="my-cash"
           />
+        )}
+      </Card>
+    </section>
+  );
+}
+
+/** Stock planning: use per month, "runs out in", low stock and the suggested quantity (6.5c). */
+export async function StockPlanningView({
+  block,
+  period,
+  filters,
+}: Omit<Common, "userId"> & { block: StockPlanning }) {
+  const t = await getTranslations("analytics");
+  const tMonths = await getTranslations("months");
+  const format = await getFormatters();
+  const download = `/analytics/download?${analyticsSearch(period, filters, {
+    block: "stockPlanning",
+  })}`;
+  const low = `/analytics/stock?${analyticsSearch(period, filters, {
+    key: { kind: "stock", view: "low" },
+  })}`;
+  // The movements of one line: its branch and subtype set, in the given days.
+  const moves = (line: PlanningLine, input: PeriodInput, lineFilters: AnalyticsFilters) =>
+    `/analytics/moves?${analyticsSearch(
+      input,
+      { ...lineFilters, branch: line.branchId },
+      { key: { kind: "moves", move: "use" }, variant: line.variantId },
+    )}`;
+  const days = (first: string, last: string): PeriodInput => ({
+    choice: "custom",
+    from: first,
+    to: last,
+  });
+  // The rate is of every department (review of the plan, correction 2).
+  const rateFilters: AnalyticsFilters = { ...filters, department: null };
+  const qty = (value: string, unit: string) =>
+    t("stock.quantity", { qty: format.quantity(value), unit });
+  const change = (each: QtyChange, unit: string) => {
+    const size = qty(each.difference.replace(/^-/, ""), unit);
+    if (/^-?0(\.0+)?$/.test(each.difference)) return t("my.planning.change.same");
+    const down = each.difference.startsWith("-");
+    if (each.percent === null) {
+      return down
+        ? t("my.planning.change.downOnly", { qty: size })
+        : t("my.planning.change.upOnly", { qty: size });
+    }
+    const percent = each.percent.replace(/^-/, "");
+    return down
+      ? t("my.planning.change.down", { qty: size, percent })
+      : t("my.planning.change.up", { qty: size, percent });
+  };
+  const monthLabel = (month: string) =>
+    t("monthLabel", {
+      month: tMonths(String(Number(month.slice(5))) as "1"),
+      year: month.slice(0, 4),
+    });
+
+  return (
+    <section
+      aria-labelledby="stock-planning-title"
+      className="flex flex-col gap-4"
+      data-analytics-block="stock-planning"
+    >
+      <div className="flex flex-col gap-1">
+        <h2 id="stock-planning-title" className="text-[20px] leading-7 font-bold">
+          {t("my.planning.title")}
+        </h2>
+        <p className="text-sm leading-5 text-muted-foreground">
+          {t("my.planning.note", {
+            first: format.date(block.rate.first),
+            last: format.date(block.rate.last),
+          })}
+        </p>
+        <p className="text-sm leading-5 text-muted-foreground">{t("warehouse.notApplied")}</p>
+        {filters.department && (
+          <p className="text-sm leading-5 text-muted-foreground" data-planning-department>
+            {t("my.planning.everyDepartment")}
+          </p>
+        )}
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="flex flex-col gap-1 rounded-lg bg-muted p-4" data-planning-tile="low">
+          <p className="text-sm leading-5 font-semibold text-muted-foreground">
+            {t("my.planning.low")}
+          </p>
+          <Link href={low} className={tileNumber}>
+            {format.quantity(String(block.low))}
+          </Link>
+        </div>
+      </div>
+      <Card id="stock-planning" title={t("my.planning.byItem")} excel={download}>
+        {block.lines.length === 0 ? (
+          <p className="text-sm leading-5 text-muted-foreground">{t("my.planning.empty")}</p>
+        ) : (
+          <>
+            <p className="text-sm leading-5 text-muted-foreground" data-planning-count>
+              {t("my.planning.shown", {
+                shown: Math.min(block.lines.length, TOP_PLANNING),
+                count: block.lines.length,
+              })}
+            </p>
+            <Table
+              headings={[
+                t("my.planning.columns.item"),
+                t("my.planning.columns.onHand"),
+                ...block.months.map(monthLabel),
+                t("my.planning.columns.used"),
+                t("my.planning.columns.runsOut"),
+                t("my.planning.columns.suggested"),
+              ]}
+              rows={block.lines.slice(0, TOP_PLANNING).map((line) => {
+                const rate = moves(line, days(block.rate.first, block.rate.last), rateFilters);
+                return {
+                  key: `${line.branchId}:${line.variantId}`,
+                  cells: [
+                    <span key="item" className="flex flex-col gap-1">
+                      <span className="font-semibold">
+                        {line.subtypeName
+                          ? `${line.productName}, ${line.subtypeName}`
+                          : line.productName}
+                      </span>
+                      <span className="text-[13px] leading-[18px] text-muted-foreground">
+                        {line.branchName}
+                      </span>
+                      {line.low && <LowLabel className="self-start" />}
+                    </span>,
+                    <span key="hand" className="flex flex-col whitespace-nowrap tabular-nums">
+                      {qty(line.onHand, line.unitShortName)}
+                      <span className="text-[13px] leading-[18px] text-muted-foreground">
+                        {line.minimum === null
+                          ? t("stock.noMinimum")
+                          : t("stock.minimum", { qty: format.quantity(line.minimum) })}
+                      </span>
+                    </span>,
+                    ...line.months.map((month) => (
+                      <span
+                        key={month.month}
+                        className="flex flex-col whitespace-nowrap tabular-nums"
+                        data-planning-month={month.month}
+                      >
+                        <Link
+                          href={moves(line, days(month.range.first, month.range.last), filters)}
+                          className={linkClass}
+                        >
+                          {qty(month.used, line.unitShortName)}
+                        </Link>
+                        <span className="text-[13px] leading-[18px] text-muted-foreground">
+                          {change(month.change, line.unitShortName)}
+                        </span>
+                      </span>
+                    )),
+                    <span
+                      key="used"
+                      className="flex flex-col whitespace-nowrap tabular-nums"
+                      data-planning-used
+                    >
+                      <Link href={moves(line, period, filters)} className={linkClass}>
+                        {qty(line.used, line.unitShortName)}
+                      </Link>
+                      <span className="text-[13px] leading-[18px] text-muted-foreground">
+                        {change(line.change, line.unitShortName)}
+                      </span>
+                    </span>,
+                    <Link key="out" href={rate} className={linkClass} data-planning-runs-out>
+                      {line.runsOutIn === null
+                        ? t("my.planning.noRate")
+                        : t("my.planning.days", { days: line.runsOutIn })}
+                    </Link>,
+                    <Link key="suggested" href={rate} className={linkClass} data-planning-suggested>
+                      {qty(line.suggested, line.unitShortName)}
+                    </Link>,
+                  ],
+                };
+              })}
+              data="stock-planning"
+            />
+          </>
         )}
       </Card>
     </section>

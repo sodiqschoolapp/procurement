@@ -30,6 +30,7 @@ import type { SpendingRecords } from "../queries/spending-records";
 import type { StatusOrders } from "../queries/status-orders";
 import type { StockLines } from "../queries/stock-lines";
 import type { StockMoves } from "../queries/stock-moves";
+import type { StockPlanning } from "../queries/stock-planning";
 import type { TopProducts } from "../queries/top-products";
 import type { Warehouse } from "../queries/warehouse";
 import type { AnalyticsSheet, CellValue } from "./excel";
@@ -1255,5 +1256,69 @@ export function myCashSheet(
         { kind: "money", value: block.owed },
       ],
     ],
+  };
+}
+
+/**
+ * Stock planning, every line (build-plan 6.5c; plan of 6.5c, decided item 6): the use of each month
+ * and of the period with its change, on hand, Low, the use of the 90 days, "runs out in" and the
+ * suggested quantity, each quantity in the line's measure.
+ */
+export function stockPlanningSheet(
+  block: StockPlanning,
+  filters: AnalyticsFilters,
+  options: AnalyticsFilterOptions,
+  locale: Locale,
+): AnalyticsSheet {
+  const { t, tRoot, format } = translators(locale);
+  const name = t("sheets.stockPlanning");
+  const qty = (value: string): CellValue => ({ kind: "text", value: format.quantity(value) });
+  const percent = (value: string | null): CellValue => ({
+    kind: "text",
+    value: value === null ? "" : `${value} %`,
+  });
+  return {
+    name,
+    heading: heading(locale, name, block.period, filters, options),
+    columns: [
+      t("stock.columns.product"),
+      t("stock.columns.branch"),
+      t("stock.columns.unit"),
+      t("my.planning.columns.onHand"),
+      t("stock.columns.minimum"),
+      t("my.planning.low"),
+      ...block.months.map((month) =>
+        t("monthLabel", {
+          month: tRoot(`months.${Number(month.slice(5))}` as "months.1"),
+          year: month.slice(0, 4),
+        }),
+      ),
+      t("my.planning.columns.used"),
+      t("my.planning.columns.usedBefore"),
+      t("my.planning.columns.change"),
+      t("my.planning.columns.rateUsed", {
+        first: format.date(block.rate.first),
+        last: format.date(block.rate.last),
+      }),
+      t("my.planning.columns.runsOutDays"),
+      t("my.planning.columns.suggested"),
+    ],
+    rows: block.lines.map((line): CellValue[] => [
+      { kind: "text", value: productText(line) },
+      { kind: "text", value: line.branchName },
+      { kind: "text", value: line.unitShortName },
+      qty(line.onHand),
+      { kind: "text", value: line.minimum === null ? "" : format.quantity(line.minimum) },
+      { kind: "text", value: line.low ? tRoot("warehouse.low.label") : "" },
+      ...line.months.map((month) => qty(month.used)),
+      qty(line.used),
+      qty(line.before),
+      percent(line.change.percent),
+      qty(line.rateUsed),
+      line.runsOutIn === null
+        ? { kind: "text", value: "" }
+        : { kind: "count", value: line.runsOutIn },
+      qty(line.suggested),
+    ]),
   };
 }
