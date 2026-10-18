@@ -1231,7 +1231,7 @@
         "purchase": "{qty} × {price}",
         "progress": "Buying: {from} → {to}",
         "owner": "From {from} to {to}",
-        "issue": "Given straight to the requester: <note>{number}</note>"
+        "issue": "Given straight to the department: <note>{number}</note>"
       },
       "waiting": {
         "HEAD": "Waiting for the Head.",
@@ -1591,7 +1591,7 @@
       "next": "Next",
       "previous": "Previous",
       "steps": "Orders of the trip",
-      "giveToRequester": "Give straight to requester",
+      "giveToRequester": "Give straight to the department",
       "giveToRequesterHint": "The items go to the order's department at once: an issue is saved with this purchase."
     }
   },

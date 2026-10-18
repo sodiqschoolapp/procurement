@@ -1231,7 +1231,7 @@
         "purchase": "{qty} × {price}",
         "progress": "Xarid: {from} → {to}",
         "owner": "{from} dan {to} ga",
-        "issue": "To'g'ridan-to'g'ri so'rovchiga berildi: <note>{number}</note>"
+        "issue": "To'g'ridan-to'g'ri bo'limga berildi: <note>{number}</note>"
       },
       "waiting": {
         "HEAD": "Rahbarni kutmoqda.",
@@ -1591,7 +1591,7 @@
       "next": "Keyingisi",
       "previous": "Oldingisi",
       "steps": "Xarid safari buyurtmalari",
-      "giveToRequester": "To'g'ridan-to'g'ri so'rovchiga berish",
+      "giveToRequester": "To'g'ridan-to'g'ri bo'limga berish",
       "giveToRequesterHint": "Mollar darhol buyurtma bo'limiga beriladi: xarid bilan birga berish hujjati saqlanadi."
     }
   },
