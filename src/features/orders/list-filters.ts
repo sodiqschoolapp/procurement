@@ -29,6 +29,11 @@ export type ListFilters = {
   numberTo: string | null;
   /** The orders of one action: the link of a notification (progress 2.7, "For 2.8"). */
   action: string | null;
+  /**
+   * The Manager home's "Orders due soon": orders that still wait, needed by today + 7 days or
+   * earlier (isDueSoon(); plan of 6.1, decided item 2). In the address as `due=soon`.
+   */
+  dueSoon: boolean;
   sort: ListSort;
 };
 
@@ -46,6 +51,7 @@ export const NO_FILTERS: ListFilters = {
   numberFrom: null,
   numberTo: null,
   action: null,
+  dueSoon: false,
   sort: "neededBy",
 };
 
@@ -102,6 +108,7 @@ export function parseListFilters(raw: Raw): { filters: ListFilters; ignored: "nu
       numberFrom,
       numberTo,
       action: uuidOf(first(raw.action)),
+      dueSoon: first(raw.due) === "soon",
       sort: oneOf(LIST_SORTS, first(raw.sort)) ?? NO_FILTERS.sort,
     },
     ignored,
@@ -129,6 +136,7 @@ export function listFiltersParams(filters: ListFilters): URLSearchParams {
   put("numberFrom", filters.numberFrom);
   put("numberTo", filters.numberTo);
   put("action", filters.action);
+  put("due", filters.dueSoon ? "soon" : null);
   put("sort", filters.sort === NO_FILTERS.sort ? null : filters.sort);
   return params;
 }

@@ -1,4 +1,18 @@
-import { type SQL, and, asc, count, desc, eq, gte, inArray, lt, ne, or, sql } from "drizzle-orm";
+import {
+  type SQL,
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  gte,
+  inArray,
+  lt,
+  lte,
+  ne,
+  or,
+  sql,
+} from "drizzle-orm";
 import * as z from "zod";
 
 import {
@@ -24,7 +38,13 @@ import {
   ownerMoveAllows,
 } from "@/domain/order-moves";
 import { type DownloadRow, orderDownloadRow } from "@/domain/order-download";
-import { type StepEvent, isOverdue } from "@/domain/order-steps";
+import {
+  STILL_DUE_OPEN,
+  STILL_DUE_STATUSES,
+  type StepEvent,
+  dueSoonUntil,
+  isOverdue,
+} from "@/domain/order-steps";
 import {
   type OrdersTotals,
   orderTotal,
@@ -168,6 +188,20 @@ function listWhere(actor: Actor, filters: ListFilters): SQL | undefined {
           sql`(select ${orderEvents.orderId} from ${orderEvents} where ${orderEvents.actionId} = ${filters.action})`,
         )
       : undefined,
+    // "Orders due soon", as isDueSoon() reads it (plan of 6.1, decided item 2): still waiting,
+    // needed by today + 7 days of the injected clock or earlier.
+    filters.dueSoon
+      ? and(
+          lte(orders.neededBy, dueSoonUntil(businessDate(now()))),
+          or(
+            inArray(orders.status, [...STILL_DUE_STATUSES]),
+            and(
+              eq(orders.status, STILL_DUE_OPEN.status),
+              eq(orders.progress, STILL_DUE_OPEN.progress),
+            ),
+          ),
+        )
+      : undefined,
   );
 }
 
@@ -252,7 +286,12 @@ export async function listOrderGroups(
   return readSnapshot((db) => readGroups(db, actor, filters, page));
 }
 
-async function readGroups(
+/**
+ * The list's group rows read inside a snapshot the caller holds: for a page that shows them beside
+ * other numbers of the same moment (the home pages; spec review of 6.1, Must fix 2). The caller has
+ * authorized `actor` for `data.view` and the `branch` filter, as listOrderGroups() does.
+ */
+export async function readGroups(
   db: Executor,
   actor: Actor,
   filters: ListFilters,

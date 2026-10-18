@@ -90,6 +90,19 @@ describe("the address of the list (05 Ticking and filters; 11 rule 8)", () => {
     );
   });
 
+  it("`due=soon` is the Manager home's 'Orders due soon' (plan of 6.1, decided item 2); another value is dropped", () => {
+    expect(parseListFilters({ due: "soon" }).filters.dueSoon).toBe(true);
+    expect(parseListFilters({ due: "1" }).filters.dueSoon).toBe(false);
+    expect(parseListFilters({ due: "late" }).filters).toEqual(NO_FILTERS);
+    const params = listFiltersParams({ ...NO_FILTERS, dueSoon: true, owner: null });
+    expect(params.toString()).toBe("due=soon");
+    expect(parseListFilters(Object.fromEntries(params)).filters).toEqual({
+      ...NO_FILTERS,
+      dueSoon: true,
+    });
+    expect(activeFilterCount({ ...NO_FILTERS, dueSoon: true })).toBe(1);
+  });
+
   it("counts the filters that are on, not the sort", () => {
     expect(activeFilterCount({ ...NO_FILTERS, sort: "product" })).toBe(0);
     expect(activeFilterCount({ ...NO_FILTERS, urgent: true, from: "2026-10-01" })).toBe(2);

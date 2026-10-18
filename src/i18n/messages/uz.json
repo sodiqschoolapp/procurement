@@ -1148,7 +1148,9 @@
         "numberToIgnored": "“Raqamgacha” hisobga olinmadi: filial kodi yoki yili boshqa.",
         "urgent": "Faqat shoshilinch",
         "action": "Bitta amaldagi buyurtmalar",
-        "removeAction": "Faqat bitta amaldagini emas, barcha buyurtmalarni ko'rsatish"
+        "removeAction": "Faqat bitta amaldagini emas, barcha buyurtmalarni ko'rsatish",
+        "dueSoon": "Muddati 7 kun ichida",
+        "removeDueSoon": "Faqat muddati yaqinlarini emas, barcha buyurtmalarni ko'rsatish"
       },
       "noStock": "–",
       "refusedMark": "Tasdiqlanmadi"

@@ -1148,7 +1148,9 @@
         "numberToIgnored": "“Number to” was not used: it has another branch code or year.",
         "urgent": "Urgent only",
         "action": "Orders of one action",
-        "removeAction": "Show all orders, not only those of one action"
+        "removeAction": "Show all orders, not only those of one action",
+        "dueSoon": "Due within 7 days",
+        "removeDueSoon": "Show all orders, not only those due soon"
       },
       "noStock": "–",
       "refusedMark": "Not approved"
