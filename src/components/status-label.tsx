@@ -7,7 +7,7 @@ import { cn } from "@/components/utils";
 import type { Colour } from "@/domain/colours";
 import type { OrderProgress } from "@/domain/purchases";
 import type { RequestStatus } from "@/domain/request-status";
-import type { DocumentStatus } from "@/domain/stock-documents";
+import type { DocumentStatus, DocumentType } from "@/domain/stock-documents";
 import { useFormatters } from "@/i18n/use-formatters";
 
 // The one status-label component (docs/design-system.md, "This app, Status labels";
@@ -241,28 +241,39 @@ export function ReversedLabel({ className }: { className?: string }) {
   );
 }
 
-/** A write-off's status (plan of 5.11): the request statuses' tones, never a colour label's. */
-const WRITE_OFF_STATUS_LOOK = {
+/**
+ * A warehouse document's status (plans of 5.11 and 5.12): the request statuses' tones, never a
+ * colour label's. A write-off's words are its own ("Approved", "Refused"); the other types say
+ * "Posted".
+ */
+const DOCUMENT_STATUS_LOOK = {
   PENDING_APPROVAL: { tone: "info", icon: "schedule" },
   POSTED: { tone: "muted", icon: "check_circle" },
+  IN_TRANSIT: { tone: "info", icon: "schedule" },
+  RECEIVED: { tone: "muted", icon: "check_circle" },
   REJECTED: { tone: "muted", icon: "block" },
   REVERSED: { tone: "muted", icon: "undo" },
-} as const satisfies Partial<Record<DocumentStatus, { tone: "info" | "muted"; icon: IconName }>>;
+} as const satisfies Record<DocumentStatus, { tone: "info" | "muted"; icon: IconName }>;
 
-export type WriteOffStatus = keyof typeof WRITE_OFF_STATUS_LOOK;
-
-export function WriteOffStatusLabel({
+export function DocumentStatusLabel({
+  type,
   status,
   className,
 }: {
-  status: WriteOffStatus;
+  type: DocumentType;
+  status: DocumentStatus;
   className?: string;
 }) {
-  const t = useTranslations("warehouse.writeOff.page.status");
-  const look = WRITE_OFF_STATUS_LOOK[status];
+  const tWriteOff = useTranslations("warehouse.writeOff.page.status");
+  const t = useTranslations("warehouse.documents.status");
+  const look = DOCUMENT_STATUS_LOOK[status];
+  const word =
+    type === "WRITE_OFF" && status !== "IN_TRANSIT" && status !== "RECEIVED"
+      ? tWriteOff(status)
+      : t(status);
   return (
     <LabelBox tone={look.tone} icon={look.icon} className={className}>
-      <span data-write-off-status={status}>{t(status)}</span>
+      <span data-document-status={status}>{word}</span>
     </LabelBox>
   );
 }

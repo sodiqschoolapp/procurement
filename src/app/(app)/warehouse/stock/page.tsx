@@ -14,9 +14,11 @@ import { BRANCH_COOKIE } from "@/features/catalog/branch-cookie";
 import { currentBranchChoice } from "@/features/catalog/queries/my-branches";
 import { AddToDraftButton } from "@/features/warehouse/components/add-to-draft-button";
 import { MinimumButton } from "@/features/warehouse/components/minimum-button";
-import { directEntryBranchChoices } from "@/features/warehouse/queries/direct-entry-form";
-import { issueBranchChoices, writeOffBranchChoices } from "@/features/warehouse/queries/issue-form";
-import { returnBranchChoices } from "@/features/warehouse/queries/return-form";
+import {
+  NewDocumentButtons,
+  mayEnterDirectly,
+} from "@/features/warehouse/components/new-document-buttons";
+import { WarehouseTabs } from "@/features/warehouse/components/warehouse-tabs";
 import {
   type StockPage,
   listStockOnHand,
@@ -35,7 +37,7 @@ import { setStockMinimumAction } from "./actions";
 // page stay in the address. The list's branch is the address's `branch=`, else the top bar's
 // choice (decided item 5, as /orders). At phone width the table scrolls inside its panel, as the
 // catalog lists (decided item 9). Each product name links to its item card in the row's branch
-// (5.3). "New issue" in the header for whoever may issue in some branch (plan of 5.4, decided
+// (5.3). The tabs to Documents (plan of 5.12). "New issue" in the header for whoever may issue in some branch (plan of 5.4, decided
 // item 10), "New return" for whoever may take returns in some branch (plan of 5.6). The minimum
 // column, "Low" and the "Low stock only" switch (`low=1` in the address), with the minimum's
 // pencil and "Add to draft" on the rows the query offers them (plan of 5.10).
@@ -53,16 +55,6 @@ type Params = {
 };
 
 const first = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value);
-
-/** Whether the user may issue, or take returns, in any branch: the button (the form asks again). */
-async function mayUse(choices: (userId: string) => Promise<unknown[]>, userId: string) {
-  try {
-    return (await choices(userId)).length > 0;
-  } catch (error) {
-    if (error instanceof AuthorizationError) return false;
-    throw error;
-  }
-}
 
 /** The page of stock, or an empty one when the `branch=` of the address is not the user's. */
 async function readStock(
@@ -99,12 +91,7 @@ export default async function StockOnHandPage({ searchParams }: { searchParams: 
     pageParam.parse(first(raw.page)),
   );
   const categories = await stockCategoryChoices(user.id);
-  const [canIssue, canReturn, canEnterDirectly, canWriteOff] = await Promise.all([
-    mayUse(issueBranchChoices, user.id),
-    mayUse(returnBranchChoices, user.id),
-    mayUse(directEntryBranchChoices, user.id),
-    mayUse(writeOffBranchChoices, user.id),
-  ]);
+  const canEnterDirectly = await mayEnterDirectly(user.id);
   const t = await getTranslations("warehouse.stock");
   const format = await getFormatters();
   const filtered = q !== "" || category !== "" || low;
@@ -121,6 +108,7 @@ export default async function StockOnHandPage({ searchParams }: { searchParams: 
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-6">
+      <WarehouseTabs current="stock" />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="flex flex-wrap items-baseline gap-x-3 text-[28px] leading-[34px] font-bold tracking-[-0.01em]">
           {t("title")}
@@ -131,43 +119,7 @@ export default async function StockOnHandPage({ searchParams }: { searchParams: 
           )}
         </h1>
         <div className="flex flex-wrap gap-3 max-sm:w-full max-sm:[&>*]:flex-1">
-          {canIssue && (
-            <Link
-              href="/warehouse/documents/new?type=ISSUE"
-              className={cn(buttonVariants(), "max-sm:h-12")}
-            >
-              <Icon name="add" />
-              {t("newIssue")}
-            </Link>
-          )}
-          {canReturn && (
-            <Link
-              href="/warehouse/documents/new?type=RETURN"
-              className={cn(buttonVariants({ variant: "secondary" }), "max-sm:h-12")}
-            >
-              <Icon name="undo" />
-              {t("newReturn")}
-            </Link>
-          )}
-          {/* Ask for a write-off (build-plan 5.11), for whoever may ask in some branch. */}
-          {canWriteOff && (
-            <Link
-              href="/warehouse/documents/new?type=WRITE_OFF"
-              className={cn(buttonVariants({ variant: "secondary" }), "max-sm:h-12")}
-            >
-              <Icon name="delete" />
-              {t("writeOff")}
-            </Link>
-          )}
-          {canEnterDirectly && (
-            <Link
-              href="/warehouse/documents/new?type=DIRECT_ENTRY"
-              className={cn(buttonVariants({ variant: "secondary" }), "max-sm:h-12")}
-            >
-              <Icon name="inventory_2" />
-              {t("directEntry")}
-            </Link>
-          )}
+          <NewDocumentButtons userId={user.id} />
           {/* Existing stock from an Excel file (build-plan 5.9), for the Head as Direct entry. */}
           {canEnterDirectly && (
             <Link

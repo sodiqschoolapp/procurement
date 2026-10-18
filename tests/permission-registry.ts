@@ -258,8 +258,11 @@ export const QUERIES: Record<string, Permission> = {
   // The write-off form (plan of 5.11): stock.ask_write_off; the branches in the SQL.
   "src/features/warehouse/queries/issue-form.ts#writeOffBranchChoices": "stock.ask_write_off",
   "src/features/warehouse/queries/issue-form.ts#searchWriteOffItems": "stock.ask_write_off",
-  // A write-off's page (plan of 5.11): data.view with the branch wall in the SQL.
-  "src/features/warehouse/queries/write-off.ts#getWriteOff": "data.view",
+  // A document's page (plans of 5.11 and 5.12) and the documents list (plan of 5.12): data.view
+  // with the branch wall in the SQL.
+  "src/features/warehouse/queries/document.ts#getStockDocument": "data.view",
+  "src/features/warehouse/queries/documents.ts#listStockDocuments": "data.view",
+  "src/features/warehouse/queries/documents.ts#documentDepartmentChoices": "data.view",
   "src/features/warehouse/queries/direct-entry-form.ts#directEntryBranchChoices":
     "stock.enter_direct",
   "src/features/warehouse/queries/direct-entry-form.ts#searchDirectEntryItems":

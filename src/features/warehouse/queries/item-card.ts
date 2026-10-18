@@ -28,8 +28,8 @@ import { readSnapshot } from "@/server/read-snapshot";
 // arithmetic, so it is never summed a second time). Under `data.view` on the asked branch (03
 // matrix "See orders, stock and reports"); another branch is "Not found" (03 rule 1). A
 // purchase's movement names its order behind the draft wall, in the SQL: a hidden order leaves
-// the row with no number, never out of the card (decided item 9). A document's number is text
-// until 5.12 gives a document an address (decided item 4, Look first). A document's movement
+// the row with no number, never out of the card (decided item 9). A document's number links to
+// its page, /warehouse/documents/[id] (decided item 4, Look first; plan of 5.12, decided item 3). A document's movement
 // carries its status and whether the user may reverse it now (plan of 5.7): `stock.return_reverse`
 // on the card's branch, reverseAllows(), a reversible status, and not a REVERSAL row; the server
 // asks again. The header carries the minimum, Low and who may set it or add a draft (plan of

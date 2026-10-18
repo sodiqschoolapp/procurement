@@ -2062,7 +2062,8 @@
       "result": {
         "ISSUE": "These items go back into stock and the issue is marked Reversed. This cannot be undone.",
         "RETURN": "These items leave stock again and the return is marked Reversed. This cannot be undone.",
-        "WRITE_OFF": "These items go back into stock and the write-off is marked Reversed. This cannot be undone."
+        "WRITE_OFF": "These items go back into stock and the write-off is marked Reversed. This cannot be undone.",
+        "DIRECT_ENTRY": "These items leave stock and the direct entry is marked Reversed. This cannot be undone."
       },
       "held": "The department holds only {held} of it: say why in the reason.",
       "short": "{item}: only {left} left in stock. Nothing was reversed.",
@@ -2093,6 +2094,76 @@
       "added": "Draft added",
       "merged": "Added to your draft: now {quantity}",
       "noDepartments": "This branch has no active department."
+    },
+    "documents": {
+      "title": "Warehouse documents",
+      "tabs": {
+        "label": "Warehouse",
+        "stock": "Stock on hand",
+        "documents": "Documents"
+      },
+      "summary": "{count, plural, one {# document} other {# documents}}",
+      "filterType": "Type",
+      "allTypes": "All types",
+      "from": "From",
+      "to": "To",
+      "filterDepartment": "Department",
+      "allDepartments": "All departments",
+      "departmentOption": "{name} ({branch})",
+      "inactiveOption": "{name} (inactive)",
+      "find": "Find",
+      "clear": "Clear",
+      "types": {
+        "ISSUE": "Issue",
+        "RETURN": "Return",
+        "TRANSFER": "Transfer",
+        "WRITE_OFF": "Write-off",
+        "COUNT": "Stock count",
+        "DIRECT_ENTRY": "Direct entry"
+      },
+      "status": {
+        "PENDING_APPROVAL": "Waiting for the Head",
+        "POSTED": "Posted",
+        "IN_TRANSIT": "In transit",
+        "RECEIVED": "Received",
+        "REJECTED": "Refused",
+        "REVERSED": "Reversed"
+      },
+      "columns": {
+        "number": "Number",
+        "type": "Type",
+        "date": "Date",
+        "branch": "Branch",
+        "department": "Department",
+        "status": "Status",
+        "createdBy": "Made by"
+      },
+      "emptyTitle": "No documents yet",
+      "emptyText": "Issues, returns, write-offs and direct entries appear here once they are saved.",
+      "noResultsTitle": "Nothing found",
+      "noResultsText": "No document matches the filters. Change them or clear them.",
+      "page": {
+        "title": "{type} {number}",
+        "branch": "Branch",
+        "date": "Date",
+        "department": "Department",
+        "receivedBy": "Received by",
+        "reason": "Reason",
+        "comment": "Comment",
+        "createdBy": "Made by",
+        "decidedBy": "Decided by",
+        "reversedBy": "Reversed by",
+        "reverseReason": "Why it was reversed",
+        "byAt": "{name}, {at}",
+        "imported": "Imported from Excel",
+        "lines": "Items",
+        "product": "Item",
+        "quantity": "Quantity",
+        "inStock": "In stock now",
+        "labelled": "{label}: {value}",
+        "downloadNote": "Issue note (PDF)",
+        "actions": "Actions"
+      }
     }
   }
 }
