@@ -1768,7 +1768,9 @@
         "subtype": "Turi",
         "quantity": "Miqdori",
         "measure": "O'lchov",
-        "value": "Qiymati"
+        "value": "Qiymati",
+        "minimum": "Minimum",
+        "actions": "Amallar"
       },
       "photoAlt": "{name} rasmi",
       "noPhoto": "Rasm yo'q",
@@ -1779,7 +1781,8 @@
       "newIssue": "Yangi berish",
       "newReturn": "Yangi qaytarish",
       "directEntry": "To'g'ridan-to'g'ri kiritish",
-      "importStock": "Excel'dan import"
+      "importStock": "Excel'dan import",
+      "lowOnly": "Faqat kam qolganlar"
     },
     "item": {
       "back": "Ombordagi qoldiq",
@@ -1810,7 +1813,8 @@
         "DIRECT_ENTRY": "To'g'ridan-to'g'ri kiritish",
         "REVERSAL": "Storno"
       },
-      "reversed": "Storno qilingan"
+      "reversed": "Storno qilingan",
+      "minimum": "Minimum"
     },
     "issue": {
       "title": "Yangi berish",
@@ -1968,6 +1972,31 @@
       "short": "{item}: omborda faqat {left} qoldi. Hech narsa storno qilinmadi.",
       "done": "{number} storno qilindi",
       "reasonHint": "Sabab majburiy: {min} dan {max} gacha belgi. {count} / {max}."
+    },
+    "low": {
+      "label": "Kam"
+    },
+    "minimum": {
+      "column": "Minimum",
+      "set": "{item} uchun minimumni belgilash",
+      "title": "Minimum: {item}",
+      "result": "Shu miqdorda yoki undan kamida mahsulot «Kam» deb belgilanadi va filial menejerlariga bir marta xabar boriladi. Minimum kerak bo'lmasa, bo'sh qoldiring.",
+      "field": "Minimum, {unit}",
+      "save": "Saqlash",
+      "saved": "Minimum saqlandi",
+      "cleared": "Minimum olib tashlandi"
+    },
+    "addToDraft": {
+      "button": "Qoralamaga qo'shish",
+      "title": "{item}ni qoralamaga qo'shish",
+      "result": "Bo'lim uchun yangi qoralama yaratiladi yoki shu mahsulot va bo'lim bo'yicha qoralamangiz shu miqdorga oshadi.",
+      "department": "Bo'lim",
+      "chooseDepartment": "Bo'limni tanlang",
+      "quantity": "Miqdor, {unit}",
+      "confirm": "Qo'shish",
+      "added": "Qoralama qo'shildi",
+      "merged": "Qoralamangizga qo'shildi: endi {quantity}",
+      "noDepartments": "Bu filialda faol bo'lim yo'q."
     }
   }
 }
