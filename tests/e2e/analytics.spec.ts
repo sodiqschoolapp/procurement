@@ -770,3 +770,94 @@ test("6.4d, the phase 6 check on the whole Head page: every block, a Spending ba
   await expect(page.locator("[data-moves-summary]")).toContainText(/2\s000/);
   expect(await scrollsSideways(page)).toBe(false);
 });
+
+/**
+ * Build plan 6.5a: an order of a new category in EA, the Principal's branch, first submitted on
+ * 10 February 2020 and waiting at Waiting for Principal, the summary refreshed. Returns its number
+ * and the category.
+ */
+async function seedPrincipalOrder(): Promise<{ number: string; category: string }> {
+  const tag = randomUUID().slice(0, 8);
+  return withDatabase(async (client) => {
+    await client.query("begin");
+    let ids;
+    try {
+      const headId = (
+        await client.query<{ id: string }>("select id from users where username = $1", [
+          E2E_ROLES.HEAD.username,
+        ])
+      ).rows[0]!.id;
+      const branch = (
+        await client.query<{ id: string }>("select id from branches where code = 'EA'")
+      ).rows[0]!.id;
+      const unit = await client.query<{ id: string }>(
+        `insert into units (name, short_name, allow_decimal, is_active, created_at)
+         values ($1, $2, true, true, now()) returning id`,
+        [`O'lchov ${tag}`, `d${tag}`],
+      );
+      const category = await client.query<{ id: string }>(
+        `insert into categories (name, is_active, created_at) values ($1, true, now()) returning id`,
+        [`Direktor ${tag}`],
+      );
+      const department = await client.query<{ id: string }>(
+        `insert into departments (branch_id, name, is_active, created_at)
+         values ($1, $2, true, now()) returning id`,
+        [branch, `Bo'lim ${tag}`],
+      );
+      const product = await client.query<{ id: string }>(
+        `insert into products (name, type, category_id, unit_id, is_active, has_variants, created_at)
+         values ($1, 'GOODS', $2, $3, true, false, now()) returning id`,
+        [`Qog'oz ${tag}`, category.rows[0]!.id, unit.rows[0]!.id],
+      );
+      const variant = await client.query<{ id: string }>(
+        `insert into product_variants (product_id, name, is_default, is_active, created_at)
+         values ($1, 'default', true, true, now()) returning id`,
+        [product.rows[0]!.id],
+      );
+      const number = `EA-20-${8_000_000 + Math.floor(Math.random() * 999_999)}`;
+      await client.query(
+        `insert into orders (number, branch_id, owner_id, created_by, status, variant_id,
+                             department_id, needed_by, planned_qty, planned_price, planned_total,
+                             payment_type, progress, submitted_at, created_at, updated_at)
+         values ($1, $2, $3, $3, 'PENDING_PRINCIPAL', $4, $5, '2020-02-20', 1, 4000, 4000, 'CASH',
+                 'OPEN', '2020-02-10T05:00:00Z', now(), now())`,
+        [number, branch, headId, variant.rows[0]!.id, department.rows[0]!.id],
+      );
+      await client.query("commit");
+      ids = { number, category: category.rows[0]!.id };
+    } catch (error) {
+      await client.query("rollback");
+      throw error;
+    }
+    await drizzle(client, { schema }).transaction((tx) => refreshAnalytics(tx));
+    return ids;
+  });
+}
+
+test("6.5a: the Principal sees the four blocks of the own branch and opens the orders behind a status count (10 Principal; plan of 6.5a)", async ({
+  page,
+}) => {
+  const { number, category } = await seedPrincipalOrder();
+  await page.goto("/login");
+  await page.locator("#username").fill(E2E_ROLES.PRINCIPAL.username);
+  await page.locator("#password").fill(E2E_ROLES.PRINCIPAL.password);
+  await page.locator("form button[type=submit]").click();
+  await expect(page).toHaveURL(/\/$/);
+  await page.goto(`/analytics?period=custom&from=2020-02-01&to=2020-02-29&category=${category}`);
+  for (const block of ["spending", "principal-spending", "orders", "my-approvals", "warehouse"]) {
+    await expect(page.locator(`[data-analytics-block="${block}"]`)).toBeVisible();
+  }
+  // The Head's blocks are not on the Principal's page.
+  await expect(page.locator('[data-analytics-block="speed"]')).toHaveCount(0);
+  await expect(page.locator('[data-analytics-block="head-spending"]')).toHaveCount(0);
+  expect(await scrollsSideways(page)).toBe(false);
+
+  const status = page.locator('[data-table="statuses"] [data-row="PENDING_PRINCIPAL"] a');
+  await expect(status).toHaveText("1");
+  await status.click();
+  await expect(page).toHaveURL(/\/analytics\/order-status\?/);
+  await expect(page.locator("[data-status-row]")).toHaveCount(1);
+  await expect(page.locator("[data-status-row]")).toContainText(number);
+  await expect(page.locator("[data-status-summary]")).toHaveText(/^1\D/);
+  expect(await scrollsSideways(page)).toBe(false);
+});
