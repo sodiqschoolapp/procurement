@@ -24,6 +24,8 @@ export type Named = Counted & { id: string; name: string; isActive: boolean };
 export type HeadSpending = {
   period: Period;
   before: Period;
+  /** The period's spending, read in the same snapshot: the total line of the exports. */
+  total: Counted;
   /** Every branch of the user with spending in either period (decided item 11). */
   branches: Named[];
   departments: (Named & { branchName: string })[];
@@ -69,6 +71,10 @@ async function headSpendingIn(
       order by sum(analytics_spending.amount) filter (where ${now}) desc nulls last, k.name, k.id
       ${limit}`);
 
+  const totals = await db.execute<{ now: string; before: string }>(sql`
+    select coalesce(sum(amount) filter (where ${now}), 0)::text as now,
+           coalesce(sum(amount) filter (where ${then}), 0)::text as before
+    from analytics_spending`);
   const branches = await grouped(sql`branches`, sql`analytics_spending.branch_id`);
   const departments = await db.execute<GroupRow & { branch_name: string }>(sql`
     select k.id, k.name, k.is_active, b.name as branch_name,
@@ -104,6 +110,7 @@ async function headSpendingIn(
   return {
     period,
     before,
+    total: counted(totals.rows[0]!.now, totals.rows[0]!.before),
     branches: branches.rows.map(named),
     departments: departments.rows.map((row) => ({ ...named(row), branchName: row.branch_name })),
     // A supplier with spending only in the period before is no top supplier of this one.

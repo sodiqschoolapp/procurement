@@ -5,7 +5,12 @@ import { NO_ANALYTICS_FILTERS, analyticsSearch } from "@/features/analytics/peri
 import { AuthorizationError } from "@/server/authorize";
 import { getSpending } from "@/features/analytics/queries/spending";
 
-import { bought, refreshNow, spendingScene } from "../../../../../tests/helpers/analytics";
+import {
+  bought,
+  buyingEvent,
+  refreshNow,
+  spendingScene,
+} from "../../../../../tests/helpers/analytics";
 import { insertCategory } from "../../../../../tests/helpers/catalog";
 import { setClock } from "../../../../../tests/helpers/clock";
 import { downloadRequest } from "../../../../../tests/helpers/files";
@@ -79,6 +84,54 @@ describe("GET /analytics/download (10 point 4)", () => {
     expect(line[5]).toBe(7_000);
   });
 
+  it("the payment types and the Plan vs actual tables (build-plan 6.4a)", async () => {
+    setClock(AT);
+    const scene = await spendingScene();
+    await bought(scene, {
+      purchasedOn: "2031-10-02",
+      unitPrice: "8000",
+      paymentType: "CARD",
+      extras: [{ amount: 1_000n, paymentType: "CASH" }],
+    });
+    const red = await bought(scene, {
+      purchasedOn: "2031-10-03",
+      qty: "10.000",
+      unitPrice: "5200",
+      progress: "DONE",
+    });
+    await buyingEvent(red.orderId, red.ownerId, "RECORD_PURCHASE", "2031-10-03T05:00:00Z");
+    await refreshNow();
+    const head = await insertUser("HEAD");
+    const cookie = await signInAs(head);
+    const filters = { ...NO_ANALYTICS_FILTERS, branch: scene.branch.id };
+    const get = async (extra: Parameters<typeof analyticsSearch>[2]) =>
+      sheetOf(
+        await GET(
+          downloadRequest(
+            `/analytics/download?${analyticsSearch(THIS_MONTH, filters, extra)}`,
+            cookie,
+          ),
+        ),
+      );
+
+    const payments = await get({ block: "payments" });
+    // Cash: the 1 000 extra and the 52 000 of the red order's cash trip; card: the 8 000 goods.
+    expect(
+      payments.filter((row) => typeof row[2] === "number").map((row) => row.slice(1, 2)),
+    ).toEqual([[1_000 + 52_000], [8_000]]);
+    expect(payments.at(-1)).toEqual([expect.any(String), 61_000]);
+
+    const managers = await get({ block: "outcomeManagers" });
+    expect(managers.find((row) => row[0] === scene.manager.fullName)?.slice(1)).toEqual([
+      1, 0, 0, 1, 2_000, 0,
+    ]);
+
+    const orders = await get({ key: { kind: "overspent" }, block: "orders" });
+    const line = orders.find((row) => row[0] === red.number)!;
+    expect(line.slice(4, 8)).toEqual([new Date("2031-10-03T00:00:00Z"), 50_000, 52_000, -2_000]);
+    expect(orders.at(-1)?.[7]).toBe(2_000);
+  });
+
   it("401 signed out; 404 for no block, a refused address, a school year not set, another branch", async () => {
     setClock(AT);
     const mine = await spendingScene();
@@ -95,6 +148,9 @@ describe("GET /analytics/download (10 point 4)", () => {
       "block=months&category=not-an-id",
       `block=months&branch=${theirs.branch.id}`,
       `block=months&department=${theirs.department.id}`,
+      "block=months&owner=other",
+      "block=records&key=colour:red",
+      "block=orders&key=payment:CASH",
     ]) {
       const response = await GET(downloadRequest(`/analytics/download?${query}`, cookie));
       expect(response.status, query).toBe(404);
@@ -136,7 +192,7 @@ describePermissionMatrix("GET /analytics/download, the branch wall in the SQL", 
     });
     await refreshNow();
     const cookie = await signInAs(user);
-    for (const block of ["records", "months"] as const) {
+    for (const block of ["records", "months", "payments", "orders"] as const) {
       const query = analyticsSearch(THIS_MONTH, NO_ANALYTICS_FILTERS, { block });
       const rows = await sheetOf(
         await GET(downloadRequest(`/analytics/download?${query}`, cookie)),

@@ -2,9 +2,19 @@ import type { NextRequest } from "next/server";
 
 import { businessDate } from "@/domain/business-date";
 import { writeAnalyticsExcel } from "@/features/analytics/download/excel";
-import { recordsSheet, spendingSheet } from "@/features/analytics/download/sheets";
+import {
+  headSpendingSheet,
+  outcomeOrdersSheet,
+  outcomesSheet,
+  recordsSheet,
+  spendingSheet,
+  tallySheet,
+} from "@/features/analytics/download/sheets";
 import { parseAnalyticsParams } from "@/features/analytics/period-params";
 import { getAnalyticsFilters } from "@/features/analytics/queries/filters";
+import { getHeadSpending } from "@/features/analytics/queries/head-spending";
+import { getOutcomeOrders } from "@/features/analytics/queries/outcome-orders";
+import { getPlanVsActual } from "@/features/analytics/queries/plan-vs-actual";
 import { getSpending } from "@/features/analytics/queries/spending";
 import { getSpendingRecords } from "@/features/analytics/queries/spending-records";
 import { PeriodRefusedError } from "@/features/analytics/resolve-period";
@@ -13,7 +23,9 @@ import { userOfCookies } from "@/server/auth/session";
 import { AuthorizationError, authorize, authorizeList } from "@/server/authorize";
 import { now } from "@/server/clock";
 
-// The Excel file of one Analytics table, GET /analytics/download?…&block=months|categories|records
+// The Excel file of one Analytics table, GET /analytics/download?…&block=… (6.3: months,
+// categories, records; 6.4a: branches, departments, suppliers, payments, outcomes,
+// outcomeBranches, outcomeManagers, orders)
 // (10-notifications-analytics-reports.md, Analytics page per role, point 4; 03 Permission matrix
 // "Export to Excel, download PDF, print"; build-plan 6.3). A route that writes nothing, as the
 // order list's download (plan of 2.14, decided item 12). The address is the page's, checked by
@@ -29,7 +41,9 @@ export async function GET(request: NextRequest): Promise<Response> {
   if (!user) return new Response(null, { status: 401 });
   const params = parseAnalyticsParams(Object.fromEntries(request.nextUrl.searchParams));
   if (!params?.block) return notFound();
-  const { period, filters, key, block } = params;
+  const { period, filters, key, block, otherOwners } = params;
+  // "Other owners" names only the orders list (plan of 6.4).
+  if (otherOwners && block !== "orders") return notFound();
   const locale = chooseLocale({
     userLocale: user.locale,
     cookieLocale: request.cookies.get(LOCALE_COOKIE)?.value,
@@ -40,21 +54,64 @@ export async function GET(request: NextRequest): Promise<Response> {
     await authorizeList(user.id, "data.export");
     if (filters.branch) await authorize(user.id, "data.export", { branchId: filters.branch });
     const options = await getAnalyticsFilters(user.id);
-    sheet =
-      block === "records"
-        ? recordsSheet(
-            await getSpendingRecords(user.id, period, filters, key, "all"),
-            filters,
-            options,
-            locale,
-          )
-        : spendingSheet(
-            await getSpending(user.id, period, filters),
-            block,
-            filters,
-            options,
-            locale,
-          );
+    switch (block) {
+      case "records":
+        sheet = recordsSheet(
+          await getSpendingRecords(user.id, period, filters, key, "all"),
+          filters,
+          options,
+          locale,
+        );
+        break;
+      case "months":
+      case "categories":
+        sheet = spendingSheet(
+          await getSpending(user.id, period, filters),
+          block,
+          filters,
+          options,
+          locale,
+        );
+        break;
+      case "branches":
+      case "departments":
+      case "suppliers":
+      case "payments":
+        sheet = headSpendingSheet(
+          await getHeadSpending(user.id, period, filters),
+          block,
+          filters,
+          options,
+          locale,
+        );
+        break;
+      case "outcomes":
+        sheet = outcomesSheet(
+          await getPlanVsActual(user.id, period, filters),
+          filters,
+          options,
+          locale,
+        );
+        break;
+      case "outcomeBranches":
+      case "outcomeManagers":
+        sheet = tallySheet(
+          await getPlanVsActual(user.id, period, filters),
+          block,
+          filters,
+          options,
+          locale,
+        );
+        break;
+      case "orders":
+        sheet = outcomeOrdersSheet(
+          await getOutcomeOrders(user.id, period, filters, key, otherOwners, "all"),
+          filters,
+          options,
+          locale,
+        );
+        break;
+    }
   } catch (error) {
     if (error instanceof AuthorizationError || error instanceof PeriodRefusedError) {
       return notFound();

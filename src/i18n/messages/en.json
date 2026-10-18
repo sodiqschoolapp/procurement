@@ -2328,7 +2328,14 @@
       "up": "+{amount} (+{percent} %) against the period before",
       "down": "−{amount} (−{percent} %) against the period before",
       "same": "No change against the period before",
-      "upFromNothing": "+{amount} against the period before, which had none"
+      "upFromNothing": "+{amount} against the period before, which had none",
+      "countUp": "+{count} (+{percent} %) against the period before",
+      "countDown": "−{count} (−{percent} %) against the period before",
+      "countUpFromNothing": "+{count} against the period before, which had none",
+      "shareUp": "+{points} points against the period before",
+      "shareDown": "−{points} points against the period before",
+      "shareSame": "Same share as in the period before",
+      "shareNone": "No orders ended in the period before"
     },
     "spending": {
       "title": "Spending",
@@ -2340,9 +2347,18 @@
         "month": "Month",
         "category": "Category",
         "amount": "Spent",
-        "change": "Change"
+        "change": "Change",
+        "branch": "Branch",
+        "department": "Department",
+        "supplier": "Supplier",
+        "payment": "Payment type"
       },
-      "open": "Show the records behind {what}"
+      "open": "Show the records behind {what}",
+      "byBranch": "By branch",
+      "byDepartment": "By department",
+      "topSuppliers": "Top 10 suppliers",
+      "byPayment": "By payment type",
+      "none": "Nothing to show for this period."
     },
     "records": {
       "title": "Records behind the number",
@@ -2360,12 +2376,76 @@
         "date": "Bought on",
         "supplier": "Supplier",
         "amount": "Actual total"
-      }
+      },
+      "payment": "{name}, {first} – {last}"
     },
     "sheets": {
       "months": "Spending by month",
       "categories": "Spending by category",
-      "records": "Records"
+      "records": "Records",
+      "branches": "Spending by branch",
+      "departments": "Spending by department",
+      "suppliers": "Top 10 suppliers",
+      "payments": "Spending by payment type",
+      "outcomes": "Plan vs actual",
+      "outcomeBranches": "Plan vs actual by branch",
+      "outcomeManagers": "Plan vs actual by Manager",
+      "orders": "Orders"
+    },
+    "plan": {
+      "title": "Plan vs actual",
+      "note": "Orders whose buying ended Done or Done short in the period. Orders marked Not bought are not counted.",
+      "ended": "Orders ended",
+      "share": "{share} % of the ended orders",
+      "noShare": "No ended order",
+      "overspent": "Total overspent",
+      "saved": "Total saved",
+      "byOutcome": "Orders by outcome",
+      "byBranch": "By branch",
+      "byManager": "By Manager",
+      "otherOwners": "Other owners",
+      "empty": "No order ended in this period, and none in the period before.",
+      "outcome": {
+        "green": "Even",
+        "amber": "Left",
+        "red": "Over"
+      },
+      "columns": {
+        "branch": "Branch",
+        "manager": "Manager",
+        "orders": "Orders",
+        "green": "Even",
+        "amber": "Left",
+        "red": "Over",
+        "overspent": "Overspent",
+        "saved": "Saved",
+        "outcome": "Outcome",
+        "count": "Orders",
+        "change": "Change"
+      }
+    },
+    "orders": {
+      "title": "Orders behind the number",
+      "all": "All ended orders, {first} – {last}",
+      "colour": "{outcome}, {first} – {last}",
+      "overspent": "Overspent orders, {first} – {last}",
+      "saved": "Orders with money left, {first} – {last}",
+      "otherOwners": "Owners who are not Managers",
+      "summary": "{count, plural, one {# order} other {# orders}}, difference {sum}",
+      "summaryOverspent": "{count, plural, one {# order} other {# orders}}, overspent {sum}",
+      "summarySaved": "{count, plural, one {# order} other {# orders}}, saved {sum}",
+      "empty": "No order makes up this number.",
+      "columns": {
+        "order": "Order",
+        "product": "Product",
+        "branch": "Branch",
+        "owner": "Owner",
+        "ended": "Buying ended",
+        "planned": "Planned total",
+        "actual": "Actual total",
+        "difference": "Difference",
+        "outcome": "Outcome"
+      }
     }
   }
 }

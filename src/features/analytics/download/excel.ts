@@ -19,7 +19,9 @@ export type CellValue =
   | { kind: "text"; value: string }
   | { kind: "money"; value: bigint }
   | { kind: "signedMoney"; value: bigint }
-  | { kind: "date"; value: BusinessDate };
+  | { kind: "date"; value: BusinessDate }
+  /** A count of orders (plan of 6.4): a whole number, never money. */
+  | { kind: "count"; value: number };
 
 export type AnalyticsSheet = {
   name: string;
@@ -27,8 +29,11 @@ export type AnalyticsSheet = {
   heading: string[];
   columns: string[];
   rows: CellValue[][];
-  /** The label and the amount of the total line, in the last money column. */
-  total: { label: string; amount: bigint };
+  /**
+   * The label and the amount of the total line, in the last money column; none when the table's
+   * rows are not the whole of a number (the top 10 suppliers, the counts of Plan vs actual).
+   */
+  total?: { label: string; amount: bigint; signed?: boolean; column?: number };
 };
 
 const DATE_FORMAT = "dd.mm.yyyy";
@@ -41,6 +46,8 @@ function cellOf(cell: CellValue): string | number | Date {
       return moneyCellValue(cell.value);
     case "signedMoney":
       return signedMoneyCellValue(cell.value);
+    case "count":
+      return cell.value;
     case "date":
       // Midnight UTC of the Tashkent business date: Excel shows the date itself.
       return new Date(`${cell.value}T00:00:00Z`);
@@ -71,10 +78,16 @@ export async function writeAnalyticsExcel(sheet: AnalyticsSheet): Promise<Uint8A
       if (cell.kind === "date") row.getCell(index + 1).numFmt = DATE_FORMAT;
     });
   }
-  const totalRow = worksheet.addRow([sheet.total.label]);
-  totalRow.getCell(moneyColumn).value = moneyCellValue(sheet.total.amount);
-  totalRow.getCell(moneyColumn).numFmt = MONEY_FORMAT;
-  totalRow.font = { bold: true };
+  if (sheet.total) {
+    const totalRow = worksheet.addRow([sheet.total.label]);
+    // A signed total (a difference) names its column, 1-based.
+    if (sheet.total.column) moneyColumn = sheet.total.column;
+    totalRow.getCell(moneyColumn).value = sheet.total.signed
+      ? signedMoneyCellValue(sheet.total.amount)
+      : moneyCellValue(sheet.total.amount);
+    totalRow.getCell(moneyColumn).numFmt = MONEY_FORMAT;
+    totalRow.font = { bold: true };
+  }
   sheet.columns.forEach((_, index) => {
     worksheet.getColumn(index + 1).width = index === 0 ? 30 : 18;
   });

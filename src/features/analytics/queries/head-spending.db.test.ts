@@ -55,6 +55,7 @@ describe("branches side by side (10 Head, Spending; decided items 9 and 11)", ()
     expect(block.branches[0]!.change).toEqual({ difference: 20_000n, percent: "200.0" });
     const total = await getSpending(finance.id, THIS_MONTH, NO_ANALYTICS_FILTERS);
     expect(block.branches.reduce((sum, row) => sum + row.amount, 0n)).toBe(total.total.amount);
+    expect(block.total).toEqual(total.total);
     for (const row of block.branches) {
       const list = await listOf(
         finance.id,
