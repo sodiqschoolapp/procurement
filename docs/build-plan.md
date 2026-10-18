@@ -427,7 +427,7 @@ Stock screens and every document that moves stock inside one branch.
   - **Build:** The return form: department, items and quantities; stock goes up; returning more than that department ever received shows a warning and needs a comment.
   - **Done when:** Database tests: a return raises stock; an over-return without a comment is refused.
 
-- [ ] **5.7 Reverse a document**
+- [x] **5.7 Reverse a document**
   - **Read:** `09-warehouse.md` (Movement types: last paragraph; Issue to a department: 3); `03-roles-and-permissions.md` (Manager rights: RETURN_REVERSE); `edge-cases/warehouse.md` ("A wrong issue was posted"); `open-questions.md` (question 19).
   - **Build:** "Reverse" with a reason on a posted issue, by its creator or the Head; the opposite movement is written; the original is marked "Reversed". Who may reverse the other document types is answered in open question 19.
   - **Done when:** Database tests: reversing an issue brings the stock back and marks the issue Reversed; a reverse that would push stock below zero is refused; a Manager with `RETURN_REVERSE` off is refused.
