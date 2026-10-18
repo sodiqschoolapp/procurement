@@ -2057,6 +2057,33 @@ Choices made during the build:
 - The e2e test of the Principal's branch name asks `getByLabel(…, { exact: true })`: the home's "Filialim …" sections are labelled by their titles, which the loose match found. It still proves the select is absent (**Look first**: a test changed because the page gained content).
 - `documents.db.test.ts` (5.12) failed about three runs in four on `main`: the clock was frozen and two documents tied on `created_at`. The direct entry is now made a minute later; the test asserts what it meant.
 
+### 6.2 Home: Head and Finance (18.10.2026)
+
+The plan's decisions as the plan review of 18.10.2026 confirmed them (corrections 1 to 3 applied: the seed's trip is of the seed's Tashkent today; the stuck instant is the injected clock's; the stuck test has an order sent back and submitted again), and those of the build. The Look first items come first.
+
+1. **Look first** (approval order). An order is "stuck" when it has stood at a Waiting step (Head, Principal, Finance) for more than the setting `escalation_hours` (48), counted from the newest event that moved it into its current status: a resubmit starts again, a move that changes no status (Move to another Manager) does not; exactly 48 h is not stuck, 48 h + 1 min is. Sent back, Open and Waiting for settlement are not approval steps (06 rule 9).
+2. **Look first** (formula). `stuckBefore()` and `STUCK_STATUSES` live in `src/domain/order-steps.ts`; the list's `stuck=1` SQL compares with the instant, as `due=soon` does. `isStuck()` is left to 8.1.
+3. **Look first** (money). Finance's exact amount is per owner and branch: cash to give is `actionTotal(approvalCashRows(...))` over `plannedCash()`, the approval dialog's prefill; the settlement amount is `settlementNet(settlementRows(...))` over the cash counts, the settlement screen's prefill net. A money action is one per Manager, a settlement one branch, and a group row can mix Managers; the entry's link (`status`, `owner`, `branch`) holds exactly its orders.
+4. **Look first** (approval order). Overspends to acknowledge are the Waiting for settlement orders with `overspendNeedsAck()` under the settings of now (decisions 4.7 item 3), each linking to its order page; the block opens `/orders?status=SETTLEMENT`. No list filter for the guard.
+5. The per-branch lists show the top bar's branch, or every branch the Head sees, an inactive one marked: 10 restricts neither, and an inactive branch can have spending this month.
+6. The price prompts of 3.10 are a Head home list after the suggestions, read by `getPricePrompts()` unchanged.
+7. Write-offs link to `/warehouse/documents/[id]`; the block to `/warehouse/documents?type=WRITE_OFF`.
+8. Counts are plain numbers; every amount is the server's.
+9. The seed grows by two Settlement orders, a pending write-off, a pending suggestion and one backdated waiting order (Waiting for Principal, three days), so each list can be seen filled by hand. The price prompts stay empty in the seed.
+10. The suggestions and price prompts blocks do not follow the top bar: both are global catalog lists.
+
+Choices made during the build:
+
+- Each list of `getHeadHome()` is authorized by its own right (`request.approve_step1`, `request.acknowledge_overspend`, `stock.approve_write_off`, `data.view`); with a branch chosen, `data.view` on it comes first, so another branch is "Not found" for every role. `getFinanceHome()` the same with `request.approve_step3` and `request.settle`.
+- `ordersOnFilter()` is a new export (registry and matrix test); `orderTotalsOnFilter()` now reads through it, so the reading exists once.
+- `listWhere()` takes `escalation_hours` from `whereOf()`, which reads the settings only when `stuck` is on, in the caller's snapshot; `selectAllOnFilter()` and `orderDownload()` build their condition inside their snapshot now.
+- The chip says "Stuck at a waiting step" without the number: the list does not read the setting for its label.
+- The seed's purchase is written as `recordPurchase` writes it (trip, record, `actual_total`, progress, the event's `purchase` payload), its actual total and progress as data (the seed computes no formula); a service, so no stock movement. The seed test's move check counts that record as finishing the buying.
+- Seed tests changed because the seed gained rows (**Look first**: tests changed because a requirement of 6.2 added seed data, nothing weakened): the audit total 80 → 81, the statuses gain Settlement, six money rows instead of four, three documents and counters instead of two, and the money-with-managers check now expects held 180 000 and owed 150 000 over four orders.
+- The 6.1 empty-state fallback of the home page and its `home.empty` texts are gone: every role has its home.
+- The Uzbek empty line of the write-offs avoids "so'rov", which the built-text check refuses.
+- Permission review: a test of every role on both homes with no branch chosen (Must fix 1); a comment that the SQL is the wall of Finance's entries and the step's `decide()` only narrows (Should fix 1). Should fix 2 (a matrix variant of the wall for `getFinanceHome`) is covered by the plain test with Finance of one branch and orders of another, as for `getMoneyWithManagers`: the matrix helper expects "Not found" for a role refused before any branch is read.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.
