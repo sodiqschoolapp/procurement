@@ -138,12 +138,11 @@ describe("getHeadHome and getFinanceHome with no branch chosen, every role (03 P
       FINANCE: await insertUser("FINANCE", { branches: [branch.id] }),
     };
     for (const [role, user] of Object.entries(users)) {
-      const head = getHeadHome(user.id, null);
-      const finance = getFinanceHome(user.id, null);
-      if (role === "HEAD") await expect(head).resolves.toBeDefined();
-      else await expect(head).rejects.toBeInstanceOf(AuthorizationError);
-      if (role === "FINANCE") await expect(finance).resolves.toBeDefined();
-      else await expect(finance).rejects.toBeInstanceOf(AuthorizationError);
+      // Each call starts only when it is awaited: a refusal never waits unhandled.
+      if (role === "HEAD") await expect(getHeadHome(user.id, null)).resolves.toBeDefined();
+      else await expect(getHeadHome(user.id, null)).rejects.toBeInstanceOf(AuthorizationError);
+      if (role === "FINANCE") await expect(getFinanceHome(user.id, null)).resolves.toBeDefined();
+      else await expect(getFinanceHome(user.id, null)).rejects.toBeInstanceOf(AuthorizationError);
     }
   });
 });

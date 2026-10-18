@@ -33,6 +33,7 @@ import {
   insertOrder,
   insertOrderExtra,
   setOrderStatus,
+  inventedNumber,
 } from "../../../../tests/helpers/orders";
 import { insertUser } from "../../../../tests/helpers/users";
 import { getOrderPage } from "./order-page";
@@ -117,7 +118,7 @@ describe("who sees the page (03 rule 1; 06 Statuses; decided item 6)", () => {
       branchId: branch.id,
       ownerId: colleague.id,
       status: "DRAFT",
-      number: `TB-26-${String(Math.floor(Math.random() * 9000) + 1000)}`,
+      number: inventedNumber(),
     });
 
     expect((await getOrderPage(manager.id, mine.id))?.id).toBe(mine.id);
@@ -245,7 +246,7 @@ describe('"with N other orders" counts only what the reader may see (decided ite
     const takenBack = await insertOrder({
       branchId: a.id,
       ownerId: colleagueA.id,
-      number: `TB-26-${String(Math.floor(Math.random() * 9000) + 1000)}`,
+      number: inventedNumber(),
     });
     const inB = [
       await insertOrder({ branchId: b.id, ownerId: managerB.id, ...waiting }),
