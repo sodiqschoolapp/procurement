@@ -243,7 +243,6 @@ async function writeOutcomes(executor: Executor) {
 type StepSource = {
   order_id: string;
   branch_id: string;
-  status: RequestStatus;
   category_id: string;
   department_id: string;
   owner_id: string;
@@ -263,7 +262,7 @@ type StepSource = {
  */
 async function writeSteps(executor: Executor) {
   const found = await executor.execute<StepSource>(sql`
-    select o.id as order_id, o.branch_id, o.status, pr.category_id, o.department_id, o.owner_id,
+    select o.id as order_id, o.branch_id, pr.category_id, o.department_id, o.owner_id,
            jsonb_agg(jsonb_build_object('type', ev.type, 'from', ev.from_status,
                                         'to', ev.to_status, 'at', ev.created_at,
                                         'reason', a.reason)
@@ -297,7 +296,6 @@ async function writeSteps(executor: Executor) {
       decision: stay.decision,
       reason: stay.reason,
       reason_key: stay.reason === null ? null : reasonKey(stay.reason),
-      status: row.status,
       category_id: row.category_id,
       department_id: row.department_id,
       owner_id: row.owner_id,
@@ -306,15 +304,14 @@ async function writeSteps(executor: Executor) {
   if (rows.length === 0) return;
   await executor.execute(sql`
     insert into analytics_steps (order_id, branch_id, step, entered_at, left_at, left_on, seconds,
-                                 decision, reason, reason_key, status, category_id, department_id,
-                                 owner_id)
+                                 decision, reason, reason_key, category_id, department_id, owner_id)
     select r.order_id, r.branch_id, r.step::request_status, r.entered_at, r.left_at,
            (r.left_at at time zone 'Asia/Tashkent')::date, r.seconds::bigint,
-           r.decision::order_event_type, r.reason, r.reason_key, r.status::request_status,
+           r.decision::order_event_type, r.reason, r.reason_key,
            r.category_id, r.department_id, r.owner_id
     from jsonb_to_recordset(${JSON.stringify(rows)}::jsonb) as r(
       order_id uuid, branch_id uuid, step text, entered_at timestamptz, left_at timestamptz,
-      seconds text, decision text, reason text, reason_key text, status text, category_id uuid,
+      seconds text, decision text, reason text, reason_key text, category_id uuid,
       department_id uuid, owner_id uuid)`);
 }
 

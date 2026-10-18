@@ -148,11 +148,11 @@ describe("analytics_steps", () => {
     const enteredAt = row.enteredAt ?? new Date(Date.UTC(2031, 4, 2, 5, 0, entered)).toISOString();
     return db.execute(sql`
       insert into analytics_steps (order_id, branch_id, step, entered_at, left_at, left_on,
-        seconds, decision, reason, reason_key, status, category_id, department_id, owner_id)
+        seconds, decision, reason, reason_key, category_id, department_id, owner_id)
       values (${row.order ?? ids.order}, ${row.branch ?? ids.branch},
         ${row.step ?? "PENDING_HEAD"}, ${enteredAt}, ${row.leftAt ?? null}, ${row.leftOn ?? null},
         ${row.seconds ?? null}, ${row.decision ?? null}, ${row.reason ?? null},
-        ${row.reasonKey ?? null}, 'RETURNED', ${row.category ?? ids.category},
+        ${row.reasonKey ?? null}, ${row.category ?? ids.category},
         ${row.department ?? ids.department}, ${row.owner ?? ids.owner})`);
   };
 

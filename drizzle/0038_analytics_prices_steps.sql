@@ -19,7 +19,6 @@ CREATE TABLE "analytics_steps" (
 	"decision" "order_event_type",
 	"reason" text,
 	"reason_key" text,
-	"status" "request_status" NOT NULL,
 	"category_id" uuid NOT NULL,
 	"department_id" uuid NOT NULL,
 	"owner_id" uuid NOT NULL,

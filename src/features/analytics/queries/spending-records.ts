@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 
 import { type DateRange, type Period, monthInside } from "@/domain/analytics";
 import type { BusinessDate } from "@/domain/business-date";
+import { unitPriceOf } from "@/domain/purchases";
 import type { Executor } from "@/server/authorize";
 import { readSnapshot } from "@/server/read-snapshot";
 
@@ -21,7 +22,10 @@ import { spendingWhere } from "../spending-where";
 // of `analytics_spending` under the same spendingWhere() as the number (review of the plan,
 // correction 3), so their total is the number clicked (plan of 6.3, decided item 10); the names
 // are read live. Under `data.view`, the branch wall in the SQL, in one snapshot; 50 a page
-// (developer-rules.md rule 12), or every row for the export.
+// (developer-rules.md rule 12), or every row for the export. A price key of 6.4b lists the priced
+// records of one subtype (a gift is no price), with their quantity and unit price, and its summary
+// is the price `unitPriceOf()` of their goods and quantity, the number clicked (plan of 6.4b,
+// decided items 1 and 12).
 
 export type SpendingRecord = {
   purchaseId: string;
@@ -33,6 +37,8 @@ export type SpendingRecord = {
   branchName: string;
   purchasedOn: BusinessDate;
   supplierName: string | null;
+  qty: string;
+  unitPrice: bigint;
   amount: bigint;
 };
 
@@ -45,6 +51,13 @@ export type SpendingRecords = {
   categoryName: string | null;
   count: number;
   total: bigint;
+  /** Of a price key: the subtype, the quantity and the price of the records listed. */
+  price: {
+    productName: string;
+    subtypeName: string | null;
+    qty: string;
+    price: bigint | null;
+  } | null;
   page: number;
   rows: SpendingRecord[];
 };
@@ -87,11 +100,33 @@ async function recordsIn(
     if (filters.category && filters.category !== key.category) throw new PeriodRefusedError();
     scope = { ...filters, category: key.category };
   }
-  // The keys of Plan vs actual name no records (their list is /analytics/orders).
-  if (key.kind === "colour" || key.kind === "overspent" || key.kind === "saved") {
+  // The keys of Plan vs actual and Approval speed name no records (their lists are
+  // /analytics/orders and /analytics/approvals).
+  if (
+    key.kind === "colour" ||
+    key.kind === "overspent" ||
+    key.kind === "saved" ||
+    key.kind === "step" ||
+    key.kind === "waiting"
+  ) {
     throw new PeriodRefusedError();
   }
-  const where = spendingWhere(actor, range, scope);
+  if (key.kind === "price") {
+    if (key.month) {
+      const inside = monthInside(key.month, period);
+      if (!inside) throw new PeriodRefusedError();
+      range = inside;
+    }
+    // A supplier filter and the records with no supplier name no number of the page.
+    if (key.noSupplier && filters.supplier) throw new PeriodRefusedError();
+  }
+  const where =
+    key.kind === "price"
+      ? sql`${spendingWhere(actor, range, scope)}
+            and analytics_spending.variant_id = ${key.variant}
+            and analytics_spending.unit_price > 0
+            ${key.noSupplier ? sql`and analytics_spending.supplier_id is null` : sql``}`
+      : spendingWhere(actor, range, scope);
   // A payment type's list holds the records with a part of that type, each with that part, so
   // its total is the slice clicked (plan of 6.4, decided item 2, Look first).
   const part =
@@ -102,9 +137,25 @@ async function recordsIn(
       : sql``;
   const amount = key.kind === "payment" ? sql`pp.amount` : sql`analytics_spending.amount`;
 
-  const summary = await db.execute<{ count: string; total: string }>(sql`
-    select count(*)::text as count, coalesce(sum(${amount}), 0)::text as total
+  const summary = await db.execute<{
+    count: string;
+    total: string;
+    goods: string;
+    qty: string;
+  }>(sql`
+    select count(*)::text as count, coalesce(sum(${amount}), 0)::text as total,
+           coalesce(sum(analytics_spending.goods), 0)::text as goods,
+           coalesce(sum(analytics_spending.qty), 0)::text as qty
     from analytics_spending ${part} where ${where}`);
+  const subtype =
+    key.kind === "price"
+      ? await db.execute<{ product_name: string; subtype_name: string | null }>(sql`
+          select pr.name as product_name,
+                 case when v.is_default then null else v.name end as subtype_name
+          from product_variants v join products pr on pr.id = v.product_id
+          where v.id = ${key.variant}`)
+      : null;
+  if (subtype && !subtype.rows[0]) throw new PeriodRefusedError();
   const category =
     key.kind === "category"
       ? await db.execute<{ name: string }>(
@@ -125,13 +176,16 @@ async function recordsIn(
     branch_name: string;
     purchased_on: string;
     supplier_name: string | null;
+    qty: string;
+    unit_price: string;
     amount: string;
   }>(sql`
     select analytics_spending.purchase_id, analytics_spending.order_id, o.number,
            pr.name as product_name,
            case when v.is_default then null else v.name end as subtype_name,
            b.name as branch_name, analytics_spending.purchased_on::text as purchased_on,
-           co.name as supplier_name, ${amount}::text as amount
+           co.name as supplier_name, analytics_spending.qty::text as qty,
+           analytics_spending.unit_price::text as unit_price, ${amount}::text as amount
     from analytics_spending
     ${part}
     join orders o on o.id = analytics_spending.order_id
@@ -151,6 +205,14 @@ async function recordsIn(
     categoryName: category?.rows[0]?.name ?? null,
     count: Number(summary.rows[0]!.count),
     total: BigInt(summary.rows[0]!.total),
+    price: subtype?.rows[0]
+      ? {
+          productName: subtype.rows[0].product_name,
+          subtypeName: subtype.rows[0].subtype_name,
+          qty: summary.rows[0]!.qty,
+          price: unitPriceOf(BigInt(summary.rows[0]!.goods), summary.rows[0]!.qty),
+        }
+      : null,
     page: pageNumber,
     rows: rows.rows.map((row) => ({
       purchaseId: row.purchase_id,
@@ -161,6 +223,8 @@ async function recordsIn(
       branchName: row.branch_name,
       purchasedOn: row.purchased_on,
       supplierName: row.supplier_name,
+      qty: row.qty,
+      unitPrice: BigInt(row.unit_price),
       amount: BigInt(row.amount),
     })),
   };

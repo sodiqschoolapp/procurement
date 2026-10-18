@@ -456,12 +456,11 @@ describe("analytics_refresh, the rows of Prices and Approval speed (build-plan 6
     decision: string | null;
     reason: string | null;
     reason_key: string | null;
-    status: string;
   };
   async function stepsOf(orderId: string) {
     const found = await db.execute<StepRow>(sql`
       select step, entered_at, left_at, left_on::text as left_on, seconds::text as seconds,
-             decision, reason, reason_key, status
+             decision, reason, reason_key
       from analytics_steps where order_id = ${orderId} order by entered_at`);
     return found.rows;
   }
@@ -490,7 +489,6 @@ describe("analytics_refresh, the rows of Prices and Approval speed (build-plan 6
         decision: "SEND_BACK",
         reason: "  Narxni   TEKSHIRING ",
         reason_key: "narxni tekshiring",
-        status: "PENDING_HEAD",
       },
       {
         step: "PENDING_HEAD",
@@ -499,7 +497,6 @@ describe("analytics_refresh, the rows of Prices and Approval speed (build-plan 6
         decision: null,
         reason: null,
         reason_key: null,
-        status: "PENDING_HEAD",
       },
     ]);
     expect(new Date(rows[1]!.entered_at).toISOString()).toBe("2031-05-02T08:00:00.000Z");

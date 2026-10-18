@@ -1,5 +1,5 @@
 {
-  "id": "390c1fad-5bb4-4a4b-ad5a-7db2873dc733",
+  "id": "8b89cdcb-9d9e-48ca-b68f-9289ba39cb13",
   "prevId": "2df4995c-68fe-440e-bdc1-6330ee57ec5f",
   "version": "7",
   "dialect": "postgresql",
@@ -705,13 +705,6 @@
           "type": "text",
           "primaryKey": false,
           "notNull": false
-        },
-        "status": {
-          "name": "status",
-          "type": "request_status",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true
         },
         "category_id": {
           "name": "category_id",

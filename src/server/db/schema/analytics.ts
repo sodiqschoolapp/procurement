@@ -163,9 +163,9 @@ export const analyticsOutcomes = pgTable(
 // decided stay has its end, its whole seconds and the decision of the step's approver; a send
 // back or a reject also its reason and `reasonKey()`. An open stay (the order waits there now)
 // has none of them: "waiting now" reads its `entered_at` with the clock (review of the plan of
-// 6.4b, Must fix 3). `status` is the order's status now, for the draft wall (Must fix 4); the
-// category is the planned subtype's, department and owner the order's (decided item 11). Task
-// 6.4b.
+// 6.4b, Must fix 3). The draft wall reads the order's live status, not a copy here (Must fix 4;
+// stepsWhere()); the category is the planned subtype's, department and owner the order's (decided
+// item 11). Task 6.4b.
 export const analyticsSteps = pgTable(
   "analytics_steps",
   {
@@ -183,7 +183,6 @@ export const analyticsSteps = pgTable(
     decision: orderEventType("decision"),
     reason: text("reason"),
     reasonKey: text("reason_key"),
-    status: requestStatus("status").notNull(),
     categoryId: uuid("category_id")
       .notNull()
       .references(() => categories.id),

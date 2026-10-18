@@ -16,6 +16,8 @@ describe("parseAnalyticsParams", () => {
       branchGiven: false,
       key: { kind: "period" },
       otherOwners: false,
+      variant: null,
+      reason: null,
       page: 1,
       block: null,
     });
@@ -35,8 +37,55 @@ describe("parseAnalyticsParams", () => {
       branchGiven: true,
       key: { kind: "category", category: ID },
       otherOwners: false,
+      variant: null,
+      reason: null,
       page: 3,
       block: "records",
+    });
+  });
+
+  // The keys, parameters and blocks of 6.4b (plan of 6.4b, decided items 3, 10 and 12).
+  it.each([
+    [{ kind: "price", variant: ID, month: null, noSupplier: false }, "records"],
+    [{ kind: "price", variant: ID, month: "2031-10", noSupplier: false }, "priceTrend"],
+    [{ kind: "price", variant: ID, month: null, noSupplier: true }, "priceSpread"],
+    [{ kind: "step", step: "PENDING_FINANCE", decision: null }, "stepHours"],
+    [{ kind: "step", step: null, decision: "APPROVE" }, "decisions"],
+    [{ kind: "waiting", step: "PENDING_HEAD", group: "twoDays" }, "waiting"],
+    [{ kind: "waiting", step: null, group: null }, "approvals"],
+  ] as const)("reads the key %o and the block %s back", (key, block) => {
+    const text = analyticsSearch(
+      { choice: "this_month", from: null, to: null },
+      NO_ANALYTICS_FILTERS,
+      {
+        key,
+        variant: ID,
+        block,
+      },
+    );
+    expect(parseAnalyticsParams(Object.fromEntries(new URLSearchParams(text)))).toMatchObject({
+      key,
+      variant: ID,
+      reason: null,
+      block,
+    });
+  });
+
+  it("reads a reason key back beside a send back or reject key", () => {
+    const key = { kind: "step", step: null, decision: "SEND_BACK" } as const;
+    const text = analyticsSearch(
+      { choice: "this_month", from: null, to: null },
+      NO_ANALYTICS_FILTERS,
+      {
+        key,
+        reason: "narxni tekshiring",
+        block: "reasons",
+      },
+    );
+    expect(parseAnalyticsParams(Object.fromEntries(new URLSearchParams(text)))).toMatchObject({
+      key,
+      reason: "narxni tekshiring",
+      block: "reasons",
     });
   });
 
@@ -105,6 +154,17 @@ describe("parseAnalyticsParams", () => {
     ["an unknown colour", { key: "colour:grey" }],
     ["an owner other than `other`", { owner: "all" }],
     ["other owners beside a Manager filter", { owner: "other", manager: ID }],
+    ["a price key that is not an id", { key: "price:everything" }],
+    ["a price key with a month that is not one", { key: `price:${ID}:2031-13` }],
+    ["a price key with another suffix", { key: `price:${ID}:somewhere` }],
+    ["a step that is no approval step", { key: "step:RETURNED" }],
+    ["a decision that is not the approver's", { key: "step:all:CANCEL" }],
+    ["an unknown age group", { key: "waiting:all:month" }],
+    ["a waiting key without its group", { key: "waiting:all" }],
+    ["a subtype that is not an id", { variant: "chalk" }],
+    ["a reason beside an approve", { key: "step:all:APPROVE", reason: "narxi qimmat" }],
+    ["a reason without a decision", { reason: "narxi qimmat" }],
+    ["a reason longer than 500 characters", { key: "step:all:REJECT", reason: "x".repeat(501) }],
   ])("refuses %s", (_, raw) => {
     expect(parseAnalyticsParams(raw)).toBeNull();
   });
