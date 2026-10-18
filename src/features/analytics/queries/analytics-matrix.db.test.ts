@@ -27,6 +27,9 @@ import { getAnalyticsFilters } from "./filters";
 import { getHeadSpending } from "./head-spending";
 import { getManagers } from "./managers";
 import { getMyApprovals } from "./my-approvals";
+import { getMyCash } from "./my-cash";
+import { getMyEstimates } from "./my-estimates";
+import { getMyOrders } from "./my-orders";
 import { getOrderStatuses } from "./order-statuses";
 import { getOutcomeOrders } from "./outcome-orders";
 import { getPlanVsActual } from "./plan-vs-actual";
@@ -660,5 +663,100 @@ describePermissionMatrix("the Principal's blocks and lists, the branch wall in t
     }
     expect(mine.waiting.all).toBeGreaterThanOrEqual(1);
     expect(orders.total.count).toBeGreaterThanOrEqual(3);
+  },
+});
+
+/**
+ * The Manager's rows of a branch, owned by `ownerId` (build-plan 6.5b): an order submitted on 1
+ * May, sent back once, Open on 3 May (48 hours); a record of 12 345 so'm paid in cash on an order
+ * planned at 5 000, so its count is 12 345 owed. The summary refreshed.
+ */
+async function ownOrdersIn(branchId: string, ownerId: string) {
+  setClock("2031-05-15T05:00:00Z");
+  const scene = await spendingScene(branchId);
+  await decided(
+    scene,
+    "PURCHASING",
+    [
+      { type: "SUBMIT", from: "DRAFT", to: "PENDING_HEAD", at: "2031-05-01T05:00:00Z" },
+      {
+        type: "SEND_BACK",
+        from: "PENDING_HEAD",
+        to: "RETURNED",
+        at: "2031-05-01T06:00:00Z",
+        reason: "Miqdorni tekshiring",
+      },
+      { type: "SUBMIT_AGAIN", from: "RETURNED", to: "PENDING_FINANCE", at: "2031-05-02T05:00:00Z" },
+      { type: "APPROVE", from: "PENDING_FINANCE", to: "PURCHASING", at: "2031-05-03T05:00:00Z" },
+    ],
+    { ownerId, submittedAt: "2031-05-01T05:00:00Z" },
+  );
+  const record = await bought(scene, { ownerId, purchasedOn: "2031-05-02", unitPrice: "12345" });
+  await refreshNow();
+  return { record };
+}
+
+describePermissionMatrix(
+  "getMyOrders, getMyEstimates, getMyCash and their lists with the branch filter",
+  {
+    permission: "data.view",
+    async run({ user, branchId }) {
+      const { record } = await ownOrdersIn(branchId, user.id);
+      const filters = { ...NO_ANALYTICS_FILTERS, branch: branchId };
+      const orders = await getMyOrders(user.id, THIS_MONTH, filters);
+      expect(orders.approval).toMatchObject({ hours: "48.0", count: 1 });
+      expect(orders.sentBack).toMatchObject({ count: 1, share: "50.0" });
+      const estimates = await getMyEstimates(user.id, THIS_MONTH, filters);
+      expect(estimates.products.map((row) => [row.productId, row.difference])).toEqual([
+        [record.productId, -7_345n],
+      ]);
+      const cash = await getMyCash(user.id, filters);
+      expect([cash.held, cash.owed]).toEqual([0n, 12_345n]);
+      // The lists take the user as their Manager filter, which only a Manager can be.
+      if (user.role !== "MANAGER") return;
+      const mine = { ...filters, manager: user.id };
+      const approved = await getStatusOrders(user.id, THIS_MONTH, mine, { kind: "approved" }, 1);
+      expect(approved.count).toBe(1);
+      const priced = await getSpendingRecords(
+        user.id,
+        THIS_MONTH,
+        mine,
+        { kind: "priced", product: null },
+        "all",
+      );
+      expect(priced.rows.map((row) => row.purchaseId)).toEqual([record.purchaseId]);
+    },
+  },
+);
+
+describePermissionMatrix("the Manager's blocks and lists, the branch wall in the SQL", {
+  permission: "data.view",
+  async run({ user, branchId }) {
+    const { record } = await ownOrdersIn(branchId, user.id);
+    const orders = await getMyOrders(user.id, THIS_MONTH, NO_ANALYTICS_FILTERS);
+    const estimates = await getMyEstimates(user.id, THIS_MONTH, NO_ANALYTICS_FILTERS);
+    const cash = await getMyCash(user.id, NO_ANALYTICS_FILTERS);
+    // The orders are the user's own: in a branch the user does not see, every number is empty.
+    const seen = orders.approval.count === 1;
+    expect(orders.decisions).toBe(seen ? 2 : 0);
+    // The bought order is submitted on the clock's day, in May too.
+    expect(orders.total.count).toBe(seen ? 2 : 0);
+    expect(estimates.all.records).toBe(seen ? 1 : 0);
+    expect(cash.owed).toBe(seen ? 12_345n : 0n);
+    // The lists take the user as their Manager filter, which only a Manager can be.
+    if (user.role === "MANAGER") {
+      const mine = { ...NO_ANALYTICS_FILTERS, manager: user.id };
+      const approved = await getStatusOrders(user.id, THIS_MONTH, mine, { kind: "approved" }, 1);
+      const priced = await getSpendingRecords(
+        user.id,
+        THIS_MONTH,
+        mine,
+        { kind: "priced", product: record.productId },
+        "all",
+      );
+      expect(approved.count).toBe(seen ? 1 : 0);
+      expect(priced.count).toBe(seen ? 1 : 0);
+    }
+    if (!seen) throw new AuthorizationError("not_found");
   },
 });

@@ -264,6 +264,9 @@ export const QUERIES: Record<string, Permission> = {
   "src/features/analytics/queries/order-statuses.ts#getOrderStatuses": "data.view",
   "src/features/analytics/queries/status-orders.ts#getStatusOrders": "data.view",
   "src/features/analytics/queries/my-approvals.ts#getMyApprovals": "data.view",
+  "src/features/analytics/queries/my-orders.ts#getMyOrders": "data.view",
+  "src/features/analytics/queries/my-estimates.ts#getMyEstimates": "data.view",
+  "src/features/analytics/queries/my-cash.ts#getMyCash": "data.view",
   // The order list's download, Excel and PDF (plan of 2.14, decided item 4, Look first): data.export
   // with the list's own walls in the SQL (queries/order-download-matrix.db.test.ts).
   "src/features/orders/queries/order-list.ts#orderDownload": "data.export",

@@ -2422,7 +2422,7 @@
       "statusOrders": "Orders",
       "myApprovals": "My approvals",
       "myOrders": "My orders",
-      "myReasons": "Sent back: reasons",
+      "myReasons": "Sent back, reasons",
       "myEstimates": "My estimates",
       "myCash": "My cash"
     },
