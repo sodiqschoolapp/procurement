@@ -149,13 +149,13 @@ test("a Manager asks to write off 4 of 10, the stock waits; the Head approves fr
   await page.goto("/notifications");
   await page.getByText(number!).first().click();
   await expect(page.getByRole("heading", { level: 1 })).toContainText(number!);
-  await expect(page.locator("[data-write-off-status]")).toHaveText(
+  await expect(page.locator("[data-document-status]")).toHaveText(
     texts.page.status.PENDING_APPROVAL,
   );
   await noSideScroll(page);
   await page.getByRole("button", { name: texts.page.approve }).click();
   await page.getByRole("alertdialog").getByRole("button", { name: texts.page.approve }).click();
-  await expect(page.locator("[data-write-off-status]")).toHaveText(texts.page.status.POSTED);
+  await expect(page.locator("[data-document-status]")).toHaveText(texts.page.status.POSTED);
   await expect(page.locator("[data-write-off-decision]")).toHaveCount(0);
 
   await page.goto(`/warehouse/stock?q=${encodeURIComponent(seeded.tag)}`);
@@ -167,7 +167,7 @@ test("a Manager asks to write off 4 of 10, the stock waits; the Head approves fr
   await page.goto("/notifications");
   await expect(page.getByText(new RegExp(`${number}.*tasdiqlandi`)).first()).toBeVisible();
   await page.getByText(number!).first().click();
-  await expect(page.locator("[data-write-off-status]")).toHaveText(texts.page.status.POSTED);
+  await expect(page.locator("[data-document-status]")).toHaveText(texts.page.status.POSTED);
   await expect(page.getByRole("button", { name: texts.page.approve })).toHaveCount(0);
 });
 
