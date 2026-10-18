@@ -2424,7 +2424,8 @@
       "myOrders": "Mening buyurtmalarim",
       "myReasons": "Qaytarilganlar sabablari",
       "myEstimates": "Mening hisob-kitobim",
-      "myCash": "Mening pulim"
+      "myCash": "Mening pulim",
+      "stockPlanning": "Zaxirani rejalashtirish"
     },
     "plan": {
       "title": "Reja va haqiqat",
@@ -2711,7 +2712,8 @@
         "department": "Bo'lim",
         "quantity": "Miqdor",
         "value": "Qiymat"
-      }
+      },
+      "quantity": "Sarflangan: {qty} {unit}"
     },
     "principal": {
       "topProducts": "Eng ko'p xarid qilingan 10 mahsulot",
@@ -2811,6 +2813,35 @@
         "priced": "{name}: narxli yozuvlar {first} – {last}",
         "pricedAll": "Barcha mahsulotlar: narxli yozuvlar {first} – {last}",
         "pricedSummary": "{count, plural, other {# yozuv}}, miqdor {qty}, tovar {goods}"
+      },
+      "planning": {
+        "title": "Zaxirani rejalashtirish",
+        "note": "Sarf — berilgan minus qaytarilgan, har bir tovarning o'lchov birligida, hujjat sanasi bo'yicha. Qoldiq, «Kam», «tugashiga» va tavsiya etilgan miqdor — hozirgi holat; sur'at — oxirgi 90 kunlik sarf ({first} – {last}). Tavsiya: shu sur'atda minimumdan tashqari 30 kunga yetadigan miqdor, qoldiq ayirilgan holda.",
+        "everyDepartment": "Bo'lim filtri faqat sarfga ta'sir qiladi: «tugashiga» va tavsiya etilgan miqdor barcha bo'limlar bo'yicha.",
+        "low": "Kam qolgan tovarlar",
+        "byItem": "Tovarlar bo'yicha sarf, tugash muddati va tavsiya etilgan buyurtma",
+        "empty": "Bu yerda ombor qatori, davrda va oxirgi 90 kunda berish yoki qaytarish yo'q.",
+        "shown": "Eng tez tugaydigan {shown} ta tovar, jami {count} ta. Excel faylida hammasi bor.",
+        "days": "{days, plural, other {taxminan # kunda}}",
+        "noRate": "Sarf yo'q",
+        "change": {
+          "up": "+{qty} (+{percent} %)",
+          "down": "−{qty} (−{percent} %)",
+          "upOnly": "+{qty}",
+          "downOnly": "−{qty}",
+          "same": "O'zgarishsiz"
+        },
+        "columns": {
+          "item": "Tovar",
+          "onHand": "Qoldiq",
+          "used": "Davrdagi sarf",
+          "usedBefore": "Oldingi davrdagi sarf",
+          "change": "O'zgarish",
+          "rateUsed": "Sarf {first} – {last}",
+          "runsOut": "Tugashiga",
+          "runsOutDays": "Tugashiga, kun",
+          "suggested": "Tavsiya etilgan buyurtma"
+        }
       }
     }
   }

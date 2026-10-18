@@ -876,7 +876,8 @@ test("6.5b: the Manager sees My orders, My estimates and My cash and opens the o
   await page.locator("form button[type=submit]").click();
   await expect(page).toHaveURL(/\/$/);
   await page.goto(`/analytics?period=custom&from=2020-02-01&to=2020-02-29&category=${category}`);
-  for (const block of ["my-orders", "my-estimates", "my-cash"]) {
+  // Stock planning joins them (build-plan 6.5c).
+  for (const block of ["my-orders", "my-estimates", "my-cash", "stock-planning"]) {
     await expect(page.locator(`[data-analytics-block="${block}"]`)).toBeVisible();
   }
   // No Manager filter on the Manager's page (decided item 6), no other role's block.
@@ -890,5 +891,40 @@ test("6.5b: the Manager sees My orders, My estimates and My cash and opens the o
   await expect(page).toHaveURL(/\/analytics\/order-status\?.*manager=/);
   await expect(page.locator("[data-status-row]")).toHaveCount(1);
   await expect(page.locator("[data-status-row]")).toContainText(number);
+  expect(await scrollsSideways(page)).toBe(false);
+});
+
+test("6.5c: the Manager sees a stock line's use in Stock planning and opens the movements behind it (10 Manager; plan of 6.5c)", async ({
+  page,
+}) => {
+  // A line of a new category in EA: 2 issued on 15 January 2020, 8 left; nothing in the last 90 days.
+  const { category } = await seedRecords();
+  const { branch } = await seedWarehouse(category);
+  const categoryId = await withDatabase(
+    async (client) =>
+      (await client.query<{ id: string }>("select id from categories where name = $1", [category]))
+        .rows[0]!.id,
+  );
+  await page.goto("/login");
+  await page.locator("#username").fill(E2E_ROLES.MANAGER.username);
+  await page.locator("#password").fill(E2E_ROLES.MANAGER.password);
+  await page.locator("form button[type=submit]").click();
+  await expect(page).toHaveURL(/\/$/);
+  await page.goto(
+    `/analytics?period=custom&from=2020-01-01&to=2020-01-31&branch=${branch}&category=${categoryId}`,
+  );
+  const block = page.locator('[data-analytics-block="stock-planning"]');
+  await expect(block).toBeVisible();
+  const row = block.locator('[data-table="stock-planning"] tbody tr');
+  await expect(row).toHaveCount(1);
+  await expect(row.locator("[data-planning-runs-out]")).toHaveText(uz.analytics.my.planning.noRate);
+  expect(await scrollsSideways(page)).toBe(false);
+
+  const january = row.locator('[data-planning-month="2020-01"] a');
+  await expect(january).toContainText("2");
+  await january.click();
+  await expect(page).toHaveURL(/\/analytics\/moves\?.*variant=/);
+  await expect(page.locator("[data-moves-row]")).toHaveCount(1);
+  await expect(page.locator("[data-moves-quantity]")).toContainText("2");
   expect(await scrollsSideways(page)).toBe(false);
 });

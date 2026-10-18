@@ -12,7 +12,7 @@ import {
   RECORDS_PAGE_SIZE,
 } from "../period-params";
 import { authorizeAnalytics } from "../authorize-filters";
-import { SIGNED_VALUE, movesWhere } from "../moves-where";
+import { SIGNED_QTY, SIGNED_VALUE, movesWhere } from "../moves-where";
 import { resolvePeriod } from "../resolve-period";
 
 // /analytics/moves, the movements behind a Warehouse number of the period (10-notifications-
@@ -21,7 +21,8 @@ import { resolvePeriod } from "../resolve-period";
 // number, so their Σ is the number clicked: in use a return counts against (`SIGNED_VALUE`). A
 // department row of use sets the department filter. Names and the document's number are read
 // live. Under `data.view`, the branch wall in the SQL, in one snapshot; 50 a page, or every row
-// for the export.
+// for the export. With a subtype (a Stock planning line's, build-plan 6.5c) the list of use also
+// sums its quantity, issue + and return −: the number of that line that was clicked.
 
 export type StockMove = {
   movementId: string;
@@ -45,6 +46,8 @@ export type StockMoves = {
   period: Period;
   count: number;
   total: bigint;
+  /** Σ issues − Σ returns in the subtype's measure, numeric text; `null` without a subtype. */
+  quantity: string | null;
   page: number;
   rows: StockMove[];
 };
@@ -71,8 +74,9 @@ export async function getStockMoves(
   input: PeriodInput,
   filters: AnalyticsFilters,
   page: number | "all",
+  variant: string | null = null,
 ): Promise<StockMoves> {
-  return readSnapshot((db) => movesIn(db, userId, move, input, filters, page));
+  return readSnapshot((db) => movesIn(db, userId, move, input, filters, page, variant));
 }
 
 async function movesIn(
@@ -82,12 +86,14 @@ async function movesIn(
   input: PeriodInput,
   filters: AnalyticsFilters,
   page: number | "all",
+  variant: string | null,
 ): Promise<StockMoves> {
   const actor = await authorizeAnalytics(db, userId, filters);
   const { period } = await resolvePeriod(db, input);
-  const where = movesWhere(actor, period, filters, move);
-  const summary = await db.execute<{ count: string; total: string }>(sql`
-    select count(*)::text as count, coalesce(sum(${SIGNED_VALUE}), 0)::text as total
+  const where = movesWhere(actor, period, filters, move, variant);
+  const summary = await db.execute<{ count: string; total: string; quantity: string }>(sql`
+    select count(*)::text as count, coalesce(sum(${SIGNED_VALUE}), 0)::text as total,
+           coalesce(sum(${SIGNED_QTY}), 0)::text as quantity
     from analytics_stock_moves where ${where}`);
   const limit =
     page === "all"
@@ -116,6 +122,7 @@ async function movesIn(
     period,
     count: Number(summary.rows[0]!.count),
     total: BigInt(summary.rows[0]!.total),
+    quantity: move === "use" && variant ? summary.rows[0]!.quantity : null,
     page: page === "all" ? 1 : page,
     rows: found.rows.map((row) => ({
       movementId: row.movement_id,

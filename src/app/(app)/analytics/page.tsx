@@ -11,6 +11,7 @@ import {
   MyCashView,
   MyEstimatesView,
   MyOrdersView,
+  StockPlanningView,
 } from "@/features/analytics/components/manager-blocks";
 import { ManagersView } from "@/features/analytics/components/managers-block";
 import {
@@ -35,6 +36,7 @@ import { getOrderStatuses } from "@/features/analytics/queries/order-statuses";
 import { getPlanVsActual } from "@/features/analytics/queries/plan-vs-actual";
 import { getPriceChoices, getPrices } from "@/features/analytics/queries/prices";
 import { getSpending } from "@/features/analytics/queries/spending";
+import { getStockPlanning } from "@/features/analytics/queries/stock-planning";
 import { getTopProducts } from "@/features/analytics/queries/top-products";
 import { getWarehouse } from "@/features/analytics/queries/warehouse";
 import { PeriodRefusedError } from "@/features/analytics/resolve-period";
@@ -49,8 +51,8 @@ import { AuthorizationError } from "@/server/authorize";
 // Spending and Plan vs actual (build-plan 6.4a; plan of 6.4, decided item 8), Prices and Approval
 // speed (build-plan 6.4b), Managers (build-plan 6.4c) and Warehouse (build-plan 6.4d). The
 // Principal's page adds the rest of Spending, Orders, My approvals and Warehouse (build-plan
-// 6.5a). The Manager's page shows My orders, My estimates and My cash only (build-plan 6.5b; plan
-// of 6.5b, decided items 6 and 7): the spec's Manager table has no Spending block, and its blocks
+// 6.5a). The Manager's page shows My orders, My estimates and My cash (build-plan 6.5b; plan of
+// 6.5b, decided items 6 and 7) and Stock planning (build-plan 6.5c), and nothing else: the spec's Manager table has no Spending block, and its blocks
 // are the user's own orders, so it has no Manager filter. The branch
 // filter starts at the top bar's branch view (decided item 9). An address the parser refuses, or a school year not set,
 // falls back to this month (review of the plan, correction 2); another branch is Not found (03
@@ -96,6 +98,7 @@ async function readPage(userId: string, role: string, raw: Raw) {
             getMyOrders(userId, params.period, filters),
             getMyEstimates(userId, params.period, filters),
             getMyCash(userId, filters),
+            getStockPlanning(userId, params.period, filters),
           ])
         : null,
     ]);
@@ -191,6 +194,7 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
           <MyOrdersView block={manager[0]} period={period} filters={filters} userId={user.id} />
           <MyEstimatesView block={manager[1]} period={period} filters={filters} userId={user.id} />
           <MyCashView block={manager[2]} filters={filters} userId={user.id} />
+          <StockPlanningView block={manager[3]} period={period} filters={filters} />
         </>
       )}
     </div>

@@ -2257,6 +2257,25 @@ Choices made during the build:
 - **Look first** (a test changed because a decision changed). The browser test "a Manager's Analytics page has no Plan vs actual block" expected the shared Spending block on the Manager's page; decided item 7 removes it, so the test now expects My orders and no Spending block. Nothing it checked about Plan vs actual was weakened.
 - `tests/helpers/analytics.ts`: a `Move` takes any action of 06's table (`OrderAction`), for the Settlement and Reopen moves of the refresh test.
 
+### 6.5c Analytics: Manager, Stock planning (18.10.2026)
+
+The plan's decisions as the plan review of 18.10.2026 confirmed them (corrections 1 to 3 applied: at least 1 for every Low line after rounding; the department filter not on the rate; decided item 3 given its wording), and those of the build. The Look first items come first.
+
+1. **Look first** (stock rule; open question 15). Suggested order quantity = `rate × 30 + (minimum ?? 0) − on hand`, half up to a whole unit, never below 0, and at least 1 for a Low line (`isLow()`); a net rate below 0 counts as 0. The rate is Σ issues − Σ returns of the 90 days that end today ÷ 90, of every department. Proposed `/spec-change` wording of 10, Manager, Stock planning: "Suggested order quantity is what lasts 30 days at the rate of the last 90 days, on top of the minimum, less the stock on hand, rounded half up to a whole unit; at least 1 for a Low item."
+2. **Look first** (stock rule). "Runs out in" = on hand ÷ ((Σ issues − Σ returns of the 90 days that end today) ÷ 90), whole days half up; none when that use is 0 or below (stock 0 included); 0 when on hand is 0 and there is use. Reversed documents are left out with their reversal; write-offs and transfers are not issues. Proposed `/spec-change` wording of 00-definitions and 10: "“Runs out in” is current stock divided by the average daily issues, less returns, of the last 90 days, in whole days."
+3. **Look first** (spec contradiction). On hand, Low, "runs out in" and the suggested quantity are numbers of now with no change; each month's use shows its change against the month before (the first month against the whole calendar month before it), the period's use against the period before, by `qtyChange()` (a percent only on a base above 0, else the difference in the item's measure). Proposed wording of 10 point 1, extending 6.5a decided item 2's: "Every number of a period shows its change against the period before; a number of now (orders waiting now, orders needed-by coming up, overdue orders, cash held, stock value, stock on hand, low stock, items with no movement, runs out in, suggested order quantity) has none."
+4. "Each item" is a stock line (branch × subtype), goods only, every line of the user's branches; the Manager filter is not read: stock is the branch's.
+5. Filters: branch and category for every number; department for each month's use and the period's use only, never for the rate, "runs out in" or the suggested quantity (review correction 2); the block says so when a department is chosen. Manager and supplier not read.
+6. The 10 lines that run out soonest on the page (none last; ties Low first, product, subtype, branch); the export holds every line; quantities are never summed across items.
+7. The Low tile counts the Low lines the block lists, which are `getStockLines("low")`'s (a database test and the matrix compare the two).
+
+Choices made during the build:
+
+- A line is listed when it holds stock, is Low, has a movement in the period, or has one in the 90 days; a movement only in the period before or the month before does not list it.
+- The drill-downs reuse `/analytics/moves` with `key=moves:use`, the line's branch and `variant=`: a month opens its days inside the period, the period's use the period, "runs out in" and the suggested quantity the 90 days without the department filter. With `variant=` the list's summary adds the Σ quantity, the number clicked.
+- The subtype filter of `movesWhere()` applies to `use` only, as the plan says.
+- Permission review: the query added to `tests/permission-registry.ts`; a matrix case with a department of the branch and no branch filter (Must fix 1); the branch-wall case compares the Low count with the Low list (Should fix 1).
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

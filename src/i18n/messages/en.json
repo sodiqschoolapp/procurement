@@ -2424,7 +2424,8 @@
       "myOrders": "My orders",
       "myReasons": "Sent back, reasons",
       "myEstimates": "My estimates",
-      "myCash": "My cash"
+      "myCash": "My cash",
+      "stockPlanning": "Stock planning"
     },
     "plan": {
       "title": "Plan vs actual",
@@ -2711,7 +2712,8 @@
         "department": "Department",
         "quantity": "Quantity",
         "value": "Value"
-      }
+      },
+      "quantity": "Used: {qty} {unit}"
     },
     "principal": {
       "topProducts": "Top 10 products",
@@ -2811,6 +2813,35 @@
         "priced": "{name}: priced records {first} – {last}",
         "pricedAll": "All products: priced records {first} – {last}",
         "pricedSummary": "{count, plural, one {# record} other {# records}}, quantity {qty}, goods {goods}"
+      },
+      "planning": {
+        "title": "Stock planning",
+        "note": "Use is issued minus returned, in each item's measure, on each document's date. On hand, Low, \"runs out in\" and the suggested quantity are of now; the rate is the use of the last 90 days ({first} – {last}). Suggested: what lasts 30 days at that rate on top of the minimum, less the stock on hand.",
+        "everyDepartment": "The department filter applies to use only: \"runs out in\" and the suggested quantity are of all departments.",
+        "low": "Low-stock items",
+        "byItem": "Use, runs out in and suggested order per item",
+        "empty": "No stock line here, and no issue or return in the period or the last 90 days.",
+        "shown": "The {shown} items that run out soonest, of {count}. The Excel file holds all.",
+        "days": "{days, plural, one {about # day} other {about # days}}",
+        "noRate": "No use",
+        "change": {
+          "up": "+{qty} (+{percent} %)",
+          "down": "−{qty} (−{percent} %)",
+          "upOnly": "+{qty}",
+          "downOnly": "−{qty}",
+          "same": "No change"
+        },
+        "columns": {
+          "item": "Item",
+          "onHand": "On hand",
+          "used": "Used in the period",
+          "usedBefore": "Used in the period before",
+          "change": "Change",
+          "rateUsed": "Used {first} – {last}",
+          "runsOut": "Runs out in",
+          "runsOutDays": "Runs out in, days",
+          "suggested": "Suggested order"
+        }
       }
     }
   }

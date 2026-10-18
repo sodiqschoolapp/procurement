@@ -507,7 +507,7 @@ What each role sees first, and the numbers behind the work.
   - **Build:** My orders (by status; average time to full approval; share sent back, with reasons), My estimates (difference between planned and actual price per product), My cash (count per open order), each number with its drill-down and Excel export.
   - **Done when:** A database test: the Manager's blocks hold only the Manager's own orders in the Manager's branches.
 
-- [ ] **6.5c Analytics: Manager, Stock planning**
+- [x] **6.5c Analytics: Manager, Stock planning**
   - **Read:** `10-notifications-analytics-reports.md` (Analytics page per role: Manager, own branches; the "Runs out in" sentence); `open-questions.md` (question 15).
   - **Build:** Stock planning: use of each item per month; "runs out in" is current stock divided by the average daily issues of the last 90 days; low stock; suggested order quantity.
   - **Done when:** A unit test of "runs out in".
