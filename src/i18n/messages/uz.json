@@ -787,7 +787,7 @@
       "products": "Turlari yoʻq har bir mahsulot uchun bitta qator yoki har bir tur uchun mahsulot nomi takrorlangan bitta qator. Toifa, oʻlchov birligi va kompaniya maʼlumotnomada boʻlishi kerak.",
       "departments": "Har bir boʻlim uchun bitta qator. Filial qisqa kodi bilan yoziladi, masalan TSH.",
       "prices": "Har bir tur uchun bitta qator. Turlari yoʻq mahsulot uchun tur katagini boʻsh qoldiring. Mahsulot va tur maʼlumotnomada boʻlishi kerak; izohda narx nega oʻzgarishi yoziladi.",
-      "stock": "Har bir tur uchun bitta qator. Turi yo'q mahsulot uchun turni bo'sh qoldiring. Ma'lumotnoma narxini olish uchun narxni bo'sh qoldiring. Mahsulot va turlar katalogda bo'lishi kerak."
+      "stock": "Har bir tur uchun bitta qator. Turi yo'q mahsulot uchun turni bo'sh qoldiring. Maʼlumotnoma narxini olish uchun narxni bo'sh qoldiring. Mahsulot va turlar katalogda bo'lishi kerak."
     },
     "download": "Shablonni yuklab olish",
     "fileHeading": "Fayl",
