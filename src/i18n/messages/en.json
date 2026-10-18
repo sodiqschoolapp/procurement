@@ -299,24 +299,6 @@
   },
   "home": {
     "title": "My tasks",
-    "empty": {
-      "MANAGER": {
-        "title": "Nothing to do yet",
-        "line": "Orders sent back to you, your drafts, your open orders, the cash you hold, low stock and lines due soon will appear here."
-      },
-      "HEAD": {
-        "title": "Nothing to decide yet",
-        "line": "Orders waiting for your approval, overspends, write-offs, product suggestions and stuck orders across all branches will appear here."
-      },
-      "PRINCIPAL": {
-        "title": "Nothing to approve yet",
-        "line": "Orders waiting for your approval and your branch's orders and spending will appear here."
-      },
-      "FINANCE": {
-        "title": "Nothing to approve yet",
-        "line": "Orders waiting for your approval, orders waiting for settlement and money with managers will appear here."
-      }
-    },
     "suggest": "Suggest a product",
     "showAll": "Show all ({count})",
     "openList": "Open in the order list",
@@ -387,6 +369,76 @@
         "period": "{from} – {to}",
         "hint": "Bought in this month, by the purchase records"
       }
+    },
+    "head": {
+      "waiting": {
+        "title": "Waiting for my approval",
+        "line": "{count, plural, one {# order} other {# orders}}, total {total}",
+        "empty": "No order waits for your approval. Submitted orders of every branch appear here."
+      },
+      "overspends": {
+        "title": "Overspends to acknowledge",
+        "row": "{over} over ({percent}%)",
+        "rowNoPercent": "{over} over",
+        "empty": "No overspend waits for you. An order in settlement above the guard appears here."
+      },
+      "writeOffs": {
+        "title": "Write-offs to approve",
+        "row": "{date} · {reason} · {name}",
+        "empty": "No write-off waits for you. A write-off a Manager asks for appears here."
+      },
+      "suggestions": {
+        "title": "Product suggestions",
+        "row": "{name} · {person}",
+        "empty": "No suggestion waits for you. A product a Manager suggests appears here."
+      },
+      "prompts": {
+        "title": "Price prompts",
+        "row": "Price {price}, recent average {average} ({percent, number, ::sign-always}%)",
+        "empty": "No price differs. A subtype whose recent purchases differ from its price by more than 20% appears here."
+      },
+      "stuck": {
+        "title": "Orders stuck over {hours} hours",
+        "hint": "At a waiting step longer than the setting",
+        "empty": "No order is stuck. An order waiting at one step longer than the setting appears here."
+      },
+      "byStatus": {
+        "title": "Orders by status, per branch",
+        "empty": "No orders yet."
+      },
+      "spending": {
+        "title": "Spending this month, per branch",
+        "period": "{from} – {to}",
+        "hint": "Bought in this month, by the purchase records"
+      },
+      "inactive": "{code} (inactive)",
+      "pair": "{first} · {second}"
+    },
+    "finance": {
+      "approvals": {
+        "title": "Waiting for my approval",
+        "entry": "{count, plural, one {# order} other {# orders}}, total {total}",
+        "give": "Give {amount} in cash",
+        "noCash": "No cash to give",
+        "empty": "No order waits for your approval. Orders the Principal approves appear here."
+      },
+      "settlements": {
+        "title": "Waiting for settlement",
+        "entry": "{count, plural, one {# order} other {# orders}}",
+        "receive": "Receive {amount} from the Manager",
+        "pay": "Pay {amount} to the Manager",
+        "none": "No cash to even out",
+        "empty": "No order waits for settlement. An order whose buying is finished and differs from the plan appears here."
+      },
+      "money": {
+        "title": "Money with managers",
+        "held": "Holds {amount}",
+        "owed": "Owed {amount}",
+        "since": "since {date}",
+        "empty": "No Manager holds or is owed money.",
+        "open": "Open Money with managers"
+      },
+      "openOrders": "Open the orders of {name}, {branch}"
     }
   },
   "profile": {

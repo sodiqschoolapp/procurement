@@ -77,6 +77,8 @@ export type HeadHome = {
   writeOffs: { count: number; lines: WriteOffLine[] };
   stuck: OrderGroupPage;
   branches: BranchFigures[];
+  /** The setting `escalation_hours` the stuck list compares with (06 rule 9). */
+  escalationHours: number;
   month: { first: BusinessDate; last: BusinessDate };
 };
 
@@ -207,6 +209,7 @@ export async function getHeadHome(userId: string, branch: string | null): Promis
       writeOffs: { count: writeOffRows.length, lines: writeOffRows.slice(0, WRITE_OFF_LINES) },
       stuck: await listOrderGroups(userId, filters.stuck, 1, db),
       branches: figures,
+      escalationHours: guard.escalation_hours,
       month,
     };
   });

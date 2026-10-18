@@ -299,24 +299,6 @@
   },
   "home": {
     "title": "Mening vazifalarim",
-    "empty": {
-      "MANAGER": {
-        "title": "Hozircha ish yoʻq",
-        "line": "Bu yerda sizga qaytarilgan buyurtmalar, qoralamalar, ochiq buyurtmalar, qoʻlingizdagi pul, kam qolgan tovarlar va yaqin muddatlar chiqadi."
-      },
-      "HEAD": {
-        "title": "Hozircha qaror kutilmaydi",
-        "line": "Bu yerda barcha filiallar boʻyicha tasdiqingizni kutayotgan buyurtmalar, ortiqcha xarajatlar, hisobdan chiqarishlar, tovar takliflari va toʻxtab qolgan buyurtmalar chiqadi."
-      },
-      "PRINCIPAL": {
-        "title": "Hozircha tasdiqlash kerak emas",
-        "line": "Bu yerda tasdiqingizni kutayotgan buyurtmalar hamda filialingiz buyurtmalari va xarajatlari chiqadi."
-      },
-      "FINANCE": {
-        "title": "Hozircha tasdiqlash kerak emas",
-        "line": "Bu yerda tasdiqingizni kutayotgan buyurtmalar, hisob-kitob kutayotgan buyurtmalar va menejerlardagi pul chiqadi."
-      }
-    },
     "suggest": "Tovar taklif qilish",
     "showAll": "Hammasini koʻrsatish ({count})",
     "openList": "Buyurtmalar roʻyxatida ochish",
@@ -387,6 +369,76 @@
         "period": "{from} – {to}",
         "hint": "Shu oyda xarid qilingan, xarid yozuvlari boʻyicha"
       }
+    },
+    "head": {
+      "waiting": {
+        "title": "Mening tasdig'imni kutmoqda",
+        "line": "{count} ta buyurtma, jami {total}",
+        "empty": "Tasdig'ingizni kutayotgan buyurtma yo'q. Barcha filiallarning yuborilgan buyurtmalari shu yerda chiqadi."
+      },
+      "overspends": {
+        "title": "Tasdiqlanadigan ortiqcha xarajatlar",
+        "row": "{over} ortiqcha ({percent}%)",
+        "rowNoPercent": "{over} ortiqcha",
+        "empty": "Ortiqcha xarajat yo'q. Hisob-kitobdagi chegaradan oshgan buyurtma shu yerda chiqadi."
+      },
+      "writeOffs": {
+        "title": "Tasdiqlanadigan hisobdan chiqarishlar",
+        "row": "{date} · {reason} · {name}",
+        "empty": "Hisobdan chiqarish so'rovi yo'q. Menejer so'ragan hisobdan chiqarish shu yerda chiqadi."
+      },
+      "suggestions": {
+        "title": "Mahsulot takliflari",
+        "row": "{name} · {person}",
+        "empty": "Taklif yo'q. Menejer taklif qilgan mahsulot shu yerda chiqadi."
+      },
+      "prompts": {
+        "title": "Narx eslatmalari",
+        "row": "Narx {price}, so'nggi o'rtacha {average} ({percent, number, ::sign-always}%)",
+        "empty": "Narxlar farq qilmaydi. So'nggi xaridlari narxdan 20% dan ko'proq farq qilgan tur shu yerda chiqadi."
+      },
+      "stuck": {
+        "title": "{hours} soatdan ortiq qotib qolgan buyurtmalar",
+        "hint": "Tasdiqlash bosqichida sozlamadagidan uzoqroq",
+        "empty": "Qotib qolgan buyurtma yo'q. Bir bosqichda sozlamadagidan uzoq kutgan buyurtma shu yerda chiqadi."
+      },
+      "byStatus": {
+        "title": "Holatlar bo'yicha buyurtmalar, filiallar kesimida",
+        "empty": "Hozircha buyurtma yo'q."
+      },
+      "spending": {
+        "title": "Shu oydagi xarajat, filiallar kesimida",
+        "period": "{from} – {to}",
+        "hint": "Shu oyda xarid qilingan, xarid yozuvlari bo'yicha"
+      },
+      "inactive": "{code} (faol emas)",
+      "pair": "{first} · {second}"
+    },
+    "finance": {
+      "approvals": {
+        "title": "Mening tasdig'imni kutmoqda",
+        "entry": "{count} ta buyurtma, jami {total}",
+        "give": "{amount} naqd berish",
+        "noCash": "Naqd pul berilmaydi",
+        "empty": "Tasdig'ingizni kutayotgan buyurtma yo'q. Direktor tasdiqlagan buyurtmalar shu yerda chiqadi."
+      },
+      "settlements": {
+        "title": "Hisob-kitobni kutmoqda",
+        "entry": "{count} ta buyurtma",
+        "receive": "Menejerdan {amount} olish",
+        "pay": "Menejerga {amount} to'lash",
+        "none": "Naqd pulni tenglash kerak emas",
+        "empty": "Hisob-kitobni kutayotgan buyurtma yo'q. Xaridi tugab, rejadan farq qilgan buyurtma shu yerda chiqadi."
+      },
+      "money": {
+        "title": "Menejerlardagi pul",
+        "held": "Qo'lida {amount}",
+        "owed": "Unga qarz {amount}",
+        "since": "{date} dan beri",
+        "empty": "Hech bir menejerda pul yoki qarz yo'q.",
+        "open": "«Menejerlardagi pul»ni ochish"
+      },
+      "openOrders": "Buyurtmalarni ochish: {name}, {branch}"
     }
   },
   "profile": {
