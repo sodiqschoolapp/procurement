@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import { NO_ANALYTICS_FILTERS } from "@/features/analytics/period-params";
 import { reportSearch } from "@/features/reports/report-params";
+import { AuthorizationError } from "@/server/authorize";
 
 import {
   bought,
@@ -13,6 +14,7 @@ import {
 import { insertCategory } from "../../../../../tests/helpers/catalog";
 import { setClock } from "../../../../../tests/helpers/clock";
 import { downloadRequest } from "../../../../../tests/helpers/files";
+import { describePermissionMatrix } from "../../../../../tests/helpers/permission-matrix";
 import { insertUser, signInAs } from "../../../../../tests/helpers/users";
 import { GET } from "./route";
 
@@ -171,4 +173,60 @@ describe("GET /reports/download (10 Reports: exports to Excel)", () => {
       expect((await GET(downloadRequest(`/reports/download?${query}`, cookie))).status).toBe(404);
     }
   });
+});
+
+/** A record of 6 000 so'm bought in May in the branch, its order Done, the summary refreshed. */
+async function doneIn(branchId: string) {
+  setClock(AT);
+  const scene = await spendingScene(branchId);
+  const record = await bought(scene, {
+    purchasedOn: "2031-05-04",
+    unitPrice: "6000",
+    plannedQty: "1",
+    plannedPrice: 6_000n,
+    progress: "DONE",
+  });
+  await buyingEvent(record.orderId, record.ownerId, "RECORD_PURCHASE", "2031-05-04T05:00:00Z");
+  await refreshNow();
+  return record;
+}
+
+// The route's own `data.export` check, every role, own and other branch (03 matrix "Export to
+// Excel, download PDF, print"; 15 Test layers; permission review of 6.8, Must fix 1).
+describePermissionMatrix("GET /reports/download with the branch filter", {
+  permission: "data.export",
+  async run({ user, branchId }) {
+    await doneIn(branchId);
+    const cookie = await signInAs(user);
+    for (const report of ["purchases", "plan", "spending"] as const) {
+      const query = reportSearch({
+        report,
+        range: MAY,
+        filters: { ...NO_ANALYTICS_FILTERS, branch: branchId },
+      });
+      const response = await GET(downloadRequest(`/reports/download?${query}`, cookie));
+      if (response.status === 404) throw new AuthorizationError("not_found");
+      const workbook = await workbookOf(response);
+      const total = rowsOf(workbook.worksheets[0]!).at(-1)!;
+      expect(total.filter((cell) => typeof cell === "number").at(-1)).toBe(
+        report === "plan" ? 0 : 6_000,
+      );
+    }
+  },
+});
+
+// Without a branch: the file holds the branch's record only where the user sees the branch
+// (permission review of 6.8, Should fix 1: another branch's record present in the Head's run).
+describePermissionMatrix("GET /reports/download, the branch wall in the SQL", {
+  permission: "data.export",
+  async run({ user, branchId }) {
+    const record = await doneIn(branchId);
+    const cookie = await signInAs(user);
+    const query = reportSearch({ report: "purchases", range: MAY, filters: NO_ANALYTICS_FILTERS });
+    const workbook = await workbookOf(
+      await GET(downloadRequest(`/reports/download?${query}`, cookie)),
+    );
+    const rows = workbook.worksheets.flatMap((sheet) => rowsOf(sheet));
+    if (!rows.some((row) => row[1] === record.number)) throw new AuthorizationError("not_found");
+  },
 });

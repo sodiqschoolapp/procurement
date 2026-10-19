@@ -93,6 +93,10 @@ describePermissionMatrix("Planned vs actual, the branch wall in the SQL", {
     const report = await getPlanVsActualReport(user.id, params(null), "all");
     expect(report.total.orders).toBe(report.orders.length);
     expect(report.total.actual).toBe(report.orders.reduce((sum, row) => sum + row.actual, 0n));
+    // Every table keeps to the same wall (permission review of 6.8, Should fix 2).
+    for (const table of [report.products, report.managers]) {
+      expect(table.reduce((sum, row) => sum + row.actual, 0n)).toBe(report.total.actual);
+    }
     if (!report.orders.some((row) => row.orderId === record.orderId)) {
       throw new AuthorizationError("not_found");
     }
@@ -115,7 +119,15 @@ describePermissionMatrix("Spending, the branch wall in the SQL", {
     await boughtIn(branchId);
     const report = await getSpendingReport(user.id, params(null));
     // The total keeps to the same wall as its branches.
-    expect(report.total).toBe(report.branches.reduce((sum, row) => sum + row.amount, 0n));
+    for (const table of [
+      report.branches,
+      report.categories,
+      report.departments,
+      report.suppliers,
+      report.months,
+    ]) {
+      expect(table.reduce((sum, row) => sum + row.amount, 0n)).toBe(report.total);
+    }
     if (!report.branches.some((row) => row.id === branchId)) {
       throw new AuthorizationError("not_found");
     }

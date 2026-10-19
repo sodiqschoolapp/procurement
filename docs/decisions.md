@@ -2361,6 +2361,31 @@ Choices made during the build:
 
 - The matrix tests `status:all` with a department and with a Manager of the branch in two blocks, so each id of another branch is refused on its own (permission review, Should fix 1).
 
+### 6.8 Reports: orders and spending (19.10.2026)
+
+The plan's decisions as the plan review of 19.10.2026 confirmed them, with its corrections applied (1: the Purchase register's category is the record's own bought subtype's; 2: a cancelled record's amounts are the domain functions of the record read as not cancelled; 3: per product is the order's planned product, read live; 4: the Order register's wall is tested for each role through `orderTotalsOnFilter()` and `orderDownload()`).
+
+1. **Look first.** Planned vs actual and Spending read `analytics_outcomes` and `analytics_spending` under `outcomesWhere()` and `spendingWhere()`, so they always equal the Analytics page; the page shows the summary's time or that it is being prepared. The Order register (the order list's download) and the Purchase register read the live tables, so for up to 5 minutes an order's actual total there can differ from Planned vs actual and Spending.
+2. **Look first.** The Purchase register lists every record of the dates, cancelled ones marked with their reason and in neither the count nor the total; read live, because the summary holds no cancelled record, no extra costs and no payment type. Goods, extra costs, total and the parts by payment type are `actualGoods()`, `actualExtra()`, `actualTotal()` and `paymentParts()` of the one record; the file puts the cancelled records on a second sheet, so a sum of the first sheet's total column is the total.
+3. **Look first.** Planned vs actual holds the orders whose buying ended Done or Done short in the dates, by `orderOutcome()`, difference = planned − actual; Not bought left out; per Manager with one "Other owners" line; per product by the planned product.
+4. The dates of each report: the Order register by submit date (`dates=submitted`), the Purchase register and Spending by the date bought, Planned vs actual by the day buying ended.
+5. Default dates: the first of this month to today (Tashkent, injected clock); `from` after `to` is refused (the page goes back to the defaults, the route answers 404); a broken value is dropped.
+6. Only the filters branch, dates and category.
+7. The Order register's screen shows its count and planned total and links to the order list with the same filters.
+8. One workbook per report: Spending five sheets, Planned vs actual three, the Purchase register two; `writeAnalyticsWorkbook()` added beside `writeAnalyticsExcel()`, which now calls it with one sheet.
+9. Spending by supplier lists every supplier and one "No supplier" line, so each table adds up to the total.
+10. No "change against the period before" on the reports.
+11. The Order register's Download Excel is the existing `/orders/download/excel`; `/reports/download` serves the other three and answers 404 for `report=orders`.
+12. 25 rows a page (11 rule 8).
+
+Choices made during the build:
+
+- The branch filter of /reports starts at "All my branches" from the address only; it does not follow the top bar's branch view, as /analytics does (6.3 decided item 9). The plan named only the address.
+- The Purchase register reads every record of the dates in one statement and pages in the server after computing the count and total with the domain functions: a sum in SQL would be a second copy of the rounding (`CLAUDE.md` rule 1).
+- A quantity is a new cell kind of the Analytics Excel writer (`quantity`, a number cell through `quantityCellValue()`), drawn by the PDF writer with the quantity formatter.
+- The page links (`PageLinks`) are drawn by the page, not the feature views: a feature does not import from `src/app/`.
+- Permission review: the route's own `data.export` check is in the permission matrix (`GET /reports/download with the branch filter` and `…, the branch wall in the SQL`), and each wall test of the queries checks that every table adds up to the total (Must fix 1, Should fix 1 and 2).
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

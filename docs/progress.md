@@ -1699,4 +1699,20 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - A key's "every value" is written `<kind>:all` and parsed to `null` (`step`, `waiting`, `priced`, now `status`); the key pattern of `period-params.ts` lists `all` beside the values.
 - `principalIn()` of the analytics matrix test returns its `scene` too.
 
-The next task is 6.8.
+## 6.8 Reports: orders and spending (19.10.2026, pull request #117)
+
+**Built**
+- `/reports` for every role: Order register, Purchase register, Planned vs actual, Spending as tabs; filters branch, From, To, category (`report-params.ts`, `parseReportParams()`, `reportSearch()`); Download Excel.
+- Queries `getPurchaseRegister()` (live tables, domain functions per record, cancelled marked), `getPlanVsActualReport()` (`analytics_outcomes`), `getSpendingReport()` (`analytics_spending`); the Order register is `orderTotalsOnFilter()` on screen and `/orders/download/excel` as its file (`orderListFilters()`, `orderListSearch()`).
+- `GET /reports/download?report=purchases|plan|spending`: one workbook per report (`download/sheets.ts`, `writeAnalyticsWorkbook()`); a `quantity` cell kind.
+- S7's reports part in `tests/e2e/branch-wall.spec.ts`; `tests/e2e/reports.spec.ts`; `tests/e2e/report-records.ts` seeds records in June 2019.
+
+**Left out, and the task that brings it**
+- Price history, Stock on hand, Stock movements, Use by department, Money with managers, Approval speed: 6.9. A PDF of a report: not asked.
+
+**What the next sessions must know**
+- For 6.9: add a report to `REPORTS` of `report-params.ts`, a tab text under `reports.tabs` and `reports.notes`, a case in `page.tsx` and in `/reports/download`, and its matrix tests in `reports-matrix.db.test.ts` and the route test.
+- For 6.9: the report pages read the filters branch and category only; `authorizeAnalytics()` checks the branch.
+- An e2e run with several workers signs in the same Principal at once and fails at sign-in locally; `--workers=1` passes.
+
+The next task is 6.9.

@@ -533,7 +533,7 @@ What each role sees first, and the numbers behind the work.
   - **Build:** The whole analytics page downloads as a PDF report without signature lines, built as answered in open question 16.
   - **Done when:** A test reads the period and one total from the file.
 
-- [ ] **6.8 Reports: orders and spending**
+- [x] **6.8 Reports: orders and spending**
   - **Read:** `10-notifications-analytics-reports.md` (Reports: first four rows); `11-screens-and-ux.md` (Screens: Reports); `03-roles-and-permissions.md` (Permission matrix: "Export to Excel, download PDF, print"); `15-quality-and-acceptance.md` (S7).
   - **Build:** `/reports` with Order register, Purchase register, Planned vs actual and Spending; filters by branch, date range and category; Excel export with real numbers and dates.
   - **Done when:** A database test for the branch wall on each report. By hand: export the spending report and sum a column in Excel. The reports part of S7 is green.
