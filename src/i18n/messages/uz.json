@@ -284,6 +284,26 @@
     "expand": "Menyuni yoyish",
     "profile": "Profil"
   },
+  "search": {
+    "open": "Qidirish",
+    "title": "Qidirish",
+    "placeholder": "Qidirish",
+    "shortcut": "Ctrl K",
+    "hint": "Kamida {count} ta belgi yozing: buyurtma raqami, mahsulot yoki yetkazib beruvchi.",
+    "loading": "Qidirilmoqda…",
+    "empty": "Hech narsa topilmadi.",
+    "found": "{count, plural, other {# ta natija}}",
+    "groups": {
+      "orders": "Buyurtmalar",
+      "products": "Mahsulotlar",
+      "suppliers": "Yetkazib beruvchilar"
+    },
+    "orderNumber": "{number} · {revision}-tahrir",
+    "subtyped": "{product}, {subtype}",
+    "inBranch": "{name} · {branch}",
+    "service": "{category} · {type}",
+    "inactive": "{name} (nofaol)"
+  },
   "branch": {
     "label": "Filial",
     "all": "Barcha filiallarim",

@@ -548,7 +548,7 @@ What each role sees first, and the numbers behind the work.
   - **Build:** Price history (as a chart), Money with managers, Approval speed, each on `/reports` with its Excel file.
   - **Done when:** Database tests: the branch wall on each of the three reports.
 
-- [ ] **6.10 Search**
+- [x] **6.10 Search**
   - **Read:** `11-screens-and-ux.md` (Rules for a smooth feel: 9).
   - **Build:** Ctrl+K or Cmd+K opens a search for order numbers, products and suppliers, limited to what the user may see.
   - **Done when:** Database test: an order number of another branch gives no result. By hand: find an order by its number.

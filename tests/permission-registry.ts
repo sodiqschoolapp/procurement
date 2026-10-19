@@ -20,6 +20,9 @@ export const SERVER_ACTIONS: Record<string, Entry> = {
   // "all" asks profile.edit; a branch id asks data.view on that branch, proved by the matrix
   // test "chooseBranch with a branch" (permission review of 0.10b, Must fix 1).
   "src/app/(app)/branch-actions.ts#chooseBranchAction": "profile.edit",
+  // The search of Ctrl+K (plan of 6.10, decided item 1, Look first): data.view with the branch
+  // wall in the SQL for orders, catalog.pick for products and suppliers, asked by the query.
+  "src/app/(app)/search-actions.ts#searchAction": "data.view",
   // One's own notifications (plan of 0.11, decision 2, Look first).
   "src/app/(app)/notifications/actions.ts#openNotificationAction": "notification.own",
   "src/app/(app)/notifications/actions.ts#markAllNotificationsReadAction": "notification.own",
@@ -326,6 +329,8 @@ export const QUERIES: Record<string, Permission> = {
   // Stock on hand (plan of 5.2): data.view with the branch wall in the SQL.
   "src/features/warehouse/queries/item-card.ts#getItemCard": "data.view",
   "src/features/warehouse/queries/stock-on-hand.ts#listStockOnHand": "data.view",
+  // The search of Ctrl+K (plan of 6.10, decided item 1, Look first).
+  "src/features/search/queries/search.ts#searchEverything": "data.view",
   "src/features/warehouse/queries/stock-on-hand.ts#stockCategoryChoices": "data.view",
   // The issue form's choices (plan of 5.4): stock.issue on the branch; the branches in the SQL.
   "src/features/warehouse/queries/issue-form.ts#issueBranchChoices": "stock.issue",

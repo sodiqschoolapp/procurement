@@ -1747,4 +1747,18 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - Every report but the Order register, Purchase register and the stock reports reads the summary and shows its time (`SUMMARY_REPORTS` of `page.tsx`).
 - `PURCHASE` rows of `price_history` carry no branch and keep cancelled prices: a reader of prices by branch reads `analytics_spending` instead.
 
-The next task is 6.10.
+## 6.10 Search (19.10.2026, pull request #120)
+
+**Built**
+- Ctrl+K or Cmd+K on every signed-in page, and the search button of the top bar (a field with "Ctrl K" from 640 px, an icon below), open the search dialog (`src/components/shell/search.tsx`).
+- `searchEverything()` (`src/features/search/queries/search.ts`): orders by number under `data.view` with `branchFilter()` and never a Draft; subtypes by product or subtype name and suppliers (`SUPPLIER`, `BOTH`) by name under `catalog.pick`; 8 per group. `searchAction` in `src/app/(app)/search-actions.ts` adds each result's address (`src/features/search/result-href.ts`).
+- Texts under `search.*` in the three message files; `src/domain/search.ts` holds the limits.
+
+**Left out, and the task that brings it**
+- Nothing of this task. Searching users, departments, document numbers: not asked by 11 rule 9.
+
+**What the next sessions must know**
+- For 7.1 to 7.4: a transfer or count number is not searched; add a group to `searchEverything()` and `hitsOf()` of the dialog if a task asks for it.
+- The dialog's results stand only for the text typed now (the answer keeps its text); keep that when the dialog changes.
+
+The next task is 7.1.
