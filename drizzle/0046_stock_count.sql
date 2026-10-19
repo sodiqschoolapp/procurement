@@ -1,0 +1,3 @@
+ALTER TABLE "stock_document_lines" ADD COLUMN "start_seq" bigint;--> statement-breakpoint
+ALTER TABLE "stock_document_lines" ADD CONSTRAINT "stock_document_lines_start_seq_stock_movements_seq_fk" FOREIGN KEY ("start_seq") REFERENCES "public"."stock_movements"("seq") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+CREATE INDEX "stock_document_lines_start_seq_idx" ON "stock_document_lines" USING btree ("start_seq");

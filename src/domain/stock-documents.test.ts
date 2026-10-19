@@ -12,6 +12,9 @@ import {
   directEntryLineRefusal,
   overReturn,
   reversalOf,
+  countDifference,
+  countTypingAllowed,
+  countedQuantityRefusal,
   receivedQuantityRefusal,
   reverseAllows,
   transferReceipt,
@@ -410,5 +413,44 @@ describe("transferShort (09 Other documents, Transfer: any shortage)", () => {
   it("more received than sent is a mistake of the caller", () => {
     expect(() => transferShort("1", "1.001")).toThrow(RangeError);
     expect(() => transferShort("1", "x")).toThrow(RangeError);
+  });
+});
+
+describe('countDifference (09 Other documents, Stock count: "The system shows the differences"; plan of 7.3, decided item 2)', () => {
+  it("is the counted quantity minus the stock at the start, signed and exact", () => {
+    expect(countDifference("10.000", "8")).toBe("-2");
+    expect(countDifference("10", "12")).toBe("2");
+    expect(countDifference("4.000", "4")).toBe("0");
+    expect(countDifference("3", "2.5")).toBe("-0.5");
+    expect(countDifference("0", "1.001")).toBe("1.001");
+  });
+
+  it("is empty while the line is not counted", () => {
+    expect(countDifference("10", null)).toBeNull();
+  });
+});
+
+describe('countedQuantityRefusal (09 Stock count: "types the counted quantities"; edge case "Half a piece"; plan of 7.3)', () => {
+  it("allows 0 by either measure: an item that is not there", () => {
+    expect(countedQuantityRefusal("0", false)).toBeNull();
+    expect(countedQuantityRefusal("0", true)).toBeNull();
+    expect(countedQuantityRefusal("0.000", true)).toBeNull();
+  });
+
+  it("follows the measure and the quantity rules", () => {
+    expect(countedQuantityRefusal("7", false)).toBeNull();
+    expect(countedQuantityRefusal("1.5", true)).toBeNull();
+    expect(countedQuantityRefusal("1.5", false)).toBe("wholeOnly");
+    expect(countedQuantityRefusal("", false)).toBe("required");
+    expect(countedQuantityRefusal("-1", false)).toBe("wrongFormat");
+    expect(countedQuantityRefusal("1.2345", true)).toBe("tooManyDecimals");
+  });
+});
+
+describe("countTypingAllowed (plan of 7.3, decided item 1, Look first)", () => {
+  it("is yes only while the count waits", () => {
+    for (const status of DOCUMENT_STATUSES) {
+      expect(countTypingAllowed(status)).toBe(status === "PENDING_APPROVAL");
+    }
   });
 });

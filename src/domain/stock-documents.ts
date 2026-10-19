@@ -194,6 +194,44 @@ export function transferShort(qty: string, receivedQty: string): string {
   return short.toFixed();
 }
 
+/**
+ * Whether counted quantities may be typed on a count of this status (09 Other documents, Stock
+ * count: "The Manager starts a count … and types the counted quantities"; plan of 7.3, decided
+ * item 1, Look first): only while it waits (PENDING_APPROVAL, its status from the start); once the
+ * Head decides it (7.4), no more. The save action asks it under the lock, the count's page asks it
+ * for its form. Who types is the permission `stock.start_count` on the count's branch.
+ */
+export function countTypingAllowed(status: DocumentStatus): boolean {
+  return status === "PENDING_APPROVAL";
+}
+
+/**
+ * What is wrong with a typed counted quantity (09 Other documents, Stock count; edge case "Half a
+ * piece"): 0 is allowed (the item is not there); otherwise the quantity rules of ./drafts.ts by the
+ * measure. The form asks this as it types; the save action asks it again.
+ */
+export function countedQuantityRefusal(
+  text: string | null | undefined,
+  allowsDecimals: boolean,
+): QuantityRefusal | null {
+  if (/^0+(\.0+)?$/.test((text ?? "").trim())) return null;
+  return quantityRefusal(text, allowsDecimals);
+}
+
+/**
+ * The difference of one count line: the counted quantity minus the stock at the start, signed
+ * numeric(14,3) text ("-2", "0.5", "0"); null while the line is not counted (09 Other documents,
+ * Stock count: "The system shows the differences"; plan of 7.3, decided item 2, Look first). The
+ * one formula of a count's difference: the count's page, its form and 7.4's correction read it.
+ */
+export function countDifference(stockAtStart: string, counted: string | null): string | null {
+  if (counted === null) return null;
+  if (!QUANTITY.test(stockAtStart) || !QUANTITY.test(counted)) {
+    throw new RangeError(`A count line of "${counted}" against "${stockAtStart}"`);
+  }
+  return new Stock(counted).minus(new Stock(stockAtStart)).toFixed();
+}
+
 /** What receiving one transfer line writes (transferReceipt()). */
 export type TransferReceipt = {
   /** The receiving branch's TRANSFER_IN; null when nothing arrived. */
