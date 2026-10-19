@@ -2306,7 +2306,8 @@
       "tabs": {
         "label": "Ombor",
         "stock": "Ombordagi qoldiq",
-        "documents": "Hujjatlar"
+        "documents": "Hujjatlar",
+        "counts": "Sanoqlar"
       },
       "summary": "{count, plural, other {# ta hujjat}}",
       "filterType": "Turi",
@@ -2394,6 +2395,41 @@
         "receivedShortAsked": "{number} ko‘chirish qabul qilindi. Kamomadni hisobdan chiqarish rahbarga qaror uchun yuborildi."
       },
       "transferBranches": "{from} → {to}"
+    },
+    "count": {
+      "title": "Ombor sanoqlari",
+      "summary": "{count, plural, other {# ta sanoq}}",
+      "start": "Sanoqni boshlash",
+      "emptyTitle": "Hozircha sanoq yoʻq",
+      "emptyText": "Sanoq filial yoki toifaning bir paytdagi qoldigʻini oladi; keyin haqiqatda bor miqdorni kiritasiz.",
+      "columns": {
+        "number": "Raqam",
+        "branch": "Filial",
+        "date": "Sana",
+        "status": "Holat",
+        "createdBy": "Boshlagan",
+        "progress": "Sanalgan"
+      },
+      "progress": "{lines} tadan {counted} ta",
+      "startTitle": "Ombor sanoqini boshlash",
+      "startResult": "Sanoq filial yoki toifadagi har bir mahsulotning shu paytdagi qoldigʻini oladi. Boshlangan sanoqni oʻchirib boʻlmaydi: uni Rahbar hal qiladi.",
+      "branch": "Filial",
+      "category": "Toifa",
+      "wholeBranch": "Butun filial",
+      "inactiveCategory": "{name} (faol emas)",
+      "comment": "Izoh",
+      "started": "{number} sanoqi boshlandi.",
+      "sheetTitle": "Sanalgan miqdorlar",
+      "sheetIntro": "Haqiqatda bor miqdorni kiriting. Farq — sanalgan miqdor minus sanoq boshidagi qoldiq.",
+      "stockAtStart": "Boshidagi qoldiq",
+      "counted": "Sanalgan",
+      "countedLabel": "Sanalgan, {unit}",
+      "difference": "Farq",
+      "notCounted": "Sanalmagan",
+      "save": "Saqlash",
+      "saved": "{number} sanalgan miqdorlari saqlandi.",
+      "stockAtStartLine": "Boshidagi qoldiq: {qty} {unit}",
+      "branchOption": "{code} · {name}"
     }
   },
   "analytics": {

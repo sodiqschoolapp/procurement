@@ -128,7 +128,7 @@ export default async function WarehouseDocumentsPage({
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-6">
-      <WarehouseTabs current="documents" />
+      <WarehouseTabs current="documents" role={user.role} />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="flex flex-wrap items-baseline gap-x-3 text-[28px] leading-[34px] font-bold tracking-[-0.01em]">
           {t("title")}

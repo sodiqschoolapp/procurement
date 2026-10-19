@@ -2306,7 +2306,8 @@
       "tabs": {
         "label": "Warehouse",
         "stock": "Stock on hand",
-        "documents": "Documents"
+        "documents": "Documents",
+        "counts": "Counts"
       },
       "summary": "{count, plural, one {# document} other {# documents}}",
       "filterType": "Type",
@@ -2394,6 +2395,41 @@
         "receivedShortAsked": "Transfer {number} is received. The Head is asked to write off the shortage."
       },
       "transferBranches": "{from} → {to}"
+    },
+    "count": {
+      "title": "Stock counts",
+      "summary": "{count, plural, one {# count} other {# counts}}",
+      "start": "Start a count",
+      "emptyTitle": "No counts yet",
+      "emptyText": "A count takes the stock of a branch or a category at one moment; you then type what is really there.",
+      "columns": {
+        "number": "Number",
+        "branch": "Branch",
+        "date": "Date",
+        "status": "Status",
+        "createdBy": "Started by",
+        "progress": "Counted"
+      },
+      "progress": "{counted} of {lines}",
+      "startTitle": "Start a stock count",
+      "startResult": "The count takes the stock of this moment for every item of the branch, or of the category. Once started it cannot be removed: the Head decides it.",
+      "branch": "Branch",
+      "category": "Category",
+      "wholeBranch": "Whole branch",
+      "inactiveCategory": "{name} (inactive)",
+      "comment": "Comment",
+      "started": "Count {number} is started.",
+      "sheetTitle": "Counted quantities",
+      "sheetIntro": "Type what is really there. The difference is the counted quantity minus the stock at the start of the count.",
+      "stockAtStart": "Stock at start",
+      "counted": "Counted",
+      "countedLabel": "Counted, {unit}",
+      "difference": "Difference",
+      "notCounted": "Not counted",
+      "save": "Save",
+      "saved": "Counted quantities of {number} are saved.",
+      "stockAtStartLine": "Stock at start: {qty} {unit}",
+      "branchOption": "{code} · {name}"
     }
   },
   "analytics": {
