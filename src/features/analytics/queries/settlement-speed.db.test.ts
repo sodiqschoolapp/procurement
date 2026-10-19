@@ -114,6 +114,12 @@ describe("Settlement speed, with the clock set (10 Finance, Settlement speed; de
     const list = await getSettlements(finance.id, THIS_MONTH, NO_ANALYTICS_FILTERS, "all");
     expect([list.count, list.days]).toEqual([2, "1.8"]);
     expect(list.rows.map((row) => row.days)).toEqual(["2.5", "1.0"]);
+    expect(
+      list.rows.map((row) => [row.sentAt.toISOString(), row.closedAt.toISOString(), row.closedOn]),
+    ).toEqual([
+      ["2031-10-03T05:00:00.000Z", "2031-10-05T17:00:00.000Z", "2031-10-05"],
+      ["2031-10-01T05:00:00.000Z", "2031-10-02T05:00:00.000Z", "2031-10-02"],
+    ]);
   });
 
   it("counts a settlement by the Tashkent date of its close, not the UTC one (CLAUDE.md rule 10)", async () => {

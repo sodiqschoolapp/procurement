@@ -47,8 +47,8 @@ type Row = {
   subtype_name: string | null;
   branch_name: string;
   owner_name: string;
-  sent_at: Date;
-  closed_at: Date;
+  sent_at: string;
+  closed_at: string;
   closed_on: string;
   seconds: string;
 };
@@ -79,8 +79,10 @@ async function settlementsIn(
   const found = await db.execute<Row>(sql`
     select analytics_settlements.order_id, o.number, pr.name as product_name,
            case when v.is_default then null else v.name end as subtype_name,
-           b.name as branch_name, u.full_name as owner_name, analytics_settlements.sent_at,
-           analytics_settlements.closed_at, analytics_settlements.closed_on::text as closed_on,
+           b.name as branch_name, u.full_name as owner_name,
+           to_json(analytics_settlements.sent_at)#>>'{}' as sent_at,
+           to_json(analytics_settlements.closed_at)#>>'{}' as closed_at,
+           analytics_settlements.closed_on::text as closed_on,
            analytics_settlements.seconds::text as seconds
     from analytics_settlements
     join orders o on o.id = analytics_settlements.order_id
