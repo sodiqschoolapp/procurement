@@ -17,7 +17,7 @@ Build in nine phases, one at a time, and do not start a phase until the done-che
 | 5. Warehouse | Stock on hand, item card, issue, return, reverse, direct stock entry by the Head, minimums and low stock, write-off with Head approval | Scenarios S8, S11 and S15; download an issue note as PDF |
 | 6. Home, reports, search | Home page and Analytics page per role, the ten reports, Excel export, Ctrl+K search | Each role's home shows the right tasks; click a bar on the Head's Analytics page and see the orders behind it |
 | 7. Transfers and counts | Transfers between branches, stock counts with corrections | Send 10 items to another branch, receive 8, see the write-off request |
-| 8. Jobs and polish | Reminder and escalation jobs, nightly balance check, weekly database copy to R2, speed and accessibility review | An order left waiting 24 hours produces a reminder in the bell; restore the database to yesterday on the test copy |
+| 8. Jobs and polish | Reminder and escalation jobs, nightly balance check, weekly database copy to R2, speed and accessibility review | An order left waiting 24 hours produces a reminder in the bell; restore yesterday's copy of the database into a new, empty database |
 
 ## How to run this with Claude Code
 
