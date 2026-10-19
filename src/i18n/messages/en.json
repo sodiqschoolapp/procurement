@@ -2342,7 +2342,11 @@
       "hoursNone": "No stay in the period before",
       "amountUp": "+{amount} against the period before",
       "amountDown": "−{amount} against the period before",
-      "amountNone": "No ended order in one of the two periods"
+      "amountNone": "No ended order in one of the two periods",
+      "daysUp": "+{days} days against the period before",
+      "daysDown": "−{days} days against the period before",
+      "daysSame": "Same as in the period before",
+      "daysNone": "No settlement in the period before"
     },
     "spending": {
       "title": "Spending",
@@ -2390,7 +2394,9 @@
       "priceNoSupplier": "{name}, no supplier: {first} – {last}",
       "priceSummary": "{count, plural, one {# record} other {# records}}, {qty} bought, {price} per unit",
       "columnsQty": "Quantity",
-      "columnsUnitPrice": "Price per unit"
+      "columnsUnitPrice": "Price per unit",
+      "noReceipt": "Without a receipt, {first} – {last}",
+      "paymentNoSupplier": "{name}, no supplier: {first} – {last}"
     },
     "sheets": {
       "months": "Spending by month",
@@ -2430,7 +2436,12 @@
       "cashAges": "Cash by age",
       "cashNeeded": "Cash needed soon",
       "moneyRows": "Money rows",
-      "neededOrders": "Orders needing cash"
+      "neededOrders": "Orders needing cash",
+      "transfers": "Bank transfers by supplier",
+      "overspendBranches": "Overspent and saved by branch",
+      "overspendManagers": "Overspent and saved by Manager",
+      "settlementBranches": "Settlement speed by branch",
+      "settlements": "Settlements"
     },
     "plan": {
       "title": "Plan vs actual",
@@ -2889,7 +2900,17 @@
         "step": "Step",
         "needed": "Needed",
         "orders": "Orders",
-        "stage": "Stage"
+        "stage": "Stage",
+        "payment": "Payment type",
+        "amount": "Amount",
+        "supplier": "Supplier",
+        "branch": "Branch",
+        "manager": "Manager",
+        "days": "Average days",
+        "daysChange": "Change, days",
+        "settlements": "Settlements",
+        "overspentOrders": "Overspent orders",
+        "savedOrders": "Saved orders"
       },
       "money": {
         "title": "Money rows",
@@ -2910,6 +2931,50 @@
           "neededBy": "Needed by",
           "planned": "Planned cash",
           "handed": "Handed so far"
+        }
+      },
+      "records": "{count, plural, one {# record} other {# records}}",
+      "payments": {
+        "title": "Payments",
+        "note": "The period's spending by the way it was paid; an extra cost counts under its own payment type.",
+        "byType": "By payment type",
+        "transfers": "Bank transfers by supplier",
+        "transfersNote": "Spending paid by bank transfer, by the supplier of the purchase.",
+        "noSupplier": "No supplier",
+        "total": "All spending",
+        "transferTotal": "All bank transfers",
+        "empty": "No spending in this period."
+      },
+      "plan": {
+        "title": "Plan vs actual",
+        "note": "Orders whose buying ended in the period: money spent over the plan and money left from it.",
+        "overspent": "Overspent",
+        "saved": "Saved",
+        "byBranch": "By branch",
+        "byManager": "By Manager",
+        "noReceipt": "Purchases without a receipt",
+        "noReceiptNote": "Purchase records of the period whose purchase has no receipt photo."
+      },
+      "speed": {
+        "title": "Settlement speed",
+        "note": "Average days from “Send to settlement” to Closed, of the settlements closed in the period.",
+        "average": "Average",
+        "days": "{days} days",
+        "none": "—",
+        "byBranch": "By branch",
+        "allBranches": "All branches",
+        "settlements": "{count, plural, one {# settlement} other {# settlements}}"
+      },
+      "settlementList": {
+        "title": "Settlements behind the number",
+        "empty": "No settlement was closed in this period.",
+        "line": "Settlements closed {first} – {last}",
+        "summary": "{count, plural, one {# settlement} other {# settlements}}, {days} days on average",
+        "columns": {
+          "owner": "Manager",
+          "sent": "Sent to settlement",
+          "closed": "Closed",
+          "days": "Days"
         }
       }
     }

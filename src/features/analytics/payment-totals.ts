@@ -13,11 +13,7 @@ import { type Counted, counted } from "./counted";
 export type PaymentTotal = Counted & { payment: PaymentType };
 
 /** In the order of PAYMENT_TYPES, each type with spending in either period. */
-export async function paymentTotals(
-  db: Executor,
-  now: SQL,
-  then: SQL,
-): Promise<PaymentTotal[]> {
+export async function paymentTotals(db: Executor, now: SQL, then: SQL): Promise<PaymentTotal[]> {
   const payments = await db.execute<{ payment_type: PaymentType; now: string; before: string }>(sql`
     select pp.payment_type,
            coalesce(sum(pp.amount) filter (where ${now}), 0)::text as now,

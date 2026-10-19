@@ -6,7 +6,13 @@ import { BRANCH_COOKIE } from "@/features/catalog/branch-cookie";
 import { currentBranchChoice } from "@/features/catalog/queries/my-branches";
 import { ApprovalSpeedView } from "@/features/analytics/components/approval-speed-block";
 import { AnalyticsFilterBar } from "@/features/analytics/components/filter-bar";
-import { CashNeededView, FinanceCashView } from "@/features/analytics/components/finance-blocks";
+import {
+  CashNeededView,
+  FinanceCashView,
+  FinancePlanView,
+  PaymentsView,
+  SettlementSpeedView,
+} from "@/features/analytics/components/finance-blocks";
 import { HeadSpendingView } from "@/features/analytics/components/head-spending-block";
 import {
   MyCashView,
@@ -28,6 +34,7 @@ import { parseAnalyticsParams } from "@/features/analytics/period-params";
 import { getApprovalSpeed } from "@/features/analytics/queries/approval-speed";
 import { getCashNeeded } from "@/features/analytics/queries/cash-needed";
 import { getFinanceCash } from "@/features/analytics/queries/finance-cash";
+import { getFinanceSpending } from "@/features/analytics/queries/finance-spending";
 import { getAnalyticsFilters } from "@/features/analytics/queries/filters";
 import { getHeadSpending } from "@/features/analytics/queries/head-spending";
 import { getManagers } from "@/features/analytics/queries/managers";
@@ -38,6 +45,7 @@ import { getMyOrders } from "@/features/analytics/queries/my-orders";
 import { getOrderStatuses } from "@/features/analytics/queries/order-statuses";
 import { getPlanVsActual } from "@/features/analytics/queries/plan-vs-actual";
 import { getPriceChoices, getPrices } from "@/features/analytics/queries/prices";
+import { getSettlementSpeed } from "@/features/analytics/queries/settlement-speed";
 import { getSpending } from "@/features/analytics/queries/spending";
 import { getStockPlanning } from "@/features/analytics/queries/stock-planning";
 import { getTopProducts } from "@/features/analytics/queries/top-products";
@@ -56,9 +64,10 @@ import { AuthorizationError } from "@/server/authorize";
 // Principal's page adds the rest of Spending, Orders, My approvals and Warehouse (build-plan
 // 6.5a). The Manager's page shows My orders, My estimates and My cash (build-plan 6.5b; plan of
 // 6.5b, decided items 6 and 7) and Stock planning (build-plan 6.5c), and nothing else: the spec's Manager table has no Spending block, and its blocks
-// are the user's own orders, so it has no Manager filter. Finance's page adds Cash and Cash needed
-// soon under the shared Spending block, which stays until 6.6b (build-plan 6.6a; plan of 6.6a,
-// decided item 9). The branch
+// are the user's own orders, so it has no Manager filter. Finance's page shows Cash and Cash
+// needed soon (build-plan 6.6a), Payments, Plan vs actual and Settlement speed (build-plan 6.6b),
+// and no Spending block: the spec's Finance table has none, and its spending is Payments' (plan
+// of 6.6b, decided item 5, Look first). The branch
 // filter starts at the top bar's branch view (decided item 9). An address the parser refuses, or a school year not set,
 // falls back to this month (review of the plan, correction 2); another branch is Not found (03
 // rule 1). The line under the title says when the summary was last rebuilt (decided item 13).
@@ -77,7 +86,7 @@ async function readPage(userId: string, role: string, raw: Raw) {
   try {
     const [options, block, head, principal, manager, finance] = await Promise.all([
       getAnalyticsFilters(userId),
-      role === "MANAGER" ? null : getSpending(userId, params.period, filters),
+      role === "MANAGER" || role === "FINANCE" ? null : getSpending(userId, params.period, filters),
       role === "HEAD"
         ? Promise.all([
             getHeadSpending(userId, params.period, filters),
@@ -110,6 +119,9 @@ async function readPage(userId: string, role: string, raw: Raw) {
         ? Promise.all([
             getFinanceCash(userId, params.period, filters),
             getCashNeeded(userId, filters),
+            getFinanceSpending(userId, params.period, filters),
+            getPlanVsActual(userId, params.period, filters),
+            getSettlementSpeed(userId, params.period, filters),
           ])
         : null,
     ]);
@@ -138,8 +150,8 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
   if (read === "refused") redirect("/analytics");
   if (read === "not_found") notFound();
   const { period, filters, variant, options, block, head, principal, manager, finance } = read;
-  // The period resolved by a query: the Manager's page reads no Spending block.
-  const shownPeriod = manager ? manager[0].period : block!.period;
+  // The period resolved by a query: the Manager's and Finance's pages read no Spending block.
+  const shownPeriod = manager ? manager[0].period : finance ? finance[0].period : block!.period;
   const t = await getTranslations("analytics");
   const format = await getFormatters();
 
@@ -213,6 +225,14 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
         <>
           <FinanceCashView block={finance[0]} period={period} filters={filters} />
           <CashNeededView block={finance[1]} filters={filters} />
+          <PaymentsView block={finance[2]} period={period} filters={filters} />
+          <FinancePlanView
+            block={finance[3]}
+            noReceipt={finance[2].noReceipt}
+            period={period}
+            filters={filters}
+          />
+          <SettlementSpeedView block={finance[4]} period={period} filters={filters} />
         </>
       )}
     </div>

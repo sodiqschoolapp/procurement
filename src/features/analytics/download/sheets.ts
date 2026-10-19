@@ -15,6 +15,7 @@ import type { CancelledRecords } from "../queries/cancelled-records";
 import type { CashNeeded } from "../queries/cash-needed";
 import type { CashAge, CashOrders } from "../queries/cash-orders";
 import type { FinanceCash } from "../queries/finance-cash";
+import type { FinanceSpending } from "../queries/finance-spending";
 import type { MoneyRowList } from "../queries/money-rows";
 import type { NeededOrders } from "../queries/needed-orders";
 import type { Managers } from "../queries/managers";
@@ -30,6 +31,8 @@ import type { OutcomeOrders } from "../queries/outcome-orders";
 import type { PlanVsActual, Tally } from "../queries/plan-vs-actual";
 import type { SpendingBlock } from "../queries/spending";
 import { CASH_KIND_KEYS, OUTCOME_COLOURS } from "../period-params";
+import type { SettlementSpeed } from "../queries/settlement-speed";
+import type { SettlementList } from "../queries/settlements";
 import type { SpendingRecords } from "../queries/spending-records";
 import type { StatusOrders } from "../queries/status-orders";
 import type { StockLines } from "../queries/stock-lines";
@@ -1528,5 +1531,150 @@ export function neededOrdersSheet(
       { kind: "money", value: row.needed },
     ]),
     total: { label: t("finance.columns.needed"), amount: list.total },
+  };
+}
+
+/**
+ * Bank transfers by supplier, the "No supplier" row last, their total the Bank transfer slice
+ * (build-plan 6.6b; plan of 6.6b, decided item 1, Look first).
+ */
+export function transfersSheet(
+  block: FinanceSpending,
+  filters: AnalyticsFilters,
+  options: AnalyticsFilterOptions,
+  locale: Locale,
+): AnalyticsSheet {
+  const { t } = translators(locale);
+  const name = t("sheets.transfers");
+  const { suppliers, noSupplier, total } = block.transfers;
+  const rows = [
+    ...suppliers.map((row) => ({ label: row.name, amount: row.amount, change: row.change })),
+    ...(noSupplier ? [{ label: t("finance.payments.noSupplier"), ...noSupplier }] : []),
+  ];
+  return {
+    name,
+    heading: heading(locale, name, block.period, filters, options),
+    columns: [
+      t("finance.columns.supplier"),
+      t("spending.columns.amount"),
+      t("spending.columns.change"),
+      "%",
+    ],
+    rows: rows.map((row): CellValue[] => [
+      { kind: "text", value: row.label },
+      { kind: "money", value: row.amount },
+      ...changeCells(row.change),
+    ]),
+    total: { label: t("finance.payments.transferTotal"), amount: total.amount },
+  };
+}
+
+/**
+ * Finance's overspent and saved by branch or by Manager, the columns its table shows (build-plan
+ * 6.6b; review of the plan, correction 2): each with its count of orders and its change.
+ */
+export function overspendSheet(
+  block: PlanVsActual,
+  which: "overspendBranches" | "overspendManagers",
+  filters: AnalyticsFilters,
+  options: AnalyticsFilterOptions,
+  locale: Locale,
+): AnalyticsSheet {
+  const { t } = translators(locale);
+  const name = t(`sheets.${which}`);
+  const rows: { label: string; tally: Tally }[] =
+    which === "overspendBranches"
+      ? block.branches.map((row) => ({ label: row.name, tally: row }))
+      : block.managers.map((row) => ({ label: row.name ?? t("plan.otherOwners"), tally: row }));
+  const side = (orders: number, amount: bigint, change: Change): CellValue[] => [
+    { kind: "count", value: orders },
+    { kind: "money", value: amount },
+    ...changeCells(change),
+  ];
+  return {
+    name,
+    heading: heading(locale, name, block.period, filters, options),
+    columns: [
+      t(which === "overspendBranches" ? "plan.columns.branch" : "plan.columns.manager"),
+      t("finance.columns.overspentOrders"),
+      t("plan.columns.overspent"),
+      t("spending.columns.change"),
+      "%",
+      t("finance.columns.savedOrders"),
+      t("plan.columns.saved"),
+      t("spending.columns.change"),
+      "%",
+    ],
+    rows: rows.map(({ label, tally }) => [
+      { kind: "text", value: label },
+      ...side(tally.colours.red.count, tally.overspent.amount, tally.overspent.change),
+      ...side(tally.colours.amber.count, tally.saved.amount, tally.saved.change),
+    ]),
+  };
+}
+
+/** Settlement speed by branch, "All branches" last (build-plan 6.6b; plan of 6.6b, decided item 6). */
+export function settlementBranchesSheet(
+  block: SettlementSpeed,
+  filters: AnalyticsFilters,
+  options: AnalyticsFilterOptions,
+  locale: Locale,
+): AnalyticsSheet {
+  const { t } = translators(locale);
+  const name = t("sheets.settlementBranches");
+  const rows = [
+    ...block.branches.map((row) => ({ label: row.name, days: row })),
+    { label: t("finance.speed.allBranches"), days: block.total },
+  ];
+  return {
+    name,
+    heading: heading(locale, name, block.period, filters, options),
+    columns: [
+      t("finance.columns.branch"),
+      t("finance.columns.days"),
+      t("finance.columns.settlements"),
+      t("finance.columns.daysChange"),
+    ],
+    rows: rows.map(({ label, days }): CellValue[] => [
+      { kind: "text", value: label },
+      { kind: "text", value: days.days ?? "" },
+      { kind: "count", value: days.count },
+      { kind: "text", value: days.change ?? "" },
+    ]),
+  };
+}
+
+/** The settlements behind a Settlement speed number, every row (build-plan 6.6b). */
+export function settlementsSheet(
+  list: SettlementList,
+  filters: AnalyticsFilters,
+  options: AnalyticsFilterOptions,
+  locale: Locale,
+): AnalyticsSheet {
+  const { t, format } = translators(locale);
+  const name = t("sheets.settlements");
+  const lines = heading(locale, name, list.period, filters, options);
+  lines.push(t("finance.settlementList.summary", { count: list.count, days: list.days ?? "0.0" }));
+  return {
+    name,
+    heading: lines,
+    columns: [
+      t("cash.columns.order"),
+      t("cash.columns.product"),
+      t("cash.columns.branch"),
+      t("finance.settlementList.columns.owner"),
+      t("finance.settlementList.columns.sent"),
+      t("finance.settlementList.columns.closed"),
+      t("finance.settlementList.columns.days"),
+    ],
+    rows: list.rows.map((row): CellValue[] => [
+      { kind: "text", value: row.orderNumber },
+      { kind: "text", value: productText(row) },
+      { kind: "text", value: row.branchName },
+      { kind: "text", value: row.ownerName },
+      { kind: "text", value: `${format.date(row.sentAt)} ${format.time(row.sentAt)}` },
+      { kind: "text", value: `${format.date(row.closedAt)} ${format.time(row.closedAt)}` },
+      { kind: "text", value: row.days },
+    ]),
   };
 }

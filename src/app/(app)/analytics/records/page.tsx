@@ -97,8 +97,12 @@ export default async function AnalyticsRecordsPage({
           : list.key.kind === "category"
             ? t("records.category", { name: list.categoryName ?? "", ...dates })
             : list.key.kind === "payment"
-              ? t("records.payment", { name: tPayment(list.key.payment), ...dates })
-              : t("records.period", dates);
+              ? list.key.noSupplier
+                ? t("records.paymentNoSupplier", { name: tPayment(list.key.payment), ...dates })
+                : t("records.payment", { name: tPayment(list.key.payment), ...dates })
+              : list.key.kind === "noreceipt"
+                ? t("records.noReceipt", dates)
+                : t("records.period", dates);
   const pages = Math.max(1, Math.ceil(list.count / RECORDS_PAGE_SIZE));
   const href = (page: number) =>
     `/analytics/records?${analyticsSearch(params.period, params.filters, { key: params.key, page })}`;

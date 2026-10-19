@@ -39,7 +39,12 @@ export async function getSettlementSpeed(
   return readSnapshot((db) => speedIn(db, userId, input, filters));
 }
 
-type Sums = { now_seconds: string; now_count: string; before_seconds: string; before_count: string };
+type Sums = {
+  now_seconds: string;
+  now_count: string;
+  before_seconds: string;
+  before_count: string;
+};
 
 function daysOf(row: Sums): Days {
   const days = averageDays(BigInt(row.now_seconds), Number(row.now_count));

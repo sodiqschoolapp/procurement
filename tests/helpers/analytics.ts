@@ -12,13 +12,7 @@ import { refreshAnalytics } from "@/server/jobs/analytics-refresh";
 import { createDocument, reverseDocument } from "@/server/stock-documents";
 
 import { insertBranch } from "./branches";
-import {
-  insertCategory,
-  insertCompany,
-  insertFileRow,
-  insertProduct,
-  insertUnit,
-} from "./catalog";
+import { insertCategory, insertCompany, insertFileRow, insertProduct, insertUnit } from "./catalog";
 import { insertDepartment, insertExtraCostType, insertOrder } from "./orders";
 import { receive } from "./stock-documents";
 import { insertUser } from "./users";

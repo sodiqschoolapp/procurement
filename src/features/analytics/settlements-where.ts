@@ -15,11 +15,7 @@ import type { AnalyticsFilters } from "./period-params";
 // draft wall: a row exists only for an order that reached Closed, and no move leads from Closed
 // back to Draft (decided item 9).
 
-export function settlementsWhere(
-  actor: Actor,
-  range: DateRange,
-  filters: AnalyticsFilters,
-): SQL {
+export function settlementsWhere(actor: Actor, range: DateRange, filters: AnalyticsFilters): SQL {
   return (
     and(
       branchFilter(actor, analyticsSettlements.branchId),

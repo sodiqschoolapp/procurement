@@ -25,15 +25,19 @@ import {
   orderStatusesSheet,
   outcomeOrdersSheet,
   outcomesSheet,
+  overspendSheet,
   priceRisesSheet,
   priceSpreadSheet,
   priceTrendSheet,
   productsSheet,
   recordsSheet,
+  settlementBranchesSheet,
+  settlementsSheet,
   spendingSheet,
   statusOrdersSheet,
   stockSheet,
   tallySheet,
+  transfersSheet,
   warehouseSheet,
 } from "@/features/analytics/download/sheets";
 import { parseAnalyticsParams } from "@/features/analytics/period-params";
@@ -43,6 +47,7 @@ import { getCancelledRecords } from "@/features/analytics/queries/cancelled-reco
 import { getCashNeeded } from "@/features/analytics/queries/cash-needed";
 import { getCashOrders } from "@/features/analytics/queries/cash-orders";
 import { getFinanceCash } from "@/features/analytics/queries/finance-cash";
+import { getFinanceSpending } from "@/features/analytics/queries/finance-spending";
 import { getAnalyticsFilters } from "@/features/analytics/queries/filters";
 import { getHeadSpending } from "@/features/analytics/queries/head-spending";
 import { getManagers } from "@/features/analytics/queries/managers";
@@ -56,6 +61,8 @@ import { getOrderStatuses } from "@/features/analytics/queries/order-statuses";
 import { getOutcomeOrders } from "@/features/analytics/queries/outcome-orders";
 import { getPlanVsActual } from "@/features/analytics/queries/plan-vs-actual";
 import { getPrices } from "@/features/analytics/queries/prices";
+import { getSettlementSpeed } from "@/features/analytics/queries/settlement-speed";
+import { getSettlements } from "@/features/analytics/queries/settlements";
 import { getSpending } from "@/features/analytics/queries/spending";
 import { getSpendingRecords } from "@/features/analytics/queries/spending-records";
 import { getStatusOrders } from "@/features/analytics/queries/status-orders";
@@ -76,7 +83,8 @@ import { now } from "@/server/clock";
 // waiting, decisions, reasons, approvals; 6.4c: managers, cancelled, cash; 6.4d: warehouse,
 // departmentUse, stock, moves; 6.5a: products, orderStatuses, statusOrders, myApprovals; 6.5b:
 // myOrders, myReasons, myEstimates, myCash; 6.5c: stockPlanning; 6.6a: financeCash, moneyRows,
-// cashAges, cashNeeded, neededOrders, and cash with an age band)
+// cashAges, cashNeeded, neededOrders, and cash with an age band; 6.6b: transfers,
+// overspendBranches, overspendManagers, settlementBranches, settlements)
 // (10-notifications-analytics-reports.md, Analytics page per role, point 4; 03 Permission matrix
 // "Export to Excel, download PDF, print"; build-plan 6.3). A route that writes nothing, as the
 // order list's download (plan of 2.14, decided item 12). The address is the page's, checked by
@@ -342,6 +350,41 @@ export async function GET(request: NextRequest): Promise<Response> {
         if (key.kind !== "needed") return notFound();
         sheet = neededOrdersSheet(
           await getNeededOrders(user.id, filters, key.stage, key.step, "all"),
+          filters,
+          options,
+          locale,
+        );
+        break;
+      case "transfers":
+        sheet = transfersSheet(
+          await getFinanceSpending(user.id, period, filters),
+          filters,
+          options,
+          locale,
+        );
+        break;
+      case "overspendBranches":
+      case "overspendManagers":
+        sheet = overspendSheet(
+          await getPlanVsActual(user.id, period, filters),
+          block,
+          filters,
+          options,
+          locale,
+        );
+        break;
+      case "settlementBranches":
+        sheet = settlementBranchesSheet(
+          await getSettlementSpeed(user.id, period, filters),
+          filters,
+          options,
+          locale,
+        );
+        break;
+      case "settlements":
+        if (key.kind !== "settled") return notFound();
+        sheet = settlementsSheet(
+          await getSettlements(user.id, period, filters, "all"),
           filters,
           options,
           locale,

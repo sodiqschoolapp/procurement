@@ -350,18 +350,18 @@ async function writeSettlements(executor: Executor) {
                   where s.order_id = o.id and s.type = 'SEND_TO_SETTLEMENT')
     group by o.id, pr.id`);
   const rows = found.rows.flatMap((row) =>
-    settlementStays(
-      row.events.map((event) => ({ ...event, at: new Date(event.at) })),
-    ).map((settlement) => ({
-      order_id: row.order_id,
-      branch_id: row.branch_id,
-      sent_at: settlement.sentAt.toISOString(),
-      closed_at: settlement.closedAt.toISOString(),
-      seconds: settlement.seconds.toString(),
-      category_id: row.category_id,
-      department_id: row.department_id,
-      owner_id: row.owner_id,
-    })),
+    settlementStays(row.events.map((event) => ({ ...event, at: new Date(event.at) }))).map(
+      (settlement) => ({
+        order_id: row.order_id,
+        branch_id: row.branch_id,
+        sent_at: settlement.sentAt.toISOString(),
+        closed_at: settlement.closedAt.toISOString(),
+        seconds: settlement.seconds.toString(),
+        category_id: row.category_id,
+        department_id: row.department_id,
+        owner_id: row.owner_id,
+      }),
+    ),
   );
   if (rows.length === 0) return;
   await executor.execute(sql`
