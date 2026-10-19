@@ -31,7 +31,11 @@ async function withDatabase<T>(work: (client: pg.Client) => Promise<T>): Promise
 }
 
 /** One order of the owner in EA at `status`, 100 pieces × 5 000, needed by `neededBy`. */
-async function seedOrder(owner: Person, status: "REJECTED" | "PENDING_HEAD", neededBy: string) {
+async function seedOrder(
+  owner: Person,
+  status: "PENDING_PRINCIPAL" | "PENDING_HEAD",
+  neededBy: string,
+) {
   return withDatabase(async (client) => {
     await client.query("begin");
     try {
@@ -86,6 +90,15 @@ async function seedOrder(owner: Person, status: "REJECTED" | "PENDING_HEAD", nee
   });
 }
 
+async function statusOf(id: string): Promise<string> {
+  return withDatabase(async (client) => {
+    const row = await client.query<{ status: string }>("select status from orders where id = $1", [
+      id,
+    ]);
+    return row.rows[0]!.status;
+  });
+}
+
 /** The owner's never-submitted draft of the subtype, as stored. */
 async function draftOf(ownerId: string, variantId: string) {
   return withDatabase(async (client) => {
@@ -112,16 +125,31 @@ function scrollsSideways(page: Page) {
   );
 }
 
-test("S6: a rejected order is read-only and Copy as new creates a draft; the Principal has no Copy as new", async ({
+test("S6: the Principal rejects with a reason; the rejected order is read-only and Copy as new creates a draft; the Principal has no Copy as new", async ({
   page,
 }, info) => {
   const owner = E2E_COPY_USERS[info.project.name as keyof typeof E2E_COPY_USERS];
-  const order = await seedOrder(owner, "REJECTED", "2031-05-01");
+  const order = await seedOrder(owner, "PENDING_PRINCIPAL", "2031-05-01");
 
-  // The Principal of the branch sees the rejected order with no button at all.
+  // The Principal rejects with a reason, clicked through (15 S6; 06 rule 3: a reason is required).
   await signIn(page, E2E_ROLES.PRINCIPAL);
   await page.goto(`/orders/${order.id}`);
   await expect(page.locator("[data-order-number]")).toHaveText(order.number);
+  await page
+    .locator("[data-order-bar]")
+    .getByRole("button", { name: t.moves.button.REJECT, exact: true })
+    .click();
+  const reject = page.getByRole("alertdialog");
+  const confirmReject = reject.getByRole("button", { name: t.moves.button.REJECT, exact: true });
+  await expect(confirmReject).toBeDisabled();
+  await reject.locator("textarea[data-reason]").fill("Bu daftarlar kerak emas");
+  await confirmReject.click();
+  await expect(page.getByText("1 ta buyurtma rad etildi.")).toBeVisible();
+  await expect.poll(() => statusOf(order.id)).toBe("REJECTED");
+
+  // Status Rejected; the Principal sees the rejected order with no button at all.
+  await page.goto(`/orders/${order.id}`);
+  await expect(page.getByText(uz.requestStatus.REJECTED, { exact: true })).toBeVisible();
   await expect(page.locator("[data-order-bar] [data-copy-as-new]")).toHaveCount(0);
   await page.context().clearCookies();
 
