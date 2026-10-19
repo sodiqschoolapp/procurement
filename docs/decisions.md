@@ -2487,13 +2487,14 @@ The plan's decisions as the plan review of 19.10.2026 confirmed them, with its t
 4. **Look first** (stock rule). A received quantity is 0 up to the quantity sent, by the measure; above is refused (`aboveSent`) by the action and by `stock_document_lines_received_qty_sent_check` (migration `0045_transfer_receive`). A line of 0 writes no `TRANSFER_IN`.
 5. **Look first** (stock rule; Decided ahead, question 19). Reverse of a received transfer: the Head only; `reverseDocument()` undoes every movement in its own branch at its own cost. The "Lost in transfer" write-off is its own document and is not touched. An In-transit transfer still has no Reverse.
 6. **Look first** (branch wall; plan review correction 1). The shortage's write-off is made by the receiving user (the true history). Its decision notice goes to its maker only when the maker may see the sending branch: `notify()` already keeps only people of the event's branch, so no code changed in `decideWriteOff`; a database test proves a receiver outside the sending branch gets nothing and a Manager of both branches is told.
-7. The write-off's `client_key` is a fresh uuid made on the server (nobody can take it first); its date is the receipt's Tashkent day, its comment the TRF number. Its number is taken before any balance lock (the order of `askWriteOff`). When the Head receives, it is approved at once and nobody is told (plan of 5.11, decided item 1).
-8. The reports are not changed: a `TRANSFER_IN` keeps the transfer's date in Stock movements (plan of 6.9a, decided item 5).
-9. "Received by" at receipt is prefilled with the sender's text, or the receiving user's name, and replaces it; the receipt has no date field.
-10. Not a create: a second receipt is `wrong_status` under the document lock.
-11. No branch lock (a branch with a transfer In transit cannot be closed) and no re-check that products are active, as at a write-off's approval.
-12. Only the Heads are told, through STOCK_CHANGE_ASKED, and only when a write-off waits. No audit row.
-13. The transfer note gets a Received column after receipt; the page shows Sent, Received and Short.
+7. **Look first** (branch wall; permission review should fix 2). The receiving user makes a write-off request on the sending branch, a branch they may not belong to, whatever their WRITE_OFF_COUNT: 09 Transfer asks for it ("Any shortage becomes a write-off request … on the sending branch"), so it crosses the matrix row "Ask for a write-off" on purpose. The receiver gets the write-off's number and id back only when they see the sending branch; otherwise the screen says a request went to the Head (permission review should fix 1).
+8. The write-off's `client_key` is a fresh uuid made on the server (nobody can take it first); its date is the receipt's Tashkent day, its comment the TRF number. Its number is taken before any balance lock (the order of `askWriteOff`). When the Head receives, it is approved at once and nobody is told (plan of 5.11, decided item 1).
+9. The reports are not changed: a `TRANSFER_IN` keeps the transfer's date in Stock movements (plan of 6.9a, decided item 5).
+10. "Received by" at receipt is prefilled with the sender's text, or the receiving user's name, and replaces it; the receipt has no date field.
+11. Not a create: a second receipt is `wrong_status` under the document lock.
+12. No branch lock (a branch with a transfer In transit cannot be closed) and no re-check that products are active, as at a write-off's approval.
+13. Only the Heads are told, through STOCK_CHANGE_ASKED, and only when a write-off waits. No audit row.
+14. The transfer note gets a Received column after receipt; the page shows Sent, Received and Short.
 
 Choices made during the build:
 

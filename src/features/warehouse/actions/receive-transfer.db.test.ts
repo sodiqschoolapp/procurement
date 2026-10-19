@@ -177,11 +177,9 @@ describe("the phase 7 check (16-build-order.md: send 10, receive 8, see the writ
       data: {
         documentId: sentResult.data.documentId,
         number: sentResult.data.number,
-        writeOff: {
-          documentId: expect.any(String),
-          number: `WOF-${sender.code}-31-0001`,
-          posted: false,
-        },
+        // The write-off is the sending branch's: no id or number for a receiver outside it
+        // (permission review of 7.2, should fix 1).
+        writeOff: { documentId: null, number: null, posted: false },
       },
     });
     if (!result.ok) return;
@@ -214,7 +212,7 @@ describe("the phase 7 check (16-build-order.md: send 10, receive 8, see the writ
     const writeOffs = await writeOffsOf(sender.id);
     expect(writeOffs).toEqual([
       {
-        id: result.data.writeOff!.documentId,
+        id: expect.any(String),
         number: `WOF-${sender.code}-31-0001`,
         status: "PENDING_APPROVAL",
         reason: "LOST_IN_TRANSFER",
@@ -239,13 +237,13 @@ describe("the phase 7 check (16-build-order.md: send 10, receive 8, see the writ
           branch: sender.code,
           kind: "WRITE_OFF",
         },
-        link: `/warehouse/documents/${result.data.writeOff!.documentId}`,
+        link: `/warehouse/documents/${(await writeOffsOf(sender.id))[0]!.id}`,
       },
     ]);
 
     // The Head approves: the 2 are lost once, and the sender holds 10.
     const approved = await runAction(decideWriteOff, head.id, {
-      documentId: result.data.writeOff!.documentId,
+      documentId: (await writeOffsOf(sender.id))[0]!.id,
       outcome: "APPROVE",
     });
     expect(approved.ok).toBe(true);
@@ -263,7 +261,7 @@ describe("the phase 7 check (16-build-order.md: send 10, receive 8, see the writ
     );
     if (!result.ok) throw new Error(`fixture: ${result.error.code}`);
     const refused = await runAction(decideWriteOff, head.id, {
-      documentId: result.data.writeOff!.documentId,
+      documentId: (await writeOffsOf(sender.id))[0]!.id,
       outcome: "REFUSE",
     });
     expect(refused.ok).toBe(true);
@@ -319,7 +317,7 @@ describe("receiveTransfer (09 Other documents, Transfer; edge case 'A transfer a
     expect(await movementsOf(receiver.id, a)).toHaveLength(1);
     expect(await balanceOf(receiver.id, a)).toEqual({ qty: "4.000", avg_cost: "3000" });
     expect(await balanceOf(sender.id, a)).toEqual({ qty: "2.500", avg_cost: "5000" });
-    expect(await linesOf(result.data.writeOff!.documentId)).toEqual([
+    expect(await linesOf((await writeOffsOf(sender.id))[0]!.id)).toEqual([
       { variant_id: a, qty: "2.500", received_qty: null },
     ]);
     expect((await documentOf(made.documentId)).received_by_name).toBeNull();
@@ -367,7 +365,7 @@ describe("receiveTransfer (09 Other documents, Transfer; edge case 'A transfer a
       lines: [{ variantId: a, qty: "2" }],
     });
     const approved = await runAction(decideWriteOff, head.id, {
-      documentId: result.data.writeOff!.documentId,
+      documentId: (await writeOffsOf(sender.id))[0]!.id,
       outcome: "APPROVE",
     });
     expect(approved).toMatchObject({ ok: false, error: { code: "invalid_input" } });
@@ -524,7 +522,9 @@ describe("the decision of a 'Lost in transfer' write-off (10 Notifications: the 
       );
       if (!result.ok) throw new Error(`fixture: ${result.error.code}`);
       const decided = await runAction(decideWriteOff, head.id, {
-        documentId: result.data.writeOff!.documentId,
+        documentId: (await writeOffsOf(sender.id)).find(
+          (each) => each.status === "PENDING_APPROVAL",
+        )!.id,
         outcome,
       });
       expect(decided.ok).toBe(true);
@@ -543,13 +543,19 @@ describe("the decision of a 'Lost in transfer' write-off (10 Notifications: the 
     );
     if (!result.ok) throw new Error(`fixture: ${result.error.code}`);
     const decided = await runAction(decideWriteOff, head.id, {
-      documentId: result.data.writeOff!.documentId,
+      documentId: (await writeOffsOf(sender.id))[0]!.id,
       outcome: "APPROVE",
     });
     expect(decided.ok).toBe(true);
     expect(await noticesOf(both.id)).toEqual([
       expect.objectContaining({ type: "STOCK_CHANGE_DECIDED" }),
     ]);
+    // A receiver who also sees the sending branch is given the write-off's number and id.
+    expect(result.data.writeOff).toEqual({
+      documentId: (await writeOffsOf(sender.id))[0]!.id,
+      number: `WOF-${sender.code}-31-0001`,
+      posted: false,
+    });
   });
 });
 

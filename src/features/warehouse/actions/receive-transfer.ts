@@ -67,8 +67,11 @@ export type ReceiveTransferInput = {
 export type ReceiveTransferResult = {
   documentId: string;
   number: string;
-  /** The write-off "Lost in transfer", when a line was short. */
-  writeOff: { documentId: string; number: string; posted: boolean } | null;
+  /**
+   * The write-off "Lost in transfer", when a line was short. Its id and number only for one who
+   * sees the sending branch: it is that branch's document (permission review of 7.2, should fix 1).
+   */
+  writeOff: { documentId: string | null; number: string | null; posted: boolean } | null;
 };
 
 const input = z
@@ -98,7 +101,12 @@ type HeldLine = {
   sent_cost: string | null;
 };
 
-type Locked = { document: LockedDocument; lines: HeldLine[] };
+type Locked = {
+  document: LockedDocument;
+  lines: HeldLine[];
+  /** Filled by the write step for the notify step: the write-off it made, if any. */
+  writeOff?: { documentId: string; number: string; posted: boolean };
+};
 
 function refuse(field: string, kind: FieldMessageKey): never {
   throw new ActionError("invalid_input", { [field]: kind });
@@ -130,7 +138,7 @@ export const receiveTransfer = defineAction({
       order by l.id`);
     return {
       target: { branchId: document.toBranchId ?? document.branchId },
-      rows: { document, lines: found.rows } satisfies Locked,
+      rows: { document, lines: found.rows } as Locked,
     };
   },
   check({ input: typed, locked }) {
@@ -236,17 +244,29 @@ export const receiveTransfer = defineAction({
       await postLines(tx, { documentId: writeOff.documentId, postedBy: userId });
     }
 
+    if (writeOff) {
+      locked!.rows.writeOff = {
+        documentId: writeOff.documentId,
+        number: writeOff.number,
+        posted: byHead,
+      };
+    }
+    const seesSender = byHead || actor.branchIds.includes(document.branchId);
     return {
       documentId: document.id,
       number,
       writeOff: writeOff
-        ? { documentId: writeOff.documentId, number: writeOff.number, posted: byHead }
+        ? {
+            documentId: seesSender ? writeOff.documentId : null,
+            number: seesSender ? writeOff.number : null,
+            posted: byHead,
+          }
         : null,
     };
   },
-  async notify({ tx, userId, locked }, result) {
-    if (!result.writeOff || result.writeOff.posted) return;
-    const document = locked!.rows.document;
+  async notify({ tx, userId, locked }) {
+    const { document, writeOff } = locked!.rows;
+    if (!writeOff || writeOff.posted) return;
     const heads = await tx
       .select({ id: users.id })
       .from(users)
@@ -266,13 +286,13 @@ export const receiveTransfer = defineAction({
         type: "STOCK_CHANGE_ASKED",
         params: {
           actor: maker!.name,
-          number: result.writeOff.number,
+          number: writeOff.number,
           branch: sender!.code,
           kind: "WRITE_OFF",
         },
         // The sending branch: the write-off is its document.
         branchId: document.branchId,
-        link: `/warehouse/documents/${result.writeOff.documentId}`,
+        link: `/warehouse/documents/${writeOff.documentId}`,
         at: now(),
       },
     );

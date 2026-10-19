@@ -2389,7 +2389,8 @@
         "confirmResult": "{count} ta tovar kiritilgan miqdorda {to} omboriga kiradi. Buni bu yerda bekor qilib bo‘lmaydi.",
         "confirmResultShort": "{count} ta tovar kiritilgan miqdorda {to} omboriga kiradi. {short} ta qatorda kamomad bor: u rahbar uchun «Ko‘chirishda yo‘qolgan» hisobdan chiqarish so‘rovi sifatida {from} ga qaytadi.",
         "received": "{number} ko‘chirish qabul qilindi.",
-        "receivedShort": "{number} ko‘chirish qabul qilindi. {writeOff} hisobdan chiqarish so‘rovi rahbarni kutmoqda."
+        "receivedShort": "{number} ko‘chirish qabul qilindi. {writeOff} hisobdan chiqarish so‘rovi rahbarni kutmoqda.",
+        "receivedShortAsked": "{number} ko‘chirish qabul qilindi. Kamomadni hisobdan chiqarish so‘rovi rahbarga yuborildi."
       },
       "transferBranches": "{from} → {to}"
     }

@@ -2389,7 +2389,8 @@
         "confirmResult": "{count, plural, one {This # item enters} other {These # items enter}} the stock of {to} as typed. This cannot be undone here.",
         "confirmResultShort": "{count, plural, one {This # item enters} other {These # items enter}} the stock of {to} as typed. {short, plural, one {# line is} other {# lines are}} short: the shortage goes back to {from} as a write-off request \"Lost in transfer\" for the Head.",
         "received": "Transfer {number} is received.",
-        "receivedShort": "Transfer {number} is received. Write-off request {writeOff} waits for the Head."
+        "receivedShort": "Transfer {number} is received. Write-off request {writeOff} waits for the Head.",
+        "receivedShortAsked": "Transfer {number} is received. A write-off request for the shortage went to the Head."
       },
       "transferBranches": "{from} → {to}"
     }

@@ -92,9 +92,11 @@ export function ReceiveTransferForm({
       if (answer.ok) {
         setDirty(false);
         toast.success(
-          answer.data.writeOff
+          answer.data.writeOff?.number
             ? t("receivedShort", { number, writeOff: answer.data.writeOff.number })
-            : t("received", { number }),
+            : answer.data.writeOff
+              ? t("receivedShortAsked", { number })
+              : t("received", { number }),
         );
         return;
       }
