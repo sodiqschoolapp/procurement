@@ -8,7 +8,7 @@ import {
   nearNotices,
   waitingNotices,
 } from "@/domain/reminders";
-import { enteredCurrentStatusAt, stillDueWhere } from "@/features/orders/queries/order-sql";
+import { enteredCurrentStatusAt, stillDueWhere } from "@/features/orders/order-sql";
 import { now } from "@/server/clock";
 import { branches, orders, userBranches, users } from "@/server/db/schema";
 import { notify } from "@/server/notify";

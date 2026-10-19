@@ -1836,7 +1836,7 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 **Built**
 - Job `reminders` (`src/server/jobs/reminders.ts`, daily at the 00:00 Tashkent tick): REQUEST_WAITING_24H to the approvers of each Waiting step (`waitingFor()`), count over their branches; REQUEST_WAITING_48H to every active Head, all branches; NEEDED_BY_NEAR to the owner, one per branch, for orders needed by today to today + 2 whose buying is not finished. Repeats daily while the orders wait.
 - Domain: `waitingNotices()`, `nearNotices()`, `NEEDED_BY_NEAR_DAYS` (`src/domain/reminders.ts`). NEEDED_BY_NEAR params `{ count, branch }` and texts in uz, ru, en.
-- `src/features/orders/queries/order-sql.ts`: `enteredCurrentStatusAt` and `stillDueWhere()`, moved out of `listWhere()`.
+- `src/features/orders/order-sql.ts`: `enteredCurrentStatusAt` and `stillDueWhere()`, moved out of `listWhere()`.
 
 **Left out, and the task that brings it**
 - A time of day for the job: 8.2. A list filter "waiting more than `reminder_hours`": none asks.
