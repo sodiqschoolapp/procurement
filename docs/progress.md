@@ -1932,5 +1932,6 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - An issue form opened by `page.goto()` can lose a department chosen before it hydrates: choose it inside `expect(...).toPass()` until Received by is prefilled (`readyIssue()` in `acceptance-warehouse.spec.ts`).
 - Name the step buttons with `exact: true`: the `next dev` tools button matches "Next".
 - A refusal toast's text shows twice in the page; read it inside the region "Notifications".
+- `OrderList` draws the list's empty page itself (`empty` prop), so a refusal it holds stays when the refresh empties the list.
 
 The next task is 9.1d.

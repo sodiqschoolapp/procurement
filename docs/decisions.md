@@ -2679,6 +2679,8 @@ Choices made during the build:
 - S4's second part needs no step to take the delivery off: Same as planned fills only the 40 still lacking and no extra cost after a first part (`sameAsPlanned()`), and the test asserts both on the form. The plan had said the row would be taken off. A part below the plan asks no comment (`purchaseCommentNeeds()`, plan of 3.3).
 - The issue form's department is chosen inside `expect(...).toPass()` until Received by is prefilled: opened by `page.goto()`, the form could lose a choice made before it hydrated.
 - The step buttons are named with `exact: true` (the `next dev` tools button matches "Next"), and the refusal toast is read inside the region "Notifications", where its text is once.
+- **A fix to the order list** (S8's "The other gets a clear message"): Head B's refused Approve showed above the list, and the refresh after it swapped the list for the empty page when the refused orders had been the list's last ones, so the refusal disappeared. `OrderList` now draws the empty page itself, so the refusal stays above it until closed. Found by the whole suite, where S8 failed once; S8 now waits for the empty page before it reads the refusal, and fails without the fix. No permission or query changed.
+- S8's direct receipt of 5 is recorded as the Head's (`stockIn(…, scene.head)`): no Manager can receive stock without an order (permission review, should-fix 1).
 
 ## Process changes
 
