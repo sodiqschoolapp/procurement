@@ -1,13 +1,18 @@
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import * as z from "zod";
 
 import { businessDate } from "@/domain/business-date";
 import { draftComment, isDraftComment } from "@/domain/drafts";
-import { countTypingAllowed, countedQuantityRefusal } from "@/domain/stock-documents";
+import {
+  countComplete,
+  countTypingAllowed,
+  countedQuantityRefusal,
+} from "@/domain/stock-documents";
 import { ActionError, defineAction } from "@/server/action";
 import type { FieldMessageKey } from "@/server/action-result";
 import { now } from "@/server/clock";
-import { branches, categories, stockDocuments } from "@/server/db/schema";
+import { branches, categories, stockDocuments, users } from "@/server/db/schema";
+import { notify } from "@/server/notify";
 import { type LockedDocument, createDocument, lockDocument } from "@/server/stock-documents";
 
 // Stock counts (09-warehouse.md, Other documents, Stock count: "The Manager starts a count for a
@@ -34,7 +39,11 @@ import { type LockedDocument, createDocument, lockDocument } from "@/server/stoc
 // from the database; not a count is "Not found"; countTypingAllowed() under the lock; the lines
 // must be lines of this count; each quantity is empty (not counted) or countedQuantityRefusal()
 // null by the measure. Only the lines sent change, so two people typing different lines both keep
-// theirs (decided item 6).
+// theirs (decided item 6). It takes the count's lock and then reads its lines, and never a balance
+// row: the Head's approval (count-decision.ts) takes the document first and the balances after, so
+// the two never wait on each other the other way round (plan review of 7.4, correction 3). The save
+// that makes the count complete (countComplete(), every line counted, after it was not) asks the
+// Heads: STOCK_CHANGE_ASKED to every active Head, kind COUNT (plan of 7.4, decided items 1 and 10).
 
 export type StartCountInput = {
   clientKey: string;
@@ -158,7 +167,12 @@ export type SaveCountedQuantitiesInput = {
   lines: { lineId: string; countedQty: string | null }[];
 };
 
-export type SaveCountedQuantitiesResult = { documentId: string; saved: number };
+export type SaveCountedQuantitiesResult = {
+  documentId: string;
+  saved: number;
+  /** This save made the count complete, so the Heads were asked (plan of 7.4, decided item 1). */
+  completed: boolean;
+};
 
 /** A size limit of one request, not a rule of the count (plan of 7.3, decided item 8). */
 const SAVE_LINES_MAX = 5_000;
@@ -185,7 +199,7 @@ const saveInput = z
     message: "A line is given twice.",
   });
 
-type HeldCountLine = { id: string; allow_decimal: boolean };
+type HeldCountLine = { id: string; allow_decimal: boolean; counted_qty: string | null };
 
 export const saveCountedQuantities = defineAction({
   name: "saveCountedQuantities",
@@ -204,7 +218,7 @@ export const saveCountedQuantities = defineAction({
     const document = await lockDocument(tx, typed.documentId);
     // The lines and their measure, in a statement of their own after the lock.
     const found = await tx.execute<HeldCountLine>(sql`
-      select l.id, u.allow_decimal
+      select l.id, u.allow_decimal, l.counted_qty::text as counted_qty
       from stock_document_lines l
       join product_variants v on v.id = l.variant_id
       join products p on p.id = v.product_id
@@ -228,7 +242,7 @@ export const saveCountedQuantities = defineAction({
     }
   },
   async write({ tx, input: typed, locked }): Promise<SaveCountedQuantitiesResult> {
-    const { document } = locked!.rows;
+    const { document, lines } = locked!.rows;
     const rows = sql.join(
       typed.lines.map((line) => sql`(${line.lineId}::uuid, ${line.countedQty}::numeric)`),
       sql`, `,
@@ -237,6 +251,40 @@ export const saveCountedQuantities = defineAction({
       update stock_document_lines l set counted_qty = typed.counted_qty
       from (values ${rows}) as typed(id, counted_qty)
       where l.id = typed.id and l.document_id = ${document.id}`);
-    return { documentId: document.id, saved: typed.lines.length };
+    const after = await tx.execute<{ counted_qty: string | null }>(sql`
+      select counted_qty::text as counted_qty from stock_document_lines
+      where document_id = ${document.id}`);
+    const completed =
+      !countComplete(lines.map((line) => line.counted_qty)) &&
+      countComplete(after.rows.map((line) => line.counted_qty));
+    return { documentId: document.id, saved: typed.lines.length, completed };
+  },
+  async notify({ tx, userId, locked }, result) {
+    if (!result.completed) return;
+    const { document } = locked!.rows;
+    const heads = await tx
+      .select({ id: users.id })
+      .from(users)
+      .where(and(eq(users.role, "HEAD"), eq(users.isActive, true)));
+    const [maker] = await tx
+      .select({ name: users.fullName })
+      .from(users)
+      .where(eq(users.id, userId));
+    const [held] = await tx
+      .select({ number: stockDocuments.number, code: branches.code })
+      .from(stockDocuments)
+      .innerJoin(branches, eq(branches.id, stockDocuments.branchId))
+      .where(eq(stockDocuments.id, document.id));
+    await notify(
+      { tx, userId },
+      {
+        to: heads.map((head) => head.id),
+        type: "STOCK_CHANGE_ASKED",
+        params: { actor: maker!.name, number: held!.number, branch: held!.code, kind: "COUNT" },
+        branchId: document.branchId,
+        link: `/warehouse/documents/${document.id}`,
+        at: now(),
+      },
+    );
   },
 });

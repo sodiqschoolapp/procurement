@@ -13,6 +13,7 @@ import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard";
 import { countDifference, countedQuantityRefusal } from "@/domain/stock-documents";
 import { useFormatters } from "@/i18n/use-formatters";
 
+import { CountAgainMark } from "./count-again-mark";
 import { signedQuantity } from "./count-difference";
 
 // Type the counted quantities of a waiting count (09-warehouse.md, Other documents, Stock count:
@@ -35,6 +36,8 @@ export type CountSheetLine = {
   countedQty: string | null;
   unitShortName: string;
   allowsDecimals: boolean;
+  /** Sent back to be counted again (plan of 7.4). */
+  recount: boolean;
 };
 
 /** A stored quantity as it is typed: "10.000" is "10", "2.500" is "2.5". */
@@ -133,6 +136,9 @@ export function CountSheetForm({
             >
               <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                 <span className="text-[15px] leading-[22px] font-semibold">{line.name}</span>
+                {line.recount && line.countedQty === null && (
+                  <CountAgainMark label={t("decision.countAgain")} />
+                )}
                 <span className="text-sm leading-5 text-muted-foreground">
                   {t("stockAtStartLine", {
                     qty: format.quantity(line.qty),

@@ -8,6 +8,9 @@ import {
   type DocumentStatus,
   type DocumentType,
   REVERSIBLE_STATUSES,
+  countComplete,
+  countCorrection,
+  countDecisionMove,
   countDifference,
   countTypingAllowed,
   reverseAllows,
@@ -24,6 +27,7 @@ import {
   stockBalances,
   stockDocumentLines,
   stockDocuments,
+  stockMovements,
   units,
   users,
 } from "@/server/db/schema";
@@ -55,6 +59,10 @@ import { documentWall } from "../document-wall";
 //   counted quantity and countDifference(), and read no stock of now: the difference is against
 //   the stock at start only (review of the plan of 7.3, must fix 3). A count is of its own branch
 //   only (documentWall()).
+// - On a count (plan of 7.4): `canDecide` is `stock.approve_write_off` and countDecisionMove() of
+//   Refuse (the count waits), `canApprove` the same of Approve (it is complete too); its lines carry
+//   `recount`; `canReverse` also needs a movement of its lines, since a count with no differences
+//   moved nothing (review of the plan of 7.4, should fix 5).
 // Document and lines in one snapshot.
 
 export type DocumentLine = {
@@ -77,6 +85,8 @@ export type DocumentLine = {
   receivedQty: string | null;
   /** What did not arrive of it (transferShort()), once received; null otherwise. */
   shortQty: string | null;
+  /** A count line sent back to be counted again (plan of 7.4); false on the other types. */
+  recount: boolean;
   /** The measure allows decimals (the receive form's check). */
   allowsDecimals: boolean;
   unitShortName: string;
@@ -109,7 +119,14 @@ export type StockDocument = {
   reversedAt: Date | null;
   reverseReason: string | null;
   lines: DocumentLine[];
+  /** The Head may decide it now: Refuse on a count, both answers on a write-off. */
   canDecide: boolean;
+  /** The Head may approve it now: a waiting write-off, or a complete waiting count. */
+  canApprove: boolean;
+  /** A complete count's lines whose approval writes a CORRECTION (countCorrection()); else 0. */
+  countChanges: number;
+  /** A count every line of which is counted and that waits for the Head (countComplete()). */
+  countAsked: boolean;
   canReverse: boolean;
   canDownloadNote: boolean;
   canReceive: boolean;
@@ -180,6 +197,7 @@ export async function getStockDocument(
           else coalesce(${stockBalances.qty}, 0)::text end`,
         receivedQty: stockDocumentLines.receivedQty,
         countedQty: stockDocumentLines.countedQty,
+        recount: stockDocumentLines.recount,
         allowsDecimals: units.allowDecimal,
         unitShortName: units.shortName,
       })
@@ -201,6 +219,25 @@ export async function getStockDocument(
       .orderBy(asc(products.name), asc(productVariants.name), asc(stockDocumentLines.id));
     const { branchId, toBranchId, createdById, ...header } = document;
     const target = { branchId };
+    const writeOff = document.type === "WRITE_OFF";
+    const approver = decide("stock.approve_write_off", actor, target) === "allow";
+    const complete = countComplete(lines.map((line) => line.countedQty));
+    const waiting = () =>
+      writeOff
+        ? writeOffDecisionMove(document.status, "APPROVE") !== null
+        : countDecisionMove(document.status, "REFUSE", complete) !== null;
+    const approvable = countDecisionMove(document.status, "APPROVE", complete) !== null;
+    // Whether a count's approval wrote any CORRECTION, which a reverse would undo.
+    const corrected =
+      count &&
+      (
+        await tx
+          .select({ id: stockMovements.id })
+          .from(stockMovements)
+          .innerJoin(stockDocumentLines, eq(stockDocumentLines.id, stockMovements.documentLineId))
+          .where(eq(stockDocumentLines.documentId, document.id))
+          .limit(1)
+      ).length > 0;
     const receiving = toBranchId ? { branchId: toBranchId } : null;
     return {
       ...header,
@@ -210,14 +247,18 @@ export async function getStockDocument(
         difference: count ? countDifference(line.qty, line.countedQty) : null,
         subtypeName: isDefault ? null : subtypeName,
       })),
-      canDecide:
-        document.type === "WRITE_OFF" &&
-        decide("stock.approve_write_off", actor, target) === "allow" &&
-        writeOffDecisionMove(document.status, "APPROVE") !== null,
+      canDecide: approver && (writeOff || count) && waiting(),
+      canApprove: approver && (writeOff ? waiting() : count && approvable),
+      countAsked: count && complete && document.status === "PENDING_APPROVAL",
+      countChanges:
+        count && complete
+          ? lines.filter((line) => countCorrection(line.qty, line.countedQty) !== null).length
+          : 0,
       canReverse:
         decide("stock.return_reverse", actor, target) === "allow" &&
         REVERSIBLE_STATUSES.includes(document.status) &&
-        reverseAllows(actor, { type: document.type, createdBy: createdById }),
+        reverseAllows(actor, { type: document.type, createdBy: createdById }) &&
+        (!count || corrected),
       canDownloadNote:
         (document.type === "ISSUE" || transfer) &&
         (decide("data.export", actor, target) === "allow" ||

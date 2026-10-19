@@ -7,6 +7,8 @@ import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/components/utils";
 import type { WriteOffReason } from "@/domain/stock-documents";
 import { signedQuantity } from "@/features/warehouse/components/count-difference";
+import { CountAgainMark } from "@/features/warehouse/components/count-again-mark";
+import { CountDecision } from "@/features/warehouse/components/count-decision";
 import { CountSheetForm } from "@/features/warehouse/components/count-sheet-form";
 import { ReceiveTransferForm } from "@/features/warehouse/components/receive-transfer-form";
 import { ReverseDocumentButton } from "@/features/warehouse/components/reverse-document-button";
@@ -28,8 +30,11 @@ import { requireUser } from "@/server/auth/session";
 // form to whom the query offers it (`canReceive`); a received one shows each line's Sent, Received
 // and Short, and who confirmed the receipt (plan of 7.2). A count's lines show the stock at start,
 // the counted quantity and the difference, never the stock of now (plan of 7.3, review of the
-// plan, must fix 3); to whom the query offers it (`canCount`) they are the counting form instead.
-// At phone width the lines are cards.
+// plan, must fix 3); to whom the query offers it (`canCount`) they are the counting form instead,
+// unless the Head may approve it now (`canApprove`): then the lines are read and Approve and
+// Refuse sit at the bottom (plan of 7.4). The Head typing an incomplete count gets Refuse below
+// the form, not fixed. A line sent back is marked "Count again"; a complete count tells everyone
+// else it waits for the Head. At phone width the lines are cards.
 
 export default async function StockDocumentPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -146,7 +151,7 @@ export default async function StockDocumentPage({ params }: { params: Promise<{ 
         )}
       </section>
 
-      {document.canCount ? (
+      {document.canCount && !document.canApprove ? (
         <CountSheetForm
           documentId={document.id}
           number={document.number}
@@ -157,6 +162,7 @@ export default async function StockDocumentPage({ params }: { params: Promise<{ 
             countedQty: line.countedQty,
             unitShortName: line.unitShortName,
             allowsDecimals: line.allowsDecimals,
+            recount: line.recount,
           }))}
         />
       ) : (
@@ -216,7 +222,16 @@ export default async function StockDocumentPage({ params }: { params: Promise<{ 
                   data-document-line={line.id}
                   className="border-b border-border last:border-0 max-sm:flex max-sm:flex-col max-sm:gap-1 max-sm:rounded-lg max-sm:border max-sm:p-3"
                 >
-                  <td className="py-2 pr-3 font-semibold max-sm:p-0">{itemName(line)}</td>
+                  <td className="py-2 pr-3 font-semibold max-sm:p-0">
+                    {count && line.recount && line.countedQty === null ? (
+                      <span className="flex flex-col gap-1">
+                        {itemName(line)}
+                        <CountAgainMark label={tCount("decision.countAgain")} />
+                      </span>
+                    ) : (
+                      itemName(line)
+                    )}
+                  </td>
                   {column(
                     transfer ? t("page.sent") : count ? tCount("stockAtStart") : t("page.quantity"),
                     line.qty,
@@ -298,7 +313,16 @@ export default async function StockDocumentPage({ params }: { params: Promise<{ 
         </div>
       )}
 
-      {document.canDecide ? (
+      {count && document.canDecide ? (
+        <CountDecision
+          documentId={document.id}
+          number={document.number}
+          lines={document.lines}
+          canApprove={document.canApprove}
+          changes={document.countChanges}
+          fixed={document.canApprove || !document.canCount}
+        />
+      ) : document.canDecide ? (
         <WriteOffDecision
           documentId={document.id}
           number={document.number}
@@ -325,6 +349,10 @@ export default async function StockDocumentPage({ params }: { params: Promise<{ 
             from: document.branchCode,
             to: document.toBranchCode ?? "",
           })}
+        </p>
+      ) : document.countAsked ? (
+        <p data-count-waiting className="text-[15px] leading-[22px] text-muted-foreground">
+          {tCount("decision.waiting")}
         </p>
       ) : document.type === "WRITE_OFF" && waiting ? (
         <p data-write-off-waiting className="text-[15px] leading-[22px] text-muted-foreground">

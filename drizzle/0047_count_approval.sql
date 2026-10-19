@@ -1,0 +1,1 @@
+ALTER TABLE "stock_document_lines" ADD COLUMN "recount" boolean DEFAULT false NOT NULL;

@@ -1814,4 +1814,21 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - For 7.4: `reverseAllows()` still answers no for COUNT; the write-off decision and the Head home list filter on `WRITE_OFF`, so a waiting count shows in neither.
 - A sticky bottom bar on a phone sits at `bottom-[calc(4rem+env(safe-area-inset-bottom))]`, above the tab bar; in a browser test the Next.js dev button covers the phone's Home tab, click another tab.
 
-The next task is 7.4.
+## 7.4 Count approval (19.10.2026, pull request #124)
+
+**Built**
+- `decideCount` (`features/warehouse/actions/count-decision.ts`, `stock.approve_write_off`, the Head): Refuse → REJECTED; Approve of a complete count → POSTED and one CORRECTION per non-zero line at the average (`postLines()` through `countCorrection()`); an item moved after its start sends the count back (lines reset, `recount = true`, outcome RECOUNT). Approve carries the counted quantities shown (`seen`); a change since is `conflict`.
+- Domain: `countComplete()`, `countDecisionMove()`, `countLineMoved()`, `countCorrection()`, `countSeenMatches()`; `reverseAllows()` + COUNT for the Head. Migration `0047_count_approval`: `stock_document_lines.recount`.
+- The save that completes a count sends STOCK_CHANGE_ASKED (kind COUNT) to the Heads; decisions send STOCK_CHANGE_DECIDED to the starter (approved, refused), and a send-back (recount) also to the branch's Managers with WRITE_OFF_COUNT.
+- The count's page: `CountDecision`, the "Count again" mark, the waiting line; the Head's home block lists complete counts and links to `/warehouse/documents`; Reverse of an approved count (not offered when it moved nothing).
+
+**Left out, and the task that brings it**
+- Search for count numbers: no task asks (6.10's note).
+
+**What the next sessions must know**
+- A count is "asked" when every line is counted (`countComplete()`); typing stays open while it waits, so an approval must carry what the Head saw.
+- `postLines()` returns only the lines that moved, each with its own id; a count line of difference 0 writes no movement.
+- The approval takes, per line in subtype order, the product FOR SHARE and the balance FOR UPDATE before its moved-check; the save takes no balance lock.
+- For 8.1: a waiting count is not escalated; only orders are.
+
+The next task is 8.1.

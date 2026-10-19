@@ -2526,6 +2526,34 @@ Choices made during the build:
 - The same-moment test was run once with the FOR SHARE lock left out and seen to fail (the count never waited).
 - Permission review, should fix 1: the save's target reads only a COUNT, so another document's id is "Not found" for every role, also a Manager with WRITE_OFF_COUNT off.
 
+### 7.4 Count approval (19.10.2026)
+
+The plan's decisions as the plan review of 19.10.2026 confirmed them (its three corrections applied: the items renumbered, the comment of `reverseAllows()`, the save's lock order named), and those of the build. The Look first items come first.
+
+1. **Look first** (status reading). A count is "asked" when every line is counted (`countComplete()`): no Send step and no new status. Typing stays open while it waits (`countTypingAllowed()` unchanged); the Head approves only a complete count; the Heads are told when a save completes it. Proposed `/spec-change`, only if the owner wants a Send step: 09 Stock count gains "The Manager sends the count to the Head".
+2. **Look first** (stock rule). The approval carries the counted quantities the Head saw (`seen`) and is `conflict` when a line changed since (`countSeenMatches()`), standing in for a version while typing stays open. A moved item (`countLineMoved()`: a movement of the branch and subtype with `seq > start_seq`) sends the whole count back: nothing posts; the moved lines get the stock and newest `seq` of now, their counted quantity cleared and `recount` set; the other lines keep their counts.
+3. **Look first** (stock rule; cost). A CORRECTION moves at the average of the moment, up or down (`MOVEMENT_RULES.CORRECTION`); a found item in a stock of 0 comes in at value 0.
+4. **Look first** (data model). New column `stock_document_lines.recount boolean not null default false`. Proposed `/spec-change` of 14, `stock_document_lines`: `…, start_seq, recount`.
+5. **Look first** (permission matrix). Deciding a count is `stock.approve_write_off` (the one row "Approve a write-off or stock correction"). A Head's own count is approved on its page, not posted when complete.
+6. **Look first** (approval reading). Refuse exists for a count (REJECTED, nothing moves) and is allowed on an incomplete count, so an abandoned count can be cleared.
+7. **Look first** (Decided ahead, question 19). Reverse of an approved count: the Head only; a count that moved nothing is not offered Reverse, and `reverseDocument()` is unchanged.
+8. A line with difference 0 writes no movement.
+9. The approval takes, per line in subtype order, the product FOR SHARE and the balance FOR UPDATE before the moved-check; the save takes no balance lock (correction 3).
+10. STOCK_CHANGE_ASKED to every active Head (kind COUNT, actor = who completed it); STOCK_CHANGE_DECIDED to the count's starter with approved or refused; `recount` to the starter and every active Manager of the branch with WRITE_OFF_COUNT on (permission review, should fix 1: a Head who started and approved, or a starter who lost the right, would otherwise leave nobody told). No audit row.
+11. The Head's home block lists complete waiting counts with the write-offs, newest started first; "Show all" goes to `/warehouse/documents`.
+12. The COUNT case lives once, in `postLines()` through `countCorrection()`, built on `countDifference()`; `lineMovement()` keeps refusing COUNT.
+13. Approval does not re-check that products or the branch are active.
+
+Choices made during the build:
+
+- `countSeenMatches()` compares the quantities with decimal.js in `src/domain/` (no float), so "8" and "8.000" are the same.
+- The Head typing an incomplete count sees the counting form with Refuse below it, not fixed (the form has its own bar); a complete count shows the Head the read-only lines with Approve and Refuse fixed at the bottom.
+- `getStockDocument()` gives `canApprove`, `countAsked` and `countChanges` (the lines whose approval writes a correction), so the page computes nothing.
+- The reverse dialog shows a count's corrections (signed), only the lines that moved.
+- The same-moment test was run once with the approval's balance FOR UPDATE left out and seen to fail (the issue-first case posted −2 against 7).
+- Permission review, should fix 2: a test sends another branch's count line id in `seen` with every other value valid: `conflict`, nothing written.
+- 7.3's test of the save's result now also expects `completed: true` (the save gained the field; the requirement of 7.4, decided item 1).
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

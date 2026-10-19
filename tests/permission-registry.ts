@@ -136,6 +136,8 @@ export const SERVER_ACTIONS: Record<string, Entry> = {
   // Approve or refuse a write-off (plan of 5.11): the Head (write-off-matrix.db.test.ts).
   "src/app/(app)/warehouse/documents/[id]/actions.ts#decideWriteOffAction":
     "stock.approve_write_off",
+  // Approve or refuse a count (plan of 7.4): the Head (count-decision-matrix.db.test.ts).
+  "src/app/(app)/warehouse/documents/[id]/actions.ts#decideCountAction": "stock.approve_write_off",
   // Receive a transfer (plan of 7.2): stock.receive_transfer on its receiving branch
   // (receive-transfer-matrix.db.test.ts).
   "src/app/(app)/warehouse/documents/[id]/actions.ts#receiveTransferAction":

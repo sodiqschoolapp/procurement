@@ -576,7 +576,7 @@ Stock moving between branches, and stock checked against the shelf.
   - **Done when:** Database test: each difference equals the counted quantity minus the stock at the start.
   - From 5.12 (`09-warehouse.md`, Stock screens: Documents, "… write-offs and counts, with filters by type …"): a count appears in `/warehouse/documents` and its type filter ("Stock count") and opens at `/warehouse/documents/[id]`, which shows its lines with the counted quantities.
 
-- [ ] **7.4 Count approval**
+- [x] **7.4 Count approval**
   - **Read:** `09-warehouse.md` (Movement types: Correction row; Other documents: Stock count); `03-roles-and-permissions.md` (Permission matrix: "Approve a write-off or stock correction"); `10-notifications-analytics-reports.md` (Notifications: "Write-off or correction asked").
   - **Build:** The Head approves the differences as corrections; an item that moved between the start of the count and the approval goes back to the Manager to be counted again; the Head is notified when a correction is asked, the decision goes back to the Manager, and corrections join the Head's home list.
   - **Done when:** Database tests: approval writes Correction movements; an item issued during the count is not corrected and is flagged.

@@ -406,9 +406,10 @@
         "empty": "Ortiqcha xarajat yo'q. Hisob-kitobdagi chegaradan oshgan buyurtma shu yerda chiqadi."
       },
       "writeOffs": {
-        "title": "Tasdiqlanadigan hisobdan chiqarishlar",
+        "title": "Tasdiqlanadigan hisobdan chiqarish va tuzatishlar",
         "row": "{date} · {reason} · {name}",
-        "empty": "Tasdiqlanadigan hisobdan chiqarish yo'q. Menejer yuborgan hisobdan chiqarish shu yerda chiqadi."
+        "empty": "Sizni hech narsa kutmayapti. Menejer soʻragan hisobdan chiqarish yoki hamma mahsuloti sanalgan inventarizatsiya shu yerda chiqadi.",
+        "countRow": "{date} · Inventarizatsiya · {name}"
       },
       "suggestions": {
         "title": "Mahsulot takliflari",
@@ -501,8 +502,8 @@
       "PURCHASE_CANCELLED": "{branch}: {actor} {count, plural, other {# ta xarid yozuvini}} bekor qildi.",
       "PRICE_DIFFERS": "{branch}: {count, plural, other {# ta mahsulotning}} so'nggi xaridlari joriy narxdan 20% dan ko'proq farq qiladi.",
       "MINIMUM_STOCK_REACHED": "{branch}: {item} minimal qoldiqqa yetdi.",
-      "STOCK_CHANGE_ASKED": "{branch}: {actor} {number} {kind, select, WRITE_OFF {hisobdan chiqarishni} other {qoldiq oʻzgarishini}} soʻradi.",
-      "STOCK_CHANGE_DECIDED": "{branch}: {number} {kind, select, WRITE_OFF {hisobdan chiqarish} other {qoldiq oʻzgarishi}} {outcome, select, approved {tasdiqlandi} other {rad etildi}}.",
+      "STOCK_CHANGE_ASKED": "{branch}: {actor} {number} {kind, select, WRITE_OFF {hisobdan chiqarishni} COUNT {inventarizatsiya tuzatishlarini} other {qoldiq oʻzgarishini}} soʻradi.",
+      "STOCK_CHANGE_DECIDED": "{branch}: {number} {kind, select, WRITE_OFF {hisobdan chiqarish} COUNT {inventarizatsiya} other {qoldiq oʻzgarishi}} {outcome, select, approved {tasdiqlandi} recount {qaytarildi: harakatlangan mahsulotlarni qayta sanang} other {rad etildi}}.",
       "TRANSFER_SENT": "{actor} {branch} filialidan sizning filialingizga {number} koʻchirishni yubordi.",
       "REQUEST_WAITING_24H": "{count, plural, other {# ta buyurtma}} tasdiqingizni {hours, plural, other {# soatdan}} ortiq kutmoqda.",
       "REQUEST_WAITING_48H": "{count, plural, other {# ta buyurtma}} tasdiqlashni {hours, plural, other {# soatdan}} ortiq kutmoqda.",
@@ -2269,7 +2270,8 @@
         "ISSUE": "Bu mahsulotlar omborga qaytadi va berish storno qilingan deb belgilanadi. Buni qaytarib bo'lmaydi.",
         "RETURN": "Bu mahsulotlar ombordan yana chiqadi va qaytarish storno qilingan deb belgilanadi. Buni qaytarib bo'lmaydi.",
         "WRITE_OFF": "Bu mollar omborga qaytadi, hisobdan chiqarish esa storno deb belgilanadi. Buni bekor qilib bo'lmaydi.",
-        "DIRECT_ENTRY": "Bu tovarlar ombordan chiqadi va to'g'ridan-to'g'ri kiritish bekor qilingan deb belgilanadi. Buni qaytarib bo'lmaydi."
+        "DIRECT_ENTRY": "Bu tovarlar ombordan chiqadi va to'g'ridan-to'g'ri kiritish bekor qilingan deb belgilanadi. Buni qaytarib bo'lmaydi.",
+        "COUNT": "Har bir mahsulot qoldigʻi tuzatish miqdoriga qaytariladi va inventarizatsiya bekor qilingan deb belgilanadi. Buni qaytarib boʻlmaydi."
       },
       "held": "Bo'limda faqat {held} bor: sababini yozing.",
       "short": "{item}: omborda faqat {left} qoldi. Hech narsa storno qilinmadi.",
@@ -2429,7 +2431,21 @@
       "save": "Saqlash",
       "saved": "{number} sanalgan miqdorlari saqlandi.",
       "stockAtStartLine": "Boshidagi qoldiq: {qty} {unit}",
-      "branchOption": "{code} · {name}"
+      "branchOption": "{code} · {name}",
+      "decision": {
+        "approve": "Tasdiqlash",
+        "refuse": "Rad etish",
+        "approveTitle": "{number} inventarizatsiyasi tasdiqlansinmi?",
+        "approveResult": "{count, plural, =0 {Farq yoʻq: inventarizatsiya tasdiqlanadi, qoldiq oʻzgarmaydi.} other {# ta mahsulot qoldigʻi hozir oʻrtacha narxda sanalgan miqdorga tuzatiladi.}} Boshlangandan keyin harakatlangan mahsulot qayta sanashga qaytariladi. Menejerga xabar beriladi.",
+        "refuseTitle": "{number} inventarizatsiyasi rad etilsinmi?",
+        "refuseResult": "{number} butunlay rad etiladi. Qoldiq oʻzgarmaydi. Menejerga xabar beriladi.",
+        "approved": "{number} inventarizatsiyasi tasdiqlandi, qoldiq tuzatildi.",
+        "refused": "{number} inventarizatsiyasi rad etildi.",
+        "recount": "{number} boshlangandan keyin # ta mahsulot harakatlandi. Hech narsa tuzatilmadi: inventarizatsiya qayta sanash uchun menejerga qaytarildi.",
+        "conflict": "Siz koʻrayotganingizda sanalgan miqdorlar oʻzgardi. Ularni qayta tekshirib, tasdiqlang.",
+        "waiting": "Hamma mahsulot sanaldi. Rahbar qarorini kutmoqda; qoldiq oʻzgarmagan.",
+        "countAgain": "Qayta sanash"
+      }
     }
   },
   "analytics": {

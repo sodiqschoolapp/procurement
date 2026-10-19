@@ -406,9 +406,10 @@
         "empty": "No overspend waits for you. An order in settlement above the guard appears here."
       },
       "writeOffs": {
-        "title": "Write-offs to approve",
+        "title": "Write-offs and corrections to approve",
         "row": "{date} · {reason} · {name}",
-        "empty": "No write-off waits for you. A write-off a Manager asks for appears here."
+        "empty": "Nothing waits for you. A write-off a Manager asks for, or a stock count once every item is counted, appears here.",
+        "countRow": "{date} · Stock count · {name}"
       },
       "suggestions": {
         "title": "Product suggestions",
@@ -501,8 +502,8 @@
       "PURCHASE_CANCELLED": "{actor} cancelled {count, plural, one {# purchase record} other {# purchase records}} in {branch}.",
       "PRICE_DIFFERS": "Recent purchases of {count, plural, one {# item} other {# items}} in {branch} differ from the current price by more than 20%.",
       "MINIMUM_STOCK_REACHED": "{item} in {branch} has reached its minimum stock.",
-      "STOCK_CHANGE_ASKED": "{actor} asked for {kind, select, WRITE_OFF {write-off} other {a stock change}} {number} in {branch}.",
-      "STOCK_CHANGE_DECIDED": "{kind, select, WRITE_OFF {Write-off} other {Stock change}} {number} in {branch} was {outcome, select, approved {approved} other {refused}}.",
+      "STOCK_CHANGE_ASKED": "{actor} asked for {kind, select, WRITE_OFF {write-off} COUNT {corrections of stock count} other {a stock change}} {number} in {branch}.",
+      "STOCK_CHANGE_DECIDED": "{kind, select, WRITE_OFF {Write-off} COUNT {Stock count} other {Stock change}} {number} in {branch} was {outcome, select, approved {approved} recount {sent back: count the items that moved again} other {refused}}.",
       "TRANSFER_SENT": "{actor} sent transfer {number} from {branch} to your branch.",
       "REQUEST_WAITING_24H": "{count, plural, one {# order has} other {# orders have}} waited more than {hours, plural, one {# hour} other {# hours}} for your approval.",
       "REQUEST_WAITING_48H": "{count, plural, one {# order has} other {# orders have}} waited more than {hours, plural, one {# hour} other {# hours}} for approval.",
@@ -2269,7 +2270,8 @@
         "ISSUE": "These items go back into stock and the issue is marked Reversed. This cannot be undone.",
         "RETURN": "These items leave stock again and the return is marked Reversed. This cannot be undone.",
         "WRITE_OFF": "These items go back into stock and the write-off is marked Reversed. This cannot be undone.",
-        "DIRECT_ENTRY": "These items leave stock and the direct entry is marked Reversed. This cannot be undone."
+        "DIRECT_ENTRY": "These items leave stock and the direct entry is marked Reversed. This cannot be undone.",
+        "COUNT": "Each item's stock goes back by its correction and the count is marked Reversed. This cannot be undone."
       },
       "held": "The department holds only {held} of it: say why in the reason.",
       "short": "{item}: only {left} left in stock. Nothing was reversed.",
@@ -2429,7 +2431,21 @@
       "save": "Save",
       "saved": "Counted quantities of {number} are saved.",
       "stockAtStartLine": "Stock at start: {qty} {unit}",
-      "branchOption": "{code} · {name}"
+      "branchOption": "{code} · {name}",
+      "decision": {
+        "approve": "Approve",
+        "refuse": "Refuse",
+        "approveTitle": "Approve count {number}?",
+        "approveResult": "{count, plural, =0 {No item differs: the count is approved and the stock does not change.} one {The stock of this # item is corrected to the counted quantity now, at its average cost.} other {The stock of these # items is corrected to the counted quantities now, at their average cost.}} An item that moved since the start goes back to be counted again. The Manager is told.",
+        "refuseTitle": "Refuse count {number}?",
+        "refuseResult": "{number} is refused for good. The stock does not change. The Manager is told.",
+        "approved": "Count {number} is approved and the stock is corrected.",
+        "refused": "Count {number} is refused.",
+        "recount": "{count, plural, one {# item} other {# items}} moved since the start of {number}. Nothing is corrected: the count goes back to the Manager to count {count, plural, one {it} other {them}} again.",
+        "conflict": "The counted quantities changed while you were looking. Check them again, then approve.",
+        "waiting": "Every item is counted. Waiting for the Head's decision; the stock has not changed.",
+        "countAgain": "Count again"
+      }
     }
   },
   "analytics": {

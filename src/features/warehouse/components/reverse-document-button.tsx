@@ -18,6 +18,8 @@ import { MOVE_REASON_MAX, MOVE_REASON_MIN, isMoveReason } from "@/domain/order-m
 import type { ReversePreview } from "@/features/warehouse/queries/reverse-preview";
 import { useFormatters } from "@/i18n/use-formatters";
 
+import { signedQuantity } from "./count-difference";
+
 // Reverse on a row of the item card and on a document's page (09-warehouse.md, Movement types, last paragraph: "A wrong
 // document is fixed with 'Reverse', which writes the opposite movement and needs a reason"; Issue
 // to a department 3; 11-screens-and-ux.md rule 6: "ask for confirmation and state the result";
@@ -28,13 +30,15 @@ import { useFormatters } from "@/i18n/use-formatters";
 // cannot be undone. Not a create, so no client key: a second press is refused as `wrong_status`.
 
 /**
- * The sentence of the result: a return and a direct entry leave stock, a write-off comes back
- * (plans of 5.11 and 5.12).
+ * The sentence of the result: a return and a direct entry leave stock, a write-off comes back, a
+ * count's corrections are undone (plans of 5.11, 5.12 and 7.4).
  */
 function resultKey(
   type: ReversePreview["type"],
-): "ISSUE" | "RETURN" | "WRITE_OFF" | "DIRECT_ENTRY" {
-  if (type === "RETURN" || type === "WRITE_OFF" || type === "DIRECT_ENTRY") return type;
+): "ISSUE" | "RETURN" | "WRITE_OFF" | "DIRECT_ENTRY" | "COUNT" {
+  if (type === "RETURN" || type === "WRITE_OFF" || type === "DIRECT_ENTRY" || type === "COUNT") {
+    return type;
+  }
   return "ISSUE";
 }
 
@@ -143,7 +147,10 @@ export function ReverseDocumentButton({
                   <span className="flex justify-between gap-3">
                     <span>{itemName(line)}</span>
                     <span className="font-semibold whitespace-nowrap tabular-nums">
-                      {format.quantity(line.qty)} {line.unitShortName}
+                      {preview.type === "COUNT"
+                        ? signedQuantity(line.qty, format.quantity)
+                        : format.quantity(line.qty)}{" "}
+                      {line.unitShortName}
                     </span>
                   </span>
                   {line.held !== null && (

@@ -196,6 +196,62 @@ describe("write-offs to approve (progress 5.11 and 5.12, 'For 6.2'; decided item
   });
 });
 
+describe("corrections to approve: complete waiting counts (10 Home page per role, Head; plan of 7.4, decided items 1 and 11)", () => {
+  it("lists a waiting count every line of which is counted; an incomplete, a decided and another branch's complete count are out", async () => {
+    setClock(AT);
+    const { branch, head, manager, base } = await scene();
+    const other = await scene();
+    const second = await insertProduct({ referencePrice: 1_000n });
+    const count = (
+      branchId: string,
+      createdBy: string,
+      variantId: string,
+      counted: [string | null, string | null],
+      status: "PENDING_APPROVAL" | "REJECTED" = "PENDING_APPROVAL",
+    ) =>
+      db.transaction(async (tx) => {
+        const made = await createDocument(tx, {
+          type: "COUNT",
+          branchId,
+          docDate: "2031-05-15",
+          status: "PENDING_APPROVAL",
+          clientKey: randomUUID(),
+          createdBy,
+          lines: [
+            { variantId, qty: "1", countedQty: counted[0] },
+            { variantId: second.defaultVariantId, qty: "2", countedQty: counted[1] },
+          ],
+        });
+        if (status !== "PENDING_APPROVAL") {
+          await tx.execute(sql`update stock_documents set status = ${status},
+            decided_by = ${head.id}, decided_at = ${AT} where id = ${made.documentId}`);
+        }
+        return made;
+      });
+    const complete = await count(branch.id, manager.id, base.variantId, ["1", "0"]);
+    // Kept out, each with every other value that would let it in (D40): one line not counted;
+    // complete but decided; complete in another branch.
+    await count(branch.id, manager.id, base.variantId, ["1", null]);
+    await count(branch.id, manager.id, base.variantId, ["1", "0"], "REJECTED");
+    const elsewhere = await count(other.branch.id, other.manager.id, base.variantId, ["1", "0"]);
+
+    const home = await getHeadHome(head.id, branch.id);
+    expect(home.writeOffs.count).toBe(1);
+    expect(home.writeOffs.lines).toEqual([
+      expect.objectContaining({
+        id: complete.documentId,
+        number: complete.number,
+        type: "COUNT",
+        branchCode: branch.code,
+        reason: null,
+        askedBy: manager.fullName,
+      }),
+    ]);
+    const all = await getHeadHome(head.id, null);
+    expect(all.writeOffs.lines.map((line) => line.id)).toContain(elsewhere.documentId);
+  });
+});
+
 /** The event that moved an order into its status, at the clock's moment. */
 async function enter(
   orderId: string,

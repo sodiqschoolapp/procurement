@@ -80,9 +80,9 @@ export const REVERSIBLE_STATUSES: readonly DocumentStatus[] = ["POSTED", "RECEIV
  * Whether the actor may reverse a document of this type and maker (09 Issue to a department 3: "A
  * posted issue can be reversed by its creator or the Head"; Decided ahead, question 19; plan of
  * 5.7, decided item 1, Look first): an issue and a return by their creator or the Head; a direct
- * entry, an approved write-off and a received transfer by the Head only (plans of 5.8, 5.11 and
- * 7.2, decided item 5, Look first). A count is no until 7.4 adds it, the Head only. A Manager's right RETURN_REVERSE and the
- * branch are authorize()'s (`stock.return_reverse`), asked beside this.
+ * entry, an approved write-off, a received transfer and an approved count by the Head only (plans
+ * of 5.8, 5.11, 7.2 decided item 5 and 7.4 decided item 7, Look first). A Manager's right
+ * RETURN_REVERSE and the branch are authorize()'s (`stock.return_reverse`), asked beside this.
  */
 export function reverseAllows(
   actor: Pick<Actor, "userId" | "role">,
@@ -91,7 +91,8 @@ export function reverseAllows(
   if (
     document.type === "DIRECT_ENTRY" ||
     document.type === "WRITE_OFF" ||
-    document.type === "TRANSFER"
+    document.type === "TRANSFER" ||
+    document.type === "COUNT"
   ) {
     return actor.role === "HEAD";
   }
@@ -232,6 +233,81 @@ export function countDifference(stockAtStart: string, counted: string | null): s
   return new Stock(counted).minus(new Stock(stockAtStart)).toFixed();
 }
 
+/**
+ * Whether a count is complete, every line counted: what makes it "asked" of the Head (09 Other
+ * documents, Stock count: "types the counted quantities … the Head approves them"; plan of 7.4,
+ * decided item 1, Look first). The approval, the notice to the Heads and the Head's home list read
+ * it; typing stays open while the count waits (countTypingAllowed()).
+ */
+export function countComplete(counted: readonly (string | null)[]): boolean {
+  return counted.length > 0 && counted.every((qty) => qty !== null);
+}
+
+/**
+ * The status the Head's decision moves a count to (09 Other documents, Stock count: "the Head
+ * approves them as corrections"; plan of 7.4, decided items 1 and 6, Look first): from
+ * PENDING_APPROVAL, APPROVE to POSTED only when the count is complete, REFUSE to REJECTED at any
+ * time; from any other status no move (null), so a second decision is refused. The one place for
+ * these moves (developer-rules.md rule 2): the decision action asks it under the lock, the count's
+ * page asks it for its buttons. An approval that finds a moved item posts nothing and sends the
+ * count back instead (countLineMoved()); its status then stays PENDING_APPROVAL.
+ */
+export function countDecisionMove(
+  status: DocumentStatus,
+  outcome: WriteOffOutcome,
+  complete: boolean,
+): Extract<DocumentStatus, "POSTED" | "REJECTED"> | null {
+  if (status !== "PENDING_APPROVAL") return null;
+  if (outcome === "REFUSE") return "REJECTED";
+  return complete ? "POSTED" : null;
+}
+
+/**
+ * Whether the counted quantities the Head was shown are the ones held now (plan of 7.4, decided
+ * item 2, Look first): `seen` names every line of the count once, each with the same quantity
+ * ("8" and "8.000" are the same). Typing stays open while a count waits, so an approval that does
+ * not match is refused rather than posting quantities nobody showed the Head.
+ */
+export function countSeenMatches(
+  held: readonly { id: string; countedQty: string | null }[],
+  seen: readonly { lineId: string; countedQty: string }[],
+): boolean {
+  const shown = new Map(seen.map((line) => [line.lineId, line.countedQty.trim()]));
+  if (shown.size !== seen.length || shown.size !== held.length) return false;
+  return held.every((line) => {
+    const qty = shown.get(line.id);
+    if (qty === undefined || line.countedQty === null || !QUANTITY.test(qty)) return false;
+    return new Stock(qty).eq(new Stock(line.countedQty));
+  });
+}
+
+/**
+ * Whether an item of a count moved after its start (09 Other documents, Stock count: "If an item
+ * moved between the start of the count and the approval, the system asks the Manager to count that
+ * item again"; progress 7.3: by `seq`, never by time): its newest movement in the count's branch now
+ * is later than the newest one at the start (`startSeq`, null when it had none).
+ */
+export function countLineMoved(startSeq: bigint | null, newestSeq: bigint | null): boolean {
+  if (newestSeq === null) return false;
+  return startSeq === null || newestSeq > startSeq;
+}
+
+/**
+ * The CORRECTION one approved count line writes (09 Movement types: "Correction after a stock
+ * count | Up or down"; plan of 7.4, decided items 3 and 8): its difference (countDifference(), the
+ * one formula) at the average of the moment; null when the difference is 0, since a movement is
+ * never 0. The line must be counted: RangeError otherwise.
+ */
+export function countCorrection(
+  stockAtStart: string,
+  counted: string | null,
+): StockMovement | null {
+  const difference = countDifference(stockAtStart, counted);
+  if (difference === null) throw new RangeError("An approved count line that is not counted");
+  if (new Stock(difference).isZero()) return null;
+  return { type: "CORRECTION", qtyDelta: difference, unitCost: null };
+}
+
 /** What receiving one transfer line writes (transferReceipt()). */
 export type TransferReceipt = {
   /** The receiving branch's TRANSFER_IN; null when nothing arrived. */
@@ -317,8 +393,9 @@ export type PostedLine = { qty: string; unitCost: bigint | null };
 /**
  * The movement a posted line writes (09 Movement types; Stock value; decisions 3.1 item 2):
  * an issue and a write-off leave at the average, a return comes in at it (into an empty stock at
- * the line's cost, as `emptyCost`), a direct entry comes in at the line's own cost, a transfer leaves the sender at its average. The movement of a
- * count line is 7.4's; a transfer's receipt writes transferReceipt()'s. A line that does not fit is a
+ * the line's cost, as `emptyCost`), a direct entry comes in at the line's own cost, a transfer leaves the sender at its average. A count
+ * line writes countCorrection()'s, which postLines() asks (plan of 7.4, decided item 13); a
+ * transfer's receipt writes transferReceipt()'s. A line that does not fit is a
  * mistake of the caller: RangeError.
  */
 export function lineMovement(type: DocumentType, line: PostedLine): StockMovement {
@@ -341,7 +418,7 @@ export function lineMovement(type: DocumentType, line: PostedLine): StockMovemen
     case "DIRECT_ENTRY":
       return { type: "DIRECT_ENTRY", qtyDelta: line.qty, unitCost: line.unitCost };
     case "COUNT":
-      throw new RangeError("A count line's movement is 7.4's");
+      throw new RangeError("A count line's movement is countCorrection()'s");
   }
 }
 

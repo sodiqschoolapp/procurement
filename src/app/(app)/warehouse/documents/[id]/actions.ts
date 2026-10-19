@@ -6,6 +6,7 @@ import {
   type SaveCountedQuantitiesResult,
   saveCountedQuantities,
 } from "@/features/warehouse/actions/count";
+import { type CountDecisionResult, decideCount } from "@/features/warehouse/actions/count-decision";
 import {
   type ReceiveTransferResult,
   receiveTransfer,
@@ -58,6 +59,21 @@ export async function saveCountedQuantitiesAction(
   input: unknown,
 ): Promise<ActionResult<SaveCountedQuantitiesResult>> {
   const result = await saveCountedAction(input);
+  if (result.ok) revalidatePath("/warehouse", "layout");
+  return result;
+}
+
+// The Head approves or refuses a count (09 Other documents, Stock count; plan of 7.4): the
+// definition's wrapper checks everything again: `stock.approve_write_off` on the count's branch,
+// the status, the counted quantities shown and the moved items under the locks.
+
+const decideCountServer = serverAction(decideCount);
+
+/** Approves (as corrections) or refuses one waiting count. */
+export async function decideCountAction(
+  input: unknown,
+): Promise<ActionResult<CountDecisionResult>> {
+  const result = await decideCountServer(input);
   if (result.ok) revalidatePath("/warehouse", "layout");
   return result;
 }
