@@ -258,6 +258,13 @@ export const stockDocumentLines = pgTable(
     countedQty: quantity("counted_qty"),
     receivedQty: quantity("received_qty"),
     unitCost: som("unit_cost"),
+    // A count line's stock at start is `qty`; this is the `seq` of the item's newest movement in
+    // the branch at that moment, so 7.4 knows a movement after the start by a larger `seq` (09
+    // Other documents, Stock count: "If an item moved between the start of the count and the
+    // approval"; plan of 7.3, decided item 2, Look first). Empty on every other type's line.
+    startSeq: bigint("start_seq", { mode: "bigint" }).references(
+      (): AnyPgColumn => stockMovements.seq,
+    ),
     createdAt: moment("created_at").notNull(),
   },
   (table) => [
@@ -275,6 +282,7 @@ export const stockDocumentLines = pgTable(
     ),
     check("stock_document_lines_unit_cost_check", sql`${table.unitCost} >= 0`),
     index("stock_document_lines_variant_id_idx").on(table.variantId),
+    index("stock_document_lines_start_seq_idx").on(table.startSeq),
   ],
 );
 

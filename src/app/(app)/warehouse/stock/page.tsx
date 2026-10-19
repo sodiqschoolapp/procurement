@@ -108,7 +108,7 @@ export default async function StockOnHandPage({ searchParams }: { searchParams: 
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-6">
-      <WarehouseTabs current="stock" />
+      <WarehouseTabs current="stock" role={user.role} />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="flex flex-wrap items-baseline gap-x-3 text-[28px] leading-[34px] font-bold tracking-[-0.01em]">
           {t("title")}

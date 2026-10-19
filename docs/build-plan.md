@@ -570,7 +570,7 @@ Stock moving between branches, and stock checked against the shelf.
   - **Done when:** The spec's phase 7 check as a test: send 10, receive 8, and a write-off request for 2 exists.
   - From 5.12 (`09-warehouse.md`, Stock screens: Documents): the receiving branch sees the transfer in its `/warehouse/documents` and on the transfer's page (`listStockDocuments()` and `getStockDocument()` filter by `branch_id` only until then), and receives it from there.
 
-- [ ] **7.3 Stock count**
+- [x] **7.3 Stock count**
   - **Read:** `09-warehouse.md` (Other documents: Stock count); `11-screens-and-ux.md` (Screens: Stock counts); `03-roles-and-permissions.md` (Manager rights: WRITE_OFF_COUNT).
   - **Build:** `/warehouse/counts`: the Manager starts a count for a branch or a category and types the counted quantities; the system shows the differences.
   - **Done when:** Database test: each difference equals the counted quantity minus the stock at the start.

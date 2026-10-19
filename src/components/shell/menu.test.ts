@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { ROLES } from "@/domain/permissions";
 
-import { isActive, menuFor, tabBarSplit } from "./menu";
+import { isActive, menuFor, seesStockCounts, tabBarSplit } from "./menu";
 
 // 11-screens-and-ux.md, Interface per role ("Menu, in order"), written out a second time by hand
 // as the oracle; docs/design-system.md, This app (Menu icons; Phone tab bar).
@@ -112,5 +112,11 @@ describe("the phone tab bar (design system, This app: Phone tab bar)", () => {
     for (const role of ["MANAGER", "PRINCIPAL"] as const) {
       expect(tabBarSplit(menuFor(role))).toEqual({ shown: menuFor(role), more: [] });
     }
+  });
+});
+
+describe("seesStockCounts (11 Screens: Stock counts | Manager, Head; plan of 7.3)", () => {
+  it("is yes for the Manager and the Head only", () => {
+    expect(ROLES.filter((role) => seesStockCounts(role))).toEqual(["HEAD", "MANAGER"]);
   });
 });

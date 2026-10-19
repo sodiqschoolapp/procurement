@@ -6,6 +6,8 @@ import { DocumentStatusLabel } from "@/components/status-label";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/components/utils";
 import type { WriteOffReason } from "@/domain/stock-documents";
+import { signedQuantity } from "@/features/warehouse/components/count-difference";
+import { CountSheetForm } from "@/features/warehouse/components/count-sheet-form";
 import { ReceiveTransferForm } from "@/features/warehouse/components/receive-transfer-form";
 import { ReverseDocumentButton } from "@/features/warehouse/components/reverse-document-button";
 import { WriteOffDecision } from "@/features/warehouse/components/write-off-decision";
@@ -24,7 +26,10 @@ import { requireUser } from "@/server/auth/session";
 // issue or transfer note only where the query offers them. A transfer's header names the sending
 // and the receiving branch and who sent it (plan of 7.1). An In-transit transfer shows the receive
 // form to whom the query offers it (`canReceive`); a received one shows each line's Sent, Received
-// and Short, and who confirmed the receipt (plan of 7.2). At phone width the lines are cards.
+// and Short, and who confirmed the receipt (plan of 7.2). A count's lines show the stock at start,
+// the counted quantity and the difference, never the stock of now (plan of 7.3, review of the
+// plan, must fix 3); to whom the query offers it (`canCount`) they are the counting form instead.
+// At phone width the lines are cards.
 
 export default async function StockDocumentPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -35,12 +40,17 @@ export default async function StockDocumentPage({ params }: { params: Promise<{ 
   const t = await getTranslations("warehouse.documents");
   const tWriteOff = await getTranslations("warehouse.writeOff");
   const tEntry = await getTranslations("warehouse.directEntry");
+  const tCount = await getTranslations("warehouse.count");
   const format = await getFormatters();
   const at = (moment: Date) => `${format.date(moment)} ${format.time(moment)}`;
   const quantity = (qty: string, unit: string) => `${format.quantity(qty)} ${unit}`;
+  const signed = (difference: string, unit: string) =>
+    `${signedQuantity(difference, format.quantity)} ${unit}`;
   const itemName = (line: DocumentLine) =>
     line.subtypeName ? `${line.productName} · ${line.subtypeName}` : line.productName;
-  const waiting = document.status === "PENDING_APPROVAL";
+  // The stock of now beside a waiting write-off's lines, which the Head weighs; never a count's.
+  const waiting = document.type === "WRITE_OFF" && document.status === "PENDING_APPROVAL";
+  const count = document.type === "COUNT";
   const reason =
     document.reason === null
       ? null
@@ -136,77 +146,135 @@ export default async function StockDocumentPage({ params }: { params: Promise<{ 
         )}
       </section>
 
-      <section
-        aria-labelledby="document-lines"
-        className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 sm:p-6"
-      >
-        <h2 id="document-lines" className="text-[17px] leading-6 font-semibold">
-          {t("page.lines")}
-        </h2>
-        <table className="w-full text-[15px] leading-[22px] max-sm:block">
-          <thead className="max-sm:sr-only">
-            <tr className="border-b border-border text-left text-sm leading-5 text-muted-foreground">
-              <th scope="col" className="py-2 pr-3 font-semibold">
-                {t("page.product")}
-              </th>
-              <th scope="col" className="py-2 pr-3 text-right font-semibold">
-                {document.type === "WRITE_OFF"
-                  ? tWriteOff("page.quantity")
-                  : transfer
-                    ? t("page.sent")
-                    : t("page.quantity")}
-              </th>
-              {received && (
-                <>
-                  <th scope="col" className="py-2 pr-3 text-right font-semibold">
-                    {t("page.received")}
-                  </th>
-                  <th scope="col" className="py-2 pr-3 text-right font-semibold">
-                    {t("page.short")}
-                  </th>
-                </>
-              )}
-              {waiting && (
-                <th scope="col" className="py-2 text-right font-semibold">
-                  {t("page.inStock")}
+      {document.canCount ? (
+        <CountSheetForm
+          documentId={document.id}
+          number={document.number}
+          lines={document.lines.map((line) => ({
+            id: line.id,
+            name: itemName(line),
+            qty: line.qty,
+            countedQty: line.countedQty,
+            unitShortName: line.unitShortName,
+            allowsDecimals: line.allowsDecimals,
+          }))}
+        />
+      ) : (
+        <section
+          aria-labelledby="document-lines"
+          className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 sm:p-6"
+        >
+          <h2 id="document-lines" className="text-[17px] leading-6 font-semibold">
+            {t("page.lines")}
+          </h2>
+          <table className="w-full text-[15px] leading-[22px] max-sm:block">
+            <thead className="max-sm:sr-only">
+              <tr className="border-b border-border text-left text-sm leading-5 text-muted-foreground">
+                <th scope="col" className="py-2 pr-3 font-semibold">
+                  {t("page.product")}
                 </th>
-              )}
-            </tr>
-          </thead>
-          <tbody className="max-sm:flex max-sm:flex-col max-sm:gap-3">
-            {document.lines.map((line) => (
-              <tr
-                key={line.id}
-                data-document-line={line.id}
-                className="border-b border-border last:border-0 max-sm:flex max-sm:flex-col max-sm:gap-1 max-sm:rounded-lg max-sm:border max-sm:p-3"
-              >
-                <td className="py-2 pr-3 font-semibold max-sm:p-0">{itemName(line)}</td>
-                {column(
-                  transfer ? t("page.sent") : t("page.quantity"),
-                  line.qty,
-                  line.unitShortName,
+                <th scope="col" className="py-2 pr-3 text-right font-semibold">
+                  {document.type === "WRITE_OFF"
+                    ? tWriteOff("page.quantity")
+                    : transfer
+                      ? t("page.sent")
+                      : count
+                        ? tCount("stockAtStart")
+                        : t("page.quantity")}
+                </th>
+                {count && (
+                  <>
+                    <th scope="col" className="py-2 pr-3 text-right font-semibold">
+                      {tCount("counted")}
+                    </th>
+                    <th scope="col" className="py-2 pr-3 text-right font-semibold">
+                      {tCount("difference")}
+                    </th>
+                  </>
                 )}
-                {received &&
-                  column(t("page.received"), line.receivedQty ?? "0", line.unitShortName)}
-                {received && column(t("page.short"), line.shortQty ?? "0", line.unitShortName)}
+                {received && (
+                  <>
+                    <th scope="col" className="py-2 pr-3 text-right font-semibold">
+                      {t("page.received")}
+                    </th>
+                    <th scope="col" className="py-2 pr-3 text-right font-semibold">
+                      {t("page.short")}
+                    </th>
+                  </>
+                )}
                 {waiting && (
-                  <td className="py-2 text-right tabular-nums max-sm:p-0 max-sm:text-left">
-                    <span className="sm:hidden">
-                      {t("page.labelled", {
-                        label: t("page.inStock"),
-                        value: quantity(line.inStock ?? "0", line.unitShortName),
-                      })}
-                    </span>
-                    <span className="max-sm:hidden">
-                      {quantity(line.inStock ?? "0", line.unitShortName)}
-                    </span>
-                  </td>
+                  <th scope="col" className="py-2 text-right font-semibold">
+                    {t("page.inStock")}
+                  </th>
                 )}
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
+            </thead>
+            <tbody className="max-sm:flex max-sm:flex-col max-sm:gap-3">
+              {document.lines.map((line) => (
+                <tr
+                  key={line.id}
+                  data-document-line={line.id}
+                  className="border-b border-border last:border-0 max-sm:flex max-sm:flex-col max-sm:gap-1 max-sm:rounded-lg max-sm:border max-sm:p-3"
+                >
+                  <td className="py-2 pr-3 font-semibold max-sm:p-0">{itemName(line)}</td>
+                  {column(
+                    transfer ? t("page.sent") : count ? tCount("stockAtStart") : t("page.quantity"),
+                    line.qty,
+                    line.unitShortName,
+                  )}
+                  {count &&
+                    (line.countedQty === null ? (
+                      <td
+                        data-count-counted
+                        className="py-2 pr-3 text-right text-muted-foreground max-sm:p-0 max-sm:text-left"
+                      >
+                        {tCount("notCounted")}
+                      </td>
+                    ) : (
+                      column(tCount("counted"), line.countedQty, line.unitShortName)
+                    ))}
+                  {count && (
+                    <td
+                      data-count-difference
+                      className="py-2 pr-3 text-right tabular-nums max-sm:p-0 max-sm:text-left"
+                    >
+                      {line.difference !== null && (
+                        <>
+                          <span className="sm:hidden">
+                            {t("page.labelled", {
+                              label: tCount("difference"),
+                              value: signed(line.difference, line.unitShortName),
+                            })}
+                          </span>
+                          <span className="max-sm:hidden">
+                            {signed(line.difference, line.unitShortName)}
+                          </span>
+                        </>
+                      )}
+                    </td>
+                  )}
+                  {received &&
+                    column(t("page.received"), line.receivedQty ?? "0", line.unitShortName)}
+                  {received && column(t("page.short"), line.shortQty ?? "0", line.unitShortName)}
+                  {waiting && (
+                    <td className="py-2 text-right tabular-nums max-sm:p-0 max-sm:text-left">
+                      <span className="sm:hidden">
+                        {t("page.labelled", {
+                          label: t("page.inStock"),
+                          value: quantity(line.inStock ?? "0", line.unitShortName),
+                        })}
+                      </span>
+                      <span className="max-sm:hidden">
+                        {quantity(line.inStock ?? "0", line.unitShortName)}
+                      </span>
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      )}
 
       {(document.canReverse || document.canDownloadNote) && (
         <div

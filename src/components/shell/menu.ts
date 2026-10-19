@@ -51,6 +51,15 @@ const MENUS: Record<Role, readonly MenuItemId[]> = {
   FINANCE: ["home", "orders", "money", "stock", "analytics", "reports"],
 };
 
+/**
+ * Whether the role opens Stock counts (11-screens-and-ux.md, Screens: "Stock counts |
+ * /warehouse/counts | Manager, Head"; plan of 7.3): the roles whose menu has Warehouse, not Stock.
+ * The counts page answers "Not found" to the others; the server checks every action again.
+ */
+export function seesStockCounts(role: Role): boolean {
+  return MENUS[role].includes("warehouse");
+}
+
 /** The role's menu, in the spec's order. */
 export function menuFor(role: Role): MenuItem[] {
   return MENUS[role].map((id) => ITEMS[id]);

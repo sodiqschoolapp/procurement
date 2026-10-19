@@ -140,6 +140,11 @@ export const SERVER_ACTIONS: Record<string, Entry> = {
   // (receive-transfer-matrix.db.test.ts).
   "src/app/(app)/warehouse/documents/[id]/actions.ts#receiveTransferAction":
     "stock.receive_transfer",
+  // Start a count and type its counted quantities (plan of 7.3): stock.start_count on the input's
+  // branch, and on the count's branch (count-matrix.db.test.ts).
+  "src/app/(app)/warehouse/counts/actions.ts#startCountAction": "stock.start_count",
+  "src/app/(app)/warehouse/documents/[id]/actions.ts#saveCountedQuantitiesAction":
+    "stock.start_count",
   // Set or clear a minimum (plan of 5.10): stock.set_minimums on the branch
   // (minimum-matrix.db.test.ts).
   "src/app/(app)/warehouse/items/[id]/actions.ts#setStockMinimumAction": "stock.set_minimums",
@@ -354,6 +359,9 @@ export const QUERIES: Record<string, Permission> = {
   "src/features/warehouse/queries/issue-form.ts#transferBranchChoices": "stock.transfer",
   "src/features/warehouse/queries/issue-form.ts#searchTransferItems": "stock.transfer",
   "src/features/warehouse/queries/transfer-form.ts#transferDestinationChoices": "stock.transfer",
+  // The counts list and the branches a count can start in (plan of 7.3).
+  "src/features/warehouse/queries/counts.ts#listCounts": "data.view",
+  "src/features/warehouse/queries/issue-form.ts#countBranchChoices": "stock.start_count",
   // A document's page (plans of 5.11 and 5.12) and the documents list (plan of 5.12): data.view
   // with the branch wall in the SQL.
   "src/features/warehouse/queries/document.ts#getStockDocument": "data.view",

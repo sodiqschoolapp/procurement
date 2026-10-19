@@ -53,6 +53,8 @@ export type DocumentLineInput = {
   qty: string;
   countedQty?: string | null;
   receivedQty?: string | null;
+  /** A count line's `seq` of the item's newest movement at the start (plan of 7.3, decided item 2). */
+  startSeq?: bigint | null;
   /**
    * Whole so'm: a direct entry's own cost (09 Direct entry, Lines); a return's cost into an empty
    * stock, required (plan of 5.6, decided item 1, Look first: not the cost it entered at, which is
@@ -131,7 +133,8 @@ export async function createDocument(tx: Executor, input: DocumentInput): Promis
     input.lines.map(
       (line) => sql`(${documentId}::uuid, ${line.variantId}::uuid, ${line.qty}::numeric,
         ${line.countedQty ?? null}::numeric, ${line.receivedQty ?? null}::numeric,
-        ${line.unitCost?.toString() ?? null}::bigint, ${moment})`,
+        ${line.unitCost?.toString() ?? null}::bigint, ${line.startSeq?.toString() ?? null}::bigint,
+        ${moment})`,
     ),
     sql`, `,
   );
@@ -139,7 +142,7 @@ export async function createDocument(tx: Executor, input: DocumentInput): Promis
   // the line.
   const lines = await tx.execute<{ id: string; variant_id: string }>(sql`
     insert into stock_document_lines (document_id, variant_id, qty, counted_qty, received_qty,
-      unit_cost, created_at)
+      unit_cost, start_seq, created_at)
     values ${rows}
     returning id, variant_id`);
   const idOf = new Map(lines.rows.map((row) => [row.variant_id, row.id]));
