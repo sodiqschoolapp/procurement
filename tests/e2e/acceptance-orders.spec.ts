@@ -460,6 +460,12 @@ test("S17: the list filtered to one week downloads as Excel and PDF with exactly
   });
   const c = e.download.columns;
   expect(rows.map((row) => row[c.number]).sort()).toEqual([number("A"), number("B")].sort());
+  // Nothing of C (another week) or of the Draft D in any cell, numbered or not.
+  const cells: string[] = [];
+  sheet.eachRow((row) => row.eachCell((cell) => cells.push(String(cell.value))));
+  for (const key of ["C", "D"] as const) {
+    expect(cells.filter((cell) => cell.includes(product(key)))).toEqual([]);
+  }
   const a = rows.find((row) => row[c.number] === number("A"))!;
   expect(a[c.status]).toBe(en.requestStatus.PENDING_PRINCIPAL);
   expect(a["Procurement Head"]).toBe(E2E_ROLES.HEAD.fullName);
@@ -480,6 +486,8 @@ test("S17: the list filtered to one week downloads as Excel and PDF with exactly
   expect(text).toContain(number("A")!);
   expect(text).toContain(number("B")!);
   expect(text).not.toContain(number("C")!);
+  expect(text).not.toContain(product("C"));
+  expect(text).not.toContain(product("D"));
   expect(text).toContain(E2E_ROLES.HEAD.fullName);
   expect(text).toContain(headAt);
   expect(text).toContain("800 000 so'm");

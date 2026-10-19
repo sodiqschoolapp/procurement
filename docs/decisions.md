@@ -2632,6 +2632,7 @@ Choices made during the build:
 - S17's orders are written as drafts with their creation day and submitted by the Manager in the grid: the download's Head stamp counts from the order's Submit event (`orderSteps()`), so an order written submitted straight into the table shows no Head. The Head approves A on its page.
 - S19's three orders of 10 are written as complete drafts and submitted in the grid one at a time; the draft merge of 05 Drafts 2 is typed through the picker for a second department, so the merged draft is none of the three (review of the plan, must-fix 1).
 - The four new scenarios and nothing else run with `test.slow()`: each signs in as two to four people.
+- The `e2e` job of `.github/workflows/ci.yml` may run 30 minutes instead of 20: on `main` at 62e88a7 it took 17.5 minutes (Playwright 14.3), and the twenty scenarios add whole flows at two widths. The `checks` job keeps 20. The job's name and steps are unchanged (Decided ahead 0.3, item 1).
 
 ## Process changes
 
