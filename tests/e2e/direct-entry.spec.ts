@@ -135,6 +135,14 @@ test("the Head enters 200 chairs EA already owns at the reference price, and the
 
   await page.goto(`/warehouse/stock?q=${encodeURIComponent(seeded.tag)}&branch=${seeded.branchId}`);
   await expect(page.getByRole("row").filter({ hasText: seeded.name })).toContainText("200");
+  // The +200 in the balance too: the product had no stock anywhere (plan of 9.1c, S15).
+  const balance = await withDatabase((client) =>
+    client.query<{ qty: string }>(
+      "select qty::text as qty from stock_balances where branch_id = $1 and variant_id = $2",
+      [seeded.branchId, seeded.variantId],
+    ),
+  );
+  expect(balance.rows.map((row) => row.qty)).toEqual(["200.000"]);
   await page.getByRole("link", { name: seeded.name }).click();
   const entered = page.getByRole("row").filter({ hasText: uz.warehouse.item.types.DIRECT_ENTRY });
   await expect(entered).toContainText(number!);
