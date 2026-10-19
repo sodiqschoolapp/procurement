@@ -1036,3 +1036,125 @@ describe("analytics_refresh, the rows of Finance's page (build-plan 6.6a)", () =
     expect(await needOf(done.id)).toMatchObject({ planned_cash: "50000", cash_needed: "0" });
   });
 });
+
+describe("analytics_refresh, the rows of Finance's 6.6b blocks (build-plan 6.6b)", () => {
+  it("writes has_receipt from the trip's receipt files, as the settlement screen's No receipt reads it (plan of 6.6b, decided item 4)", async () => {
+    setClock("2031-05-15T05:00:00Z");
+    const scene = await spendingScene();
+    const without = await bought(scene, { purchasedOn: "2031-05-02" });
+    const withFile = await bought(scene, { purchasedOn: "2031-05-02", receipt: true });
+    await refreshNow();
+    const rows = await db.execute<{ purchase_id: string; has_receipt: boolean }>(sql`
+      select purchase_id, has_receipt from analytics_spending where branch_id = ${scene.branch.id}`);
+    expect(new Map(rows.rows.map((row) => [row.purchase_id, row.has_receipt]))).toEqual(
+      new Map([
+        [without.purchaseId, false],
+        [withFile.purchaseId, true],
+      ]),
+    );
+  });
+
+  it("writes each settlement of settlementStays() with its first send, close, seconds and Tashkent close date; none for a close by exact match (plan of 6.6b, decided item 3)", async () => {
+    setClock("2031-05-15T05:00:00Z");
+    const scene = await spendingScene();
+    const approved = {
+      type: "APPROVE",
+      from: "PENDING_FINANCE",
+      to: "PURCHASING",
+      at: "2031-05-01T05:00:00Z",
+    } as const;
+    const options = { submittedAt: "2031-04-30T05:00:00Z" };
+    // Sent, sent back for correction, sent again, closed at 20:00 UTC (the next day in Tashkent);
+    // reopened and settled a second time.
+    const twice = await decided(
+      scene,
+      "CLOSED",
+      [
+        approved,
+        {
+          type: "SEND_TO_SETTLEMENT",
+          from: "PURCHASING",
+          to: "SETTLEMENT",
+          at: "2031-05-02T05:00:00Z",
+        },
+        {
+          type: "SEND_BACK_FOR_CORRECTION",
+          from: "SETTLEMENT",
+          to: "PURCHASING",
+          at: "2031-05-03T05:00:00Z",
+          reason: "Chek yo'q",
+        },
+        {
+          type: "SEND_TO_SETTLEMENT",
+          from: "PURCHASING",
+          to: "SETTLEMENT",
+          at: "2031-05-04T05:00:00Z",
+        },
+        { type: "CLOSE", from: "SETTLEMENT", to: "CLOSED", at: "2031-05-05T20:00:00Z" },
+        {
+          type: "REOPEN",
+          from: "CLOSED",
+          to: "PURCHASING",
+          at: "2031-05-08T05:00:00Z",
+          reason: "Xato topildi",
+        },
+        {
+          type: "SEND_TO_SETTLEMENT",
+          from: "PURCHASING",
+          to: "SETTLEMENT",
+          at: "2031-05-09T05:00:00Z",
+        },
+        { type: "CLOSE", from: "SETTLEMENT", to: "CLOSED", at: "2031-05-10T05:00:00Z" },
+      ],
+      options,
+    );
+    // Closed by exact match, never sent to settlement: no row.
+    const exact = await decided(
+      scene,
+      "CLOSED",
+      [
+        approved,
+        { type: "CLOSE_EXACT", from: "PURCHASING", to: "CLOSED", at: "2031-05-03T05:00:00Z" },
+      ],
+      options,
+    );
+    await refreshNow();
+    const rows = await db.execute<{
+      order_id: string;
+      sent_at: string;
+      closed_at: string;
+      closed_on: string;
+      seconds: string;
+      category_id: string;
+      department_id: string;
+      owner_id: string;
+    }>(sql`
+      select order_id, to_json(sent_at)#>>'{}' as sent_at, to_json(closed_at)#>>'{}' as closed_at,
+             closed_on::text as closed_on, seconds::text as seconds,
+             category_id, department_id, owner_id
+      from analytics_settlements where branch_id = ${scene.branch.id} order by closed_at`);
+    expect(rows.rows).toEqual([
+      {
+        order_id: twice.id,
+        sent_at: "2031-05-02T05:00:00+00:00",
+        closed_at: "2031-05-05T20:00:00+00:00",
+        closed_on: "2031-05-06",
+        seconds: String(3 * 86_400 + 15 * 3_600),
+        category_id: scene.category.id,
+        department_id: scene.department.id,
+        owner_id: scene.manager.id,
+      },
+      {
+        order_id: twice.id,
+        sent_at: "2031-05-09T05:00:00+00:00",
+        closed_at: "2031-05-10T05:00:00+00:00",
+        closed_on: "2031-05-10",
+        seconds: "86400",
+        category_id: scene.category.id,
+        department_id: scene.department.id,
+        owner_id: scene.manager.id,
+      },
+    ]);
+    expect(rows.rows.some((row) => row.order_id === exact.id)).toBe(false);
+  });
+});

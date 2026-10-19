@@ -53,10 +53,10 @@ describe("analytics_spending, the columns of 6.4b", () => {
     db.execute(sql`
       insert into analytics_spending (purchase_id, order_id, branch_id, purchased_on,
         category_id, department_id, owner_id, amount, variant_id, qty, unit_price, goods,
-        created_at)
+        created_at, has_receipt)
       values (${ids.purchase}, ${ids.order}, ${ids.branch}, '2031-05-02', ${ids.category},
         ${ids.department}, ${ids.owner}, 0, ${sql.raw(row.variant)}, ${row.qty},
-        ${row.unitPrice}, ${row.goods}, '2031-05-02T05:00:00Z')`);
+        ${row.unitPrice}, ${row.goods}, '2031-05-02T05:00:00Z', false)`);
 
   it("takes a valid row (a gift: price 0, goods 0)", async () => {
     await insert(valid());

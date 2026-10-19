@@ -2342,7 +2342,11 @@
       "hoursNone": "Oldingi davrda qaror bo'lmagan",
       "amountUp": "Oldingi davrga nisbatan +{amount}",
       "amountDown": "Oldingi davrga nisbatan −{amount}",
-      "amountNone": "Ikki davrdan birida tugagan buyurtma yo'q"
+      "amountNone": "Ikki davrdan birida tugagan buyurtma yo'q",
+      "daysUp": "Oldingi davrga nisbatan +{days} kun",
+      "daysDown": "Oldingi davrga nisbatan −{days} kun",
+      "daysSame": "Oldingi davrdagidek",
+      "daysNone": "Oldingi davrda hisob-kitob bo'lmagan"
     },
     "spending": {
       "title": "Xarajatlar",
@@ -2390,7 +2394,9 @@
       "priceNoSupplier": "{name}, yetkazib beruvchisiz: {first} – {last}",
       "priceSummary": "{count, plural, other {# ta yozuv}}, {qty} sotib olingan, birligi {price}",
       "columnsQty": "Miqdor",
-      "columnsUnitPrice": "Birlik narxi"
+      "columnsUnitPrice": "Birlik narxi",
+      "noReceipt": "Cheksiz, {first} – {last}",
+      "paymentNoSupplier": "{name}, yetkazib beruvchisiz: {first} – {last}"
     },
     "sheets": {
       "months": "Oylar boʻyicha xarajatlar",
@@ -2430,7 +2436,12 @@
       "cashAges": "Muddat bo'yicha naqd",
       "cashNeeded": "Tez orada kerak naqd",
       "moneyRows": "Pul qatorlari",
-      "neededOrders": "Naqd kutayotgan buyurtmalar"
+      "neededOrders": "Naqd kutayotgan buyurtmalar",
+      "transfers": "Yetkazib beruvchilar bo'yicha o'tkazmalar",
+      "overspendBranches": "Filiallar bo'yicha ortiqcha sarf va tejash",
+      "overspendManagers": "Menejerlar bo'yicha ortiqcha sarf va tejash",
+      "settlementBranches": "Filiallar bo'yicha hisob-kitob tezligi",
+      "settlements": "Hisob-kitoblar"
     },
     "plan": {
       "title": "Reja va haqiqat",
@@ -2889,7 +2900,17 @@
         "step": "Bosqich",
         "needed": "Kerak",
         "orders": "Buyurtmalar",
-        "stage": "Holat"
+        "stage": "Holat",
+        "payment": "To'lov usuli",
+        "amount": "Summa",
+        "supplier": "Yetkazib beruvchi",
+        "branch": "Filial",
+        "manager": "Menejer",
+        "days": "O'rtacha kun",
+        "daysChange": "O'zgarish, kun",
+        "settlements": "Hisob-kitoblar",
+        "overspentOrders": "Ortiqcha sarfli buyurtmalar",
+        "savedOrders": "Tejalgan buyurtmalar"
       },
       "money": {
         "title": "Pul qatorlari",
@@ -2910,6 +2931,50 @@
           "neededBy": "Qachongacha",
           "planned": "Rejadagi naqd",
           "handed": "Qo'lga berilgan"
+        }
+      },
+      "records": "{count, plural, other {# ta yozuv}}",
+      "payments": {
+        "title": "To'lovlar",
+        "note": "Davr xarajatlari to'lov usuli bo'yicha; qo'shimcha xarajat o'z to'lov usuli bo'yicha hisoblanadi.",
+        "byType": "To'lov usuli bo'yicha",
+        "transfers": "Yetkazib beruvchilar bo'yicha o'tkazmalar",
+        "transfersNote": "Bank o'tkazmasi bilan to'langan xarajatlar, xarid yetkazib beruvchisi bo'yicha.",
+        "noSupplier": "Yetkazib beruvchisiz",
+        "total": "Barcha xarajatlar",
+        "transferTotal": "Barcha o'tkazmalar",
+        "empty": "Bu davrda xarajat yo'q."
+      },
+      "plan": {
+        "title": "Reja va haqiqat",
+        "note": "Xaridi shu davrda tugagan buyurtmalar: rejadan ortiq sarflangan va rejadan qolgan pul.",
+        "overspent": "Ortiqcha sarf",
+        "saved": "Tejalgan",
+        "byBranch": "Filiallar bo'yicha",
+        "byManager": "Menejerlar bo'yicha",
+        "noReceipt": "Cheksiz xaridlar",
+        "noReceiptNote": "Davrdagi xarid yozuvlari, xaridida chek surati yo'q."
+      },
+      "speed": {
+        "title": "Hisob-kitob tezligi",
+        "note": "Davrda yopilgan hisob-kitoblarning «Hisob-kitobga yuborish»dan «Yopilgan»gacha o'rtacha kunlari.",
+        "average": "O'rtacha",
+        "days": "{days} kun",
+        "none": "—",
+        "byBranch": "Filiallar bo'yicha",
+        "allBranches": "Barcha filiallar",
+        "settlements": "{count, plural, other {# ta hisob-kitob}}"
+      },
+      "settlementList": {
+        "title": "Raqam ortidagi hisob-kitoblar",
+        "empty": "Bu davrda hech bir hisob-kitob yopilmagan.",
+        "line": "{first} – {last} yopilgan hisob-kitoblar",
+        "summary": "{count, plural, other {# ta hisob-kitob}}, o'rtacha {days} kun",
+        "columns": {
+          "owner": "Menejer",
+          "sent": "Hisob-kitobga yuborilgan",
+          "closed": "Yopilgan",
+          "days": "Kunlar"
         }
       }
     }

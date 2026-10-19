@@ -1,12 +1,12 @@
 import { type SQL, sql } from "drizzle-orm";
 
 import type { Period } from "@/domain/analytics";
-import { PAYMENT_TYPES, type PaymentType } from "@/domain/payment-types";
 import type { Executor } from "@/server/authorize";
 import { readSnapshot } from "@/server/read-snapshot";
 
 import { type AnalyticsFilters, type PeriodInput, TOP_SUPPLIERS } from "../period-params";
 import { authorizeAnalytics } from "../authorize-filters";
+import { type PaymentTotal, paymentTotals } from "../payment-totals";
 import { resolvePeriod } from "../resolve-period";
 import { spendingWhere } from "../spending-where";
 import { type Counted, counted } from "../counted";
@@ -17,7 +17,7 @@ import { type Counted, counted } from "../counted";
 // tables under spendingWhere(), the one condition of a number, its list and its export (6.3);
 // every row with its change against the same key in the period before (10 point 1; plan of 6.3,
 // decided item 6). Payment types sum the parts of `analytics_spending_payments` (plan of 6.4,
-// decided item 2, Look first). Under `data.view`, the branch wall in the SQL, in one snapshot.
+// decided item 2, Look first), by paymentTotals(), which Finance's Payments block shares. Under `data.view`, the branch wall in the SQL, in one snapshot.
 
 export type Named = Counted & { id: string; name: string; isActive: boolean };
 
@@ -32,7 +32,7 @@ export type HeadSpending = {
   /** The 10 suppliers with the most spending in the period; records without one are left out. */
   suppliers: Named[];
   /** In the order of PAYMENT_TYPES, each type with spending in either period. */
-  payments: (Counted & { payment: PaymentType })[];
+  payments: PaymentTotal[];
 };
 
 export async function getHeadSpending(
@@ -89,15 +89,7 @@ async function headSpendingIn(
     sql`analytics_spending.supplier_id`,
     sql`limit ${TOP_SUPPLIERS}`,
   );
-  const payments = await db.execute<{ payment_type: PaymentType; now: string; before: string }>(sql`
-    select pp.payment_type,
-           coalesce(sum(pp.amount) filter (where ${now}), 0)::text as now,
-           coalesce(sum(pp.amount) filter (where ${then}), 0)::text as before
-    from analytics_spending
-    join analytics_spending_payments pp on pp.purchase_id = analytics_spending.purchase_id
-    where (${now}) or (${then})
-    group by pp.payment_type`);
-  const byType = new Map(payments.rows.map((row) => [row.payment_type, row]));
+  const payments = await paymentTotals(db, now, then);
 
   const named = (row: GroupRow): Named => ({
     id: row.id,
@@ -113,9 +105,6 @@ async function headSpendingIn(
     departments: departments.rows.map((row) => ({ ...named(row), branchName: row.branch_name })),
     // A supplier with spending only in the period before is no top supplier of this one.
     suppliers: suppliers.rows.map(named).filter((row) => row.amount > 0n),
-    payments: PAYMENT_TYPES.flatMap((payment) => {
-      const row = byType.get(payment);
-      return row ? [{ payment, ...counted(row.now, row.before) }] : [];
-    }),
+    payments,
   };
 }

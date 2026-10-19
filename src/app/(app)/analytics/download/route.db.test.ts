@@ -1044,3 +1044,160 @@ describe("GET /analytics/download, the 6.6a sheets (10 point 4; plan of 6.6a)", 
     }
   });
 });
+
+/**
+ * Finance's 6.6b rows of a branch (build-plan 6.6b): a bank-transfer record of 70 000 from the
+ * scene's supplier, a cash record of 60 000 ended red against its 50 000 plan, and an order sent
+ * to settlement on 3 October and closed on 5 October (2.0 days), the summary refreshed.
+ */
+async function finance66bRowsIn(branchId?: string) {
+  setClock(AT);
+  const scene = await spendingScene(branchId);
+  const transfer = await bought(scene, {
+    purchasedOn: "2031-10-02",
+    unitPrice: "70000",
+    paymentType: "TRANSFER",
+  });
+  // A second transfer with no supplier and no receipt, for the record keys of 6.6b.
+  const loose = await bought(scene, {
+    purchasedOn: "2031-10-02",
+    unitPrice: "3000",
+    paymentType: "TRANSFER",
+    supplierId: null,
+  });
+  const red = await bought(scene, {
+    purchasedOn: "2031-10-02",
+    unitPrice: "60000",
+    progress: "DONE",
+  });
+  await buyingEvent(red.orderId, red.ownerId, "FINISH_ORDER", "2031-10-02T05:00:00Z");
+  const settled = await decided(
+    scene,
+    "CLOSED",
+    [
+      { type: "APPROVE", from: "PENDING_FINANCE", to: "PURCHASING", at: "2031-10-01T05:00:00Z" },
+      {
+        type: "SEND_TO_SETTLEMENT",
+        from: "PURCHASING",
+        to: "SETTLEMENT",
+        at: "2031-10-03T05:00:00Z",
+      },
+      { type: "CLOSE", from: "SETTLEMENT", to: "CLOSED", at: "2031-10-05T05:00:00Z" },
+    ],
+    { submittedAt: "2031-09-30T05:00:00Z" },
+  );
+  await refreshNow();
+  return { scene, transfer: loose, supplied: transfer, red, settled };
+}
+
+// The blocks of 6.6b (plan of 6.6b, Tests): every sheet of Payments, Plan vs actual and
+// Settlement speed, and the list behind Settlement speed, behind the same wall.
+describePermissionMatrix("GET /analytics/download, the blocks of 6.6b behind the wall", {
+  permission: "data.export",
+  async run({ user, branchId }) {
+    const { scene, settled, transfer } = await finance66bRowsIn(branchId);
+    const cookie = await signInAs(user);
+    const own = { ...NO_ANALYTICS_FILTERS, category: scene.category.id };
+    const texts = async (block: ExportBlock, extra: Parameters<typeof analyticsSearch>[2] = {}) =>
+      (
+        await sheetOf(
+          await GET(
+            downloadRequest(
+              `/analytics/download?${analyticsSearch(THIS_MONTH, own, { ...extra, block })}`,
+              cookie,
+            ),
+          ),
+        )
+      ).flat();
+    const seen = [
+      (await texts("transfers")).includes(70_000),
+      (await texts("overspendBranches")).includes(10_000),
+      (await texts("overspendManagers")).includes(10_000),
+      (await texts("settlementBranches")).includes("2.0"),
+      (await texts("settlements", { key: { kind: "settled" } })).includes(settled.number),
+      // The two new record keys through the download (permission review of 6.6b, Should fix 1).
+      (await texts("records", { key: { kind: "noreceipt" } })).includes(transfer.number),
+      (
+        await texts("records", {
+          key: { kind: "payment", payment: "TRANSFER", noSupplier: true },
+        })
+      ).includes(transfer.number),
+    ];
+    expect(seen).toEqual(seen.map(() => seen[0]));
+    if (!seen[0]) throw new AuthorizationError("not_found");
+  },
+});
+
+describe("GET /analytics/download, the 6.6b sheets (10 point 4; plan of 6.6b; review of the plan, correction 2)", () => {
+  const get = async (
+    user: Parameters<typeof signInAs>[0],
+    filters: typeof NO_ANALYTICS_FILTERS,
+    block: ExportBlock,
+    extra: Parameters<typeof analyticsSearch>[2] = {},
+  ) =>
+    GET(
+      downloadRequest(
+        `/analytics/download?${analyticsSearch(THIS_MONTH, filters, { ...extra, block })}`,
+        await signInAs(user),
+      ),
+    );
+
+  it("writes the transfers, the overspent and saved columns the page shows, the settlement days and the list, with the page's totals", async () => {
+    const { scene, settled } = await finance66bRowsIn();
+    const finance = await insertUser("FINANCE", { branches: [scene.branch.id] });
+    const own = { ...NO_ANALYTICS_FILTERS, branch: scene.branch.id };
+
+    const transfers = await sheetOf(await get(finance, own, "transfers"));
+    // The supplier's row (70 000, +70 000 against nothing before), "No supplier" (3 000), then
+    // the total line: the Bank transfer slice.
+    expect(transfers.at(-3)!.slice(1)).toEqual([70_000, 70_000, ""]);
+    expect(transfers.at(-2)!.slice(1)).toEqual([3_000, 3_000, ""]);
+    expect(transfers.at(-1)!.at(-1)).toBe(73_000);
+
+    const plan = await getPlanVsActual(finance.id, THIS_MONTH, own);
+    expect(plan.total.overspent.amount).toBe(10_000n);
+    const branches = await sheetOf(await get(finance, own, "overspendBranches"));
+    // Branch, overspent orders, overspent, its change and %, saved orders, saved, its change and %:
+    // no colour shares (correction 2).
+    expect(branches.at(-2)!.length).toBe(9);
+    expect(branches.at(-1)!.slice(1)).toEqual([
+      1,
+      Number(plan.total.overspent.amount),
+      10_000,
+      "",
+      0,
+      0,
+      0,
+      "",
+    ]);
+    const managers = await sheetOf(await get(finance, own, "overspendManagers"));
+    expect(managers.at(-1)!.slice(1, 3)).toEqual([1, 10_000]);
+
+    const speed = await sheetOf(await get(finance, own, "settlementBranches"));
+    // The branch's row, then All branches: 2.0 days, one settlement, nothing before.
+    expect(speed.slice(-2).map((row) => row.slice(1))).toEqual([
+      ["2.0", 1, ""],
+      ["2.0", 1, ""],
+    ]);
+    const list = await sheetOf(
+      await get(finance, own, "settlements", { key: { kind: "settled" } }),
+    );
+    expect(list.at(-1)!).toEqual(expect.arrayContaining([settled.number, "2.0"]));
+  });
+
+  it("is Not found for the settlements without their key, or another branch's filter (03 rule 1)", async () => {
+    const { scene } = await finance66bRowsIn();
+    const finance = await insertUser("FINANCE", { branches: [scene.branch.id] });
+    const other = await spendingScene();
+    const elsewhere = { ...NO_ANALYTICS_FILTERS, branch: other.branch.id };
+    for (const response of [
+      await get(finance, NO_ANALYTICS_FILTERS, "settlements"),
+      await get(finance, elsewhere, "transfers"),
+      await get(finance, elsewhere, "overspendBranches"),
+      await get(finance, elsewhere, "settlementBranches"),
+      await get(finance, elsewhere, "settlements", { key: { kind: "settled" } }),
+    ]) {
+      expect(response.status).toBe(404);
+    }
+  });
+});

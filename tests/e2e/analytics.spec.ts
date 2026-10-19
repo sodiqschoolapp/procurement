@@ -944,9 +944,11 @@ test("6.6a: Finance sees Cash and Cash needed soon and opens the orders behind a
   await page.goto(
     `/analytics?period=custom&from=2020-03-01&to=2020-03-31&branch=all&category=${held.category}`,
   );
-  for (const block of ["spending", "finance-cash", "cash-needed"]) {
+  for (const block of ["finance-cash", "cash-needed"]) {
     await expect(page.locator(`[data-analytics-block="${block}"]`)).toBeVisible();
   }
+  // No Spending block on Finance's page since 6.6b (plan of 6.6b, decided item 5, Look first).
+  await expect(page.locator('[data-analytics-block="spending"]')).toHaveCount(0);
   // No other role's block on Finance's page.
   await expect(page.locator('[data-analytics-block="my-cash"]')).toHaveCount(0);
   await expect(page.locator('[data-analytics-block="managers"]')).toHaveCount(0);
@@ -968,5 +970,149 @@ test("6.6a: Finance sees Cash and Cash needed soon and opens the orders behind a
   await expect(page).toHaveURL(/\/analytics\/cash-needed\?/);
   await expect(page.locator("[data-needed-row]")).toHaveCount(1);
   await expect(page.locator("[data-needed-row]")).toContainText(waiting.number);
+  expect(await scrollsSideways(page)).toBe(false);
+});
+
+/**
+ * Finance's 6.6b rows of a new category in EA (build-plan 6.6b): an order planned at 50 000 by
+ * bank transfer, bought on 4 May 2020 for 50 000 by transfer from a supplier of its own, with no
+ * receipt; sent to settlement on 5 May at 10:00 and closed on 7 May at 10:00 in Tashkent (2.0
+ * days). Then the job's refresh.
+ */
+async function seedSettled(): Promise<{
+  branch: string;
+  category: string;
+  supplier: string;
+  number: string;
+}> {
+  const tag = randomUUID().slice(0, 8);
+  return withDatabase(async (client) => {
+    await client.query("begin");
+    let ids;
+    try {
+      const headId = (
+        await client.query<{ id: string }>("select id from users where username = $1", [
+          E2E_ROLES.HEAD.username,
+        ])
+      ).rows[0]!.id;
+      const branch = (
+        await client.query<{ id: string }>("select id from branches where code = 'EA'")
+      ).rows[0]!.id;
+      const unit = await client.query<{ id: string }>(
+        `insert into units (name, short_name, allow_decimal, is_active, created_at)
+         values ($1, $2, true, true, now()) returning id`,
+        [`O'lchov ${tag}`, `s${tag}`],
+      );
+      const category = await client.query<{ id: string }>(
+        `insert into categories (name, is_active, created_at) values ($1, true, now()) returning id`,
+        [`Hisob ${tag}`],
+      );
+      const supplier = await client.query<{ id: string }>(
+        `insert into companies (name, kind, is_active, created_at)
+         values ($1, 'SUPPLIER', true, now()) returning id`,
+        [`Ta'minotchi ${tag}`],
+      );
+      const department = await client.query<{ id: string }>(
+        `insert into departments (branch_id, name, is_active, created_at)
+         values ($1, $2, true, now()) returning id`,
+        [branch, `Bo'lim ${tag}`],
+      );
+      const product = await client.query<{ id: string }>(
+        `insert into products (name, type, category_id, unit_id, is_active, has_variants, created_at)
+         values ($1, 'GOODS', $2, $3, true, false, now()) returning id`,
+        [`Stol ${tag}`, category.rows[0]!.id, unit.rows[0]!.id],
+      );
+      const variant = await client.query<{ id: string }>(
+        `insert into product_variants (product_id, name, is_default, is_active, created_at)
+         values ($1, 'default', true, true, now()) returning id`,
+        [product.rows[0]!.id],
+      );
+      const number = `EA-20-${9_000_000 + Math.floor(Math.random() * 999_999)}`;
+      const order = await client.query<{ id: string }>(
+        `insert into orders (number, branch_id, owner_id, created_by, status, variant_id,
+                             department_id, needed_by, planned_qty, planned_price, planned_total,
+                             payment_type, progress, submitted_at, created_at, updated_at)
+         values ($1, $2, $3, $3, 'CLOSED', $4, $5, '2020-06-01', 1, 50000, 50000, 'TRANSFER',
+                 'DONE', '2020-05-01T05:00:00Z', now(), now())
+         returning id`,
+        [number, branch, headId, variant.rows[0]!.id, department.rows[0]!.id],
+      );
+      const trip = await client.query<{ id: string }>(
+        `insert into purchase_trips (client_key, branch_id, purchased_on, supplier_id,
+                                     payment_type, created_by, created_at)
+         values ($1, $2, '2020-05-04', $3, 'TRANSFER', $4, now()) returning id`,
+        [randomUUID(), branch, supplier.rows[0]!.id, headId],
+      );
+      await client.query(
+        `insert into purchases (trip_id, order_id, branch_id, variant_id, qty, unit_price,
+                                created_by, created_at)
+         values ($1, $2, $3, $4, 1, 50000, $5, now())`,
+        [trip.rows[0]!.id, order.rows[0]!.id, branch, variant.rows[0]!.id, headId],
+      );
+      for (const [type, from, to, at] of [
+        ["APPROVE", "PENDING_FINANCE", "PURCHASING", "2020-05-02T05:00:00Z"],
+        ["SEND_TO_SETTLEMENT", "PURCHASING", "SETTLEMENT", "2020-05-05T05:00:00Z"],
+        ["CLOSE", "SETTLEMENT", "CLOSED", "2020-05-07T05:00:00Z"],
+      ]) {
+        const action = await client.query<{ id: string }>(
+          `insert into order_actions (client_key, type, actor_id, order_count, created_at)
+           values ($1, $2, $3, 1, $4) returning id`,
+          [randomUUID(), type, headId, at],
+        );
+        await client.query(
+          `insert into order_events (order_id, action_id, type, from_status, to_status, actor_id,
+                                     created_at)
+           values ($1, $2, $3, $4, $5, $6, $7)`,
+          [order.rows[0]!.id, action.rows[0]!.id, type, from, to, headId, at],
+        );
+      }
+      await client.query("commit");
+      ids = { branch, category: category.rows[0]!.id, supplier: supplier.rows[0]!.id, number };
+    } catch (error) {
+      await client.query("rollback");
+      throw error;
+    }
+    await drizzle(client, { schema }).transaction((tx) => refreshAnalytics(tx));
+    return ids;
+  });
+}
+
+test("6.6b: Finance sees Payments, Plan vs actual and Settlement speed and opens a supplier's transfers and the settlements behind the average (10 Finance; plan of 6.6b)", async ({
+  page,
+}) => {
+  const seeded = await seedSettled();
+  await page.goto("/login");
+  await page.locator("#username").fill(E2E_ROLES.FINANCE.username);
+  await page.locator("#password").fill(E2E_ROLES.FINANCE.password);
+  await page.locator("form button[type=submit]").click();
+  await expect(page).toHaveURL(/\/$/);
+  const address = `/analytics?period=custom&from=2020-05-01&to=2020-05-31&branch=all&category=${seeded.category}`;
+  await page.goto(address);
+  for (const block of [
+    "finance-cash",
+    "cash-needed",
+    "payments",
+    "finance-plan",
+    "settlement-speed",
+  ]) {
+    await expect(page.locator(`[data-analytics-block="${block}"]`)).toBeVisible();
+  }
+  await expect(page.locator('[data-analytics-block="spending"]')).toHaveCount(0);
+  await expect(page.locator('[data-finance-plan-tile="receipt"]')).toContainText(/50\s000/);
+  await expect(page.locator("[data-settlement-tile]")).toContainText("2");
+  expect(await scrollsSideways(page)).toBe(false);
+
+  const supplier = page.locator(`[data-table="transfers"] [data-row="${seeded.supplier}"] a`);
+  await expect(supplier).toContainText(/50\s000/);
+  await supplier.click();
+  await expect(page).toHaveURL(/\/analytics\/records\?.*key=payment%3ATRANSFER/);
+  await expect(page.locator("[data-records-summary]")).toContainText(/50\s000/);
+  expect(await scrollsSideways(page)).toBe(false);
+
+  await page.goto(address);
+  await page.locator("[data-settlement-tile] a").click();
+  await expect(page).toHaveURL(/\/analytics\/settlements\?.*key=settled/);
+  await expect(page.locator("[data-settlement-row]")).toHaveCount(1);
+  await expect(page.locator("[data-settlement-row]")).toContainText(seeded.number);
   expect(await scrollsSideways(page)).toBe(false);
 });

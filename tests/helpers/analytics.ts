@@ -12,7 +12,7 @@ import { refreshAnalytics } from "@/server/jobs/analytics-refresh";
 import { createDocument, reverseDocument } from "@/server/stock-documents";
 
 import { insertBranch } from "./branches";
-import { insertCategory, insertCompany, insertProduct, insertUnit } from "./catalog";
+import { insertCategory, insertCompany, insertFileRow, insertProduct, insertUnit } from "./catalog";
 import { insertDepartment, insertExtraCostType, insertOrder } from "./orders";
 import { receive } from "./stock-documents";
 import { insertUser } from "./users";
@@ -42,6 +42,8 @@ export type Bought = {
   extras?: readonly (bigint | { amount: bigint; paymentType: PaymentType })[];
   /** The trip's payment type, cash by default. */
   paymentType?: PaymentType;
+  /** A receipt file on the trip (07 Purchase record: Receipt); none by default (plan of 6.6b). */
+  receipt?: boolean;
   cancelled?: boolean;
   /** The moment of the cancel, the record's entry moment unless given (plan of 6.4c, item 5). */
   cancelledAt?: string;
@@ -112,6 +114,11 @@ export async function recordOn(
       ${row.qty ?? "1.000"}, ${row.unitPrice ?? "10000"}, ${ownerId}, ${AT})
     returning id`);
   const purchaseId = purchase.rows[0]!.id;
+  if (row.receipt) {
+    const file = await insertFileRow(ownerId);
+    await db.execute(sql`insert into trip_files (trip_id, file_id, created_at)
+      values (${trip.rows[0]!.id}, ${file.id}, ${AT})`);
+  }
   for (const extra of row.extras ?? []) {
     const { amount, paymentType } =
       typeof extra === "bigint" ? { amount: extra, paymentType: "CASH" } : extra;

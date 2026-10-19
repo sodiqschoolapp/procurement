@@ -74,6 +74,10 @@ export const analyticsSpending = pgTable(
     unitPrice: som("unit_price").notNull(),
     goods: som("goods").notNull(),
     createdAt: moment("created_at").notNull(),
+    // Whether the record's trip has a receipt file, as the settlement screen's "No receipt" label
+    // reads it (edge-cases/purchasing-and-money.md, "No receipt photo"; plan of 6.6b, decided item
+    // 4). Task 6.6b.
+    hasReceipt: boolean("has_receipt").notNull(),
   },
   (table) => [
     check("analytics_spending_amount_check", sql`${table.amount} >= 0`),
@@ -550,5 +554,58 @@ export const analyticsMoney = pgTable(
     index("analytics_money_manager_id_idx").on(table.managerId),
     index("analytics_money_category_id_idx").on(table.categoryId),
     index("analytics_money_department_id_idx").on(table.departmentId),
+  ],
+);
+
+// One row per settlement of an order that ended in Closed (10 Analytics, Finance, Settlement speed:
+// "Average days from 'Send to settlement' to Closed"; plan of 6.6b, decided items 3 and 9, Look
+// first): `settlementStays()` of src/domain/approval-stays.ts, its first Send to settlement, the
+// close that ended it, the whole seconds between and the Tashkent date of the close. An order
+// settled again after a Reopen has a second row. Category the planned subtype's product's,
+// department and owner the order's, as `analytics_orders`. Task 6.6b.
+export const analyticsSettlements = pgTable(
+  "analytics_settlements",
+  {
+    orderId: uuid("order_id")
+      .notNull()
+      .references(() => orders.id),
+    branchId: uuid("branch_id")
+      .notNull()
+      .references(() => branches.id),
+    sentAt: moment("sent_at").notNull(),
+    closedAt: moment("closed_at").notNull(),
+    closedOn: date("closed_on").notNull(),
+    seconds: bigint("seconds", { mode: "bigint" }).notNull(),
+    categoryId: uuid("category_id")
+      .notNull()
+      .references(() => categories.id),
+    departmentId: uuid("department_id")
+      .notNull()
+      .references(() => departments.id),
+    ownerId: uuid("owner_id")
+      .notNull()
+      .references(() => users.id),
+  },
+  (table) => [
+    primaryKey({ columns: [table.orderId, table.closedAt] }),
+    foreignKey({
+      name: "analytics_settlements_order_branch_fk",
+      columns: [table.orderId, table.branchId],
+      foreignColumns: [orders.id, orders.branchId],
+    }),
+    foreignKey({
+      name: "analytics_settlements_department_branch_fk",
+      columns: [table.departmentId, table.branchId],
+      foreignColumns: [departments.id, departments.branchId],
+    }),
+    // As analytics_steps_left_check holds a stay (spec review of the plan, Should fix 4).
+    check(
+      "analytics_settlements_seconds_check",
+      sql`${table.closedAt} >= ${table.sentAt} AND ${table.seconds} >= 0`,
+    ),
+    index("analytics_settlements_branch_id_closed_on_idx").on(table.branchId, table.closedOn),
+    index("analytics_settlements_category_id_idx").on(table.categoryId),
+    index("analytics_settlements_department_id_idx").on(table.departmentId),
+    index("analytics_settlements_owner_id_idx").on(table.ownerId),
   ],
 );

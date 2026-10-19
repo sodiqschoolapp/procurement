@@ -2300,6 +2300,30 @@ Choices made during the build:
 - Tests changed because the table changed: the 0041 and 0042 constraint tests insert `analytics_orders` rows with the three new NOT NULL columns (0, 0, 0); nothing they check changed.
 - Permission review: a matrix case with a department or a Manager id of the branch (Must fix 1); the wall case asserts the totals (Should fix 1); a draft-wall test of the age bands and of the money rows (Should fix 3); a line in `.claude/rules/tests.md`.
 
+### 6.6b Analytics: Finance, Payments, Plan vs actual and Settlement speed (19.10.2026)
+
+The plan's decisions as the plan review of 19.10.2026 confirmed them (correction 1: every number of the three blocks, each row included, shows its change; correction 2: Finance's overspent and saved tables export the columns the page shows, `overspendBranches` and `overspendManagers`), and those of the build. The Look first items come first.
+
+1. **Look first** (money). "Spending by payment type" is `paymentTotals()` over `analytics_spending_payments`, the Head's split. "Bank transfers by supplier" is the spending paid by bank transfer by the trip's supplier, plus a "No supplier" row, not the ledger's Bank transfer rows by `money_actions.supplier_id` (no screen fills that column). Proposed `/spec-change` of the Finance row of 10: "Payments | Spending by payment type; spending paid by bank transfer, by supplier".
+2. **Look first** (money). Finance's overspent and saved by branch and Manager are `getPlanVsActual()`, the Head's numbers; Finance's view shows overspent and saved only.
+3. **Look first** (settlement). A settlement runs from the first Send to settlement since the order last reached Closed to its next move into Closed, whoever closes; a correction does not end it; a Reopen starts a new one; a close by exact match with no send is none. Days are whole seconds ÷ 86 400, averaged by `averageDays()` (half up, one decimal); the period counts by the Tashkent close date; the change is the difference in days.
+4. Purchases without a receipt: records not cancelled whose trip has no receipt file, any payment type, by purchase date, count and actual total.
+5. **Look first** (a test changed because a decision changed). Finance's page drops the shared Spending block; the 6.6a browser test now asserts it is absent.
+6. Settlement speed: the total and per branch; no per-Manager row.
+7. Filters per source: `spendingWhere()`, `outcomesWhere()`, `settlementsWhere()` (supplier: an order with a live record from it).
+8. Keys `noreceipt`, `payment:<TYPE>:nosupplier` (refused beside a supplier filter) and `settled`; export blocks `transfers`, `overspendBranches`, `overspendManagers`, `settlementBranches`, `settlements`.
+9. `analytics_settlements` is its own table (an order can be settled twice); no draft wall: no move leads from Closed back to Draft.
+10. The page was read on the seed as Finance at 1440 and 375 px, with seed passwords made up in the shell for the run.
+
+Choices made during the build:
+
+- `settlementStays()` lives in `approval-stays.ts` beside `approvalStays()`, to share the ordering of same-moment events and `secondsBetween()`.
+- `averageHours()` and `averageDays()` share one private rounding (`averageIn()`), one formula (developer-rules rule 1; the plan review's "Not checked").
+- The payment types on Finance's page show amount and change, no share: a share of so'm would need a money division no domain function has; the plan's "share" is left out.
+- `getFinanceSpending()` holds the three spending numbers in one query (spec review of the plan, Should fix 5).
+- Migration 0044 empties the spending tables and clears the job's tick, as 0038 to 0043; an upgrade test runs it over rows the 0043 refresh wrote (.claude/rules/database.md).
+- Tests changed because the table changed: the 0036 and 0038 constraint tests insert `analytics_spending` rows with `has_receipt`; nothing they check changed.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

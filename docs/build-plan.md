@@ -517,7 +517,7 @@ What each role sees first, and the numbers behind the work.
   - **Build:** Cash (given, returned and paid back by month; money with managers by age: up to 7 days, 8 to 30 days, over 30 days) and Cash needed soon (planned cash of approved orders not yet paid, plus orders still in approval), each number with its drill-down and Excel export.
   - **Done when:** A test checks the age bands with the clock set.
 
-- [ ] **6.6b Analytics: Finance, Payments, Plan vs actual and Settlement speed**
+- [x] **6.6b Analytics: Finance, Payments, Plan vs actual and Settlement speed**
   - **Read:** `10-notifications-analytics-reports.md` (Analytics page per role: Finance, own branches); `edge-cases/purchasing-and-money.md` ("No receipt photo").
   - **Build:** Payments (spending by payment type; bank transfers by supplier), Plan vs actual (overspends and savings by branch and Manager; purchases without a receipt), Settlement speed (average days from "Send to settlement" to Closed), each number with its drill-down and Excel export.
   - **Done when:** A database test: Finance's page holds only Finance's branches. By hand: read the page on the seed.

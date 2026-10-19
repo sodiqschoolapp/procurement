@@ -1,7 +1,13 @@
 import { sql } from "drizzle-orm";
 
 import { reasonKey } from "@/domain/analytics";
-import { type StayEvent, approvalStays, secondsBetween } from "@/domain/approval-stays";
+import {
+  type MoveEvent,
+  type StayEvent,
+  approvalStays,
+  secondsBetween,
+  settlementStays,
+} from "@/domain/approval-stays";
 import { orderOutcome } from "@/domain/colours";
 import {
   type DatedCashRecord,
@@ -72,6 +78,11 @@ import type { Job } from "./job";
 // not cancelled, and to `analytics_orders` each order's planned cash, the cash handed to its
 // Manager and its Cash needed soon, `plannedCashOf()`, `cashHanded()` and `cashNeeded()` of
 // src/domain/money-ledger.ts (plan of 6.6a, decided items 2, 4 and 5, Look first).
+//
+// Task 6.6b adds to each spending row whether its trip has a receipt file, as the settlement
+// screen's "No receipt" reads it (plan of 6.6b, decided item 4), and `analytics_settlements`, the
+// settlements of every order from `settlementStays()` of src/domain/approval-stays.ts (decided
+// item 3, Look first).
 
 type SpendingSource = {
   purchase_id: string;
@@ -86,6 +97,7 @@ type SpendingSource = {
   created_at: string;
   qty: string;
   unit_price: string;
+  has_receipt: boolean;
   payment_type: PaymentType;
   extras: { amount: string; payment_type: PaymentType }[];
 };
@@ -116,12 +128,14 @@ export async function refreshAnalytics(executor: Executor): Promise<void> {
   await executor.execute(
     sql`lock table analytics_spending, analytics_spending_payments, analytics_outcomes,
                analytics_steps, analytics_cancelled, analytics_cash, analytics_stock,
-               analytics_stock_moves, analytics_orders, analytics_money in exclusive mode`,
+               analytics_stock_moves, analytics_orders, analytics_money,
+               analytics_settlements in exclusive mode`,
   );
   const found = await executor.execute<SpendingSource>(sql`
     select p.id as purchase_id, p.order_id, p.branch_id, t.purchased_on::text as purchased_on,
            pr.category_id, o.department_id, o.owner_id, t.supplier_id, p.variant_id,
            to_json(p.created_at)#>>'{}' as created_at, p.qty, p.unit_price, t.payment_type,
+           exists (select 1 from trip_files f where f.trip_id = t.id) as has_receipt,
            coalesce(jsonb_agg(jsonb_build_object('amount', e.amount::text,
                                                  'payment_type', e.payment_type) order by e.id)
                     filter (where e.id is not null), '[]') as extras
@@ -174,6 +188,7 @@ export async function refreshAnalytics(executor: Executor): Promise<void> {
       unit_price: record.unitPrice.toString(),
       goods: actualGoods([record]).toString(),
       created_at: row.created_at,
+      has_receipt: row.has_receipt,
     };
   });
 
@@ -187,6 +202,7 @@ export async function refreshAnalytics(executor: Executor): Promise<void> {
   await executor.execute(sql`delete from analytics_stock_moves`);
   await executor.execute(sql`delete from analytics_orders`);
   await executor.execute(sql`delete from analytics_money`);
+  await executor.execute(sql`delete from analytics_settlements`);
   if (rows.length > 0) await insertSpending(executor, rows, parts);
   await writeOutcomes(executor);
   await writeSteps(executor);
@@ -196,6 +212,7 @@ export async function refreshAnalytics(executor: Executor): Promise<void> {
   await writeStockMoves(executor);
   await writeOrders(executor);
   await writeMoney(executor);
+  await writeSettlements(executor);
 }
 
 type OrderSource = {
@@ -305,18 +322,71 @@ async function writeMoney(executor: Executor) {
     where not a.is_cancelled and r.kind in ('CASH_GIVEN', 'CASH_RETURNED', 'PAID_BACK')`);
 }
 
+type SettlementSource = {
+  order_id: string;
+  branch_id: string;
+  category_id: string;
+  department_id: string;
+  owner_id: string;
+  events: { type: MoveEvent["type"]; from: MoveEvent["from"]; to: MoveEvent["to"]; at: string }[];
+};
+
+/**
+ * The settlements of every order ever sent to settlement, by `settlementStays()` (plan of 6.6b,
+ * decided item 3, Look first): its first send, the close that ended it and the whole seconds
+ * between; the Tashkent date of the close is read by PostgreSQL, as `left_on` above.
+ */
+async function writeSettlements(executor: Executor) {
+  const found = await executor.execute<SettlementSource>(sql`
+    select o.id as order_id, o.branch_id, pr.category_id, o.department_id, o.owner_id,
+           jsonb_agg(jsonb_build_object('type', ev.type, 'from', ev.from_status,
+                                        'to', ev.to_status, 'at', ev.created_at)
+                     order by ev.created_at) as events
+    from orders o
+    join product_variants v on v.id = o.variant_id
+    join products pr on pr.id = v.product_id
+    join order_events ev on ev.order_id = o.id
+    where exists (select 1 from order_events s
+                  where s.order_id = o.id and s.type = 'SEND_TO_SETTLEMENT')
+    group by o.id, pr.id`);
+  const rows = found.rows.flatMap((row) =>
+    settlementStays(row.events.map((event) => ({ ...event, at: new Date(event.at) }))).map(
+      (settlement) => ({
+        order_id: row.order_id,
+        branch_id: row.branch_id,
+        sent_at: settlement.sentAt.toISOString(),
+        closed_at: settlement.closedAt.toISOString(),
+        seconds: settlement.seconds.toString(),
+        category_id: row.category_id,
+        department_id: row.department_id,
+        owner_id: row.owner_id,
+      }),
+    ),
+  );
+  if (rows.length === 0) return;
+  await executor.execute(sql`
+    insert into analytics_settlements (order_id, branch_id, sent_at, closed_at, closed_on, seconds,
+                                       category_id, department_id, owner_id)
+    select r.order_id, r.branch_id, r.sent_at, r.closed_at,
+           (r.closed_at at time zone 'Asia/Tashkent')::date, r.seconds::bigint, r.category_id,
+           r.department_id, r.owner_id
+    from jsonb_to_recordset(${JSON.stringify(rows)}::jsonb) as r(
+      order_id uuid, branch_id uuid, sent_at timestamptz, closed_at timestamptz, seconds text,
+      category_id uuid, department_id uuid, owner_id uuid)`);
+}
+
 async function insertSpending(executor: Executor, rows: object[], parts: object[]) {
   await executor.execute(sql`
     insert into analytics_spending (purchase_id, order_id, branch_id, purchased_on, category_id,
                                     department_id, owner_id, supplier_id, amount, variant_id, qty,
-                                    unit_price, goods, created_at)
+                                    unit_price, goods, created_at, has_receipt)
     select r.purchase_id, r.order_id, r.branch_id, r.purchased_on, r.category_id,
            r.department_id, r.owner_id, r.supplier_id, r.amount::bigint, r.variant_id,
-           r.qty::numeric, r.unit_price::bigint, r.goods::bigint, r.created_at
+           r.qty::numeric, r.unit_price::bigint, r.goods::bigint, r.created_at, r.has_receipt
     from jsonb_to_recordset(${JSON.stringify(rows)}::jsonb) as r(
       purchase_id uuid, order_id uuid, branch_id uuid, purchased_on date, category_id uuid,
       department_id uuid, owner_id uuid, supplier_id uuid, amount text, variant_id uuid, qty text,
-      unit_price text, goods text, created_at timestamptz)`);
+      unit_price text, goods text, created_at timestamptz, has_receipt boolean)`);
   if (parts.length === 0) return;
   await executor.execute(sql`
     insert into analytics_spending_payments (purchase_id, payment_type, amount)

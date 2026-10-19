@@ -96,3 +96,18 @@ export function amountChangeText(
   const amount = format.money(difference < 0n ? -difference : difference);
   return difference < 0n ? t("change.amountDown", { amount }) : t("change.amountUp", { amount });
 }
+
+type DaysTranslate = (
+  key: "change.daysUp" | "change.daysDown" | "change.daysSame" | "change.daysNone",
+  values?: Record<string, string>,
+) => string;
+
+/** An average's change in days, the difference of two one-decimal averages (plan of 6.6b, decided item 3). */
+export function daysChangeText(days: string | null, t: DaysTranslate, format: Formatters): string {
+  if (days === null) return t("change.daysNone");
+  if (/^-?0(\.0)?$/.test(days)) return t("change.daysSame");
+  const size = format.quantity(days.replace(/^-/, ""));
+  return days.startsWith("-")
+    ? t("change.daysDown", { days: size })
+    : t("change.daysUp", { days: size });
+}
