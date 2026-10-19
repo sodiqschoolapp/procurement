@@ -1884,4 +1884,19 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - An Uzbek value may drop the plural of a count, never the argument: write `{count, plural, other {# ta …}}`.
 - `docs/translations.xlsx` is a snapshot; run `npm run i18n:export` for a fresh one before handing it to the owner.
 
-The next task is 9.1.
+## 9.1a Acceptance run: orders to approval (19.10.2026, pull request #128)
+
+**Built**
+- 9.1 split in four in `docs/build-plan.md`: 9.1a (this), 9.1b money and settlement, 9.1c purchasing and warehouse, 9.1d the accessibility pass.
+- `tests/e2e/acceptance-orders.spec.ts`: S14, S17, S18 and S19 clicked through as each role, at 375 px and 1440 px.
+- S5 (`send-back.spec.ts`) asserts the highlight and the restart at Head; S6 (`copy-as-new.spec.ts`) has the Principal press Reject with a reason. S7 (`branch-wall.spec.ts`) unchanged.
+
+**Left out, and the task that brings it**
+- S1, S2, S3, S9, S12, S13, S16, S20: 9.1b. S4, S8, S10, S11, S15: 9.1c. The accessibility pass: 9.1d.
+
+**What the next sessions must know**
+- For 9.1b, 9.1c: the fixtures of `acceptance-orders.spec.ts` (`newBranch()`, `newManager()`, `newProduct()`, `insertDraft()`) make fresh people, branches and products per attempt; a scenario that counts or groups needs them, as the e2e database is kept and CI retries twice.
+- An order written straight into the table as submitted has no Submit event: the stepper and the download show no step names for it. Write a draft and submit it in the grid when a step's name or time is read.
+- `browser.newContext()` does not take the project's viewport: pass `info.project.use.viewport`.
+
+The next task is 9.1b.

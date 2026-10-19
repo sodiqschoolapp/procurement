@@ -2616,6 +2616,23 @@ Choices made during the build:
 - `.gitignore` refuses every `*.xlsx` (real school data); `!docs/translations.xlsx` lets the owner's file in: it holds interface texts only.
 - The workbook's created and modified stamps are a fixed moment (review correction 2).
 
+### 9.1a Acceptance run: orders to approval (19.10.2026)
+
+The plan's decisions as the plan review of 19.10.2026 confirmed them (its three corrections applied: S6 clicks Reject through; S5 asserts the highlight; S14's comment names the database test that proves the lock), and those of the build. The Look first item comes first.
+
+1. **Look first** (a task split). 9.1 is split in four: 9.1a orders to approval (S5, S6, S7, S14, S17, S18, S19), 9.1b money and settlement (S1, S2, S3, S9, S12, S13, S16, S20), 9.1c purchasing and warehouse (S4, S8, S10, S11, S15), 9.1d the accessibility pass (the former 8.3, D47). The groups are the "You can try" column of `16-build-order.md`; 7 + 8 + 5 = 20. 9.1d comes last, as its "S1 with the keyboard only" needs 9.1b's S1.
+2. "All 18" in 9.1's Done-when is a miscount of the build plan: `15-quality-and-acceptance.md` says "the 20 scenarios" and 9.1's Build line "S1 to S20"; the parts cover all 20. S8 and S14 get browser tests too: both sides load their screen before either acts.
+3. S14's "first orders of 2027": the `next dev` server of Playwright keeps the real clock, so the browser test asserts `<code>-<yy>-0001` to `0004` in the current year in a branch made for the attempt; the start of 2027 at 0001 and the counter's lock stay proven by `submit.db.test.ts` ("S14").
+4. "Branch code CHL": the e2e database is not seeded; the scenarios use EA, and a new branch `Z` + three random capitals for S14 and S17, made per attempt (the e2e database is kept and CI retries twice), with invented Managers made per attempt. S18 and S19 use a new product per attempt in EA.
+5. A scenario's end is asserted on the screen and, where the screen shows a formatted value, in the database too (S14's numbers, S19's statuses and events).
+6. S5, S6 and S7 stay in the files of the tasks that wrote them; `tests/e2e/acceptance-orders.spec.ts` holds S14, S17, S18 and S19.
+
+Choices made during the build:
+
+- S17's orders are written as drafts with their creation day and submitted by the Manager in the grid: the download's Head stamp counts from the order's Submit event (`orderSteps()`), so an order written submitted straight into the table shows no Head. The Head approves A on its page.
+- S19's three orders of 10 are written as complete drafts and submitted in the grid one at a time; the draft merge of 05 Drafts 2 is typed through the picker for a second department, so the merged draft is none of the three (review of the plan, must-fix 1).
+- The four new scenarios and nothing else run with `test.slow()`: each signs in as two to four people.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.
