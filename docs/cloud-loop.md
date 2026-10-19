@@ -352,7 +352,7 @@ With sections 3 to 6 and the first half of section 7 done, press **Run now** on 
 
 1. **Issue #9.** Read the new comments, the items marked **Look first** first, and reply under each task's comment, one line per decision: `1 confirmed`, `2 change: <what instead>`. A changed decision becomes a line under "What the next sessions must know" in `docs/progress.md` and, when code must change, a fix task `<id>b` first among the open tasks of `docs/build-plan.md` (the owner's reviewer chat writes both as a process change). A confirmed decision that fills a silence of the spec is recorded with `/spec-change`. The comment's last line names the migrations of the task.
 2. **The texts.** Read the "Texts to read" comment of each merged pull request: every new or changed Uzbek and Russian text. A wrong word is a comment on the pull request and a line for a fix task.
-3. **The result.** Look at the merged tasks by the report's "What to look at": on the test copy once task 0.16 and the owner's steps of `docs/deploy.md` are done, before that on the laptop after `git pull`. Something wrong is a comment on the merged pull request and a fix task.
+3. **The result.** Look at the merged tasks by the report's "What to look at": on the live app during its trial once task 9.4 and the owner's steps of `docs/deploy.md` are done (D52), before that on the laptop after `git pull`. Something wrong is a comment on the merged pull request and a fix task.
 4. **`needs-owner`.** Any pull request or issue with that label, or an `@abbosc` notification: the comment says what is needed.
 5. Answer the decided-ahead questions when the owner's reviewer chat brings them, while the phase before runs. Nothing waits for them: where no answer came, the loop decides and flags.
 

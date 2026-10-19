@@ -3,7 +3,7 @@
 > Part of the School Procurement & Warehouse Platform spec, baseline of 10 October 2026 (document revision 123).
 > Index and reading order: `docs/spec/00-index.md`. Read-only: this folder changes only through `/spec-change`.
 
-Running the app costs about $25 a month for hosting, from the day the live app is set up (task 9.4). There is no separate test copy: before the school's real data goes in, the live app is tried with invented data, then emptied. The address is a sub-address of the school's own domain, so it costs nothing. Everything else is free or already yours. Prices were checked on 10 October 2026.
+Running the app costs about $25 a month for hosting, from the day the live app is set up (task 9.4). Before the school's real data goes in, the live app is tried with invented data, then emptied. The address is a sub-address of the school's own domain, so it costs nothing. Everything else is free or already yours. Prices were checked on 10 October 2026.
 
 The app and the database are on DigitalOcean, in its Frankfurt data centre, and the files are on Cloudflare R2. Both are well-known providers, and nobody has to look after a server: updates, HTTPS and database backups are handled for you. The app is always on, so the first click of the day is as fast as the rest.
 
