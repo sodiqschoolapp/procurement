@@ -360,3 +360,59 @@ describe("stock_movements: the key to a line and one reversal (decided items 4 a
     ).toMatchObject({ code: UNIQUE, constraint: "stock_movements_reverses_movement_id_key" });
   });
 });
+
+// The foreign key of migration 0046_stock_count (plan of 7.3, Database changes; decided item 2,
+// Look first): a count line's `start_seq` is the `seq` of a real movement, on insert and on update.
+describe("stock_document_lines.start_seq (plan of 7.3, decided item 2)", () => {
+  const CONSTRAINT = "stock_document_lines_start_seq_stock_movements_seq_fk";
+
+  async function realSeq(variantId: string): Promise<string> {
+    const moved = await db.execute<{ seq: string }>(sql`
+      insert into stock_movements (branch_id, variant_id, type, qty_delta, unit_cost,
+        balance_after, created_by, created_at)
+      values (${branchId}, ${variantId}, 'RECEIPT', 3, 1000, 3, ${userId}, ${AT})
+      returning seq::text as seq`);
+    return moved.rows[0]!.seq;
+  }
+
+  async function unknownSeq(): Promise<string> {
+    const found = await db.execute<{ seq: string }>(
+      sql`select (coalesce(max(seq), 0) + 1000000)::text as seq from stock_movements`,
+    );
+    return found.rows[0]!.seq;
+  }
+
+  function insertCountLine(documentId: string, variantId: string, startSeq: string) {
+    return db.execute(sql`
+      insert into stock_document_lines (document_id, variant_id, qty, start_seq, created_at)
+      values (${documentId}, ${variantId}, 3, ${startSeq}::bigint, ${AT})`);
+  }
+
+  it("takes the seq of a real movement and refuses one no movement has, on insert", async () => {
+    const id = await insertDocument(document("COUNT", { status: "PENDING_APPROVAL" }));
+    const kept = await variant();
+    await insertCountLine(id, kept, await realSeq(kept));
+    const found = await db.execute<{ n: number }>(sql`
+      select count(*)::int as n from stock_document_lines
+      where document_id = ${id} and start_seq is not null`);
+    expect(found.rows[0]!.n).toBe(1);
+
+    expect(await refusalOf(insertCountLine(id, await variant(), await unknownSeq()))).toMatchObject(
+      { code: FOREIGN, constraint: CONSTRAINT },
+    );
+  });
+
+  it("refuses an update to a seq no movement has", async () => {
+    const id = await insertDocument(document("COUNT", { status: "PENDING_APPROVAL" }));
+    const v = await variant();
+    await insertCountLine(id, v, await realSeq(v));
+    const bogus = await unknownSeq();
+    expect(
+      await refusalOf(
+        db.execute(sql`
+          update stock_document_lines set start_seq = ${bogus}::bigint
+          where document_id = ${id}`),
+      ),
+    ).toMatchObject({ code: FOREIGN, constraint: CONSTRAINT });
+  });
+});
