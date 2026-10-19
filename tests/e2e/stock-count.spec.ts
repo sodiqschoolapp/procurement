@@ -170,6 +170,61 @@ test("a Manager counts a category: the differences are counted − stock at star
   );
 });
 
+test("the Head approves a counted count on its page; the correction is on the item card (build plan 7.4; 09 Stock count)", async ({
+  page,
+}) => {
+  const seeded = await seedCategory();
+  await signIn(page, E2E_ROLES.MANAGER);
+  await page.goto("/warehouse/counts");
+  await page.locator("[data-count-start]").click();
+  const dialog = page.getByRole("alertdialog");
+  await dialog.locator("[data-count-category]").selectOption(seeded.categoryId);
+  await dialog.getByRole("button", { name: texts.start, exact: true }).click();
+  await expect(page).toHaveURL(/\/warehouse\/documents\/[0-9a-f-]+$/);
+  const address = new URL(page.url()).pathname;
+  const heading = (await page.getByRole("heading", { level: 1 }).textContent()) ?? "";
+  const number = /CNT-EA-\d{2}-\d{4,}/.exec(heading)?.[0] ?? "";
+  expect(number).not.toBe("");
+
+  const sheet = page.locator("[data-count-sheet]");
+  await sheet
+    .locator("[data-count-line]")
+    .filter({ hasText: "Sanoq dona" })
+    .getByRole("textbox")
+    .fill("8");
+  await sheet
+    .locator("[data-count-line]")
+    .filter({ hasText: "Sanoq kg" })
+    .getByRole("textbox")
+    .fill("2.5");
+  await page.locator("[data-count-save]").click();
+  await expect(page.getByText(texts.saved.replace("{number}", number))).toBeVisible();
+  // The Manager decides nothing: complete, the count waits for the Head.
+  await page.reload();
+  await expect(page.locator("[data-count-decision]")).toHaveCount(0);
+
+  await page.context().clearCookies();
+  await signIn(page, E2E_ROLES.HEAD);
+  await page.goto(address);
+  const decision = page.locator("[data-count-decision]");
+  await expect(decision).toBeVisible();
+  await noSideScroll(page);
+  await decision.getByRole("button", { name: texts.decision.approve, exact: true }).click();
+  const confirm = page.getByRole("alertdialog");
+  await expect(confirm).toContainText(texts.decision.approveTitle.replace("{number}", number));
+  await confirm.getByRole("button", { name: texts.decision.approve, exact: true }).click();
+  await expect(page.getByText(texts.decision.approved.replace("{number}", number))).toBeVisible();
+  await expect(decision).toHaveCount(0);
+
+  const branch = await withDatabase(async (client) => {
+    const found = await client.query<{ id: string }>("select id from branches where code = 'EA'");
+    return found.rows[0]!.id;
+  });
+  await page.goto(`/warehouse/items/${seeded.pieces}?branch=${branch}`);
+  await expect(page.getByRole("link", { name: number })).toBeVisible();
+  await noSideScroll(page);
+});
+
 test("Stock counts is Not found for the Principal and Finance, with no Counts tab (11 Screens: Manager, Head)", async ({
   page,
 }) => {
