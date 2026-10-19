@@ -217,7 +217,7 @@ test("S8: two Heads approve the same ticked orders, two Managers issue the last 
   const managerB = await newPerson("MANAGER", scene.branch.id, "en");
   const product = `Daftar ${tag()}`;
   const item: Planned = { id: "", product, variantId: await newProduct(product, 5000) };
-  await stockIn(scene.branch.id, item.variantId, 5, 5000, scene.manager);
+  await stockIn(scene.branch.id, item.variantId, 5, 5000, scene.head);
 
   await as(page, scene.manager);
   await readyIssue(page, info, scene, item, "5");
