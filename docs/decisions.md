@@ -2539,7 +2539,7 @@ The plan's decisions as the plan review of 19.10.2026 confirmed them (its three 
 7. **Look first** (Decided ahead, question 19). Reverse of an approved count: the Head only; a count that moved nothing is not offered Reverse, and `reverseDocument()` is unchanged.
 8. A line with difference 0 writes no movement.
 9. The approval takes, per line in subtype order, the product FOR SHARE and the balance FOR UPDATE before the moved-check; the save takes no balance lock (correction 3).
-10. STOCK_CHANGE_ASKED to every active Head (kind COUNT, actor = who completed it); STOCK_CHANGE_DECIDED to the count's starter with approved, refused or `recount`. No audit row.
+10. STOCK_CHANGE_ASKED to every active Head (kind COUNT, actor = who completed it); STOCK_CHANGE_DECIDED to the count's starter with approved or refused; `recount` to the starter and every active Manager of the branch with WRITE_OFF_COUNT on (permission review, should fix 1: a Head who started and approved, or a starter who lost the right, would otherwise leave nobody told). No audit row.
 11. The Head's home block lists complete waiting counts with the write-offs, newest started first; "Show all" goes to `/warehouse/documents`.
 12. The COUNT case lives once, in `postLines()` through `countCorrection()`, built on `countDifference()`; `lineMovement()` keeps refusing COUNT.
 13. Approval does not re-check that products or the branch are active.
@@ -2551,6 +2551,7 @@ Choices made during the build:
 - `getStockDocument()` gives `canApprove`, `countAsked` and `countChanges` (the lines whose approval writes a correction), so the page computes nothing.
 - The reverse dialog shows a count's corrections (signed), only the lines that moved.
 - The same-moment test was run once with the approval's balance FOR UPDATE left out and seen to fail (the issue-first case posted −2 against 7).
+- Permission review, should fix 2: a test sends another branch's count line id in `seen` with every other value valid: `conflict`, nothing written.
 - 7.3's test of the save's result now also expects `completed: true` (the save gained the field; the requirement of 7.4, decided item 1).
 
 ## Process changes

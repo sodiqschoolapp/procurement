@@ -7,7 +7,7 @@ import { runAction } from "@/server/action";
 import { db } from "@/server/db/client";
 import { postMovement } from "@/server/stock-ledger";
 
-import { insertBranch } from "../../../../tests/helpers/branches";
+import { insertBranch, setManagerRight } from "../../../../tests/helpers/branches";
 import { setClock } from "../../../../tests/helpers/clock";
 import { insertItem } from "../../../../tests/helpers/orders";
 import { receive } from "../../../../tests/helpers/stock-documents";
@@ -528,5 +528,79 @@ describe("the count's page offers what the actions allow (getStockDocument; plan
       [lineOf(lines, item).id]: false,
       [lineOf(lines, second).id]: true,
     });
+  });
+});
+
+describe("the send-back reaches who can count again (permission review of 7.4, should fix 1)", () => {
+  it("a Head who started and approved: every active Manager of the branch with WRITE_OFF_COUNT is told; one with it off, another branch's and the deciding Head are not", async () => {
+    const counter = await insertUser("MANAGER", { branches: [branch.id] });
+    const switchedOff = await insertUser("MANAGER", { branches: [branch.id] });
+    await setManagerRight(switchedOff.id, "WRITE_OFF_COUNT", false);
+    const elsewhere = await insertUser("MANAGER", { branches: [other.id] });
+    const item = await inStock("10");
+    setClock(STARTED);
+    const start = await runAction(startCount, head.id, {
+      clientKey: randomUUID(),
+      branchId: branch.id,
+      categoryId: null,
+      comment: null,
+    });
+    if (!start.ok) throw new Error(`fixture: ${start.error.code}`);
+    const line = lineOf(await linesOf(start.data.documentId), item);
+    const saved = await runAction(saveCountedQuantities, head.id, {
+      documentId: start.data.documentId,
+      lines: [{ lineId: line.id, countedQty: "9" }],
+    });
+    if (!saved.ok) throw new Error(`fixture: ${saved.error.code}`);
+    await issue(branch.id, item, "1");
+
+    const result = await approve(start.data.documentId);
+    expect(result.ok && result.data.outcome).toBe("RECOUNT");
+    const told = await db.execute<{ user_id: string }>(sql`
+      select user_id from notifications
+      where type = 'STOCK_CHANGE_DECIDED'
+        and link = ${`/warehouse/documents/${start.data.documentId}`}`);
+    const ids = told.rows.map((row) => row.user_id);
+    expect(ids).toContain(counter.id);
+    expect(ids).toContain(manager.id);
+    expect(ids).not.toContain(switchedOff.id);
+    expect(ids).not.toContain(elsewhere.id);
+    expect(ids).not.toContain(head.id);
+  });
+});
+
+describe("a line id from the browser that is not this count's (.claude/rules/tests.md, permission review of 3.7)", () => {
+  it("another branch's count line, with every other value valid: conflict, nothing written", async () => {
+    const item = await inStock("10");
+    const count = await started();
+    await counted(count.documentId, { [item]: "8" });
+    // A complete count of the other branch, made by the Head, with the same counted quantity.
+    setClock(STARTED);
+    const foreign = await runAction(startCount, head.id, {
+      clientKey: randomUUID(),
+      branchId: other.id,
+      categoryId: null,
+      comment: null,
+    });
+    if (!foreign.ok) throw new Error(`fixture: ${foreign.error.code}`);
+    const foreignLines = await linesOf(foreign.data.documentId);
+    const foreignLine = lineOf(foreignLines, item);
+    const typed = await runAction(saveCountedQuantities, head.id, {
+      documentId: foreign.data.documentId,
+      lines: foreignLines.map((each) => ({ lineId: each.id, countedQty: "8" })),
+    });
+    if (!typed.ok) throw new Error(`fixture: ${typed.error.code}`);
+
+    setClock(DECIDED);
+    const result = await runAction(decideCount, head.id, {
+      documentId: count.documentId,
+      outcome: "APPROVE",
+      seen: [{ lineId: foreignLine.id, countedQty: "8" }],
+    });
+    expect(result.ok ? null : result.error.code).toBe("conflict");
+    expect(await movementsOf(count.documentId)).toEqual([]);
+    expect(await movementsOf(foreign.data.documentId)).toEqual([]);
+    expect((await documentOf(foreign.data.documentId)).status).toBe("PENDING_APPROVAL");
+    expect((await balanceOf(other.id, item))?.qty).toBe("10.000");
   });
 });

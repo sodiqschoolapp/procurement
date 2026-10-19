@@ -39,8 +39,11 @@ import { type LockedDocument, lockDocument, postLines } from "@/server/stock-doc
 //              is not 0, at the average of the moment (decided items 3 and 8).
 //
 // Approval does not ask again whether the branch, the product or the subtype is still active, as a
-// write-off's (decided item 12). No audit row (decided item 10). The count's starter is told the
-// outcome; notify() leaves out the Head who decided.
+// write-off's (decided item 13). No audit row (decided item 10). The count's starter is told an
+// approval or a refusal; a send-back goes to every active Manager of the branch with WRITE_OFF_COUNT
+// on, who may type the count, and to the starter (permission review of 7.4, should fix 1: a Head who
+// started and approved, or a starter who lost the right, would otherwise leave nobody told).
+// notify() leaves out the Head who decided.
 
 export type CountOutcome = WriteOffOutcome | "RECOUNT";
 
@@ -193,10 +196,20 @@ export const decideCount = defineAction({
     const branch = await tx.execute<{ code: string }>(
       sql`select code from branches where id = ${document.branchId}`,
     );
+    const counters =
+      result.outcome === "RECOUNT"
+        ? await tx.execute<{ id: string }>(sql`
+            select u.id from users u
+            join user_branches ub on ub.user_id = u.id and ub.branch_id = ${document.branchId}
+            where u.role = 'MANAGER' and u.is_active and not exists (
+              select 1 from manager_rights mr
+              where mr.user_id = u.id and mr."right" = 'WRITE_OFF_COUNT' and not mr.enabled)
+            order by u.id`)
+        : { rows: [] };
     await notify(
       { tx, userId },
       {
-        to: [document.createdBy],
+        to: [...new Set([document.createdBy, ...counters.rows.map((row) => row.id)])],
         type: "STOCK_CHANGE_DECIDED",
         params: {
           number: result.number,
