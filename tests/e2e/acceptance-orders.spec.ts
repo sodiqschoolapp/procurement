@@ -222,7 +222,10 @@ async function approveGroup(page: Page, product: string, count: number): Promise
     .check();
   await page
     .locator("[data-list-bar]")
-    .getByRole("button", { name: t.approve.buttonCount.replace("{count}", String(count)) })
+    .getByRole("button", {
+      name: count > 1 ? t.approve.buttonCount.replace("{count}", String(count)) : t.approve.button,
+      exact: true,
+    })
     .click();
   await page
     .getByRole("alertdialog")
@@ -261,6 +264,8 @@ test("S14: two Managers submit two orders each at the same moment; numbers 0001 
   page,
   browser,
 }, info) => {
+  // A whole scenario through several roles: three times the usual time.
+  test.slow();
   // The counter's lock is proven by the same-moment database test of submit.db.test.ts ("S14",
   // commitWhileWaiting), where the clock is fixed in 2027 and the new year starts at 0001. The
   // browser cannot set the app's clock (plan of 9.1a, decided 3); this test clicks the scenario
@@ -325,90 +330,64 @@ test("S14: two Managers submit two orders each at the same moment; numbers 0001 
 test("S17: the list filtered to one week downloads as Excel and PDF with exactly its orders, the Head's name and time, empty Principal and Finance, and the screen's totals (15 S17; 05 Download)", async ({
   page,
 }, info) => {
+  // A whole scenario through several roles: three times the usual time.
+  test.slow();
   const e = en.orders;
   const branch = await newBranch();
   const department = await newDepartment(branch.id, `Bo'lim ${tag()}`);
   const manager = await newManager(branch.id, "en");
-  const product = `Daftar ${tag()}`;
-  const variantId = await newProduct(product, 5000);
+  const run = tag();
   // In the week 12–18.10.2026: A (approved below by the Head) and B (bank transfer, 3 × 100 000);
-  // outside it: C; in it but never listed: a Draft (05 Download 1: "exactly the filtered orders").
-  const scene = await withDatabase((client) =>
-    inTransaction(client, async () => {
-      const made: Record<string, { id: string; number: string | null }> = {};
-      const rows = [
-        {
-          key: "A",
-          status: "PENDING_HEAD",
-          at: "2026-10-13T05:00:00Z",
-          qty: 100,
-          price: 5000,
-          pay: "CASH",
-        },
-        {
-          key: "B",
-          status: "PENDING_HEAD",
-          at: "2026-10-14T05:00:00Z",
-          qty: 3,
-          price: 100_000,
-          pay: "TRANSFER",
-        },
-        {
-          key: "C",
-          status: "PENDING_HEAD",
-          at: "2026-10-05T05:00:00Z",
-          qty: 7,
-          price: 5000,
-          pay: "CASH",
-        },
-        { key: "D", status: "DRAFT", at: "2026-10-15T05:00:00Z", qty: 9, price: 5000, pay: "CASH" },
-      ];
-      for (const [at, row] of rows.entries()) {
-        const number = row.status === "DRAFT" ? null : `${branch.code}-26-000${at + 1}`;
-        const order = await client.query<{ id: string }>(
-          `insert into orders (number, branch_id, owner_id, created_by, status, variant_id,
-                               department_id, needed_by, planned_qty, planned_price, planned_total,
-                               payment_type, stock_at_submit, submitted_at, created_at, updated_at)
-           values ($1, $2, $3, $3, $4, $5, $6, '2031-05-01', $7, $8, $7 * $8, $9,
-                   case when $4 = 'DRAFT' then null else 0 end,
-                   case when $4 = 'DRAFT' then null else $10::timestamptz end, $10, $10)
-           returning id`,
-          [
-            number,
-            branch.id,
-            manager.id,
-            row.status,
-            variantId,
-            department,
-            row.qty,
-            row.price,
-            row.pay,
-            row.at,
-          ],
-        );
-        const id = order.rows[0]!.id;
-        if (number) {
-          // The full copy of rev 1, as Submit writes it (14 order_revisions).
-          await client.query(
-            `insert into order_revisions (order_id, revision, submission, snapshot, created_at)
-             select o.id, 1, 1, jsonb_build_object(
-               'number', o.number, 'branchId', o.branch_id, 'variantId', o.variant_id,
-               'companyId', o.company_id, 'departmentId', o.department_id,
-               'requesterName', o.requester_name, 'neededBy', o.needed_by,
-               'quantity', o.planned_qty::text, 'price', o.planned_price::text, 'extras', '[]'::jsonb,
-               'plannedTotal', o.planned_total::text, 'paymentType', o.payment_type,
-               'priority', o.priority, 'urgentReason', o.urgent_reason, 'comment', o.comment,
-               'referencePhotoFileId', o.reference_photo_file_id,
-               'stockAtSubmit', o.stock_at_submit::text), o.submitted_at
-             from orders o where o.id = $1`,
-            [id],
-          );
-        }
-        made[row.key] = { id, number };
-      }
-      return made as Record<"A" | "B" | "C" | "D", { id: string; number: string | null }>;
-    }),
-  );
+  // outside it: C; in it but never submitted, so never listed: the Draft D (05 Download 1:
+  // "exactly the filtered orders"). Each its own product, so each is found by its own tick. The
+  // drafts are written with their creation day; the Manager submits A, B and C in the grid, so
+  // every history event the files read is an action's own (05 Download 3).
+  const plan = {
+    A: { at: "2026-10-13T05:00:00Z", qty: 100, price: 5000, pay: "CASH" },
+    B: { at: "2026-10-14T05:00:00Z", qty: 3, price: 100_000, pay: "TRANSFER" },
+    C: { at: "2026-10-05T05:00:00Z", qty: 7, price: 5000, pay: "CASH" },
+    D: { at: "2026-10-15T05:00:00Z", qty: 9, price: 5000, pay: "CASH" },
+  } as const;
+  const keys = ["A", "B", "C", "D"] as const;
+  const product = (key: (typeof keys)[number]) => `Daftar ${run} ${key}`;
+  const scene = {} as Record<(typeof keys)[number], { id: string }>;
+  for (const key of keys) {
+    const variantId = await newProduct(product(key), plan[key].price);
+    const row = plan[key];
+    scene[key] = await withDatabase(async (client) => {
+      const made = await client.query<{ id: string }>(
+        `insert into orders (branch_id, owner_id, created_by, variant_id, department_id, needed_by,
+                             planned_qty, planned_price, payment_type, created_at, updated_at)
+         values ($1, $2, $2, $3, $4, '2031-05-01', $5, $6, $7, $8, $8) returning id`,
+        [branch.id, manager.id, variantId, department, row.qty, row.price, row.pay, row.at],
+      );
+      return { id: made.rows[0]!.id };
+    });
+  }
+  await signIn(page, manager);
+  await page.goto("/orders");
+  for (const key of ["A", "B", "C"] as const) {
+    await page
+      .getByRole("checkbox", { name: e.tickRow.replace("{product}", product(key)) })
+      .check();
+  }
+  await page.getByRole("button", { name: e.submit.button.replace("{count}", "3") }).click();
+  await page
+    .getByRole("alertdialog")
+    .getByRole("button", { name: e.submit.confirm, exact: true })
+    .click();
+  await expect(page.getByText(/Submitted 3 orders:/)).toBeVisible();
+  await page.context().clearCookies();
+  const numbers = await withDatabase(async (client) => {
+    const found = await client.query<{ id: string; number: string | null }>(
+      "select id, number from orders where owner_id = $1",
+      [manager.id],
+    );
+    return new Map(found.rows.map((row) => [row.id, row.number]));
+  });
+  const number = (key: (typeof keys)[number]) => numbers.get(scene[key].id) ?? null;
+  for (const key of ["A", "B", "C"] as const) expect(number(key)).not.toBeNull();
+  expect(number("D")).toBeNull();
 
   // The Head approves A on its page, so the event the files read is the action's own (05 Download 3).
   await signIn(page, E2E_ROLES.HEAD);
@@ -449,10 +428,11 @@ test("S17: the list filtered to one week downloads as Excel and PDF with exactly
   await expect(page.locator("tbody[data-group]")).toHaveCount(2);
 
   // The screen's total: every listed order ticked.
-  const ticks = page.getByRole("checkbox", {
-    name: e.list.tickGroup.replace("{product}", product),
-  });
-  for (const box of await ticks.all()) await box.check();
+  for (const key of ["A", "B"] as const) {
+    await page
+      .getByRole("checkbox", { name: e.list.tickGroup.replace("{product}", product(key)) })
+      .check();
+  }
   const shown = await page.locator('[data-list-bar] [data-total="grand"]').first().innerText();
   const grand = BigInt(shown.replace(/\D/g, ""));
   // A 100 × 5 000 and B 3 × 100 000: 800 000 so'm.
@@ -479,8 +459,8 @@ test("S17: the list filtered to one week downloads as Excel and PDF with exactly
     }
   });
   const c = e.download.columns;
-  expect(rows.map((row) => row[c.number]).sort()).toEqual([scene.A.number, scene.B.number].sort());
-  const a = rows.find((row) => row[c.number] === scene.A.number)!;
+  expect(rows.map((row) => row[c.number]).sort()).toEqual([number("A"), number("B")].sort());
+  const a = rows.find((row) => row[c.number] === number("A"))!;
   expect(a[c.status]).toBe(en.requestStatus.PENDING_PRINCIPAL);
   expect(a["Procurement Head"]).toBe(E2E_ROLES.HEAD.fullName);
   expect(a["Procurement Head, time"]).toBe(headAt);
@@ -497,9 +477,9 @@ test("S17: the list filtered to one week downloads as Excel and PDF with exactly
   const text = (await pdfPages(new Uint8Array(await readFile(await pdf.path()))))
     .join(" ")
     .replaceAll(NBSP, " ");
-  expect(text).toContain(scene.A.number!);
-  expect(text).toContain(scene.B.number!);
-  expect(text).not.toContain(scene.C.number!);
+  expect(text).toContain(number("A")!);
+  expect(text).toContain(number("B")!);
+  expect(text).not.toContain(number("C")!);
   expect(text).toContain(E2E_ROLES.HEAD.fullName);
   expect(text).toContain(headAt);
   expect(text).toContain("800 000 so'm");
@@ -592,6 +572,8 @@ test("S18: the Head changes the price from 5 000 to 6 500; a new draft suggests 
 test("S19: three orders of 10 Tata pens: the Head sees one row of 20, the Principal 20 and then one row of 30 holding three; approving it moves all three, each with its own number and history; 10 more on a draft raise it to 20 (15 S19; 05 Group rows 1, 4; Drafts 2)", async ({
   page,
 }) => {
+  // A whole scenario through several roles: three times the usual time.
+  test.slow();
   const branch = await branchId("EA");
   const manager = await newManager(branch);
   const run = tag();
