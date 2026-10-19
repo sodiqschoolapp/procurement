@@ -27,7 +27,7 @@ import {
 } from "@/server/db/schema";
 import { readSnapshot } from "@/server/read-snapshot";
 
-import { documentWall } from "./documents";
+import { documentWall } from "../document-wall";
 
 // A warehouse document's own page, /warehouse/documents/[id], of every type (09-warehouse.md,
 // Movement types; Issue to a department; Other documents; Direct entry by the Head; plan of 5.11,

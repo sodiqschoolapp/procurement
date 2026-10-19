@@ -9,10 +9,11 @@ import {
   type DocumentStatus,
   type DocumentType,
 } from "@/domain/stock-documents";
-import type { Actor } from "@/domain/permissions";
 import { authorize, authorizeList, branchFilter } from "@/server/authorize";
 import { branches, departments, stockDocuments, users } from "@/server/db/schema";
 import { readSnapshot } from "@/server/read-snapshot";
+
+import { documentWall } from "../document-wall";
 
 // Warehouse documents, /warehouse/documents (09-warehouse.md, Stock screens: Documents; 11-
 // screens-and-ux.md, Screens: "Warehouse documents | All", rules 8 and 12; plan of 5.12). Under
@@ -57,22 +58,6 @@ export type DepartmentChoice = {
 };
 
 const idInput = z.uuid().nullable().catch(null);
-
-/**
- * The branch wall of a warehouse document, inside the SQL (03 rule 1; developer-rules.md rule 4):
- * a document of one of the user's branches, or a transfer to one of them (09 Other documents,
- * Transfer: "The receiving Manager enters what really arrived"; plan of 7.2, decided item 3, Look
- * first). The Head sees every branch: no condition. The one wall of the list, the page and the
- * note.
- */
-export function documentWall(actor: Actor): SQL | undefined {
-  const own = branchFilter(actor, stockDocuments.branchId);
-  if (!own) return undefined;
-  return or(
-    own,
-    and(eq(stockDocuments.type, "TRANSFER"), branchFilter(actor, stockDocuments.toBranchId)),
-  );
-}
 
 /** The asked branch: the document's own, or a transfer's receiving branch. */
 function ofBranch(branchId: string): SQL {

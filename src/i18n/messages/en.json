@@ -2380,17 +2380,17 @@
       },
       "receive": {
         "title": "Receive",
-        "intro": "Enter what really arrived from {from} at {to}. Anything short becomes a write-off request \"Lost in transfer\" for the Head.",
+        "intro": "Enter what really arrived from {from} at {to}. Anything short goes to the Head to decide as a write-off \"Lost in transfer\".",
         "sent": "Sent: {qty} {unit}",
         "receivedQty": "Received, {unit}",
         "receivedBy": "Received by",
         "confirm": "Confirm receipt",
         "confirmTitle": "Receive transfer {number}?",
         "confirmResult": "{count, plural, one {This # item enters} other {These # items enter}} the stock of {to} as typed. This cannot be undone here.",
-        "confirmResultShort": "{count, plural, one {This # item enters} other {These # items enter}} the stock of {to} as typed. {short, plural, one {# line is} other {# lines are}} short: the shortage goes back to {from} as a write-off request \"Lost in transfer\" for the Head.",
+        "confirmResultShort": "{count, plural, one {This # item enters} other {These # items enter}} the stock of {to} as typed. {short, plural, one {# line is} other {# lines are}} short: the shortage goes back to {from} and is asked of the Head as a write-off \"Lost in transfer\".",
         "received": "Transfer {number} is received.",
-        "receivedShort": "Transfer {number} is received. Write-off request {writeOff} waits for the Head.",
-        "receivedShortAsked": "Transfer {number} is received. A write-off request for the shortage went to the Head."
+        "receivedShort": "Transfer {number} is received. Write-off {writeOff} waits for the Head.",
+        "receivedShortAsked": "Transfer {number} is received. The Head is asked to write off the shortage."
       },
       "transferBranches": "{from} → {to}"
     }

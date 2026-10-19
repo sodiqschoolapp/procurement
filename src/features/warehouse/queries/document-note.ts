@@ -17,7 +17,7 @@ import {
 import { readSnapshot } from "@/server/read-snapshot";
 import { readSettings } from "@/server/settings";
 
-import { documentWall } from "./documents";
+import { documentWall } from "../document-wall";
 
 // What the issue note and the transfer note PDF show, GET /warehouse/documents/[id]/note
 // (09-warehouse.md, Issue to a department 2: "a PDF issue note naming who gave the items and who
