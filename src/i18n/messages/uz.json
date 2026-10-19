@@ -2992,13 +2992,19 @@
       "orders": "Buyurtmalar reyestri",
       "purchases": "Xaridlar reyestri",
       "plan": "Reja va amal",
-      "spending": "Xarajatlar"
+      "spending": "Xarajatlar",
+      "stock": "Ombordagi qoldiq",
+      "movements": "Tovar harakati",
+      "use": "Bo'limlar sarfi"
     },
     "notes": {
       "orders": "Shu sanalarda yuborilgan buyurtmalar holati, summalari va sanalari bilan: buyurtmalar ro'yxatining yuklamasi.",
       "purchases": "Shu sanalardagi barcha xarid yozuvlari yetkazib beruvchi, narx va to'lov turi bilan. Bekor qilingan yozuvlar belgilangan va hisoblanmaydi.",
       "plan": "Xaridi shu sanalarda to'liq yoki qisman yakunlangan buyurtmalar. Farq — reja minus amal: 0 dan yuqori pul qoldi, 0 dan past ko'proq sarflandi.",
-      "spending": "Shu sanalardagi bekor qilinmagan xarid yozuvlarining haqiqiy summalari."
+      "spending": "Shu sanalardagi bekor qilinmagan xarid yozuvlarining haqiqiy summalari.",
+      "stock": "Hozirgi miqdor va qiymat: sanalar ularni o'zgartirmaydi. Xaridlar va to'g'ridan-to'g'ri kiritishlar — shu sanalarda kelgan narsa, har biri o'z narxida, alohida qatorlarda.",
+      "movements": "Shu sanalardagi barcha tovar harakati: kirim 0 dan katta, chiqim 0 dan kichik, har biri o'tgan narxida. Keyin bekor qilingan harakat belgilangan.",
+      "use": "Har bir bo'lim shu sanalarda olgan narsa, qaytarilgani ayirilgan holda, har bir harakat narxida. Bekor qilingan hujjatlar hisobga olinmaydi."
     },
     "filters": "Filtrlar",
     "from": "Dan",
@@ -3085,6 +3091,62 @@
         "month": "Oy",
         "records": "Yozuvlar",
         "amount": "Summa"
+      }
+    },
+    "allBranchesTotal": "Barcha filiallar",
+    "inactive": "Faol emas",
+    "stock": {
+      "summary": "Omborda {count} ta qator, qiymati {value}",
+      "byBranch": "Filiallar bo'yicha",
+      "lines": "Ombor qatorlari",
+      "empty": "Qoldiq yo'q va shu sanalarda hech narsa kelmadi.",
+      "columns": {
+        "branch": "Filial",
+        "product": "Mahsulot",
+        "subtype": "Turi",
+        "qty": "Miqdor",
+        "measure": "O'lchov",
+        "average": "O'rtacha narx",
+        "value": "Hozirgi qiymat",
+        "purchases": "Xaridlar",
+        "directEntries": "To'g'ridan-to'g'ri kiritish"
+      }
+    },
+    "movements": {
+      "summary": "{count} ta harakat",
+      "sheet": "Harakatlar",
+      "empty": "Shu sanalarda tovar harakati bo'lmadi.",
+      "undone": "Bekor qilish bilan qaytarilgan",
+      "undoneYes": "Qaytarilgan",
+      "columns": {
+        "date": "Sana",
+        "branch": "Filial",
+        "type": "Harakat",
+        "source": "Hujjat yoki buyurtma",
+        "product": "Mahsulot",
+        "subtype": "Turi",
+        "qty": "Miqdor",
+        "measure": "O'lchov",
+        "unitCost": "Birlik narxi",
+        "value": "Qiymat",
+        "undone": "Qaytarilgan"
+      }
+    },
+    "use": {
+      "summary": "{count} ta bo'lim, qiymati {value}",
+      "byDepartment": "Bo'limlar bo'yicha",
+      "lines": "Qatorlar bo'yicha",
+      "empty": "Shu sanalarda bo'limlar hech narsa olmadi.",
+      "columns": {
+        "department": "Bo'lim",
+        "branch": "Filial",
+        "product": "Mahsulot",
+        "subtype": "Turi",
+        "measure": "O'lchov",
+        "issued": "Berildi",
+        "returned": "Qaytarildi",
+        "net": "Olindi",
+        "value": "Qiymat"
       }
     }
   }

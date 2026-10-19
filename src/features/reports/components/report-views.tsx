@@ -8,12 +8,15 @@ import { cn } from "@/components/utils";
 import type { OrdersTotals } from "@/domain/order-totals";
 import { getFormatters } from "@/i18n/get-formatters";
 
+import type { DepartmentUseReport } from "../queries/department-use-report";
 import type { PlanVsActualReport, Sums } from "../queries/plan-vs-actual-report";
 import type { PurchaseRegister } from "../queries/purchase-register";
 import type { SpendingLine, SpendingReport } from "../queries/spending-report";
+import type { StockMovementsReport } from "../queries/stock-movements-report";
+import type { StockReport } from "../queries/stock-report";
 
-// The four reports of /reports on screen (10-notifications-analytics-reports.md, Reports, first
-// four rows; build-plan 6.8). Every number is the query's; the screen adds nothing up (.claude/
+// The reports of /reports on screen (10-notifications-analytics-reports.md, Reports; build-plan
+// 6.8 and 6.9a). Every number is the query's; the screen adds nothing up (.claude/
 // rules/ui.md). Each table scrolls sideways inside its own box at phone width, so the page never
 // does (plan of 6.8, Screens); the lists are 25 a page (11 rule 8).
 
@@ -407,6 +410,285 @@ export async function SpendingView({ report }: { report: SpendingReport }) {
           (line) => month(line.name!),
         )}
       </div>
+    </>
+  );
+}
+
+const departmentOf = (row: { departmentName: string; branchCode: string }) =>
+  `${row.departmentName}, ${row.branchCode}`;
+
+const itemName = (row: { productName: string; subtypeName: string | null }) =>
+  row.subtypeName ? `${row.productName}, ${row.subtypeName}` : row.productName;
+
+export async function StockReportView({
+  report,
+  pager,
+}: {
+  report: StockReport;
+  /** The page links of the lines, drawn under them. */
+  pager: ReactNode;
+}) {
+  const t = await getTranslations("reports");
+  const format = await getFormatters();
+  if (report.branches.length === 0) {
+    return <EmptyState title={t("tabs.stock")} line={t("stock.empty")} />;
+  }
+  const cells = (row: StockReport["all"]) => (
+    <>
+      <td className={NUMBER} data-value>
+        {format.money(row.value)}
+      </td>
+      <td className={NUMBER} data-purchases>
+        {format.money(row.purchases)}
+      </td>
+      <td className={NUMBER} data-direct-entries>
+        {format.money(row.directEntries)}
+      </td>
+    </>
+  );
+  return (
+    <>
+      <p className="text-[15px] leading-[22px] font-semibold tabular-nums" data-report-summary>
+        {t("stock.summary", { count: report.lineCount, value: format.money(report.all.value) })}
+      </p>
+      <Table
+        name="stock-branches"
+        title={t("stock.byBranch")}
+        columns={[
+          t("stock.columns.branch"),
+          t("stock.columns.value"),
+          t("stock.columns.purchases"),
+          t("stock.columns.directEntries"),
+        ]}
+        numeric={[1, 2, 3]}
+        foot={
+          <tr>
+            <td className={CELL}>{t("allBranchesTotal")}</td>
+            {cells(report.all)}
+          </tr>
+        }
+      >
+        {report.branches.map((row) => (
+          <tr key={row.id} className="border-t" data-branch-row={row.id}>
+            <td className={CELL}>
+              {row.name}
+              {!row.isActive && <span className="ml-2 text-muted-foreground">{t("inactive")}</span>}
+            </td>
+            {cells(row)}
+          </tr>
+        ))}
+      </Table>
+      {report.lines.length > 0 && (
+        <Table
+          name="stock-lines"
+          title={t("stock.lines")}
+          columns={[
+            t("stock.columns.branch"),
+            t("stock.columns.product"),
+            t("stock.columns.qty"),
+            t("stock.columns.average"),
+            t("stock.columns.value"),
+          ]}
+          numeric={[2, 3, 4]}
+        >
+          {report.lines.map((row) => (
+            <tr
+              key={`${row.branchId}:${row.variantId}`}
+              className="border-t"
+              data-line-row={`${row.branchId}:${row.variantId}`}
+            >
+              <td className={cn(CELL, "whitespace-nowrap")}>{row.branchCode}</td>
+              <td className={CELL}>
+                <Link
+                  href={`/warehouse/items/${row.variantId}?branch=${row.branchId}`}
+                  className="text-primary underline-offset-2 hover:underline"
+                >
+                  {itemName(row)}
+                </Link>
+              </td>
+              <td className={NUMBER}>
+                {format.quantity(row.qty)} {row.unitShortName}
+              </td>
+              <td className={NUMBER}>{format.money(row.avgCost)}</td>
+              <td className={NUMBER} data-value>
+                {format.money(row.value)}
+              </td>
+            </tr>
+          ))}
+        </Table>
+      )}
+      {pager}
+    </>
+  );
+}
+
+export async function StockMovementsView({
+  report,
+  pager,
+}: {
+  report: StockMovementsReport;
+  /** The page links of the movements, drawn under them. */
+  pager: ReactNode;
+}) {
+  const t = await getTranslations("reports");
+  const tRoot = await getTranslations();
+  const format = await getFormatters();
+  if (report.count === 0) {
+    return <EmptyState title={t("tabs.movements")} line={t("movements.empty")} />;
+  }
+  return (
+    <>
+      <p className="text-[15px] leading-[22px] font-semibold tabular-nums" data-report-summary>
+        {t("movements.summary", { count: report.count })}
+      </p>
+      <Table
+        name="movements"
+        title={t("movements.sheet")}
+        columns={[
+          t("movements.columns.date"),
+          t("movements.columns.branch"),
+          t("movements.columns.type"),
+          t("movements.columns.source"),
+          t("movements.columns.product"),
+          t("movements.columns.qty"),
+          t("movements.columns.unitCost"),
+          t("movements.columns.value"),
+        ]}
+        numeric={[5, 6, 7]}
+      >
+        {report.rows.map((row) => (
+          <tr
+            key={row.movementId}
+            className={cn("border-t", row.undone && "text-muted-foreground")}
+            data-movement-row={row.movementId}
+            data-undone={row.undone ? "" : undefined}
+          >
+            <td className={cn(CELL, "whitespace-nowrap tabular-nums")}>
+              {format.date(row.movedOn)}
+            </td>
+            <td className={cn(CELL, "whitespace-nowrap")}>{row.branchCode}</td>
+            <td className={CELL}>
+              {tRoot(`warehouse.item.types.${row.type}`)}
+              {row.undone && (
+                <span className="block text-[13px] leading-[18px]">{t("movements.undone")}</span>
+              )}
+            </td>
+            <td className={cn(CELL, "font-semibold whitespace-nowrap")}>
+              {row.documentId ? (
+                <Link
+                  href={`/warehouse/documents/${row.documentId}`}
+                  className="text-primary underline-offset-2 hover:underline"
+                >
+                  {row.documentNumber}
+                </Link>
+              ) : row.orderId ? (
+                <Link
+                  href={`/orders/${row.orderId}`}
+                  className="text-primary underline-offset-2 hover:underline"
+                >
+                  {row.orderNumber}
+                </Link>
+              ) : (
+                "—"
+              )}
+            </td>
+            <td className={CELL}>{itemName(row)}</td>
+            <td className={NUMBER}>
+              {format.quantity(row.qtyDelta)} {row.unitShortName}
+            </td>
+            <td className={NUMBER}>{format.money(row.unitCost)}</td>
+            <td className={NUMBER} data-value={row.value.toString()}>
+              {format.money(row.value)}
+            </td>
+          </tr>
+        ))}
+      </Table>
+      {pager}
+    </>
+  );
+}
+
+export async function DepartmentUseView({
+  report,
+  pager,
+}: {
+  report: DepartmentUseReport;
+  /** The page links of the lines, drawn under them. */
+  pager: ReactNode;
+}) {
+  const t = await getTranslations("reports");
+  const format = await getFormatters();
+  if (report.departments.length === 0) {
+    return <EmptyState title={t("tabs.use")} line={t("use.empty")} />;
+  }
+  return (
+    <>
+      <p className="text-[15px] leading-[22px] font-semibold tabular-nums" data-report-summary>
+        {t("use.summary", {
+          count: report.departments.length,
+          value: format.money(report.total),
+        })}
+      </p>
+      <Table
+        name="use-departments"
+        title={t("use.byDepartment")}
+        columns={[t("use.columns.department"), t("use.columns.branch"), t("use.columns.value")]}
+        numeric={[2]}
+        foot={
+          <tr>
+            <td className={CELL} colSpan={2}>
+              {t("total")}
+            </td>
+            <td className={NUMBER} data-value>
+              {format.money(report.total)}
+            </td>
+          </tr>
+        }
+      >
+        {report.departments.map((row) => (
+          <tr key={row.id} className="border-t" data-department-row={row.id}>
+            <td className={CELL}>
+              {row.name}
+              {!row.isActive && <span className="ml-2 text-muted-foreground">{t("inactive")}</span>}
+            </td>
+            <td className={cn(CELL, "whitespace-nowrap")}>{row.branchCode}</td>
+            <td className={NUMBER} data-value={row.value.toString()}>
+              {format.money(row.value)}
+            </td>
+          </tr>
+        ))}
+      </Table>
+      <Table
+        name="use-lines"
+        title={t("use.lines")}
+        columns={[
+          t("use.columns.department"),
+          t("use.columns.product"),
+          t("use.columns.issued"),
+          t("use.columns.returned"),
+          t("use.columns.net"),
+          t("use.columns.value"),
+        ]}
+        numeric={[2, 3, 4, 5]}
+      >
+        {report.lines.map((row) => (
+          <tr key={`${row.departmentId}:${row.variantId}`} className="border-t">
+            <td className={CELL}>{departmentOf(row)}</td>
+            <td className={CELL}>{itemName(row)}</td>
+            <td className={NUMBER}>
+              {format.quantity(row.issued)} {row.unitShortName}
+            </td>
+            <td className={NUMBER}>
+              {format.quantity(row.returned)} {row.unitShortName}
+            </td>
+            <td className={NUMBER}>
+              {format.quantity(row.net)} {row.unitShortName}
+            </td>
+            <td className={NUMBER}>{format.money(row.value)}</td>
+          </tr>
+        ))}
+      </Table>
+      {pager}
     </>
   );
 }

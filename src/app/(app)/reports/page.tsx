@@ -9,14 +9,20 @@ import { getAnalyticsFilters } from "@/features/analytics/queries/filters";
 import { orderTotalsOnFilter } from "@/features/orders/queries/order-list";
 import { ReportFilters } from "@/features/reports/components/report-filters";
 import {
+  DepartmentUseView,
   OrderRegisterView,
   PlanVsActualView,
   PurchaseRegisterView,
   SpendingView,
+  StockMovementsView,
+  StockReportView,
 } from "@/features/reports/components/report-views";
+import { getDepartmentUseReport } from "@/features/reports/queries/department-use-report";
 import { getPlanVsActualReport } from "@/features/reports/queries/plan-vs-actual-report";
 import { getPurchaseRegister } from "@/features/reports/queries/purchase-register";
 import { getSpendingReport } from "@/features/reports/queries/spending-report";
+import { getStockMovementsReport } from "@/features/reports/queries/stock-movements-report";
+import { getStockReport } from "@/features/reports/queries/stock-report";
 import {
   REPORTS,
   type ReportParams,
@@ -33,12 +39,12 @@ import { today } from "@/server/clock";
 import { PageLinks } from "../catalog/page-links";
 
 // /reports (11-screens-and-ux.md, Screens: "Reports | `/reports` | All"; 10-notifications-
-// analytics-reports.md, Reports, first four rows; build-plan 6.8): Order register, Purchase
-// register, Planned vs actual and Spending as tabs, the filters of branch, dates and category,
+// analytics-reports.md, Reports; build-plan 6.8 and 6.9a): Order register, Purchase register,
+// Planned vs actual, Spending, Stock on hand, Stock movements and Use by department as tabs, the filters of branch, dates and category,
 // and Download Excel. The Order register is the order list's: its count and planned total here,
 // its orders on /orders, its file the list's download (plan of 6.8, decided items 7 and 11).
-// Planned vs actual and Spending say when the summary they read was rebuilt (decided item 1, Look
-// first). An address the parser refuses goes back to /reports; another branch is Not found (03
+// Planned vs actual, Spending and Use by department say when the summary they read was rebuilt
+// (decided item 1, Look first; plan of 6.9a, decided item 3). An address the parser refuses goes back to /reports; another branch is Not found (03
 // rule 1; 15 S7).
 
 type Raw = Record<string, string | string[] | undefined>;
@@ -63,6 +69,21 @@ async function readReport(userId: string, params: ReportParams) {
         };
       case "spending":
         return { report: "spending" as const, data: await getSpendingReport(userId, params) };
+      case "stock":
+        return {
+          report: "stock" as const,
+          data: await getStockReport(userId, params, params.page),
+        };
+      case "movements":
+        return {
+          report: "movements" as const,
+          data: await getStockMovementsReport(userId, params, params.page),
+        };
+      case "use":
+        return {
+          report: "use" as const,
+          data: await getDepartmentUseReport(userId, params, params.page),
+        };
     }
   } catch (error) {
     if (error instanceof AuthorizationError) return null;
@@ -103,7 +124,9 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
               })}
             </span>
           </h1>
-          {(params.report === "plan" || params.report === "spending") && (
+          {(params.report === "plan" ||
+            params.report === "spending" ||
+            params.report === "use") && (
             <p className="text-sm leading-5 text-muted-foreground" data-refreshed>
               {options.refreshedAt
                 ? t("refreshed", { time: format.time(options.refreshedAt) })
@@ -152,6 +175,15 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
         <PlanVsActualView report={read.data} pager={pager(read.data.page, read.data.pages)} />
       )}
       {read.report === "spending" && <SpendingView report={read.data} />}
+      {read.report === "stock" && (
+        <StockReportView report={read.data} pager={pager(read.data.page, read.data.pages)} />
+      )}
+      {read.report === "movements" && (
+        <StockMovementsView report={read.data} pager={pager(read.data.page, read.data.pages)} />
+      )}
+      {read.report === "use" && (
+        <DepartmentUseView report={read.data} pager={pager(read.data.page, read.data.pages)} />
+      )}
     </div>
   );
 }

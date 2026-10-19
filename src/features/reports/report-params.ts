@@ -14,7 +14,15 @@ import { type AnalyticsFilters, NO_ANALYTICS_FILTERS } from "../analytics/period
 // `to` are refused: the page falls back to the defaults, the route answers 404. Nothing here is a
 // permission: the queries authorize the branch.
 
-export const REPORTS = ["orders", "purchases", "plan", "spending"] as const;
+export const REPORTS = [
+  "orders",
+  "purchases",
+  "plan",
+  "spending",
+  "stock",
+  "movements",
+  "use",
+] as const;
 export type Report = (typeof REPORTS)[number];
 
 /** The rows of a report page (11-screens-and-ux.md rule 8: "25 rows per page"; decided item 12). */
