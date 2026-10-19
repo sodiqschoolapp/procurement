@@ -1846,4 +1846,24 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - For 8.2: when a time of day comes to `schedule.ts`, the reminders may move to it (decided item 5 of 8.1 names the delay).
 - A database test of a job that counts every branch (the Head's) leaves its orders out of the counted statuses after each test (`afterEach` of `reminders.db.test.ts`): the tests of one file share a database.
 
-The next task is 8.2.
+## 8.2 Nightly check and weekly copy (19.10.2026, pull request #126)
+
+**Built**
+- `src/domain/schedule.ts`: `{ dailyAt: "HH:MM" }` and `{ weeklyOn: 1..7, dailyAt }` (ISO weekday, Tashkent time) beside `{ everyMinutes }`.
+- Job `stock_check` (03:00 daily): one statement reads every balance and movement; `stockMismatch()` of `src/domain/stock-check.ts` replays each branch and subtype through `nextBalance()`; any mismatch sends one STOCK_CHECK_MISMATCH `{ count }` to every active Head (link `/warehouse/stock`) and logs `Stock check: branch …, subtype …` per item. Corrects nothing. Migration `0048_stock_check` (enum value).
+- Job `database_copy` (Sunday 04:00), only where `copyRuns()` (production and `S3_BUCKET`): `databaseCopy()` of `scripts/db-copy.mjs` runs `pg_dump --format=custom` (PG* variables, CA as verify-full) and writes `backups/database-<Tashkent date>.dump` to the files bucket. `npm run db:copy`; `node scripts/db-copy.mjs` in the image's console.
+- The image installs `postgresql-client-17` from apt.postgresql.org; the build stops unless `pg_dump` says 17. `docs/deploy.md`: "The weekly copy", restore with `pg_restore`.
+
+**Left out, and the task that brings it**
+- The restore drill: 9.6. Moving the reminders to a time of day: no task asks.
+
+**Open for the owner**
+- The by-hand check on the test copy: `backups/` in R2 holds last Sunday's file (report, "For the owner").
+
+**What the next sessions must know**
+- A stored movement is replayed by `replayedMovement()`: a new movement type or a new way of pricing one changes it there, or the nightly check reports every such item.
+- A job that must not run everywhere is chosen in `jobsFor(env)` of `registry.ts`; the copy is last, as a dump delays what follows it in a round.
+- `pg_dump` 17 is not on this machine or the CI runner (16 there); a local by-hand copy can run `postgres:17`'s `pg_dump` through a wrapper on `PATH` (`docker run --rm -i --network host -e PGHOST … postgres:17 pg_dump "$@"`).
+- For 9.6: restore with `pg_restore --no-owner` 17 into an empty database; tried locally on 19.10.2026, all 49 migrations came back.
+
+The next task is 8.4.

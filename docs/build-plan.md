@@ -592,7 +592,7 @@ The scheduled work, and the translation pass.
   - **Build:** Scheduled jobs: orders waiting longer than `reminder_hours` remind the approvers of their step, grouped in one notification a day per approver; longer than `escalation_hours` tell the Head, grouped the same way; an order whose buying is not finished 2 days before its needed-by date tells the owner.
   - **Done when:** Database tests with the clock: at 24 hours and 1 minute the approvers have a reminder (the spec's phase 8 check); at 48 hours and 1 minute the Head has one.
 
-- [ ] **8.2 Nightly check and weekly copy**
+- [x] **8.2 Nightly check and weekly copy**
   - **Read:** `14-data-model.md` (Notes for the build: first bullet); `13-technology.md` (Running it); `open-questions.md` (question 17).
   - **Build:** A nightly job recomputes `stock_balances` from the movements and reports any mismatch, as answered in open question 17; a weekly job saves a copy of the database to R2.
   - **Done when:** Database test: a balance changed directly in the database is reported. By hand on the test copy: the weekly file is in the bucket.
