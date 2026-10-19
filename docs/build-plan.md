@@ -538,10 +538,15 @@ What each role sees first, and the numbers behind the work.
   - **Build:** `/reports` with Order register, Purchase register, Planned vs actual and Spending; filters by branch, date range and category; Excel export with real numbers and dates.
   - **Done when:** A database test for the branch wall on each report. By hand: export the spending report and sum a column in Excel. The reports part of S7 is green.
 
-- [ ] **6.9 Reports: prices, stock and money**
-  - **Read:** `10-notifications-analytics-reports.md` (Reports: last six rows); `09-warehouse.md` (Direct entry by the Head: 5; Stock value).
-  - **Build:** Price history (as a chart), Stock on hand (quantities and value, with direct entries as their own line), Stock movements, Use by department, Money with managers, Approval speed.
-  - **Done when:** Database tests: stock value equals quantity × average cost; the branch wall on each report.
+- [x] **6.9a Reports: Stock on hand, Stock movements and Use by department** (6.9 split in two by its plan, pull request #118)
+  - **Read:** `10-notifications-analytics-reports.md` (Reports: rows Stock on hand, Stock movements, Use by department); `09-warehouse.md` (Direct entry by the Head: 5; Stock value).
+  - **Build:** Stock on hand (quantities and value, with direct entries as their own line), Stock movements, Use by department, each on `/reports` with its Excel file.
+  - **Done when:** Database tests: stock value equals quantity × average cost; the branch wall on each of the three reports.
+
+- [ ] **6.9b Reports: Price history, Money with managers and Approval speed**
+  - **Read:** `10-notifications-analytics-reports.md` (Reports: rows Price history, Money with managers, Approval speed); `04-catalogs.md` (rule 4, Price memory); `08-money-and-settlement.md` (Money with managers); `06-approval-workflow.md` (Statuses).
+  - **Build:** Price history (as a chart), Money with managers, Approval speed, each on `/reports` with its Excel file.
+  - **Done when:** Database tests: the branch wall on each of the three reports.
 
 - [ ] **6.10 Search**
   - **Read:** `11-screens-and-ux.md` (Rules for a smooth feel: 9).
