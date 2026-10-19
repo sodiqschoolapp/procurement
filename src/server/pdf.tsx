@@ -6,8 +6,8 @@ import sharp from "sharp";
 // The parts every PDF of the app shares (docs/design-system.md, Printouts and PDFs; plan of 2.14;
 // plan of 5.4, decided item 11): Golos Text from the committed TTF files, the on-dark logo as a
 // PNG, the colours, and the letterhead strip at the top of each page. The order list download
-// (src/features/orders/download/pdf.tsx) and the issue note (src/features/warehouse/download/
-// issue-note.tsx) draw their own tables under it.
+// (src/features/orders/download/pdf.tsx) and the issue and transfer note (src/features/warehouse/download/
+// document-note.tsx) draw their own tables under it.
 //
 // Golos Text comes from the committed TTF files of src/features/orders/download/fonts (decisions
 // 2.14, item 9: static 400 and 600, tabular figures frozen as the default digits, U+02BB mapped to

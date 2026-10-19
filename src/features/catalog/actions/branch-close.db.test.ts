@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import { issueStock } from "@/features/warehouse/actions/issue";
 import { enterStockDirectly } from "@/features/warehouse/actions/direct-entry";
+import { sendTransfer } from "@/features/warehouse/actions/transfer";
 import { submitDrafts } from "@/features/orders/actions/submit";
 import type { RequestStatus } from "@/domain/request-status";
 import { runAction } from "@/server/action";
@@ -25,7 +26,8 @@ import { setBranchActive } from "./branches";
 // close a branch": "Blocked while it has unfinished orders or stock above 0"; plan of 5.12, decided
 // item 1 (unfinished: not Closed, Rejected or Cancelled, and not a draft never submitted), item 2
 // (stock: the subtypes with a balance above 0, counted), item 4 (the branch row's lock), all Look
-// first, with the plan review's worked examples. Every fixture is asserted (D38).
+// first, with the plan review's worked examples. A transfer in transit from or to it blocks too
+// (plan of 7.1, decided item 4, Look first). Every fixture is asserted (D38).
 
 const DAY = "2031-04-20";
 
@@ -281,5 +283,91 @@ describe("closing a branch at the same moment as a write in it (decided item 4)"
       ok: false,
       error: { code: "invalid_input", fields: { branchId: "errors.field.branchInactive" } },
     });
+  });
+});
+
+// A transfer in transit (plan of 7.1, decided item 4, Look first; plan review, correction 1): the
+// sender sends its whole stock, so neither branch has stock above 0 or an unfinished order, and
+// the transfer alone is what refuses (.claude/rules/tests.md, one condition keeping a row out).
+describe("a transfer in transit blocks closing either branch (plan of 7.1, decided item 4)", () => {
+  // Exactly this refusal, no other field beside it.
+  const onlyTransfers = {
+    ok: false,
+    error: {
+      code: "invalid_input",
+      messageKey: "errors.invalidInput",
+      fields: { transfers: "errors.field.transfersInTransit" },
+      available: { transfers: "1" },
+    },
+  };
+
+  async function inTransit(s: Scene) {
+    const receiver = await insertBranch();
+    const item = await insertItem();
+    await receive(s.branch.id, item.variantId, "3", 5_000n, s.head.id);
+    const sent = await runAction(sendTransfer, s.manager.id, {
+      clientKey: randomUUID(),
+      branchId: s.branch.id,
+      toBranchId: receiver.id,
+      docDate: DAY,
+      receivedByName: null,
+      comment: null,
+      lines: [{ variantId: item.variantId, qty: "3" }],
+    });
+    expect(sent).toMatchObject({ ok: true });
+    return receiver;
+  }
+
+  it("the sender, its stock all sent: refused on transfers only, with the count", async () => {
+    const s = await scene();
+    await inTransit(s);
+    expect(await close(s)).toEqual(onlyTransfers);
+    expect(await isActive(s.branch.id)).toBe(true);
+    expect(await deactivations(s.branch.id)).toEqual([]);
+  });
+
+  it("the receiver, with no stock and no order of its own: refused on transfers only", async () => {
+    const s = await scene();
+    const receiver = await inTransit(s);
+    const closing = await runAction(setBranchActive, s.head.id, {
+      id: receiver.id,
+      active: false,
+    });
+    expect(closing).toEqual(onlyTransfers);
+    expect(await isActive(receiver.id)).toBe(true);
+  });
+
+  it("a transfer between two other branches does not block", async () => {
+    const s = await scene();
+    const elsewhere = await scene();
+    await inTransit(elsewhere);
+    expect(await close(s)).toMatchObject({ ok: true });
+  });
+
+  it("a send waiting with both branches held FOR SHARE: the closing of the receiver waits, then sees the transfer", async () => {
+    const s = await scene();
+    const receiver = await insertBranch();
+    const item = await insertItem();
+    await receive(s.branch.id, item.variantId, "3", 5_000n, s.head.id);
+    const [sent, closing] = await heldWhile(
+      "select 1 from products where id = $1 for update",
+      [item.id],
+      [
+        () =>
+          runAction(sendTransfer, s.manager.id, {
+            clientKey: randomUUID(),
+            branchId: s.branch.id,
+            toBranchId: receiver.id,
+            docDate: DAY,
+            receivedByName: null,
+            comment: null,
+            lines: [{ variantId: item.variantId, qty: "3" }],
+          }),
+        () => runAction(setBranchActive, s.head.id, { id: receiver.id, active: false }),
+      ],
+    );
+    expect(sent).toMatchObject({ ok: true });
+    expect(closing).toEqual(onlyTransfers);
+    expect(await isActive(receiver.id)).toBe(true);
   });
 });

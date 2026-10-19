@@ -20,7 +20,9 @@ import {
 // in is refused as authorize() refuses it. Active entries only: inactive ones leave the pickers
 // (04 rule 2; decided item 3, Look first). The write-off form (09 Other documents, Write-off; plan
 // of 5.11) picks from the same items in stock under `stock.ask_write_off` (the Head any branch, a
-// Manager own branches with WRITE_OFF_COUNT): one reader, asked with either permission.
+// Manager own branches with WRITE_OFF_COUNT), and the transfer form (09 Other documents,
+// Transfer; plan of 7.1) under `stock.transfer` (a Manager with TRANSFER_STOCK): one reader,
+// asked with any of the three.
 
 export type IssueBranch = { id: string; code: string; name: string };
 
@@ -60,10 +62,17 @@ export async function writeOffBranchChoices(userId: string): Promise<IssueBranch
   return branchChoices(userId, "stock.ask_write_off");
 }
 
-async function branchChoices(
-  userId: string,
-  permission: "stock.issue" | "stock.ask_write_off",
-): Promise<IssueBranch[]> {
+/** The active branches the user may send a transfer from (plan of 7.1). */
+export async function transferBranchChoices(userId: string): Promise<IssueBranch[]> {
+  return branchChoices(userId, "stock.transfer");
+}
+
+type StockPermission = Extract<
+  Permission,
+  "stock.issue" | "stock.ask_write_off" | "stock.transfer"
+>;
+
+async function branchChoices(userId: string, permission: StockPermission): Promise<IssueBranch[]> {
   const actor = await authorizeList(userId, permission);
   // Loaded here, not at the top: `next build` has no DATABASE_URL (progress 0.6).
   const { db } = await import("@/server/db/client");
@@ -112,9 +121,17 @@ export async function searchWriteOffItems(
   return itemsInStock(userId, "stock.ask_write_off", options);
 }
 
+/** The same items, for a transfer (plan of 7.1): only what the sender holds is sent. */
+export async function searchTransferItems(
+  userId: string,
+  options: { branchId: string; q?: string },
+): Promise<IssueItem[]> {
+  return itemsInStock(userId, "stock.transfer", options);
+}
+
 async function itemsInStock(
   userId: string,
-  permission: Extract<Permission, "stock.issue" | "stock.ask_write_off">,
+  permission: StockPermission,
   options: { branchId: string; q?: string },
 ): Promise<IssueItem[]> {
   const branchId = branchInput.parse(options.branchId);

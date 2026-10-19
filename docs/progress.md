@@ -1761,4 +1761,23 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - For 7.1 to 7.4: a transfer or count number is not searched; add a group to `searchEverything()` and `hitsOf()` of the dialog if a task asks for it.
 - The dialog's results stand only for the text typed now (the answer keeps its text); keep that when the dialog changes.
 
-The next task is 7.1.
+## 7.1 Transfer: send (19.10.2026, pull request #121)
+
+**Built**
+- `sendTransfer` (`features/warehouse/actions/transfer.ts`, `stock.transfer`): TRF number of the sender, `IN_TRANSIT`, `to_branch_id`, `TRANSFER_OUT` at the sender's average at once; `TRANSFER_SENT` to the receiving branch's active Managers.
+- `/warehouse/documents/new?type=TRANSFER` (`TransferForm`), the Transfer button (`NewDocumentButtons`), `transferBranchChoices`, `searchTransferItems` (`issue-form.ts`), `transferDestinationChoices` (`transfer-form.ts`).
+- The transfer's page: From, To, Sent by, In transit; the transfer note PDF through the issue note's route (`queries/document-note.ts`, `download/document-note.tsx`, `getDocumentNote()`).
+- `setBranchActive` refuses while a transfer from or to the branch is In transit (`transfers`, `errors.field.transfersInTransit`).
+
+**Left out, and the task that brings it**
+- Receiving, the receiver's view, `TRANSFER_IN`, "Lost in transfer" and Reverse of a received transfer: 7.2.
+
+**Open for the owner**
+- A PDF rendered after another in one server process can lose letters (a Russian note, then an English one): not this task's; see the report of #121.
+
+**What the next sessions must know**
+- For 7.2: `getStockDocument()`, `listStockDocuments()` and `getDocumentNote()` still filter by `branch_id` only; add `to_branch_id` for the receiver. The notice already links to `/warehouse/documents/<id>`.
+- For 7.2: the `TRANSFER_OUT` movement of each line holds the sender's average in `unit_cost`; the line has none. `received_by_name` is the sender's optional text; decide whether the receipt fills or replaces it.
+- For 7.2: a received transfer no longer blocks closing a branch (`status = 'IN_TRANSIT'` only); add `TRANSFER` to `reverseAllows()` for the Head.
+
+The next task is 7.2.

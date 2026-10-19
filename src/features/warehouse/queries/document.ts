@@ -37,7 +37,11 @@ import { readSnapshot } from "@/server/read-snapshot";
 //   the decision action asks (developer-rules.md rule 2);
 // - `canReverse`: `stock.return_reverse` on the branch, a reversible status and reverseAllows(),
 //   the item card's rule (plan of 5.7);
-// - `canDownloadNote`: an issue, and `data.export` on the branch (plan of 5.4, decided item 8).
+// - `canDownloadNote`: an issue or a transfer, and `data.export` on the branch (plan of 5.4,
+//   decided item 8; plan of 7.1, decided item 12).
+// A transfer is of its sending branch: the filter stays on `branch_id`, and its receiving branch
+// is read for the header only; the receiver's view is 7.2's (plan of 7.1, decided item 5, Look
+// first).
 // Document and lines in one snapshot.
 
 export type DocumentLine = {
@@ -60,6 +64,9 @@ export type StockDocument = {
   docDate: string;
   branchCode: string;
   branchName: string;
+  /** A transfer's receiving branch; null for the other types. */
+  toBranchCode: string | null;
+  toBranchName: string | null;
   /** An issue's or a return's department; null for the other types. */
   departmentName: string | null;
   receivedByName: string | null;
@@ -93,6 +100,7 @@ export async function getStockDocument(
   if (!parsed.success) return null;
   const decider = alias(users, "decider");
   const reverser = alias(users, "reverser");
+  const toBranch = alias(branches, "to_branch");
   return readSnapshot(async (tx) => {
     const [document] = await tx
       .select({
@@ -104,6 +112,8 @@ export async function getStockDocument(
         branchId: stockDocuments.branchId,
         branchCode: branches.code,
         branchName: branches.name,
+        toBranchCode: toBranch.code,
+        toBranchName: toBranch.name,
         departmentName: departments.name,
         receivedByName: stockDocuments.receivedByName,
         reason: stockDocuments.reason,
@@ -121,6 +131,7 @@ export async function getStockDocument(
       .from(stockDocuments)
       .innerJoin(branches, eq(branches.id, stockDocuments.branchId))
       .innerJoin(users, eq(users.id, stockDocuments.createdBy))
+      .leftJoin(toBranch, eq(toBranch.id, stockDocuments.toBranchId))
       .leftJoin(departments, eq(departments.id, stockDocuments.departmentId))
       .leftJoin(decider, eq(decider.id, stockDocuments.decidedBy))
       .leftJoin(reverser, eq(reverser.id, stockDocuments.reversedBy))
@@ -166,7 +177,8 @@ export async function getStockDocument(
         REVERSIBLE_STATUSES.includes(document.status) &&
         reverseAllows(actor, { type: document.type, createdBy: createdById }),
       canDownloadNote:
-        document.type === "ISSUE" && decide("data.export", actor, target) === "allow",
+        (document.type === "ISSUE" || document.type === "TRANSFER") &&
+        decide("data.export", actor, target) === "allow",
     };
   });
 }

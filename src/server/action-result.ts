@@ -128,6 +128,8 @@ export const FIELD_ERROR_KINDS = [
   // (edge-cases/requests-and-approval.md, "The Head wants to close a branch"; plan of 5.12).
   "unfinishedOrders",
   "stockLeft",
+  // ... or a transfer from or to it in transit (plan of 7.1, decided item 4, Look first).
+  "transfersInTransit",
 ] as const;
 export type FieldErrorKind = (typeof FIELD_ERROR_KINDS)[number];
 export type FieldMessageKey = `errors.field.${FieldErrorKind}`;

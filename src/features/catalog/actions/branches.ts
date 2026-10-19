@@ -18,7 +18,7 @@ import type { FieldMessageKey } from "@/server/action-result";
 import { audit } from "@/server/audit";
 import type { Executor } from "@/server/authorize";
 import { now } from "@/server/clock";
-import { auditLog, branches, orders, stockBalances } from "@/server/db/schema";
+import { auditLog, branches, orders, stockBalances, stockDocuments } from "@/server/db/schema";
 
 // The Head's branches (build-plan 1.2; 04-catalogs.md, Catalogs table: Branches; rules 2, 3, 9).
 // "Manage catalogs, users, branches, settings": catalog.manage, Head only, global (03, Permission
@@ -273,7 +273,9 @@ export const setBranchActive = defineAction({
   // A second click of the same is refused. Deactivating moves nothing: users, stock and records
   // stay (decision 2, Look first). It is refused while the branch has unfinished orders or stock
   // above 0, each named with its count (edge-cases/requests-and-approval.md, "The Head wants to
-  // close a branch"; plan of 5.12, decided items 1 and 2, Look first). Read under the branch row's
+  // close a branch"; plan of 5.12, decided items 1 and 2, Look first), or while a transfer from or
+  // to it is In transit: its goods are still stock of the two branches, and a closed branch could
+  // not receive them (plan of 7.1, decided item 4, Look first). Read under the branch row's
   // FOR UPDATE lock: drafts, submit and the warehouse documents hold the branch FOR SHARE, so they
   // queue behind it and then find it inactive (decided item 4, Look first).
   async check({ tx, input, locked }) {
@@ -292,6 +294,10 @@ export const setBranchActive = defineAction({
             and not (${orders.status} = 'DRAFT' and ${orders.number} is null))`,
         stock: sql<number>`(select count(*)::int from ${stockBalances}
           where ${stockBalances.branchId} = ${input.id} and ${stockBalances.qty} > 0)`,
+        transfers: sql<number>`(select count(*)::int from ${stockDocuments}
+          where ${stockDocuments.type} = 'TRANSFER' and ${stockDocuments.status} = 'IN_TRANSIT'
+            and (${stockDocuments.branchId} = ${input.id}
+              or ${stockDocuments.toBranchId} = ${input.id}))`,
       })
       .from(sql`(select 1) as one`);
     const fields: Record<string, FieldMessageKey> = {};
@@ -303,6 +309,10 @@ export const setBranchActive = defineAction({
     if (left!.stock > 0) {
       fields.stock = "errors.field.stockLeft";
       counts.stock = String(left!.stock);
+    }
+    if (left!.transfers > 0) {
+      fields.transfers = "errors.field.transfersInTransit";
+      counts.transfers = String(left!.transfers);
     }
     if (Object.keys(fields).length > 0) throw new ActionError("invalid_input", fields, counts);
   },

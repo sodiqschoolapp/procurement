@@ -18,6 +18,11 @@ describe("firstDocumentStepWithError", () => {
     expect(firstDocumentStepWithError(["lines.0.unitCost"], 2)).toBe(1);
   });
 
+  it("opens the header for a transfer's receiving branch and its receiver (plan of 7.1)", () => {
+    expect(firstDocumentStepWithError(["toBranchId"], 2)).toBe(0);
+    expect(firstDocumentStepWithError(["receivedByName"], 2)).toBe(0);
+  });
+
   it("takes the first step that holds an error", () => {
     expect(firstDocumentStepWithError(["comment", "lines.0.qty", "docDate"], 2)).toBe(0);
     expect(firstDocumentStepWithError(["comment", "lines.0.variantId"], 0)).toBe(1);

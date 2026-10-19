@@ -17,6 +17,7 @@ import { enterStockDirectly } from "../actions/direct-entry";
 import { issueStock } from "../actions/issue";
 import { returnStock } from "../actions/return";
 import { reverseStockDocument } from "../actions/reverse";
+import { sendTransfer } from "../actions/transfer";
 import { askWriteOff } from "../actions/write-off";
 import { decideWriteOff } from "../actions/write-off-decision";
 import { getStockDocument } from "./document";
@@ -307,5 +308,60 @@ describe("getStockDocument: every type (plan of 5.12, decided item 3)", () => {
     if (!entry.ok) throw new Error(`fixture: ${entry.error.code}`);
     expect(await getStockDocument(manager.id, entry.data.documentId)).toBeNull();
     expect(await getStockDocument(head.id, entry.data.documentId)).not.toBeNull();
+  });
+});
+
+describe("getStockDocument: a transfer (plan of 7.1; decided items 5 and 9)", () => {
+  async function sent(from: string, to: string) {
+    const item = await insertItem();
+    const sender = await insertUser("MANAGER", { branches: [from] });
+    await receive(from, item.variantId, "5", 1000n, sender.id);
+    const made = await runAction(sendTransfer, sender.id, {
+      clientKey: randomUUID(),
+      branchId: from,
+      toBranchId: to,
+      docDate: "2031-05-03",
+      receivedByName: "Sinov Haydovchi",
+      comment: null,
+      lines: [{ variantId: item.variantId, qty: "2" }],
+    });
+    if (!made.ok) throw new Error(`fixture: ${made.error.code}`);
+    return { ...made.data, sender, item };
+  }
+
+  it("shows both branches, who sent it and In transit; its note may be downloaded; nobody may reverse or decide it", async () => {
+    const from = await insertBranch();
+    const to = await insertBranch();
+    const head = await insertUser("HEAD");
+    const t = await sent(from.id, to.id);
+    expect(await getStockDocument(t.sender.id, t.documentId)).toMatchObject({
+      number: t.number,
+      type: "TRANSFER",
+      status: "IN_TRANSIT",
+      branchCode: from.code,
+      toBranchCode: to.code,
+      toBranchName: to.name,
+      departmentName: null,
+      receivedByName: "Sinov Haydovchi",
+      createdBy: t.sender.fullName,
+      lines: [{ productName: t.item.name, qty: "2.000", inStock: "3.000" }],
+      canDecide: false,
+      canReverse: false,
+      canDownloadNote: true,
+    });
+    expect(await getStockDocument(head.id, t.documentId)).toMatchObject({
+      canReverse: false,
+      canDownloadNote: true,
+    });
+  });
+
+  it("is Not found for a Manager of only the receiving branch until 7.2, read by a Manager of both (03 rule 1; decided item 5)", async () => {
+    const from = await insertBranch();
+    const to = await insertBranch();
+    const t = await sent(from.id, to.id);
+    const there = await insertUser("MANAGER", { branches: [to.id] });
+    const both = await insertUser("MANAGER", { branches: [from.id, to.id] });
+    expect(await getStockDocument(there.id, t.documentId)).toBeNull();
+    expect((await getStockDocument(both.id, t.documentId))?.type).toBe("TRANSFER");
   });
 });

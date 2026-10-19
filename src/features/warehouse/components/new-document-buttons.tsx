@@ -5,13 +5,17 @@ import { Icon } from "@/components/icon";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/components/utils";
 import { directEntryBranchChoices } from "@/features/warehouse/queries/direct-entry-form";
-import { issueBranchChoices, writeOffBranchChoices } from "@/features/warehouse/queries/issue-form";
+import {
+  issueBranchChoices,
+  transferBranchChoices,
+  writeOffBranchChoices,
+} from "@/features/warehouse/queries/issue-form";
 import { returnBranchChoices } from "@/features/warehouse/queries/return-form";
 import { AuthorizationError } from "@/server/authorize";
 
-// New issue, New return, Write-off and Direct entry, each for whoever may make it in some branch,
+// New issue, New return, Transfer, Write-off and Direct entry, each for whoever may make it in some branch,
 // opening /warehouse/documents/new?type= (11-screens-and-ux.md, Screens: "New issue, return,
-// transfer, write-off | Manager, Head"; plans of 5.4, 5.6, 5.8, 5.11; shared by Stock on hand and
+// transfer, write-off | Manager, Head"; plans of 5.4, 5.6, 5.8, 5.11, 7.1; shared by Stock on hand and
 // the documents list, plan of 5.12, decided item 10). Each choices function asks its own
 // permission; the form asks again.
 
@@ -26,11 +30,12 @@ async function mayUse(choices: (userId: string) => Promise<unknown[]>, userId: s
 }
 
 export async function NewDocumentButtons({ userId }: { userId: string }) {
-  const [canIssue, canReturn, canEnterDirectly, canWriteOff] = await Promise.all([
+  const [canIssue, canReturn, canEnterDirectly, canWriteOff, canTransfer] = await Promise.all([
     mayUse(issueBranchChoices, userId),
     mayUse(returnBranchChoices, userId),
     mayUse(directEntryBranchChoices, userId),
     mayUse(writeOffBranchChoices, userId),
+    mayUse(transferBranchChoices, userId),
   ]);
   const t = await getTranslations("warehouse.stock");
   return (
@@ -51,6 +56,15 @@ export async function NewDocumentButtons({ userId }: { userId: string }) {
         >
           <Icon name="undo" />
           {t("newReturn")}
+        </Link>
+      )}
+      {canTransfer && (
+        <Link
+          href="/warehouse/documents/new?type=TRANSFER"
+          className={cn(buttonVariants({ variant: "secondary" }), "max-sm:h-12")}
+        >
+          <Icon name="swap_horiz" />
+          {t("transfer")}
         </Link>
       )}
       {canWriteOff && (

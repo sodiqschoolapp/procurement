@@ -36,10 +36,17 @@ export function BranchActiveButton({
     const reasons = [
       error.fields?.orders ? t("blockedOrders", { count: Number(counts.orders) }) : null,
       error.fields?.stock ? t("blockedStock", { count: Number(counts.stock) }) : null,
+      // Plan of 7.1, decided item 4.
+      error.fields?.transfers ? t("blockedTransfers", { count: Number(counts.transfers) }) : null,
     ].filter((reason) => reason !== null);
-    const [first, second] = reasons;
+    const [first, second, third] = reasons;
     if (first === undefined) return null;
-    return t("blocked", { reasons: second ? t("blockedAnd", { first, second }) : first });
+    const joined = third
+      ? t("blockedThree", { first, second: second!, third })
+      : second
+        ? t("blockedAnd", { first, second })
+        : first;
+    return t("blocked", { reasons: joined });
   }
 
   async function confirm() {

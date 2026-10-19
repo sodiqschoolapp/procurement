@@ -157,6 +157,12 @@ export type NotificationParamsOf = {
     kind: StockChangeKind;
     outcome: StockChangeOutcome;
   };
+  /**
+   * "Transfer sent" (plan of 7.1, decided items 3 and 8, Look first): to every active Manager of
+   * the receiving branch, the notice's `branchId`; `number` is the transfer's (TRF-…), `branch`
+   * the sending branch's code, `actor` who sent it. No quantity and no amount.
+   */
+  TRANSFER_SENT: { actor: string; number: string; branch: string };
   REQUEST_WAITING_24H: OrdersWaitingParams;
   REQUEST_WAITING_48H: OrdersWaitingParams;
   /** "Branch has no active user for a role": the branch's code and the role's code. */
@@ -197,6 +203,7 @@ export const NOTIFICATION_PARAMS: {
   MINIMUM_STOCK_REACHED: ["item", "branch"],
   STOCK_CHANGE_ASKED: ["actor", "number", "branch", "kind"],
   STOCK_CHANGE_DECIDED: ["number", "branch", "kind", "outcome"],
+  TRANSFER_SENT: ["actor", "number", "branch"],
   REQUEST_WAITING_24H: ["count", "hours"],
   REQUEST_WAITING_48H: ["count", "hours"],
   BRANCH_ROLE_VACANT: ["branch", "role"],
