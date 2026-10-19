@@ -8,7 +8,7 @@ import { AuthorizationError } from "@/server/authorize";
 import { db } from "@/server/db/client";
 
 import { insertBranch, setManagerRight } from "../../../../tests/helpers/branches";
-import { setClock } from "../../../../tests/helpers/clock";
+import { advanceClock, setClock } from "../../../../tests/helpers/clock";
 import { insertItem } from "../../../../tests/helpers/orders";
 import { describePermissionMatrix } from "../../../../tests/helpers/permission-matrix";
 import { receive } from "../../../../tests/helpers/stock-documents";
@@ -76,7 +76,9 @@ describe("listCounts (11 Screens: Stock counts; plan of 7.3)", () => {
         lines: [{ lineId: first.lineId, countedQty: "9" }],
       }),
     ).toMatchObject({ ok: true });
-    // The second count holds the same one item, not counted yet.
+    // The second count holds the same one item, not counted yet. It starts a minute later: at the
+    // same moment the newest-first order would fall to the random id (CI of 7.4).
+    advanceClock({ minutes: 1 });
     const second = await runAction(startCount, manager.id, {
       clientKey: randomUUID(),
       branchId: branch.id,
