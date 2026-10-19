@@ -154,7 +154,7 @@ none and the pull request's mergeable_state is dirty, GitHub ran no CI because
 the branch conflicts with main: post only [review] changes needed at <sha>: CI
 red (no checks: merge conflict with main), naming the conflicting files when
 they can be found. Otherwise wait for CI on the head commit (every 30 seconds,
-up to 15 minutes); when checks or e2e failed, post only [review] changes needed
+up to 30 minutes); when checks or e2e failed, post only [review] changes needed
 at <sha>: CI red (<check>). Neither is a code round, and no code is reviewed
 then. Otherwise review the code. On a pull request with a task id, a change under
 .claude/, CLAUDE.md, .github/ or docs/cloud-loop.md is [review] owner decision
@@ -162,9 +162,10 @@ needed: the loop may not loosen its own rules. The three exceptions are in the
 skill's Rules: added check lines in .claude/agents and .claude/rules, added
 Commands lines of CLAUDE.md, and a CI workflow the task's Build line on main asks
 for (never routines.yml, never a loosening).
-Before reviewing a plan or code, claim the commit as the skill says: a live
-claim is a "Reviewing <sha>." for this head sha, younger than 60 minutes, with no
-[review] naming that sha after it. When one exists, post nothing and stop;
+Before reviewing a plan, or code once its CI is green, claim the commit as the
+skill says: a live claim is a "Reviewing <sha>." for this head sha, younger than
+40 minutes, with no [review] naming that sha after it. When one exists, post
+nothing and stop;
 otherwise post "Reviewing <sha>." and stop when another live claim for the same
 sha has a lower comment id. Post the verdict as a comment that starts with
 [review] and names the head sha you read ([review] approved at <sha>), and set
@@ -190,7 +191,7 @@ comments again right before the merge call and merge only while the newest
 [review] by abbosc naming that sha is the ready to merge (any later verdict at
 the same sha stops the merge: post nothing more and stop); then merge with the
 skill's REST call and -f "sha=<that sha>" (merge commit) and say "Merged."; when
-one is still running, read the check runs again every 30 seconds for up to 15
+one is still running, read the check runs again every 30 seconds for up to 30
 minutes, then re-read the comments and merge the same way, or stop and say so;
 when the head moved, review
 the new head instead; when the merge is refused, post the reason with @abbosc
