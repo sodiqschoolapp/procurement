@@ -42,7 +42,8 @@ export function Table({
 }) {
   return (
     <section
-      className="flex flex-col gap-3 rounded-xl bg-card p-4 text-card-foreground"
+      // min-w-0: in a grid or flex row the table scrolls inside its box, never the page.
+      className="flex min-w-0 flex-col gap-3 rounded-xl bg-card p-4 text-card-foreground"
       data-table={name}
     >
       <h2 className="text-lg leading-6 font-semibold">{title}</h2>
