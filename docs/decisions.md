@@ -2434,6 +2434,25 @@ Choices made during the build:
 - A report table's card has `min-w-0`: the browser test at 375 px found the Spending grid's tables pushing the page sideways (on `main` too, depending on when the check ran); the table now scrolls inside its box, as the views' comment always said.
 - Money with managers' sheets carry no dates line (`heading()` takes `null` dates), and the page's heading says "Now" in place of the dates.
 
+### 6.10 Search (19.10.2026)
+
+The plan's decisions as the plan review of 19.10.2026 confirmed them, with its corrections applied (1: an order result's status is drawn by `RequestStatusLabel`; 2: each target page was read and opens under `data.view` for all four roles). The Look first item comes first.
+
+1. **Look first** (branch wall). Search sees what the order list sees: orders under `data.view` with `branchFilter()` in the SQL and never a Draft (the list's draft wall); products and suppliers under `catalog.pick` (every role, global; catalogs hold no branch data).
+2. A supplier result opens `/analytics/records?supplier=<id>`, which already filters by supplier for every role; no report gets a new filter.
+3. A product result is one subtype (the product's name, with the subtype's when it is not the hidden default). Goods open Stock on hand searched by the product's name; a service opens its Price history (`variant=`).
+4. Links carry no dates: each target page opens on its own default period.
+5. Inactive products and suppliers are found, marked "(inactive)": 04 rule 2 takes them out of the pickers only.
+6. 2 characters, 250 ms after the last key, at most 8 per group (`src/domain/search.ts`); orders newest number first, products and suppliers by name; any part of the text, any case, `%`, `_` and `\` literal.
+7. The search button sits in the place 0.10b kept: a field with "Ctrl K" as plain text from 640 px (design system, Top bar), a 44 px icon button below; Cmd+K opens it on a Mac too.
+8. The read is a `"use server"` function (`searchAction`) called from the dialog, as `searchDraftProductsAction`; it writes nothing, so it is not in the action wrapper.
+9. Search ignores the top bar's branch view and looks in all the user's branches; the walls stay those of item 1.
+
+Choices made during the build:
+
+- The dialog keeps the newest answer with the text it answers; results show only for the text typed now, so neither an older text's results nor "Nothing found" show during the pause (`.claude/rules/ui.md`). The browser test checks it with Playwright's clock.
+- No DOM test library is in the stack, so the unit test covers the shortcut and the button; typing, the arrow keys, Enter, Escape and the pause are in `tests/e2e/search.spec.ts`.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.
