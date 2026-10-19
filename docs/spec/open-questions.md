@@ -30,7 +30,7 @@ Each line names the first build-plan task that needs the answer.
 
 ## Release
 
-10. **From test to production.** Section 18 says a new version is published each time a pull request is merged, and that new versions are tried on the test copy first. What moves a version from the test copy to production: every merge, or a step the owner takes by hand? Needed by task 9.4.
+10. ~~**From test to production.** Section 18 says a new version is published each time a pull request is merged, and that new versions are tried on the test copy first. What moves a version from the test copy to production: every merge, or a step the owner takes by hand? Needed by task 9.4.~~ **Answered 19.10.2026:** there is no test copy. Every merge reaches the one live app; before the real data, it is tried with invented data and then emptied (section 18).
 
 ## Warehouse
 

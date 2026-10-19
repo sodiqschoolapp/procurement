@@ -108,4 +108,4 @@ Every term the spec defines, in the spec's own words, with the file that defines
 | Session | Ends 24 hours after sign-in. Several devices can be signed in at once. | `02-assumptions.md` A8, `13-technology.md` |
 | Bell | The in-app notification list with an unread count. No messenger, email or SMS is used. | `10-notifications-analytics-reports.md` |
 | School year | A period choice in Analytics. Its first day is set in Settings; hidden until set. | `10-notifications-analytics-reports.md` |
-| Test copy | The second environment at `ombor-test.sodiqschool.uz`, where new versions are tried first. | `18-hosting-and-costs.md` |
+| Trial | The time between setting up the live app (task 9.4) and loading the school's real data: the app holds only invented data and the demo users, and is emptied at its end. | `18-hosting-and-costs.md` |

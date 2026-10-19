@@ -26,7 +26,7 @@ Run on a `task/...` branch when the build is done. This skill never merges and n
 7. **Write the report**, in plain words, under the heading `## Report`:
    - `### Built`: what exists now, in the words of the task's Build line.
    - `### Done when`: each part of the task's Done-when line, with the test name or the result that proves it.
-   - `### What to look at`: three to five things only a person can judge (the wording in the three languages, how a screen reads on a phone, anything missing), each with the page to open. The owner looks at them after the merge: on the test copy once it exists, before that on the laptop after `git pull`. A task with no screen says so in one line.
+   - `### What to look at`: three to five things only a person can judge (the wording in the three languages, how a screen reads on a phone, anything missing), each with the page to open. The owner looks at them after the merge: on the live app during its trial once task 9.4 is done (D52), before that on the laptop after `git pull`. A task with no screen says so in one line.
    - `### What the browser test proved`: one line.
    - `### Decided without the owner`: every decision of the plan as the reviewer confirmed or changed it, plus any taken during the build, in the form of issue #9, the Look first items first, each starting with **Look first**.
    - `### Left out`: what was not built, and the task that brings it.

@@ -616,26 +616,26 @@ Proof that it works, then the real environment and the real data.
 - [ ] **9.2 Speed**
   - **Read:** `01-summary.md` (Quality bar: Fast); `edge-cases/developer-rules.md` (rule 12); `11-screens-and-ux.md` (Rules for a smooth feel: 5, 8).
   - **Build:** A script fills a database with several years of invented orders, purchases and movements; every page is measured; missing indexes and queries inside loops are fixed.
-  - **Done when:** A table in `docs/` shows every page under 1 second on the test copy with that volume.
+  - **Done when:** A table in `docs/` shows every page under 1 second with that volume, measured on a production build against a local database (no test copy, D52).
 
 - [ ] **9.3 Monitoring**
   - **Read:** `18-hosting-and-costs.md` (table row 8).
   - **Build:** If the owner wants it: error alerts and an uptime check on free plans, as section 18 names them.
-  - **Done when:** A forced error on the test copy reaches the owner as an alert.
+  - **Done when:** A forced error in a production build is handed to the error-reporting client (stubbed) in a test; the owner's check on the live app during the trial (after 9.4) is listed in the report under "For the owner" (no test copy, D52).
 
 > **Owner gate.** The start routine stops here until the owner, after the go-live review of every Look first decision with the owner's reviewer, deletes this line. From here on the live system, real data and secrets start.
 
-- [ ] **9.4 Production**
-  - **Read:** `18-hosting-and-costs.md` (whole file); `13-technology.md` (Running it); `open-questions.md` (question 10).
-  - **Build:** The production app (1 GiB container, Managed PostgreSQL with 1 GiB, Frankfurt), its R2 bucket, the address `ombor.sodiqschool.uz`, the first Head created by the script, and the path from the test copy to production as answered in open question 10.
-  - **Done when:** The Head signs in at the production address; the database dashboard shows a daily backup.
+- [ ] **9.4 The live app, in trial**
+  - **Read:** `18-hosting-and-costs.md` (whole file); `13-technology.md` (Running it); `open-questions.md` (question 10, answered); `docs/decisions.md` (D52).
+  - **Build:** `.do/app.yaml` and `docs/deploy.md` turned from the test copy into the live app: app `ombor`, 1 GiB container, Managed PostgreSQL with 1 GiB (daily backups), Frankfurt, the R2 bucket `ombor-files`, the address `ombor.sodiqschool.uz`; it starts in trial mode with `SEED_DEMO_DATA` on, the demo users and the invented data. The end of the trial as one script (`npm run trial:reset`): it drops the `public` and `drizzle` schemas, applies the migrations from zero and records in the new database that the trial has ended; it runs only when the database's name is typed as the confirmation, and refuses, writing nothing, once that record exists, so it can never run over the real data. No test copy (D52).
+  - **Done when:** The demo users sign in at the live address; the database dashboard shows a daily backup; a database test shows that the reset empties a database with demo data, and refuses a second run and a wrong confirmation.
+
+- [ ] **9.6 Restore drill**
+  - **Read:** `13-technology.md` (Running it); `16-build-order.md` (phase 8 row); `18-hosting-and-costs.md` (table row 2; Total).
+  - **Build:** A written restore procedure in `docs/`, and one real run of it during the trial, before 9.5: yesterday's copy of the live database restored into a new, empty database, never over the live one.
+  - **Done when:** The restored database holds yesterday's demo orders, users and stock lines, counted against the live one; the owner has the written steps.
 
 - [ ] **9.5 Real data**
   - **Read:** `04-catalogs.md` (Rules: 7); `09-warehouse.md` (Direct entry by the Head); `edge-cases/warehouse.md` ("The school already has stock on launch day").
-  - **Build:** With the owner: catalogs, departments and prices imported from the school's Excel files; users created by the Head; existing stock entered by direct entry. The files never enter the repository, a test, a log or a chat.
+  - **Build:** First the end of the trial (D52): `SEED_DEMO_DATA` removed from the app (its next start writes no demo users), then `npm run trial:reset`, then the first Head created by `npm run user:first-head`. Then, with the owner: catalogs, departments and prices imported from the school's Excel files; users created by the Head; existing stock entered by direct entry. The files never enter the repository, a test, a log or a chat.
   - **Done when:** The Head confirms the counts of products, users and stock lines on production.
-
-- [ ] **9.6 Restore drill**
-  - **Read:** `13-technology.md` (Running it); `16-build-order.md` (phase 8 row); `18-hosting-and-costs.md` (table rows 2 and 7; Total).
-  - **Build:** A written restore procedure in `docs/`, and one real run of it on the test copy. A page in `docs/` with the steps by which the owner switches the test copy off after go-live and on again when the app is changed later.
-  - **Done when:** The test copy's database is restored to yesterday and the four seed users can sign in. The owner has the steps to switch the test copy off and on.
