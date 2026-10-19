@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  countComplete,
+  countCorrection,
+  countDecisionMove,
+  countLineMoved,
+  countSeenMatches,
   DOCUMENT_PREFIX,
   DOCUMENT_STATUSES,
   DOCUMENT_TYPES,
@@ -247,20 +252,21 @@ describe("reverseAllows (09 Issue to a department 3; Decided ahead, question 19;
     }
   });
 
-  it("refuses every other type, to the Head and its creator too, until its task adds it", () => {
-    for (const type of DOCUMENT_TYPES.filter(
-      (each) =>
-        each !== "ISSUE" &&
-        each !== "RETURN" &&
-        each !== "DIRECT_ENTRY" &&
-        each !== "WRITE_OFF" &&
-        each !== "TRANSFER",
-    )) {
-      expect(reverseAllows({ userId: maker, role: "HEAD" }, { type, createdBy: maker })).toBe(
+  it("an approved count: the Head only, never its starter (Decided ahead, question 19; plan of 7.4, decided item 7)", () => {
+    expect(
+      reverseAllows({ userId: colleague, role: "HEAD" }, { type: "COUNT", createdBy: maker }),
+    ).toBe(true);
+    for (const role of ["MANAGER", "PRINCIPAL", "FINANCE"] as const) {
+      expect(reverseAllows({ userId: maker, role }, { type: "COUNT", createdBy: maker })).toBe(
         false,
       );
-      expect(reverseAllows({ userId: maker, role: "MANAGER" }, { type, createdBy: maker })).toBe(
-        false,
+    }
+  });
+
+  it("covers every type: each one has its answer (Decided ahead, question 19)", () => {
+    for (const type of DOCUMENT_TYPES) {
+      expect(reverseAllows({ userId: colleague, role: "HEAD" }, { type, createdBy: maker })).toBe(
+        true,
       );
     }
   });
@@ -452,5 +458,110 @@ describe("countTypingAllowed (plan of 7.3, decided item 1, Look first)", () => {
     for (const status of DOCUMENT_STATUSES) {
       expect(countTypingAllowed(status)).toBe(status === "PENDING_APPROVAL");
     }
+  });
+});
+
+describe('countComplete (09 Stock count: "the Head approves them"; plan of 7.4, decided item 1, Look first)', () => {
+  it("is yes only when every line is counted, 0 included", () => {
+    expect(countComplete(["0", "3.5"])).toBe(true);
+    expect(countComplete(["0", null])).toBe(false);
+    expect(countComplete([null])).toBe(false);
+    expect(countComplete([])).toBe(false);
+  });
+});
+
+describe("countDecisionMove (09 Stock count; plan of 7.4, decided items 1 and 6; developer-rules rule 2)", () => {
+  it("approves a complete waiting count to POSTED, never an incomplete one", () => {
+    expect(countDecisionMove("PENDING_APPROVAL", "APPROVE", true)).toBe("POSTED");
+    expect(countDecisionMove("PENDING_APPROVAL", "APPROVE", false)).toBeNull();
+  });
+
+  it("refuses a waiting count to REJECTED, complete or not", () => {
+    expect(countDecisionMove("PENDING_APPROVAL", "REFUSE", true)).toBe("REJECTED");
+    expect(countDecisionMove("PENDING_APPROVAL", "REFUSE", false)).toBe("REJECTED");
+  });
+
+  it("moves nothing from any other status, so a second decision is refused", () => {
+    for (const status of DOCUMENT_STATUSES.filter((each) => each !== "PENDING_APPROVAL")) {
+      for (const outcome of WRITE_OFF_OUTCOMES) {
+        expect(countDecisionMove(status, outcome, true)).toBeNull();
+      }
+    }
+  });
+});
+
+describe('countLineMoved (09 Stock count: "If an item moved between the start of the count and the approval")', () => {
+  it("is yes for a movement after the start, by seq", () => {
+    expect(countLineMoved(100n, 105n)).toBe(true);
+    expect(countLineMoved(null, 1n)).toBe(true);
+  });
+
+  it("is no for the start's own newest movement and for an item that never moved", () => {
+    expect(countLineMoved(100n, 100n)).toBe(false);
+    expect(countLineMoved(null, null)).toBe(false);
+  });
+});
+
+describe('countCorrection (09 Movement types: "Correction after a stock count | Up or down"; plan of 7.4, decided items 3 and 8)', () => {
+  it("writes the difference at the average, down and up", () => {
+    expect(countCorrection("10", "8")).toEqual({
+      type: "CORRECTION",
+      qtyDelta: "-2",
+      unitCost: null,
+    });
+    expect(countCorrection("1.5", "2.25")).toEqual({
+      type: "CORRECTION",
+      qtyDelta: "0.75",
+      unitCost: null,
+    });
+  });
+
+  it("writes nothing for a difference of 0", () => {
+    expect(countCorrection("4", "4.000")).toBeNull();
+  });
+
+  it("refuses a line that is not counted", () => {
+    expect(() => countCorrection("4", null)).toThrow(RangeError);
+  });
+});
+
+describe("countSeenMatches (plan of 7.4, decided item 2, Look first: the Head approves the differences shown)", () => {
+  const held = [
+    { id: "a", countedQty: "8.000" },
+    { id: "b", countedQty: "0" },
+  ];
+
+  it("is yes when every line is named once with the same quantity", () => {
+    expect(
+      countSeenMatches(held, [
+        { lineId: "b", countedQty: "0.0" },
+        { lineId: "a", countedQty: "8" },
+      ]),
+    ).toBe(true);
+  });
+
+  it("is no for a changed quantity, a missing, extra or repeated line, or an uncounted line", () => {
+    expect(
+      countSeenMatches(held, [
+        { lineId: "a", countedQty: "7" },
+        { lineId: "b", countedQty: "0" },
+      ]),
+    ).toBe(false);
+    expect(countSeenMatches(held, [{ lineId: "a", countedQty: "8" }])).toBe(false);
+    expect(
+      countSeenMatches(held, [
+        { lineId: "a", countedQty: "8" },
+        { lineId: "a", countedQty: "8" },
+      ]),
+    ).toBe(false);
+    expect(
+      countSeenMatches(held, [
+        { lineId: "a", countedQty: "8" },
+        { lineId: "c", countedQty: "0" },
+      ]),
+    ).toBe(false);
+    expect(
+      countSeenMatches([{ id: "a", countedQty: null }], [{ lineId: "a", countedQty: "0" }]),
+    ).toBe(false);
   });
 });

@@ -141,7 +141,8 @@ describe("the difference of a count (09 Stock count: the system shows the differ
       { lineId: lineOf(held, b.variantId).id, countedQty: "4" },
       { lineId: lineOf(held, c.variantId).id, countedQty: "7" },
     ]);
-    expect(saved).toEqual({ ok: true, data: { documentId, saved: 3 } });
+    // Every line counted: this save completes the count (plan of 7.4, decided item 1).
+    expect(saved).toEqual({ ok: true, data: { documentId, saved: 3, completed: true } });
 
     const lines = await linesOf(documentId);
     const differences = Object.fromEntries(
@@ -372,5 +373,74 @@ describe("saveCountedQuantities (09 Stock count: types the counted quantities)",
     expect(
       await save(entry.documentId, [{ lineId: entry.lineIds[0]!, countedQty: "9" }]),
     ).toMatchObject({ ok: false, error: { code: "not_found" } });
+  });
+});
+
+describe('"Write-off or correction asked" for a count (10 Notifications; plan of 7.4, decided items 1 and 10)', () => {
+  async function askedOf(documentId: string) {
+    const found = await db.execute<{ user_id: string; params: unknown }>(sql`
+      select user_id, params from notifications
+      where type = 'STOCK_CHANGE_ASKED' and link = ${`/warehouse/documents/${documentId}`}
+      order by created_at, id`);
+    return found.rows;
+  }
+
+  it("the save that completes the count tells every active Head once; a save that leaves a line empty and a later save tell nobody", async () => {
+    const head = await insertUser("HEAD");
+    const away = await insertUser("HEAD");
+    await db.execute(sql`update users set is_active = false where id = ${away.id}`);
+    const a = await inStock("10");
+    const b = await inStock("4");
+    const { documentId, number } = await started();
+    const held = await linesOf(documentId);
+
+    const first = await save(documentId, [
+      { lineId: lineOf(held, a.variantId).id, countedQty: "9" },
+    ]);
+    expect(first).toMatchObject({ ok: true, data: { completed: false } });
+    expect(await askedOf(documentId)).toEqual([]);
+
+    const second = await save(documentId, [
+      { lineId: lineOf(held, b.variantId).id, countedQty: "4" },
+    ]);
+    expect(second).toMatchObject({ ok: true, data: { completed: true } });
+    const maker = await db.execute<{ full_name: string }>(
+      sql`select full_name from users where id = ${manager.id}`,
+    );
+    expect(
+      (await askedOf(documentId))
+        .filter((row) => row.user_id !== head.id)
+        .map((row) => row.user_id),
+    ).not.toContain(away.id);
+    expect((await askedOf(documentId)).filter((row) => row.user_id === head.id)).toEqual([
+      {
+        user_id: head.id,
+        params: { actor: maker.rows[0]!.full_name, number, branch: branch.code, kind: "COUNT" },
+      },
+    ]);
+
+    const third = await save(documentId, [
+      { lineId: lineOf(held, a.variantId).id, countedQty: "8" },
+    ]);
+    expect(third).toMatchObject({ ok: true, data: { completed: false } });
+    expect((await askedOf(documentId)).filter((row) => row.user_id === head.id)).toHaveLength(1);
+  });
+
+  it("clearing a line and counting it again asks again", async () => {
+    const head = await insertUser("HEAD");
+    const a = await inStock("10");
+    const { documentId } = await started();
+    const line = lineOf(await linesOf(documentId), a.variantId).id;
+    expect(await save(documentId, [{ lineId: line, countedQty: "9" }])).toMatchObject({ ok: true });
+    expect(await save(documentId, [{ lineId: line, countedQty: null }])).toMatchObject({
+      ok: true,
+      data: { completed: false },
+    });
+    expect((await askedOf(documentId)).filter((row) => row.user_id === head.id)).toHaveLength(1);
+    expect(await save(documentId, [{ lineId: line, countedQty: "9" }])).toMatchObject({
+      ok: true,
+      data: { completed: true },
+    });
+    expect((await askedOf(documentId)).filter((row) => row.user_id === head.id)).toHaveLength(2);
   });
 });

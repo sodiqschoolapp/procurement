@@ -64,12 +64,16 @@ export type CashGivenVia = "approval" | "money";
 /** The direction of a settlement action's net (`SettlementNet` of ./money-ledger.ts). */
 /**
  * What a stock change asked of the Head is (10 Notifications, "Write-off or correction asked";
- * plan of 5.11, decided item 5, Look first): a write-off now; 7.4 adds its correction as a word.
+ * plan of 5.11, decided item 5, Look first): a write-off, or a count's corrections (plan of 7.4,
+ * decided item 10).
  */
-export type StockChangeKind = "WRITE_OFF";
+export type StockChangeKind = "WRITE_OFF" | "COUNT";
 
-/** The Head's answer to it, as the notice's `select` reads it. */
-export type StockChangeOutcome = "approved" | "refused";
+/**
+ * The Head's answer to it, as the notice's `select` reads it; `recount` when an approval found
+ * items that moved and sent the count back (plan of 7.4, decided item 2).
+ */
+export type StockChangeOutcome = "approved" | "refused" | "recount";
 
 export type SettlementDirection = "TO_FINANCE" | "TO_MANAGER" | "NONE";
 

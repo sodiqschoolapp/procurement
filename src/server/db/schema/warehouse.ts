@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import {
   type AnyPgColumn,
   bigint,
+  boolean,
   check,
   date,
   foreignKey,
@@ -265,6 +266,10 @@ export const stockDocumentLines = pgTable(
     startSeq: bigint("start_seq", { mode: "bigint" }).references(
       (): AnyPgColumn => stockMovements.seq,
     ),
+    // A count line the Head's approval sent back to be counted again because the item moved after
+    // the start (09 Other documents, Stock count; plan of 7.4, decided item 4, Look first). False
+    // on every other type's line.
+    recount: boolean("recount").notNull().default(false),
     createdAt: moment("created_at").notNull(),
   },
   (table) => [

@@ -7,6 +7,7 @@ import {
   type DocumentType,
   DOCUMENT_PREFIX,
   REVERSIBLE_STATUSES,
+  countCorrection,
   documentNumber,
   lineMovement,
   reversalOf,
@@ -91,7 +92,7 @@ export type CreatedDocument = {
   number: string;
   /** The ids of the lines in the order they were given. */
   lineIds: string[];
-  /** The movements written, one per line; empty for a document that waits. */
+  /** The movements written, one per line that moved; empty for a document that waits. */
   posted: PostedLine[];
 };
 
@@ -191,7 +192,9 @@ export async function lockDocument(tx: Executor, documentId: string): Promise<Lo
 
 /**
  * Writes the movement of each line of one document (lineMovement() of src/domain/
- * stock-documents.ts), in postMovements()' fixed order, each pointing at its line. The document
+ * stock-documents.ts; a count line's countCorrection(), which writes nothing for a difference of
+ * 0: plan of 7.4, decided items 8 and 13), in postMovements()' fixed order, each pointing at its
+ * line. Returns the lines that moved, each with its own id. The document
  * is locked here and its type and branch read from it; it must be POSTED or IN_TRANSIT (the
  * caller sets the status first) and none of its lines may have moved yet: `wrong_status`
  * otherwise (permission review of 5.1, Must fix 1). The lines are read after the lock, in a
@@ -210,21 +213,29 @@ export async function postLines(
     variant_id: string;
     qty: string;
     unit_cost: string | null;
+    counted_qty: string | null;
     moved: boolean;
   }>(sql`
     select l.id, l.variant_id, l.qty::text as qty, l.unit_cost::text as unit_cost,
+      l.counted_qty::text as counted_qty,
       exists (select 1 from stock_movements m where m.document_line_id = l.id) as moved
     from stock_document_lines l where l.document_id = ${document.id}
     order by l.id`);
-  const lines = found.rows;
-  if (lines.some((line) => line.moved)) throw new ActionError("wrong_status");
+  if (found.rows.some((line) => line.moved)) throw new ActionError("wrong_status");
+  const lines = found.rows.flatMap((line) => {
+    const movement =
+      document.type === "COUNT"
+        ? countCorrection(line.qty, line.counted_qty)
+        : lineMovement(document.type, {
+            qty: line.qty,
+            unitCost: line.unit_cost === null ? null : BigInt(line.unit_cost),
+          });
+    return movement ? [{ ...line, movement }] : [];
+  });
   const movements = await postMovements(
     tx,
     lines.map((line) => ({
-      ...lineMovement(document.type, {
-        qty: line.qty,
-        unitCost: line.unit_cost === null ? null : BigInt(line.unit_cost),
-      }),
+      ...line.movement,
       branchId: document.branchId,
       variantId: line.variant_id,
       createdBy: input.postedBy,
