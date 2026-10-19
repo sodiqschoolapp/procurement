@@ -19,6 +19,7 @@
     "db:seed": "node --env-file-if-exists=.env scripts/db-seed.mjs",
     "storage:bucket": "node --env-file-if-exists=.env scripts/storage-bucket.mjs",
     "storage:check": "node --env-file-if-exists=.env scripts/storage-check.mjs",
+    "db:copy": "node --env-file-if-exists=.env scripts/db-copy.mjs",
     "user:first-head": "node --env-file-if-exists=.env scripts/create-first-head.mjs",
     "dev:notify": "node --env-file-if-exists=.env scripts/dev-notify.mjs"
   },

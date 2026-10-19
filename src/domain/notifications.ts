@@ -42,6 +42,7 @@ export const NOTIFICATION_TYPES = [
   "MANAGER_RIGHT_SWITCHED",
   "CASH_SETTLED",
   "REQUEST_SENT_BACK_FOR_CORRECTION",
+  "STOCK_CHECK_MISMATCH",
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
@@ -175,6 +176,12 @@ export type NotificationParamsOf = {
    * `branch` (its code) needed by today to today + 2. No amount and no order number.
    */
   NEEDED_BY_NEAR: { count: number; branch: string };
+  /**
+   * The nightly stock check found balances that are not what their movements say (plan of 8.2,
+   * decided items 1 and 11, Look first): to every active Head, `branchId` null; `count` the
+   * branch-and-subtype items that differ. No branch, item or quantity.
+   */
+  STOCK_CHECK_MISMATCH: { count: number };
   /** "Branch has no active user for a role": the branch's code and the role's code. */
   BRANCH_ROLE_VACANT: { branch: string; role: Role };
   /** "A Manager's right is switched on or off": the right's code, and "on" or "off". */
@@ -217,6 +224,7 @@ export const NOTIFICATION_PARAMS: {
   REQUEST_WAITING_24H: ["count", "hours"],
   REQUEST_WAITING_48H: ["count", "hours"],
   NEEDED_BY_NEAR: ["count", "branch"],
+  STOCK_CHECK_MISMATCH: ["count"],
   BRANCH_ROLE_VACANT: ["branch", "role"],
   MANAGER_RIGHT_SWITCHED: ["right", "state"],
   PRODUCT_SUGGESTED: ["name", "branch"],

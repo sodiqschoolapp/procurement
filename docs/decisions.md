@@ -2573,6 +2573,31 @@ Choices made during the build:
 - The grouping is the pure `waitingNotices()` and `nearNotices()` of `src/domain/reminders.ts`; the SQL gives each waiting order two flags (past `reminder_hours`, past `escalation_hours`) and reads only orders past the smaller of the two.
 - `stillDueWhere()` and `enteredCurrentStatusAt` moved out of `listWhere()` unchanged; the list's tests cover them as before.
 
+### 8.2 Nightly check and weekly copy (19.10.2026)
+
+The plan's decisions as the plan review of 19.10.2026 confirmed them (its three corrections applied), and those of the build. The Look first items come first.
+
+1. **Look first** (open question 17). A mismatch is told as one bell notification STOCK_CHECK_MISMATCH `{ count }` to every active Head, every night while it lasts, and logged item by item (ids and numbers only). The check corrects nothing. Proposed `/spec-change` for `14-data-model.md`, Notes for the build, first bullet: "A nightly job recomputes it from the movements; any mismatch is told to every active Head as one bell notification with the number of items that differ, every night while it lasts, and logged item by item. The job corrects nothing." And a row in `10-notifications-analytics-reports.md`, Notifications: "The nightly stock check found a mismatch | every active Head, once a night".
+2. **Look first** (stock rule). Recompute = per branch and subtype, the movements in `seq` order through `nextBalance()` from 0 and 0: average types without a cost, every RETURN with `emptyCost` = its stored `unit_cost`, every other type (REVERSAL included) at its stored cost. A mismatch: the quantity (exact decimal) or the average differs, the replay goes below 0, movements with no row, or a row with no movements that is not 0 and 0. `balance_after` of each movement is not checked.
+3. **Look first** (new dependency). `postgresql-client-17` from apt.postgresql.org in the image's run stage, added by the script of Debian's signed `postgresql-common` package; PostgreSQL Licence; the build stops unless `pg_dump --version` says 17.
+4. The copy goes to the files bucket under `backups/`; every copy is kept. No route serves `backups/`.
+5. The check daily at 03:00, the copy on Sunday at 04:00, Tashkent time; the reminders stay at 00:00.
+6. The copy keeps the Job shape of 0.13; it holds its row while `pg_dump` runs. A repeat for one tick writes the same key.
+7. The dump is held in memory before the upload.
+8. `database_copy` is in `JOBS` only in a production server with `S3_BUCKET` (`copyRuns()`); its first deploy copies for the last Sunday at once.
+9. A failed copy is a failed tick and a log line, no notification.
+10. `pg_dump` gets the address as PG* variables; with `DATABASE_CA_CERT`, `verify-full` against a temporary file of mode 600, removed after.
+11. STOCK_CHECK_MISMATCH links to `/warehouse/stock` (the plan said `/warehouse`; Stock on hand is `/warehouse/stock`), with no branch.
+
+Choices made during the build:
+
+- The file key's Tashkent date is made in `scripts/db-copy.mjs` (`copyKeyOf()`, Intl with `Asia/Tashkent`), because the image's console runs the script without the TypeScript domain; a unit test holds it equal to `businessDate()` across midnight and the year end.
+- `pg_dump`'s own error text is never printed (it can name the server): only its exit code.
+- No CI step runs the copy (review correction 1); `tests/image-files.test.ts` keeps the install in the run stage and the script in the image. Locally, `pg_dump` 17 of the `postgres:17` image copied the local database and `pg_restore` 17 restored it into an empty one.
+- Permission review, should fix 3: STOCK_CHECK_MISMATCH has `branchId: null` and a count over every branch, which is right only because its recipients are the active Heads; the database test with a Manager of two branches, a Principal, Finance and an inactive Head is the guard. A later all-branch notice to another role must carry a `branchId` per branch.
+- Permission review, should fix 1: for 9.4 to 9.6, the copies hold password hashes and live session rows, and sit in the files bucket, so its R2 token and any public access reach them too; a bucket of their own, or a token scoped to `backups/`, is the safer production shape. A test holds that no download key reaches `backups/`.
+- The managed database's `idle_in_transaction_session_timeout` could not be read from here; PostgreSQL's default and the local server's is 0 (none). The held transaction of the copy relies on it.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.
