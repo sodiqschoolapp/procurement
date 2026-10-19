@@ -2985,5 +2985,107 @@
         }
       }
     }
+  },
+  "reports": {
+    "title": "Hisobotlar",
+    "tabs": {
+      "orders": "Buyurtmalar reyestri",
+      "purchases": "Xaridlar reyestri",
+      "plan": "Reja va amal",
+      "spending": "Xarajatlar"
+    },
+    "notes": {
+      "orders": "Shu sanalarda yuborilgan buyurtmalar holati, summalari va sanalari bilan: buyurtmalar ro'yxatining yuklamasi.",
+      "purchases": "Shu sanalardagi barcha xarid yozuvlari yetkazib beruvchi, narx va to'lov turi bilan. Bekor qilingan yozuvlar belgilangan va hisoblanmaydi.",
+      "plan": "Xaridi shu sanalarda to'liq yoki qisman yakunlangan buyurtmalar. Farq — reja minus amal: 0 dan yuqori pul qoldi, 0 dan past ko'proq sarflandi.",
+      "spending": "Shu sanalardagi bekor qilinmagan xarid yozuvlarining haqiqiy summalari."
+    },
+    "filters": "Filtrlar",
+    "from": "Dan",
+    "to": "Gacha",
+    "branch": "Filial",
+    "allBranches": "Barcha filiallarim",
+    "category": "Toifa",
+    "allCategories": "Barcha toifalar",
+    "apply": "Ko'rsatish",
+    "reset": "Tozalash",
+    "excel": "Excel yuklab olish",
+    "periodLine": "{first} dan {last} gacha",
+    "period": "Sanalar",
+    "refreshed": "{time} holatiga jamlanma",
+    "refreshing": "Jamlanma tayyorlanmoqda",
+    "total": "Jami",
+    "orders": {
+      "summary": "{count, plural, other {# ta buyurtma}}, rejadagi jami {total}",
+      "openList": "Buyurtmalar ro'yxatida ochish"
+    },
+    "purchases": {
+      "summary": "{count, plural, other {# ta yozuv}}, jami {total}",
+      "cancelledLine": "{count, plural, other {# ta bekor qilingan yozuv}}, hisoblanmaydi",
+      "sheet": "Xarid yozuvlari",
+      "cancelledSheet": "Bekor qilingan yozuvlar",
+      "empty": "Shu sanalarda xarid bo'lmagan.",
+      "noSupplier": "Yetkazib beruvchisiz",
+      "yes": "Ha",
+      "no": "Yo'q",
+      "cancelled": "Bekor qilingan: {reason}",
+      "columns": {
+        "date": "Xarid sanasi",
+        "order": "Buyurtma",
+        "branch": "Filial",
+        "department": "Bo'lim",
+        "owner": "Egasi",
+        "product": "Mahsulot",
+        "subtype": "Turi",
+        "supplier": "Yetkazib beruvchi",
+        "qty": "Miqdor",
+        "unitPrice": "Birlik narxi",
+        "goods": "Tovar summasi",
+        "extras": "Qo'shimcha xarajatlar",
+        "total": "Yozuv jami",
+        "receipt": "Chek",
+        "cancelReason": "Bekor qilingan, sababi"
+      }
+    },
+    "plan": {
+      "summary": "{count, plural, other {# ta buyurtma}}: reja {planned}, amal {actual}, farq {difference}",
+      "byOrder": "Buyurtmalar bo'yicha",
+      "byProduct": "Mahsulotlar bo'yicha",
+      "byManager": "Menejerlar bo'yicha",
+      "otherOwners": "Boshqa egalar",
+      "empty": "Shu sanalarda birorta xarid yakunlanmagan.",
+      "columns": {
+        "order": "Buyurtma",
+        "branch": "Filial",
+        "owner": "Egasi",
+        "product": "Mahsulot",
+        "ended": "Xarid yakunlangan",
+        "outcome": "Natija",
+        "name": "Nomi",
+        "orders": "Buyurtmalar",
+        "planned": "Reja",
+        "actual": "Amal",
+        "difference": "Farq"
+      }
+    },
+    "spending": {
+      "summary": "{count, plural, other {# ta yozuv}}, jami {total}",
+      "byBranch": "Filiallar bo'yicha",
+      "byCategory": "Toifalar bo'yicha",
+      "byDepartment": "Bo'limlar bo'yicha",
+      "bySupplier": "Yetkazib beruvchilar bo'yicha",
+      "byMonth": "Oylar bo'yicha",
+      "noSupplier": "Yetkazib beruvchisiz",
+      "empty": "Shu sanalarda hech narsa xarid qilinmagan.",
+      "columns": {
+        "branch": "Filial",
+        "category": "Toifa",
+        "department": "Bo'lim",
+        "supplier": "Yetkazib beruvchi",
+        "month": "Oy",
+        "records": "Yozuvlar",
+        "amount": "Summa"
+      }
+    }
   }
 }

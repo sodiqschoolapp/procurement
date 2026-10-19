@@ -64,6 +64,8 @@ function cellText(cell: CellValue, format: AnalyticsReport["format"]): string {
       return format.money(cell.value);
     case "count":
       return format.quantity(String(cell.value));
+    case "quantity":
+      return format.quantity(cell.value);
     case "date":
       return format.date(cell.value);
   }
