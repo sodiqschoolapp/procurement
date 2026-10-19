@@ -94,6 +94,7 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - 17.10.2026: the Phase 2 audit (D48) found one gap. Fix task 2.7b comes next after the task running when it was added (3.5). For 2.7b: the order page's confirmation is in `order-action-bar.tsx`; reuse it. The last line of this file may name 3.6; 2.7b comes first.
 - 17.10.2026: the loop's waits and stalls (D49): `next-task` step 11 now waits for the plan review in the same session; progress comments every 20 minutes, a stall after 45 minutes; "Acting on the red CI."; the reviewer merges only while its verdict is the newest. For 2.11b: the findings are in the `changes needed` comment of #61.
 - 17.10.2026: D50: before acting on a review, and before the first commit, re-read the comments; act on the newest verdict at the head sha; stop when another session posted "Resumed by the start routine." after it.
+- 19.10.2026: D51: a reviewer claims a commit ("Reviewing <sha>.") before reviewing it; a stricter verdict is posted even after another run's. For 6.5a-2: the finding is in decision D51. 6.5a-2 sits above the finished 6.5b in `docs/build-plan.md`, so it is the next task after the one running when D51 merged.
 
 ## 0.3 CI (14.10.2026, pull request #12)
 

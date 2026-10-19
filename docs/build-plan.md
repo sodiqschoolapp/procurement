@@ -23,11 +23,11 @@ The whole project as ordered tasks. One task is one Claude Code session and one 
 | 3. Purchasing | 10 | The Manager records what was really bought, one order or one whole shop visit at a time. |
 | 4. Money and settlement | 10 | Cash given, cash spent, the difference, and the close, per order. |
 | 5. Warehouse | 11 | Stock screens and every document that moves stock inside one branch. |
-| 6. Home, analytics, reports | 16 | What each role sees first, and the numbers behind the work. |
+| 6. Home, analytics, reports | 17 | What each role sees first, and the numbers behind the work. |
 | 7. Transfers and counts | 4 | Stock moving between branches, and stock checked against the shelf. |
 | 8. Jobs and polish | 3 | The scheduled work, and the translation pass. |
 | 9. Before go-live | 6 | Proof that it works, then the real environment and the real data. |
-| **Total** | **107** | |
+| **Total** | **108** | |
 
 ## Phase 0: Foundations
 
@@ -501,6 +501,12 @@ What each role sees first, and the numbers behind the work.
   - **Read:** `10-notifications-analytics-reports.md` (Analytics page per role: Principal, own branch).
   - **Build:** The four Principal blocks: Spending (my branch by month against the period before; by category and department; top 10 products), Orders (by status; needed-by dates coming up; overdue orders), My approvals (waiting now; my average time to decide), Warehouse (stock value; low stock; what each department used), each number with its drill-down and Excel export.
   - **Done when:** A database test: the Principal's page holds only the Principal's branch.
+
+- [ ] **6.5a-2 The Orders total of the Principal's page opens its list**
+  - **Read:** `10-notifications-analytics-reports.md` (Analytics page per role: point 3, every number opens the list behind it); `docs/decisions.md` (D51).
+  - **Build:** The "All orders" total of the Orders block (`src/features/analytics/components/principal-blocks.tsx`) opens the list of every order of the period behind it, through a drill key that `getStatusOrders()` accepts for all statuses of the period, inside the same walls as the other keys.
+  - **Done when:** A database test: the list's count equals the total, for the Principal's branch only. A Playwright step clicks the total and sees the list.
+  - Added by the owner on 19.10.2026 (D51): the finding of a second review run of #109 that stood down after the merge.
 
 - [x] **6.5b Analytics: Manager, My orders, My estimates, My cash**
   - **Read:** `10-notifications-analytics-reports.md` (Analytics page per role: Manager, own branches).
