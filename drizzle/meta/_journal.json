@@ -309,6 +309,13 @@
       "when": 1792366176093,
       "tag": "0043_analytics_finance",
       "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1792370490289,
+      "tag": "0044_analytics_finance_speed",
+      "breakpoints": true
     }
   ]
 }

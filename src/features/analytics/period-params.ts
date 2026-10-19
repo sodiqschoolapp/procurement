@@ -63,14 +63,17 @@ export type PeriodInput = { choice: PeriodChoice; from: string | null; to: strin
  * decided item 10): the money rows of one cash kind in the period or one month of it
  * (/analytics/money), the orders of a Cash needed soon number, all, approved or in approval, one
  * step of it included (/analytics/cash-needed), and the orders of one age band, held or owed
- * (/analytics/cash). A breakdown by branch, department, supplier or Manager drills down with that
- * filter set.
+ * (/analytics/cash). Of Finance's 6.6b blocks (plan of 6.6b, decided item 8): the parts of one
+ * payment type of the records with no supplier (`noSupplier`, /analytics/records), the records
+ * without a receipt (`noreceipt`, /analytics/records) and the settlements closed in the period
+ * (`settled`, /analytics/settlements). A breakdown by branch, department, supplier or Manager drills
+ * down with that filter set.
  */
 export type DrillKey =
   | { kind: "period" }
   | { kind: "month"; month: string }
   | { kind: "category"; category: string }
-  | { kind: "payment"; payment: PaymentType }
+  | { kind: "payment"; payment: PaymentType; noSupplier?: true }
   | { kind: "colour"; colour: Colour }
   | { kind: "overspent" }
   | { kind: "saved" }
@@ -87,7 +90,9 @@ export type DrillKey =
   | { kind: "priced"; product: string | null }
   | { kind: "money"; money: CashKind; month: string | null }
   | { kind: "needed"; stage: NeededStage; step: ApprovalStatus | null }
-  | { kind: "age"; band: CashAgeBand; side: CashSide };
+  | { kind: "age"; band: CashAgeBand; side: CashSide }
+  | { kind: "noreceipt" }
+  | { kind: "settled" };
 
 /** The three cash kinds of Finance's Cash block (plan of 6.6a, decided item 2), as the address names them. */
 export const CASH_KINDS = {
@@ -184,6 +189,11 @@ export const EXPORT_BLOCKS = [
   "cashAges",
   "cashNeeded",
   "neededOrders",
+  "transfers",
+  "overspendBranches",
+  "overspendManagers",
+  "settlementBranches",
+  "settlements",
 ] as const;
 export type ExportBlock = (typeof EXPORT_BLOCKS)[number];
 
@@ -211,7 +221,7 @@ const id = z.uuid().transform((value) => value.toLowerCase());
 const date = z.string().refine(isBusinessDate);
 
 const KEY =
-  /^(period|overspent|saved|month:\d{4}-\d{2}|category:[0-9a-fA-F-]{36}|payment:[A-Z]+|colour:[a-z]+|price:[0-9a-fA-F-]{36}(:\d{4}-\d{2}|:nosupplier)?|step:[A-Z_a-z]+(:[A-Z_]+)?|waiting:[A-Z_a-z]+:[A-Za-z]+|stock:[a-z]+|moves:[a-z]+|product:[0-9a-fA-F-]{36}|status:[A-Z_]+|due:[a-z]+|mine|approved|priced:(all|[0-9a-fA-F-]{36})|money:[A-Za-z]+(:\d{4}-\d{2})?|needed:[a-z]+(:[A-Z_]+)?|age:[a-z]+:[a-z]+)$/;
+  /^(period|overspent|saved|month:\d{4}-\d{2}|category:[0-9a-fA-F-]{36}|payment:[A-Z]+(:nosupplier)?|colour:[a-z]+|price:[0-9a-fA-F-]{36}(:\d{4}-\d{2}|:nosupplier)?|step:[A-Z_a-z]+(:[A-Z_]+)?|waiting:[A-Z_a-z]+:[A-Za-z]+|stock:[a-z]+|moves:[a-z]+|product:[0-9a-fA-F-]{36}|status:[A-Z_]+|due:[a-z]+|mine|approved|priced:(all|[0-9a-fA-F-]{36})|money:[A-Za-z]+(:\d{4}-\d{2})?|needed:[a-z]+(:[A-Z_]+)?|age:[a-z]+:[a-z]+|noreceipt|settled)$/;
 
 /** A reason key as reasonKey() writes it: at most the 500 characters of a reason (06 rule 3). */
 const reason = z.string().min(1).max(500);
@@ -249,7 +259,9 @@ function keyOf(text: string): DrillKey | null {
     text === "overspent" ||
     text === "saved" ||
     text === "mine" ||
-    text === "approved"
+    text === "approved" ||
+    text === "noreceipt" ||
+    text === "settled"
   )
     return { kind: text };
   const [kind, value] = text.split(/:(.*)/s) as [string, string];
@@ -326,8 +338,10 @@ function keyOf(text: string): DrillKey | null {
   }
   if (kind === "month") return isMonthKey(value) ? { kind, month: value } : null;
   if (kind === "payment") {
-    const payment = PAYMENT_TYPES.find((type) => type === value);
-    return payment ? { kind, payment } : null;
+    const [paymentText, rest] = value.split(":") as [string, string | undefined];
+    const payment = PAYMENT_TYPES.find((type) => type === paymentText);
+    if (!payment) return null;
+    return rest === undefined ? { kind, payment } : { kind, payment, noSupplier: true };
   }
   if (kind === "colour") {
     const colour = OUTCOME_COLOURS.find((each) => each === value);
@@ -417,13 +431,15 @@ function keyText(key: DrillKey): string {
     case "saved":
     case "mine":
     case "approved":
+    case "noreceipt":
+    case "settled":
       return key.kind;
     case "month":
       return `month:${key.month}`;
     case "category":
       return `category:${key.category}`;
     case "payment":
-      return `payment:${key.payment}`;
+      return `payment:${key.payment}${key.noSupplier ? ":nosupplier" : ""}`;
     case "colour":
       return `colour:${key.colour}`;
     case "price":

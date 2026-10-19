@@ -27,7 +27,9 @@ import { spendingWhere } from "../spending-where";
 // is the price `unitPriceOf()` of their goods and quantity, the number clicked (plan of 6.4b,
 // decided items 1 and 12). A `priced` key of 6.5b lists the priced records of one product (every
 // subtype bought) or of all, the set My estimates reads, and its summary carries their Σ quantity
-// and Σ goods (plan of 6.5b, decided items 4 and 8; review of the plan, Should fix 2).
+// and Σ goods (plan of 6.5b, decided items 4 and 8; review of the plan, Should fix 2). Task 6.6b
+// adds Finance's records without a receipt (`noreceipt`) and a payment type's parts of the records
+// with no supplier (plan of 6.6b, decided items 1, 4 and 8).
 
 export type SpendingRecord = {
   purchaseId: string;
@@ -118,7 +120,8 @@ async function recordsIn(
     key.kind === "status" ||
     key.kind === "due" ||
     key.kind === "mine" ||
-    key.kind === "approved"
+    key.kind === "approved" ||
+    key.kind === "settled"
   ) {
     throw new PeriodRefusedError();
   }
@@ -130,6 +133,10 @@ async function recordsIn(
     }
     // A supplier filter and the records with no supplier name no number of the page.
     if (key.noSupplier && filters.supplier) throw new PeriodRefusedError();
+  }
+  // The same for the parts of a payment type with no supplier (plan of 6.6b, decided item 8).
+  if (key.kind === "payment" && key.noSupplier && filters.supplier) {
+    throw new PeriodRefusedError();
   }
   const where =
     key.kind === "price"
@@ -145,7 +152,13 @@ async function recordsIn(
             ${key.kind === "priced" ? sql`and analytics_spending.unit_price > 0` : sql``}`
         : key.kind === "priced"
           ? sql`${spendingWhere(actor, range, scope)} and analytics_spending.unit_price > 0`
-          : spendingWhere(actor, range, scope);
+          : key.kind === "noreceipt"
+            ? // Finance's purchases without a receipt (plan of 6.6b, decided item 4).
+              sql`${spendingWhere(actor, range, scope)} and not analytics_spending.has_receipt`
+            : key.kind === "payment" && key.noSupplier
+              ? // Bank transfers with no supplier (plan of 6.6b, decided item 1).
+                sql`${spendingWhere(actor, range, scope)} and analytics_spending.supplier_id is null`
+              : spendingWhere(actor, range, scope);
   // A payment type's list holds the records with a part of that type, each with that part, so
   // its total is the slice clicked (plan of 6.4, decided item 2, Look first).
   const part =
