@@ -164,8 +164,8 @@ Commands lines of CLAUDE.md, and a CI workflow the task's Build line on main ask
 for (never routines.yml, never a loosening).
 Before reviewing a plan, or code once its CI is green, claim the commit as the
 skill says: a live claim is a "Reviewing <sha>." for this head sha, younger than
-40 minutes, with no
-[review] naming that sha after it. When one exists, post nothing and stop;
+40 minutes, with no [review] naming that sha after it. When one exists, post
+nothing and stop;
 otherwise post "Reviewing <sha>." and stop when another live claim for the same
 sha has a lower comment id. Post the verdict as a comment that starts with
 [review] and names the head sha you read ([review] approved at <sha>), and set
