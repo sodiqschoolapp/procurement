@@ -242,7 +242,7 @@ export const stockDocuments = pgTable(
 
 // One item of a document (14, stock_document_lines): one line per subtype (plan of 5.1, decided
 // item 6). `counted_qty` and `received_qty` are typed by a count (7.3) and a receipt (7.2);
-// `unit_cost` is a direct entry's own cost (09 Direct entry, Lines). `qty` may be 0 on a count
+// `received_qty` is at most `qty`. `unit_cost` is a direct entry's own cost (09 Direct entry, Lines). `qty` may be 0 on a count
 // line (decided item 11); a posted 0 is refused by stock_movements_qty_delta_check.
 export const stockDocumentLines = pgTable(
   "stock_document_lines",
@@ -267,6 +267,12 @@ export const stockDocumentLines = pgTable(
     check("stock_document_lines_qty_check", sql`${table.qty} >= 0`),
     check("stock_document_lines_counted_qty_check", sql`${table.countedQty} >= 0`),
     check("stock_document_lines_received_qty_check", sql`${table.receivedQty} >= 0`),
+    // What arrived is never more than was sent: an excess would make stock out of nothing (plan of
+    // 7.2, decided item 4, Look first; review of the plan, correction 2).
+    check(
+      "stock_document_lines_received_qty_sent_check",
+      sql`${table.receivedQty} IS NULL OR ${table.receivedQty} <= ${table.qty}`,
+    ),
     check("stock_document_lines_unit_cost_check", sql`${table.unitCost} >= 0`),
     index("stock_document_lines_variant_id_idx").on(table.variantId),
   ],

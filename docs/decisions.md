@@ -2477,6 +2477,31 @@ Choices made during the build:
 - The branch-close message joins three reasons (`branches.blockedThree`) and adds that a transfer in transit is received first.
 - The transfer note's route tests are in their own file, `transfer-route.db.test.ts`: in one process, a PDF rendered after another can lose glyphs (see the report, "For the owner"). That bug was already on `main` and is not fixed here.
 
+### 7.2 Transfer: receive (19.10.2026)
+
+The plan's decisions as the plan review of 19.10.2026 confirmed them, with its two corrections applied (1: the decision notice of a "Lost in transfer" write-off never reaches a receiver outside the sending branch; 2: the database refuses a received quantity above the quantity sent). The Look first items come first.
+
+1. **Look first** (stock rule). The short quantity comes back into the sender's stock at the line's `TRANSFER_OUT` cost (a `TRANSFER_IN` in the sending branch, on the same line), and the write-off "Lost in transfer" waits for the Head as any write-off: approved, the sender's stock falls by the short quantity once; refused, it stays counted at the sender. Without the return an approval would take it out a second time (09 Other documents, Write-off: "Stock changes only after the Head approves"). `decideWriteOff` is unchanged.
+2. **Look first** (permission matrix). Receiving is the new permission `stock.receive_transfer`: the Head in any branch, a Manager in the receiving branch, with no Manager right (03 "Issue, return, transfer stock"; 09 "the receiving Manager confirms"; `TRANSFER_STOCK` is "Send transfers" only).
+3. **Look first** (branch wall). A transfer is seen (list, page, note) by its sending and its receiving branch, In transit and after; any other branch gets "Not found". A transfer's lines read no stock (`inStock` null), so the receiver never sees the sender's stock.
+4. **Look first** (stock rule). A received quantity is 0 up to the quantity sent, by the measure; above is refused (`aboveSent`) by the action and by `stock_document_lines_received_qty_sent_check` (migration `0045_transfer_receive`). A line of 0 writes no `TRANSFER_IN`.
+5. **Look first** (stock rule; Decided ahead, question 19). Reverse of a received transfer: the Head only; `reverseDocument()` undoes every movement in its own branch at its own cost. The "Lost in transfer" write-off is its own document and is not touched. An In-transit transfer still has no Reverse.
+6. **Look first** (branch wall; plan review correction 1). The shortage's write-off is made by the receiving user (the true history). Its decision notice goes to its maker only when the maker may see the sending branch: `notify()` already keeps only people of the event's branch, so no code changed in `decideWriteOff`; a database test proves a receiver outside the sending branch gets nothing and a Manager of both branches is told.
+7. **Look first** (branch wall; permission review should fix 2). The receiving user makes a write-off request on the sending branch, a branch they may not belong to, whatever their WRITE_OFF_COUNT: 09 Transfer asks for it ("Any shortage becomes a write-off request … on the sending branch"), so it crosses the matrix row "Ask for a write-off" on purpose. The receiver gets the write-off's number and id back only when they see the sending branch; otherwise the screen says a request went to the Head (permission review should fix 1).
+8. The write-off's `client_key` is a fresh uuid made on the server (nobody can take it first); its date is the receipt's Tashkent day, its comment the TRF number. Its number is taken before any balance lock (the order of `askWriteOff`). When the Head receives, it is approved at once and nobody is told (plan of 5.11, decided item 1).
+9. The reports are not changed: a `TRANSFER_IN` keeps the transfer's date in Stock movements (plan of 6.9a, decided item 5).
+10. "Received by" at receipt is prefilled with the sender's text, or the receiving user's name, and replaces it; the receipt has no date field.
+11. Not a create: a second receipt is `wrong_status` under the document lock.
+12. No branch lock (a branch with a transfer In transit cannot be closed) and no re-check that products are active, as at a write-off's approval.
+13. Only the Heads are told, through STOCK_CHANGE_ASKED, and only when a write-off waits. No audit row.
+14. The transfer note gets a Received column after receipt; the page shows Sent, Received and Short.
+
+Choices made during the build:
+
+- `transferShort()` in `src/domain/stock-documents.ts` is the one formula of the short quantity: `transferReceipt()`, the receive form's confirmation and the page's Short column read it.
+- The receive input names each line by its id; the action refuses (`lines: notAllowed`) unless the ids are exactly the document's lines.
+- 7.1's tests that said the receiving branch cannot see a transfer "until 7.2" now check that it can (the requirement of 7.2; decided item 3); a third branch still gets "Not found".
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

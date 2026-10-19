@@ -166,8 +166,10 @@ describe("listStockDocuments: the filters (09 Stock screens: Documents)", () => 
   });
 });
 
-describe("listStockDocuments: a transfer (build plan 7.1, from 5.12; decided item 5)", () => {
-  it("is listed in the sending branch and found by the type Transfer, not among the issues; a Manager of only the receiving branch does not see it until 7.2", async () => {
+describe("listStockDocuments: a transfer (build plans 7.1 and 7.2, from 5.12; 7.2 decided item 3)", () => {
+  // 7.1 kept the transfer from the receiving branch until 7.2 (its decided item 5); 7.2 lists it
+  // there too (decided item 3, Look first), so this test changed with the requirement.
+  it("is listed in the sending and the receiving branch, found by the type Transfer and by either branch, not among the issues; a third branch does not see it", async () => {
     const s = await scene();
     const receiving = await insertBranch();
     const issue = await issueOn(s, "2031-05-10", s.science.id);
@@ -187,6 +189,7 @@ describe("listStockDocuments: a transfer (build plan 7.1, from 5.12; decided ite
       type: "TRANSFER",
       status: "IN_TRANSIT",
       branchCode: s.branch.code,
+      toBranchCode: receiving.code,
       departmentName: null,
     });
     expect(numbers(await listStockDocuments(s.manager.id, { type: "TRANSFER" }))).toEqual([
@@ -197,6 +200,33 @@ describe("listStockDocuments: a transfer (build plan 7.1, from 5.12; decided ite
     ]);
 
     const there = await insertUser("MANAGER", { branches: [receiving.id] });
-    expect(numbers(await listStockDocuments(there.id))).not.toContain(sent.data.number);
+    expect(numbers(await listStockDocuments(there.id))).toEqual([sent.data.number]);
+    expect(numbers(await listStockDocuments(there.id, { branch: receiving.id }))).toEqual([
+      sent.data.number,
+    ]);
+    expect(numbers(await listStockDocuments(there.id, { type: "TRANSFER" }))).toEqual([
+      sent.data.number,
+    ]);
+    // The receiving branch sees the transfer only, never the sender's other documents.
+    expect(numbers(await listStockDocuments(there.id, { type: "ISSUE" }))).toEqual([]);
+    const principal = await insertUser("PRINCIPAL", { branches: [receiving.id] });
+    expect(numbers(await listStockDocuments(principal.id))).toEqual([sent.data.number]);
+
+    // A third branch, with every other value that would let the row in: a transfer of the same
+    // type, date and sender to it beside.
+    const third = await insertBranch();
+    const toThird = await runAction(sendTransfer, s.manager.id, {
+      clientKey: randomUUID(),
+      branchId: s.branch.id,
+      toBranchId: third.id,
+      docDate: "2031-05-10",
+      receivedByName: null,
+      comment: null,
+      lines: [{ variantId: s.item.variantId, qty: "1" }],
+    });
+    if (!toThird.ok) throw new Error(`fixture: ${toThird.error.code}`);
+    const elsewhere = await insertUser("MANAGER", { branches: [third.id] });
+    expect(numbers(await listStockDocuments(elsewhere.id))).toEqual([toThird.data.number]);
+    expect(numbers(await listStockDocuments(there.id))).toEqual([sent.data.number]);
   });
 });

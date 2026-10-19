@@ -80,15 +80,19 @@ export const REVERSIBLE_STATUSES: readonly DocumentStatus[] = ["POSTED", "RECEIV
  * Whether the actor may reverse a document of this type and maker (09 Issue to a department 3: "A
  * posted issue can be reversed by its creator or the Head"; Decided ahead, question 19; plan of
  * 5.7, decided item 1, Look first): an issue and a return by their creator or the Head; a direct
- * entry and an approved write-off by the Head only (plans of 5.8 and 5.11). Every other type is no
- * until its task adds it, the Head only (7.2, 7.4). A Manager's right RETURN_REVERSE and the
+ * entry, an approved write-off and a received transfer by the Head only (plans of 5.8, 5.11 and
+ * 7.2, decided item 5, Look first). A count is no until 7.4 adds it, the Head only. A Manager's right RETURN_REVERSE and the
  * branch are authorize()'s (`stock.return_reverse`), asked beside this.
  */
 export function reverseAllows(
   actor: Pick<Actor, "userId" | "role">,
   document: { type: DocumentType; createdBy: string },
 ): boolean {
-  if (document.type === "DIRECT_ENTRY" || document.type === "WRITE_OFF") {
+  if (
+    document.type === "DIRECT_ENTRY" ||
+    document.type === "WRITE_OFF" ||
+    document.type === "TRANSFER"
+  ) {
     return actor.role === "HEAD";
   }
   if (document.type !== "ISSUE" && document.type !== "RETURN") return false;
@@ -141,6 +145,96 @@ export function writeOffDecisionMove(
   return outcome === "APPROVE" ? "POSTED" : "REJECTED";
 }
 
+/**
+ * The status receiving a transfer moves it to (09 Other documents, Transfer: "the transfer shows 'In
+ * transit'" until "The receiving Manager enters what really arrived"; 00-definitions, Transfer;
+ * plan of 7.2): from IN_TRANSIT to RECEIVED; from any other status no move (null), so a second
+ * receipt is refused. The one place for this move (developer-rules.md rule 2): the receive action
+ * asks it under the lock, the transfer's page asks it for its form. Who receives is the permission
+ * `stock.receive_transfer` on the receiving branch.
+ */
+export function transferReceiveMove(
+  status: DocumentStatus,
+): Extract<DocumentStatus, "RECEIVED"> | null {
+  return status === "IN_TRANSIT" ? "RECEIVED" : null;
+}
+
+/**
+ * What is wrong with a typed received quantity (09 Other documents, Transfer: "The receiving
+ * Manager enters what really arrived"; edge case "Half a piece"; plan of 7.2, decided item 4, Look
+ * first): 0 is allowed (nothing of the line arrived); otherwise the quantity rules of ./drafts.ts
+ * by the measure; more than was sent is `aboveSent`, since an excess would make stock out of
+ * nothing. The form asks this as it types; the action asks it again under the lock, and the
+ * database refuses a received quantity above the line's (`stock_document_lines_received_qty_check`).
+ */
+export function receivedQuantityRefusal(
+  text: string | null | undefined,
+  allowsDecimals: boolean,
+  sent: string,
+): QuantityRefusal | "aboveSent" | null {
+  const typed = (text ?? "").trim();
+  if (/^0+(\.0+)?$/.test(typed)) return null;
+  const refusal = quantityRefusal(typed, allowsDecimals);
+  if (refusal) return refusal;
+  return new Stock(typed).gt(new Stock(sent)) ? "aboveSent" : null;
+}
+
+/**
+ * What did not arrive of a transfer line: the quantity sent less the quantity received, as
+ * numeric(14,3) text, "0" when all arrived (09 Other documents, Transfer: "Any shortage"). The
+ * one formula of the short quantity: transferReceipt(), the receive form and the transfer's page
+ * read it. `receivedQty` must be 0 up to `qty`: RangeError otherwise.
+ */
+export function transferShort(qty: string, receivedQty: string): string {
+  if (!QUANTITY.test(qty) || !QUANTITY.test(receivedQty)) {
+    throw new RangeError(`A received line of "${receivedQty}" of "${qty}"`);
+  }
+  const short = new Stock(qty).minus(new Stock(receivedQty));
+  if (short.isNegative()) throw new RangeError(`A received line of "${receivedQty}" of "${qty}"`);
+  return short.toFixed();
+}
+
+/** What receiving one transfer line writes (transferReceipt()). */
+export type TransferReceipt = {
+  /** The receiving branch's TRANSFER_IN; null when nothing arrived. */
+  received: StockMovement | null;
+  /** The quantity that did not arrive, numeric(14,3) text; null when all arrived. */
+  short: string | null;
+  /** The sending branch's TRANSFER_IN of the short quantity; null when all arrived. */
+  back: StockMovement | null;
+};
+
+/**
+ * The movements of one received transfer line (09 Stock value, second bullet: "A transfer arrives
+ * at the receiver with the sender's average"; Other documents, Transfer: "Any shortage becomes a
+ * write-off request 'Lost in transfer' on the sending branch"; plan of 7.2, decided item 1, Look
+ * first). `sentCost` is the unit cost of the line's TRANSFER_OUT, the sender's average when it
+ * left. What arrived comes in at the receiver at that cost; the short quantity comes back into the
+ * sender's stock at the same cost, so that the write-off "Lost in transfer" takes it out only when
+ * the Head approves. `receivedQty` must be 0 up to `qty` (receivedQuantityRefusal()): RangeError
+ * otherwise.
+ */
+export function transferReceipt(line: {
+  qty: string;
+  receivedQty: string;
+  sentCost: bigint;
+}): TransferReceipt {
+  if (line.sentCost < 0n || new Stock(line.qty).isZero()) {
+    throw new RangeError(`A received line of "${line.receivedQty}" of "${line.qty}"`);
+  }
+  const short = new Stock(transferShort(line.qty, line.receivedQty));
+  const received = new Stock(line.receivedQty);
+  return {
+    received: received.isZero()
+      ? null
+      : { type: "TRANSFER_IN", qtyDelta: received.toFixed(), unitCost: line.sentCost },
+    short: short.isZero() ? null : short.toFixed(),
+    back: short.isZero()
+      ? null
+      : { type: "TRANSFER_IN", qtyDelta: short.toFixed(), unitCost: line.sentCost },
+  };
+}
+
 /** A subtype of a direct-entry line as it was read under its lock. */
 export type DirectEntrySubtype = {
   isActive: boolean;
@@ -186,7 +280,7 @@ export type PostedLine = { qty: string; unitCost: bigint | null };
  * The movement a posted line writes (09 Movement types; Stock value; decisions 3.1 item 2):
  * an issue and a write-off leave at the average, a return comes in at it (into an empty stock at
  * the line's cost, as `emptyCost`), a direct entry comes in at the line's own cost, a transfer leaves the sender at its average. The movement of a
- * count line and of a transfer's receipt are 7.4's and 7.2's. A line that does not fit is a
+ * count line is 7.4's; a transfer's receipt writes transferReceipt()'s. A line that does not fit is a
  * mistake of the caller: RangeError.
  */
 export function lineMovement(type: DocumentType, line: PostedLine): StockMovement {

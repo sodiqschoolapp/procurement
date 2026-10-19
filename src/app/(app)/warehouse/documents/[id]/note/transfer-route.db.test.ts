@@ -2,7 +2,10 @@ import { randomUUID } from "node:crypto";
 
 import { describe, expect, it } from "vitest";
 
+import { receiveTransfer } from "@/features/warehouse/actions/receive-transfer";
 import { sendTransfer } from "@/features/warehouse/actions/transfer";
+import { sql } from "drizzle-orm";
+
 import { runAction } from "@/server/action";
 import { db } from "@/server/db/client";
 import { postMovement } from "@/server/stock-ledger";
@@ -27,7 +30,8 @@ function download(id: string, cookie?: { name: string; value: string }) {
 
 // The transfer note through the same route (plan of 7.1, decided item 12; 09 Other documents,
 // Transfer: "a PDF transfer note naming who sent the items and who received them, as typed, with
-// no signature lines"; decided item 5, Look first: of the sending branch until 7.2).
+// no signature lines"; plan of 7.2, decided items 3 and 12: of the sending and the receiving
+// branch, with what arrived once received).
 describe("GET /warehouse/documents/[id]/note for a transfer (09 Other documents, Transfer)", () => {
   async function sent(locale: "uz" | "ru" | "en", receivedByName: string | null) {
     setClock(AT);
@@ -95,14 +99,41 @@ describe("GET /warehouse/documents/[id]/note for a transfer (09 Other documents,
     expect(all).not.toMatch(/подпись/i);
   });
 
-  it("is 404 for a Manager of only the receiving branch until 7.2, and for a third branch's (03 rule 1; decided item 5)", async () => {
+  // 7.1 kept the note from the receiving branch until 7.2 (its decided item 5); 7.2 opens it
+  // (decided item 3, Look first), so this test changed with the requirement.
+  it("is downloaded by the receiving branch's Manager and Finance, and is 404 for a third branch's (03 rule 1; 7.2 decided item 3)", async () => {
     const t = await sent("en", null);
     const there = await insertUser("MANAGER", { branches: [t.receiving.id] });
-    expect((await download(t.documentId, await signInAs(there))).status).toBe(404);
+    expect((await download(t.documentId, await signInAs(there))).status).toBe(200);
+    const finance = await insertUser("FINANCE", { branches: [t.receiving.id] });
+    expect((await download(t.documentId, await signInAs(finance))).status).toBe(200);
     const elsewhere = await insertBranch();
     const stranger = await insertUser("MANAGER", { branches: [elsewhere.id] });
     expect((await download(t.documentId, await signInAs(stranger))).status).toBe(404);
     const principal = await insertUser("PRINCIPAL", { branches: [t.branch.id] });
     expect((await download(t.documentId, await signInAs(principal))).status).toBe(200);
+  });
+
+  it("once received, shows what arrived and who received it as typed (7.2 decided items 8 and 12)", async () => {
+    const t = await sent("en", null);
+    const there = await insertUser("MANAGER", { branches: [t.receiving.id], locale: "en" });
+    const [line] = (
+      await db.execute<{ id: string }>(
+        sql`select id from stock_document_lines where document_id = ${t.documentId}`,
+      )
+    ).rows;
+    const received = await runAction(receiveTransfer, there.id, {
+      documentId: t.documentId,
+      receivedByName: RECEIVER,
+      lines: [{ lineId: line!.id, receivedQty: "3" }],
+    });
+    expect(received.ok).toBe(true);
+    const pages = await pdfPages(
+      new Uint8Array(await (await download(t.documentId, await signInAs(there))).arrayBuffer()),
+    );
+    const all = pages.join(" ");
+    expect(all).toMatch(new RegExp(`Received by ${RECEIVER}`));
+    expect(all).toMatch(/Sent\s+Received/);
+    expect(all).toMatch(/4 \S+\s+3 \S+/);
   });
 });

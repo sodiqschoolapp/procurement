@@ -94,7 +94,8 @@
       "reverseStockShort": "Not enough in stock to reverse: the items have left again.",
       "unfinishedOrders": "The branch still has unfinished orders.",
       "stockLeft": "The branch still has stock.",
-      "transfersInTransit": "A transfer from or to the branch is still in transit."
+      "transfersInTransit": "A transfer from or to the branch is still in transit.",
+      "aboveSent": "More than was sent."
     },
     "file": {
       "tooLarge": "The file is larger than 10 MB. Choose a smaller file or take the photo again.",
@@ -2255,7 +2256,9 @@
       "title": "Transfer note {number}",
       "from": "From branch",
       "to": "To branch",
-      "sentBy": "Sent by"
+      "sentBy": "Sent by",
+      "sent": "Sent",
+      "received": "Received"
     },
     "reverse": {
       "button": "Reverse",
@@ -2369,8 +2372,27 @@
         "to": "To",
         "sentBy": "Sent by",
         "downloadTransferNote": "Transfer note (PDF)",
-        "inTransit": "In transit. The stock has left {from} and is received at {to} when it arrives."
-      }
+        "inTransit": "In transit. The stock has left {from} and is received at {to} when it arrives.",
+        "sent": "Sent",
+        "received": "Received",
+        "short": "Short",
+        "confirmedBy": "Receipt confirmed by"
+      },
+      "receive": {
+        "title": "Receive",
+        "intro": "Enter what really arrived from {from} at {to}. Anything short goes to the Head to decide as a write-off \"Lost in transfer\".",
+        "sent": "Sent: {qty} {unit}",
+        "receivedQty": "Received, {unit}",
+        "receivedBy": "Received by",
+        "confirm": "Confirm receipt",
+        "confirmTitle": "Receive transfer {number}?",
+        "confirmResult": "{count, plural, one {This # item enters} other {These # items enter}} the stock of {to} as typed. This cannot be undone here.",
+        "confirmResultShort": "{count, plural, one {This # item enters} other {These # items enter}} the stock of {to} as typed. {short, plural, one {# line is} other {# lines are}} short: the shortage goes back to {from} and is asked of the Head as a write-off \"Lost in transfer\".",
+        "received": "Transfer {number} is received.",
+        "receivedShort": "Transfer {number} is received. Write-off {writeOff} waits for the Head.",
+        "receivedShortAsked": "Transfer {number} is received. The Head is asked to write off the shortage."
+      },
+      "transferBranches": "{from} → {to}"
     }
   },
   "analytics": {

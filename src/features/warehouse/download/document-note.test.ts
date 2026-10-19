@@ -21,7 +21,15 @@ const TRANSFER: DocumentNote = {
   givenBy: "Sinov Yuboruvchi",
   receivedBy: null,
   comment: null,
-  lines: [{ productName: "Sinov daftar", subtypeName: null, qty: "4", unitShortName: "dona" }],
+  lines: [
+    {
+      productName: "Sinov daftar",
+      subtypeName: null,
+      qty: "4",
+      receivedQty: null,
+      unitShortName: "dona",
+    },
+  ],
   downloadedBy: "Sinov Yuklovchi",
   schoolName: null,
 };
@@ -72,6 +80,26 @@ describe("documentNoteSheet for a transfer (plan of 7.1, decided item 12)", () =
       "Department",
       "Given by",
       "Received by",
+    ]);
+  });
+});
+
+describe("documentNoteSheet for a received transfer (plan of 7.2, decided item 12)", () => {
+  it("adds what arrived beside what was sent; before receipt there is no such column", () => {
+    expect(documentNoteSheet(TRANSFER, "en", AT).titles.received).toBeNull();
+    const sheet = documentNoteSheet(
+      {
+        ...TRANSFER,
+        status: "RECEIVED",
+        receivedBy: "Sinov Qabulqiluvchi",
+        lines: [{ ...TRANSFER.lines[0]!, receivedQty: "3.000" }],
+      },
+      "en",
+      AT,
+    );
+    expect(sheet.titles).toMatchObject({ quantity: "Sent", received: "Received" });
+    expect(sheet.lines).toEqual([
+      { product: "Sinov daftar", subtype: "—", quantity: "4 dona", received: "3 dona" },
     ]);
   });
 });

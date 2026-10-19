@@ -130,6 +130,8 @@ export const FIELD_ERROR_KINDS = [
   "stockLeft",
   // ... or a transfer from or to it in transit (plan of 7.1, decided item 4, Look first).
   "transfersInTransit",
+  // A received quantity above the quantity sent (plan of 7.2, decided item 4, Look first).
+  "aboveSent",
 ] as const;
 export type FieldErrorKind = (typeof FIELD_ERROR_KINDS)[number];
 export type FieldMessageKey = `errors.field.${FieldErrorKind}`;

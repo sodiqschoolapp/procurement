@@ -94,7 +94,8 @@
       "reverseStockShort": "Storno qilish uchun omborda yetarli emas: mahsulotlar yana chiqib ketgan.",
       "unfinishedOrders": "Filialda tugallanmagan buyurtmalar bor.",
       "stockLeft": "Filial omborida hali tovar bor.",
-      "transfersInTransit": "Filialdan yoki filialga koʻchirish hali yoʻlda."
+      "transfersInTransit": "Filialdan yoki filialga koʻchirish hali yoʻlda.",
+      "aboveSent": "Yuborilganidan ko‘p."
     },
     "file": {
       "tooLarge": "Fayl 10 MB dan katta. Kichikroq fayl tanlang yoki suratni qaytadan oling.",
@@ -2255,7 +2256,9 @@
       "title": "Koʻchirish yuk xati {number}",
       "from": "Qaysi filialdan",
       "to": "Qaysi filialga",
-      "sentBy": "Yuborgan"
+      "sentBy": "Yuborgan",
+      "sent": "Yuborilgan",
+      "received": "Qabul qilingan"
     },
     "reverse": {
       "button": "Storno qilish",
@@ -2369,8 +2372,27 @@
         "to": "Qayerga",
         "sentBy": "Yuborgan",
         "downloadTransferNote": "Koʻchirish yuk xati (PDF)",
-        "inTransit": "Yoʻlda. Tovar {from} omboridan chiqdi va yetib kelganda {to} da qabul qilinadi."
-      }
+        "inTransit": "Yoʻlda. Tovar {from} omboridan chiqdi va yetib kelganda {to} da qabul qilinadi.",
+        "sent": "Yuborilgan",
+        "received": "Qabul qilingan",
+        "short": "Kamomad",
+        "confirmedBy": "Qabulni tasdiqlagan"
+      },
+      "receive": {
+        "title": "Qabul qilish",
+        "intro": "{from} dan {to} ga haqiqatda nima yetib kelganini kiriting. Kamomad rahbarga «Ko‘chirishda yo‘qolgan» hisobdan chiqarish sifatida qaror uchun yuboriladi.",
+        "sent": "Yuborilgan: {qty} {unit}",
+        "receivedQty": "Qabul qilingan, {unit}",
+        "receivedBy": "Qabul qilgan",
+        "confirm": "Qabulni tasdiqlash",
+        "confirmTitle": "{number} ko‘chirishni qabul qilasizmi?",
+        "confirmResult": "{count} ta tovar kiritilgan miqdorda {to} omboriga kiradi. Buni bu yerda bekor qilib bo‘lmaydi.",
+        "confirmResultShort": "{count} ta tovar kiritilgan miqdorda {to} omboriga kiradi. {short} ta qatorda kamomad bor: u {from} ga qaytadi va rahbarga «Ko‘chirishda yo‘qolgan» hisobdan chiqarish sifatida qaror uchun yuboriladi.",
+        "received": "{number} ko‘chirish qabul qilindi.",
+        "receivedShort": "{number} ko‘chirish qabul qilindi. {writeOff} hisobdan chiqarish rahbarni kutmoqda.",
+        "receivedShortAsked": "{number} ko‘chirish qabul qilindi. Kamomadni hisobdan chiqarish rahbarga qaror uchun yuborildi."
+      },
+      "transferBranches": "{from} → {to}"
     }
   },
   "analytics": {

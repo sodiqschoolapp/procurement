@@ -12,6 +12,7 @@ import { postMovement } from "@/server/stock-ledger";
 
 import { runAction } from "@/server/action";
 
+import { receiveTransfer } from "../actions/receive-transfer";
 import { reverseStockDocument } from "../actions/reverse";
 import { askWriteOff } from "../actions/write-off";
 import { decideWriteOff } from "../actions/write-off-decision";
@@ -20,7 +21,11 @@ import { insertProduct, insertSubtypes, insertUnit } from "../../../../tests/hel
 import { setClock } from "../../../../tests/helpers/clock";
 import { insertDepartment, insertOrder } from "../../../../tests/helpers/orders";
 import { insertPurchaseRow, insertTrip } from "../../../../tests/helpers/purchases";
-import { postDocument, receive } from "../../../../tests/helpers/stock-documents";
+import {
+  postDocument,
+  receive,
+  sendTransferDocument,
+} from "../../../../tests/helpers/stock-documents";
 import { type InsertedUser, insertUser } from "../../../../tests/helpers/users";
 import { getItemCard } from "./item-card";
 
@@ -382,5 +387,50 @@ describe("getItemCard: the Reverse button on an approved write-off (plan of 5.11
         .map((row) => row.documentId);
     expect(await offered(head.id)).toEqual([asked.data.documentId]);
     expect(await offered(manager.id)).toEqual([]);
+  });
+});
+
+describe("getItemCard: a received transfer (plan of 7.2, decided items 3 and 5; progress 6.9a, permission review should fix 1)", () => {
+  it("the receiving branch's card links its TRANSFER_IN to the transfer, whose page that Manager may open; only the Head is offered Reverse; a third branch's card has no row of it", async () => {
+    setClock(AT);
+    const from = await insertBranch();
+    const to = await insertBranch();
+    const third = await insertBranch();
+    const there = await insertUser("MANAGER", { branches: [to.id] });
+    const variantId = await goods();
+    await receive(from.id, variantId, "5", 1000n, head.id);
+    await receive(third.id, variantId, "1", 1000n, head.id);
+    const made = await sendTransferDocument({
+      branchId: from.id,
+      toBranchId: to.id,
+      createdBy: head.id,
+      lines: [{ variantId, qty: "5" }],
+    });
+    const received = await runAction(receiveTransfer, there.id, {
+      documentId: made.documentId,
+      receivedByName: null,
+      lines: [{ lineId: made.lineIds[0]!, receivedQty: "4" }],
+    });
+    expect(received.ok).toBe(true);
+
+    const card = await getItemCard(there.id, variantId, to.id);
+    expect(card!.movements).toEqual([
+      expect.objectContaining({
+        type: "TRANSFER_IN",
+        documentNumber: made.number,
+        documentId: made.documentId,
+        canReverse: false,
+      }),
+    ]);
+    const headCard = await getItemCard(head.id, variantId, to.id);
+    expect(headCard!.movements[0]).toMatchObject({ canReverse: true });
+    const fromCard = await getItemCard(head.id, variantId, from.id);
+    expect(fromCard!.movements.map((row) => row.type)).toEqual([
+      "TRANSFER_IN",
+      "TRANSFER_OUT",
+      "RECEIPT",
+    ]);
+    const thirdCard = await getItemCard(head.id, variantId, third.id);
+    expect(thirdCard!.movements.map((row) => row.documentId)).toEqual([null]);
   });
 });

@@ -1,0 +1,1 @@
+ALTER TABLE "stock_document_lines" ADD CONSTRAINT "stock_document_lines_received_qty_sent_check" CHECK ("stock_document_lines"."received_qty" IS NULL OR "stock_document_lines"."received_qty" <= "stock_document_lines"."qty");

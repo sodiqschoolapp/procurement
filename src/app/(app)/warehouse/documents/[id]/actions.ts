@@ -3,6 +3,10 @@
 import { revalidatePath } from "next/cache";
 
 import {
+  type ReceiveTransferResult,
+  receiveTransfer,
+} from "@/features/warehouse/actions/receive-transfer";
+import {
   type WriteOffDecisionResult,
   decideWriteOff,
 } from "@/features/warehouse/actions/write-off-decision";
@@ -20,6 +24,21 @@ export async function decideWriteOffAction(
   input: unknown,
 ): Promise<ActionResult<WriteOffDecisionResult>> {
   const result = await decideAction(input);
+  if (result.ok) revalidatePath("/warehouse", "layout");
+  return result;
+}
+
+// The receiving branch receives a transfer (09 Other documents, Transfer; plan of 7.2): the
+// definition's wrapper checks everything again: `stock.receive_transfer` on the receiving branch,
+// the status and the lines under the lock.
+
+const receiveAction = serverAction(receiveTransfer);
+
+/** Receives one In-transit transfer with what really arrived. */
+export async function receiveTransferAction(
+  input: unknown,
+): Promise<ActionResult<ReceiveTransferResult>> {
+  const result = await receiveAction(input);
   if (result.ok) revalidatePath("/warehouse", "layout");
   return result;
 }

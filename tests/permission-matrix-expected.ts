@@ -175,6 +175,15 @@ export const EXPECTED_MATRIX: Record<Permission, Expected> = {
     FINANCE: "no",
     right: "TRANSFER_STOCK",
   },
+  // 09 Movement types: "the receiving Manager confirms"; no Manager right (plan of 7.2, decided
+  // item 2, Look first), asked on the transfer's receiving branch.
+  "stock.receive_transfer": {
+    row: "Issue, return, transfer stock (receive a transfer)",
+    HEAD: "all",
+    MANAGER: "own",
+    PRINCIPAL: "no",
+    FINANCE: "no",
+  },
   "stock.ask_write_off": {
     row: "Ask for a write-off or stock correction",
     HEAD: "all",

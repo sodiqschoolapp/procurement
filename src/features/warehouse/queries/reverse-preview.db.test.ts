@@ -10,8 +10,13 @@ import { insertBranch } from "../../../../tests/helpers/branches";
 import { insertProduct, insertSubtypes, insertUnit } from "../../../../tests/helpers/catalog";
 import { setClock } from "../../../../tests/helpers/clock";
 import { insertDepartment, insertItem } from "../../../../tests/helpers/orders";
-import { postDocument, receive } from "../../../../tests/helpers/stock-documents";
+import {
+  postDocument,
+  receive,
+  sendTransferDocument,
+} from "../../../../tests/helpers/stock-documents";
 import { insertUser } from "../../../../tests/helpers/users";
+import { receiveTransfer } from "../actions/receive-transfer";
 import { askWriteOff } from "../actions/write-off";
 import { decideWriteOff } from "../actions/write-off-decision";
 import { getReversePreview } from "./reverse-preview";
@@ -207,6 +212,44 @@ describe("getReversePreview of an approved write-off (plan of 5.11; Decided ahea
     ]);
     await expect(getReversePreview(manager.id, asked.data.documentId)).rejects.toMatchObject({
       kind: "forbidden",
+    });
+  });
+});
+
+describe("getReversePreview of a received transfer (Decided ahead, question 19; plan of 7.2, decided item 5)", () => {
+  it("is the Head's, with the lines as sent; the sending Manager is refused and a receiving Manager gets Not found", async () => {
+    const from = await insertBranch();
+    const to = await insertBranch();
+    const head = await insertUser("HEAD");
+    const sender = await insertUser("MANAGER", { branches: [from.id] });
+    const there = await insertUser("MANAGER", { branches: [to.id] });
+    const item = await insertItem();
+    await receive(from.id, item.variantId, "5", 1000n, head.id);
+    const made = await sendTransferDocument({
+      branchId: from.id,
+      toBranchId: to.id,
+      createdBy: sender.id,
+      lines: [{ variantId: item.variantId, qty: "5" }],
+    });
+    const received = await runAction(receiveTransfer, there.id, {
+      documentId: made.documentId,
+      receivedByName: null,
+      lines: [{ lineId: made.lineIds[0]!, receivedQty: "5" }],
+    });
+    expect(received.ok).toBe(true);
+
+    expect(await getReversePreview(head.id, made.documentId)).toMatchObject({
+      number: made.number,
+      type: "TRANSFER",
+      status: "RECEIVED",
+      departmentName: null,
+      lines: [{ id: made.lineIds[0], qty: "5.000", held: null }],
+    });
+    await expect(getReversePreview(sender.id, made.documentId)).rejects.toMatchObject({
+      kind: "forbidden",
+    });
+    await expect(getReversePreview(there.id, made.documentId)).rejects.toMatchObject({
+      kind: "not_found",
     });
   });
 });

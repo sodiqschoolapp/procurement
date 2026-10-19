@@ -12,7 +12,10 @@ import { E2E_ROLES, e2eDatabaseUrl, serverDatabaseUrl } from "./global-setup";
 // transit'"; 11-screens-and-ux.md rule 6 (the confirmation states the result). In branch EA of
 // the browser tests: the Manager opens the form from Stock on hand, picks a receiving branch made
 // for this run, adds 4 of 10, sends through the confirmation; the transfer's page shows In transit
-// and 6 are left in EA. Run at 375 px (one step at a time) and at 1440 px by the two projects.
+// and 6 are left in EA. Build plan 7.2 (Transfer: receive): a transfer of 10 from a branch made
+// for this run arrives at EA short; the Manager of EA receives 8 through the confirmation, and the
+// page shows Received with 2 short. Run at 375 px (one step at a time) and at 1440 px by the two
+// projects.
 
 type Person = { username: string; password: string };
 
@@ -181,4 +184,129 @@ test("the transfer form is Not found for the Principal and Finance, and their St
     await page.goto("/warehouse/documents/new?type=TRANSFER");
     await expect(page.getByRole("heading", { name: uz.notFoundPage.title })).toBeVisible();
   }
+});
+
+/** An In-transit transfer of 10 to EA from a branch made for this run, as sendTransfer writes it. */
+async function seedInTransit() {
+  return withDatabase(async (client) => {
+    await client.query("begin");
+    try {
+      const found = await client.query<{ id: string }>("select id from users where username = $1", [
+        E2E_ROLES.MANAGER.username,
+      ]);
+      const userId = found.rows[0]!.id;
+      const tag = randomUUID().slice(0, 8);
+      const code = Array.from(
+        randomUUID()
+          .replace(/[^a-f]/g, "")
+          .slice(0, 4),
+      )
+        .map((letter) => letter.toUpperCase())
+        .join("")
+        .padEnd(4, "Z");
+      const unit = await client.query<{ id: string }>(
+        `insert into units (name, short_name, allow_decimal, is_active, created_at)
+         values ($1, $2, false, true, now()) returning id`,
+        [`O'lchov ${tag}`, `d${tag}`],
+      );
+      const category = await client.query<{ id: string }>(
+        `insert into categories (name, is_active, created_at) values ($1, true, now()) returning id`,
+        [`Toifa ${tag}`],
+      );
+      const sending = await client.query<{ id: string }>(
+        `insert into branches (name, code, address, is_active, created_at)
+         values ($1, $2, 'Sinov ko''chasi 3', true, now()) returning id`,
+        [`Yuboruvchi filial ${tag}`, code],
+      );
+      const fromId = sending.rows[0]!.id;
+      const product = await client.query<{ id: string }>(
+        `insert into products (name, type, category_id, unit_id, is_active, has_variants, created_at)
+         values ($1, 'GOODS', $2, $3, true, false, now()) returning id`,
+        [`Qabul ${tag}`, category.rows[0]!.id, unit.rows[0]!.id],
+      );
+      const variant = await client.query<{ id: string }>(
+        `insert into product_variants (product_id, name, is_default, is_active, created_at)
+         values ($1, 'default', true, true, now()) returning id`,
+        [product.rows[0]!.id],
+      );
+      const variantId = variant.rows[0]!.id;
+      const number = `TRF-${code}-31-0001`;
+      const document = await client.query<{ id: string }>(
+        `insert into stock_documents (number, type, branch_id, to_branch_id, doc_date, status,
+                                      client_key, created_by, created_at)
+         select $1, 'TRANSFER', $2, id, current_date, 'IN_TRANSIT', $3, $4, now()
+         from branches where code = 'EA' returning id`,
+        [number, fromId, randomUUID(), userId],
+      );
+      const documentId = document.rows[0]!.id;
+      const line = await client.query<{ id: string }>(
+        `insert into stock_document_lines (document_id, variant_id, qty, created_at)
+         values ($1, $2, 10, now()) returning id`,
+        [documentId, variantId],
+      );
+      await client.query(
+        `insert into stock_movements (branch_id, variant_id, type, qty_delta, unit_cost,
+                                      balance_after, created_by, created_at)
+         values ($1, $2, 'RECEIPT', 10, 5000, 10, $3, now())`,
+        [fromId, variantId, userId],
+      );
+      await client.query(
+        `insert into stock_movements (branch_id, variant_id, type, qty_delta, unit_cost,
+                                      balance_after, document_line_id, created_by, created_at)
+         values ($1, $2, 'TRANSFER_OUT', -10, 5000, 0, $3, $4, now())`,
+        [fromId, variantId, line.rows[0]!.id, userId],
+      );
+      await client.query(
+        `insert into stock_balances (branch_id, variant_id, qty, avg_cost, created_at, updated_at)
+         values ($1, $2, 0, 0, now(), now())`,
+        [fromId, variantId],
+      );
+      await client.query("commit");
+      return { documentId, number, lineId: line.rows[0]!.id, fromCode: code };
+    } catch (error) {
+      await client.query("rollback");
+      throw error;
+    }
+  });
+}
+
+test("the receiving Manager receives 8 of 10 through the confirmation; the transfer is Received with 2 short (09 Transfer; 16 phase 7 check)", async ({
+  page,
+}) => {
+  const seeded = await seedInTransit();
+  const receive = uz.warehouse.documents.receive;
+  await signIn(page, E2E_ROLES.MANAGER);
+
+  await page.goto(`/warehouse/documents/${seeded.documentId}`);
+  await expect(page.locator("[data-document-status]")).toHaveText(
+    uz.warehouse.documents.status.IN_TRANSIT,
+  );
+  const form = page.locator("[data-receive-transfer]");
+  await expect(form).toBeVisible();
+  const quantity = form.locator(`[data-receive-line="${seeded.lineId}"]`).getByRole("textbox");
+  await expect(quantity).toHaveValue("10");
+  await quantity.fill("11");
+  await expect(form).toContainText(uz.errors.field.aboveSent);
+  await expect(form.getByRole("button", { name: receive.confirm })).toBeDisabled();
+  await quantity.fill("8");
+  await expect(form).not.toContainText(uz.errors.field.aboveSent);
+  await noSideScroll(page);
+
+  // Receiving cannot be undone here: the confirmation names the shortage and where it goes.
+  await form.getByRole("button", { name: receive.confirm }).click();
+  const confirm = page.getByRole("alertdialog");
+  await expect(confirm).toContainText(seeded.fromCode);
+  await expect(confirm).toContainText("EA");
+  await confirm.getByRole("button", { name: receive.confirm }).click();
+
+  await expect(page.locator("[data-document-status]")).toHaveText(
+    uz.warehouse.documents.status.RECEIVED,
+  );
+  await expect(page.locator("[data-receive-transfer]")).toHaveCount(0);
+  const row = page.locator(`[data-document-line="${seeded.lineId}"]`);
+  await expect(row).toContainText("10");
+  await expect(row).toContainText("8");
+  await expect(row).toContainText("2");
+  await expect(page.locator('[data-field="decidedBy"]')).toBeVisible();
+  await noSideScroll(page);
 });

@@ -6,6 +6,7 @@ import { DocumentStatusLabel } from "@/components/status-label";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/components/utils";
 import type { WriteOffReason } from "@/domain/stock-documents";
+import { ReceiveTransferForm } from "@/features/warehouse/components/receive-transfer-form";
 import { ReverseDocumentButton } from "@/features/warehouse/components/reverse-document-button";
 import { WriteOffDecision } from "@/features/warehouse/components/write-off-decision";
 import { type DocumentLine, getStockDocument } from "@/features/warehouse/queries/document";
@@ -21,11 +22,14 @@ import { requireUser } from "@/server/auth/session";
 // show the stock of now; Approve and Refuse, fixed at the bottom, only where the query offers
 // them (`canDecide`), anyone else reads who it waits for. Reverse (the item card's dialog) and the
 // issue or transfer note only where the query offers them. A transfer's header names the sending
-// and the receiving branch and who sent it (plan of 7.1). At phone width the lines are cards.
+// and the receiving branch and who sent it (plan of 7.1). An In-transit transfer shows the receive
+// form to whom the query offers it (`canReceive`); a received one shows each line's Sent, Received
+// and Short, and who confirmed the receipt (plan of 7.2). At phone width the lines are cards.
 
 export default async function StockDocumentPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const user = await requireUser(`/warehouse/documents/${encodeURIComponent(id)}`);
+  const userName = user.fullName;
   const document = await getStockDocument(user.id, id);
   if (!document) notFound();
   const t = await getTranslations("warehouse.documents");
@@ -74,7 +78,7 @@ export default async function StockDocumentPage({ params }: { params: Promise<{ 
   if (document.decidedBy && document.decidedAt) {
     fields.push({
       key: "decidedBy",
-      label: t("page.decidedBy"),
+      label: transfer ? t("page.confirmedBy") : t("page.decidedBy"),
       value: t("page.byAt", { name: document.decidedBy, at: at(document.decidedAt) }),
     });
   }
@@ -94,6 +98,14 @@ export default async function StockDocumentPage({ params }: { params: Promise<{ 
   if (document.comment) {
     fields.push({ key: "comment", label: t("page.comment"), value: document.comment, wide: true });
   }
+
+  const received = transfer && document.lines.some((line) => line.receivedQty !== null);
+  const column = (label: string, qty: string, unit: string) => (
+    <td className="py-2 pr-3 text-right tabular-nums max-sm:p-0 max-sm:text-left">
+      <span className="sm:hidden">{t("page.labelled", { label, value: quantity(qty, unit) })}</span>
+      <span className="max-sm:hidden">{quantity(qty, unit)}</span>
+    </td>
+  );
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
@@ -138,8 +150,22 @@ export default async function StockDocumentPage({ params }: { params: Promise<{ 
                 {t("page.product")}
               </th>
               <th scope="col" className="py-2 pr-3 text-right font-semibold">
-                {document.type === "WRITE_OFF" ? tWriteOff("page.quantity") : t("page.quantity")}
+                {document.type === "WRITE_OFF"
+                  ? tWriteOff("page.quantity")
+                  : transfer
+                    ? t("page.sent")
+                    : t("page.quantity")}
               </th>
+              {received && (
+                <>
+                  <th scope="col" className="py-2 pr-3 text-right font-semibold">
+                    {t("page.received")}
+                  </th>
+                  <th scope="col" className="py-2 pr-3 text-right font-semibold">
+                    {t("page.short")}
+                  </th>
+                </>
+              )}
               {waiting && (
                 <th scope="col" className="py-2 text-right font-semibold">
                   {t("page.inStock")}
@@ -155,25 +181,24 @@ export default async function StockDocumentPage({ params }: { params: Promise<{ 
                 className="border-b border-border last:border-0 max-sm:flex max-sm:flex-col max-sm:gap-1 max-sm:rounded-lg max-sm:border max-sm:p-3"
               >
                 <td className="py-2 pr-3 font-semibold max-sm:p-0">{itemName(line)}</td>
-                <td className="py-2 pr-3 text-right tabular-nums max-sm:p-0 max-sm:text-left">
-                  <span className="sm:hidden">
-                    {t("page.labelled", {
-                      label: t("page.quantity"),
-                      value: quantity(line.qty, line.unitShortName),
-                    })}
-                  </span>
-                  <span className="max-sm:hidden">{quantity(line.qty, line.unitShortName)}</span>
-                </td>
+                {column(
+                  transfer ? t("page.sent") : t("page.quantity"),
+                  line.qty,
+                  line.unitShortName,
+                )}
+                {received &&
+                  column(t("page.received"), line.receivedQty ?? "0", line.unitShortName)}
+                {received && column(t("page.short"), line.shortQty ?? "0", line.unitShortName)}
                 {waiting && (
                   <td className="py-2 text-right tabular-nums max-sm:p-0 max-sm:text-left">
                     <span className="sm:hidden">
                       {t("page.labelled", {
                         label: t("page.inStock"),
-                        value: quantity(line.inStock, line.unitShortName),
+                        value: quantity(line.inStock ?? "0", line.unitShortName),
                       })}
                     </span>
                     <span className="max-sm:hidden">
-                      {quantity(line.inStock, line.unitShortName)}
+                      {quantity(line.inStock ?? "0", line.unitShortName)}
                     </span>
                   </td>
                 )}
@@ -210,6 +235,21 @@ export default async function StockDocumentPage({ params }: { params: Promise<{ 
           documentId={document.id}
           number={document.number}
           lines={document.lines}
+        />
+      ) : document.canReceive ? (
+        <ReceiveTransferForm
+          documentId={document.id}
+          number={document.number}
+          fromBranch={document.branchCode}
+          toBranch={document.toBranchCode ?? ""}
+          receivedByName={document.receivedByName ?? userName}
+          lines={document.lines.map((line) => ({
+            id: line.id,
+            name: itemName(line),
+            qty: line.qty,
+            unitShortName: line.unitShortName,
+            allowsDecimals: line.allowsDecimals,
+          }))}
         />
       ) : transfer && document.status === "IN_TRANSIT" ? (
         <p data-transfer-in-transit className="text-[15px] leading-[22px] text-muted-foreground">
