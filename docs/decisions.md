@@ -2502,6 +2502,29 @@ Choices made during the build:
 - The receive input names each line by its id; the action refuses (`lines: notAllowed`) unless the ids are exactly the document's lines.
 - 7.1's tests that said the receiving branch cannot see a transfer "until 7.2" now check that it can (the requirement of 7.2; decided item 3); a third branch still gets "Not found".
 
+### 7.3 Stock count (19.10.2026)
+
+The plan's decisions as the plan review of 19.10.2026 confirmed them (its two test corrections applied: a cleared line beside a kept one; 0 passes for an item in pieces), and those of the build. The Look first items come first.
+
+1. **Look first** (status reading). A count is PENDING_APPROVAL from its start, the only waiting status of 14; counted quantities are typed while it waits (`countTypingAllowed()`). What makes a count "asked" is 7.4's. Proposed `/spec-change`, only if the owner wants a status of its own: 14 `stock_documents.status` gains `COUNTING`.
+2. **Look first** (stock reading; data model). The stock at start is each item's `stock_balances.qty`, read after FOR SHARE locks of those balance rows in subtype order, stored in the line's `qty`; the line also stores `start_seq`, the `seq` of the item's newest movement then, for 7.4's "moved since the start". The difference is `counted − qty` (`countDifference()`). Proposed `/spec-change` of 14-data-model.md, `stock_document_lines`: `document_id, variant_id, qty, counted_qty, received_qty, unit_cost, start_seq`.
+3. **Look first** (stock reading). The items of a count are the balance rows Stock on hand shows for that branch (and category), at 0 and of inactive products too; an item never stocked in the branch cannot be counted.
+4. **Look first** (permission matrix). Typing is `stock.start_count` on the count's branch: the Head and every Manager of the branch with WRITE_OFF_COUNT, not only the starter. `/warehouse/counts` is Manager and Head; every role that sees the branch reads a count on its page.
+5. **Look first** (stock reading). Two counts may hold the same item; 7.4's moved-check catches the second (no extra guard, D44).
+6. Save sends the changed lines only; the same line, the later save wins.
+7. The category is not stored; the date is the start's Tashkent business day.
+8. No cap on the items of a count; a save request holds at most 5 000 lines.
+9. No notification and no audit row; a waiting count does not block closing a branch.
+10. Typing happens on the count's own page `/warehouse/documents/[id]`.
+
+Choices made during the build:
+
+- `seesStockCounts(role)` in `src/components/shell/menu.ts` answers which roles open `/warehouse/counts`: the roles whose menu has Warehouse (Manager, Head). The page answers Not found to the others; the Counts tab follows it.
+- The page's "In stock now" column of a waiting document is now a write-off's only (review of the plan, must fix 3), so a count never shows the stock of now beside the stock at start.
+- A positive difference is shown with "+" (`signedQuantity()`, `components/count-difference.ts`); a negative one keeps the formatter's minus.
+- `listCounts` is its own query rather than the documents list with a type filter: it adds the counted/total per count.
+- The same-moment test was run once with the FOR SHARE lock left out and seen to fail (the count never waited).
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

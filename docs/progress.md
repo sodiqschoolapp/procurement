@@ -1797,4 +1797,21 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - A shortage's write-off is made by the receiving user on the sending branch; `notify()` drops recipients outside the event's branch, so its decision notice reaches the receiver only when they are also of the sending branch.
 - A TRANSFER line may carry two movements of type TRANSFER_IN (receiver's and the sender's return) besides its TRANSFER_OUT; a reader of "what arrived" reads `received_qty`, not the movements.
 
-The next task is 7.3.
+## 7.3 Stock count (19.10.2026, pull request #123)
+
+**Built**
+- `startCount` and `saveCountedQuantities` (`features/warehouse/actions/count.ts`, `stock.start_count`): a CNT count, PENDING_APPROVAL from its start, one line per balance row of the branch (or category) with `qty` = stock at start and `start_seq` = the item's newest movement `seq`, read after FOR SHARE locks of those balance rows; typing saves `counted_qty` of the lines sent.
+- Domain: `countDifference()`, `countedQuantityRefusal()`, `countTypingAllowed()`. Migration `0046_stock_count`: `stock_document_lines.start_seq` (FK to `stock_movements.seq`).
+- `/warehouse/counts` (Manager, Head: `seesStockCounts()` of `menu.ts`): list (`listCounts`, counted N of M) and the Start dialog (`CountStartButton`, `countBranchChoices`); a Counts tab beside Stock on hand | Documents.
+- The count's page `/warehouse/documents/[id]`: Stock at start, Counted, Difference; `CountSheetForm` where `canCount`. The page's "In stock now" column is now a waiting write-off's only.
+
+**Left out, and the task that brings it**
+- Approval as corrections, re-count of moved items, "Write-off or correction asked", the Head's home list, Reverse of a count: 7.4.
+
+**What the next sessions must know**
+- For 7.4: an item moved after the start when a movement of that branch and subtype has `seq > start_seq` of its line (never compare `created_at`). The correction is `countDifference(qty, counted_qty)`; take the balance locks as `postMovements()` does.
+- For 7.4: `countTypingAllowed()` is the one place that says when typing stops; decide what makes a count "asked" (all lines counted, or a Send step) and change it there.
+- For 7.4: `reverseAllows()` still answers no for COUNT; the write-off decision and the Head home list filter on `WRITE_OFF`, so a waiting count shows in neither.
+- A sticky bottom bar on a phone sits at `bottom-[calc(4rem+env(safe-area-inset-bottom))]`, above the tab bar; in a browser test the Next.js dev button covers the phone's Home tab, click another tab.
+
+The next task is 7.4.
