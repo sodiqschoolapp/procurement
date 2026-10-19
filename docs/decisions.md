@@ -2683,6 +2683,32 @@ Choices made during the build:
 - **A fix to the order list** (S8's "The other gets a clear message"): Head B's refused Approve showed above the list, and the refresh after it swapped the list for the empty page when the refused orders had been the list's last ones, so the refusal disappeared. `OrderList` now draws the empty page itself, so the refusal stays above it until closed. Found by the whole suite, where S8 failed once; S8 now waits for the empty page before it reads the refusal, and fails without the fix. No permission or query changed.
 - S8's direct receipt of 5 is recorded as the Head's (`stockIn(…, scene.head)`): no Manager can receive stock without an order (permission review, should-fix 1).
 
+### 9.1d Accessibility pass (20.10.2026)
+
+The plan's decisions as the plan review of 19.10.2026 confirmed them, with its four corrections applied (one test per screen and role, so the shards share them; the dark pass asserts the dark canvas; plain links get weight 600; the report names what the design system asks that no task checks):
+
+1. **Look first** (a new dependency). `@axe-core/playwright` 4.14.0, a dev dependency: MPL-2.0, published 15.10.2026 by Deque, its one dependency `axe-core ~4.14.0` already in the tree; `npm audit` with it installed lists only the 13 findings already on `main`, none in it.
+2. **Look first** (a task split: none). One pass over existing screens.
+3. A serious finding is axe's `serious` or `critical` on `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`; moderate and minor go to a Playwright attachment, never stdout (D37).
+4. Every screen in light and dark by colour-scheme emulation; the dark pass asserts no kept light choice and the dark canvas.
+5. One role per screen; home, analytics, the order page (four states), money, warehouse stock and orders as each role that draws different parts.
+6. 44 × 44 at 375 px on the hit area; a control in a label is measured by its label; a link inside a `<p>` is exempt.
+7. The per-screen Tab walk (focus wraps to the first element, a visible indicator on each stop, `<main>` within 40 presses, no trap) plus S1 by keyboard.
+8. S1 by keyboard sets up the branch, people, product, department and the complete draft with the fixtures, as 9.1b's S1 does.
+9. Orange plain links become `text-link`, weight 600; no colour token changes.
+
+Choices made during the build:
+
+- **Look first** (a test changed because a requirement changed). `home.spec.ts` finds Finance's entry by the owner and branch it shows: the link's `aria-label` "Open the orders of {name}, {branch}" did not hold its visible text (WCAG 2.5.3 Label in Name), so the label and its key `home.finance.openOrders` are gone. `bell.test.tsx`: above 99 unread the bell is named "Notifications, 99+ unread" (new key `notifications.bellMany`), the number it shows; the exact count stays in the name up to 99.
+- **Look first** (a plan line changed). S1 by keyboard starts from the fixture's complete draft (decision 8) instead of the Manager typing it into the grid, which the plan's "What will exist" had said: S1 begins at the approvals, and drafts typed by keyboard are proven by `drafts.spec.ts`'s Done-when test.
+- Text that only decorates a control (the avatar's initials, the search button's "Ctrl K") is drawn by CSS from a `data-` attribute, so it stays out of the control's name. The profile link of the menu is named by the person's name and role it shows; in the rail that text is `sr-only`.
+- At phone width every link in a table cell or row heading is 44 × 44 by one rule in `globals.css`; every link with `inline-flex min-h-11` got `min-w-11`; the analytics big numbers are `inline-flex min-h-11 min-w-11`.
+- A table wrapper that scrolls sideways gets `tabIndex={0}` and the focus ring (the spending charts' and the price history's also `role="region"` named by the card title); the hidden charts set Recharts' `accessibilityLayer={false}`, as their tables carry the numbers.
+- Textareas inside a `Field` take its id (the catalog, product, issue and count forms); the photo inputs, opened by their button, are `tabIndex={-1}` with the field's label.
+- `orders.extras.open` starts with the `{sum}` the button shows; the group row's name holds the branch code it shows; a space now separates the two spans, as axe reads text without layout.
+- The money page is checked as Head and Finance: the Manager has no money page.
+- The Tab walk's outer stop is one press per focusable element plus 100 (the Head's Analytics on a database many tests have filled holds over 2 000 links); a date field's parts are one stop.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.
