@@ -15,6 +15,7 @@ import { insertItem } from "../../../../tests/helpers/orders";
 import { describePermissionMatrix } from "../../../../tests/helpers/permission-matrix";
 import { receive } from "../../../../tests/helpers/stock-documents";
 import { type InsertedUser, insertUser } from "../../../../tests/helpers/users";
+import { getDocumentNote } from "../queries/document-note";
 import { searchTransferItems, transferBranchChoices } from "../queries/issue-form";
 import { transferDestinationChoices } from "../queries/transfer-form";
 import { sendTransfer } from "./transfer";
@@ -131,6 +132,22 @@ describePermissionMatrix("transferDestinationChoicesAction", {
   async run({ user, branchId }) {
     signedIn(user);
     asMatrixAnswer(await transferDestinationChoicesAction({ branchId }));
+  },
+});
+
+// The note of a sent transfer: data.view's filter on the sending branch, then data.export
+// (permission review of 7.1, Should fix 1).
+describePermissionMatrix("getDocumentNote of a transfer", {
+  permission: "data.export",
+  async run({ user, branchId }) {
+    const { variantId } = await stocked(branchId);
+    const sender = await insertUser("HEAD");
+    const sent = await runAction(sendTransfer, sender.id, await sendInput(branchId, variantId));
+    if (!sent.ok) throw new Error(`fixture: ${sent.error.code}`);
+    const note = await getDocumentNote(user.id, sent.data.documentId);
+    // The branch wall is in the SQL: another branch's note reads as unknown (03 rule 1).
+    if (!note) throw new AuthorizationError("not_found");
+    expect(note.type).toBe("TRANSFER");
   },
 });
 

@@ -2453,6 +2453,30 @@ Choices made during the build:
 - The dialog keeps the newest answer with the text it answers; results show only for the text typed now, so neither an older text's results nor "Nothing found" show during the pause (`.claude/rules/ui.md`). The browser test checks it with Playwright's clock.
 - No DOM test library is in the stack, so the unit test covers the shortcut and the button; typing, the arrow keys, Enter, Escape and the pause are in `tests/e2e/search.spec.ts`.
 
+### 7.1 Transfer: send (19.10.2026)
+
+The plan's decisions as the plan review of 19.10.2026 confirmed them, with its corrections applied (1: the branch-close test leaves every other way in open: the sender sends its whole stock, neither branch has stock or orders, and the refusal names `transfers` only; 2: a receiving Manager with `TRANSFER_STOCK` off is still told, the Head is not). The Look first items come first.
+
+1. **Look first** (branch wall). The receiving branch is any active branch other than the sender, also one the sender does not belong to; the choice shows code and name only, and is asked under `stock.transfer` on the sending branch.
+2. **Look first** (stock rule). A transfer's lines carry no `unit_cost`; its `TRANSFER_OUT` stores the sender's average of that moment, which 7.2 reads for the `TRANSFER_IN`.
+3. **Look first** (branch wall; 0.11 item 4). `TRANSFER_SENT` holds `actor`, `number` (TRF) and `branch` (the sender's code), with `branchId` the receiving branch; a TRF number is neither a request number nor an amount, so old notices show as written.
+4. **Look first** (stock rule). A branch is not deactivated while a transfer from or to it is In transit (`setBranchActive`, field `transfers`). Proposed `/spec-change` of edge-cases/requests-and-approval.md, "The Head wants to close a branch": "Blocked while it has unfinished orders, stock above 0, or a transfer from or to it In transit."
+5. **Look first** (branch wall). Until 7.2 only the sending branch sees the transfer (list, page, note); the notice's link to `/warehouse/documents/<id>` is "Not found" for the receiving Managers until then.
+6. "Received by" is optional free text at sending, "—" on the note when empty.
+7. "Sent by" is the document's maker.
+8. Every active Manager of the receiving branch is told, whatever their rights; the Head is not.
+9. An In-transit transfer has no cancel and no Reverse.
+10. The issue's line rules: items in stock of the sender, active subtypes of active goods, at most 100 lines.
+11. No audit row.
+12. One note route and one PDF component for the issue and the transfer note (`download/document-note.tsx`, `queries/document-note.ts`, renamed from `issue-note`).
+
+Choices made during the build:
+
+- Both branches are locked FOR SHARE in the order of their ids before the products, and checked active under that lock.
+- "Received by" sits on the first phone step, beside the branches and the date (`document-steps.ts` maps `toBranchId` and `receivedByName` to step 0); the last step holds the comment only.
+- The branch-close message joins three reasons (`branches.blockedThree`) and adds that a transfer in transit is received first.
+- The transfer note's route tests are in their own file, `transfer-route.db.test.ts`: in one process, a PDF rendered after another can lose glyphs (see the report, "For the owner"). That bug was already on `main` and is not fixed here.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

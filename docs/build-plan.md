@@ -558,7 +558,7 @@ What each role sees first, and the numbers behind the work.
 
 Stock moving between branches, and stock checked against the shelf.
 
-- [ ] **7.1 Transfer: send**
+- [x] **7.1 Transfer: send**
   - **Read:** `09-warehouse.md` (Movement types: Transfer row; Other documents: Transfer); `03-roles-and-permissions.md` (Manager rights: TRANSFER_STOCK); `10-notifications-analytics-reports.md` (Notifications: "Transfer sent"); `05-order-request-form.md` (Download: 2, 3).
   - **Build:** The sender picks the other branch and the items; stock leaves the sender at once; the transfer shows "In transit"; the Managers of the receiving branch are notified; the transfer note as a PDF without signature lines.
   - **Done when:** Database test: the sender's stock falls at once and the receiver's does not change yet.
