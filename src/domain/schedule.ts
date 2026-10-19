@@ -8,9 +8,7 @@ import { businessDate, businessDayStart } from "./business-date";
 // nightly stock check and the weekly copy.
 
 export type Schedule =
-  | { everyMinutes: number }
-  | { dailyAt: string }
-  | { weeklyOn: number; dailyAt: string };
+  { everyMinutes: number } | { dailyAt: string } | { weeklyOn: number; dailyAt: string };
 
 const MINUTES_IN_A_DAY = 1440;
 const MINUTE_MS = 60_000;
@@ -41,7 +39,9 @@ export function checkSchedule(schedule: Schedule): void {
     return;
   }
   if (minutesOf(schedule.dailyAt) === null) {
-    throw new Error(`Refused: a time of day is "HH:MM" from 00:00 to 23:59; "${schedule.dailyAt}" is not.`);
+    throw new Error(
+      `Refused: a time of day is "HH:MM" from 00:00 to 23:59; "${schedule.dailyAt}" is not.`,
+    );
   }
   if ("weeklyOn" in schedule) {
     const { weeklyOn } = schedule;
