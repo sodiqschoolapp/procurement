@@ -95,7 +95,8 @@
       "unfinishedOrders": "Filialda tugallanmagan buyurtmalar bor.",
       "stockLeft": "Filial omborida hali tovar bor.",
       "transfersInTransit": "Filialdan yoki filialga koʻchirish hali yoʻlda.",
-      "aboveSent": "Yuborilganidan ko‘p."
+      "aboveSent": "Yuborilganidan ko‘p.",
+      "nothingToCount": "Bu yerda sanash uchun ombordagi mahsulot yoʻq."
     },
     "file": {
       "tooLarge": "Fayl 10 MB dan katta. Kichikroq fayl tanlang yoki suratni qaytadan oling.",

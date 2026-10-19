@@ -132,6 +132,8 @@ export const FIELD_ERROR_KINDS = [
   "transfersInTransit",
   // A received quantity above the quantity sent (plan of 7.2, decided item 4, Look first).
   "aboveSent",
+  // A count of a branch or category that holds no item of the stock (plan of 7.3).
+  "nothingToCount",
 ] as const;
 export type FieldErrorKind = (typeof FIELD_ERROR_KINDS)[number];
 export type FieldMessageKey = `errors.field.${FieldErrorKind}`;
