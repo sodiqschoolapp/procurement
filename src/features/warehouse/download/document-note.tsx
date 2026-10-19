@@ -40,8 +40,8 @@ export type DocumentNoteSheet = {
   title: string;
   downloadedLine: string;
   fields: { label: string; value: string }[];
-  titles: { product: string; subtype: string; quantity: string };
-  lines: { product: string; subtype: string; quantity: string }[];
+  titles: { product: string; subtype: string; quantity: string; received: string | null };
+  lines: { product: string; subtype: string; quantity: string; received: string | null }[];
   pageLine: (page: number, pages: number) => string;
 };
 
@@ -54,6 +54,8 @@ export function documentNoteSheet(note: DocumentNote, locale: Locale, at: Date):
   const tRoot = createTranslator({ locale, messages });
   const format = bindFormatters(locale, tRoot("format.currency"));
   const transfer = note.type === "TRANSFER";
+  // A received transfer adds what arrived of each line (plan of 7.2, decided item 12).
+  const received = transfer && note.lines.some((line) => line.receivedQty !== null);
   const title = transfer
     ? tTransfer("title", { number: note.number })
     : t("title", { number: note.number });
@@ -84,11 +86,19 @@ export function documentNoteSheet(note: DocumentNote, locale: Locale, at: Date):
       at: `${format.date(at)} ${format.time(at)}`,
     }),
     fields,
-    titles: { product: t("product"), subtype: t("subtype"), quantity: t("quantity") },
+    titles: {
+      product: t("product"),
+      subtype: t("subtype"),
+      quantity: received ? tTransfer("sent") : t("quantity"),
+      received: received ? tTransfer("received") : null,
+    },
     lines: note.lines.map((line) => ({
       product: line.productName,
       subtype: line.subtypeName ?? "—",
       quantity: `${format.quantity(line.qty)} ${line.unitShortName}`,
+      received: received
+        ? `${format.quantity(line.receivedQty ?? "0")} ${line.unitShortName}`
+        : null,
     })),
     pageLine: (page, pages) => t("page", { page, pages }),
   };
@@ -113,9 +123,14 @@ const styles = StyleSheet.create({
   product: { width: "50%" },
   subtype: { width: "28%" },
   quantity: { width: "22%", textAlign: "right" },
+  // With a Received column the four share the width.
+  productNarrow: { width: "40%" },
+  subtypeNarrow: { width: "22%" },
+  quantityNarrow: { width: "19%", textAlign: "right" },
 });
 
 function DocumentNotePdf({ sheet, logoSrc }: { sheet: DocumentNoteSheet; logoSrc: Buffer }) {
+  const wide = sheet.titles.received === null;
   return (
     <Document title={sheet.title} language={sheet.locale}>
       <Page size="A4" style={styles.page}>
@@ -131,15 +146,31 @@ function DocumentNotePdf({ sheet, logoSrc }: { sheet: DocumentNoteSheet; logoSrc
         </View>
 
         <View style={[styles.row, styles.head]} fixed>
-          <Text style={[styles.cell, styles.product]}>{sheet.titles.product}</Text>
-          <Text style={[styles.cell, styles.subtype]}>{sheet.titles.subtype}</Text>
-          <Text style={[styles.cell, styles.quantity]}>{sheet.titles.quantity}</Text>
+          <Text style={[styles.cell, wide ? styles.product : styles.productNarrow]}>
+            {sheet.titles.product}
+          </Text>
+          <Text style={[styles.cell, wide ? styles.subtype : styles.subtypeNarrow]}>
+            {sheet.titles.subtype}
+          </Text>
+          <Text style={[styles.cell, wide ? styles.quantity : styles.quantityNarrow]}>
+            {sheet.titles.quantity}
+          </Text>
+          {!wide && (
+            <Text style={[styles.cell, styles.quantityNarrow]}>{sheet.titles.received}</Text>
+          )}
         </View>
         {sheet.lines.map((line, index) => (
           <View key={index} style={styles.row} wrap={false}>
-            <Text style={[styles.cell, styles.product]}>{line.product}</Text>
-            <Text style={[styles.cell, styles.subtype]}>{line.subtype}</Text>
-            <Text style={[styles.cell, styles.quantity]}>{line.quantity}</Text>
+            <Text style={[styles.cell, wide ? styles.product : styles.productNarrow]}>
+              {line.product}
+            </Text>
+            <Text style={[styles.cell, wide ? styles.subtype : styles.subtypeNarrow]}>
+              {line.subtype}
+            </Text>
+            <Text style={[styles.cell, wide ? styles.quantity : styles.quantityNarrow]}>
+              {line.quantity}
+            </Text>
+            {!wide && <Text style={[styles.cell, styles.quantityNarrow]}>{line.received}</Text>}
           </View>
         ))}
 

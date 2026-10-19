@@ -1,4 +1,5 @@
-import { and, asc, count, desc, eq, gte, lte } from "drizzle-orm";
+import { type SQL, and, asc, count, desc, eq, gte, lte, or } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import * as z from "zod";
 
 import { isBusinessDate } from "@/domain/business-date";
@@ -8,6 +9,7 @@ import {
   type DocumentStatus,
   type DocumentType,
 } from "@/domain/stock-documents";
+import type { Actor } from "@/domain/permissions";
 import { authorize, authorizeList, branchFilter } from "@/server/authorize";
 import { branches, departments, stockDocuments, users } from "@/server/db/schema";
 import { readSnapshot } from "@/server/read-snapshot";
@@ -17,7 +19,8 @@ import { readSnapshot } from "@/server/read-snapshot";
 // `data.view` with the branch inside the SQL (03 matrix "See orders, stock and reports": Head all
 // branches, Manager own branches, Principal own branch, Finance own branches; developer-rules.md
 // rule 4); an asked branch the user may not see is "Not found" (03 rule 1). Every type is listed,
-// direct entries too (decided item 5). Filters by type, by date from and to on the document's
+// direct entries too (decided item 5). A transfer is listed for its sending and its receiving
+// branch (documentWall(); plan of 7.2, decided item 3, Look first). Filters by type, by date from and to on the document's
 // Tashkent business date (decided item 6) and by department; no money (decided item 7). Count
 // and rows in one snapshot (.claude/rules/server-actions.md).
 
@@ -28,6 +31,8 @@ export type DocumentRow = {
   status: DocumentStatus;
   docDate: string;
   branchCode: string;
+  /** A transfer's receiving branch; null for the other types. */
+  toBranchCode: string | null;
   /** An issue's or a return's department; null for the other types. */
   departmentName: string | null;
   createdBy: string;
@@ -52,6 +57,30 @@ export type DepartmentChoice = {
 };
 
 const idInput = z.uuid().nullable().catch(null);
+
+/**
+ * The branch wall of a warehouse document, inside the SQL (03 rule 1; developer-rules.md rule 4):
+ * a document of one of the user's branches, or a transfer to one of them (09 Other documents,
+ * Transfer: "The receiving Manager enters what really arrived"; plan of 7.2, decided item 3, Look
+ * first). The Head sees every branch: no condition. The one wall of the list, the page and the
+ * note.
+ */
+export function documentWall(actor: Actor): SQL | undefined {
+  const own = branchFilter(actor, stockDocuments.branchId);
+  if (!own) return undefined;
+  return or(
+    own,
+    and(eq(stockDocuments.type, "TRANSFER"), branchFilter(actor, stockDocuments.toBranchId)),
+  );
+}
+
+/** The asked branch: the document's own, or a transfer's receiving branch. */
+function ofBranch(branchId: string): SQL {
+  return or(
+    eq(stockDocuments.branchId, branchId),
+    and(eq(stockDocuments.type, "TRANSFER"), eq(stockDocuments.toBranchId, branchId)),
+  )!;
+}
 const typeInput = z.enum(DOCUMENT_TYPES).nullable().catch(null);
 const dateInput = z.string().refine(isBusinessDate).nullable().catch(null);
 
@@ -73,14 +102,15 @@ export async function listStockDocuments(
   if (branch) await authorize(userId, "data.view", { branchId: branch });
 
   const where = and(
-    branchFilter(actor, stockDocuments.branchId),
-    branch ? eq(stockDocuments.branchId, branch) : undefined,
+    documentWall(actor),
+    branch ? ofBranch(branch) : undefined,
     type ? eq(stockDocuments.type, type) : undefined,
     from ? gte(stockDocuments.docDate, from) : undefined,
     to ? lte(stockDocuments.docDate, to) : undefined,
     department ? eq(stockDocuments.departmentId, department) : undefined,
   );
 
+  const toBranch = alias(branches, "to_branch");
   return readSnapshot(async (db) => {
     const [total] = await db.select({ found: count() }).from(stockDocuments).where(where);
     const found = total?.found ?? 0;
@@ -94,11 +124,13 @@ export async function listStockDocuments(
         status: stockDocuments.status,
         docDate: stockDocuments.docDate,
         branchCode: branches.code,
+        toBranchCode: toBranch.code,
         departmentName: departments.name,
         createdBy: users.fullName,
       })
       .from(stockDocuments)
       .innerJoin(branches, eq(branches.id, stockDocuments.branchId))
+      .leftJoin(toBranch, eq(toBranch.id, stockDocuments.toBranchId))
       .innerJoin(users, eq(users.id, stockDocuments.createdBy))
       .leftJoin(departments, eq(departments.id, stockDocuments.departmentId))
       .where(where)

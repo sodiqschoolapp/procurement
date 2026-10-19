@@ -3,7 +3,7 @@ import { alias } from "drizzle-orm/pg-core";
 import * as z from "zod";
 
 import type { DocumentStatus } from "@/domain/stock-documents";
-import { authorize, authorizeList, branchFilter } from "@/server/authorize";
+import { authorize, authorizeList } from "@/server/authorize";
 import {
   branches,
   departments,
@@ -17,15 +17,19 @@ import {
 import { readSnapshot } from "@/server/read-snapshot";
 import { readSettings } from "@/server/settings";
 
+import { documentWall } from "./documents";
+
 // What the issue note and the transfer note PDF show, GET /warehouse/documents/[id]/note
 // (09-warehouse.md, Issue to a department 2: "a PDF issue note naming who gave the items and who
 // received them, as typed. There are no signature lines"; Other documents, Transfer: "a PDF
 // transfer note naming who sent the items and who received them, as typed, with no signature
-// lines"; plan of 5.4, decided item 8; plan of 7.1, decided item 12). A transfer is of its
-// sending branch until 7.2 opens it to the receiver (plan of 7.1, decided item 5, Look first). The document is read with the branch
-// filter of `data.view` inside the SQL, so an unknown id and another branch's document are alike
-// "Not found" (03 rule 1; .claude/rules/server-actions.md, several ids); then `data.export` on its
-// branch (03 matrix "Export to Excel, download PDF, print"). Document and lines in one snapshot.
+// lines"; plan of 5.4, decided item 8; plan of 7.1, decided item 12). A transfer is seen by its
+// sending and its receiving branch (documentWall(); plan of 7.2, decided item 3, Look first). The
+// document is read with that wall of `data.view` inside the SQL, so an unknown id and another
+// branch's document are alike "Not found" (03 rule 1; .claude/rules/server-actions.md, several
+// ids); then `data.export` on the branch through which the user sees it (03 matrix "Export to
+// Excel, download PDF, print"). Once received, a transfer's lines carry what arrived (plan of
+// 7.2, decided item 12). Document and lines in one snapshot.
 
 export type IssueNoteLine = {
   productName: string;
@@ -33,6 +37,8 @@ export type IssueNoteLine = {
   subtypeName: string | null;
   /** numeric(14,3) text as stored. */
   qty: string;
+  /** What arrived of a received transfer's line; null otherwise. */
+  receivedQty: string | null;
   unitShortName: string;
 };
 
@@ -85,6 +91,7 @@ export async function getDocumentNote(
         status: stockDocuments.status,
         docDate: stockDocuments.docDate,
         branchId: stockDocuments.branchId,
+        toBranchId: stockDocuments.toBranchId,
         branchCode: branches.code,
         branchName: branches.name,
         departmentName: departments.name,
@@ -103,11 +110,16 @@ export async function getDocumentNote(
         and(
           eq(stockDocuments.id, parsed.data),
           inArray(stockDocuments.type, ["ISSUE", "TRANSFER"]),
-          branchFilter(actor, stockDocuments.branchId),
+          documentWall(actor),
         ),
       );
     if (!document) return null;
-    await authorize(userId, "data.export", { branchId: document.branchId }, tx);
+    // The sending branch, or, for one who sees a transfer only as its receiver, the receiving one.
+    const seenFrom =
+      actor.role === "HEAD" || actor.branchIds.includes(document.branchId) || !document.toBranchId
+        ? document.branchId
+        : document.toBranchId;
+    await authorize(userId, "data.export", { branchId: seenFrom }, tx);
     const [me] = await tx.select({ name: users.fullName }).from(users).where(eq(users.id, userId));
     const settings = await readSettings(tx);
     const lines = await tx
@@ -116,6 +128,7 @@ export async function getDocumentNote(
         subtypeName: productVariants.name,
         isDefault: productVariants.isDefault,
         qty: stockDocumentLines.qty,
+        receivedQty: stockDocumentLines.receivedQty,
         unitShortName: units.shortName,
       })
       .from(stockDocumentLines)

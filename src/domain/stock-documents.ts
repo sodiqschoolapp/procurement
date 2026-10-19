@@ -179,6 +179,21 @@ export function receivedQuantityRefusal(
   return new Stock(typed).gt(new Stock(sent)) ? "aboveSent" : null;
 }
 
+/**
+ * What did not arrive of a transfer line: the quantity sent less the quantity received, as
+ * numeric(14,3) text, "0" when all arrived (09 Other documents, Transfer: "Any shortage"). The
+ * one formula of the short quantity: transferReceipt(), the receive form and the transfer's page
+ * read it. `receivedQty` must be 0 up to `qty`: RangeError otherwise.
+ */
+export function transferShort(qty: string, receivedQty: string): string {
+  if (!QUANTITY.test(qty) || !QUANTITY.test(receivedQty)) {
+    throw new RangeError(`A received line of "${receivedQty}" of "${qty}"`);
+  }
+  const short = new Stock(qty).minus(new Stock(receivedQty));
+  if (short.isNegative()) throw new RangeError(`A received line of "${receivedQty}" of "${qty}"`);
+  return short.toFixed();
+}
+
 /** What receiving one transfer line writes (transferReceipt()). */
 export type TransferReceipt = {
   /** The receiving branch's TRANSFER_IN; null when nothing arrived. */
@@ -204,15 +219,11 @@ export function transferReceipt(line: {
   receivedQty: string;
   sentCost: bigint;
 }): TransferReceipt {
-  if (!QUANTITY.test(line.qty) || !QUANTITY.test(line.receivedQty) || line.sentCost < 0n) {
+  if (line.sentCost < 0n || new Stock(line.qty).isZero()) {
     throw new RangeError(`A received line of "${line.receivedQty}" of "${line.qty}"`);
   }
-  const sent = new Stock(line.qty);
+  const short = new Stock(transferShort(line.qty, line.receivedQty));
   const received = new Stock(line.receivedQty);
-  if (sent.isZero() || received.gt(sent)) {
-    throw new RangeError(`A received line of "${line.receivedQty}" of "${line.qty}"`);
-  }
-  const short = sent.minus(received);
   return {
     received: received.isZero()
       ? null

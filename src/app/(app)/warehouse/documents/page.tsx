@@ -258,7 +258,11 @@ export default async function WarehouseDocumentsPage({
                       <td className="px-4 py-3 whitespace-nowrap tabular-nums">
                         {format.date(row.docDate)}
                       </td>
-                      <td className="px-4 py-3">{row.branchCode}</td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {row.toBranchCode
+                          ? t("transferBranches", { from: row.branchCode, to: row.toBranchCode })
+                          : row.branchCode}
+                      </td>
                       <td className="px-4 py-3">{row.departmentName ?? ""}</td>
                       <td className="px-4 py-3">
                         <DocumentStatusLabel type={row.type} status={row.status} />

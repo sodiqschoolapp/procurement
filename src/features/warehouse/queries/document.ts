@@ -9,9 +9,11 @@ import {
   type DocumentType,
   REVERSIBLE_STATUSES,
   reverseAllows,
+  transferReceiveMove,
+  transferShort,
   writeOffDecisionMove,
 } from "@/domain/stock-documents";
-import { authorizeList, branchFilter } from "@/server/authorize";
+import { authorizeList } from "@/server/authorize";
 import {
   branches,
   departments,
@@ -25,6 +27,8 @@ import {
 } from "@/server/db/schema";
 import { readSnapshot } from "@/server/read-snapshot";
 
+import { documentWall } from "./documents";
+
 // A warehouse document's own page, /warehouse/documents/[id], of every type (09-warehouse.md,
 // Movement types; Issue to a department; Other documents; Direct entry by the Head; plan of 5.11,
 // decided item 11, opened to every type by 5.12, decided item 3, Look first: the item card's
@@ -37,11 +41,13 @@ import { readSnapshot } from "@/server/read-snapshot";
 //   the decision action asks (developer-rules.md rule 2);
 // - `canReverse`: `stock.return_reverse` on the branch, a reversible status and reverseAllows(),
 //   the item card's rule (plan of 5.7);
-// - `canDownloadNote`: an issue or a transfer, and `data.export` on the branch (plan of 5.4,
-//   decided item 8; plan of 7.1, decided item 12).
-// A transfer is of its sending branch: the filter stays on `branch_id`, and its receiving branch
-// is read for the header only; the receiver's view is 7.2's (plan of 7.1, decided item 5, Look
-// first).
+// - `canDownloadNote`: an issue or a transfer, and `data.export` on a branch through which the
+//   user sees it (plan of 5.4, decided item 8; plan of 7.1, decided item 12);
+// - `canReceive`: a transfer, `stock.receive_transfer` on its receiving branch and
+//   transferReceiveMove(), the function the receive action asks (plan of 7.2).
+// A transfer is seen by its sending and its receiving branch (documentWall(); plan of 7.2, decided
+// item 3, Look first). Its lines read no stock at all: the sender's stock is not the receiver's to
+// see (review of the plan of 7.2, must fix 1).
 // Document and lines in one snapshot.
 
 export type DocumentLine = {
@@ -51,8 +57,17 @@ export type DocumentLine = {
   subtypeName: string | null;
   /** numeric(14,3) text as stored. */
   qty: string;
-  /** The branch's stock of this subtype now, "0" when it never had any. */
-  inStock: string;
+  /**
+   * The branch's stock of this subtype now, "0" when it never had any; null on a transfer, whose
+   * lines read no stock.
+   */
+  inStock: string | null;
+  /** What arrived of a transfer's line, once received; null otherwise. */
+  receivedQty: string | null;
+  /** What did not arrive of it (transferShort()), once received; null otherwise. */
+  shortQty: string | null;
+  /** The measure allows decimals (the receive form's check). */
+  allowsDecimals: boolean;
   unitShortName: string;
 };
 
@@ -86,6 +101,7 @@ export type StockDocument = {
   canDecide: boolean;
   canReverse: boolean;
   canDownloadNote: boolean;
+  canReceive: boolean;
 };
 
 const idInput = z.uuid();
@@ -112,6 +128,7 @@ export async function getStockDocument(
         branchId: stockDocuments.branchId,
         branchCode: branches.code,
         branchName: branches.name,
+        toBranchId: stockDocuments.toBranchId,
         toBranchCode: toBranch.code,
         toBranchName: toBranch.name,
         departmentName: departments.name,
@@ -135,8 +152,9 @@ export async function getStockDocument(
       .leftJoin(departments, eq(departments.id, stockDocuments.departmentId))
       .leftJoin(decider, eq(decider.id, stockDocuments.decidedBy))
       .leftJoin(reverser, eq(reverser.id, stockDocuments.reversedBy))
-      .where(and(eq(stockDocuments.id, parsed.data), branchFilter(actor, stockDocuments.branchId)));
+      .where(and(eq(stockDocuments.id, parsed.data), documentWall(actor)));
     if (!document) return null;
+    const transfer = document.type === "TRANSFER";
     const lines = await tx
       .select({
         id: stockDocumentLines.id,
@@ -144,7 +162,10 @@ export async function getStockDocument(
         subtypeName: productVariants.name,
         isDefault: productVariants.isDefault,
         qty: stockDocumentLines.qty,
-        inStock: sql<string>`coalesce(${stockBalances.qty}, 0)::text`,
+        inStock: sql<string | null>`case when ${transfer} then null
+          else coalesce(${stockBalances.qty}, 0)::text end`,
+        receivedQty: stockDocumentLines.receivedQty,
+        allowsDecimals: units.allowDecimal,
         unitShortName: units.shortName,
       })
       .from(stockDocumentLines)
@@ -156,16 +177,20 @@ export async function getStockDocument(
         and(
           eq(stockBalances.variantId, stockDocumentLines.variantId),
           eq(stockBalances.branchId, document.branchId),
+          // A transfer's lines join no stock (must fix 1 of the plan review).
+          sql`not ${transfer}`,
         ),
       )
       .where(eq(stockDocumentLines.documentId, document.id))
       .orderBy(asc(products.name), asc(productVariants.name), asc(stockDocumentLines.id));
-    const { branchId, createdById, ...header } = document;
+    const { branchId, toBranchId, createdById, ...header } = document;
     const target = { branchId };
+    const receiving = toBranchId ? { branchId: toBranchId } : null;
     return {
       ...header,
       lines: lines.map(({ isDefault, subtypeName, ...line }) => ({
         ...line,
+        shortQty: line.receivedQty === null ? null : transferShort(line.qty, line.receivedQty),
         subtypeName: isDefault ? null : subtypeName,
       })),
       canDecide:
@@ -177,8 +202,14 @@ export async function getStockDocument(
         REVERSIBLE_STATUSES.includes(document.status) &&
         reverseAllows(actor, { type: document.type, createdBy: createdById }),
       canDownloadNote:
-        (document.type === "ISSUE" || document.type === "TRANSFER") &&
-        decide("data.export", actor, target) === "allow",
+        (document.type === "ISSUE" || transfer) &&
+        (decide("data.export", actor, target) === "allow" ||
+          (receiving !== null && decide("data.export", actor, receiving) === "allow")),
+      canReceive:
+        transfer &&
+        receiving !== null &&
+        decide("stock.receive_transfer", actor, receiving) === "allow" &&
+        transferReceiveMove(document.status) !== null,
     };
   });
 }

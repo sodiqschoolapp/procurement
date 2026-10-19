@@ -15,6 +15,7 @@ import {
   receivedQuantityRefusal,
   reverseAllows,
   transferReceipt,
+  transferShort,
   transferReceiveMove,
   WRITE_OFF_OUTCOMES,
   writeOffCommentRefusal,
@@ -395,5 +396,19 @@ describe('transferReceipt (09 Stock value, second bullet; edge case "A transfer 
     expect(() => transferReceipt({ qty: "10", receivedQty: "-1", sentCost: 1n })).toThrow(
       RangeError,
     );
+  });
+});
+
+describe("transferShort (09 Other documents, Transfer: any shortage)", () => {
+  it("is what was sent less what arrived, exactly", () => {
+    expect(transferShort("10.000", "8")).toBe("2");
+    expect(transferShort("10", "10.000")).toBe("0");
+    expect(transferShort("2.5", "0")).toBe("2.5");
+    expect(transferShort("0.003", "0.001")).toBe("0.002");
+  });
+
+  it("more received than sent is a mistake of the caller", () => {
+    expect(() => transferShort("1", "1.001")).toThrow(RangeError);
+    expect(() => transferShort("1", "x")).toThrow(RangeError);
   });
 });
