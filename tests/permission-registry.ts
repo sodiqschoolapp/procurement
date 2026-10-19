@@ -280,6 +280,12 @@ export const QUERIES: Record<string, Permission> = {
   "src/features/analytics/queries/finance-spending.ts#getFinanceSpending": "data.view",
   "src/features/analytics/queries/settlement-speed.ts#getSettlementSpeed": "data.view",
   "src/features/analytics/queries/settlements.ts#getSettlements": "data.view",
+  // The Reports of 6.8 (plan of 6.8): data.view, the walls in spendingWhere(), outcomesWhere()
+  // and the Purchase register's own branchFilter() (src/features/reports/queries/
+  // reports-matrix.db.test.ts).
+  "src/features/reports/queries/purchase-register.ts#getPurchaseRegister": "data.view",
+  "src/features/reports/queries/plan-vs-actual-report.ts#getPlanVsActualReport": "data.view",
+  "src/features/reports/queries/spending-report.ts#getSpendingReport": "data.view",
   // The order list's download, Excel and PDF (plan of 2.14, decided item 4, Look first): data.export
   // with the list's own walls in the SQL (queries/order-download-matrix.db.test.ts).
   "src/features/orders/queries/order-list.ts#orderDownload": "data.export",
