@@ -1126,6 +1126,8 @@ test("6.7: the Head downloads the whole page as a PDF; the link carries what the
   await page.goto("/analytics?period=bogus");
   await expect(page).toHaveURL(/\/analytics$/);
   const link = page.locator("[data-report-pdf]");
+  // The streamed page shows the link once its content is in: wait for it before measuring.
+  await expect(link).toBeVisible();
   await expect(link).toHaveText(uz.analytics.pdf);
   await expect(link).toHaveAttribute("href", /^\/analytics\/report\?period=this_month&branch=/);
   expect(await scrollsSideways(page)).toBe(false);
