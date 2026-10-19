@@ -169,6 +169,12 @@ export type NotificationParamsOf = {
   TRANSFER_SENT: { actor: string; number: string; branch: string };
   REQUEST_WAITING_24H: OrdersWaitingParams;
   REQUEST_WAITING_48H: OrdersWaitingParams;
+  /**
+   * "Needed-by date is 2 days away and the order's buying is not finished" (plan of 8.1, decided
+   * items 6 and 7, Look first): to the owner, one per branch; `count` the owner's orders of
+   * `branch` (its code) needed by today to today + 2. No amount and no order number.
+   */
+  NEEDED_BY_NEAR: { count: number; branch: string };
   /** "Branch has no active user for a role": the branch's code and the role's code. */
   BRANCH_ROLE_VACANT: { branch: string; role: Role };
   /** "A Manager's right is switched on or off": the right's code, and "on" or "off". */
@@ -210,6 +216,7 @@ export const NOTIFICATION_PARAMS: {
   TRANSFER_SENT: ["actor", "number", "branch"],
   REQUEST_WAITING_24H: ["count", "hours"],
   REQUEST_WAITING_48H: ["count", "hours"],
+  NEEDED_BY_NEAR: ["count", "branch"],
   BRANCH_ROLE_VACANT: ["branch", "role"],
   MANAGER_RIGHT_SWITCHED: ["right", "state"],
   PRODUCT_SUGGESTED: ["name", "branch"],

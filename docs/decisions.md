@@ -2554,6 +2554,25 @@ Choices made during the build:
 - Permission review, should fix 2: a test sends another branch's count line id in `seen` with every other value valid: `conflict`, nothing written.
 - 7.3's test of the save's result now also expects `completed: true` (the save gained the field; the requirement of 7.4, decided item 1).
 
+### 8.1 Reminders and escalation (19.10.2026)
+
+The plan's decisions as the plan review of 19.10.2026 confirmed them (its three test corrections applied), and those of the build. The Look first items come first.
+
+1. **Look first** (open question 7). The reminder and the Head's notice repeat every day while the orders wait: each daily run counts what waits more than N hours at that moment. Proposed `/spec-change` for `06-approval-workflow.md` rule 9: "Reminders are sent once a day, and again every day while the orders wait."
+2. **Look first** (approval order). The approvers of a step are `waitingFor()` of its status: every active Head for Waiting for Head; the active Principal of the branch; the active Finance users of the branch. A step with no active approver sends no reminder; the Head's notice covers it.
+3. **Look first** (approval order). The Head's notice counts the orders of all branches at any of the three Waiting steps (`STUCK_STATUSES`) past `escalation_hours`; it links to `stuck=1`, the same set.
+4. **Look first** (approval order). The wait is measured from the newest event that moved the order into its current status, strictly more than N hours, by `enteredCurrentStatusAt` of `src/features/orders/order-sql.ts`, shared with the list's `stuck=1`; no `isStuck()` copy in TypeScript.
+5. **Look first** (approval order). The job runs once a day at the 00:00 Tashkent tick; a missed day runs at the scheduler's first round of that day. A notice comes between N and N + 24 hours after the order entered its step. The hourly alternative (at most one notice per approver and type per Tashkent day) was named for the owner. A time of day: 8.2.
+6. One waiting notice per approver, `branchId: null`, its count over the recipient's own branches (the text names no branch). NEEDED_BY_NEAR is one notice per owner and branch, with the branch's code and `branchId`.
+7. **Look first** (D46). "Needed-by date is 2 days away" is read as needed-by from today to today + 2, told every day, so a late submit or a failed run is not missed; an overdue order is not told. "Buying not finished" is the `STILL_DUE` set of `isOverdue()`, as `stillDueWhere()` in SQL. Proposed `/spec-change` for the row of 10 Notifications: "Needed-by date is 2 days away or nearer and the order's buying is not finished | Owner, once a day, grouped per branch".
+8. Links: the reminder opens the list at the recipient's step (`status=PENDING_…`); the Head's notice `stuck=1`; the needed-by notice `branch=…&owner=…&due=soon`.
+9. Three reads per run and one `notify()` per group of recipients with equal params and link.
+
+Choices made during the build:
+
+- The grouping is the pure `waitingNotices()` and `nearNotices()` of `src/domain/reminders.ts`; the SQL gives each waiting order two flags (past `reminder_hours`, past `escalation_hours`) and reads only orders past the smaller of the two.
+- `stillDueWhere()` and `enteredCurrentStatusAt` moved out of `listWhere()` unchanged; the list's tests cover them as before.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

@@ -40,8 +40,6 @@ import {
 } from "@/domain/order-moves";
 import { type DownloadRow, orderDownloadRow } from "@/domain/order-download";
 import {
-  STILL_DUE_OPEN,
-  STILL_DUE_STATUSES,
   STUCK_STATUSES,
   type StepEvent,
   dueSoonUntil,
@@ -84,6 +82,7 @@ import { readSnapshot } from "@/server/read-snapshot";
 import { readSettings } from "@/server/settings";
 
 import { type ListFilters, NO_FILTERS, numberParts } from "../list-filters";
+import { enteredCurrentStatusAt, stillDueWhere } from "../order-sql";
 
 import { settlementFactsOf } from "@/features/money/settlement-facts";
 import { recordsOfListed, recordsOfOrders } from "@/features/purchasing/order-records";
@@ -216,16 +215,7 @@ function listWhere(
     // "Orders due soon", as isDueSoon() reads it (plan of 6.1, decided item 2): still waiting,
     // needed by today + 7 days of the injected clock or earlier.
     filters.dueSoon
-      ? and(
-          lte(orders.neededBy, dueSoonUntil(businessDate(now()))),
-          or(
-            inArray(orders.status, [...STILL_DUE_STATUSES]),
-            and(
-              eq(orders.status, STILL_DUE_OPEN.status),
-              eq(orders.progress, STILL_DUE_OPEN.progress),
-            ),
-          ),
-        )
+      ? and(lte(orders.neededBy, dueSoonUntil(businessDate(now()))), stillDueWhere())
       : undefined,
     // "Orders stuck over 48 hours" (plan of 6.2, decided items 1 and 2, Look first): at a Waiting
     // step, entered by its newest event into the current status more than `escalation_hours` ago
@@ -234,10 +224,7 @@ function listWhere(
     filters.stuck
       ? and(
           inArray(orders.status, [...STUCK_STATUSES]),
-          sql`(select max(${orderEvents.createdAt}) from ${orderEvents}
-                where ${orderEvents.orderId} = ${orders.id}
-                  and ${orderEvents.toStatus} = ${orders.status}
-                  and ${orderEvents.fromStatus} <> ${orderEvents.toStatus})
+          sql`${enteredCurrentStatusAt}
               < ${stuckBefore(now(), escalationHours!).toISOString()}::timestamptz`,
         )
       : undefined,
