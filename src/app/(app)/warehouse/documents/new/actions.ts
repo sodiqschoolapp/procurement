@@ -9,6 +9,7 @@ import {
 } from "@/features/warehouse/actions/direct-entry";
 import { type IssueResult, issueStock } from "@/features/warehouse/actions/issue";
 import { type ReturnResult, returnStock } from "@/features/warehouse/actions/return";
+import { type TransferResult, sendTransfer } from "@/features/warehouse/actions/transfer";
 import { type WriteOffResult, askWriteOff } from "@/features/warehouse/actions/write-off";
 import {
   type DirectEntryItem,
@@ -18,7 +19,9 @@ import {
   type IssueDepartment,
   type IssueItem,
   issueFormChoices,
+  type IssueBranch,
   searchIssueItems,
+  searchTransferItems,
   searchWriteOffItems,
 } from "@/features/warehouse/queries/issue-form";
 import {
@@ -27,6 +30,7 @@ import {
   returnFormChoices,
   searchReturnItems,
 } from "@/features/warehouse/queries/return-form";
+import { transferDestinationChoices } from "@/features/warehouse/queries/transfer-form";
 import { serverAction } from "@/server/action";
 import { type ActionResult, failure } from "@/server/action-result";
 import { getCurrentUser } from "@/server/auth/session";
@@ -38,11 +42,14 @@ import { AuthorizationError } from "@/server/authorize";
 // branch, the fields, the stock under the lock, the amount the department received. The direct
 // entry's (09 Direct entry by the Head; plan of 5.8) under `stock.enter_direct`, the Head only.
 // The write-off's (09 Other documents, Write-off; plan of 5.11) under `stock.ask_write_off`.
+// The transfer's (09 Other documents, Transfer; plan of 7.1) under `stock.transfer` on the
+// sending branch.
 
 const issue = serverAction(issueStock);
 const giveBack = serverAction(returnStock);
 const enter = serverAction(enterStockDirectly);
 const writeOff = serverAction(askWriteOff);
+const transfer = serverAction(sendTransfer);
 
 /** A query as an answer: a refusal of authorize() or of the input is returned, never thrown. */
 async function asked<T>(read: (userId: string) => Promise<T>): Promise<ActionResult<T>> {
@@ -140,4 +147,26 @@ export async function searchWriteOffItemsAction(input: {
   q: string;
 }): Promise<ActionResult<IssueItem[]>> {
   return asked((userId) => searchWriteOffItems(userId, { branchId: input?.branchId, q: input?.q }));
+}
+
+/** Sends one transfer (09 Other documents, Transfer); safe to repeat with the same browser id. */
+export async function sendTransferAction(input: unknown): Promise<ActionResult<TransferResult>> {
+  const result = await transfer(input);
+  if (result.ok) revalidatePath("/warehouse", "layout");
+  return result;
+}
+
+/** Every active branch but the sending one (09 Transfer: "The sender picks the other branch"). */
+export async function transferDestinationChoicesAction(input: {
+  branchId: string;
+}): Promise<ActionResult<IssueBranch[]>> {
+  return asked((userId) => transferDestinationChoices(userId, { branchId: input?.branchId }));
+}
+
+/** The items in stock in the sending branch whose name holds `q` (09 Transfer: the items). */
+export async function searchTransferItemsAction(input: {
+  branchId: string;
+  q: string;
+}): Promise<ActionResult<IssueItem[]>> {
+  return asked((userId) => searchTransferItems(userId, { branchId: input?.branchId, q: input?.q }));
 }

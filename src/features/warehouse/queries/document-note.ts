@@ -1,4 +1,5 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import * as z from "zod";
 
 import type { DocumentStatus } from "@/domain/stock-documents";
@@ -16,9 +17,12 @@ import {
 import { readSnapshot } from "@/server/read-snapshot";
 import { readSettings } from "@/server/settings";
 
-// What the issue note PDF shows, GET /warehouse/documents/[id]/note (09-warehouse.md, Issue to a
-// department 2: "a PDF issue note naming who gave the items and who received them, as typed. There
-// are no signature lines"; plan of 5.4, decided item 8). The document is read with the branch
+// What the issue note and the transfer note PDF show, GET /warehouse/documents/[id]/note
+// (09-warehouse.md, Issue to a department 2: "a PDF issue note naming who gave the items and who
+// received them, as typed. There are no signature lines"; Other documents, Transfer: "a PDF
+// transfer note naming who sent the items and who received them, as typed, with no signature
+// lines"; plan of 5.4, decided item 8; plan of 7.1, decided item 12). A transfer is of its
+// sending branch until 7.2 opens it to the receiver (plan of 7.1, decided item 5, Look first). The document is read with the branch
 // filter of `data.view` inside the SQL, so an unknown id and another branch's document are alike
 // "Not found" (03 rule 1; .claude/rules/server-actions.md, several ids); then `data.export` on its
 // branch (03 matrix "Export to Excel, download PDF, print"). Document and lines in one snapshot.
@@ -32,16 +36,24 @@ export type IssueNoteLine = {
   unitShortName: string;
 };
 
-export type IssueNote = {
+export type DocumentNote = {
+  type: "ISSUE" | "TRANSFER";
   number: string;
   status: DocumentStatus;
   docDate: string;
   branchCode: string;
   branchName: string;
-  departmentName: string;
-  /** Who gave the items: the document's maker. */
+  /** An issue's department; null on a transfer. */
+  departmentName: string | null;
+  /** A transfer's receiving branch; null on an issue. */
+  toBranchCode: string | null;
+  toBranchName: string | null;
+  /** Who gave or sent the items: the document's maker. */
   givenBy: string;
-  /** Who received them, as typed; empty on an issue of "Give straight to requester" with nobody named. */
+  /**
+   * Who received them, as typed; empty on an issue of "Give straight to requester" with nobody
+   * named, and on a transfer whose sender named nobody (plan of 7.1, decided item 6).
+   */
   receivedBy: string | null;
   comment: string | null;
   lines: IssueNoteLine[];
@@ -52,15 +64,23 @@ export type IssueNote = {
 
 const idInput = z.uuid();
 
-/** The note of one issue, or null ("Not found") for an unknown id or another branch's document. */
-export async function getIssueNote(userId: string, documentId: string): Promise<IssueNote | null> {
+/**
+ * The note of one issue or transfer, or null ("Not found") for an unknown id, another type, or
+ * another branch's document.
+ */
+export async function getDocumentNote(
+  userId: string,
+  documentId: string,
+): Promise<DocumentNote | null> {
   const parsed = idInput.safeParse(documentId);
   const actor = await authorizeList(userId, "data.view");
   if (!parsed.success) return null;
+  const toBranch = alias(branches, "to_branch");
   return readSnapshot(async (tx) => {
     const [document] = await tx
       .select({
         id: stockDocuments.id,
+        type: stockDocuments.type,
         number: stockDocuments.number,
         status: stockDocuments.status,
         docDate: stockDocuments.docDate,
@@ -68,18 +88,21 @@ export async function getIssueNote(userId: string, documentId: string): Promise<
         branchCode: branches.code,
         branchName: branches.name,
         departmentName: departments.name,
+        toBranchCode: toBranch.code,
+        toBranchName: toBranch.name,
         givenBy: users.fullName,
         receivedBy: stockDocuments.receivedByName,
         comment: stockDocuments.comment,
       })
       .from(stockDocuments)
       .innerJoin(branches, eq(branches.id, stockDocuments.branchId))
-      .innerJoin(departments, eq(departments.id, stockDocuments.departmentId))
+      .leftJoin(departments, eq(departments.id, stockDocuments.departmentId))
+      .leftJoin(toBranch, eq(toBranch.id, stockDocuments.toBranchId))
       .innerJoin(users, eq(users.id, stockDocuments.createdBy))
       .where(
         and(
           eq(stockDocuments.id, parsed.data),
-          eq(stockDocuments.type, "ISSUE"),
+          inArray(stockDocuments.type, ["ISSUE", "TRANSFER"]),
           branchFilter(actor, stockDocuments.branchId),
         ),
       );
@@ -102,12 +125,15 @@ export async function getIssueNote(userId: string, documentId: string): Promise<
       .where(eq(stockDocumentLines.documentId, document.id))
       .orderBy(asc(products.name), asc(productVariants.name), asc(stockDocumentLines.id));
     return {
+      type: document.type as DocumentNote["type"],
       number: document.number,
       status: document.status,
       docDate: document.docDate,
       branchCode: document.branchCode,
       branchName: document.branchName,
       departmentName: document.departmentName,
+      toBranchCode: document.toBranchCode,
+      toBranchName: document.toBranchName,
       givenBy: document.givenBy,
       receivedBy: document.receivedBy,
       comment: document.comment,

@@ -16,7 +16,7 @@ import { describePermissionMatrix } from "../../../../tests/helpers/permission-m
 import { setClock } from "../../../../tests/helpers/clock";
 import { type InsertedUser, insertUser } from "../../../../tests/helpers/users";
 import { issueBranchChoices, issueFormChoices, searchIssueItems } from "../queries/issue-form";
-import { getIssueNote } from "../queries/issue-note";
+import { getDocumentNote } from "../queries/document-note";
 import { issueStock } from "./issue";
 
 // Issue to a department in the permission matrix (15-quality-and-acceptance.md, Test layers:
@@ -169,14 +169,14 @@ describe("issueBranchChoices: the branches where the user may issue (03 matrix; 
   });
 });
 
-describePermissionMatrix("getIssueNote", {
+describePermissionMatrix("getDocumentNote", {
   permission: "data.export",
   async run({ user, branchId }) {
     const made = await stocked(branchId);
     const maker = await insertUser("HEAD");
     const posted = await runAction(issueStock, maker.id, issueInput(branchId, made));
     expect(posted.ok).toBe(true);
-    const note = await getIssueNote(user.id, posted.ok ? posted.data.documentId : "");
+    const note = await getDocumentNote(user.id, posted.ok ? posted.data.documentId : "");
     // The branch wall is in the SQL: another branch's note reads as unknown (03 rule 1).
     if (!note) throw new AuthorizationError("not_found");
     expect(note.lines).toHaveLength(1);

@@ -127,6 +127,12 @@ export const SERVER_ACTIONS: Record<string, Entry> = {
   "src/app/(app)/warehouse/documents/new/actions.ts#askWriteOffAction": "stock.ask_write_off",
   "src/app/(app)/warehouse/documents/new/actions.ts#searchWriteOffItemsAction":
     "stock.ask_write_off",
+  // Send a transfer (plan of 7.1): stock.transfer on the sending branch
+  // (transfer-matrix.db.test.ts).
+  "src/app/(app)/warehouse/documents/new/actions.ts#sendTransferAction": "stock.transfer",
+  "src/app/(app)/warehouse/documents/new/actions.ts#transferDestinationChoicesAction":
+    "stock.transfer",
+  "src/app/(app)/warehouse/documents/new/actions.ts#searchTransferItemsAction": "stock.transfer",
   // Approve or refuse a write-off (plan of 5.11): the Head (write-off-matrix.db.test.ts).
   "src/app/(app)/warehouse/documents/[id]/actions.ts#decideWriteOffAction":
     "stock.approve_write_off",
@@ -339,6 +345,11 @@ export const QUERIES: Record<string, Permission> = {
   // The write-off form (plan of 5.11): stock.ask_write_off; the branches in the SQL.
   "src/features/warehouse/queries/issue-form.ts#writeOffBranchChoices": "stock.ask_write_off",
   "src/features/warehouse/queries/issue-form.ts#searchWriteOffItems": "stock.ask_write_off",
+  // The transfer form (plan of 7.1): the sending branches, its items, and the receiving branches
+  // under stock.transfer on the sending branch.
+  "src/features/warehouse/queries/issue-form.ts#transferBranchChoices": "stock.transfer",
+  "src/features/warehouse/queries/issue-form.ts#searchTransferItems": "stock.transfer",
+  "src/features/warehouse/queries/transfer-form.ts#transferDestinationChoices": "stock.transfer",
   // A document's page (plans of 5.11 and 5.12) and the documents list (plan of 5.12): data.view
   // with the branch wall in the SQL.
   "src/features/warehouse/queries/document.ts#getStockDocument": "data.view",
@@ -352,9 +363,9 @@ export const QUERIES: Record<string, Permission> = {
   "src/features/warehouse/queries/return-form.ts#returnFormChoices": "stock.return_reverse",
   "src/features/warehouse/queries/return-form.ts#searchReturnItems": "stock.return_reverse",
   "src/features/warehouse/queries/reverse-preview.ts#getReversePreview": "stock.return_reverse",
-  // The issue note PDF (plan of 5.4, decided item 8): data.view's branch filter in the SQL, then
+  // The issue and transfer note PDF (plan of 5.4, decided item 8; plan of 7.1): data.view's branch filter in the SQL, then
   // data.export on the document's branch.
-  "src/features/warehouse/queries/issue-note.ts#getIssueNote": "data.export",
+  "src/features/warehouse/queries/document-note.ts#getDocumentNote": "data.export",
 };
 
 /**

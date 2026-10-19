@@ -17,9 +17,12 @@ import {
   registerFonts,
 } from "@/server/pdf";
 
-import type { IssueNote } from "../queries/issue-note";
+import type { DocumentNote } from "../queries/document-note";
 
-// The issue note as a PDF (09-warehouse.md, Issue to a department 2: "a PDF issue note naming who
+// The issue note and the transfer note as a PDF (09-warehouse.md, Other documents, Transfer: "a
+// PDF transfer note naming who sent the items and who received them, as typed, with no signature
+// lines"; plan of 7.1, decided item 12: one component, the header fields by type; Issue to a
+// department 2: "a PDF issue note naming who
 // gave the items and who received them, as typed. There are no signature lines"; build plan 5.4,
 // from the former 5.5: "in the style of the order list download: number, date, department, items,
 // who gave them and who received them as typed"; plan of 5.4, decided items 11 and 14). A4
@@ -32,7 +35,7 @@ import type { IssueNote } from "../queries/issue-note";
 const MESSAGES = { uz, ru, en } satisfies Record<Locale, unknown>;
 
 /** The texts of one note, in one language. */
-export type IssueNoteSheet = {
+export type DocumentNoteSheet = {
   locale: Locale;
   title: string;
   downloadedLine: string;
@@ -43,18 +46,32 @@ export type IssueNoteSheet = {
 };
 
 /** The note's texts: every value as the screen would show it. */
-export function issueNoteSheet(note: IssueNote, locale: Locale, at: Date): IssueNoteSheet {
+export function documentNoteSheet(note: DocumentNote, locale: Locale, at: Date): DocumentNoteSheet {
   const messages = MESSAGES[locale];
+  // The transfer note's own words where they differ; the rest are the issue note's.
   const t = createTranslator({ locale, messages, namespace: "warehouse.issueNote" });
+  const tTransfer = createTranslator({ locale, messages, namespace: "warehouse.transferNote" });
   const tRoot = createTranslator({ locale, messages });
   const format = bindFormatters(locale, tRoot("format.currency"));
-  const title = t("title", { number: note.number });
+  const transfer = note.type === "TRANSFER";
+  const title = transfer
+    ? tTransfer("title", { number: note.number })
+    : t("title", { number: note.number });
+  const branch = `${note.branchCode} · ${note.branchName}`;
   const fields = [
     { label: t("number"), value: note.number },
     { label: t("date"), value: format.date(note.docDate) },
-    { label: t("branch"), value: `${note.branchCode} · ${note.branchName}` },
-    { label: t("department"), value: note.departmentName },
-    { label: t("givenBy"), value: note.givenBy },
+    ...(transfer
+      ? [
+          { label: tTransfer("from"), value: branch },
+          { label: tTransfer("to"), value: `${note.toBranchCode} · ${note.toBranchName}` },
+          { label: tTransfer("sentBy"), value: note.givenBy },
+        ]
+      : [
+          { label: t("branch"), value: branch },
+          { label: t("department"), value: note.departmentName ?? "—" },
+          { label: t("givenBy"), value: note.givenBy },
+        ]),
     { label: t("receivedBy"), value: note.receivedBy ?? "—" },
   ];
   if (note.status === "REVERSED") fields.push({ label: t("status"), value: t("reversed") });
@@ -98,7 +115,7 @@ const styles = StyleSheet.create({
   quantity: { width: "22%", textAlign: "right" },
 });
 
-function IssueNotePdf({ sheet, logoSrc }: { sheet: IssueNoteSheet; logoSrc: Buffer }) {
+function DocumentNotePdf({ sheet, logoSrc }: { sheet: DocumentNoteSheet; logoSrc: Buffer }) {
   return (
     <Document title={sheet.title} language={sheet.locale}>
       <Page size="A4" style={styles.page}>
@@ -136,9 +153,11 @@ function IssueNotePdf({ sheet, logoSrc }: { sheet: IssueNoteSheet; logoSrc: Buff
   );
 }
 
-/** The PDF of one issue note, as bytes. */
-export async function writeIssueNotePdf(sheet: IssueNoteSheet): Promise<Uint8Array<ArrayBuffer>> {
+/** The PDF of one issue or transfer note, as bytes. */
+export async function writeDocumentNotePdf(
+  sheet: DocumentNoteSheet,
+): Promise<Uint8Array<ArrayBuffer>> {
   registerFonts();
   const logoSrc = await logoPng();
-  return new Uint8Array(await renderToBuffer(<IssueNotePdf sheet={sheet} logoSrc={logoSrc} />));
+  return new Uint8Array(await renderToBuffer(<DocumentNotePdf sheet={sheet} logoSrc={logoSrc} />));
 }

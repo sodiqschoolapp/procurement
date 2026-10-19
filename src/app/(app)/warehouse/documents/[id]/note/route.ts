@@ -1,14 +1,18 @@
 import type { NextRequest } from "next/server";
 
-import { issueNoteSheet, writeIssueNotePdf } from "@/features/warehouse/download/issue-note";
-import { getIssueNote } from "@/features/warehouse/queries/issue-note";
+import {
+  documentNoteSheet,
+  writeDocumentNotePdf,
+} from "@/features/warehouse/download/document-note";
+import { getDocumentNote } from "@/features/warehouse/queries/document-note";
 import { LOCALE_COOKIE, chooseLocale } from "@/i18n/locale";
 import { userOfCookies } from "@/server/auth/session";
 import { AuthorizationError, authorizeList } from "@/server/authorize";
 import { now } from "@/server/clock";
 
-// The issue note, GET /warehouse/documents/[id]/note (09-warehouse.md, Issue to a department 2;
-// plan of 5.4, decided item 8: a route that writes nothing, as the order list download). A
+// The issue note and the transfer note, GET /warehouse/documents/[id]/note (09-warehouse.md,
+// Issue to a department 2; Other documents, Transfer; plan of 7.1, decided item 12; plan of 5.4,
+// decided item 8: a route that writes nothing, as the order list download). A
 // signed-out visitor gets 401; an unknown id and another branch's document 404 (03 rule 1). The
 // language is the screen's: the user's, then the cookie (05 Download 3).
 
@@ -24,9 +28,9 @@ export async function GET(
 
   let note;
   try {
-    // The route's own check; getIssueNote() asks data.export again on the document's branch.
+    // The route's own check; getDocumentNote() asks data.export again on the document's branch.
     await authorizeList(user.id, "data.export");
-    note = await getIssueNote(user.id, id);
+    note = await getDocumentNote(user.id, id);
   } catch (error) {
     if (error instanceof AuthorizationError) return notFound();
     throw error;
@@ -36,7 +40,7 @@ export async function GET(
     userLocale: user.locale,
     cookieLocale: request.cookies.get(LOCALE_COOKIE)?.value,
   });
-  const bytes = await writeIssueNotePdf(issueNoteSheet(note, locale, now()));
+  const bytes = await writeDocumentNotePdf(documentNoteSheet(note, locale, now()));
   return new Response(bytes, {
     headers: {
       "Content-Type": "application/pdf",

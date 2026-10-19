@@ -93,7 +93,8 @@
       "overReturnComment": "Qatorda bo'lim olganidan ko'p: izoh yozing.",
       "reverseStockShort": "Storno qilish uchun omborda yetarli emas: mahsulotlar yana chiqib ketgan.",
       "unfinishedOrders": "Filialda tugallanmagan buyurtmalar bor.",
-      "stockLeft": "Filial omborida hali tovar bor."
+      "stockLeft": "Filial omborida hali tovar bor.",
+      "transfersInTransit": "Filialdan yoki filialga koʻchirish hali yoʻlda."
     },
     "file": {
       "tooLarge": "Fayl 10 MB dan katta. Kichikroq fayl tanlang yoki suratni qaytadan oling.",
@@ -500,6 +501,7 @@
       "MINIMUM_STOCK_REACHED": "{branch}: {item} minimal qoldiqqa yetdi.",
       "STOCK_CHANGE_ASKED": "{branch}: {actor} {number} {kind, select, WRITE_OFF {hisobdan chiqarishni} other {qoldiq oʻzgarishini}} soʻradi.",
       "STOCK_CHANGE_DECIDED": "{branch}: {number} {kind, select, WRITE_OFF {hisobdan chiqarish} other {qoldiq oʻzgarishi}} {outcome, select, approved {tasdiqlandi} other {rad etildi}}.",
+      "TRANSFER_SENT": "{actor} {branch} filialidan sizning filialingizga {number} koʻchirishni yubordi.",
       "REQUEST_WAITING_24H": "{count, plural, other {# ta buyurtma}} tasdiqingizni {hours, plural, other {# soatdan}} ortiq kutmoqda.",
       "REQUEST_WAITING_48H": "{count, plural, other {# ta buyurtma}} tasdiqlashni {hours, plural, other {# soatdan}} ortiq kutmoqda.",
       "BRANCH_ROLE_VACANT": "{branch} filialida faol {role, select, HEAD {xaridlar rahbari} MANAGER {menejer} PRINCIPAL {direktor} FINANCE {moliya xodimi} other {foydalanuvchi}} yoʻq.",
@@ -605,10 +607,12 @@
     "activateTitle": "{name} faollashtirilsinmi?",
     "activateResult": "Filial yangi yozuvlar yaratiladigan roʻyxatlarga qaytadi.",
     "deactivated": "Filial faolsizlantirildi",
-    "blocked": "Filialda {reasons} bor ekan, uni nofaol qilib bo'lmaydi. Avval buyurtmalarni yakunlang yoki bekor qiling, qoldiqni bering yoki hisobdan chiqaring.",
+    "blocked": "Filialda {reasons} bor ekan, uni nofaol qilib bo'lmaydi. Avval buyurtmalarni yakunlang yoki bekor qiling, qoldiqni bering yoki hisobdan chiqaring. Yoʻldagi koʻchirish avval oʻz filialida qabul qilinadi.",
     "blockedOrders": "{count, plural, other {# ta tugallanmagan buyurtma}}",
     "blockedStock": "{count, plural, other {omborda # xil tovar}}",
+    "blockedTransfers": "{count} ta yoʻldagi koʻchirish",
     "blockedAnd": "{first} va {second}",
+    "blockedThree": "{first}, {second} va {third}",
     "activated": "Filial faollashtirildi",
     "history": "Oʻzgarishlar tarixi",
     "isActive": "Faol",
@@ -1935,6 +1939,7 @@
       "newIssue": "Yangi berish",
       "newReturn": "Yangi qaytarish",
       "writeOff": "Hisobdan chiqarish",
+      "transfer": "Koʻchirish",
       "directEntry": "To'g'ridan-to'g'ri kiritish",
       "importStock": "Excel'dan import",
       "lowOnly": "Faqat kam qolganlar"
@@ -2184,6 +2189,51 @@
         "labelled": "{label}: {value}"
       }
     },
+    "transfer": {
+      "title": "Yangi koʻchirish",
+      "whoAndWhen": "Qayerdan, qayerga va kim qabul qiladi",
+      "branch": "Qaysi filialdan",
+      "chooseBranch": "Filialni tanlang",
+      "toBranch": "Qaysi filialga",
+      "chooseToBranch": "Qabul qiluvchi filialni tanlang",
+      "noOtherBranch": "Yuborish uchun boshqa faol filial yoʻq.",
+      "date": "Sana",
+      "items": "Tovarlar",
+      "branchFirst": "Avval yuboruvchi filialni tanlang: uning qoldigʻi shu yerda chiqadi.",
+      "noLines": "Hozircha tovar yoʻq. Yuqorida tovarni topib qoʻshing.",
+      "search": "Ombordagi tovarni topish",
+      "searchHint": "Tovar nomi",
+      "results": "Ombordagi tovarlar",
+      "nothingFound": "Omborda mos tovar topilmadi. Qidiruvni oʻzgartiring.",
+      "full": "Bitta koʻchirishda koʻpi bilan {max} ta tovar boʻladi. Buni yuboring va yangisini boshlang.",
+      "inStock": "Omborda: {qty} {unit}",
+      "quantity": "Miqdor, {unit}",
+      "moreThanStock": "Ombordagidan koʻp.",
+      "short": "{item} dan faqat {available} {unit} qoldi. Miqdorni kamaytiring.",
+      "remove": "Olib tashlash",
+      "removeLine": "{name} ni olib tashlash",
+      "commentStep": "Izoh",
+      "receivedBy": "Qabul qiluvchi (ixtiyoriy)",
+      "receivedByHint": "Tovarni kim olib ketadi, maʼlum boʻlsa",
+      "comment": "Izoh (ixtiyoriy)",
+      "steps": "Koʻchirish qadamlari",
+      "previous": "Orqaga",
+      "next": "Keyingi",
+      "step": "{total} dan {current}-qadam",
+      "cancel": "Bekor qilish",
+      "save": "Yuborish",
+      "confirmTitle": "{count} ta tovar {to} ga yuborilsinmi?",
+      "confirmResult": "Tovar hozir {from} omboridan chiqadi. Koʻchirish {to} da qabul qilinmaguncha «Yoʻlda» boʻladi. Uni bekor qilib boʻlmaydi.",
+      "confirmButton": "Hozir yuborish",
+      "saved": "{number} koʻchirish yuborildi.",
+      "savedTitle": "{number} koʻchirish yuborildi va yoʻlda. {from} qoldigʻi kamaydi.",
+      "open": "Koʻchirishni ochish",
+      "newTransfer": "Yangi koʻchirish",
+      "toStock": "Ombordagi qoldiq",
+      "switchTitle": "Filial almashtirilsinmi?",
+      "switchResult": "Qoʻshilgan tovarlar shu filial qoldigʻidan, ular shakldan olib tashlanadi.",
+      "switchConfirm": "Filialni almashtirish"
+    },
     "issueNote": {
       "title": "{number} berish varaqasi",
       "number": "Raqam",
@@ -2200,6 +2250,12 @@
       "quantity": "Miqdori",
       "downloadedBy": "Yuklab oldi: {name}, {at}",
       "page": "{pages} dan {page}-sahifa"
+    },
+    "transferNote": {
+      "title": "Koʻchirish yuk xati {number}",
+      "from": "Qaysi filialdan",
+      "to": "Qaysi filialga",
+      "sentBy": "Yuborgan"
     },
     "reverse": {
       "button": "Storno qilish",
@@ -2308,7 +2364,12 @@
         "inStock": "Hozir omborda",
         "labelled": "{label}: {value}",
         "downloadNote": "Berish varaqasi (PDF)",
-        "actions": "Amallar"
+        "actions": "Amallar",
+        "from": "Qayerdan",
+        "to": "Qayerga",
+        "sentBy": "Yuborgan",
+        "downloadTransferNote": "Koʻchirish yuk xati (PDF)",
+        "inTransit": "Yoʻlda. Tovar {from} omboridan chiqdi va yetib kelganda {to} da qabul qilinadi."
       }
     }
   },

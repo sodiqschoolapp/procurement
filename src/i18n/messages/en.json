@@ -93,7 +93,8 @@
       "overReturnComment": "A line is more than the department received: write a comment.",
       "reverseStockShort": "Not enough in stock to reverse: the items have left again.",
       "unfinishedOrders": "The branch still has unfinished orders.",
-      "stockLeft": "The branch still has stock."
+      "stockLeft": "The branch still has stock.",
+      "transfersInTransit": "A transfer from or to the branch is still in transit."
     },
     "file": {
       "tooLarge": "The file is larger than 10 MB. Choose a smaller file or take the photo again.",
@@ -500,6 +501,7 @@
       "MINIMUM_STOCK_REACHED": "{item} in {branch} has reached its minimum stock.",
       "STOCK_CHANGE_ASKED": "{actor} asked for {kind, select, WRITE_OFF {write-off} other {a stock change}} {number} in {branch}.",
       "STOCK_CHANGE_DECIDED": "{kind, select, WRITE_OFF {Write-off} other {Stock change}} {number} in {branch} was {outcome, select, approved {approved} other {refused}}.",
+      "TRANSFER_SENT": "{actor} sent transfer {number} from {branch} to your branch.",
       "REQUEST_WAITING_24H": "{count, plural, one {# order has} other {# orders have}} waited more than {hours, plural, one {# hour} other {# hours}} for your approval.",
       "REQUEST_WAITING_48H": "{count, plural, one {# order has} other {# orders have}} waited more than {hours, plural, one {# hour} other {# hours}} for approval.",
       "BRANCH_ROLE_VACANT": "Branch {branch} has no active {role, select, HEAD {Procurement Head} MANAGER {Manager} PRINCIPAL {Principal} FINANCE {Finance user} other {user}}.",
@@ -605,10 +607,12 @@
     "activateTitle": "Activate {name}?",
     "activateResult": "The branch comes back to the lists where new records are made.",
     "deactivated": "Branch deactivated",
-    "blocked": "The branch cannot be deactivated while it has {reasons}. Finish or cancel the orders and issue or write off the stock first.",
+    "blocked": "The branch cannot be deactivated while it has {reasons}. Finish or cancel the orders and issue or write off the stock first. A transfer in transit is received at its branch first.",
     "blockedOrders": "{count, plural, one {# unfinished order} other {# unfinished orders}}",
     "blockedStock": "{count, plural, one {# item in stock} other {# items in stock}}",
+    "blockedTransfers": "{count, plural, one {# transfer in transit} other {# transfers in transit}}",
     "blockedAnd": "{first} and {second}",
+    "blockedThree": "{first}, {second} and {third}",
     "activated": "Branch activated",
     "history": "Change history",
     "isActive": "Active",
@@ -1935,6 +1939,7 @@
       "newIssue": "New issue",
       "newReturn": "New return",
       "writeOff": "Write-off",
+      "transfer": "Transfer",
       "directEntry": "Direct entry",
       "importStock": "Import from Excel",
       "lowOnly": "Low stock only"
@@ -2184,6 +2189,51 @@
         "labelled": "{label}: {value}"
       }
     },
+    "transfer": {
+      "title": "New transfer",
+      "whoAndWhen": "From, to and who takes it",
+      "branch": "From branch",
+      "chooseBranch": "Choose a branch",
+      "toBranch": "To branch",
+      "chooseToBranch": "Choose the receiving branch",
+      "noOtherBranch": "There is no other active branch to send to.",
+      "date": "Date",
+      "items": "Items",
+      "branchFirst": "Choose the sending branch first: its stock is listed here.",
+      "noLines": "No items yet. Find an item above and add it.",
+      "search": "Find an item in stock",
+      "searchHint": "Product name",
+      "results": "Items in stock",
+      "nothingFound": "Nothing in stock matches. Change the search.",
+      "full": "A transfer holds at most {max} items. Send this one and start another.",
+      "inStock": "In stock: {qty} {unit}",
+      "quantity": "Quantity, {unit}",
+      "moreThanStock": "More than in stock.",
+      "short": "Only {available} {unit} of {item} left. Lower the quantity.",
+      "remove": "Remove",
+      "removeLine": "Remove {name}",
+      "commentStep": "Comment",
+      "receivedBy": "Received by (optional)",
+      "receivedByHint": "Who will take the items, if known",
+      "comment": "Comment (optional)",
+      "steps": "Steps of the transfer",
+      "previous": "Back",
+      "next": "Next",
+      "step": "Step {current} of {total}",
+      "cancel": "Cancel",
+      "save": "Send",
+      "confirmTitle": "Send {count, plural, one {# item} other {# items}} to {to}?",
+      "confirmResult": "The stock leaves {from} now. The transfer is In transit to {to} until it is received there. It cannot be cancelled.",
+      "confirmButton": "Send now",
+      "saved": "Transfer {number} is sent.",
+      "savedTitle": "Transfer {number} is sent and In transit. The stock of {from} is lowered.",
+      "open": "Open the transfer",
+      "newTransfer": "New transfer",
+      "toStock": "Stock on hand",
+      "switchTitle": "Change the branch?",
+      "switchResult": "The items you added are of this branch's stock and will be removed from the form.",
+      "switchConfirm": "Change branch"
+    },
     "issueNote": {
       "title": "Issue note {number}",
       "number": "Number",
@@ -2200,6 +2250,12 @@
       "quantity": "Quantity",
       "downloadedBy": "Downloaded by {name}, {at}",
       "page": "Page {page} of {pages}"
+    },
+    "transferNote": {
+      "title": "Transfer note {number}",
+      "from": "From branch",
+      "to": "To branch",
+      "sentBy": "Sent by"
     },
     "reverse": {
       "button": "Reverse",
@@ -2308,7 +2364,12 @@
         "inStock": "In stock now",
         "labelled": "{label}: {value}",
         "downloadNote": "Issue note (PDF)",
-        "actions": "Actions"
+        "actions": "Actions",
+        "from": "From",
+        "to": "To",
+        "sentBy": "Sent by",
+        "downloadTransferNote": "Transfer note (PDF)",
+        "inTransit": "In transit. The stock has left {from} and is received at {to} when it arrives."
       }
     }
   },

@@ -20,7 +20,8 @@ import { requireUser } from "@/server/auth/session";
 // header shows the fields of its type; no money (decided item 7). A waiting write-off's lines
 // show the stock of now; Approve and Refuse, fixed at the bottom, only where the query offers
 // them (`canDecide`), anyone else reads who it waits for. Reverse (the item card's dialog) and the
-// issue note only where the query offers them. At phone width the lines are cards.
+// issue or transfer note only where the query offers them. A transfer's header names the sending
+// and the receiving branch and who sent it (plan of 7.1). At phone width the lines are cards.
 
 export default async function StockDocumentPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -42,10 +43,17 @@ export default async function StockDocumentPage({ params }: { params: Promise<{ 
       : document.type === "DIRECT_ENTRY"
         ? tEntry(`reasons.${document.reason as "EXISTING_STOCK" | "GIFT" | "OTHER"}`)
         : tWriteOff(`reasons.${document.reason as WriteOffReason}`);
-  const fields: { key: string; label: string; value: string; wide?: boolean }[] = [
-    { key: "branch", label: t("page.branch"), value: document.branchCode },
-    { key: "date", label: t("page.date"), value: format.date(document.docDate) },
-  ];
+  const transfer = document.type === "TRANSFER";
+  const fields: { key: string; label: string; value: string; wide?: boolean }[] = transfer
+    ? [
+        { key: "branch", label: t("page.from"), value: document.branchCode },
+        { key: "toBranch", label: t("page.to"), value: document.toBranchCode ?? "" },
+        { key: "date", label: t("page.date"), value: format.date(document.docDate) },
+      ]
+    : [
+        { key: "branch", label: t("page.branch"), value: document.branchCode },
+        { key: "date", label: t("page.date"), value: format.date(document.docDate) },
+      ];
   if (document.departmentName !== null) {
     fields.push({ key: "department", label: t("page.department"), value: document.departmentName });
   }
@@ -55,7 +63,12 @@ export default async function StockDocumentPage({ params }: { params: Promise<{ 
   if (reason !== null) fields.push({ key: "reason", label: t("page.reason"), value: reason });
   fields.push({
     key: "createdBy",
-    label: document.type === "WRITE_OFF" ? tWriteOff("page.askedBy") : t("page.createdBy"),
+    label:
+      document.type === "WRITE_OFF"
+        ? tWriteOff("page.askedBy")
+        : transfer
+          ? t("page.sentBy")
+          : t("page.createdBy"),
     value: t("page.byAt", { name: document.createdBy, at: at(document.createdAt) }),
   });
   if (document.decidedBy && document.decidedAt) {
@@ -183,7 +196,7 @@ export default async function StockDocumentPage({ params }: { params: Promise<{ 
               className={cn(buttonVariants({ variant: "secondary" }), "max-sm:h-12")}
             >
               <Icon name="download" />
-              {t("page.downloadNote")}
+              {transfer ? t("page.downloadTransferNote") : t("page.downloadNote")}
             </a>
           )}
           {document.canReverse && (
@@ -198,6 +211,13 @@ export default async function StockDocumentPage({ params }: { params: Promise<{ 
           number={document.number}
           lines={document.lines}
         />
+      ) : transfer && document.status === "IN_TRANSIT" ? (
+        <p data-transfer-in-transit className="text-[15px] leading-[22px] text-muted-foreground">
+          {t("page.inTransit", {
+            from: document.branchCode,
+            to: document.toBranchCode ?? "",
+          })}
+        </p>
       ) : document.type === "WRITE_OFF" && waiting ? (
         <p data-write-off-waiting className="text-[15px] leading-[22px] text-muted-foreground">
           {tWriteOff("page.waiting")}
