@@ -482,3 +482,103 @@ test("S13: 520 000 given, nothing bought: settlement asks for 520 000 back; clos
   expect(await stockOf(scene.branch.id, order.variantId)).toBeNull();
   expect(await movementsOf(scene.branch.id, order.variantId)).toBe(0);
 });
+
+test('S9: a cash order 10 000 over and a card order 40 000 under: "Pay Manager 10 000" and card "Left 40 000"; both close after both are handled (15 S9; 08 Closing 2 and 3)', async ({
+  page,
+}) => {
+  test.slow();
+  const scene = await newScene();
+  const cash = await notebooks(scene);
+  const card = await notebooks(scene, "CARD");
+  await throughApprovals(page, scene, [cash, card]);
+  // Cash is prefilled for the cash order only (08 When Finance approves).
+  await financeApproves(page, scene, [cash, card], { [cash.id]: "520000" });
+
+  await as(page, scene.manager);
+  await recordPurchase(page, cash, { price: "5100", comment: "Narx oshdi" });
+  await recordPurchase(page, card, { price: "4600", comment: "Chegirma bilan olindi" });
+  await sendToSettlement(page, scene, [cash, card]);
+
+  await openSettle(page, scene, [cash, card]);
+  // The cash block: Pay 10 000, and the net "Finance pays the Manager 10 000" (08 Money ledger 2).
+  await expect(page.locator(`[data-settle-amount="${cash.id}"]`)).toHaveValue("10000");
+  const net = page.locator("[data-settle-net]");
+  await expect(net).toContainText(
+    s.net.TO_MANAGER.replace("{name}", scene.manager.fullName).replace(" {amount}.", ""),
+  );
+  await expect(net).toContainText(/10\s000/);
+  // The card block: "Left 40 000" for the card order.
+  const left = page.locator(`[data-card-order="${card.id}"] [data-fact="difference"]`);
+  await expect(left).toContainText(s.card.left.replace(" {amount}", ""));
+  await expect(left).toContainText(/40\s000/);
+  expect(await scrollsSideways(page)).toBe(false);
+
+  // Nothing handled yet: Close closes nothing and names both orders (08 Closing 3).
+  await closeOnSettle(page);
+  const failed = page.locator("[data-settle-failed]");
+  await expect(failed).toContainText(m.notReady.CLOSE);
+  await expect(failed.locator("p")).toHaveCount(2);
+  expect(await statusOf(cash.id)).toBe("SETTLEMENT");
+  expect(await statusOf(card.id)).toBe("SETTLEMENT");
+
+  // Both handled: the Pay row saved and the card order confirmed; then both close.
+  await saveSettlement(page, 1);
+  const confirmed = page.locator(`[data-confirm="CARD:${card.id}"]`);
+  await confirmed.click();
+  await expect(confirmed).toBeChecked();
+  await closeOnSettle(page);
+  await expect(page.getByText("Closed 2 orders.")).toBeVisible();
+
+  const paid = (await moneyRowsOf([cash.id, card.id])).filter((row) => row.kind === "PAID_BACK");
+  expect(paid.map((row) => [row.order_id, row.amount])).toEqual([[cash.id, "10000"]]);
+  expect(await countOf(cash.id)).toBe(0);
+  expect(await statusOf(cash.id)).toBe("CLOSED");
+  expect(await statusOf(card.id)).toBe("CLOSED");
+});
+
+test("S16: close-alone switched off: the Manager has no Close; the order goes to Finance, who closes it (15 S16; 03 Manager rights; 08 Closing 1)", async ({
+  page,
+}) => {
+  test.slow();
+  const scene = await newScene();
+  const order = await notebooks(scene);
+
+  // The Head switches off "Close exact-match orders alone" on the Manager's page (03).
+  await as(page, scene.head);
+  await page.goto(`/users/${scene.manager.id}`);
+  const rights = page.locator("section", {
+    has: page.getByRole("heading", { name: en.managerRights.title, level: 2 }),
+  });
+  const closeAlone = rights.getByRole("checkbox", { name: en.managerRights.names.CLOSE_ALONE });
+  await expect(closeAlone).toBeChecked();
+  await closeAlone.uncheck();
+  await expect(page.getByText(en.managerRights.switchedOff).first()).toBeVisible();
+  await expect(closeAlone).not.toBeChecked();
+
+  await throughApprovals(page, scene, [order]);
+  await financeApproves(page, scene, [order], { [order.id]: "520000" });
+
+  // An exact match, but no Close: not on the order page, not in the list bar.
+  await as(page, scene.manager);
+  await recordPurchase(page, order);
+  for (const label of ["number", "price", "total"] as const) {
+    await expect(labelOf(page, label)).toHaveAttribute("data-colour", "green");
+  }
+  await expect(page.locator('[data-order-bar] [data-move="SEND_TO_SETTLEMENT"]')).toBeVisible();
+  await expect(page.locator('[data-order-bar] [data-move="CLOSE_EXACT"]')).toHaveCount(0);
+  await listAt(page, scene, "PURCHASING");
+  await tickGroups(page, [order]);
+  const bar = page.locator("[data-list-bar]");
+  await expect(bar.locator('[data-move="SEND_TO_SETTLEMENT"]')).toBeVisible();
+  await expect(bar.locator('[data-move="CLOSE_EXACT"]')).toHaveCount(0);
+  await bar.getByRole("button", { name: o.list.bar.clear }).click();
+  await sendToSettlement(page, scene, [order]);
+  expect(await statusOf(order.id)).toBe("SETTLEMENT");
+
+  // Finance closes it: the count is 0, nothing to settle (08 Closing 3).
+  await openSettle(page, scene, [order]);
+  await closeOnSettle(page);
+  await expect(page.getByText("Closed 1 order.")).toBeVisible();
+  expect(await countOf(order.id)).toBe(0);
+  expect(await statusOf(order.id)).toBe("CLOSED");
+});
