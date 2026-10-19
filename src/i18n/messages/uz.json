@@ -94,7 +94,8 @@
       "reverseStockShort": "Storno qilish uchun omborda yetarli emas: mahsulotlar yana chiqib ketgan.",
       "unfinishedOrders": "Filialda tugallanmagan buyurtmalar bor.",
       "stockLeft": "Filial omborida hali tovar bor.",
-      "transfersInTransit": "Filialdan yoki filialga koʻchirish hali yoʻlda."
+      "transfersInTransit": "Filialdan yoki filialga koʻchirish hali yoʻlda.",
+      "aboveSent": "Yuborilganidan ko‘p."
     },
     "file": {
       "tooLarge": "Fayl 10 MB dan katta. Kichikroq fayl tanlang yoki suratni qaytadan oling.",

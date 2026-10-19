@@ -94,7 +94,8 @@
       "reverseStockShort": "Not enough in stock to reverse: the items have left again.",
       "unfinishedOrders": "The branch still has unfinished orders.",
       "stockLeft": "The branch still has stock.",
-      "transfersInTransit": "A transfer from or to the branch is still in transit."
+      "transfersInTransit": "A transfer from or to the branch is still in transit.",
+      "aboveSent": "More than was sent."
     },
     "file": {
       "tooLarge": "The file is larger than 10 MB. Choose a smaller file or take the photo again.",

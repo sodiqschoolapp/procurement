@@ -316,6 +316,13 @@
       "when": 1792370490289,
       "tag": "0044_analytics_finance_speed",
       "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1792400669501,
+      "tag": "0045_transfer_receive",
+      "breakpoints": true
     }
   ]
 }

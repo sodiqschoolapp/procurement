@@ -47,3 +47,31 @@ export async function postDocument(input: {
   );
   return { documentId: created.documentId, number: created.number, lineIds: created.lineIds };
 }
+
+/**
+ * An IN_TRANSIT transfer from one branch to another, made straight through createDocument() as
+ * sendTransfer makes it (plan of 7.1): its TRANSFER_OUT at the sender's average. For the tests of
+ * 7.2; the sender must hold the quantities.
+ */
+export async function sendTransferDocument(input: {
+  branchId: string;
+  toBranchId: string;
+  createdBy: string;
+  lines: { variantId: string; qty: string }[];
+  receivedByName?: string | null;
+}): Promise<{ documentId: string; number: string; lineIds: string[] }> {
+  const created = await db.transaction((tx) =>
+    createDocument(tx, {
+      type: "TRANSFER",
+      branchId: input.branchId,
+      toBranchId: input.toBranchId,
+      receivedByName: input.receivedByName ?? null,
+      docDate: "2031-05-03",
+      status: "IN_TRANSIT",
+      clientKey: randomUUID(),
+      createdBy: input.createdBy,
+      lines: input.lines,
+    }),
+  );
+  return { documentId: created.documentId, number: created.number, lineIds: created.lineIds };
+}

@@ -113,6 +113,10 @@ export const PERMISSIONS = {
   "stock.issue": { scope: "branch", roles: HEAD_AND_MANAGER, right: "ISSUE_STOCK" },
   "stock.return_reverse": { scope: "branch", roles: HEAD_AND_MANAGER, right: "RETURN_REVERSE" },
   "stock.transfer": { scope: "branch", roles: HEAD_AND_MANAGER, right: "TRANSFER_STOCK" },
+  // Receiving a transfer (09 Movement types: "the receiving Manager confirms"), asked on its
+  // receiving branch: TRANSFER_STOCK is "Send transfers" only, so no right (plan of 7.2, decided
+  // item 2, Look first).
+  "stock.receive_transfer": { scope: "branch", roles: HEAD_AND_MANAGER },
   // "Ask for a write-off or stock correction", and starting a count: WRITE_OFF_COUNT, "Ask for
   // write-offs and run stock counts".
   "stock.ask_write_off": { scope: "branch", roles: HEAD_AND_MANAGER, right: "WRITE_OFF_COUNT" },

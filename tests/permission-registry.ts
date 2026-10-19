@@ -136,6 +136,10 @@ export const SERVER_ACTIONS: Record<string, Entry> = {
   // Approve or refuse a write-off (plan of 5.11): the Head (write-off-matrix.db.test.ts).
   "src/app/(app)/warehouse/documents/[id]/actions.ts#decideWriteOffAction":
     "stock.approve_write_off",
+  // Receive a transfer (plan of 7.2): stock.receive_transfer on its receiving branch
+  // (receive-transfer-matrix.db.test.ts).
+  "src/app/(app)/warehouse/documents/[id]/actions.ts#receiveTransferAction":
+    "stock.receive_transfer",
   // Set or clear a minimum (plan of 5.10): stock.set_minimums on the branch
   // (minimum-matrix.db.test.ts).
   "src/app/(app)/warehouse/items/[id]/actions.ts#setStockMinimumAction": "stock.set_minimums",
