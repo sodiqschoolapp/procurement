@@ -26,8 +26,8 @@ The whole project as ordered tasks. One task is one Claude Code session and one 
 | 6. Home, analytics, reports | 17 | What each role sees first, and the numbers behind the work. |
 | 7. Transfers and counts | 4 | Stock moving between branches, and stock checked against the shelf. |
 | 8. Jobs and polish | 3 | The scheduled work, and the translation pass. |
-| 9. Before go-live | 6 | Proof that it works, then the real environment and the real data. |
-| **Total** | **108** | |
+| 9. Before go-live | 9 | Proof that it works, then the real environment and the real data. |
+| **Total** | **111** | |
 
 ## Phase 0: Foundations
 
@@ -607,10 +607,25 @@ The scheduled work, and the translation pass.
 
 Proof that it works, then the real environment and the real data.
 
-- [ ] **9.1 Acceptance run and accessibility pass**
+- [x] **9.1a Acceptance run: orders to approval** (9.1 split in four by its plan, pull request #128)
   - **Read:** `15-quality-and-acceptance.md` (whole file); `16-build-order.md` (whole file). From the former 8.3: `11-screens-and-ux.md` (Rules for a smooth feel: 13); `01-summary.md` (Quality bar); `15-quality-and-acceptance.md` (Done-check for every phase).
-  - **Build:** Every scenario S1 to S20 as a Playwright test at phone and desktop width; a scenario covered so far only by database tests gets its browser test. From the former 8.3 (Accessibility pass): Every screen checked for keyboard use and WCAG AA contrast at 375 px and 1440 px, and for 44 px touch targets at 375 px, and fixed.
-  - **Done when:** All 18 are green in CI at both widths. An automated accessibility check runs in Playwright on every screen with no serious finding; S1 passes with the keyboard only.
+  - **Build:** The Phase 2 scenarios of `16-build-order.md` as Playwright tests at both widths: S5, S6, S7, S14, S17, S18, S19; a scenario covered so far only by database tests gets its browser test.
+  - **Done when:** All seven are green in CI in both projects (`phone-375`, `desktop-1440`), each test named for its scenario.
+
+- [ ] **9.1b Acceptance run: money and settlement**
+  - **Read:** `15-quality-and-acceptance.md` (whole file); `16-build-order.md` (whole file). From the former 8.3: `11-screens-and-ux.md` (Rules for a smooth feel: 13); `01-summary.md` (Quality bar); `15-quality-and-acceptance.md` (Done-check for every phase).
+  - **Build:** S1, S2, S3, S9, S12, S13, S16, S20 as Playwright tests at phone and desktop width.
+  - **Done when:** All eight are green in CI in both projects.
+
+- [ ] **9.1c Acceptance run: purchasing and warehouse**
+  - **Read:** `15-quality-and-acceptance.md` (whole file); `16-build-order.md` (whole file). From the former 8.3: `11-screens-and-ux.md` (Rules for a smooth feel: 13); `01-summary.md` (Quality bar); `15-quality-and-acceptance.md` (Done-check for every phase).
+  - **Build:** S4, S8, S10, S11, S15 as Playwright tests at phone and desktop width (S10 and S15 have browser tests; each is read against its "Must end with" line).
+  - **Done when:** All five are green in CI in both projects; with 9.1a and 9.1b every scenario S1 to S20 has its browser test.
+
+- [ ] **9.1d Accessibility pass**
+  - **Read:** `15-quality-and-acceptance.md` (whole file); `16-build-order.md` (whole file). From the former 8.3: `11-screens-and-ux.md` (Rules for a smooth feel: 13); `01-summary.md` (Quality bar); `15-quality-and-acceptance.md` (Done-check for every phase).
+  - **Build:** From the former 8.3 (Accessibility pass): Every screen checked for keyboard use and WCAG AA contrast at 375 px and 1440 px, and for 44 px touch targets at 375 px, and fixed.
+  - **Done when:** An automated accessibility check runs in Playwright on every screen with no serious finding; S1 passes with the keyboard only.
   - Merged with the former 8.3 by the owner on 17.10.2026 (D47).
 
 - [ ] **9.2 Speed**

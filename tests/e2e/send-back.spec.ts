@@ -220,5 +220,12 @@ test("S5: send back with a note, 100 → 80, submit again; the Head sees the sam
   await expect(changed.locator("[data-old]")).toContainText("100");
   await expect(changed.locator("[data-new]")).toContainText("80");
   await expect(changed).toContainText("→");
+  // "Highlighted" (15 S5): the new value is marked with the warning background of what-changed.tsx.
+  await expect(changed.locator("ins[data-new]")).toHaveClass(/\bbg-warning-bg\b/);
+  // Approval restarts at Head (06 rule 5): the stepper stands at Head and the Head has Approve.
+  await expect(page.locator('li[data-step="HEAD"]')).toHaveAttribute("data-state", "current");
+  await expect(
+    page.locator("[data-order-bar]").getByRole("button", { name: t.approve.button, exact: true }),
+  ).toBeVisible();
   expect(await scrollsSideways(page)).toBe(false);
 });
