@@ -24,7 +24,7 @@ export type CellValue =
   | { kind: "date"; value: BusinessDate }
   /** A count of orders (plan of 6.4): a whole number, never money. */
   | { kind: "count"; value: number }
-  /** A quantity's numeric(14,3) text, a number cell (Reports, plan of 6.8). */
+  /** A quantity's numeric(14,3) text, signed or not, a number cell (Reports, plans of 6.8, 6.9a). */
   | { kind: "quantity"; value: string };
 
 export type AnalyticsSheet = {
@@ -53,7 +53,10 @@ function cellOf(cell: CellValue): string | number | Date {
     case "count":
       return cell.value;
     case "quantity":
-      return quantityCellValue(cell.value);
+      // A movement out of stock is negative (Stock movements, plan of 6.9a).
+      return cell.value.startsWith("-")
+        ? -quantityCellValue(cell.value.slice(1))
+        : quantityCellValue(cell.value);
     case "date":
       // Midnight UTC of the Tashkent business date: Excel shows the date itself.
       return new Date(`${cell.value}T00:00:00Z`);

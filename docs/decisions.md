@@ -2386,6 +2386,29 @@ Choices made during the build:
 - The page links (`PageLinks`) are drawn by the page, not the feature views: a feature does not import from `src/app/`.
 - Permission review: the route's own `data.export` check is in the permission matrix (`GET /reports/download with the branch filter` and `…, the branch wall in the SQL`), and each wall test of the queries checks that every table adds up to the total (Must fix 1, Should fix 1 and 2).
 
+### 6.9a Reports: Stock on hand, Stock movements and Use by department (19.10.2026)
+
+The plan's decisions as the plan review of 19.10.2026 confirmed them, with its corrections applied (1: the Purchases line is compared with the Purchase register's goods of product records only, a service record beside them; 2: the REVERSAL rows lie in the dates and count in no total, named in the test and the code). The Look first items come first.
+
+1. **Look first** (task split). 6.9 is split into 6.9a (the three stock reports, with the stock value Done when) and 6.9b (Price history, Money with managers, Approval speed): six reports are about 40 files, 6.8's four were 28.
+2. **Look first** (reading of 09 Direct entry rule 5). The Stock on hand report's branch table carries, beside the value now, the value that came in during the dates by purchase and by direct entry on two lines of their own, each at its own cost: a value now cannot be split by source under one moving average per subtype and branch. Proposed `/spec-change` of 09 Direct entry rule 5: "The stock value report shows, beside the value now, what came in during the dates by purchase and by direct entry on lines of their own, each at its own cost, so they are easy to tell apart."
+3. **Look first** (stock value source). The stock lines and their value are read live from `stock_balances`, as the Stock on hand screen (5.2), so report and screen agree at once; the Analytics Warehouse block can be up to 5 minutes behind. Use by department reads `analytics_stock_moves`, so it equals Analytics' use by department.
+4. **Look first** (numbers of now). Stock value and the lines are numbers of now, the dates do not change them (6.4d decided item 2); the dates filter the two in-lines, the movements and the use, and the note says so.
+5. **Look first** (one date and one value per movement). A movement's value is `stockValue(|qty|, unit_cost)`, signed; its date the business date of its source: a document's `doc_date`, a receipt's `purchased_on`, a REVERSAL the Tashkent day of its own `created_at`. Purchases counts RECEIPT rows not undone (= `actualGoods()` of the product records), Direct entries DIRECT_ENTRY rows not undone, Use by department ISSUE − RETURN of documents not Reversed; so the three reports add up to each other for the same dates and filters.
+6. Stock movements lists every type, a reversal as its own row on its own day and the undone row marked; no table of totals.
+7. Use by department's quantities are per subtype; its value per department and in all.
+8. Only the filters branch, dates and category; category the product's.
+9. Lines and movements 25 a page; the file holds all rows; the tables of totals are not paged.
+10. No change against the period before.
+11. Rows: every branch of the user with a stock line or a counted in-movement, inactive marked; departments with use, largest net value first.
+
+Choices made during the build:
+
+- The Stock on hand report lists the lines holding stock (quantity above 0); the Stock on hand screen keeps its 0 lines for the minimums (5.2 decided item 3), which a report of value does not need.
+- The Excel writer's `quantity` cell takes a signed quantity ("-0.500" is −0.5), for the movements out and a department's negative net use.
+- The address tests that used `report=stock` as an unknown report now use `report=prices`: `stock` became a report in this task (a requirement change, not a weakened test).
+- The stock lines link to their item card, the movements to their document or order, as the Analytics lists do.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

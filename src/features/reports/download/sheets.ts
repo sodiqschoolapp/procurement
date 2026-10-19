@@ -11,9 +11,12 @@ import uz from "@/i18n/messages/uz.json";
 import type { AnalyticsSheet, CellValue } from "../../analytics/download/excel";
 import type { AnalyticsFilterOptions } from "../../analytics/queries/filters";
 import type { Report, ReportParams } from "../report-params";
+import type { DepartmentUseReport } from "../queries/department-use-report";
 import type { PlanVsActualReport, Sums } from "../queries/plan-vs-actual-report";
 import type { PurchaseRegister, RegisterRecord } from "../queries/purchase-register";
 import type { SpendingLine, SpendingReport } from "../queries/spending-report";
+import type { StockMovementsReport } from "../queries/stock-movements-report";
+import type { StockReport } from "../queries/stock-report";
 
 // The sheets of the report files (10-notifications-analytics-reports.md, Reports: "exports to
 // Excel"; build-plan 6.8: "Excel export with real numbers and dates"; plan of 6.8, decided item 8):
@@ -241,5 +244,148 @@ export function spendingSheets(report: SpendingReport, context: Context): Analyt
       (l) => l.name ?? t("spending.noSupplier"),
     ),
     table(t("spending.byMonth"), t("spending.columns.month"), report.months, (l) => month(l.name!)),
+  ];
+}
+
+/** Stock on hand: the branches with their two in-lines, then every stock line. */
+export function stockReportSheets(report: StockReport, context: Context): AnalyticsSheet[] {
+  const { t } = translators(context.locale);
+  return [
+    {
+      name: t("stock.byBranch"),
+      heading: heading(context, "stock", t("stock.byBranch"), report.range, false),
+      columns: [
+        t("stock.columns.branch"),
+        t("stock.columns.value"),
+        t("stock.columns.purchases"),
+        t("stock.columns.directEntries"),
+      ],
+      rows: [
+        ...report.branches.map((row) => [
+          text(row.name),
+          money(row.value),
+          money(row.purchases),
+          money(row.directEntries),
+        ]),
+        [
+          text(t("allBranchesTotal")),
+          money(report.all.value),
+          money(report.all.purchases),
+          money(report.all.directEntries),
+        ],
+      ],
+    },
+    {
+      name: t("stock.lines"),
+      heading: heading(context, "stock", t("stock.lines"), report.range, false),
+      columns: [
+        t("stock.columns.branch"),
+        t("stock.columns.product"),
+        t("stock.columns.subtype"),
+        t("stock.columns.qty"),
+        t("stock.columns.measure"),
+        t("stock.columns.average"),
+        t("stock.columns.value"),
+      ],
+      rows: report.lines.map((row) => [
+        text(row.branchCode),
+        text(row.productName),
+        text(row.subtypeName ?? ""),
+        { kind: "quantity", value: row.qty },
+        text(row.unitShortName),
+        money(row.avgCost),
+        money(row.value),
+      ]),
+      total: { label: t("total"), amount: report.all.value, column: 7 },
+    },
+  ];
+}
+
+/** Stock movements: every movement of the dates, signed. */
+export function stockMovementsSheets(
+  report: StockMovementsReport,
+  context: Context,
+): AnalyticsSheet[] {
+  const { t, tRoot } = translators(context.locale);
+  return [
+    {
+      name: t("movements.sheet"),
+      heading: heading(context, "movements", null, report.range, false),
+      columns: [
+        t("movements.columns.date"),
+        t("movements.columns.branch"),
+        t("movements.columns.type"),
+        t("movements.columns.source"),
+        t("movements.columns.product"),
+        t("movements.columns.subtype"),
+        t("movements.columns.qty"),
+        t("movements.columns.measure"),
+        t("movements.columns.unitCost"),
+        t("movements.columns.value"),
+        t("movements.columns.undone"),
+      ],
+      rows: report.rows.map((row) => [
+        { kind: "date", value: row.movedOn },
+        text(row.branchCode),
+        text(tRoot(`warehouse.item.types.${row.type}`)),
+        text(row.documentNumber ?? row.orderNumber ?? ""),
+        text(row.productName),
+        text(row.subtypeName ?? ""),
+        { kind: "quantity", value: row.qtyDelta },
+        text(row.unitShortName),
+        money(row.unitCost),
+        { kind: "signedMoney", value: row.value },
+        text(row.undone ? t("movements.undoneYes") : ""),
+      ]),
+    },
+  ];
+}
+
+/** Use by department: the departments' values, then the lines per subtype. */
+export function departmentUseSheets(
+  report: DepartmentUseReport,
+  context: Context,
+): AnalyticsSheet[] {
+  const { t } = translators(context.locale);
+  const total = { label: t("total"), amount: report.total, signed: true };
+  return [
+    {
+      name: t("use.byDepartment"),
+      heading: heading(context, "use", t("use.byDepartment"), report.range, true),
+      columns: [t("use.columns.department"), t("use.columns.branch"), t("use.columns.value")],
+      rows: report.departments.map((row) => [
+        text(row.name),
+        text(row.branchCode),
+        { kind: "signedMoney", value: row.value },
+      ]),
+      total: { ...total, column: 3 },
+    },
+    {
+      name: t("use.lines"),
+      heading: heading(context, "use", t("use.lines"), report.range, true),
+      columns: [
+        t("use.columns.department"),
+        t("use.columns.branch"),
+        t("use.columns.product"),
+        t("use.columns.subtype"),
+        t("use.columns.issued"),
+        t("use.columns.returned"),
+        t("use.columns.net"),
+        t("use.columns.measure"),
+        t("use.columns.value"),
+      ],
+      rows: report.lines.map((row) => [
+        text(row.departmentName),
+        text(row.branchCode),
+        text(row.productName),
+        text(row.subtypeName ?? ""),
+        { kind: "quantity", value: row.issued },
+        { kind: "quantity", value: row.returned },
+        { kind: "quantity", value: row.net },
+        text(row.unitShortName),
+        { kind: "signedMoney", value: row.value },
+      ]),
+      total: { ...total, column: 9 },
+    },
   ];
 }

@@ -73,7 +73,8 @@ describe("parseReportParams (10 Reports; decided items 5 and 6)", () => {
   });
 
   it("refuses an unknown report, a name given twice and `from` after `to`", () => {
-    expect(parseReportParams({ report: "stock" }, TODAY)).toBeNull();
+    // `stock` became a report in 6.9a; a name that is none stays refused.
+    expect(parseReportParams({ report: "prices" }, TODAY)).toBeNull();
     expect(parseReportParams({ branch: [BRANCH, BRANCH] }, TODAY)).toBeNull();
     expect(parseReportParams({ from: "2031-05-10", to: "2031-05-09" }, TODAY)).toBeNull();
     // One day is a range.
@@ -81,6 +82,18 @@ describe("parseReportParams (10 Reports; decided items 5 and 6)", () => {
       first: "2031-05-10",
       last: "2031-05-10",
     });
+  });
+});
+
+describe("the stock reports of 6.9a (10 Reports: Stock on hand, Stock movements, Use by department)", () => {
+  it("reads each of them and gives back the same address", () => {
+    for (const report of ["stock", "movements", "use"] as const) {
+      const params = parseReportParams({ report, branch: BRANCH, page: "2" }, TODAY)!;
+      expect([params.report, params.filters.branch, params.page]).toEqual([report, BRANCH, 2]);
+      expect(
+        parseReportParams(Object.fromEntries(new URLSearchParams(reportSearch(params))), TODAY),
+      ).toEqual(params);
+    }
   });
 });
 

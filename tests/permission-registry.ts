@@ -286,6 +286,11 @@ export const QUERIES: Record<string, Permission> = {
   "src/features/reports/queries/purchase-register.ts#getPurchaseRegister": "data.view",
   "src/features/reports/queries/plan-vs-actual-report.ts#getPlanVsActualReport": "data.view",
   "src/features/reports/queries/spending-report.ts#getSpendingReport": "data.view",
+  // The stock reports of 6.9a (plan of 6.9a): data.view, the walls in their own branchFilter() and
+  // in movesWhere() (src/features/reports/queries/reports-matrix.db.test.ts).
+  "src/features/reports/queries/stock-report.ts#getStockReport": "data.view",
+  "src/features/reports/queries/stock-movements-report.ts#getStockMovementsReport": "data.view",
+  "src/features/reports/queries/department-use-report.ts#getDepartmentUseReport": "data.view",
   // The order list's download, Excel and PDF (plan of 2.14, decided item 4, Look first): data.export
   // with the list's own walls in the SQL (queries/order-download-matrix.db.test.ts).
   "src/features/orders/queries/order-list.ts#orderDownload": "data.export",

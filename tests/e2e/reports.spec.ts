@@ -5,8 +5,8 @@ import uz from "../../src/i18n/messages/uz.json" with { type: "json" };
 import { E2E_ROLES } from "./global-setup";
 import { REPORT_MONTH, seedReportRecords } from "./report-records";
 
-// Build plan 6.8 (Reports: orders and spending) in the browser, at 375 and 1440 px: the Head opens
-// /reports, each of the four tabs, chooses the dates and a category, and downloads the Spending
+// Build plan 6.8 (Reports: orders and spending) and 6.9a (the three stock reports) in the browser,
+// at 375 and 1440 px: the Head opens /reports, each of the tabs, chooses the dates and a category, and downloads the Spending
 // report; the file's amounts are number cells that add up to its total line (Done when: "export
 // the spending report and sum a column in Excel"; 10-notifications-analytics-reports.md, Reports;
 // 11-screens-and-ux.md, Screens: Reports). The Head reads Uzbek, as in the other specs.
@@ -41,6 +41,9 @@ test("Done when: the Head opens each report, filters by dates and category, and 
     uz.reports.tabs.purchases,
     uz.reports.tabs.plan,
     uz.reports.tabs.spending,
+    uz.reports.tabs.stock,
+    uz.reports.tabs.movements,
+    uz.reports.tabs.use,
   ]);
 
   // At phone width the filters fold behind their button; it opens on a tap.
@@ -89,4 +92,19 @@ test("Done when: the Head opens each report, filters by dates and category, and 
     /^\/orders\/download\/excel\?dates=submitted/,
   );
   expect(await scrollsSideways(page)).toBe(false);
+
+  // The three stock reports of 6.9a keep the dates and the category, and download from the route.
+  for (const report of ["stock", "movements", "use"] as const) {
+    await page.locator(`[data-report-tab="${report}"]`).click();
+    await expect(page).toHaveURL(new RegExp(`report=${report}.*category=`));
+    await expect(page.locator(`[data-report-tab="${report}"]`)).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    await expect(page.locator(`[data-excel="${report}"]`)).toHaveAttribute(
+      "href",
+      new RegExp(`^/reports/download\\?report=${report}&`),
+    );
+    expect(await scrollsSideways(page)).toBe(false);
+  }
 });

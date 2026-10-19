@@ -2992,13 +2992,19 @@
       "orders": "Order register",
       "purchases": "Purchase register",
       "plan": "Planned vs actual",
-      "spending": "Spending"
+      "spending": "Spending",
+      "stock": "Stock on hand",
+      "movements": "Stock movements",
+      "use": "Use by department"
     },
     "notes": {
       "orders": "Orders submitted in the dates, with status, totals and dates: the order list's download.",
       "purchases": "Every purchase record bought in the dates, with supplier, price and payment type. Cancelled records are marked and not counted.",
       "plan": "Orders whose buying ended Done or Done short in the dates. Difference is planned minus actual: above 0 money is left, below 0 more was spent.",
-      "spending": "Actual totals of the purchase records bought in the dates, not cancelled."
+      "spending": "Actual totals of the purchase records bought in the dates, not cancelled.",
+      "stock": "Quantities and value now: the dates do not change them. Purchases and Direct entries are what came in during the dates, each at its own cost, on lines of their own.",
+      "movements": "Every movement of stock in the dates, in above 0 and out below 0, each at the cost it moved at. A movement a later reversal undid is marked.",
+      "use": "What each department received in the dates, less what it returned, at the cost each movement moved at. Reversed documents are left out."
     },
     "filters": "Filters",
     "from": "From",
@@ -3085,6 +3091,62 @@
         "month": "Month",
         "records": "Records",
         "amount": "Amount"
+      }
+    },
+    "allBranchesTotal": "All branches",
+    "inactive": "Inactive",
+    "stock": {
+      "summary": "{count, plural, one {# line} other {# lines}} in stock, value {value}",
+      "byBranch": "By branch",
+      "lines": "Stock lines",
+      "empty": "No stock and nothing came in during these dates.",
+      "columns": {
+        "branch": "Branch",
+        "product": "Product",
+        "subtype": "Subtype",
+        "qty": "Quantity",
+        "measure": "Measure",
+        "average": "Average cost",
+        "value": "Value now",
+        "purchases": "Purchases",
+        "directEntries": "Direct entries"
+      }
+    },
+    "movements": {
+      "summary": "{count, plural, one {# movement} other {# movements}}",
+      "sheet": "Movements",
+      "empty": "No stock moved in these dates.",
+      "undone": "Undone by a reversal",
+      "undoneYes": "Undone",
+      "columns": {
+        "date": "Date",
+        "branch": "Branch",
+        "type": "Movement",
+        "source": "Document or order",
+        "product": "Product",
+        "subtype": "Subtype",
+        "qty": "Quantity",
+        "measure": "Measure",
+        "unitCost": "Cost per unit",
+        "value": "Value",
+        "undone": "Undone"
+      }
+    },
+    "use": {
+      "summary": "{count, plural, one {# department} other {# departments}}, value {value}",
+      "byDepartment": "By department",
+      "lines": "By item",
+      "empty": "No department received anything in these dates.",
+      "columns": {
+        "department": "Department",
+        "branch": "Branch",
+        "product": "Product",
+        "subtype": "Subtype",
+        "measure": "Measure",
+        "issued": "Issued",
+        "returned": "Returned",
+        "net": "Received",
+        "value": "Value"
       }
     }
   }
