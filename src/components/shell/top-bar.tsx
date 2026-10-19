@@ -11,11 +11,13 @@ import { countMyUnread } from "@/features/notifications/queries/my-notifications
 import { Bell } from "./bell";
 import { BranchSelect } from "./branch-select";
 import { Avatar } from "./person";
+import { Search } from "./search";
 
 // The top bar (docs/design-system.md, Layout shell; This app: "The branch switcher with 'All my
 // branches' for a person with several branches; the search field; at the right the bell"):
-// white (dark: --topbar), 64 high, a bottom border. Search (6.10) keeps its place empty until its
-// task: no control that does nothing (plan of 0.10b, decision 9). The bell (0.11) stays at phone
+// white (dark: --topbar), 64 high, a bottom border. The search (6.10) sits in the place 0.10b
+// kept, left of the bell: a field with "Ctrl K" from 640 px, a search button below (plan of
+// 6.10, decided item 7). The bell (0.11) stays at phone
 // width too: /notifications is in no role's menu (plan of 0.11, decision 7). At phone width the
 // avatar links to /profile, where sign-out is.
 
@@ -57,6 +59,7 @@ export async function TopBar({ userId, fullName }: { userId: string; fullName: s
         </Suspense>
       </div>
       <div className="flex shrink-0 items-center gap-2">
+        <Search />
         <Suspense
           fallback={
             <span aria-busy="true" className="block">

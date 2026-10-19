@@ -284,6 +284,26 @@
     "expand": "Expand the menu",
     "profile": "Profile"
   },
+  "search": {
+    "open": "Search",
+    "title": "Search",
+    "placeholder": "Search",
+    "shortcut": "Ctrl K",
+    "hint": "Type at least {count} characters: an order number, a product or a supplier.",
+    "loading": "Searching…",
+    "empty": "Nothing found.",
+    "found": "{count, plural, one {# result} other {# results}}",
+    "groups": {
+      "orders": "Orders",
+      "products": "Products",
+      "suppliers": "Suppliers"
+    },
+    "orderNumber": "{number} · rev {revision}",
+    "subtyped": "{product}, {subtype}",
+    "inBranch": "{name} · {branch}",
+    "service": "{category} · {type}",
+    "inactive": "{name} (inactive)"
+  },
   "branch": {
     "label": "Branch",
     "all": "All my branches",

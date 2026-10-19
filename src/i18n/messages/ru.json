@@ -284,6 +284,26 @@
     "expand": "Развернуть меню",
     "profile": "Профиль"
   },
+  "search": {
+    "open": "Поиск",
+    "title": "Поиск",
+    "placeholder": "Поиск",
+    "shortcut": "Ctrl K",
+    "hint": "Введите не меньше {count} символов: номер заказа, товар или поставщика.",
+    "loading": "Ищем…",
+    "empty": "Ничего не найдено.",
+    "found": "{count, plural, one {# результат} few {# результата} many {# результатов} other {# результата}}",
+    "groups": {
+      "orders": "Заказы",
+      "products": "Товары",
+      "suppliers": "Поставщики"
+    },
+    "orderNumber": "{number} · ред. {revision}",
+    "subtyped": "{product}, {subtype}",
+    "inBranch": "{name} · {branch}",
+    "service": "{category} · {type}",
+    "inactive": "{name} (неактивен)"
+  },
   "branch": {
     "label": "Филиал",
     "all": "Все мои филиалы",
