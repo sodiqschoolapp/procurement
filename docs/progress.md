@@ -1686,4 +1686,4 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - Locally the browser tests failed at sign-in on `main`'s tests too (6.5a), with a throwaway `BETTER_AUTH_SECRET`; CI's `e2e` is the gate.
 - Never run two vitest runs at once: they share the test database and fail across the board.
 
-The next task is 6.8.
+The next task is 6.5a-2.
