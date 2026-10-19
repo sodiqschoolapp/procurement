@@ -6,6 +6,7 @@ import pg from "pg";
 import uz from "../../src/i18n/messages/uz.json" with { type: "json" };
 import { connectionOptions } from "../../src/server/db/connection-options.mjs";
 import { E2E_ROLES, E2E_WALL_USERS, e2eDatabaseUrl, serverDatabaseUrl } from "./global-setup";
+import { REPORT_MONTH, seedReportRecords } from "./report-records";
 
 // S7 for orders (15-quality-and-acceptance.md: "Principal of branch A opens an order address of
 // branch B, and ticks an order of branch B through a forged action. Must end with: 'Not found',
@@ -280,4 +281,36 @@ test("S7, the stock part: the Principal of EA sees EA's stock only, and EB's bra
     await expect(page.getByText(seeded.names.EB)).toHaveCount(0);
     await expect(page.getByText(seeded.names.EA)).toHaveCount(0);
   }
+});
+
+test("S7, the reports part: the Principal of EA gets Not found for EB's branch, the file 404, and EA's report holds nothing of EB's", async ({
+  page,
+}) => {
+  const seeded = await seedReportRecords([
+    { code: "EA", day: "2019-06-11", qty: "1.000", price: 4000 },
+    { code: "EB", day: "2019-06-11", qty: "1.000", price: 4000 },
+  ]);
+  const [eaNumber, ebNumber] = seeded.numbers as [string, string];
+  await signIn(page, E2E_ROLES.PRINCIPAL);
+  const dates = `from=${REPORT_MONTH.from}&to=${REPORT_MONTH.to}&category=${seeded.categoryId}`;
+
+  // EB's branch in the address: "Not found" on every report, and its file is 404 (03 rule 1;
+  // 15 S7: "The same holds for stock and reports"; build-plan 6.8).
+  for (const report of ["orders", "purchases", "plan", "spending"]) {
+    await page.goto(`/reports?report=${report}&branch=${seeded.ebId}&${dates}`);
+    await expect(page.getByRole("heading", { name: uz.notFoundPage.title })).toBeVisible();
+    await expect(page.getByText(ebNumber)).toHaveCount(0);
+  }
+  for (const report of ["purchases", "plan", "spending"]) {
+    const file = await page.request.get(
+      `/reports/download?report=${report}&branch=${seeded.ebId}&${dates}`,
+    );
+    expect(file.status()).toBe(404);
+  }
+
+  // Without a branch: EA's record and its total only (03 matrix: Principal "Own branch").
+  await page.goto(`/reports?report=purchases&${dates}`);
+  await expect(page.getByRole("link", { name: eaNumber })).toBeVisible();
+  await expect(page.getByText(ebNumber)).toHaveCount(0);
+  await expect(page.locator("[data-report-summary]")).toContainText(/4\s000/);
 });
