@@ -293,7 +293,7 @@ async function TallyTable({ firstColumn, rows }: { firstColumn: string; rows: Ta
                 <td key={cell.id} className="px-3 py-2 text-right tabular-nums" data-cell={cell.id}>
                   <Link
                     href={row.href(cell.key)}
-                    className="font-semibold whitespace-nowrap text-primary underline-offset-2 hover:underline"
+                    className="font-semibold whitespace-nowrap text-link underline-offset-2 hover:underline"
                   >
                     {cell.shown}
                   </Link>

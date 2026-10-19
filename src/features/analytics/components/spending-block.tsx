@@ -187,7 +187,10 @@ export async function ChartCard({
             {rows.map((row) => (
               <tr key={row.href} className="border-t" data-chart-row={row.label}>
                 <th scope="row" className="px-3 py-2 font-normal">
-                  <Link href={row.href} className="text-primary underline-offset-2 hover:underline">
+                  <Link
+                    href={row.href}
+                    className="font-semibold text-link underline-offset-2 hover:underline"
+                  >
                     {row.label}
                   </Link>
                 </th>

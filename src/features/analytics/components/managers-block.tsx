@@ -55,7 +55,7 @@ export async function ManagersView({
   const link = (href: string, text: string) => (
     <Link
       href={href}
-      className="font-semibold whitespace-nowrap text-primary underline-offset-2 hover:underline"
+      className="font-semibold whitespace-nowrap text-link underline-offset-2 hover:underline"
     >
       {text}
     </Link>

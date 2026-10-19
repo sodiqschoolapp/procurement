@@ -27,7 +27,7 @@ import { CELL, NUMBER, Table, itemName } from "./report-views";
 // is the Analytics line chart, one point per record that opens its order (plan of 6.9b, decided
 // item 7); its `value` is for the drawing only.
 
-const LINK = "text-primary underline-offset-2 hover:underline";
+const LINK = "font-semibold text-link underline-offset-2 hover:underline";
 
 export async function PriceHistoryView({
   report,

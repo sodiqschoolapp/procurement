@@ -137,7 +137,7 @@ export default async function AnalyticsCashPage({ searchParams }: { searchParams
                   <td className="px-4 py-3 font-semibold whitespace-nowrap max-sm:p-0">
                     <Link
                       href={`/orders/${row.orderId}`}
-                      className="text-primary underline-offset-2 hover:underline"
+                      className="font-semibold text-link underline-offset-2 hover:underline"
                     >
                       {row.orderNumber}
                     </Link>

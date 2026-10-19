@@ -34,7 +34,7 @@ import { Card, Table } from "./prices-block";
 
 type Common = { period: PeriodInput; filters: AnalyticsFilters };
 
-const linkClass = "font-semibold whitespace-nowrap text-primary underline-offset-2 hover:underline";
+const linkClass = "font-semibold whitespace-nowrap text-link underline-offset-2 hover:underline";
 const tileNumber =
   "text-[28px] leading-[34px] font-bold tabular-nums underline-offset-4 hover:underline";
 

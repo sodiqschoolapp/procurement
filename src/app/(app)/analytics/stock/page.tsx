@@ -113,7 +113,7 @@ export default async function AnalyticsStockPage({ searchParams }: { searchParam
                   <td className="px-4 py-3 font-semibold max-sm:p-0">
                     <Link
                       href={`/warehouse/items/${row.variantId}?branch=${row.branchId}`}
-                      className="text-primary underline-offset-2 hover:underline"
+                      className="font-semibold text-link underline-offset-2 hover:underline"
                     >
                       {row.subtypeName ? `${row.productName}, ${row.subtypeName}` : row.productName}
                     </Link>

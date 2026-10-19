@@ -30,7 +30,7 @@ import { ChartCard, type ChartRow, chartPoints } from "./spending-block";
 
 type Common = { period: PeriodInput; filters: AnalyticsFilters };
 
-const linkClass = "font-semibold whitespace-nowrap text-primary underline-offset-2 hover:underline";
+const linkClass = "font-semibold whitespace-nowrap text-link underline-offset-2 hover:underline";
 
 /** By department (6.4a's breakdown) and the top 10 products, under the shared Spending block. */
 export async function PrincipalSpendingView({

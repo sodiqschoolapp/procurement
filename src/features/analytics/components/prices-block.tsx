@@ -151,7 +151,7 @@ export async function PricesView({
                       month: point.month,
                       noSupplier: false,
                     })}
-                    className="text-primary underline-offset-2 hover:underline"
+                    className="font-semibold text-link underline-offset-2 hover:underline"
                   >
                     {monthLabel(point.month)}
                   </Link>,
@@ -208,7 +208,7 @@ export async function PricesView({
                         to: block.riseWindow.last,
                       },
                     )}
-                    className="font-semibold whitespace-nowrap text-primary underline-offset-2 hover:underline"
+                    className="font-semibold whitespace-nowrap text-link underline-offset-2 hover:underline"
                   >
                     {t("prices.riseBy", {
                       amount: format.money(rise.rise.difference),
@@ -246,7 +246,7 @@ export async function PricesView({
                       month: null,
                       noSupplier: false,
                     })}
-                    className="text-primary underline-offset-2 hover:underline"
+                    className="font-semibold text-link underline-offset-2 hover:underline"
                   >
                     {subtypeLabel(spread)}
                   </Link>,
@@ -282,7 +282,7 @@ function PairCell({ href, price, where }: { href: string; price: string; where: 
     <>
       <Link
         href={href}
-        className="font-semibold whitespace-nowrap text-primary underline-offset-2 hover:underline"
+        className="font-semibold whitespace-nowrap text-link underline-offset-2 hover:underline"
       >
         {price}
       </Link>
