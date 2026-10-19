@@ -12,6 +12,7 @@ import { postDocument, receive } from "../../../../tests/helpers/stock-documents
 import { insertUser } from "../../../../tests/helpers/users";
 import { enterStockDirectly } from "../actions/direct-entry";
 import { issueStock } from "../actions/issue";
+import { sendTransfer } from "../actions/transfer";
 import { documentDepartmentChoices, listStockDocuments } from "./documents";
 
 // The documents list (build-plan 5.12, Done when: "A database test for the branch wall"; by hand
@@ -162,5 +163,40 @@ describe("listStockDocuments: the filters (09 Stock screens: Documents)", () => 
       department: "not-an-id",
     });
     expect(numbers(page)).toEqual([issue.number]);
+  });
+});
+
+describe("listStockDocuments: a transfer (build plan 7.1, from 5.12; decided item 5)", () => {
+  it("is listed in the sending branch and found by the type Transfer, not among the issues; a Manager of only the receiving branch does not see it until 7.2", async () => {
+    const s = await scene();
+    const receiving = await insertBranch();
+    const issue = await issueOn(s, "2031-05-10", s.science.id);
+    const sent = await runAction(sendTransfer, s.manager.id, {
+      clientKey: randomUUID(),
+      branchId: s.branch.id,
+      toBranchId: receiving.id,
+      docDate: "2031-05-10",
+      receivedByName: null,
+      comment: null,
+      lines: [{ variantId: s.item.variantId, qty: "3" }],
+    });
+    if (!sent.ok) throw new Error(`fixture: ${sent.error.code}`);
+
+    const all = await listStockDocuments(s.manager.id, { branch: s.branch.id });
+    expect(all.rows.find((row) => row.number === sent.data.number)).toMatchObject({
+      type: "TRANSFER",
+      status: "IN_TRANSIT",
+      branchCode: s.branch.code,
+      departmentName: null,
+    });
+    expect(numbers(await listStockDocuments(s.manager.id, { type: "TRANSFER" }))).toEqual([
+      sent.data.number,
+    ]);
+    expect(numbers(await listStockDocuments(s.manager.id, { type: "ISSUE" }))).toEqual([
+      issue.number,
+    ]);
+
+    const there = await insertUser("MANAGER", { branches: [receiving.id] });
+    expect(numbers(await listStockDocuments(there.id))).not.toContain(sent.data.number);
   });
 });
