@@ -2276,6 +2276,30 @@ Choices made during the build:
 - The subtype filter of `movesWhere()` applies to `use` only, as the plan says.
 - Permission review: the query added to `tests/permission-registry.ts`; a matrix case with a department of the branch and no branch filter (Must fix 1); the branch-wall case compares the Low count with the Low list (Should fix 1).
 
+### 6.6a Analytics: Finance, Cash and Cash needed soon (19.10.2026)
+
+The plan's decisions as the plan review of 18.10.2026 confirmed them (correction 1: a step's list keeps an order while its live status is any of the three pending ones, so the steps add up to the in-approval total; correction 2: the worked example and a paid-back-only case in the unit test), and those of the build. The Look first items come first.
+
+1. **Look first** (task split). 6.6 is split into 6.6a (Cash, Cash needed soon; the age-band test) and 6.6b (Payments, Plan vs actual with purchases without a receipt, Settlement speed; Finance's branch-wall test and the read on the seed). Phase 6 has 16 tasks, the plan 107.
+2. **Look first** (money). "Given, returned and paid back by month" sums the Cash given, Cash returned and Paid back rows of actions not cancelled, on the action's date, by Tashkent month, never netted; each amount and each month has its change (a month against the month before, the first against the whole calendar month before the period). Bank transfer and card rows are not cash. The Manager filter is the action's Manager.
+3. **Look first** (money). Money with managers by age shows held and owed apart, never netted, from `analytics_cash`; an order's age is `daysOf({ first: since, last: today }) − 1` with `since` its first cash movement (`cashSince()`): 0 to 7 days (a `since` after today included), 8 to 30, 31 and more.
+4. **Look first** (money). "Approved orders not yet paid": each Open order whose buying is still Open needs its planned cash (`plannedCashOf()`) less the cash handed to its Manager (given + paid back − returned, actions not cancelled), never below 0. A bank-transfer or card order needs none.
+5. **Look first** (money; approval order). "Orders still in approval" are the orders at Head, Principal and Finance, each with its whole planned cash; a Returned order is not in approval. The block shows the approved total, the in-approval total with each step, and their sum. The stored status picks the step; the live status keeps the order in its stage.
+6. **Look first** (spec contradiction). The age bands and Cash needed soon are numbers of now with no change. Proposed wording of 10 point 1, extending 6.5c decided item 3's: "Every number of a period shows its change against the period before; a number of now (orders waiting now, orders needed-by coming up, overdue orders, cash held, money with managers by age, cash needed soon, stock value, stock on hand, low stock, items with no movement, runs out in, suggested order quantity) has none."
+7. Cash shows tiles and a month table, no chart: the bar chart draws one series.
+8. The filters: branch, category (the planned subtype's), department, Manager (the action's for money, the owner's for the age bands and the need), supplier (an order with a live record from it, so an order in approval leaves under a supplier filter).
+9. Finance's page keeps the shared Spending block until 6.6b.
+10. Lists: `/analytics/money` (`money:<kind>[:<month>]`), `/analytics/cash-needed` (`needed:<all|open|approval>[:<step>]`), `/analytics/cash` with `age:<band>:<held|owed>`.
+11. The need is three columns of `analytics_orders` (one CHECK, `cash_needed >= 0`), not a table of its own.
+
+Choices made during the build:
+
+- `moneyWhere()` reads the live status against Draft as `cashWhere()` does (permission review, Should fix 2), though a money row exists only from Open on.
+- An Open order leaves the approved number as soon as its live status leaves Open or its live buying is no longer Open, before the next refresh.
+- `daysOut()` moved to `features/analytics/days-out.ts`: a query file exports queries only.
+- Tests changed because the table changed: the 0041 and 0042 constraint tests insert `analytics_orders` rows with the three new NOT NULL columns (0, 0, 0); nothing they check changed.
+- Permission review: a matrix case with a department or a Manager id of the branch (Must fix 1); the wall case asserts the totals (Should fix 1); a draft-wall test of the age bands and of the money rows (Should fix 3); a line in `.claude/rules/tests.md`.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

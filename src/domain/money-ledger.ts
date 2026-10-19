@@ -288,6 +288,45 @@ export function plannedCashOf(paymentType: PaymentType, plannedTotal: bigint): b
   return paymentType === "CASH" ? plannedTotal : 0n;
 }
 
+/**
+ * The cash handed to the Manager on an order so far: cash given + paid back − cash returned, over
+ * the rows whose action is not cancelled (08 Money ledger table, the rows that move the count;
+ * plan of 6.6a, decided item 4, Look first). Bank transfer and card rows hand nothing.
+ */
+export function cashHanded(rows: readonly MoneyRow[]): bigint {
+  return rows
+    .filter((row) => !row.isCancelled)
+    .reduce((sum, row) => sum + COUNT_SIGN[row.kind] * row.amount, 0n);
+}
+
+/** The statuses of "orders still in approval" (10 Finance, Cash needed soon; 06 Statuses). */
+export const APPROVAL_STATUSES = [
+  "PENDING_HEAD",
+  "PENDING_PRINCIPAL",
+  "PENDING_FINANCE",
+] as const satisfies readonly RequestStatus[];
+
+/**
+ * An order's part of Finance's "Cash needed soon" (10 Finance: "Planned cash of approved orders
+ * not yet paid, plus orders still in approval"; plan of 6.6a, decided items 4 and 5, Look first):
+ * an order waiting at Head, Principal or Finance needs its whole planned cash; an Open order whose
+ * buying is still Open needs its planned cash less what was handed, never below 0; any other order
+ * (Returned, buying finished, Settlement and on) needs nothing.
+ */
+export function cashNeeded(order: {
+  status: RequestStatus;
+  progress: OrderProgress;
+  plannedCash: bigint;
+  handed: bigint;
+}): bigint {
+  if ((APPROVAL_STATUSES as readonly RequestStatus[]).includes(order.status)) {
+    return order.plannedCash;
+  }
+  if (order.status !== "PURCHASING" || order.progress !== "OPEN") return 0n;
+  const rest = order.plannedCash - order.handed;
+  return rest > 0n ? rest : 0n;
+}
+
 /** 08 Money ledger: "The action's total is the sum of its rows." */
 export function actionTotal(rows: readonly { amount: bigint }[]): bigint {
   return rows.reduce((sum, row) => sum + row.amount, 0n);

@@ -22,16 +22,21 @@ import { PageLinks } from "../../catalog/page-links";
 // for the way back. Its held amount and "held for" are the number clicked; oldest first; 50 a
 // page; each row opens its order; the list exports to Excel (point 4). The address is the page's,
 // with `owner=other` for "Other owners"; one the parser refuses goes back to /analytics, another
-// branch is Not found. A table at 1440 px, cards at 375 px, as /analytics/approvals.
+// branch is Not found. A table at 1440 px, cards at 375 px, as /analytics/approvals. Task 6.6a:
+// with `key=age:<band>:<held|owed>` it lists the orders behind one amount of Finance's money with
+// managers by age, its summary that amount (plan of 6.6a, decided items 3 and 10).
 
 type Raw = Record<string, string | string[] | undefined>;
 
 async function readList(userId: string, raw: Raw) {
   const params = parseAnalyticsParams(raw);
-  if (!params || params.key.kind !== "period") return "refused" as const;
+  if (!params || (params.key.kind !== "period" && params.key.kind !== "age")) {
+    return "refused" as const;
+  }
+  const age = params.key.kind === "age" ? { band: params.key.band, side: params.key.side } : null;
   try {
-    const list = await getCashOrders(userId, params.filters, params.otherOwners, params.page);
-    return { params, list };
+    const list = await getCashOrders(userId, params.filters, params.otherOwners, params.page, age);
+    return { params, list, age };
   } catch (error) {
     if (error instanceof AuthorizationError && error.kind === "not_found")
       return "not_found" as const;
@@ -44,10 +49,10 @@ export default async function AnalyticsCashPage({ searchParams }: { searchParams
   const read = await readList(user.id, await searchParams);
   if (read === "refused") redirect("/analytics");
   if (read === "not_found") notFound();
-  const { params, list } = read;
+  const { params, list, age } = read;
   const t = await getTranslations("analytics");
   const format = await getFormatters();
-  const extra = { otherOwners: params.otherOwners };
+  const extra = { otherOwners: params.otherOwners, key: params.key };
   const pages = Math.max(1, Math.ceil(list.count / RECORDS_PAGE_SIZE));
   const href = (page: number) =>
     `/analytics/cash?${analyticsSearch(params.period, params.filters, { ...extra, page })}`;
@@ -70,18 +75,28 @@ export default async function AnalyticsCashPage({ searchParams }: { searchParams
             {t("cash.title")}
           </h1>
           <p className="text-[15px] leading-[22px] text-muted-foreground" data-cash-what>
-            {t("cash.what")}
+            {age
+              ? t("cash.ageWhat", {
+                  band: t(`finance.cash.bands.${age.band}`),
+                  side: t(`finance.columns.${age.side}`),
+                })
+              : t("cash.what")}
             {params.otherOwners && <span className="block">{t("orders.otherOwners")}</span>}
           </p>
           <p className="text-[15px] leading-[22px] font-semibold tabular-nums" data-cash-summary>
-            {list.heldSince === null || list.heldDays === null
-              ? t("cash.summaryNone")
-              : t("cash.summary", {
+            {age
+              ? t("cash.summaryAge", {
                   count: list.count,
-                  held: format.money(list.held),
-                  days: list.heldDays,
-                  date: format.date(list.heldSince),
-                })}
+                  amount: format.money(age.side === "held" ? list.held : list.owed),
+                })
+              : list.heldSince === null || list.heldDays === null
+                ? t("cash.summaryNone")
+                : t("cash.summary", {
+                    count: list.count,
+                    held: format.money(list.held),
+                    days: list.heldDays,
+                    date: format.date(list.heldSince),
+                  })}
           </p>
         </div>
         <a
@@ -108,7 +123,7 @@ export default async function AnalyticsCashPage({ searchParams }: { searchParams
                   ),
                 )}
                 <th scope="col" className="px-4 py-3 text-right">
-                  {t("cash.columns.held")}
+                  {t(age?.side === "owed" ? "cash.columns.owed" : "cash.columns.held")}
                 </th>
               </tr>
             </thead>
@@ -146,7 +161,7 @@ export default async function AnalyticsCashPage({ searchParams }: { searchParams
                     className="px-4 py-3 text-right whitespace-nowrap tabular-nums max-sm:p-0 max-sm:text-left max-sm:font-semibold"
                     data-held
                   >
-                    {format.money(row.cashCount)}
+                    {format.money(row.cashCount < 0n ? -row.cashCount : row.cashCount)}
                   </td>
                 </tr>
               ))}

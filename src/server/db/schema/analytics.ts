@@ -16,6 +16,7 @@ import {
 } from "drizzle-orm/pg-core";
 
 import { categories, companies, departments, productVariants } from "./catalogs";
+import { moneyRowKind, moneyRows } from "./money";
 import { orderEventType, orderProgress, orders, paymentType, requestStatus } from "./orders";
 import { branches } from "./organisation";
 import { purchases } from "./purchasing";
@@ -458,6 +459,12 @@ export const analyticsOrders = pgTable(
     openedAt: moment("opened_at"),
     openedOn: date("opened_on"),
     approvalSeconds: bigint("approval_seconds", { mode: "bigint" }),
+    // Finance's Cash needed soon (plan of 6.6a, decided items 4, 5 and 11, Look first): the
+    // order's planned cash `plannedCashOf()`, the cash handed to its Manager `cashHanded()` and
+    // its need `cashNeeded()`, all from src/domain/money-ledger.ts.
+    plannedCash: som("planned_cash").notNull(),
+    cashHanded: som("cash_handed").notNull(),
+    cashNeeded: som("cash_needed").notNull(),
   },
   (table) => [
     foreignKey({
@@ -485,5 +492,63 @@ export const analyticsOrders = pgTable(
     index("analytics_orders_category_id_idx").on(table.categoryId),
     index("analytics_orders_department_id_idx").on(table.departmentId),
     index("analytics_orders_owner_id_idx").on(table.ownerId),
+    check("analytics_orders_cash_needed_check", sql`${table.cashNeeded} >= 0`),
+    index("analytics_orders_branch_id_cash_needed_idx")
+      .on(table.branchId)
+      .where(sql`${table.cashNeeded} > 0`),
+  ],
+);
+
+// One row per money row of kind Cash given, Cash returned or Paid back whose action is not
+// cancelled (10 Analytics, Finance, Cash: "Given, returned and paid back by month"; plan of 6.6a,
+// decided item 2, Look first): its amount, its action's date and Manager (08 Money ledger 1: one
+// Manager per action). Bank transfer and card rows are not cash (08: "No, shown for information").
+// Category the planned subtype's product's, department the order's. Task 6.6a.
+export const analyticsMoney = pgTable(
+  "analytics_money",
+  {
+    moneyRowId: uuid("money_row_id")
+      .primaryKey()
+      .references(() => moneyRows.id),
+    orderId: uuid("order_id")
+      .notNull()
+      .references(() => orders.id),
+    branchId: uuid("branch_id")
+      .notNull()
+      .references(() => branches.id),
+    managerId: uuid("manager_id")
+      .notNull()
+      .references(() => users.id),
+    categoryId: uuid("category_id")
+      .notNull()
+      .references(() => categories.id),
+    departmentId: uuid("department_id")
+      .notNull()
+      .references(() => departments.id),
+    kind: moneyRowKind("kind").notNull(),
+    amount: som("amount").notNull(),
+    occurredOn: date("occurred_on").notNull(),
+  },
+  (table) => [
+    foreignKey({
+      name: "analytics_money_order_branch_fk",
+      columns: [table.orderId, table.branchId],
+      foreignColumns: [orders.id, orders.branchId],
+    }),
+    foreignKey({
+      name: "analytics_money_department_branch_fk",
+      columns: [table.departmentId, table.branchId],
+      foreignColumns: [departments.id, departments.branchId],
+    }),
+    check(
+      "analytics_money_kind_check",
+      sql`${table.kind} IN ('CASH_GIVEN', 'CASH_RETURNED', 'PAID_BACK')`,
+    ),
+    check("analytics_money_amount_check", sql`${table.amount} > 0`),
+    index("analytics_money_branch_id_occurred_on_idx").on(table.branchId, table.occurredOn),
+    index("analytics_money_order_id_idx").on(table.orderId),
+    index("analytics_money_manager_id_idx").on(table.managerId),
+    index("analytics_money_category_id_idx").on(table.categoryId),
+    index("analytics_money_department_id_idx").on(table.departmentId),
   ],
 );

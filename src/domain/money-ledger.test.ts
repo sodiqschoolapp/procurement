@@ -9,6 +9,8 @@ import {
   actionTotal,
   approvalCashRows,
   blockConfirmed,
+  cashHanded,
+  cashNeeded,
   cashSince,
   cashSpent,
   crossingRefusal,
@@ -944,5 +946,79 @@ describe("overspendNeedsAck() (08 Overspend guard: \"must click 'Acknowledge ove
   it("a cancelled record does not count toward the actual total", () => {
     const records = [record("100", 5_800n, [cash(20_000n)], { isCancelled: true })];
     expect(overspendNeedsAck({ plan: NOTEBOOKS, records, stored: null }, TIGHT)).toBe(false);
+  });
+});
+
+describe("Cash needed soon (10 Finance; 08 When Finance approves, Money ledger table; plan of 6.6a, decided items 4 and 5, Look first)", () => {
+  const PLANNED = plannedCash(NOTEBOOKS); // 520 000, 08 Worked example
+  const open = (handed: bigint) =>
+    cashNeeded({ status: "PURCHASING", progress: "OPEN", plannedCash: PLANNED, handed });
+
+  it("hands given and paid back, takes returned back, and leaves out a cancelled action and the information rows", () => {
+    expect(
+      cashHanded([
+        row("CASH_GIVEN", 300_000n),
+        row("PAID_BACK", 20_000n),
+        row("CASH_RETURNED", 50_000n),
+        row("CASH_GIVEN", 999_000n, true),
+        row("BANK_TRANSFER", 70_000n),
+        row("CARD_TOPUP", 10_000n),
+        row("CARD_RETURNED", 5_000n),
+      ]),
+    ).toBe(270_000n);
+  });
+
+  it("is the whole planned cash of an order waiting at Head, Principal or Finance", () => {
+    for (const status of ["PENDING_HEAD", "PENDING_PRINCIPAL", "PENDING_FINANCE"] as const) {
+      expect(cashNeeded({ status, progress: "OPEN", plannedCash: PLANNED, handed: 0n })).toBe(
+        520_000n,
+      );
+    }
+  });
+
+  it("is 0 for a bank-transfer order: its planned cash is 0", () => {
+    const plannedCashOfTransfer = plannedCash({ ...NOTEBOOKS, paymentType: "TRANSFER" });
+    expect(
+      cashNeeded({
+        status: "PENDING_FINANCE",
+        progress: "OPEN",
+        plannedCash: plannedCashOfTransfer,
+        handed: 0n,
+      }),
+    ).toBe(0n);
+  });
+
+  it("is the rest of an Open order: planned 520 000, given 300 000 needs 220 000", () => {
+    expect(open(cashHanded([row("CASH_GIVEN", 300_000n)]))).toBe(220_000n);
+  });
+
+  it("is 0 once the worked example's 520 000 is given, and never below 0", () => {
+    expect(open(cashHanded(GIVEN))).toBe(0n);
+    expect(open(cashHanded([row("CASH_GIVEN", 600_000n)]))).toBe(0n);
+  });
+
+  it("needs 520 000 again when 520 000 was given and returned (review of the plan, Should fix 2)", () => {
+    expect(open(cashHanded([row("CASH_GIVEN", 520_000n), row("CASH_RETURNED", 520_000n)]))).toBe(
+      520_000n,
+    );
+  });
+
+  it("counts paid back as handed: 200 000 bought with own money and paid back needs 320 000 (review correction 2)", () => {
+    expect(open(cashHanded([row("PAID_BACK", 200_000n)]))).toBe(320_000n);
+  });
+
+  it("does not count a cancelled action", () => {
+    expect(open(cashHanded([row("CASH_GIVEN", 520_000n, true)]))).toBe(520_000n);
+  });
+
+  it("is 0 for a Returned order, a Settlement order and an Open order whose buying is finished", () => {
+    for (const status of ["RETURNED", "SETTLEMENT", "CLOSED", "REJECTED", "CANCELLED"] as const) {
+      expect(cashNeeded({ status, progress: "OPEN", plannedCash: PLANNED, handed: 0n })).toBe(0n);
+    }
+    for (const progress of ["DONE", "DONE_SHORT", "NOT_BOUGHT"] as const) {
+      expect(cashNeeded({ status: "PURCHASING", progress, plannedCash: PLANNED, handed: 0n })).toBe(
+        0n,
+      );
+    }
   });
 });

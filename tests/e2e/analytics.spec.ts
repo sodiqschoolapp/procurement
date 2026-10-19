@@ -928,3 +928,45 @@ test("6.5c: the Manager sees a stock line's use in Stock planning and opens the 
   await expect(page.locator("[data-moves-quantity]")).toContainText("2");
   expect(await scrollsSideways(page)).toBe(false);
 });
+
+test("6.6a: Finance sees Cash and Cash needed soon and opens the orders behind an age band and a step (10 Finance; plan of 6.6a)", async ({
+  page,
+}) => {
+  // An Open order of a new category in EA holding 70 000 given on 1 March 2020: over 30 days.
+  const held = await seedCashHeld();
+  // An order of another new category in EA waiting at the Principal, 4 000 planned in cash.
+  const waiting = await seedPrincipalOrder();
+  await page.goto("/login");
+  await page.locator("#username").fill(E2E_ROLES.FINANCE.username);
+  await page.locator("#password").fill(E2E_ROLES.FINANCE.password);
+  await page.locator("form button[type=submit]").click();
+  await expect(page).toHaveURL(/\/$/);
+  await page.goto(
+    `/analytics?period=custom&from=2020-03-01&to=2020-03-31&branch=all&category=${held.category}`,
+  );
+  for (const block of ["spending", "finance-cash", "cash-needed"]) {
+    await expect(page.locator(`[data-analytics-block="${block}"]`)).toBeVisible();
+  }
+  // No other role's block on Finance's page.
+  await expect(page.locator('[data-analytics-block="my-cash"]')).toHaveCount(0);
+  await expect(page.locator('[data-analytics-block="managers"]')).toHaveCount(0);
+  await expect(page.locator('[data-finance-cash-tile="given"]')).toContainText(/70\s000/);
+  expect(await scrollsSideways(page)).toBe(false);
+
+  const older = page.locator('[data-table="finance-ages"] [data-row="older"] a').first();
+  await expect(older).toContainText(/70\s000/);
+  await older.click();
+  await expect(page).toHaveURL(/\/analytics\/cash\?.*key=age%3Aolder%3Aheld/);
+  await expect(page.locator("[data-cash-row]")).toHaveCount(1);
+  await expect(page.locator("[data-cash-summary]")).toContainText(/70\s000/);
+  expect(await scrollsSideways(page)).toBe(false);
+
+  await page.goto(`/analytics?branch=all&category=${waiting.category}`);
+  const step = page.locator('[data-table="cash-needed-steps"] [data-row="PENDING_PRINCIPAL"] a');
+  await expect(step).toContainText(/4\s000/);
+  await step.click();
+  await expect(page).toHaveURL(/\/analytics\/cash-needed\?/);
+  await expect(page.locator("[data-needed-row]")).toHaveCount(1);
+  await expect(page.locator("[data-needed-row]")).toContainText(waiting.number);
+  expect(await scrollsSideways(page)).toBe(false);
+});

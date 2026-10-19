@@ -156,6 +156,28 @@ describe("parseAnalyticsParams", () => {
     });
   });
 
+  // Finance's keys and blocks (build-plan 6.6a; plan of 6.6a, decided item 10).
+  it.each([
+    [{ kind: "money", money: "given", month: null }, "moneyRows"],
+    [{ kind: "money", money: "paidBack", month: "2031-10" }, "moneyRows"],
+    [{ kind: "needed", stage: "all", step: null }, "neededOrders"],
+    [{ kind: "needed", stage: "open", step: null }, "cashNeeded"],
+    [{ kind: "needed", stage: "approval", step: "PENDING_PRINCIPAL" }, "neededOrders"],
+    [{ kind: "age", band: "older", side: "owed" }, "cash"],
+    [{ kind: "period" }, "financeCash"],
+    [{ kind: "period" }, "cashAges"],
+  ] as const)("reads Finance's key %o and the block %s back", (key, block) => {
+    const text = analyticsSearch(
+      { choice: "this_month", from: null, to: null },
+      NO_ANALYTICS_FILTERS,
+      { key, block },
+    );
+    expect(parseAnalyticsParams(Object.fromEntries(new URLSearchParams(text)))).toMatchObject({
+      key,
+      block,
+    });
+  });
+
   it("treats empty form fields as no filter, `branch=all` as all, and drops dates beside another period", () => {
     expect(
       parseAnalyticsParams({
@@ -212,6 +234,14 @@ describe("parseAnalyticsParams", () => {
     ["a subtype that is not an id", { variant: "chalk" }],
     ["a reason beside an approve", { key: "step:all:APPROVE", reason: "narxi qimmat" }],
     ["a reason without a decision", { reason: "narxi qimmat" }],
+    ["an unknown cash kind", { key: "money:bankTransfer" }],
+    ["a money key with a month that is not one", { key: "money:given:2031-13" }],
+    ["an unknown need stage", { key: "needed:soon" }],
+    ["a step beside a stage other than approval (Must fix 2)", { key: "needed:all:PENDING_HEAD" }],
+    ["a step that is not in approval", { key: "needed:approval:PURCHASING" }],
+    ["an unknown age band", { key: "age:year:held" }],
+    ["an age key without its side", { key: "age:week" }],
+    ["an age key with an unknown side", { key: "age:week:net" }],
     ["a reason longer than 500 characters", { key: "step:all:REJECT", reason: "x".repeat(501) }],
   ])("refuses %s", (_, raw) => {
     expect(parseAnalyticsParams(raw)).toBeNull();

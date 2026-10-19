@@ -2,6 +2,8 @@ import * as z from "zod";
 
 import { isBusinessDate } from "@/domain/business-date";
 import {
+  CASH_AGE_BAND_KEYS,
+  type CashAgeBand,
   PERIOD_CHOICES,
   type PeriodChoice,
   WAITING_GROUP_KEYS,
@@ -12,6 +14,7 @@ import { type ApprovalStep, STAY_DECISIONS, type StayDecision } from "@/domain/a
 import { type ListStatus, isListStatus } from "@/domain/order-list";
 import { STUCK_STATUSES } from "@/domain/order-steps";
 import type { Colour } from "@/domain/colours";
+import { APPROVAL_STATUSES, type MoneyRowKind } from "@/domain/money-ledger";
 import { PAYMENT_TYPES, type PaymentType } from "@/domain/payment-types";
 
 // The address of the Analytics pages (10-notifications-analytics-reports.md, Analytics page per
@@ -56,8 +59,12 @@ export type PeriodInput = { choice: PeriodChoice; from: string | null; to: strin
  * orders coming up or overdue now (/analytics/order-status), the stays the user decided in the
  * period (/analytics/approvals). Of the Manager's page (plan of 6.5b, decided item 8): the orders
  * that reached Open in the period (/analytics/order-status) and the priced records of one product
- * or of all (/analytics/records), the set an estimate reads. A breakdown by branch, department,
- * supplier or Manager drills down with that filter set.
+ * or of all (/analytics/records), the set an estimate reads. Of Finance's page (plan of 6.6a,
+ * decided item 10): the money rows of one cash kind in the period or one month of it
+ * (/analytics/money), the orders of a Cash needed soon number, all, approved or in approval, one
+ * step of it included (/analytics/cash-needed), and the orders of one age band, held or owed
+ * (/analytics/cash). A breakdown by branch, department, supplier or Manager drills down with that
+ * filter set.
  */
 export type DrillKey =
   | { kind: "period" }
@@ -77,7 +84,28 @@ export type DrillKey =
   | { kind: "due"; due: DueKind }
   | { kind: "mine" }
   | { kind: "approved" }
-  | { kind: "priced"; product: string | null };
+  | { kind: "priced"; product: string | null }
+  | { kind: "money"; money: CashKind; month: string | null }
+  | { kind: "needed"; stage: NeededStage; step: ApprovalStatus | null }
+  | { kind: "age"; band: CashAgeBand; side: CashSide };
+
+/** The three cash kinds of Finance's Cash block (plan of 6.6a, decided item 2), as the address names them. */
+export const CASH_KINDS = {
+  given: "CASH_GIVEN",
+  returned: "CASH_RETURNED",
+  paidBack: "PAID_BACK",
+} as const satisfies Record<string, MoneyRowKind>;
+export type CashKind = keyof typeof CASH_KINDS;
+export const CASH_KIND_KEYS = Object.keys(CASH_KINDS) as CashKind[];
+
+/** The orders of a Cash needed soon number (plan of 6.6a, decided items 4 and 5). */
+export const NEEDED_STAGES = ["all", "open", "approval"] as const;
+export type NeededStage = (typeof NEEDED_STAGES)[number];
+export type ApprovalStatus = (typeof APPROVAL_STATUSES)[number];
+
+/** Held and owed of an age band, never netted (08 Money with managers; plan of 6.6a, item 3). */
+export const CASH_SIDES = ["held", "owed"] as const;
+export type CashSide = (typeof CASH_SIDES)[number];
 
 /** The orders behind the Orders block's numbers of now (plan of 6.5a, decided item 4). */
 export const DUE_KINDS = ["soon", "overdue"] as const;
@@ -151,6 +179,11 @@ export const EXPORT_BLOCKS = [
   "myEstimates",
   "myCash",
   "stockPlanning",
+  "financeCash",
+  "moneyRows",
+  "cashAges",
+  "cashNeeded",
+  "neededOrders",
 ] as const;
 export type ExportBlock = (typeof EXPORT_BLOCKS)[number];
 
@@ -178,7 +211,7 @@ const id = z.uuid().transform((value) => value.toLowerCase());
 const date = z.string().refine(isBusinessDate);
 
 const KEY =
-  /^(period|overspent|saved|month:\d{4}-\d{2}|category:[0-9a-fA-F-]{36}|payment:[A-Z]+|colour:[a-z]+|price:[0-9a-fA-F-]{36}(:\d{4}-\d{2}|:nosupplier)?|step:[A-Z_a-z]+(:[A-Z_]+)?|waiting:[A-Z_a-z]+:[A-Za-z]+|stock:[a-z]+|moves:[a-z]+|product:[0-9a-fA-F-]{36}|status:[A-Z_]+|due:[a-z]+|mine|approved|priced:(all|[0-9a-fA-F-]{36}))$/;
+  /^(period|overspent|saved|month:\d{4}-\d{2}|category:[0-9a-fA-F-]{36}|payment:[A-Z]+|colour:[a-z]+|price:[0-9a-fA-F-]{36}(:\d{4}-\d{2}|:nosupplier)?|step:[A-Z_a-z]+(:[A-Z_]+)?|waiting:[A-Z_a-z]+:[A-Za-z]+|stock:[a-z]+|moves:[a-z]+|product:[0-9a-fA-F-]{36}|status:[A-Z_]+|due:[a-z]+|mine|approved|priced:(all|[0-9a-fA-F-]{36})|money:[A-Za-z]+(:\d{4}-\d{2})?|needed:[a-z]+(:[A-Z_]+)?|age:[a-z]+:[a-z]+)$/;
 
 /** A reason key as reasonKey() writes it: at most the 500 characters of a reason (06 rule 3). */
 const reason = z.string().min(1).max(500);
@@ -264,6 +297,27 @@ function keyOf(text: string): DrillKey | null {
     if (value === "all") return { kind, product: null };
     const product = id.safeParse(value);
     return product.success ? { kind, product: product.data } : null;
+  }
+  if (kind === "money") {
+    const [moneyText, month] = value.split(":") as [string, string | undefined];
+    const money = CASH_KIND_KEYS.find((each) => each === moneyText);
+    if (!money || (month !== undefined && !isMonthKey(month))) return null;
+    return { kind, money, month: month ?? null };
+  }
+  if (kind === "needed") {
+    const [stageText, stepText] = value.split(":") as [string, string | undefined];
+    const stage = NEEDED_STAGES.find((each) => each === stageText);
+    if (!stage) return null;
+    if (stepText === undefined) return { kind, stage, step: null };
+    // A step belongs to the in-approval list only (review of the plan, Must fix 2).
+    const step = APPROVAL_STATUSES.find((each) => each === stepText);
+    return step && stage === "approval" ? { kind, stage, step } : null;
+  }
+  if (kind === "age") {
+    const [bandText, sideText] = value.split(":") as [string, string];
+    const band = CASH_AGE_BAND_KEYS.find((each) => each === bandText);
+    const side = CASH_SIDES.find((each) => each === sideText);
+    return band && side ? { kind, band, side } : null;
   }
   if (kind === "status") return isListStatus(value) ? { kind, status: value } : null;
   if (kind === "due") {
@@ -390,5 +444,11 @@ function keyText(key: DrillKey): string {
       return `due:${key.due}`;
     case "priced":
       return `priced:${key.product ?? "all"}`;
+    case "money":
+      return `money:${key.money}${key.month ? `:${key.month}` : ""}`;
+    case "needed":
+      return `needed:${key.stage}${key.step ? `:${key.step}` : ""}`;
+    case "age":
+      return `age:${key.band}:${key.side}`;
   }
 }

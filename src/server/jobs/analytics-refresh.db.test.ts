@@ -956,3 +956,83 @@ describe("analytics_refresh, the rows of the Principal's page (build-plan 6.5a)"
     ]);
   });
 });
+
+describe("analytics_refresh, the rows of Finance's page (build-plan 6.6a)", () => {
+  type Money = { order_id: string; manager_id: string; kind: string; amount: string; on: string };
+  const moneyOf = async (branchId: string) =>
+    (
+      await db.execute<Money>(sql`
+        select order_id, manager_id, kind, amount::text as amount, occurred_on::text as on
+        from analytics_money where branch_id = ${branchId} order by occurred_on, kind`)
+    ).rows;
+  type Need = { order_id: string; planned_cash: string; cash_handed: string; cash_needed: string };
+  const needOf = async (orderId: string) =>
+    (
+      await db.execute<Need>(sql`
+        select order_id, planned_cash::text as planned_cash, cash_handed::text as cash_handed,
+               cash_needed::text as cash_needed
+        from analytics_orders where order_id = ${orderId}`)
+    ).rows[0];
+
+  it("writes each Cash given, Cash returned and Paid back row of an action not cancelled on its action's date and Manager; no bank-transfer row (plan of 6.6a, decided item 2)", async () => {
+    setClock("2031-05-15T05:00:00Z");
+    const scene = await spendingScene();
+    const finance = await insertUser("FINANCE", { branches: [scene.branch.id] });
+    const order = await bought(scene, { purchasedOn: "2031-05-02" });
+    await moneyOn(order, finance.id, { amount: 30_000n, occurredOn: "2031-05-03" });
+    await moneyOn(order, finance.id, {
+      kind: "PAID_BACK",
+      amount: 5_000n,
+      occurredOn: "2031-05-06",
+    });
+    await moneyOn(order, finance.id, {
+      kind: "CASH_RETURNED",
+      amount: 2_000n,
+      occurredOn: "2031-05-07",
+    });
+    await moneyOn(order, finance.id, {
+      amount: 99_000n,
+      occurredOn: "2031-05-04",
+      cancelled: true,
+    });
+    await moneyOn(order, finance.id, {
+      kind: "BANK_TRANSFER",
+      amount: 70_000n,
+      occurredOn: "2031-05-05",
+    });
+    await refreshNow();
+    const of = (kind: string, amount: string, on: string) => ({
+      order_id: order.orderId,
+      manager_id: scene.manager.id,
+      kind,
+      amount,
+      on,
+    });
+    expect(await moneyOf(scene.branch.id)).toEqual([
+      of("CASH_GIVEN", "30000", "2031-05-03"),
+      of("PAID_BACK", "5000", "2031-05-06"),
+      of("CASH_RETURNED", "2000", "2031-05-07"),
+    ]);
+    // The same rows hand 30 000 + 5 000 − 2 000 to the Manager: of 50 000 planned, 17 000 needed.
+    expect(await needOf(order.orderId)).toEqual({
+      order_id: order.orderId,
+      planned_cash: "50000",
+      cash_handed: "33000",
+      cash_needed: "17000",
+    });
+  });
+
+  it("writes each order's planned cash, cash handed and Cash needed soon by cashNeeded() (plan of 6.6a, decided items 4 and 5)", async () => {
+    setClock("2031-05-15T05:00:00Z");
+    const scene = await spendingScene();
+    const waiting = await decided(scene, "PENDING_PRINCIPAL", []);
+    const transfer = await decided(scene, "PENDING_FINANCE", [], { paymentType: "TRANSFER" });
+    const returned = await decided(scene, "RETURNED", []);
+    const done = await decided(scene, "PURCHASING", [], { progress: "DONE" });
+    await refreshNow();
+    expect(await needOf(waiting.id)).toMatchObject({ planned_cash: "50000", cash_needed: "50000" });
+    expect(await needOf(transfer.id)).toMatchObject({ planned_cash: "0", cash_needed: "0" });
+    expect(await needOf(returned.id)).toMatchObject({ planned_cash: "50000", cash_needed: "0" });
+    expect(await needOf(done.id)).toMatchObject({ planned_cash: "50000", cash_needed: "0" });
+  });
+});

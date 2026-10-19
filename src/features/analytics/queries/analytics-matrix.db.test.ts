@@ -22,14 +22,18 @@ import { NO_ANALYTICS_FILTERS, type PeriodInput } from "../period-params";
 import { getApprovalOrders } from "./approval-orders";
 import { getApprovalSpeed } from "./approval-speed";
 import { getCancelledRecords } from "./cancelled-records";
+import { getCashNeeded } from "./cash-needed";
 import { getCashOrders } from "./cash-orders";
+import { getFinanceCash } from "./finance-cash";
 import { getAnalyticsFilters } from "./filters";
 import { getHeadSpending } from "./head-spending";
 import { getManagers } from "./managers";
+import { getMoneyRows } from "./money-rows";
 import { getMyApprovals } from "./my-approvals";
 import { getMyCash } from "./my-cash";
 import { getMyEstimates } from "./my-estimates";
 import { getMyOrders } from "./my-orders";
+import { getNeededOrders } from "./needed-orders";
 import { getOrderStatuses } from "./order-statuses";
 import { getOutcomeOrders } from "./outcome-orders";
 import { getPlanVsActual } from "./plan-vs-actual";
@@ -828,3 +832,115 @@ describePermissionMatrix("the Manager's blocks and lists, the branch wall in the
     if (!seen) throw new AuthorizationError("not_found");
   },
 });
+
+/**
+ * Finance's rows of a branch (build-plan 6.6a): an Open order given 30 000 on 4 May (held 11 days:
+ * 8 to 30; 20 000 of its 50 000 still needed) and an order waiting at Finance (50 000 in
+ * approval), the summary refreshed.
+ */
+async function financeIn(branchId: string) {
+  setClock("2031-05-15T05:00:00Z");
+  const scene = await spendingScene(branchId);
+  const held = await bought(scene, { purchasedOn: "2031-05-02", unitPrice: "0" });
+  await moneyOn(held, scene.manager.id, { amount: 30_000n, occurredOn: "2031-05-04" });
+  const waiting = await decided(scene, "PENDING_FINANCE", []);
+  await refreshNow();
+  return { held, waiting, category: scene.category.id, department: scene.department.id };
+}
+
+/** Every Finance list of 6.6a under the filters: whether each shows the branch's rows. */
+async function financeLists(
+  userId: string,
+  filters: typeof NO_ANALYTICS_FILTERS,
+  { held, waiting }: Awaited<ReturnType<typeof financeIn>>,
+) {
+  const given = await getMoneyRows(userId, "given", null, THIS_MONTH, filters, "all");
+  const month = await getMoneyRows(userId, "given", "2031-05", THIS_MONTH, filters, "all");
+  const aged = await getCashOrders(userId, filters, false, "all", { band: "month", side: "held" });
+  const open = await getNeededOrders(userId, filters, "open", null, "all");
+  const step = await getNeededOrders(userId, filters, "approval", "PENDING_FINANCE", "all");
+  const all = await getNeededOrders(userId, filters, "all", null, "all");
+  return [
+    given.rows.some((row) => row.orderId === held.orderId),
+    month.rows.some((row) => row.orderId === held.orderId),
+    aged.rows.some((row) => row.orderId === held.orderId),
+    open.rows.some((row) => row.orderId === held.orderId),
+    step.rows.some((row) => row.orderId === waiting.id),
+    all.rows.some((row) => row.orderId === waiting.id) &&
+      all.rows.some((row) => row.orderId === held.orderId),
+  ];
+}
+
+describePermissionMatrix(
+  "getFinanceCash, getCashNeeded, getMoneyRows, getNeededOrders and getCashOrders by age with the branch filter",
+  {
+    permission: "data.view",
+    async run({ user, branchId }) {
+      const rows = await financeIn(branchId);
+      const filters = { ...NO_ANALYTICS_FILTERS, branch: branchId };
+      const cash = await getFinanceCash(user.id, THIS_MONTH, filters);
+      const needed = await getCashNeeded(user.id, filters);
+      expect(cash.totals.given.amount).toBe(30_000n);
+      expect(cash.ages.find((row) => row.band === "month")!.held).toBe(30_000n);
+      expect(needed.open.amount).toBe(20_000n);
+      expect(needed.approval.amount).toBe(50_000n);
+      const seen = await financeLists(user.id, filters, rows);
+      expect(seen).toEqual(seen.map(() => true));
+    },
+  },
+);
+
+describePermissionMatrix(
+  "getFinanceCash, getCashNeeded, getMoneyRows, getNeededOrders and getCashOrders by age, the branch wall in the SQL",
+  {
+    permission: "data.view",
+    async run({ user, branchId }) {
+      const rows = await financeIn(branchId);
+      // The branch's category alone: the totals are then this branch's rows or nothing.
+      const own = { ...NO_ANALYTICS_FILTERS, category: rows.category };
+      const cash = await getFinanceCash(user.id, THIS_MONTH, own);
+      const needed = await getCashNeeded(user.id, own);
+      const seen = [
+        ...(await financeLists(user.id, own, rows)),
+        cash.totals.given.amount === 30_000n,
+        cash.ages.find((row) => row.band === "month")!.held === 30_000n,
+        needed.open.amount === 20_000n,
+        needed.approval.amount === 50_000n,
+      ];
+      // The lists and the totals keep to the same wall (permission review of 6.6a, Should fix 1).
+      expect(seen).toEqual(seen.map(() => seen[0]));
+      if (!seen[0]) throw new AuthorizationError("not_found");
+    },
+  },
+);
+
+// The ids of the filters (.claude/rules/server-actions.md: every id from the browser is checked to
+// belong to a branch the user may use; permission review of 6.6a, Must fix 1): a department or a
+// Manager of the branch, sent to each Finance query without a branch filter.
+describePermissionMatrix(
+  "getFinanceCash, getCashNeeded, getMoneyRows, getNeededOrders and getCashOrders by age with a department or a Manager of the branch",
+  {
+    permission: "data.view",
+    async run({ user, branchId }) {
+      const rows = await financeIn(branchId);
+      const owner = (
+        await db.execute<{ owner_id: string }>(
+          sql`select owner_id from orders where id = ${rows.held.orderId}`,
+        )
+      ).rows[0]!.owner_id;
+      for (const filters of [
+        { ...NO_ANALYTICS_FILTERS, department: rows.department },
+        { ...NO_ANALYTICS_FILTERS, manager: owner },
+      ]) {
+        const cash = await getFinanceCash(user.id, THIS_MONTH, filters);
+        const needed = await getCashNeeded(user.id, filters);
+        expect(cash.totals.given.amount).toBe(30_000n);
+        expect(cash.ages.find((row) => row.band === "month")!.held).toBe(30_000n);
+        expect(needed.open.amount).toBe(20_000n);
+        expect(needed.approval.amount).toBe(50_000n);
+        const seen = await financeLists(user.id, filters, rows);
+        expect(seen).toEqual(seen.map(() => true));
+      }
+    },
+  },
+);

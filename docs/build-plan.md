@@ -23,11 +23,11 @@ The whole project as ordered tasks. One task is one Claude Code session and one 
 | 3. Purchasing | 10 | The Manager records what was really bought, one order or one whole shop visit at a time. |
 | 4. Money and settlement | 10 | Cash given, cash spent, the difference, and the close, per order. |
 | 5. Warehouse | 11 | Stock screens and every document that moves stock inside one branch. |
-| 6. Home, analytics, reports | 15 | What each role sees first, and the numbers behind the work. |
+| 6. Home, analytics, reports | 16 | What each role sees first, and the numbers behind the work. |
 | 7. Transfers and counts | 4 | Stock moving between branches, and stock checked against the shelf. |
 | 8. Jobs and polish | 3 | The scheduled work, and the translation pass. |
 | 9. Before go-live | 6 | Proof that it works, then the real environment and the real data. |
-| **Total** | **106** | |
+| **Total** | **107** | |
 
 ## Phase 0: Foundations
 
@@ -512,10 +512,15 @@ What each role sees first, and the numbers behind the work.
   - **Build:** Stock planning: use of each item per month; "runs out in" is current stock divided by the average daily issues of the last 90 days; low stock; suggested order quantity.
   - **Done when:** A unit test of "runs out in".
 
-- [ ] **6.6 Analytics: Finance**
-  - **Read:** `10-notifications-analytics-reports.md` (Analytics page per role: Finance, own branches).
-  - **Build:** The five blocks: Cash (with the age bands up to 7 days, 8 to 30 days, over 30 days), Cash needed soon, Payments, Plan vs actual (with purchases without a receipt), Settlement speed.
-  - **Done when:** A test checks the age bands with the clock set. By hand: read the page on the seed.
+- [x] **6.6a Analytics: Finance, Cash and Cash needed soon** (6.6 split in two by its plan, pull request #113)
+  - **Read:** `10-notifications-analytics-reports.md` (Analytics page per role: Finance, own branches); `08-money-and-settlement.md` (Money ledger; When Finance approves; Money with managers).
+  - **Build:** Cash (given, returned and paid back by month; money with managers by age: up to 7 days, 8 to 30 days, over 30 days) and Cash needed soon (planned cash of approved orders not yet paid, plus orders still in approval), each number with its drill-down and Excel export.
+  - **Done when:** A test checks the age bands with the clock set.
+
+- [ ] **6.6b Analytics: Finance, Payments, Plan vs actual and Settlement speed**
+  - **Read:** `10-notifications-analytics-reports.md` (Analytics page per role: Finance, own branches); `edge-cases/purchasing-and-money.md` ("No receipt photo").
+  - **Build:** Payments (spending by payment type; bank transfers by supplier), Plan vs actual (overspends and savings by branch and Manager; purchases without a receipt), Settlement speed (average days from "Send to settlement" to Closed), each number with its drill-down and Excel export.
+  - **Done when:** A database test: Finance's page holds only Finance's branches. By hand: read the page on the seed.
 
 - [ ] **6.7 Analytics as a PDF**
   - **Read:** `10-notifications-analytics-reports.md` (Analytics page per role: 4); `05-order-request-form.md` (Download: 2, 3); `open-questions.md` (question 16).

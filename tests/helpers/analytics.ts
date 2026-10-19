@@ -222,6 +222,8 @@ export async function decided(
     neededBy?: string;
     submittedAt?: string;
     progress?: OrderProgress;
+    /** The planned payment type, Cash by default (plan of 6.6a, Cash needed soon). */
+    paymentType?: PaymentType;
   } = {},
 ) {
   const product = await insertProduct({ categoryId: row.categoryId ?? scene.category.id });
@@ -235,6 +237,7 @@ export async function decided(
     neededBy: row.neededBy,
     submittedAt: row.submittedAt === undefined ? undefined : new Date(row.submittedAt),
     progress: row.progress,
+    paymentType: row.paymentType,
     finishReason:
       row.progress === "DONE_SHORT" || row.progress === "NOT_BOUGHT"
         ? "Do'konda qolmagan"
