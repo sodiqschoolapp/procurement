@@ -306,7 +306,9 @@ export async function withGuardLock<T>(work: () => Promise<T>): Promise<T> {
       // No row means the default; it is written as that value, as rows are never deleted.
       await setGuardAmount(
         client,
-        typeof before === "string" ? before : SETTING_DEFAULTS.overspend_guard_min_amount.toString(),
+        typeof before === "string"
+          ? before
+          : SETTING_DEFAULTS.overspend_guard_min_amount.toString(),
       );
       await client.query("select pg_advisory_unlock($1)", [GUARD_LOCK]);
     }
