@@ -564,7 +564,7 @@ Stock moving between branches, and stock checked against the shelf.
   - **Done when:** Database test: the sender's stock falls at once and the receiver's does not change yet.
   - From 5.12 (`09-warehouse.md`, Stock screens: Documents, "All issues, returns, transfers, write-offs and counts, with filters by type, date and department"; `11-screens-and-ux.md`, Screens: "New issue, return, transfer, write-off | `/warehouse/documents/new?type=`"): `?type=TRANSFER` opens the send form (the page answers "Not found" for it until then), and a sent transfer appears in `/warehouse/documents` and its type filter, and opens at `/warehouse/documents/[id]`, of the sending branch.
 
-- [ ] **7.2 Transfer: receive**
+- [x] **7.2 Transfer: receive**
   - **Read:** `09-warehouse.md` (Other documents: Transfer; Stock value: second bullet); `16-build-order.md` (phase 7 row); `edge-cases/warehouse.md` ("A transfer arrives short").
   - **Build:** The receiving Manager enters what really arrived; stock rises there with the sender's average cost; a shortage becomes a write-off request "Lost in transfer" on the sending branch for the Head.
   - **Done when:** The spec's phase 7 check as a test: send 10, receive 8, and a write-off request for 2 exists.

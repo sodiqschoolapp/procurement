@@ -1780,4 +1780,21 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - For 7.2: the `TRANSFER_OUT` movement of each line holds the sender's average in `unit_cost`; the line has none. `received_by_name` is the sender's optional text; decide whether the receipt fills or replaces it.
 - For 7.2: a received transfer no longer blocks closing a branch (`status = 'IN_TRANSIT'` only); add `TRANSFER` to `reverseAllows()` for the Head.
 
-The next task is 7.2.
+## 7.2 Transfer: receive (19.10.2026, pull request #122)
+
+**Built**
+- `receiveTransfer` (`features/warehouse/actions/receive-transfer.ts`, new permission `stock.receive_transfer` on the receiving branch, no Manager right): RECEIVED with `received_qty` per line, "Received by" and `decided_by`/`decided_at`; `TRANSFER_IN` at the receiver at the line's `TRANSFER_OUT` cost; the short quantity `TRANSFER_IN` back at the sender and a WRITE_OFF LOST_IN_TRANSFER waiting on the sending branch (the Head's receipt posts it at once).
+- Domain: `transferReceiveMove()`, `receivedQuantityRefusal()`, `transferShort()`, `transferReceipt()`; `reverseAllows()` + TRANSFER for the Head.
+- `documentWall()` (`queries/documents.ts`): list, page and note open a transfer to its receiving branch; a transfer's lines read no stock (`inStock` null).
+- The receive form on `/warehouse/documents/[id]` (`ReceiveTransferForm`), Sent/Received/Short columns, the list's "CHL → YNS", the note's Received column; `0045_transfer_receive`: `received_qty <= qty`.
+
+**Left out, and the task that brings it**
+- Counts and corrections: 7.3, 7.4.
+
+**What the next sessions must know**
+- For 7.3 and 7.4: a COUNT is seen by its own branch only; `documentWall()` opens TRANSFER only, keep it so.
+- For 7.4: `reverseAllows()` now answers yes for DIRECT_ENTRY, WRITE_OFF and TRANSFER to the Head; add COUNT the same way.
+- A shortage's write-off is made by the receiving user on the sending branch; `notify()` drops recipients outside the event's branch, so its decision notice reaches the receiver only when they are also of the sending branch.
+- A TRANSFER line may carry two movements of type TRANSFER_IN (receiver's and the sender's return) besides its TRANSFER_OUT; a reader of "what arrived" reads `received_qty`, not the movements.
+
+The next task is 7.3.
