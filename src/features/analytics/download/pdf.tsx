@@ -76,29 +76,30 @@ function Section({ section, report }: { section: ReportSection; report: Analytic
   const { format } = report;
   return (
     <View style={styles.section}>
-      <View wrap={false}>
+      {/* The title stays with its notes, its numbers and the start of its first table. */}
+      <View wrap={false} minPresenceAhead={60}>
         <Text style={styles.sectionTitle}>{section.title}</Text>
         {section.notes.map((note, index) => (
           <Text key={index} style={styles.note}>
             {note}
           </Text>
         ))}
+        {section.figures.length > 0 && (
+          <View style={styles.figures}>
+            {section.figures.map((figure, index) => (
+              <View key={index} style={styles.figure}>
+                <Text style={styles.figureLabel}>{figure.label}</Text>
+                <Text style={styles.figureValue}>{figure.value}</Text>
+                {figure.lines.map((line, at) => (
+                  <Text key={at} style={styles.note}>
+                    {line}
+                  </Text>
+                ))}
+              </View>
+            ))}
+          </View>
+        )}
       </View>
-      {section.figures.length > 0 && (
-        <View style={styles.figures} wrap={false}>
-          {section.figures.map((figure, index) => (
-            <View key={index} style={styles.figure}>
-              <Text style={styles.figureLabel}>{figure.label}</Text>
-              <Text style={styles.figureValue}>{figure.value}</Text>
-              {figure.lines.map((line, at) => (
-                <Text key={at} style={styles.note}>
-                  {line}
-                </Text>
-              ))}
-            </View>
-          ))}
-        </View>
-      )}
       {section.tables.map(({ captions, sheet }, index) => {
         // The total sits in the column it names, else in the last plain money column (excel.ts).
         const totalColumn = sheet.total
@@ -112,7 +113,7 @@ function Section({ section, report }: { section: ReportSection; report: Analytic
           : -1;
         return (
           <View key={index} style={styles.table}>
-            <View wrap={false}>
+            <View wrap={false} minPresenceAhead={30}>
               {captions.map((line, at) => (
                 <Text key={at} style={at === 0 ? styles.caption : styles.captionLine}>
                   {line}
