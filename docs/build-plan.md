@@ -617,7 +617,7 @@ Proof that it works, then the real environment and the real data.
   - **Build:** S1, S2, S3, S9, S12, S13, S16, S20 as Playwright tests at phone and desktop width.
   - **Done when:** All eight are green in CI in both projects.
 
-- [ ] **9.1c Acceptance run: purchasing and warehouse**
+- [x] **9.1c Acceptance run: purchasing and warehouse**
   - **Read:** `15-quality-and-acceptance.md` (whole file); `16-build-order.md` (whole file). From the former 8.3: `11-screens-and-ux.md` (Rules for a smooth feel: 13); `01-summary.md` (Quality bar); `15-quality-and-acceptance.md` (Done-check for every phase).
   - **Build:** S4, S8, S10, S11, S15 as Playwright tests at phone and desktop width (S10 and S15 have browser tests; each is read against its "Must end with" line).
   - **Done when:** All five are green in CI in both projects; with 9.1a and 9.1b every scenario S1 to S20 has its browser test.

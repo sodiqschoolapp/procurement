@@ -1916,4 +1916,21 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - 08's orange is `data-colour="amber"` on the labels.
 - The 16 tests take about 5.5 minutes at two workers locally; run them at two workers, as CI does: four workers on this machine time out sign-ins.
 
-The next task is 9.1c.
+## 9.1c Acceptance run: purchasing and warehouse (19.10.2026, pull request #131)
+
+**Built**
+- `tests/e2e/acceptance-warehouse.spec.ts`: S4, S8, S10 and S11 clicked through from complete drafts (Submit, approvals, purchases, issues, Cancel record), at 375 px and 1440 px.
+- `tests/e2e/acceptance-fixtures.ts`: the flow helpers of 9.1b moved in (`newScene()`, `throughApprovals()`, `submitInGrid()`, `financeApproves()`, `recordPurchase()` with `subtype` and `progress`, `numberOf()`, `movementsOf()`, the 15-second `expect`), plus `newProductWithSubtypes()` and `stockIn()`.
+- S15: the two tests of `direct-entry.spec.ts`; the first now reads the +200 in `stock_balances`.
+- Every scenario has its browser test: S1, S2, S3, S9, S12, S13, S16, S20 `acceptance-money.spec.ts`; S4, S8, S10, S11 `acceptance-warehouse.spec.ts`; S5 `send-back.spec.ts`; S6 `copy-as-new.spec.ts`; S7 `branch-wall.spec.ts`; S14, S17, S18, S19 `acceptance-orders.spec.ts`; S15 `direct-entry.spec.ts`.
+
+**Left out, and the task that brings it**
+- The accessibility pass and S1 with the keyboard only: 9.1d.
+
+**What the next sessions must know**
+- For 9.1d: every acceptance helper is in `acceptance-fixtures.ts`; import `expect` from there for the 15-second wait.
+- An issue form opened by `page.goto()` can lose a department chosen before it hydrates: choose it inside `expect(...).toPass()` until Received by is prefilled (`readyIssue()` in `acceptance-warehouse.spec.ts`).
+- Name the step buttons with `exact: true`: the `next dev` tools button matches "Next".
+- A refusal toast's text shows twice in the page; read it inside the region "Notifications".
+
+The next task is 9.1d.
