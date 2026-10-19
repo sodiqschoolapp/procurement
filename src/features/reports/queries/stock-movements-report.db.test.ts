@@ -193,10 +193,16 @@ describe("everything that went in and out in the dates (10 Reports, Stock moveme
       "all",
     );
     expect(byHead.rows.map((row) => row.orderNumber)).toEqual([record.number]);
-    const seen = await getStockMovementsReport(colleague.id, params, "all");
-    expect(seen.rows.map((row) => [row.type, row.orderId, row.orderNumber])).toEqual([
-      ["RECEIPT", null, null],
-    ]);
+    // A colleague Manager, the Principal and Finance of the branch see the movement, not the order
+    // (permission review of 6.9a, Should fix 2).
+    const principal = await insertUser("PRINCIPAL", { branches: [scene.branch.id] });
+    const finance = await insertUser("FINANCE", { branches: [scene.branch.id] });
+    for (const reader of [colleague, principal, finance]) {
+      const seen = await getStockMovementsReport(reader.id, params, "all");
+      expect(seen.rows.map((row) => [row.type, row.orderId, row.orderNumber])).toEqual([
+        ["RECEIPT", null, null],
+      ]);
+    }
   });
 });
 

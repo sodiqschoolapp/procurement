@@ -1728,6 +1728,7 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 **What the next sessions must know**
 - For 6.9b: the steps of a new report are those of 6.8's note; the tab row has seven tabs and wraps.
 - For 7.1 to 7.4: Stock movements already lists TRANSFER_OUT, TRANSFER_IN and CORRECTION rows (a transfer's on its document's date); Use by department and the two in-lines do not count them.
+- For 7.2: a TRANSFER_IN movement sits in the receiving branch but its document in the sender's; Stock movements and the item card join the document with no branch check, so the receiver would see the sender's document number and a link the document page answers Not found. Join it only when the document is of the movement's branch or its `to_branch_id`, and decide who may open a transfer document (permission review of 6.9a, Should fix 1).
 - Stock movements, the two in-lines and Use by department agree for the same dates and filters (`stock-movements-report.db.test.ts`); a change to how a movement is dated changes `MOVEMENT_DATE` and `analytics_stock_moves.moved_on` together.
 - `stocked()` writes a RECEIPT with no purchase: the Stock on hand report counts it under Purchases on the clock's day, so a test that wants no in-line sets the clock before the dates first.
 
