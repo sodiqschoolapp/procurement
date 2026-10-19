@@ -172,6 +172,8 @@ export function SuggestionForm({
             ref={fileInput}
             id="suggestion-photo"
             type="file"
+            aria-label={t("fields.photoFileId")}
+            tabIndex={-1}
             accept={IMAGE_MIMES.join(",")}
             className="sr-only"
             onChange={(event) => void choosePhoto(event.target.files?.[0])}

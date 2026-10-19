@@ -431,6 +431,7 @@ export function IssueForm({
         </h2>
         <Field id="issue-comment" label={t("comment")} error={fieldTexts.comment}>
           <textarea
+            id="issue-comment"
             {...register("comment")}
             rows={3}
             maxLength={1000}

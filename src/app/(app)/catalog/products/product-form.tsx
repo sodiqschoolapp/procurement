@@ -310,6 +310,7 @@ export function ProductForm({
           error={action.fieldTexts.description}
         >
           <textarea
+            id="product-description"
             {...register("description")}
             rows={4}
             maxLength={1200}
@@ -341,6 +342,8 @@ export function ProductForm({
             ref={fileInput}
             id="product-photo"
             type="file"
+            aria-label={t("fields.photoFileId")}
+            tabIndex={-1}
             accept={IMAGE_MIMES.join(",")}
             className="sr-only"
             onChange={(event) => void choosePhoto(event.target.files?.[0])}

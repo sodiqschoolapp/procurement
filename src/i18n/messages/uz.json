@@ -461,8 +461,7 @@
         "since": "{date} dan beri",
         "empty": "Hech bir menejerda pul yoki qarz yoʻq.",
         "open": "«Menejerlardagi pul»ni ochish"
-      },
-      "openOrders": "Buyurtmalarni ochish: {name}, {branch}"
+      }
     }
   },
   "profile": {
@@ -1158,7 +1157,7 @@
       "alt": "{name} namuna rasmi"
     },
     "extras": {
-      "open": "{product} qoʻshimcha xarajatlarini tahrirlash",
+      "open": "{sum}, {product} qoʻshimcha xarajatlarini tahrirlash",
       "title": "Qoʻshimcha xarajatlar",
       "type": "Turi",
       "amount": "Summa",

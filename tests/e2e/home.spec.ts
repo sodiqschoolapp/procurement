@@ -189,10 +189,10 @@ test("Done when: a Finance entry opens the order list filtered to its orders, re
 
   await signIn(page, people.finance);
   const approvals = page.locator('[data-home-block="approvals"]');
+  // The entry is named by what it shows, the owner and the branch first (WCAG 2.5.3 Label in
+  // Name; plan of 9.1d).
   const entry = approvals.getByRole("link", {
-    name: uz.home.finance.openOrders
-      .replace("{name}", people.manager.fullName)
-      .replace("{branch}", "EA"),
+    name: new RegExp(`^${people.manager.fullName} EA\\b`),
   });
   await expect(entry).toBeVisible();
   // The exact cash to give: at least the two seeded Cash orders of 10 000 (other specs may add

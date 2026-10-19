@@ -200,6 +200,7 @@ export function CatalogForm({
                 </Select>
               ) : field.type === "long" ? (
                 <textarea
+                  id={id}
                   {...register(field.key)}
                   rows={4}
                   maxLength={MAX_LENGTH.long}
