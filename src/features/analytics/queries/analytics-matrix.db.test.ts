@@ -692,30 +692,39 @@ describePermissionMatrix("getStatusOrders with the branch filter", {
 });
 
 // The Orders total's list with a department or a Manager of the branch and no branch filter
-// (build-plan 6.5a-2; .claude/rules/tests.md, the three ways): the scene's three orders.
-describePermissionMatrix(
-  "getStatusOrders, status:all, with a department or a Manager of the branch",
-  {
-    permission: "data.view",
-    async run({ user, branchId }) {
-      const { scene, waiting } = await principalIn(branchId, user.id);
-      for (const filters of [
-        { ...NO_ANALYTICS_FILTERS, department: scene.department.id },
-        { ...NO_ANALYTICS_FILTERS, manager: scene.manager.id },
-      ]) {
-        const all = await getStatusOrders(
-          user.id,
-          THIS_MONTH,
-          filters,
-          { kind: "status", status: null },
-          "all",
-        );
-        expect(all.count).toBe(3);
-        expect(all.rows.map((row) => row.orderId)).toContain(waiting.id);
-      }
-    },
+// (build-plan 6.5a-2; .claude/rules/tests.md, the three ways): the scene's three orders. One
+// block per filter, so each id of another branch is refused on its own (permission review).
+describePermissionMatrix("getStatusOrders, status:all, with a department of the branch", {
+  permission: "data.view",
+  async run({ user, branchId }) {
+    const { scene, waiting } = await principalIn(branchId, user.id);
+    const all = await getStatusOrders(
+      user.id,
+      THIS_MONTH,
+      { ...NO_ANALYTICS_FILTERS, department: scene.department.id },
+      { kind: "status", status: null },
+      "all",
+    );
+    expect(all.count).toBe(3);
+    expect(all.rows.map((row) => row.orderId)).toContain(waiting.id);
   },
-);
+});
+
+describePermissionMatrix("getStatusOrders, status:all, with a Manager of the branch", {
+  permission: "data.view",
+  async run({ user, branchId }) {
+    const { scene, waiting } = await principalIn(branchId, user.id);
+    const all = await getStatusOrders(
+      user.id,
+      THIS_MONTH,
+      { ...NO_ANALYTICS_FILTERS, manager: scene.manager.id },
+      { kind: "status", status: null },
+      "all",
+    );
+    expect(all.count).toBe(3);
+    expect(all.rows.map((row) => row.orderId)).toContain(waiting.id);
+  },
+});
 
 describePermissionMatrix("the Principal's blocks and lists, the branch wall in the SQL", {
   permission: "data.view",
