@@ -12,7 +12,10 @@ import {
   directEntryLineRefusal,
   overReturn,
   reversalOf,
+  receivedQuantityRefusal,
   reverseAllows,
+  transferReceipt,
+  transferReceiveMove,
   WRITE_OFF_OUTCOMES,
   writeOffCommentRefusal,
   writeOffDecisionMove,
@@ -229,10 +232,25 @@ describe("reverseAllows (09 Issue to a department 3; Decided ahead, question 19;
     }
   });
 
+  it("a received transfer: the Head only, never its sender (Decided ahead, question 19; plan of 7.2, decided item 5)", () => {
+    expect(
+      reverseAllows({ userId: colleague, role: "HEAD" }, { type: "TRANSFER", createdBy: maker }),
+    ).toBe(true);
+    for (const role of ["MANAGER", "PRINCIPAL", "FINANCE"] as const) {
+      expect(reverseAllows({ userId: maker, role }, { type: "TRANSFER", createdBy: maker })).toBe(
+        false,
+      );
+    }
+  });
+
   it("refuses every other type, to the Head and its creator too, until its task adds it", () => {
     for (const type of DOCUMENT_TYPES.filter(
       (each) =>
-        each !== "ISSUE" && each !== "RETURN" && each !== "DIRECT_ENTRY" && each !== "WRITE_OFF",
+        each !== "ISSUE" &&
+        each !== "RETURN" &&
+        each !== "DIRECT_ENTRY" &&
+        each !== "WRITE_OFF" &&
+        each !== "TRANSFER",
     )) {
       expect(reverseAllows({ userId: maker, role: "HEAD" }, { type, createdBy: maker })).toBe(
         false,
@@ -311,5 +329,71 @@ describe("writeOffDecisionMove (09 Other documents, Write-off; plan of 5.11, dec
         expect(writeOffDecisionMove(status, outcome)).toBeNull();
       }
     }
+  });
+});
+
+describe("transferReceiveMove (09 Other documents, Transfer: In transit until received; plan of 7.2; developer-rules rule 2)", () => {
+  it("moves an In-transit transfer to Received, and nothing else", () => {
+    expect(transferReceiveMove("IN_TRANSIT")).toBe("RECEIVED");
+    for (const status of DOCUMENT_STATUSES.filter((each) => each !== "IN_TRANSIT")) {
+      expect(transferReceiveMove(status)).toBeNull();
+    }
+  });
+});
+
+describe('receivedQuantityRefusal (09 Transfer: "enters what really arrived"; edge case "Half a piece"; plan of 7.2, decided item 4)', () => {
+  it("allows 0, a part and all of what was sent", () => {
+    expect(receivedQuantityRefusal("0", false, "10")).toBeNull();
+    expect(receivedQuantityRefusal("0.000", true, "10")).toBeNull();
+    expect(receivedQuantityRefusal("8", false, "10")).toBeNull();
+    expect(receivedQuantityRefusal(" 10 ", false, "10.000")).toBeNull();
+    expect(receivedQuantityRefusal("2.5", true, "2.5")).toBeNull();
+  });
+
+  it("refuses more than was sent, by the smallest step", () => {
+    expect(receivedQuantityRefusal("11", false, "10")).toBe("aboveSent");
+    expect(receivedQuantityRefusal("2.501", true, "2.5")).toBe("aboveSent");
+  });
+
+  it("follows the measure and the quantity rules", () => {
+    expect(receivedQuantityRefusal("1.5", false, "10")).toBe("wholeOnly");
+    expect(receivedQuantityRefusal("", false, "10")).toBe("required");
+    expect(receivedQuantityRefusal("-1", false, "10")).toBe("wrongFormat");
+    expect(receivedQuantityRefusal("1.2345", true, "10")).toBe("tooManyDecimals");
+  });
+});
+
+describe('transferReceipt (09 Stock value, second bullet; edge case "A transfer arrives short"; plan of 7.2, decided item 1)', () => {
+  it("the phase 7 check: 10 sent, 8 received: 8 in at the sender's cost, 2 short, 2 back at the same cost", () => {
+    expect(transferReceipt({ qty: "10.000", receivedQty: "8", sentCost: 5000n })).toEqual({
+      received: { type: "TRANSFER_IN", qtyDelta: "8", unitCost: 5000n },
+      short: "2",
+      back: { type: "TRANSFER_IN", qtyDelta: "2", unitCost: 5000n },
+    });
+  });
+
+  it("all received: nothing short and nothing back", () => {
+    expect(transferReceipt({ qty: "10", receivedQty: "10.000", sentCost: 700n })).toEqual({
+      received: { type: "TRANSFER_IN", qtyDelta: "10", unitCost: 700n },
+      short: null,
+      back: null,
+    });
+  });
+
+  it("nothing received: no movement at the receiver, all of it back", () => {
+    expect(transferReceipt({ qty: "2.5", receivedQty: "0", sentCost: 0n })).toEqual({
+      received: null,
+      short: "2.5",
+      back: { type: "TRANSFER_IN", qtyDelta: "2.5", unitCost: 0n },
+    });
+  });
+
+  it("a received quantity above the sent one is a mistake of the caller", () => {
+    expect(() => transferReceipt({ qty: "10", receivedQty: "10.001", sentCost: 1n })).toThrow(
+      RangeError,
+    );
+    expect(() => transferReceipt({ qty: "10", receivedQty: "-1", sentCost: 1n })).toThrow(
+      RangeError,
+    );
   });
 });
