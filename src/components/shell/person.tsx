@@ -15,14 +15,15 @@ export function initialsOf(fullName: string): string {
 
 export function Avatar({ fullName, className }: { fullName: string; className?: string }) {
   return (
+    // The initials are drawn by CSS, not written as text: a picture of the name, they stay out of
+    // the accessible name of the link that holds them (WCAG 2.5.3 Label in Name; plan of 9.1d).
     <span
       aria-hidden="true"
+      data-initials={initialsOf(fullName)}
       className={cn(
-        "flex size-9 shrink-0 items-center justify-center rounded-full bg-sidebar-avatar text-[13px] font-semibold text-sidebar-accent-foreground",
+        "flex size-9 shrink-0 items-center justify-center rounded-full bg-sidebar-avatar text-[13px] font-semibold text-sidebar-accent-foreground before:content-[attr(data-initials)]",
         className,
       )}
-    >
-      {initialsOf(fullName)}
-    </span>
+    />
   );
 }

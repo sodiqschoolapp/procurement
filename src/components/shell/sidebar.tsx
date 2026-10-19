@@ -121,7 +121,6 @@ export function Sidebar({
         <div className="flex items-center gap-1 rail:flex-col">
           <Link
             href="/profile"
-            aria-label={t("shell.profile")}
             title={t("shell.profile")}
             className={cn(
               "flex min-w-0 flex-1 items-center gap-3 rounded-lg p-1 rail:flex-none",
@@ -130,7 +129,7 @@ export function Sidebar({
             )}
           >
             <Avatar fullName={fullName} />
-            <span className="flex min-w-0 flex-col rail:hidden">
+            <span className="flex min-w-0 flex-col rail:sr-only">
               <span className="truncate text-sm leading-5 font-semibold text-sidebar-accent-foreground">
                 {fullName}
               </span>
