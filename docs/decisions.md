@@ -2409,6 +2409,31 @@ Choices made during the build:
 - The address tests that used `report=stock` as an unknown report now use `report=prices`: `stock` became a report in this task (a requirement change, not a weakened test).
 - The stock lines link to their item card, the movements to their document or order, as the Analytics lists do.
 
+### 6.9b Reports: Price history, Money with managers and Approval speed (19.10.2026)
+
+The plan's decisions as the plan review of 19.10.2026 confirmed them, with its corrections applied (1: the Money with managers wall test checks that Finance of one branch sees a two-branch Manager's held and owed of that branch's orders only; 2: Price history's default subtype is picked inside the branch wall, with a test). The Look first items come first.
+
+1. **Look first** (permission matrix). Money with managers as a report is under `data.view` for every role in its own branches (10 Reports: "Every report … respects the user's branches"; 03 matrix "See orders, stock and reports"); the `/money` page stays Finance and the Head (`money.managers`). The owner may narrow the report to Finance and the Head.
+2. **Look first** (money source). Money with managers reads `analytics_cash` (refreshed every 5 minutes), so it equals Finance's Cash bands and the Head's Managers block; the page shows the summary's time; the live `/money` page can differ for up to 5 minutes.
+3. **Look first** (numbers of now). Money with managers is a number of now; age is whole Tashkent days from `since` (`daysOut()`), bands `cashAgeBand()`, held and owed of each band by `managerCashBalance()`, never netted; the owners are `managerBalances()`.
+4. **Look first** (Approval speed). The stays of `analytics_steps` decided in the dates; average hours per step is `averageHours()` of each set's sum and count, per branch and for all the user's branches, never a mean of the rows; orders still waiting are not in the report.
+5. **Look first** (price source). Purchase prices are `analytics_spending.unit_price` above 0 under `spendingWhere()`; reference prices the `HEAD` rows of `price_history`, school-wide; the `PURCHASE` rows are not read (no branch, cancelled prices kept).
+6. Price history is per subtype (`variant=`), else the most bought in the dates under the filters inside the wall; any catalog subtype may be named, its records stay those of the user's branches.
+7. One chart point per record (date bought, then entry time), not a monthly average; the chart shows all records of the dates, the table pages them.
+8. Reference prices: the one in force on the first day (newest before 00:00 Tashkent, by `created_at` then `seq`) and every one set in the dates, as a table, not a second chart series.
+9. Category filters each report as its `*Where()` does: the bought subtype's (Price history), the planned subtype's (Money with managers, Approval speed).
+10. Money with managers rows: `managerBalances()`'s blocks in its order, inactive owners marked; the orders 25 a page in that order.
+11. Approval speed rows: every branch with a stay decided in the dates, by name, inactive marked; the stays newest decided first.
+12. Excel: Price history two sheets, Money with managers three, Approval speed two; money whole so'm, hours the one-decimal text of the screen.
+13. No change against the period before; no "waiting now".
+
+Choices made during the build:
+
+- The three views are in a new file, `components/more-report-views.tsx`, which imports `Table`, `CELL`, `NUMBER` and `itemName` from `report-views.tsx` (exported now): `report-views.tsx` would have passed 1 000 lines.
+- The address tests that used `report=prices` as an unknown report now use `report=unknown`: `prices` became a report in this task (a requirement change, not a weakened test).
+- A report table's card has `min-w-0`: the browser test at 375 px found the Spending grid's tables pushing the page sideways (on `main` too, depending on when the check ran); the table now scrolls inside its box, as the views' comment always said.
+- Money with managers' sheets carry no dates line (`heading()` takes `null` dates), and the page's heading says "Now" in place of the dates.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

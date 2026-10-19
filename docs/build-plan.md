@@ -543,7 +543,7 @@ What each role sees first, and the numbers behind the work.
   - **Build:** Stock on hand (quantities and value, with direct entries as their own line), Stock movements, Use by department, each on `/reports` with its Excel file.
   - **Done when:** Database tests: stock value equals quantity × average cost; the branch wall on each of the three reports.
 
-- [ ] **6.9b Reports: Price history, Money with managers and Approval speed**
+- [x] **6.9b Reports: Price history, Money with managers and Approval speed**
   - **Read:** `10-notifications-analytics-reports.md` (Reports: rows Price history, Money with managers, Approval speed); `04-catalogs.md` (rule 4, Price memory); `08-money-and-settlement.md` (Money with managers); `06-approval-workflow.md` (Statuses).
   - **Build:** Price history (as a chart), Money with managers, Approval speed, each on `/reports` with its Excel file.
   - **Done when:** Database tests: the branch wall on each of the three reports.
