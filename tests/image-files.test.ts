@@ -11,7 +11,13 @@ import { describe, expect, it } from "vitest";
 // and every package they import must be a production dependency.
 
 /** The scripts the image runs: scripts/start.sh, and the check the owner runs in the console. */
-const ENTRY_POINTS = ["scripts/db-migrate.mjs", "scripts/db-seed.mjs", "scripts/storage-check.mjs"];
+const ENTRY_POINTS = [
+  "scripts/db-migrate.mjs",
+  "scripts/db-seed.mjs",
+  "scripts/storage-check.mjs",
+  // The copy made from the console of the test copy (build-plan 8.2).
+  "scripts/db-copy.mjs",
+];
 
 /** The sources of every COPY of the run stage that does not copy from another stage. */
 function copiedIntoRunStage(): string[] {
@@ -84,6 +90,7 @@ describe("the image holds what its scripts import (build-plan 0.15; 0.16, decisi
         "scripts/seed.mjs",
         "scripts/first-head.mjs",
         "scripts/storage-check.mjs",
+        "scripts/db-copy.mjs",
         "scripts/ensure-bucket.mjs",
         "src/server/audit-row.mjs",
         "src/domain/audit-secrets.mjs",
@@ -124,5 +131,25 @@ describe("the image holds the files the app reads at run time (plan of 2.14, dec
       expect(existsSync(file), file).toBe(true);
       expect(isCopied(file, copied), file).toBe(true);
     }
+  });
+});
+
+// build-plan 8.2 (plan, decided item 3, Look first; review of the plan, correction 1): the weekly
+// copy needs pg_dump of the server's major version, 17, which Debian's own client (15) is not. No
+// CI step runs it; this keeps the install in the run stage, and the build itself stops unless
+// pg_dump says 17.
+describe("the image carries pg_dump 17 (build-plan 8.2; 13-technology.md, Running it)", () => {
+  const dockerfile = readFileSync("Dockerfile", "utf8");
+  const run = dockerfile.slice(dockerfile.indexOf(" AS run"));
+
+  it("installs postgresql-client-17 from apt.postgresql.org in the run stage, before USER node", () => {
+    const install = run.indexOf("postgresql-client-17");
+    expect(install).toBeGreaterThan(-1);
+    expect(run).toContain("/usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y");
+    expect(install).toBeLessThan(run.indexOf("USER node"));
+  });
+
+  it("stops the build unless pg_dump is 17", () => {
+    expect(run).toContain("pg_dump --version | grep --quiet ' 17\\.'");
   });
 });

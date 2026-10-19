@@ -38,7 +38,10 @@ let inactiveHead: string;
 let seedHead: string;
 
 /** The items whose ledger the clean case holds; a mismatch test changes one and restores it. */
-const items: Record<string, string> = {};
+const items = {} as Record<
+  "reversed" | "returned" | "clamped" | "decimal" | "moved" | "empty",
+  string
+>;
 
 function post(input: Omit<PostedMovementInput, "createdBy">) {
   return db.transaction((tx) => postMovement(tx, { ...input, createdBy: manager }));

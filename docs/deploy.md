@@ -14,6 +14,7 @@ Steps 1 to 5 type no secret: the database address and its certificate are handed
 | The database | A development database, PostgreSQL 17, component `db` of the same app | `.do/app.yaml` |
 | The address | `ombor-test.sodiqschool.uz`, a CNAME in the DNS of `sodiqschool.uz` | Step 4 below |
 | The files | Cloudflare R2, the private bucket `ombor-test-files` | Step 6 below |
+| The weekly copy of the database | The same bucket, under `backups/`, one file `database-<date>.dump` per Sunday | The job `database_copy`, Sundays at 04:00 Tashkent (task 8.2); the section "The weekly copy" below |
 | The demo users | `seed_head`, `seed_manager`, `seed_principal`, `seed_finance` in the database | `scripts/db-seed.mjs` at every start, step 7 below |
 
 When a new version starts, the container first applies the database migrations (`scripts/start.sh`), then, on the test copy only (`SEED_DEMO_DATA=yes`), writes the demo users that are missing, then starts the app. DigitalOcean sends visitors to the new version only after `/health` answers. If the migration fails, the new container stops and the deploy is marked failed; the old version should keep running (DigitalOcean's documented behaviour as remembered by the session that wrote this, not read: check it the first time a deploy fails).
@@ -111,6 +112,19 @@ Task 0.15 added `SEED_DEMO_DATA`, `S3_REGION` and `S3_BUCKET` to `.do/app.yaml`.
 
 How the demo users behave (0.14, decision 4): the seed runs on every deploy and **keeps what is there**. It never changes a password, a name or a branch, and never activates a user again. A demo user you deactivate or change by hand stays so; a changed password in the dashboard does not change the user's password. It refuses, writing nothing, when a user with a demo name exists with another role, or when `seed_principal` is missing and branch CHL already has an active Principal: the log then shows that reason and `db:seed failed: …`, and the app starts all the same.
 
+## The weekly copy (task 8.2)
+
+Every Sunday at 04:00 Tashkent time the app saves a copy of the whole database, made by `pg_dump` 17 in the image, to the bucket `ombor-test-files` as `backups/database-<YYYY-MM-DD>.dump`. It needs no new variable: it uses the database's own `DATABASE_URL` and `DATABASE_CA_CERT` and the `S3_…` values of step 8. Every copy is kept; nothing deletes them. DigitalOcean's own daily backups of the database are separate and stay as they are.
+
+The first version that carries the job copies at once for the last Sunday, so a file is there soon after the deploy.
+
+1. In Cloudflare: R2 → `ombor-test-files` → the folder `backups/` holds `database-<last Sunday>.dump`. This is the check of task 8.2.
+2. Also, in the app → component `web` → Console: `node scripts/db-copy.mjs` makes a copy now, named by today's date, and prints `copy ok backups/database-….dump (<size> bytes)`. Anything else is one line `copy failed: …` (below).
+
+To restore a copy into an **empty** database (the restore drill is task 9.6; never into the running app's database): download the file from R2, then `pg_restore --no-owner --dbname=<the empty database's address> database-<date>.dump`, with `pg_restore` 17.
+
+The copies hold everything in the database, password hashes and sign-in sessions included. On the test copy that is invented data; before go-live this is looked at again (tasks 9.4 to 9.6).
+
 ## The variables
 
 Seven variables are in `.do/app.yaml`; the owner types eight more in the dashboard, encrypted (steps 8.1 and `BETTER_AUTH_SECRET` below). Where to see them: the app → component `web` → Settings → Environment Variables. The values of `DATABASE_URL` and `DATABASE_CA_CERT` are filled in by DigitalOcean from the database; they are not shown in a chat or written anywhere. Applying `.do/app.yaml` again (step 7) can drop the typed ones: check them after every apply.
@@ -152,6 +166,11 @@ It is not declared in `.do/app.yaml`, so no value and no empty placeholder sits 
 - **`storage failed: … (HTTP 403).`** The token's keys are wrong, or the token is not for the bucket `ombor-test-files`: make a new token (step 6.4) and type both keys again.
 - **`storage failed: … (HTTP 404).`** The bucket is not named `ombor-test-files`, or the endpoint is of another account.
 - **Another `storage failed: …` line.** Post the line on issue #9; it holds no secret.
+- **The log shows `Job database_copy failed: copy failed: …`, or the console prints `copy failed: …`.**
+  - `pg_dump ended with code …`: the dump did not finish. A reason with a certificate: see the first item of this list (`DATABASE_CA_CERT`). Otherwise post the line on issue #9.
+  - `S3_… is not set`, or `(HTTP 403)`, `(HTTP 404)`: as for the storage check below.
+  - The scheduler tries the copy again the next Sunday; the console line makes one at once.
+- **The log shows `Stock check: branch …, subtype …`** (and the Head has the bell notification "The nightly stock check found …"): a stored stock number is not what its movements say. Nothing was changed. Post the lines on issue #9; they hold ids and numbers only.
 - **`/health` shows `"status":"database unavailable"`.** The app runs but does not reach the database in 3 seconds. Check the database component is running; then post the line on issue #9.
 - **The page does not open at all.** Check the CNAME record of step 4 and that the domain shows as active.
 

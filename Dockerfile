@@ -24,6 +24,16 @@ RUN npm ci --omit=dev && npm cache clean --force
 
 FROM ${NODE_IMAGE} AS run
 WORKDIR /app
+# pg_dump 17, the server's major version, for the weekly copy (build-plan 8.2; scripts/db-copy.mjs;
+# plan of 8.2, decided item 3, Look first): Debian's own client is 15 and refuses a server of 17.
+# The PostgreSQL project's apt repository is added by the script Debian's signed postgresql-common
+# package ships, with the key it carries; the build stops unless pg_dump says 17.
+RUN apt-get update \
+ && apt-get install --yes --no-install-recommends ca-certificates postgresql-common \
+ && /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y \
+ && apt-get install --yes --no-install-recommends postgresql-client-17 \
+ && rm -rf /var/lib/apt/lists/* \
+ && pg_dump --version | grep --quiet ' 17\.'
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
     PORT=8080
@@ -38,9 +48,10 @@ COPY --from=build --chown=node:node /app/.next ./.next
 COPY drizzle ./drizzle
 COPY scripts/start.sh scripts/db-migrate.mjs scripts/apply-migrations.mjs ./scripts/
 COPY src/server/db/connection-options.mjs ./src/server/db/connection-options.mjs
-# The demo users of the test copy and the storage check (build-plan 0.15). tests/image-files.test.ts
+# The demo users of the test copy, the storage check (build-plan 0.15) and the copy made from the
+# console (8.2). tests/image-files.test.ts
 # checks that every file these import is copied here.
-COPY scripts/db-seed.mjs scripts/seed.mjs scripts/seed-catalogs.mjs scripts/seed-orders.mjs scripts/seed-stock.mjs scripts/first-head.mjs scripts/storage-check.mjs scripts/ensure-bucket.mjs ./scripts/
+COPY scripts/db-seed.mjs scripts/seed.mjs scripts/seed-catalogs.mjs scripts/seed-orders.mjs scripts/seed-stock.mjs scripts/first-head.mjs scripts/storage-check.mjs scripts/ensure-bucket.mjs scripts/db-copy.mjs ./scripts/
 COPY src/server/audit-row.mjs ./src/server/audit-row.mjs
 COPY src/server/auth/password-user.mjs ./src/server/auth/password-user.mjs
 COPY src/domain/audit-secrets.mjs ./src/domain/audit-secrets.mjs
