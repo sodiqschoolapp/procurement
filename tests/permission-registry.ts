@@ -275,6 +275,11 @@ export const QUERIES: Record<string, Permission> = {
   "src/features/analytics/queries/cash-needed.ts#getCashNeeded": "data.view",
   "src/features/analytics/queries/money-rows.ts#getMoneyRows": "data.view",
   "src/features/analytics/queries/needed-orders.ts#getNeededOrders": "data.view",
+  // Finance's Payments, purchases without a receipt and Settlement speed of 6.6b and its list:
+  // data.view, the walls in spendingWhere() and settlementsWhere().
+  "src/features/analytics/queries/finance-spending.ts#getFinanceSpending": "data.view",
+  "src/features/analytics/queries/settlement-speed.ts#getSettlementSpeed": "data.view",
+  "src/features/analytics/queries/settlements.ts#getSettlements": "data.view",
   // The order list's download, Excel and PDF (plan of 2.14, decided item 4, Look first): data.export
   // with the list's own walls in the SQL (queries/order-download-matrix.db.test.ts).
   "src/features/orders/queries/order-list.ts#orderDownload": "data.export",

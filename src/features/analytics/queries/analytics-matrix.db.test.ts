@@ -25,6 +25,7 @@ import { getCancelledRecords } from "./cancelled-records";
 import { getCashNeeded } from "./cash-needed";
 import { getCashOrders } from "./cash-orders";
 import { getFinanceCash } from "./finance-cash";
+import { getFinanceSpending } from "./finance-spending";
 import { getAnalyticsFilters } from "./filters";
 import { getHeadSpending } from "./head-spending";
 import { getManagers } from "./managers";
@@ -38,6 +39,8 @@ import { getOrderStatuses } from "./order-statuses";
 import { getOutcomeOrders } from "./outcome-orders";
 import { getPlanVsActual } from "./plan-vs-actual";
 import { getPriceChoices, getPrices } from "./prices";
+import { getSettlementSpeed } from "./settlement-speed";
+import { getSettlements } from "./settlements";
 import { getSpending } from "./spending";
 import { getSpendingRecords } from "./spending-records";
 import { getStockLines } from "./stock-lines";
@@ -939,6 +942,133 @@ describePermissionMatrix(
         expect(needed.open.amount).toBe(20_000n);
         expect(needed.approval.amount).toBe(50_000n);
         const seen = await financeLists(user.id, filters, rows);
+        expect(seen).toEqual(seen.map(() => true));
+      }
+    },
+  },
+);
+
+/**
+ * Finance's 6.6b rows of a branch (build-plan 6.6b): a bank-transfer record of 70 000 with no
+ * supplier and no receipt, bought on 2 May, and an order sent to settlement on 3 May and closed on
+ * 5 May (2.0 days), the summary refreshed.
+ */
+async function finance66bIn(branchId: string) {
+  setClock("2031-05-15T05:00:00Z");
+  const scene = await spendingScene(branchId);
+  const record = await bought(scene, {
+    purchasedOn: "2031-05-02",
+    unitPrice: "70000",
+    paymentType: "TRANSFER",
+    supplierId: null,
+  });
+  const closed = await decided(
+    scene,
+    "CLOSED",
+    [
+      { type: "APPROVE", from: "PENDING_FINANCE", to: "PURCHASING", at: "2031-05-01T05:00:00Z" },
+      {
+        type: "SEND_TO_SETTLEMENT",
+        from: "PURCHASING",
+        to: "SETTLEMENT",
+        at: "2031-05-03T05:00:00Z",
+      },
+      { type: "CLOSE", from: "SETTLEMENT", to: "CLOSED", at: "2031-05-05T05:00:00Z" },
+    ],
+    { submittedAt: "2031-04-30T05:00:00Z" },
+  );
+  await refreshNow();
+  return {
+    record,
+    closed,
+    category: scene.category.id,
+    department: scene.department.id,
+    owner: scene.manager.id,
+  };
+}
+
+/** Finance's 6.6b numbers and lists under the filters: whether each holds the branch's rows. */
+async function finance66bSeen(
+  userId: string,
+  filters: typeof NO_ANALYTICS_FILTERS,
+  { record, closed }: Awaited<ReturnType<typeof finance66bIn>>,
+) {
+  const spending = await getFinanceSpending(userId, THIS_MONTH, filters);
+  const speed = await getSettlementSpeed(userId, THIS_MONTH, filters);
+  const transfers = await getSpendingRecords(
+    userId,
+    THIS_MONTH,
+    filters,
+    { kind: "payment", payment: "TRANSFER", noSupplier: true },
+    "all",
+  );
+  const receiptless = await getSpendingRecords(
+    userId,
+    THIS_MONTH,
+    filters,
+    { kind: "noreceipt" },
+    "all",
+  );
+  const settlements = await getSettlements(userId, THIS_MONTH, filters, "all");
+  return [
+    spending.payments.find((row) => row.payment === "TRANSFER")?.amount === 70_000n,
+    spending.transfers.noSupplier?.amount === 70_000n,
+    spending.noReceipt.amount === 70_000n && spending.noReceipt.count === 1,
+    speed.total.days === "2.0" && speed.total.count === 1,
+    transfers.total === 70_000n &&
+      transfers.rows.some((row) => row.purchaseId === record.purchaseId),
+    receiptless.total === 70_000n &&
+      receiptless.rows.some((row) => row.purchaseId === record.purchaseId),
+    settlements.days === "2.0" && settlements.rows.some((row) => row.orderId === closed.id),
+  ];
+}
+
+describePermissionMatrix(
+  "getFinanceSpending, getSettlementSpeed, getSettlements and the records without a receipt or supplier with the branch filter",
+  {
+    permission: "data.view",
+    async run({ user, branchId }) {
+      const rows = await finance66bIn(branchId);
+      const seen = await finance66bSeen(
+        user.id,
+        { ...NO_ANALYTICS_FILTERS, branch: branchId },
+        rows,
+      );
+      expect(seen).toEqual(seen.map(() => true));
+    },
+  },
+);
+
+describePermissionMatrix(
+  "getFinanceSpending, getSettlementSpeed, getSettlements and the records without a receipt or supplier, the branch wall in the SQL",
+  {
+    permission: "data.view",
+    async run({ user, branchId }) {
+      const rows = await finance66bIn(branchId);
+      // The branch's category alone: the totals are then this branch's rows or nothing.
+      const seen = await finance66bSeen(
+        user.id,
+        { ...NO_ANALYTICS_FILTERS, category: rows.category },
+        rows,
+      );
+      // The lists and the totals keep to the same wall.
+      expect(seen).toEqual(seen.map(() => seen[0]));
+      if (!seen[0]) throw new AuthorizationError("not_found");
+    },
+  },
+);
+
+describePermissionMatrix(
+  "getFinanceSpending, getSettlementSpeed, getSettlements and the records without a receipt or supplier with a department or a Manager of the branch",
+  {
+    permission: "data.view",
+    async run({ user, branchId }) {
+      const rows = await finance66bIn(branchId);
+      for (const filters of [
+        { ...NO_ANALYTICS_FILTERS, department: rows.department },
+        { ...NO_ANALYTICS_FILTERS, manager: rows.owner },
+      ]) {
+        const seen = await finance66bSeen(user.id, filters, rows);
         expect(seen).toEqual(seen.map(() => true));
       }
     },
