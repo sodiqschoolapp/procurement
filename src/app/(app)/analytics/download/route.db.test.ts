@@ -1058,6 +1058,13 @@ async function finance66bRowsIn(branchId?: string) {
     unitPrice: "70000",
     paymentType: "TRANSFER",
   });
+  // A second transfer with no supplier and no receipt, for the record keys of 6.6b.
+  const loose = await bought(scene, {
+    purchasedOn: "2031-10-02",
+    unitPrice: "3000",
+    paymentType: "TRANSFER",
+    supplierId: null,
+  });
   const red = await bought(scene, {
     purchasedOn: "2031-10-02",
     unitPrice: "60000",
@@ -1080,7 +1087,7 @@ async function finance66bRowsIn(branchId?: string) {
     { submittedAt: "2031-09-30T05:00:00Z" },
   );
   await refreshNow();
-  return { scene, transfer, red, settled };
+  return { scene, transfer: loose, supplied: transfer, red, settled };
 }
 
 // The blocks of 6.6b (plan of 6.6b, Tests): every sheet of Payments, Plan vs actual and
@@ -1088,7 +1095,7 @@ async function finance66bRowsIn(branchId?: string) {
 describePermissionMatrix("GET /analytics/download, the blocks of 6.6b behind the wall", {
   permission: "data.export",
   async run({ user, branchId }) {
-    const { scene, settled } = await finance66bRowsIn(branchId);
+    const { scene, settled, transfer } = await finance66bRowsIn(branchId);
     const cookie = await signInAs(user);
     const own = { ...NO_ANALYTICS_FILTERS, category: scene.category.id };
     const texts = async (block: ExportBlock, extra: Parameters<typeof analyticsSearch>[2] = {}) =>
@@ -1108,6 +1115,13 @@ describePermissionMatrix("GET /analytics/download, the blocks of 6.6b behind the
       (await texts("overspendManagers")).includes(10_000),
       (await texts("settlementBranches")).includes("2.0"),
       (await texts("settlements", { key: { kind: "settled" } })).includes(settled.number),
+      // The two new record keys through the download (permission review of 6.6b, Should fix 1).
+      (await texts("records", { key: { kind: "noreceipt" } })).includes(transfer.number),
+      (
+        await texts("records", {
+          key: { kind: "payment", payment: "TRANSFER", noSupplier: true },
+        })
+      ).includes(transfer.number),
     ];
     expect(seen).toEqual(seen.map(() => seen[0]));
     if (!seen[0]) throw new AuthorizationError("not_found");
@@ -1134,9 +1148,11 @@ describe("GET /analytics/download, the 6.6b sheets (10 point 4; plan of 6.6b; re
     const own = { ...NO_ANALYTICS_FILTERS, branch: scene.branch.id };
 
     const transfers = await sheetOf(await get(finance, own, "transfers"));
-    // The supplier's row (70 000, +70 000 against nothing before), then the total line.
-    expect(transfers.at(-2)!.slice(1)).toEqual([70_000, 70_000, ""]);
-    expect(transfers.at(-1)!.at(-1)).toBe(70_000);
+    // The supplier's row (70 000, +70 000 against nothing before), "No supplier" (3 000), then
+    // the total line: the Bank transfer slice.
+    expect(transfers.at(-3)!.slice(1)).toEqual([70_000, 70_000, ""]);
+    expect(transfers.at(-2)!.slice(1)).toEqual([3_000, 3_000, ""]);
+    expect(transfers.at(-1)!.at(-1)).toBe(73_000);
 
     const plan = await getPlanVsActual(finance.id, THIS_MONTH, own);
     expect(plan.total.overspent.amount).toBe(10_000n);
