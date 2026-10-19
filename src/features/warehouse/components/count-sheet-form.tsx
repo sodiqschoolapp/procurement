@@ -23,8 +23,8 @@ import { signedQuantity } from "./count-difference";
 // countedQuantityRefusal(), the server's own rule. Save sends only the lines changed since the
 // page was read, so two people typing different lines both keep theirs (decided item 6); an
 // emptied field goes back to not counted. Unsaved changes ask before leaving (11 rule 6; review
-// of the plan, must fix 2). At phone width each line is a card and Save sits in a bar at the
-// bottom of the screen.
+// of the plan, must fix 2). At phone width each line is a card and Save stays in a bar above the
+// tab bar, as the write-off decision's.
 
 export type CountSheetLine = {
   id: string;
@@ -113,7 +113,7 @@ export function CountSheetForm({
     <section
       data-count-sheet
       aria-labelledby="count-sheet"
-      className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 pb-24 sm:p-6"
+      className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 sm:p-6"
     >
       <UnsavedChangesGuard dirty={dirty} />
       <div className="flex flex-col gap-1">
@@ -171,7 +171,7 @@ export function CountSheetForm({
           );
         })}
       </ul>
-      <div className="fixed inset-x-0 bottom-0 z-10 flex border-t border-border bg-card p-3 sm:static sm:justify-end sm:border-0 sm:bg-transparent sm:p-0">
+      <div className="sticky bottom-0 z-10 -mx-4 flex border-t border-border bg-card p-4 max-sm:bottom-[calc(4rem+env(safe-area-inset-bottom))] sm:static sm:mx-0 sm:justify-end sm:border-0 sm:p-0">
         <Button
           icon="check_circle"
           className="max-sm:h-12 max-sm:w-full"

@@ -3,8 +3,8 @@
 // formatter, with "+" before a rise, so a surplus and a shortage read apart. The page and the
 // counting form both show it so.
 
-/** "-2" is "−2" as the formatter writes it with its minus; "2" is "+2"; "0" stays "0". */
+/** "-2" stays "-2" as the formatter writes it; "2" is "+2"; "0" stays "0". */
 export function signedQuantity(difference: string, quantity: (value: string) => string): string {
-  if (difference.startsWith("-")) return `−${quantity(difference.slice(1))}`;
-  return /[1-9]/.test(difference) ? `+${quantity(difference)}` : quantity(difference);
+  const rise = !difference.startsWith("-") && /[1-9]/.test(difference);
+  return rise ? `+${quantity(difference)}` : quantity(difference);
 }
