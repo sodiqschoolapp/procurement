@@ -6,6 +6,7 @@ import { Icon } from "@/components/icon";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/components/utils";
 import { getAnalyticsFilters } from "@/features/analytics/queries/filters";
+import { getPriceChoices } from "@/features/analytics/queries/prices";
 import { orderTotalsOnFilter } from "@/features/orders/queries/order-list";
 import { ReportFilters } from "@/features/reports/components/report-filters";
 import {
@@ -17,8 +18,16 @@ import {
   StockMovementsView,
   StockReportView,
 } from "@/features/reports/components/report-views";
+import {
+  ApprovalSpeedView,
+  MoneyWithManagersView,
+  PriceHistoryView,
+} from "@/features/reports/components/more-report-views";
+import { getApprovalSpeedReport } from "@/features/reports/queries/approval-speed-report";
 import { getDepartmentUseReport } from "@/features/reports/queries/department-use-report";
+import { getMoneyWithManagersReport } from "@/features/reports/queries/money-with-managers-report";
 import { getPlanVsActualReport } from "@/features/reports/queries/plan-vs-actual-report";
+import { getPriceHistoryReport } from "@/features/reports/queries/price-history-report";
 import { getPurchaseRegister } from "@/features/reports/queries/purchase-register";
 import { getSpendingReport } from "@/features/reports/queries/spending-report";
 import { getStockMovementsReport } from "@/features/reports/queries/stock-movements-report";
@@ -39,15 +48,26 @@ import { today } from "@/server/clock";
 import { PageLinks } from "../catalog/page-links";
 
 // /reports (11-screens-and-ux.md, Screens: "Reports | `/reports` | All"; 10-notifications-
-// analytics-reports.md, Reports; build-plan 6.8 and 6.9a): Order register, Purchase register,
-// Planned vs actual, Spending, Stock on hand, Stock movements and Use by department as tabs, the filters of branch, dates and category,
-// and Download Excel. The Order register is the order list's: its count and planned total here,
+// analytics-reports.md, Reports; build-plan 6.8, 6.9a and 6.9b): Order register, Purchase
+// register, Planned vs actual, Spending, Stock on hand, Stock movements, Use by department, Price
+// history, Money with managers and Approval speed as tabs, the filters of branch, dates and
+// category, and Download Excel. The Order register is the order list's: its count and planned total here,
 // its orders on /orders, its file the list's download (plan of 6.8, decided items 7 and 11).
-// Planned vs actual, Spending and Use by department say when the summary they read was rebuilt
-// (decided item 1, Look first; plan of 6.9a, decided item 3). An address the parser refuses goes back to /reports; another branch is Not found (03
+// The reports read from the summary say when it was rebuilt (decided item 1, Look first; plan of
+// 6.9a, decided item 3; plan of 6.9b, decided items 2, 4 and 5). An address the parser refuses goes back to /reports; another branch is Not found (03
 // rule 1; 15 S7).
 
 type Raw = Record<string, string | string[] | undefined>;
+
+/** The reports read from the summary tables, which show its time. */
+const SUMMARY_REPORTS: readonly ReportParams["report"][] = [
+  "plan",
+  "spending",
+  "use",
+  "prices",
+  "cash",
+  "speed",
+];
 
 async function readReport(userId: string, params: ReportParams) {
   try {
@@ -84,6 +104,22 @@ async function readReport(userId: string, params: ReportParams) {
           report: "use" as const,
           data: await getDepartmentUseReport(userId, params, params.page),
         };
+      case "prices":
+        return {
+          report: "prices" as const,
+          data: await getPriceHistoryReport(userId, params, params.page),
+          choices: await getPriceChoices(userId),
+        };
+      case "cash":
+        return {
+          report: "cash" as const,
+          data: await getMoneyWithManagersReport(userId, params, params.page),
+        };
+      case "speed":
+        return {
+          report: "speed" as const,
+          data: await getApprovalSpeedReport(userId, params, params.page),
+        };
     }
   } catch (error) {
     if (error instanceof AuthorizationError) return null;
@@ -118,15 +154,15 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
               className="text-[15px] leading-[22px] font-normal tracking-normal text-muted-foreground"
               data-period-line
             >
-              {t("periodLine", {
-                first: format.date(params.range.first),
-                last: format.date(params.range.last),
-              })}
+              {params.report === "cash"
+                ? t("cash.now")
+                : t("periodLine", {
+                    first: format.date(params.range.first),
+                    last: format.date(params.range.last),
+                  })}
             </span>
           </h1>
-          {(params.report === "plan" ||
-            params.report === "spending" ||
-            params.report === "use") && (
+          {SUMMARY_REPORTS.includes(params.report) && (
             <p className="text-sm leading-5 text-muted-foreground" data-refreshed>
               {options.refreshedAt
                 ? t("refreshed", { time: format.time(options.refreshedAt) })
@@ -183,6 +219,20 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
       )}
       {read.report === "use" && (
         <DepartmentUseView report={read.data} pager={pager(read.data.page, read.data.pages)} />
+      )}
+      {read.report === "prices" && (
+        <PriceHistoryView
+          report={read.data}
+          choices={read.choices}
+          params={params}
+          pager={pager(read.data.page, read.data.pages)}
+        />
+      )}
+      {read.report === "cash" && (
+        <MoneyWithManagersView report={read.data} pager={pager(read.data.page, read.data.pages)} />
+      )}
+      {read.report === "speed" && (
+        <ApprovalSpeedView report={read.data} pager={pager(read.data.page, read.data.pages)} />
       )}
     </div>
   );

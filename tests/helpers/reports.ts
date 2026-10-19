@@ -1,5 +1,7 @@
 import { randomUUID } from "node:crypto";
 
+import { sql } from "drizzle-orm";
+
 import { db } from "@/server/db/client";
 import { createDocument } from "@/server/stock-documents";
 import { postMovement } from "@/server/stock-ledger";
@@ -8,7 +10,8 @@ import { type Bought, type SpendingScene, bought } from "./analytics";
 
 // Stock scenes for the stock reports of 6.9a: a purchase record with the RECEIPT it writes (and,
 // cancelled, the REVERSAL its cancel writes; 07 What saving a record does 2; 09 Stock value), and
-// a direct entry by the Head, both through the stock ledger as the actions post them.
+// a direct entry by the Head, both through the stock ledger as the actions post them. And a new
+// reference price set by the Head at a moment, for Price history (6.9b).
 
 /** `bought()` with its RECEIPT, and the REVERSAL of a cancelled record. Returns the record. */
 export async function boughtIn(scene: SpendingScene, row: Bought) {
@@ -61,4 +64,24 @@ export async function directEntry(
     }),
   );
   return created.documentId;
+}
+
+/**
+ * A new reference price of the subtype, set by `headId` at `at` with its HEAD history row, in one
+ * transaction (04-catalogs.md rule 4; the deferred check `price_recorded` of migration 0014).
+ */
+export async function headPrice(
+  variantId: string,
+  headId: string,
+  row: { price: bigint; at: string; note?: string },
+): Promise<string> {
+  return db.transaction(async (tx) => {
+    const inserted = await tx.execute<{ id: string }>(sql`
+      insert into price_history (variant_id, price, source, note, set_by, created_at)
+      values (${variantId}, ${row.price.toString()}, 'HEAD', ${row.note ?? null}, ${headId}, ${row.at})
+      returning id`);
+    await tx.execute(sql`update product_variants set reference_price = ${row.price.toString()}
+      where id = ${variantId}`);
+    return inserted.rows[0]!.id;
+  });
 }

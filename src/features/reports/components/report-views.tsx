@@ -21,10 +21,10 @@ import type { StockReport } from "../queries/stock-report";
 // does (plan of 6.8, Screens); the lists are 25 a page (11 rule 8).
 
 const HEAD = "bg-muted text-[13px] leading-[18px] font-semibold text-muted-foreground";
-const CELL = "px-4 py-3";
-const NUMBER = "px-4 py-3 text-right whitespace-nowrap tabular-nums";
+export const CELL = "px-4 py-3";
+export const NUMBER = "px-4 py-3 text-right whitespace-nowrap tabular-nums";
 
-function Table({
+export function Table({
   title,
   columns,
   numeric,
@@ -417,7 +417,7 @@ export async function SpendingView({ report }: { report: SpendingReport }) {
 const departmentOf = (row: { departmentName: string; branchCode: string }) =>
   `${row.departmentName}, ${row.branchCode}`;
 
-const itemName = (row: { productName: string; subtypeName: string | null }) =>
+export const itemName = (row: { productName: string; subtypeName: string | null }) =>
   row.subtypeName ? `${row.productName}, ${row.subtypeName}` : row.productName;
 
 export async function StockReportView({

@@ -1,6 +1,7 @@
 import { createTranslator } from "next-intl";
 
-import type { DateRange } from "@/domain/analytics";
+import { CASH_AGE_BAND_KEYS, type DateRange } from "@/domain/analytics";
+import { STUCK_STATUSES } from "@/domain/order-steps";
 import { PAYMENT_TYPES } from "@/domain/payment-types";
 import { bindFormatters } from "@/i18n/format";
 import type { Locale } from "@/i18n/locale";
@@ -11,8 +12,11 @@ import uz from "@/i18n/messages/uz.json";
 import type { AnalyticsSheet, CellValue } from "../../analytics/download/excel";
 import type { AnalyticsFilterOptions } from "../../analytics/queries/filters";
 import type { Report, ReportParams } from "../report-params";
+import type { ApprovalSpeedReport, StepHours } from "../queries/approval-speed-report";
 import type { DepartmentUseReport } from "../queries/department-use-report";
+import type { MoneyWithManagersReport } from "../queries/money-with-managers-report";
 import type { PlanVsActualReport, Sums } from "../queries/plan-vs-actual-report";
+import type { PriceHistoryReport } from "../queries/price-history-report";
 import type { PurchaseRegister, RegisterRecord } from "../queries/purchase-register";
 import type { SpendingLine, SpendingReport } from "../queries/spending-report";
 import type { StockMovementsReport } from "../queries/stock-movements-report";
@@ -45,14 +49,17 @@ function heading(
   { params, options, locale }: Context,
   report: Report,
   table: string | null,
-  range: DateRange,
+  /** `null`: a report of now, which the dates do not change (plan of 6.9b, decided item 3). */
+  range: DateRange | null,
   fromSummary: boolean,
 ): string[] {
   const { t, format } = translators(locale);
-  const lines = [
-    table ? `${t(`tabs.${report}`)}: ${table}` : t(`tabs.${report}`),
-    `${t("period")}: ${t("periodLine", { first: format.date(range.first), last: format.date(range.last) })}`,
-  ];
+  const lines = [table ? `${t(`tabs.${report}`)}: ${table}` : t(`tabs.${report}`)];
+  if (range) {
+    lines.push(
+      `${t("period")}: ${t("periodLine", { first: format.date(range.first), last: format.date(range.last) })}`,
+    );
+  }
   const named = (list: readonly { id: string; name: string }[], id: string | null) =>
     list.find((option) => option.id === id)?.name ?? null;
   const branch = named(options.branches, params.filters.branch);
@@ -386,6 +393,194 @@ export function departmentUseSheets(
         { kind: "signedMoney", value: row.value },
       ]),
       total: { ...total, column: 9 },
+    },
+  ];
+}
+
+/** Price history: the subtype's records of the dates, then its reference prices (decided item 12). */
+export function priceHistorySheets(report: PriceHistoryReport, context: Context): AnalyticsSheet[] {
+  const { t, format } = translators(context.locale);
+  const subtype = report.subtype
+    ? report.subtype.subtypeName
+      ? `${report.subtype.productName}, ${report.subtype.subtypeName}`
+      : report.subtype.productName
+    : null;
+  const withName = (lines: string[]) =>
+    subtype ? [lines[0]!, `${t("prices.product")}: ${subtype}`, ...lines.slice(1)] : lines;
+  return [
+    {
+      name: t("prices.records"),
+      heading: withName(heading(context, "prices", t("prices.records"), report.range, true)),
+      columns: [
+        t("prices.columns.date"),
+        t("prices.columns.branch"),
+        t("prices.columns.order"),
+        t("prices.columns.supplier"),
+        t("prices.columns.qty"),
+        t("prices.columns.measure"),
+        t("prices.columns.unitPrice"),
+      ],
+      rows: report.records.map((row) => [
+        { kind: "date", value: row.purchasedOn },
+        text(row.branchCode),
+        text(row.orderNumber),
+        text(row.supplierName ?? t("prices.noSupplier")),
+        { kind: "quantity", value: row.qty },
+        text(row.unitShortName),
+        money(row.unitPrice),
+      ]),
+    },
+    {
+      name: t("prices.references"),
+      heading: withName(heading(context, "prices", t("prices.references"), report.range, false)),
+      columns: [
+        t("prices.columns.setOn"),
+        t("prices.columns.price"),
+        t("prices.columns.note"),
+        t("prices.columns.setBy"),
+        t("prices.inForce"),
+      ],
+      rows: report.references.map((row) => [
+        { kind: "date", value: row.setOn },
+        money(row.price),
+        text(row.note ?? ""),
+        text(row.setByName),
+        text(row.inForce ? format.date(report.range.first) : ""),
+      ]),
+    },
+  ];
+}
+
+/** Money with managers: the owners, the age bands and the orders behind them (decided item 12). */
+export function moneyWithManagersSheets(
+  report: MoneyWithManagersReport,
+  context: Context,
+): AnalyticsSheet[] {
+  const { t, tRoot } = translators(context.locale);
+  // A number of now: the dates do not apply (decided item 3), so no period line.
+  const lines = (table: string) => heading(context, "cash", table, null, true);
+  return [
+    {
+      name: t("cash.owners"),
+      heading: lines(t("cash.owners")),
+      columns: [
+        t("cash.columns.owner"),
+        t("cash.columns.held"),
+        t("cash.columns.owed"),
+        t("cash.columns.since"),
+        t("cash.columns.days"),
+        t("cash.columns.orders"),
+      ],
+      rows: [
+        ...report.owners.map((row): CellValue[] => [
+          text(row.ownerIsActive ? row.ownerName : `${row.ownerName} (${t("inactive")})`),
+          money(row.held),
+          money(row.owed),
+          { kind: "date", value: row.since },
+          { kind: "count", value: row.days },
+          { kind: "count", value: row.orderCount },
+        ]),
+        [text(t("total")), money(report.held), money(report.owed)],
+      ],
+    },
+    {
+      name: t("cash.ages"),
+      heading: lines(t("cash.ages")),
+      columns: [
+        t("cash.columns.band"),
+        t("cash.columns.held"),
+        t("cash.columns.heldCount"),
+        t("cash.columns.owed"),
+        t("cash.columns.owedCount"),
+      ],
+      rows: CASH_AGE_BAND_KEYS.map((band) => {
+        const row = report.ages.find((each) => each.band === band)!;
+        return [
+          text(t(`cash.bands.${band}`)),
+          money(row.held),
+          { kind: "count", value: row.heldCount },
+          money(row.owed),
+          { kind: "count", value: row.owedCount },
+        ];
+      }),
+    },
+    {
+      name: t("cash.orders"),
+      heading: lines(t("cash.orders")),
+      columns: [
+        t("cash.columns.owner"),
+        t("cash.columns.order"),
+        t("cash.columns.branch"),
+        t("cash.columns.product"),
+        t("cash.columns.status"),
+        t("cash.columns.held"),
+        t("cash.columns.owed"),
+        t("cash.columns.since"),
+        t("cash.columns.days"),
+        t("cash.columns.band"),
+      ],
+      rows: report.orders.map((row) => [
+        text(row.ownerName),
+        text(row.number),
+        text(row.branchCode),
+        text(row.subtypeName ? `${row.productName}, ${row.subtypeName}` : row.productName),
+        text(tRoot(`requestStatus.${row.status}`)),
+        money(row.cashCount > 0n ? row.cashCount : 0n),
+        money(row.cashCount < 0n ? -row.cashCount : 0n),
+        { kind: "date", value: row.since },
+        { kind: "count", value: row.days },
+        text(t(`cash.bands.${row.band}`)),
+      ]),
+    },
+  ];
+}
+
+/** Approval speed: the hours per branch and step, then the stays behind them (decided item 12). */
+export function approvalSpeedSheets(
+  report: ApprovalSpeedReport,
+  context: Context,
+): AnalyticsSheet[] {
+  const { t, format } = translators(context.locale);
+  const stepCells = (steps: Record<(typeof STUCK_STATUSES)[number], StepHours>) =>
+    STUCK_STATUSES.flatMap((step): CellValue[] => [
+      text(steps[step].hours ?? ""),
+      { kind: "count", value: steps[step].count },
+    ]);
+  const moment = (value: Date) => `${format.date(value)} ${format.time(value)}`;
+  return [
+    {
+      name: t("speed.byBranch"),
+      heading: heading(context, "speed", t("speed.byBranch"), report.range, true),
+      columns: [
+        t("speed.columns.branch"),
+        ...STUCK_STATUSES.flatMap((step) => [t(`speed.steps.${step}`), t("speed.columns.count")]),
+      ],
+      rows: [
+        ...report.branches.map((row) => [text(row.name), ...stepCells(row.steps)]),
+        [text(t("allBranchesTotal")), ...stepCells(report.all)],
+      ],
+    },
+    {
+      name: t("speed.stays"),
+      heading: heading(context, "speed", t("speed.stays"), report.range, true),
+      columns: [
+        t("speed.columns.left"),
+        t("speed.columns.order"),
+        t("speed.columns.branch"),
+        t("speed.columns.step"),
+        t("speed.columns.entered"),
+        t("speed.columns.hours"),
+        t("speed.columns.decision"),
+      ],
+      rows: report.stays.map((row) => [
+        text(moment(row.leftAt)),
+        text(row.orderNumber),
+        text(row.branchCode),
+        text(t(`speed.steps.${row.step}`)),
+        text(moment(row.enteredAt)),
+        text(row.hours),
+        text(t(`speed.decisions.${row.decision}`)),
+      ]),
     },
   ];
 }

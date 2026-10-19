@@ -2995,7 +2995,10 @@
       "spending": "Xarajatlar",
       "stock": "Ombordagi qoldiq",
       "movements": "Tovar harakati",
-      "use": "Bo'limlar sarfi"
+      "use": "Bo'limlar sarfi",
+      "prices": "Narxlar tarixi",
+      "cash": "Menejerlardagi pul",
+      "speed": "Tasdiqlash tezligi"
     },
     "notes": {
       "orders": "Shu sanalarda yuborilgan buyurtmalar holati, summalari va sanalari bilan: buyurtmalar ro'yxatining yuklamasi.",
@@ -3004,7 +3007,10 @@
       "spending": "Shu sanalardagi bekor qilinmagan xarid yozuvlarining haqiqiy summalari.",
       "stock": "Hozirgi miqdor va qiymat: sanalar ularni o'zgartirmaydi. Xaridlar va to'g'ridan-to'g'ri kiritishlar — shu sanalarda kelgan narsa, har biri o'z narxida, alohida qatorlarda.",
       "movements": "Shu sanalardagi barcha tovar harakati: kirim 0 dan katta, chiqim 0 dan kichik, har biri o'tgan narxida. Keyin bekor qilingan harakat belgilangan.",
-      "use": "Har bir bo'lim shu sanalarda olgan narsa, qaytarilgani ayirilgan holda, har bir harakat narxida. Bekor qilingan hujjatlar hisobga olinmaydi."
+      "use": "Har bir bo'lim shu sanalarda olgan narsa, qaytarilgani ayirilgan holda, har bir harakat narxida. Bekor qilingan hujjatlar hisobga olinmaydi.",
+      "prices": "Bir mahsulotning sanalar ichida sotib olingan har bir xaridi bo'yicha birlik narxi, eskisidan boshlab; 0 narxdagi sovg'alar hisobga olinmaydi. Ma'lumotnoma narxlarini rahbar belgilaydi, ular barcha filiallar uchun bir xil.",
+      "cash": "Hozirgi naqd pul qoldiqlari: sanalar ularni o'zgartirmaydi. «Qo'lida» — menejerdagi naqd pul, «qarz» — maktab menejerga qarzdor summa; ular bir-biriga hisoblanmaydi. Yoshi — buyurtmadagi birinchi pul harakatidan beri o'tgan kunlar.",
+      "speed": "Buyurtma bosqichda tasdiqlovchi uni tasdiqlaguncha, qaytarguncha yoki rad etguncha kutgan soatlar, sanalar ichida qaror qilinganlar bo'yicha. Hali kutayotgan buyurtmalar hisobga olinmaydi."
     },
     "filters": "Filtrlar",
     "from": "Dan",
@@ -3147,6 +3153,92 @@
         "returned": "Qaytarildi",
         "net": "Olindi",
         "value": "Qiymat"
+      }
+    },
+    "prices": {
+      "product": "Mahsulot",
+      "choose": "Mahsulotni tanlang",
+      "show": "Ko'rsatish",
+      "chart": "Xaridlar bo'yicha birlik narxi",
+      "summary": "{name}: {count} ta xarid",
+      "records": "Xaridlar",
+      "references": "Ma'lumotnoma narxlari",
+      "inForce": "Birinchi kuni amalda",
+      "noReferences": "Ma'lumotnoma narxi belgilanmagan.",
+      "empty": "Bu sanalarda hech narsa sotib olinmagan.",
+      "noRecords": "Bu sanalarda bu mahsulot sotib olinmagan.",
+      "noSupplier": "Yetkazib beruvchisiz",
+      "columns": {
+        "date": "Sotib olingan sana",
+        "branch": "Filial",
+        "order": "Buyurtma",
+        "supplier": "Yetkazib beruvchi",
+        "qty": "Miqdor",
+        "measure": "O'lchov",
+        "unitPrice": "Birlik narxi",
+        "setOn": "Sana",
+        "price": "Narx",
+        "note": "Izoh",
+        "setBy": "Kim belgilagan"
+      }
+    },
+    "cash": {
+      "summary": "Qo'lida {held}, qarz {owed}",
+      "owners": "Egalari bo'yicha",
+      "ages": "Yoshi bo'yicha",
+      "orders": "Qoldiqlar ortidagi buyurtmalar",
+      "empty": "Hozir hech kimda naqd pul yo'q va hech kimga qarz yo'q.",
+      "bands": {
+        "week": "7 kungacha",
+        "month": "8–30 kun",
+        "older": "30 kundan ortiq"
+      },
+      "days": "{days} kun",
+      "columns": {
+        "owner": "Egasi",
+        "held": "Qo'lida",
+        "owed": "Qarz",
+        "since": "Sanadan",
+        "days": "Kun",
+        "orders": "Buyurtmalar",
+        "band": "Yoshi",
+        "heldCount": "Qo'lidagi buyurtmalar",
+        "owedCount": "Qarzdagi buyurtmalar",
+        "order": "Buyurtma",
+        "branch": "Filial",
+        "product": "Mahsulot",
+        "status": "Holat",
+        "count": "Naqd hisob"
+      },
+      "now": "Hozir"
+    },
+    "speed": {
+      "summary": "{count} ta qaror",
+      "byBranch": "Har bir bosqichdagi o'rtacha soat",
+      "stays": "Sanalar ichidagi qarorlar",
+      "empty": "Bu sanalarda hech bir bosqichda buyurtma bo'yicha qaror qilinmagan.",
+      "hours": "{hours} soat",
+      "none": "—",
+      "steps": {
+        "PENDING_HEAD": "Rahbar",
+        "PENDING_PRINCIPAL": "Direktor",
+        "PENDING_FINANCE": "Moliya"
+      },
+      "decisions": {
+        "APPROVE": "Tasdiqlangan",
+        "SEND_BACK": "Qaytarilgan",
+        "REJECT": "Rad etilgan"
+      },
+      "stayCount": "{count} ta buyurtma",
+      "columns": {
+        "branch": "Filial",
+        "order": "Buyurtma",
+        "step": "Bosqich",
+        "entered": "Kelgan",
+        "left": "Qaror",
+        "hours": "Soat",
+        "decision": "Qaror",
+        "count": "Buyurtmalar"
       }
     }
   }

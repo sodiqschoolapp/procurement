@@ -4,15 +4,21 @@ import { businessDate } from "@/domain/business-date";
 import { writeAnalyticsWorkbook } from "@/features/analytics/download/excel";
 import { getAnalyticsFilters } from "@/features/analytics/queries/filters";
 import {
+  approvalSpeedSheets,
   departmentUseSheets,
+  moneyWithManagersSheets,
   planVsActualSheets,
+  priceHistorySheets,
   purchaseRegisterSheets,
   spendingSheets,
   stockMovementsSheets,
   stockReportSheets,
 } from "@/features/reports/download/sheets";
+import { getApprovalSpeedReport } from "@/features/reports/queries/approval-speed-report";
 import { getDepartmentUseReport } from "@/features/reports/queries/department-use-report";
+import { getMoneyWithManagersReport } from "@/features/reports/queries/money-with-managers-report";
 import { getPlanVsActualReport } from "@/features/reports/queries/plan-vs-actual-report";
+import { getPriceHistoryReport } from "@/features/reports/queries/price-history-report";
 import { getPurchaseRegister } from "@/features/reports/queries/purchase-register";
 import { getSpendingReport } from "@/features/reports/queries/spending-report";
 import { getStockMovementsReport } from "@/features/reports/queries/stock-movements-report";
@@ -24,8 +30,9 @@ import { AuthorizationError, authorize, authorizeList } from "@/server/authorize
 import { now, today } from "@/server/clock";
 
 // The Excel file of a report, GET /reports/download?report=purchases|plan|spending|stock|movements
-// |use&from&to&branch&category (10-notifications-analytics-reports.md, Reports: "exports to Excel";
-// 03 Permission matrix "Export to Excel, download PDF, print"; build-plan 6.8 and 6.9a). The Order register's file is the
+// |use|prices|cash|speed&from&to&branch&category (and `variant` for prices) (10-notifications-
+// analytics-reports.md, Reports: "exports to Excel"; 03 Permission matrix "Export to Excel,
+// download PDF, print"; build-plan 6.8, 6.9a and 6.9b). The Order register's file is the
 // order list's own route, /orders/download/excel (plan of 6.8, decided item 11), so `orders` is
 // not served here. A route that writes nothing, as the other downloads (plan of 2.14, decided item
 // 12). The address is the page's, checked by the same parser; a signed-out visitor gets 401; an
@@ -74,6 +81,18 @@ export async function GET(request: NextRequest): Promise<Response> {
         break;
       case "use":
         sheets = departmentUseSheets(await getDepartmentUseReport(user.id, params, "all"), context);
+        break;
+      case "prices":
+        sheets = priceHistorySheets(await getPriceHistoryReport(user.id, params, "all"), context);
+        break;
+      case "cash":
+        sheets = moneyWithManagersSheets(
+          await getMoneyWithManagersReport(user.id, params, "all"),
+          context,
+        );
+        break;
+      case "speed":
+        sheets = approvalSpeedSheets(await getApprovalSpeedReport(user.id, params, "all"), context);
         break;
     }
   } catch (error) {

@@ -2995,7 +2995,10 @@
       "spending": "Spending",
       "stock": "Stock on hand",
       "movements": "Stock movements",
-      "use": "Use by department"
+      "use": "Use by department",
+      "prices": "Price history",
+      "cash": "Money with managers",
+      "speed": "Approval speed"
     },
     "notes": {
       "orders": "Orders submitted in the dates, with status, totals and dates: the order list's download.",
@@ -3004,7 +3007,10 @@
       "spending": "Actual totals of the purchase records bought in the dates, not cancelled.",
       "stock": "Quantities and value now: the dates do not change them. Purchases and Direct entries are what came in during the dates, each at its own cost, on lines of their own.",
       "movements": "Every movement of stock in the dates, in above 0 and out below 0, each at the cost it moved at. A movement a later reversal undid is marked.",
-      "use": "What each department received in the dates, less what it returned, at the cost each movement moved at. Reversed documents are left out."
+      "use": "What each department received in the dates, less what it returned, at the cost each movement moved at. Reversed documents are left out.",
+      "prices": "The unit price of each purchase record of one product bought in the dates, oldest first; gifts at 0 are left out. Reference prices are the Head's, the same for every branch.",
+      "cash": "Cash balances now: the dates do not change them. Held is cash a Manager holds, owed is what the school owes a Manager; they are never netted. Age is days since the order's first cash movement.",
+      "speed": "Hours an order waited at a step until its approver approved, sent back or rejected it, for the stays decided in the dates. Orders still waiting are not counted."
     },
     "filters": "Filters",
     "from": "From",
@@ -3147,6 +3153,92 @@
         "returned": "Returned",
         "net": "Received",
         "value": "Value"
+      }
+    },
+    "prices": {
+      "product": "Product",
+      "choose": "Choose a product",
+      "show": "Show",
+      "chart": "Unit price per purchase",
+      "summary": "{count, plural, one {# purchase} other {# purchases}} of {name}",
+      "records": "Purchases",
+      "references": "Reference prices",
+      "inForce": "In force on the first day",
+      "noReferences": "No reference price set.",
+      "empty": "No product was bought in these dates.",
+      "noRecords": "No purchase of this product in these dates.",
+      "noSupplier": "No supplier",
+      "columns": {
+        "date": "Date bought",
+        "branch": "Branch",
+        "order": "Order",
+        "supplier": "Supplier",
+        "qty": "Quantity",
+        "measure": "Measure",
+        "unitPrice": "Unit price",
+        "setOn": "Set on",
+        "price": "Price",
+        "note": "Note",
+        "setBy": "Set by"
+      }
+    },
+    "cash": {
+      "summary": "Held {held}, owed {owed}",
+      "owners": "By owner",
+      "ages": "By age",
+      "orders": "Orders behind the balances",
+      "empty": "Nobody holds or is owed cash now.",
+      "bands": {
+        "week": "Up to 7 days",
+        "month": "8 to 30 days",
+        "older": "Over 30 days"
+      },
+      "days": "{days, plural, one {# day} other {# days}}",
+      "columns": {
+        "owner": "Owner",
+        "held": "Held",
+        "owed": "Owed",
+        "since": "Since",
+        "days": "Days",
+        "orders": "Orders",
+        "band": "Age",
+        "heldCount": "Orders holding",
+        "owedCount": "Orders owed",
+        "order": "Order",
+        "branch": "Branch",
+        "product": "Product",
+        "status": "Status",
+        "count": "Cash count"
+      },
+      "now": "Now"
+    },
+    "speed": {
+      "summary": "{count, plural, one {# decided stay} other {# decided stays}}",
+      "byBranch": "Average hours at each step",
+      "stays": "Stays decided in the dates",
+      "empty": "No order was decided at any step in these dates.",
+      "hours": "{hours} h",
+      "none": "—",
+      "steps": {
+        "PENDING_HEAD": "Head",
+        "PENDING_PRINCIPAL": "Principal",
+        "PENDING_FINANCE": "Finance"
+      },
+      "decisions": {
+        "APPROVE": "Approved",
+        "SEND_BACK": "Sent back",
+        "REJECT": "Rejected"
+      },
+      "stayCount": "{count, plural, one {# order} other {# orders}}",
+      "columns": {
+        "branch": "Branch",
+        "order": "Order",
+        "step": "Step",
+        "entered": "Arrived",
+        "left": "Decided",
+        "hours": "Hours",
+        "decision": "Decision",
+        "count": "Orders"
       }
     }
   }

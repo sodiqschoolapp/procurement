@@ -35,6 +35,9 @@ export async function ReportFilters({
         className="flex flex-wrap items-end gap-3 max-sm:flex-col max-sm:items-stretch"
       >
         <input type="hidden" name="report" value={params.report} />
+        {params.report === "prices" && params.variant && (
+          <input type="hidden" name="variant" value={params.variant} />
+        )}
         <label className={field}>
           {t("from")}
           <Input
