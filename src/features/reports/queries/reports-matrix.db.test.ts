@@ -6,6 +6,8 @@ import { AuthorizationError } from "@/server/authorize";
 import {
   bought,
   buyingEvent,
+  decided,
+  moneyOn,
   refreshNow,
   spendingScene,
   stockDocument,
@@ -18,15 +20,20 @@ import { insertUser } from "../../../../tests/helpers/users";
 import { NO_ANALYTICS_FILTERS } from "../../analytics/period-params";
 import { orderListFilters } from "../report-params";
 
+import { getApprovalSpeedReport } from "./approval-speed-report";
 import { getDepartmentUseReport } from "./department-use-report";
+import { getMoneyWithManagersReport } from "./money-with-managers-report";
 import { getPlanVsActualReport } from "./plan-vs-actual-report";
+import { getPriceHistoryReport } from "./price-history-report";
 import { getPurchaseRegister } from "./purchase-register";
 import { getSpendingReport } from "./spending-report";
 import { getStockMovementsReport } from "./stock-movements-report";
 import { getStockReport } from "./stock-report";
 
-// The branch wall on each report of 6.8 and 6.9a (build-plan 6.8, Done when: "A database test for
-// the branch wall on each report"; build-plan 6.9, Done when: "the branch wall on each report"; 15-quality-and-acceptance.md, Test layers: "each action × each role
+// The branch wall on each report of 6.8, 6.9a and 6.9b (build-plan 6.8, Done when: "A database test
+// for the branch wall on each report"; build-plan 6.9a and 6.9b, Done when: "the branch wall on
+// each of the three reports"; plan of 6.9b, decided item 1, Look first: Money with managers under
+// `data.view` for every role; 15-quality-and-acceptance.md, Test layers: "each action × each role
 // × own branch and other branch", and S7: "The same holds for stock and reports";
 // 03-roles-and-permissions.md, Permission matrix "Export to Excel, download PDF, print": every
 // role, for what the role can see; rule 1: another branch is "Not found"). Each report is asked
@@ -267,6 +274,132 @@ describePermissionMatrix("Use by department, the branch wall in the SQL", {
     expect(report.total).toBe(report.departments.reduce((sum, row) => sum + row.value, 0n));
     expect(report.total).toBe(report.lines.reduce((sum, row) => sum + row.value, 0n));
     if (!report.departments.some((row) => row.id === scene.department.id)) {
+      throw new AuthorizationError("not_found");
+    }
+  },
+});
+
+/** A record of 12 345 so'm bought on 2 May in the branch (6.9b, Price history). */
+async function pricedIn(branchId: string) {
+  setClock("2031-05-15T05:00:00Z");
+  const scene = await spendingScene(branchId);
+  const record = await bought(scene, { purchasedOn: "2031-05-02", unitPrice: "12345" });
+  await refreshNow();
+  return record;
+}
+
+describePermissionMatrix("Price history with the branch filter", {
+  permission: "data.view",
+  async run({ user, branchId }) {
+    const record = await pricedIn(branchId);
+    const report = await getPriceHistoryReport(
+      user.id,
+      { ...params(branchId), variant: record.variantId },
+      "all",
+    );
+    expect(report.points.map((row) => [row.purchaseId, row.unitPrice])).toEqual([
+      [record.purchaseId, 12_345n],
+    ]);
+  },
+});
+
+describePermissionMatrix("Price history, the branch wall in the SQL", {
+  permission: "data.view",
+  async run({ user, branchId }) {
+    const record = await pricedIn(branchId);
+    const report = await getPriceHistoryReport(
+      user.id,
+      { ...params(null), variant: record.variantId },
+      "all",
+    );
+    expect(report.recordCount).toBe(report.points.length);
+    if (!report.points.some((row) => row.purchaseId === record.purchaseId)) {
+      throw new AuthorizationError("not_found");
+    }
+  },
+});
+
+/** An order of the branch holding 40 000 so'm given on 2 May (6.9b, Money with managers). */
+async function cashIn(branchId: string) {
+  setClock("2031-05-15T05:00:00Z");
+  const scene = await spendingScene(branchId);
+  const order = await bought(scene, { purchasedOn: "2031-05-02", unitPrice: "0" });
+  await moneyOn(order, scene.manager.id, { amount: 40_000n, occurredOn: "2031-05-02" });
+  await refreshNow();
+  return order;
+}
+
+describePermissionMatrix("Money with managers with the branch filter", {
+  permission: "data.view",
+  async run({ user, branchId }) {
+    const order = await cashIn(branchId);
+    const report = await getMoneyWithManagersReport(user.id, params(branchId), "all");
+    expect(report.orders.map((row) => [row.id, row.cashCount])).toEqual([[order.orderId, 40_000n]]);
+    expect([report.held, report.owed]).toEqual([40_000n, 0n]);
+  },
+});
+
+describePermissionMatrix("Money with managers, the branch wall in the SQL", {
+  permission: "data.view",
+  async run({ user, branchId }) {
+    const order = await cashIn(branchId);
+    const report = await getMoneyWithManagersReport(user.id, params(null), "all");
+    // The owners and the totals keep to the same wall as the orders.
+    const held = report.orders.reduce(
+      (sum, row) => sum + (row.cashCount > 0n ? row.cashCount : 0n),
+      0n,
+    );
+    expect(report.held).toBe(held);
+    expect(report.owners.reduce((sum, row) => sum + row.held, 0n)).toBe(held);
+    expect(report.ages.reduce((sum, row) => sum + row.held, 0n)).toBe(held);
+    if (!report.orders.some((row) => row.id === order.orderId)) {
+      throw new AuthorizationError("not_found");
+    }
+  },
+});
+
+/** An order of the branch that waited 3 hours at the Principal step on 2 May (6.9b, Approval speed). */
+async function decidedIn(branchId: string) {
+  setClock("2031-05-15T05:00:00Z");
+  const scene = await spendingScene(branchId);
+  const order = await decided(scene, "PENDING_FINANCE", [
+    { type: "SUBMIT", from: "DRAFT", to: "PENDING_HEAD", at: "2031-05-02T03:00:00Z" },
+    { type: "APPROVE", from: "PENDING_HEAD", to: "PENDING_PRINCIPAL", at: "2031-05-02T04:00:00Z" },
+    {
+      type: "APPROVE",
+      from: "PENDING_PRINCIPAL",
+      to: "PENDING_FINANCE",
+      at: "2031-05-02T07:00:00Z",
+    },
+  ]);
+  await refreshNow();
+  return order;
+}
+
+describePermissionMatrix("Approval speed with the branch filter", {
+  permission: "data.view",
+  async run({ user, branchId }) {
+    const order = await decidedIn(branchId);
+    const report = await getApprovalSpeedReport(user.id, params(branchId), "all");
+    expect(report.branches.map((row) => row.branchId)).toEqual([branchId]);
+    expect(report.all.PENDING_PRINCIPAL).toEqual({ hours: "3.0", count: 1 });
+    expect(new Set(report.stays.map((row) => row.orderId))).toEqual(new Set([order.id]));
+  },
+});
+
+describePermissionMatrix("Approval speed, the branch wall in the SQL", {
+  permission: "data.view",
+  async run({ user, branchId }) {
+    const order = await decidedIn(branchId);
+    const report = await getApprovalSpeedReport(user.id, params(null), "all");
+    // The All row keeps to the same wall as the branch rows and the stays.
+    const counted = report.branches.reduce(
+      (sum, row) => sum + row.steps.PENDING_PRINCIPAL.count,
+      0,
+    );
+    expect(report.all.PENDING_PRINCIPAL.count).toBe(counted);
+    expect(report.stays.filter((row) => row.step === "PENDING_PRINCIPAL")).toHaveLength(counted);
+    if (!report.stays.some((row) => row.orderId === order.id)) {
       throw new AuthorizationError("not_found");
     }
   },
