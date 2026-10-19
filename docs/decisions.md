@@ -2594,6 +2594,8 @@ Choices made during the build:
 - The file key's Tashkent date is made in `scripts/db-copy.mjs` (`copyKeyOf()`, Intl with `Asia/Tashkent`), because the image's console runs the script without the TypeScript domain; a unit test holds it equal to `businessDate()` across midnight and the year end.
 - `pg_dump`'s own error text is never printed (it can name the server): only its exit code.
 - No CI step runs the copy (review correction 1); `tests/image-files.test.ts` keeps the install in the run stage and the script in the image. Locally, `pg_dump` 17 of the `postgres:17` image copied the local database and `pg_restore` 17 restored it into an empty one.
+- Permission review, should fix 3: STOCK_CHECK_MISMATCH has `branchId: null` and a count over every branch, which is right only because its recipients are the active Heads; the database test with a Manager of two branches, a Principal, Finance and an inactive Head is the guard. A later all-branch notice to another role must carry a `branchId` per branch.
+- Permission review, should fix 1: for 9.4 to 9.6, the copies hold password hashes and live session rows, and sit in the files bucket, so its R2 token and any public access reach them too; a bucket of their own, or a token scoped to `backups/`, is the safer production shape. A test holds that no download key reaches `backups/`.
 - The managed database's `idle_in_transaction_session_timeout` could not be read from here; PostgreSQL's default and the local server's is 0 (none). The held transaction of the copy relies on it.
 
 ## Process changes
