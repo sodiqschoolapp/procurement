@@ -178,6 +178,38 @@ describe("parseAnalyticsParams", () => {
     });
   });
 
+  // Finance's 6.6b keys and blocks (build-plan 6.6b; plan of 6.6b, decided item 8).
+  it.each([
+    [{ kind: "payment", payment: "TRANSFER" }, "transfers"],
+    [{ kind: "payment", payment: "TRANSFER", noSupplier: true }, "records"],
+    [{ kind: "noreceipt" }, "records"],
+    [{ kind: "settled" }, "settlements"],
+    [{ kind: "period" }, "settlementBranches"],
+    [{ kind: "period" }, "overspendBranches"],
+    [{ kind: "period" }, "overspendManagers"],
+  ] as const)("reads Finance's 6.6b key %o and the block %s back", (key, block) => {
+    const text = analyticsSearch(
+      { choice: "this_month", from: null, to: null },
+      NO_ANALYTICS_FILTERS,
+      { key, block },
+    );
+    expect(parseAnalyticsParams(Object.fromEntries(new URLSearchParams(text)))).toEqual(
+      expect.objectContaining({ key, block }),
+    );
+  });
+
+  it("reads a payment key without its no-supplier mark as the whole slice (plan of 6.6b, decided item 8)", () => {
+    expect(parseAnalyticsParams({ key: "payment:TRANSFER" })?.key).toEqual({
+      kind: "payment",
+      payment: "TRANSFER",
+    });
+    expect(parseAnalyticsParams({ key: "payment:TRANSFER:nosupplier" })?.key).toEqual({
+      kind: "payment",
+      payment: "TRANSFER",
+      noSupplier: true,
+    });
+  });
+
   it("treats empty form fields as no filter, `branch=all` as all, and drops dates beside another period", () => {
     expect(
       parseAnalyticsParams({
@@ -213,6 +245,9 @@ describe("parseAnalyticsParams", () => {
     ["a value given twice", { category: [ID, ID] }],
     ["an unknown payment type", { key: "payment:CHEQUE" }],
     ["a payment type in small letters", { key: "payment:cash" }],
+    ["a payment key with another mark", { key: "payment:TRANSFER:supplier" }],
+    ["a no-receipt key with a value", { key: "noreceipt:all" }],
+    ["a settled key with a value", { key: "settled:all" }],
     ["an unknown colour", { key: "colour:grey" }],
     ["an owner other than `other`", { owner: "all" }],
     ["other owners beside a Manager filter", { owner: "other", manager: ID }],
