@@ -29,6 +29,8 @@ import {
 // 20 000 delivery, planned total 520 000.
 
 const o = en.orders;
+// 08's orange is drawn amber (src/domain/colours.ts, Colour; plan of 0.10a, decision 7).
+const ORANGE = "amber";
 const m = en.orders.moves;
 const s = en.money.settle;
 
@@ -309,6 +311,28 @@ async function moneyRowsOf(orderIds: string[]) {
   });
 }
 
+/** The order's overspend acknowledgment comment, or null (08 Overspend guard). */
+async function acknowledgmentOf(orderId: string): Promise<string | null> {
+  return withDatabase(async (client) => {
+    const found = await client.query<{ comment: string | null }>(
+      "select overspend_ack_comment as comment from order_settlements where order_id = $1",
+      [orderId],
+    );
+    return found.rows[0]?.comment ?? null;
+  });
+}
+
+/** The number of stock movements of a subtype in a branch. */
+async function movementsOf(branch: string, variantId: string): Promise<number> {
+  return withDatabase(async (client) => {
+    const found = await client.query<{ count: number }>(
+      "select count(*)::int as count from stock_movements where branch_id = $1 and variant_id = $2",
+      [branch, variantId],
+    );
+    return found.rows[0]!.count;
+  });
+}
+
 test("S1: three approvals, 520 000 given, bought exactly: all green, the Manager closes, stock +100, cash count 0 (15 S1; 08 Exact match, Closing 1)", async ({
   page,
 }) => {
@@ -342,4 +366,119 @@ test("S1: three approvals, 520 000 given, bought exactly: all green, the Manager
   expect(await scrollsSideways(page)).toBe(false);
   expect(await stockOf(scene.branch.id, order.variantId)).toBe("100.000");
   expect(await countOf(order.id)).toBe(0);
+});
+
+test('S2: bought at 4 500: Total orange "Left 50 000"; Finance records 50 000 returned and closes (15 S2; 08 The three colours, Closing 2 and 3)', async ({
+  page,
+}) => {
+  test.slow();
+  const scene = await newScene();
+  const order = await notebooks(scene);
+  await throughApprovals(page, scene, [order]);
+  await financeApproves(page, scene, [order], { [order.id]: "520000" });
+
+  await as(page, scene.manager);
+  await recordPurchase(page, order, { price: "4500", comment: "Arzonroq topildi" });
+  // 08 Worked example, Cheaper: Number green, Price orange, Total orange "Left 50 000".
+  await expect(labelOf(page, "number")).toHaveAttribute("data-colour", "green");
+  await expect(labelOf(page, "price")).toHaveAttribute("data-colour", ORANGE);
+  const total = labelOf(page, "total");
+  await expect(total).toHaveAttribute("data-colour", ORANGE);
+  await expect(total).toContainText(en.colourLabel.total.left);
+  await expect(total).toContainText(/50\s000/);
+  await sendToSettlement(page, scene, [order]);
+
+  // The settlement asks for the count back: Receive 50 000, prefilled (08 Closing 2).
+  await openSettle(page, scene, [order]);
+  await expect(page.locator(`[data-settle-amount="${order.id}"]`)).toHaveValue("50000");
+  expect(await scrollsSideways(page)).toBe(false);
+  await saveSettlement(page, 1);
+  await closeOnSettle(page);
+  await expect(page.getByText("Closed 1 order.")).toBeVisible();
+
+  const returned = (await moneyRowsOf([order.id])).filter((row) => row.kind === "CASH_RETURNED");
+  expect(returned.map((row) => row.amount)).toEqual(["50000"]);
+  expect(await countOf(order.id)).toBe(0);
+  expect(await statusOf(order.id)).toBe("CLOSED");
+});
+
+test('S3: bought at 5 200 with 30 000 delivery: Total red "Over 30 000"; Finance pays back 30 000 and closes with no Head step (15 S3; 08 Overspend guard)', async ({
+  page,
+}) => {
+  test.slow();
+  const scene = await newScene();
+  const order = await notebooks(scene);
+  await throughApprovals(page, scene, [order]);
+  await financeApproves(page, scene, [order], { [order.id]: "520000" });
+
+  await as(page, scene.manager);
+  await recordPurchase(page, order, {
+    price: "5200",
+    delivery: "30000",
+    comment: "Narx va yetkazish qimmatlashdi",
+  });
+  // 08 Worked example, Dearer: Price red, Total red "Over 30 000".
+  await expect(labelOf(page, "number")).toHaveAttribute("data-colour", "green");
+  await expect(labelOf(page, "price")).toHaveAttribute("data-colour", "red");
+  const total = labelOf(page, "total");
+  await expect(total).toHaveAttribute("data-colour", "red");
+  await expect(total).toContainText(en.colourLabel.total.over);
+  await expect(total).toContainText(/30\s000/);
+  await sendToSettlement(page, scene, [order]);
+
+  // 5.8% and 30 000 so'm are under the guard: the Head is offered no acknowledgment.
+  await as(page, scene.head);
+  await page.goto(`/orders/${order.id}`);
+  await expect(page.locator("[data-order-number]")).toBeVisible();
+  await expect(page.locator('[data-order-bar] [data-move="ACKNOWLEDGE_OVERSPEND"]')).toHaveCount(0);
+
+  // Finance pays back 30 000, prefilled, and closes with no Head step (08 Closing 2, 3).
+  await openSettle(page, scene, [order]);
+  await expect(page.locator(`[data-settle-amount="${order.id}"]`)).toHaveValue("30000");
+  await expect(page.locator(`[data-settle-order="${order.id}"] [data-overspend]`)).toHaveCount(0);
+  await saveSettlement(page, 1);
+  await closeOnSettle(page);
+  await expect(page.getByText("Closed 1 order.")).toBeVisible();
+
+  const paid = (await moneyRowsOf([order.id])).filter((row) => row.kind === "PAID_BACK");
+  expect(paid.map((row) => row.amount)).toEqual(["30000"]);
+  expect(await countOf(order.id)).toBe(0);
+  expect(await statusOf(order.id)).toBe("CLOSED");
+  expect(await acknowledgmentOf(order.id)).toBeNull();
+});
+
+test("S13: 520 000 given, nothing bought: settlement asks for 520 000 back; closes with no stock change (15 S13; 07 Order progress; 08 Closing 2)", async ({
+  page,
+}) => {
+  test.slow();
+  const scene = await newScene();
+  const order = await notebooks(scene);
+  await throughApprovals(page, scene, [order]);
+  await financeApproves(page, scene, [order], { [order.id]: "520000" });
+
+  // Not bought, with its reason (07 Order progress), then Send to settlement.
+  await as(page, scene.manager);
+  await page.goto(`/orders/${order.id}`);
+  await page.locator('[data-order-bar] [data-move="MARK_NOT_BOUGHT"]').click();
+  const dialog = page.getByRole("alertdialog");
+  await expect(dialog).toBeVisible();
+  await dialog.locator("textarea[data-reason]").fill("Yetkazib beruvchida qolmadi");
+  await dialog.getByRole("button", { name: m.button.MARK_NOT_BOUGHT, exact: true }).click();
+  await expect(page.getByText("Marked 1 order not bought.")).toBeVisible();
+  await expect(page.locator('[data-progress="NOT_BOUGHT"]')).toBeVisible();
+  await sendToSettlement(page, scene, [order]);
+
+  await openSettle(page, scene, [order]);
+  await expect(page.locator(`[data-settle-amount="${order.id}"]`)).toHaveValue("520000");
+  await saveSettlement(page, 1);
+  await closeOnSettle(page);
+  await expect(page.getByText("Closed 1 order.")).toBeVisible();
+
+  const returned = (await moneyRowsOf([order.id])).filter((row) => row.kind === "CASH_RETURNED");
+  expect(returned.map((row) => row.amount)).toEqual(["520000"]);
+  expect(await countOf(order.id)).toBe(0);
+  expect(await statusOf(order.id)).toBe("CLOSED");
+  // No stock change: no movement and no balance of the subtype in the branch.
+  expect(await stockOf(scene.branch.id, order.variantId)).toBeNull();
+  expect(await movementsOf(scene.branch.id, order.variantId)).toBe(0);
 });
