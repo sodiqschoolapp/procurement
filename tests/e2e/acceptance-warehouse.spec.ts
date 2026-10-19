@@ -176,6 +176,10 @@ test("S8: two Heads approve the same ticked orders, two Managers issue the last 
     await confirmApprove(page, dialogA, 2);
 
     await dialogB.getByRole("button", { name: en.orders.approve.button, exact: true }).click();
+    // The refresh after the refusal empties B's list; the refusal stays above the empty page.
+    await expect(
+      second.page.getByRole("heading", { name: en.orders.list.emptyFiltered.title }),
+    ).toBeVisible();
     const failed = second.page.locator("[data-approve-failed]");
     await expect(failed).toBeVisible();
     await expect(failed.locator("[data-failed-order]")).toHaveCount(2);

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { selectAllOnFilterAction, tickedSummaryAction } from "@/app/(app)/orders/actions";
+import { EmptyState } from "@/components/empty-state";
 import { Icon } from "@/components/icon";
 import { ColourLabels, RequestStatusLabel } from "@/components/status-label";
 import { toast } from "@/components/toast";
@@ -56,6 +57,7 @@ export function OrderList({
   total,
   query,
   hrefOf,
+  empty,
 }: {
   groups: WireOrderGroup[];
   page: number;
@@ -66,6 +68,8 @@ export function OrderList({
   query: string;
   /** The address of a page of the list, every other parameter kept. */
   hrefOf: Record<number, string>;
+  /** The empty page's texts, shown when no group row matches (11 rule 12). */
+  empty: { title: string; line: string };
 }) {
   const t = useTranslations("orders.list");
   const tPager = useTranslations("pager");
@@ -156,31 +160,42 @@ export function OrderList({
   const refusedSet = new Set(failed?.lines.map((line) => line.orderId) ?? []);
   const summary = answered?.ids === ticked.join(",") ? answered.summary : null;
 
+  // A refusal stays on the screen when the refresh after it empties the list: two Heads approve
+  // the same orders, and the second one's list no longer holds them (15 S8; plan of 9.1c).
+  const failure = failed && (
+    <section
+      role="alert"
+      data-approve-failed
+      className="flex flex-col gap-2 rounded-xl border border-destructive bg-card p-4"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <h2 className="text-[15px] leading-[22px] font-bold text-destructive">{failed.title}</h2>
+        <Button type="button" variant="ghost" size="sm" onClick={() => setFailed(null)}>
+          {tCommon("close")}
+        </Button>
+      </div>
+      <ul className="flex flex-col gap-1 text-[15px] leading-[22px]">
+        {failed.lines.map(({ orderId, line }) => (
+          <li key={orderId} data-failed-order={orderId}>
+            {line}
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+
+  if (total === 0) {
+    return (
+      <div className="flex flex-col gap-4">
+        {failure}
+        <EmptyState title={empty.title} line={empty.line} />
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-4">
-      {failed && (
-        <section
-          role="alert"
-          data-approve-failed
-          className="flex flex-col gap-2 rounded-xl border border-destructive bg-card p-4"
-        >
-          <div className="flex items-start justify-between gap-3">
-            <h2 className="text-[15px] leading-[22px] font-bold text-destructive">
-              {failed.title}
-            </h2>
-            <Button type="button" variant="ghost" size="sm" onClick={() => setFailed(null)}>
-              {tCommon("close")}
-            </Button>
-          </div>
-          <ul className="flex flex-col gap-1 text-[15px] leading-[22px]">
-            {failed.lines.map(({ orderId, line }) => (
-              <li key={orderId} data-failed-order={orderId}>
-                {line}
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+      {failure}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <span className="text-sm text-muted-foreground">{t("groupCount", { count: total })}</span>
         <Button type="button" variant="secondary" pending={selecting} onClick={selectAll}>
