@@ -115,6 +115,45 @@ describe("money with managers by age, with the clock set (build-plan 6.6a, Done 
   });
 });
 
+describe("money with managers by age, the draft wall (.claude/rules/tests.md; permission review of 6.6a, Should fix 3)", () => {
+  it("leaves out an order taken back to Draft after the refresh, held or owed, with every other value letting it in", async () => {
+    setClock("2031-10-15T05:00:00Z");
+    const { scene, finance } = await financeScene();
+    const held = await holding(scene, finance.id, "2031-10-10", 1_000n);
+    const owes = await owed(scene, "2031-10-10", 2_000n);
+    await refreshNow();
+    const before = await getFinanceCash(finance.id, THIS_MONTH, NO_ANALYTICS_FILTERS);
+    expect(before.ages[0]).toMatchObject({ held: 1_000n, owed: 2_000n });
+    await setOrderStatus(held.orderId, "DRAFT");
+    await setOrderStatus(owes.orderId, "DRAFT");
+    const after = await getFinanceCash(finance.id, THIS_MONTH, NO_ANALYTICS_FILTERS);
+    expect(after.ages[0]).toEqual({ band: "week", held: 0n, heldCount: 0, owed: 0n, owedCount: 0 });
+    for (const side of ["held", "owed"] as const) {
+      const list = await getCashOrders(finance.id, NO_ANALYTICS_FILTERS, false, "all", {
+        band: "week",
+        side,
+      });
+      expect(list.count).toBe(0);
+    }
+  });
+
+  it("leaves out the money rows of an order taken back to Draft (the draft wall of moneyWhere(); Should fix 2)", async () => {
+    setClock("2031-10-15T05:00:00Z");
+    const { scene, finance } = await financeScene();
+    const order = await holding(scene, finance.id, "2031-10-10", 1_000n);
+    await refreshNow();
+    expect(
+      (await getFinanceCash(finance.id, THIS_MONTH, NO_ANALYTICS_FILTERS)).totals.given.amount,
+    ).toBe(1_000n);
+    await setOrderStatus(order.orderId, "DRAFT");
+    expect(
+      (await getFinanceCash(finance.id, THIS_MONTH, NO_ANALYTICS_FILTERS)).totals.given.amount,
+    ).toBe(0n);
+    const rows = await getMoneyRows(finance.id, "given", null, THIS_MONTH, NO_ANALYTICS_FILTERS, 1);
+    expect(rows.count).toBe(0);
+  });
+});
+
 describe("given, returned and paid back by month (10 Finance, Cash; 08 Money ledger; decided item 2)", () => {
   it("sums each cash kind of actions not cancelled on their dates, with the change against the period before", async () => {
     setClock("2031-10-15T05:00:00Z");

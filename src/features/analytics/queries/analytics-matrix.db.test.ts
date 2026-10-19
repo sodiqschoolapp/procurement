@@ -845,7 +845,7 @@ async function financeIn(branchId: string) {
   await moneyOn(held, scene.manager.id, { amount: 30_000n, occurredOn: "2031-05-04" });
   const waiting = await decided(scene, "PENDING_FINANCE", []);
   await refreshNow();
-  return { held, waiting };
+  return { held, waiting, category: scene.category.id, department: scene.department.id };
 }
 
 /** Every Finance list of 6.6a under the filters: whether each shows the branch's rows. */
@@ -896,12 +896,51 @@ describePermissionMatrix(
     permission: "data.view",
     async run({ user, branchId }) {
       const rows = await financeIn(branchId);
-      await getFinanceCash(user.id, THIS_MONTH, NO_ANALYTICS_FILTERS);
-      await getCashNeeded(user.id, NO_ANALYTICS_FILTERS);
-      const seen = await financeLists(user.id, NO_ANALYTICS_FILTERS, rows);
-      // The lists keep to the same wall: every one sees the branch's rows, or none does.
+      // The branch's category alone: the totals are then this branch's rows or nothing.
+      const own = { ...NO_ANALYTICS_FILTERS, category: rows.category };
+      const cash = await getFinanceCash(user.id, THIS_MONTH, own);
+      const needed = await getCashNeeded(user.id, own);
+      const seen = [
+        ...(await financeLists(user.id, own, rows)),
+        cash.totals.given.amount === 30_000n,
+        cash.ages.find((row) => row.band === "month")!.held === 30_000n,
+        needed.open.amount === 20_000n,
+        needed.approval.amount === 50_000n,
+      ];
+      // The lists and the totals keep to the same wall (permission review of 6.6a, Should fix 1).
       expect(seen).toEqual(seen.map(() => seen[0]));
       if (!seen[0]) throw new AuthorizationError("not_found");
+    },
+  },
+);
+
+// The ids of the filters (.claude/rules/server-actions.md: every id from the browser is checked to
+// belong to a branch the user may use; permission review of 6.6a, Must fix 1): a department or a
+// Manager of the branch, sent to each Finance query without a branch filter.
+describePermissionMatrix(
+  "getFinanceCash, getCashNeeded, getMoneyRows, getNeededOrders and getCashOrders by age with a department or a Manager of the branch",
+  {
+    permission: "data.view",
+    async run({ user, branchId }) {
+      const rows = await financeIn(branchId);
+      const owner = (
+        await db.execute<{ owner_id: string }>(
+          sql`select owner_id from orders where id = ${rows.held.orderId}`,
+        )
+      ).rows[0]!.owner_id;
+      for (const filters of [
+        { ...NO_ANALYTICS_FILTERS, department: rows.department },
+        { ...NO_ANALYTICS_FILTERS, manager: owner },
+      ]) {
+        const cash = await getFinanceCash(user.id, THIS_MONTH, filters);
+        const needed = await getCashNeeded(user.id, filters);
+        expect(cash.totals.given.amount).toBe(30_000n);
+        expect(cash.ages.find((row) => row.band === "month")!.held).toBe(30_000n);
+        expect(needed.open.amount).toBe(20_000n);
+        expect(needed.approval.amount).toBe(50_000n);
+        const seen = await financeLists(user.id, filters, rows);
+        expect(seen).toEqual(seen.map(() => true));
+      }
     },
   },
 );
