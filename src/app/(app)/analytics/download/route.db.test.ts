@@ -726,6 +726,12 @@ describe("GET /analytics/download, the 6.5a sheets (10 point 4; plan of 6.5a)", 
     expect(statuses.slice(-6).map((row) => row[1])).toEqual([1, 1, 1, 3, 1, 0]);
     const list = await get("statusOrders", { key: { kind: "due", due: "soon" } });
     expect(list.at(-1)![0]).toBe(number);
+    // The total's list, `status:all` (build-plan 6.5a-2): its three orders at three statuses
+    // under the same column line, as many rows as the total.
+    const all = await get("statusOrders", { key: { kind: "status", status: null } });
+    expect(all.at(-4)).toEqual(list.at(-2));
+    expect(all.slice(-3).map((row) => row[0])).toContain(number);
+    expect(new Set(all.slice(-3).map((row) => row[3])).size).toBe(3);
     const approvals = await get("myApprovals");
     expect(approvals.at(-2)!.slice(1, 2)).toEqual(["3.0"]);
   });

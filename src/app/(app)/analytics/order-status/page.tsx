@@ -21,7 +21,8 @@ import { PageLinks } from "../../catalog/page-links";
 // /analytics/order-status, the orders behind a number of the Principal's Orders block
 // (10-notifications-analytics-reports.md, Analytics page per role, point 3: "Clicking any bar,
 // slice or number opens the list of orders or records that make it up"; build-plan 6.5a; plan of
-// 6.5a, decided item 6): the orders first submitted in the period at one status now, or the orders
+// 6.5a, decided item 6): the orders first submitted in the period at one status now or at any (the
+// total, build-plan 6.5a-2), or the orders
 // coming up or overdue now; of the Manager's My orders (build-plan 6.5b; plan of 6.5b, decided
 // items 1 and 8), the orders that first entered Open in the period, each with its hours from the
 // first submit, and their average, the number clicked. Its count is the number clicked; 50 a page; each row opens its order;
@@ -69,7 +70,8 @@ export default async function AnalyticsOrderStatusPage({
   const what =
     key.kind === "status"
       ? t("principal.list.status", {
-          status: tStatus(key.status),
+          // `status:all` is the Orders total: its own label (build-plan 6.5a-2).
+          status: key.status === null ? t("principal.orders.total") : tStatus(key.status),
           first: format.date(list.period.first),
           last: format.date(list.period.last),
         })

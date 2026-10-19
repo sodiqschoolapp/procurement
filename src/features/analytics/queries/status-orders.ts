@@ -22,7 +22,8 @@ import { PeriodRefusedError, resolvePeriod } from "../resolve-period";
 // The list behind an Orders number of the Principal's page, /analytics/order-status
 // (10-notifications-analytics-reports.md, Analytics page per role, point 3: "Every number can be
 // traced to its source"; build-plan 6.5a; plan of 6.5a, decided item 6). A `status` key lists the
-// orders first submitted in the period at that status now; a `due` key the orders coming up or
+// orders first submitted in the period at that status now, or at any status for `status:all`, the
+// Orders total (build-plan 6.5a-2); a `due` key the orders coming up or
 // overdue now; the Manager's `approved` key (build-plan 6.5b; plan of 6.5b, decided items 1 and 8)
 // the orders that first entered Open in the period, each with its hours from the first submit,
 // and their average `averageHours()` of Σ seconds and count, the number clicked. The rows are those of `analytics_orders` under the same ordersWhere() as the
@@ -103,7 +104,9 @@ async function statusOrdersIn(
   const day = today();
   const where =
     key.kind === "status"
-      ? sql`${ordersWhere(actor, period, filters)} and analytics_orders.status = ${key.status}`
+      ? key.status === null
+        ? ordersWhere(actor, period, filters)
+        : sql`${ordersWhere(actor, period, filters)} and analytics_orders.status = ${key.status}`
       : key.kind === "approved"
         ? ordersWhere(actor, { opened: period }, filters)
         : ordersWhere(actor, { due: key.due, today: day }, filters);

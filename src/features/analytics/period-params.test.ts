@@ -141,6 +141,8 @@ describe("parseAnalyticsParams", () => {
   it.each([
     [{ kind: "product", product: ID }, "products"],
     [{ kind: "status", status: "PENDING_PRINCIPAL" }, "statusOrders"],
+    // The Orders total, every status of the period (build-plan 6.5a-2).
+    [{ kind: "status", status: null }, "statusOrders"],
     [{ kind: "due", due: "soon" }, "statusOrders"],
     [{ kind: "due", due: "overdue" }, "orderStatuses"],
     [{ kind: "mine" }, "myApprovals"],
@@ -155,6 +157,14 @@ describe("parseAnalyticsParams", () => {
       block,
     });
   });
+
+  // Only `all` stands for every status; another spelling or a Draft is no key (build-plan 6.5a-2).
+  it.each(["status:ALL", "status:DRAFT", "status:", "status:all:x"])(
+    "refuses the key %s",
+    (key) => {
+      expect(parseAnalyticsParams({ period: "this_month", key })).toBeNull();
+    },
+  );
 
   // Finance's keys and blocks (build-plan 6.6a; plan of 6.6a, decided item 10).
   it.each([

@@ -146,6 +146,23 @@ describe("getOrderStatuses (10 Principal, Orders; plan of 6.5a, decided items 2 
     expect(list.rows.find((row) => row.orderId === ids.doneBuying)?.overdue).toBe(false);
   });
 
+  it("the total's list is the total clicked: every status, September and the other branch out (build-plan 6.5a-2; 10 point 3)", async () => {
+    const block = await getOrderStatuses(principal, THIS_MONTH, filters);
+    const list = await getStatusOrders(
+      principal,
+      THIS_MONTH,
+      filters,
+      { kind: "status", status: null },
+      "all",
+    );
+    expect(list.count).toBe(block.total.count);
+    const october = Object.entries(ids)
+      .filter(([name]) => name !== "september")
+      .map(([, id]) => id);
+    expect(new Set(list.rows.map((row) => row.orderId))).toEqual(new Set(october));
+    expect(list.rows).toHaveLength(11);
+  });
+
   it("a key of another list is refused", async () => {
     await expect(
       getStatusOrders(principal, THIS_MONTH, filters, { kind: "period" }, 1),
@@ -174,6 +191,24 @@ describe("the draft wall on the live status (06 Statuses; .claude/rules/server-a
       "all",
     );
     expect(list.rows.map((row) => row.orderId)).not.toContain(order.id);
+    // The total's list as well (build-plan 6.5a-2).
+    const total = await getStatusOrders(
+      principal,
+      THIS_MONTH,
+      filters,
+      { kind: "status", status: null },
+      "all",
+    );
+    expect(total.count).toBe(after.total.count);
+    expect(total.rows.map((row) => row.orderId)).not.toContain(order.id);
+    const ownersTotal = await getStatusOrders(
+      scene.manager.id,
+      THIS_MONTH,
+      filters,
+      { kind: "status", status: null },
+      "all",
+    );
+    expect(ownersTotal.rows.map((row) => row.orderId)).toContain(order.id);
     const owners = await getStatusOrders(
       scene.manager.id,
       THIS_MONTH,

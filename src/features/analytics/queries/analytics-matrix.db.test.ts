@@ -642,7 +642,7 @@ async function principalIn(branchId: string, deciderId: string) {
     { submittedAt: "2031-05-03T05:00:00Z", neededBy: "2031-06-30" },
   );
   await refreshNow();
-  return { record, waiting };
+  return { scene, record, waiting };
 }
 
 describePermissionMatrix(
@@ -678,8 +678,44 @@ describePermissionMatrix("getStatusOrders with the branch filter", {
       "all",
     );
     expect(list.rows.map((row) => row.orderId)).toEqual([waiting.id]);
+    // The Orders total's list (build-plan 6.5a-2): the branch's three orders of the period.
+    const all = await getStatusOrders(
+      user.id,
+      THIS_MONTH,
+      { ...NO_ANALYTICS_FILTERS, branch: branchId },
+      { kind: "status", status: null },
+      "all",
+    );
+    expect(all.count).toBe(3);
+    expect(all.rows.map((row) => row.orderId)).toContain(waiting.id);
   },
 });
+
+// The Orders total's list with a department or a Manager of the branch and no branch filter
+// (build-plan 6.5a-2; .claude/rules/tests.md, the three ways): the scene's three orders.
+describePermissionMatrix(
+  "getStatusOrders, status:all, with a department or a Manager of the branch",
+  {
+    permission: "data.view",
+    async run({ user, branchId }) {
+      const { scene, waiting } = await principalIn(branchId, user.id);
+      for (const filters of [
+        { ...NO_ANALYTICS_FILTERS, department: scene.department.id },
+        { ...NO_ANALYTICS_FILTERS, manager: scene.manager.id },
+      ]) {
+        const all = await getStatusOrders(
+          user.id,
+          THIS_MONTH,
+          filters,
+          { kind: "status", status: null },
+          "all",
+        );
+        expect(all.count).toBe(3);
+        expect(all.rows.map((row) => row.orderId)).toContain(waiting.id);
+      }
+    },
+  },
+);
 
 describePermissionMatrix("the Principal's blocks and lists, the branch wall in the SQL", {
   permission: "data.view",
@@ -712,8 +748,19 @@ describePermissionMatrix("the Principal's blocks and lists, the branch wall in t
       null,
       "all",
     );
+    const all = await getStatusOrders(
+      user.id,
+      THIS_MONTH,
+      NO_ANALYTICS_FILTERS,
+      { kind: "status", status: null },
+      "all",
+    );
     // The numbers and their lists keep to the same wall.
     expect(orders.comingUp).toBe(soon.count);
+    expect(orders.total.count).toBe(all.count);
+    expect(all.rows.some((row) => row.orderId === waiting.id)).toBe(
+      soon.rows.some((row) => row.orderId === waiting.id),
+    );
     expect(mine.mine.count).toBe(myList.count);
     const listed = soon.rows.some((row) => row.orderId === waiting.id);
     expect(product.rows.some((row) => row.purchaseId === record.purchaseId)).toBe(listed);

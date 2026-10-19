@@ -19,6 +19,7 @@ import { getHeadSpending } from "./head-spending";
 import { getMyApprovals } from "./my-approvals";
 import { getOrderStatuses } from "./order-statuses";
 import { getSpending } from "./spending";
+import { getStatusOrders } from "./status-orders";
 import { getTopProducts } from "./top-products";
 import { getWarehouse } from "./warehouse";
 
@@ -149,6 +150,36 @@ describe("the Principal's page holds only the Principal's branch (build-plan 6.5
     expect(orders.total.count).toBe(3);
     expect(orders.comingUp).toBe(1);
     expect(orders.overdue).toBe(1);
+  });
+
+  // Build-plan 6.5a-2, Done when: the list behind the Orders total (10 point 3). The other branch
+  // holds the same three October orders, so a list that let it in would count 6.
+  it("Orders: the total's list counts the total, the Principal's branch only", async () => {
+    const orders = await getOrderStatuses(principal, THIS_MONTH, all);
+    const list = await getStatusOrders(
+      principal,
+      THIS_MONTH,
+      all,
+      { kind: "status", status: null },
+      "all",
+    );
+    expect(list.count).toBe(orders.total.count);
+    expect(list.rows).toHaveLength(3);
+    expect(new Set(list.rows.map((row) => row.departmentName))).toEqual(
+      new Set([a.department.name]),
+    );
+    expect(new Set(list.rows.map((row) => row.status))).toEqual(
+      new Set(["PENDING_PRINCIPAL", "PENDING_FINANCE", "PURCHASING"]),
+    );
+    await expect(
+      getStatusOrders(
+        principal,
+        THIS_MONTH,
+        { ...all, branch: b.branch.id },
+        { kind: "status", status: null },
+        1,
+      ),
+    ).rejects.toMatchObject({ constructor: AuthorizationError, kind: "not_found" });
   });
 
   it("My approvals: one waiting now, my 2 hours", async () => {
