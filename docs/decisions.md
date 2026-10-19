@@ -2524,6 +2524,7 @@ Choices made during the build:
 - A positive difference is shown with "+" (`signedQuantity()`, `components/count-difference.ts`); a negative one keeps the formatter's minus.
 - `listCounts` is its own query rather than the documents list with a type filter: it adds the counted/total per count.
 - The same-moment test was run once with the FOR SHARE lock left out and seen to fail (the count never waited).
+- Permission review, should fix 1: the save's target reads only a COUNT, so another document's id is "Not found" for every role, also a Manager with WRITE_OFF_COUNT off.
 
 ## Process changes
 

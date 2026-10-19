@@ -9,7 +9,7 @@ import { db } from "@/server/db/client";
 import { createDocument } from "@/server/stock-documents";
 import { postMovement } from "@/server/stock-ledger";
 
-import { insertBranch } from "../../../../tests/helpers/branches";
+import { insertBranch, setManagerRight } from "../../../../tests/helpers/branches";
 import { setClock } from "../../../../tests/helpers/clock";
 import { insertItem } from "../../../../tests/helpers/orders";
 import { receive } from "../../../../tests/helpers/stock-documents";
@@ -364,6 +364,11 @@ describe("saveCountedQuantities (09 Stock count: types the counted quantities)",
         lines: [{ variantId: pieces.variant_id, qty: "1", unitCost: 1000n }],
       }),
     );
+    expect(
+      await save(entry.documentId, [{ lineId: entry.lineIds[0]!, countedQty: "9" }]),
+    ).toMatchObject({ ok: false, error: { code: "not_found" } });
+    // Not found also for a Manager with WRITE_OFF_COUNT off, never "forbidden".
+    await setManagerRight(manager.id, "WRITE_OFF_COUNT", false);
     expect(
       await save(entry.documentId, [{ lineId: entry.lineIds[0]!, countedQty: "9" }]),
     ).toMatchObject({ ok: false, error: { code: "not_found" } });

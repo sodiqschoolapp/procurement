@@ -193,7 +193,9 @@ export const saveCountedQuantities = defineAction({
   input: saveInput,
   async target({ tx, input: typed }) {
     const found = await tx.execute<{ branch_id: string }>(
-      sql`select branch_id from stock_documents where id = ${typed.documentId}`,
+      // Only a count has a branch here: another type is "Not found" before any right is asked
+      // (permission review of 7.3, should fix 1).
+      sql`select branch_id from stock_documents where id = ${typed.documentId} and type = 'COUNT'`,
     );
     const branchId = found.rows[0]?.branch_id;
     return branchId ? { branchId } : null;
