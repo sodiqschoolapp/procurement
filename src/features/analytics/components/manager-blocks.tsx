@@ -161,7 +161,9 @@ export async function MyOrdersView({
                   cells: [
                     <strong key="total">{t("principal.orders.total")}</strong>,
                     <>
-                      <strong>{count(block.total.count)}</strong>
+                      <Link href={orders({ kind: "status", status: null })} className={linkClass}>
+                        {count(block.total.count)}
+                      </Link>
                       <span className="block text-[13px] leading-[18px] text-muted-foreground">
                         {countChangeText(block.total.change, t, format)}
                       </span>

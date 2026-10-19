@@ -2348,6 +2348,19 @@ Choices made during the build:
 - A block's title is kept with its notes and tiles on one page, and a table's caption and column titles with its first rows (`wrap={false}`, `minPresenceAhead`).
 - The test the plan named `page-report.test.ts` (unit) is a database test, `page-report.db.test.ts`: the page's queries need the database to give the numbers the report must repeat.
 
+### 6.5a-2 The Orders total of the Principal's page opens its list (19.10.2026)
+
+The plan's decisions as the plan review of 19.10.2026 confirmed them (corrections 1 and 2 applied: the list's line shows the total's label for `status: null`; the key pattern changes for `status:all` only).
+
+1. The key is `status:all` (`{ kind: "status", status: null }`), not the `period` key: `all` already names every value in `step:all`, `waiting:all` and `priced:all`; `period` stays a key of the records lists, and `getStatusOrders()` still refuses it. Its condition is `ordersWhere(actor, period, filters)` with no status term, the condition `getOrderStatuses()` sums its total over (`analytics_orders` holds no Draft, so the sum over `LIST_STATUSES` is that count).
+2. The Manager's My orders total gets the same link, with the Manager filter set as its status counts: the same gap of 10 point 3 on the same list. It goes beyond the task's Build line, which names `principal-blocks.tsx` only.
+3. No new interface text: the list's line is `principal.list.status` with the total's own label (`principal.orders.total`) as the status.
+4. The PDF of the page (6.7) is unchanged: it holds no drill-down lists (6.7 decided item 3).
+
+Choices made during the build:
+
+- The matrix tests `status:all` with a department and with a Manager of the branch in two blocks, so each id of another branch is refused on its own (permission review, Should fix 1).
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

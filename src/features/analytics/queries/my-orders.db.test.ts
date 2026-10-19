@@ -378,6 +378,25 @@ describe("every number of the Manager's blocks equals the list behind it (10 poi
     expect(list.rows.map((row) => row.orderId)).toEqual([mine.open]);
   });
 
+  // The My orders total opens its list too (build-plan 6.5a-2; plan of 6.5a-2, decided item 2).
+  it("the total: the Manager's own orders of the period at every status", async () => {
+    const list = await getStatusOrders(
+      manager,
+      THIS_MONTH,
+      mineOnly(),
+      { kind: "status", status: null },
+      "all",
+    );
+    expect(list.count).toBe(MY_ORDERS.total.count);
+    expect(list.rows.map((row) => row.status).sort()).toEqual(
+      MY_ORDERS.statuses.map((row) => row.status).sort(),
+    );
+    const listed = list.rows.map((row) => row.orderId);
+    expect(listed).toEqual(expect.arrayContaining([mine.waiting, mine.open]));
+    expect(listed).not.toContain(colleagues.open);
+    expect(listed).not.toContain(colleagues.waiting);
+  });
+
   it("the send backs, in all and of one reason", async () => {
     const key = { kind: "step", step: null, decision: "SEND_BACK" } as const;
     const all = await getApprovalOrders(manager, THIS_MONTH, mineOnly(), key, null, 1);

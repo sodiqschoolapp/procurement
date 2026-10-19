@@ -864,6 +864,16 @@ test("6.5a: the Principal sees the four blocks of the own branch and opens the o
   await expect(page.locator("[data-status-row]")).toContainText(number);
   await expect(page.locator("[data-status-summary]")).toHaveText(/^1\D/);
   expect(await scrollsSideways(page)).toBe(false);
+
+  // The "All orders" total opens the list of every order of the period (build-plan 6.5a-2).
+  await page.goBack();
+  const total = page.locator('[data-table="statuses"] [data-row="total"] a');
+  await expect(total).toHaveText("1");
+  await total.click();
+  await expect(page).toHaveURL(/\/analytics\/order-status\?.*key=status%3Aall/);
+  await expect(page.locator("[data-status-row]")).toHaveCount(1);
+  await expect(page.locator("[data-status-row]")).toContainText(number);
+  await expect(page.locator("[data-status-summary]")).toHaveText(/^1\D/);
 });
 
 test("6.5b: the Manager sees My orders, My estimates and My cash and opens the orders behind a status count (10 Manager; plan of 6.5b)", async ({

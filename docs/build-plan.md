@@ -502,7 +502,7 @@ What each role sees first, and the numbers behind the work.
   - **Build:** The four Principal blocks: Spending (my branch by month against the period before; by category and department; top 10 products), Orders (by status; needed-by dates coming up; overdue orders), My approvals (waiting now; my average time to decide), Warehouse (stock value; low stock; what each department used), each number with its drill-down and Excel export.
   - **Done when:** A database test: the Principal's page holds only the Principal's branch.
 
-- [ ] **6.5a-2 The Orders total of the Principal's page opens its list**
+- [x] **6.5a-2 The Orders total of the Principal's page opens its list**
   - **Read:** `10-notifications-analytics-reports.md` (Analytics page per role: point 3, every number opens the list behind it); `docs/decisions.md` (D51).
   - **Build:** The "All orders" total of the Orders block (`src/features/analytics/components/principal-blocks.tsx`) opens the list of every order of the period behind it, through a drill key that `getStatusOrders()` accepts for all statuses of the period, inside the same walls as the other keys.
   - **Done when:** A database test: the list's count equals the total, for the Principal's branch only. A Playwright step clicks the total and sees the list.

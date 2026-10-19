@@ -83,7 +83,7 @@ export type DrillKey =
   | { kind: "stock"; view: StockView }
   | { kind: "moves"; move: MoveKind }
   | { kind: "product"; product: string }
-  | { kind: "status"; status: ListStatus }
+  | { kind: "status"; status: ListStatus | null }
   | { kind: "due"; due: DueKind }
   | { kind: "mine" }
   | { kind: "approved" }
@@ -221,7 +221,7 @@ const id = z.uuid().transform((value) => value.toLowerCase());
 const date = z.string().refine(isBusinessDate);
 
 const KEY =
-  /^(period|overspent|saved|month:\d{4}-\d{2}|category:[0-9a-fA-F-]{36}|payment:[A-Z]+(:nosupplier)?|colour:[a-z]+|price:[0-9a-fA-F-]{36}(:\d{4}-\d{2}|:nosupplier)?|step:[A-Z_a-z]+(:[A-Z_]+)?|waiting:[A-Z_a-z]+:[A-Za-z]+|stock:[a-z]+|moves:[a-z]+|product:[0-9a-fA-F-]{36}|status:[A-Z_]+|due:[a-z]+|mine|approved|priced:(all|[0-9a-fA-F-]{36})|money:[A-Za-z]+(:\d{4}-\d{2})?|needed:[a-z]+(:[A-Z_]+)?|age:[a-z]+:[a-z]+|noreceipt|settled)$/;
+  /^(period|overspent|saved|month:\d{4}-\d{2}|category:[0-9a-fA-F-]{36}|payment:[A-Z]+(:nosupplier)?|colour:[a-z]+|price:[0-9a-fA-F-]{36}(:\d{4}-\d{2}|:nosupplier)?|step:[A-Z_a-z]+(:[A-Z_]+)?|waiting:[A-Z_a-z]+:[A-Za-z]+|stock:[a-z]+|moves:[a-z]+|product:[0-9a-fA-F-]{36}|status:([A-Z_]+|all)|due:[a-z]+|mine|approved|priced:(all|[0-9a-fA-F-]{36})|money:[A-Za-z]+(:\d{4}-\d{2})?|needed:[a-z]+(:[A-Z_]+)?|age:[a-z]+:[a-z]+|noreceipt|settled)$/;
 
 /** A reason key as reasonKey() writes it: at most the 500 characters of a reason (06 rule 3). */
 const reason = z.string().min(1).max(500);
@@ -331,7 +331,11 @@ function keyOf(text: string): DrillKey | null {
     const side = CASH_SIDES.find((each) => each === sideText);
     return band && side ? { kind, band, side } : null;
   }
-  if (kind === "status") return isListStatus(value) ? { kind, status: value } : null;
+  if (kind === "status") {
+    // `status:all`: every order of the period, the Orders total (build-plan 6.5a-2).
+    if (value === "all") return { kind, status: null };
+    return isListStatus(value) ? { kind, status: value } : null;
+  }
   if (kind === "due") {
     const due = DUE_KINDS.find((each) => each === value);
     return due ? { kind, due } : null;
@@ -455,7 +459,7 @@ function keyText(key: DrillKey): string {
     case "product":
       return `product:${key.product}`;
     case "status":
-      return `status:${key.status}`;
+      return `status:${key.status ?? "all"}`;
     case "due":
       return `due:${key.due}`;
     case "priced":

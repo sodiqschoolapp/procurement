@@ -1686,4 +1686,17 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - Locally the browser tests failed at sign-in on `main`'s tests too (6.5a), with a throwaway `BETTER_AUTH_SECRET`; CI's `e2e` is the gate.
 - Never run two vitest runs at once: they share the test database and fail across the board.
 
-The next task is 6.5a-2.
+## 6.5a-2 The Orders total of the Principal's page opens its list (19.10.2026, pull request #116)
+
+**Built**
+- The drill key `status:all` (`{ kind: "status", status: null }`): `getStatusOrders()` lists every order first submitted in the period under the total's `ordersWhere()`; `/analytics/order-status` names it "All orders"; the `statusOrders` export takes it.
+- The "All orders" total of the Principal's Orders block and of the Manager's My orders block links to it.
+
+**Left out, and the task that brings it**
+- Nothing of this task. Reports: 6.8.
+
+**What the next sessions must know**
+- A key's "every value" is written `<kind>:all` and parsed to `null` (`step`, `waiting`, `priced`, now `status`); the key pattern of `period-params.ts` lists `all` beside the values.
+- `principalIn()` of the analytics matrix test returns its `scene` too.
+
+The next task is 6.8.
