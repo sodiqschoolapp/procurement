@@ -7,6 +7,7 @@ import {
   analyticsSearch,
 } from "@/features/analytics/period-params";
 import { AuthorizationError } from "@/server/authorize";
+import { BRANCH_COOKIE, branchCookieValue } from "@/features/catalog/branch-cookie";
 
 import { bought, refreshNow, spendingScene } from "../../../../../tests/helpers/analytics";
 import { insertCategory } from "../../../../../tests/helpers/catalog";
@@ -183,6 +184,35 @@ describe("GET /analytics/report (10 point 4; 05 Download 2 and 3)", () => {
     // The school year is not set: its period is refused, as on the page (plan of 6.3).
     const year = await GET(downloadRequest("/analytics/report?period=school_year", cookie));
     expect(year.status).toBe(404);
+  });
+});
+
+describe("GET /analytics/report, the branch cookie (03 rule 1; permission review of 6.7, Must fix 1)", () => {
+  it("a cookie naming another branch, or another user, gives the own branches' file, never the other branch", async () => {
+    setClock(AT);
+    const scene = await spendingScene();
+    await bought(scene, { purchasedOn: "2031-10-02", unitPrice: "6000" });
+    const other = await spendingScene();
+    await bought(other, { purchasedOn: "2031-10-03", unitPrice: "7000" });
+    await refreshNow();
+    const principal = await insertUser("PRINCIPAL", { branches: [scene.branch.id], locale: "en" });
+    // A Principal of the other branch, whose own cookie would name it.
+    const stranger = await insertUser("PRINCIPAL", { branches: [other.branch.id], locale: "en" });
+    const cookie = await signInAs(principal);
+    // The page's address with no `branch=`: the file takes the branch view from the cookie.
+    for (const value of [
+      branchCookieValue(principal.id, other.branch.id),
+      branchCookieValue(stranger.id, other.branch.id),
+    ]) {
+      const request = downloadRequest("/analytics/report?period=this_month", cookie);
+      request.cookies.set(BRANCH_COOKIE, value);
+      const response = await GET(request);
+      expect(response.status).toBe(200);
+      const text = (await pdfPages(new Uint8Array(await response.arrayBuffer()))).join(" ");
+      expect(text).toContain("Spent in the period 6 000 so'm");
+      expect(text).not.toContain("7 000 so'm");
+      expect(text).not.toContain("13 000 so'm");
+    }
   });
 });
 

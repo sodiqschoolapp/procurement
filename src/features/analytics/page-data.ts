@@ -1,5 +1,5 @@
 import { currentBranchChoice } from "@/features/catalog/queries/my-branches";
-import { AuthorizationError } from "@/server/authorize";
+import { AuthorizationError, authorizeList } from "@/server/authorize";
 
 import { parseAnalyticsParams } from "./period-params";
 import { getApprovalSpeed } from "./queries/approval-speed";
@@ -44,6 +44,9 @@ export async function readAnalyticsPage(
 ) {
   const params = parseAnalyticsParams(raw);
   if (!params) return "refused" as const;
+  // The entry point's own check (developer-rules rule 4; permission review of 6.7, Should fix 1);
+  // each query asks again with its branch wall in the SQL.
+  await authorizeList(userId, "data.view");
   const filters = params.branchGiven
     ? params.filters
     : {
