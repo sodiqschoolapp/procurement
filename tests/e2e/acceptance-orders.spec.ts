@@ -1,16 +1,24 @@
-import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 
 import { type Locator, type Page, expect, test } from "@playwright/test";
 import ExcelJS from "exceljs";
-import pg from "pg";
 
 import en from "../../src/i18n/messages/en.json" with { type: "json" };
 import uz from "../../src/i18n/messages/uz.json" with { type: "json" };
-import { insertPasswordUser } from "../../src/server/auth/password-user.mjs";
-import { connectionOptions } from "../../src/server/db/connection-options.mjs";
 import { pdfPages } from "../helpers/pdf-text";
-import { E2E_ROLES, e2eDatabaseUrl, serverDatabaseUrl } from "./global-setup";
+import {
+  branchId,
+  insertDraft,
+  newBranch,
+  newDepartment,
+  newManager,
+  newProduct,
+  scrollsSideways,
+  signIn,
+  tag,
+  withDatabase,
+} from "./acceptance-fixtures";
+import { E2E_ROLES } from "./global-setup";
 
 // Build plan 9.1a: the acceptance scenarios of phase 2 (16-build-order.md) that had no browser
 // test, clicked through as each role (15-quality-and-acceptance.md, Test layers: Full flow). Both
@@ -20,178 +28,7 @@ import { E2E_ROLES, e2eDatabaseUrl, serverDatabaseUrl } from "./global-setup";
 // (plan of 9.1a, review must-fixes 2 and 3): nothing of another project or attempt reaches a
 // group row, a counter or a filtered week here.
 
-type Person = { username: string; password: string; fullName: string };
-
-const PASSWORD = "invented-e2e-password";
-const MADE_AT = new Date("2026-10-01T00:00:00Z");
 const NBSP = " ";
-
-async function withDatabase<T>(work: (client: pg.Client) => Promise<T>): Promise<T> {
-  const client = new pg.Client(
-    connectionOptions(e2eDatabaseUrl(serverDatabaseUrl()), process.env.DATABASE_CA_CERT),
-  );
-  await client.connect();
-  try {
-    return await work(client);
-  } finally {
-    await client.end();
-  }
-}
-
-async function inTransaction<T>(client: pg.Client, work: () => Promise<T>): Promise<T> {
-  await client.query("begin");
-  try {
-    const result = await work();
-    await client.query("commit");
-    return result;
-  } catch (error) {
-    await client.query("rollback");
-    throw error;
-  }
-}
-
-function tag(): string {
-  return randomUUID().slice(0, 8);
-}
-
-/** A new branch with no order at all: code Z and three random capitals (branches_code_check). */
-async function newBranch(): Promise<{ id: string; code: string }> {
-  return withDatabase(async (client) => {
-    for (let attempt = 0; attempt < 10; attempt += 1) {
-      const code = `Z${Array.from({ length: 3 }, () => String.fromCharCode(65 + Math.floor(Math.random() * 26))).join("")}`;
-      const made = await client.query<{ id: string }>(
-        `insert into branches (name, code, address, is_active, created_at)
-         values ($1, $2, 'Sinov ko''chasi 9', true, $3)
-         on conflict do nothing returning id`,
-        [`Sinov filiali ${code} ${tag()}`, code, MADE_AT],
-      );
-      if (made.rows[0]) return { id: made.rows[0].id, code };
-    }
-    throw new Error("No free branch code after ten tries.");
-  });
-}
-
-async function branchId(code: string): Promise<string> {
-  return withDatabase(async (client) => {
-    const found = await client.query<{ id: string }>("select id from branches where code = $1", [
-      code,
-    ]);
-    return found.rows[0]!.id;
-  });
-}
-
-/** An invented Manager of one branch, in the language given. */
-async function newManager(
-  branch: string,
-  locale: "uz" | "en" = "uz",
-): Promise<Person & { id: string }> {
-  const name = tag();
-  const person = {
-    fullName: `Sinov Menejer ${name}`,
-    username: `e2e_acc_${name}`,
-    phone: "+998 90 000 98 00",
-    role: "MANAGER",
-    locale,
-  };
-  const id = await withDatabase((client) =>
-    inTransaction(client, async () => {
-      const made = await insertPasswordUser(
-        (text: string, values: unknown[]) => client.query(text, values),
-        { ...person, isActive: true },
-        PASSWORD,
-        MADE_AT,
-      );
-      await client.query(
-        `insert into user_branches (user_id, branch_id, user_role, user_is_active, created_at)
-         values ($1, $2, 'MANAGER', true, $3)`,
-        [made.id, branch, MADE_AT],
-      );
-      return made.id;
-    }),
-  );
-  return { ...person, password: PASSWORD, id };
-}
-
-async function newDepartment(branch: string, name: string): Promise<string> {
-  return withDatabase(async (client) => {
-    const made = await client.query<{ id: string }>(
-      `insert into departments (branch_id, name, responsible_name, is_active, created_at)
-       values ($1, $2, 'Sinov Masʼul', true, $3) returning id`,
-      [branch, name, MADE_AT],
-    );
-    return made.rows[0]!.id;
-  });
-}
-
-/** An invented product without subtypes at a reference price set by the Head (04 rules 1, 4). */
-async function newProduct(name: string, referencePrice: number): Promise<string> {
-  return withDatabase((client) =>
-    inTransaction(client, async () => {
-      const mark = tag();
-      const unit = await client.query<{ id: string }>(
-        `insert into units (name, short_name, allow_decimal, is_active, created_at)
-         values ($1, $2, false, true, $3) returning id`,
-        [`O'lchov ${mark}`, `d${mark}`, MADE_AT],
-      );
-      const category = await client.query<{ id: string }>(
-        `insert into categories (name, is_active, created_at) values ($1, true, $2) returning id`,
-        [`Toifa ${mark}`, MADE_AT],
-      );
-      const product = await client.query<{ id: string }>(
-        `insert into products (name, type, category_id, unit_id, reference_price, is_active,
-                               has_variants, created_at)
-         values ($1, 'GOODS', $2, $3, $4, true, false, $5) returning id`,
-        [name, category.rows[0]!.id, unit.rows[0]!.id, referencePrice, MADE_AT],
-      );
-      const variant = await client.query<{ id: string }>(
-        `insert into product_variants (product_id, name, is_default, reference_price, is_active,
-                                       created_at)
-         values ($1, 'default', true, $2, true, $3) returning id`,
-        [product.rows[0]!.id, referencePrice, MADE_AT],
-      );
-      await client.query(
-        `insert into price_history (variant_id, price, source, set_by, created_at)
-         select $1, $2, 'HEAD', id, $3 from users where username = $4`,
-        [variant.rows[0]!.id, referencePrice, MADE_AT, E2E_ROLES.HEAD.username],
-      );
-      return variant.rows[0]!.id;
-    }),
-  );
-}
-
-/** A complete never-submitted draft of the owner: `quantity` of the subtype at its price. */
-async function insertDraft(
-  owner: { id: string },
-  branch: string,
-  variantId: string,
-  departmentId: string,
-  quantity: number,
-  price: number,
-): Promise<string> {
-  return withDatabase(async (client) => {
-    const made = await client.query<{ id: string }>(
-      `insert into orders (branch_id, owner_id, created_by, variant_id, department_id, needed_by,
-                           planned_qty, planned_price, payment_type, created_at, updated_at)
-       values ($1, $2, $2, $3, $4, '2031-05-01', $5, $6, 'CASH', now(), now()) returning id`,
-      [branch, owner.id, variantId, departmentId, quantity, price],
-    );
-    return made.rows[0]!.id;
-  });
-}
-
-async function signIn(page: Page, user: { username: string; password: string }): Promise<void> {
-  await page.goto("/login");
-  await page.locator("#username").fill(user.username);
-  await page.locator("#password").fill(user.password);
-  await page.locator("form button[type=submit]").click();
-  await expect(page).toHaveURL(/\/$/);
-}
-
-function scrollsSideways(page: Page) {
-  return page.evaluate(
-    () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
-  );
-}
 
 const t = uz.orders;
 

@@ -612,7 +612,7 @@ Proof that it works, then the real environment and the real data.
   - **Build:** The Phase 2 scenarios of `16-build-order.md` as Playwright tests at both widths: S5, S6, S7, S14, S17, S18, S19; a scenario covered so far only by database tests gets its browser test.
   - **Done when:** All seven are green in CI in both projects (`phone-375`, `desktop-1440`), each test named for its scenario.
 
-- [ ] **9.1b Acceptance run: money and settlement**
+- [x] **9.1b Acceptance run: money and settlement**
   - **Read:** `15-quality-and-acceptance.md` (whole file); `16-build-order.md` (whole file). From the former 8.3: `11-screens-and-ux.md` (Rules for a smooth feel: 13); `01-summary.md` (Quality bar); `15-quality-and-acceptance.md` (Done-check for every phase).
   - **Build:** S1, S2, S3, S9, S12, S13, S16, S20 as Playwright tests at phone and desktop width.
   - **Done when:** All eight are green in CI in both projects.

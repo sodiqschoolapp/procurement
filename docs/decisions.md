@@ -2635,6 +2635,29 @@ Choices made during the build:
 - The four new scenarios and nothing else run with `test.slow()`: each signs in as two to four people.
 - The `e2e` job of `.github/workflows/ci.yml` may run 30 minutes instead of 20: on `main` at 62e88a7 it took 17.5 minutes (Playwright 14.3), and the twenty scenarios add whole flows at two widths. The `checks` job keeps 20. The job's name and steps are unchanged (Decided ahead 0.3, item 1).
 
+### 9.1b Acceptance run: money and settlement (19.10.2026)
+
+The plan's decisions as the plan review of 19.10.2026 confirmed them (none of a Look first kind; its three corrections applied: buying is finished on the screen before every close or send, asserted as `[data-progress]`; S12's percent comes from `overspend()` and the acknowledgment is read in `order_settlements`; `withGuardLock()` releases the lock and restores the amount in a `finally`), and those of the build.
+
+1. Every scenario starts from complete drafts written by the fixture and clicks everything after: Submit, the three approvals, the purchases, the closes and the settlement. Every event, version and money row comes from a real action.
+2. "Branch code CHL": each attempt makes its own branch (`Z` + three capitals) and its own Manager, Principal and Finance user (a second Finance user for S20); S20's orders get the numbers Submit gives (`<code>-<yy>-0001` to `0004`).
+3. A Head made per attempt does the approvals, S3's look, S12's setting and acknowledgment and S16's switch; the scenarios' people read English and the asserted words come from `en.json`.
+4. The guard amount is school-wide: S12 and the guard-amount test of `settings.spec.ts` hold one advisory lock (`withGuardLock()`), and the amount found at the start is written back (the default 100 000 when no row exists, as rows are never deleted). Both tests have a 240-second limit for the wait.
+5. S12: 100 × 5 800 + 20 000 = 600 000, 80 000 over (15.4%); the percent stays at its default 10.
+6. S12 is two orders bought the same way, one closed at 100 000 and one at 50 000.
+7. S9: the cash order bought 100 × 5 100 + 20 000 (Pay 10 000, net "Finance pays …"), the card order 100 × 4 600 + 20 000 by card (the card block's "Left 40 000"); Close is pressed once before both are handled and once after.
+8. S13: Mark not bought with a reason, then Send to settlement; no movement and no balance of the subtype.
+9. S16: no Close on the order page or the list bar; the server's refusal stays the matrix's.
+10. S20: Finance A's Approve dialog is open with the four before Finance B approves the fourth on its page; A's refusal names it, nothing of A is saved, the fourth's Cash given row is B's.
+11. S1's stock is read on the stock page and in `stock_balances`; cash counts through `countOf()` (08's formula, extra costs of type Cash included) and, after a settlement, on the screen.
+12. The fixtures of 9.1a moved to `tests/e2e/acceptance-fixtures.ts`; `newManager()` stays as a wrapper.
+13. `test.slow()` for six scenarios; S20 180 seconds, S12 240 seconds. The `e2e` job keeps its 30 minutes.
+
+Choices made during the build:
+
+- The spec's asserts wait up to 15 seconds (`expect.configure` in `acceptance-money.spec.ts`): a result line follows a server action on the `next dev` server while the other project runs.
+- After a settlement save the test waits for the refreshed count of 0, and after the card confirmation it reloads, before Close: Close sends the versions the screen holds, and the app rightly refuses a stale one. Seen as "Changed a moment ago" under four local workers.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

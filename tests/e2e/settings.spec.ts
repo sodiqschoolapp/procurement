@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { type Page, expect, test } from "@playwright/test";
 
 import uz from "../../src/i18n/messages/uz.json" with { type: "json" };
+import { withGuardLock } from "./acceptance-fixtures";
 import { E2E_ROLES } from "./global-setup";
 
 // Build-plan 1.1, Done when (the by-hand check, automated): "set the school name and see it in
@@ -110,27 +111,33 @@ test("the Head sets the overspend guard amount beside the percent; a negative on
 }, info) => {
   // The settings are one per school: only the desktop project changes this key.
   test.skip(info.project.name !== "desktop-1440", "the phone project changes the reminder hours");
-  await signIn(page, E2E_ROLES.HEAD);
-  await openSettings(page);
+  // S12 of acceptance-money.spec.ts changes the same key: one lock keeps them apart, and the
+  // amount found at the start is put back (plan of 9.1b, decided item 4). The wait for S12 counts
+  // in the test's time.
+  test.setTimeout(240_000);
+  await withGuardLock(async () => {
+    await signIn(page, E2E_ROLES.HEAD);
+    await openSettings(page);
 
-  const field = page.getByLabel(uz.settings.overspendGuardMinAmount);
-  await expect(page.getByLabel(uz.settings.overspendGuardPercent)).toBeVisible();
-  const before = await field.inputValue();
-  const amount = before === "250000" ? "150000" : "250000";
-  await field.fill(amount);
-  await page.getByRole("button", { name: uz.settings.save }).click();
-  await expect(page.getByText(uz.settings.saved)).toBeVisible();
+    const field = page.getByLabel(uz.settings.overspendGuardMinAmount);
+    await expect(page.getByLabel(uz.settings.overspendGuardPercent)).toBeVisible();
+    const before = await field.inputValue();
+    const amount = before === "250000" ? "150000" : "250000";
+    await field.fill(amount);
+    await page.getByRole("button", { name: uz.settings.save }).click();
+    await expect(page.getByText(uz.settings.saved)).toBeVisible();
 
-  await openSettings(page);
-  await expect(page.getByLabel(uz.settings.overspendGuardMinAmount)).toHaveValue(amount);
+    await openSettings(page);
+    await expect(page.getByLabel(uz.settings.overspendGuardMinAmount)).toHaveValue(amount);
 
-  // 08, Overspend guard: whole so'm, 0 or more; "-5" is refused under its field, nothing saved.
-  await page.getByLabel(uz.settings.overspendGuardMinAmount).fill("-5");
-  await page.getByRole("button", { name: uz.settings.save }).click();
-  await expect(page.getByText(uz.errors.field.wrongFormat)).toBeVisible();
-  await openSettings(page);
-  await expect(page.getByLabel(uz.settings.overspendGuardMinAmount)).toHaveValue(amount);
-  await noSideScroll(page);
+    // 08, Overspend guard: whole so'm, 0 or more; "-5" is refused under its field, nothing saved.
+    await page.getByLabel(uz.settings.overspendGuardMinAmount).fill("-5");
+    await page.getByRole("button", { name: uz.settings.save }).click();
+    await expect(page.getByText(uz.errors.field.wrongFormat)).toBeVisible();
+    await openSettings(page);
+    await expect(page.getByLabel(uz.settings.overspendGuardMinAmount)).toHaveValue(amount);
+    await noSideScroll(page);
+  });
 });
 
 for (const role of ["MANAGER", "PRINCIPAL", "FINANCE"] as const) {
