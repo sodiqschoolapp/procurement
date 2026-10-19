@@ -1650,4 +1650,22 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - Every new Analytics query is in the matrix three ways (.claude/rules/tests.md): branch filter, the wall in the SQL with its totals asserted, a department or Manager id of the branch.
 - Russian texts say «заказ», never «заявка» (tests/notification-texts.test.ts).
 
-The next task is 6.6b.
+## 6.6b Analytics: Finance, Payments, Plan vs actual and Settlement speed (19.10.2026, pull request #114)
+
+**Built**
+- Migration 0044: `analytics_spending.has_receipt` (the trip has a receipt file) and `analytics_settlements` (one row per settlement that ended in Closed: first send, close, seconds, Tashkent close date), both written by `refreshAnalytics()`.
+- Domain: `settlementStays()` (approval-stays.ts), `averageDays()` (analytics.ts, one rounding with `averageHours()`).
+- Queries `getFinanceSpending()` (payment types, transfers by supplier, records without a receipt), `getSettlementSpeed()`, `getSettlements()`; `paymentTotals()` shared with `getHeadSpending()`; `settlementsWhere()`; keys `noreceipt`, `settled`, `payment:<TYPE>:nosupplier`; `/analytics/settlements`; download blocks `transfers`, `overspendBranches`, `overspendManagers`, `settlementBranches`, `settlements`.
+- Finance's `/analytics`: Cash, Cash needed soon, Payments, Plan vs actual, Settlement speed; no Spending block.
+
+**Left out, and the task that brings it**
+- Page PDF: 6.7. Purchase register and Planned vs actual reports: 6.8, 6.9.
+
+**What the next sessions must know**
+- For 6.7: Finance's page has five blocks; the Head's, Principal's and Finance's Plan vs actual all read `getPlanVsActual()`.
+- For 6.8 and 6.9: "no receipt" is `analytics_spending.has_receipt = false`, the settlement screen's reading; "by payment type" is `paymentTotals()`.
+- A settlement test order needs an approval event and a `submittedAt` before it, or `writeOrders()` meets a send back for correction as its first entry into Open and throws on negative approval seconds.
+- `db.execute` returns timestamptz as text like `2031-05-05 20:00:00+00`, which `new Date()` cannot be trusted with: select `to_json(<col>)#>>'{}'`.
+- The seed's trips are Cash with no supplier and no receipt; its one settled order closes last month at its send's moment (0 days).
+
+The next task is 6.7.
