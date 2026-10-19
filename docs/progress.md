@@ -1899,4 +1899,21 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - An order written straight into the table as submitted has no Submit event: the stepper and the download show no step names for it. Write a draft and submit it in the grid when a step's name or time is read.
 - `browser.newContext()` does not take the project's viewport: pass `info.project.use.viewport`.
 
-The next task is 9.1b.
+## 9.1b Acceptance run: money and settlement (19.10.2026, pull request #130)
+
+**Built**
+- `tests/e2e/acceptance-money.spec.ts`: S1, S2, S3, S9, S12, S13, S16 and S20 clicked through from complete drafts (Submit, three approvals, purchases, closes, settlement), at 375 px and 1440 px.
+- `tests/e2e/acceptance-fixtures.ts`: the fixtures of 9.1a in one module, plus `newPerson(role, branch, locale)`, `newExtraCostType()`, planned extras and payment type on `insertDraft()`, `countOf()`, `statusOf()`, `stockOf()`, `withGuardLock()`, `setGuardAmount()`.
+- `settings.spec.ts`: its guard-amount test runs inside `withGuardLock()`.
+
+**Left out, and the task that brings it**
+- S4, S8, S10, S11, S15: 9.1c. The accessibility pass and S1 with the keyboard only: 9.1d.
+
+**What the next sessions must know**
+- For 9.1c, 9.1d: import the fixtures from `acceptance-fixtures.ts`; each scenario makes its own branch and one person per role (`newScene()` in `acceptance-money.spec.ts` shows the pattern).
+- A test that changes `overspend_guard_min_amount` runs inside `withGuardLock()`: it serialises with S12 and the settings test and puts the amount back.
+- After a settlement save, wait for the refreshed count (`[data-cash-order] [data-fact="count"]` reads 0) or reload before Close: Close sends the versions the screen holds, and a stale one is refused "Changed a moment ago".
+- 08's orange is `data-colour="amber"` on the labels.
+- The 16 tests take about 5.5 minutes at two workers locally; run them at two workers, as CI does: four workers on this machine time out sign-ins.
+
+The next task is 9.1c.
