@@ -67,9 +67,14 @@ export async function transferBranchChoices(userId: string): Promise<IssueBranch
   return branchChoices(userId, "stock.transfer");
 }
 
+/** The active branches the user may start a count in (plan of 7.3). */
+export async function countBranchChoices(userId: string): Promise<IssueBranch[]> {
+  return branchChoices(userId, "stock.start_count");
+}
+
 type StockPermission = Extract<
   Permission,
-  "stock.issue" | "stock.ask_write_off" | "stock.transfer"
+  "stock.issue" | "stock.ask_write_off" | "stock.transfer" | "stock.start_count"
 >;
 
 async function branchChoices(userId: string, permission: StockPermission): Promise<IssueBranch[]> {

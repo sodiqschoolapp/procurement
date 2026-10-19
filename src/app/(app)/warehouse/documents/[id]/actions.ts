@@ -3,6 +3,10 @@
 import { revalidatePath } from "next/cache";
 
 import {
+  type SaveCountedQuantitiesResult,
+  saveCountedQuantities,
+} from "@/features/warehouse/actions/count";
+import {
   type ReceiveTransferResult,
   receiveTransfer,
 } from "@/features/warehouse/actions/receive-transfer";
@@ -39,6 +43,21 @@ export async function receiveTransferAction(
   input: unknown,
 ): Promise<ActionResult<ReceiveTransferResult>> {
   const result = await receiveAction(input);
+  if (result.ok) revalidatePath("/warehouse", "layout");
+  return result;
+}
+
+// Type the counted quantities of a count (09 Other documents, Stock count; plan of 7.3): the
+// definition's wrapper checks everything again: `stock.start_count` on the count's branch, the
+// status and the lines under the lock.
+
+const saveCountedAction = serverAction(saveCountedQuantities);
+
+/** Saves the counted quantities typed on a waiting count. */
+export async function saveCountedQuantitiesAction(
+  input: unknown,
+): Promise<ActionResult<SaveCountedQuantitiesResult>> {
+  const result = await saveCountedAction(input);
   if (result.ok) revalidatePath("/warehouse", "layout");
   return result;
 }

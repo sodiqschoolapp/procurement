@@ -8,6 +8,8 @@ import {
   type DocumentStatus,
   type DocumentType,
   REVERSIBLE_STATUSES,
+  countDifference,
+  countTypingAllowed,
   reverseAllows,
   transferReceiveMove,
   transferShort,
@@ -48,6 +50,11 @@ import { documentWall } from "../document-wall";
 // A transfer is seen by its sending and its receiving branch (documentWall(); plan of 7.2, decided
 // item 3, Look first). Its lines read no stock at all: the sender's stock is not the receiver's to
 // see (review of the plan of 7.2, must fix 1).
+// - `canCount`: a count, `stock.start_count` on its branch and countTypingAllowed(), the function
+//   the save action asks (plan of 7.3). A count's lines carry the stock at start (`qty`), the
+//   counted quantity and countDifference(), and read no stock of now: the difference is against
+//   the stock at start only (review of the plan of 7.3, must fix 3). A count is of its own branch
+//   only (documentWall()).
 // Document and lines in one snapshot.
 
 export type DocumentLine = {
@@ -58,10 +65,14 @@ export type DocumentLine = {
   /** numeric(14,3) text as stored. */
   qty: string;
   /**
-   * The branch's stock of this subtype now, "0" when it never had any; null on a transfer, whose
-   * lines read no stock.
+   * The branch's stock of this subtype now, "0" when it never had any; null on a transfer and a
+   * count, whose lines read no stock.
    */
   inStock: string | null;
+  /** A count line's counted quantity; null while not counted, and on the other types. */
+  countedQty: string | null;
+  /** A count line's countDifference(); null while not counted, and on the other types. */
+  difference: string | null;
   /** What arrived of a transfer's line, once received; null otherwise. */
   receivedQty: string | null;
   /** What did not arrive of it (transferShort()), once received; null otherwise. */
@@ -102,6 +113,7 @@ export type StockDocument = {
   canReverse: boolean;
   canDownloadNote: boolean;
   canReceive: boolean;
+  canCount: boolean;
 };
 
 const idInput = z.uuid();
@@ -155,6 +167,8 @@ export async function getStockDocument(
       .where(and(eq(stockDocuments.id, parsed.data), documentWall(actor)));
     if (!document) return null;
     const transfer = document.type === "TRANSFER";
+    const count = document.type === "COUNT";
+    const noStock = transfer || count;
     const lines = await tx
       .select({
         id: stockDocumentLines.id,
@@ -162,9 +176,10 @@ export async function getStockDocument(
         subtypeName: productVariants.name,
         isDefault: productVariants.isDefault,
         qty: stockDocumentLines.qty,
-        inStock: sql<string | null>`case when ${transfer} then null
+        inStock: sql<string | null>`case when ${noStock} then null
           else coalesce(${stockBalances.qty}, 0)::text end`,
         receivedQty: stockDocumentLines.receivedQty,
+        countedQty: stockDocumentLines.countedQty,
         allowsDecimals: units.allowDecimal,
         unitShortName: units.shortName,
       })
@@ -177,8 +192,9 @@ export async function getStockDocument(
         and(
           eq(stockBalances.variantId, stockDocumentLines.variantId),
           eq(stockBalances.branchId, document.branchId),
-          // A transfer's lines join no stock (must fix 1 of the plan review).
-          sql`not ${transfer}`,
+          // A transfer's and a count's lines join no stock (must fix 1 of the plan review of 7.2;
+          // must fix 3 of the plan review of 7.3).
+          sql`not ${noStock}`,
         ),
       )
       .where(eq(stockDocumentLines.documentId, document.id))
@@ -191,6 +207,7 @@ export async function getStockDocument(
       lines: lines.map(({ isDefault, subtypeName, ...line }) => ({
         ...line,
         shortQty: line.receivedQty === null ? null : transferShort(line.qty, line.receivedQty),
+        difference: count ? countDifference(line.qty, line.countedQty) : null,
         subtypeName: isDefault ? null : subtypeName,
       })),
       canDecide:
@@ -210,6 +227,10 @@ export async function getStockDocument(
         receiving !== null &&
         decide("stock.receive_transfer", actor, receiving) === "allow" &&
         transferReceiveMove(document.status) !== null,
+      canCount:
+        count &&
+        decide("stock.start_count", actor, target) === "allow" &&
+        countTypingAllowed(document.status),
     };
   });
 }
