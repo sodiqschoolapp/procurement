@@ -25,7 +25,7 @@ describe("the language choice on /profile (A2)", () => {
   it("names each language in its own words, the person's own one chosen", () => {
     const html = wrap(<LanguageChoice current="ru" />);
     expect(html).toContain('aria-label="Language"');
-    for (const name of ["O&#x27;zbekcha", "Русский", "English"]) expect(html).toContain(name);
+    for (const name of ["Oʻzbekcha", "Русский", "English"]) expect(html).toContain(name);
     expect(html).toMatch(/aria-checked="true"[^>]*>Русский/);
     expect(html.match(/aria-checked="true"/g)).toHaveLength(1);
   });

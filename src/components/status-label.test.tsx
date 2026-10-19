@@ -181,7 +181,7 @@ describe("colour labels (08 The three colours; review correction 2)", () => {
     expect(visibleText(html)).toBe("Остаток 1 so'm");
     expect(
       visibleText(render(<ColourLabel label="number" colour="red" difference="-1" />, "uz")),
-    ).toBe("Ko'p 1");
+    ).toBe("Koʻp 1");
   });
 
   it("a set's count in all three languages (plan of 3.8, decided item 2)", () => {
