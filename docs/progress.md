@@ -1668,4 +1668,21 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - `db.execute` returns timestamptz as text like `2031-05-05 20:00:00+00`, which `new Date()` cannot be trusted with: select `to_json(<col>)#>>'{}'`.
 - The seed's trips are Cash with no supplier and no receipt; its one settled order closes last month at its send's moment (0 days).
 
-The next task is 6.7.
+## 6.7 Analytics as a PDF (19.10.2026, pull request #115)
+
+**Built**
+- `GET /analytics/report?<the page's address>`: the user's own Analytics page as a PDF (A4 landscape, letterhead, period, summary time, filters, who and when on every page, page n of m; no signature lines), in the user's language.
+- `readAnalyticsPage()` in `src/features/analytics/page-data.ts`, read by the page and the route; `analyticsReport()` (`download/page-report.ts`) builds the sections: title, notes, headline numbers, and every table as its Excel sheet; `writeAnalyticsPdf()` (`download/pdf.tsx`) draws them.
+- The "Download PDF" link at the top of `/analytics`, from the parsed address.
+
+**Left out, and the task that brings it**
+- The drill-down lists in the PDF: not built (decided item 3). Reports: 6.8, 6.9. The react-pdf defect after a Russian PDF: the fix task proposed after 3.5.
+
+**What the next sessions must know**
+- A new Analytics block goes into `readAnalyticsPage()`, the page, and a section of `analyticsReport()`; its tables are its Excel sheets.
+- `sheets.ts` exports `translators()` and `heading()`; a table's captions are its heading lines minus the file's.
+- A route test passes the branch cookie with `request.cookies.set(BRANCH_COOKIE, …)` on `downloadRequest()`.
+- Locally the browser tests failed at sign-in on `main`'s tests too (6.5a), with a throwaway `BETTER_AUTH_SECRET`; CI's `e2e` is the gate.
+- Never run two vitest runs at once: they share the test database and fail across the board.
+
+The next task is 6.8.
