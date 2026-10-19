@@ -27,12 +27,16 @@ export const STAY_DECISIONS = [
 ] as const satisfies readonly OrderEventType[];
 export type StayDecision = (typeof STAY_DECISIONS)[number];
 
-/** One event of an order's history, as the stays read it. */
-export type StayEvent = {
+/** One move of an order's history: what the settlements read (plan of 6.6b, decided item 3). */
+export type MoveEvent = {
   type: OrderEventType;
   from: RequestStatus;
   to: RequestStatus;
   at: Date;
+};
+
+/** One event of an order's history, as the stays read it. */
+export type StayEvent = MoveEvent & {
   /** The action's reason (06 rule 3), on a send back or a reject. */
   reason: string | null;
   /** The user who made the move (plan of 6.5a, decided item 3, Look first). */
@@ -72,9 +76,9 @@ const isDecision = (type: OrderEventType): type is StayDecision =>
  * that leaves the status the order is in (two moves of one order can share a moment in a test with
  * a frozen clock).
  */
-function inOrder(events: readonly StayEvent[]): StayEvent[] {
+function inOrder<T extends MoveEvent>(events: readonly T[]): T[] {
   const left = [...events].sort((a, b) => a.at.getTime() - b.at.getTime());
-  const ordered: StayEvent[] = [];
+  const ordered: T[] = [];
   // The history starts at the status no other move of its first moment led to.
   const firstMoment = left.filter((event) => event.at.getTime() === left[0]?.at.getTime());
   let status: RequestStatus | null =
@@ -89,7 +93,7 @@ function inOrder(events: readonly StayEvent[]): StayEvent[] {
       (event) => event.at.getTime() === first && event.from !== event.to && event.from === status,
     );
     if (index === -1) index = 0;
-    const [event] = left.splice(index, 1) as [StayEvent];
+    const [event] = left.splice(index, 1) as [T];
     ordered.push(event);
     if (event.from !== event.to) status = event.to;
   }
@@ -138,4 +142,37 @@ export function approvalStays(events: readonly StayEvent[]): Stay[] {
     });
   }
   return stays;
+}
+
+/** One settlement of an order: from its first Send to settlement to the close that ended it. */
+export type Settlement = { sentAt: Date; closedAt: Date; seconds: bigint };
+
+/**
+ * The settlements of one order, oldest first (10 Finance, Settlement speed: "Average days from
+ * 'Send to settlement' to Closed"; 06 Allowed moves; plan of 6.6b, decided item 3, Look first).
+ * A settlement starts with the first Send to settlement since the order last reached Closed (or
+ * ever) and ends with its next move into Closed, whoever closes: a Send back for correction does
+ * not end it, so the days back at Open count, and a Close (exact match) after it ends it. A Reopen
+ * ends nothing; the next Send to settlement starts a new one. A close with no send since the last
+ * close is none; a settlement still running is left out. Open and Waiting for settlement have no
+ * other way out (06), so nothing else ends one.
+ */
+export function settlementStays(events: readonly MoveEvent[]): Settlement[] {
+  const settlements: Settlement[] = [];
+  let sentAt: Date | null = null;
+  for (const event of inOrder(events)) {
+    if (event.from === event.to) continue;
+    if (event.type === "SEND_TO_SETTLEMENT" && sentAt === null) sentAt = event.at;
+    if (event.to === "CLOSED") {
+      if (sentAt !== null) {
+        settlements.push({
+          sentAt,
+          closedAt: event.at,
+          seconds: secondsBetween(sentAt, event.at),
+        });
+      }
+      sentAt = null;
+    }
+  }
+  return settlements;
 }

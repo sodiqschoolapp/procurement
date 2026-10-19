@@ -13,6 +13,7 @@ import {
   periodChoices,
   periodOf,
   WAITING_GROUP_KEYS,
+  averageDays,
   averageHours,
   averageSom,
   ninetyDaysSince,
@@ -277,6 +278,19 @@ describe("the 6.4b numbers (10 Analytics, Head, Prices and Approval speed; plan 
     expect(averageHours(0n, 0)).toBeNull();
     expect(() => averageHours(-1n, 1)).toThrow(RangeError);
     expect(() => averageHours(1n, -1)).toThrow(RangeError);
+  });
+
+  it("averageDays: Σ seconds ÷ count in days of 86 400 s, half up to one decimal (10 Finance, Settlement speed; plan of 6.6b, decided item 3)", () => {
+    // 1 day and 2 days 12 hours: 302 400 s ÷ 2 = 1.75 days, half up 1.8.
+    expect(averageDays(86_400n + 216_000n, 2)).toBe("1.8");
+    expect(averageDays(86_400n, 1)).toBe("1.0");
+    // 4 hours 48 minutes is 0.2 of a day.
+    expect(averageDays(17_280n, 1)).toBe("0.2");
+    expect(averageDays(0n, 2)).toBe("0.0");
+    expect(averageDays(0n, 0)).toBeNull();
+    expect(() => averageDays(-1n, 1)).toThrow(RangeError);
+    expect(() => averageDays(1n, -1)).toThrow(RangeError);
+    expect(() => averageDays(1 as unknown as bigint, 1)).toThrow(RangeError);
   });
 
   it("averageHours of all branches is of the whole set, not a mean of branch means (review correction 2)", () => {

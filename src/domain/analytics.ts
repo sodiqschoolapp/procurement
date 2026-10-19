@@ -254,6 +254,21 @@ export function ninetyDaysSince(today: BusinessDate): BusinessDate {
  * own sum and count, never as a mean of means (review of the plan, correction 2).
  */
 export function averageHours(totalSeconds: bigint, count: number): string | null {
+  return averageIn(totalSeconds, count, 3600);
+}
+
+/**
+ * The average of `count` settlements of `totalSeconds` together, in days of 86 400 seconds, half
+ * up to one decimal, the rounding of `averageHours()` (10 Finance, Settlement speed: "Average days
+ * from 'Send to settlement' to Closed"; plan of 6.6b, decided item 3, Look first); `null` for no
+ * settlement. Each set from its own sum and count, as `averageHours()`.
+ */
+export function averageDays(totalSeconds: bigint, count: number): string | null {
+  return averageIn(totalSeconds, count, 86_400);
+}
+
+/** Σ seconds ÷ (count × unit), half up to one decimal: the one rounding of both averages. */
+function averageIn(totalSeconds: bigint, count: number, unit: number): string | null {
   if (typeof totalSeconds !== "bigint" || totalSeconds < 0n) {
     throw new RangeError("Seconds are a whole number (bigint), 0 or more.");
   }
@@ -262,7 +277,7 @@ export function averageHours(totalSeconds: bigint, count: number): string | null
   }
   if (count === 0) return null;
   return new Exact(totalSeconds.toString())
-    .dividedBy(count * 3600)
+    .dividedBy(count * unit)
     .toDecimalPlaces(1, Exact.ROUND_HALF_UP)
     .toFixed(1);
 }
