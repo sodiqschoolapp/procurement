@@ -187,6 +187,12 @@ describe("everything that went in and out in the dates (10 Reports, Stock moveme
 
     const owner = await getStockMovementsReport(scene.manager.id, params, "all");
     expect(owner.rows.map((row) => row.orderNumber)).toEqual([record.number]);
+    const byHead = await getStockMovementsReport(
+      head.id,
+      { range: RANGE, filters: { ...NO_ANALYTICS_FILTERS, branch: scene.branch.id } },
+      "all",
+    );
+    expect(byHead.rows.map((row) => row.orderNumber)).toEqual([record.number]);
     const seen = await getStockMovementsReport(colleague.id, params, "all");
     expect(seen.rows.map((row) => [row.type, row.orderId, row.orderNumber])).toEqual([
       ["RECEIPT", null, null],

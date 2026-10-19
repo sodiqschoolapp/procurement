@@ -8,6 +8,8 @@ import {
   buyingEvent,
   refreshNow,
   spendingScene,
+  stockDocument,
+  stocked,
 } from "../../../../tests/helpers/analytics";
 import { setClock } from "../../../../tests/helpers/clock";
 import { insertOrder } from "../../../../tests/helpers/orders";
@@ -16,12 +18,15 @@ import { insertUser } from "../../../../tests/helpers/users";
 import { NO_ANALYTICS_FILTERS } from "../../analytics/period-params";
 import { orderListFilters } from "../report-params";
 
+import { getDepartmentUseReport } from "./department-use-report";
 import { getPlanVsActualReport } from "./plan-vs-actual-report";
 import { getPurchaseRegister } from "./purchase-register";
 import { getSpendingReport } from "./spending-report";
+import { getStockMovementsReport } from "./stock-movements-report";
+import { getStockReport } from "./stock-report";
 
-// The branch wall on each report of 6.8 (build-plan 6.8, Done when: "A database test for the
-// branch wall on each report"; 15-quality-and-acceptance.md, Test layers: "each action × each role
+// The branch wall on each report of 6.8 and 6.9a (build-plan 6.8, Done when: "A database test for
+// the branch wall on each report"; build-plan 6.9, Done when: "the branch wall on each report"; 15-quality-and-acceptance.md, Test layers: "each action × each role
 // × own branch and other branch", and S7: "The same holds for stock and reports";
 // 03-roles-and-permissions.md, Permission matrix "Export to Excel, download PDF, print": every
 // role, for what the role can see; rule 1: another branch is "Not found"). Each report is asked
@@ -164,6 +169,104 @@ describePermissionMatrix("Order register, the branch wall in the SQL", {
     // The count beside the file keeps to the same wall.
     expect(totals.count).toBe(file.orders.length);
     if (!file.orders.some((each) => each.id === order.id)) {
+      throw new AuthorizationError("not_found");
+    }
+  },
+});
+
+/**
+ * Stock of the branch: 4 received in May at 1 000, 1 of it issued to its department on 3 May
+ * (6.9a), the summary refreshed.
+ */
+async function stockIn(branchId: string) {
+  setClock("2031-05-15T05:00:00Z");
+  const scene = await spendingScene(branchId);
+  const variantId = await stocked(scene, { qty: "4", unitCost: 1_000n });
+  const documentId = await stockDocument(scene, {
+    type: "ISSUE",
+    docDate: "2031-05-03",
+    lines: [{ variantId, qty: "1" }],
+  });
+  await refreshNow();
+  return { scene, variantId, documentId };
+}
+
+describePermissionMatrix("Stock on hand with the branch filter", {
+  permission: "data.view",
+  async run({ user, branchId }) {
+    const { variantId } = await stockIn(branchId);
+    const report = await getStockReport(user.id, params(branchId), "all");
+    expect(report.lines.map((row) => row.variantId)).toEqual([variantId]);
+    expect(report.branches.map((row) => [row.id, row.value, row.purchases])).toEqual([
+      [branchId, 3_000n, 4_000n],
+    ]);
+  },
+});
+
+describePermissionMatrix("Stock on hand, the branch wall in the SQL", {
+  permission: "data.view",
+  async run({ user, branchId }) {
+    const { variantId } = await stockIn(branchId);
+    const report = await getStockReport(user.id, params(null), "all");
+    // The totals keep to the same wall as the lines.
+    expect(report.all.value).toBe(report.lines.reduce((sum, row) => sum + row.value, 0n));
+    expect(report.all.purchases).toBe(
+      report.branches.reduce((sum, row) => sum + row.purchases, 0n),
+    );
+    expect(new Set(report.lines.map((row) => row.branchId))).toEqual(
+      new Set(report.branches.filter((row) => row.value > 0n).map((row) => row.id)),
+    );
+    if (!report.lines.some((row) => row.branchId === branchId && row.variantId === variantId)) {
+      throw new AuthorizationError("not_found");
+    }
+  },
+});
+
+describePermissionMatrix("Stock movements with the branch filter", {
+  permission: "data.view",
+  async run({ user, branchId }) {
+    const { documentId } = await stockIn(branchId);
+    const report = await getStockMovementsReport(user.id, params(branchId), "all");
+    expect(report.rows.map((row) => [row.type, row.documentId])).toEqual([
+      // Newest first: received on 15 May, issued on 3 May.
+      ["RECEIPT", null],
+      ["ISSUE", documentId],
+    ]);
+  },
+});
+
+describePermissionMatrix("Stock movements, the branch wall in the SQL", {
+  permission: "data.view",
+  async run({ user, branchId }) {
+    const { documentId } = await stockIn(branchId);
+    const report = await getStockMovementsReport(user.id, params(null), "all");
+    expect(report.count).toBe(report.rows.length);
+    if (!report.rows.some((row) => row.documentId === documentId)) {
+      throw new AuthorizationError("not_found");
+    }
+  },
+});
+
+describePermissionMatrix("Use by department with the branch filter", {
+  permission: "data.view",
+  async run({ user, branchId }) {
+    const { scene } = await stockIn(branchId);
+    const report = await getDepartmentUseReport(user.id, params(branchId), "all");
+    expect(report.departments.map((row) => [row.id, row.value])).toEqual([
+      [scene.department.id, 1_000n],
+    ]);
+  },
+});
+
+describePermissionMatrix("Use by department, the branch wall in the SQL", {
+  permission: "data.view",
+  async run({ user, branchId }) {
+    const { scene } = await stockIn(branchId);
+    const report = await getDepartmentUseReport(user.id, params(null), "all");
+    // The total and the lines keep to the same wall as the departments.
+    expect(report.total).toBe(report.departments.reduce((sum, row) => sum + row.value, 0n));
+    expect(report.total).toBe(report.lines.reduce((sum, row) => sum + row.value, 0n));
+    if (!report.departments.some((row) => row.id === scene.department.id)) {
       throw new AuthorizationError("not_found");
     }
   },
