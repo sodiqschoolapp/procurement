@@ -2270,7 +2270,8 @@
         "ISSUE": "Bu mahsulotlar omborga qaytadi va berish storno qilingan deb belgilanadi. Buni qaytarib bo'lmaydi.",
         "RETURN": "Bu mahsulotlar ombordan yana chiqadi va qaytarish storno qilingan deb belgilanadi. Buni qaytarib bo'lmaydi.",
         "WRITE_OFF": "Bu mollar omborga qaytadi, hisobdan chiqarish esa storno deb belgilanadi. Buni bekor qilib bo'lmaydi.",
-        "DIRECT_ENTRY": "Bu tovarlar ombordan chiqadi va to'g'ridan-to'g'ri kiritish bekor qilingan deb belgilanadi. Buni qaytarib bo'lmaydi."
+        "DIRECT_ENTRY": "Bu tovarlar ombordan chiqadi va to'g'ridan-to'g'ri kiritish bekor qilingan deb belgilanadi. Buni qaytarib bo'lmaydi.",
+        "COUNT": "Har bir mahsulot qoldigʻi tuzatish miqdoriga qaytariladi va inventarizatsiya bekor qilingan deb belgilanadi. Buni qaytarib boʻlmaydi."
       },
       "held": "Bo'limda faqat {held} bor: sababini yozing.",
       "short": "{item}: omborda faqat {left} qoldi. Hech narsa storno qilinmadi.",

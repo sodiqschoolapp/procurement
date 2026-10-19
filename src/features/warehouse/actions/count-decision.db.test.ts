@@ -12,8 +12,11 @@ import { setClock } from "../../../../tests/helpers/clock";
 import { insertItem } from "../../../../tests/helpers/orders";
 import { receive } from "../../../../tests/helpers/stock-documents";
 import { insertUser } from "../../../../tests/helpers/users";
+import { getStockDocument } from "../queries/document";
+import { getReversePreview } from "../queries/reverse-preview";
 import { saveCountedQuantities, startCount } from "./count";
 import { decideCount } from "./count-decision";
+import { reverseStockDocument } from "./reverse";
 
 // The Head's decision on a stock count (build plan 7.4, Done when; plan of 7.4, Tests). Spec:
 // 09-warehouse.md (Movement types: "Correction after a stock count | Up or down | Manager asks |
@@ -435,5 +438,95 @@ describe("decideCount: the decision goes back to the Manager (10 Notifications)"
         params: { number: count.number, branch: branch.code, kind: "COUNT", outcome: "approved" },
       },
     ]);
+  });
+});
+
+describe("Reverse of an approved count (Decided ahead, question 19: the Head only; plan of 7.4, decided item 7)", () => {
+  it("the Head reverses it: one REVERSAL per CORRECTION, the stock back to the start, the count REVERSED", async () => {
+    const down = await inStock("10");
+    const up = await inStock("4");
+    const count = await started();
+    await counted(count.documentId, { [down]: "7", [up]: "6" });
+    expect((await approve(count.documentId)).ok).toBe(true);
+
+    const preview = await getReversePreview(head.id, count.documentId);
+    expect(preview.lines.map((line) => line.qty).sort()).toEqual(["-3", "2"]);
+    const reversed = await runAction(reverseStockDocument, head.id, {
+      documentId: count.documentId,
+      reason: "Sanoqda xato (sinov)",
+    });
+    expect(reversed).toMatchObject({ ok: true });
+    expect((await documentOf(count.documentId)).status).toBe("REVERSED");
+    expect((await movementsOf(count.documentId)).map((m) => m.type)).toEqual([
+      "CORRECTION",
+      "CORRECTION",
+      "REVERSAL",
+      "REVERSAL",
+    ]);
+    expect((await balanceOf(branch.id, down))?.qty).toBe("10.000");
+    expect((await balanceOf(branch.id, up))?.qty).toBe("4.000");
+  });
+
+  it("the Manager who started it, with RETURN_REVERSE on, is refused; the page offers it to the Head only", async () => {
+    const item = await inStock("10");
+    const count = await started();
+    await counted(count.documentId, { [item]: "7" });
+    expect((await approve(count.documentId)).ok).toBe(true);
+    const refused = await runAction(reverseStockDocument, manager.id, {
+      documentId: count.documentId,
+      reason: "Sanoqda xato (sinov)",
+    });
+    expect(refused.ok ? null : refused.error.code).toBe("forbidden");
+    await expect(getReversePreview(manager.id, count.documentId)).rejects.toMatchObject({
+      kind: "forbidden",
+    });
+    expect((await getStockDocument(manager.id, count.documentId))?.canReverse).toBe(false);
+    expect((await getStockDocument(head.id, count.documentId))?.canReverse).toBe(true);
+    expect((await balanceOf(branch.id, item))?.qty).toBe("7.000");
+  });
+
+  it("a count with no differences moved nothing: Reverse is not offered (plan review, should fix 5)", async () => {
+    const item = await inStock("10");
+    const count = await started();
+    await counted(count.documentId, { [item]: "10" });
+    expect((await approve(count.documentId)).ok).toBe(true);
+    expect((await documentOf(count.documentId)).status).toBe("POSTED");
+    expect(await movementsOf(count.documentId)).toEqual([]);
+    expect((await getStockDocument(head.id, count.documentId))?.canReverse).toBe(false);
+  });
+});
+
+describe("the count's page offers what the actions allow (getStockDocument; plan of 7.4)", () => {
+  it("the Head may refuse an incomplete count and approve a complete one; a Manager may neither; a sent-back line is marked", async () => {
+    const item = await inStock("10");
+    const second = await inStock("3");
+    const count = await started();
+    await counted(count.documentId, { [item]: "9" });
+    const incomplete = await getStockDocument(head.id, count.documentId);
+    expect(incomplete).toMatchObject({ canDecide: true, canApprove: false, countAsked: false });
+
+    await counted(count.documentId, { [second]: "3" });
+    expect(await getStockDocument(head.id, count.documentId)).toMatchObject({
+      canDecide: true,
+      canApprove: true,
+      countAsked: true,
+      countChanges: 1,
+    });
+    expect(await getStockDocument(manager.id, count.documentId)).toMatchObject({
+      canDecide: false,
+      canApprove: false,
+      countAsked: true,
+    });
+
+    await issue(branch.id, second, "1");
+    expect((await approve(count.documentId)).ok).toBe(true);
+    const sentBack = await getStockDocument(manager.id, count.documentId);
+    expect(sentBack?.countAsked).toBe(false);
+    const lines = await linesOf(count.documentId);
+    const marks = Object.fromEntries(sentBack!.lines.map((line) => [line.id, line.recount]));
+    expect(marks).toEqual({
+      [lineOf(lines, item).id]: false,
+      [lineOf(lines, second).id]: true,
+    });
   });
 });

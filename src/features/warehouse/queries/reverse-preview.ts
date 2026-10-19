@@ -4,6 +4,7 @@ import * as z from "zod";
 import {
   type DocumentStatus,
   type DocumentType,
+  countCorrection,
   overReturn,
   reverseAllows,
 } from "@/domain/stock-documents";
@@ -25,7 +26,10 @@ export type ReverseLine = {
   productName: string;
   /** null for the hidden default subtype of a product without subtypes. */
   subtypeName: string | null;
-  /** numeric(14,3) text as stored. */
+  /**
+   * numeric(14,3) text as stored; on a count, the line's correction (countDifference(), signed),
+   * and only the lines whose correction is not 0 (plan of 7.4).
+   */
   qty: string;
   unitShortName: string;
   /** On an issue whose line is more than the department holds: what it holds; else null. */
@@ -87,10 +91,12 @@ export async function getReversePreview(
       variant_name: string;
       is_default: boolean;
       qty: string;
+      counted_qty: string | null;
       unit_short_name: string;
     }>(sql`
       select l.id, l.variant_id, p.name as product_name, v.name as variant_name,
-        v.is_default, l.qty::text as qty, u.short_name as unit_short_name
+        v.is_default, l.qty::text as qty, l.counted_qty::text as counted_qty,
+        u.short_name as unit_short_name
       from stock_document_lines l
       join product_variants v on v.id = l.variant_id
       join products p on p.id = v.product_id
@@ -113,9 +119,24 @@ export async function getReversePreview(
       type: document.type,
       status: document.status,
       departmentName: document.department_name,
-      lines: lines.rows.map((line) => {
+      lines: lines.rows.flatMap((line) => {
+        if (document.type === "COUNT") {
+          const correction = countCorrection(line.qty, line.counted_qty);
+          if (!correction) return [];
+          return [
+            {
+              id: line.id,
+              variantId: line.variant_id,
+              productName: line.product_name,
+              subtypeName: line.is_default ? null : line.variant_name,
+              qty: correction.qtyDelta,
+              unitShortName: line.unit_short_name,
+              held: null,
+            },
+          ];
+        }
         const holds = received?.get(line.variant_id) ?? null;
-        return {
+        const each: ReverseLine = {
           id: line.id,
           variantId: line.variant_id,
           productName: line.product_name,
@@ -124,6 +145,7 @@ export async function getReversePreview(
           unitShortName: line.unit_short_name,
           held: holds !== null && overReturn(line.qty, holds) ? holds : null,
         };
+        return [each];
       }),
     };
   });
