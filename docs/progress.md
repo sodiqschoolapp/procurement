@@ -1732,4 +1732,19 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - Stock movements, the two in-lines and Use by department agree for the same dates and filters (`stock-movements-report.db.test.ts`); a change to how a movement is dated changes `MOVEMENT_DATE` and `analytics_stock_moves.moved_on` together.
 - `stocked()` writes a RECEIPT with no purchase: the Stock on hand report counts it under Purchases on the clock's day, so a test that wants no in-line sets the clock before the dates first.
 
-The next task is 6.9b.
+## 6.9b Reports: Price history, Money with managers and Approval speed (19.10.2026, pull request #119)
+
+**Built**
+- Three tabs on `/reports` (ten in all): Price history (`getPriceHistoryReport()`: one subtype, `variant=` or the most bought in the dates inside the wall; a line chart with a point per priced record of `analytics_spending`, the records 25 a page, the `HEAD` reference prices in force on the first day and set in the dates), Money with managers (`getMoneyWithManagersReport()`: `analytics_cash` under `cashWhere(…, owed)`, `managerBalances()` per owner, the three age bands, the orders), Approval speed (`getApprovalSpeedReport()`: `analytics_steps` decided in the dates, `averageHours()` per branch and step and for all, the stays).
+- `/reports/download?report=prices|cash|speed`; `variant` in `ReportParams`; `heading()` of the report sheets takes `null` dates for a report of now; `tests/helpers/reports.ts` `headPrice()`.
+- A report table's card has `min-w-0`, so at 375 px its table scrolls inside the box (the Spending grid could push the page sideways on `main` too).
+
+**Left out, and the task that brings it**
+- Nothing of this task. A PDF of a report: not asked. Search: 6.10.
+
+**What the next sessions must know**
+- Money with managers as a report is `data.view` (every role, own branches); the `/money` page stays `money.managers` (plan of 6.9b, decided item 1, Look first, waiting for the owner on issue #9).
+- Every report but the Order register, Purchase register and the stock reports reads the summary and shows its time (`SUMMARY_REPORTS` of `page.tsx`).
+- `PURCHASE` rows of `price_history` carry no branch and keep cancelled prices: a reader of prices by branch reads `analytics_spending` instead.
+
+The next task is 6.10.

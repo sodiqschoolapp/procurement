@@ -8,6 +8,8 @@ import { AuthorizationError } from "@/server/authorize";
 import {
   bought,
   buyingEvent,
+  decided,
+  moneyOn,
   refreshNow,
   spendingScene,
   stockDocument,
@@ -23,8 +25,8 @@ import { GET } from "./route";
 // The report files through their route (build-plan 6.8: "Excel export with real numbers and
 // dates"; Done when: "export the spending report and sum a column in Excel"; 10-notifications-
 // analytics-reports.md, Reports; 03-roles-and-permissions.md rule 1 and the matrix row "Export to
-// Excel, download PDF, print"; plan of 6.8, decided items 2, 8 and 11; build-plan 6.9a). 15 May
-// 2031 in Tashkent.
+// Excel, download PDF, print"; plan of 6.8, decided items 2, 8 and 11; build-plan 6.9a and 6.9b;
+// plan of 6.9b, decided item 12). 15 May 2031 in Tashkent.
 
 const AT = "2031-05-15T05:00:00Z";
 const MAY = { first: "2031-05-01", last: "2031-05-15" };
@@ -204,6 +206,78 @@ describe("GET /reports/download (10 Reports: exports to Excel)", () => {
     expect(byItem.total.at(-1)).toBe(1_667);
   });
 
+  it("the three reports of 6.9b: their sheets, money and dates as numbers and dates, hours as on screen", async () => {
+    setClock(AT);
+    const scene = await spendingScene();
+    // Price history: two records of one subtype; Money with managers: 40 000 held since 2 May.
+    const record = await bought(scene, { purchasedOn: "2031-05-02", unitPrice: "1500" });
+    await moneyOn(record, scene.manager.id, { amount: 40_000n, occurredOn: "2031-05-02" });
+    // Approval speed: 3 hours at the Principal step on 3 May.
+    await decided(scene, "PENDING_FINANCE", [
+      { type: "SUBMIT", from: "DRAFT", to: "PENDING_HEAD", at: "2031-05-03T03:00:00Z" },
+      {
+        type: "APPROVE",
+        from: "PENDING_HEAD",
+        to: "PENDING_PRINCIPAL",
+        at: "2031-05-03T04:00:00Z",
+      },
+      {
+        type: "APPROVE",
+        from: "PENDING_PRINCIPAL",
+        to: "PENDING_FINANCE",
+        at: "2031-05-03T07:00:00Z",
+      },
+    ]);
+    await refreshNow();
+    const head = await insertUser("HEAD", { locale: "en" });
+    const cookie = await signInAs(head);
+    const file = async (report: "prices" | "cash" | "speed") =>
+      workbookOf(
+        await GET(
+          downloadRequest(
+            `/reports/download?${reportSearch({
+              report,
+              range: MAY,
+              filters: { ...NO_ANALYTICS_FILTERS, branch: scene.branch.id },
+              variant: report === "prices" ? record.variantId : null,
+            })}`,
+            cookie,
+          ),
+        ),
+      );
+
+    const prices = await file("prices");
+    expect(prices.worksheets.map((sheet) => sheet.name)).toEqual(["Purchases", "Reference prices"]);
+    const priced = rowsOf(prices.getWorksheet("Purchases")!).filter(
+      (row) => row[0] instanceof Date,
+    );
+    // The one record: 1 × 1 500, its order number beside it.
+    expect(priced.map((row) => [row[0], row[2], row[4], row[6]])).toEqual([
+      [new Date("2031-05-02T00:00:00Z"), record.number, 1, 1_500],
+    ]);
+
+    const cash = await file("cash");
+    expect(cash.worksheets.map((sheet) => sheet.name)).toEqual([
+      "By owner",
+      "By age",
+      "Orders behind the balances",
+    ]);
+    const owners = rowsOf(cash.getWorksheet("By owner")!);
+    // A number of now: no dates line above the table (decided item 3).
+    expect(owners.some((row) => String(row[0]).startsWith("Dates"))).toBe(false);
+    // Held 40 000 − 1 500 spent = 38 500, since 2 May, 13 days.
+    const owner = owners.find((row) => row[0] === scene.manager.fullName)!;
+    expect(owner.slice(1)).toEqual([38_500, 0, new Date("2031-05-02T00:00:00Z"), 13, 1]);
+
+    const speed = await file("speed");
+    expect(speed.worksheets.map((sheet) => sheet.name)).toEqual([
+      "Average hours at each step",
+      "Stays decided in the dates",
+    ]);
+    const hours = rowsOf(speed.getWorksheet("Average hours at each step")!);
+    expect(hours.at(-1)).toEqual(["All branches", "1.0", 1, "3.0", 1, "", 0]);
+  });
+
   it("answers 401 signed out, 404 for another branch, a refused address and the Order register (03 rule 1; decided item 11)", async () => {
     setClock(AT);
     const scene = await spendingScene();
@@ -211,7 +285,17 @@ describe("GET /reports/download (10 Reports: exports to Excel)", () => {
     const cookie = await signInAs(scene.manager);
     const own = reportSearch({ report: "spending", range: MAY, filters: NO_ANALYTICS_FILTERS });
     expect((await GET(downloadRequest(`/reports/download?${own}`))).status).toBe(401);
-    for (const report of ["purchases", "plan", "spending", "stock", "movements", "use"] as const) {
+    for (const report of [
+      "purchases",
+      "plan",
+      "spending",
+      "stock",
+      "movements",
+      "use",
+      "prices",
+      "cash",
+      "speed",
+    ] as const) {
       const query = reportSearch({
         report,
         range: MAY,
@@ -220,8 +304,8 @@ describe("GET /reports/download (10 Reports: exports to Excel)", () => {
       expect((await GET(downloadRequest(`/reports/download?${query}`, cookie))).status).toBe(404);
     }
     for (const query of [
-      // `stock` is a report since 6.9a; a name that is none is refused.
-      "report=prices",
+      // `stock` is a report since 6.9a and `prices` since 6.9b; a name that is none is refused.
+      "report=unknown",
       "report=spending&from=2031-05-10&to=2031-05-01",
       "report=orders",
     ]) {
@@ -315,6 +399,46 @@ describePermissionMatrix("GET /reports/download, the stock reports with the bran
       expect(amounts).toContain(
         report === "stock" ? 4_000 : report === "movements" ? -2_000 : 2_000,
       );
+    }
+  },
+});
+
+// The files of 6.9b under the route's own `data.export` check, every role, own and other branch:
+// the branch filter's file holds the branch's record, cash and stay.
+describePermissionMatrix("GET /reports/download, the reports of 6.9b with the branch filter", {
+  permission: "data.export",
+  async run({ user, branchId }) {
+    setClock(AT);
+    const scene = await spendingScene(branchId);
+    const record = await bought(scene, { purchasedOn: "2031-05-02", unitPrice: "2345" });
+    await moneyOn(record, scene.manager.id, { amount: 50_000n, occurredOn: "2031-05-02" });
+    const order = await decided(scene, "PENDING_PRINCIPAL", [
+      { type: "SUBMIT", from: "DRAFT", to: "PENDING_HEAD", at: "2031-05-03T03:00:00Z" },
+      {
+        type: "APPROVE",
+        from: "PENDING_HEAD",
+        to: "PENDING_PRINCIPAL",
+        at: "2031-05-03T05:00:00Z",
+      },
+    ]);
+    await refreshNow();
+    const cookie = await signInAs(user);
+    for (const report of ["prices", "cash", "speed"] as const) {
+      const query = reportSearch({
+        report,
+        range: MAY,
+        filters: { ...NO_ANALYTICS_FILTERS, branch: branchId },
+        variant: record.variantId,
+      });
+      const response = await GET(downloadRequest(`/reports/download?${query}`, cookie));
+      if (response.status === 404) throw new AuthorizationError("not_found");
+      const cells = (await workbookOf(response)).worksheets
+        .flatMap((sheet) => rowsOf(sheet))
+        .flat();
+      // The record's price; the cash held, 50 000 − 2 345; the order's Head stay.
+      if (report === "prices") expect(cells).toContain(2_345);
+      if (report === "cash") expect(cells).toContain(47_655);
+      if (report === "speed") expect(cells).toContain(order.number);
     }
   },
 });

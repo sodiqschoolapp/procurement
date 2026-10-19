@@ -5,7 +5,8 @@ import uz from "../../src/i18n/messages/uz.json" with { type: "json" };
 import { E2E_ROLES } from "./global-setup";
 import { REPORT_MONTH, seedReportRecords } from "./report-records";
 
-// Build plan 6.8 (Reports: orders and spending) and 6.9a (the three stock reports) in the browser,
+// Build plan 6.8 (Reports: orders and spending), 6.9a (the three stock reports) and 6.9b (Price
+// history, Money with managers, Approval speed) in the browser,
 // at 375 and 1440 px: the Head opens /reports, each of the tabs, chooses the dates and a category, and downloads the Spending
 // report; the file's amounts are number cells that add up to its total line (Done when: "export
 // the spending report and sum a column in Excel"; 10-notifications-analytics-reports.md, Reports;
@@ -44,6 +45,9 @@ test("Done when: the Head opens each report, filters by dates and category, and 
     uz.reports.tabs.stock,
     uz.reports.tabs.movements,
     uz.reports.tabs.use,
+    uz.reports.tabs.prices,
+    uz.reports.tabs.cash,
+    uz.reports.tabs.speed,
   ]);
 
   // At phone width the filters fold behind their button; it opens on a tap.
@@ -93,8 +97,9 @@ test("Done when: the Head opens each report, filters by dates and category, and 
   );
   expect(await scrollsSideways(page)).toBe(false);
 
-  // The three stock reports of 6.9a keep the dates and the category, and download from the route.
-  for (const report of ["stock", "movements", "use"] as const) {
+  // The stock reports of 6.9a and the three of 6.9b keep the dates and the category, and download
+  // from the route.
+  for (const report of ["stock", "movements", "use", "prices", "cash", "speed"] as const) {
     await page.locator(`[data-report-tab="${report}"]`).click();
     await expect(page).toHaveURL(new RegExp(`report=${report}.*category=`));
     await expect(page.locator(`[data-report-tab="${report}"]`)).toHaveAttribute(
@@ -107,4 +112,11 @@ test("Done when: the Head opens each report, filters by dates and category, and 
     );
     expect(await scrollsSideways(page)).toBe(false);
   }
+
+  // Price history draws its chart: the most bought product of the category in June 2019.
+  await page.locator('[data-report-tab="prices"]').click();
+  await expect(page.locator("[data-price-picker] select")).toBeVisible();
+  await expect(page.locator('[data-chart="line"]')).toBeVisible();
+  await expect(page.locator("[data-price-row]").first()).toBeVisible();
+  expect(await scrollsSideways(page)).toBe(false);
 });

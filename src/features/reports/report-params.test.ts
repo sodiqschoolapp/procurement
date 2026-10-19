@@ -23,6 +23,7 @@ describe("parseReportParams (10 Reports; decided items 5 and 6)", () => {
       report: "orders",
       range: { first: "2031-05-01", last: "2031-05-15" },
       filters: { branch: null, category: null, department: null, manager: null, supplier: null },
+      variant: null,
       page: 1,
     });
   });
@@ -49,6 +50,7 @@ describe("parseReportParams (10 Reports; decided items 5 and 6)", () => {
         manager: null,
         supplier: null,
       },
+      variant: null,
       page: 3,
     });
     expect(
@@ -66,6 +68,7 @@ describe("parseReportParams (10 Reports; decided items 5 and 6)", () => {
       report: "plan",
       range: { first: "2031-05-01", last: "2031-05-15" },
       filters: { branch: null, category: null, department: null, manager: null, supplier: null },
+      variant: null,
       page: 1,
     });
     // "All my branches" is no branch filter.
@@ -73,8 +76,8 @@ describe("parseReportParams (10 Reports; decided items 5 and 6)", () => {
   });
 
   it("refuses an unknown report, a name given twice and `from` after `to`", () => {
-    // `stock` became a report in 6.9a; a name that is none stays refused.
-    expect(parseReportParams({ report: "prices" }, TODAY)).toBeNull();
+    // `stock` became a report in 6.9a and `prices` in 6.9b; a name that is none stays refused.
+    expect(parseReportParams({ report: "unknown" }, TODAY)).toBeNull();
     expect(parseReportParams({ branch: [BRANCH, BRANCH] }, TODAY)).toBeNull();
     expect(parseReportParams({ from: "2031-05-10", to: "2031-05-09" }, TODAY)).toBeNull();
     // One day is a range.
@@ -94,6 +97,30 @@ describe("the stock reports of 6.9a (10 Reports: Stock on hand, Stock movements,
         parseReportParams(Object.fromEntries(new URLSearchParams(reportSearch(params))), TODAY),
       ).toEqual(params);
     }
+  });
+});
+
+describe("the reports of 6.9b (10 Reports: Price history, Money with managers, Approval speed)", () => {
+  const VARIANT = "2b3c4d5e-6f70-4a8b-9c0d-1e2f3a4b5c6d";
+
+  it("reads each of them and gives back the same address", () => {
+    for (const report of ["prices", "cash", "speed"] as const) {
+      const params = parseReportParams({ report, branch: BRANCH, page: "2" }, TODAY)!;
+      expect([params.report, params.filters.branch, params.page]).toEqual([report, BRANCH, 2]);
+      expect(
+        parseReportParams(Object.fromEntries(new URLSearchParams(reportSearch(params))), TODAY),
+      ).toEqual(params);
+    }
+  });
+
+  it("reads Price history's subtype, drops a broken one, and writes it back for Price history only (decided item 6)", () => {
+    const params = parseReportParams({ report: "prices", variant: VARIANT.toUpperCase() }, TODAY)!;
+    expect(params.variant).toBe(VARIANT);
+    expect(
+      parseReportParams(Object.fromEntries(new URLSearchParams(reportSearch(params))), TODAY),
+    ).toEqual(params);
+    expect(parseReportParams({ report: "prices", variant: "x" }, TODAY)!.variant).toBeNull();
+    expect(reportSearch({ ...params, report: "cash" })).not.toContain("variant");
   });
 });
 

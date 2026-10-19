@@ -22,6 +22,9 @@ export const REPORTS = [
   "stock",
   "movements",
   "use",
+  "prices",
+  "cash",
+  "speed",
 ] as const;
 export type Report = (typeof REPORTS)[number];
 
@@ -34,6 +37,8 @@ export type ReportParams = {
   range: DateRange;
   /** Only the branch and the category of 10 Reports (decided item 6); the rest stay null. */
   filters: AnalyticsFilters;
+  /** Price history's subtype (`variant=`, plan of 6.9b, decided item 6); null: the most bought. */
+  variant: string | null;
   page: number;
 };
 
@@ -71,18 +76,23 @@ export function parseReportParams(raw: Raw, today: BusinessDate): ReportParams |
       branch: single.branch === "all" ? null : valid(id, single.branch),
       category: valid(id, single.category),
     },
+    variant: valid(id, single.variant),
     page: valid(page, single.page) ?? 1,
   };
 }
 
 /** The address of a report, read back by the parser; `page` 1 is left out. */
-export function reportSearch(params: Omit<ReportParams, "page"> & { page?: number }): string {
+export function reportSearch(
+  params: Omit<ReportParams, "page" | "variant"> & { page?: number; variant?: string | null },
+): string {
   const search = new URLSearchParams();
   search.set("report", params.report);
   search.set("from", params.range.first);
   search.set("to", params.range.last);
   if (params.filters.branch) search.set("branch", params.filters.branch);
   if (params.filters.category) search.set("category", params.filters.category);
+  // The subtype is Price history's alone: another tab's address does not carry it.
+  if (params.report === "prices" && params.variant) search.set("variant", params.variant);
   if (params.page && params.page > 1) search.set("page", String(params.page));
   return search.toString();
 }

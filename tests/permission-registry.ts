@@ -291,6 +291,13 @@ export const QUERIES: Record<string, Permission> = {
   "src/features/reports/queries/stock-report.ts#getStockReport": "data.view",
   "src/features/reports/queries/stock-movements-report.ts#getStockMovementsReport": "data.view",
   "src/features/reports/queries/department-use-report.ts#getDepartmentUseReport": "data.view",
+  // The reports of 6.9b (plan of 6.9b; decided item 1, Look first: Money with managers under
+  // data.view, not money.managers): the walls in spendingWhere(), cashWhere() and stepsWhere()
+  // (src/features/reports/queries/reports-matrix.db.test.ts).
+  "src/features/reports/queries/price-history-report.ts#getPriceHistoryReport": "data.view",
+  "src/features/reports/queries/money-with-managers-report.ts#getMoneyWithManagersReport":
+    "data.view",
+  "src/features/reports/queries/approval-speed-report.ts#getApprovalSpeedReport": "data.view",
   // The order list's download, Excel and PDF (plan of 2.14, decided item 4, Look first): data.export
   // with the list's own walls in the SQL (queries/order-download-matrix.db.test.ts).
   "src/features/orders/queries/order-list.ts#orderDownload": "data.export",
