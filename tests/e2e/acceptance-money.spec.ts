@@ -1,5 +1,7 @@
-import { type Locator, type Page, expect, test } from "@playwright/test";
+import { type Locator, type Page, expect as baseExpect, test } from "@playwright/test";
 
+import { overspend } from "../../src/domain/overspend";
+import { SETTING_DEFAULTS } from "../../src/domain/settings";
 import en from "../../src/i18n/messages/en.json" with { type: "json" };
 import {
   type Person,
@@ -11,11 +13,13 @@ import {
   newPerson,
   newProduct,
   scrollsSideways,
+  setGuardAmount,
   signIn,
   statusOf,
   stockOf,
   tag,
   withDatabase,
+  withGuardLock,
 } from "./acceptance-fixtures";
 
 // Build plan 9.1b: the acceptance scenarios of phase 4 (16-build-order.md), money and settlement,
@@ -27,6 +31,10 @@ import {
 // people (decided item 2), who read English, so the asserted words are the spec's own (decided
 // item 3). The plan of section 8 unless a scenario says otherwise: 100 × 5 000 in cash plus
 // 20 000 delivery, planned total 520 000.
+
+// Each step answers after a server action on the `next dev` server while other projects run; a
+// result line can take longer than the default 5 seconds to appear there.
+const expect = baseExpect.configure({ timeout: 15_000 });
 
 const o = en.orders;
 // 08's orange is drawn amber (src/domain/colours.ts, Colour; plan of 0.10a, decision 7).
@@ -267,8 +275,13 @@ async function openSettle(page: Page, scene: Scene, orders: Planned[]): Promise<
   await expect(page.locator("[data-settlement] h1")).toHaveText(s.title);
 }
 
-/** Saves the one settlement action of the screen after its confirmation. */
-async function saveSettlement(page: Page, orders: number): Promise<void> {
+/**
+ * Saves the one settlement action of the screen after its confirmation, and waits until the
+ * refreshed screen shows each order's cash count at 0: Close sends the versions the screen holds,
+ * so it is pressed only after the refresh (08 Closing 3).
+ */
+async function saveSettlement(page: Page, settled: Planned[]): Promise<void> {
+  const orders = settled.length;
   await page.locator("[data-settle-comment]").fill("Hisob-kitob sinovi");
   await page.locator("[data-settle-save]").click();
   const dialog = page.getByRole("alertdialog");
@@ -279,6 +292,11 @@ async function saveSettlement(page: Page, orders: number): Promise<void> {
       count(orders, "Settlement saved for 1 order.", "Settlement saved for # orders."),
     ),
   ).toBeVisible();
+  for (const order of settled) {
+    await expect(page.locator(`[data-cash-order="${order.id}"] [data-fact="count"] dd`)).toHaveText(
+      /^0\s/,
+    );
+  }
 }
 
 /** Presses Close on the settlement screen and confirms it (08 Closing 3). */
@@ -319,6 +337,17 @@ async function acknowledgmentOf(orderId: string): Promise<string | null> {
       [orderId],
     );
     return found.rows[0]?.comment ?? null;
+  });
+}
+
+/** The number an order got at its Submit. */
+async function numberOf(orderId: string): Promise<string> {
+  return withDatabase(async (client) => {
+    const found = await client.query<{ number: string }>(
+      "select number from orders where id = $1",
+      [orderId],
+    );
+    return found.rows[0]!.number;
   });
 }
 
@@ -392,7 +421,7 @@ test('S2: bought at 4 500: Total orange "Left 50 000"; Finance records 50 000 re
   await openSettle(page, scene, [order]);
   await expect(page.locator(`[data-settle-amount="${order.id}"]`)).toHaveValue("50000");
   expect(await scrollsSideways(page)).toBe(false);
-  await saveSettlement(page, 1);
+  await saveSettlement(page, [order]);
   await closeOnSettle(page);
   await expect(page.getByText("Closed 1 order.")).toBeVisible();
 
@@ -436,7 +465,7 @@ test('S3: bought at 5 200 with 30 000 delivery: Total red "Over 30 000"; Finance
   await openSettle(page, scene, [order]);
   await expect(page.locator(`[data-settle-amount="${order.id}"]`)).toHaveValue("30000");
   await expect(page.locator(`[data-settle-order="${order.id}"] [data-overspend]`)).toHaveCount(0);
-  await saveSettlement(page, 1);
+  await saveSettlement(page, [order]);
   await closeOnSettle(page);
   await expect(page.getByText("Closed 1 order.")).toBeVisible();
 
@@ -470,7 +499,7 @@ test("S13: 520 000 given, nothing bought: settlement asks for 520 000 back; clos
 
   await openSettle(page, scene, [order]);
   await expect(page.locator(`[data-settle-amount="${order.id}"]`)).toHaveValue("520000");
-  await saveSettlement(page, 1);
+  await saveSettlement(page, [order]);
   await closeOnSettle(page);
   await expect(page.getByText("Closed 1 order.")).toBeVisible();
 
@@ -522,10 +551,13 @@ test('S9: a cash order 10 000 over and a card order 40 000 under: "Pay Manager 1
   expect(await statusOf(card.id)).toBe("SETTLEMENT");
 
   // Both handled: the Pay row saved and the card order confirmed; then both close.
-  await saveSettlement(page, 1);
+  await saveSettlement(page, [cash]);
   const confirmed = page.locator(`[data-confirm="CARD:${card.id}"]`);
   await confirmed.click();
   await expect(confirmed).toBeChecked();
+  // The box turns ticked once the save has answered; the reload brings the versions Close sends.
+  await page.reload();
+  await expect(page.locator(`[data-confirm="CARD:${card.id}"]`)).toBeChecked();
   await closeOnSettle(page);
   await expect(page.getByText("Closed 2 orders.")).toBeVisible();
 
@@ -581,4 +613,201 @@ test("S16: close-alone switched off: the Manager has no Close; the order goes to
   await expect(page.getByText("Closed 1 order.")).toBeVisible();
   expect(await countOf(order.id)).toBe(0);
   expect(await statusOf(order.id)).toBe("CLOSED");
+});
+
+test("S12: 600 000 actual: at 100 000 Finance closes without the Head; at 50 000 not until the Head acknowledges (15 S12; 08 Overspend guard)", async ({
+  page,
+}) => {
+  // Four roles, two orders, and the wait for the other project's S12 or the settings test, which
+  // hold the guard amount (plan of 9.1b, decided item 4).
+  test.setTimeout(240_000);
+  const scene = await newScene();
+  const first = await notebooks(scene);
+  const second = await notebooks(scene);
+
+  await withGuardLock(async () => {
+    await withDatabase((client) => setGuardAmount(client, "100000"));
+    await throughApprovals(page, scene, [first, second]);
+    await financeApproves(page, scene, [first, second], {
+      [first.id]: "520000",
+      [second.id]: "520000",
+    });
+
+    // 100 × 5 800 + 20 000 = 600 000: 80 000 over, 15.4% (plan of 9.1b, decided item 5).
+    const dearer = { price: "5800", comment: "Narx 5 800 ga oshdi" };
+    const over = overspend(520_000n, 600_000n, {
+      overspend_guard_percent: SETTING_DEFAULTS.overspend_guard_percent,
+      overspend_guard_min_amount: 50_000n,
+    });
+
+    // At 100 000: Finance pays back 80 000 and closes with no Head step.
+    await as(page, scene.manager);
+    await recordPurchase(page, first, dearer);
+    const total = labelOf(page, "total");
+    await expect(total).toHaveAttribute("data-colour", "red");
+    await expect(total).toContainText(/80\s000/);
+    await sendToSettlement(page, scene, [first]);
+    await openSettle(page, scene, [first]);
+    await expect(page.locator(`[data-settle-amount="${first.id}"]`)).toHaveValue("80000");
+    await saveSettlement(page, [first]);
+    await closeOnSettle(page);
+    await expect(page.getByText("Closed 1 order.")).toBeVisible();
+    expect(await statusOf(first.id)).toBe("CLOSED");
+    expect(await acknowledgmentOf(first.id)).toBeNull();
+
+    // The Head sets the amount to 50 000 on the settings screen.
+    await as(page, scene.head);
+    await page.goto("/settings");
+    const save = page.getByRole("button", { name: en.settings.save });
+    await expect(save).toBeEnabled();
+    await page.getByLabel(en.settings.overspendGuardMinAmount).fill("50000");
+    await save.click();
+    await expect(page.getByText(en.settings.saved)).toBeVisible();
+
+    // At 50 000 the same purchase waits for the Head: Close closes nothing.
+    await as(page, scene.manager);
+    await recordPurchase(page, second, dearer);
+    await sendToSettlement(page, scene, [second]);
+    await openSettle(page, scene, [second]);
+    const waits = page.locator(`[data-settle-order="${second.id}"] [data-overspend="waits"]`);
+    await expect(waits).toContainText(`(${over.percent}%)`);
+    await expect(waits).toContainText(/80\s000/);
+    await saveSettlement(page, [second]);
+    await closeOnSettle(page);
+    await expect(page.locator("[data-settle-failed]")).toContainText(m.notReady.CLOSE);
+    expect(await statusOf(second.id)).toBe("SETTLEMENT");
+
+    // The Head acknowledges with a comment on the order page; then Finance closes.
+    const comment = "Narxlar oshgani tasdiqlandi";
+    await as(page, scene.head);
+    await page.goto(`/orders/${second.id}`);
+    await page.locator('[data-order-bar] [data-move="ACKNOWLEDGE_OVERSPEND"]').click();
+    const dialog = page.getByRole("alertdialog");
+    await dialog.locator("textarea[data-reason]").fill(comment);
+    await dialog.getByRole("button", { name: m.button.ACKNOWLEDGE_OVERSPEND, exact: true }).click();
+    await expect(dialog).toBeHidden();
+    await expect.poll(() => acknowledgmentOf(second.id)).toBe(comment);
+
+    await openSettle(page, scene, [second]);
+    await closeOnSettle(page);
+    await expect(page.getByText("Closed 1 order.")).toBeVisible();
+    expect(await statusOf(second.id)).toBe("CLOSED");
+    expect(await countOf(second.id)).toBe(0);
+  });
+});
+
+test("S20: four ticked, one approved a moment earlier by another Finance user: refused whole naming it; 650 000 split 520 000, 100 000, 30 000; the folders closed by the Manager; one settlement action, net 20 000; both close (15 S20; 08 Worked example; 06 rule 8)", async ({
+  page,
+  browser,
+}, info) => {
+  // Four roles, a second Finance user and four orders: about a minute here, so twice the slow time.
+  test.setTimeout(180_000);
+  const scene = await newScene();
+  const other = await newPerson("FINANCE", scene.branch.id, "en");
+  // 08 Worked example, "Three orders, one action", and a fourth order.
+  const notes = await notebooks(scene);
+  const pens = await planOf(scene, `Ruchka ${tag()}`, 50, 2000);
+  const folders = await planOf(scene, `Papka ${tag()}`, 10, 3000);
+  const rulers = await planOf(scene, `Chizgʻich ${tag()}`, 10, 1000);
+  const three = [notes, pens, folders];
+  await throughApprovals(page, scene, [...three, rulers]);
+
+  // Finance ticks all four and opens Approve; another Finance user approves the fourth first.
+  await as(page, scene.finance);
+  await listAt(page, scene, "PENDING_FINANCE");
+  const dialog = await openApprove(page, [...three, rulers]);
+  await expect(dialog.locator(`[data-cash-row="${rulers.id}"] input`)).toHaveValue("10000");
+  const context = await browser.newContext({ viewport: info.project.use.viewport ?? null });
+  const otherPage = await context.newPage();
+  try {
+    await signIn(otherPage, other);
+    await otherPage.goto(`/orders/${rulers.id}`);
+    await otherPage
+      .locator("[data-order-bar]")
+      .getByRole("button", { name: o.approve.button, exact: true })
+      .click();
+    await otherPage
+      .getByRole("alertdialog")
+      .getByRole("button", { name: o.approve.button, exact: true })
+      .click();
+    await expect(otherPage.getByText("Approved 1 order.")).toBeVisible();
+  } finally {
+    await context.close();
+  }
+
+  // Refused whole, naming the fourth order; nothing of the first Finance user is saved.
+  await dialog.getByRole("button", { name: o.approve.button, exact: true }).click();
+  const failed = page.locator("[data-approve-failed]");
+  await expect(failed).toContainText("Nothing was approved: 1 order is named below.");
+  await expect(failed.locator("[data-failed-order]")).toHaveCount(1);
+  await expect(failed.locator(`[data-failed-order="${rulers.id}"]`)).toContainText(
+    await numberOf(rulers.id),
+  );
+  for (const order of three) expect(await statusOf(order.id)).toBe("PENDING_FINANCE");
+  expect(await moneyRowsOf(three.map((order) => order.id))).toEqual([]);
+  const fourth = await moneyRowsOf([rulers.id]);
+  expect(fourth.map((row) => [row.kind, row.amount, row.created_by])).toEqual([
+    ["CASH_GIVEN", "10000", other.id],
+  ]);
+
+  // Approved again without it: 650 000, split 520 000, 100 000 and 30 000 in one action.
+  await listAt(page, scene, "PENDING_FINANCE");
+  const again = await openApprove(page, three);
+  for (const [order, amount] of [
+    [notes, "520000"],
+    [pens, "100000"],
+    [folders, "30000"],
+  ] as const) {
+    await expect(again.locator(`[data-cash-row="${order.id}"] input`)).toHaveValue(amount);
+  }
+  await expect(again).toContainText(/650\s000/);
+  await confirmApprove(page, again, 3);
+  const given = await moneyRowsOf(three.map((order) => order.id));
+  expect(given.map((row) => [row.order_id, row.kind, row.amount]).sort()).toEqual(
+    [
+      [notes.id, "CASH_GIVEN", "520000"],
+      [pens.id, "CASH_GIVEN", "100000"],
+      [folders.id, "CASH_GIVEN", "30000"],
+    ].sort(),
+  );
+  expect(new Set(given.map((row) => row.action)).size).toBe(1);
+
+  // Buying follows the example; the folders match exactly and the Manager closes them alone.
+  await as(page, scene.manager);
+  await recordPurchase(page, notes, { price: "4500", comment: "Arzonroq topildi" });
+  await recordPurchase(page, pens, { price: "2600", comment: "Narx oshdi" });
+  await recordPurchase(page, folders);
+  await listAt(page, scene, "PURCHASING");
+  await moveOnList(page, [folders], "CLOSE_EXACT", "Closed 1 order.");
+  expect(await statusOf(folders.id)).toBe("CLOSED");
+  await sendToSettlement(page, scene, [notes, pens]);
+
+  // One settlement action: Receive 50 000 and Pay 30 000; the net, the Manager hands 20 000.
+  await openSettle(page, scene, [notes, pens]);
+  await expect(page.locator(`[data-settle-amount="${notes.id}"]`)).toHaveValue("50000");
+  await expect(page.locator(`[data-settle-amount="${pens.id}"]`)).toHaveValue("30000");
+  const net = page.locator("[data-settle-net]");
+  await expect(net).toContainText(
+    s.net.TO_FINANCE.replace("{name}", scene.manager.fullName).replace(" {amount}.", ""),
+  );
+  await expect(net).toContainText(/20\s000/);
+  expect(await scrollsSideways(page)).toBe(false);
+  await saveSettlement(page, [notes, pens]);
+  await closeOnSettle(page);
+  await expect(page.getByText("Closed 2 orders.")).toBeVisible();
+
+  const settled = (await moneyRowsOf([notes.id, pens.id])).filter(
+    (row) => row.kind !== "CASH_GIVEN",
+  );
+  expect(settled.map((row) => [row.order_id, row.kind, row.amount]).sort()).toEqual(
+    [
+      [notes.id, "CASH_RETURNED", "50000"],
+      [pens.id, "PAID_BACK", "30000"],
+    ].sort(),
+  );
+  expect(new Set(settled.map((row) => row.action)).size).toBe(1);
+  for (const order of [notes, pens]) {
+    expect(await countOf(order.id)).toBe(0);
+    expect(await statusOf(order.id)).toBe("CLOSED");
+  }
 });
