@@ -92,6 +92,12 @@ describe("Approval speed: the branch wall (03 rule 1; 10 Reports: respects the u
     expect(await sees(head.id)).toBe(true);
     expect(await sees(order.ownerId)).toBe(true);
     expect(await sees(principal.id)).toBe(false);
+    // A colleague Manager and Finance of the same branch: not the owner, so not seen
+    // (permission review of 6.9b, Should fix 2).
+    const colleague = await insertUser("MANAGER", { branches: [a.branch.id] });
+    const finance = await insertUser("FINANCE", { branches: [a.branch.id] });
+    expect(await sees(colleague.id)).toBe(false);
+    expect(await sees(finance.id)).toBe(false);
   });
 });
 
