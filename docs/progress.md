@@ -1631,4 +1631,23 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - A use is signed numeric text (`-?\d+(\.\d{1,3})?`), not `quantityOf()` (which refuses 0 and below).
 - A Head's `getStockPlanning()` without a branch filter covers every branch: compare its Low count with `getStockLines("low")`, not with a fixed number.
 
-The next task is 6.6.
+## 6.6a Analytics: Finance, Cash and Cash needed soon (19.10.2026, pull request #113)
+
+**Built**
+- 6.6 split into 6.6a and 6.6b in `docs/build-plan.md` (phase 6 now 16 tasks, total 107).
+- Migration 0043: `analytics_money` (each Cash given, Cash returned and Paid back row of an action not cancelled, on the action's date and Manager) and `analytics_orders.planned_cash`, `cash_handed`, `cash_needed`, all written by `refreshAnalytics()`.
+- Domain: `cashAgeBand()`, `CASH_AGE_BANDS` (analytics.ts); `cashHanded()`, `cashNeeded()`, `APPROVAL_STATUSES` (money-ledger.ts).
+- Queries `getFinanceCash()`, `getCashNeeded()`, `getMoneyRows()`, `getNeededOrders()`; `getCashOrders(…, age)`; `moneyWhere()`, `neededWhere()`, `daysOut()`; keys `money:<kind>[:<month>]`, `needed:<stage>[:<step>]`, `age:<band>:<side>`; `/analytics/money`, `/analytics/cash-needed`; download blocks `financeCash`, `cashAges`, `cashNeeded`, `moneyRows`, `neededOrders`; Finance's two blocks on `/analytics` (`finance-blocks.tsx`), under the shared Spending block.
+
+**Left out, and the task that brings it**
+- Payments, Plan vs actual with purchases without a receipt, Settlement speed, Finance's branch-wall test and the read of the page on the seed: 6.6b. Page PDF: 6.7.
+
+**What the next sessions must know**
+- For 6.6b: add Finance's blocks to the `role === "FINANCE"` tuple of `src/app/(app)/analytics/page.tsx` and to `finance-blocks.tsx`; 6.6b decides whether the shared Spending block leaves Finance's page (6.6a decided item 9).
+- For 6.6b: "spending by payment type" is `analytics_spending_payments` as the Head's block reads it (`getHeadSpending()`); bank transfer money rows are not in `analytics_money` (its CHECK holds the three cash kinds).
+- For 6.7: Finance's page now has three blocks; Cash's month table grows with the period.
+- `daysOut()` (features/analytics/days-out.ts) is the one "days since" of cash held and of the age bands; a query file may export only queries (the permission registry lists every export).
+- Every new Analytics query is in the matrix three ways (.claude/rules/tests.md): branch filter, the wall in the SQL with its totals asserted, a department or Manager id of the branch.
+- Russian texts say «заказ», never «заявка» (tests/notification-texts.test.ts).
+
+The next task is 6.6b.
