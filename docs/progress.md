@@ -1866,4 +1866,22 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - `pg_dump` 17 is not on this machine or the CI runner (16 there); a local by-hand copy can run `postgres:17`'s `pg_dump` through a wrapper on `PATH` (`docker run --rm -i --network host -e PGHOST … postgres:17 pg_dump "$@"`).
 - For 9.6: restore with `pg_restore --no-owner` 17 into an empty database; tried locally on 19.10.2026, all 49 migrations came back.
 
-The next task is 8.4.
+## 8.4 Translation pass (19.10.2026, pull request #127)
+
+**Built**
+- `npm run i18n:check` also compares the three languages value by value (`scripts/check-translations.mjs`: `readMessage()`, `uzbekApostrophes()`, `SCRIPT_EXEMPT`); the message files pass it.
+- `npm run i18n:export [file]` and `npm run i18n:import <file>` (`scripts/translations-excel.mjs`): one workbook, sheet "Texts" (Key, English, Oʻzbekcha, Русский) and a very hidden sheet "Exported"; the import is all or nothing and never writes `en.json`.
+- `docs/translations.xlsx`, the owner's file, exported at this task.
+
+**Left out, and the task that brings it**
+- A word-by-word style review of Uzbek and Russian: the owner, through the file (D12).
+
+**Open for the owner**
+- Correct `docs/translations.xlsx` and hand it back to a session, which runs `npm run i18n:import <file>` and opens a pull request.
+
+**What the next sessions must know**
+- A new Uzbek text writes oʻ/gʻ with U+02BB and the tutuq with U+02BC; a Russian plural names one, few, many and other (or `=1`/other for "it/they"); every language uses the same argument names. The check says which.
+- An Uzbek value may drop the plural of a count, never the argument: write `{count, plural, other {# ta …}}`.
+- `docs/translations.xlsx` is a snapshot; run `npm run i18n:export` for a fresh one before handing it to the owner.
+
+The next task is 9.1.
