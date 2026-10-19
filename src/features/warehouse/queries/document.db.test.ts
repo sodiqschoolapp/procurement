@@ -16,6 +16,7 @@ import { insertUser } from "../../../../tests/helpers/users";
 import { enterStockDirectly } from "../actions/direct-entry";
 import { issueStock } from "../actions/issue";
 import { returnStock } from "../actions/return";
+import { receiveTransfer } from "../actions/receive-transfer";
 import { reverseStockDocument } from "../actions/reverse";
 import { sendTransfer } from "../actions/transfer";
 import { askWriteOff } from "../actions/write-off";
@@ -311,7 +312,7 @@ describe("getStockDocument: every type (plan of 5.12, decided item 3)", () => {
   });
 });
 
-describe("getStockDocument: a transfer (plan of 7.1; decided items 5 and 9)", () => {
+describe("getStockDocument: a transfer (plans of 7.1 and 7.2; 7.2 decided item 3)", () => {
   async function sent(from: string, to: string) {
     const item = await insertItem();
     const sender = await insertUser("MANAGER", { branches: [from] });
@@ -329,7 +330,7 @@ describe("getStockDocument: a transfer (plan of 7.1; decided items 5 and 9)", ()
     return { ...made.data, sender, item };
   }
 
-  it("shows both branches, who sent it and In transit; its note may be downloaded; nobody may reverse or decide it", async () => {
+  it("shows both branches, who sent it and In transit, and no stock; its note may be downloaded; nobody may reverse, decide or receive it from the sending side", async () => {
     const from = await insertBranch();
     const to = await insertBranch();
     const head = await insertUser("HEAD");
@@ -344,24 +345,94 @@ describe("getStockDocument: a transfer (plan of 7.1; decided items 5 and 9)", ()
       departmentName: null,
       receivedByName: "Sinov Haydovchi",
       createdBy: t.sender.fullName,
-      lines: [{ productName: t.item.name, qty: "2.000", inStock: "3.000" }],
+      // A transfer's lines read no stock (7.2, review of the plan, must fix 1).
+      lines: [
+        {
+          productName: t.item.name,
+          qty: "2.000",
+          inStock: null,
+          receivedQty: null,
+          shortQty: null,
+        },
+      ],
       canDecide: false,
       canReverse: false,
       canDownloadNote: true,
+      canReceive: false,
     });
     expect(await getStockDocument(head.id, t.documentId)).toMatchObject({
       canReverse: false,
       canDownloadNote: true,
+      canReceive: true,
     });
   });
 
-  it("is Not found for a Manager of only the receiving branch until 7.2, read by a Manager of both (03 rule 1; decided item 5)", async () => {
+  // 7.1 kept the transfer from the receiving branch until 7.2 (its decided item 5); 7.2 opens it
+  // (decided item 3, Look first), so this test changed with the requirement.
+  it("is read by every role of the receiving branch, holding no stock of the sender; only its Managers and the Head may receive; a third branch gets Not found (03 rule 1; 7.2 decided items 2 and 3)", async () => {
+    const from = await insertBranch();
+    const to = await insertBranch();
+    const third = await insertBranch();
+    const t = await sent(from.id, to.id);
+    const there = await insertUser("MANAGER", { branches: [to.id] });
+    const both = await insertUser("MANAGER", { branches: [from.id, to.id] });
+    const seen = await getStockDocument(there.id, t.documentId);
+    expect(seen).toMatchObject({
+      type: "TRANSFER",
+      branchCode: from.code,
+      toBranchCode: to.code,
+      canReceive: true,
+      canReverse: false,
+      canDownloadNote: true,
+    });
+    expect(seen!.lines.map((line) => line.inStock)).toEqual([null]);
+    expect(await getStockDocument(both.id, t.documentId)).toMatchObject({ canReceive: true });
+    for (const role of ["PRINCIPAL", "FINANCE"] as const) {
+      const user = await insertUser(role, { branches: [to.id] });
+      expect(await getStockDocument(user.id, t.documentId)).toMatchObject({
+        canReceive: false,
+        canDownloadNote: true,
+      });
+    }
+    // A Manager of a third branch, with a transfer of their own to the same receiver beside it.
+    const elsewhere = await insertUser("MANAGER", { branches: [third.id] });
+    await sent(third.id, to.id);
+    expect(await getStockDocument(elsewhere.id, t.documentId)).toBeNull();
+  });
+
+  it("once received, shows what arrived and what was short, and nobody may receive it again", async () => {
     const from = await insertBranch();
     const to = await insertBranch();
     const t = await sent(from.id, to.id);
     const there = await insertUser("MANAGER", { branches: [to.id] });
-    const both = await insertUser("MANAGER", { branches: [from.id, to.id] });
-    expect(await getStockDocument(there.id, t.documentId)).toBeNull();
-    expect((await getStockDocument(both.id, t.documentId))?.type).toBe("TRANSFER");
+    const [line] = (
+      await db.execute<{ id: string }>(
+        sql`select id from stock_document_lines where document_id = ${t.documentId}`,
+      )
+    ).rows;
+    const received = await runAction(receiveTransfer, there.id, {
+      documentId: t.documentId,
+      receivedByName: null,
+      lines: [{ lineId: line!.id, receivedQty: "1.5" }],
+    });
+    expect(received.ok).toBe(false);
+    const done = await runAction(receiveTransfer, there.id, {
+      documentId: t.documentId,
+      receivedByName: null,
+      lines: [{ lineId: line!.id, receivedQty: "1" }],
+    });
+    if (!done.ok) throw new Error(`fixture: ${done.error.code}`);
+    const head = await insertUser("HEAD");
+    expect(await getStockDocument(there.id, t.documentId)).toMatchObject({
+      status: "RECEIVED",
+      decidedBy: there.fullName,
+      lines: [{ qty: "2.000", receivedQty: "1.000", shortQty: "1", inStock: null }],
+      canReceive: false,
+      canReverse: false,
+    });
+    expect(await getStockDocument(head.id, t.documentId)).toMatchObject({
+      canReceive: false,
+      canReverse: true,
+    });
   });
 });
