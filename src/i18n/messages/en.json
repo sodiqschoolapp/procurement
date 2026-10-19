@@ -2985,5 +2985,107 @@
         }
       }
     }
+  },
+  "reports": {
+    "title": "Reports",
+    "tabs": {
+      "orders": "Order register",
+      "purchases": "Purchase register",
+      "plan": "Planned vs actual",
+      "spending": "Spending"
+    },
+    "notes": {
+      "orders": "Orders submitted in the dates, with status, totals and dates: the order list's download.",
+      "purchases": "Every purchase record bought in the dates, with supplier, price and payment type. Cancelled records are marked and not counted.",
+      "plan": "Orders whose buying ended Done or Done short in the dates. Difference is planned minus actual: above 0 money is left, below 0 more was spent.",
+      "spending": "Actual totals of the purchase records bought in the dates, not cancelled."
+    },
+    "filters": "Filters",
+    "from": "From",
+    "to": "To",
+    "branch": "Branch",
+    "allBranches": "All my branches",
+    "category": "Category",
+    "allCategories": "All categories",
+    "apply": "Show",
+    "reset": "Reset",
+    "excel": "Download Excel",
+    "periodLine": "{first} to {last}",
+    "period": "Dates",
+    "refreshed": "Summary of {time}",
+    "refreshing": "The summary is being prepared",
+    "total": "Total",
+    "orders": {
+      "summary": "{count, plural, one {# order} other {# orders}}, planned total {total}",
+      "openList": "Open in the order list"
+    },
+    "purchases": {
+      "summary": "{count, plural, one {# record} other {# records}}, total {total}",
+      "cancelledLine": "{count, plural, one {# cancelled record} other {# cancelled records}}, not counted",
+      "sheet": "Purchase records",
+      "cancelledSheet": "Cancelled records",
+      "empty": "No purchase record was bought in these dates.",
+      "noSupplier": "No supplier",
+      "yes": "Yes",
+      "no": "No",
+      "cancelled": "Cancelled: {reason}",
+      "columns": {
+        "date": "Bought on",
+        "order": "Order",
+        "branch": "Branch",
+        "department": "Department",
+        "owner": "Owner",
+        "product": "Product",
+        "subtype": "Subtype",
+        "supplier": "Supplier",
+        "qty": "Quantity",
+        "unitPrice": "Unit price",
+        "goods": "Goods",
+        "extras": "Extra costs",
+        "total": "Record total",
+        "receipt": "Receipt",
+        "cancelReason": "Cancelled, reason"
+      }
+    },
+    "plan": {
+      "summary": "{count, plural, one {# order} other {# orders}}: planned {planned}, actual {actual}, difference {difference}",
+      "byOrder": "By order",
+      "byProduct": "By product",
+      "byManager": "By Manager",
+      "otherOwners": "Other owners",
+      "empty": "No order's buying ended in these dates.",
+      "columns": {
+        "order": "Order",
+        "branch": "Branch",
+        "owner": "Owner",
+        "product": "Product",
+        "ended": "Buying ended",
+        "outcome": "Outcome",
+        "name": "Name",
+        "orders": "Orders",
+        "planned": "Planned",
+        "actual": "Actual",
+        "difference": "Difference"
+      }
+    },
+    "spending": {
+      "summary": "{count, plural, one {# record} other {# records}}, total {total}",
+      "byBranch": "By branch",
+      "byCategory": "By category",
+      "byDepartment": "By department",
+      "bySupplier": "By supplier",
+      "byMonth": "By month",
+      "noSupplier": "No supplier",
+      "empty": "Nothing was bought in these dates.",
+      "columns": {
+        "branch": "Branch",
+        "category": "Category",
+        "department": "Department",
+        "supplier": "Supplier",
+        "month": "Month",
+        "records": "Records",
+        "amount": "Amount"
+      }
+    }
   }
 }

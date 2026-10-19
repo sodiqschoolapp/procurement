@@ -4,7 +4,9 @@ import type { BusinessDate } from "@/domain/business-date";
 
 import {
   MONEY_FORMAT,
+  QUANTITY_FORMAT,
   moneyCellValue,
+  quantityCellValue,
   signedMoneyCellValue,
 } from "@/features/orders/download/excel";
 
@@ -21,7 +23,9 @@ export type CellValue =
   | { kind: "signedMoney"; value: bigint }
   | { kind: "date"; value: BusinessDate }
   /** A count of orders (plan of 6.4): a whole number, never money. */
-  | { kind: "count"; value: number };
+  | { kind: "count"; value: number }
+  /** A quantity's numeric(14,3) text, a number cell (Reports, plan of 6.8). */
+  | { kind: "quantity"; value: string };
 
 export type AnalyticsSheet = {
   name: string;
@@ -48,6 +52,8 @@ function cellOf(cell: CellValue): string | number | Date {
       return signedMoneyCellValue(cell.value);
     case "count":
       return cell.value;
+    case "quantity":
+      return quantityCellValue(cell.value);
     case "date":
       // Midnight UTC of the Tashkent business date: Excel shows the date itself.
       return new Date(`${cell.value}T00:00:00Z`);
@@ -55,7 +61,22 @@ function cellOf(cell: CellValue): string | number | Date {
 }
 
 export async function writeAnalyticsExcel(sheet: AnalyticsSheet): Promise<Uint8Array<ArrayBuffer>> {
+  return writeAnalyticsWorkbook([sheet]);
+}
+
+/**
+ * Several tables as one file, a sheet each in the order given (the Reports, plan of 6.8, decided
+ * item 8). Their names must differ within 31 characters.
+ */
+export async function writeAnalyticsWorkbook(
+  sheets: readonly AnalyticsSheet[],
+): Promise<Uint8Array<ArrayBuffer>> {
   const workbook = new ExcelJS.Workbook();
+  for (const sheet of sheets) addSheet(workbook, sheet);
+  return new Uint8Array(await workbook.xlsx.writeBuffer());
+}
+
+function addSheet(workbook: ExcelJS.Workbook, sheet: AnalyticsSheet) {
   // Excel limits a sheet name to 31 characters.
   const worksheet = workbook.addWorksheet(sheet.name.slice(0, 31));
   for (const line of sheet.heading) worksheet.addRow([line]);
@@ -79,6 +100,7 @@ export async function writeAnalyticsExcel(sheet: AnalyticsSheet): Promise<Uint8A
         if (cell.kind === "money" && !named) moneyColumn = index + 1;
       }
       if (cell.kind === "date") row.getCell(index + 1).numFmt = DATE_FORMAT;
+      if (cell.kind === "quantity") row.getCell(index + 1).numFmt = QUANTITY_FORMAT;
     });
   }
   if (sheet.total) {
@@ -93,5 +115,4 @@ export async function writeAnalyticsExcel(sheet: AnalyticsSheet): Promise<Uint8A
   sheet.columns.forEach((_, index) => {
     worksheet.getColumn(index + 1).width = index === 0 ? 30 : 18;
   });
-  return new Uint8Array(await workbook.xlsx.writeBuffer());
 }
