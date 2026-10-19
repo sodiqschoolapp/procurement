@@ -528,7 +528,7 @@ What each role sees first, and the numbers behind the work.
   - **Build:** Payments (spending by payment type; bank transfers by supplier), Plan vs actual (overspends and savings by branch and Manager; purchases without a receipt), Settlement speed (average days from "Send to settlement" to Closed), each number with its drill-down and Excel export.
   - **Done when:** A database test: Finance's page holds only Finance's branches. By hand: read the page on the seed.
 
-- [ ] **6.7 Analytics as a PDF**
+- [x] **6.7 Analytics as a PDF**
   - **Read:** `10-notifications-analytics-reports.md` (Analytics page per role: 4); `05-order-request-form.md` (Download: 2, 3); `open-questions.md` (question 16).
   - **Build:** The whole analytics page downloads as a PDF report without signature lines, built as answered in open question 16.
   - **Done when:** A test reads the period and one total from the file.

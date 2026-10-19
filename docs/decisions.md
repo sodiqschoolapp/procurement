@@ -2325,6 +2325,29 @@ Choices made during the build:
 - Migration 0044 empties the spending tables and clears the job's tick, as 0038 to 0043; an upgrade test runs it over rows the 0043 refresh wrote (.claude/rules/database.md).
 - Tests changed because the table changed: the 0036 and 0038 constraint tests insert `analytics_spending` rows with `has_receipt`; nothing they check changed.
 
+### 6.7 Analytics as a PDF (19.10.2026)
+
+The plan's decisions as the plan review of 19.10.2026 confirmed them (correction 1: the link carries the address the page shows, as parsed; correction 2: the items renumbered).
+
+1. **Look first** (open question 16). The analytics PDF follows the order list's plain PDF (05 Download 2 and 3): A4 landscape; the fonts for Uzbek and Russian built in; on every page the letterhead, the period, the summary's time, the filters used, who downloaded it and when, and the page number; the same queries and domain functions as the screen; the user's language; no signature lines. Proposed `/spec-change` wording for 10 point 4: "The whole page downloads as a PDF report, as the order list's PDF (05 Download 2 and 3): A4 landscape, the period, the filters used, who downloaded it and when on every page; each block's numbers and tables as on the screen, each chart as its table; no signature lines."
+2. **Look first.** Charts print as their tables (the same numbers; Recharts does not render inside react-pdf).
+3. **Look first.** The drill-down lists are left out: the page shows them only after a click, and each has its own Excel.
+4. The tables are the Excel sheets of `download/sheets.ts`; their heading lines print once at the top of the file, and a table repeats only the lines it differs in (its name, and the "as of now" line of a number of now).
+5. The headline numbers (the tiles) print as label, value and lines, from the same query result with the page's texts and `changeText()` and its variants, built in `page-report.ts`; `pdf.tsx` only draws.
+6. The address is the page's, through `parseAnalyticsParams()`; without `branch=` the branch view of the cookie; drill-down keys ignored; a Manager's file names no Manager.
+7. Its own route `/analytics/report`, file name `analytics-<YYYY-MM-DD>.pdf`, the business date from the clock.
+8. The "Summary updated at" line prints under the period.
+9. **Look first** (a known defect inherited). @react-pdf/renderer 4.9.0 loses letters in a PDF made after a Russian one in the same server process (report of 3.5). The analytics PDF uses the same renderer and fonts, so it carries the same risk in production. Not fixed here; the Russian test is its own file (`route-russian.db.test.ts`). The fix task proposed after 3.5 is still to be placed.
+10. Prices prints the trend of the subtype the page shows (`variant=`, else the most bought).
+
+Choices made during the build:
+
+- `readAnalyticsPage()` moved from the page to `src/features/analytics/page-data.ts` and takes the branch cookie's value as an argument, so the route can pass the request's cookie (a route test runs outside a Next.js request). It asks `data.view` itself first (permission review, Should fix 1).
+- The route reads the school name with `getSchoolName()`, which asks `profile.edit` (every role has it); the school name is no branch data (permission review, Should fix 2: noted, not changed).
+- Finance's "spending by payment type" table is `headSpendingSheet(…, "payments")` over `getFinanceSpending()`'s `period`, `total` and `payments`: the same `paymentTotals()` the Excel link of Finance's Payments downloads through `getHeadSpending()`.
+- A block's title is kept with its notes and tiles on one page, and a table's caption and column titles with its first rows (`wrap={false}`, `minPresenceAhead`).
+- The test the plan named `page-report.test.ts` (unit) is a database test, `page-report.db.test.ts`: the page's queries need the database to give the numbers the report must repeat.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

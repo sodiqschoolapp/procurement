@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { readFile } from "node:fs/promises";
 
 import { type Page, expect, test } from "@playwright/test";
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -1115,4 +1116,28 @@ test("6.6b: Finance sees Payments, Plan vs actual and Settlement speed and opens
   await expect(page.locator("[data-settlement-row]")).toHaveCount(1);
   await expect(page.locator("[data-settlement-row]")).toContainText(seeded.number);
   expect(await scrollsSideways(page)).toBe(false);
+});
+
+test("6.7: the Head downloads the whole page as a PDF; the link carries what the page shows (10 point 4; plan of 6.7, correction 1)", async ({
+  page,
+}) => {
+  await signIn(page);
+  // An address the parser refuses falls back to this month; the link names what is shown.
+  await page.goto("/analytics?period=bogus");
+  await expect(page).toHaveURL(/\/analytics$/);
+  const link = page.locator("[data-report-pdf]");
+  // The streamed page shows the link once its content is in: wait for it before measuring.
+  await expect(link).toBeVisible();
+  await expect(link).toHaveText(uz.analytics.pdf);
+  await expect(link).toHaveAttribute("href", /^\/analytics\/report\?period=this_month&branch=/);
+  expect(await scrollsSideways(page)).toBe(false);
+  if (test.info().project.name === "phone-375") {
+    const box = await link.boundingBox();
+    expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
+  }
+
+  const [pdf] = await Promise.all([page.waitForEvent("download"), link.click()]);
+  expect(pdf.suggestedFilename()).toMatch(/^analytics-\d{4}-\d{2}-\d{2}\.pdf$/);
+  const bytes = await readFile(await pdf.path());
+  expect(bytes.subarray(0, 5).toString()).toBe("%PDF-");
 });

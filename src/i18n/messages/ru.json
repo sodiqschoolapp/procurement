@@ -2324,6 +2324,13 @@
     "periodLine": "{first} – {last}",
     "monthLabel": "{month} {year}",
     "excel": "Excel",
+    "pdf": "Скачать PDF",
+    "report": {
+      "title": "Аналитика",
+      "downloadedBy": "Скачал(а) {name}, {at}",
+      "page": "Страница {page} из {pages}",
+      "empty": "За этот период ничего нет."
+    },
     "change": {
       "up": "+{amount} (+{percent} %) к прошлому периоду",
       "down": "−{amount} (−{percent} %) к прошлому периоду",
