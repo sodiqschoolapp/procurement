@@ -79,7 +79,7 @@ export default async function BranchesPage({
                   <td className="px-4 py-3 font-semibold">
                     <Link
                       href={`/branches/${branch.id}`}
-                      className="inline-flex min-h-11 items-center underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:min-h-0"
+                      className="inline-flex min-h-11 min-w-11 items-center underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:min-h-0"
                     >
                       {branch.code}
                     </Link>

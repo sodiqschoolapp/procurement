@@ -106,7 +106,7 @@ export async function OrdersView({ block, period, filters }: Common & { block: O
       <p className="text-sm leading-5 font-semibold text-muted-foreground">{label}</p>
       <Link
         href={href}
-        className="text-[28px] leading-[34px] font-bold tabular-nums underline-offset-4 hover:underline"
+        className="inline-flex min-h-11 min-w-11 items-center text-[28px] leading-[34px] font-bold tabular-nums underline-offset-4 hover:underline"
       >
         {count(value)}
       </Link>
@@ -220,7 +220,7 @@ export async function MyApprovalsView({ block, period, filters }: Common & { blo
               <>
                 <Link
                   href={approvals({ kind: "mine" })}
-                  className="text-[28px] leading-[34px] font-bold tabular-nums underline-offset-4 hover:underline"
+                  className="inline-flex min-h-11 min-w-11 items-center text-[28px] leading-[34px] font-bold tabular-nums underline-offset-4 hover:underline"
                 >
                   {t("speed.hours", { hours: format.quantity(block.mine.hours) })}
                 </Link>
@@ -239,7 +239,7 @@ export async function MyApprovalsView({ block, period, filters }: Common & { blo
             </p>
             <Link
               href={approvals({ kind: "waiting", step: "PENDING_PRINCIPAL", group: null })}
-              className="text-[28px] leading-[34px] font-bold tabular-nums underline-offset-4 hover:underline"
+              className="inline-flex min-h-11 min-w-11 items-center text-[28px] leading-[34px] font-bold tabular-nums underline-offset-4 hover:underline"
             >
               {count(block.waiting.all)}
             </Link>

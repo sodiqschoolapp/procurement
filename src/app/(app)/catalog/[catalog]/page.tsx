@@ -59,7 +59,7 @@ export default async function CatalogListPage({
       <AdminNav current="catalog" />
       <Link
         href="/catalog"
-        className="inline-flex min-h-11 items-center gap-1 self-start text-sm leading-5 font-semibold text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:min-h-0"
+        className="inline-flex min-h-11 min-w-11 items-center gap-1 self-start text-sm leading-5 font-semibold text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:min-h-0"
       >
         <Icon name="chevron_left" />
         {t("back")}
@@ -143,7 +143,7 @@ export default async function CatalogListPage({
                           <td key={field.key} className="px-4 py-3 font-semibold">
                             <Link
                               href={`/catalog/${kind}/${row.id}`}
-                              className="inline-flex min-h-11 items-center underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:min-h-0"
+                              className="inline-flex min-h-11 min-w-11 items-center underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:min-h-0"
                             >
                               {row.name}
                             </Link>

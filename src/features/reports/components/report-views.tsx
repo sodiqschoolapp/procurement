@@ -88,7 +88,7 @@ export async function OrderRegisterView({
       </p>
       <Link
         href={listHref}
-        className="inline-flex min-h-11 items-center self-start text-sm font-semibold text-link underline-offset-2 hover:underline sm:min-h-0"
+        className="inline-flex min-h-11 min-w-11 items-center self-start text-sm font-semibold text-link underline-offset-2 hover:underline sm:min-h-0"
         data-order-list-link
       >
         {t("orders.openList")}

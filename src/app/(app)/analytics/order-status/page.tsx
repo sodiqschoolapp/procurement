@@ -106,7 +106,7 @@ export default async function AnalyticsOrderStatusPage({
     <div className="mx-auto flex max-w-6xl flex-col gap-6">
       <Link
         href={`/analytics?${analyticsSearch(params.period, params.filters)}`}
-        className="inline-flex min-h-11 items-center self-start text-sm font-semibold underline-offset-2 hover:underline sm:min-h-0"
+        className="inline-flex min-h-11 min-w-11 items-center self-start text-sm font-semibold underline-offset-2 hover:underline sm:min-h-0"
       >
         {t("approvals.back")}
       </Link>
@@ -129,7 +129,7 @@ export default async function AnalyticsOrderStatusPage({
         </div>
         <a
           href={excel}
-          className="inline-flex min-h-11 items-center text-sm font-semibold underline-offset-2 hover:underline"
+          className="inline-flex min-h-11 min-w-11 items-center text-sm font-semibold underline-offset-2 hover:underline"
           data-excel="statusOrders"
         >
           {t("excel")}

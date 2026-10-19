@@ -370,17 +370,25 @@ async function smallTargets(page: Page): Promise<string[]> {
 /**
  * The Tab walk (decided item 7): from the top, Tab until focus comes back to the first element.
  * Every element reached shows a focus indicator; focus moves on every press; <main> is reached
- * within 40 presses; 400 presses without wrapping is a trap.
+ * within 40 presses. Focus that comes back to an element it already left, before the first, is a
+ * trap (it circles without reaching the rest of the page). The outer stop is one press per
+ * focusable element of the page and 100 more: a page can hold thousands (the Head's Analytics).
  */
 async function tabWalk(page: Page): Promise<void> {
   await page.evaluate(() => {
     (document.activeElement as HTMLElement | null)?.blur();
     window.scrollTo(0, 0);
   });
+  const focusable = await page.evaluate(
+    () =>
+      document.querySelectorAll(
+        "a[href], button, input, select, textarea, summary, [tabindex]:not([tabindex='-1'])",
+      ).length,
+  );
   const problems: string[] = [];
   let mainAt: number | null = null;
   let stops = 0;
-  for (let press = 1; press <= 400; press += 1) {
+  for (let press = 1; press <= focusable + 100; press += 1) {
     await page.keyboard.press("Tab");
     const at = await page.evaluate(() => {
       const element = document.activeElement as HTMLElement | null;
@@ -389,6 +397,8 @@ async function tabWalk(page: Page): Promise<void> {
       }
       const first = element.hasAttribute("data-a11y-first");
       const same = element.hasAttribute("data-a11y-last");
+      const again = !same && element.hasAttribute("data-a11y-seen");
+      element.setAttribute("data-a11y-seen", "");
       for (const old of document.querySelectorAll("[data-a11y-last]")) {
         old.removeAttribute("data-a11y-last");
       }
@@ -417,6 +427,7 @@ async function tabWalk(page: Page): Promise<void> {
         kind: "element" as const,
         first,
         same,
+        again,
         inMain: element.closest("main") !== null,
         visible: element.matches(":focus-visible") && indicator,
         name: `${element.tagName.toLowerCase()} "${name.slice(0, 40)}"`,
@@ -430,17 +441,18 @@ async function tabWalk(page: Page): Promise<void> {
       return;
     }
     stops += 1;
+    if (at.again) throw new Error(`Tab came back to ${at.name} before the first element: a trap`);
     if (at.same) problems.push(`focus stays on ${at.name}`);
     if (!at.visible) problems.push(`no focus indicator on ${at.name}`);
     if (at.inMain && mainAt === null) mainAt = press;
   }
-  throw new Error("Tab never came back to the first element in 400 presses: a keyboard trap");
+  throw new Error(`Tab never came back to the first element in ${focusable + 100} presses`);
 }
 
 for (const screen of SCREENS) {
   const title = `${screen.route}${screen.note ? ` (${screen.note})` : ""} as ${screen.who ?? "nobody signed in"}: no serious axe finding in both themes, 44 px targets, the Tab walk (9.1d; 11 rule 13)`;
   test(title, async ({ browser, world }, info) => {
-    test.setTimeout(180_000);
+    test.setTimeout(300_000);
     const viewport = info.project.use.viewport!;
     const phone = viewport.width < 640;
     const url = screen.url(world);

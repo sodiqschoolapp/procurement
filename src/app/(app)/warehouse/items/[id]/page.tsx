@@ -89,7 +89,7 @@ export default async function ItemCardPage({
       <div className="flex flex-col gap-2">
         <Link
           href={`/warehouse/stock?branch=${card.branchId}`}
-          className="inline-flex min-h-11 items-center gap-1 self-start text-sm font-semibold text-link sm:min-h-0"
+          className="inline-flex min-h-11 min-w-11 items-center gap-1 self-start text-sm font-semibold text-link sm:min-h-0"
         >
           <Icon name="arrow_back" size={18} />
           {t("back")}

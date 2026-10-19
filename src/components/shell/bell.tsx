@@ -44,7 +44,12 @@ export function Bell({ count }: { count: number }) {
   return (
     <Link
       href="/notifications"
-      aria-label={t("notifications.bell", { count })}
+      // The name holds the number shown, "99+" included (WCAG 2.5.3; plan of 9.1d).
+      aria-label={
+        label === null || label === String(count)
+          ? t("notifications.bell", { count })
+          : t("notifications.bellMany", { shown: label })
+      }
       data-testid="bell"
       className={buttonVariants({ variant: "ghost", size: label === null ? "icon" : "default" })}
     >

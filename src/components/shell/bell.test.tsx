@@ -38,7 +38,8 @@ describe("the bell (plan of 0.11, Screens)", () => {
   it.each([
     [1, "1", "Notifications, 1 unread"],
     [7, "7", "Notifications, 7 unread"],
-    [120, "99+", "Notifications, 120 unread"],
+    // The name says what is shown (WCAG 2.5.3 Label in Name; plan of 9.1d).
+    [120, "99+", "Notifications, 99+ unread"],
   ])("%i unread shows %j and is named %j", (count, shown, label) => {
     const html = render(count);
     expect(visibleText(html)).toBe(shown);

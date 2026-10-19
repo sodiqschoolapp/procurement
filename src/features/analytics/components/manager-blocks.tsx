@@ -37,7 +37,7 @@ type Common = { period: PeriodInput; filters: AnalyticsFilters; userId: string }
 
 const linkClass = "font-semibold whitespace-nowrap text-link underline-offset-2 hover:underline";
 const tileNumber =
-  "text-[28px] leading-[34px] font-bold tabular-nums underline-offset-4 hover:underline";
+  "inline-flex min-h-11 min-w-11 items-center text-[28px] leading-[34px] font-bold tabular-nums underline-offset-4 hover:underline";
 
 /** The filters with the user as the Manager: the lists behind the blocks' numbers. */
 const mineOf = (filters: AnalyticsFilters, userId: string): AnalyticsFilters => ({

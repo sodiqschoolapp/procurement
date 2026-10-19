@@ -474,6 +474,7 @@
   "notifications": {
     "title": "Notifications",
     "bell": "{count, plural, =0 {Notifications} one {Notifications, # unread} other {Notifications, # unread}}",
+    "bellMany": "Notifications, {shown} unread",
     "unreadFact": "{count, plural, one {# unread} other {# unread}}",
     "unread": "Unread",
     "markAllRead": "Mark all as read",

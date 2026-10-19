@@ -193,7 +193,7 @@ export async function PurchasesTab({ order }: { order: OrderPage }) {
                             href={`/files/${file.fileId}/${file.isImage ? "large" : "original"}`}
                             target="_blank"
                             rel="noreferrer"
-                            className="inline-flex min-h-11 items-center font-semibold underline underline-offset-2 sm:min-h-0"
+                            className="inline-flex min-h-11 min-w-11 items-center font-semibold underline underline-offset-2 sm:min-h-0"
                           >
                             {t("receipt", { n: index + 1 })}
                           </a>
