@@ -99,7 +99,10 @@ describe("per order, product and Manager (10 Reports; 08 Difference)", () => {
         plan: { quantity: "10", price: 5_000n, extras: [], paymentType: "CASH" },
         records: [{ qty: "10.000", unitPrice: 4_500n, extras: [], isCancelled: false }],
       }),
-    ).toMatchObject({ planned: byOrder.get(left.id)!.planned, actual: byOrder.get(left.id)!.actual });
+    ).toMatchObject({
+      planned: byOrder.get(left.id)!.planned,
+      actual: byOrder.get(left.id)!.actual,
+    });
     expect(byOrder.get(left.id)).toMatchObject({ colour: "amber", difference: 5_000n });
     expect(byOrder.get(even.orderId)).toMatchObject({ colour: "green", difference: 0n });
 
