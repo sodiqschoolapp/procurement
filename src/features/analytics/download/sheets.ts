@@ -48,7 +48,7 @@ import type { AnalyticsSheet, CellValue } from "./excel";
 
 const MESSAGES = { uz, ru, en } satisfies Record<Locale, unknown>;
 
-function translators(locale: Locale) {
+export function translators(locale: Locale) {
   const messages = MESSAGES[locale];
   const t = createTranslator({ locale, messages, namespace: "analytics" });
   const tRoot = createTranslator({ locale, messages });
@@ -60,7 +60,7 @@ function translators(locale: Locale) {
  * held, plan of 6.4c, decided item 4; stock, plan of 6.4d, decided item 2) has no period: `null`
  * names it as of now, by `now` (cash held's line unless given).
  */
-function heading(
+export function heading(
   locale: Locale,
   name: string,
   period: { first: string; last: string } | null,

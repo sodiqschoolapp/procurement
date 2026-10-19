@@ -2324,6 +2324,13 @@
     "periodLine": "{first} – {last}",
     "monthLabel": "{month} {year}",
     "excel": "Excel",
+    "pdf": "PDF yuklab olish",
+    "report": {
+      "title": "Tahlil",
+      "downloadedBy": "Yuklab oldi: {name}, {at}",
+      "page": "{pages} betdan {page}-bet",
+      "empty": "Bu davrda hech narsa yo'q."
+    },
     "change": {
       "up": "Oldingi davrga nisbatan +{amount} (+{percent} %)",
       "down": "Oldingi davrga nisbatan −{amount} (−{percent} %)",

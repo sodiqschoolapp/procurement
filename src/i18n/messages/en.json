@@ -2324,6 +2324,13 @@
     "periodLine": "{first} – {last}",
     "monthLabel": "{month} {year}",
     "excel": "Excel",
+    "pdf": "Download PDF",
+    "report": {
+      "title": "Analytics",
+      "downloadedBy": "Downloaded by {name}, {at}",
+      "page": "Page {page} of {pages}",
+      "empty": "Nothing in this period."
+    },
     "change": {
       "up": "+{amount} (+{percent} %) against the period before",
       "down": "−{amount} (−{percent} %) against the period before",
