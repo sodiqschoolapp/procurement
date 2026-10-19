@@ -2,7 +2,8 @@ name: CI
 
 # The gate of every pull request (build-plan 0.3; docs/decisions.md, "Decided ahead: task 0.3").
 # Two jobs, named exactly `checks` and `e2e`: the review routine reads these names and the
-# owner makes them required (docs/cloud-loop.md, section 7). They are never renamed.
+# owner makes them required (docs/cloud-loop.md, section 7). They are never renamed. Since
+# 20 October 2026 each is a small last job that is green only when every part before it is (D53).
 #
 # PostgreSQL is the service of docker-compose.yml, as on the laptop and in a cloud session.
 # The workflow holds no secret: DATABASE_URL is the public local address of README.md, with no
@@ -26,9 +27,12 @@ env:
   DATABASE_URL: postgres://procurement@127.0.0.1:5433/procurement
 
 jobs:
-  checks:
+  # The checks run in parts at the same time since 20 October 2026 (D53): as one job they took 13 to
+  # 15 minutes, 11 to 12.5 of them the tests. This part holds everything but the tests; the job named
+  # "checks" at the end is the one branch protection and the loop read.
+  lint-and-migrations:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       # The whole history: the migration check below compares with the base. No step needs the
       # token after checkout, so it is not left in .git/config for the code under test.
@@ -109,9 +113,6 @@ jobs:
             exit 1
           fi
 
-      - name: Unit and database tests
-        run: npm test
-
       - name: The schema files and the migrations agree
         run: |
           npx drizzle-kit generate
@@ -148,9 +149,65 @@ jobs:
             exit 1
           fi
 
-  e2e:
+  # The unit and database tests in three parts, each on its own machine with its own PostgreSQL:
+  # every *.db.test.ts file gets its own database copied from a template the part builds from the
+  # migrations (tests/helpers/), so the parts share nothing. vitest divides the test files.
+  tests:
+    name: tests (${{ matrix.part }}/3)
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        part: [1, 2, 3]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Start PostgreSQL
+        run: docker compose up -d --wait
+
+      - name: Unit and database tests (part ${{ matrix.part }} of 3)
+        run: npx vitest run --shard=${{ matrix.part }}/3
+
+  checks:
+    needs: [lint-and-migrations, tests]
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Every part of the checks passed
+        env:
+          LINT: ${{ needs.lint-and-migrations.result }}
+          TESTS: ${{ needs.tests.result }}
+        run: |
+          echo "lint-and-migrations: $LINT"
+          echo "tests: $TESTS"
+          if [ "$LINT" != "success" ] || [ "$TESTS" != "success" ]; then
+            echo "::error::A part of the checks did not pass; its job above names the failure."
+            exit 1
+          fi
+
+  # The browser tests in four parts at the same time since 20 October 2026 (D53): as one job they
+  # took 17 to 23 minutes. Each part has its own PostgreSQL, its own app server and its own database
+  # procurement_e2e (tests/e2e/global-setup.ts); Playwright divides the tests between the parts.
+  e2e-parts:
+    name: e2e (${{ matrix.shard }}/4)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -174,8 +231,29 @@ jobs:
       - name: Install the browser
         run: npx playwright install --with-deps chromium --only-shell
 
-      - name: Playwright
-        run: npm run test:e2e
+      - name: Playwright (part ${{ matrix.shard }} of 4)
+        run: npx playwright test --shard=${{ matrix.shard }}/4
+
+      - name: Keep the traces of a failed run
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: playwright-traces-${{ matrix.shard }}
+          path: test-results/
+          retention-days: 14
+          if-no-files-found: ignore
+
+  # Build-plan 0.16: the image App Platform runs, built and started in its own job, beside the parts.
+  image:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Start PostgreSQL
+        run: docker compose up -d --wait
 
       # Build-plan 0.16: the image App Platform runs. It is built here as App Platform builds it,
       # migrates a fresh database before the app starts, and answers on /health with this commit.
@@ -242,11 +320,20 @@ jobs:
             exit 1
           fi
 
-      - name: Keep the traces of a failed run
-        if: failure()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: playwright-traces
-          path: test-results/
-          retention-days: 14
-          if-no-files-found: ignore
+  e2e:
+    needs: [e2e-parts, image]
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Every part of the browser tests and the image passed
+        env:
+          PARTS: ${{ needs.e2e-parts.result }}
+          IMAGE: ${{ needs.image.result }}
+        run: |
+          echo "e2e-parts: $PARTS"
+          echo "image: $IMAGE"
+          if [ "$PARTS" != "success" ] || [ "$IMAGE" != "success" ]; then
+            echo "::error::A part of the browser tests or the image did not pass; its job above names the failure."
+            exit 1
+          fi
