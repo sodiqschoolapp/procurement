@@ -161,7 +161,7 @@ test("Done when: the Head chooses a period and a category, clicks a bar and sees
   await page.locator("[data-filter-to]").fill("2020-01-31");
   await page.locator("[data-filter-branch]").selectOption({ label: "Sinov filiali A" });
   await page.locator("[data-filter-category]").selectOption({ label: category });
-  await page.getByRole("button", { name: uz.analytics.apply }).click();
+  await page.getByRole("search").getByRole("button", { name: uz.analytics.apply }).click();
   await expect(page).toHaveURL(/period=custom/);
 
   // 8 333 + 1 000 + 20 000 = 29 333, each record rounded on its own (08).
