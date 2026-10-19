@@ -406,9 +406,10 @@
         "empty": "Ortiqcha xarajat yo'q. Hisob-kitobdagi chegaradan oshgan buyurtma shu yerda chiqadi."
       },
       "writeOffs": {
-        "title": "Tasdiqlanadigan hisobdan chiqarishlar",
+        "title": "Tasdiqlanadigan hisobdan chiqarish va tuzatishlar",
         "row": "{date} · {reason} · {name}",
-        "empty": "Tasdiqlanadigan hisobdan chiqarish yo'q. Menejer yuborgan hisobdan chiqarish shu yerda chiqadi."
+        "empty": "Sizni hech narsa kutmayapti. Menejer soʻragan hisobdan chiqarish yoki hamma mahsuloti sanalgan inventarizatsiya shu yerda chiqadi.",
+        "countRow": "{date} · Inventarizatsiya · {name}"
       },
       "suggestions": {
         "title": "Mahsulot takliflari",
@@ -2429,7 +2430,21 @@
       "save": "Saqlash",
       "saved": "{number} sanalgan miqdorlari saqlandi.",
       "stockAtStartLine": "Boshidagi qoldiq: {qty} {unit}",
-      "branchOption": "{code} · {name}"
+      "branchOption": "{code} · {name}",
+      "decision": {
+        "approve": "Tasdiqlash",
+        "refuse": "Rad etish",
+        "approveTitle": "{number} inventarizatsiyasi tasdiqlansinmi?",
+        "approveResult": "{count, plural, =0 {Farq yoʻq: inventarizatsiya tasdiqlanadi, qoldiq oʻzgarmaydi.} other {# ta mahsulot qoldigʻi hozir oʻrtacha narxda sanalgan miqdorga tuzatiladi.}} Boshlangandan keyin harakatlangan mahsulot qayta sanashga qaytariladi. Menejerga xabar beriladi.",
+        "refuseTitle": "{number} inventarizatsiyasi rad etilsinmi?",
+        "refuseResult": "{number} butunlay rad etiladi. Qoldiq oʻzgarmaydi. Menejerga xabar beriladi.",
+        "approved": "{number} inventarizatsiyasi tasdiqlandi, qoldiq tuzatildi.",
+        "refused": "{number} inventarizatsiyasi rad etildi.",
+        "recount": "{number} boshlangandan keyin # ta mahsulot harakatlandi. Hech narsa tuzatilmadi: inventarizatsiya qayta sanash uchun menejerga qaytarildi.",
+        "conflict": "Siz koʻrayotganingizda sanalgan miqdorlar oʻzgardi. Ularni qayta tekshirib, tasdiqlang.",
+        "waiting": "Hamma mahsulot sanaldi. Rahbar qarorini kutmoqda; qoldiq oʻzgarmagan.",
+        "countAgain": "Qayta sanash"
+      }
     }
   },
   "analytics": {

@@ -1,4 +1,4 @@
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, or, sql } from "drizzle-orm";
 
 import { businessDate, businessMonth, type BusinessDate } from "@/domain/business-date";
 import { orderOverspend, overspendNeedsAck } from "@/domain/money-ledger";
@@ -53,6 +53,8 @@ export type OverspendLine = {
 export type WriteOffLine = {
   id: string;
   number: string;
+  /** WRITE_OFF, or COUNT for a count's corrections (plan of 7.4). */
+  type: (typeof stockDocuments.$inferSelect)["type"];
   branchCode: string;
   docDate: string;
   reason: (typeof stockDocuments.$inferSelect)["reason"];
@@ -146,9 +148,19 @@ export async function getHeadHome(userId: string, branch: string | null): Promis
       ];
     });
 
-    // Write-offs to approve (progress 5.11, "For 6.2"), newest first.
+    // Write-offs and corrections to approve (progress 5.11, "For 6.2"; 10 Home page per role,
+    // Head: "write-offs and corrections to approve"), newest first: a waiting write-off, and a
+    // waiting count every line of which is counted, which is what asks the Head (countComplete();
+    // plan of 7.4, decided items 1 and 11).
     const writeOffWhere = and(
-      eq(stockDocuments.type, "WRITE_OFF"),
+      or(
+        eq(stockDocuments.type, "WRITE_OFF"),
+        and(
+          eq(stockDocuments.type, "COUNT"),
+          sql`not exists (select 1 from stock_document_lines l
+            where l.document_id = ${stockDocuments.id} and l.counted_qty is null)`,
+        ),
+      ),
       eq(stockDocuments.status, "PENDING_APPROVAL"),
       branchFilter(writeOffActor, stockDocuments.branchId),
       branch ? eq(stockDocuments.branchId, branch) : undefined,
@@ -157,6 +169,7 @@ export async function getHeadHome(userId: string, branch: string | null): Promis
       .select({
         id: stockDocuments.id,
         number: stockDocuments.number,
+        type: stockDocuments.type,
         branchCode: branches.code,
         docDate: stockDocuments.docDate,
         reason: stockDocuments.reason,

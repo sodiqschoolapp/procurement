@@ -494,7 +494,7 @@ async function HeadHome({ userId, branch }: { userId: string; branch: string | n
         count={home.writeOffs.count}
         empty={home.writeOffs.count === 0 ? t("head.writeOffs.empty") : null}
         link={{
-          href: "/warehouse/documents?type=WRITE_OFF",
+          href: "/warehouse/documents",
           label: t("showAll", { count: home.writeOffs.count }),
         }}
       >
@@ -504,11 +504,18 @@ async function HeadHome({ userId, branch }: { userId: string; branch: string | n
               key={row.id}
               href={`/warehouse/documents/${row.id}`}
               title={t("head.pair", { first: row.number, second: row.branchCode })}
-              line={t("head.writeOffs.row", {
-                date: format.date(row.docDate),
-                reason: row.reason ? tReasons(row.reason as WriteOffReason) : "",
-                name: row.askedBy,
-              })}
+              line={
+                row.type === "COUNT"
+                  ? t("head.writeOffs.countRow", {
+                      date: format.date(row.docDate),
+                      name: row.askedBy,
+                    })
+                  : t("head.writeOffs.row", {
+                      date: format.date(row.docDate),
+                      reason: row.reason ? tReasons(row.reason as WriteOffReason) : "",
+                      name: row.askedBy,
+                    })
+              }
             />
           ))}
         </ul>

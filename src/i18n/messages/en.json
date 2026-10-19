@@ -406,9 +406,10 @@
         "empty": "No overspend waits for you. An order in settlement above the guard appears here."
       },
       "writeOffs": {
-        "title": "Write-offs to approve",
+        "title": "Write-offs and corrections to approve",
         "row": "{date} · {reason} · {name}",
-        "empty": "No write-off waits for you. A write-off a Manager asks for appears here."
+        "empty": "Nothing waits for you. A write-off a Manager asks for, or a stock count once every item is counted, appears here.",
+        "countRow": "{date} · Stock count · {name}"
       },
       "suggestions": {
         "title": "Product suggestions",
@@ -2429,7 +2430,21 @@
       "save": "Save",
       "saved": "Counted quantities of {number} are saved.",
       "stockAtStartLine": "Stock at start: {qty} {unit}",
-      "branchOption": "{code} · {name}"
+      "branchOption": "{code} · {name}",
+      "decision": {
+        "approve": "Approve",
+        "refuse": "Refuse",
+        "approveTitle": "Approve count {number}?",
+        "approveResult": "{count, plural, =0 {No item differs: the count is approved and the stock does not change.} one {The stock of this # item is corrected to the counted quantity now, at its average cost.} other {The stock of these # items is corrected to the counted quantities now, at their average cost.}} An item that moved since the start goes back to be counted again. The Manager is told.",
+        "refuseTitle": "Refuse count {number}?",
+        "refuseResult": "{number} is refused for good. The stock does not change. The Manager is told.",
+        "approved": "Count {number} is approved and the stock is corrected.",
+        "refused": "Count {number} is refused.",
+        "recount": "{count, plural, one {# item} other {# items}} moved since the start of {number}. Nothing is corrected: the count goes back to the Manager to count {count, plural, one {it} other {them}} again.",
+        "conflict": "The counted quantities changed while you were looking. Check them again, then approve.",
+        "waiting": "Every item is counted. Waiting for the Head's decision; the stock has not changed.",
+        "countAgain": "Count again"
+      }
     }
   },
   "analytics": {
