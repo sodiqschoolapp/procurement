@@ -27,6 +27,8 @@ blob-report/
 *.xlsx
 !tests/fixtures/**/*.xlsx
 !public/templates/**/*.xlsx
+# the interface texts for the owner to correct (task 8.4); no school data
+!docs/translations.xlsx
 
 # machine files
 *.log
