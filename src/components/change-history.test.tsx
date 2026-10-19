@@ -68,7 +68,7 @@ describe("the change-history list (04-catalogs.md rule 9)", () => {
     expect(text).toContain("Who Before Old Name After New Name");
     expect(text).toContain("What Before 1 250 000 so'm After 2 500 000 so'm");
     expect(text).toContain("When Before Yes After No");
-    expect(text).toContain("Change history Before O'zbekcha After Русский");
+    expect(text).toContain("Change history Before Oʻzbekcha After Русский");
     // An unchanged field is not listed.
     expect(text).not.toContain("Other field");
   });
@@ -198,7 +198,7 @@ describe("the change-history list (04-catalogs.md rule 9)", () => {
   it("shows one line when there is nothing yet", () => {
     expect(textOf(render([]))).toBe("No changes yet");
     expect(textOf(render([], {}, "ru"))).toBe("Изменений пока нет");
-    expect(textOf(render([], {}, "uz"))).toBe("Hozircha o'zgarish yo'q");
+    expect(textOf(render([], {}, "uz"))).toBe("Hozircha oʻzgarish yoʻq");
   });
 
   // 11-screens-and-ux.md rule 14; plan of 0.9: every action that writes an audit row has its label.

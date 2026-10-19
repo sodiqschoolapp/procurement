@@ -597,7 +597,7 @@ The scheduled work, and the translation pass.
   - **Build:** A nightly job recomputes `stock_balances` from the movements and reports any mismatch, as answered in open question 17; a weekly job saves a copy of the database to R2.
   - **Done when:** Database test: a balance changed directly in the database is reported. By hand on the test copy: the weekly file is in the bucket.
 
-- [ ] **8.4 Translation pass**
+- [x] **8.4 Translation pass**
   - **Read:** `02-assumptions.md` (A2); `11-screens-and-ux.md` (Rules for a smooth feel: 14).
   - **Build:** All three languages complete and consistent; a script exports every Uzbek and Russian text to one Excel file for the owner to correct, and reads the corrected file back.
   - **Done when:** The missing-key check is green; the owner has the file; a corrected file changes the message files and nothing else.

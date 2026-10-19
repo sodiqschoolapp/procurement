@@ -2598,6 +2598,24 @@ Choices made during the build:
 - Permission review, should fix 1: for 9.4 to 9.6, the copies hold password hashes and live session rows, and sit in the files bucket, so its R2 token and any public access reach them too; a bucket of their own, or a token scoped to `backups/`, is the safer production shape. A test holds that no download key reaches `backups/`.
 - The managed database's `idle_in_transaction_session_timeout` could not be read from here; PostgreSQL's default and the local server's is 0 (none). The held transaction of the copy relies on it.
 
+### 8.4 Translation pass (19.10.2026)
+
+The plan's decisions as the plan review of 19.10.2026 confirmed them (its three corrections applied), and those of the build. The Look first item comes first.
+
+1. **Look first** (a spec text that should change). The currency word stays `so'm` with an ASCII apostrophe in `format.currency` of all three files, as `11-screens-and-ux.md` rule 10 writes it and decisions 0.5 item 2 kept it; every other Uzbek text writes `soʻm`. Proposed `/spec-change` for rule 10: "Money as `1 250 000 soʻm` (Uzbek oʻ, U+02BB)", then one value in each file.
+2. "Consistent" is the check of `scripts/check-translations.mjs`: every value a valid ICU message; the same argument and tag names and the same `select` options in all three (the kind of an argument does not count: an Uzbek count without a plural is good Uzbek); no `#` outside a plural; every plural has `other`; a Russian plural names `one`, `few`, `many` and `other`, or only `=n` forms and `other`; no Cyrillic in Uzbek and English; a Cyrillic letter in every Russian value with words outside its arguments; the keys of `SCRIPT_EXEMPT` (language names, logo, currency, shortcut, number placeholder, `analytics.excel`) leave out the script checks.
+3. Uzbek writes oʻ/gʻ with U+02BB and the tutuq belgisi with U+02BC (`uzbekApostrophes()`); "Oʻzbekcha" in `languages.uz` of all three files. On import, an ASCII or curly apostrophe between letters in the Uzbek column becomes the right sign before the check, so the owner can type `'`.
+4. Import: a cell counts as corrected only when it differs from the hidden "Exported" sheet; a corrected text that also changed in the files since the export is a conflict; a key no longer in the files is skipped when unchanged and refused when corrected; an empty cell, a key twice, a changed header, or a check problem in the result refuses the whole file and nothing is written. The English column is never read back. The files are written as `JSON.stringify(…, null, 2)` plus a newline.
+5. The owner's file is `docs/translations.xlsx`, committed; `npm run i18n:export` makes a fresh one. No CI check keeps it current; item 4 keeps an old copy safe.
+6. The ICU reader is in `scripts/check-translations.mjs`, not `@formatjs/icu-messageformat-parser` (a new direct dependency). A unit test formats every value of the three files through next-intl's `createTranslator` with invented arguments and fails on any error or a printed `#` (review correction 1).
+
+Choices made during the build:
+
+- Russian plurals: `one`/`few`/`other` got `many` equal to `other`; `one`/`other` with `#` got `few` and `many` equal to `other`; `one`/`other` without `#` (it/they) became `=1`/`other`, since Russian `one` is also 21, 31 ….
+- Three values gained the argument the others had: `warehouse.count.decision.recount` (uz, printed a literal `#`), `orders.moves.result.REOPEN_BUYING` and `ACKNOWLEDGE_OVERSPEND` (uz, ru). `orders.ticked.failed` (ru) reads "не принял дату и обновлён" per form.
+- `.gitignore` refuses every `*.xlsx` (real school data); `!docs/translations.xlsx` lets the owner's file in: it holds interface texts only.
+- The workbook's created and modified stamps are a fixed moment (review correction 2).
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.
