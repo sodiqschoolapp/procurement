@@ -107,6 +107,10 @@ describe("reminders (06 rule 9; 10 Notifications)", () => {
     setClock("2031-01-10T07:00:00Z");
     const { branch, manager } = await scene();
     const principal = await insertUser("PRINCIPAL", { branches: [branch.id] });
+    const inactivePrincipal = await insertUser("PRINCIPAL", {
+      branches: [branch.id],
+      isActive: false,
+    });
     const other = await scene();
     const otherPrincipal = await insertUser("PRINCIPAL", { branches: [other.branch.id] });
 
@@ -138,12 +142,13 @@ describe("reminders (06 rule 9; 10 Notifications)", () => {
     expect(await noticesOf(principal.id, "REQUEST_WAITING_24H")).toEqual([
       { params: { count: 1, hours: 24 }, link: "/orders?status=PENDING_PRINCIPAL" },
     ]);
+    expect(await noticesOf(inactivePrincipal.id, "REQUEST_WAITING_24H")).toEqual([]);
     expect(await noticesOf(otherPrincipal.id, "REQUEST_WAITING_24H")).toEqual([
       { params: { count: 1, hours: 24 }, link: "/orders?status=PENDING_PRINCIPAL" },
     ]);
   });
 
-  it("tells the active Finance users of the branch of Waiting for Finance only, not Waiting for settlement or Sent back; every active Head of Waiting for Head (06 Statuses; review correction 1; D40)", async () => {
+  it("tells the active Finance users of the branch of Waiting for Finance only, not Waiting for settlement or Sent back; every active Head of Waiting for Head of every branch; nobody else (06 Statuses; review correction 1; permission review Should fix 1 to 3; D40)", async () => {
     setClock("2031-02-07T07:00:00Z");
     const { branch, manager } = await scene();
     const other = await scene();
@@ -153,6 +158,7 @@ describe("reminders (06 rule 9; 10 Notifications)", () => {
     const head1 = await insertUser("HEAD");
     const head2 = await insertUser("HEAD");
     const inactiveHead = await insertUser("HEAD", { isActive: false });
+    const principal = await insertUser("PRINCIPAL", { branches: [branch.id] });
     const where = { branchId: branch.id, ownerId: manager.id };
 
     // Three days ago: one Waiting for Finance; Waiting for settlement and Sent back, whose
@@ -163,6 +169,12 @@ describe("reminders (06 rule 9; 10 Notifications)", () => {
     // 24 h 1 min before the run: Waiting for Head.
     setClock("2031-02-09T06:59:00Z");
     await entered(where, "PENDING_HEAD", "SUBMIT", "DRAFT");
+    await entered(
+      { branchId: other.branch.id, ownerId: other.manager.id },
+      "PENDING_HEAD",
+      "SUBMIT",
+      "DRAFT",
+    );
 
     setClock("2031-02-10T07:00:00Z");
     await run();
@@ -173,10 +185,19 @@ describe("reminders (06 rule 9; 10 Notifications)", () => {
     expect(await noticesOf(otherFinance.id, "REQUEST_WAITING_24H")).toEqual([]);
     for (const head of [head1, head2]) {
       expect(await noticesOf(head.id, "REQUEST_WAITING_24H")).toEqual([
-        { params: { count: 1, hours: 24 }, link: "/orders?status=PENDING_HEAD" },
+        { params: { count: 2, hours: 24 }, link: "/orders?status=PENDING_HEAD" },
       ]);
     }
     expect(await noticesOf(inactiveHead.id, "REQUEST_WAITING_24H")).toEqual([]);
+    // Not approvers of these steps: the owner, the Principal at Waiting for Finance; and the
+    // Head's notice of all branches reaches no Finance user or Principal, although the Finance
+    // order has waited three days (permission review of 8.1, Should fix 1).
+    for (const user of [manager, principal, finance]) {
+      expect(await noticesOf(user.id, "REQUEST_WAITING_48H"), user.role).toEqual([]);
+    }
+    for (const user of [manager, principal]) {
+      expect(await noticesOf(user.id, "REQUEST_WAITING_24H"), user.role).toEqual([]);
+    }
     expect(await noticesOf(inactiveHead.id, "REQUEST_WAITING_48H")).toEqual([]);
   });
 

@@ -587,7 +587,7 @@ Stock moving between branches, and stock checked against the shelf.
 
 The scheduled work, and the translation pass.
 
-- [ ] **8.1 Reminders and escalation**
+- [x] **8.1 Reminders and escalation**
   - **Read:** `06-approval-workflow.md` (Rules: 8); `10-notifications-analytics-reports.md` (Notifications: "Orders waiting more than 24 hours"; "Orders waiting more than 48 hours"; "Needed-by date is 2 days away and the order's buying is not finished"); `14-data-model.md` (Notes for the build: settings keys); `16-build-order.md` (phase 8 row); `open-questions.md` (question 7).
   - **Build:** Scheduled jobs: orders waiting longer than `reminder_hours` remind the approvers of their step, grouped in one notification a day per approver; longer than `escalation_hours` tell the Head, grouped the same way; an order whose buying is not finished 2 days before its needed-by date tells the owner.
   - **Done when:** Database tests with the clock: at 24 hours and 1 minute the approvers have a reminder (the spec's phase 8 check); at 48 hours and 1 minute the Head has one.

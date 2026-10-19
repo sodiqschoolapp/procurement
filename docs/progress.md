@@ -1831,4 +1831,19 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - The approval takes, per line in subtype order, the product FOR SHARE and the balance FOR UPDATE before its moved-check; the save takes no balance lock.
 - For 8.1: a waiting count is not escalated; only orders are.
 
-The next task is 8.1.
+## 8.1 Reminders and escalation (19.10.2026, pull request #125)
+
+**Built**
+- Job `reminders` (`src/server/jobs/reminders.ts`, daily at the 00:00 Tashkent tick): REQUEST_WAITING_24H to the approvers of each Waiting step (`waitingFor()`), count over their branches; REQUEST_WAITING_48H to every active Head, all branches; NEEDED_BY_NEAR to the owner, one per branch, for orders needed by today to today + 2 whose buying is not finished. Repeats daily while the orders wait.
+- Domain: `waitingNotices()`, `nearNotices()`, `NEEDED_BY_NEAR_DAYS` (`src/domain/reminders.ts`). NEEDED_BY_NEAR params `{ count, branch }` and texts in uz, ru, en.
+- `src/features/orders/queries/order-sql.ts`: `enteredCurrentStatusAt` and `stillDueWhere()`, moved out of `listWhere()`.
+
+**Left out, and the task that brings it**
+- A time of day for the job: 8.2. A list filter "waiting more than `reminder_hours`": none asks.
+
+**What the next sessions must know**
+- "Entered its current status" and "still due" are the SQL of `order-sql.ts`; a new reader uses them, never a copy.
+- For 8.2: when a time of day comes to `schedule.ts`, the reminders may move to it (decided item 5 of 8.1 names the delay).
+- A database test of a job that counts every branch (the Head's) leaves its orders out of the counted statuses after each test (`afterEach` of `reminders.db.test.ts`): the tests of one file share a database.
+
+The next task is 8.2.
