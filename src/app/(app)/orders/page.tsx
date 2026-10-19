@@ -116,24 +116,22 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
         branches={myBranches}
         choices={choices}
       />
-      {list.total === 0 ? (
-        <EmptyState
-          title={t(filtered ? "list.emptyFiltered.title" : "list.empty.title")}
-          line={t(filtered ? "list.emptyFiltered.line" : "list.empty.line")}
-        />
-      ) : (
-        <OrderList
-          // A change of filter or sort starts a new selection; a change of page keeps it (review
-          // of the plan, correction 1).
-          key={listFiltersParams(filters).toString()}
-          groups={list.groups.map(wireGroup)}
-          page={list.page}
-          pages={list.pages}
-          total={list.total}
-          query={listFiltersParams(filters).toString()}
-          hrefOf={listHrefs}
-        />
-      )}
+      {/* The list shows the empty page itself, so a refusal it holds outlives the refresh. */}
+      <OrderList
+        // A change of filter or sort starts a new selection; a change of page keeps it (review
+        // of the plan, correction 1).
+        key={listFiltersParams(filters).toString()}
+        groups={list.groups.map(wireGroup)}
+        page={list.page}
+        pages={list.pages}
+        total={list.total}
+        query={listFiltersParams(filters).toString()}
+        hrefOf={listHrefs}
+        empty={{
+          title: t(filtered ? "list.emptyFiltered.title" : "list.empty.title"),
+          line: t(filtered ? "list.emptyFiltered.line" : "list.empty.line"),
+        }}
+      />
     </section>
   );
 

@@ -2659,6 +2659,30 @@ Choices made during the build:
 - The spec's asserts wait up to 15 seconds (`expect.configure` in `acceptance-money.spec.ts`): a result line follows a server action on the `next dev` server while the other project runs.
 - After a settlement save the test waits for the refreshed count of 0, and after the card confirmation it reloads, before Close: Close sends the versions the screen holds, and the app rightly refuses a stale one. Seen as "Changed a moment ago" under four local workers.
 
+### 9.1c Acceptance run: purchasing and warehouse (19.10.2026)
+
+The plan's decisions as the plan review of 19.10.2026 confirmed them (its three corrections applied: S10 asserts the green labels and Done before the missing Close; S8 reads one ISSUE movement and A's document of 5; S11 reads the whole `errors.field.stockShort` text, the order still Open and no cancel movement), and those of the build. The Look first items come first.
+
+1. **Look first** (a reading of a stock rule). S4's "Monday … Friday": both parts are bought today in the browser, as Date bought may not be before the Finance approval (07 Purchase record) and the approval is clicked on the real clock; the days stay proven by `issue-scenarios.db.test.ts` with the injected clock. "Stays Open" is `PURCHASING` with progress Open (07 Order progress).
+2. **Look first** (the approval order and the stock CHECK). S8's "together": both sides stand ready (dialog open, quantity typed) before either acts; A acts, then B, so each side's message is known. The real lock collisions stay in `approve.db.test.ts` and `issue-same-moment.db.test.ts`. The orders are at version 3 afterwards (draft 1, Submit 2, A's Approve 3).
+3. **Look first** (an exact-match rule). S10's "Manager cannot close alone": no Close on the order bar or the list bar, with every other condition of 08 Exact match true (green labels, Done, cash count 0, no extras, the planned payment type) and the close-alone right read as on; the server's refusal is `isExactMatch()`'s tests. "Finance reviews it" is not clicked.
+4. S4, S8, S10, S11 live in `acceptance-warehouse.spec.ts`; S15 stays in `direct-entry.spec.ts`, which already ends as S15 says, with the +200 now read in `stock_balances`. The 3.6 test of `purchase.spec.ts` stays as it is.
+5. Every scenario starts from complete drafts and clicks Submit, the approvals and the purchases, with its own branch and people who read English (9.1b items 1 to 3); S8's last 5 notebooks come from `stockIn()`, a receipt written as `postMovement()` writes it.
+6. S4 and S11 use the plan of section 8 with its delivery; S4 pays it with the first part. S10 has its own plan, 100 × 2 000 in cash and no extras.
+7. S8's two Heads and second Manager are made per attempt.
+8. S11's explanation is read in English from `errors.field.stockShort`.
+9. The flow helpers moved from `acceptance-money.spec.ts` to `acceptance-fixtures.ts`; 9.1b's tests keep every step and assert.
+10. S15's server refusal stays the database test's, as 9.1b item 9 for S16.
+11. The `e2e` job keeps its 30 minutes.
+
+Choices made during the build:
+
+- S4's second part needs no step to take the delivery off: Same as planned fills only the 40 still lacking and no extra cost after a first part (`sameAsPlanned()`), and the test asserts both on the form. The plan had said the row would be taken off. A part below the plan asks no comment (`purchaseCommentNeeds()`, plan of 3.3).
+- The issue form's department is chosen inside `expect(...).toPass()` until Received by is prefilled: opened by `page.goto()`, the form could lose a choice made before it hydrated.
+- The step buttons are named with `exact: true` (the `next dev` tools button matches "Next"), and the refusal toast is read inside the region "Notifications", where its text is once.
+- **A fix to the order list** (S8's "The other gets a clear message"): Head B's refused Approve showed above the list, and the refresh after it swapped the list for the empty page when the refused orders had been the list's last ones, so the refusal disappeared. `OrderList` now draws the empty page itself, so the refusal stays above it until closed. Found by the whole suite, where S8 failed once; S8 now waits for the empty page before it reads the refusal, and fails without the fix. No permission or query changed.
+- S8's direct receipt of 5 is recorded as the Head's (`stockIn(…, scene.head)`): no Manager can receive stock without an order (permission review, should-fix 1).
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

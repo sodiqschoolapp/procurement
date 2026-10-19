@@ -1,9 +1,10 @@
 import { randomUUID } from "node:crypto";
 
-import { type Page, expect } from "@playwright/test";
+import { type Locator, type Page, expect as baseExpect } from "@playwright/test";
 import pg from "pg";
 
 import { SETTING_DEFAULTS } from "../../src/domain/settings";
+import en from "../../src/i18n/messages/en.json" with { type: "json" };
 import { insertPasswordUser } from "../../src/server/auth/password-user.mjs";
 import { connectionOptions } from "../../src/server/db/connection-options.mjs";
 import { E2E_ROLES, e2eDatabaseUrl, serverDatabaseUrl } from "./global-setup";
@@ -187,6 +188,82 @@ export async function newProduct(name: string, referencePrice: number): Promise<
 }
 
 /**
+ * An invented product with real subtypes, each at the reference price (04 rules 1, 4; 07
+ * Substitution). Returns the subtype ids in the order given.
+ */
+export async function newProductWithSubtypes(
+  name: string,
+  referencePrice: number,
+  subtypes: string[],
+): Promise<string[]> {
+  return withDatabase((client) =>
+    inTransaction(client, async () => {
+      const mark = tag();
+      const unit = await client.query<{ id: string }>(
+        `insert into units (name, short_name, allow_decimal, is_active, created_at)
+         values ($1, $2, false, true, $3) returning id`,
+        [`O'lchov ${mark}`, `s${mark}`, MADE_AT],
+      );
+      const category = await client.query<{ id: string }>(
+        `insert into categories (name, is_active, created_at) values ($1, true, $2) returning id`,
+        [`Toifa ${mark}`, MADE_AT],
+      );
+      const product = await client.query<{ id: string }>(
+        `insert into products (name, type, category_id, unit_id, reference_price, is_active,
+                               has_variants, created_at)
+         values ($1, 'GOODS', $2, $3, $4, true, true, $5) returning id`,
+        [name, category.rows[0]!.id, unit.rows[0]!.id, referencePrice, MADE_AT],
+      );
+      const ids: string[] = [];
+      for (const subtype of subtypes) {
+        const variant = await client.query<{ id: string }>(
+          `insert into product_variants (product_id, name, is_default, reference_price, is_active,
+                                         created_at)
+           values ($1, $2, false, $3, true, $4) returning id`,
+          [product.rows[0]!.id, subtype, referencePrice, MADE_AT],
+        );
+        await client.query(
+          `insert into price_history (variant_id, price, source, set_by, created_at)
+           select $1, $2, 'HEAD', id, $3 from users where username = $4`,
+          [variant.rows[0]!.id, referencePrice, MADE_AT, E2E_ROLES.HEAD.username],
+        );
+        ids.push(variant.rows[0]!.id);
+      }
+      return ids;
+    }),
+  );
+}
+
+/**
+ * `qty` of the subtype received into the branch at `cost`, written as postMovement() writes it:
+ * the movement and its balance in one transaction (plan of 9.1c, decided item 2; as issue.spec.ts
+ * sets up stock). The branch must hold none of it yet.
+ */
+export async function stockIn(
+  branch: string,
+  variantId: string,
+  qty: number,
+  cost: number,
+  by: { id: string },
+): Promise<void> {
+  await withDatabase((client) =>
+    inTransaction(client, async () => {
+      await client.query(
+        `insert into stock_movements (branch_id, variant_id, type, qty_delta, unit_cost,
+                                      balance_after, created_by, created_at)
+         values ($1, $2, 'RECEIPT', $3, $4, $3, $5, now())`,
+        [branch, variantId, qty, cost, by.id],
+      );
+      await client.query(
+        `insert into stock_balances (branch_id, variant_id, qty, avg_cost, created_at, updated_at)
+         values ($1, $2, $3, $4, now(), now())`,
+        [branch, variantId, qty, cost],
+      );
+    }),
+  );
+}
+
+/**
  * A complete never-submitted draft of the owner: `quantity` of the subtype at its price, in cash
  * unless the payment type is given, with the planned extra costs given (05 field 12).
  */
@@ -325,4 +402,270 @@ export async function setGuardAmount(client: pg.Client, amount: string): Promise
      on conflict (key) do update set value = excluded.value`,
     [amount],
   );
+}
+
+// The flow helpers of the acceptance scenarios (plan of 9.1c, decided item 9): moved here from
+// acceptance-money.spec.ts, as a spec file cannot be imported by another without registering its
+// tests twice.
+
+// Each step answers after a server action on the `next dev` server while other projects run; a
+// result line can take longer than the default 5 seconds to appear there.
+export const expect = baseExpect.configure({ timeout: 15_000 });
+
+const o = en.orders;
+const m = en.orders.moves;
+
+export type Scene = {
+  branch: { id: string; code: string };
+  department: string;
+  delivery: string;
+  manager: Person & { id: string };
+  principal: Person & { id: string };
+  finance: Person & { id: string };
+  head: Person & { id: string };
+};
+
+/** A branch of its own with its department, the plan's delivery and one person of each role. */
+export async function newScene(): Promise<Scene> {
+  const branch = await newBranch();
+  return {
+    branch,
+    department: await newDepartment(branch.id, `Bo'lim ${tag()}`),
+    delivery: await newExtraCostType(`Yetkazib berish ${tag()}`),
+    manager: await newPerson("MANAGER", branch.id, "en"),
+    principal: await newPerson("PRINCIPAL", branch.id, "en"),
+    finance: await newPerson("FINANCE", branch.id, "en"),
+    head: await newPerson("HEAD", null, "en"),
+  };
+}
+
+export type Planned = { id: string; product: string; variantId: string };
+
+/** A draft of the scene's Manager: `quantity` × `price`, with the planned delivery when given. */
+export async function planOf(
+  scene: Scene,
+  product: string,
+  quantity: number,
+  price: number,
+  plan: { delivery?: number; paymentType?: "CASH" | "CARD" } = {},
+): Promise<Planned> {
+  const variantId = await newProduct(product, price);
+  const id = await insertDraft(
+    scene.manager,
+    scene.branch.id,
+    variantId,
+    scene.department,
+    quantity,
+    price,
+    {
+      paymentType: plan.paymentType,
+      extras: plan.delivery ? [{ typeId: scene.delivery, amount: plan.delivery }] : [],
+    },
+  );
+  return { id, product, variantId };
+}
+
+/** The plan of section 8: 100 notebooks × 5 000 in cash plus 20 000 delivery. */
+export function notebooks(scene: Scene, paymentType: "CASH" | "CARD" = "CASH"): Promise<Planned> {
+  return planOf(scene, `Daftar ${tag()}`, 100, 5000, { delivery: 20000, paymentType });
+}
+
+/** Signs the page in as another person. */
+export async function as(page: Page, person: Person): Promise<void> {
+  await page.context().clearCookies();
+  await signIn(page, person);
+}
+
+export function count(value: number, one: string, other: string): string {
+  return value === 1 ? one : other.replace("#", String(value));
+}
+
+/** The group row of a product in the order list (05 Group rows 1). */
+export function groupOf(page: Page, product: string): Locator {
+  return page.locator("tbody[data-group]").filter({ hasText: product });
+}
+
+/**
+ * Ticks the group rows of the products. On a phone the action bar can cover a lower row's tick
+ * box once the first is ticked; the page has answered the first tick, so a click event reaches
+ * the others (as settlement.spec.ts ticks its second order).
+ */
+export async function tickGroups(page: Page, orders: Planned[]): Promise<void> {
+  for (const [at, order] of orders.entries()) {
+    const box = groupOf(page, order.product).getByRole("checkbox", {
+      name: o.list.tickGroup.replace("{product}", order.product),
+    });
+    if (at === 0) await box.check();
+    else await box.dispatchEvent("click");
+    await expect(box).toBeChecked();
+  }
+}
+
+/** The list of the owner's orders at one status. */
+export async function listAt(page: Page, scene: Scene, status: string): Promise<void> {
+  await page.goto(`/orders?status=${status}&owner=${scene.manager.id}`);
+}
+
+/** Opens the Approve dialog of the ticked orders. */
+export async function openApprove(page: Page, orders: Planned[]): Promise<Locator> {
+  await tickGroups(page, orders);
+  await page
+    .locator("[data-list-bar]")
+    .getByRole("button", {
+      name:
+        orders.length > 1
+          ? o.approve.buttonCount.replace("{count}", String(orders.length))
+          : o.approve.button,
+      exact: true,
+    })
+    .click();
+  const dialog = page.getByRole("alertdialog");
+  await expect(dialog).toBeVisible();
+  return dialog;
+}
+
+/** Confirms an open Approve dialog and waits for the result (D38). */
+export async function confirmApprove(page: Page, dialog: Locator, approved: number): Promise<void> {
+  await dialog.getByRole("button", { name: o.approve.button, exact: true }).click();
+  await expect(
+    page.getByText(count(approved, "Approved 1 order.", "Approved # orders.")),
+  ).toBeVisible();
+}
+
+/** The scene's Manager ticks the drafts in the grid and submits them, through the confirmation. */
+export async function submitInGrid(page: Page, scene: Scene, orders: Planned[]): Promise<void> {
+  await as(page, scene.manager);
+  await page.goto("/orders");
+  for (const order of orders) {
+    await page
+      .getByRole("checkbox", { name: o.tickRow.replace("{product}", order.product) })
+      .check();
+  }
+  await page
+    .getByRole("button", { name: o.submit.button.replace("{count}", String(orders.length)) })
+    .click();
+  const submit = page.getByRole("alertdialog");
+  await submit.getByRole("button", { name: o.submit.confirm, exact: true }).click();
+  await expect(
+    page.getByText(new RegExp(count(orders.length, "Submitted 1 order", "Submitted # orders"))),
+  ).toBeVisible();
+}
+
+/**
+ * The scene's setting before Finance (plan of 9.1b, decided item 1): the Manager submits the
+ * drafts in the grid, the Head and then the Principal approve them on the list.
+ */
+export async function throughApprovals(page: Page, scene: Scene, orders: Planned[]): Promise<void> {
+  await submitInGrid(page, scene, orders);
+
+  for (const [approver, status] of [
+    [scene.head, "PENDING_HEAD"],
+    [scene.principal, "PENDING_PRINCIPAL"],
+  ] as const) {
+    await as(page, approver);
+    await listAt(page, scene, status);
+    await confirmApprove(page, await openApprove(page, orders), orders.length);
+  }
+}
+
+/**
+ * Finance approves the ticked orders with the cash prefilled per order (08 When Finance
+ * approves): each given row is asserted as prefilled before the confirmation.
+ */
+export async function financeApproves(
+  page: Page,
+  scene: Scene,
+  orders: Planned[],
+  prefilled: Record<string, string>,
+): Promise<void> {
+  await as(page, scene.finance);
+  await listAt(page, scene, "PENDING_FINANCE");
+  const dialog = await openApprove(page, orders);
+  for (const [orderId, amount] of Object.entries(prefilled)) {
+    await expect(dialog.locator(`[data-cash-row="${orderId}"] input`)).toHaveValue(amount);
+  }
+  expect(await scrollsSideways(page)).toBe(false);
+  await confirmApprove(page, dialog, orders.length);
+}
+
+export type Bought = {
+  qty?: string;
+  price?: string;
+  delivery?: string;
+  /** The subtype bought, when another than the ordered one (07 Substitution). */
+  subtype?: string;
+  comment?: string;
+  /** The progress the order page shows afterwards: Done unless a part was bought (07 Order progress). */
+  progress?: "OPEN" | "DONE";
+};
+
+/**
+ * The owner records one purchase of the order from its page: Same as planned, then what differs
+ * (07 Purchase record). Buying the planned quantity finishes it: the page shows Done (plan of
+ * 9.1b, review correction 1); a part leaves it Open (plan of 9.1c, S4).
+ */
+export async function recordPurchase(
+  page: Page,
+  order: Planned,
+  bought: Bought = {},
+): Promise<void> {
+  await page.goto(`/orders/${order.id}`);
+  await page.locator("[data-record-purchase]").click();
+  await expect(page).toHaveURL(new RegExp(`/orders/${order.id}/purchase$`));
+  await page.getByRole("button", { name: en.purchase.form.sameAsPlanned }).click();
+  if (bought.qty) await page.locator(`#purchase-qty-${order.id}`).fill(bought.qty);
+  if (bought.price) await page.locator(`#purchase-price-${order.id}`).fill(bought.price);
+  if (bought.delivery) {
+    await page.locator(`#purchase-extra-amount-0-${order.id}`).fill(bought.delivery);
+  }
+  if (bought.subtype) {
+    await page.locator(`#purchase-subtype-${order.id}`).selectOption(bought.subtype);
+  }
+  if (bought.comment) await page.locator(`#purchase-comment-${order.id}`).fill(bought.comment);
+  expect(await scrollsSideways(page)).toBe(false);
+  await page.getByRole("button", { name: en.purchase.form.save }).click();
+  await expect(page).toHaveURL(new RegExp(`/orders/${order.id}$`));
+  await expect(page.locator(`[data-progress="${bought.progress ?? "DONE"}"]`)).toBeVisible();
+}
+
+/** The order page's label (Number, Price or Total): its colour and its text. */
+export function labelOf(page: Page, label: "number" | "price" | "total"): Locator {
+  return page.locator(`[data-colours] [data-colour-label="${label}"]`).first();
+}
+
+/** A move of the list bar on the ticked orders, through its confirmation. */
+export async function moveOnList(
+  page: Page,
+  orders: Planned[],
+  move: "CLOSE_EXACT" | "SEND_TO_SETTLEMENT",
+  done: string,
+): Promise<void> {
+  await tickGroups(page, orders);
+  await page.locator(`[data-list-bar] [data-move="${move}"]`).click();
+  const dialog = page.getByRole("alertdialog");
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole("button", { name: m.button[move], exact: true }).click();
+  await expect(page.getByText(done)).toBeVisible();
+}
+
+/** The number an order got at its Submit. */
+export async function numberOf(orderId: string): Promise<string> {
+  return withDatabase(async (client) => {
+    const found = await client.query<{ number: string }>(
+      "select number from orders where id = $1",
+      [orderId],
+    );
+    return found.rows[0]!.number;
+  });
+}
+
+/** The number of stock movements of a subtype in a branch. */
+export async function movementsOf(branch: string, variantId: string): Promise<number> {
+  return withDatabase(async (client) => {
+    const found = await client.query<{ count: number }>(
+      "select count(*)::int as count from stock_movements where branch_id = $1 and variant_id = $2",
+      [branch, variantId],
+    );
+    return found.rows[0]!.count;
+  });
 }
