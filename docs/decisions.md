@@ -2711,6 +2711,31 @@ Choices made during the build:
 - The Tab walk's outer stop is one press per focusable element plus 100 (the Head's Analytics on a database many tests have filled holds over 2 000 links); a date field's parts are one stop.
 - S1 by keyboard waits for every finite animation to end before each axe check (a dialog fading in read as low contrast in CI), and presses Enter again from the password field until home opens (a first Enter can come before the form hydrates).
 
+### 9.2 Speed (20.10.2026)
+
+The plan's decisions as the plan review of 20.10.2026 confirmed them, with its six corrections applied (the wait for `aria-busy` placeholders, the scheduler off, prefetch aborted, the fill run through Vitest, `docs/speed.md` outside Prettier's reach, the source tests read sources only and catch an address in a variable):
+
+1. **Look first** (quality bar). "Any page opens in under 1 second" is the slowest of three warm loads after one warm-up, from navigation start until the load event has ended and no `aria-busy="true"` area is left, at 1440 px, on `next start` with the database on the same machine. The office connection and cold loads after a deploy are the owner's check during the trial.
+2. **Look first** (volume). Three school years, four branches, 30 people, 36 000 orders (3 000 per branch per year): 235 000 order events, 111 000 actions, 33 000 purchases, 62 000 stock movements, 25 000 stock documents, 35 000 money rows, 114 000 notifications, 800 products with 2 000 subtypes. The plan estimated 100 000 movements and 200 000 notifications; the fill's own proportions gave fewer. Sizes are `SPEED_SIZES` in `tests/speed/fill.ts`.
+3. **Look first** (rule 12, filter column). A filter column is a column a list's or a page's `where` or `order by` reads, on every table; one read only through an indexed key is listed with that index in `FILTER_COLUMNS` of `tests/indexes.db.test.ts`. Added: `orders (branch_id, needed_by)`, `stock_documents (branch_id, created_at)`, and `name` of branches, units, categories, extra cost types, companies and products, `users.full_name`.
+4. **Look first** (rule 12, analytics). Every number, chart and block reads the summary tables; a drill-down list reads the orders by the summary rows' ids; the draft wall and the live status are read from `orders` by id. Four blocks (`my-cash`, `managers`, `finance-cash`, `my-estimates`) join `orders` by the summary row's id for its live status or plan: not moved, as their tests would change; listed in `tests/analytics-summary-reads.test.ts`.
+5. **Look first** (task split: none). One session built it.
+6. The analytics refresh has no bound of its own: one refresh takes 23 to 27 s on this volume, far under its 5 minutes.
+7. The measurement is not in CI; CI runs the small fill, the index test and the source tests.
+8. The fill writes rows directly, numbers from `src/domain/` (`orderTotal()`, `actualTotal()`, `progressAfterBuying()`, `isExactMatch()`, `orderCashCount()`, `approvalCashRows()`, `settlementRows()`, `settlementCashRows()`, `nextBalance()`, `orderNumber()`, `documentNumber()`); the nightly stock check finds no mismatch on it.
+9. The fill is TypeScript under `tests/speed/`, run by Vitest (`vitest.speed.config.mts`, `npm run speed:fill`), which `playwright.speed.config.ts` runs first.
+10. The speed database has its own invented people (`speed_head`, `speed_manager_01` …) with one invented password.
+
+Choices made during the build:
+
+- **Look first** (11 rule 8, a page size changed). The Analytics drill-down lists showed 50 rows a page (`RECORDS_PAGE_SIZE`, task 6.3); rule 8 says 25. Found by the speed run's paging check; now 25, with a unit test. Still at 50: the item card's movements (`ITEM_CARD_PAGE_SIZE`, decisions 5.3 item 6) and the change history (decisions 0.9 item 12); proposed for the owner: both to 25 by rule 8, or `/spec-change` of rule 8 to name them.
+- **Look first** (11 rule 5, placeholders). Seven sections had no `loading.tsx`. Adding one to a section whose pages answer another role with a 404 makes Next.js send the page frame with status 200 before the page's `notFound()` runs, and the browser tests that read the 404 failed (users, settings, subtypes, suggestions, catalog, prices, departments, import). So only Profile got one; branches, catalog, prices, settings, suggestions and users keep none, named in `tests/placeholders.test.ts` (each opened under 400 ms). The sections that already had a `loading.tsx` (orders, money, warehouse, notifications, reports, analytics) answer "Not found" with status 200 already; their tests read the text, not the status.
+- **Look first** (indexes replaced). Thirteen single-column foreign-key indexes became the composite index of their whole key, led by the same column (migration `0049_speed_indexes.sql`): a query on the column alone still uses it.
+- JIT is off on the app's connections (`-c jit=off` in `src/server/db/client.ts`, beside `timezone=UTC`): on the Analytics counts it spent about 270 of 310 ms compiling. Whether a connection pooler in front of the managed database passes the option on is the same open point as for `timezone` (progress of 0.2, for 0.16).
+- Eight Analytics totals (`finance-cash`, `finance-spending`, `head-spending`, `top-products`, `spending`, `plan-vs-actual`, `settlement-speed`, `order-statuses`) read their whole summary table and filtered inside the sums; they now have the `where (now) or (then)` that `spending.ts` and `status-counts.ts` already had. Finance's Analytics went from 1 006 to about 400 ms.
+- The measurement counts each load's statements between two marker statements of its own connection in PostgreSQL's log (`log_statement = 'all'` on the speed database only); without Docker the column says "not read".
+- `next start` needs `BETTER_AUTH_SECRET`: the speed config makes a throwaway one for the local run on invented data, never written or printed; the local `.env`'s is used when set.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.
