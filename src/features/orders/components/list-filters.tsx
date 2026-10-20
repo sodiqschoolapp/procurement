@@ -161,7 +161,7 @@ export function ListFiltersBar({
         <button
           type="button"
           onClick={openSearch}
-          className="flex h-11 min-w-0 flex-1 items-center gap-2 rounded-md border border-border-strong bg-card px-3 text-left text-sm text-muted-foreground shadow-xs transition-colors duration-120 ease-out hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:h-9 sm:max-w-72"
+          className="flex h-11 min-w-0 flex-1 items-center gap-2 rounded-md border border-border-strong bg-card px-3 text-left text-sm text-muted-foreground shadow-xs transition-colors duration-120 ease-out hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:h-10 sm:max-w-72"
         >
           <Icon name="search" size={18} />
           <span className="truncate">{t("search")}</span>

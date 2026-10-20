@@ -611,7 +611,7 @@ export function PurchaseFormView({
               type="submit"
               pending={action.pending}
               disabled={!hydrated || uploading || recorded.length === 0}
-              className={cn("h-12 sm:h-9", shownStep !== last && "max-sm:hidden")}
+              className={cn("h-12 sm:h-10", shownStep !== last && "max-sm:hidden")}
             >
               {t("save")}
             </Button>

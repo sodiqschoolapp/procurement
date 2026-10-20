@@ -44,9 +44,9 @@ describe("the bell (plan of 0.11, Screens)", () => {
     const html = render(count);
     expect(visibleText(html)).toBe(shown);
     expect(html).toContain(`aria-label="${label}"`);
-    // The default button: 44 high at phone width, 36 from sm up (Buttons).
+    // The default button: 44 high at phone width, 40 from sm up (Buttons).
     expect(html).toContain("h-11");
-    expect(html).toContain("sm:h-9");
+    expect(html).toContain("sm:h-10");
   });
 
   it("the number sits on the orange highlight with navy text, never a status colour (design system, Colour)", () => {

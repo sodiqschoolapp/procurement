@@ -52,8 +52,8 @@ describe("the confirm dialog (11-screens rule 6)", () => {
     const html = render(SUBMIT);
     expect(html.match(/bg-primary /g)).toHaveLength(1);
     expect(html.match(/bg-secondary /g)).toHaveLength(1);
-    // The default button of docs/design-system.md, Buttons (D60): 44 at phone width, 36 from sm.
-    expect(html.match(/h-11 px-3\.5 text-sm sm:h-9/g)).toHaveLength(2);
+    // The default button of docs/design-system.md, Buttons (D60): 44 at phone width, 40 from sm.
+    expect(html.match(/h-11 px-3\.5 text-sm sm:h-10/g)).toHaveLength(2);
   });
 
   it("an irreversible loss uses the danger kind and no primary fill", () => {

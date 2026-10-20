@@ -54,7 +54,7 @@ export async function TopBar({ userId, fullName }: { userId: string; fullName: s
         <Suspense
           fallback={
             <span aria-busy="true" className="block">
-              <Skeleton className="h-11 w-56 max-w-full sm:h-9" />
+              <Skeleton className="h-11 w-56 max-w-full sm:h-10" />
             </span>
           }
         >
@@ -66,7 +66,7 @@ export async function TopBar({ userId, fullName }: { userId: string; fullName: s
         <Suspense
           fallback={
             <span aria-busy="true" className="block">
-              <Skeleton className="size-11 sm:size-9" />
+              <Skeleton className="size-11 sm:size-10" />
             </span>
           }
         >

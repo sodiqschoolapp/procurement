@@ -5,7 +5,7 @@ import { Field } from "./field";
 import { Input } from "./input";
 import { Select } from "./select";
 
-// docs/design-system.md, Fields: 36 high (44 at phone width and on sign-in), 1 px --input
+// docs/design-system.md, Fields: 40 high (44 at phone width and on sign-in), 1 px --input
 // border, an error is a --destructive border and one line under the field; a select draws the
 // "expand more" icon, never a text caret (D60, 21.10.2026). 11-screens-and-ux.md
 // rule 13 (keyboard and screen readers: the label and the error line are tied to the field).
@@ -22,7 +22,7 @@ describe("fields (design system, Fields and switches)", () => {
     expect(html).not.toContain("aria-invalid=");
     expect(html).not.toContain("aria-describedby=");
     expect(html).toContain("border-input");
-    expect(html).toEqual(expect.stringContaining("h-11 sm:h-9"));
+    expect(html).toEqual(expect.stringContaining("h-11 sm:h-10"));
   });
 
   it("an error sets aria-invalid, the danger border and exactly one error line", () => {

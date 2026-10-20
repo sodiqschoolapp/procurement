@@ -6,12 +6,12 @@ import { cn } from "@/components/utils";
 
 import { useFieldControl } from "./field";
 
-// docs/design-system.md, Fields: 36 high (44 at phone width and on sign-in), white fill, 1 px
+// docs/design-system.md, Fields: 40 high (44 at phone width and on sign-in), white fill, 1 px
 // --input border, corner 6; focus is the 2 px ring; an error is a --destructive border. 16 px
 // text at phone width, so a phone does not zoom into the field.
 
 export const FIELD_SIZES = {
-  default: "h-11 sm:h-9",
+  default: "h-11 sm:h-10",
   lg: "h-12 sm:h-11",
 } as const;
 

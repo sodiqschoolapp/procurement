@@ -25,10 +25,10 @@ describe("the shared button (design system, Buttons)", () => {
     ]);
   });
 
-  it("sizes: default 36 and 44 at phone width, large 44 and 48 at phone width, icon 36 and 44", () => {
-    expect(BUTTON_SIZES.default.split(" ")).toEqual(expect.arrayContaining(["h-11", "sm:h-9"]));
+  it("sizes: default 40 and 44 at phone width, large 44 and 48 at phone width, icon 40 and 44", () => {
+    expect(BUTTON_SIZES.default.split(" ")).toEqual(expect.arrayContaining(["h-11", "sm:h-10"]));
     expect(BUTTON_SIZES.lg.split(" ")).toEqual(expect.arrayContaining(["h-12", "sm:h-11"]));
-    expect(BUTTON_SIZES.icon.split(" ")).toEqual(expect.arrayContaining(["size-11", "sm:size-9"]));
+    expect(BUTTON_SIZES.icon.split(" ")).toEqual(expect.arrayContaining(["size-11", "sm:size-10"]));
   });
 
   it("a small button is 44 high at phone width and 32 from the sm width up (design system, Buttons, 14.10.2026; build-plan 0.10b)", () => {

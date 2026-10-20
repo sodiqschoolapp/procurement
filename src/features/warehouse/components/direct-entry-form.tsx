@@ -506,7 +506,7 @@ export function DirectEntryForm({
           type="submit"
           pending={action.pending}
           disabled={!hydrated || lines.fields.length === 0}
-          className={cn("h-12 sm:h-9", step !== DOCUMENT_STEPS - 1 && "max-sm:hidden")}
+          className={cn("h-12 sm:h-10", step !== DOCUMENT_STEPS - 1 && "max-sm:hidden")}
         >
           {t("save")}
         </Button>

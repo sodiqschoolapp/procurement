@@ -197,7 +197,7 @@ export function Search() {
         data-testid="search-open"
         className={cn(
           buttonVariants({ variant: "ghost", size: "icon" }),
-          "sm:h-9 sm:w-64 sm:justify-start sm:border sm:border-border-strong sm:bg-muted sm:px-3 sm:font-normal sm:text-muted-foreground sm:hover:bg-accent",
+          "sm:h-10 sm:w-64 sm:justify-start sm:border sm:border-border-strong sm:bg-muted sm:px-3 sm:font-normal sm:text-muted-foreground sm:hover:bg-accent",
         )}
       >
         <Icon name="search" />

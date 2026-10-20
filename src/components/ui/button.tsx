@@ -5,7 +5,7 @@ import { Icon, type IconName } from "@/components/icon";
 import { cn } from "@/components/utils";
 
 // docs/design-system.md, Buttons: three sizes, four kinds, one shape. Sizes `sm` 32 and `default`
-// 36 (both 44 at phone width), `lg` 44 (48 at phone width) and the square `icon-sm`, `icon`,
+// 40 (both 44 at phone width), `lg` 44 (48 at phone width) and the square `icon-sm`, `icon`,
 // `icon-lg`; kinds `default` (primary, navy), `secondary` (white with a hairline edge), `ghost`
 // (quiet), `destructive` (danger, no fill until hover). A link styled as a button uses
 // `buttonVariants()`.
@@ -21,10 +21,10 @@ export const BUTTON_KINDS = {
 
 export const BUTTON_SIZES = {
   sm: "h-11 px-3 text-small sm:h-8",
-  default: "h-11 px-3.5 text-sm sm:h-9",
+  default: "h-11 px-3.5 text-sm sm:h-10",
   lg: "h-12 px-5 text-subheading font-semibold sm:h-11",
   "icon-sm": "size-11 sm:size-8",
-  icon: "size-11 sm:size-9",
+  icon: "size-11 sm:size-10",
   "icon-lg": "size-12 sm:size-11",
 } as const;
 

@@ -168,7 +168,7 @@ export default async function StockOnHandPage({ searchParams }: { searchParams: 
                 </option>
               ))}
             </Select>
-            <label className="flex h-11 items-center gap-2 px-1 text-sm sm:h-9">
+            <label className="flex h-11 items-center gap-2 px-1 text-sm sm:h-10">
               <input
                 type="checkbox"
                 name="low"

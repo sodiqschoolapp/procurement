@@ -121,7 +121,7 @@ Weights in use: 400, 500 (links, menu items, labels of fields) and 600 (titles, 
 | Size | Height (desktop / phone) | Padding | Text |
 | --- | --- | --- | --- |
 | `sm` | 32 / 44 | 0 12 | 13 / 500 |
-| `default` | 36 / 44 | 0 14 | 14 / 500 |
+| `default` | 40 / 44 | 0 14 | 14 / 500 |
 | `lg` | 44 / 48 | 0 20 | 15 / 600 |
 
 | Kind | Look |
@@ -132,12 +132,12 @@ Weights in use: 400, 500 (links, menu items, labels of fields) and 600 (titles, 
 | `destructive` | No fill, `--destructive` text; `--destructive-bg` on hover. |
 
 - A button that cannot be pressed now says why, on a line next to or under it (`text-xs`, `--muted-foreground`, with the `info` icon): "Write a comment to save". It is never greyed out without a reason.
-- An icon-only button is square (36, 44 on a phone) and has an `aria-label`.
+- An icon-only button is square (40, 44 on a phone) and has an `aria-label`.
 - A link styled as a button uses the same classes. Plain links are `--link`, weight 500, underlined on hover.
 
 ### Fields
 
-- Fields and selects: 36 high (44 on a phone, 44 on sign-in), `--card` fill, 1 px `--input` border, corner 6; focus is the 2 px ring. An error is a `--destructive` border and one line under the field.
+- Fields and selects: 40 high (44 on a phone, 44 on sign-in), `--card` fill, 1 px `--input` border, corner 6; focus is the 2 px ring. An error is a `--destructive` border and one line under the field.
 - A label sits above its field (`text-sm` 500). A hint, only when it prevents a mistake, sits under the field in `text-xs`.
 - **Dates** are shown and typed as dd.mm.yyyy everywhere, never the browser's own date format.
 - A **segmented control** (two to four short choices): a `--muted` track with a hairline edge, the chosen item `--card` with navy text and a hairline edge; when the words do not fit on one line the choices stack, one per line, so no word is ever cut or overlapped.
