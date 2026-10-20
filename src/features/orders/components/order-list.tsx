@@ -536,7 +536,7 @@ function GroupRows({
             <span className="text-small text-muted-foreground">
               {t("rowFacts", {
                 branch: group.branchCode,
-                count: group.summary.count,
+                orders: t("orderCount", { count: group.summary.count }),
                 date: format.date(group.summary.earliestNeededBy),
               })}
             </span>

@@ -88,7 +88,7 @@ export default async function NotificationsPage({
         {unread > 0 && <MarkAllRead />}
       </div>
       {items.length === 0 ? (
-        <EmptyState title={t("notifications.empty.title")} line={t("notifications.empty.line")} />
+        <EmptyState icon="notifications" title={t("notifications.empty.title")} />
       ) : (
         <NotificationList items={items} />
       )}

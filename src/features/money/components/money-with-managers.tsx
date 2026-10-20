@@ -23,10 +23,9 @@ export async function MoneyWithManagers({ blocks }: { blocks: MoneyWithManagersB
     <div className="flex w-full min-w-0 flex-col gap-6">
       <div className="flex flex-col gap-1">
         <h1 className="text-title">{t("title")}</h1>
-        <p className="text-sm text-muted-foreground">{t("line")}</p>
       </div>
       {blocks.length === 0 ? (
-        <EmptyState title={t("empty.title")} line={t("empty.line")} />
+        <EmptyState icon="payments" title={t("empty.title")} />
       ) : (
         <ul className="flex flex-col gap-3">
           {blocks.map((block) => (

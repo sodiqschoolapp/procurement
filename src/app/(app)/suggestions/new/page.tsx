@@ -33,7 +33,6 @@ export default async function NewSuggestionPage() {
       </Link>
       <div className="flex flex-col gap-1">
         <h1 className="text-title">{t("newTitle")}</h1>
-        <p className="text-sm text-muted-foreground">{t("intro")}</p>
       </div>
       <SuggestionForm
         branches={branches.map(({ id, code, name }) => ({ id, code, name }))}

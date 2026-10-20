@@ -340,25 +340,21 @@
         "issue": "Issue from stock"
       },
       "sentBack": {
-        "title": "Sent back to me",
-        "empty": "No order is sent back to you. An order an approver returns for changes appears here."
+        "title": "Sent back to me"
       },
       "drafts": {
         "title": "My drafts",
         "count": "{count, plural, =0 {No drafts} one {# draft} other {# drafts}}",
-        "open": "Open my drafts",
-        "empty": "No drafts. A new order starts as a draft in the drafts grid."
+        "open": "Open my drafts"
       },
       "open": {
         "title": "My open orders",
-        "empty": "No open orders. Orders appear here once Finance approves them, ready to buy.",
         "progress": "Received {received} of {planned} {unit}",
         "finished": "{finished} of {count} finished"
       },
       "requested": {
         "title": "Ordered, every stage",
-        "line": "{product}: {quantity} {unit} ordered",
-        "empty": "Nothing ordered. Your submitted orders, until they close, add up here."
+        "line": "{product}: {quantity} {unit} ordered"
       },
       "cash": {
         "title": "Cash I hold",
@@ -369,20 +365,16 @@
       "low": {
         "title": "Low stock",
         "count": "{count, plural, one {# item at or below its minimum} other {# items at or below their minimum}}",
-        "row": "{quantity} {unit}, minimum {minimum}",
-        "empty": "No item is low. An item at or below its minimum appears here."
+        "row": "{quantity} {unit}, minimum {minimum}"
       },
       "dueSoon": {
-        "title": "Orders due soon",
-        "hint": "Needed within 7 days, or overdue",
-        "empty": "No order is needed within 7 days."
+        "title": "Orders due soon"
       }
     },
     "principal": {
       "waiting": {
         "title": "Waiting for my approval",
-        "total": "{count, plural, one {# order} other {# orders}}, total {total}",
-        "empty": "No order waits for your approval. Orders the Head approves appear here."
+        "total": "{count, plural, one {# order} other {# orders}}, total {total}"
       },
       "card": {
         "neededBy": "Needed by {date}",
@@ -391,47 +383,38 @@
         "tooMany": "Over 200 orders: approve them from the order list, up to 200 at a time."
       },
       "byStatus": {
-        "title": "My branch's orders by status",
-        "empty": "No orders yet."
+        "title": "My branch's orders by status"
       },
       "spending": {
         "title": "My branch's spending this month",
-        "period": "{from} – {to}",
-        "hint": "Bought in this month, by the purchase records"
+        "period": "{from} – {to}"
       }
     },
     "head": {
       "waiting": {
         "title": "Waiting for my approval",
-        "line": "{count, plural, one {# order} other {# orders}}, total {total}",
-        "empty": "No order waits for your approval. Submitted orders of every branch appear here."
+        "line": "{count, plural, one {# order} other {# orders}}, total {total}"
       },
       "overspends": {
         "title": "Overspends to acknowledge",
         "row": "{over} over ({percent}%)",
-        "rowNoPercent": "{over} over",
-        "empty": "No overspend waits for you. An order in settlement above the guard appears here."
+        "rowNoPercent": "{over} over"
       },
       "writeOffs": {
         "title": "Write-offs and corrections to approve",
         "row": "{date} · {reason} · {name}",
-        "empty": "Nothing waits for you. A write-off a Manager asks for, or a stock count once every item is counted, appears here.",
         "countRow": "{date} · Stock count · {name}"
       },
       "suggestions": {
         "title": "Product suggestions",
-        "row": "{name} · {person}",
-        "empty": "No suggestion waits for you. A product a Manager suggests appears here."
+        "row": "{name} · {person}"
       },
       "prompts": {
         "title": "Price prompts",
-        "row": "Price {price}, recent average {average} ({percent, number, ::sign-always}%)",
-        "empty": "No price differs. A subtype whose recent purchases differ from its price by more than 20% appears here."
+        "row": "Price {price}, recent average {average} ({percent, number, ::sign-always}%)"
       },
       "stuck": {
-        "title": "Orders stuck over {hours} hours",
-        "hint": "At a waiting step longer than the setting",
-        "empty": "No order is stuck. An order waiting at one step longer than the setting appears here."
+        "title": "Orders stuck over {hours} hours"
       },
       "byStatus": {
         "title": "Orders by status, per branch",
@@ -439,8 +422,7 @@
       },
       "spending": {
         "title": "Spending this month, per branch",
-        "period": "{from} – {to}",
-        "hint": "Bought in this month, by the purchase records"
+        "period": "{from} – {to}"
       },
       "inactive": "{code} (inactive)",
       "pair": "{first} · {second}"
@@ -450,23 +432,20 @@
         "title": "Waiting for my approval",
         "entry": "{count, plural, one {# order} other {# orders}}, total {total}",
         "give": "Give {amount} in cash",
-        "noCash": "No cash to give",
-        "empty": "No order waits for your approval. Orders the Principal approves appear here."
+        "noCash": "No cash to give"
       },
       "settlements": {
         "title": "Waiting for settlement",
         "entry": "{count, plural, one {# order} other {# orders}}",
         "receive": "Receive {amount} from the Manager",
         "pay": "Pay {amount} to the Manager",
-        "none": "No cash to even out",
-        "empty": "No order waits for settlement. An order whose buying is finished and differs from the plan appears here."
+        "none": "No cash to even out"
       },
       "money": {
         "title": "Money with managers",
         "held": "Holds {amount}",
         "owed": "Owed {amount}",
         "since": "since {date}",
-        "empty": "No Manager holds or is owed money.",
         "open": "Open Money with managers"
       }
     },
@@ -491,8 +470,7 @@
     "markedAllRead": "{count, plural, =0 {Nothing was unread} one {# notification marked as read} other {# notifications marked as read}}",
     "notYours": "This notification is not yours or no longer exists. The list has been reloaded.",
     "empty": {
-      "title": "No notifications yet",
-      "line": "When an order, money or stock needs you, you are told here."
+      "title": "No notifications yet"
     },
     "previous": "Newer",
     "next": "Older",
@@ -1026,7 +1004,6 @@
   },
   "suggestions": {
     "title": "Product suggestions",
-    "intro": "Ask the Procurement Head to add an item that is missing from the catalog.",
     "new": "Suggest a product",
     "newTitle": "Suggest a product",
     "back": "Back to suggestions",
@@ -1093,7 +1070,6 @@
     },
     "empty": {
       "title": "No drafts yet",
-      "line": "Add the first order below: pick the product, the department and the quantity.",
       "lineViewOnly": "Your draft orders and the orders sent back to you appear here."
     },
     "columns": {
@@ -1243,7 +1219,6 @@
         "status": "Status",
         "quantity": "Quantity",
         "total": "Total",
-        "count": "Orders",
         "neededBy": "Needed by",
         "number": "Number",
         "department": "Department",
@@ -1261,7 +1236,6 @@
       "hideOrders": "Hide the orders of {product}",
       "ordersOf": "The orders of {product}",
       "urgent": "Urgent",
-      "orderCount": "{count, plural, one {# order} other {# orders}}",
       "tooMany": "At most 200 orders in one action. Untick some or narrow the filter.",
       "refreshed": "Some ticked orders changed and left the list. They were unticked and the list was refreshed.",
       "summaryFailed": "The ticked orders could not be read. Check the connection and tick again.",
@@ -1341,8 +1315,9 @@
         "waitingForMe": "Waiting for me",
         "dueSoon": "Due within 7 days"
       },
-      "rowFacts": "{branch} · {count, plural, one {# order} other {# orders}} · needed by {date}",
-      "yours": "Your turn"
+      "rowFacts": "{branch} · {orders} · needed by {date}",
+      "yours": "Your turn",
+      "orderCount": "{count, plural, one {# order} other {# orders}}"
     },
     "page": {
       "noNumber": "Draft without a number",
@@ -1948,7 +1923,6 @@
     },
     "managers": {
       "title": "Money with managers",
-      "line": "Who holds school money right now, and since when. Closed orders are not counted.",
       "holds": "Holds",
       "owed": "Owed",
       "since": "Since",
@@ -1959,8 +1933,7 @@
       "orderOwed": "Owed {amount}",
       "orderSince": "since {date}",
       "empty": {
-        "title": "Nobody holds school money",
-        "line": "Every order that is not Closed has a cash count of 0."
+        "title": "Nobody holds school money"
       }
     }
   },
