@@ -442,9 +442,8 @@ describe('Cancels after a move (08 Money ledger: "When one of its orders was mov
       }),
     ];
     for (const answer of answers) {
-      expect(answer.ok).toBe(false);
-      const [failed] = (answer as { ok: false; error: { orders: { values?: unknown }[] } }).error
-        .orders;
+      if (answer.ok) throw new Error("expected a refusal");
+      const [failed] = answer.error.orders ?? [];
       expect(failed).toBeDefined();
       expect(failed!.values).toBeUndefined();
     }
