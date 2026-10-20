@@ -79,6 +79,15 @@ export function CancelPurchaseButton({ target }: { target: CancelTarget }) {
             tAll("errors.field.movedSince", { manager: order.values?.manager ?? "" }),
           ]),
       );
+      // The record's issue to reverse first (plan of 5.4b, decided item 3, Look first).
+      const givenIssue = new Map(
+        (answer.error.orders ?? [])
+          .filter((order) => order.fields?.stock === "errors.field.givenIssuePosted")
+          .map((order) => [
+            order.orderId,
+            tAll("errors.field.givenIssuePosted", { number: order.values?.number ?? "" }),
+          ]),
+      );
       const lines = moveFailureLines(
         answer.error,
         answer.decided,
@@ -90,10 +99,11 @@ export function CancelPurchaseButton({ target }: { target: CancelTarget }) {
         },
         format,
       ).map(({ orderId, line }) =>
-        stockShort.has(orderId) || moved.has(orderId)
+        stockShort.has(orderId) || moved.has(orderId) || givenIssue.has(orderId)
           ? tMoves("failedLine", {
               number: numberOf.get(orderId) ?? "",
-              problem: moved.get(orderId) ?? tAll("errors.field.stockShort"),
+              problem:
+                moved.get(orderId) ?? givenIssue.get(orderId) ?? tAll("errors.field.stockShort"),
             })
           : line,
       );

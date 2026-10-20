@@ -206,6 +206,26 @@ describe('recordPurchase with "Give straight to requester" (07 What saving a rec
     ]);
   });
 
+  it("stores the tick on the record: true when ticked, false when not (07 Purchase record, Give straight to requester; 14 purchases; D56 finding 2)", async () => {
+    const scene = await opened();
+    const ticked = await order(scene, new Date(`${TODAY}T04:00:00Z`));
+    const kept = await order(scene, new Date(`${TODAY}T05:00:00Z`));
+    expect(
+      (
+        await trip(scene, [
+          { made: ticked, give: true },
+          { made: kept, give: false },
+        ])
+      ).ok,
+    ).toBe(true);
+    const stored = await db
+      .select({ orderId: purchases.orderId, give: purchases.giveToRequester })
+      .from(purchases)
+      .where(eq(purchases.branchId, scene.branch.id));
+    expect(stored.find((each) => each.orderId === ticked.id)?.give).toBe(true);
+    expect(stored.find((each) => each.orderId === kept.id)?.give).toBe(false);
+  });
+
   it("refuses the tick on a service, nothing saved (Decided ahead, question 9)", async () => {
     const scene = await opened({ type: "SERVICE" });
     const made = await order(scene);

@@ -89,6 +89,7 @@
       "cashNotZero": "Its cash count is not 0.",
       "alreadyOwner": "It already belongs to this Manager.",
       "movedSince": "This was recorded while the order was with {manager}. The Head first moves the order back to {manager}; then it can be cancelled.",
+      "givenIssuePosted": "Issue {number} gave these items to the department. Reverse that issue first, then cancel; if the items came back by a return, reverse that return first. Or keep this record and use a write-off.",
       "overReturn": "More than this department received.",
       "overReturnComment": "A line is more than the department received: write a comment.",
       "reverseStockShort": "Not enough in stock to reverse: the items have left again.",
