@@ -171,8 +171,6 @@ export async function ChartCard({
       {/* A table wider than a phone scrolls; the keyboard reaches it too (WCAG 2.1.1; plan of 9.1d). */}
       <div
         tabIndex={0}
-        role="region"
-        aria-labelledby={`${id}-title`}
         className="overflow-x-auto rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
       >
         <table className="w-full min-w-[28rem] border-collapse text-left text-sm leading-5">

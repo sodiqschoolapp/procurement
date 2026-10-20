@@ -61,8 +61,15 @@ async function signInByKeys(page: Page, person: Person): Promise<void> {
   await page.keyboard.press("Tab");
   await expect(page.locator("#password")).toBeFocused();
   await page.keyboard.type(person.password);
-  await page.keyboard.press("Enter");
-  await expect(page).toHaveURL(/\/$/);
+  // Enter again from the password field until the home page opens: on a loaded `next dev` server
+  // a first Enter can come before the form has hydrated.
+  await expect(async () => {
+    if (new URL(page.url()).pathname === "/login") {
+      await tabTo(page, page.locator("#password"));
+      await page.keyboard.press("Enter");
+    }
+    await expect(page).toHaveURL(/\/$/, { timeout: 5000 });
+  }).toPass();
 }
 
 /** The list of the owner's orders at one status, as an address typed in. */
