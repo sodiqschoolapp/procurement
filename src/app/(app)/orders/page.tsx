@@ -143,6 +143,8 @@ async function summaryFigures(
   );
   const due = await orNothing(() => countOrdersByStatus(userId, { ...base, dueSoon: true }), []);
   const mainCount = main?.count ?? 0;
+  const dueCount = due.reduce((sum, row) => sum + row.count, 0);
+  // A figure of 0 opens nothing: it is a plain figure, not a link and not a stop of the Tab key.
 
   return [
     {
@@ -150,20 +152,23 @@ async function summaryFigures(
       label: role === "MANAGER" ? tStatus(mainStatus) : t("waitingForMe"),
       value: mainCount,
       note: main && mainCount > 0 ? format.money(main.totals.grand) : undefined,
-      href: listAddress({ ...base, status: mainStatus }, raw),
+      href: mainCount > 0 ? listAddress({ ...base, status: mainStatus }, raw) : undefined,
       now: mainCount > 0,
     },
-    ...otherStatuses.map((status) => ({
-      id: status,
-      label: tStatus(status),
-      value: byStatus.find((row) => row.status === status)?.count ?? 0,
-      href: listAddress({ ...base, status }, raw),
-    })),
+    ...otherStatuses.map((status) => {
+      const count = byStatus.find((row) => row.status === status)?.count ?? 0;
+      return {
+        id: status,
+        label: tStatus(status),
+        value: count,
+        href: count > 0 ? listAddress({ ...base, status }, raw) : undefined,
+      };
+    }),
     {
       id: "dueSoon",
       label: t("dueSoon"),
-      value: due.reduce((sum, row) => sum + row.count, 0),
-      href: listAddress({ ...base, dueSoon: true }, raw),
+      value: dueCount,
+      href: dueCount > 0 ? listAddress({ ...base, dueSoon: true }, raw) : undefined,
     },
   ];
 }
