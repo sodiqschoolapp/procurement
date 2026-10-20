@@ -21,6 +21,9 @@ if (!process.env.SPEED_SKIP_FILL) {
 export default defineConfig({
   testDir: "./tests/speed",
   testMatch: "pages.spec.ts",
+  // Its own output folder: Playwright empties it at the start, and test-results/speed-*.json
+  // (the refresh time, the timings) lie beside it.
+  outputDir: "test-results/speed",
   fullyParallel: false,
   workers: 1,
   retries: 0,

@@ -150,14 +150,12 @@ async function mark(text: string): Promise<void> {
 }
 let marker: pg.Client | null = null;
 
-/**
- * The statements PostgreSQL logged between two marks (log_statement = 'all' on this database),
- * since a moment a little before the first.
- */
-function statementsBetween(since: string, start: string, end: string): number | null {
+/** The statements PostgreSQL logged between two marks (log_statement = 'all' on this database). */
+function statementsBetween(start: string, end: string): number | null {
   if (postgres === null) return null;
-  // PostgreSQL logs to its stderr, which `docker logs` hands back on stderr.
-  const log = spawnSync("docker", ["logs", "--since", since, postgres], {
+  // PostgreSQL logs to its stderr, which `docker logs` hands back on stderr. Read from the end:
+  // `--since` reads the whole log file, which this run makes large.
+  const log = spawnSync("docker", ["logs", "--tail", "20000", postgres], {
     encoding: "utf8",
     maxBuffer: 64 * 1024 * 1024,
   });
@@ -202,8 +200,6 @@ async function measure(page: Page, entry: Omit<Result, "times" | "statements" | 
   const times: number[] = [];
   let statements: number | null = null;
   for (let n = 0; n < TIMED; n += 1) {
-    // eslint-disable-next-line no-restricted-syntax -- the moment the log is read from, not a business time
-    const since = new Date(Date.now() - 1000).toISOString();
     const id = `${results.length}-${n}`;
     await mark(`speed-start-${id}`);
     times.push(await load(page, entry.url));
@@ -212,7 +208,7 @@ async function measure(page: Page, entry: Omit<Result, "times" | "statements" | 
     await mark(`speed-end-${id}`);
     if (n === TIMED - 1) {
       await page.waitForTimeout(200);
-      statements = statementsBetween(since, `speed-start-${id}`, `speed-end-${id}`);
+      statements = statementsBetween(`speed-start-${id}`, `speed-end-${id}`);
     }
   }
   const result: Result = { ...entry, times, statements, rows: await rowsOf(page) };
