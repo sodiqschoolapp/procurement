@@ -8,33 +8,9 @@
 import Decimal from "decimal.js";
 
 import { QUANTITY } from "./order-totals";
-import {
-  MOVEMENT_RULES,
-  type MovementType,
-  type StockBalance,
-  type StockMovement,
-  nextBalance,
-} from "./stock";
+import { type StockBalance, type StoredMovement, nextBalance, replayedMovement } from "./stock";
 
-/** A movement as `stock_movements` holds it: its type, signed quantity and the cost it was written with. */
-export type StoredMovement = { type: MovementType; qtyDelta: string; unitCost: bigint };
-
-/**
- * A stored movement back into the input nextBalance() took when it was posted:
- * - a type that moves at the average (MOVEMENT_RULES) without a cost: its stored cost is the
- *   average it moved at, which the replay reaches by itself;
- * - a RETURN also carries its stored cost as `emptyCost`, which nextBalance() uses only into a
- *   stock of 0, the one case it was posted with it (plan of 5.6, decided item 1);
- * - every other type at its stored cost: a priced type, and a REVERSAL, which is always posted
- *   priced (a cancelled purchase at its price, a document's reversal at the reversed movement's
- *   cost: reversalOf() of ./stock-documents.ts).
- */
-export function replayedMovement(movement: StoredMovement): StockMovement {
-  const { type, qtyDelta, unitCost } = movement;
-  if (type === "RETURN") return { type, qtyDelta, unitCost: null, emptyCost: unitCost };
-  if (MOVEMENT_RULES[type].cost === "average") return { type, qtyDelta, unitCost: null };
-  return { type, qtyDelta, unitCost };
-}
+export type { StoredMovement } from "./stock";
 
 /** What the movements say the stock is, or that they would take it below 0 at one of them. */
 export type Recomputed = { ok: true; qty: string; avgCost: bigint } | { ok: false };

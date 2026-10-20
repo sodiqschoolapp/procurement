@@ -2779,6 +2779,24 @@ Choices made during the build:
 - A user refused the action itself (`forbidden` beside the moved refusal: a Principal, a Manager without the right) gets no `values`: the wrapper drops them, so the next step of another role is never told (permission review, Should fix 1).
 - The record dialog and the settlement screen set the date input's `max` to the server's today.
 
+### 7.4b Inactive stock, counts into 0, a direct entry's cost (20.10.2026)
+
+The plan's decisions as the plan review of 20.10.2026 confirmed them, with its two corrections applied (both numbers of the 5.12 decision named in item 5; a count after a cancelled purchase record in the database test). The Look first items come first.
+
+1. **Look first** (stock, cost). "The subtype's last cost in that branch" is `lastCost()` in `src/domain/stock.ts`: the branch's movements of the subtype replayed in `seq` order through `nextBalance()` (`replayedMovement()` moved there from `stock-check.ts`), the average held just before the latest movement that took the stock from above 0 to 0; 0 when it never did, and 0 when that average was 0 (free items). Reverses 7.4 item 3 (D55, 4).
+2. **Look first** (stock, cost). The last cost enters as the CORRECTION's `emptyCost`, accepted by `nextBalance()` on a RETURN or a positive CORRECTION and used only into a stock of 0; stored as the movement's `unit_cost`; the nightly check replays a positive CORRECTION with its stored cost as `emptyCost`. A reversal leaves at its own cost.
+3. **Look first** (stock). Issue, write-off and transfer drop the line's activity check; the stock rule is the only limit (an inactive item with nothing held is refused as short with 0 available). Direct entry and the Excel stock import still refuse inactive entries. Reverses 5.4 item 3, 5.11 item 9 and 7.1 item 10 for inactive entries (D55, 3); the three tests that asserted the old refusal lost that case, now in `inactive-stock.db.test.ts`.
+4. **Look first** (stock). "Returned by a department that received it" is the department's net received amount above 0 (`departmentReceived()`, `departmentHolds()`), read for every inactive line whatever the comment; the over-return warning and comment are unchanged. Reverses the item list of 5.6 (issue #9 5.6 item 7) for inactive entries.
+5. **Look first** (permission). The cost per unit is read only when `stock.enter_direct` (the Head) allows it on the entry's branch, inside the SQL, on direct entries only, posted or reversed. Reverses 5.12 item 7 of this file (item 8 of 5.12 on issue #9; D55, 19).
+6. The picker mark: a subtype is "inactive" when it or its product is switched off; inactive items keep the name order.
+7. A transfer received with an inactive item: no check added; the receiving branch takes it in.
+8. **Look first** (stock; buying). "It can no longer be bought" keeps 3.6 item 4 as built: a purchase record that buys a switched-off subtype in place of the ordered one is refused; an approved order's own subtype, switched off after the approval, can still be bought. The build line says buying "still" refuses, so nothing changed; the substitution case has a test.
+
+Choices made during the build:
+
+- The page's column uses a new key `warehouse.documents.page.unitCost` ("Cost per unit"): the existing `warehouse.directEntry.unitCost` ends in "so'm", which the money formatter adds again.
+- The Manager row of the cost per unit is tested in `document.db.test.ts` (Head, Manager, Principal and Finance of the branch, posted and reversed) rather than in `documents-matrix.db.test.ts`, which tests the list.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

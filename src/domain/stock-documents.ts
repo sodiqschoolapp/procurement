@@ -296,16 +296,25 @@ export function countLineMoved(startSeq: bigint | null, newestSeq: bigint | null
  * The CORRECTION one approved count line writes (09 Movement types: "Correction after a stock
  * count | Up or down"; plan of 7.4, decided items 3 and 8): its difference (countDifference(), the
  * one formula) at the average of the moment; null when the difference is 0, since a movement is
- * never 0. The line must be counted: RangeError otherwise.
+ * never 0. The line must be counted: RangeError otherwise. A line that adds stock to a stock at
+ * start of 0 carries `lastCost` (lastCost() of ./stock.ts) as its `emptyCost`, so it comes in at
+ * the subtype's last cost (09 Stock value, the count bullet; plan of 7.4b, decided items 1 and 2,
+ * Look first); a caller that only asks whether the line moves leaves `lastCost` out.
  */
 export function countCorrection(
   stockAtStart: string,
   counted: string | null,
+  lastCost?: bigint,
 ): StockMovement | null {
   const difference = countDifference(stockAtStart, counted);
   if (difference === null) throw new RangeError("An approved count line that is not counted");
-  if (new Stock(difference).isZero()) return null;
-  return { type: "CORRECTION", qtyDelta: difference, unitCost: null };
+  const moved = new Stock(difference);
+  if (moved.isZero()) return null;
+  const correction: StockMovement = { type: "CORRECTION", qtyDelta: difference, unitCost: null };
+  if (lastCost !== undefined && moved.isPositive() && new Stock(stockAtStart).isZero()) {
+    return { ...correction, emptyCost: lastCost };
+  }
+  return correction;
 }
 
 /** What receiving one transfer line writes (transferReceipt()). */

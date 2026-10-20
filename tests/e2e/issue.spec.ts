@@ -157,6 +157,48 @@ test("a Manager issues 3 of 10 to a department, downloads the issue note, and 7 
   await expect(page.getByRole("row").filter({ hasText: seeded.name })).toContainText("7");
 });
 
+test("a switched-off product still held is listed marked inactive and is issued (04 rule 2; plan of 7.4b)", async ({
+  page,
+}, testInfo) => {
+  const phone = testInfo.project.name === "phone-375";
+  const seeded = await seedStock();
+  await withDatabase((client) =>
+    client.query(
+      `update products set is_active = false
+       where id = (select product_id from product_variants where id = $1)`,
+      [seeded.variantId],
+    ),
+  );
+  const marked = uz.warehouse.documents.inactiveOption.replace("{name}", seeded.name);
+  await signIn(page, E2E_ROLES.MANAGER);
+
+  await page.goto(`/warehouse/stock?q=${encodeURIComponent(seeded.tag)}`);
+  await page.getByRole("link", { name: uz.warehouse.stock.newIssue }).click();
+  await expect(page).toHaveURL(/\/warehouse\/documents\/new\?type=ISSUE$/);
+  await page
+    .getByLabel(texts.department, { exact: true })
+    .selectOption({ label: seeded.department });
+  await expect(page.getByLabel(texts.receivedBy, { exact: true })).toHaveValue(seeded.responsible);
+  if (phone) await page.getByRole("button", { name: texts.next }).click();
+  await page.getByLabel(texts.search).fill(seeded.tag);
+  const pick = page.locator(`[data-pick="${seeded.variantId}"]`);
+  await expect(pick).toContainText(marked);
+  await pick.click();
+  const line = page.locator(`[data-issue-line="${seeded.variantId}"]`);
+  await expect(line).toContainText(marked);
+  await line.getByRole("textbox").fill("2");
+  if (phone) {
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+      ),
+    ).toBe(false);
+    await page.getByRole("button", { name: texts.next }).click();
+  }
+  await page.getByRole("button", { name: texts.save }).click();
+  await expect(page.locator("[data-issue-saved]")).toBeVisible();
+});
+
 test("the issue form is Not found for the Principal and Finance, and their Stock on hand has no New issue (03 matrix: Issue, return, transfer stock)", async ({
   page,
 }) => {

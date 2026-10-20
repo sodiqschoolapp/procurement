@@ -9,7 +9,12 @@ import { insertProduct, insertSubtypes } from "../../../../tests/helpers/catalog
 import { setClock } from "../../../../tests/helpers/clock";
 import { insertDepartment, insertItem } from "../../../../tests/helpers/orders";
 import { insertUser } from "../../../../tests/helpers/users";
-import { issueFormChoices, searchIssueItems } from "./issue-form";
+import {
+  issueFormChoices,
+  searchIssueItems,
+  searchTransferItems,
+  searchWriteOffItems,
+} from "./issue-form";
 
 // The issue form's choices (plan of 5.4). 09-warehouse.md, Issue to a department: "Department …
 // from this branch", "Received by … prefilled with the department's responsible person", "Current
@@ -76,12 +81,12 @@ describe("searchIssueItems: what can be issued from the branch", () => {
         name: "Sinov daftar",
         unitShortName: expect.any(String),
         allowsDecimals: expect.any(Boolean),
-        subtypes: [{ id: blue!, name: "Ko'k", inStock: "7.000" }],
+        subtypes: [{ id: blue!, name: "Ko'k", inStock: "7.000", inactive: false }],
       },
     ]);
   });
 
-  it("leaves out an inactive subtype, an inactive product, and a product of no stock in the branch", async () => {
+  it("lists an inactive subtype and an inactive product held, marked, in the issue, write-off and transfer pickers; leaves out one at 0 (04 rule 2; plan of 7.4b, decided items 3 and 6)", async () => {
     const product = await insertProduct({ name: "Sinov qalam" });
     const [kept, dropped] = await insertSubtypes(product.id, [{ name: "A" }, { name: "B" }]);
     await stock(branch.id, kept!, "1");
@@ -93,11 +98,23 @@ describe("searchIssueItems: what can be issued from the branch", () => {
       sql`update products set is_active = false where id = (select product_id from product_variants where id = ${closed.variantId})`,
     );
 
-    const items = await searchIssueItems(head, { branchId: branch.id });
-    const ids = items.flatMap((each) => each.subtypes.map((subtype) => subtype.id));
-    expect(ids).toContain(kept!);
-    expect(ids).not.toContain(dropped!);
-    expect(ids).not.toContain(closed.variantId);
+    // An inactive item at 0 in the branch, given every other value that would list it (D46).
+    const emptied = await insertItem();
+    await stock(branch.id, emptied.variantId, "2");
+    await out(branch.id, emptied.variantId, "2");
+    await db.execute(
+      sql`update products set is_active = false where id = (select product_id from product_variants where id = ${emptied.variantId})`,
+    );
+
+    for (const search of [searchIssueItems, searchWriteOffItems, searchTransferItems]) {
+      const items = await search(head, { branchId: branch.id });
+      const subtypes = items.flatMap((each) => each.subtypes);
+      const marks = (id: string) => subtypes.find((subtype) => subtype.id === id)?.inactive;
+      expect(marks(kept!)).toBe(false);
+      expect(marks(dropped!)).toBe(true);
+      expect(marks(closed.variantId)).toBe(true);
+      expect(marks(emptied.variantId)).toBeUndefined();
+    }
   });
 });
 

@@ -50,6 +50,8 @@ type Line = {
   /** What the line shows: the product and subtype, what the department received, the measure. */
   productName: string;
   subtypeName: string | null;
+  /** Switched off: shown marked "inactive" (04 rule 2). */
+  inactive: boolean;
   received: string;
   unitShortName: string;
   allowsDecimals: boolean;
@@ -157,6 +159,7 @@ export function ReturnForm({
       qty: "",
       productName: item.name,
       subtypeName: subtype.name,
+      inactive: subtype.inactive,
       received: subtype.received,
       unitShortName: item.unitShortName,
       allowsDecimals: item.allowsDecimals,
@@ -381,9 +384,12 @@ export function ReturnForm({
           <ul className="flex flex-col gap-3">
             {lines.fields.map((field, index) => {
               const line = values.lines[index] ?? field;
-              const name = line.subtypeName
+              const named = line.subtypeName
                 ? `${line.productName} · ${line.subtypeName}`
                 : line.productName;
+              const name = line.inactive
+                ? tAll("warehouse.documents.inactiveOption", { name: named })
+                : named;
               const over = isOver(index);
               return (
                 <li
@@ -610,7 +616,13 @@ function ItemSearch({
                   className="flex min-h-11 w-full flex-wrap items-center justify-between gap-x-3 gap-y-0.5 rounded-lg px-3 py-2 text-left text-[15px] leading-[22px] hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring"
                 >
                   <span className="min-w-0">
-                    {subtype.name ? `${item.name} · ${subtype.name}` : item.name}
+                    {subtype.inactive
+                      ? tAll("warehouse.documents.inactiveOption", {
+                          name: subtype.name ? `${item.name} · ${subtype.name}` : item.name,
+                        })
+                      : subtype.name
+                        ? `${item.name} · ${subtype.name}`
+                        : item.name}
                   </span>
                   <span className="flex shrink-0 flex-wrap gap-x-3 text-sm leading-5 text-muted-foreground tabular-nums">
                     <span>

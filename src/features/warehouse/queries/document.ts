@@ -42,7 +42,11 @@ import { documentWall } from "../document-wall";
 // (03 "See orders, stock and reports"), so an unknown id and another branch's document are alike
 // "Not found" (03 rule 1). Its lines carry the branch's stock of now, which the Head weighs before
 // approving a write-off. No money is read (09 Stock value: "Value is shown in reports only"; plan
-// of 5.12, decided item 7). What the user may do now, each asked again by its action:
+// of 5.12, decided item 7), but for a direct entry's cost per unit, read for the Head only: the
+// column is chosen inside the SQL when `stock.enter_direct` (the Head) allows it on the entry's
+// branch, so no other role is ever sent it (09 Direct entry by the Head 4: "The entry's page shows
+// the Head its cost per unit"; plan of 7.4b, decided item 5, Look first). What the user may do
+// now, each asked again by its action:
 // - `canDecide`: `stock.approve_write_off` (the Head) and writeOffDecisionMove(), the function
 //   the decision action asks (developer-rules.md rule 2);
 // - `canReverse`: `stock.return_reverse` on the branch, a reversible status and reverseAllows(),
@@ -90,6 +94,8 @@ export type DocumentLine = {
   /** The measure allows decimals (the receive form's check). */
   allowsDecimals: boolean;
   unitShortName: string;
+  /** A direct entry's cost per unit in whole so'm, for the Head only; null otherwise. */
+  unitCost: bigint | null;
 };
 
 export type StockDocument = {
@@ -186,6 +192,9 @@ export async function getStockDocument(
     const transfer = document.type === "TRANSFER";
     const count = document.type === "COUNT";
     const noStock = transfer || count;
+    const showsCost =
+      document.type === "DIRECT_ENTRY" &&
+      decide("stock.enter_direct", actor, { branchId: document.branchId }) === "allow";
     const lines = await tx
       .select({
         id: stockDocumentLines.id,
@@ -200,6 +209,8 @@ export async function getStockDocument(
         recount: stockDocumentLines.recount,
         allowsDecimals: units.allowDecimal,
         unitShortName: units.shortName,
+        unitCost: sql<string | null>`case when ${showsCost}
+          then ${stockDocumentLines.unitCost}::text else null end`,
       })
       .from(stockDocumentLines)
       .innerJoin(productVariants, eq(productVariants.id, stockDocumentLines.variantId))
@@ -241,8 +252,9 @@ export async function getStockDocument(
     const receiving = toBranchId ? { branchId: toBranchId } : null;
     return {
       ...header,
-      lines: lines.map(({ isDefault, subtypeName, ...line }) => ({
+      lines: lines.map(({ isDefault, subtypeName, unitCost, ...line }) => ({
         ...line,
+        unitCost: unitCost === null ? null : BigInt(unitCost),
         shortQty: line.receivedQty === null ? null : transferShort(line.qty, line.receivedQty),
         difference: count ? countDifference(line.qty, line.countedQty) : null,
         subtypeName: isDefault ? null : subtypeName,

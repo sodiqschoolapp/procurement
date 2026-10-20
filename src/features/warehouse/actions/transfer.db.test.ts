@@ -229,7 +229,8 @@ describe("sendTransfer (09 Other documents, Transfer: stock leaves the sender at
     expect(result.ok).toBe(true);
   });
 
-  it('refuses half a piece, an inactive subtype, a service, an inactive sending branch and a future date (edge case "Half a piece"; 04 rule 2; decided item 10)', async () => {
+  // An inactive subtype is sent up to the stock held since D55 (3): inactive-stock.db.test.ts.
+  it('refuses half a piece, a service, an inactive sending branch and a future date (edge case "Half a piece"; decided item 10)', async () => {
     const a = await inStock("4");
     expect(
       await runAction(sendTransfer, manager.id, transferInput([{ variantId: a, qty: "1.5" }])),
@@ -252,14 +253,6 @@ describe("sendTransfer (09 Other documents, Transfer: stock leaves the sender at
     ).toMatchObject({
       ok: false,
       error: { fields: { "lines.0.variantId": "errors.field.notAllowed" } },
-    });
-
-    await db.execute(sql`update product_variants set is_active = false where id = ${a}`);
-    expect(
-      await runAction(sendTransfer, manager.id, transferInput([{ variantId: a, qty: "1" }])),
-    ).toMatchObject({
-      ok: false,
-      error: { fields: { "lines.0.variantId": "errors.field.inactive" } },
     });
 
     const b = await inStock("4");

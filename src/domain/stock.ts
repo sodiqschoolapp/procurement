@@ -35,7 +35,9 @@ export type MovementType = (typeof MOVEMENT_TYPES)[number];
  * - ISSUE, WRITE_OFF, TRANSFER_OUT: "use the average at that moment" (09 Stock value).
  * - RETURN: at the current average, which it leaves unchanged (Decided ahead, question 11); into
  *   an empty stock at its `emptyCost` (plan of 5.6, decided item 1, Look first).
- * - CORRECTION: a stock count's difference has no price of its own.
+ * - CORRECTION: a stock count's difference has no price of its own: at the average; up into an
+ *   empty stock at its `emptyCost`, the subtype's lastCost() (09 Stock value, the count bullet;
+ *   plan of 7.4b, decided items 1 and 2, Look first).
  * - REVERSAL: a cancelled purchase removes its quantity at its own price (09 Stock value, third
  *   bullet); a document's reversal moves the opposite quantity at the reversed movement's own
  *   cost (reversalOf() of ./stock-documents.ts; plan of 5.1, decided item 2, Look first).
@@ -62,8 +64,8 @@ export type StockBalance = { qty: string; avgCost: bigint };
  * One movement: `qtyDelta` is signed numeric(14,3) text ("5", "-2.5"), never 0; `unitCost` is
  * whole so'm of 0 or more for a priced movement (an item can be free: edge-cases/
  * purchasing-and-money.md, "The item was free"), `null` for one at the average. `emptyCost`, on a
- * RETURN only: the cost it comes in at when the stock under the lock is 0 (plan of 5.6, decided
- * item 1, Look first).
+ * RETURN or a CORRECTION up only: the cost it comes in at when the stock under the lock is 0 (plan
+ * of 5.6, decided item 1; plan of 7.4b, decided item 2; both Look first).
  */
 export type StockMovement = {
   type: MovementType;
@@ -109,8 +111,8 @@ function wholeSom(value: Decimal): bigint {
  * - Priced out (a cancelled purchase): (old quantity × old average − quantity × price) ÷ new
  *   quantity, never below 0 (plan of 3.1, decided item 3, Look first).
  * - At the average: the average stays.
- * - A return into a stock of 0 (quantity 0, not only an average of 0): priced at its `emptyCost`,
- *   which becomes the average. Into free stock (above 0 at an average of 0) it comes in at the
+ * - A return or a correction up into a stock of 0 (quantity 0, not only an average of 0): priced
+ *   at its `emptyCost`, which becomes the average. Into free stock (above 0 at an average of 0) it comes in at the
  *   average of 0, as Decided ahead 11 says (plan of 5.6, decided item 1 and correction 3).
  * - Whatever the movement, a stock of 0 has the average 0 (decided item 4, Look first).
  */
@@ -132,7 +134,9 @@ export function nextBalance(balance: StockBalance, movement: StockMovement): Nex
     throw new RangeError(`A unit cost of ${String(movement.unitCost)}: below 0`);
   }
   if (movement.emptyCost !== undefined) {
-    if (movement.type !== "RETURN" || priced || movement.emptyCost < 0n) {
+    const into =
+      movement.type === "RETURN" || (movement.type === "CORRECTION" && delta.isPositive());
+    if (!into || priced || movement.emptyCost < 0n) {
       throw new RangeError(`A ${movement.type} with an empty-stock cost`);
     }
   }
@@ -163,6 +167,51 @@ export function nextBalance(balance: StockBalance, movement: StockMovement): Nex
     .plus(delta.times(movement.unitCost.toString()));
   const avgCost = value.isNegative() ? 0n : wholeSom(value.dividedBy(after));
   return { ok: true, qty, avgCost, unitCost: movement.unitCost };
+}
+
+/** A movement as `stock_movements` holds it: its type, signed quantity and the cost it was written with. */
+export type StoredMovement = { type: MovementType; qtyDelta: string; unitCost: bigint };
+
+/**
+ * A stored movement back into the input nextBalance() took when it was posted (the nightly check's
+ * replay, ./stock-check.ts, and lastCost() below; plan of 8.2, decided item 2, Look first):
+ * - a type that moves at the average (MOVEMENT_RULES) without a cost: its stored cost is the
+ *   average it moved at, which the replay reaches by itself;
+ * - a RETURN, and a CORRECTION up, also carry their stored cost as `emptyCost`, which nextBalance()
+ *   uses only into a stock of 0, the one case they were posted with it (plan of 5.6, decided item
+ *   1; plan of 7.4b, decided item 2);
+ * - every other type at its stored cost: a priced type, and a REVERSAL, which is always posted
+ *   priced (a cancelled purchase at its price, a document's reversal at the reversed movement's
+ *   cost: reversalOf() of ./stock-documents.ts).
+ */
+export function replayedMovement(movement: StoredMovement): StockMovement {
+  const { type, qtyDelta, unitCost } = movement;
+  if (type === "RETURN" || (type === "CORRECTION" && !qtyDelta.startsWith("-"))) {
+    return { type, qtyDelta, unitCost: null, emptyCost: unitCost };
+  }
+  if (MOVEMENT_RULES[type].cost === "average") return { type, qtyDelta, unitCost: null };
+  return { type, qtyDelta, unitCost };
+}
+
+/**
+ * The subtype's last cost in a branch (09 Stock value: a count correction that adds stock to a
+ * quantity of 0 "comes in at the subtype's last cost in that branch, the average it had before its
+ * stock last reached 0; at 0 only when it never had a cost"; plan of 7.4b, decided item 1, Look
+ * first): the branch's movements of the subtype, given in `seq` order, replayed through
+ * nextBalance(); the average held just before the latest movement that took the stock from above 0
+ * to 0. 0 when the stock never went from above 0 to 0, and when that average was 0 (free items).
+ * Movements that would take the stock below 0 are a mistake of the caller: RangeError.
+ */
+export function lastCost(movements: readonly StoredMovement[]): bigint {
+  let balance: StockBalance = { qty: "0", avgCost: 0n };
+  let last = 0n;
+  for (const movement of movements) {
+    const next = nextBalance(balance, replayedMovement(movement));
+    if (!next.ok) throw new RangeError("Movements that take the stock below 0");
+    if (stockOf(next.qty).isZero() && !stockOf(balance.qty).isZero()) last = balance.avgCost;
+    balance = { qty: next.qty, avgCost: next.avgCost };
+  }
+  return last;
 }
 
 /**

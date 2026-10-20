@@ -36,8 +36,9 @@ import { StockShortError } from "@/server/stock-ledger";
 //   1  the branch, active (FOR SHARE); the date, up to today in Tashkent (decided item 8); the
 //      comment, required for every reason (writeOffCommentRefusal(); decided item 7)
 //   2  the products FOR SHARE in the order of their ids, then the subtypes FOR SHARE in the order
-//      of their ids: each an active subtype of an active product of goods (decided item 9; 04
-//      rule 2), its quantity by the measure and not above the stock of this moment
+//      of their ids: each a subtype of a product of goods, active or not (04 rule 2: an inactive
+//      entry is written off up to the stock the branch holds; plan of 7.4b, decided item 3, Look
+//      first), its quantity by the measure and not above the stock of this moment
 //      (issueQuantityRefusal(); decided item 3, Look first)
 //   3  createDocument() of src/server/stock-documents.ts: the WOF number and the document with its
 //      lines. A Manager's waits PENDING_APPROVAL and moves no stock ("Stock changes only after
@@ -129,8 +130,6 @@ async function refuseLines(tx: Executor, typed: Typed) {
   const rows = await tx
     .select({
       id: productVariants.id,
-      isActive: productVariants.isActive,
-      productActive: products.isActive,
       type: products.type,
       allowDecimal: units.allowDecimal,
     })
@@ -150,9 +149,6 @@ async function refuseLines(tx: Executor, typed: Typed) {
     const row = rows.find((each) => each.id === line.variantId);
     // A service never enters stock (A7), so it is never written off.
     if (!row || row.type !== "GOODS") refuse(`lines.${at}.variantId`, "errors.field.notAllowed");
-    if (!row.isActive || !row.productActive) {
-      refuse(`lines.${at}.variantId`, "errors.field.inactive");
-    }
     const inStock = held.find((each) => each.variantId === line.variantId)?.qty ?? "0";
     const refusal = issueQuantityRefusal(line.qty, row.allowDecimal, inStock);
     if (refusal === "stockShort") {

@@ -2371,6 +2371,7 @@
         "product": "Item",
         "quantity": "Quantity",
         "inStock": "In stock now",
+        "unitCost": "Cost per unit",
         "labelled": "{label}: {value}",
         "downloadNote": "Issue note (PDF)",
         "actions": "Actions",

@@ -2371,6 +2371,7 @@
         "product": "Товар",
         "quantity": "Количество",
         "inStock": "Сейчас на складе",
+        "unitCost": "Цена за единицу",
         "labelled": "{label}: {value}",
         "downloadNote": "Накладная на выдачу (PDF)",
         "actions": "Действия",

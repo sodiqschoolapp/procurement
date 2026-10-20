@@ -74,6 +74,42 @@ describe("recomputeBalance replays what was posted (09 Stock value; decided item
     expect(recomputeBalance(stored)).toEqual({ ok: true, ...balance });
   });
 
+  it("a count correction into 0 at its last cost of 3 000 replays to 3 000 (plan of 7.4b, decided item 2)", () => {
+    const { stored, balance } = post([
+      { type: "RECEIPT", qtyDelta: "40", unitCost: 3000n },
+      { type: "ISSUE", qtyDelta: "-40", unitCost: null },
+      { type: "CORRECTION", qtyDelta: "20", unitCost: null, emptyCost: 3000n },
+    ]);
+    expect(balance).toEqual({ qty: "20", avgCost: 3000n });
+    expect(recomputeBalance(stored)).toEqual({ ok: true, ...balance });
+  });
+
+  it("a correction up into stock above 0 keeps the average whatever its stored cost", () => {
+    const { stored, balance } = post([
+      { type: "RECEIPT", qtyDelta: "10", unitCost: 1500n },
+      { type: "CORRECTION", qtyDelta: "2", unitCost: null, emptyCost: 9000n },
+    ]);
+    expect(balance).toEqual({ qty: "12", avgCost: 1500n });
+    expect(recomputeBalance(stored)).toEqual({ ok: true, ...balance });
+  });
+
+  it("a correction down replays without an empty-stock cost and no RangeError", () => {
+    const stored: StoredMovement[] = [
+      { type: "RECEIPT", qtyDelta: "10", unitCost: 1500n },
+      { type: "CORRECTION", qtyDelta: "-10", unitCost: 1500n },
+    ];
+    expect(recomputeBalance(stored)).toEqual({ ok: true, qty: "0", avgCost: 0n });
+  });
+
+  it("a correction into 0 at 3 000 and its reversal replay to 0 at 0", () => {
+    const { stored, balance } = post([
+      { type: "CORRECTION", qtyDelta: "20", unitCost: null, emptyCost: 3000n },
+      { type: "REVERSAL", qtyDelta: "-20", unitCost: 3000n },
+    ]);
+    expect(balance).toEqual({ qty: "0", avgCost: 0n });
+    expect(recomputeBalance(stored)).toEqual({ ok: true, qty: "0", avgCost: 0n });
+  });
+
   it("movements that would go below 0 are a refusal, not a balance (09, first paragraph)", () => {
     expect(
       recomputeBalance([

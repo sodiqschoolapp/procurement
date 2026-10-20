@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 
 import { businessYear } from "@/domain/business-date";
+import { type MovementType, type StoredMovement, lastCost } from "@/domain/stock";
 import {
   type DocumentReason,
   type DocumentStatus,
@@ -199,6 +200,13 @@ export async function lockDocument(tx: Executor, documentId: string): Promise<Lo
  * caller sets the status first) and none of its lines may have moved yet: `wrong_status`
  * otherwise (permission review of 5.1, Must fix 1). The lines are read after the lock, in a
  * statement of their own.
+ *
+ * A count line that adds stock to a stock at start of 0 comes in at the subtype's lastCost() in
+ * the branch (09 Stock value, the count bullet; plan of 7.4b, decided items 1 and 2, Look first),
+ * replayed from the movements read here in one statement. The caller (decideCount) must already
+ * hold the balance rows of the count's lines FOR UPDATE and have checked that none of its items
+ * moved since the start (countLineMoved()), so the stock at start is the stock now and no movement
+ * can land between this read and the post.
  */
 export async function postLines(
   tx: Executor,
@@ -222,10 +230,12 @@ export async function postLines(
     from stock_document_lines l where l.document_id = ${document.id}
     order by l.id`);
   if (found.rows.some((line) => line.moved)) throw new ActionError("wrong_status");
+  const lastCosts =
+    document.type === "COUNT" ? await countLastCosts(tx, document.branchId, document.id) : null;
   const lines = found.rows.flatMap((line) => {
     const movement =
       document.type === "COUNT"
-        ? countCorrection(line.qty, line.counted_qty)
+        ? countCorrection(line.qty, line.counted_qty, lastCosts!.get(line.variant_id))
         : lineMovement(document.type, {
             qty: line.qty,
             unitCost: line.unit_cost === null ? null : BigInt(line.unit_cost),
@@ -247,6 +257,36 @@ export async function postLines(
     variantId: line.variant_id,
     movement: movements[index]!,
   }));
+}
+
+/**
+ * lastCost() of each subtype of a count's lines found where the stock at start was 0 (plan of
+ * 7.4b): every movement of those subtypes in the branch, in `seq` order, in one statement.
+ */
+async function countLastCosts(
+  tx: Executor,
+  branchId: string,
+  documentId: string,
+): Promise<Map<string, bigint>> {
+  const found = await tx.execute<{
+    variant_id: string;
+    type: MovementType;
+    qty_delta: string;
+    unit_cost: string;
+  }>(sql`
+    select m.variant_id, m.type, m.qty_delta::text as qty_delta, m.unit_cost::text as unit_cost
+    from stock_movements m
+    where m.branch_id = ${branchId}
+      and m.variant_id in (select l.variant_id from stock_document_lines l
+        where l.document_id = ${documentId} and l.qty = 0 and l.counted_qty > 0)
+    order by m.variant_id, m.seq`);
+  const movements = new Map<string, StoredMovement[]>();
+  for (const row of found.rows) {
+    const list = movements.get(row.variant_id) ?? [];
+    list.push({ type: row.type, qtyDelta: row.qty_delta, unitCost: BigInt(row.unit_cost) });
+    movements.set(row.variant_id, list);
+  }
+  return new Map([...movements].map(([variantId, list]) => [variantId, lastCost(list)]));
 }
 
 type HeldMovement = {

@@ -5,6 +5,7 @@ import {
   MOVEMENT_TYPES,
   type StockMovement,
   isLow,
+  lastCost,
   minimumStep,
   nextBalance,
   stockValue,
@@ -158,17 +159,109 @@ describe("nextBalance, a return into empty stock (Decided ahead 11; plan of 5.6,
   it("refuses an empty-stock cost on another type, beside a unit cost, or below 0", () => {
     const issue: StockMovement = { type: "ISSUE", qtyDelta: "-1", unitCost: null, emptyCost: 1n };
     expect(() => nextBalance(at("3", 100n), issue)).toThrow(RangeError);
+    // A correction up may carry one (plan of 7.4b, decided item 2), a correction down may not.
     const correction: StockMovement = {
       type: "CORRECTION",
-      qtyDelta: "1",
+      qtyDelta: "-1",
       unitCost: null,
       emptyCost: 1n,
     };
-    expect(() => nextBalance(at("0", 0n), correction)).toThrow(RangeError);
+    expect(() => nextBalance(at("3", 100n), correction)).toThrow(RangeError);
     expect(() =>
       nextBalance(at("0", 0n), { type: "RETURN", qtyDelta: "1", unitCost: 5n, emptyCost: 5n }),
     ).toThrow(RangeError);
     expect(() => nextBalance(at("0", 0n), back("1", -1n))).toThrow(RangeError);
+  });
+});
+
+describe("nextBalance, a count correction up into empty stock (09 Stock value, the count bullet; plan of 7.4b, decided item 2)", () => {
+  const found = (qtyDelta: string, emptyCost: bigint): StockMovement => ({
+    type: "CORRECTION",
+    qtyDelta,
+    unitCost: null,
+    emptyCost,
+  });
+
+  it("into a stock of 0 comes in at its last cost, which becomes the average", () => {
+    expect(nextBalance(at("0", 0n), found("20", 3000n))).toEqual({
+      ok: true,
+      qty: "20",
+      avgCost: 3000n,
+      unitCost: 3000n,
+    });
+  });
+
+  it("the Done-when case: 20 found at 3 000, then 100 bought at 3 000 keeps 3 000", () => {
+    const counted = landed(nextBalance(at("0", 0n), found("20", 3000n)));
+    expect(landed(nextBalance(counted, move("RECEIPT", "100", 3000n))).avgCost).toBe(3000n);
+  });
+
+  it("into a stock above 0 comes in at the average and leaves it, the last cost unused", () => {
+    expect(nextBalance(at("6", 1200n), found("2", 5000n))).toEqual({
+      ok: true,
+      qty: "8",
+      avgCost: 1200n,
+      unitCost: 1200n,
+    });
+  });
+});
+
+describe("lastCost (09 Stock value: the count correction into 0 comes in at the average before the stock last reached 0; plan of 7.4b, decided item 1)", () => {
+  const stored = (type: StockMovement["type"], qtyDelta: string, unitCost: bigint) => ({
+    type,
+    qtyDelta,
+    unitCost,
+  });
+
+  it("is 0 when the stock never had any movement", () => {
+    expect(lastCost([])).toBe(0n);
+  });
+
+  it("is 0 when the stock never went from above 0 to 0", () => {
+    expect(lastCost([stored("RECEIPT", "40", 3000n), stored("ISSUE", "-10", 3000n)])).toBe(0n);
+  });
+
+  it("40 at 3 000 issued to 0 → 3 000", () => {
+    expect(lastCost([stored("RECEIPT", "40", 3000n), stored("ISSUE", "-40", 3000n)])).toBe(3000n);
+  });
+
+  it("40 at 3 000 and 40 at 5 000 (average 4 000) issued to 0 → 4 000, not the last price", () => {
+    const movements = [
+      stored("RECEIPT", "40", 3000n),
+      stored("RECEIPT", "40", 5000n),
+      stored("ISSUE", "-80", 4000n),
+    ];
+    expect(lastCost(movements)).toBe(4000n);
+  });
+
+  it("the latest trip to 0 counts: 3 000 first, then 5 000", () => {
+    const movements = [
+      stored("RECEIPT", "10", 3000n),
+      stored("ISSUE", "-10", 3000n),
+      stored("RECEIPT", "4", 5000n),
+      stored("WRITE_OFF", "-4", 5000n),
+    ];
+    expect(lastCost(movements)).toBe(5000n);
+  });
+
+  it("a cancelled purchase that empties the stock: the average before it, not its price", () => {
+    // 10 at 1 000 and 10 at 3 000 → 2 000; the 10 at 1 000 issued (10 left at 2 000); then the
+    // purchase of 10 at 3 000 cancelled at its own price: the average before it was 2 000.
+    const movements = [
+      stored("RECEIPT", "10", 1000n),
+      stored("RECEIPT", "10", 3000n),
+      stored("ISSUE", "-10", 2000n),
+      stored("REVERSAL", "-10", 3000n),
+    ];
+    expect(lastCost(movements)).toBe(2000n);
+  });
+
+  it("free items (average 0) emptied: 0", () => {
+    expect(lastCost([stored("RECEIPT", "5", 0n), stored("ISSUE", "-5", 0n)])).toBe(0n);
+  });
+
+  it("refuses movements that would go below 0", () => {
+    expect(() => lastCost([stored("ISSUE", "-1", 0n)])).toThrow(RangeError);
   });
 });
 
