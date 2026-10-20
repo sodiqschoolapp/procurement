@@ -360,6 +360,30 @@ export async function fill(query: Query, moment: Date, sizes: FillSizes): Promis
     }
   }
 
+  // Product suggestions of the Managers (04 Product suggestions), most of them decided.
+  for (const branch of branches) {
+    for (let n = 0; n < 30; n += 1) {
+      const when = start + Math.floor(random.next() * (end - start));
+      const decided = n >= 5;
+      rows.add("catalog_suggestions", {
+        id: randomUUID(),
+        branch_id: branch.id,
+        suggested_by: random.pick(managers.get(branch.id)!).id,
+        name: `Taklif ${branch.code}-${n + 1}`,
+        unit_text: "dona",
+        photo_file_id: null,
+        note: null,
+        status: decided ? "DECLINED" : "PENDING",
+        decided_by: decided ? head.id : null,
+        decided_at: decided ? at(when + DAY) : null,
+        decision_note: decided ? "Katalogda bor" : null,
+        product_id: null,
+        client_key: randomUUID(),
+        created_at: at(when),
+      });
+    }
+  }
+
   // The orders (05): spread over the years per branch, each with its plan and total.
   const plans: Plan[] = [];
   for (const branch of branches) {
@@ -1285,6 +1309,7 @@ export async function fill(query: Query, moment: Date, sizes: FillSizes): Promis
     "extra_cost_types",
     "products",
     "product_variants",
+    "catalog_suggestions",
     "orders",
     "order_extras",
     "order_actions",
