@@ -5,6 +5,7 @@ import { db } from "@/server/db/client";
 import { scheduledJobs } from "@/server/db/schema";
 
 import { advanceClock, setClock } from "../../../tests/helpers/clock";
+import { catchErrorReports, eventOf } from "../../../tests/helpers/error-reports";
 import type { Job } from "./job";
 import { heartbeat } from "./registry";
 import { runDueJobs } from "./run-due";
@@ -172,6 +173,41 @@ describe("a failed run saves nothing of itself (developer-rules.md rule 3)", () 
       broken_first: "failed",
       fine_second: "ran",
     });
+  });
+});
+
+describe("a failure is handed to the error reporter (build-plan 9.3)", () => {
+  it("a failed job is reported by its name; a job that ran is not", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const reports = catchErrorReports();
+    setClock("2026-10-14T13:30:00Z");
+    const broken = watched("reported_probe", async () => {
+      throw new Error("the job broke");
+    });
+    const fine = watched("unreported_probe");
+    expect(await runDueJobs([broken.job, fine.job])).toEqual({
+      reported_probe: "failed",
+      unreported_probe: "ran",
+    });
+    expect(reports.map((report) => eventOf(report).transaction)).toEqual(["job reported_probe"]);
+    expect(eventOf(reports[0]!).exception.values[0]!.value).toBe("Error: the job broke");
+  });
+
+  it("a round that fails as a whole is reported", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const reports = catchErrorReports();
+    let failed!: () => void;
+    const roundFailed = new Promise<void>((resolve) => (failed = resolve));
+    const scheduler = startScheduler({
+      jobs: [],
+      runRound: async () => {
+        failed();
+        throw new Error("the round broke");
+      },
+    });
+    await roundFailed;
+    await scheduler.stop();
+    expect(reports.map((report) => eventOf(report).transaction)).toEqual(["scheduler round"]);
   });
 });
 

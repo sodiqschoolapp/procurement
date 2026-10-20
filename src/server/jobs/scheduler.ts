@@ -1,4 +1,5 @@
 import { describeForLog } from "@/server/action";
+import { reportError } from "@/server/error-report";
 
 import type { Job } from "./job";
 import { runDueJobs } from "./run-due";
@@ -32,6 +33,7 @@ export function startScheduler(options: {
       () => undefined,
       (error: unknown) => {
         console.error(`Scheduler round failed: ${describeForLog(error)}`);
+        void reportError(error, "scheduler round");
       },
     );
     void running.then(() => {

@@ -1974,4 +1974,22 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - `SPEED_SKIP_FILL=1 SPEED_ONLY=<text> npm run speed` measures a few addresses without writing the table; `alter database procurement_speed set log_min_duration_statement = 100` shows the slow statements in `docker compose logs postgres` (reset it before a full run: the long statements it logs push the run's marks out of the log it reads).
 - For 9.4: whether the managed database's pooler passes `-c jit=off` and `-c timezone=UTC` on.
 
-The next task is 9.3.
+## 9.3 Monitoring (20.10.2026, pull request #136)
+
+**Built**
+- `src/server/error-report.ts`: an error-reporting client with no dependency (Sentry's envelope format over `fetch`), off until `ERROR_REPORT_DSN` is set. Called by `onRequestError` in `src/instrumentation.ts`, the two action wrappers, the scheduler, the jobs and the nightly stock check's mismatch.
+- `describeForLog()` moved to `src/server/log-error.ts` (still exported by `action.ts`).
+- `/health?forced-error` throws only with `FORCED_ERROR=on`. `docs/monitoring.md`: the owner's Sentry, UptimeRobot and trial-check steps.
+
+**Left out, and the task that brings it**
+- Browser errors: no task. The image job's check of a built app: a later task if the owner wants it (decisions 9.3, item 1).
+
+**Open for the owner**
+- After 9.4: the three steps of `docs/monitoring.md` (optional).
+
+**What the next sessions must know**
+- A new place that catches an unexpected error and logs it also calls `void reportError(error, "<where>")`; its test uses `catchErrorReports()` of `tests/helpers/error-reports.ts`.
+- Never pass a request's path, query, headers or a `cause` to `reportError()`; the `where` is a route pattern or a name.
+- For 9.4: keep the names `SEED_DEMO_DATA` (the environment tag reads it) and `ERROR_REPORT_DSN`; add `ERROR_REPORT_DSN` to `docs/deploy.md`'s list of typed values.
+
+The next task is 9.4.

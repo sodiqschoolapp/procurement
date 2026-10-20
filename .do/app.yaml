@@ -4,6 +4,7 @@
 # are bound by DigitalOcean itself (`${db.…}`), so nobody types them and no file holds them. The
 # values the owner types (BETTER_AUTH_SECRET, three S3_*, four SEED_*_PASSWORD) are not declared
 # here: docs/deploy.md lists them, and says to type them again after this file is applied.
+# ERROR_REPORT_DSN (build-plan 9.3, optional) is typed the same way: docs/monitoring.md.
 #
 # Unconfirmed from the session that wrote it (DigitalOcean's pages could not be read there):
 # the size slug, PostgreSQL 17 for a dev database, and the bindings CA_CERT and COMMIT_HASH.

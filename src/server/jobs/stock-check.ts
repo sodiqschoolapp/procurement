@@ -4,6 +4,7 @@ import type { MovementType } from "@/domain/stock";
 import { type StockMismatch, stockMismatch } from "@/domain/stock-check";
 import { now } from "@/server/clock";
 import { users } from "@/server/db/schema";
+import { reportError } from "@/server/error-report";
 import { notify } from "@/server/notify";
 
 import type { Job } from "./job";
@@ -41,6 +42,11 @@ function describeMismatch(row: CheckedRow, mismatch: StockMismatch): string {
   );
 }
 
+/** The error a mismatch is reported as: ids and numbers only, no personal data. */
+export class StockCheckMismatch extends Error {
+  override name = "StockCheckMismatch";
+}
+
 export const stockCheck: Job = {
   name: "stock_check",
   schedule: { dailyAt: "03:00" },
@@ -76,7 +82,10 @@ export const stockCheck: Job = {
       const mismatch = stockMismatch(movements, found);
       if (mismatch === null) continue;
       count += 1;
-      console.error(describeMismatch(row, mismatch));
+      const line = describeMismatch(row, mismatch);
+      console.error(line);
+      // Also an alert (plan of 9.3, decision 7): a wrong stock number is the worst bug there is.
+      void reportError(new StockCheckMismatch(line), "job stock_check");
     }
     if (count === 0) return;
 
