@@ -9,6 +9,7 @@ import { db } from "@/server/db/client";
 
 import { insertBranch, setManagerRight } from "../../tests/helpers/branches";
 import { setClock } from "../../tests/helpers/clock";
+import { catchErrorReports, eventOf } from "../../tests/helpers/error-reports";
 import { runTogether, type Meet } from "../../tests/helpers/together";
 import { type InsertedUser, insertUser } from "../../tests/helpers/users";
 import {
@@ -317,6 +318,40 @@ describe("one transaction per action (developer-rules.md rule 3)", () => {
       "Action createSample failed: TypeError: invented failure",
     ]);
     expect(JSON.stringify(logged.mock.calls)).not.toContain("Maxfiy nom");
+  });
+
+  it("an unexpected error is also handed to the error reporter; a refusal is not (build-plan 9.3)", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const reports = catchErrorReports();
+    const { manager, branchId } = await managerWithBranch();
+
+    const refused = await runAction(
+      createSample({
+        write: async () => {
+          throw new ActionError("not_found");
+        },
+      }),
+      manager.id,
+      { clientKey: newClientKey(), branchId, title: "Yangi" },
+    );
+    expect(refused).toMatchObject({ ok: false, error: { code: "not_found" } });
+    expect(reports).toEqual([]);
+
+    await runAction(
+      createSample({
+        write: async () => {
+          throw new TypeError("invented failure");
+        },
+      }),
+      manager.id,
+      { clientKey: newClientKey(), branchId, title: "Maxfiy nom" },
+    );
+    expect(reports).toHaveLength(1);
+    expect(eventOf(reports[0]!)).toMatchObject({
+      transaction: "action createSample",
+      exception: { values: [{ value: "TypeError: invented failure" }] },
+    });
+    expect(reports[0]!.body).not.toContain("Maxfiy nom");
   });
 
   it("a refused SQL statement is logged without its values (CLAUDE.md conventions; plan, decision 7)", async () => {

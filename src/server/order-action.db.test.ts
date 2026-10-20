@@ -9,6 +9,7 @@ import { db } from "@/server/db/client";
 import { orderActions, orderEvents, orders } from "@/server/db/schema";
 
 import { insertBranch, setManagerRight } from "../../tests/helpers/branches";
+import { catchErrorReports, eventOf } from "../../tests/helpers/error-reports";
 import { insertOrder, inventedNumber } from "../../tests/helpers/orders";
 import { runTogether } from "../../tests/helpers/together";
 import { type InsertedUser, insertUser } from "../../tests/helpers/users";
@@ -194,6 +195,23 @@ describe("one action on many orders, all or nothing (06 rule 8; developer-rules 
     const state = await stateOf(two);
     for (const order of two) expect(state.get(order.id)?.status).toBe("PENDING_HEAD");
     expect(await actionsWith(input.clientKey)).toHaveLength(0);
+  });
+
+  it("an unexpected error is also handed to the error reporter (build-plan 9.3)", async () => {
+    const two = await placed(2);
+    const input = ticked(two);
+    const logged = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const reports = catchErrorReports();
+    const failing = move("APPROVE", async () => {
+      throw new Error("The bell is broken.");
+    });
+    expect(expectRefused(await runOrdersAction(failing, head.id, input)).code).toBe("unexpected");
+    expect(reports).toHaveLength(1);
+    expect(eventOf(reports[0]!)).toMatchObject({
+      transaction: `action ${failing.name}`,
+      exception: { values: [{ value: "Error: The bell is broken." }] },
+    });
+    logged.mockRestore();
   });
 
   it("the write sees its own order_actions row by context.actionId (plan of 4.2, decided item 8)", async () => {

@@ -1,6 +1,6 @@
 import { and, eq, sql } from "drizzle-orm";
 import pg from "pg";
-import { beforeAll, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { runAction } from "@/server/action";
 import { now } from "@/server/clock";
@@ -10,6 +10,7 @@ import { type PostedMovementInput, postMovement } from "@/server/stock-ledger";
 import { reverseStockDocument } from "@/features/warehouse/actions/reverse";
 
 import { seed } from "../../../scripts/seed.mjs";
+import { catchErrorReports, eventOf } from "../../../tests/helpers/error-reports";
 import { insertBranch } from "../../../tests/helpers/branches";
 import { setClock } from "../../../tests/helpers/clock";
 import { insertDepartment, insertItem } from "../../../tests/helpers/orders";
@@ -27,6 +28,10 @@ import { stockCheck } from "./stock-check";
 // written by the real writers (postMovement(), the document helpers, the reverse action and the
 // seed), and holds every case the replay could get wrong (review of the plan, Should fix 2, and
 // corrections 2 and 3; D40). Every fixture is asserted (D38).
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 let branchA: string;
 let branchB: string;
@@ -290,6 +295,23 @@ describe("stock_check (14-data-model.md, Notes for the build; open question 17, 
       await check();
       expect(await noticesOf(head)).toEqual([{ params: { count: 1 }, link: "/warehouse/stock" }]);
     });
+  });
+
+  it("a mismatch is also handed to the error reporter, ids and numbers only; a clean ledger sends nothing (build-plan 9.3, plan decision 7)", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const reports = catchErrorReports();
+    setClock("2031-05-09T07:00:00Z");
+    await check();
+    expect(reports).toEqual([]);
+    setClock("2031-05-09T08:00:00Z");
+    await withChanged(branchB, items.empty, sql`qty = 1`, async () => {
+      await check();
+    });
+    expect(reports).toHaveLength(1);
+    const event = eventOf(reports[0]!);
+    expect(event.transaction).toBe("job stock_check");
+    expect(event.exception.values[0]!.type).toBe("StockCheckMismatch");
+    expect(event.exception.values[0]!.value).toContain(`branch ${branchB}, subtype ${items.empty}`);
   });
 
   it("corrects nothing: the changed balance stays as it was found (decided item 1)", async () => {
