@@ -2371,6 +2371,7 @@
         "product": "Tovar",
         "quantity": "Miqdor",
         "inStock": "Hozir omborda",
+        "unitCost": "Birlik narxi",
         "labelled": "{label}: {value}",
         "downloadNote": "Berish varaqasi (PDF)",
         "actions": "Amallar",

@@ -34,7 +34,8 @@ import { requireUser } from "@/server/auth/session";
 // unless the Head may approve it now (`canApprove`): then the lines are read and Approve and
 // Refuse sit at the bottom (plan of 7.4). The Head typing an incomplete count gets Refuse below
 // the form, not fixed. A line sent back is marked "Count again"; a complete count tells everyone
-// else it waits for the Head. At phone width the lines are cards.
+// else it waits for the Head. A direct entry shows the Head each line's cost per unit, which the
+// query reads for the Head only (plan of 7.4b). At phone width the lines are cards.
 
 export default async function StockDocumentPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -56,6 +57,8 @@ export default async function StockDocumentPage({ params }: { params: Promise<{ 
   // The stock of now beside a waiting write-off's lines, which the Head weighs; never a count's.
   const waiting = document.type === "WRITE_OFF" && document.status === "PENDING_APPROVAL";
   const count = document.type === "COUNT";
+  // A direct entry's cost per unit, which the query sends to the Head only (plan of 7.4b).
+  const costed = document.lines.some((line) => line.unitCost !== null);
   const reason =
     document.reason === null
       ? null
@@ -208,6 +211,11 @@ export default async function StockDocumentPage({ params }: { params: Promise<{ 
                     </th>
                   </>
                 )}
+                {costed && (
+                  <th scope="col" className="py-2 text-right font-semibold">
+                    {t("page.unitCost")}
+                  </th>
+                )}
                 {waiting && (
                   <th scope="col" className="py-2 text-right font-semibold">
                     {t("page.inStock")}
@@ -271,6 +279,24 @@ export default async function StockDocumentPage({ params }: { params: Promise<{ 
                   {received &&
                     column(t("page.received"), line.receivedQty ?? "0", line.unitShortName)}
                   {received && column(t("page.short"), line.shortQty ?? "0", line.unitShortName)}
+                  {costed && (
+                    <td
+                      data-unit-cost
+                      className="py-2 text-right tabular-nums max-sm:p-0 max-sm:text-left"
+                    >
+                      {line.unitCost !== null && (
+                        <>
+                          <span className="sm:hidden">
+                            {t("page.labelled", {
+                              label: t("page.unitCost"),
+                              value: format.money(line.unitCost),
+                            })}
+                          </span>
+                          <span className="max-sm:hidden">{format.money(line.unitCost)}</span>
+                        </>
+                      )}
+                    </td>
+                  )}
                   {waiting && (
                     <td className="py-2 text-right tabular-nums max-sm:p-0 max-sm:text-left">
                       <span className="sm:hidden">

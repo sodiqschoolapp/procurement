@@ -249,6 +249,63 @@ describe("getStockDocument: every type (plan of 5.12, decided item 3)", () => {
     });
   });
 
+  it("a direct entry's cost per unit reaches the Head only, posted and reversed (09 Direct entry by the Head 4; plan of 7.4b, decided item 5)", async () => {
+    const branch = await insertBranch();
+    const head = await insertUser("HEAD");
+    const manager = await insertUser("MANAGER", { branches: [branch.id] });
+    const principal = await insertUser("PRINCIPAL", { branches: [branch.id] });
+    const finance = await insertUser("FINANCE", { branches: [branch.id] });
+    const item = await insertItem({ referencePrice: 9000n });
+    const made = await runAction(enterStockDirectly, head.id, {
+      clientKey: randomUUID(),
+      branchId: branch.id,
+      docDate: "2031-05-03",
+      reason: "EXISTING_STOCK",
+      comment: null,
+      lines: [{ variantId: item.variantId, qty: "4", unitCost: "1250" }],
+    });
+    if (!made.ok) throw new Error(`fixture: ${made.error.code}`);
+
+    const seen = async (userId: string) =>
+      (await getStockDocument(userId, made.data.documentId))!.lines.map((line) => line.unitCost);
+    expect(await seen(head.id)).toEqual([1250n]);
+    for (const reader of [manager, principal, finance])
+      expect(await seen(reader.id)).toEqual([null]);
+
+    const reversed = await runAction(reverseStockDocument, head.id, {
+      documentId: made.data.documentId,
+      reason: "Xato kiritilgan",
+    });
+    expect(reversed.ok).toBe(true);
+    expect(await seen(head.id)).toEqual([1250n]);
+    expect(await seen(manager.id)).toEqual([null]);
+  });
+
+  it("no other type carries a cost per unit, not even to the Head: an issue, and a return whose lines store one (plan of 7.4b, decided item 5)", async () => {
+    const branch = await insertBranch();
+    const head = await insertUser("HEAD");
+    const doc = await issued(branch.id);
+    expect(
+      (await getStockDocument(head.id, doc.documentId))!.lines.map((line) => line.unitCost),
+    ).toEqual([null]);
+    const back = await runAction(returnStock, doc.maker.id, {
+      clientKey: randomUUID(),
+      branchId: branch.id,
+      docDate: "2031-05-03",
+      departmentId: doc.department.id,
+      comment: null,
+      lines: [{ variantId: doc.item.variantId, qty: "1" }],
+    });
+    if (!back.ok) throw new Error(`fixture: ${back.error.code}`);
+    const stored = await db.execute<{ unit_cost: string | null }>(sql`
+      select unit_cost::text as unit_cost from stock_document_lines
+      where document_id = ${back.data.documentId}`);
+    expect(stored.rows[0]!.unit_cost).not.toBeNull();
+    expect(
+      (await getStockDocument(head.id, back.data.documentId))!.lines.map((line) => line.unitCost),
+    ).toEqual([null]);
+  });
+
   it("a return: its department, reversible by its maker; no note", async () => {
     const branch = await insertBranch();
     const doc = await issued(branch.id);
