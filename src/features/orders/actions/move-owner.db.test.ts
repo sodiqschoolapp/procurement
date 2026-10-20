@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 
 import { cancelMoney } from "@/features/money/actions/cancel-money";
@@ -10,7 +10,7 @@ import { cancelPurchase, cancelTrip } from "@/features/purchasing/actions/cancel
 import { recordPurchase } from "@/features/purchasing/actions/record-purchase";
 import type { ActionResult } from "@/server/action-result";
 import { db } from "@/server/db/client";
-import { moneyActions, orderEvents, orders, purchases } from "@/server/db/schema";
+import { moneyActions, notifications, orderEvents, orders, purchases } from "@/server/db/schema";
 import { type OrdersResult, runOrdersAction } from "@/server/order-action";
 
 import { insertBranch } from "../../../../tests/helpers/branches";
@@ -559,5 +559,101 @@ describe('Cancels after a move (08 Money ledger: "When one of its orders was mov
       }),
     );
     expect(await count(s, order)).toBe(0n);
+  });
+});
+
+/** The move notices one user got, as [type, branch id, count, manager]. */
+async function moveNotices(userId: string) {
+  const rows = await db
+    .select({
+      type: notifications.type,
+      branchId: notifications.branchId,
+      params: notifications.params,
+    })
+    .from(notifications)
+    .where(
+      and(
+        eq(notifications.userId, userId),
+        inArray(notifications.type, ["REQUEST_MOVED_IN", "REQUEST_MOVED_OUT"]),
+      ),
+    );
+  return rows
+    .map((row) => {
+      const params = row.params as { count: number; manager?: string };
+      return [row.type, row.branchId, params.count, params.manager ?? null];
+    })
+    .sort((a, b) => String(a).localeCompare(String(b)));
+}
+
+describe('Who is told of a move (10 Notifications: "Orders moved to another Manager | The new owner and the old one"; D55 item 14; plan of 2.3b, decided item 9)', () => {
+  it("orders of two old owners in two branches: the new owner one notice per branch, each old owner one per branch with the new owner's name", async () => {
+    setClock(`${TODAY}T07:00:00Z`);
+    const chl = await insertBranch();
+    const yun = await insertBranch();
+    const dilnoza = await insertUser("MANAGER", { branches: [chl.id, yun.id] });
+    const aziz = await insertUser("MANAGER", { branches: [chl.id] });
+    const bekzod = await insertUser("MANAGER", { branches: [chl.id, yun.id] });
+    const finance = await insertUser("FINANCE", { branches: [chl.id, yun.id] });
+    const head = await insertUser("HEAD");
+    const otherHead = await insertUser("HEAD");
+    const at = (branchId: string, ownerId: string) =>
+      insertOrder({ branchId, ownerId, status: "PENDING_HEAD" });
+    const ids = [
+      (await at(chl.id, aziz.id)).id,
+      (await at(chl.id, aziz.id)).id,
+      (await at(chl.id, bekzod.id)).id,
+      (await at(yun.id, bekzod.id)).id,
+    ];
+
+    const result = await runOrdersAction(moveOrdersToManager, head.id, {
+      ...(await ticked(ids)),
+      managerId: dilnoza.id,
+    });
+    expectOk(result);
+
+    expect(await moveNotices(dilnoza.id)).toEqual(
+      [
+        ["REQUEST_MOVED_IN", chl.id, 3, null],
+        ["REQUEST_MOVED_IN", yun.id, 1, null],
+      ].sort((a, b) => String(a).localeCompare(String(b))),
+    );
+    expect(await moveNotices(aziz.id)).toEqual([
+      ["REQUEST_MOVED_OUT", chl.id, 2, dilnoza.fullName],
+    ]);
+    expect(await moveNotices(bekzod.id)).toEqual(
+      [
+        ["REQUEST_MOVED_OUT", chl.id, 1, dilnoza.fullName],
+        ["REQUEST_MOVED_OUT", yun.id, 1, dilnoza.fullName],
+      ].sort((a, b) => String(a).localeCompare(String(b))),
+    );
+    // Nobody else: not the Head who moved them, not another Head, not Finance.
+    for (const user of [head, otherHead, finance]) expect(await moveNotices(user.id)).toEqual([]);
+  });
+
+  it("an old owner who left the branch or was deactivated gets no notice; the new owner still does", async () => {
+    setClock(`${TODAY}T07:00:00Z`);
+    const chl = await insertBranch();
+    const elsewhere = await insertBranch();
+    const dilnoza = await insertUser("MANAGER", { branches: [chl.id] });
+    const left = await insertUser("MANAGER", { branches: [chl.id] });
+    const gone = await insertUser("MANAGER", { branches: [chl.id] });
+    const head = await insertUser("HEAD");
+    const fromLeft = await insertOrder({ branchId: chl.id, ownerId: left.id, status: "RETURNED" });
+    const fromGone = await insertOrder({ branchId: chl.id, ownerId: gone.id, status: "RETURNED" });
+    // The one who left works in another branch now; the other is switched off.
+    await db.execute(
+      sql`update user_branches set branch_id = ${elsewhere.id} where user_id = ${left.id}`,
+    );
+    await db.execute(sql`update users set is_active = false where id = ${gone.id}`);
+
+    expectOk(
+      await runOrdersAction(moveOrdersToManager, head.id, {
+        ...(await ticked([fromLeft.id, fromGone.id])),
+        managerId: dilnoza.id,
+      }),
+    );
+    expect(await moveNotices(dilnoza.id)).toEqual([["REQUEST_MOVED_IN", chl.id, 2, null]]);
+    expect(await moveNotices(left.id)).toEqual([]);
+    expect(await moveNotices(gone.id)).toEqual([]);
   });
 });

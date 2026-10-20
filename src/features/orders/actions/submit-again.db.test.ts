@@ -19,10 +19,12 @@ import { insertUser } from "../../../../tests/helpers/users";
 import { getOrderPage } from "../queries/order-page";
 import { approveOrders } from "./approve";
 import { sendBackOrders } from "./send-back";
+import { submitDrafts } from "./submit";
 import { submitAgainOrders } from "./submit-again";
 
-// Submit again (build plan 2.11): 06-approval-workflow.md, Allowed moves ("Sent back for editing |
-// Submit again | Owner | Waiting for Head | Revision number goes up by 1"); rules 4 ("A corrected
+// Submit again (build plans 2.11 and 2.3b): 06-approval-workflow.md, Allowed moves ("Sent back for
+// editing | Submit again | Owner or Head | Waiting for Head | Revision number goes up by 1"; the
+// Head since D55 item 12); rules 4 ("A corrected
 // order goes back to the Head. Earlier approvals stay in the history but no longer count"), 8;
 // 02 A4; 05 Order number 4; Checks at submit; 10 Notifications ("Orders submitted or submitted
 // again | Head"); plan of 2.11, decided item 4 (Look first). The permission rows are
@@ -178,5 +180,64 @@ describe("The Heads are told, one notice per branch (10 Notifications)", () => {
     );
     expect(await noticesOf(owner.id, "REQUEST_SUBMITTED")).toEqual([]);
     expect(await noticesOf(manager.id, "REQUEST_SUBMITTED")).toEqual([]);
+  });
+});
+
+describe("The Head submits again a Manager's sent-back order (06 Submit again: Owner or Head; D55 item 12; plan of 2.3b)", () => {
+  it("Done when: Bekzod's sent-back order, submitted again by the Head, waits for the Head with revision 2", async () => {
+    const { order, manager: bekzod, head } = await sentBackByPrincipal();
+    const otherHead = await insertUser("HEAD");
+    setClock("2026-10-16T07:00:00Z");
+    expect(await run(submitAgainOrders, head.id, tickedInput([order], {}))).toMatchObject({
+      ok: true,
+      data: { orders: [{ id: order.id, status: "PENDING_HEAD" }] },
+    });
+    expect(await orderRow(order.id)).toMatchObject({
+      status: "PENDING_HEAD",
+      revision: 2,
+      number: order.number,
+      ownerId: bekzod.id,
+    });
+    // The Head step is not skipped: the Head approves it again, as any re-submitted order.
+    const page = (await getOrderPage(head.id, order.id))!;
+    expect(page.steps.find((step) => step.step === "HEAD")).toMatchObject({ state: "current" });
+    expect(page.actions).toContain("APPROVE");
+    // "Orders submitted or submitted again | Head": the other Heads, not the actor, not the owner
+    // (plan of 2.3b, decided item 10).
+    expect(await noticesOf(otherHead.id, "REQUEST_SUBMITTED")).toHaveLength(1);
+    expect(await noticesOf(head.id, "REQUEST_SUBMITTED")).toEqual([]);
+    expect(await noticesOf(bekzod.id, "REQUEST_SUBMITTED")).toEqual([]);
+  });
+
+  it("a Head-created order: the first Submit skips the Head step, Submit again after a send-back does not (server-actions rule: a shortcut holds on the first pass only)", async () => {
+    const { branch, head, principal } = await moveScene();
+    const draft = await insertOrder({ branchId: branch.id, ownerId: head.id, status: "DRAFT" });
+    setClock("2026-10-16T05:00:00Z");
+    expect(await run(submitDrafts, head.id, tickedInput([draft], {}))).toMatchObject({
+      ok: true,
+      data: { orders: [{ id: draft.id, status: "PENDING_PRINCIPAL" }] },
+    });
+    setClock("2026-10-16T06:00:00Z");
+    const sent = (await orderRow(draft.id))!;
+    expect(await run(sendBackOrders, principal.id, tickedInput([sent]))).toMatchObject({
+      ok: true,
+    });
+    setClock("2026-10-16T07:00:00Z");
+    const back = (await orderRow(draft.id))!;
+    expect(await run(submitAgainOrders, head.id, tickedInput([back], {}))).toMatchObject({
+      ok: true,
+      data: { orders: [{ id: draft.id, status: "PENDING_HEAD" }] },
+    });
+    expect(await orderRow(draft.id)).toMatchObject({ status: "PENDING_HEAD", revision: 2 });
+  });
+
+  it("another Manager of the branch may not submit again Bekzod's order; nothing moves", async () => {
+    const { order, branch } = await sentBackByPrincipal();
+    const colleague = await insertUser("MANAGER", { branches: [branch.id] });
+    expect(await run(submitAgainOrders, colleague.id, tickedInput([order], {}))).toMatchObject({
+      ok: false,
+      error: { code: "forbidden" },
+    });
+    expect(await orderRow(order.id)).toMatchObject({ status: "RETURNED", revision: 1 });
   });
 });
