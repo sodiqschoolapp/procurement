@@ -470,7 +470,8 @@
     "markedAllRead": "{count, plural, =0 {Oʻqilmagan bildirishnoma yoʻq edi} other {# ta bildirishnoma oʻqilgan deb belgilandi}}",
     "notYours": "Bu bildirishnoma sizniki emas yoki endi mavjud emas. Roʻyxat yangilandi.",
     "empty": {
-      "title": "Hozircha bildirishnoma yoʻq"
+      "title": "Hozircha bildirishnoma yoʻq",
+      "line": "Buyurtma, pul yoki ombor sizni kutsa, shu yerda xabar beriladi."
     },
     "previous": "Yangiroq",
     "next": "Eskiroq",
@@ -1070,6 +1071,7 @@
     },
     "empty": {
       "title": "Hali qoralama yoʻq",
+      "line": "Birinchi buyurtmani pastda qoʻshing: mahsulot, boʻlim va miqdorni tanlang.",
       "lineViewOnly": "Bu yerda qoralamalaringiz va sizga qaytarilgan buyurtmalar chiqadi."
     },
     "columns": {

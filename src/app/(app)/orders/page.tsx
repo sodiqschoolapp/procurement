@@ -209,10 +209,13 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
       : statusCounts;
   const tStatus = await getTranslations("requestStatus");
   const figures = await summaryFigures(user.id, user.role, cookieBranch, raw);
-  // The "your turn" mark only where the person can act: a Manager whose right to add and send
-  // orders is off in every branch gets none on sent-back rows (addsDraftsIn of the drafts grid).
-  const marksTurn =
-    user.role !== "MANAGER" || myBranches.some((branch) => addsDraftsIn(markActor, branch));
+  // The "your turn" mark only where the person can act: a Manager's sent-back row is marked only
+  // in a branch where their right to add and send orders is on (addsDraftsIn of the drafts grid;
+  // plan review of the redesign, correction 2).
+  const turnBranchIds =
+    user.role === "MANAGER"
+      ? myBranches.filter((branch) => addsDraftsIn(markActor, branch)).map((branch) => branch.id)
+      : null;
 
   const listSection = (
     <section aria-labelledby="order-list-title" className="flex min-w-0 flex-col gap-3">
@@ -255,8 +258,9 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
         total={list.total}
         query={listQuery}
         hrefOf={listHrefs}
-        role={marksTurn ? user.role : null}
+        role={user.role}
         meId={user.id}
+        turnBranchIds={turnBranchIds}
         empty={{
           title: t(filtered ? "list.emptyFiltered.title" : "list.empty.title"),
           line: t(filtered ? "list.emptyFiltered.line" : "list.empty.line"),
@@ -342,7 +346,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
           <EmptyState
             icon="edit"
             title={t("empty.title")}
-            line={canAdd ? undefined : t("empty.lineViewOnly")}
+            line={t(canAdd ? "empty.line" : "empty.lineViewOnly")}
             className="py-6 sm:py-8"
           />
         )}

@@ -470,7 +470,8 @@
     "markedAllRead": "{count, plural, =0 {Nothing was unread} one {# notification marked as read} other {# notifications marked as read}}",
     "notYours": "This notification is not yours or no longer exists. The list has been reloaded.",
     "empty": {
-      "title": "No notifications yet"
+      "title": "No notifications yet",
+      "line": "When an order, money or stock needs you, you are told here."
     },
     "previous": "Newer",
     "next": "Older",
@@ -1070,6 +1071,7 @@
     },
     "empty": {
       "title": "No drafts yet",
+      "line": "Add the first order below: pick the product, the department and the quantity.",
       "lineViewOnly": "Your draft orders and the orders sent back to you appear here."
     },
     "columns": {

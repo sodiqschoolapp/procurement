@@ -24,6 +24,7 @@ import { RecordMoneyButton } from "@/features/money/components/record-money-butt
 import { ListActionBar } from "./list-action-bar";
 import { MoveOwnerButton } from "./move-owner-button";
 import { MoveButton, type StatusMoveKind } from "./move-button";
+import { waitsOn } from "./waits-on";
 
 /**
  * The moves of the list's action bar besides Approve, in the table's order. Submit again is not
@@ -60,6 +61,7 @@ export function OrderList({
   hrefOf,
   role,
   meId,
+  turnBranchIds,
   empty,
 }: {
   groups: WireOrderGroup[];
@@ -71,12 +73,11 @@ export function OrderList({
   query: string;
   /** The address of a page of the list, every other parameter kept. */
   hrefOf: Record<number, string>;
-  /**
-   * The person's role and id: which rows wait on this person (a mark only, never a right); no
-   * role when the person can take none of those steps.
-   */
-  role: Role | null;
+  /** The person's role and id: which rows wait on this person (a mark only, never a right). */
+  role: Role;
   meId: string;
+  /** A Manager's branches where they may add and send orders; null for the other roles. */
+  turnBranchIds: readonly string[] | null;
   /** The empty page's texts, shown when no group row matches (11 rule 12). */
   empty: { title: string; line: string };
 }) {
@@ -255,7 +256,7 @@ export function OrderList({
               ticked={tickedSet}
               refused={refusedSet}
               onTick={tick}
-              yours={waitsOn(group, role, meId)}
+              yours={waitsOn(group, role, meId, turnBranchIds)}
             />
           ))}
         </table>
@@ -420,27 +421,6 @@ export function OrderList({
       )}
     </div>
   );
-}
-
-/**
- * Whether a row waits on this person, for the orange "your turn" mark (docs/design-system.md,
- * Colour: the one "needs you now" accent). A mark only: the actions are the server's, asked when
- * the row is ticked. The Manager's own sent-back orders; the Head's, the Principal's and Finance's
- * own approval step; Finance's settlements.
- */
-function waitsOn(group: WireOrderGroup, role: Role | null, meId: string): boolean {
-  switch (role) {
-    case null:
-      return false;
-    case "MANAGER":
-      return group.status === "RETURNED" && group.orders.every((order) => order.ownerId === meId);
-    case "HEAD":
-      return group.status === "PENDING_HEAD";
-    case "PRINCIPAL":
-      return group.status === "PENDING_PRINCIPAL";
-    case "FINANCE":
-      return group.status === "PENDING_FINANCE" || group.status === "SETTLEMENT";
-  }
 }
 
 function GroupRows({
