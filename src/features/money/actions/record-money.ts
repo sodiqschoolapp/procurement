@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import * as z from "zod";
 
-import { isBusinessDate } from "@/domain/business-date";
+import { businessDate, isBusinessDate } from "@/domain/business-date";
 import { FILE_MIMES } from "@/domain/files";
 import { parseSomOrZero } from "@/domain/money";
 import {
@@ -89,8 +89,10 @@ const input = ordersInput({
 ) as unknown as z.ZodType<RecordMoneyInput>;
 
 /**
- * The trimmed comment, document number and date, or the fields that refuse them. The settlement
- * action of 4.5 asks the same (./settle-cash.ts).
+ * The trimmed comment, document number and date, or the fields that refuse them. The date is not
+ * later than today in Tashkent from the injected clock (08 Money ledger: "one date, not later than
+ * today"; D55 (15); plan of 4.10b, decided item 5, Look first). The settlement action of 4.5 asks
+ * the same (./settle-cash.ts).
  */
 export function storedFields(value: { comment: string; documentNo?: string; occurredOn: string }): {
   comment: string;
@@ -106,6 +108,7 @@ export function storedFields(value: { comment: string; documentNo?: string; occu
     fields.documentNo = "errors.field.tooLong";
   }
   if (!isBusinessDate(value.occurredOn)) fields.occurredOn = "errors.field.wrongFormat";
+  else if (value.occurredOn > businessDate(now())) fields.occurredOn = "errors.field.inFuture";
   if (Object.keys(fields).length > 0) throw new ActionError("invalid_input", fields);
   return {
     comment,
