@@ -4,7 +4,8 @@ import { type Period, averageSom, changeAgainst, daysOf } from "@/domain/analyti
 import type { BusinessDate } from "@/domain/business-date";
 import { managerCashBalance } from "@/domain/money-ledger";
 import type { RequestStatus } from "@/domain/request-status";
-import type { Executor } from "@/server/authorize";
+import { decideList } from "@/domain/permissions";
+import { AuthorizationError, type Executor } from "@/server/authorize";
 import { today } from "@/server/clock";
 import { readSnapshot } from "@/server/read-snapshot";
 
@@ -73,6 +74,10 @@ async function managersIn(
   filters: AnalyticsFilters,
 ): Promise<Managers> {
   const actor = await authorizeAnalytics(db, userId, filters);
+  // Every Manager's cash held is in the block: "See every Manager's cash" is the Head's and
+  // Finance's (03 matrix; plan of 2.3b, the permission review's Must fix 1, Look first). After the
+  // filters, so another branch's filter is still "Not found".
+  if (decideList("money.managers", actor) !== "allow") throw new AuthorizationError("forbidden");
   const { period, before } = await resolvePeriod(db, input);
   const endedNow = outcomesWhere(actor, period, filters);
   const endedBefore = outcomesWhere(actor, before, filters);

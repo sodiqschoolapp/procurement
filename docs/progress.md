@@ -2058,6 +2058,7 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - Migration 0051: `notifications.branch_id` (written by `insertNotifications()`), three notice types, `notifications_guard` holds `branch_id`. The bell reads through `visibleToItsUser`.
 - Money with managers report under `money.managers`; Price history's notes and setter only when `decideList("money.managers")` allows (`showsNotes`). The tab hides by `seesManagersCash`.
 - The drafts grid links a numbered row's number to its order page.
+- The analytics Managers block and `getCashOrders()` ask `money.managers` after the filters; a Manager reads only their own cash (`manager` = themselves, no other owners).
 
 **Left out, and the task that brings it**
 - The other D55 items: 8.2b.

@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { expect } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import { AuthorizationError } from "@/server/authorize";
 import { db } from "@/server/db/client";
@@ -16,7 +16,9 @@ import {
   stocked,
 } from "../../../../tests/helpers/analytics";
 import { setClock } from "../../../../tests/helpers/clock";
+import { insertBranch } from "../../../../tests/helpers/branches";
 import { describePermissionMatrix } from "../../../../tests/helpers/permission-matrix";
+import { insertUser } from "../../../../tests/helpers/users";
 import { NO_ANALYTICS_FILTERS, type PeriodInput } from "../period-params";
 
 import { getApprovalOrders } from "./approval-orders";
@@ -407,49 +409,103 @@ async function managerIn(branchId: string) {
   return { manager: scene.manager, cancelled, held };
 }
 
-describePermissionMatrix(
-  "getManagers, getCancelledRecords and getCashOrders with the branch filter",
-  {
-    permission: "data.view",
-    async run({ user, branchId }) {
-      const { manager, cancelled, held } = await managerIn(branchId);
-      const filters = { ...NO_ANALYTICS_FILTERS, branch: branchId };
-      const block = await getManagers(user.id, THIS_MONTH, filters);
-      const records = await getCancelledRecords(user.id, THIS_MONTH, filters, false, "all");
-      const cash = await getCashOrders(user.id, filters, false, "all");
-      expect(block.rows.find((row) => row.id === manager.id)).toMatchObject({
-        cancelled: { count: 1 },
-        held: 30_000n,
-      });
-      expect(records.rows.map((row) => row.purchaseId)).toContain(cancelled.purchaseId);
-      expect(cash.rows.map((row) => row.orderId)).toContain(held.orderId);
-    },
+// Since D55 item 22 and the permission review of 2.3b (Must fix 1, Look first), the Managers block
+// and its cash list are "See every Manager's cash": `money.managers`, the Head and Finance; the
+// cancelled records stay every role's (`data.view`).
+describePermissionMatrix("getManagers and getCashOrders with the branch filter", {
+  permission: "money.managers",
+  async run({ user, branchId }) {
+    const { manager, cancelled, held } = await managerIn(branchId);
+    const filters = { ...NO_ANALYTICS_FILTERS, branch: branchId };
+    const block = await getManagers(user.id, THIS_MONTH, filters);
+    expect(block.rows.find((row) => row.id === manager.id)).toMatchObject({
+      cancelled: { count: 1 },
+      held: 30_000n,
+    });
+    const cash = await getCashOrders(user.id, filters, false, "all");
+    expect(cash.rows.map((row) => row.orderId)).toContain(held.orderId);
+    expect(cancelled.purchaseId).toBeTruthy();
   },
-);
+});
 
-describePermissionMatrix(
-  "getManagers, getCancelledRecords and getCashOrders, the branch wall in the SQL",
-  {
-    permission: "data.view",
-    async run({ user, branchId }) {
-      const { manager, cancelled, held } = await managerIn(branchId);
-      const block = await getManagers(user.id, THIS_MONTH, NO_ANALYTICS_FILTERS);
-      const records = await getCancelledRecords(
-        user.id,
-        THIS_MONTH,
-        NO_ANALYTICS_FILTERS,
-        false,
-        "all",
-      );
-      const cash = await getCashOrders(user.id, NO_ANALYTICS_FILTERS, false, "all");
-      // The number and its lists keep to the same wall.
-      const listed = cash.rows.some((row) => row.orderId === held.orderId);
-      expect(records.rows.some((row) => row.purchaseId === cancelled.purchaseId)).toBe(listed);
-      expect(block.rows.some((row) => row.id === manager.id)).toBe(listed);
-      if (!listed) throw new AuthorizationError("not_found");
-    },
+describePermissionMatrix("getCancelledRecords with the branch filter", {
+  permission: "data.view",
+  async run({ user, branchId }) {
+    const { cancelled } = await managerIn(branchId);
+    const filters = { ...NO_ANALYTICS_FILTERS, branch: branchId };
+    const records = await getCancelledRecords(user.id, THIS_MONTH, filters, false, "all");
+    expect(records.rows.map((row) => row.purchaseId)).toContain(cancelled.purchaseId);
   },
-);
+});
+
+describePermissionMatrix("getCancelledRecords, the branch wall in the SQL", {
+  permission: "data.view",
+  async run({ user, branchId }) {
+    const { cancelled } = await managerIn(branchId);
+    const records = await getCancelledRecords(
+      user.id,
+      THIS_MONTH,
+      NO_ANALYTICS_FILTERS,
+      false,
+      "all",
+    );
+    if (!records.rows.some((row) => row.purchaseId === cancelled.purchaseId)) {
+      throw new AuthorizationError("not_found");
+    }
+  },
+});
+
+// Without a filter the role answers first, so the wall in the SQL is proved by hand: Finance of A
+// sees A's Manager and cash and not B's beside it (D40), the Head both; the Manager and the
+// Principal are refused, and a Manager still reads their own cash (03: "Own cash only").
+describe("getManagers and getCashOrders, the branch wall in the SQL (03 matrix; plan of 2.3b)", () => {
+  it("Finance of A: A only; the Head: A and B; the Manager and the Principal: forbidden, the Manager's own cash allowed", async () => {
+    const a = await managerIn((await insertBranch()).id);
+    const b = await managerIn((await insertBranch()).id);
+    const branchA = (
+      await db.execute<{ branch_id: string }>(
+        sql`select branch_id from orders where id = ${a.held.orderId}`,
+      )
+    ).rows[0]!.branch_id;
+    const finance = await insertUser("FINANCE", { branches: [branchA] });
+    const head = await insertUser("HEAD");
+    const read = async (userId: string) => {
+      const block = await getManagers(userId, THIS_MONTH, NO_ANALYTICS_FILTERS);
+      const cash = await getCashOrders(userId, NO_ANALYTICS_FILTERS, false, "all");
+      const ids = cash.rows.map((row) => row.orderId);
+      // The number and its list keep to the same wall.
+      expect(block.rows.some((row) => row.id === a.manager.id)).toBe(ids.includes(a.held.orderId));
+      return ids;
+    };
+    const financeSees = await read(finance.id);
+    expect(financeSees).toContain(a.held.orderId);
+    expect(financeSees).not.toContain(b.held.orderId);
+    expect(await read(head.id)).toEqual(expect.arrayContaining([a.held.orderId, b.held.orderId]));
+    const principal = await insertUser("PRINCIPAL", { branches: [branchA] });
+    for (const user of [a.manager, principal]) {
+      await expect(getManagers(user.id, THIS_MONTH, NO_ANALYTICS_FILTERS)).rejects.toBeInstanceOf(
+        AuthorizationError,
+      );
+      await expect(
+        getCashOrders(user.id, NO_ANALYTICS_FILTERS, false, "all"),
+      ).rejects.toBeInstanceOf(AuthorizationError);
+    }
+    // The Principal with the Manager filter, and the Manager with "other owners": still refused.
+    await expect(
+      getCashOrders(principal.id, { ...NO_ANALYTICS_FILTERS, manager: a.manager.id }, false, "all"),
+    ).rejects.toBeInstanceOf(AuthorizationError);
+    await expect(
+      getCashOrders(a.manager.id, { ...NO_ANALYTICS_FILTERS, manager: a.manager.id }, true, "all"),
+    ).rejects.toBeInstanceOf(AuthorizationError);
+    const own = await getCashOrders(
+      a.manager.id,
+      { ...NO_ANALYTICS_FILTERS, manager: a.manager.id },
+      false,
+      "all",
+    );
+    expect(own.rows.map((row) => row.orderId)).toEqual([a.held.orderId]);
+  });
+});
 
 // The ids of the filters (.claude/rules/server-actions.md: every id from the browser is checked to
 // belong to a branch the user may use; permission review of 6.4c, Should fix 2): a department or a
@@ -457,7 +513,9 @@ describePermissionMatrix(
 describePermissionMatrix(
   "getManagers, getCancelledRecords and getCashOrders with a department or a Manager of the branch",
   {
-    permission: "data.view",
+    // The cash of every Manager: the Head and Finance (plan of 2.3b); the cancelled records alone
+    // stay every role's, in the matrices above.
+    permission: "money.managers",
     async run({ user, branchId }) {
       const { manager, held } = await managerIn(branchId);
       const department = (
@@ -915,14 +973,12 @@ async function financeLists(
 ) {
   const given = await getMoneyRows(userId, "given", null, THIS_MONTH, filters, "all");
   const month = await getMoneyRows(userId, "given", "2031-05", THIS_MONTH, filters, "all");
-  const aged = await getCashOrders(userId, filters, false, "all", { band: "month", side: "held" });
   const open = await getNeededOrders(userId, filters, "open", null, "all");
   const step = await getNeededOrders(userId, filters, "approval", "PENDING_FINANCE", "all");
   const all = await getNeededOrders(userId, filters, "all", null, "all");
   return [
     given.rows.some((row) => row.orderId === held.orderId),
     month.rows.some((row) => row.orderId === held.orderId),
-    aged.rows.some((row) => row.orderId === held.orderId),
     open.rows.some((row) => row.orderId === held.orderId),
     step.rows.some((row) => row.orderId === waiting.id),
     all.rows.some((row) => row.orderId === waiting.id) &&
@@ -931,7 +987,7 @@ async function financeLists(
 }
 
 describePermissionMatrix(
-  "getFinanceCash, getCashNeeded, getMoneyRows, getNeededOrders and getCashOrders by age with the branch filter",
+  "getFinanceCash, getCashNeeded, getMoneyRows and getNeededOrders with the branch filter",
   {
     permission: "data.view",
     async run({ user, branchId }) {
@@ -950,7 +1006,7 @@ describePermissionMatrix(
 );
 
 describePermissionMatrix(
-  "getFinanceCash, getCashNeeded, getMoneyRows, getNeededOrders and getCashOrders by age, the branch wall in the SQL",
+  "getFinanceCash, getCashNeeded, getMoneyRows and getNeededOrders, the branch wall in the SQL",
   {
     permission: "data.view",
     async run({ user, branchId }) {
@@ -973,11 +1029,27 @@ describePermissionMatrix(
   },
 );
 
+// The orders behind one amount of money with managers by age list every Manager's cash: the Head
+// and Finance only since the permission review of 2.3b (Must fix 1, Look first); the role is asked
+// after the filters, so another branch's filter is still "Not found".
+describePermissionMatrix("getCashOrders by age with the branch filter", {
+  permission: "money.managers",
+  async run({ user, branchId }) {
+    const { held } = await financeIn(branchId);
+    const filters = { ...NO_ANALYTICS_FILTERS, branch: branchId };
+    const aged = await getCashOrders(user.id, filters, false, "all", {
+      band: "month",
+      side: "held",
+    });
+    expect(aged.rows.map((row) => row.orderId)).toContain(held.orderId);
+  },
+});
+
 // The ids of the filters (.claude/rules/server-actions.md: every id from the browser is checked to
 // belong to a branch the user may use; permission review of 6.6a, Must fix 1): a department or a
 // Manager of the branch, sent to each Finance query without a branch filter.
 describePermissionMatrix(
-  "getFinanceCash, getCashNeeded, getMoneyRows, getNeededOrders and getCashOrders by age with a department or a Manager of the branch",
+  "getFinanceCash, getCashNeeded, getMoneyRows and getNeededOrders with a department or a Manager of the branch",
   {
     permission: "data.view",
     async run({ user, branchId }) {

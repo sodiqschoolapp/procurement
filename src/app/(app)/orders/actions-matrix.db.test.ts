@@ -432,10 +432,19 @@ describeOwnerMoveMatrix("takeBackOrdersAction", "PENDING_HEAD", async (user, ord
   return answer.ok ? answer : { ok: false, error: answer.error };
 });
 
-describeOwnerMoveMatrix("submitAgainOrdersAction", "RETURNED", async (user, orders) => {
-  signedIn(user);
-  const answer = await submitAgainOrdersAction({ clientKey: newClientKey(), orders });
-  return answer.ok ? answer : { ok: false, error: answer.error };
+// Submit again: "Owner or Head" since the spec change of 20.10.2026 (06 Allowed moves; D55 item 12;
+// plan of 2.3b), the request.edit row as Cancel.
+describePermissionMatrix("submitAgainOrdersAction", {
+  permission: "request.edit",
+  async run({ user, branchId, ownerId }) {
+    const order = await insertOrder({ branchId, ownerId, status: "RETURNED" });
+    signedIn(user);
+    const answer = await submitAgainOrdersAction({
+      clientKey: newClientKey(),
+      orders: [{ id: order.id, version: order.version }],
+    });
+    asMatrixAnswer(answer.ok ? answer : { ok: false, error: answer.error });
+  },
 });
 
 // Copy as new: `request.create` on the ticked order's branch (05 Ticking and filters; plan of
