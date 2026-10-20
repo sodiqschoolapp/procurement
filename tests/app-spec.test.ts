@@ -29,6 +29,10 @@ describe("the App Platform spec of the live app (build-plan 9.4; 18-hosting rows
     expect(valuesOf("name")[0]).toBe("ombor");
   });
 
+  it("names the service web and the database component ombor-db, as the live app has them (D59)", () => {
+    expect(valuesOf("name")).toEqual(["ombor", "web", "ombor-db"]);
+  });
+
   it("builds this repository's Dockerfile on every push to main (open question 10)", () => {
     expect(valuesOf("repo")).toEqual(["sodiqschoolapp/procurement"]);
     expect(valuesOf("branch")).toEqual(["main"]);
@@ -60,8 +64,8 @@ describe("the App Platform spec of the live app (build-plan 9.4; 18-hosting rows
   it("holds no secret: every value is a DigitalOcean binding or a plain word (Decided ahead 0.16, item 2)", () => {
     expect(valuesOf("value")).toEqual([
       "production",
-      "${db.DATABASE_URL}",
-      "${db.CA_CERT}",
+      "${ombor-db.DATABASE_URL}",
+      "${ombor-db.CA_CERT}",
       "${_self.COMMIT_HASH}",
       '"yes"',
       "auto",

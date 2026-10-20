@@ -11,7 +11,7 @@ Steps 1 to 5 type no secret: the database address and its certificate are handed
 | Part | Where | Comes from |
 | --- | --- | --- |
 | The app | DigitalOcean App Platform, Frankfurt, app `ombor`, component `web` | `Dockerfile`, built by DigitalOcean from `main` on every push |
-| The database | A Managed PostgreSQL 17 cluster `ombor-db`, one node of 1 GiB, Frankfurt; component `db` of the app, database `defaultdb`, user `doadmin` | Step 3 below, then `.do/app.yaml` |
+| The database | A Managed PostgreSQL 17 cluster `ombor-db`, one node of 1 GiB, Frankfurt; component `ombor-db` of the app, database `defaultdb`, user `doadmin` | Step 3 below, then `.do/app.yaml` |
 | The address | `ombor.sodiqschool.uz`, a CNAME in the DNS of `sodiqschool.uz` | Step 5 below |
 | The files | Cloudflare R2, the private bucket `ombor-files` | Step 6 below |
 | The weekly copy of the database | Cloudflare R2, a bucket of its own, `ombor-copies`, under `backups/`, one file `database-<date>.dump` per copy | The job `database_copy` (tasks 8.2 and 8.2b); the section "The weekly copy" below |
@@ -42,13 +42,19 @@ When a new version starts, the container first applies the database migrations (
 5. Do **not** add a connection pool, a database or a user: the app connects as `doadmin` to `defaultdb` directly (plan of 9.4, decided items 1 and 9). A pool would drop the settings the app sends on each connection (`timezone=UTC`, `jit=off`).
 6. The cluster's **Backups** tab: DigitalOcean makes a daily backup by itself and can restore to any moment of the last 7 days (`13-technology.md`, Running it). The first one shows within a day. Nothing is switched on by hand.
 
-### 4. Create the app from `.do/app.yaml`
+### 4. Create the app, then apply `.do/app.yaml`
 
-1. Open `.do/app.yaml` on GitHub (`main` branch) and copy its whole text.
-2. In DigitalOcean: Create → App Platform → choose the option to create from an app spec (in some versions of the dashboard: the "…" or "Import" option on the create page), and paste the text. With the command line instead: `doctl apps create --spec .do/app.yaml` from a clone of the repository.
-3. **Before pressing Create, check the review page**: region Frankfurt (`fra`); one web service of 1 GiB, one container, **$10.00** a month; the database `db` attached to the existing cluster `ombor-db` (no new database is charged).
-4. **Stop here if anything differs**: DigitalOcean refuses the spec (an unknown size, an unknown field of the database, a variable), it offers to create a new database instead of attaching `ombor-db`, or the app's total is not $10. Do not pick another size or database in the dashboard. Copy DigitalOcean's message (it holds no secret) into a comment on issue #9; a fix task then corrects `.do/app.yaml`. The session that wrote the spec could not read DigitalOcean's documentation, so the size name, the database fields `production`, `cluster_name`, `db_name` and `db_user`, and the two variables `CA_CERT` and `COMMIT_HASH` were written from memory.
-5. Create. The first build takes a few minutes. Activity shows "Deployed" when it is done. Until step 8 the sign-in refuses everyone and the log says `db:seed failed` (the seed passwords are not typed yet): expected.
+The dashboard has no button to create an app from a spec file (seen on 20.10.2026), so the app is made with the wizard and the file is applied right after (D59).
+
+1. In DigitalOcean: Create → App Platform → GitHub → repository `sodiqschoolapp/procurement`, branch `main`, Autodeploy on → Next.
+2. On the page of resources:
+   - the web service: Info → Name **`web`**; Size → **$10.00/mo**, 1 GB RAM, 1 shared vCPU, **1 container**, autoscale off; port **8080**; no environment variables;
+   - Add a database → **Attach DigitalOcean database** → cluster **`ombor-db`**, user **`doadmin`** (the database field can stay empty: the default is `defaultdb`), "Add app as a trusted source" ticked. Not "Create dev database";
+   - region **Frankfurt** (FRA1); app name **`ombor`**.
+3. **Before pressing Create App, check the Summary**: the web service at **$10.00/mo**, `ombor-db` "Billed separately", the total $10.00 a month. Stop if it differs and post what you saw on issue #9.
+4. Create App. The first build takes a few minutes.
+5. The app → Settings → App Spec → Edit: replace the whole text with `.do/app.yaml` from `main`, and Save. The dashboard names the attached database `ombor-db`, the same name the file uses; a file with another name is refused with "cannot create and delete a database in a single spec change". With the command line instead: `doctl apps update <app id> --spec .do/app.yaml`.
+6. Until step 8 the sign-in refuses everyone and the log says `db:seed failed` (the seed passwords are not typed yet): expected.
 
 ### 5. The address
 
@@ -186,8 +192,8 @@ Eight variables are in `.do/app.yaml`; the owner types eleven more in the dashbo
 
 | Name | Value in `.do/app.yaml` | What it is |
 | --- | --- | --- |
-| `DATABASE_URL` | `${db.DATABASE_URL}` | The database's address, with its user and password. A secret: DigitalOcean binds it. |
-| `DATABASE_CA_CERT` | `${db.CA_CERT}` | The certificate the app checks the database against. Public, but bound too. |
+| `DATABASE_URL` | `${ombor-db.DATABASE_URL}` | The database's address, with its user and password. A secret: DigitalOcean binds it. |
+| `DATABASE_CA_CERT` | `${ombor-db.CA_CERT}` | The certificate the app checks the database against. Public, but bound too. |
 | `GIT_COMMIT` | `${_self.COMMIT_HASH}` | The commit the app was built from, shown by `/health` and the sign-in page. |
 | `NODE_ENV` | `production` | Runs Next.js as a production server. |
 | `PORT` | none: `8080` is set in `Dockerfile` | The port the app listens on, the same as `http_port` in `.do/app.yaml`. |
@@ -216,7 +222,7 @@ It is not declared in `.do/app.yaml`, so no value and no empty placeholder sits 
 ## When something is wrong
 
 - **The deploy fails at the migration.** The app → Activity → the failed deploy → Runtime logs. The first lines are `Migrating database …` then `db:migrate failed: …`.
-  - The reason names a certificate (for example `self-signed certificate in certificate chain` or `unable to verify`): the binding `${db.CA_CERT}` did not arrive. Open the database cluster → Connection details → download the CA certificate, then in the component `web` → Settings → Environment Variables change `DATABASE_CA_CERT` to its whole text (from `-----BEGIN CERTIFICATE-----` to `-----END CERTIFICATE-----`), and save. Say on issue #9 that this was needed, so the spec file is corrected.
+  - The reason names a certificate (for example `self-signed certificate in certificate chain` or `unable to verify`): the binding `${ombor-db.CA_CERT}` did not arrive. Open the database cluster → Connection details → download the CA certificate, then in the component `web` → Settings → Environment Variables change `DATABASE_CA_CERT` to its whole text (from `-----BEGIN CERTIFICATE-----` to `-----END CERTIFICATE-----`), and save. Say on issue #9 that this was needed, so the spec file is corrected.
   - The reason says `permission denied for database` or `for schema`: the app does not connect as `doadmin`. Check the database component of the app spec (step 4.4) and post the line on issue #9.
 - **The log shows `db:seed failed: …`.** The line before it says why: `Refused: SEED_… is not set` (step 8.1 is missing that password), `Refused: the user … exists with the role …`, `Refused: branch CHL already has an active Principal` (see "How the demo users behave"), or `Refused: the trial of this database has ended` (remove `SEED_DEMO_DATA`, "The end of the trial" step 1). The app runs; only the missing demo data is not there.
 - **No `seed` line at all in the log during the trial.** `SEED_DEMO_DATA` is not `yes`: apply `.do/app.yaml` again (step 7), then check step 8.1.
