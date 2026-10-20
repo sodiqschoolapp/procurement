@@ -121,18 +121,6 @@ export async function datedCashRecordsOf(
   return byOrder;
 }
 
-/**
- * The records of these ids as `cashSpent()` reads them, with each one's order and the moment it
- * was written: the purchase cancels' guard on a moved order (plan of 4.10, decided item 3).
- */
-export async function cashRecordsByIds(
-  executor: Executor,
-  purchaseIds: readonly string[],
-): Promise<{ id: string; orderId: string; createdAt: Date; record: CashRecord }[]> {
-  if (purchaseIds.length === 0) return [];
-  return cashRecordRows(executor, sql`p.id in (${uuidList(purchaseIds)})`);
-}
-
 function uuidList(ids: readonly string[]): SQL {
   return sql.join(
     ids.map((id) => sql`${id}::uuid`),
@@ -140,7 +128,7 @@ function uuidList(ids: readonly string[]): SQL {
   );
 }
 
-/** One statement for both readers above: a record's goods by its trip's type, each extra by its own. */
+/** One statement for the readers above: a record's goods by its trip's type, each extra by its own. */
 async function cashRecordRows(executor: Executor, where: SQL) {
   const found = await executor.execute<{
     id: string;

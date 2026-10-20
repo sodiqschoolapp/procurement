@@ -188,18 +188,24 @@ function firstCode(codes: Iterable<OrderRefusalCode>): OrderRefusalCode | undefi
 
 /**
  * Collects the codes of each failing order; refuses with every order's first code, and the fields
- * a check or inspect step gave with that code (the Closed order of a money cancel; plan of 4.3).
+ * a check or inspect step gave with that code (the Closed order of a money cancel; plan of 4.3)
+ * with the values their message names (the Manager of a moved order; plan of 4.10b).
  */
 export class Failures {
   private readonly byOrder = new Map<string, Set<OrderRefusalCode>>();
-  private readonly fieldsOf = new Map<string, OrderFailure["fields"]>();
+  private readonly fieldsOf = new Map<string, Pick<OrderFailure, "fields" | "values">>();
 
-  add(orderId: string, code: OrderRefusalCode, fields?: OrderFailure["fields"]): void {
+  add(
+    orderId: string,
+    code: OrderRefusalCode,
+    fields?: OrderFailure["fields"],
+    values?: OrderFailure["values"],
+  ): void {
     const codes = this.byOrder.get(orderId) ?? new Set<OrderRefusalCode>();
     codes.add(code);
     this.byOrder.set(orderId, codes);
     if (fields && !this.fieldsOf.has(`${orderId}:${code}`)) {
-      this.fieldsOf.set(`${orderId}:${code}`, fields);
+      this.fieldsOf.set(`${orderId}:${code}`, values ? { fields, values } : { fields });
     }
   }
 
@@ -214,8 +220,8 @@ export class Failures {
     const named: OrderFailure[] = [];
     for (const { id } of sent) {
       const code = firstCode(this.byOrder.get(id) ?? []);
-      const fields = code ? this.fieldsOf.get(`${id}:${code}`) : undefined;
-      if (code) named.push({ orderId: id, code, ...(fields ? { fields } : {}) });
+      const given = code ? this.fieldsOf.get(`${id}:${code}`) : undefined;
+      if (code) named.push({ orderId: id, code, ...given });
     }
     throw new OrdersRefusal(firstCode(named.map((order) => order.code))!, named);
   }
@@ -391,11 +397,11 @@ export async function runOrdersAction<Input extends OrdersInput>(
       }
       const checking: OrdersContext<Input> = { tx, input, userId, actor, orders: visible };
       if (visible.length > 0) {
-        for (const { orderId, code, fields } of definition.check(checking)) {
-          failures.add(orderId, code, fields);
+        for (const { orderId, code, fields, values } of definition.check(checking)) {
+          failures.add(orderId, code, fields, values);
         }
-        for (const { orderId, code, fields } of (await definition.inspect?.(checking)) ?? []) {
-          failures.add(orderId, code, fields);
+        for (const failed of (await definition.inspect?.(checking)) ?? []) {
+          failures.add(failed.orderId, failed.code, failed.fields, failed.values);
         }
       }
       failures.throwIfAny(sent);

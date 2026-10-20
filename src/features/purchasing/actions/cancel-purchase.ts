@@ -1,7 +1,6 @@
 import { asc, eq, inArray, sql } from "drizzle-orm";
 import * as z from "zod";
 
-import { cashSpent } from "@/domain/money-ledger";
 import { isMoveReason, moveReason } from "@/domain/order-moves";
 import {
   actualQuantity,
@@ -29,7 +28,7 @@ import { StockShortError, postMovement } from "@/server/stock-ledger";
 
 import { actionLink, branchNotices, ownersAndHeads } from "../../orders/actions/notices";
 import { movedSince } from "../../orders/moved-since";
-import { cashRecordsByIds, orderRecords } from "../order-records";
+import { orderRecords } from "../order-records";
 import { noticePriceDiffers } from "../price-prompts";
 
 // Cancel a purchase record, or every record of one trip, while the orders are Open
@@ -43,8 +42,9 @@ import { noticePriceDiffers } from "../price-prompts";
 //            order, or a trip none of whose records is on a sent order, is `not_found`; a record
 //            cancelled before, or a trip with none left, is `wrong_status`; a trip whose orders
 //            are not the sent ones is `invalid_input` (decided item 7; review of the plan, Should
-//            fix 1); a record that changes a cash count on an order moved since it was written is
-//            `wrong_status` (`movedSince()`; plan of 4.10, decided item 3, Look first)
+//            fix 1); a record on an order whose owner now is not the one it had when the record
+//            was written is `wrong_status`, naming that owner (`movedSince()`; plan of 4.10b,
+//            decided items 3 and 4, Look first)
 //   write    the products FOR SHARE and the subtypes bought FOR UPDATE, each in id order (the lock
 //            order of .claude/rules/server-actions.md); each record's one cancel update (the
 //            trigger purchases_cancel_only of 0024 allows nothing else); for a product a priced
@@ -97,6 +97,7 @@ type HeldRecord = {
   qty: string;
   unitPrice: bigint;
   isCancelled: boolean;
+  createdAt: Date;
 };
 
 /**
@@ -130,9 +131,10 @@ async function lockRecords(
     qty: string;
     unit_price: string;
     is_cancelled: boolean;
+    created_at: string | Date;
   }>(sql`
     select p.id, p.trip_id, p.order_id, p.branch_id, p.variant_id, v.product_id, pr.type,
-           p.qty::text as qty, p.unit_price::text as unit_price, p.is_cancelled
+           p.qty::text as qty, p.unit_price::text as unit_price, p.is_cancelled, p.created_at
     from purchases p
     join product_variants v on v.id = p.variant_id
     join products pr on pr.id = v.product_id
@@ -150,6 +152,7 @@ async function lockRecords(
     qty: row.qty,
     unitPrice: BigInt(row.unit_price),
     isCancelled: row.is_cancelled,
+    createdAt: new Date(row.created_at),
   }));
   if ("purchaseId" in input || held.length === 0) return { held, elsewhere: 0 };
   const others = await context.tx.execute<{ count: number }>(sql`
@@ -214,31 +217,28 @@ function chosen(
 }
 
 /**
- * A record that changes a cash count (`cashSpent()` above 0: Cash goods or a Cash extra) on an
- * order moved to another Manager since it was written is refused (plan of 4.10, decided item 3,
- * Look first; review of the plan, correction 1): its cash would land on the new owner's count. A
- * Transfer or Card record changes no count and is cancelled as 07 says.
+ * A record on an order whose owner now is not the owner it had when the record was written is
+ * refused, naming that owner (08 Money ledger; edge case "A typo in a purchase record": "the Head
+ * first moves it back to the Manager who held it when the record was written"; D55 (2); plan of
+ * 4.10b, decided items 3 and 4, Look first). Every record, whatever its payment type: the edge case
+ * names no exception, so 4.10's narrowing to records that change a cash count ends.
  */
-async function movedAfterCash(
+async function movedAway(
   context: OrdersContext<CancelInput>,
   records: readonly HeldRecord[],
 ): Promise<OrderFailure[]> {
-  const cash = (
-    await cashRecordsByIds(
-      context.tx,
-      records.map((record) => record.id),
-    )
-  ).filter((row) => cashSpent([{ ...row.record, isCancelled: false }]) > 0n);
-  const refused = new Set<string>();
-  for (const row of cash) {
-    if ((await movedSince(context.tx, [row.orderId], row.createdAt)).size > 0) {
-      refused.add(row.orderId);
-    }
+  const refused = new Map<string, string>();
+  for (const record of records) {
+    if (refused.has(record.orderId)) continue;
+    const order = context.orders.find((each) => each.id === record.orderId)!;
+    const then = (await movedSince(context.tx, [order], record.createdAt)).get(order.id);
+    if (then) refused.set(order.id, then.name);
   }
-  return [...refused].map((orderId) => ({
+  return [...refused].map(([orderId, manager]) => ({
     orderId,
     code: "wrong_status" as const,
     fields: { status: "errors.field.movedSince" as const },
+    values: { manager },
   }));
 }
 
@@ -376,7 +376,7 @@ function defineCancel<Input extends CancelInput>(
     check: (context) => statusCheck(context),
     async inspect(context) {
       const { failures, records } = chosen(context, await lockRecords(context));
-      return [...failures, ...(await movedAfterCash(context, records))];
+      return [...failures, ...(await movedAway(context, records))];
     },
     async write(context) {
       const reason = storedReason(context.input);

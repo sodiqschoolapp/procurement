@@ -103,6 +103,7 @@ async function buy(
   user: InsertedUser,
   order: Order,
   paymentType: "CASH" | "TRANSFER",
+  qty = "10",
 ): Promise<{ purchaseId: string; tripId: string }> {
   expectOk(
     await runOrdersAction(recordPurchase, user.id, {
@@ -115,7 +116,7 @@ async function buy(
         {
           orderId: order.id,
           variantId: order.variantId,
-          qty: "10",
+          qty,
           unitPrice: "5000",
           extras: [],
           comment: "Invented: bought as planned",
@@ -356,7 +357,7 @@ describe("Move orders to another Manager (03 rule 7; build plan 4.10)", () => {
   });
 });
 
-describe("Cancels after a move (plan of 4.10, decided item 3, Look first; corrections 1 and 2)", () => {
+describe('Cancels after a move (08 Money ledger: "When one of its orders was moved to another Manager since, the Head first moves it back"; edge case "A typo in a purchase record"; D55 (2); plans of 4.10, decided item 3, and 4.10b, decided items 3 and 4, Look first)', () => {
   /** An order at 0 after 50 000 given and spent in cash by the first Manager, then moved. */
   async function movedAfterCash(s: Scene) {
     const order = await openOrder(s);
@@ -369,34 +370,40 @@ describe("Cancels after a move (plan of 4.10, decided item 3, Look first; correc
     return { order, actionId, ...bought };
   }
 
-  const movedSince = { status: "errors.field.movedSince" };
+  /** The refusal naming the Manager the order was with when the cancelled thing was written. */
+  const movedSince = (manager: InsertedUser) => ({
+    code: "wrong_status",
+    fields: { status: "errors.field.movedSince" },
+    values: { manager: manager.fullName },
+  });
 
-  it("refuses the cancel of a money action written before the move", async () => {
+  function cancelMoneyOf(s: Scene, order: Order, moneyActionId: string) {
+    return ticked([order.id]).then((sent) =>
+      runOrdersAction(cancelMoney, s.finance.id, { ...sent, moneyActionId, reason: REASON }),
+    );
+  }
+
+  function cancelPurchaseOf(s: Scene, order: Order, purchaseId: string) {
+    return ticked([order.id]).then((sent) =>
+      runOrdersAction(cancelPurchase, s.head.id, { ...sent, purchaseId, reason: REASON }),
+    );
+  }
+
+  it("refuses the cancel of a money action written before the move, naming the Manager to move it back to", async () => {
     const s = await scene();
     const { order, actionId } = await movedAfterCash(s);
-    expect(
-      await runOrdersAction(cancelMoney, s.finance.id, {
-        ...(await ticked([order.id])),
-        moneyActionId: actionId,
-        reason: REASON,
-      }),
-    ).toMatchObject({
+    expect(await cancelMoneyOf(s, order, actionId)).toMatchObject({
       ok: false,
-      error: { orders: [{ orderId: order.id, code: "wrong_status", fields: movedSince }] },
+      error: { orders: [{ orderId: order.id, ...movedSince(s.manager) }] },
     });
     expect(await count(s, order)).toBe(0n);
   });
 
-  it("refuses the cancel of a cash record and of its trip written before the move", async () => {
+  it("refuses the cancel of a cash record and of its trip written before the move, naming that Manager", async () => {
     const s = await scene();
     const { order, purchaseId, tripId } = await movedAfterCash(s);
     const cancels = [
-      async () =>
-        runOrdersAction(cancelPurchase, s.head.id, {
-          ...(await ticked([order.id])),
-          purchaseId,
-          reason: REASON,
-        }),
+      async () => cancelPurchaseOf(s, order, purchaseId),
       async () =>
         runOrdersAction(cancelTrip, s.head.id, {
           ...(await ticked([order.id])),
@@ -407,41 +414,80 @@ describe("Cancels after a move (plan of 4.10, decided item 3, Look first; correc
     for (const cancel of cancels) {
       expect(await cancel()).toMatchObject({
         ok: false,
-        error: { orders: [{ orderId: order.id, code: "wrong_status", fields: movedSince }] },
+        error: { orders: [{ orderId: order.id, ...movedSince(s.manager) }] },
       });
     }
     expect(await count(s, order)).toBe(0n);
   });
 
-  it("still refuses after the order is moved back to the first Manager", async () => {
+  // Changed by D55 (2) and the spec change of 20.10.2026: 4.10 kept the refusal after a move back
+  // (plan of 4.10b, Look first).
+  it("Aziz's typo is refused while the order is with Dilnoza and cancelled once it is back with Aziz; an order still with Dilnoza beside it stays refused", async () => {
     const s = await scene();
-    const { order, actionId, purchaseId } = await movedAfterCash(s);
+    const back = await movedAfterCash(s);
+    const still = await movedAfterCash(s);
+    expectOk(await move(s, [back.order.id], s.manager.id));
+    advanceClock({ minutes: 1 });
+    expect(await ownerOf(back.order.id)).toBe(s.manager.id);
+    expect(await ownerOf(still.order.id)).toBe(s.next.id);
+
+    expect(await cancelPurchaseOf(s, still.order, still.purchaseId)).toMatchObject({
+      ok: false,
+      error: { orders: [movedSince(s.manager)] },
+    });
+    expect(await cancelMoneyOf(s, still.order, still.actionId)).toMatchObject({
+      ok: false,
+      error: { orders: [movedSince(s.manager)] },
+    });
+    expect(await count(s, still.order)).toBe(0n);
+
+    // Back with Aziz: his typo is cancelled (the count goes to 50 000 he holds), then the cash
+    // given is cancelled (back to 0).
+    expectOk(await cancelPurchaseOf(s, back.order, back.purchaseId));
+    expect(await count(s, back.order)).toBe(50_000n);
+    expectOk(await cancelMoneyOf(s, back.order, back.actionId));
+    expect(await count(s, back.order)).toBe(0n);
+  });
+
+  it("a record written while the order was with Dilnoza, after it is moved back to Aziz, is refused naming Dilnoza (the first move at or after the write; review correction 1)", async () => {
+    const s = await scene();
+    // With Aziz: 25 000 given and spent on 5 of the 10, then moved to Dilnoza at a count of 0.
+    const order = await openOrder(s);
+    await money(s, order, "CASH_GIVEN", "25000");
+    await buy(s.manager, order, "CASH", "5");
+    expect(await count(s, order)).toBe(0n);
+    advanceClock({ minutes: 1 });
+    expectOk(await move(s, [order.id], s.next.id));
+    advanceClock({ minutes: 1 });
+    // With Dilnoza: Finance gives 25 000, Dilnoza spends it in cash on the other 5.
+    const given = await money(s, order, "CASH_GIVEN", "25000");
+    advanceClock({ minutes: 1 });
+    await buy(s.next, order, "CASH", "5");
+    const [record] = await db
+      .select({ id: purchases.id })
+      .from(purchases)
+      .where(and(eq(purchases.orderId, order.id), eq(purchases.createdBy, s.next.id)));
+    expect(await count(s, order)).toBe(0n);
+    advanceClock({ minutes: 1 });
     expectOk(await move(s, [order.id], s.manager.id));
     advanceClock({ minutes: 1 });
     expect(await ownerOf(order.id)).toBe(s.manager.id);
-    expect(
-      await runOrdersAction(cancelMoney, s.finance.id, {
-        ...(await ticked([order.id])),
-        moneyActionId: actionId,
-        reason: REASON,
-      }),
-    ).toMatchObject({
+
+    expect(await cancelPurchaseOf(s, order, record!.id)).toMatchObject({
       ok: false,
-      error: { orders: [{ code: "wrong_status", fields: movedSince }] },
+      error: { orders: [{ orderId: order.id, ...movedSince(s.next) }] },
     });
-    expect(
-      await runOrdersAction(cancelPurchase, s.head.id, {
-        ...(await ticked([order.id])),
-        purchaseId,
-        reason: REASON,
-      }),
-    ).toMatchObject({
+    expect(await cancelMoneyOf(s, order, given)).toMatchObject({
       ok: false,
-      error: { orders: [{ code: "wrong_status", fields: movedSince }] },
+      error: { orders: [{ orderId: order.id, ...movedSince(s.next) }] },
     });
+    expect(await count(s, order)).toBe(0n);
   });
 
-  it("lets a Transfer record of a moved order be cancelled: it changes no cash count (correction 1)", async () => {
+  // Changed by D55 (2) and the spec change of 20.10.2026: the edge case names no payment type, so
+  // 4.10's correction 1 (a Transfer record of a moved order is cancelled) ends (plan of 4.10b,
+  // decided item 4, Look first).
+  it("a Transfer record of a moved order is refused too, and cancelled once the order is back", async () => {
     const s = await scene();
     const order = await insertOrder({
       branchId: s.branch.id,
@@ -454,13 +500,13 @@ describe("Cancels after a move (plan of 4.10, decided item 3, Look first; correc
     advanceClock({ minutes: 1 });
     expectOk(await move(s, [order.id], s.next.id));
     advanceClock({ minutes: 1 });
-    expectOk(
-      await runOrdersAction(cancelPurchase, s.head.id, {
-        ...(await ticked([order.id])),
-        purchaseId,
-        reason: REASON,
-      }),
-    );
+    expect(await cancelPurchaseOf(s, order, purchaseId)).toMatchObject({
+      ok: false,
+      error: { orders: [{ orderId: order.id, ...movedSince(s.manager) }] },
+    });
+    expectOk(await move(s, [order.id], s.manager.id));
+    advanceClock({ minutes: 1 });
+    expectOk(await cancelPurchaseOf(s, order, purchaseId));
     expect(await count(s, order)).toBe(0n);
   });
 

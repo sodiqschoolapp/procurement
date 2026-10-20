@@ -603,24 +603,34 @@ describe('the Money tab\'s prefilled rows (08 When Finance approves: "a later Ca
   });
 
   it("Cash returned is the count above 0 (worked example, Cheaper: +50 000); empty at 0 and below", () => {
-    expect(moneyPrefill("CASH_RETURNED", { plannedCash: 520_000n, cashCount: 50_000n, handed: 0n })).toBe(
-      50_000n,
-    );
-    expect(moneyPrefill("CASH_RETURNED", { plannedCash: 520_000n, cashCount: 0n, handed: 0n })).toBeNull();
+    expect(
+      moneyPrefill("CASH_RETURNED", { plannedCash: 520_000n, cashCount: 50_000n, handed: 0n }),
+    ).toBe(50_000n);
+    expect(
+      moneyPrefill("CASH_RETURNED", { plannedCash: 520_000n, cashCount: 0n, handed: 0n }),
+    ).toBeNull();
     expect(
       moneyPrefill("CASH_RETURNED", { plannedCash: 520_000n, cashCount: -30_000n, handed: 0n }),
     ).toBeNull();
   });
 
   it("Paid back is the count without its minus below 0 (worked example, Dearer: −30 000); empty at 0 and above", () => {
-    expect(moneyPrefill("PAID_BACK", { plannedCash: 520_000n, cashCount: -30_000n, handed: 0n })).toBe(30_000n);
-    expect(moneyPrefill("PAID_BACK", { plannedCash: 520_000n, cashCount: 0n, handed: 0n })).toBeNull();
-    expect(moneyPrefill("PAID_BACK", { plannedCash: 520_000n, cashCount: 50_000n, handed: 0n })).toBeNull();
+    expect(
+      moneyPrefill("PAID_BACK", { plannedCash: 520_000n, cashCount: -30_000n, handed: 0n }),
+    ).toBe(30_000n);
+    expect(
+      moneyPrefill("PAID_BACK", { plannedCash: 520_000n, cashCount: 0n, handed: 0n }),
+    ).toBeNull();
+    expect(
+      moneyPrefill("PAID_BACK", { plannedCash: 520_000n, cashCount: 50_000n, handed: 0n }),
+    ).toBeNull();
   });
 
   it("Bank transfer, Card top-up and Card money returned are never prefilled (08 names no amount)", () => {
     for (const kind of ["BANK_TRANSFER", "CARD_TOPUP", "CARD_RETURNED"] as const) {
-      expect(moneyPrefill(kind, { plannedCash: 520_000n, cashCount: -30_000n, handed: 0n })).toBeNull();
+      expect(
+        moneyPrefill(kind, { plannedCash: 520_000n, cashCount: -30_000n, handed: 0n }),
+      ).toBeNull();
     }
   });
 });

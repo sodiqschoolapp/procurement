@@ -158,6 +158,11 @@ export type OrderFailure = {
    * the exact cell of the exact order (05 Checks at submit; plan of 2.7, decided item 10).
    */
   fields?: Record<string, FieldMessageKey>;
+  /**
+   * The values the message of `fields` names, by name: the Manager to move the order back to
+   * before a cancel (`errors.field.movedSince`; 08 Money ledger; plan of 4.10b, decided item 8).
+   */
+  values?: Record<string, string>;
 };
 
 export type ActionFailure = {

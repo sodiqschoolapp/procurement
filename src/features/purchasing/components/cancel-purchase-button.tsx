@@ -70,6 +70,15 @@ export function CancelPurchaseButton({ target }: { target: CancelTarget }) {
           .filter((order) => order.fields?.stock === "errors.field.stockShort")
           .map((order) => order.orderId),
       );
+      // The Manager to move the order back to before the cancel (plan of 4.10b, decided item 8).
+      const moved = new Map(
+        (answer.error.orders ?? [])
+          .filter((order) => order.fields?.status === "errors.field.movedSince")
+          .map((order) => [
+            order.orderId,
+            tAll("errors.field.movedSince", { manager: order.values?.manager ?? "" }),
+          ]),
+      );
       const lines = moveFailureLines(
         answer.error,
         answer.decided,
@@ -81,10 +90,10 @@ export function CancelPurchaseButton({ target }: { target: CancelTarget }) {
         },
         format,
       ).map(({ orderId, line }) =>
-        stockShort.has(orderId)
+        stockShort.has(orderId) || moved.has(orderId)
           ? tMoves("failedLine", {
               number: numberOf.get(orderId) ?? "",
-              problem: tAll("errors.field.stockShort"),
+              problem: moved.get(orderId) ?? tAll("errors.field.stockShort"),
             })
           : line,
       );

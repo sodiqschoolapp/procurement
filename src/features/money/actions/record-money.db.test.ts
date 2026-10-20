@@ -320,7 +320,12 @@ describe('the date (08 Money ledger: "one date, not later than today"; D55 (15);
     // 20:00 UTC on 20 May is 01:00 on 21 May in Tashkent.
     setClock("2031-05-20T20:00:00Z");
     const one = await order(branch.id, manager.id);
-    const tomorrow = input([one], "CASH_GIVEN", { [one.id]: "10000" }, { occurredOn: "2031-05-22" });
+    const tomorrow = input(
+      [one],
+      "CASH_GIVEN",
+      { [one.id]: "10000" },
+      { occurredOn: "2031-05-22" },
+    );
     expect(await record(finance.id, tomorrow)).toMatchObject({
       ok: false,
       error: { code: "invalid_input", fields: { occurredOn: "errors.field.inFuture" } },
