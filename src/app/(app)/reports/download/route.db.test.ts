@@ -2,6 +2,7 @@ import ExcelJS from "exceljs";
 import { describe, expect, it } from "vitest";
 
 import { NO_ANALYTICS_FILTERS } from "@/features/analytics/period-params";
+import { BRANCH_COOKIE, branchCookieValue } from "@/features/catalog/branch-cookie";
 import { reportSearch } from "@/features/reports/report-params";
 import { AuthorizationError } from "@/server/authorize";
 
@@ -87,6 +88,29 @@ describe("GET /reports/download (10 Reports: exports to Excel)", () => {
     const sum = body.reduce((add, row) => add + (row[2] as number), 0);
     expect(total).toEqual(["Total", undefined, 14_833]);
     expect(sum).toBe(14_833);
+  });
+
+  it("without branch= the file starts at the switcher's branch, as the page (10 Reports; D55 item 11)", async () => {
+    setClock(AT);
+    const chl = await spendingScene();
+    const yun = await spendingScene();
+    // The same record in each branch (D40).
+    await bought(chl, { purchasedOn: "2031-05-03", unitPrice: "2000" });
+    await bought(yun, { purchasedOn: "2031-05-03", unitPrice: "2000" });
+    const finance = await insertUser("FINANCE", {
+      branches: [chl.branch.id, yun.branch.id],
+      locale: "en",
+    });
+    const cookie = await signInAs(finance);
+    const request = downloadRequest(
+      `/reports/download?report=purchases&from=${MAY.first}&to=${MAY.last}`,
+      cookie,
+    );
+    request.cookies.set(BRANCH_COOKIE, branchCookieValue(finance.id, chl.branch.id));
+    const [records] = (await workbookOf(await GET(request))).worksheets;
+    const { body } = bodyOf(records!, "Bought on");
+    expect(body).toHaveLength(1);
+    expect(body.reduce((add, row) => add + (row[12] as number), 0)).toBe(2_000);
   });
 
   it("Purchase register: dates as date cells, quantities and money as numbers, cancelled records on their own sheet", async () => {

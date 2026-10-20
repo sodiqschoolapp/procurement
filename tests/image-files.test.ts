@@ -17,6 +17,8 @@ const ENTRY_POINTS = [
   "scripts/storage-check.mjs",
   // The copy made from the console of the test copy (build-plan 8.2).
   "scripts/db-copy.mjs",
+  // A Head's password renewed from the hosting console (build-plan 8.2b; 03 rule 4).
+  "scripts/renew-head.mjs",
 ];
 
 /** The sources of every COPY of the run stage that does not copy from another stage. */

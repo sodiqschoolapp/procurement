@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import Link from "next/link";
@@ -6,6 +7,7 @@ import { Icon } from "@/components/icon";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/components/utils";
 import { getAnalyticsFilters } from "@/features/analytics/queries/filters";
+import { BRANCH_COOKIE } from "@/features/catalog/branch-cookie";
 import { getPriceChoices } from "@/features/analytics/queries/prices";
 import { orderTotalsOnFilter } from "@/features/orders/queries/order-list";
 import { ReportFilters } from "@/features/reports/components/report-filters";
@@ -23,6 +25,7 @@ import {
   MoneyWithManagersView,
   PriceHistoryView,
 } from "@/features/reports/components/more-report-views";
+import { withSwitcherBranch } from "@/features/reports/report-branch";
 import { getApprovalSpeedReport } from "@/features/reports/queries/approval-speed-report";
 import { getDepartmentUseReport } from "@/features/reports/queries/department-use-report";
 import { getMoneyWithManagersReport } from "@/features/reports/queries/money-with-managers-report";
@@ -129,8 +132,13 @@ async function readReport(userId: string, params: ReportParams) {
 
 export default async function ReportsPage({ searchParams }: { searchParams: Promise<Raw> }) {
   const user = await requireUser("/reports");
-  const params = parseReportParams(await searchParams, today());
-  if (!params) redirect("/reports");
+  const parsed = parseReportParams(await searchParams, today());
+  if (!parsed) redirect("/reports");
+  const params = await withSwitcherBranch(
+    user.id,
+    parsed,
+    (await cookies()).get(BRANCH_COOKIE)?.value,
+  );
   const read = await readReport(user.id, params);
   if (!read) notFound();
   const options = await getAnalyticsFilters(user.id);

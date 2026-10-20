@@ -37,6 +37,11 @@ export type ReportParams = {
   range: DateRange;
   /** Only the branch and the category of 10 Reports (decided item 6); the rest stay null. */
   filters: AnalyticsFilters;
+  /**
+   * Whether the address named the branch (a branch, or `all`). Without it the report starts at
+   * the branch picked in the switcher on top (10 Reports; plan of 8.2b): `withSwitcherBranch()`.
+   */
+  branchGiven: boolean;
   /** Price history's subtype (`variant=`, plan of 6.9b, decided item 6); null: the most bought. */
   variant: string | null;
   page: number;
@@ -65,6 +70,7 @@ export function parseReportParams(raw: Raw, today: BusinessDate): ReportParams |
     const parsed = schema.safeParse(value);
     return parsed.success ? parsed.data : null;
   };
+  const branch = single.branch === "all" ? null : valid(id, single.branch);
   const first = valid(date, single.from) ?? businessMonth(today).first;
   const last = valid(date, single.to) ?? today;
   if (first > last) return null;
@@ -73,9 +79,11 @@ export function parseReportParams(raw: Raw, today: BusinessDate): ReportParams |
     range: { first, last },
     filters: {
       ...NO_ANALYTICS_FILTERS,
-      branch: single.branch === "all" ? null : valid(id, single.branch),
+      branch,
       category: valid(id, single.category),
     },
+    // A broken branch is dropped, as every broken value: then the switcher's branch.
+    branchGiven: single.branch === "all" || branch !== null,
     variant: valid(id, single.variant),
     page: valid(page, single.page) ?? 1,
   };
@@ -83,13 +91,18 @@ export function parseReportParams(raw: Raw, today: BusinessDate): ReportParams |
 
 /** The address of a report, read back by the parser; `page` 1 is left out. */
 export function reportSearch(
-  params: Omit<ReportParams, "page" | "variant"> & { page?: number; variant?: string | null },
+  params: Omit<ReportParams, "page" | "variant" | "branchGiven"> & {
+    page?: number;
+    variant?: string | null;
+  },
 ): string {
   const search = new URLSearchParams();
   search.set("report", params.report);
   search.set("from", params.range.first);
   search.set("to", params.range.last);
-  if (params.filters.branch) search.set("branch", params.filters.branch);
+  // "All my branches" is written `all`, never left out: an address without the branch starts at
+  // the switcher's branch (plan of 8.2b, decided item 12).
+  search.set("branch", params.filters.branch ?? "all");
   if (params.filters.category) search.set("category", params.filters.category);
   // The subtype is Price history's alone: another tab's address does not carry it.
   if (params.report === "prices" && params.variant) search.set("variant", params.variant);
