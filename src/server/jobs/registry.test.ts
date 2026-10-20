@@ -52,7 +52,9 @@ describe("jobsFor (build-plan 8.2; 13-technology.md, Running it)", () => {
 
   it("gives the copy a schedule the scheduler accepts and a name its row accepts", () => {
     const copy = jobsFor({ NODE_ENV: "production", S3_BUCKET: "invented-bucket" }).at(-1)!;
-    expect(copy.schedule).toEqual({ weeklyOn: 7, dailyAt: "04:00" });
+    // Every night at 04:00: copyDue() picks Sundays and the nights after a failure (D55 item 6;
+    // plan of 8.2b, decided item 3). It was Sundays only before 8.2b.
+    expect(copy.schedule).toEqual({ dailyAt: "04:00" });
     expect(() => checkSchedule(copy.schedule)).not.toThrow();
     expect(copy.name).toMatch(/^[a-z][a-z0-9_]*$/);
   });

@@ -6,7 +6,7 @@ import { settings } from "@/server/db/schema";
 
 import { describePermissionMatrix } from "../../../../tests/helpers/permission-matrix";
 import { insertUser } from "../../../../tests/helpers/users";
-import { getSchoolName, getSettingsForHead } from "./settings";
+import { getLastDatabaseCopy, getSchoolName, getSettingsForHead } from "./settings";
 
 // build-plan 1.1; developer-rules.md rule 4 (authorize() in every query); plan of 1.1, decision
 // 4 (Look first): the form's values are the Head's, the school name every signed-in role's.
@@ -39,6 +39,12 @@ describe("the settings queries (build-plan 1.1)", () => {
 describePermissionMatrix("getSettingsForHead", {
   permission: "catalog.manage",
   run: ({ user }) => getSettingsForHead(user.id),
+});
+
+// The date of the last copy of the database: the Head's, as the Settings page (build-plan 8.2b).
+describePermissionMatrix("getLastDatabaseCopy", {
+  permission: "catalog.manage",
+  run: ({ user }) => getLastDatabaseCopy(user.id),
 });
 
 describePermissionMatrix("getSchoolName", {
