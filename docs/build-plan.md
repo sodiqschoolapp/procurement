@@ -10,7 +10,7 @@ The whole project as ordered tasks. One task is one Claude Code session and one 
 - A task that turns out too large is split by the builder into a, b, c in this file, in the task's own pull request; the first part is planned and built, and the split is flagged **Look first** on issue #9. Nothing waits for a confirmation.
 - A task that names an open question uses the owner's answer under "Decided ahead" in `docs/decisions.md`. Where no answer came, the builder takes the most reasonable reading and flags it **Look first** (D20, D26). The owner's reviewer prepares each phase's questions while the phase before it runs.
 - A fix task `<id>b` (for example `1.3b`) is added by the owner when a decision made without the owner is changed on issue #9, or an owner's audit finds a gap (D48), and code must change. It is placed first among the open tasks, so the start routine takes it next; its Read line names the decision it changes or comes from.
-- One owner gate stands before task 9.4, where the live system, real data and secrets start: a quoted line that begins with the words "Owner gate." in bold. The start routine starts nothing after it until the owner deletes that line.
+- One owner gate stood before task 9.4, where the live system, real data and secrets start: a quoted line that began with the words "Owner gate." in bold. The start routine started nothing after it until the owner deleted that line, which the owner did on 20.10.2026 (D58).
 - Tick a task only in `/finish-task`.
 
 ## Phases
@@ -679,8 +679,6 @@ Proof that it works, then the real environment and the real data.
   - **Build:** The reverse of an issue (`src/features/warehouse/actions/reverse.ts`, `reverseAllows()` or a rule beside it in `src/domain/`) is refused, under the locks it already takes, when a line is more than the department's net received amount of that subtype (`departmentReceived()`), the message naming the line, what the department holds, and "reverse the return first"; the warning of 5.7 item 2 for an issue goes. A return keeps its warning and comment (09 Return). This also closes the gap left open by 5.4b item 2 (an issue "given straight" reversed after a return).
   - **Done when:** a database test names the rule and fails without the fix: 10 notebooks issued to Maths, 4 returned, the reverse of the issue is refused and stock stays where it is; after the return is reversed, the issue's reverse goes through and stock is back to before the issue; an issue with nothing returned reverses as today.
   - Added by the owner on 20.10.2026 (D57): found in the review of the D55 fix tasks' decisions.
-
-> **Owner gate.** The start routine stops here until the owner, after the go-live review of every Look first decision with the owner's reviewer, deletes this line. From here on the live system, real data and secrets start.
 
 - [ ] **9.4 The live app, in trial**
   - **Read:** `18-hosting-and-costs.md` (whole file); `13-technology.md` (Running it); `open-questions.md` (question 10, answered); `docs/decisions.md` (D52).
