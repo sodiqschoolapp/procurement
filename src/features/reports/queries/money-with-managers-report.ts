@@ -8,6 +8,7 @@ import {
   managerCashBalance,
 } from "@/domain/money-ledger";
 import type { RequestStatus } from "@/domain/request-status";
+import { authorizeList } from "@/server/authorize";
 import { readSnapshot } from "@/server/read-snapshot";
 
 import { authorizeAnalytics } from "../../analytics/authorize-filters";
@@ -18,8 +19,10 @@ import { REPORT_PAGE_SIZE, type ReportParams } from "../report-params";
 
 // The Money with managers report (10-notifications-analytics-reports.md, Reports: "Open cash
 // balances and their age"; 08-money-and-settlement.md, Money with managers; build-plan 6.9b).
-// Under `data.view` for every role in its own branches (plan of 6.9b, decided item 1, Look first),
-// read from `analytics_cash` under cashWhere(…, owed = true): each order's `orderCashCount()` and
+// Under `money.managers`, the Head in every branch and Finance in its own; the Manager and the
+// Principal are refused (03 matrix "See every Manager's cash (Money with managers)"; 10 Reports
+// "Head and Finance only"; plan of 2.3b, decided items 4 and 5, which replace decided item 1 of
+// 6.9b, D55 item 22). Then `data.view` for the filters, read from `analytics_cash` under cashWhere(…, owed = true): each order's `orderCashCount()` and
 // `since`, the order's live status not Draft or Closed, the branch wall inside the SQL (decided
 // item 2, Look first). A number of now: the dates do not change it (decided item 3, Look first).
 // The owners' blocks are `managerBalances()`, the /money page's own grouping, held and owed apart
@@ -76,6 +79,7 @@ export async function getMoneyWithManagersReport(
   page: number | "all",
 ): Promise<MoneyWithManagersReport> {
   return readSnapshot(async (db) => {
+    await authorizeList(userId, "money.managers", db);
     const actor = await authorizeAnalytics(db, userId, params.filters);
     const found = await db.execute<Row>(sql`
       select analytics_cash.order_id, o.number, o.status, analytics_cash.owner_id,

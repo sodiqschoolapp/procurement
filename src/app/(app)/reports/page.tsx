@@ -181,7 +181,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
         </a>
       </div>
       <nav aria-label={t("title")} className="flex flex-wrap gap-2">
-        {REPORTS.map((report) => (
+        {REPORTS.filter((report) => report !== "cash" || options.seesManagersCash).map((report) => (
           <Link
             key={report}
             href={`/reports?${reportSearch({ ...params, report, page: 1 })}`}

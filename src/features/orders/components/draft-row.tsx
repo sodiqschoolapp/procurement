@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -332,7 +333,19 @@ export function DraftRow(props: DraftRowProps) {
       <Cell col="number" className="min-w-36 max-sm:w-auto max-sm:flex-1">
         <span className="flex flex-col gap-1 py-2">
           <span className="flex flex-wrap items-center gap-2 text-sm font-semibold">
-            {row.number ?? t("draftWord")}
+            {/* A numbered row opens its order page, where its Cancel is (plan of 2.3b, decided
+                item 11). */}
+            {row.number ? (
+              <Link
+                href={`/orders/${row.id}`}
+                className="inline-flex min-h-11 items-center underline-offset-2 hover:underline sm:min-h-0"
+                data-order-link
+              >
+                {row.number}
+              </Link>
+            ) : (
+              t("draftWord")
+            )}
             {row.revision >= 2 && (
               <span className="font-normal text-muted-foreground">
                 {t("revision", { revision: row.revision })}

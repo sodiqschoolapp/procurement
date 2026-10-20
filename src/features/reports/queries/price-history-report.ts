@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 
 import type { DateRange } from "@/domain/analytics";
 import type { BusinessDate } from "@/domain/business-date";
+import { decideList } from "@/domain/permissions";
 import type { Executor } from "@/server/authorize";
 import { readSnapshot } from "@/server/read-snapshot";
 
@@ -20,7 +21,10 @@ import { REPORT_PAGE_SIZE, type ReportParams } from "../report-params";
 // first): one chart point per record, oldest first (decided item 7). Its reference prices are the
 // `HEAD` rows of `price_history`, one price for the whole school and no branch data (04 rule 4):
 // the one in force on the first day and every one set in the dates, newest by `created_at` then
-// `seq`, the order the catalog's check `price_recorded` reads (decided item 8). Under `data.view`,
+// `seq`, the order the catalog's check `price_recorded` reads (decided item 8). The Head's note and
+// who set it only for `money.managers`, the Head and Finance, chosen inside the SQL; the Manager
+// and the Principal get both empty (03 matrix "… and the Head's price notes"; 10 Reports, Price
+// history; plan of 2.3b, decided item 4, Look first). Under `data.view`,
 // the branch wall in the SQL, in one snapshot; the records 25 a page, or all for the file; the
 // chart always all.
 
@@ -41,8 +45,10 @@ export type PriceRecord = {
 export type ReferencePrice = {
   id: string;
   price: bigint;
+  /** `null` also when the reader may not see the notes (`showsNotes`). */
   note: string | null;
-  setByName: string;
+  /** `null` when the reader may not see who set it. */
+  setByName: string | null;
   /** The Tashkent date it was set. */
   setOn: BusinessDate;
   /** The one in force on the first day of the dates, set before them. */
@@ -61,6 +67,8 @@ export type PriceHistoryReport = {
   /** The records of the page, oldest first. */
   records: PriceRecord[];
   references: ReferencePrice[];
+  /** The reader sees the Head's notes and who set each price (plan of 2.3b). */
+  showsNotes: boolean;
 };
 
 type RecordRow = {
@@ -83,11 +91,14 @@ export async function getPriceHistoryReport(
 ): Promise<PriceHistoryReport> {
   return readSnapshot(async (db) => {
     const actor = await authorizeAnalytics(db, userId, params.filters);
+    const showsNotes = decideList("money.managers", actor) === "allow";
     const where = sql`${spendingWhere(actor, params.range, params.filters)}
       and analytics_spending.unit_price > 0`;
     const variantId = params.variant ?? (await mostBought(db, where));
     const empty = { records: [], points: [], recordCount: 0, page: 1, pages: 1 };
-    if (!variantId) return { range: params.range, subtype: null, references: [], ...empty };
+    if (!variantId) {
+      return { range: params.range, subtype: null, references: [], showsNotes, ...empty };
+    }
     const name = await db.execute<{
       variant_id: string;
       product_name: string;
@@ -98,7 +109,9 @@ export async function getPriceHistoryReport(
       from product_variants v join products pr on pr.id = v.product_id
       where v.id = ${variantId}`);
     const named = name.rows[0];
-    if (!named) return { range: params.range, subtype: null, references: [], ...empty };
+    if (!named) {
+      return { range: params.range, subtype: null, references: [], showsNotes, ...empty };
+    }
     const subtype = {
       variantId: named.variant_id,
       productName: named.product_name,
@@ -137,12 +150,15 @@ export async function getPriceHistoryReport(
       id: string;
       price: string;
       note: string | null;
-      set_by_name: string;
+      set_by_name: string | null;
       set_on: string;
       in_force: boolean;
     }>(sql`
       with head as (
-        select h.id, h.price, h.note, h.created_at, h.seq, u.full_name as set_by_name,
+        select h.id, h.price,
+               case when ${showsNotes} then h.note end as note,
+               h.created_at, h.seq,
+               case when ${showsNotes} then u.full_name end as set_by_name,
                ${setOn} as set_on
         from price_history h join users u on u.id = h.set_by
         where h.variant_id = ${variantId} and h.source = 'HEAD'),
@@ -162,6 +178,7 @@ export async function getPriceHistoryReport(
     return {
       range: params.range,
       subtype,
+      showsNotes,
       points,
       recordCount: points.length,
       page: shown,
