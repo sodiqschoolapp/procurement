@@ -2121,4 +2121,25 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - A department lock that a foreign-key insert can meet under a balance lock is FOR NO KEY UPDATE, never FOR UPDATE: a "Give straight" purchase locks the balance, then inserts an ISSUE pointing at the department (FOR KEY SHARE).
 - A reverse of an issue after a return: reverse the return first (09 Issue 3). Test scenes that reverse an issue after an unreversed return now get `reverseOverHeld`.
 
-The next task is 9.4.
+## 9.4 The live app, in trial (20.10.2026, pull request #148)
+
+**Built**
+- `.do/app.yaml`: the live app `ombor` at `ombor.sodiqschool.uz`, 1 GiB, the managed cluster `ombor-db` (`production: true`, `defaultdb` / `doadmin`), buckets `ombor-files` and `ombor-copies`, `SEED_DEMO_DATA` `yes` (trial). `docs/deploy.md` rewritten: the owner's steps, the alerts required, "The end of the trial".
+- `npm run trial:reset` (`scripts/trial-reset.mjs`, core `endTrial()` in `scripts/trial-end.mjs`): the database's name as the confirmation; under the session lock `FIRST_HEAD_LOCK` drops `public` and `drizzle`, migrates from zero, writes the one row of `trial_end` (migration 0053). Refuses a wrong name and any run once the row exists.
+- `seed()` refuses once `trial_end` holds a row (`trialHasEnded()`), whatever `SEED_DEMO_DATA` says.
+- The image carries `trial-end.mjs`, `trial-reset.mjs` and `create-first-head.mjs`.
+
+**Left out, and the task that brings it**
+- `SEED_DEMO_DATA` removed, the reset run, the two Heads, the real data: 9.5. The restore drill: 9.6.
+
+**Open for the owner**
+- Every step of `docs/deploy.md` (accounts, $25 a month, DNS, R2, typed values, Sentry, UptimeRobot), and the two live Done-when checks: the four demo users sign in at the live address; the cluster's Backups tab shows a daily backup.
+
+**What the next sessions must know**
+- For 9.5: remove `SEED_DEMO_DATA` from `.do/app.yaml` and change the `"yes"` assertion and the key list of `tests/app-spec.test.ts`; the error reports' environment then reads `production`.
+- For 9.5: the reset runs in the console only after the deploy without `SEED_DEMO_DATA` is done and no deploy is in progress (`docs/deploy.md`, "The end of the trial").
+- For 9.6: the app connects straight to the cluster as `doadmin`; a restore goes into a new, empty database, never `defaultdb`.
+- A new console script the owner runs in the image goes into `ENTRY_POINTS` of `tests/image-files.test.ts` and the Dockerfile's COPY line.
+- `endTrial()` holds `pg_advisory_lock(FIRST_HEAD_LOCK, 0)` for its whole run; a new writer that must never meet a half-reset database takes that lock first.
+
+The next task is 9.6.

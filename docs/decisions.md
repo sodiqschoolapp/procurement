@@ -2916,6 +2916,30 @@ Choices made during the build:
 - The read of what is held is in the `check` step, after the lock step and before `write`.
 - The dialog's line is red (`text-destructive`), no longer the warning colour: it is a refusal now.
 
+### 9.4 The live app, in trial (20.10.2026)
+
+The plan's decisions as the plan review of 20.10.2026 confirmed them (its two corrections applied: `docs/deploy.md` says what the reset does not empty, the two buckets and DigitalOcean's backups, and what to do when the reset fails with a message from PostgreSQL), and those of the build. The Look first items come first.
+
+1. **Look first.** The managed database is attached with `production: true`, `cluster_name: ombor-db`, and the app connects as the cluster's admin `doadmin` to `defaultdb`: `trial:reset` drops and makes again the `public` schema, which only the database's owner may do (PostgreSQL 15+). The field names, `doadmin`'s ownership of `defaultdb` and `${db.CA_CERT}` for a managed cluster are written from memory (DigitalOcean's pages could not be read); `docs/deploy.md` says to stop and post DigitalOcean's message on issue #9 if the spec is refused. 13 Running it; 18 rows 1 and 2.
+2. **Look first.** A new table `trial_end` (one row at most: `id boolean primary key default true check (id)`, `ended_at`), migration 0053, records the end of the trial. Not a `settings` row, which the Head could change on a screen. Proposed `/spec-change` to 14: "`trial_end`: one row at most, written by `npm run trial:reset` when the trial ends (D52); its row makes the reset and the seed refuse."
+3. **Look first** (a test changed because a decision changed). The 0.15 note "the production app spec must not carry `SEED_DEMO_DATA`" is replaced by D52: `tests/app-spec.test.ts` asserts `"yes"` while the trial runs; 9.5 removes it and changes the assertion.
+4. The seed refuses once `trial_end` holds a row, inside its transaction under `FIRST_HEAD_LOCK`: a `SEED_DEMO_DATA` left on after 9.5 can never write demo users beside the real data. The second guard independent of configuration that the 0.14 and 0.15 permission reviews asked for.
+5. The reset: the drops in one transaction, then `applyMigrations()` (the deploy's own code, in its own transaction), then the row, all under the session-level advisory lock `FIRST_HEAD_LOCK`, so a container's seed or a `user:first-head` waits and then meets the record (review of the plan, Must fix 1). A failure between leaves an empty database without the record, and the reset runs again. Drizzle's migrator cannot run inside an outer transaction. A container's own migration is not under the lock; `docs/deploy.md` says to reset with no deploy in progress.
+6. The new `public` schema gets no grant: the app and `pg_dump` connect as its owner.
+7. The confirmation is the database's name as the driver reads it from `DATABASE_URL`, trimmed of surrounding white space, case-sensitive, typed at a prompt.
+8. The reset does not check `SEED_DEMO_DATA` itself: item 4 makes a value left on harmless.
+9. The app connects straight to the database, no DigitalOcean connection pool, so `-c timezone=UTC -c jit=off` reach the server (progress 9.2, "For 9.4").
+10. The alerts of 9.3 are required setup steps (`docs/deploy.md` step 9; D55 item 21); `ERROR_REPORT_DSN` joins the typed values. No code.
+11. `scripts/create-first-head.mjs` is copied into the image now: 9.5 runs it in the live console and builds no code.
+12. `.do/app.yaml` is replaced, not doubled; nothing is switched off (D52: no test copy was created).
+13. The two live parts of Done when (the demo users sign in at the live address; a daily backup on the cluster's dashboard) are the owner's checks after the merge, as 0.16's online proof was (Decided ahead 0.16, item 5); the task is ticked with them listed under "For the owner".
+
+Choices made during the build:
+
+- The reset reads whether `trial_end` exists (`to_regclass`) before it reads the row, so a database migrated before 0053 counts as "not ended".
+- A refusal prints its own line; any other failure prints `trial:reset failed: <reason>` through `failureReason()`, as `db:migrate` does.
+- The seed's hosted-database refusal and the comments of `start.sh` and `db-seed.mjs` say "the live app in trial" instead of "the test copy"; `tests/seed-guard.test.ts` follows the new text.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.
