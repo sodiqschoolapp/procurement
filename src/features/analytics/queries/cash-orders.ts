@@ -18,7 +18,7 @@ import { daysOut } from "../days-out";
 // first as Money with managers lists them; the held amount is `managerCashBalance()` of them all,
 // "held for" from the oldest since, so the summary is the number clicked. A number of now: no
 // period. Under `data.view`, the branch wall and the live status in the SQL, in one snapshot; the
-// rows are few (open orders holding cash), so they are read whole and paged here, 50 a page.
+// rows are few (open orders holding cash), so they are read whole and paged here, 25 a page.
 // Task 6.6a adds the orders behind one amount of Finance's "money with managers by age" (plan of
 // 6.6a, decided item 3, Look first): held (a count above 0) or owed (below 0), never netted, of one
 // age band by `cashAgeBand()` of the days since; `held` and `owed` are `managerCashBalance()` of

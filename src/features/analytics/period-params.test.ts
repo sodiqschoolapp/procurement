@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { NO_ANALYTICS_FILTERS, analyticsSearch, parseAnalyticsParams } from "./period-params";
+import {
+  NO_ANALYTICS_FILTERS,
+  RECORDS_PAGE_SIZE,
+  analyticsSearch,
+  parseAnalyticsParams,
+} from "./period-params";
 
 // The address of the Analytics pages, checked with Zod (developer-rules.md rule 13; review of the
 // plan of 6.3, correction 2: "a value that does not parse is refused … one test of each refusal";
@@ -290,5 +295,11 @@ describe("parseAnalyticsParams", () => {
     ["a reason longer than 500 characters", { key: "step:all:REJECT", reason: "x".repeat(501) }],
   ])("refuses %s", (_, raw) => {
     expect(parseAnalyticsParams(raw)).toBeNull();
+  });
+});
+
+describe("the drill-down pages", () => {
+  it("show 25 rows a page (11-screens-and-ux.md rule 8; found by the speed run of 9.2)", () => {
+    expect(RECORDS_PAGE_SIZE).toBe(25);
   });
 });

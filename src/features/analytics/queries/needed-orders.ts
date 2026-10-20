@@ -18,7 +18,7 @@ import {
 // reports.md, Analytics page per role, point 3; build-plan 6.6a; plan of 6.6a, decided items 4, 5
 // and 10): the rows of `analytics_orders` under the same neededWhere() as the number, nearest
 // needed-by date first, so their Σ is the number clicked. Names and numbers are read live. Under
-// `data.view`, the branch wall and the live status in the SQL, in one snapshot; 50 a page, or
+// `data.view`, the branch wall and the live status in the SQL, in one snapshot; 25 a page, or
 // every row for the export.
 
 export type NeededOrder = {

@@ -16,7 +16,7 @@ import { resolvePeriod } from "../resolve-period";
 // cancelledWhere() as the number, so their count is the number clicked; a Manager cell sets the
 // Manager filter, "Other owners" sets `otherOwners`. Who cancelled and why are read live from the
 // record (its cancel fields are written once, Decided ahead, question 3). Under `data.view`, the
-// branch wall in the SQL, in one snapshot; 50 a page, or every row for the export.
+// branch wall in the SQL, in one snapshot; 25 a page, or every row for the export.
 
 export type CancelledRecord = {
   purchaseId: string;

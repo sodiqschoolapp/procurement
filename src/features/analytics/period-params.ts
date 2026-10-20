@@ -130,7 +130,7 @@ export type MoveKind = (typeof MOVE_KINDS)[number];
 export const OUTCOME_COLOURS = ["green", "amber", "red"] as const satisfies readonly Colour[];
 
 /** The rows of a drill-down page (developer-rules.md rule 12: lists use server paging). */
-export const RECORDS_PAGE_SIZE = 50;
+export const RECORDS_PAGE_SIZE = 25;
 
 /** The suppliers of the Head's "top 10 suppliers" (10 Analytics, Head, Spending). */
 export const TOP_SUPPLIERS = 10;
