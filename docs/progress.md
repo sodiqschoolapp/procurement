@@ -2029,4 +2029,23 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - A movement type that comes in "at a cost only into an empty stock" uses `emptyCost`, and `replayedMovement()` must replay it the same way, or the nightly check reports a mismatch.
 - `postLines()` for a COUNT relies on the caller holding the balance locks and having checked that nothing moved (decideCount's lock step).
 
-The next task is 7.4c.
+## 7.4c Cancel a transfer, a reason for a refusal (20.10.2026, pull request #141)
+
+**Built**
+- Migration 0050: `CANCELLED` status, `TRANSFER_CANCELLED` notice type, `stock_documents.decision_reason` with `stock_documents_decision_reason_check` (NOT VALID).
+- `cancelTransfer` (`stock.transfer` on the sending branch): `transferCancelMove()`, then `cancelTransferDocument()` writes one REVERSAL per TRANSFER_OUT at its cost; the receiving branch's active Managers are told.
+- `decideWriteOff` and `decideCount` refuse a Refuse without a reason of 5 to 500 and store it in `decision_reason`.
+- The document page: Cancel transfer with its dialog, "Cancelled by" and the reasons; the note says "Cancelled"; `ReasonField` shared by every warehouse reason dialog.
+
+**Left out, and the task that brings it**
+- The other D55 items: 2.3b, 8.2b.
+
+**Open for the owner**
+- None.
+
+**What the next sessions must know**
+- `reverseMovements()` (`src/server/stock-documents.ts`) is the one writer of a document's REVERSALs; Reverse and the cancel call it.
+- A check that names an enum value added in the same migration compares `status::text`: all pending migrations run in one transaction.
+- Every test or fixture that refuses a write-off or a count gives `reason`.
+
+The next task is 2.3b.

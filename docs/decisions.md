@@ -2797,6 +2797,29 @@ Choices made during the build:
 - The page's column uses a new key `warehouse.documents.page.unitCost` ("Cost per unit"): the existing `warehouse.directEntry.unitCost` ends in "so'm", which the money formatter adds again.
 - The Manager row of the cost per unit is tested in `document.db.test.ts` (Head, Manager, Principal and Finance of the branch, posted and reversed) rather than in `documents-matrix.db.test.ts`, which tests the list.
 
+### 7.4c Cancel a transfer, a reason for a refusal (20.10.2026)
+
+The plan's decisions as the plan review of 20.10.2026 confirmed them, with its two corrections applied (every existing test that refuses a write-off or a count now gives a valid reason; the check compares `status::text`). The Look first items come first.
+
+1. **Look first** (stock rule). The cancel puts the stock back as one REVERSAL per TRANSFER_OUT, at that movement's own `unit_cost`, with `reverses_movement_id` set (`reversalOf()`, through `reverseMovements()` of `src/server/stock-documents.ts`, which Reverse now shares): exactly "at the cost it left with", whatever the sender's average is now.
+2. **Look first** (status move). IN_TRANSIT → CANCELLED is `transferCancelMove()` of `src/domain/stock-documents.ts`, asked by the action under the lock and by the page; CANCELLED is final: no receive, no Reverse, no second cancel. A received transfer is still fixed by Reverse.
+3. **Look first** (permission matrix). Who cancels: the Head in any branch, or any Manager of the sending branch with `TRANSFER_STOCK` on (`stock.transfer` on the sending branch), not only the Manager who sent it. A Manager of the receiving branch only gets "Not found".
+4. **Look first** (a constraint on old rows). `stock_documents_decision_reason_check` is added `NOT VALID` (migration 0050): refusals made before this task carry no reason, and none is invented; every new insert and update is checked.
+5. **Look first** (data model). A cancel is stored in `decided_by`, `decided_at` and `decision_reason`; no cancel columns of its own. The page labels them "Cancelled by" and "Why it was cancelled".
+6. **Look first** (notification params). `TRANSFER_CANCELLED { actor, number, branch }` to every active Manager of the receiving branch, whatever their rights, `branchId` the receiving branch; the Head and the sending branch are not told.
+7. The reason is 5 to 500 code points once trimmed (`isMoveReason()`, `moveReason()`), stored trimmed; Approve takes none and stores none.
+8. The refusal's reason is shown on the document's page to everyone who sees the document; the notice carries none, as an order's rejection notice carries none.
+9. The cancel does not ask whether products or branches are still active, as Reverse does not.
+10. No audit row for the cancel, as for the transfer.
+11. A cancelled transfer's note can still be downloaded and says "Cancelled".
+12. The Head refusing an incomplete count gives a reason too.
+
+Choices made during the build:
+
+- One `ReasonField` (`src/features/warehouse/components/reason-field.tsx`) serves the cancel, the two Refuse dialogs and the Reverse dialog, which used to hold its own copy.
+- The Refuse dialogs say "The Manager sees it" under the reason (`warehouse.refuseReason.hint`).
+- **Look first** (a test changed because a requirement changed). The tests that refused a write-off or a count without a reason, and the fixtures that wrote REJECTED straight into the database, now give a reason (09 Other documents: "A refusal … carries a reason"); what they check is unchanged.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.
