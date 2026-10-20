@@ -690,6 +690,12 @@ Proof that it works, then the real environment and the real data.
   - **Build:** A written restore procedure in `docs/`, and one real run of it during the trial, before 9.5: yesterday's copy of the live database restored into a new, empty database, never over the live one; and once the newest weekly copy from `ombor-copies` restored the same way (D55).
   - **Done when:** The restored database holds yesterday's demo orders, users and stock lines, counted against the live one, and the restored weekly copy holds the demo orders of its Sunday; the owner has the written steps.
 
+- [ ] **6.4e Price rises: not within one day**
+  - **Read:** `10-notifications-analytics-reports.md` (Analytics page per role: Head, Prices); `docs/decisions.md` (D60; under 6.4b decided item 4, which this changes).
+  - **Build:** In "Biggest price rises" (`risesOf()`, `src/features/analytics/queries/prices.ts`), the earlier price is the newest record before the 90 days, else the oldest record in them only when its trip date is before the newest record's trip date. Records on the same trip date as the newest one are no rise: those differences already show under "different prices". A subtype with no earlier date has no rise. Everything else of decided item 4 stays as built, the newest record included (trip date, entry time, id).
+  - **Done when:** a database test names the rule and fails without the fix: two purchases of one subtype on the same date at 3 500 and 4 000 show no rise; the same two on two dates show +500, +14.3 %; the existing tests of decided item 4 still pass unchanged.
+  - Added by the owner on 21.10.2026 (D60): found in the live test of the trial.
+
 > **Owner gate.** The restore drill of 9.6 has run (`docs/restore.md`, parts A and B): both pairs of count lines are on issue #9. The owner deletes this line; the start routine takes 9.5 only then, because 9.5 begins with `npm run trial:reset`, which empties the trial database the drill runs against (plan of 9.6, decided item 10).
 
 - [ ] **9.5 Real data**
