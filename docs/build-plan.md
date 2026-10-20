@@ -26,8 +26,8 @@ The whole project as ordered tasks. One task is one Claude Code session and one 
 | 6. Home, analytics, reports | 17 | What each role sees first, and the numbers behind the work. |
 | 7. Transfers and counts | 4 | Stock moving between branches, and stock checked against the shelf. |
 | 8. Jobs and polish | 3 | The scheduled work, and the translation pass. |
-| 9. Before go-live | 15 | Proof that it works, then the real environment and the real data. |
-| **Total** | **117** | |
+| 9. Before go-live | 16 | Proof that it works, then the real environment and the real data. |
+| **Total** | **118** | |
 
 ## Phase 0: Foundations
 
@@ -673,6 +673,12 @@ Proof that it works, then the real environment and the real data.
   - **Build:** (1) Saving a record with "Give straight to requester" writes `purchases.give_to_requester` true (`record-purchase.ts`; it is left out of the insert today). (2) Cancelling a record whose "Give straight to requester" issue is still posted is refused, the message naming that issue and the two ways out (07 Fixing a mistake 2), whatever other stock the branch holds; once the issue is reversed, the cancel goes through as today (`cancel-purchase.ts`).
   - **Done when:** a database test per item names its rule and fails without its fix: a record with the tick reads `give_to_requester` true and one without reads false; with 50 notebooks in CHL, a record of 10 with the tick cannot be cancelled while its issue is posted (stock stays 50 and the issue stays), and after the issue is reversed the cancel leaves 50 and the department's received count back where it was.
   - Added by the owner on 20.10.2026 (D56): the money and stock audit.
+
+- [ ] **5.7b Reversing an issue after a return**
+  - **Read:** `09-warehouse.md` (Issue to a department: 3; Other documents: Return); `docs/decisions.md` (D57; 5.7 item 2, which this reverses; 5.4b item 2).
+  - **Build:** The reverse of an issue (`src/features/warehouse/actions/reverse.ts`, `reverseAllows()` or a rule beside it in `src/domain/`) is refused, under the locks it already takes, when a line is more than the department's net received amount of that subtype (`departmentReceived()`), the message naming the line, what the department holds, and "reverse the return first"; the warning of 5.7 item 2 for an issue goes. A return keeps its warning and comment (09 Return). This also closes the gap left open by 5.4b item 2 (an issue "given straight" reversed after a return).
+  - **Done when:** a database test names the rule and fails without the fix: 10 notebooks issued to Maths, 4 returned, the reverse of the issue is refused and stock stays where it is; after the return is reversed, the issue's reverse goes through and stock is back to before the issue; an issue with nothing returned reverses as today.
+  - Added by the owner on 20.10.2026 (D57): found in the review of the D55 fix tasks' decisions.
 
 > **Owner gate.** The start routine stops here until the owner, after the go-live review of every Look first decision with the owner's reviewer, deletes this line. From here on the live system, real data and secrets start.
 
