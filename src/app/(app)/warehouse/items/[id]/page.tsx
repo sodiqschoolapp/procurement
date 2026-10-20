@@ -194,7 +194,7 @@ export default async function ItemCardPage({
                         {t("order", { number: movement.order.number })}
                       </Link>
                     ) : (
-                      <span className="inline-flex items-center gap-2">
+                      <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1">
                         {movement.documentId && movement.documentNumber ? (
                           // The document's own page (plan of 5.12, decided item 3, Look first).
                           <Link

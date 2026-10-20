@@ -343,6 +343,7 @@
     }
     /* Hidden from sight only: the column names stay a header row for screen readers. */
     .table-cards > thead {
+      display: block;
       position: absolute;
       width: 1px;
       height: 1px;
@@ -374,7 +375,8 @@
       display: none;
     }
     .table-cards > tbody > tr > td[data-label]::before {
-      content: attr(data-label);
+      /* Seen, not read: the header row names the column for screen readers. */
+      content: attr(data-label) / "";
       display: block;
       margin-bottom: 0.125rem;
       font-size: 0.75rem;
