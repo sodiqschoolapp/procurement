@@ -115,8 +115,8 @@ export const purchases = pgTable(
         ELSE ${table.cancelReason} IS NULL AND ${table.cancelledBy} IS NULL AND ${table.cancelledAt} IS NULL
       END`,
     ),
-    index("purchases_trip_id_idx").on(table.tripId),
-    index("purchases_order_id_idx").on(table.orderId),
+    index("purchases_trip_id_branch_id_idx").on(table.tripId, table.branchId),
+    index("purchases_order_id_branch_id_idx").on(table.orderId, table.branchId),
     index("purchases_branch_id_idx").on(table.branchId),
     index("purchases_variant_id_idx").on(table.variantId),
     index("purchases_created_by_idx").on(table.createdBy),

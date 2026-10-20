@@ -120,7 +120,11 @@ export const stockMovements = pgTable(
       columns: [table.purchaseId, table.branchId, table.variantId],
       foreignColumns: [purchases.id, purchases.branchId, purchases.variantId],
     }),
-    index("stock_movements_purchase_id_idx").on(table.purchaseId),
+    index("stock_movements_purchase_id_branch_id_variant_id_idx").on(
+      table.purchaseId,
+      table.branchId,
+      table.variantId,
+    ),
     // A document's movement moves the subtype of its line; the branch stays free, since a
     // transfer's TRANSFER_IN lands in its `to_branch_id` (plan of 5.1, decided item 5, Look first).
     foreignKey({
@@ -128,7 +132,10 @@ export const stockMovements = pgTable(
       columns: [table.documentLineId, table.variantId],
       foreignColumns: [stockDocumentLines.id, stockDocumentLines.variantId],
     }),
-    index("stock_movements_document_line_id_idx").on(table.documentLineId),
+    index("stock_movements_document_line_id_variant_id_idx").on(
+      table.documentLineId,
+      table.variantId,
+    ),
   ],
 );
 
@@ -230,9 +237,11 @@ export const stockDocuments = pgTable(
       foreignColumns: [departments.id, departments.branchId],
     }),
     index("stock_documents_branch_id_doc_date_idx").on(table.branchId, table.docDate),
+    // A filter column of its list (developer-rules.md rule 12; plan of 9.2, decided item 3).
+    index("stock_documents_branch_id_created_at_idx").on(table.branchId, table.createdAt),
     index("stock_documents_type_idx").on(table.type),
     index("stock_documents_status_idx").on(table.status),
-    index("stock_documents_department_id_idx").on(table.departmentId),
+    index("stock_documents_department_id_branch_id_idx").on(table.departmentId, table.branchId),
     index("stock_documents_to_branch_id_idx").on(table.toBranchId),
     index("stock_documents_created_by_idx").on(table.createdBy),
     index("stock_documents_decided_by_idx").on(table.decidedBy),

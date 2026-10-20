@@ -54,6 +54,8 @@ export const branches = pgTable(
       "btree",
       sql`lower(regexp_replace(btrim(${table.name}), '\\s+', ' ', 'g'))`,
     ),
+    // A filter column of its list (developer-rules.md rule 12; plan of 9.2, decided item 3).
+    index("branches_name_idx").on(table.name),
   ],
 );
 
@@ -81,6 +83,12 @@ export const userBranches = pgTable(
       foreignColumns: [users.id, users.role, users.isActive],
     }).onUpdate("cascade"),
     index("user_branches_branch_id_idx").on(table.branchId),
+    // The key of user_branches_user_fk leads an index (developer-rules.md rule 12; plan of 9.2).
+    index("user_branches_user_id_user_role_user_is_active_idx").on(
+      table.userId,
+      table.userRole,
+      table.userIsActive,
+    ),
     check("user_branches_user_role_check", sql`${table.userRole} <> 'HEAD'`),
     uniqueIndex("user_branches_principal_user_id_key")
       .on(table.userId)

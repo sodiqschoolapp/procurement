@@ -196,10 +196,12 @@ export const orders = pgTable(
     index("orders_branch_id_status_idx").on(table.branchId, table.status),
     index("orders_owner_id_idx").on(table.ownerId),
     index("orders_variant_id_idx").on(table.variantId),
-    index("orders_department_id_idx").on(table.departmentId),
+    index("orders_department_id_branch_id_idx").on(table.departmentId, table.branchId),
     index("orders_company_id_idx").on(table.companyId),
     index("orders_created_by_idx").on(table.createdBy),
     index("orders_submitted_at_idx").on(table.submittedAt),
+    // A filter column of its list (developer-rules.md rule 12; plan of 9.2, decided item 3).
+    index("orders_branch_id_needed_by_idx").on(table.branchId, table.neededBy),
   ],
 );
 

@@ -1,7 +1,5 @@
 import { existsSync } from "node:fs";
 
-import { addressOf } from "../helpers/test-database";
-
 // The address of the speed database (plan of 9.2, What will exist 1): `procurement_speed` on the
 // server of DATABASE_URL, which must be the PostgreSQL of docker-compose.yml.
 
@@ -19,6 +17,15 @@ export function serverUrl(): string {
   return address;
 }
 
+/** The same server, another database (as addressOf() of tests/helpers/test-database.ts, which
+ * Playwright's CommonJS loader cannot import: it reads import.meta). */
+export function databaseUrl(server: string, database: string): string {
+  if (!URL.canParse(server)) throw new Error("DATABASE_URL is not a valid database address.");
+  const url = new URL(server);
+  url.pathname = `/${database}`;
+  return url.toString();
+}
+
 export function speedDatabaseUrl(server: string = serverUrl()): string {
-  return addressOf(server, SPEED_DATABASE);
+  return databaseUrl(server, SPEED_DATABASE);
 }
