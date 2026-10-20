@@ -38,8 +38,8 @@ async function readList(userId: string, raw: Raw) {
     const list = await getCashOrders(userId, params.filters, params.otherOwners, params.page, age);
     return { params, list, age };
   } catch (error) {
-    if (error instanceof AuthorizationError && error.kind === "not_found")
-      return "not_found" as const;
+    // Another branch, or every Manager's cash for a role without it (plan of 2.3b): Not found.
+    if (error instanceof AuthorizationError) return "not_found" as const;
     throw error;
   }
 }

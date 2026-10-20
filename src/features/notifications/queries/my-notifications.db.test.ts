@@ -1,7 +1,14 @@
+import { sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 
 import { NOTIFICATIONS_MAX_PAGE, NOTIFICATIONS_PAGE_SIZE } from "@/domain/notifications";
+import { runAction } from "@/server/action";
+import { db } from "@/server/db/client";
 
+import { markAllNotificationsRead } from "../actions/mark-all-read";
+import { openNotification } from "../actions/open-notification";
+
+import { insertBranch } from "../../../../tests/helpers/branches";
 import { setClock } from "../../../../tests/helpers/clock";
 import { insertNotification } from "../../../../tests/helpers/notifications";
 import { describePermissionMatrix } from "../../../../tests/helpers/permission-matrix";
@@ -86,4 +93,73 @@ describePermissionMatrix("countMyUnread", {
   async run({ user }) {
     await countMyUnread(user.id);
   },
+});
+
+// 10 Notifications: "The bell shows only notifications of branches the reader has now" (D55 item
+// 20, which replaces decision 4 of 0.11; build-plan 2.3b; plan of 2.3b, decided items 6 and 7,
+// Look first). Every reader of the bell: the list, the count, opening, "Mark all as read".
+describe("The bell shows only notices of branches the reader has now (build-plan 2.3b)", () => {
+  it("Done when: Bekzod, moved from YUN to CHL, no longer sees a YUN notice; a CHL notice and one of no branch still show", async () => {
+    setClock("2026-10-20T05:00:00Z");
+    const yun = await insertBranch();
+    const chl = await insertBranch();
+    const bekzod = await insertUser("MANAGER", { branches: [yun.id] });
+    const ofYun = await insertNotification(bekzod.id, { branchId: yun.id });
+    const ofNone = await insertNotification(bekzod.id, { branchId: null });
+    expect((await listMyNotifications(bekzod.id, {})).rows.map((row) => row.id).sort()).toEqual(
+      [ofYun.id, ofNone.id].sort(),
+    );
+
+    // Bekzod moves from YUN to CHL, as the Head's user form writes it.
+    await db.execute(
+      sql`update user_branches set branch_id = ${chl.id} where user_id = ${bekzod.id}`,
+    );
+    const ofChl = await insertNotification(bekzod.id, { branchId: chl.id });
+
+    expect((await listMyNotifications(bekzod.id, {})).rows.map((row) => row.id).sort()).toEqual(
+      [ofChl.id, ofNone.id].sort(),
+    );
+    expect(await countMyUnread(bekzod.id)).toBe(2);
+    expect(await runAction(openNotification, bekzod.id, { id: ofYun.id })).toMatchObject({
+      ok: false,
+      error: { code: "not_found" },
+    });
+    expect(await runAction(markAllNotificationsRead, bekzod.id, {})).toEqual({
+      ok: true,
+      data: { count: 2 },
+    });
+    const [row] = (
+      await db.execute<{ read_at: Date | null }>(
+        sql`select read_at from notifications where id = ${ofYun.id}`,
+      )
+    ).rows;
+    expect(row!.read_at).toBeNull();
+
+    // Given YUN back, the notice shows again as it was, unread.
+    await db.execute(
+      sql`update user_branches set branch_id = ${yun.id} where user_id = ${bekzod.id}`,
+    );
+    expect((await listMyNotifications(bekzod.id, {})).rows.map((row) => row.id)).toContain(
+      ofYun.id,
+    );
+    expect(await countMyUnread(bekzod.id)).toBe(1);
+  });
+
+  it("a Head sees every branch's notice; a row of no branch (from before migration 0051) shows to everyone it was written to", async () => {
+    const yun = await insertBranch();
+    const head = await insertUser("HEAD");
+    const finance = await insertUser("FINANCE", { branches: [yun.id] });
+    const other = await insertBranch();
+    const headRow = await insertNotification(head.id, { branchId: other.id });
+    const old = await insertNotification(finance.id, { branchId: null });
+    // Beside it, a notice of a branch Finance does not hold (D40).
+    const hidden = await insertNotification(finance.id, { branchId: other.id });
+
+    expect((await listMyNotifications(head.id, {})).rows.map((row) => row.id)).toEqual([
+      headRow.id,
+    ]);
+    expect((await listMyNotifications(finance.id, {})).rows.map((row) => row.id)).toEqual([old.id]);
+    expect(await countMyUnread(finance.id)).toBe(1);
+    expect(hidden.id).not.toBe(old.id);
+  });
 });

@@ -5,6 +5,7 @@ import { NOTIFICATION_TYPES } from "@/domain/notifications";
 import { db } from "@/server/db/client";
 import { notifications } from "@/server/db/schema";
 
+import { insertBranch } from "../../../../tests/helpers/branches";
 import { refusalOf } from "../../../../tests/helpers/database-error";
 import { insertUser } from "../../../../tests/helpers/users";
 
@@ -149,6 +150,23 @@ describe("notifications table (14-data-model.md, System: user_id, type, params, 
     });
   });
 
+  it("refuses an unknown branch: the foreign key of branch_id (build-plan 2.3b; developer-rules.md rule 5)", async () => {
+    const user = await insertUser("HEAD");
+    const refusal = await refusalOf(
+      db.insert(notifications).values({
+        userId: user.id,
+        branchId: "00000000-0000-4000-8000-000000000000",
+        type: "BRANCH_ROLE_VACANT",
+        link: "/",
+        createdAt: CREATED,
+      }),
+    );
+    expect(refusal).toMatchObject({
+      code: "23503",
+      constraint: "notifications_branch_id_branches_id_fk",
+    });
+  });
+
   it("refuses a row without created_at: no database time (CLAUDE.md rule 10)", async () => {
     const user = await insertUser("HEAD");
     const refusal = await refusalOf(
@@ -193,6 +211,7 @@ describe("notifications_guard (plan of 0.11, decision 3, Look first; CLAUDE.md r
 
   it("refuses a change of any other column, also together with marking read", async () => {
     const other = await insertUser("MANAGER");
+    const branch = await insertBranch();
     const changes: Partial<typeof notifications.$inferInsert>[] = [
       { type: "TRANSFER_SENT" },
       { params: { branch: "OTHR", role: "FINANCE" } },
@@ -200,6 +219,9 @@ describe("notifications_guard (plan of 0.11, decision 3, Look first; CLAUDE.md r
       { userId: other.id },
       { createdAt: LATER },
       { link: "/profile", readAt: LATER },
+      // branch_id since migration 0051: marking read never moves a row to a branch (2.3b).
+      { branchId: branch.id },
+      { branchId: branch.id, readAt: LATER },
     ];
     for (const change of changes) {
       const row = await insertOne();

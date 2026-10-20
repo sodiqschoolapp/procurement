@@ -19,6 +19,7 @@ import { insertCategory } from "../../../../../tests/helpers/catalog";
 import { setClock } from "../../../../../tests/helpers/clock";
 import { downloadRequest } from "../../../../../tests/helpers/files";
 import { describePermissionMatrix } from "../../../../../tests/helpers/permission-matrix";
+import { headPrice } from "../../../../../tests/helpers/reports";
 import { insertUser, signInAs } from "../../../../../tests/helpers/users";
 import { GET } from "./route";
 
@@ -404,7 +405,8 @@ describePermissionMatrix("GET /reports/download, the stock reports with the bran
 });
 
 // The files of 6.9b under the route's own `data.export` check, every role, own and other branch:
-// the branch filter's file holds the branch's record, cash and stay.
+// the branch filter's file holds the branch's record and stay. Money with managers is the Head's
+// and Finance's only since D55 item 22, so its file is tested below (plan of 2.3b).
 describePermissionMatrix("GET /reports/download, the reports of 6.9b with the branch filter", {
   permission: "data.export",
   async run({ user, branchId }) {
@@ -423,7 +425,7 @@ describePermissionMatrix("GET /reports/download, the reports of 6.9b with the br
     ]);
     await refreshNow();
     const cookie = await signInAs(user);
-    for (const report of ["prices", "cash", "speed"] as const) {
+    for (const report of ["prices", "speed"] as const) {
       const query = reportSearch({
         report,
         range: MAY,
@@ -435,10 +437,86 @@ describePermissionMatrix("GET /reports/download, the reports of 6.9b with the br
       const cells = (await workbookOf(response)).worksheets
         .flatMap((sheet) => rowsOf(sheet))
         .flat();
-      // The record's price; the cash held, 50 000 − 2 345; the order's Head stay.
+      // The record's price; the order's Head stay.
       if (report === "prices") expect(cells).toContain(2_345);
-      if (report === "cash") expect(cells).toContain(47_655);
       if (report === "speed") expect(cells).toContain(order.number);
     }
   },
+});
+
+// The Price history file of the Manager and the Principal leaves out the Head's note and who set
+// it; the Head's and Finance's file holds both (03 matrix "… and the Head's price notes"; plan of
+// 2.3b, decided item 4; permission review of 2.3b, Should fix 2).
+describe("GET /reports/download, Price history: the Head's notes for the Head and Finance only (D55 item 22)", () => {
+  it("the Note and Set by columns and their values are in the Head's and Finance's file only", async () => {
+    setClock(AT);
+    const scene = await spendingScene();
+    const record = await bought(scene, { purchasedOn: "2031-05-02", unitPrice: "2345" });
+    await refreshNow();
+    const setter = await insertUser("HEAD");
+    await headPrice(record.variantId, setter.id, {
+      price: 2_400n,
+      at: "2031-05-05T05:00:00Z",
+      note: "Invented note of the Head",
+    });
+    const query = reportSearch({
+      report: "prices",
+      range: MAY,
+      filters: { ...NO_ANALYTICS_FILTERS, branch: scene.branch.id },
+      variant: record.variantId,
+    });
+    for (const role of ["HEAD", "FINANCE", "MANAGER", "PRINCIPAL"] as const) {
+      const user = await insertUser(role, {
+        branches: role === "HEAD" ? [] : [scene.branch.id],
+        locale: "en",
+      });
+      const response = await GET(
+        downloadRequest(`/reports/download?${query}`, await signInAs(user)),
+      );
+      expect(response.status, role).toBe(200);
+      const cells = rowsOf((await workbookOf(response)).getWorksheet("Reference prices")!).flat();
+      const sees = role === "HEAD" || role === "FINANCE";
+      expect(cells.includes("Note"), role).toBe(sees);
+      expect(cells.includes("Invented note of the Head"), role).toBe(sees);
+      expect(cells.includes(setter.fullName), role).toBe(sees);
+      // The price itself stays open to every role.
+      expect(cells, role).toContain(2_400);
+    }
+  });
+});
+
+// The file of Money with managers under the report's own `money.managers` (03 matrix "See every
+// Manager's cash (Money with managers)"; 10 Reports "Head and Finance only"; plan of 2.3b,
+// decided items 4 and 5): the route answers every refusal 404, so the matrix's two kinds are
+// told apart by role here. Each user is a user of the branch, the cash row beside it (D40).
+describe("GET /reports/download, Money with managers: the Head and Finance only (D55 item 22)", () => {
+  it("the Head and the branch's Finance get the cash held; the branch's Manager and Principal get 404", async () => {
+    setClock(AT);
+    const scene = await spendingScene();
+    const branch = scene.branch;
+    const record = await bought(scene, { purchasedOn: "2031-05-02", unitPrice: "2345" });
+    await moneyOn(record, scene.manager.id, { amount: 50_000n, occurredOn: "2031-05-02" });
+    await refreshNow();
+    const query = reportSearch({
+      report: "cash",
+      range: MAY,
+      filters: { ...NO_ANALYTICS_FILTERS, branch: branch.id },
+    });
+    for (const role of ["HEAD", "FINANCE", "MANAGER", "PRINCIPAL"] as const) {
+      const user = await insertUser(role, { branches: role === "HEAD" ? [] : [branch.id] });
+      const response = await GET(
+        downloadRequest(`/reports/download?${query}`, await signInAs(user)),
+      );
+      if (role === "HEAD" || role === "FINANCE") {
+        expect(response.status, role).toBe(200);
+        // The cash held, 50 000 − 2 345.
+        const cells = (await workbookOf(response)).worksheets
+          .flatMap((sheet) => rowsOf(sheet))
+          .flat();
+        expect(cells, role).toContain(47_655);
+      } else {
+        expect(response.status, role).toBe(404);
+      }
+    }
+  });
 });

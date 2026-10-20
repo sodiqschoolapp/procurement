@@ -3,8 +3,9 @@ import { sql } from "drizzle-orm";
 import { type CashAgeBand, cashAgeBand } from "@/domain/analytics";
 import type { BusinessDate } from "@/domain/business-date";
 import { managerCashBalance } from "@/domain/money-ledger";
+import { decideList } from "@/domain/permissions";
 import type { RequestStatus } from "@/domain/request-status";
-import type { Executor } from "@/server/authorize";
+import { AuthorizationError, type Executor } from "@/server/authorize";
 import { readSnapshot } from "@/server/read-snapshot";
 
 import { type AnalyticsFilters, type CashSide, RECORDS_PAGE_SIZE } from "../period-params";
@@ -81,6 +82,14 @@ async function ordersIn(
   age: CashAge | null,
 ): Promise<CashOrders> {
   const actor = await authorizeAnalytics(db, userId, filters);
+  // Every Manager's cash is the Head's and Finance's; a Manager reads only their own (My cash:
+  // the Manager filter set to themselves, no other owners); the Principal none (03 matrix "See
+  // every Manager's cash … | Own cash only | No"; plan of 2.3b, the permission review's Must fix
+  // 1, Look first).
+  const ownCash = actor.role === "MANAGER" && filters.manager === actor.userId && !otherOwners;
+  if (decideList("money.managers", actor) !== "allow" && !ownCash) {
+    throw new AuthorizationError("forbidden");
+  }
   const found = await db.execute<Row>(sql`
     select analytics_cash.order_id, o.number, pr.name as product_name,
            case when v.is_default then null else v.name end as subtype_name,

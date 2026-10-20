@@ -405,16 +405,19 @@ describe("draftSubmittableAgain (05 Drafts 5; 06 Allowed moves: Submit again, Ow
     branchId: OWN,
     ownerId: ME,
     status: "RETURNED" as const,
+    number: "EA-26-0003",
   };
 
-  it("only the owner may submit a sent-back order again: not the Head, not another Manager (D40)", () => {
+  // 06 Allowed moves: "Sent back for editing | Submit again | Owner or Head" since the spec change
+  // of 20.10.2026 (D55, item 12): the Head now may, on any Manager's order (plan of 2.3b).
+  it("the owner and the Head may submit a sent-back order again; another Manager may not (D40)", () => {
     expect(draftSubmittableAgain(manager, sentBack)).toBe(true);
     expect(
       draftSubmittableAgain(
         { userId: COLLEAGUE, role: "HEAD", branchIds: [], disabledRights: [] },
         sentBack,
       ),
-    ).toBe(false);
+    ).toBe(true);
     expect(draftSubmittableAgain({ ...manager, userId: COLLEAGUE }, sentBack)).toBe(false);
     expect(
       draftSubmittableAgain({ ...manager, disabledRights: ["CREATE_REQUESTS"] }, sentBack),

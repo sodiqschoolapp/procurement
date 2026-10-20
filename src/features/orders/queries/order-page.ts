@@ -528,6 +528,7 @@ async function readPage(db: Executor, actor: Actor, id: string): Promise<OrderPa
         branchId: row.branchId,
         ownerId: row.ownerId,
         createdByHead: row.createdByHead === true,
+        numbered: row.number !== null,
         ownerClosesAlone: row.ownerClosesAlone === true,
         version: row.version,
         revision: row.revision,

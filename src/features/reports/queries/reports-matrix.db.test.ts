@@ -1,4 +1,4 @@
-import { expect } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import { orderDownload, orderTotalsOnFilter } from "@/features/orders/queries/order-list";
 import { AuthorizationError } from "@/server/authorize";
@@ -13,6 +13,7 @@ import {
   stockDocument,
   stocked,
 } from "../../../../tests/helpers/analytics";
+import { insertBranch } from "../../../../tests/helpers/branches";
 import { setClock } from "../../../../tests/helpers/clock";
 import { insertOrder } from "../../../../tests/helpers/orders";
 import { describePermissionMatrix } from "../../../../tests/helpers/permission-matrix";
@@ -32,8 +33,9 @@ import { getStockReport } from "./stock-report";
 
 // The branch wall on each report of 6.8, 6.9a and 6.9b (build-plan 6.8, Done when: "A database test
 // for the branch wall on each report"; build-plan 6.9a and 6.9b, Done when: "the branch wall on
-// each of the three reports"; plan of 6.9b, decided item 1, Look first: Money with managers under
-// `data.view` for every role; 15-quality-and-acceptance.md, Test layers: "each action × each role
+// each of the three reports"; Money with managers under `money.managers`, the Head and Finance
+// only, since the spec change of 20.10.2026 (D55 item 22; plan of 2.3b, decided items 4 and 5,
+// which replace decided item 1 of 6.9b); 15-quality-and-acceptance.md, Test layers: "each action × each role
 // × own branch and other branch", and S7: "The same holds for stock and reports";
 // 03-roles-and-permissions.md, Permission matrix "Export to Excel, download PDF, print": every
 // role, for what the role can see; rule 1: another branch is "Not found"). Each report is asked
@@ -330,7 +332,7 @@ async function cashIn(branchId: string) {
 }
 
 describePermissionMatrix("Money with managers with the branch filter", {
-  permission: "data.view",
+  permission: "money.managers",
   async run({ user, branchId }) {
     const order = await cashIn(branchId);
     const report = await getMoneyWithManagersReport(user.id, params(branchId), "all");
@@ -339,23 +341,40 @@ describePermissionMatrix("Money with managers with the branch filter", {
   },
 });
 
-describePermissionMatrix("Money with managers, the branch wall in the SQL", {
-  permission: "data.view",
-  async run({ user, branchId }) {
-    const order = await cashIn(branchId);
-    const report = await getMoneyWithManagersReport(user.id, params(null), "all");
-    // The owners and the totals keep to the same wall as the orders.
-    const held = report.orders.reduce(
-      (sum, row) => sum + (row.cashCount > 0n ? row.cashCount : 0n),
-      0n,
-    );
-    expect(report.held).toBe(held);
-    expect(report.owners.reduce((sum, row) => sum + row.held, 0n)).toBe(held);
-    expect(report.ages.reduce((sum, row) => sum + row.held, 0n)).toBe(held);
-    if (!report.orders.some((row) => row.id === order.orderId)) {
-      throw new AuthorizationError("not_found");
+// Without the branch filter the role answers first (authorizeList()), so the wall in the SQL is
+// proved by hand: Finance sees its branch's cash and not the other branch's beside it (D40), the
+// Head both, the Manager and the Principal are refused (plan of 2.3b, decided items 4 and 5).
+describe("Money with managers, the branch wall in the SQL (03 matrix; D55 item 22)", () => {
+  it("Finance of A: A's cash only; the Head: A's and B's; the Manager and the Principal of A: forbidden", async () => {
+    const a = await insertBranch();
+    const inA = await cashIn(a.id);
+    const inB = await cashIn((await insertBranch()).id);
+    const finance = await insertUser("FINANCE", { branches: [a.id] });
+    const head = await insertUser("HEAD");
+    const ids = async (userId: string) => {
+      const report = await getMoneyWithManagersReport(userId, params(null), "all");
+      // The owners and the totals keep to the same wall as the orders.
+      const held = report.orders.reduce(
+        (sum, row) => sum + (row.cashCount > 0n ? row.cashCount : 0n),
+        0n,
+      );
+      expect(report.held).toBe(held);
+      expect(report.owners.reduce((sum, row) => sum + row.held, 0n)).toBe(held);
+      expect(report.ages.reduce((sum, row) => sum + row.held, 0n)).toBe(held);
+      return report.orders.map((row) => row.id);
+    };
+    const financeSees = await ids(finance.id);
+    expect(financeSees).toContain(inA.orderId);
+    expect(financeSees).not.toContain(inB.orderId);
+    expect(await ids(head.id)).toEqual(expect.arrayContaining([inA.orderId, inB.orderId]));
+    for (const role of ["MANAGER", "PRINCIPAL"] as const) {
+      const user = await insertUser(role, { branches: [a.id] });
+      await expect(
+        getMoneyWithManagersReport(user.id, params(null), "all"),
+        role,
+      ).rejects.toBeInstanceOf(AuthorizationError);
     }
-  },
+  });
 });
 
 /** An order of the branch that waited 3 hours at the Principal step on 2 May (6.9b, Approval speed). */

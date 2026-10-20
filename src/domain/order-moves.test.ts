@@ -51,11 +51,12 @@ const TABLE: readonly Row[] = [
   { from: "PENDING_PRINCIPAL", action: "REJECT", to: "REJECTED", who: "step2" },
   { from: "PENDING_FINANCE", action: "REJECT", to: "REJECTED", who: "step3" },
   { from: "PENDING_HEAD", action: "TAKE_BACK", to: "DRAFT", who: "owner" },
-  { from: "RETURNED", action: "SUBMIT_AGAIN", to: "PENDING_HEAD", who: "owner" },
+  { from: "RETURNED", action: "SUBMIT_AGAIN", to: "PENDING_HEAD", who: "edit" },
   { from: "PENDING_HEAD", action: "CANCEL", to: "CANCELLED", who: "edit" },
   { from: "PENDING_PRINCIPAL", action: "CANCEL", to: "CANCELLED", who: "edit" },
   { from: "PENDING_FINANCE", action: "CANCEL", to: "CANCELLED", who: "edit" },
   { from: "RETURNED", action: "CANCEL", to: "CANCELLED", who: "edit" },
+  { from: "DRAFT", action: "CANCEL", to: "CANCELLED", who: "edit" },
   { from: "PURCHASING", action: "CLOSE_EXACT", to: "CLOSED", who: "close" },
   { from: "PURCHASING", action: "SEND_TO_SETTLEMENT", to: "SETTLEMENT", who: "settle" },
   { from: "SETTLEMENT", action: "SEND_BACK_FOR_CORRECTION", to: "PURCHASING", who: "finance" },
@@ -154,6 +155,8 @@ function order(status: RequestStatus, overrides: Partial<OrderState> = {}): Orde
     branchId: OWN,
     ownerId: ME,
     createdByHead: false,
+    // A Draft here was taken back unless a test says otherwise; Submit does not read it.
+    numbered: true,
     buyingFinished: true,
     exactMatch: true,
     ownerClosesAlone: true,
@@ -219,7 +222,7 @@ function asExpected(check: ReturnType<typeof checkMoves>): Expected {
 }
 
 describe("ORDER_MOVES (06-approval-workflow.md, Allowed moves)", () => {
-  it("has exactly the 21 entries of the table, each from a status of request-status.ts", () => {
+  it("has exactly the 22 entries of the table, each from a status of request-status.ts", () => {
     const pairs = (rows: readonly { from: string; action: string; to: string }[]) =>
       rows.map((row) => `${row.from} ${row.action} ${row.to}`).toSorted();
     expect(pairs(ORDER_MOVES)).toEqual(pairs(TABLE));
@@ -332,6 +335,8 @@ describe("every other combination is refused, generated (06: any move not in the
         "PENDING_FINANCE CANCELLED MANAGER",
         "RETURNED CANCELLED HEAD",
         "RETURNED CANCELLED MANAGER",
+        "DRAFT CANCELLED HEAD",
+        "DRAFT CANCELLED MANAGER",
         "PURCHASING CLOSED HEAD",
         "PURCHASING CLOSED MANAGER",
         "PURCHASING SETTLEMENT HEAD",
@@ -382,19 +387,36 @@ describe("Submit (06 Allowed moves; 03 rule 6; 05 Order number 4)", () => {
   });
 });
 
-describe("Owner only: Take back and Submit again (06 Allowed moves; decision 5)", () => {
-  it("refuses the Head on an order owned by another user, and lets the owner act", () => {
+describe("Owner only: Take back (06 Allowed moves; decision 5)", () => {
+  // Submit again was the owner's only too until the spec change of 20.10.2026 (D55, item 12):
+  // "Sent back for editing | Submit again | Owner or Head" (plan of 2.3b, decided items 2 and 3).
+  it("refuses the Head's Take back on an order owned by another user, and lets the owner act", () => {
     const pending = order("PENDING_HEAD", { ownerId: COLLEAGUE });
     expect(checkMoves(actor("HEAD"), [pending], "TAKE_BACK")).toEqual({
       ok: false,
       refusal: { kind: "orders", orders: [{ orderId: pending.id, reason: "forbidden" }] },
     });
-    const returned = order("RETURNED", { ownerId: COLLEAGUE });
-    expect(asExpected(checkMoves(actor("HEAD"), [returned], "SUBMIT_AGAIN"))).toEqual({
-      ok: false,
-      reason: "forbidden",
-    });
     expect(checkMoves(actor("MANAGER"), [order("PENDING_HEAD")], "TAKE_BACK").ok).toBe(true);
+  });
+
+  it("lets the Head submit again a Manager's sent-back order: to the Head, revision up, no shortcut (06 Submit again row; rule 4; D55 item 12)", () => {
+    for (const createdByHead of [false, true]) {
+      const returned = order("RETURNED", { ownerId: COLLEAGUE, createdByHead });
+      expect(movesOf(checkMoves(actor("HEAD"), [returned], "SUBMIT_AGAIN"))).toEqual([
+        {
+          orderId: returned.id,
+          from: "RETURNED",
+          to: "PENDING_HEAD",
+          revisionUp: true,
+          headStepAuto: false,
+        },
+      ]);
+    }
+    // Another Manager of the branch still may not (D40: the same order, only the actor differs).
+    const returned = order("RETURNED", { ownerId: COLLEAGUE });
+    expect(
+      asExpected(checkMoves({ ...actor("MANAGER"), userId: "x" }, [returned], "SUBMIT_AGAIN")),
+    ).toEqual({ ok: false, reason: "forbidden" });
   });
 
   it("takes back only before the Head decides", () => {
@@ -446,7 +468,7 @@ describe("The approver of each step, in their branch (03 Permission matrix; rule
         reason: "not_found",
       });
     }
-    expect(allowedActions(actor("HEAD"), [draft])).toEqual(["SUBMIT"]);
+    expect(allowedActions(actor("HEAD"), [draft])).toEqual(["SUBMIT", "CANCEL"]);
   });
 });
 
@@ -534,6 +556,47 @@ describe("Closing (08 Closing 1 and 3; 03 Manager rights; decisions 4, 6, 8)", (
       ok: false,
       refusal: { kind: "orders", orders: [{ orderId: notReady.id, reason: "not_ready" }] },
     });
+  });
+});
+
+describe("Cancel of a Draft with a number (06 Allowed moves, Cancel row; D55 item 9)", () => {
+  it("the owner or the Head cancels a taken-back Draft, with a reason", () => {
+    for (const who of [actor("MANAGER"), actor("HEAD")]) {
+      const draft = order("DRAFT");
+      expect(movesOf(checkMoves(who, [draft], "CANCEL", { reason: REASON }))).toEqual([
+        {
+          orderId: draft.id,
+          from: "DRAFT",
+          to: "CANCELLED",
+          revisionUp: false,
+          headStepAuto: false,
+        },
+      ]);
+    }
+    expect(checkMoves(actor("MANAGER"), [order("DRAFT")], "CANCEL", { reason: "no" })).toEqual({
+      ok: false,
+      refusal: { kind: "reason" },
+    });
+  });
+
+  it("a Draft without a number has no Cancel: it is deleted (plan of 2.3b, decided item 1)", () => {
+    const draft = order("DRAFT", { numbered: false });
+    for (const who of [actor("MANAGER"), actor("HEAD")]) {
+      expect(asExpected(checkMoves(who, [draft], "CANCEL", { reason: REASON }))).toEqual({
+        ok: false,
+        reason: "wrong_status",
+      });
+      expect(allowedActions(who, [draft])).toEqual(["SUBMIT"]);
+    }
+  });
+
+  it("offers Submit and Cancel on a taken-back Draft; another Manager sees nothing (draft wall)", () => {
+    expect(allowedActions(actor("MANAGER"), [order("DRAFT")])).toEqual(["SUBMIT", "CANCEL"]);
+    expect(allowedActions(actor("HEAD"), [order("DRAFT", { ownerId: COLLEAGUE })])).toEqual([
+      "SUBMIT",
+      "CANCEL",
+    ]);
+    expect(allowedActions(actor("MANAGER"), [order("DRAFT", { ownerId: COLLEAGUE })])).toEqual([]);
   });
 });
 

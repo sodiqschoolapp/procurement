@@ -2048,4 +2048,26 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - A check that names an enum value added in the same migration compares `status::text`: all pending migrations run in one transaction.
 - Every test or fixture that refuses a write-off or a count gives `reason`.
 
-The next task is 2.3b.
+
+## 2.3b Orders, notices and report access from issue #9 (20.10.2026, pull request #142)
+
+**Built**
+- `ORDER_MOVES`: DRAFT → CANCELLED (owner or Head, reason, `numbered`); Submit again by the owner or the Head. `OrderState.numbered` is required; every builder sets it from `orders.number`.
+- `cancelOrders`: `cancelPlanGaps()` refuses a numbered Draft with an empty plan cell (`not_ready`); `REQUEST_CANCELLED` per owner and branch (`noticePerOwner()`, `notices.ts`).
+- `moveOrdersToManager`: `REQUEST_MOVED_IN` to the new owner, `REQUEST_MOVED_OUT` to each old owner, per branch.
+- Migration 0051: `notifications.branch_id` (written by `insertNotifications()`), three notice types, `notifications_guard` holds `branch_id`. The bell reads through `visibleToItsUser`.
+- Money with managers report under `money.managers`; Price history's notes and setter only when `decideList("money.managers")` allows (`showsNotes`). The tab hides by `seesManagersCash`.
+- The drafts grid links a numbered row's number to its order page.
+- The analytics Managers block and `getCashOrders()` ask `money.managers` after the filters; a Manager reads only their own cash (`manager` = themselves, no other owners).
+
+**Left out, and the task that brings it**
+- The other D55 items: 8.2b.
+
+**Open for the owner**
+- None.
+
+**What the next sessions must know**
+- A new notice of a branch passes `branchId`: the bell shows it only to readers of that branch.
+- A numbered Draft in a test is `insertOrder({ status: "DRAFT", number: inventedNumber() })`; it gets a submit time.
+
+The next task is 8.2b.

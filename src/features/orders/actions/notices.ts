@@ -1,6 +1,10 @@
 import { and, eq, inArray } from "drizzle-orm";
 
-import { type OrderActionParams, orderActionNotices } from "@/domain/notifications";
+import {
+  type NotificationParamsOf,
+  type OrderActionParams,
+  orderActionNotices,
+} from "@/domain/notifications";
 import { now } from "@/server/clock";
 import { branches, userBranches, users } from "@/server/db/schema";
 import { notify } from "@/server/notify";
@@ -91,6 +95,7 @@ export async function noticePerBranch(
     | "REQUEST_SENT_TO_SETTLEMENT"
     | "REQUEST_CLOSED"
     | "REQUEST_REOPENED"
+    | "REQUEST_MOVED_IN"
     | "OVERSPEND_ABOVE_GUARD"
     | "OVERSPEND_ACKNOWLEDGED",
   to: (ownerIds: readonly string[], branchId: string) => Promise<string[]>,
@@ -112,5 +117,42 @@ export async function noticePerBranch(
         at,
       },
     );
+  }
+}
+
+/**
+ * One notification per owner and branch of the given orders, to that owner only, `count` that
+ * owner's orders in the branch; never the actor (notify()). Used by Cancel ("Cancelled by someone
+ * other than its owner | Owner") and by the move to another Manager for the old owners (plan of
+ * 2.3b, decided items 8 and 9).
+ */
+export async function noticePerOwner<Type extends "REQUEST_CANCELLED" | "REQUEST_MOVED_OUT">(
+  context: {
+    tx: Transaction;
+    userId: string;
+    orders: readonly { branchId: string; ownerId: string }[];
+  },
+  actionId: string,
+  type: Type,
+  extra: Omit<NotificationParamsOf[Type], keyof OrderActionParams>,
+): Promise<void> {
+  const { tx, userId } = context;
+  const at = now();
+  for (const ownerId of [...new Set(context.orders.map((order) => order.ownerId))].sort()) {
+    if (ownerId === userId) continue;
+    const theirs = context.orders.filter((order) => order.ownerId === ownerId);
+    for (const { branchId, params } of await branchNotices(tx, userId, theirs)) {
+      await notify(
+        { tx, userId },
+        {
+          to: [ownerId],
+          type,
+          params: { ...params, ...extra } as NotificationParamsOf[Type],
+          branchId,
+          link: actionLink(branchId, actionId),
+          at,
+        },
+      );
+    }
   }
 }

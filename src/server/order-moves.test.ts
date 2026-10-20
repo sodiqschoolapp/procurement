@@ -16,6 +16,7 @@ const locked: LockedOrder = {
   revision: 1,
   progress: "DONE",
   createdByHead: false,
+  numbered: true,
   ownerClosesAlone: true,
 };
 

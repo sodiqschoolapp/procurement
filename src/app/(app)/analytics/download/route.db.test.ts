@@ -463,19 +463,59 @@ describePermissionMatrix("GET /analytics/download, the blocks of 6.4c behind the
       )
         .flat()
         .map((cell) => String(cell));
-    const seen = [
-      (await texts("managers")).includes(scene.manager.fullName),
-      (await texts("cancelled")).includes(cancelled.number!),
-      (await texts("cash")).includes(held.number!),
-    ];
-    expect(seen).toEqual(seen.map(() => seen[0]));
-    // "Other owners" keeps the Manager's rows out of both lists.
+    // The Managers block and its cash list are the Head's and Finance's since 2.3b: tested below.
+    const seen = (await texts("cancelled")).includes(cancelled.number!);
+    // "Other owners" keeps the Manager's rows out of the list.
     expect((await texts("cancelled", { otherOwners: true })).includes(cancelled.number!)).toBe(
       false,
     );
-    expect((await texts("cash", { otherOwners: true })).includes(held.number!)).toBe(false);
-    if (!seen[0]) throw new AuthorizationError("not_found");
+    expect(held.number).toBeTruthy();
+    if (!seen) throw new AuthorizationError("not_found");
   },
+});
+
+// Every Manager's cash in a file: the Managers block, its cash list and the cash by age are the
+// Head's and Finance's (03 matrix "See every Manager's cash … | Own cash only | No"; permission
+// review of 2.3b, Must fix 1, Look first); the Manager downloads only their own cash. Each user
+// is of the branch, with the cash row there (D40).
+describe("GET /analytics/download, every Manager's cash: the Head and Finance only (plan of 2.3b)", () => {
+  it("the Head and Finance get the Managers block and the cash lists; the Manager and the Principal 404, the Manager's own cash 200", async () => {
+    setClock(AT);
+    const scene = await spendingScene();
+    const held = await bought(scene, { purchasedOn: "2031-10-02", unitPrice: "0" });
+    await moneyOn(held, scene.manager.id, { amount: 30_000n, occurredOn: "2031-10-04" });
+    await refreshNow();
+    const own = { ...NO_ANALYTICS_FILTERS, category: scene.category.id };
+    const ask = async (
+      user: Parameters<typeof signInAs>[0],
+      block: ExportBlock,
+      filters = own,
+      extra: Parameters<typeof analyticsSearch>[2] = {},
+    ) =>
+      GET(
+        downloadRequest(
+          `/analytics/download?${analyticsSearch(THIS_MONTH, filters, { ...extra, block })}`,
+          await signInAs(user),
+        ),
+      );
+    const byAge = { key: { kind: "age", band: "month", side: "held" } } as const;
+    for (const role of ["HEAD", "FINANCE", "MANAGER", "PRINCIPAL"] as const) {
+      const user = await insertUser(role, { branches: role === "HEAD" ? [] : [scene.branch.id] });
+      const expected = role === "HEAD" || role === "FINANCE" ? 200 : 404;
+      expect((await ask(user, "managers")).status, role).toBe(expected);
+      expect((await ask(user, "cash")).status, role).toBe(expected);
+      expect((await ask(user, "cash", own, byAge)).status, role).toBe(expected);
+    }
+    // The Manager's own cash ("My cash"): the Manager filter set to themselves.
+    const mine = await ask(scene.manager, "cash", { ...own, manager: scene.manager.id });
+    expect(mine.status).toBe(200);
+    expect(
+      (await sheetOf(mine))
+        .flat()
+        .map((cell) => String(cell))
+        .includes(held.number!),
+    ).toBe(true);
+  });
 });
 
 describe("GET /analytics/download, the 6.4c sheets (10 point 4; plan of 6.4c)", () => {
@@ -979,9 +1019,6 @@ describePermissionMatrix("GET /analytics/download, the blocks of 6.6a behind the
           key: { kind: "needed", stage: "approval", step: "PENDING_FINANCE" },
         })
       ).includes(waiting.number),
-      (await texts("cash", { key: { kind: "age", band: "month", side: "held" } })).includes(
-        held.number,
-      ),
     ];
     expect(seen).toEqual(seen.map(() => seen[0]));
     if (!seen[0]) throw new AuthorizationError("not_found");

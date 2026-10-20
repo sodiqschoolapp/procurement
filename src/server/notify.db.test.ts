@@ -165,6 +165,50 @@ describe("notify() inside the action's transaction (developer-rules.md rule 3)",
     );
   });
 
+  it("each row keeps the event's branch in branch_id, and a notice of no branch none (14 notifications; build-plan 2.3b)", async () => {
+    const own = await insertBranch();
+    const head = await insertUser("HEAD");
+    const finance = await insertUser("FINANCE", { branches: [own.id] });
+    const nowhere = await insertUser("HEAD");
+
+    await db.transaction(async (tx) => {
+      await notify(
+        { tx, userId: null },
+        {
+          to: [head.id, finance.id],
+          type: "BRANCH_ROLE_VACANT",
+          params: PARAMS,
+          branchId: own.id,
+          link: "/",
+          at: now(),
+        },
+      );
+      await notify(
+        { tx, userId: null },
+        {
+          to: [nowhere.id],
+          type: "BRANCH_ROLE_VACANT",
+          params: PARAMS,
+          branchId: null,
+          link: "/",
+          at: now(),
+        },
+      );
+    });
+
+    const rows = await db
+      .select({ userId: notifications.userId, branchId: notifications.branchId })
+      .from(notifications)
+      .where(inArray(notifications.userId, [head.id, finance.id, nowhere.id]));
+    expect(rows.map((row) => [row.userId, row.branchId]).sort()).toEqual(
+      [
+        [head.id, own.id],
+        [finance.id, own.id],
+        [nowhere.id, null],
+      ].sort(),
+    );
+  });
+
   it("no recipient writes nothing", async () => {
     const written = await db.transaction((tx) =>
       notify(

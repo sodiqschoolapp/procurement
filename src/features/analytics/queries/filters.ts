@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 
 import { type PeriodChoice, periodChoices } from "@/domain/analytics";
+import { mayInSomeBranch } from "@/domain/permissions";
 import { authorizeList, branchFilter } from "@/server/authorize";
 import { branches, departments, userBranches } from "@/server/db/schema";
 import { readSnapshot } from "@/server/read-snapshot";
@@ -25,6 +26,12 @@ export type AnalyticsFilterOptions = {
   suppliers: FilterOption[];
   /** When `analytics_refresh` last finished; `null` before its first run. */
   refreshedAt: Date | null;
+  /**
+   * The Money with managers report is the user's: `money.managers` in some branch, the Head and
+   * Finance (03 matrix "See every Manager's cash"; plan of 2.3b). Only shows its tab; the report's
+   * query refuses the others itself.
+   */
+  seesManagersCash: boolean;
 };
 
 type Row = { id: string; name: string; is_active: boolean };
@@ -73,6 +80,7 @@ export async function getAnalyticsFilters(userId: string): Promise<AnalyticsFilt
       })),
       managers: managerRows.rows.map(option),
       suppliers: supplierRows.rows.map(option),
+      seesManagersCash: mayInSomeBranch("money.managers", actor),
       refreshedAt: refreshed.rows[0]?.last_finished_at
         ? new Date(refreshed.rows[0].last_finished_at)
         : null,

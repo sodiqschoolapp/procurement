@@ -157,8 +157,8 @@ export async function PriceHistoryView({
               columns={[
                 t("prices.columns.setOn"),
                 t("prices.columns.price"),
-                t("prices.columns.note"),
-                t("prices.columns.setBy"),
+                // The Head and Finance only (plan of 2.3b, decided item 4).
+                ...(report.showsNotes ? [t("prices.columns.note"), t("prices.columns.setBy")] : []),
               ]}
               numeric={[1]}
             >
@@ -173,8 +173,12 @@ export async function PriceHistoryView({
                     )}
                   </td>
                   <td className={NUMBER}>{format.money(row.price)}</td>
-                  <td className={CELL}>{row.note ?? ""}</td>
-                  <td className={CELL}>{row.setByName}</td>
+                  {report.showsNotes && (
+                    <>
+                      <td className={CELL}>{row.note ?? ""}</td>
+                      <td className={CELL}>{row.setByName ?? ""}</td>
+                    </>
+                  )}
                 </tr>
               ))}
             </Table>

@@ -44,6 +44,9 @@ export const NOTIFICATION_TYPES = [
   "REQUEST_SENT_BACK_FOR_CORRECTION",
   "STOCK_CHECK_MISMATCH",
   "TRANSFER_CANCELLED",
+  "REQUEST_CANCELLED",
+  "REQUEST_MOVED_IN",
+  "REQUEST_MOVED_OUT",
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
@@ -174,6 +177,18 @@ export type NotificationParamsOf = {
    * active Manager of the receiving branch, the notice's `branchId`; `actor` who cancelled.
    */
   TRANSFER_CANCELLED: { actor: string; number: string; branch: string };
+  /**
+   * "Cancelled by someone other than its owner | Owner" (10 Notifications; plan of 2.3b, decided
+   * item 8): one per owner, action and branch; `count` is that owner's cancelled orders in `branch`.
+   */
+  REQUEST_CANCELLED: OrderActionParams;
+  /**
+   * "Orders moved to another Manager | The new owner and the old one" (plan of 2.3b, decided item
+   * 9): per action and branch, to the new owner `count` orders that came; to each old owner
+   * `count` of theirs that left, and `manager` the new owner's name.
+   */
+  REQUEST_MOVED_IN: OrderActionParams;
+  REQUEST_MOVED_OUT: OrderActionParams & { manager: string };
   REQUEST_WAITING_24H: OrdersWaitingParams;
   REQUEST_WAITING_48H: OrdersWaitingParams;
   /**
@@ -228,6 +243,9 @@ export const NOTIFICATION_PARAMS: {
   STOCK_CHANGE_DECIDED: ["number", "branch", "kind", "outcome"],
   TRANSFER_SENT: ["actor", "number", "branch"],
   TRANSFER_CANCELLED: ["actor", "number", "branch"],
+  REQUEST_CANCELLED: ["actor", "count", "branch"],
+  REQUEST_MOVED_IN: ["actor", "count", "branch"],
+  REQUEST_MOVED_OUT: ["actor", "count", "branch", "manager"],
   REQUEST_WAITING_24H: ["count", "hours"],
   REQUEST_WAITING_48H: ["count", "hours"],
   NEEDED_BY_NEAR: ["count", "branch"],

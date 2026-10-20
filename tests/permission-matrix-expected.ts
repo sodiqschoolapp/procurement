@@ -86,7 +86,7 @@ export const EXPECTED_MATRIX: Record<Permission, Expected> = {
   // Not a row of 03: 11 Screens, "Money with managers | /money | Finance, Head" (plan of 4.9,
   // decided item 1, Look first).
   "money.managers": {
-    row: "Money with managers (11 Screens)",
+    row: "See every Manager's cash (Money with managers) and the Head's price notes",
     HEAD: "all",
     MANAGER: "no",
     PRINCIPAL: "no",

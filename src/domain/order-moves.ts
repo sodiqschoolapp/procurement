@@ -69,7 +69,9 @@ export type MoveNeed =
   | "buying_finished"
   | "exact_match"
   | "ready_to_close"
-  | "cash_optional";
+  | "cash_optional"
+  /** A Draft has a number: it was submitted and taken back (06 Allowed moves, Cancel row). */
+  | "numbered";
 
 export type OrderMove = {
   from: RequestStatus;
@@ -86,7 +88,7 @@ export type OrderMove = {
 
 const REASON = ["reason"] as const;
 
-/** The allowed-moves table of 06, one entry per row and per "from" status: 21 entries. */
+/** The allowed-moves table of 06, one entry per row and per "from" status: 22 entries. */
 export const ORDER_MOVES: readonly OrderMove[] = [
   // Draft | Submit | Owner or Head | Waiting for Head (Waiting for Principal when the Head is the
   // creator) | The order passes all checks
@@ -183,18 +185,29 @@ export const ORDER_MOVES: readonly OrderMove[] = [
     permission: "request.edit",
     needs: [],
   },
-  // Sent back for editing | Submit again | Owner | Waiting for Head | Revision number goes up by 1
-  // (for an order the Head created too: plan of 2.3, decision 3, Look first)
+  // Sent back for editing | Submit again | Owner or Head | Waiting for Head | Revision number goes
+  // up by 1 (for an order the Head created too: plan of 2.3, decision 3, Look first; never the
+  // shortcut of a first Submit: plan of 2.3b, decided item 2, Look first)
   {
     from: "RETURNED",
     action: "SUBMIT_AGAIN",
     to: "PENDING_HEAD",
-    who: "owner",
+    who: "owner_or_head",
     permission: "request.edit",
     needs: ["submit_checks"],
     revisionUp: true,
   },
-  // Any "Waiting for" step, Sent back | Cancel | Owner or Head | Cancelled | Reason
+  // Any "Waiting for" step, Sent back, Draft with a number (taken back) | Cancel | Owner or Head |
+  // Cancelled | Reason. A Draft without a number is deleted, never cancelled (plan of 2.3b, decided
+  // item 1, Look first).
+  {
+    from: "DRAFT",
+    action: "CANCEL",
+    to: "CANCELLED",
+    who: "owner_or_head",
+    permission: "request.edit",
+    needs: ["reason", "numbered"],
+  },
   {
     from: "PENDING_HEAD",
     action: "CANCEL",
@@ -303,6 +316,8 @@ export type OrderState = {
   ownerId: string;
   /** The Head created the order: its submit skips the Head step (03 rule 6). */
   createdByHead: boolean;
+  /** The order has a number: a Draft with one was submitted and taken back (05 Order number). */
+  numbered: boolean;
   /** Progress is Done, Done short or Not bought (07 Finishing). */
   buyingFinished: boolean;
   /** 08 Exact match. */
@@ -383,6 +398,8 @@ function judge(
 
   const move = moveOf(order.status, action);
   if (!move) return { reason: "wrong_status" };
+  // A never-submitted Draft has no Cancel: it is deleted (plan of 2.3b, decided item 1).
+  if (move.needs.includes("numbered") && !order.numbered) return { reason: "wrong_status" };
 
   const target = { branchId: order.branchId, ownerId: order.ownerId };
   if (decide(move.permission, actor, target) !== "allow") return { reason: "forbidden" };

@@ -433,18 +433,17 @@ export function priceHistorySheets(report: PriceHistoryReport, context: Context)
     {
       name: t("prices.references"),
       heading: withName(heading(context, "prices", t("prices.references"), report.range, false)),
+      // The note and who set it: the Head and Finance only (plan of 2.3b, decided item 4).
       columns: [
         t("prices.columns.setOn"),
         t("prices.columns.price"),
-        t("prices.columns.note"),
-        t("prices.columns.setBy"),
+        ...(report.showsNotes ? [t("prices.columns.note"), t("prices.columns.setBy")] : []),
         t("prices.inForce"),
       ],
       rows: report.references.map((row) => [
         { kind: "date", value: row.setOn },
         money(row.price),
-        text(row.note ?? ""),
-        text(row.setByName),
+        ...(report.showsNotes ? [text(row.note ?? ""), text(row.setByName ?? "")] : []),
         text(row.inForce ? format.date(report.range.first) : ""),
       ]),
     },

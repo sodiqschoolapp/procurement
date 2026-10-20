@@ -256,6 +256,7 @@ type GridRow = {
   branchId: string;
   ownerId: string;
   status: RequestStatus;
+  number: string | null;
 };
 
 /** The moves the state machine offers on one grid row (developer-rules.md rule 2). */
@@ -266,6 +267,7 @@ function gridRowActions(actor: Actor, row: GridRow) {
       status: row.status,
       branchId: row.branchId,
       ownerId: row.ownerId,
+      numbered: row.number !== null,
       // Facts no Submit reads: who created the order changes where it goes, not whether it may.
       createdByHead: false,
       buyingFinished: false,

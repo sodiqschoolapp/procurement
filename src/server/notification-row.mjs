@@ -8,10 +8,12 @@
 // When the event is about a branch, only a Head or a person of that branch is told: a recipient
 // list worked out wrongly by a later task cannot carry a branch's request number or amount to
 // another branch (permission review of 0.11, Should fix 1; 03-roles-and-permissions.md rule 1).
+// The row keeps that branch in `branch_id`, so the bell shows it only to a reader who has the
+// branch now (build-plan 2.3b).
 
 export const INSERT_NOTIFICATIONS = `insert into notifications
-     (user_id, type, params, link, created_at)
-   select u.id, $2::notification_type, $3::jsonb, $4, $5
+     (user_id, type, branch_id, params, link, created_at)
+   select u.id, $2::notification_type, $7::uuid, $3::jsonb, $4, $5
    from users u
    where u.id in (select jsonb_array_elements_text($1::jsonb)::uuid)
      and u.is_active

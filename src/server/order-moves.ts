@@ -60,6 +60,7 @@ export function orderState(order: LockedOrder): OrderState {
     branchId: order.branchId,
     ownerId: order.ownerId,
     createdByHead: order.createdByHead,
+    numbered: order.numbered,
     buyingFinished: order.progress !== "OPEN",
     // 08 Exact match: read by the `facts` step of Close (plan of 4.4); 08 Closing 3: read by the
     // `facts` step of Finance's Close (plan of 4.6). Unread is false, never a guess.

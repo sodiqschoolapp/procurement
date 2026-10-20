@@ -2820,6 +2820,35 @@ Choices made during the build:
 - The Refuse dialogs say "The Manager sees it" under the reason (`warehouse.refuseReason.hint`).
 - **Look first** (a test changed because a requirement changed). The tests that refused a write-off or a count without a reason, and the fixtures that wrote REJECTED straight into the database, now give a reason (09 Other documents: "A refusal … carries a reason"); what they check is unchanged.
 
+### 2.3b Orders, notices and report access from issue #9 (20.10.2026)
+
+The plan's decisions as the plan review of 20.10.2026 confirmed them, with its four corrections applied (`numbered` is a required fact; the Look first items first; the plan-gap refusal is tested with the cell filled again; a move notice is tested for an old owner who left the branch or was switched off). The Look first items come first.
+
+1. **Look first** (approval order). "Draft with a number (taken back)" is a DRAFT whose `number` is not null, read as the required fact `numbered` of `OrderState` by every builder (the wrapper's `lockOrders()`, the order page, the order list, the grid, the Principal's home). A DRAFT without a number answers `wrong_status` to Cancel: it is deleted instead (05 Drafts; CLAUDE.md rule 11).
+2. **Look first** (approval order). The Head's Submit again of another owner's order goes to Waiting for Head, also for an order the Head created; the Head then approves step 1. Only a first Submit skips the Head step.
+3. **Look first** (approval order). Take back stays the owner's only (06 "Take back | Owner"; D55 changed only Submit again and Cancel).
+4. **Look first** (permission). The 03 row "See every Manager's cash (Money with managers) and the Head's price notes" is the one permission `money.managers` (Head all, Finance own): the report asks it (`authorize()` with a chosen branch, `authorizeList()` without), and the notes, which belong to no branch, ask `decideList()` inside the Price history SQL. No new permission.
+5. **Look first** (permission). The report refuses the Manager whole; the Manager's "Own cash only" is the cash on their own home and analytics.
+6. **Look first** (branch wall). A notice hidden by the bell's branch filter is hidden from the count, the list, opening it ("Not found") and "Mark all as read" (left unread); given the branch back, it shows again as it was.
+7. **Look first** (branch wall). A notice shows when its `branch_id` is empty, its reader is a Head, or its reader holds its branch in `user_branches` now (`visibleToItsUser`, `src/features/notifications/visible.ts`). Rows from before migration 0051 have no branch and always show.
+8. **Look first** (approval order, database). A numbered Draft whose plan misses a cell (the grid saves cleared cells on any Draft) is refused Cancel with `not_ready` naming the cells (`cancelPlanGaps()`, `src/domain/submit-checks.ts`), and `orders_submitted_plan_check` stays as it is: weakening it would put cancelled orders with no total into every reader of `planned_total`. Proposed `/spec-change` for the Cancel row's Needs: "Reason; a draft's plan complete".
+9. **Look first** (tests changed because a requirement changed, D55 items 9, 12, 13, 14, 20 and 22). The cases "the Head may not Submit again another's order", "a numbered draft cannot be cancelled", "Cancel tells nobody", "a move tells nobody", "the bell shows every row" and "every role sees Money with managers and the price notes" are replaced by their new rules, each naming D55.
+10. The cancel notice is one per owner, action and branch, `count` that owner's orders in the branch; an owner who cancels their own orders tells nobody.
+11. Move notices: `REQUEST_MOVED_IN` to the new owner per branch with the count; `REQUEST_MOVED_OUT` to each old owner per branch with their count and the new owner's name. An old owner who left the branch or was switched off gets none (`notify()`'s filters).
+12. The Head's Submit again tells the active Heads but the actor, not the owner (10 "Orders submitted or submitted again | Head").
+13. The button is the order page's existing Cancel; the drafts grid links a numbered row's number to its order page.
+14. The three notice texts in English as the plan gave them; Uzbek and Russian written alongside, for the owner to correct (D12).
+
+Choices made during the build:
+
+- **Look first** (permission, the permission review's Must fix 1). The analytics Managers block (`getManagers()`) and the cash list behind it and behind Finance's money with managers by age (`getCashOrders()`) list every Manager's cash, so they now ask `money.managers` after the filters (the Head and Finance); the Manager reads only their own cash there (the Manager filter set to themselves, no other owners, as My cash links), the Principal none. `/analytics/cash` and `/analytics/download` answer a refusal "Not found". Finance's totals, money rows and needed lists of 6.6a stay `data.view`: they are not per Manager.
+- **Look first** (branch wall, the permission review's Should fix 1, not built). The waiting reminders (`REQUEST_WAITING_24H/48H`, 8.1) are written with no branch, their count cut to the reader's branches when written; a Principal or Finance user moved to another branch keeps seeing that old count in the bell (the link checks access again). Left as it is: the number was the reader's when written, and one row per branch would change 8.1's notices. Proposed for a later fix task: write one reminder per branch with its `branch_id`.
+- **Look first** (a database guard). Migration 0051 also replaces `notifications_guard` so that an update may not change `branch_id` (marking read never moves a row to a branch); its test sets `branch_id` together with `read_at`, which the old guard let through.
+- The Reports page hides the Money with managers tab with `seesManagersCash` of `getAnalyticsFilters()`, the query it already calls (`mayInSomeBranch("money.managers")`).
+- The Excel file of Price history leaves out the Note and Set by columns for the Manager and the Principal, as the screen does.
+- The download of Money with managers answers 404 to the Manager and the Principal, as every refusal of that route.
+- `insertOrder()` (`tests/helpers/orders.ts`) gives a Draft with a number a submit time, as a taken-back order keeps one.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.
