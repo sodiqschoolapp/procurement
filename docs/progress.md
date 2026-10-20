@@ -2160,5 +2160,6 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - For 9.5: copy the four lines of the drill from issue #9 into the record table of `docs/restore.md`.
 - A copy's counts are compared with the live side by `db:counts -- --until <the copy's newest row>`; a deleted draft lowers only the live `orders`.
 - `restoreCopy()` takes `{ restore }` in place of `pg_restore`, as `databaseCopy()` takes `dump`.
+- A test never makes a new bucket: the local SeaweedFS runs out of volumes (HTTP 500 everywhere). Use `TEST_BUCKET` / `TEST_BACKUP_BUCKET`.
 
 The next task is 9.5.

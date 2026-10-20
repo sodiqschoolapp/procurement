@@ -4,9 +4,9 @@ import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { afterAll, describe, expect, inject, it } from "vitest";
 
 import { applyMigrations } from "../scripts/apply-migrations.mjs";
-import { backupStorageConfigOf, ensureBucket, s3ClientOf } from "../scripts/ensure-bucket.mjs";
+import { backupStorageConfigOf, s3ClientOf } from "../scripts/ensure-bucket.mjs";
 import { restoreCopy } from "../scripts/restore-copy.mjs";
-import { TEST_BUCKET, testStorageEnv } from "./helpers/local-storage";
+import { TEST_BACKUP_BUCKET, TEST_BUCKET, testStorageEnv } from "./helpers/local-storage";
 import {
   TEST_DATABASE_PREFIX,
   addressOf,
@@ -29,11 +29,13 @@ afterAll(async () => {
   for (const name of made) await dropTestDatabase(serverUrl, name);
 }, 60_000);
 
-/** The storage env with a bucket of copies of its own, made if missing. */
-async function storageWith(bucket: string): Promise<Record<string, string>> {
-  const env = { ...testStorageEnv(TEST_BUCKET), BACKUP_S3_BUCKET: bucket };
-  await ensureBucket(backupStorageConfigOf(env));
-  return env;
+/**
+ * The storage env of the tests, whose bucket of the copies is `bucket`. Only the buckets the test
+ * setup makes: the local SeaweedFS gives every bucket volumes of its own, and a bucket more per
+ * test file runs it out of them.
+ */
+function storageWith(bucket: string): Record<string, string> {
+  return { ...testStorageEnv(TEST_BUCKET), BACKUP_S3_BUCKET: bucket };
 }
 
 async function put(env: Record<string, string>, key: string, body: string): Promise<void> {
@@ -87,14 +89,17 @@ async function checked(...args: Parameters<typeof restoreCopy>): ReturnType<type
   return result;
 }
 
-const COPIES = "procurement-test-restore";
-const EMPTY = "procurement-test-restore-empty";
-const OLDER = "backups/database-2031-06-15.dump";
-const NEWEST = "backups/database-2031-06-22.dump";
+// The shared bucket of the copies, where the job tests of 8.2 write copies of their own clock's
+// days: the newest here is far after any of them, and the bad file is far before.
+const COPIES = TEST_BACKUP_BUCKET;
+// The files bucket never holds a copy (13 Running it: "a bucket of its own").
+const EMPTY = TEST_BUCKET;
+const OLDER = "backups/database-2998-06-15.dump";
+const NEWEST = "backups/database-2999-12-31.dump";
 
 describe("restoreCopy (build-plan 9.6; 16 phase 8 row: into a new, empty database)", () => {
   it("restores the newest copy into a new database and counts it", async () => {
-    const storage = await storageWith(COPIES);
+    const storage = storageWith(COPIES);
     await put(storage, OLDER, "PGDMP invented older copy");
     await put(storage, NEWEST, "PGDMP invented newest copy");
     await put(storage, "backups/notes.txt", "PGDMP not a copy");
@@ -118,7 +123,7 @@ describe("restoreCopy (build-plan 9.6; 16 phase 8 row: into a new, empty databas
   });
 
   it("restores the copy named, when one is given (decided item 5)", async () => {
-    const storage = await storageWith(COPIES);
+    const storage = storageWith(COPIES);
     await put(storage, OLDER, "PGDMP invented older copy");
     const app = await appDatabase();
     const name = newName();
@@ -136,7 +141,7 @@ describe("restoreCopy (build-plan 9.6; 16 phase 8 row: into a new, empty databas
   });
 
   it("refuses a database that already exists, the app's own included, creating nothing (decided item 1)", async () => {
-    const storage = await storageWith(COPIES);
+    const storage = storageWith(COPIES);
     await put(storage, NEWEST, "PGDMP invented newest copy");
     const app = await appDatabase();
     const other = await appDatabase();
@@ -160,8 +165,8 @@ describe("restoreCopy (build-plan 9.6; 16 phase 8 row: into a new, empty databas
   });
 
   it("refuses before creating any database when the bucket holds no copy, or not the one named", async () => {
-    const empty = await storageWith(EMPTY);
-    const storage = await storageWith(COPIES);
+    const empty = storageWith(EMPTY);
+    const storage = storageWith(COPIES);
     await put(storage, NEWEST, "PGDMP invented newest copy");
     const app = await appDatabase();
     const name = newName();
@@ -181,8 +186,8 @@ describe("restoreCopy (build-plan 9.6; 16 phase 8 row: into a new, empty databas
   });
 
   it("refuses a file that is not a custom-format dump, creating nothing", async () => {
-    const storage = await storageWith(`${COPIES}-bad`);
-    const key = "backups/database-2031-06-29.dump";
+    const storage = storageWith(COPIES);
+    const key = "backups/database-1901-01-01.dump";
     await put(storage, key, "not a dump");
     const app = await appDatabase();
     const name = newName();
@@ -196,7 +201,7 @@ describe("restoreCopy (build-plan 9.6; 16 phase 8 row: into a new, empty databas
   });
 
   it("a failed pg_restore says the new database was made and is to be deleted, and touches no other", async () => {
-    const storage = await storageWith(COPIES);
+    const storage = storageWith(COPIES);
     await put(storage, NEWEST, "PGDMP invented newest copy");
     const app = await appDatabase();
     const name = newName();
@@ -217,7 +222,7 @@ describe("restoreCopy (build-plan 9.6; 16 phase 8 row: into a new, empty databas
   });
 
   it("names a missing BACKUP_S3_* variable, and never its value", async () => {
-    const storage = await storageWith(COPIES);
+    const storage = storageWith(COPIES);
     const app = await appDatabase();
     const name = newName();
     const env: Record<string, string | undefined> = { ...storage, DATABASE_URL: app.url };

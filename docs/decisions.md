@@ -2959,7 +2959,7 @@ The plan's decisions as the plan review of 20.10.2026 confirmed them (its three 
 Choices made during the build:
 
 - `db:counts` takes `--until` only as an ISO 8601 moment (`2026-10-19T23:00:00.000Z`), the form its own line prints, so the moment is copied from one line to the other unchanged.
-- The tests of `restoreCopy()` use buckets of their own (`procurement-test-restore`, `-empty`, `-bad`), so the copies the job tests of 8.2 write into the shared backups bucket cannot become "the newest".
+- The tests of `restoreCopy()` use only the buckets the test setup makes: the local SeaweedFS gives each bucket volumes of its own, and three more buckets ran it out of them (HTTP 500 in every storage test). Their copies are dated 2998 and 2999, after any day the job tests of 8.2 write, and the files bucket stands for an empty bucket of copies.
 - A by-hand run on this machine with `pg_dump` and `pg_restore` 17 (the `postgres:17` image on `PATH`): `db:copy` of the seeded local database, `db:restore -- drill_local` and `db:counts -- --until <newest row>` printed equal lines (orders 12, users 4, stock lines 2, quantity 250.000, movements 4); the restore refused `drill_local` again, `procurement` and `defaultdb`.
 
 ## Process changes
