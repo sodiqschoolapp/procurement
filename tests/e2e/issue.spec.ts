@@ -172,10 +172,13 @@ test("a switched-off product still held is listed marked inactive and is issued 
   const marked = uz.warehouse.documents.inactiveOption.replace("{name}", seeded.name);
   await signIn(page, E2E_ROLES.MANAGER);
 
-  await page.goto("/warehouse/documents/new?type=ISSUE");
+  await page.goto(`/warehouse/stock?q=${encodeURIComponent(seeded.tag)}`);
+  await page.getByRole("link", { name: uz.warehouse.stock.newIssue }).click();
+  await expect(page).toHaveURL(/\/warehouse\/documents\/new\?type=ISSUE$/);
   await page
     .getByLabel(texts.department, { exact: true })
     .selectOption({ label: seeded.department });
+  await expect(page.getByLabel(texts.receivedBy, { exact: true })).toHaveValue(seeded.responsible);
   if (phone) await page.getByRole("button", { name: texts.next }).click();
   await page.getByLabel(texts.search).fill(seeded.tag);
   const pick = page.locator(`[data-pick="${seeded.variantId}"]`);
