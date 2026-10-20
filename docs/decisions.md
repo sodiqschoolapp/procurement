@@ -2988,6 +2988,9 @@ Technical choices:
 - `MoveButton` takes an `onDone` that skips the page refresh after a success, so settlement shows a "closed" state with links instead of reloading into "Not found". The move itself is the same call.
 - A catch-all `(app)/[...missing]` page signs the person in first (`requireUser`) and then shows the app's own not-found page inside the shell; it is in the permission registry and the placeholder list.
 - The before and after screenshots live in `docs/redesign/` as JPEG (about 2 MB), taken from the invented seed on a separate local database.
+- After the first CI runs: the default button, icon button and field stay 40 px high on a desktop (44 on a phone), as the browser tests of the earlier tasks ask; a summary figure of 0 is plain, not a link (nothing to open, one Tab stop fewer); the price history keeps drawing its line chart from one point; a change from nothing keeps its amount ("+29 333 (new)").
+- Phone cards: the table's header row is hidden from sight only (it still names the columns for screen readers), and each cell's visible column label is CSS text with an empty alternative (`content: attr(data-label) / ""`), so a cell's accessible name is its value alone.
+- The not-found screen is in the accessibility list (`tests/e2e/screens.ts`, `missing: true`): it is checked like any screen, answering 404 with its heading; the speed run expects the same 404.
 
 ## Process changes
 
