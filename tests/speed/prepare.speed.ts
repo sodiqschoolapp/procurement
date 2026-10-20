@@ -64,6 +64,7 @@ it("the speed database is filled, refreshed and consistent (build plan 9.2)", as
   try {
     // The statements of the fill and the jobs are not logged; the measurement's are.
     await client.query(`alter database "${SPEED_DATABASE}" reset log_statement`);
+    await client.query(`alter database "${SPEED_DATABASE}" reset log_min_duration_statement`);
     process.env.DATABASE_URL = address;
     const { now } = await import("@/server/clock");
     const { rows } = await client.query<{ n: number }>("select count(*)::int as n from orders");

@@ -1,4 +1,5 @@
 import { execFileSync, spawnSync } from "node:child_process";
+import { randomUUID } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
 import { cpus, totalmem } from "node:os";
 
@@ -20,6 +21,8 @@ import { SPEED_PASSWORD, SPEED_PEOPLE } from "./fill";
 // writes docs/speed.md.
 
 const LIMIT_MS = 1000;
+/** Marks this run's statements apart from an earlier run's in the same log. */
+const RUN = randomUUID().slice(0, 8);
 const TIMED = 3;
 const RESULTS = "test-results/speed-pages.json";
 const TABLE = "docs/speed.md";
@@ -151,11 +154,11 @@ async function mark(text: string): Promise<void> {
 let marker: pg.Client | null = null;
 
 /** The statements PostgreSQL logged between two marks (log_statement = 'all' on this database). */
-function statementsBetween(start: string, end: string): number | null {
+function statementsBetween(start: string, end: string, tail = 20_000): number | null {
   if (postgres === null) return null;
   // PostgreSQL logs to its stderr, which `docker logs` hands back on stderr. Read from the end:
   // `--since` reads the whole log file, which this run makes large.
-  const log = spawnSync("docker", ["logs", "--tail", "20000", postgres], {
+  const log = spawnSync("docker", ["logs", "--tail", String(tail), postgres], {
     encoding: "utf8",
     maxBuffer: 64 * 1024 * 1024,
   });
@@ -200,7 +203,7 @@ async function measure(page: Page, entry: Omit<Result, "times" | "statements" | 
   const times: number[] = [];
   let statements: number | null = null;
   for (let n = 0; n < TIMED; n += 1) {
-    const id = `${results.length}-${n}`;
+    const id = `${RUN}-${results.length}-${n}`;
     await mark(`speed-start-${id}`);
     times.push(await load(page, entry.url));
     // What the page sends after its load event (a streamed part's late statement) still counts.
@@ -209,6 +212,11 @@ async function measure(page: Page, entry: Omit<Result, "times" | "statements" | 
     if (n === TIMED - 1) {
       await page.waitForTimeout(200);
       statements = statementsBetween(`speed-start-${id}`, `speed-end-${id}`);
+      // A page of many long statements can push its marks further back, or the log comes late.
+      for (let wait = 0; statements === null && wait < 3; wait += 1) {
+        await page.waitForTimeout(1000);
+        statements = statementsBetween(`speed-start-${id}`, `speed-end-${id}`, 100_000);
+      }
     }
   }
   const result: Result = { ...entry, times, statements, rows: await rowsOf(page) };
@@ -331,6 +339,23 @@ test("every page opens in under 1 second at the fill's volume (01-summary.md, Qu
   expect(
     slow.map((result) => `${result.url} as ${result.who}: ${result.times.join(", ")} ms`),
   ).toEqual([]);
+  // developer-rules.md rule 12, "No query runs inside a loop": a list's statements do not grow
+  // with its rows (the first page holds 25, the last fewer; the notifications' last page reads
+  // twice, as a page past the end goes back to page 1).
+  const growing = results
+    .filter((result) => result.note === "first page")
+    .flatMap((first) => {
+      const last = results.find(
+        (each) => each.note === "last page" && each.route === first.route && each.who === first.who,
+      );
+      return last?.statements != null &&
+        first.statements != null &&
+        (first.rows ?? 0) > (last.rows ?? 0) &&
+        first.statements > last.statements
+        ? [`${first.url} as ${first.who}: ${first.statements} against ${last.statements}`]
+        : [];
+    });
+  expect(growing).toEqual([]);
   // 11-screens-and-ux.md rule 8 and developer-rules.md rule 12: lists are paged by the server.
   const unpaged = results.filter((result) => PAGED.has(result.route) && (result.rows ?? 0) > 25);
   expect(unpaged.map((result) => `${result.url}: ${result.rows} rows`)).toEqual([]);
@@ -384,6 +409,17 @@ Build plan 9.2: every page measured at the volume of several school years (01-su
 | Table | Rows |
 | --- | --- |
 ${volume.join("\n")}
+
+## What task 9.2 changed
+
+- Migration \`0049_speed_indexes.sql\`: every foreign key is led by an index of its own columns (13 single-column indexes became the composite of their key), and every filter column has its index or is read through the key of one (\`tests/indexes.db.test.ts\`).
+- Eight Analytics totals read their whole summary table and filtered inside the sums; they now read only the rows of the two periods (\`where (now) or (then)\`). Finance's Analytics went from about 1 000 ms to about 400 ms.
+- JIT is off on the app's connections: it spent about 270 of 310 ms of one Analytics count compiling.
+- The Analytics drill-downs show 25 rows a page (rule 8), not 50.
+
+## Queries in loops
+
+No statement count grows with the rows of a page: a list's first page (25 rows) and its last page (fewer) send the same number. The notifications list is not a table; its 25 a page is proved by \`src/features/notifications/queries/my-notifications.db.test.ts\`.
 
 ## Pages
 
