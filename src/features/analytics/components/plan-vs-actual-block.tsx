@@ -43,6 +43,7 @@ export async function PlanVsActualView({
   filters: AnalyticsFilters;
 }) {
   const t = await getTranslations("analytics");
+  const tShort = await getTranslations("analytics.short");
   const format = await getFormatters();
   const orders = (key: DrillKey, scope: AnalyticsFilters = filters, otherOwners = false) =>
     `/analytics/orders?${analyticsSearch(period, scope, { key, otherOwners })}`;
@@ -57,7 +58,7 @@ export async function PlanVsActualView({
     label: t(`plan.outcome.${colour}`),
     value: total.colours[colour].count,
     shown: count(total.colours[colour].count),
-    change: countChangeText(total.colours[colour].change, t, format),
+    change: countChangeText(total.colours[colour].change, tShort, format),
     href: orders({ kind: "colour", colour }),
   }));
 
@@ -84,7 +85,7 @@ export async function PlanVsActualView({
               label={t("plan.ended")}
               href={orders({ kind: "period" })}
               value={count(total.orders.count)}
-              lines={[countChangeText(total.orders.change, t, format)]}
+              lines={[countChangeText(total.orders.change, tShort, format)]}
               data="ended"
             />
             {OUTCOME_COLOURS.map((colour) => {
@@ -99,8 +100,8 @@ export async function PlanVsActualView({
                     each.share === null
                       ? t("plan.noShare")
                       : t("plan.share", { share: format.quantity(each.share) }),
-                    countChangeText(each.change, t, format),
-                    shareChangeText(each.shareChange, t, format),
+                    countChangeText(each.change, tShort, format),
+                    shareChangeText(each.shareChange, tShort, format),
                   ]}
                   data={colour}
                 />
@@ -110,14 +111,14 @@ export async function PlanVsActualView({
               label={t("plan.overspent")}
               href={orders({ kind: "overspent" })}
               value={format.money(total.overspent.amount)}
-              lines={[changeText(total.overspent.change, t, format)]}
+              lines={[changeText(total.overspent.change, tShort, format)]}
               data="overspent"
             />
             <Tile
               label={t("plan.saved")}
               href={orders({ kind: "saved" })}
               value={format.money(total.saved.amount)}
-              lines={[changeText(total.saved.change, t, format)]}
+              lines={[changeText(total.saved.change, tShort, format)]}
               data="saved"
             />
           </div>
@@ -234,6 +235,7 @@ type TallyRow = { key: string; label: string; tally: Tally; href: (key: DrillKey
 
 async function TallyTable({ firstColumn, rows }: { firstColumn: string; rows: TallyRow[] }) {
   const t = await getTranslations("analytics");
+  const tShort = await getTranslations("analytics.short");
   const format = await getFormatters();
   const count = (value: number) => format.quantity(String(value));
   type Cell = { id: string; key: DrillKey; shown: string; change: string };
@@ -242,25 +244,25 @@ async function TallyTable({ firstColumn, rows }: { firstColumn: string; rows: Ta
       id: "orders",
       key: { kind: "period" },
       shown: count(tally.orders.count),
-      change: countChangeText(tally.orders.change, t, format),
+      change: countChangeText(tally.orders.change, tShort, format),
     },
     ...OUTCOME_COLOURS.map((colour) => ({
       id: colour,
       key: { kind: "colour", colour } as const,
       shown: count(tally.colours[colour].count),
-      change: countChangeText(tally.colours[colour].change, t, format),
+      change: countChangeText(tally.colours[colour].change, tShort, format),
     })),
     {
       id: "overspent",
       key: { kind: "overspent" },
       shown: format.money(tally.overspent.amount),
-      change: changeText(tally.overspent.change, t, format),
+      change: changeText(tally.overspent.change, tShort, format),
     },
     {
       id: "saved",
       key: { kind: "saved" },
       shown: format.money(tally.saved.amount),
-      change: changeText(tally.saved.change, t, format),
+      change: changeText(tally.saved.change, tShort, format),
     },
   ];
   const headings = [

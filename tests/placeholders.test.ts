@@ -19,7 +19,16 @@ const APP = join(process.cwd(), "src", "app", "(app)");
  * none (plan of 9.2, decided during the build, Look first). Each opened under 400 ms in the speed
  * run (docs/speed.md).
  */
-const STATUS_FIRST = ["branches", "catalog", "prices", "settings", "suggestions", "users"];
+const STATUS_FIRST = [
+  "branches",
+  "catalog",
+  "prices",
+  "settings",
+  "suggestions",
+  "users",
+  // A mistyped address: it only answers "Not found" (redesign of 21.10.2026).
+  "[...missing]",
+];
 
 function pages(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {

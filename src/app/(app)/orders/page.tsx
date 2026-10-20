@@ -190,6 +190,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
   const filtered = activeFilterCount(parsed.filters) > 0;
 
   const listQuery = listFiltersParams(filters).toString();
+  const markActor = await authorizeList(user.id, "data.view");
   // The status tabs: every status the other filters hold, with its count (countOrdersByStatus,
   // the query of the home pages), and the chosen one even when it holds none.
   const statusCounts = await orNothing(
@@ -203,6 +204,10 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
       : statusCounts;
   const tStatus = await getTranslations("requestStatus");
   const figures = await summaryFigures(user.id, user.role, cookieBranch, raw);
+  // The "your turn" mark only where the person can act: a Manager whose right to add and send
+  // orders is off in every branch gets none on sent-back rows (addsDraftsIn of the drafts grid).
+  const marksTurn =
+    user.role !== "MANAGER" || myBranches.some((branch) => addsDraftsIn(markActor, branch));
 
   const listSection = (
     <section aria-labelledby="order-list-title" className="flex min-w-0 flex-col gap-3">
@@ -245,7 +250,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
         total={list.total}
         query={listQuery}
         hrefOf={listHrefs}
-        role={user.role}
+        role={marksTurn ? user.role : null}
         meId={user.id}
         empty={{
           title: t(filtered ? "list.emptyFiltered.title" : "list.empty.title"),

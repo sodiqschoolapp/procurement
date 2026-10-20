@@ -105,7 +105,7 @@ describe("colour labels (08 The three colours; review correction 2)", () => {
     // Dearer → −30 000 → red "Over 30 000 so'm", shown without its sign.
     {
       props: { label: "total", colour: "red", difference: -30_000n },
-      text: "Over by 30 000 so'm",
+      text: "Over 30 000 so'm",
       tokens: "bg-destructive-bg text-destructive",
     },
     // Green says its plain word, without "0" (D60, 21.10.2026).

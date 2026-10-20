@@ -35,6 +35,7 @@ export async function SpendingBlockView({
   filters: AnalyticsFilters;
 }) {
   const t = await getTranslations("analytics");
+  const tShort = await getTranslations("analytics.short");
   const tMonths = await getTranslations("months");
   const format = await getFormatters();
   const records = (key: DrillKey) =>
@@ -57,7 +58,7 @@ export async function SpendingBlockView({
     label: category.isActive ? category.name : t("inactive", { name: category.name }),
     counted: category,
   }));
-  const pointsOf = (rows: ChartRow[]) => chartPoints(rows, t, format);
+  const pointsOf = (rows: ChartRow[]) => chartPoints(rows, tShort, format);
   const empty = block.total.amount === 0n && block.categories.length === 0;
 
   return (
@@ -81,7 +82,7 @@ export async function SpendingBlockView({
           {format.money(block.total.amount)}
         </Link>
         <p className="text-sm leading-5 text-muted-foreground tabular-nums" data-spending-change>
-          {changeText(block.total.change, t, format)}
+          {changeText(block.total.change, tShort, format)}
         </p>
       </div>
       {empty ? (
@@ -148,6 +149,7 @@ export async function ChartCard({
   children: React.ReactNode;
 }) {
   const t = await getTranslations("analytics");
+  const tShort = await getTranslations("analytics.short");
   const format = await getFormatters();
   return (
     <section
@@ -202,7 +204,7 @@ export async function ChartCard({
                   {format.money(row.counted.amount)}
                 </td>
                 <td className="px-3 py-2 text-muted-foreground tabular-nums">
-                  {changeText(row.counted.change, t, format)}
+                  {changeText(row.counted.change, tShort, format)}
                 </td>
               </tr>
             ))}

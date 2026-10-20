@@ -71,8 +71,11 @@ export function OrderList({
   query: string;
   /** The address of a page of the list, every other parameter kept. */
   hrefOf: Record<number, string>;
-  /** The person's role and id: which rows wait on this person (a mark only, never a right). */
-  role: Role;
+  /**
+   * The person's role and id: which rows wait on this person (a mark only, never a right); no
+   * role when the person can take none of those steps.
+   */
+  role: Role | null;
   meId: string;
   /** The empty page's texts, shown when no group row matches (11 rule 12). */
   empty: { title: string; line: string };
@@ -425,8 +428,10 @@ export function OrderList({
  * the row is ticked. The Manager's own sent-back orders; the Head's, the Principal's and Finance's
  * own approval step; Finance's settlements.
  */
-function waitsOn(group: WireOrderGroup, role: Role, meId: string): boolean {
+function waitsOn(group: WireOrderGroup, role: Role | null, meId: string): boolean {
   switch (role) {
+    case null:
+      return false;
     case "MANAGER":
       return group.status === "RETURNED" && group.orders.every((order) => order.ownerId === meId);
     case "HEAD":
@@ -514,7 +519,7 @@ function GroupRows({
         <td
           className={cn(
             cell,
-            "relative w-12 pl-4 max-sm:row-span-4 max-sm:pl-0",
+            "relative w-12 pl-4 max-sm:row-span-3 max-sm:pl-0",
             yours &&
               "sm:before:absolute sm:before:inset-y-3 sm:before:left-0 sm:before:w-[3px] sm:before:rounded-r-full sm:before:bg-brand",
           )}
@@ -559,7 +564,7 @@ function GroupRows({
           <span className="flex flex-col items-end gap-0.5 max-sm:items-start">
             <span className="whitespace-nowrap max-sm:flex max-sm:gap-2">
               <span className="text-muted-foreground sm:hidden">
-                {format.quantity(group.summary.quantity)} {group.unitShortName} ·
+                {format.quantity(group.summary.quantity)} {group.unitShortName}
               </span>
               <span className="font-semibold tabular-nums" data-cell="group-total">
                 {format.money(BigInt(group.summary.totals.grand))}

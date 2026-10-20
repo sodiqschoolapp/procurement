@@ -41,6 +41,7 @@ export async function WarehouseView({
   principal?: boolean;
 }) {
   const t = await getTranslations("analytics");
+  const tShort = await getTranslations("analytics.short");
   const format = await getFormatters();
   const stock = (branch: string | null, key: DrillKey) =>
     `/analytics/stock?${analyticsSearch(period, { ...filters, branch }, { key })}`;
@@ -77,7 +78,7 @@ export async function WarehouseView({
         moves({ ...filters, branch }, { kind: "moves", move: "writeoff" }),
         format.money(row.writtenOff),
       )}
-      {under(changeText(row.writtenOffChange, t, format))}
+      {under(changeText(row.writtenOffChange, tShort, format))}
     </>,
   ];
   const usedHref = (row: DepartmentUseRow) =>
@@ -89,8 +90,8 @@ export async function WarehouseView({
     });
   const usedChange = (row: DepartmentUseRow) =>
     row.change
-      ? changeText(row.change, t, format)
-      : amountChangeText(row.used - row.before, t, format);
+      ? changeText(row.change, tShort, format)
+      : amountChangeText(row.used - row.before, tShort, format);
   const points: ChartPoint[] = block.departments.map((row) => ({
     key: row.id,
     label: usedLabel(row),

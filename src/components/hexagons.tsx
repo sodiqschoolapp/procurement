@@ -1,5 +1,3 @@
-import { cn } from "@/components/utils";
-
 // The brand's hexagon pattern, on the sign-in panel (docs/design-system.md, This app, Sign-in).
 // Decoration only, hidden from screen readers. Pointy-top hexagons on a honeycomb grid.
 

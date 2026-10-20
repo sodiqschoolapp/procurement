@@ -43,6 +43,7 @@ export async function PricesView({
   filters: AnalyticsFilters;
 }) {
   const t = await getTranslations("analytics");
+  const tShort = await getTranslations("analytics.short");
   const tMonths = await getTranslations("months");
   const format = await getFormatters();
   const records = (key: DrillKey, scope: AnalyticsFilters = filters, at: PeriodInput = period) =>
@@ -65,7 +66,7 @@ export async function PricesView({
             // The drawing's height only (src/components/charts/chart-point.ts).
             value: Number(point.price),
             shown: format.money(point.price),
-            change: point.change ? changeText(point.change, t, format) : "",
+            change: point.change ? changeText(point.change, tShort, format) : "",
             href: records({
               kind: "price",
               variant: trend!.variantId,
@@ -156,7 +157,7 @@ export async function PricesView({
                     {monthLabel(point.month)}
                   </Link>,
                   point.price === null ? t("prices.noPrice") : format.money(point.price),
-                  point.change ? changeText(point.change, t, format) : "",
+                  point.change ? changeText(point.change, tShort, format) : "",
                 ],
               }))}
               data="trend"

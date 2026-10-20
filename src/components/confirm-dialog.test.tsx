@@ -43,11 +43,12 @@ describe("the confirm dialog (11-screens rule 6)", () => {
     expect(html).toContain(">Submit</button>");
   });
 
-  it("the confirm button is primary, Cancel secondary, both the medium size", () => {
+  it("the confirm button is primary, Cancel secondary, both the default size", () => {
     const html = render(SUBMIT);
     expect(html.match(/bg-primary /g)).toHaveLength(1);
     expect(html.match(/bg-secondary /g)).toHaveLength(1);
-    expect(html.match(/h-11 px-4/g)).toHaveLength(2);
+    // The default button of docs/design-system.md, Buttons (D60): 44 at phone width, 36 from sm.
+    expect(html.match(/h-11 px-3\.5 text-sm sm:h-9/g)).toHaveLength(2);
   });
 
   it("an irreversible loss uses the danger kind and no primary fill", () => {

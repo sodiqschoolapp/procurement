@@ -40,6 +40,7 @@ export async function PrincipalSpendingView({
   filters,
 }: Common & { spending: HeadSpending; products: TopProducts }) {
   const t = await getTranslations("analytics");
+  const tShort = await getTranslations("analytics.short");
   const format = await getFormatters();
   const records = (scope: AnalyticsFilters, key: DrillKey = { kind: "period" }) =>
     `/analytics/records?${analyticsSearch(period, scope, { key })}`;
@@ -84,7 +85,7 @@ export async function PrincipalSpendingView({
           {chart.rows.length === 0 ? (
             <p className="text-sm text-muted-foreground">{t("spending.none")}</p>
           ) : (
-            <BarChartBlock points={chartPoints(chart.rows, t, format)} label={chart.title} />
+            <BarChartBlock points={chartPoints(chart.rows, tShort, format)} label={chart.title} />
           )}
         </ChartCard>
       ))}
@@ -95,6 +96,7 @@ export async function PrincipalSpendingView({
 /** Orders: by status of the orders first submitted in the period; coming up and overdue now. */
 export async function OrdersView({ block, period, filters }: Common & { block: OrderStatuses }) {
   const t = await getTranslations("analytics");
+  const tShort = await getTranslations("analytics.short");
   const tStatus = await getTranslations("requestStatus");
   const format = await getFormatters();
   const list = (key: DrillKey) =>
@@ -159,7 +161,7 @@ export async function OrdersView({ block, period, filters }: Common & { block: O
                       {count(row.count)}
                     </Link>
                     <span className="block text-small text-muted-foreground">
-                      {countChangeText(row.change, t, format)}
+                      {countChangeText(row.change, tShort, format)}
                     </span>
                   </>,
                 ],
@@ -173,7 +175,7 @@ export async function OrdersView({ block, period, filters }: Common & { block: O
                       {count(block.total.count)}
                     </Link>
                     <span className="block text-small text-muted-foreground">
-                      {countChangeText(block.total.change, t, format)}
+                      {countChangeText(block.total.change, tShort, format)}
                     </span>
                   </>,
                 ],
@@ -190,6 +192,7 @@ export async function OrdersView({ block, period, filters }: Common & { block: O
 /** My approvals: the orders waiting for me by age, and my average time to decide. */
 export async function MyApprovalsView({ block, period, filters }: Common & { block: MyApprovals }) {
   const t = await getTranslations("analytics");
+  const tShort = await getTranslations("analytics.short");
   const format = await getFormatters();
   const approvals = (key: DrillKey) =>
     `/analytics/approvals?${analyticsSearch(period, filters, { key })}`;
@@ -225,7 +228,7 @@ export async function MyApprovalsView({ block, period, filters }: Common & { blo
                 <p className="text-sm leading-5 text-muted-foreground">
                   {t("joined", {
                     first: t("speed.stays", { count: block.mine.count }),
-                    second: hoursChangeText(block.mine.change, t, format),
+                    second: hoursChangeText(block.mine.change, tShort, format),
                   })}
                 </p>
               </>

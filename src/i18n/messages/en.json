@@ -254,7 +254,7 @@
       "name": "Total",
       "even": "Even",
       "left": "Left",
-      "over": "Over by",
+      "over": "Over",
       "inProgress": "In progress"
     }
   },
@@ -2533,28 +2533,28 @@
       "empty": "Nothing in this period."
     },
     "change": {
-      "up": "+{amount} (+{percent} %)",
-      "down": "−{amount} (−{percent} %)",
-      "same": "No change",
-      "upFromNothing": "New",
-      "countUp": "+{count} (+{percent} %)",
-      "countDown": "−{count} (−{percent} %)",
-      "countUpFromNothing": "New",
-      "shareUp": "+{points} pt",
-      "shareDown": "−{points} pt",
-      "shareSame": "No change",
-      "shareNone": "Nothing before",
-      "hoursUp": "+{hours} h",
-      "hoursDown": "−{hours} h",
-      "hoursSame": "No change",
-      "hoursNone": "Nothing before",
-      "amountUp": "+{amount}",
-      "amountDown": "−{amount}",
-      "amountNone": "Nothing to compare",
-      "daysUp": "+{days} days",
-      "daysDown": "−{days} days",
-      "daysSame": "No change",
-      "daysNone": "Nothing before"
+      "up": "+{amount} (+{percent} %) against the period before",
+      "down": "−{amount} (−{percent} %) against the period before",
+      "same": "No change against the period before",
+      "upFromNothing": "+{amount} against the period before, which had none",
+      "countUp": "+{count} (+{percent} %) against the period before",
+      "countDown": "−{count} (−{percent} %) against the period before",
+      "countUpFromNothing": "+{count} against the period before, which had none",
+      "shareUp": "+{points} points against the period before",
+      "shareDown": "−{points} points against the period before",
+      "shareSame": "Same share as in the period before",
+      "shareNone": "No orders ended in the period before",
+      "hoursUp": "+{hours} h against the period before",
+      "hoursDown": "−{hours} h against the period before",
+      "hoursSame": "Same as in the period before",
+      "hoursNone": "No stay in the period before",
+      "amountUp": "+{amount} against the period before",
+      "amountDown": "−{amount} against the period before",
+      "amountNone": "No ended order in one of the two periods",
+      "daysUp": "+{days} days against the period before",
+      "daysDown": "−{days} days against the period before",
+      "daysSame": "Same as in the period before",
+      "daysNone": "No settlement in the period before"
     },
     "spending": {
       "title": "Spending",
@@ -3184,6 +3184,32 @@
           "closed": "Closed",
           "days": "Days"
         }
+      }
+    },
+    "short": {
+      "change": {
+        "up": "+{amount} (+{percent} %)",
+        "down": "−{amount} (−{percent} %)",
+        "same": "No change",
+        "upFromNothing": "New",
+        "countUp": "+{count} (+{percent} %)",
+        "countDown": "−{count} (−{percent} %)",
+        "countUpFromNothing": "New",
+        "shareUp": "+{points} pt",
+        "shareDown": "−{points} pt",
+        "shareSame": "No change",
+        "shareNone": "Nothing before",
+        "hoursUp": "+{hours} h",
+        "hoursDown": "−{hours} h",
+        "hoursSame": "No change",
+        "hoursNone": "Nothing before",
+        "amountUp": "+{amount}",
+        "amountDown": "−{amount}",
+        "amountNone": "Nothing to compare",
+        "daysUp": "+{days} days",
+        "daysDown": "−{days} days",
+        "daysSame": "No change",
+        "daysNone": "Nothing before"
       }
     }
   },

@@ -7,7 +7,6 @@ import { EmptyState } from "@/components/empty-state";
 import { DocumentStatusLabel } from "@/components/status-label";
 import { buttonVariants } from "@/components/ui/button";
 import { DateInput } from "@/components/ui/date-input";
-import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { isBusinessDate } from "@/domain/business-date";
 import { DOCUMENT_TYPES, type DocumentType } from "@/domain/stock-documents";

@@ -34,6 +34,7 @@ export async function ApprovalSpeedView({
   filters: AnalyticsFilters;
 }) {
   const t = await getTranslations("analytics");
+  const tShort = await getTranslations("analytics.short");
   const format = await getFormatters();
   const approvals = (key: DrillKey, scope: AnalyticsFilters = filters, reason?: string) =>
     `/analytics/approvals?${analyticsSearch(period, scope, { key, reason })}`;
@@ -57,7 +58,7 @@ export async function ApprovalSpeedView({
         <span className="block text-small text-muted-foreground">
           {t("joined", {
             first: t("speed.stays", { count: hours.count }),
-            second: hoursChangeText(hours.change, t, format),
+            second: hoursChangeText(hours.change, tShort, format),
           })}
         </span>
       </>
@@ -161,7 +162,7 @@ export async function ApprovalSpeedView({
                         }),
                   )}
                   <span className="block text-small text-muted-foreground">
-                    {shareChangeText(value.change, t, format)}
+                    {shareChangeText(value.change, tShort, format)}
                   </span>
                 </>
               );
@@ -198,7 +199,7 @@ export async function ApprovalSpeedView({
                           t("speed.times", { count: reason.count }),
                         )}{" "}
                         <span className="text-muted-foreground">
-                          {countChangeText(reason.change, t, format)}
+                          {countChangeText(reason.change, tShort, format)}
                         </span>
                       </span>
                     </li>

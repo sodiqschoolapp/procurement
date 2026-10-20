@@ -53,6 +53,7 @@ export async function MyOrdersView({
   userId,
 }: Common & { block: MyOrders }) {
   const t = await getTranslations("analytics");
+  const tShort = await getTranslations("analytics.short");
   const tStatus = await getTranslations("requestStatus");
   const format = await getFormatters();
   const mine = mineOf(filters, userId);
@@ -94,7 +95,7 @@ export async function MyOrdersView({
               <p className="text-sm leading-5 text-muted-foreground">
                 {t("joined", {
                   first: t("speed.stays", { count: block.approval.count }),
-                  second: hoursChangeText(block.approval.change, t, format),
+                  second: hoursChangeText(block.approval.change, tShort, format),
                 })}
               </p>
             </>
@@ -121,7 +122,7 @@ export async function MyOrdersView({
               <p className="text-sm leading-5 text-muted-foreground">
                 {block.sentBack.change === null
                   ? t("my.orders.noDecisionBefore")
-                  : shareChangeText(block.sentBack.change, t, format)}
+                  : shareChangeText(block.sentBack.change, tShort, format)}
               </p>
             </>
           )}
@@ -147,7 +148,7 @@ export async function MyOrdersView({
                         {count(row.count)}
                       </Link>
                       <span className="block text-small text-muted-foreground">
-                        {countChangeText(row.change, t, format)}
+                        {countChangeText(row.change, tShort, format)}
                       </span>
                     </>,
                   ],
@@ -161,7 +162,7 @@ export async function MyOrdersView({
                         {count(block.total.count)}
                       </Link>
                       <span className="block text-small text-muted-foreground">
-                        {countChangeText(block.total.change, t, format)}
+                        {countChangeText(block.total.change, tShort, format)}
                       </span>
                     </>,
                   ],
@@ -184,7 +185,7 @@ export async function MyOrdersView({
                       {t("speed.times", { count: reason.count })}
                     </Link>{" "}
                     <span className="text-muted-foreground">
-                      {countChangeText(reason.change, t, format)}
+                      {countChangeText(reason.change, tShort, format)}
                     </span>
                   </span>
                 </li>

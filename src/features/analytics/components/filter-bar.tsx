@@ -3,7 +3,6 @@ import Link from "next/link";
 
 import { buttonVariants } from "@/components/ui/button";
 import { DateInput } from "@/components/ui/date-input";
-import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 
 import type { AnalyticsFilterOptions, FilterOption } from "../queries/filters";

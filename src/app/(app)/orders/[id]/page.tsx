@@ -246,6 +246,7 @@ export default async function OrderPageScreen({
     </dl>
   );
 
+  const branchText = `${order.branchCode} · ${order.branchName}`;
   const tabs: Tab[] = hasPurchases
     ? ["details", "purchases", "money", "history"]
     : ["details", "history"];
@@ -289,21 +290,21 @@ export default async function OrderPageScreen({
           ) : null}
         </div>
         <p data-fact="product" className="text-heading">
-          <span className="sr-only">{t("product")}: </span>
+          <span className="sr-only">{t("product")} </span>
           {product}
         </p>
         <dl className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted-foreground">
           <div data-fact="branch" className="flex gap-1.5">
             <dt className="sr-only">{t("branch")}</dt>
-            <dd>{`${order.branchCode} · ${order.branchName}`}</dd>
+            <dd>{branchText}</dd>
           </div>
           <div data-fact="owner" className="flex gap-1.5">
-            <dt>{t("owner")}:</dt>
+            <dt>{t("owner")}</dt>
             <dd className="text-foreground">{order.ownerName}</dd>
           </div>
           {order.departmentName ? (
             <div data-fact="department" className="flex gap-1.5">
-              <dt>{t("department")}:</dt>
+              <dt>{t("department")}</dt>
               <dd className="text-foreground">{order.departmentName}</dd>
             </div>
           ) : null}

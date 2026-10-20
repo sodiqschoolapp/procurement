@@ -30,6 +30,7 @@ export async function HeadSpendingView({
   filters: AnalyticsFilters;
 }) {
   const t = await getTranslations("analytics");
+  const tShort = await getTranslations("analytics.short");
   const tPayment = await getTranslations("paymentTypes");
   const format = await getFormatters();
   const records = (scope: AnalyticsFilters, key: DrillKey = { kind: "period" }) =>
@@ -98,7 +99,7 @@ export async function HeadSpendingView({
           {chart.rows.length === 0 ? (
             <p className="text-sm text-muted-foreground">{t("spending.none")}</p>
           ) : (
-            <BarChartBlock points={chartPoints(chart.rows, t, format)} label={chart.title} />
+            <BarChartBlock points={chartPoints(chart.rows, tShort, format)} label={chart.title} />
           )}
         </ChartCard>
       ))}

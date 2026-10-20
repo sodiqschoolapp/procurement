@@ -33,6 +33,7 @@ export async function ManagersView({
   filters: AnalyticsFilters;
 }) {
   const t = await getTranslations("analytics");
+  const tShort = await getTranslations("analytics.short");
   const format = await getFormatters();
   const scope = (row: ManagerRow) => ({
     filters: { ...filters, manager: row.id },
@@ -106,19 +107,19 @@ export async function ManagersView({
                     : t("inactive", { name: row.name! }),
                 <>
                   {link(orders(row), format.quantity(String(row.orders.count)))}
-                  {under(countChangeText(row.orders.change, t, format))}
+                  {under(countChangeText(row.orders.change, tShort, format))}
                 </>,
                 row.average === null ? (
                   <span className="text-muted-foreground">{t("managers.noOrder")}</span>
                 ) : (
                   <>
                     {link(orders(row), average(row.average))}
-                    {under(amountChangeText(row.averageChange, t, format))}
+                    {under(amountChangeText(row.averageChange, tShort, format))}
                   </>
                 ),
                 <>
                   {link(cancelled(row), format.quantity(String(row.cancelled.count)))}
-                  {under(countChangeText(row.cancelled.change, t, format))}
+                  {under(countChangeText(row.cancelled.change, tShort, format))}
                 </>,
                 row.held === 0n ? (
                   <span className="text-muted-foreground">{t("managers.noCash")}</span>
