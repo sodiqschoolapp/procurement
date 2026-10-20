@@ -61,6 +61,8 @@ export function SettlementView({ settlement }: { settlement: WireSettlement }) {
   const [asking, setAsking] = useState(false);
   const [pending, setPending] = useState(false);
   const [failed, setFailed] = useState<Failed>(null);
+  // After Close the orders leave settlement: the screen says so instead of "Not found".
+  const [closed, setClosed] = useState<number | null>(null);
 
   const allOrders = settlement.managers.flatMap((manager) => manager.orders);
   const numberOf = new Map(allOrders.map((order) => [order.id, order.number]));
@@ -106,6 +108,20 @@ export function SettlementView({ settlement }: { settlement: WireSettlement }) {
   const oneManager = settlement.managers.length === 1;
   const ready =
     valid && rowCount > 0 && comment.trim() !== "" && date !== "" && !uploading && !pending;
+  // Why "Save" cannot be pressed yet, said beside it (no button is greyed out without a reason).
+  const notReady = pending
+    ? null
+    : !valid
+      ? t("whyNot.amounts")
+      : rowCount === 0
+        ? t("whyNot.nothing")
+        : date === ""
+          ? t("whyNot.date")
+          : comment.trim() === ""
+            ? t("whyNot.comment")
+            : uploading
+              ? t("whyNot.uploading")
+              : null;
 
   async function addFile(chosen: File | undefined) {
     if (!chosen) return;
@@ -198,6 +214,25 @@ export function SettlementView({ settlement }: { settlement: WireSettlement }) {
       <dd className="text-sm tabular-nums">{value}</dd>
     </div>
   );
+
+  if (closed !== null) {
+    return (
+      <div className="flex w-full min-w-0 flex-col gap-6" data-settlement-closed>
+        <section className="flex flex-col items-center gap-2 rounded-xl border border-border bg-card px-4 py-12 text-center">
+          <Icon name="check_circle" size={24} className="mb-1 text-success" />
+          <h1 className="text-subheading font-semibold">{t("closedDone", { count: closed })}</h1>
+          <div className="mt-3 flex flex-wrap justify-center gap-2">
+            <Link href="/orders" className={buttonVariants()}>
+              {t("back")}
+            </Link>
+            <Link href="/orders?status=CLOSED" className={buttonVariants({ variant: "ghost" })}>
+              {t("seeClosed")}
+            </Link>
+          </div>
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-6" data-settlement>
@@ -565,7 +600,16 @@ export function SettlementView({ settlement }: { settlement: WireSettlement }) {
           ) : (
             <p className="text-small text-muted-foreground">{t("fileOneManager")}</p>
           )}
-          <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+            {notReady && (
+              <p
+                data-settle-why
+                className="flex items-center gap-1.5 text-small text-muted-foreground sm:mr-auto"
+              >
+                <Icon name="info" size={16} className="shrink-0" />
+                {notReady}
+              </p>
+            )}
             <Link
               href="/orders"
               className={cn(buttonVariants({ variant: "secondary" }), "max-sm:h-12")}
@@ -593,6 +637,7 @@ export function SettlementView({ settlement }: { settlement: WireSettlement }) {
           orders={allOrders.map((order) => ({ id: order.id, number: order.number }))}
           versionOf={(id) => allOrders.find((order) => order.id === id)?.version ?? 0}
           onAnswer={setFailed}
+          onDone={setClosed}
           className="max-sm:h-12 max-sm:w-full"
         />
       </div>
@@ -602,6 +647,7 @@ export function SettlementView({ settlement }: { settlement: WireSettlement }) {
         onOpenChange={setAsking}
         pending={pending}
         confirmDisabled={!ready}
+        disabledReason={notReady}
         text={{
           title: t("confirmTitle", { count: rowCount }),
           result: [

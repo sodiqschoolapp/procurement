@@ -104,6 +104,7 @@ export function MoveButton({
   orders,
   versionOf,
   onAnswer,
+  onDone,
   size,
   variant = "secondary",
   className,
@@ -115,6 +116,11 @@ export function MoveButton({
   versionOf: (orderId: string) => number;
   /** Called after every answer: null on success, else one line per refused order. */
   onAnswer: (failed: { title: string; lines: { orderId: string; line: string }[] } | null) => void;
+  /**
+   * Called after a success with how many orders moved, in place of reading the page again: a
+   * screen whose orders leave it (the settlement screen after Close) shows its own success state.
+   */
+  onDone?: (count: number) => void;
   /** Small in a desktop selection bar beside Clear (design system: one size in one row). */
   size?: "sm";
   variant?: "default" | "secondary";
@@ -143,6 +149,7 @@ export function MoveButton({
     setPending(true);
     key.current ??= newClientKey();
     let answered = false;
+    let done = false;
     try {
       const written = Object.fromEntries(
         Object.entries(notes).filter(([, text]) => text.trim() !== ""),
@@ -157,6 +164,10 @@ export function MoveButton({
       if (answer.ok) {
         toast.success(t(`done.${move}`, { count: answer.data.orders.length }));
         onAnswer(null);
+        if (onDone) {
+          done = true;
+          onDone(answer.data.orders.length);
+        }
         return;
       }
       const numberOf = new Map(orders.map((order) => [order.id, order.number]));
@@ -192,7 +203,7 @@ export function MoveButton({
       if (answered) key.current = null;
       setAsking(false);
       setPending(false);
-      router.refresh();
+      if (!done) router.refresh();
     }
   }
 

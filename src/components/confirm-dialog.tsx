@@ -4,6 +4,7 @@ import { AlertDialog } from "@base-ui/react/alert-dialog";
 import { useTranslations } from "next-intl";
 import { type ReactNode, useId } from "react";
 
+import { Icon } from "@/components/icon";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/components/utils";
 
@@ -31,6 +32,7 @@ export function ConfirmDialogBody({
   text,
   pending = false,
   confirmDisabled = false,
+  disabledReason,
   onConfirm,
   onCancel,
   children,
@@ -41,6 +43,8 @@ export function ConfirmDialogBody({
   pending?: boolean;
   /** While what the user still has to give is missing (a reason too short); the server checks again. */
   confirmDisabled?: boolean;
+  /** Why the confirm button cannot be pressed yet, said beside it (no reasonless grey button). */
+  disabledReason?: string | null;
   onConfirm: () => void;
   onCancel: () => void;
   /** What the user may still set before confirming, under the result (Finance's payment types). */
@@ -56,6 +60,15 @@ export function ConfirmDialogBody({
         {text.result}
       </p>
       {children}
+      {confirmDisabled && !pending && disabledReason ? (
+        <p
+          data-confirm-why
+          className="mt-4 flex items-center gap-1.5 text-small text-muted-foreground"
+        >
+          <Icon name="info" size={16} className="shrink-0" />
+          {disabledReason}
+        </p>
+      ) : null}
       <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
         <Button variant="secondary" onClick={onCancel} disabled={pending}>
           {t("cancel")}
@@ -79,6 +92,7 @@ export function ConfirmDialog({
   text,
   pending = false,
   confirmDisabled = false,
+  disabledReason,
   onConfirm,
   children,
 }: {
@@ -87,6 +101,7 @@ export function ConfirmDialog({
   text: ConfirmDialogText;
   pending?: boolean;
   confirmDisabled?: boolean;
+  disabledReason?: string | null;
   onConfirm: () => void;
   children?: ReactNode;
 }) {
@@ -106,7 +121,7 @@ export function ConfirmDialog({
           aria-describedby={resultId}
           className={cn(
             "fixed top-1/2 left-1/2 z-50 w-[calc(100vw-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2",
-            "rounded-xl bg-popover p-6 text-popover-foreground shadow-float",
+            "rounded-xl border border-border bg-popover p-5 text-popover-foreground shadow-float sm:p-6",
             "transition-[opacity,scale] duration-160 ease-out",
             "data-ending-style:scale-[0.98] data-ending-style:opacity-0 data-starting-style:scale-[0.98] data-starting-style:opacity-0",
           )}
@@ -117,6 +132,7 @@ export function ConfirmDialog({
             text={text}
             pending={pending}
             confirmDisabled={confirmDisabled}
+            disabledReason={disabledReason}
             onConfirm={onConfirm}
             onCancel={() => onOpenChange(false)}
           >

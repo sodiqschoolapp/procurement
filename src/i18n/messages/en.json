@@ -260,7 +260,11 @@
   },
   "common": {
     "close": "Close",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "whyNot": {
+      "branch": "To go on, choose the branch.",
+      "fields": "To go on, fill in every field."
+    }
   },
   "unsavedChanges": {
     "title": "Leave without saving?",
@@ -1930,7 +1934,16 @@
       "overspend": {
         "waits": "Over the plan by {amount} ({percent}%): waits for the Procurement Head's acknowledgment.",
         "acknowledged": "Over the plan by {amount} ({percent}%): acknowledged by {name}."
-      }
+      },
+      "whyNot": {
+        "amounts": "To save, fix the amounts marked in red.",
+        "nothing": "To save, type at least one amount above 0.",
+        "date": "To save, choose the date.",
+        "comment": "To save, write a comment.",
+        "uploading": "Wait for the file to upload."
+      },
+      "closedDone": "{count, plural, one {# order closed} other {# orders closed}}",
+      "seeClosed": "See the closed orders"
     },
     "managers": {
       "title": "Money with managers",
@@ -2265,7 +2278,7 @@
       "cancel": "Cancel",
       "save": "Send",
       "confirmTitle": "Send {count, plural, one {# item} other {# items}} to {to}?",
-      "confirmResult": "The stock leaves {from} now. The transfer is In transit to {to} until it is received there. It cannot be cancelled.",
+      "confirmResult": "The stock leaves {from} now. The transfer is In transit to {to} until it is received there; until then it can be cancelled.",
       "confirmButton": "Send now",
       "saved": "Transfer {number} is sent.",
       "savedTitle": "Transfer {number} is sent and In transit. The stock of {from} is lowered.",

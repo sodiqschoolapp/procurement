@@ -260,7 +260,11 @@
   },
   "common": {
     "close": "Yopish",
-    "cancel": "Bekor qilish"
+    "cancel": "Bekor qilish",
+    "whyNot": {
+      "branch": "Davom etish uchun filialni tanlang.",
+      "fields": "Davom etish uchun har bir maydonni toʻldiring."
+    }
   },
   "unsavedChanges": {
     "title": "Saqlamasdan chiqasizmi?",
@@ -1930,7 +1934,16 @@
       "overspend": {
         "waits": "Rejadan {amount} ({percent}%) ortiq: Xaridlar rahbari tasdigʻini kutmoqda.",
         "acknowledged": "Rejadan {amount} ({percent}%) ortiq: {name} tasdiqladi."
-      }
+      },
+      "whyNot": {
+        "amounts": "Saqlash uchun qizil bilan belgilangan summalarni tuzating.",
+        "nothing": "Saqlash uchun kamida bitta summani 0 dan katta qilib yozing.",
+        "date": "Saqlash uchun sanani tanlang.",
+        "comment": "Saqlash uchun izoh yozing.",
+        "uploading": "Fayl yuklanishini kuting."
+      },
+      "closedDone": "{count} ta buyurtma yopildi",
+      "seeClosed": "Yopilgan buyurtmalarni koʻrish"
     },
     "managers": {
       "title": "Menejerlardagi pul",
@@ -2265,7 +2278,7 @@
       "cancel": "Bekor qilish",
       "save": "Yuborish",
       "confirmTitle": "{count} ta tovar {to} ga yuborilsinmi?",
-      "confirmResult": "Tovar hozir {from} omboridan chiqadi. Koʻchirish {to} da qabul qilinmaguncha «Yoʻlda» boʻladi. Uni bekor qilib boʻlmaydi.",
+      "confirmResult": "Tovar hozir {from} omboridan chiqadi. Koʻchirish {to} da qabul qilinmaguncha «Yoʻlda» boʻladi; shu vaqtgacha uni bekor qilish mumkin.",
       "confirmButton": "Hozir yuborish",
       "saved": "{number} koʻchirish yuborildi.",
       "savedTitle": "{number} koʻchirish yuborildi va yoʻlda. {from} qoldigʻi kamaydi.",

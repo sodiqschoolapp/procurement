@@ -62,6 +62,7 @@ export function RecordMoneyButton({
   className?: string;
 }) {
   const t = useTranslations("money.record");
+  const tSettle = useTranslations("money.settle");
   const tKinds = useTranslations("money.kinds");
   const tMoves = useTranslations("orders.moves");
   const tAll = useTranslations();
@@ -259,6 +260,21 @@ export function RecordMoneyButton({
         onOpenChange={setAsking}
         pending={pending}
         confirmDisabled={!ready}
+        disabledReason={
+          loading
+            ? null
+            : !valid
+              ? tSettle("whyNot.amounts")
+              : given.length === 0
+                ? tSettle("whyNot.nothing")
+                : date === ""
+                  ? tSettle("whyNot.date")
+                  : comment.trim() === ""
+                    ? tSettle("whyNot.comment")
+                    : uploading
+                      ? tSettle("whyNot.uploading")
+                      : null
+        }
         text={{
           title: t("title", { count: count || orderIds.length }),
           result,
