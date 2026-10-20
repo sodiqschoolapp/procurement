@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { check, jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { bigint, boolean, check, jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
 // scheduled_jobs: the state of each job of the scheduler (build-plan 0.13: "a job registry with
 // name, schedule and last run"). Not a table of 14-data-model.md (plan of 0.13, decision 2, Look
@@ -37,6 +37,36 @@ export const scheduledJobs = pgTable(
     check(
       "scheduled_jobs_failed_check",
       sql`(${table.lastFailedTick} IS NULL) = (${table.lastFailedAt} IS NULL)`,
+    ),
+  ],
+);
+
+// database_copies: one row per attempt of the job `database_copy` (13-technology.md, Running it;
+// D55 item 6; plan of 8.2b, decided items 3, 6 and 13). Not a table of 14-data-model.md, as
+// scheduled_jobs. `copyDue()` of src/domain/database-copy.ts reads the newest rows; the Head's
+// Settings page shows the Tashkent date of the newest good one. A console copy (`npm run
+// db:copy`) writes no row. Written only by the job, never updated, never deleted.
+// - `tick` is the job's tick, one row per tick; `file_key` and `size_bytes` are the file of a
+//   good copy and are empty for a failed one.
+export const databaseCopies = pgTable(
+  "database_copies",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    tick: timestamp("tick", { withTimezone: true }).notNull().unique("database_copies_tick_key"),
+    succeeded: boolean("succeeded").notNull(),
+    fileKey: text("file_key"),
+    sizeBytes: bigint("size_bytes", { mode: "bigint" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    check(
+      "database_copies_outcome_check",
+      sql`CASE WHEN ${table.succeeded}
+            THEN ${table.fileKey} IS NOT NULL AND ${table.sizeBytes} IS NOT NULL AND ${table.sizeBytes} > 0
+            ELSE ${table.fileKey} IS NULL AND ${table.sizeBytes} IS NULL
+          END`,
     ),
   ],
 );

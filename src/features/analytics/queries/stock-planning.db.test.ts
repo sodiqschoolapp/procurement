@@ -146,6 +146,40 @@ describe("Stock planning (10 Analytics, Manager, Stock planning; plan of 6.5c)",
     expect(block.low).toBe(1);
   });
 
+  it("a running month's use and its point are against the same days of September (10 point 1; D55 item 10)", async () => {
+    setClock(TODAY);
+    const own = await spendingScene();
+    const head = await insertUser("HEAD");
+    const { a } = await planningScene(own, head.id);
+    // 15 September is the last of the same days of 15 October; 20 September is after them.
+    await stockDocument(own, {
+      type: "ISSUE",
+      docDate: "2031-09-15",
+      lines: [{ variantId: a, qty: "1" }],
+    });
+    await stockDocument(own, {
+      type: "ISSUE",
+      docDate: "2031-09-20",
+      lines: [{ variantId: a, qty: "3" }],
+    });
+    setClock(TODAY);
+    await refreshNow();
+
+    const block = await getStockPlanning(own.manager.id, THIS_MONTH, ofBranch(own));
+    const line = block.lines.find((each) => each.variantId === a)!;
+    // 10 against 6 + 1 = 7: +3, 42.9 %; the 3 of 20 September are left out.
+    expect(line).toMatchObject({ used: "10.000", before: "7.000" });
+    expect(line.change).toEqual({ difference: "3", percent: "42.9" });
+    expect(line.months[0]!.change).toEqual({ difference: "3", percent: "42.9" });
+    // September once finished is compared whole: 6 + 1 + 3 = 10.
+    const september = await getStockPlanning(
+      own.manager.id,
+      { choice: "last_month", from: null, to: null },
+      ofBranch(own),
+    );
+    expect(september.lines.find((each) => each.variantId === a)!.used).toBe("10.000");
+  });
+
   it("each number equals the list it opens (point 3; decided item 7)", async () => {
     const { own, a, b } = await scene();
     const filters = ofBranch(own);

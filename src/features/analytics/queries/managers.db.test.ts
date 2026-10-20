@@ -62,7 +62,9 @@ async function managersScene() {
   );
 
   // Cancelled: 20:30 UTC on 9 October is 10 October in Tashkent (now), bought in September;
-  // 19:30 UTC on 30 September is 1 October (now); 18:30 UTC is 23:30 on 30 September (before).
+  // 19:30 UTC on 30 September is 1 October (now); 18:30 UTC on 15 September is 23:30 on 15
+  // September, the last of the same days the running month is compared with (before; D55 item
+  // 10), and 19:30 UTC that day is 16 September, after them (neither).
   await bought(scene, {
     purchasedOn: "2031-09-20",
     cancelled: true,
@@ -74,9 +76,14 @@ async function managersScene() {
     cancelledAt: "2031-09-30T19:30:00Z",
   });
   await bought(scene, {
-    purchasedOn: "2031-09-29",
+    purchasedOn: "2031-09-10",
     cancelled: true,
-    cancelledAt: "2031-09-30T18:30:00Z",
+    cancelledAt: "2031-09-15T18:30:00Z",
+  });
+  await bought(scene, {
+    purchasedOn: "2031-09-10",
+    cancelled: true,
+    cancelledAt: "2031-09-15T19:30:00Z",
   });
 
   // Cash held: 60 000 since 3 October, 40 000 since 8 October (gifts: nothing spent). Owed:

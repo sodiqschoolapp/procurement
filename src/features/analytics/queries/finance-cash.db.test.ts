@@ -159,7 +159,8 @@ describe("given, returned and paid back by month (10 Finance, Cash; 08 Money led
     setClock("2031-10-15T05:00:00Z");
     const { scene, finance, other, otherFinance } = await financeScene();
     const order = await bought(scene, { purchasedOn: "2031-09-02" });
-    await moneyOn(order, finance.id, { amount: 60_000n, occurredOn: "2031-09-20" });
+    // Inside 1 to 15 September, the same days this running month is compared with (D55 item 10).
+    await moneyOn(order, finance.id, { amount: 60_000n, occurredOn: "2031-09-10" });
     await moneyOn(order, finance.id, { amount: 100_000n, occurredOn: "2031-10-03" });
     await moneyOn(order, finance.id, { amount: 50_000n, occurredOn: "2031-10-10" });
     await moneyOn(order, finance.id, {
@@ -193,15 +194,23 @@ describe("given, returned and paid back by month (10 Finance, Cash; 08 Money led
       returned: { amount: 20_000n, change: { difference: 20_000n, percent: null } },
       paidBack: { amount: 5_000n, change: { difference: 5_000n, percent: null } },
     });
-    // The only month is October, its change against the whole of September.
+    // The only month is October, holding today: its change against 1 to 15 September (D55 item 10).
     expect(block.months).toEqual([{ month: "2031-10", ...block.totals }]);
+
+    // Cash given on 20 September is after the same days: it changes neither the total nor the
+    // October point of this running month (10 point 1; D55 item 10).
+    await moneyOn(order, finance.id, { amount: 1_000n, occurredOn: "2031-09-20" });
+    await refreshNow();
+    const later = await getFinanceCash(finance.id, THIS_MONTH, NO_ANALYTICS_FILTERS);
+    expect(later.totals.given).toEqual(block.totals.given);
+    expect(later.months[0]!.given).toEqual(block.totals.given);
 
     // Two months: September against August (nothing), October against September (Must fix 1).
     const twoMonths: PeriodInput = { choice: "custom", from: "2031-09-01", to: "2031-10-31" };
     const both = await getFinanceCash(finance.id, twoMonths, NO_ANALYTICS_FILTERS);
     expect(both.months.map((row) => [row.month, row.given])).toEqual([
-      ["2031-09", { amount: 60_000n, change: { difference: 60_000n, percent: null } }],
-      ["2031-10", { amount: 150_000n, change: { difference: 90_000n, percent: "150.0" } }],
+      ["2031-09", { amount: 61_000n, change: { difference: 61_000n, percent: null } }],
+      ["2031-10", { amount: 150_000n, change: { difference: 89_000n, percent: "145.9" } }],
     ]);
 
     // Each amount is the rows it opens (10 point 3).

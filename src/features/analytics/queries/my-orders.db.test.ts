@@ -109,35 +109,36 @@ async function ownScene(scene: SpendingScene, ownerId: string, people: People) {
     ],
     { ownerId, submittedAt: "2031-10-12T05:00:00Z" },
   );
-  // The period before: submitted 20 September, Open 24 hours later, three approvals.
+  // The period before: submitted 10 September, inside 1 to 15 September, the same days this
+  // running month is compared with (D55 item 10); Open 24 hours later, three approvals.
   await decided(
     scene,
     "PURCHASING",
     [
-      { type: "SUBMIT", from: "DRAFT", to: "PENDING_HEAD", at: "2031-09-20T05:00:00Z" },
+      { type: "SUBMIT", from: "DRAFT", to: "PENDING_HEAD", at: "2031-09-10T05:00:00Z" },
       {
         type: "APPROVE",
         from: "PENDING_HEAD",
         to: "PENDING_PRINCIPAL",
-        at: "2031-09-20T06:00:00Z",
+        at: "2031-09-10T06:00:00Z",
         actorId: people.head,
       },
       {
         type: "APPROVE",
         from: "PENDING_PRINCIPAL",
         to: "PENDING_FINANCE",
-        at: "2031-09-20T07:00:00Z",
+        at: "2031-09-10T07:00:00Z",
         actorId: people.principal,
       },
       {
         type: "APPROVE",
         from: "PENDING_FINANCE",
         to: "PURCHASING",
-        at: "2031-09-21T05:00:00Z",
+        at: "2031-09-11T05:00:00Z",
         actorId: people.finance,
       },
     ],
-    { ownerId, submittedAt: "2031-09-20T05:00:00Z" },
+    { ownerId, submittedAt: "2031-09-10T05:00:00Z" },
   );
 
   // The bought orders are submitted on 1 August: outside both periods of My orders.

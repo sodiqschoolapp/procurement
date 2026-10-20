@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { MAX_FILE_BYTES, allowedFor, shrinkTarget, sniffMime, storedName } from "./files";
+import {
+  MAX_FILE_BYTES,
+  allowedFor,
+  shrinkTarget,
+  sniffMime,
+  storedName,
+  versionSide,
+} from "./files";
 
 const bytes = (...values: (number | string)[]): Uint8Array =>
   new Uint8Array(
@@ -58,18 +65,36 @@ describe("the stored file name (plan of 0.12, review Should fix 6)", () => {
 
 describe("the browser shrinks a large photo (edge-cases/system.md, 'A phone photo is very large')", () => {
   it("a 4032 × 3024 phone photo becomes 2400 × 1800", () => {
-    expect(shrinkTarget(4032, 3024, 3_500_000)).toEqual({ width: 2400, height: 1800 });
+    expect(shrinkTarget(4032, 3024, 3_500_000, "photo")).toEqual({ width: 2400, height: 1800 });
   });
 
   it("a small, light photo is sent as it is", () => {
-    expect(shrinkTarget(1000, 800, 400_000)).toBeNull();
+    expect(shrinkTarget(1000, 800, 400_000, "photo")).toBeNull();
   });
 
   it("a heavy photo of small sides is re-encoded at its own size", () => {
-    expect(shrinkTarget(1000, 800, 2_500_000)).toEqual({ width: 1000, height: 800 });
+    expect(shrinkTarget(1000, 800, 2_500_000, "photo")).toEqual({ width: 1000, height: 800 });
   });
 
   it("a tall photo keeps its shape", () => {
-    expect(shrinkTarget(3024, 4032, 100)).toEqual({ width: 1800, height: 2400 });
+    expect(shrinkTarget(3024, 4032, 100, "photo")).toEqual({ width: 1800, height: 2400 });
+  });
+});
+
+describe("a receipt keeps 2 500 px (07-purchasing.md, Receipt; D55 item 7; plan of 8.2b)", () => {
+  it("a 1 000 × 4 000 receipt is redrawn to 625 × 2 500, a catalog photo to 600 × 2 400", () => {
+    expect(shrinkTarget(1000, 4000, 100, "document")).toEqual({ width: 625, height: 2500 });
+    expect(shrinkTarget(1000, 4000, 100, "photo")).toEqual({ width: 600, height: 2400 });
+  });
+
+  it("a receipt of 2 500 px and under 2 MB is sent as it is", () => {
+    expect(shrinkTarget(2500, 1800, 1_900_000, "document")).toBeNull();
+  });
+
+  it("is stored at 2 500 px beside the 160 px thumbnail; a catalog photo keeps 160 and 1 200", () => {
+    expect([versionSide("small", "document"), versionSide("large", "document")]).toEqual([
+      160, 2500,
+    ]);
+    expect([versionSide("small", "photo"), versionSide("large", "photo")]).toEqual([160, 1200]);
   });
 });

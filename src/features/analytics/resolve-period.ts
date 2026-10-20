@@ -1,4 +1,5 @@
-import { type Period, periodBefore, periodOf } from "@/domain/analytics";
+import { type Period, isRunning, periodBefore, periodOf } from "@/domain/analytics";
+import type { BusinessDate } from "@/domain/business-date";
 import type { MonthDay } from "@/domain/settings";
 import type { Executor } from "@/server/authorize";
 import { today } from "@/server/clock";
@@ -19,23 +20,39 @@ export class PeriodRefusedError extends Error {
   }
 }
 
-export type ResolvedPeriod = { period: Period; before: Period; schoolYearStart: MonthDay | null };
+export type ResolvedPeriod = {
+  period: Period;
+  /** The period before; while the period runs, its same days (10 point 1; plan of 8.2b). */
+  before: Period;
+  /** Whether the period is still running, so the page says what it is compared with. */
+  running: boolean;
+  /** Today's Tashkent date, which the month points of a running period are compared on. */
+  today: BusinessDate;
+  schoolYearStart: MonthDay | null;
+};
 
 export async function resolvePeriod(
   executor: Executor,
   input: PeriodInput,
 ): Promise<ResolvedPeriod> {
   const { school_year_start: schoolYearStart } = await readSettings(executor);
+  const day = today();
   let period: Period;
   try {
     period = periodOf(
       input.choice,
-      today(),
+      day,
       schoolYearStart,
       input.from && input.to ? { from: input.from, to: input.to } : undefined,
     );
   } catch {
     throw new PeriodRefusedError();
   }
-  return { period, before: periodBefore(period, schoolYearStart), schoolYearStart };
+  return {
+    period,
+    before: periodBefore(period, schoolYearStart, day),
+    running: isRunning(period, day),
+    today: day,
+    schoolYearStart,
+  };
 }

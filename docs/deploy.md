@@ -14,7 +14,7 @@ Steps 1 to 5 type no secret: the database address and its certificate are handed
 | The database | A development database, PostgreSQL 17, component `db` of the same app | `.do/app.yaml` |
 | The address | `ombor-test.sodiqschool.uz`, a CNAME in the DNS of `sodiqschool.uz` | Step 4 below |
 | The files | Cloudflare R2, the private bucket `ombor-test-files` | Step 6 below |
-| The weekly copy of the database | The same bucket, under `backups/`, one file `database-<date>.dump` per Sunday | The job `database_copy`, Sundays at 04:00 Tashkent (task 8.2); the section "The weekly copy" below |
+| The weekly copy of the database | Cloudflare R2, a bucket of its own, `ombor-test-backups`, under `backups/`, one file `database-<date>.dump` per copy | The job `database_copy`, Sundays at 04:00 Tashkent and the next night after a failure (tasks 8.2 and 8.2b); the section "The weekly copy" below |
 | The demo users | `seed_head`, `seed_manager`, `seed_principal`, `seed_finance` in the database | `scripts/db-seed.mjs` at every start, step 7 below |
 
 When a new version starts, the container first applies the database migrations (`scripts/start.sh`), then, on the test copy only (`SEED_DEMO_DATA=yes`), writes the demo users that are missing, then starts the app. DigitalOcean sends visitors to the new version only after `/health` answers. If the migration fails, the new container stops and the deploy is marked failed; the old version should keep running (DigitalOcean's documented behaviour as remembered by the session that wrote this, not read: check it the first time a deploy fails).
@@ -66,7 +66,8 @@ When a new version starts, the container first applies the database migrations (
 2. R2 Object Storage → turn it on. Cloudflare may ask for a card even for the free 10 GB; nothing is charged below that.
 3. Create bucket: name `ombor-test-files` (exactly this: `.do/app.yaml` names it), location Automatic with the hint Eastern Europe (EEUR), the nearest to Frankfurt, default storage class Standard. Leave **public access off**: no `r2.dev` address and no custom domain. Every file goes through the app, which checks who may see it (`13-technology.md`, Files).
 4. R2 → Manage API tokens → Create API token: permission **Object Read & Write**, applied to the one bucket `ombor-test-files` only, no expiry needed. Cloudflare shows three things once: the Access Key ID, the Secret Access Key, and the S3 endpoint for your account (`https://<account id>.r2.cloudflarestorage.com`). Keep the page open for step 8; do not paste them anywhere else.
-5. If a screen differs from these words (another name for the permission, no location hint), choose the nearest and say on issue #9 what you saw. Stop if R2 asks for money beyond the free tier.
+5. The bucket of the copies of the database (task 8.2b): Create bucket `ombor-test-backups` the same way, public access off. Then a second API token, **Object Read & Write** on the one bucket `ombor-test-backups` only. Its Access Key ID and Secret Access Key go into step 8 as `BACKUP_S3_ACCESS_KEY_ID` and `BACKUP_S3_SECRET_ACCESS_KEY`; the endpoint is the same. The copies hold password hashes, so the files token never reaches them, and this token reaches nothing else.
+6. If a screen differs from these words (another name for the permission, no location hint), choose the nearest and say on issue #9 what you saw. Stop if R2 asks for money beyond the free tier.
 
 ### 7. Update the app from `.do/app.yaml`
 
@@ -85,6 +86,8 @@ Task 0.15 added `SEED_DEMO_DATA`, `S3_REGION` and `S3_BUCKET` to `.do/app.yaml`.
    | `S3_ENDPOINT` | the S3 endpoint Cloudflare showed in step 6.4 |
    | `S3_ACCESS_KEY_ID` | the Access Key ID of step 6.4 |
    | `S3_SECRET_ACCESS_KEY` | the Secret Access Key of step 6.4 |
+   | `BACKUP_S3_ACCESS_KEY_ID` | the Access Key ID of the token of step 6.5 |
+   | `BACKUP_S3_SECRET_ACCESS_KEY` | the Secret Access Key of the token of step 6.5 |
    | `SEED_HEAD_PASSWORD` | a password you choose for `seed_head` |
    | `SEED_MANAGER_PASSWORD` | a password you choose for `seed_manager` |
    | `SEED_PRINCIPAL_PASSWORD` | a password you choose for `seed_principal` |
@@ -112,22 +115,34 @@ Task 0.15 added `SEED_DEMO_DATA`, `S3_REGION` and `S3_BUCKET` to `.do/app.yaml`.
 
 How the demo users behave (0.14, decision 4): the seed runs on every deploy and **keeps what is there**. It never changes a password, a name or a branch, and never activates a user again. A demo user you deactivate or change by hand stays so; a changed password in the dashboard does not change the user's password. It refuses, writing nothing, when a user with a demo name exists with another role, or when `seed_principal` is missing and branch CHL already has an active Principal: the log then shows that reason and `db:seed failed: …`, and the app starts all the same.
 
-## The weekly copy (task 8.2)
+## The weekly copy (tasks 8.2 and 8.2b)
 
-Every Sunday at 04:00 Tashkent time the app saves a copy of the whole database, made by `pg_dump` 17 in the image, to the bucket `ombor-test-files` as `backups/database-<YYYY-MM-DD>.dump`. It needs no new variable: it uses the database's own `DATABASE_URL` and `DATABASE_CA_CERT` and the `S3_…` values of step 8. Every copy is kept; nothing deletes them. DigitalOcean's own daily backups of the database are separate and stay as they are.
+Every Sunday at 04:00 Tashkent time the app saves a copy of the whole database, made by `pg_dump` 17 in the image, to the bucket of its own `ombor-test-backups` as `backups/database-<YYYY-MM-DD>.dump` (`13-technology.md`, Running it). It uses the database's own `DATABASE_URL` and `DATABASE_CA_CERT`, `S3_ENDPOINT` and `S3_REGION` of the files, and `BACKUP_S3_BUCKET`, `BACKUP_S3_ACCESS_KEY_ID` and `BACKUP_S3_SECRET_ACCESS_KEY` of step 8. Every copy is kept; nothing deletes them. DigitalOcean's own daily backups of the database are separate and stay as they are.
 
-The first version that carries the job copies at once for the last Sunday, so a file is there soon after the deploy.
+When a copy fails, every active Head gets a notice in the bell ("The weekly copy of the database failed"), and the copy is tried again the next night at 04:00, every night until one succeeds. A Sunday missed while the app was down is copied the first night the last good copy is 7 days old. The Head's Settings page shows the date of the last good copy. A missing `BACKUP_S3_…` value is a failed copy too: the Heads are told every night until it is typed. The cause is in the runtime log, one line `Job database_copy: copy failed: …`.
 
-1. In Cloudflare: R2 → `ombor-test-files` → the folder `backups/` holds `database-<last Sunday>.dump`. This is the check of task 8.2.
-2. Also, in the app → component `web` → Console: `node scripts/db-copy.mjs` makes a copy now, named by today's date, and prints `copy ok backups/database-….dump (<size> bytes)`. Anything else is one line `copy failed: …` (below).
+The first version that carries the job copies on its first night, so a file is there soon after the deploy.
+
+1. In Cloudflare: R2 → `ombor-test-backups` → the folder `backups/` holds `database-<date>.dump`; `ombor-test-files` holds no `backups/` folder. Settings in the app (as the Head) shows the same date.
+2. Also, in the app → component `web` → Console: `node scripts/db-copy.mjs` makes a copy now, named by today's date, and prints `copy ok backups/database-….dump (<size> bytes)`. Anything else is one line `copy failed: …` (below). A copy made here does not change the date on the Settings page.
 
 To restore a copy into an **empty** database (the restore drill is task 9.6; never into the running app's database): download the file from R2, then `pg_restore --no-owner --dbname=<the empty database's address> database-<date>.dump`, with `pg_restore` 17.
 
-The copies hold everything in the database, password hashes and sign-in sessions included. On the test copy that is invented data; before go-live this is looked at again (tasks 9.4 to 9.6).
+The copies hold everything in the database, password hashes and sign-in sessions included. That is why they are in a bucket of their own, reached by a token of their own (step 6.5).
+
+## A Head forgot the password (task 8.2b)
+
+A Head's password is renewed by another Head on the user's page. When no other Head can (one Head, or every Head locked out), it is renewed from the console (`03-roles-and-permissions.md` rule 4):
+
+1. The app → component `web` → Console.
+2. Type `npm run user:renew-head`. It asks for the Head's username, then the new password twice; the password is not shown while typed and is never printed.
+3. It prints `Renewed the password of "<username>". Every session of this Head is ended.` The Head signs in with the new password. The audit log shows the renewal, with the Head as the one who made it.
+
+It refuses, changing nothing, a username that is not an active Head, an empty password, two passwords that differ, and a Head with no password account. Nothing in the app changes; a Head still cannot renew their own password on a screen.
 
 ## The variables
 
-Seven variables are in `.do/app.yaml`; the owner types eight more in the dashboard, encrypted (steps 8.1 and `BETTER_AUTH_SECRET` below). Where to see them: the app → component `web` → Settings → Environment Variables. The values of `DATABASE_URL` and `DATABASE_CA_CERT` are filled in by DigitalOcean from the database; they are not shown in a chat or written anywhere. Applying `.do/app.yaml` again (step 7) can drop the typed ones: check them after every apply.
+Eight variables are in `.do/app.yaml`; the owner types ten more in the dashboard, encrypted (steps 8.1 and `BETTER_AUTH_SECRET` below). Where to see them: the app → component `web` → Settings → Environment Variables. The values of `DATABASE_URL` and `DATABASE_CA_CERT` are filled in by DigitalOcean from the database; they are not shown in a chat or written anywhere. Applying `.do/app.yaml` again (step 7) can drop the typed ones: check them after every apply.
 
 | Name | Value in `.do/app.yaml` | What it is |
 | --- | --- | --- |
@@ -143,6 +158,8 @@ Seven variables are in `.do/app.yaml`; the owner types eight more in the dashboa
 | `S3_BUCKET` | `ombor-test-files` | The private bucket of step 6. |
 | `S3_ENDPOINT` | none: typed in the dashboard only (step 8) | `https://<account id>.r2.cloudflarestorage.com`. Not a secret, but your own. |
 | `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` | none: typed in the dashboard only (step 8) | The R2 token of step 6.4, for the one bucket. Secrets. |
+| `BACKUP_S3_BUCKET` | `ombor-test-backups` | The private bucket of the copies of the database, step 6.5 (task 8.2b). |
+| `BACKUP_S3_ACCESS_KEY_ID`, `BACKUP_S3_SECRET_ACCESS_KEY` | none: typed in the dashboard only (step 8) | The R2 token of step 6.5, for the bucket of the copies only. Secrets. |
 
 ### `BETTER_AUTH_SECRET` (task 0.6)
 

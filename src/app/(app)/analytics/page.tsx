@@ -68,7 +68,8 @@ export default async function AnalyticsPage({
   );
   if (read === "refused") redirect("/analytics");
   if (read === "not_found") notFound();
-  const { period, filters, variant, options, block, head, principal, manager, finance } = read;
+  const { period, filters, variant, compared, options, block, head, principal, manager, finance } =
+    read;
   // The period resolved by a query: the Manager's and Finance's pages read no Spending block.
   const shownPeriod = manager ? manager[0].period : finance ? finance[0].period : block!.period;
   const t = await getTranslations("analytics");
@@ -90,6 +91,14 @@ export default async function AnalyticsPage({
               })}
             </span>
           </h1>
+          {compared ? (
+            <p className="text-sm leading-5 text-muted-foreground" data-same-days>
+              {t("sameDays", {
+                first: format.date(compared.first),
+                last: format.date(compared.last),
+              })}
+            </p>
+          ) : null}
           <p className="text-sm leading-5 text-muted-foreground" data-refreshed>
             {options.refreshedAt
               ? t("refreshed", { time: format.time(options.refreshedAt) })

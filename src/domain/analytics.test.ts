@@ -9,7 +9,10 @@ import {
   monthBefore,
   monthInside,
   monthsOf,
+  isRunning,
   periodBefore,
+  runningMonthBefore,
+  sameDaysBefore,
   periodChoices,
   periodOf,
   WAITING_GROUP_KEYS,
@@ -122,40 +125,109 @@ describe("the dates of a period", () => {
 });
 
 describe("the period before (decided item 3)", () => {
-  it("is the whole month before, also for a month still running", () => {
-    expect(periodBefore(periodOf("this_month", "2026-10-18", null), null)).toMatchObject({
-      first: "2026-09-01",
-      last: "2026-09-30",
-    });
-    expect(periodBefore(periodOf("last_month", "2026-10-18", null), null)).toMatchObject({
-      first: "2026-08-01",
-      last: "2026-08-31",
-    });
+  it("is the whole month before a finished month", () => {
+    expect(
+      periodBefore(periodOf("last_month", "2026-10-18", null), null, "2026-10-18"),
+    ).toMatchObject({ first: "2026-08-01", last: "2026-08-31" });
   });
 
-  it("is the quarter before, across the year end", () => {
-    expect(periodBefore(periodOf("this_quarter", "2026-02-10", null), null)).toMatchObject({
+  it("is the quarter before a finished quarter, across the year end", () => {
+    const quarter = periodOf("this_quarter", "2026-02-10", null);
+    expect(periodBefore(quarter, null, "2026-04-02")).toMatchObject({
       first: "2025-10-01",
       last: "2025-12-31",
     });
   });
 
-  it("is the school year before", () => {
+  it("is the school year before a finished school year", () => {
     const year = periodOf("school_year", "2026-10-18", SEPTEMBER_1);
-    expect(periodBefore(year, SEPTEMBER_1)).toMatchObject({
+    expect(periodBefore(year, SEPTEMBER_1, "2027-09-02")).toMatchObject({
       first: "2025-09-01",
       last: "2026-08-31",
     });
   });
 
-  it("is the same number of days just before custom dates", () => {
+  it("is the same number of days just before custom dates, even when they hold today", () => {
     const custom = periodOf("custom", "2026-10-18", null, { from: "2026-03-01", to: "2026-03-10" });
     expect(daysOf(custom)).toBe(10);
-    expect(periodBefore(custom, null)).toEqual({
+    expect(periodBefore(custom, null, "2026-03-05")).toEqual({
       choice: "custom",
       first: "2026-02-19",
       last: "2026-02-28",
     });
+  });
+});
+
+describe("a period still running against the same days of the period before (10 point 1; D55 item 10)", () => {
+  it("on 18 October, this month is 1 to 18 October against 1 to 18 September (Done when)", () => {
+    const month = periodOf("this_month", "2026-10-18", null);
+    expect(isRunning(month, "2026-10-18")).toBe(true);
+    expect(periodBefore(month, null, "2026-10-18")).toEqual({
+      choice: "this_month",
+      first: "2026-09-01",
+      last: "2026-09-18",
+    });
+  });
+
+  it("on 31 March, this month is against the whole of February, cut at its end (Done when)", () => {
+    const month = periodOf("this_month", "2027-03-31", null);
+    expect(periodBefore(month, null, "2027-03-31")).toEqual({
+      choice: "this_month",
+      first: "2027-02-01",
+      last: "2027-02-28",
+    });
+    // 30 March: 30 days, still the whole of February.
+    expect(periodBefore(month, null, "2027-03-30")).toMatchObject({ last: "2027-02-28" });
+  });
+
+  it("on 15 November, this quarter is its 46 days against 1 July to 15 August", () => {
+    const quarter = periodOf("this_quarter", "2026-11-15", null);
+    expect(periodBefore(quarter, null, "2026-11-15")).toMatchObject({
+      first: "2026-07-01",
+      last: "2026-08-15",
+    });
+  });
+
+  it("this school year on 18 October is against 1 September to 18 October of the year before", () => {
+    const year = periodOf("school_year", "2026-10-18", SEPTEMBER_1);
+    expect(periodBefore(year, SEPTEMBER_1, "2026-10-18")).toMatchObject({
+      first: "2025-09-01",
+      last: "2025-10-18",
+    });
+  });
+
+  it("last month is never running", () => {
+    expect(isRunning(periodOf("last_month", "2026-10-18", null), "2026-10-18")).toBe(false);
+  });
+
+  it("sameDaysBefore cuts at the end of the period before", () => {
+    expect(
+      sameDaysBefore(
+        { first: "2027-03-01", last: "2027-03-31" },
+        { first: "2027-02-01", last: "2027-02-28" },
+        "2027-03-29",
+      ),
+    ).toEqual({ first: "2027-02-01", last: "2027-02-28" });
+    expect(
+      sameDaysBefore(
+        { first: "2026-10-01", last: "2026-10-31" },
+        { first: "2026-09-01", last: "2026-09-30" },
+        "2026-10-01",
+      ),
+    ).toEqual({ first: "2026-09-01", last: "2026-09-01" });
+  });
+
+  it("the point of the month holding today is against the same days of the month before; the others keep the whole month", () => {
+    const quarter = periodOf("this_quarter", "2026-11-15", null);
+    expect(runningMonthBefore(quarter, "2026-11", "2026-11-15")).toEqual({
+      first: "2026-10-01",
+      last: "2026-10-15",
+    });
+    expect(runningMonthBefore(quarter, "2026-10", "2026-11-15")).toBeNull();
+    // A finished period's points, and custom dates holding today, keep the whole month before.
+    expect(runningMonthBefore(quarter, "2026-11", "2027-01-05")).toBeNull();
+    const custom = periodOf("custom", "2026-11-15", null, { from: "2026-11-01", to: "2026-11-30" });
+    expect(runningMonthBefore(custom, "2026-11", "2026-11-15")).toBeNull();
   });
 });
 

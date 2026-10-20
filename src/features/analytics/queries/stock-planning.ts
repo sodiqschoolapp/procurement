@@ -6,6 +6,7 @@ import {
   type Period,
   type QtyChange,
   monthBefore,
+  runningMonthBefore,
   monthInside,
   monthsOf,
   ninetyDaysSince,
@@ -15,7 +16,6 @@ import {
 } from "@/domain/analytics";
 import { businessMonth } from "@/domain/business-date";
 import type { Executor } from "@/server/authorize";
-import { today } from "@/server/clock";
 import { readSnapshot } from "@/server/read-snapshot";
 
 import type { AnalyticsFilters, PeriodInput } from "../period-params";
@@ -116,6 +116,7 @@ type SpanRow = {
   before: string;
   rate_used: string;
   rate_moves: string;
+  same_days: string;
 };
 
 const keyOf = (row: { branch_id: string; variant_id: string }) =>
@@ -128,8 +129,7 @@ async function planningIn(
   filters: AnalyticsFilters,
 ): Promise<StockPlanning> {
   const actor = await authorizeAnalytics(db, userId, filters);
-  const { period, before } = await resolvePeriod(db, input);
-  const now = today();
+  const { period, before, today: now } = await resolvePeriod(db, input);
   const rate: DateRange = { first: ninetyDaysSince(now), last: now };
   const months = monthsOf(period);
   const firstBefore = businessMonth(`${monthBefore(months[0]!)}-01`);
@@ -139,6 +139,10 @@ async function planningIn(
   const inMonthBefore = movesWhere(actor, firstBefore, filters, "use");
   const inBefore = movesWhere(actor, before, filters, "use");
   const inRate = movesWhere(actor, rate, everyDepartment, "use");
+  // The month holding today, while the period runs, is against the same days of the month
+  // before (10 point 1; plan of 8.2b, decided item 2).
+  const cut = months.map((month) => runningMonthBefore(period, month, now)).find(Boolean) ?? null;
+  const inSameDays = cut ? movesWhere(actor, cut, filters, "use") : sql`false`;
 
   const lines = await db.execute<LineRow>(sql`
     select analytics_stock.branch_id, analytics_stock.variant_id, b.code as branch_code,
@@ -165,10 +169,11 @@ async function planningIn(
            coalesce(sum(${SIGNED_QTY}) filter (where ${inPeriod}), 0)::text as used,
            coalesce(sum(${SIGNED_QTY}) filter (where ${inMonthBefore}), 0)::text as month_before,
            coalesce(sum(${SIGNED_QTY}) filter (where ${inBefore}), 0)::text as before,
+           coalesce(sum(${SIGNED_QTY}) filter (where ${inSameDays}), 0)::text as same_days,
            coalesce(sum(${SIGNED_QTY}) filter (where ${inRate}), 0)::text as rate_used,
            count(*) filter (where ${inRate})::text as rate_moves
     from analytics_stock_moves
-    where (${inPeriod}) or (${inMonthBefore}) or (${inBefore}) or (${inRate})
+    where (${inPeriod}) or (${inMonthBefore}) or (${inBefore}) or (${inRate}) or (${inSameDays})
     group by branch_id, variant_id`);
 
   const usesOf = new Map<string, Map<MonthKey, string>>();
@@ -196,7 +201,8 @@ async function planningIn(
       let earlier = span?.month_before ?? "0";
       const each: PlanningMonth[] = months.map((month) => {
         const value = used?.get(month) ?? "0";
-        const change = qtyChange(value, earlier);
+        const against = runningMonthBefore(period, month, now) ? (span?.same_days ?? "0") : earlier;
+        const change = qtyChange(value, against);
         earlier = value;
         return { month, range: monthInside(month, period)!, used: value, change };
       });

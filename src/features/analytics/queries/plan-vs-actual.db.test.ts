@@ -82,8 +82,9 @@ async function planScene() {
     "MARK_NOT_BOUGHT",
     "2031-10-05T05:00:00Z",
   );
-  // 18:30 UTC on 30 September is 23:30 in Tashkent: the period before, red −3 000.
-  await ended(scene, { purchasedOn: "2031-09-30", unitPrice: "5300" }, "2031-09-30T18:30:00Z");
+  // 18:30 UTC on 15 September is 23:30 in Tashkent, the last of the same days this running
+  // month is compared with (D55 item 10): the period before, red −3 000.
+  await ended(scene, { purchasedOn: "2031-09-15", unitPrice: "5300" }, "2031-09-15T18:30:00Z");
   // 19:30 UTC on 31 October is 1 November: in neither period (D40).
   await ended(scene, { purchasedOn: "2031-10-31", unitPrice: "5200" }, "2031-10-31T19:30:00Z");
   await refreshNow();

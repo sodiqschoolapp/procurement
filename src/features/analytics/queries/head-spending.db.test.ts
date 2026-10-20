@@ -43,7 +43,8 @@ describe("branches side by side (10 Head, Spending; decided items 9 and 11)", ()
     const c = await spendingScene();
     const finance = await insertUser("FINANCE", { branches: [a.branch.id, b.branch.id] });
     await bought(a, { purchasedOn: "2031-10-02", unitPrice: "30000" });
-    await bought(a, { purchasedOn: "2031-09-20", unitPrice: "10000" });
+    // Inside 1 to 15 September, the same days this running month is compared with (D55 item 10).
+    await bought(a, { purchasedOn: "2031-09-10", unitPrice: "10000" });
     await bought(b, { purchasedOn: "2031-10-03", unitPrice: "20000" });
     await bought(c, { purchasedOn: "2031-10-02", unitPrice: "30000" });
     await refreshNow();

@@ -12,7 +12,10 @@ import { isLow } from "./stock";
 // - "This quarter" is the calendar quarter holding today (open question 14; plan of 6.3, decided
 //   item 2, Look first).
 // - The period before is the whole period of the same kind just before; custom dates of n days
-//   compare with the n days just before (decided item 3, Look first).
+//   compare with the n days just before (decided item 3, Look first). While this month, this
+//   quarter or this school year is still running, it is compared with the same number of days at
+//   the start of the period before, cut at its end (10 point 1; D55 item 10; plan of 8.2b,
+//   decided item 2, Look first); so is the point of the month holding today.
 // - The school year runs from its first day (`school_year_start`) to the day before the next one;
 //   the choice is absent while the setting is empty (10 point 1; decided item 8).
 // - A change is the difference in so'm and the percent of the period before, half up to one
@@ -121,8 +124,43 @@ export function periodOf(
   }
 }
 
-/** The period before: the same kind just before, or as many days just before custom dates. */
-export function periodBefore(period: Period, schoolYearStart: MonthDay | null): Period {
+/** The choices that can hold today: a period of one of them is still running while it does. */
+const RUNNING_CHOICES: readonly PeriodChoice[] = ["this_month", "this_quarter", "school_year"];
+
+/** Whether a period is still running on a day (10 point 1): last month and custom dates never. */
+export function isRunning(period: Period, today: BusinessDate): boolean {
+  refuseDate(today);
+  return RUNNING_CHOICES.includes(period.choice) && period.first <= today && today <= period.last;
+}
+
+/**
+ * "The same number of days at the start of the period before" (10 point 1; D55 item 10): as many
+ * days of `before` from its first as `range` has run from its first to today, never past the end
+ * of `before` (on 31 March, the whole of February).
+ */
+export function sameDaysBefore(
+  range: DateRange,
+  before: DateRange,
+  today: BusinessDate,
+): DateRange {
+  const last = shiftDays(before.first, daysOf({ first: range.first, last: today }) - 1);
+  return { first: before.first, last: last < before.last ? last : before.last };
+}
+
+/**
+ * The period before: the same kind just before, or as many days just before custom dates; while
+ * the period is still running, the same days at the start of it.
+ */
+export function periodBefore(
+  period: Period,
+  schoolYearStart: MonthDay | null,
+  today: BusinessDate,
+): Period {
+  const whole = wholePeriodBefore(period, schoolYearStart);
+  return isRunning(period, today) ? { ...whole, ...sameDaysBefore(period, whole, today) } : whole;
+}
+
+function wholePeriodBefore(period: Period, schoolYearStart: MonthDay | null): Period {
   const dayBefore = shiftDays(period.first, -1);
   switch (period.choice) {
     case "this_month":
@@ -179,6 +217,25 @@ export function monthInside(month: MonthKey, range: DateRange): DateRange | null
   const first = whole.first > range.first ? whole.first : range.first;
   const last = whole.last < range.last ? whole.last : range.last;
   return first <= last ? { first, last } : null;
+}
+
+/**
+ * The days a month's point is compared with when they are not the whole month before it: the
+ * point of the month holding today, in a period still running, against the same days at the
+ * start of the month before (10 point 1: "every number"; D55 item 10, which reverses 6.3 decided
+ * item 6 for it). `null` for every other point: it keeps the whole month before.
+ */
+export function runningMonthBefore(
+  period: Period,
+  month: MonthKey,
+  today: BusinessDate,
+): DateRange | null {
+  if (!isRunning(period, today) || month !== monthOf(today)) return null;
+  return sameDaysBefore(
+    businessMonth(`${month}-01`),
+    businessMonth(`${monthBefore(month)}-01`),
+    today,
+  );
 }
 
 /** A number's change against the period before. */

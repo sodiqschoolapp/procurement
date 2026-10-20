@@ -92,6 +92,24 @@ describe("the price trend (10 Head, Prices; decided items 1 and 3)", () => {
     expect(unitPriceOf(goods, "2")).toBe(prices.trend!.points[0]!.price);
   });
 
+  it("the point of the month holding today is against the same days of September (10 point 1; D55 item 10)", async () => {
+    setClock("2031-10-15T05:00:00Z");
+    const scene = await spendingScene();
+    const head = await insertUser("HEAD");
+    // 15 September is the last of the same days; 20 September is after them: left out.
+    const item = await subtype(scene, { purchasedOn: "2031-09-15", unitPrice: "5000" }, [
+      { purchasedOn: "2031-09-20", unitPrice: "9000" },
+      { purchasedOn: "2031-10-02", unitPrice: "6000" },
+    ]);
+    await refreshNow();
+
+    const prices = await getPrices(head.id, THIS_MONTH, only(scene), item.variantId);
+    // 6 000 against 5 000, not against September's whole 7 000.
+    expect(prices.trend!.points).toEqual([
+      { month: "2031-10", price: 6000n, count: 1, change: { difference: 1000n, percent: "20.0" } },
+    ]);
+  });
+
   it("weighs each record by its quantity: 1 × 4 000 and 3 × 6 000 is 5 500, not 5 000", async () => {
     setClock("2031-10-15T05:00:00Z");
     const scene = await spendingScene();

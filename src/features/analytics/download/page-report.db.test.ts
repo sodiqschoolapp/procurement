@@ -54,6 +54,25 @@ describe("analyticsReport (10 point 4; developer-rules rule 1)", () => {
     expect(total.value.replace(/\s/g, " ")).toBe("6 000 so'm");
   });
 
+  it("a running month's file says it is against the same days of the period before (10 point 1; D55 item 10)", async () => {
+    setClock(AT.toISOString());
+    const scene = await spendingScene();
+    const principal = await insertUser("PRINCIPAL", { branches: [scene.branch.id] });
+    const page = await pageOf(principal);
+    expect(page.compared).toMatchObject({ first: "2031-09-01", last: "2031-09-15" });
+    expect(reportOf(page).captions).toContain(
+      "Against the same days of the period before: 01.09.2031 – 15.09.2031",
+    );
+    // Last month is finished: no such line.
+    const raw = Object.fromEntries(
+      new URLSearchParams(
+        analyticsSearch({ choice: "last_month", from: null, to: null }, NO_ANALYTICS_FILTERS),
+      ),
+    );
+    const finished = await readAnalyticsPage(principal.id, principal.role, raw, undefined);
+    expect(finished).toMatchObject({ compared: null });
+  });
+
   it("Finance's numbers are the queries': Cash needed soon, Plan vs actual, Settlement speed", async () => {
     setClock(AT.toISOString());
     const scene = await spendingScene();

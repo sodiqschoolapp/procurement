@@ -4,7 +4,11 @@ import { parseEnv } from "node:util";
 import type { TestProject } from "vitest/node";
 
 import { applyMigrations } from "../../scripts/apply-migrations.mjs";
-import { ensureBucket, storageConfigOf } from "../../scripts/ensure-bucket.mjs";
+import {
+  backupStorageConfigOf,
+  ensureBucket,
+  storageConfigOf,
+} from "../../scripts/ensure-bucket.mjs";
 import { TEST_BUCKET, testStorageEnv } from "./local-storage";
 import {
   TEMPLATE_DATABASE,
@@ -54,6 +58,8 @@ export default async function setup(project: TestProject): Promise<() => Promise
   // The bucket of the tests that store files (plan of 0.12, decision 13): made by the setup, never
   // by the app.
   await ensureBucket(storageConfigOf(testStorageEnv(TEST_BUCKET)));
+  // The bucket of the weekly copies, of its own (build-plan 8.2b).
+  await ensureBucket(backupStorageConfigOf(testStorageEnv(TEST_BUCKET)));
 
   project.provide("databaseServerUrl", serverUrl);
 

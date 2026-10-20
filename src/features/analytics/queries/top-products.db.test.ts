@@ -56,7 +56,8 @@ describe("getTopProducts (10 Principal, Spending: 'top 10 products')", () => {
       scene,
       { id: p.orderId, ownerId: p.ownerId, variantId: p.variantId },
       {
-        purchasedOn: "2031-09-20",
+        // Inside 1 to 15 September, the same days of this running month (D55 item 10).
+        purchasedOn: "2031-09-10",
         unitPrice: "7000",
       },
     );

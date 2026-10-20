@@ -14,10 +14,11 @@ import { type UploadResult, uploadFailure } from "@/features/files/upload-result
 // photo or receipt field uses it and brings its Playwright test (plan of 0.12, Left out).
 
 /**
- * The photo to send: redrawn as a JPEG of at most 2400 px when it is large, else as it is. A file
+ * The photo to send: redrawn as a JPEG of at most 2400 px (a receipt 2500 px) when it is large,
+ * else as it is. A file
  * the browser cannot draw (a HEIC outside Safari, a PDF) is sent as it is.
  */
-export async function shrinkPhoto(file: File): Promise<File> {
+export async function shrinkPhoto(file: File, purpose: FilePurpose): Promise<File> {
   const mime = sniffMime(new Uint8Array(await file.slice(0, 16).arrayBuffer()));
   if (!mime || !isImageMime(mime)) return file;
 
@@ -28,7 +29,7 @@ export async function shrinkPhoto(file: File): Promise<File> {
     return file;
   }
   try {
-    const target = shrinkTarget(bitmap.width, bitmap.height, file.size);
+    const target = shrinkTarget(bitmap.width, bitmap.height, file.size, purpose);
     if (!target) return file;
     const canvas = new OffscreenCanvas(target.width, target.height);
     const context = canvas.getContext("2d");
@@ -53,7 +54,7 @@ export async function uploadFile(
   purpose: FilePurpose,
   clientKey: ClientKey,
 ): Promise<UploadResult> {
-  const sent = await shrinkPhoto(file);
+  const sent = await shrinkPhoto(file, purpose);
   const form = new FormData();
   form.set("file", sent);
   form.set("purpose", purpose);

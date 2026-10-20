@@ -25,6 +25,7 @@
     "storage:check": "node --env-file-if-exists=.env scripts/storage-check.mjs",
     "db:copy": "node --env-file-if-exists=.env scripts/db-copy.mjs",
     "user:first-head": "node --env-file-if-exists=.env scripts/create-first-head.mjs",
+    "user:renew-head": "node --env-file-if-exists=.env scripts/renew-head.mjs",
     "dev:notify": "node --env-file-if-exists=.env scripts/dev-notify.mjs"
   },
   "dependencies": {

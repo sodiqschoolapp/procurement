@@ -2,7 +2,7 @@ import { type Page, expect, test } from "@playwright/test";
 import ExcelJS from "exceljs";
 
 import uz from "../../src/i18n/messages/uz.json" with { type: "json" };
-import { E2E_ROLES } from "./global-setup";
+import { E2E_BRANCHES, E2E_ROLES } from "./global-setup";
 import { REPORT_MONTH, seedReportRecords } from "./report-records";
 
 // Build plan 6.8 (Reports: orders and spending), 6.9a (the three stock reports) and 6.9b (Price
@@ -119,4 +119,27 @@ test("Done when: the Head opens each report, filters by dates and category, and 
   await expect(page.locator('[data-chart="line"]')).toBeVisible();
   await expect(page.locator("[data-price-row]").first()).toBeVisible();
   expect(await scrollsSideways(page)).toBe(false);
+});
+
+test("a report opened with a branch picked in the switcher starts at that branch (10 Reports; D55 item 11)", async ({
+  page,
+}) => {
+  const seeded = await seedReportRecords([
+    { code: "EA", day: "2019-06-11", qty: "1.000", price: 1000 },
+    { code: "EB", day: "2019-06-12", qty: "1.000", price: 2000 },
+  ]);
+  await signIn(page);
+  const select = page.getByLabel(uz.branch.label, { exact: true });
+  await select.selectOption({ label: `${E2E_BRANCHES[1].code} — ${E2E_BRANCHES[1].name}` });
+  await expect(select).toBeEnabled();
+
+  await page.goto(`/reports?report=spending&from=${REPORT_MONTH.from}&to=${REPORT_MONTH.to}`);
+  if (test.info().project.name === "phone-375") await page.locator("[data-filter-toggle]").click();
+  await expect(page.locator("[data-filter-branch]")).not.toHaveValue("all");
+  await page.locator("[data-filter-category]").selectOption({ label: seeded.category });
+  await page.getByRole("button", { name: uz.reports.apply }).click();
+  await expect(page).toHaveURL(/category=/);
+  // EB alone: its 2 000, never EA's 1 000 beside it.
+  await expect(page.locator('[data-table="spending-branches"] tbody tr')).toHaveCount(1);
+  await expect(page.locator("[data-report-summary]")).toContainText(/2\s000/);
 });

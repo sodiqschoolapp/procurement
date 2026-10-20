@@ -23,6 +23,8 @@ describe("parseReportParams (10 Reports; decided items 5 and 6)", () => {
       report: "orders",
       range: { first: "2031-05-01", last: "2031-05-15" },
       filters: { branch: null, category: null, department: null, manager: null, supplier: null },
+      // No branch in the address: the report starts at the switcher's (D55 item 11).
+      branchGiven: false,
       variant: null,
       page: 1,
     });
@@ -50,6 +52,7 @@ describe("parseReportParams (10 Reports; decided items 5 and 6)", () => {
         manager: null,
         supplier: null,
       },
+      branchGiven: true,
       variant: null,
       page: 3,
     });
@@ -68,11 +71,16 @@ describe("parseReportParams (10 Reports; decided items 5 and 6)", () => {
       report: "plan",
       range: { first: "2031-05-01", last: "2031-05-15" },
       filters: { branch: null, category: null, department: null, manager: null, supplier: null },
+      // A broken branch is dropped: the switcher's branch, as with none (D55 item 11).
+      branchGiven: false,
       variant: null,
       page: 1,
     });
-    // "All my branches" is no branch filter.
-    expect(parseReportParams({ branch: "all" }, TODAY)!.filters.branch).toBeNull();
+    // "All my branches" is no branch filter, and names the branch (D55 item 11).
+    expect(parseReportParams({ branch: "all" }, TODAY)).toMatchObject({
+      filters: { branch: null },
+      branchGiven: true,
+    });
   });
 
   it("refuses an unknown report, a name given twice and `from` after `to`", () => {
@@ -85,6 +93,16 @@ describe("parseReportParams (10 Reports; decided items 5 and 6)", () => {
       first: "2031-05-10",
       last: "2031-05-10",
     });
+  });
+});
+
+describe("the branch of the switcher (10 Reports; D55 item 11; plan of 8.2b, decided item 12)", () => {
+  it('writes "All my branches" as branch=all, so a link stays all-branches', () => {
+    const params = parseReportParams({ report: "spending", branch: "all" }, TODAY)!;
+    expect(new URLSearchParams(reportSearch(params)).get("branch")).toBe("all");
+    expect(
+      parseReportParams(Object.fromEntries(new URLSearchParams(reportSearch(params))), TODAY),
+    ).toEqual(params);
   });
 });
 
@@ -116,9 +134,10 @@ describe("the reports of 6.9b (10 Reports: Price history, Money with managers, A
   it("reads Price history's subtype, drops a broken one, and writes it back for Price history only (decided item 6)", () => {
     const params = parseReportParams({ report: "prices", variant: VARIANT.toUpperCase() }, TODAY)!;
     expect(params.variant).toBe(VARIANT);
+    // The address written back names "all", so it no longer follows the switcher (D55 item 11).
     expect(
       parseReportParams(Object.fromEntries(new URLSearchParams(reportSearch(params))), TODAY),
-    ).toEqual(params);
+    ).toEqual({ ...params, branchGiven: true });
     expect(parseReportParams({ report: "prices", variant: "x" }, TODAY)!.variant).toBeNull();
     expect(reportSearch({ ...params, report: "cash" })).not.toContain("variant");
   });

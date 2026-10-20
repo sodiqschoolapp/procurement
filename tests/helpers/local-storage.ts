@@ -10,7 +10,11 @@ const LOCAL = {
   S3_SECRET_ACCESS_KEY: "procurement-local-secret",
 };
 
-/** The S3_* variables of a test layer: the environment's own, or the local ones. */
+/**
+ * The S3_* variables of a test layer: the environment's own, or the local ones; and the
+ * BACKUP_S3_* ones of the weekly copies (build-plan 8.2b): the bucket `<bucket>-backups` of the
+ * same storage, with the same keys.
+ */
 export function testStorageEnv(
   bucket: string,
   env: NodeJS.ProcessEnv = process.env,
@@ -18,10 +22,15 @@ export function testStorageEnv(
   const names = ["S3_ENDPOINT", "S3_REGION", "S3_ACCESS_KEY_ID", "S3_SECRET_ACCESS_KEY"] as const;
   const result: Record<string, string> = { S3_BUCKET: bucket };
   for (const name of names) result[name] = env[name] || LOCAL[name];
+  result.BACKUP_S3_BUCKET = `${bucket}-backups`;
+  result.BACKUP_S3_ACCESS_KEY_ID = result.S3_ACCESS_KEY_ID!;
+  result.BACKUP_S3_SECRET_ACCESS_KEY = result.S3_SECRET_ACCESS_KEY!;
   return result;
 }
 
 /** The bucket of the Vitest database tests. */
 export const TEST_BUCKET = "procurement-test";
+/** The bucket of the weekly copies in the Vitest database tests (build-plan 8.2b). */
+export const TEST_BACKUP_BUCKET = `${TEST_BUCKET}-backups`;
 /** The bucket of the Playwright server. */
 export const E2E_BUCKET = "procurement-e2e";

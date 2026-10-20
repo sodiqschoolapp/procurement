@@ -509,6 +509,7 @@
       "REQUEST_WAITING_48H": "Ждут согласования дольше {hours, plural, one {# часа} few {# часов} many {# часов} other {# часа}}: {count, plural, one {# заказ} few {# заказа} many {# заказов} other {# заказа}}.",
       "NEEDED_BY_NEAR": "{branch}: {count, plural, one {# заказ нужен} few {# заказа нужны} many {# заказов нужны} other {# заказа нужны}} в ближайшие 2 дня, а закупка не завершена.",
       "STOCK_CHECK_MISMATCH": "Ночная проверка склада нашла {count, plural, one {# позицию} few {# позиции} many {# позиций} other {# позиции}}, остаток которых не совпадает с движениями.",
+      "DATABASE_COPY_FAILED": "Еженедельная копия базы данных не сохранилась. Следующей ночью будет новая попытка.",
       "BRANCH_ROLE_VACANT": "В филиале {branch} нет активного {role, select, HEAD {руководителя закупок} MANAGER {менеджера} PRINCIPAL {директора} FINANCE {сотрудника финансов} other {пользователя}}.",
       "MANAGER_RIGHT_SWITCHED": "Руководитель закупок {state, select, on {включил} other {выключил}} ваше право: {right, select, CREATE_REQUESTS {Добавление и отправка заказов} RECORD_PURCHASES {Запись покупок} CANCEL_PURCHASES {Отмена записей о покупках} CLOSE_ALONE {Самостоятельное закрытие заказов без расхождений} ISSUE_STOCK {Выдача со склада отделам} RETURN_REVERSE {Приём возвратов и сторно документов} TRANSFER_STOCK {Отправка перемещений в другие филиалы} WRITE_OFF_COUNT {Запрос списаний и проведение инвентаризаций} SET_MINIMUMS {Установка минимальных остатков} other {?}}.",
       "PRODUCT_SUGGESTED": "Новое предложение товара из филиала {branch}: {name}.",
@@ -546,6 +547,8 @@
   },
   "settings": {
     "title": "Настройки",
+    "lastCopy": "Последняя копия базы данных: {date}",
+    "noCopy": "Копии базы данных ещё нет",
     "school": "Школа",
     "ordersAndMoney": "Заказы и деньги",
     "reminders": "Напоминания",
@@ -2473,6 +2476,7 @@
   },
   "analytics": {
     "title": "Аналитика",
+    "sameDays": "В сравнении с теми же днями прошлого периода: {first} – {last}",
     "refreshed": "Сводка обновлена в {time}",
     "refreshing": "Сводка готовится. Цифры появятся в течение 5 минут.",
     "filters": "Фильтры",

@@ -65,7 +65,8 @@ async function stockScene(scene: SpendingScene, head: string) {
   });
   await stockDocument(scene, {
     type: "WRITE_OFF",
-    docDate: "2031-09-28",
+    // Inside 1 to 15 September, the same days of this running month (D55 item 10).
+    docDate: "2031-09-10",
     lines: line("1"),
     decidedBy: head,
   });

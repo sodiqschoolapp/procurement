@@ -7,6 +7,7 @@ import {
   type Period,
   cashAgeBand,
   monthBefore,
+  runningMonthBefore,
   monthsOf,
 } from "@/domain/analytics";
 import { businessMonth } from "@/domain/business-date";
@@ -78,7 +79,7 @@ async function cashIn(
   filters: AnalyticsFilters,
 ): Promise<FinanceCash> {
   const actor = await authorizeAnalytics(db, userId, filters);
-  const { period, before } = await resolvePeriod(db, input);
+  const { period, before, today } = await resolvePeriod(db, input);
 
   const now = moneyWhere(actor, period, filters);
   const then = moneyWhere(actor, before, filters);
@@ -98,24 +99,30 @@ async function cashIn(
   ) as CashKinds;
 
   // The months of the period, and the whole month before its first one: a month counts its days
-  // inside the period, its change the month before it (as getSpending()).
+  // inside the period, its change the month before it; the month holding today, while the
+  // period runs, the same days of the month before (as getSpending(); plan of 8.2b).
   const months = monthsOf(period);
   const firstMonth = months[0]!;
   const series = { first: businessMonth(`${monthBefore(firstMonth)}-01`).first, last: period.last };
+  const cut = months.map((month) => runningMonthBefore(period, month, today)).find(Boolean) ?? null;
   const byMonth = await db.execute<{
     month: string;
     kind: string;
     inside: string;
     whole: string;
+    same: string;
   }>(sql`
     select to_char(occurred_on, 'YYYY-MM') as month, kind::text as kind,
            coalesce(sum(amount) filter (where occurred_on >= ${period.first}::date), 0)::text
              as inside,
-           sum(amount)::text as whole
+           sum(amount)::text as whole,
+           coalesce(sum(amount) filter (where ${
+             cut ? sql`occurred_on between ${cut.first}::date and ${cut.last}::date` : sql`false`
+           }), 0)::text as same
     from analytics_money
     where ${moneyWhere(actor, series, filters)}
     group by 1, 2`);
-  const amountOf = (month: string, kind: CashKind, part: "inside" | "whole") =>
+  const amountOf = (month: string, kind: CashKind, part: "inside" | "whole" | "same") =>
     byMonth.rows.find((row) => row.month === month && row.kind === CASH_KINDS[kind])?.[part] ?? "0";
   const previous = Object.fromEntries(
     CASH_KIND_KEYS.map((kind) => [kind, amountOf(monthBefore(firstMonth), kind, "whole")]),
@@ -124,7 +131,10 @@ async function cashIn(
     const row = { month } as { month: MonthKey } & CashKinds;
     for (const kind of CASH_KIND_KEYS) {
       const amount = amountOf(month, kind, "inside");
-      row[kind] = counted(amount, previous[kind]);
+      const against = runningMonthBefore(period, month, today)
+        ? amountOf(monthBefore(month), kind, "same")
+        : previous[kind];
+      row[kind] = counted(amount, against);
       previous[kind] = amount;
     }
     return row;

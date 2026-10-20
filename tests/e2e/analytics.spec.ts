@@ -1151,3 +1151,21 @@ test("6.7: the Head downloads the whole page as a PDF; the link carries what the
   const bytes = await readFile(await pdf.path());
   expect(bytes.subarray(0, 5).toString()).toBe("%PDF-");
 });
+
+test("a running month says it is against the same days of the month before; last month does not (10 point 1; D55 item 10)", async ({
+  page,
+}) => {
+  await signIn(page);
+  // This month always holds today: the line names 1 … today's day of the month before.
+  await page.goto("/analytics?period=this_month");
+  const prefix = uz.analytics.sameDays.split("{first}")[0]!;
+  await expect(page.locator("[data-same-days]")).toHaveText(
+    new RegExp(
+      `^${prefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}01\\.\\d\\d\\.\\d{4} – \\d\\d\\.\\d\\d\\.\\d{4}$`,
+    ),
+  );
+  expect(await scrollsSideways(page)).toBe(false);
+  await page.goto("/analytics?period=last_month");
+  await expect(page.locator("[data-period-line]")).toBeVisible();
+  await expect(page.locator("[data-same-days]")).toHaveCount(0);
+});

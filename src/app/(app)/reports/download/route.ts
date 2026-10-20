@@ -23,6 +23,8 @@ import { getPurchaseRegister } from "@/features/reports/queries/purchase-registe
 import { getSpendingReport } from "@/features/reports/queries/spending-report";
 import { getStockMovementsReport } from "@/features/reports/queries/stock-movements-report";
 import { getStockReport } from "@/features/reports/queries/stock-report";
+import { BRANCH_COOKIE } from "@/features/catalog/branch-cookie";
+import { withSwitcherBranch } from "@/features/reports/report-branch";
 import { parseReportParams } from "@/features/reports/report-params";
 import { LOCALE_COOKIE, chooseLocale } from "@/i18n/locale";
 import { userOfCookies } from "@/server/auth/session";
@@ -45,8 +47,13 @@ const notFound = () => new Response(null, { status: 404 });
 export async function GET(request: NextRequest): Promise<Response> {
   const user = await userOfCookies(request.cookies);
   if (!user) return new Response(null, { status: 401 });
-  const params = parseReportParams(Object.fromEntries(request.nextUrl.searchParams), today());
-  if (!params || params.report === "orders") return notFound();
+  const parsed = parseReportParams(Object.fromEntries(request.nextUrl.searchParams), today());
+  if (!parsed || parsed.report === "orders") return notFound();
+  const params = await withSwitcherBranch(
+    user.id,
+    parsed,
+    request.cookies.get(BRANCH_COOKIE)?.value,
+  );
   const locale = chooseLocale({
     userLocale: user.locale,
     cookieLocale: request.cookies.get(LOCALE_COOKIE)?.value,
@@ -94,6 +101,8 @@ export async function GET(request: NextRequest): Promise<Response> {
       case "speed":
         sheets = approvalSpeedSheets(await getApprovalSpeedReport(user.id, params, "all"), context);
         break;
+      case "orders":
+        return notFound();
     }
   } catch (error) {
     if (error instanceof AuthorizationError) return notFound();

@@ -73,6 +73,9 @@ test("the Head changes the reminder hours at phone width (rules 4, 13)", async (
   test.skip(info.project.name !== "phone-375", "the desktop project changes the school name");
   await signIn(page, E2E_ROLES.HEAD);
   await openSettings(page);
+  // The date of the last copy of the database (13 Running it; build-plan 8.2b): the browser
+  // tests' server never copies, so none yet.
+  await expect(page.locator("[data-last-copy]")).toHaveText(uz.settings.noCopy);
 
   const field = page.getByLabel(uz.settings.reminderHours);
   const before = await field.inputValue();
