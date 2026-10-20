@@ -509,6 +509,7 @@
       "REQUEST_WAITING_48H": "{count, plural, other {# ta buyurtma}} tasdiqlashni {hours, plural, other {# soatdan}} ortiq kutmoqda.",
       "NEEDED_BY_NEAR": "{branch}: {count, plural, other {# ta buyurtma}} 2 kun ichida kerak, xarid esa tugallanmagan.",
       "STOCK_CHECK_MISMATCH": "Tungi ombor tekshiruvi qoldigʻi harakatlarga mos kelmaydigan {count, plural, other {# ta mahsulot}} topdi.",
+      "DATABASE_COPY_FAILED": "Maʼlumotlar bazasining haftalik nusxasi saqlanmadi. Keyingi kechasi yana urinib koʻriladi.",
       "BRANCH_ROLE_VACANT": "{branch} filialida faol {role, select, HEAD {xaridlar rahbari} MANAGER {menejer} PRINCIPAL {direktor} FINANCE {moliya xodimi} other {foydalanuvchi}} yoʻq.",
       "MANAGER_RIGHT_SWITCHED": "Xaridlar rahbari sizning huquqingizni {state, select, on {yoqdi} other {oʻchirdi}}: {right, select, CREATE_REQUESTS {Buyurtmalar yaratish va yuborish} RECORD_PURCHASES {Xaridlarni yozish} CANCEL_PURCHASES {Xarid yozuvlarini bekor qilish} CLOSE_ALONE {Farqsiz buyurtmalarni oʻzi yopish} ISSUE_STOCK {Boʻlimlarga tovar berish} RETURN_REVERSE {Qaytarishlarni qabul qilish va hujjatlarni bekor qilish} TRANSFER_STOCK {Boshqa filiallarga koʻchirish yuborish} WRITE_OFF_COUNT {Hisobdan chiqarishni soʻrash va inventarizatsiya oʻtkazish} SET_MINIMUMS {Minimal qoldiqlarni belgilash} other {?}}.",
       "PRODUCT_SUGGESTED": "{branch} filialidan yangi tovar taklifi: {name}.",
@@ -546,6 +547,8 @@
   },
   "settings": {
     "title": "Sozlamalar",
+    "lastCopy": "Maʼlumotlar bazasining oxirgi nusxasi: {date}",
+    "noCopy": "Maʼlumotlar bazasining nusxasi hali yoʻq",
     "school": "Maktab",
     "ordersAndMoney": "Buyurtmalar va pul",
     "reminders": "Eslatmalar",

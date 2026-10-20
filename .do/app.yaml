@@ -2,7 +2,7 @@
 # docs/decisions.md D22 and "Decided ahead: task 0.16"). docs/deploy.md says how the owner creates
 # the app from this file. No value here is a secret: the database address and its certificate
 # are bound by DigitalOcean itself (`${db.…}`), so nobody types them and no file holds them. The
-# values the owner types (BETTER_AUTH_SECRET, three S3_*, four SEED_*_PASSWORD) are not declared
+# values the owner types (BETTER_AUTH_SECRET, three S3_*, two BACKUP_S3_*, four SEED_*_PASSWORD) are not declared
 # here: docs/deploy.md lists them, and says to type them again after this file is applied.
 # ERROR_REPORT_DSN (build-plan 9.3, optional) is typed the same way: docs/monitoring.md.
 #
@@ -67,6 +67,12 @@ services:
       - key: S3_BUCKET
         scope: RUN_TIME
         value: ombor-test-files
+      # The bucket of the weekly copies of the database, of its own (build-plan 8.2b). Its keys,
+      # BACKUP_S3_ACCESS_KEY_ID and BACKUP_S3_SECRET_ACCESS_KEY, are typed by the owner, encrypted,
+      # in the dashboard (docs/deploy.md), never here.
+      - key: BACKUP_S3_BUCKET
+        scope: RUN_TIME
+        value: ombor-test-backups
 
 databases:
   # The development database: $7 a month (row 7). PostgreSQL 17, the major version of the local

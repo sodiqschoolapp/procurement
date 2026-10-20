@@ -1,16 +1,18 @@
-// The weekly copy of the database (build-plan 8.2; 13-technology.md, Running it: "A weekly copy is
-// also saved to R2"). The job `database_copy` of src/server/jobs/database-copy.ts calls
-// databaseCopy() every Sunday at 04:00 in Tashkent; `npm run db:copy`, and `node
-// scripts/db-copy.mjs` in the console of the test copy's component `web` (docs/deploy.md), make one
-// at once. Plain .mjs, so the image runs it with production packages only (0.16).
+// The weekly copy of the database (build-plan 8.2 and 8.2b; 13-technology.md, Running it: "A weekly
+// copy is also saved to R2, in a bucket of its own"). The job `database_copy` of
+// src/server/jobs/database-copy.ts calls databaseCopy() every Sunday at 04:00 in Tashkent, and the
+// next night again after a failure; `npm run db:copy`, and `node scripts/db-copy.mjs` in the
+// console of the app's component `web` (docs/deploy.md), make one at once. Plain .mjs, so the image
+// runs it with production packages only (0.16).
 //
 // `pg_dump` 17 of the image (Dockerfile; plan of 8.2, decided item 3, Look first) writes the
 // custom format that `pg_restore` reads back whole. The address reaches it through PG* variables,
 // never as an argument, so the password is not in the process list (review of the plan, nit 4);
 // with DATABASE_CA_CERT the server is verified against it (verify-full), as the app's pool does
-// (src/server/db/connection-options.mjs; decided item 10). The file goes to the files bucket under
-// backups/ (decided item 4); no route serves that prefix. It prints "copy ok …" or one line
-// "copy failed: …" that names a variable or an error kind, never a value.
+// (src/server/db/connection-options.mjs; decided item 10). The file goes under backups/ of the
+// bucket of the copies, BACKUP_S3_* (plan of 8.2b, decided item 5), never the files bucket. It
+// prints "copy ok …" or one line "copy failed: …" that names a variable or an error kind, never a
+// value.
 import { spawn } from "node:child_process";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -19,7 +21,7 @@ import { pathToFileURL } from "node:url";
 
 import { HeadObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 
-import { s3ClientOf, storageConfigOf } from "./ensure-bucket.mjs";
+import { backupStorageConfigOf, s3ClientOf } from "./ensure-bucket.mjs";
 
 /** Where the copies are kept in the bucket. */
 export const COPY_PREFIX = "backups/";
@@ -120,20 +122,27 @@ function kindOf(error) {
 }
 
 /**
+ * @typedef {{ ok: true, key: string, size: number, line: string } | { ok: false, line: string }} CopyResult
+ */
+
+/** @param {string} line @returns {CopyResult} */
+const failed = (line) => ({ ok: false, line });
+
+/**
  * Makes one copy.
- * @param {Record<string, string | undefined>} env where DATABASE_URL, DATABASE_CA_CERT and S3_* are read
+ * @param {Record<string, string | undefined>} env where DATABASE_URL, DATABASE_CA_CERT, S3_ENDPOINT, S3_REGION and BACKUP_S3_* are read
  * @param {Date} moment names the file (CLAUDE.md rule 10: the caller gives the time)
  * @param {{ dump?: typeof dumpDatabase }} [options] `dump` replaces pg_dump, for the tests
- * @returns {Promise<string>} "copy ok <key> (<bytes> bytes)" or "copy failed: …"
+ * @returns {Promise<CopyResult>} `line` is "copy ok <key> (<bytes> bytes)" or "copy failed: …"
  */
 export async function databaseCopy(env, moment, options = {}) {
   let config;
   try {
-    config = storageConfigOf(env);
+    config = backupStorageConfigOf(env);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    const missing = /^(S3_[A-Z_]+) is not set\./.exec(message);
-    return `copy failed: ${missing ? `${missing[1]} is not set.` : message}`;
+    const missing = /^((?:BACKUP_)?S3_[A-Z_]+) is not set\./.exec(message);
+    return failed(`copy failed: ${missing ? `${missing[1]} is not set.` : message}`);
   }
   const dump = options.dump ?? dumpDatabase;
   const key = copyKeyOf(moment);
@@ -144,10 +153,10 @@ export async function databaseCopy(env, moment, options = {}) {
     const message = error instanceof Error ? error.message : String(error);
     // Only the messages of this file are told; anything else by its kind.
     const known = /^(pg_dump |DATABASE_URL )/.test(message);
-    return `copy failed: ${known ? message : kindOf(error)}.`;
+    return failed(`copy failed: ${known ? message : kindOf(error)}.`);
   }
   if (Buffer.from(bytes.subarray(0, DUMP_MAGIC.length)).toString("latin1") !== DUMP_MAGIC) {
-    return "copy failed: the dump is not a pg_dump custom-format file.";
+    return failed("copy failed: the dump is not a pg_dump custom-format file.");
   }
   const client = s3ClientOf(config);
   try {
@@ -161,11 +170,11 @@ export async function databaseCopy(env, moment, options = {}) {
     );
     const head = await client.send(new HeadObjectCommand({ Bucket: config.bucket, Key: key }));
     if (head.ContentLength !== bytes.length) {
-      return "copy failed: the file read back has another size than the one written.";
+      return failed("copy failed: the file read back has another size than the one written.");
     }
-    return `copy ok ${key} (${bytes.length} bytes)`;
+    return { ok: true, key, size: bytes.length, line: `copy ok ${key} (${bytes.length} bytes)` };
   } catch (error) {
-    return `copy failed: ${kindOf(error)}.`;
+    return failed(`copy failed: ${kindOf(error)}.`);
   } finally {
     client.destroy();
   }
@@ -173,7 +182,7 @@ export async function databaseCopy(env, moment, options = {}) {
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   // eslint-disable-next-line no-restricted-syntax -- the one moment of this script (rule 10)
-  const line = await databaseCopy(process.env, new Date());
-  console.log(line);
-  if (!line.startsWith("copy ok")) process.exitCode = 1;
+  const result = await databaseCopy(process.env, new Date());
+  console.log(result.line);
+  if (!result.ok) process.exitCode = 1;
 }

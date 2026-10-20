@@ -28,6 +28,30 @@ export function storageConfigOf(env) {
   };
 }
 
+/**
+ * The bucket of the weekly copies of the database: a bucket of its own with its own keys
+ * (13-technology.md, Running it: "in a bucket of its own"; D55 item 6; plan of 8.2b, decided item
+ * 5), on the same S3 endpoint and region as the files (one R2 account). The message names a
+ * variable, never a value.
+ */
+export function backupStorageConfigOf(env) {
+  for (const name of [
+    "BACKUP_S3_BUCKET",
+    "BACKUP_S3_ACCESS_KEY_ID",
+    "BACKUP_S3_SECRET_ACCESS_KEY",
+  ]) {
+    if (!env[name]) {
+      throw new Error(`${name} is not set. Put it into the local .env file (README.md, "Run it").`);
+    }
+  }
+  return storageConfigOf({
+    ...env,
+    S3_BUCKET: env.BACKUP_S3_BUCKET,
+    S3_ACCESS_KEY_ID: env.BACKUP_S3_ACCESS_KEY_ID,
+    S3_SECRET_ACCESS_KEY: env.BACKUP_S3_SECRET_ACCESS_KEY,
+  });
+}
+
 /** An S3 client for SeaweedFS on this machine or R2 in the cloud: the same code for both. */
 export function s3ClientOf(config) {
   return new S3Client({

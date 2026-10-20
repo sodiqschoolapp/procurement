@@ -61,6 +61,7 @@ describe("the App Platform spec of the test copy (build-plan 0.16; 18-hosting ro
       '"yes"',
       "auto",
       "ombor-test-files",
+      "ombor-test-backups",
     ]);
     expect(text).not.toMatch(/postgres(ql)?:\/\//);
     expect(text).not.toMatch(/BEGIN CERTIFICATE/);
@@ -75,6 +76,8 @@ describe("the App Platform spec of the test copy (build-plan 0.16; 18-hosting ro
       "SEED_DEMO_DATA",
       "S3_REGION",
       "S3_BUCKET",
+      // The bucket of the weekly copies (build-plan 8.2b); its two keys are typed in the dashboard.
+      "BACKUP_S3_BUCKET",
     ]);
     expect(text).not.toMatch(
       /PASSWORD|S3_ENDPOINT|S3_ACCESS_KEY_ID|S3_SECRET_ACCESS_KEY|BETTER_AUTH_SECRET/,

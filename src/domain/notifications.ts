@@ -47,6 +47,7 @@ export const NOTIFICATION_TYPES = [
   "REQUEST_CANCELLED",
   "REQUEST_MOVED_IN",
   "REQUEST_MOVED_OUT",
+  "DATABASE_COPY_FAILED",
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
@@ -203,6 +204,12 @@ export type NotificationParamsOf = {
    * branch-and-subtype items that differ. No branch, item or quantity.
    */
   STOCK_CHECK_MISMATCH: { count: number };
+  /**
+   * "The weekly copy of the database failed" (10 Notifications; 13 Running it; D55 item 6): to
+   * every active Head, each night until a copy succeeds, `branchId` null. No cause: the log has it
+   * (plan of 8.2b, decided item 8).
+   */
+  DATABASE_COPY_FAILED: Record<string, never>;
   /** "Branch has no active user for a role": the branch's code and the role's code. */
   BRANCH_ROLE_VACANT: { branch: string; role: Role };
   /** "A Manager's right is switched on or off": the right's code, and "on" or "off". */
@@ -250,6 +257,7 @@ export const NOTIFICATION_PARAMS: {
   REQUEST_WAITING_48H: ["count", "hours"],
   NEEDED_BY_NEAR: ["count", "branch"],
   STOCK_CHECK_MISMATCH: ["count"],
+  DATABASE_COPY_FAILED: [],
   BRANCH_ROLE_VACANT: ["branch", "role"],
   MANAGER_RIGHT_SWITCHED: ["right", "state"],
   PRODUCT_SUGGESTED: ["name", "branch"],

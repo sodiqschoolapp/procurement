@@ -5,7 +5,8 @@ import { AdminNav } from "@/components/admin-nav";
 import { ChangeHistory, type HistoryField } from "@/components/change-history";
 import { listChangeHistory } from "@/features/audit/queries/change-history";
 import { storedSettingValue } from "@/domain/settings";
-import { getSettingsForHead } from "@/features/settings/queries/settings";
+import { getLastDatabaseCopy, getSettingsForHead } from "@/features/settings/queries/settings";
+import { getFormatters } from "@/i18n/get-formatters";
 import { requireUser } from "@/server/auth/session";
 import { AuthorizationError } from "@/server/authorize";
 
@@ -41,6 +42,8 @@ export default async function SettingsPage() {
   const user = await requireUser("/settings");
   const t = await getTranslations();
   const values = await readOrNotFound(() => getSettingsForHead(user.id));
+  const lastCopy = await readOrNotFound(() => getLastDatabaseCopy(user.id));
+  const format = await getFormatters();
   const history = await listChangeHistory(user.id, { entity: "settings", entityId: "settings" });
 
   return (
@@ -49,6 +52,10 @@ export default async function SettingsPage() {
       <h1 className="text-[28px] leading-[34px] font-bold tracking-[-0.01em]">
         {t("settings.title")}
       </h1>
+      {/* 13-technology.md, Running it: "the Head's Settings page shows the date of the last copy". */}
+      <p className="text-sm leading-5 text-muted-foreground" data-last-copy>
+        {lastCopy ? t("settings.lastCopy", { date: format.date(lastCopy) }) : t("settings.noCopy")}
+      </p>
       <SettingsForm
         values={{
           ...values,

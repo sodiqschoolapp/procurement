@@ -509,6 +509,7 @@
       "REQUEST_WAITING_48H": "{count, plural, one {# order has} other {# orders have}} waited more than {hours, plural, one {# hour} other {# hours}} for approval.",
       "NEEDED_BY_NEAR": "{count, plural, one {# order} other {# orders}} in {branch} {count, plural, one {is} other {are}} needed within 2 days and buying is not finished.",
       "STOCK_CHECK_MISMATCH": "The nightly stock check found {count, plural, one {# item} other {# items}} whose stock does not match its movements.",
+      "DATABASE_COPY_FAILED": "The weekly copy of the database failed. It is tried again the next night.",
       "BRANCH_ROLE_VACANT": "Branch {branch} has no active {role, select, HEAD {Procurement Head} MANAGER {Manager} PRINCIPAL {Principal} FINANCE {Finance user} other {user}}.",
       "MANAGER_RIGHT_SWITCHED": "The Procurement Head switched {state, select, on {on} other {off}} your right: {right, select, CREATE_REQUESTS {Add and submit orders} RECORD_PURCHASES {Record purchases} CANCEL_PURCHASES {Cancel purchase records} CLOSE_ALONE {Close exact-match orders alone} ISSUE_STOCK {Issue stock to departments} RETURN_REVERSE {Take returns and reverse documents} TRANSFER_STOCK {Send transfers to other branches} WRITE_OFF_COUNT {Ask for write-offs and run stock counts} SET_MINIMUMS {Set minimum stock levels} other {?}}.",
       "PRODUCT_SUGGESTED": "New product suggestion from branch {branch}: {name}.",
@@ -546,6 +547,8 @@
   },
   "settings": {
     "title": "Settings",
+    "lastCopy": "Last copy of the database: {date}",
+    "noCopy": "No copy of the database yet",
     "school": "School",
     "ordersAndMoney": "Orders and money",
     "reminders": "Reminders",
