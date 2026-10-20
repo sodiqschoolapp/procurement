@@ -224,7 +224,8 @@ describe("corrections to approve: complete waiting counts (10 Home page per role
         });
         if (status !== "PENDING_APPROVAL") {
           await tx.execute(sql`update stock_documents set status = ${status},
-            decided_by = ${head.id}, decided_at = ${AT} where id = ${made.documentId}`);
+            decided_by = ${head.id}, decided_at = ${AT}, decision_reason = 'Sinov sababi'
+            where id = ${made.documentId}`);
         }
         return made;
       });
