@@ -122,12 +122,12 @@ export function OrderActionBar({
         {t("title")}
       </h2>
       {waitingLine ? (
-        <p data-waiting className="text-[15px] leading-[22px] text-muted-foreground">
+        <p data-waiting className="text-sm text-muted-foreground">
           {waitingLine}
         </p>
       ) : null}
       {failure ? (
-        <p role="alert" className="text-[15px] leading-[22px] text-destructive">
+        <p role="alert" className="text-sm text-destructive">
           {failure}{" "}
           <Link href="/orders" className="font-semibold underline underline-offset-2">
             {t("editInList")}
@@ -135,7 +135,7 @@ export function OrderActionBar({
         </p>
       ) : null}
       {refused ? (
-        <p role="alert" data-approve-failed className="text-[15px] leading-[22px] text-destructive">
+        <p role="alert" data-approve-failed className="text-sm text-destructive">
           {refused}
         </p>
       ) : null}

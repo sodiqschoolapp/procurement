@@ -36,16 +36,16 @@ export function OwnerEntries({
             className="flex min-h-11 items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
           >
             <span className="flex min-w-0 flex-col gap-1">
-              <span className="text-[15px] leading-[22px] font-semibold">
+              <span className="text-sm font-semibold">
                 {entry.ownerName}{" "}
-                <span className="text-[13px] font-normal text-muted-foreground">
+                <span className="text-small font-normal text-muted-foreground">
                   {entry.branchCode}
                 </span>
               </span>
-              <span className="text-[13px] leading-4 text-muted-foreground tabular-nums">
+              <span className="text-xs text-muted-foreground tabular-nums">
                 {entry.line}
               </span>
-              <span className="text-[15px] leading-[22px] font-semibold tabular-nums">
+              <span className="text-sm font-semibold tabular-nums">
                 {entry.amount}
               </span>
             </span>

@@ -530,7 +530,7 @@ export function DraftsGrid({
           <div className="relative overflow-x-auto rounded-xl bg-card max-sm:overflow-visible max-sm:rounded-none max-sm:bg-transparent">
             <table className="w-max min-w-full border-collapse text-sm max-sm:block max-sm:w-full">
               <caption className="sr-only">{t("draftsTitle")}</caption>
-              <thead className="bg-muted text-left text-[13px] leading-[18px] text-muted-foreground max-sm:hidden">
+              <thead className="bg-muted text-left text-small text-muted-foreground max-sm:hidden">
                 <tr>
                   <th scope="col" className="px-2 py-2 font-semibold">
                     <span className="sr-only">{t("columns.tick")}</span>

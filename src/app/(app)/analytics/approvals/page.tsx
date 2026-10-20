@@ -115,14 +115,14 @@ export default async function AnalyticsApprovalsPage({
       </Link>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <h1 className="text-[28px] leading-[34px] font-bold tracking-[-0.01em]">
+          <h1 className="text-title">
             {t("approvals.title")}
           </h1>
-          <p className="text-[15px] leading-[22px] text-muted-foreground" data-approvals-what>
+          <p className="text-sm text-muted-foreground" data-approvals-what>
             {what}
           </p>
           <p
-            className="text-[15px] leading-[22px] font-semibold tabular-nums"
+            className="text-sm font-semibold tabular-nums"
             data-approvals-summary
           >
             {summary}
@@ -142,7 +142,7 @@ export default async function AnalyticsApprovalsPage({
       ) : (
         <section className="rounded-xl bg-card text-card-foreground">
           <table className="w-full border-collapse text-left text-sm leading-5 max-sm:block">
-            <thead className="bg-muted text-[13px] leading-[18px] font-semibold text-muted-foreground max-sm:hidden">
+            <thead className="bg-muted text-small font-semibold text-muted-foreground max-sm:hidden">
               <tr>
                 {(
                   [

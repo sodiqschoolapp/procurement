@@ -119,10 +119,10 @@ export function ReceiveTransferForm({
     >
       <UnsavedChangesGuard dirty={dirty} />
       <div className="flex flex-col gap-1">
-        <h2 id="receive-transfer" className="text-[17px] leading-6 font-semibold">
+        <h2 id="receive-transfer" className="text-subheading font-semibold">
           {t("title")}
         </h2>
-        <p className="text-[15px] leading-[22px] text-muted-foreground">
+        <p className="text-sm text-muted-foreground">
           {t("intro", { from: fromBranch, to: toBranch })}
         </p>
       </div>
@@ -134,7 +134,7 @@ export function ReceiveTransferForm({
             className="flex flex-col gap-2 rounded-lg border border-border p-3 sm:flex-row sm:items-start sm:gap-4"
           >
             <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-              <span className="text-[15px] leading-[22px] font-semibold">{line.name}</span>
+              <span className="text-sm font-semibold">{line.name}</span>
               <span className="text-sm leading-5 text-muted-foreground">
                 {t("sent", { qty: format.quantity(line.qty), unit: line.unitShortName })}
               </span>

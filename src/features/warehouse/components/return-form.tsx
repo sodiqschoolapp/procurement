@@ -219,7 +219,7 @@ export function ReturnForm({
         data-return-saved
         className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 sm:p-6"
       >
-        <h2 className="flex items-center gap-2 text-[17px] leading-6 font-semibold">
+        <h2 className="flex items-center gap-2 text-subheading font-semibold">
           <Icon name="check_circle" className="text-success" />
           {t("savedTitle", { number: saved.number })}
         </h2>
@@ -293,7 +293,7 @@ export function ReturnForm({
           id="return-step-0"
           data-step-heading
           tabIndex={-1}
-          className="text-[17px] leading-6 font-semibold outline-none"
+          className="text-subheading font-semibold outline-none"
         >
           {t("whoAndWhen")}
         </h2>
@@ -317,7 +317,7 @@ export function ReturnForm({
               </Select>
             </Field>
           ) : (
-            <p className="flex flex-col gap-1.5 text-[15px] leading-[22px]">
+            <p className="flex flex-col gap-1.5 text-sm">
               <span className="text-sm leading-5 font-semibold">{t("branch")}</span>
               {branches[0]
                 ? tAll("branch.option", { code: branches[0].code, name: branches[0].name })
@@ -359,7 +359,7 @@ export function ReturnForm({
           id="return-step-1"
           data-step-heading
           tabIndex={-1}
-          className="text-[17px] leading-6 font-semibold outline-none"
+          className="text-subheading font-semibold outline-none"
         >
           {t("items")}
         </h2>
@@ -371,15 +371,15 @@ export function ReturnForm({
             onPick={addLine}
           />
         ) : (
-          <p className="text-[15px] leading-[22px] text-muted-foreground">{t("departmentFirst")}</p>
+          <p className="text-sm text-muted-foreground">{t("departmentFirst")}</p>
         )}
         {fieldTexts.lines ? (
-          <p role="alert" className="text-[15px] leading-[22px] text-destructive">
+          <p role="alert" className="text-sm text-destructive">
             {fieldTexts.lines}
           </p>
         ) : null}
         {lines.fields.length === 0 ? (
-          <p className="text-[15px] leading-[22px] text-muted-foreground">{t("noLines")}</p>
+          <p className="text-sm text-muted-foreground">{t("noLines")}</p>
         ) : (
           <ul className="flex flex-col gap-3">
             {lines.fields.map((field, index) => {
@@ -398,7 +398,7 @@ export function ReturnForm({
                   className="flex flex-col gap-3 rounded-lg border border-border p-3 sm:flex-row sm:items-start"
                 >
                   <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                    <span className="text-[15px] leading-[22px] font-semibold">{name}</span>
+                    <span className="text-sm font-semibold">{name}</span>
                     <span data-received className="text-sm leading-5 text-muted-foreground">
                       {t("received", {
                         qty: format.quantity(receivedOf(index)),
@@ -457,7 +457,7 @@ export function ReturnForm({
           id="return-step-2"
           data-step-heading
           tabIndex={-1}
-          className="text-[17px] leading-6 font-semibold outline-none"
+          className="text-subheading font-semibold outline-none"
         >
           {t("commentStep")}
         </h2>
@@ -476,7 +476,7 @@ export function ReturnForm({
       </section>
 
       {action.errorText && Object.keys(fieldTexts).length === 0 ? (
-        <p role="alert" className="text-[15px] leading-[22px] text-destructive">
+        <p role="alert" className="text-sm text-destructive">
           {action.errorText}
         </p>
       ) : null}
@@ -493,7 +493,7 @@ export function ReturnForm({
         ) : (
           <span />
         )}
-        <span data-step-count className="text-[15px] leading-[22px] tabular-nums">
+        <span data-step-count className="text-sm tabular-nums">
           {t("step", { current: step + 1, total: DOCUMENT_STEPS })}
         </span>
         {step < DOCUMENT_STEPS - 1 ? (
@@ -613,7 +613,7 @@ function ItemSearch({
                   type="button"
                   data-pick={subtype.id}
                   onClick={() => onPick(item, subtype)}
-                  className="flex min-h-11 w-full flex-wrap items-center justify-between gap-x-3 gap-y-0.5 rounded-lg px-3 py-2 text-left text-[15px] leading-[22px] hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring"
+                  className="flex min-h-11 w-full flex-wrap items-center justify-between gap-x-3 gap-y-0.5 rounded-lg px-3 py-2 text-left text-sm hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring"
                 >
                   <span className="min-w-0">
                     {subtype.inactive

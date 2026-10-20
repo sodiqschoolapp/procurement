@@ -55,10 +55,10 @@ export default async function ImportPage({ params }: { params: Promise<{ kind: s
         {back}
       </Link>
       <div className="flex flex-col gap-2">
-        <h1 className="text-[28px] leading-[34px] font-bold tracking-[-0.01em]">
+        <h1 className="text-title">
           {t(`title.${kind}`)}
         </h1>
-        <p className="text-[15px] leading-[22px] text-muted-foreground">
+        <p className="text-sm text-muted-foreground">
           {t(`description.${kind}`)}
         </p>
       </div>

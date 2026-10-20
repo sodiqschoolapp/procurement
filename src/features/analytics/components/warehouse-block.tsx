@@ -57,7 +57,7 @@ export async function WarehouseView({
     </Link>
   );
   const under = (text: string) => (
-    <span className="block text-[13px] leading-[18px] text-muted-foreground">{text}</span>
+    <span className="block text-small text-muted-foreground">{text}</span>
   );
   const nowCells = (branch: string | null, row: WarehouseTotals) => [
     link(stock(branch, { kind: "stock", view: "value" }), format.money(row.value)),
@@ -109,7 +109,7 @@ export async function WarehouseView({
       data-analytics-block="warehouse"
     >
       <div className="flex flex-col gap-1">
-        <h2 id="warehouse-title" className="text-[20px] leading-7 font-bold">
+        <h2 id="warehouse-title" className="text-heading font-semibold">
           {t("warehouse.title")}
         </h2>
         <p className="text-sm leading-5 text-muted-foreground">

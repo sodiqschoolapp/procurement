@@ -35,8 +35,8 @@ export function TickedTotals({ drafts }: { drafts: readonly TickedDraft[] }) {
       data-total={key}
       className={cn("flex items-baseline justify-between gap-4", folded && "max-sm:hidden")}
     >
-      <dt className={strong ? "font-bold" : "text-muted-foreground"}>{label}</dt>
-      <dd className={`tabular-nums ${strong ? "font-bold" : ""}`}>{format.money(amount)}</dd>
+      <dt className={strong ? "font-semibold" : "text-muted-foreground"}>{label}</dt>
+      <dd className={`tabular-nums ${strong ? "font-semibold" : ""}`}>{format.money(amount)}</dd>
     </div>
   );
 
@@ -49,15 +49,15 @@ export function TickedTotals({ drafts }: { drafts: readonly TickedDraft[] }) {
     >
       <h2
         id="ticked-totals-title"
-        className="flex flex-wrap items-baseline gap-x-3 text-[17px] leading-6 font-bold"
+        className="flex flex-wrap items-baseline gap-x-3 text-subheading font-semibold"
       >
         {t("title")}
-        <span className="text-[15px] font-normal text-muted-foreground">
+        <span className="text-sm font-normal text-muted-foreground">
           {t("count", { count })}
         </span>
       </h2>
       <div className="grid gap-x-12 gap-y-4 sm:grid-cols-2">
-        <dl className="flex flex-col gap-1 text-[15px] leading-[22px]">
+        <dl className="flex flex-col gap-1 text-sm">
           {line("goods", t("goods"), totals.goods, false, !details)}
           {line("extras", t("extras"), totals.extras, false, !details)}
           {line("grand", t("grand"), totals.grand, true)}
@@ -65,7 +65,7 @@ export function TickedTotals({ drafts }: { drafts: readonly TickedDraft[] }) {
         <dl
           id="ticked-totals-split"
           className={cn(
-            "flex flex-col gap-1 text-[15px] leading-[22px]",
+            "flex flex-col gap-1 text-sm",
             !details && "max-sm:hidden",
           )}
         >

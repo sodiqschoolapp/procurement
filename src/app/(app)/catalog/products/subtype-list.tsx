@@ -56,7 +56,7 @@ export async function SubtypeList({
       className="flex flex-col gap-4 rounded-xl bg-card p-6 text-card-foreground"
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 id="subtypes-title" className="text-[17px] leading-6 font-bold">
+        <h2 id="subtypes-title" className="text-subheading font-semibold">
           {t("subtypes.title")}
         </h2>
         {productActive && (
@@ -70,7 +70,7 @@ export async function SubtypeList({
         )}
       </div>
       {rows.length === 0 ? (
-        <p className="text-[15px] leading-[22px] text-muted-foreground">{t("subtypes.none")}</p>
+        <p className="text-sm text-muted-foreground">{t("subtypes.none")}</p>
       ) : (
         <>
           <ul className="flex flex-col gap-2 sm:hidden">
@@ -96,7 +96,7 @@ export async function SubtypeList({
             ))}
           </ul>
           <table className="hidden w-full border-collapse text-left text-sm leading-5 sm:table">
-            <thead className="bg-muted text-[13px] leading-[18px] font-semibold text-muted-foreground">
+            <thead className="bg-muted text-small font-semibold text-muted-foreground">
               <tr>
                 <th scope="col" className="w-16 px-4 py-3">
                   <span className="sr-only">{t("fields.photoFileId")}</span>

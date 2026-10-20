@@ -72,7 +72,7 @@ export function PricePrompts({ rows }: { rows: readonly PromptRow[] }) {
       className="flex flex-col gap-4 rounded-xl bg-card p-6 text-card-foreground"
     >
       <div className="flex flex-col gap-1">
-        <h2 id="price-prompts-title" className="text-[17px] leading-6 font-bold">
+        <h2 id="price-prompts-title" className="text-subheading font-semibold">
           {t("prompt.title")}
         </h2>
         <p className="text-sm leading-5 text-muted-foreground">{t("prompt.line")}</p>
@@ -90,7 +90,7 @@ export function PricePrompts({ rows }: { rows: readonly PromptRow[] }) {
               <dt className="text-muted-foreground">{t("prompt.average")}</dt>
               <dd className="tabular-nums">
                 {row.averageText}
-                <span className="block text-[13px] leading-[18px] text-muted-foreground">
+                <span className="block text-small text-muted-foreground">
                   {t("prompt.purchases", { count: row.count })}
                 </span>
               </dd>
@@ -106,7 +106,7 @@ export function PricePrompts({ rows }: { rows: readonly PromptRow[] }) {
 
       <div className="-mx-6 hidden overflow-x-auto sm:block">
         <table className="w-full min-w-[44rem] border-collapse text-left text-sm leading-5">
-          <thead className="text-[13px] leading-[18px] font-semibold text-muted-foreground">
+          <thead className="text-small font-semibold text-muted-foreground">
             <tr>
               <th scope="col" className="px-6 py-2">
                 {t("product")}
@@ -138,7 +138,7 @@ export function PricePrompts({ rows }: { rows: readonly PromptRow[] }) {
                 </td>
                 <td className="px-3 py-3 text-right whitespace-nowrap tabular-nums">
                   {row.averageText}
-                  <span className="block text-[13px] leading-[18px] text-muted-foreground">
+                  <span className="block text-small text-muted-foreground">
                     {t("prompt.purchases", { count: row.count })}
                   </span>
                 </td>

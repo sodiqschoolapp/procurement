@@ -27,7 +27,7 @@ export default async function NewProductPage() {
         <Icon name="chevron_left" />
         {t("kinds.products.title")}
       </Link>
-      <h1 className="text-[28px] leading-[34px] font-bold tracking-[-0.01em]">
+      <h1 className="text-title">
         {t("kinds.products.newTitle")}
       </h1>
       <ProductForm entry={null} choices={choices} />

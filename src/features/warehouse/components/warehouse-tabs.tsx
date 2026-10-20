@@ -31,7 +31,7 @@ export async function WarehouseTabs({
           href={tab.href}
           aria-current={tab.id === current ? "page" : undefined}
           className={cn(
-            "-mb-px flex h-11 items-center border-b-2 px-4 text-[15px] leading-[22px] font-semibold",
+            "-mb-px flex h-11 items-center border-b-2 px-4 text-sm font-semibold",
             tab.id === current
               ? "border-primary text-foreground"
               : "border-transparent text-muted-foreground hover:text-foreground",

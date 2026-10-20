@@ -163,7 +163,7 @@ export function ProductPicker({
                       ? `${hit.product.name} — ${hit.subtype.name}`
                       : hit.product.name}
                   </span>
-                  <span className="truncate text-[13px] leading-4 text-muted-foreground">
+                  <span className="truncate text-xs text-muted-foreground">
                     {[
                       hit.product.categoryName,
                       tCatalog(`productType.${hit.product.type}`),

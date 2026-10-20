@@ -279,7 +279,7 @@ export function ProductForm({
         {entry ? (
           <>
             <span className="text-sm leading-5 font-semibold">{t("fields.referencePrice")}</span>
-            <span className="text-[15px] leading-[22px] tabular-nums">{price ?? t("noPrice")}</span>
+            <span className="text-sm tabular-nums">{price ?? t("noPrice")}</span>
             {hint("product-referencePrice-hint", t("hints.referencePriceLater"))}
           </>
         ) : (

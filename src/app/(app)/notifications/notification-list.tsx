@@ -64,7 +64,7 @@ export function NotificationList({ items }: { items: readonly NotificationItem[]
               className={cn("mt-0.5 shrink-0", opening === item.id && "animate-spin")}
             />
             <span className="flex min-w-0 flex-1 flex-col gap-1">
-              <span className={cn("text-[15px] leading-[22px]", item.unread && "font-bold")}>
+              <span className={cn("text-sm", item.unread && "font-semibold")}>
                 {item.text}
               </span>
               <span className="flex flex-wrap gap-x-3 text-sm leading-5 text-muted-foreground">

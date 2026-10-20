@@ -342,7 +342,7 @@ export function RecordMoneyButton({
               />
               {file ? (
                 <div className="flex items-center justify-between gap-3">
-                  <span className="truncate text-[15px] leading-[22px]">{file.name}</span>
+                  <span className="truncate text-sm">{file.name}</span>
                   <Button
                     type="button"
                     variant="ghost"
@@ -368,17 +368,17 @@ export function RecordMoneyButton({
               )}
             </div>
           ) : blocks.size > 1 ? (
-            <p className="text-[13px] leading-[18px] text-muted-foreground">
+            <p className="text-small text-muted-foreground">
               {t("fileOneManager")}
             </p>
           ) : null}
           <section aria-label={t("rowsTitle")} className="flex flex-col gap-4">
             {loading ? (
-              <p className="text-[15px] leading-[22px] text-muted-foreground">{t("loading")}</p>
+              <p className="text-sm text-muted-foreground">{t("loading")}</p>
             ) : null}
             {[...blocks].map(([ownerId, block]) => (
               <div key={ownerId} data-money-block={ownerId} className="flex flex-col gap-3">
-                <h3 className="text-[15px] leading-[22px] font-bold">{block.name}</h3>
+                <h3 className="text-sm font-semibold">{block.name}</h3>
                 {block.orders.map((order) => {
                   const invalid = amountOf(order) === null;
                   return (
@@ -388,8 +388,8 @@ export function RecordMoneyButton({
                       className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
                     >
                       <label htmlFor={`money-${order.id}`} className="flex flex-col">
-                        <span className="text-[15px] leading-[22px]">{order.number}</span>
-                        <span className="text-[13px] leading-[18px] text-muted-foreground">
+                        <span className="text-sm">{order.number}</span>
+                        <span className="text-small text-muted-foreground">
                           {t("rowFacts", {
                             planned: format.money(BigInt(order.plannedCash)),
                             given: format.money(BigInt(order.handed)),
@@ -417,7 +417,7 @@ export function RecordMoneyButton({
                         {invalid ? (
                           <p
                             id={`money-error-${order.id}`}
-                            className="text-[13px] leading-[18px] text-destructive"
+                            className="text-small text-destructive"
                           >
                             {t("amountInvalid")}
                           </p>

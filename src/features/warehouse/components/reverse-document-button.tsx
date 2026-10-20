@@ -158,7 +158,7 @@ export function ReverseDocumentButton({
                     </span>
                   </span>
                   {line.held !== null && (
-                    <span className="text-[13px] leading-[18px] text-destructive" data-held>
+                    <span className="text-small text-destructive" data-held>
                       {t("overHeld", {
                         held: `${format.quantity(line.held)} ${line.unitShortName}`,
                       })}

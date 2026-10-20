@@ -94,7 +94,7 @@ export async function PricesView({
       data-analytics-block="prices"
     >
       <div className="flex flex-col gap-1">
-        <h2 id="prices-title" className="text-[20px] leading-7 font-bold">
+        <h2 id="prices-title" className="text-heading font-semibold">
           {t("prices.title")}
         </h2>
         <p className="text-sm leading-5 text-muted-foreground">{t("prices.note")}</p>
@@ -110,7 +110,7 @@ export async function PricesView({
             <select
               name="variant"
               defaultValue={trend?.variantId ?? ""}
-              className="min-h-11 rounded-md border bg-background px-3 text-[15px] font-normal sm:min-h-9"
+              className="min-h-11 rounded-md border bg-background px-3 text-sm font-normal sm:min-h-9"
             >
               {!trend && <option value="">{t("prices.choose")}</option>}
               {choices.map((choice) => (
@@ -128,7 +128,7 @@ export async function PricesView({
           </button>
         </form>
         {!trend || points.length === 0 ? (
-          <p className="text-[15px] leading-[22px] text-muted-foreground" data-trend-empty>
+          <p className="text-sm text-muted-foreground" data-trend-empty>
             {trend ? t("prices.trendEmpty", { name: subtypeLabel(trend) }) : t("prices.noRecords")}
           </p>
         ) : (
@@ -174,7 +174,7 @@ export async function PricesView({
             })}
           </p>
           {block.rises.length === 0 ? (
-            <p className="text-[15px] leading-[22px] text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               {t("prices.risesEmpty")}
             </p>
           ) : (
@@ -224,7 +224,7 @@ export async function PricesView({
 
         <Card id="prices-spread" title={t("prices.spread")} excel={download("priceSpread")}>
           {block.spreads.length === 0 ? (
-            <p className="text-[15px] leading-[22px] text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               {t("prices.spreadEmpty")}
             </p>
           ) : (
@@ -286,7 +286,7 @@ function PairCell({ href, price, where }: { href: string; price: string; where: 
       >
         {price}
       </Link>
-      <span className="block text-[13px] leading-[18px] text-muted-foreground">{where}</span>
+      <span className="block text-small text-muted-foreground">{where}</span>
     </>
   );
 }
@@ -311,7 +311,7 @@ export async function Card({
       data-chart-card={id}
     >
       <div className="flex items-baseline justify-between gap-3">
-        <h3 id={`${id}-title`} className="text-[17px] leading-6 font-bold">
+        <h3 id={`${id}-title`} className="text-subheading font-semibold">
           {title}
         </h3>
         <a
@@ -347,7 +347,7 @@ export function Table({
         className="w-full min-w-[32rem] border-collapse text-left text-sm leading-5"
         data-table={data}
       >
-        <thead className="bg-muted text-[13px] leading-[18px] font-semibold text-muted-foreground">
+        <thead className="bg-muted text-small font-semibold text-muted-foreground">
           <tr>
             {headings.map((heading, index) => (
               <th

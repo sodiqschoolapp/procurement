@@ -71,20 +71,20 @@ function WaitingCard({ card, listHref }: { card: WaitingCardData; listHref: stri
     >
       <div className="flex flex-col gap-2">
         <div className="flex items-start justify-between gap-3">
-          <h3 className="min-w-0 text-[17px] leading-6 font-bold break-words">
+          <h3 className="min-w-0 text-subheading font-semibold break-words">
             {product}{" "}
-            <span className="text-[13px] font-normal text-muted-foreground">
+            <span className="text-small font-normal text-muted-foreground">
               {group.branchCode}
             </span>
           </h3>
           <span
             data-card-total
-            className="text-[20px] leading-7 font-bold whitespace-nowrap tabular-nums"
+            className="text-heading font-semibold whitespace-nowrap tabular-nums"
           >
             {format.money(BigInt(group.summary.totals.grand))}
           </span>
         </div>
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] leading-4 text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
           <span className="tabular-nums">
             {format.quantity(group.summary.quantity)} {group.unitShortName}
           </span>
@@ -126,7 +126,7 @@ function WaitingCard({ card, listHref }: { card: WaitingCardData; listHref: stri
         {open ? t("hideOrders", { product }) : t("showOrders", { product })}
       </Button>
       {open && (
-        <ul id={ordersId} className="flex flex-col gap-2 text-[13px] leading-[18px]">
+        <ul id={ordersId} className="flex flex-col gap-2 text-small">
           {group.orders.map((order) => (
             <li
               key={order.id}
@@ -165,14 +165,14 @@ function WaitingCard({ card, listHref }: { card: WaitingCardData; listHref: stri
           className="flex flex-col gap-2 rounded-lg border border-destructive p-3"
         >
           <div className="flex items-start justify-between gap-3">
-            <h4 className="text-[15px] leading-[22px] font-bold text-destructive">
+            <h4 className="text-sm font-semibold text-destructive">
               {failed.title}
             </h4>
             <Button type="button" variant="ghost" size="sm" onClick={() => setFailed(null)}>
               {tCommon("close")}
             </Button>
           </div>
-          <ul className="flex flex-col gap-1 text-[15px] leading-[22px]">
+          <ul className="flex flex-col gap-1 text-sm">
             {failed.lines.map(({ orderId, line }) => (
               <li key={orderId}>{line}</li>
             ))}

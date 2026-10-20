@@ -37,11 +37,11 @@ export default async function NewSubtypePage({ params }: { params: Promise<{ id:
         <Icon name="chevron_left" />
         {product.name}
       </Link>
-      <h1 className="text-[28px] leading-[34px] font-bold tracking-[-0.01em]">
+      <h1 className="text-title">
         {t("subtypes.newTitle", { product: product.name })}
       </h1>
       {first && (
-        <p className="flex gap-2 rounded-xl bg-muted p-4 text-[15px] leading-[22px]">
+        <p className="flex gap-2 rounded-xl bg-muted p-4 text-sm">
           <Icon name="info" />
           {t("subtypes.firstNote")}
         </p>

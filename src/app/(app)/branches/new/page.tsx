@@ -17,7 +17,7 @@ export default async function NewBranchPage() {
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
       <AdminNav current="branches" />
-      <h1 className="text-[28px] leading-[34px] font-bold tracking-[-0.01em]">
+      <h1 className="text-title">
         {t("branches.newTitle")}
       </h1>
       <BranchForm branch={null} />

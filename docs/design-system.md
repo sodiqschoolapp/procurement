@@ -1,208 +1,171 @@
 # Design system
 
-The look of every screen of the Sodiq School apps: the academic platform (`sodiqschoolapp/sodiq-platform`) and the procurement and warehouse app (`sodiqschoolapp/procurement`). Approved by the owner on 12 October 2026 from the design board "Sodiq Platform design directions" (page "Final"). The brand comes from the Sodiq School brand guidelines (Opera Branding Agency, 2021–2022): colours, logo, slogan, hexagon pattern and the navy-and-orange letterhead strip.
+The look of every screen of the procurement and warehouse app (`sodiqschoolapp/procurement`). This app's own text since 21.10.2026 (D60, which replaces D23): it no longer shares the sodiq-platform design system word for word. The brand comes from the Sodiq School brand guidelines: the navy, the orange and the logo.
 
-**One text in two repositories.** Everything above the last section, "This app", is the same text, word for word, in both repositories, so the two apps look like one family and can later share one sign-in. A change to it is a process change made by the owner in both repositories in the same week. The last section holds what belongs to one app only: its files, its menu and its own labels.
+The spec says what a screen must do; this file says how it looks. Where they differ, the spec wins and the difference is reported. Every screen is checked against this file by the builder before the report and by the reviewer on every pull request that changes a screen.
 
-Each app's spec says what its screens must do; this file says how they look. Where they differ, the spec wins and the difference is reported. Every screen is checked against this file by the builder before the report and by the reviewer on every pull request that changes a screen.
+## Direction: calm, clean, obvious
 
-## The principle: loud at the edges, calm in the work
+The app is used every day by people who are not technical, half of them on a phone. A screen is calm when the eye goes first to what the person must do now, and everything else is quiet.
 
-- **Brand moments** are loud: the sign-in page, empty pages, full-page errors and everything printed or downloaded as a PDF. They use the slab font, the hexagon pattern and the letterhead strip.
-- **Working screens** are calm: tables, lists, forms, editors and home pages. White panels on a light grey canvas, navy text, and orange only where the person acts: the primary button, the active menu item, and "now" or "today".
-- One primary (orange) button per area. If two actions compete, one of them is secondary.
-
-## What we never do
-
-These patterns make a screen look generated. The review refuses them.
-
-1. Small uppercase labels above a title ("eyebrows"). A title stands alone; its context is in the breadcrumbs or a normal line under it.
-2. Icons inside coloured squares or circles. An icon stands next to its word.
-3. A coloured stripe on the left of a card, a row or a menu item. The active menu item is a solid orange fill.
-4. Pill-shaped tags for counts or plain status ("Now", "4 lessons", "Active"). Status is plain words, with an icon where it helps; a count is a plain number. The one exception is a status label that the app's spec defines as a label (see "This app"): a rectangle with corner 6, its icon and its word.
-5. Greetings ("Good morning, Dilnoza"). The page title says what the page is.
-6. Outlined buttons. A button is a fill; only a field has a border.
-7. Buttons of different heights side by side, or one-off sizes.
-8. Shadows and gradients on panels and cards. Elevation is for things that float: menus, dialogs, popovers.
-9. Orange text on white or on the canvas, thin orange icons, or white text on orange. Orange on white is 2.35 : 1; the sign-in slogan on the navy panel is the one orange text.
-10. Emoji, decorative illustrations on working screens, or icons from more than one set.
-11. An intro sentence under a page title on a screen used every day. A page explains itself through its title and its content.
-12. A notification dot that only says "something".
+- **Neutral surfaces.** White panels with hairline borders on a very light cool grey page. No heavy shadows, no gradients, no large coloured areas.
+- **Navy is the brand.** The school's navy (#06113C) is the text, the primary button and every active state.
+- **Orange is a small highlight.** The school's orange (#FF8A32) marks what is current or what needs the person now: the active tab underline, the active menu marker, the one "needs you now" accent on a row. Never a large area, never text on a light background, never a status colour.
+- **Colour means something.** Red for refused, sent back or over plan; amber for due soon, overdue or waiting on you; green for done, even or money left; blue for "in the approval or buying flow"; grey for neutral. Never colour alone: always a word or an icon with it.
+- **Less text.** A page explains itself through its title and its content. Text stays only when it says why something is refused or disabled, warns about a money or stock consequence, or tells the person what to do next.
+- **One next step.** Each screen leads with the one action that moves the work forward; other actions are secondary or quiet.
 
 ## Colour
 
-The tokens keep the names of shadcn/ui and are written in the app's stylesheet in oklch; the app's contrast test reads them there (files: "This app"). Hex is the brand value; the oklch value is its exact conversion.
+The tokens keep the names of shadcn/ui and are written in `src/app/globals.css` in oklch (the exact conversion of the hex values below); `tests/contrast.test.ts` reads them there and checks the values and the contrast of every pair named under "Accessibility".
 
-### Light theme
-
-| Token | Hex | oklch | Use |
+| Token | Light | Dark | Use |
 | --- | --- | --- | --- |
-| `--background` | #ECECEC | oklch(0.9431 0 0) | The page canvas (brand grey). |
-| `--foreground` | #06113C | oklch(0.2026 0.0841 266.73) | All text: brand navy, never black. |
-| `--card`, `--popover` | #FFFFFF | oklch(1 0 0) | Panels, side panels, menus, dialogs. |
-| `--card-foreground`, `--popover-foreground` | #06113C | as foreground | |
-| `--primary` | #FF8A32 | oklch(0.7491 0.1706 52.71) | Primary button fill, active menu item, "now". |
-| `--primary-foreground` | #06113C | as foreground | Text on orange: 7.75 : 1. |
-| `--primary-hover` (new) | #DE7230 | oklch(0.6666 0.1552 48.52) | Hover and pressed orange (the brand's darker orange); navy on it 5.68 : 1. |
-| `--secondary` | #DCDFE8 | oklch(0.9040 0.0127 271.28) | Secondary button fill; navy on it 13.67 : 1. |
-| `--secondary-hover` (new) | #CDD1DD | oklch(0.8612 0.0171 271.22) | Its hover; navy on it 11.93 : 1. |
-| `--secondary-foreground` | #06113C | as foreground | |
-| `--muted` | #F6F6F6 | oklch(0.9731 0 0) | Table header and summary columns, quiet fills on white. |
-| `--muted-foreground` | #4A5270 | oklch(0.4441 0.0505 272.67) | Second lines, captions: 7.69 : 1 on white, 6.51 : 1 on the canvas. |
-| `--accent` | #ECECEC | oklch(0.9431 0 0) | Hover of quiet buttons and rows. |
-| `--accent-foreground` | #06113C | as foreground | |
-| `--destructive` | #A3221A | oklch(0.4680 0.1662 28.87) | Danger text and danger buttons (7.50 : 1 on white). |
-| `--destructive-bg` (new) | #FDE7E4 | oklch(0.9448 0.0245 26.92) | Danger tint (danger text on it 6.33 : 1). |
-| `--success`, `--success-bg` (new) | #146C2E on #E6F4EA | oklch(0.4670 0.1247 148.20) on oklch(0.9540 0.0199 154.90) | Saved, active, done (5.75 : 1). |
-| `--warning`, `--warning-bg` (new) | #7A4A00 on #FFF1CC | oklch(0.4544 0.0996 68.13) on oklch(0.9599 0.0504 89.76) | Late, provisional, needs attention (6.66 : 1). Amber, never the brand orange. |
-| `--info`, `--info-bg` (new) | #1D4FA8 on #E3ECFB | oklch(0.4486 0.1532 260.94) on oklch(0.9407 0.0225 260.72) | Notices (6.45 : 1). |
-| `--today` (new) | #FFF4E8 | oklch(0.9725 0.0198 70.00) | The row, column or item that is "now" or "today", and the selection bar (navy on it 16.79 : 1, muted 7.09 : 1). |
-| `--border` | #DBDBDB | oklch(0.8914 0 0) | Dividers and panel edges (decorative). |
-| `--input` | #7C849C | oklch(0.6152 0.0375 270.74) | Border of fields and selects: 3.73 : 1 on white, 3.15 : 1 on the canvas. |
-| `--ring` | #06113C | as foreground | Focus: 2 px outline, 2 px offset. |
-| `--sidebar` | #06113C | as foreground | The menu, navy in both themes. |
-| `--sidebar-foreground` | #C9CFE3 | oklch(0.8560 0.0285 272.47) | Menu items (11.72 : 1 on navy). |
-| `--sidebar-primary` | #FF8A32 | as primary | Active menu item fill. |
-| `--sidebar-primary-foreground` | #06113C | as foreground | |
-| `--sidebar-accent` | #0E1B4D | oklch(0.2475 0.0939 267.72) | Menu hover (light text on it 10.54 : 1). |
-| `--sidebar-accent-foreground` | #FFFFFF | oklch(1 0 0) | |
-| `--sidebar-border` | #16224F | oklch(0.2703 0.0841 268.91) | |
-| `--sidebar-ring` | #FF8A32 | as primary | Focus inside the menu (7.75 : 1 on navy). |
+| `--background` | #F5F6F8 | #0A0F1E | The page. |
+| `--foreground` | #06113C | #E8EBF3 | Text and headings: the school's navy in the light theme. |
+| `--card`, `--popover` | #FFFFFF | #111831, popover #151D3A | Panels, tables, menus, dialogs. |
+| `--primary` | #06113C | #E8ECF6 | The primary button and selected controls. |
+| `--primary-foreground` | #FFFFFF | #06113C | Text on the primary button. |
+| `--primary-hover` | #1B2754 | #CBD3E8 | Its hover and press. |
+| `--secondary` | #FFFFFF | #172041 | The secondary button (with a `--border-strong` edge). |
+| `--secondary-hover` | #F1F3F7 | #1F2A50 | Its hover. |
+| `--muted` | #F8F9FB | #151C36 | Table headers, quiet fills inside a panel. |
+| `--muted-foreground` | #5A6278 | #9AA3BC | Second lines, captions, column headers. |
+| `--accent` | #F1F3F7 | #1A2343 | Hover of rows, quiet buttons and menu items. |
+| `--border` | #E3E6EC | #232C4A | Hairlines: panel edges and dividers (decorative). |
+| `--border-strong` | #D2D7E0 | #2E3858 | The edge of a secondary button, a chip, a checkbox. |
+| `--input` | #868EA3 | #5E6990 | The border of fields and selects (3 : 1 on the page and on a panel). |
+| `--ring` | #06113C | #FF8A32 | Focus: 2 px outline, 2 px offset. Navy in the light theme, because orange on white is 2.35 : 1; orange in the dark theme. |
+| `--brand` | #FF8A32 | #FF8A32 | The orange highlight: active tab underline, active menu marker, the "needs you now" accent. Fills and lines only. |
+| `--brand-foreground` | #06113C | #06113C | Text on an orange fill (7.75 : 1). |
+| `--destructive`, `--destructive-bg` | #B42318 on #FEF1F0 | #FF8F85 on #372B3E | Refused, sent back, over plan, danger buttons. |
+| `--warning`, `--warning-bg` | #8A4B00 on #FFF5DB | #FFD27A on #37363D | Overdue, due soon, waiting on you, money left. Amber, never the brand orange. |
+| `--success`, `--success-bg` | #13703A on #EBF7EF | #6FD08C on #203540 | Done, even, saved. |
+| `--info`, `--info-bg` | #2348A8 on #EEF3FD | #9DBBFF on #273252 | In approval, open, in settlement; notices. |
+| `--today`, `--today-muted` | #FFF6EE, #5A6278 | #2E2631, #C9C2C4 | A row or item that needs the person now (an orange tint). |
+| `--topbar` | #FFFFFF | #111831 | The top bar. |
+| `--link` | #06113C | #E8EBF3 | Plain links: weight 500, underlined on hover. |
+| `--sidebar` | #FFFFFF | #0D1328 | The menu. |
+| `--sidebar-foreground` | #3D4560 | #B7BFD4 | Menu items at rest. |
+| `--sidebar-primary`, `--sidebar-primary-foreground` | #EDF0F7, #06113C | #1C2547, #FFFFFF | The active menu item: a light navy tint and navy text. |
+| `--sidebar-accent`, `--sidebar-accent-foreground` | #F1F3F7, #06113C | #161E38, #FFFFFF | Menu hover. |
+| `--sidebar-border` | #E3E6EC | #1E2642 | The menu's hairline edge. |
+| `--sidebar-ring` | #06113C | #FF8A32 | Focus inside the menu. |
+| `--sidebar-avatar` | #06113C | #2A3561 | The round avatar behind white initials. |
+| `--chart-1` … `--chart-5` | #34498A, #7C8DBF, #B9C3DE, #5A6278, #C9CED9 | #8EA2DA, #5D6FA6, #3A4877, #9AA3BC, #2E3858 | Chart marks: one navy-blue series; the others for a second series or a total. |
 
-### Dark theme
+The dark tints of danger, warning, success and info are the colour at 16% over the dark card, composited in sRGB; `--today` dark is the orange at 12% over the card.
 
-| Token | Hex | oklch |
-| --- | --- | --- |
-| `--background` | #040920 | oklch(0.1509 0.0498 267.91) |
-| `--foreground` | #ECECEC | oklch(0.9431 0 0) |
-| `--card`, `--popover` | #0B1438 | oklch(0.2087 0.0711 268.84) |
-| top bar | #08102F | oklch(0.1880 0.0631 268.56) |
-| `--primary`, `--primary-foreground`, `--primary-hover` | as light | as light |
-| `--secondary` | #1C2856 | oklch(0.2942 0.0845 269.60) |
-| `--secondary-hover` | #26346A | oklch(0.3441 0.0955 269.85) |
-| `--secondary-foreground` | #ECECEC | |
-| `--muted` | #16224F | oklch(0.2703 0.0841 268.91) |
-| `--muted-foreground` | #A9B1CC | oklch(0.7629 0.0397 272.38) (8.41 : 1 on the card) |
-| `--accent` | #16224F | oklch(0.2703 0.0841 268.91) |
-| `--destructive` | #FF8F85 | oklch(0.7681 0.1370 26.09) (8.13 : 1 on the card) |
-| `--success` | #6FD08C | oklch(0.7806 0.1343 151.86) |
-| `--warning` | #FFD27A | oklch(0.8847 0.1180 82.93) |
-| `--info` | #9DBBFF | oklch(0.7953 0.1027 265.79) |
-| `--today` | #2A1C14 | oklch(0.2416 0.0266 50.81), its second line #D9C2B0 oklch(0.8286 0.0359 60.33) |
-| links | #FFB37A | oklch(0.8269 0.1149 57.22) (10.23 : 1 on the card) |
-| `--border` | #1C2856 | oklch(0.2942 0.0845 269.60) |
-| `--input` | #5A6690 | oklch(0.5176 0.0683 271.60) (3.19 : 1 on the card) |
-| `--ring`, `--sidebar-ring` | #FF8A32 | as primary (focus is orange in the dark theme) |
-| `--sidebar` and its tokens | as light | the menu does not change between themes |
-
-The tints of success, warning, info and danger in the dark theme are the colour at 16% over the card; the builder checks each pair in the app's contrast test.
-
-The theme follows the device by default; the person can choose light or dark, and the choice is kept in the browser.
+The theme follows the device by default; the person can choose light or dark on Profile or on the sign-in page, and the choice is kept in the browser.
 
 ## Type
 
-- **Golos Text** (ParaType, SIL Open Font License) for everything people work with. It covers Uzbek Latin (oʻ, gʻ with U+02BB) and Cyrillic, and has tabular figures: every column of numbers and every amount uses `font-variant-numeric: tabular-nums`. PDFs use the same font files.
-- **Bitter** (SIL Open Font License) for brand moments only: the sign-in title and slogan, the title of an empty page and of a full-page error. Never in tables, forms, menus or page titles of working screens. If Bitter lacks a letter of a language (checked in the browser test with "Oʻgʻil, Ўзбекистон, Қашқадарё, Ғулом, Ҳамид"), that language's slab titles use Golos Text bold.
-- Both are served from the app's own files (no Google Fonts at run time).
+**Golos Text** only (ParaType, SIL Open Font License), served from the app's own files. It covers Latin and Cyrillic. It has no U+02BB (the Uzbek oʻ and gʻ), so the app adds one face of the same family, limited to U+02BB, from the PDF fonts in `src/features/orders/download/fonts/`, where U+02BB is mapped to the turned comma; the browser test checks every letter of "Oʻgʻil, Ўзбекистон, Қашқадарё, Ғулом, Ҳамид" comes from the app's own files at 400, 500 and 600.
 
-| Style | Size / line | Weight | Use |
-| --- | --- | --- | --- |
-| Page title | 28 / 34 | 700, letter spacing −0.01em | The page header title |
-| Section | 17 / 24 | 700 | Panel and section titles |
-| Body | 15 / 22 | 400 | Text, list rows, first lines of items |
-| Control | 14 / 20 | 600 | Buttons, menu items (500 when not active), selects |
-| Table | 13 / 18 | 400 | Dense tables; 14 / 20 in ordinary lists |
-| Caption | 12 or 13 / 16 | 400 | Second lines, legends |
-| Brand title | 40 / 44 (empty page), 56 / 58 (sign-in slogan) | 700–800 | Bitter, brand moments only |
+Every number is set with `tabular-nums` (on the whole page), and amounts in tables are right-aligned.
+
+| Style | Class | Size / line | Weight | Use |
+| --- | --- | --- | --- | --- |
+| Title | `text-title` | 24 / 32 (22 / 28 on phones), −0.015em | 600 | The page title, one per page |
+| Heading | `text-heading` | 18 / 26 | 600 | A section of a page |
+| Subheading | `text-subheading` | 15 / 22 | 600 | Panel titles, card titles |
+| Body | `text-sm` | 14 / 20 | 400 | Text, table cells, fields, buttons |
+| Small | `text-small` | 13 / 18 | 400 | Secondary lines in dense rows |
+| Caption | `text-xs` | 12 / 16 | 400–500 | Column headers, field hints, chip words |
+| Figure | `text-figure` | 22 / 28 | 600 | A number in the summary strip or a total |
+
+Weights in use: 400, 500 (links, menu items, labels of fields) and 600 (titles, buttons, the figure of an amount). No 700.
 
 ## Spacing, corners, elevation
 
-- Spacing in steps of 4: 4, 8, 12, 16, 24, 32, 48. Page padding 32 (16 at phone width), panel padding 24, gap between panels 24.
-- Corners: 8 for every control (buttons, fields, selects, menu items, tiles), 12 for panels, 6 for the inner buttons of a segmented control and for status labels, round for avatars.
-- Panels are white on the canvas with no border and no shadow. Floating things (menus, popovers, dialogs) have one shadow: `0 8px 24px -8px` of navy at 20%.
-
-## Buttons
-
-Three sizes, four kinds, one shape. Every button is a fill with no border.
-
-| Size | Height | Padding | Text | Where |
-| --- | --- | --- | --- | --- |
-| Large | 48 | 0 20 | 16 / 600 | Sign-in, the main action of a phone screen |
-| Medium | 40 (44 at phone width) | 0 16 | 14 / 600 | Everywhere else (default) |
-| Small | 32 (44 at phone width) | 0 12 | 13 / 600 | Inside dense tables and selection bars on a desktop |
-
-| Kind | Fill | Text | Hover |
-| --- | --- | --- | --- |
-| Primary | `--primary` | `--primary-foreground` | `--primary-hover` |
-| Secondary | `--secondary` | `--secondary-foreground` | `--secondary-hover` |
-| Quiet | none | foreground | `--accent` |
-| Danger | none | `--destructive` | `--destructive-bg` |
-
-- At phone width every control a finger uses is at least 44 high; a small button takes the height of a medium one (44).
-- An icon-only button is square (40 × 40 at medium, 44 × 44 at phone width) and has an `aria-label`.
-- Buttons in one row have one size. Action buttons in a list of items share one minimum width (112 at medium) so they line up.
-- A link styled as a button uses the same classes. Plain links are navy, weight 600, underlined on hover.
-- In the shadcn/ui button the sizes are `sm` 32, `default` 40 and `lg` 48, with the square `icon-sm`, `icon` and `icon-lg`; the kinds are `default` (primary), `secondary`, `ghost` (quiet) and `destructive` (danger, no fill until hover). There are no `xs` sizes and no `outline` or `link` variants.
-
-## Fields and switches
-
-- Fields and selects: 40 high (44 at phone width, 48 on sign-in), white fill, 1 px `--input` border, corner 8; focus is the 2 px ring. An error is a 2 px `--destructive` border and one line under the field in `--destructive`.
-- A select draws a filled "expand more" icon on the right, never a text caret.
-- A segmented control (two to four choices) is a `--accent` track with 4 px padding; the chosen item is white with navy text, the others muted text, 32 high (44 at phone width, so the track is 52).
-- Checkboxes use navy in the light theme and the foreground colour in the dark theme.
+- One spacing scale in steps of 4: 4, 8, 12, 16, 20, 24, 32, 48.
+- **Content width.** Every page sits in one column of at most 1280 px, centred, with 16 px sides on a phone, 24 on a tablet and 32 on a desktop; the page starts 24 px (phone 16 px) under the top bar. A form keeps its fields in a readable grid inside that column; it does not shrink the column.
+- **Corners.** 6 for every control (buttons, fields, selects, chips, menu items, labels), 8 for panels, cards and dialogs, round for avatars and status dots.
+- **Elevation.** Panels have a 1 px `--border` edge and no shadow. Only floating things have a shadow: menus, popovers, dialogs, toasts and the selection bar, `0 8px 24px -8px` of navy at 20% (`shadow-float`).
 
 ## Icons
 
-- **Material Symbols Rounded, filled** (Apache 2.0): filled and rounded like the brand book's icon page. One set only, drawn from SVG, never from a font ligature (the icon's name would be text in a screen).
-- 20 px in menus, buttons and fields; 24 px on phone screens; 16–18 px inline with small text.
+- **Material Symbols Rounded**, weight 400, drawn from SVG paths (never a font ligature). **Outlined** at rest; **filled** only for the active menu item.
+- 20 px in menus, buttons and fields; 16 px inline with small text; 24 px in the phone tab bar.
 - An icon stands next to its word. An icon alone is a button with an `aria-label`, or decoration with `aria-hidden`.
-- Common actions: `search`, `notifications`, `download`, `print`, `add`, `edit`, `close`, `expand_more`, `chevron_left`, `chevron_right`, `arrow_back`, `check_circle`, `warning`, `error`, `info`, `inventory_2` (archive), `logout`, `dark_mode`, `light_mode`, `language`, `tune` (settings). Each app's menu icons are in "This app".
+- Common actions: `search`, `notifications`, `download`, `print`, `add`, `edit`, `close`, `expand_more`, `chevron_left`, `chevron_right`, `arrow_back`, `check_circle`, `warning`, `error`, `info`, `inventory_2`, `logout`, `dark_mode`, `light_mode`, `language`, `tune`, `filter_list`.
 
-## Layout shell
+## Parts
 
-- **Menu:** left, navy in both themes, 240 wide: the one-line logo (on-dark version) at the top, the items (icon and word, 40 high, corner 8, the active one solid orange with navy text), a count as a plain number at the right of an item, and at the bottom the person (round avatar with initials on #1B2A63, name, role) with a sign-out icon button. It can collapse to a 72-wide rail of icons with the shield logo; the choice is kept in the browser. In the collapsed rail the current item is its icon on the solid orange fill of an item (corner 8); this is not an icon in a coloured square.
-- **Top bar:** white (dark: #08102F), 64 high, a bottom border: the app's context selects on the left (which ones: "This app"), the search field with "Ctrl K" as plain text at its right, and at the right the notifications button and any app-specific switch.
-- **Page:** a header with breadcrumbs (inner pages), the title and its actions at the right; then the content. A short fact may follow the title on the same line in muted text ("74 active, 6 archived"; "Monday, 12 October").
-- **Lists:** a toolbar (search field, filter selects, a quiet "Reset", the column chooser as an icon button), a selection bar in `--today` above the table when rows are chosen (count, small secondary actions, quiet "Clear"), the table in a white panel, and the side panel (white, left border) for an opened record with its actions at the bottom: primary "Edit", secondary actions, danger quiet "Archive".
-- **Phone width (below 640 px):** the menu becomes a bottom tab bar (navy, the app's main items with icon and word, the active one orange), the top bar keeps the context select and the search button, toolbars wrap, wide tables scroll inside their panel or become cards where the app's spec says so.
+### Page shell
 
-## Brand moments
+- **Sidebar** (from 640 px): white (dark `--sidebar`), 240 wide, a hairline right edge. At the top the school's colour logo (on-dark in the dark theme), 56 high; then the role's items: icon and word, 36 high, corner 6, `--sidebar-foreground`. The **active item** has `--sidebar-primary` behind it, navy text, its icon filled, and a small orange marker: a 3 × 16 px rounded bar at the item's left edge. At the bottom the person (avatar, name, role) and the sign-out icon button. It collapses to a 64-wide rail of icons with the shield; the choice is kept in the browser. In the rail the active item is its filled icon on the tint, with the same orange marker.
+- **Top bar:** white, 56 high, a hairline bottom edge: the branch context on the left, the search field ("Ctrl K" as quiet text) and the bell on the right; on a phone the search is a button and the avatar opens Profile.
+- **Phone tab bar** (below 640 px): white, a hairline top edge, the role's menu (the first four and "More" when there are more than five), icon above word, every target at least 44 px. The active tab has navy text, its icon filled and the orange marker above the icon (16 × 3 px).
+- **Page header:** a back link on inner pages ("← Orders"), then the title, and on the same line at the right the page's actions. A short fact may follow the title in `--muted-foreground` ("12 orders"). No sentence under a title.
 
-- **Sign-in:** the form on the left (horizontal colour logo, the language select and the theme button at the top; a Bitter title, two fields 48 high, a large primary button the full width of the form); on the right a navy panel with the slogan in Bitter, uppercase, orange, with the brand's line ornament, and a white column of orange hexagons (the brand book's cover). The slogan is a text of the three languages: uz "Taʼlim tarbiyadan boshlanadi", ru "Образование начинается с воспитания", en "Education begins with upbringing". At phone width the navy panel is hidden.
-- **Empty page:** in the page's white panel: a Bitter title that says what is missing, one short line (what the page is for), the first action as a primary button and at most one quiet second action; at the right, a small drawing of navy hexagon outlines (the foreground colour in the dark theme) with one or two orange filled hexagons. At phone width the drawing is hidden.
-- **Full-page error** (not found, no access, failed to load the app): like the empty page.
-- **Printouts and PDFs:** A4, white; at the top of each page or slip the letterhead strip: a navy tab with the on-dark one-line logo and a rounded top-right corner, followed by an orange band; Golos Text; navy text; no other colour except where the app's spec asks for one (a status, a grey "Draft" word). Which documents: "This app".
+### Panels and lists
 
-## Logo
+- **Panel:** `--card`, 1 px `--border`, corner 8. A panel title is `text-subheading` with 16 px (phone) or 20 px (desktop) padding; the content keeps the same side padding.
+- **Table:** in a panel; header row 40 high on `--muted`, `text-xs` medium `--muted-foreground` words in sentence case; rows at least 48 high with hairline dividers and `--accent` on hover; numbers and amounts right-aligned. Below 640 px a list of more than three columns becomes **cards** (one per row: the name and status on top, two or three facts, the row's action at the bottom), never a table that scrolls sideways.
+- **Tabs:** words in a row over a hairline; the current tab is navy with a 2 px orange underline, the others `--muted-foreground`. A count follows the word as a plain number. On a phone the row scrolls sideways inside itself.
+- **Summary strip:** at the top of a list, three or four figures the person acts on (needs action, to buy, cash in hand, due this week), each a caption over a `text-figure` value, side by side in one panel divided by hairlines (two by two on a phone). Each figure that has a list behind it is a link to that list. Built only from figures the app already shows.
+- **Filter bar:** a search field, two or three key filters, and a secondary "More filters" button with the count of active ones that opens the rest. Each active filter shows below as a removable chip (word, value, ✕), and "Clear all" ends the row.
+- **Selection bar:** when rows are ticked, a bar floats at the bottom of the page (above the phone tab bar): the count and the total in `text-subheading`, the actions this person can take on all of them now, and a quiet "Clear". `--card`, a hairline edge, the floating shadow, corner 8.
+- **Empty state:** inside the panel, centred: an outlined icon in `--muted-foreground`, a `text-subheading` title that says what belongs there, at most one short line, and the button that creates it when the person can. When a whole home page has nothing to do, one calm empty state replaces all its sections.
 
-The same files in both apps (path: "This app"), exact vectors of the brand book:
+### Status and outcome
 
-| File | Use |
+- **Status:** a coloured dot (8 px) and the status word, in the foreground colour. Blue (`--info`): waiting for Head, Principal or Finance, Open, waiting for settlement. Red: sent back, rejected. Green: closed. Grey: draft, cancelled. One status per row. A document status uses the same dots.
+- **Flags** beside the status, word and icon in their colour: Urgent (red, `warning`), Overdue (amber, `schedule`).
+- **Outcome** of a row: one phrase that says how the money ended, from the Total label: "Over by 15 000 so'm" (red, `error`), "Left 50 000 so'm" (amber, `warning`), "Even" (green, `check_circle`), "In progress" (grey, `schedule`). Number and Price follow as small words only when they are orange or red ("Bought less", "Dearer").
+- **The three colour labels** (08 The three colours), in full on the order page and in the selection bar: a light tint of their colour, corner 6, 24 high, the icon, the word and the amount.
+
+### Buttons
+
+| Size | Height (desktop / phone) | Padding | Text |
+| --- | --- | --- | --- |
+| `sm` | 32 / 44 | 0 12 | 13 / 500 |
+| `default` | 36 / 44 | 0 14 | 14 / 500 |
+| `lg` | 44 / 48 | 0 20 | 15 / 600 |
+
+| Kind | Look |
 | --- | --- |
-| `sodiq-logo.svg`, `sodiq-logo-on-dark.svg` | Stacked logo: printouts, About |
-| `sodiq-logo-horizontal.svg`, `sodiq-logo-horizontal-on-dark.svg` | One line: sign-in (colour), menu (on dark), letterhead (on dark) |
-| `sodiq-mark.svg`, `sodiq-mark-on-dark.svg` | The shield alone: collapsed menu, browser-tab icon |
-| `favicon.ico`, `icon-32.png`, `icon-48.png`, `icon-180.png` (Apple touch), `icon-192.png`, `icon-512.png` | Browser and home-screen icons: the shield on white |
+| `default` (primary) | `--primary` fill, `--primary-foreground` text. One per area. |
+| `secondary` | `--secondary` fill, a 1 px `--border-strong` edge, foreground text. |
+| `ghost` (quiet) | No fill; `--accent` on hover. |
+| `destructive` | No fill, `--destructive` text; `--destructive-bg` on hover. |
 
-The brand book's rules: keep clear space around the logo, never recolour, stretch, rotate, outline, shadow or blur it, never place the colour logo on a busy or orange background; the on-dark version goes on navy. Its smallest height is 10 mm in print and 24 px on screen (the shield alone below that). The logo is part of the app, not a setting.
+- A button that cannot be pressed now says why, on a line next to or under it (`text-xs`, `--muted-foreground`, with the `info` icon): "Write a comment to save". It is never greyed out without a reason.
+- An icon-only button is square (36, 44 on a phone) and has an `aria-label`.
+- A link styled as a button uses the same classes. Plain links are `--link`, weight 500, underlined on hover.
+
+### Fields
+
+- Fields and selects: 36 high (44 on a phone, 44 on sign-in), `--card` fill, 1 px `--input` border, corner 6; focus is the 2 px ring. An error is a `--destructive` border and one line under the field.
+- A label sits above its field (`text-sm` 500). A hint, only when it prevents a mistake, sits under the field in `text-xs`.
+- **Dates** are shown and typed as dd.mm.yyyy everywhere, never the browser's own date format.
+- A **segmented control** (two to four short choices): a `--muted` track with a hairline edge, the chosen item `--card` with navy text and a hairline edge; when the words do not fit on one line the choices stack, one per line, so no word is ever cut or overlapped.
+- Checkboxes and radios use `--primary` when chosen.
 
 ## Motion
 
-Short and quiet: 120 ms for hover and press, 160 ms for panels and menus opening, ease-out; nothing moves on its own. People who ask the system for reduced motion get none.
+Short and quiet: 120 ms for hover and press, 160 ms for menus and dialogs opening, ease-out; nothing moves on its own. People who ask the system for reduced motion get none.
 
 ## Accessibility
 
-Text 4.5 : 1 and controls 3 : 1 in both themes (checked by the app's contrast test), full keyboard use, the visible focus ring, text that can be enlarged to 200%, touch targets of 44 px at phone width, and no information by colour alone.
+Text 4.5 : 1 and controls 3 : 1 in both themes (checked by `tests/contrast.test.ts`), full keyboard use with a visible focus ring, text that can be enlarged to 200%, touch targets of 44 px on phones, and no information by colour alone.
 
-## This app: procurement and warehouse
+## This app
 
-This section belongs to `sodiqschoolapp/procurement` only.
+- **Files.** Tokens and type utilities in `src/app/globals.css`; the contrast test is `tests/contrast.test.ts`; the button is `src/components/ui/button.tsx`; the page parts (page header, panel, tabs, summary strip, empty state) are in `src/components/`; the logo files are in `public/brand/`; icons are generated into `src/components/icon-paths.ts` by `npm run icons`.
+- **Menu icons.** Home `home`, Orders `receipt_long`, Warehouse and Stock `inventory`, Money `payments`, Analytics `bar_chart`, Reports `description`, Admin `tune`, Notifications `notifications`, Profile `person`.
+- **Sign-in.** The form on a white panel with the colour logo, the language select and the theme button; on a desktop a quiet panel beside it with the shield, the school's slogan in navy and a short orange line. No "Forgot your password?" link: the Head renews passwords (`02-assumptions.md`, A8).
+- **Home.** What the person must do now comes first, each item with its action; sections with nothing in them are hidden; when everything is empty, one calm empty state. The Manager's three main actions (New order, Record purchase, Issue from stock) are large buttons, New order primary.
+- **Printouts and PDFs.** Unchanged by this file: A4, the letterhead strip (a navy tab with the on-dark logo, an orange band), Golos Text, navy text; the grey word on Draft, Rejected and Cancelled stays as the spec asks.
 
-- **Files.** Tokens in `src/app/globals.css`; the contrast test is `tests/contrast.test.ts` (task 0.10 creates it); the shadcn/ui button is `src/components/ui/button.tsx`; the logo files are in `public/brand/`; PDFs are drawn by @react-pdf/renderer with the Golos Text files.
-- **Sign-in.** No "Forgot your password?" link: the Head renews passwords (`02-assumptions.md`, A8).
-- **Top bar.** The branch switcher with "All my branches" for a person with several branches (`11-screens-and-ux.md`, rule 1); the search field (rule 9); at the right the bell.
-- **Menu icons.** Home `home`, Requests `receipt_long`, Warehouse and Stock `inventory`, Money `payments`, Analytics `bar_chart`, Reports `description`, Admin `tune`, Notifications `notifications`, Profile `person`.
-- **Phone tab bar.** The role's menu in the spec's order (`11-screens-and-ux.md`, Interface per role); a role with more than five items shows the first four and "More".
-- **Status labels.** The request statuses and the three colour labels (`11-screens-and-ux.md`, rule 11) are this app's labels: a rectangle with corner 6, its icon, its word and, for a colour label, the amount. Green uses the success tokens, amber the warning tokens and red the danger tokens; a status that is not a colour label uses info or muted. The mapping lives in one status-label component.
-- **Home buttons.** The Manager's three large buttons on Home are large buttons: "New request" primary, the other two secondary.
-- **Printouts.** The formal request PDF (tasks 2.14 and 3.5), the issue note (5.4) and the analytics PDF (6.7) carry the letterhead strip at the top of each page; the grey word on Draft, Rejected and Cancelled stays as the spec asks.
+## Logo
+
+| File | Use |
+| --- | --- |
+| `sodiq-logo-horizontal.svg`, `sodiq-logo-horizontal-on-dark.svg` | One line: the sidebar (colour, on-dark in the dark theme), sign-in, the PDF letterhead (on-dark) |
+| `sodiq-logo.svg`, `sodiq-logo-on-dark.svg` | Stacked logo |
+| `sodiq-mark.svg`, `sodiq-mark-on-dark.svg` | The shield alone: collapsed menu, the sign-in panel, the browser tab |
+| `favicon.ico`, `icon-*.png` | Browser and home-screen icons |
+
+The brand book's rules: keep clear space around the logo; never recolour, stretch, rotate, outline, shadow or blur it; never place it on a busy or orange background; the on-dark version goes on a dark background. Its smallest height is 24 px on screen (the shield alone below that).

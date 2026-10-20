@@ -99,12 +99,12 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
   const filtered = activeFilterCount(parsed.filters) > 0;
 
   const title = (
-    <h1 className="text-[28px] leading-[34px] font-bold tracking-[-0.01em]">{t("title")}</h1>
+    <h1 className="text-title">{t("title")}</h1>
   );
   const listSection = (
     <section aria-labelledby="order-list-title" className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 id="order-list-title" className="text-[20px] leading-7 font-bold">
+        <h2 id="order-list-title" className="text-heading font-semibold">
           {t("list.title")}
         </h2>
         <DownloadButtons query={listFiltersParams(filters).toString()} />
@@ -177,7 +177,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
       {listSection}
       <section aria-labelledby="drafts-title" className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 id="drafts-title" className="text-[20px] leading-7 font-bold">
+          <h2 id="drafts-title" className="text-heading font-semibold">
             {t("draftsTitle")}
           </h2>
           {user.role === "HEAD" && <OwnersSwitch all={everyOwner} />}

@@ -193,16 +193,16 @@ export function SettlementView({ settlement }: { settlement: WireSettlement }) {
 
   const fact = (label: string, value: string, name?: string) => (
     <div className="flex flex-col gap-0.5" data-fact={name}>
-      <dt className="text-[13px] leading-[18px] text-muted-foreground">{label}</dt>
-      <dd className="text-[15px] leading-[22px] tabular-nums">{value}</dd>
+      <dt className="text-small text-muted-foreground">{label}</dt>
+      <dd className="text-sm tabular-nums">{value}</dd>
     </div>
   );
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6" data-settlement>
       <header className="flex flex-col gap-1">
-        <h1 className="text-[28px] leading-[34px] font-bold tracking-[-0.01em]">{t("title")}</h1>
-        <p className="text-[15px] leading-[22px] text-muted-foreground">
+        <h1 className="text-title">{t("title")}</h1>
+        <p className="text-sm text-muted-foreground">
           {t("subtitle", {
             count: allOrders.length,
             managers: settlement.managers.length,
@@ -217,9 +217,9 @@ export function SettlementView({ settlement }: { settlement: WireSettlement }) {
           data-settle-failed
           className="flex flex-col gap-1 rounded-xl border border-destructive bg-card p-4"
         >
-          <h2 className="text-[15px] leading-[22px] font-bold">{failed.title}</h2>
+          <h2 className="text-sm font-semibold">{failed.title}</h2>
           {failed.lines.map((each) => (
-            <p key={each.orderId} className="text-[15px] leading-[22px]">
+            <p key={each.orderId} className="text-sm">
               {each.line}
             </p>
           ))}
@@ -237,7 +237,7 @@ export function SettlementView({ settlement }: { settlement: WireSettlement }) {
             aria-labelledby={`manager-${manager.id}`}
             className="flex flex-col gap-6 rounded-xl bg-card p-4 sm:p-6"
           >
-            <h2 id={`manager-${manager.id}`} className="text-[22px] leading-7 font-bold">
+            <h2 id={`manager-${manager.id}`} className="text-figure font-semibold">
               {manager.name}
             </h2>
 
@@ -251,11 +251,11 @@ export function SettlementView({ settlement }: { settlement: WireSettlement }) {
                   <div className="flex flex-col gap-1">
                     <Link
                       href={`/orders/${order.id}`}
-                      className="inline-flex min-h-11 items-center text-[15px] leading-[22px] font-semibold underline-offset-4 hover:underline sm:min-h-0"
+                      className="inline-flex min-h-11 items-center text-sm font-semibold underline-offset-4 hover:underline sm:min-h-0"
                     >
                       {order.number}
                     </Link>
-                    <span className="text-[13px] leading-[18px] text-muted-foreground">
+                    <span className="text-small text-muted-foreground">
                       {order.subtypeName
                         ? `${order.productName} · ${order.subtypeName}`
                         : order.productName}
@@ -264,7 +264,7 @@ export function SettlementView({ settlement }: { settlement: WireSettlement }) {
                       <p
                         data-overspend={order.overspend.acknowledgedBy ? "acknowledged" : "waits"}
                         className={cn(
-                          "flex items-start gap-1.5 text-[13px] leading-[18px]",
+                          "flex items-start gap-1.5 text-small",
                           order.overspend.acknowledgedBy ? "text-muted-foreground" : "text-warning",
                         )}
                       >
@@ -290,7 +290,7 @@ export function SettlementView({ settlement }: { settlement: WireSettlement }) {
                       {order.cancelledRecords.length > 0 ? (
                         <span
                           data-cancelled-records={order.cancelledRecords.length}
-                          className="flex flex-wrap items-center gap-x-2 text-[13px] leading-[18px]"
+                          className="flex flex-wrap items-center gap-x-2 text-small"
                         >
                           {t("cancelled", { count: order.cancelledRecords.length })}
                           {order.cancelledRecords.map((record, index) => (
@@ -324,7 +324,7 @@ export function SettlementView({ settlement }: { settlement: WireSettlement }) {
                 data-settle-block="CASH"
                 className="flex flex-col gap-3"
               >
-                <h3 id={`cash-${manager.id}`} className="text-[17px] leading-6 font-bold">
+                <h3 id={`cash-${manager.id}`} className="text-subheading font-semibold">
                   {t("cash.title")}
                 </h3>
                 <ul className="flex flex-col divide-y divide-border">
@@ -373,14 +373,14 @@ export function SettlementView({ settlement }: { settlement: WireSettlement }) {
                             {invalid ? (
                               <p
                                 id={`settle-error-${order.id}`}
-                                className="text-[13px] leading-[18px] text-destructive"
+                                className="text-small text-destructive"
                               >
                                 {t("amountInvalid")}
                               </p>
                             ) : null}
                           </div>
                         ) : (
-                          <p className="text-[15px] leading-[22px] text-muted-foreground">
+                          <p className="text-sm text-muted-foreground">
                             {t("cash.settled")}
                           </p>
                         )}
@@ -388,7 +388,7 @@ export function SettlementView({ settlement }: { settlement: WireSettlement }) {
                     );
                   })}
                 </ul>
-                <p data-settle-net={manager.id} className="text-[17px] leading-6 font-bold">
+                <p data-settle-net={manager.id} className="text-subheading font-semibold">
                   {netLine(manager.id)}
                 </p>
               </section>
@@ -400,7 +400,7 @@ export function SettlementView({ settlement }: { settlement: WireSettlement }) {
                 data-settle-block="TRANSFER"
                 className="flex flex-col gap-3"
               >
-                <h3 id={`transfer-${manager.id}`} className="text-[17px] leading-6 font-bold">
+                <h3 id={`transfer-${manager.id}`} className="text-subheading font-semibold">
                   {t("transfer.title")}
                 </h3>
                 <ul className="flex flex-col divide-y divide-border">
@@ -417,7 +417,7 @@ export function SettlementView({ settlement }: { settlement: WireSettlement }) {
                 data-settle-block="CARD"
                 className="flex flex-col gap-3"
               >
-                <h3 id={`card-${manager.id}`} className="text-[17px] leading-6 font-bold">
+                <h3 id={`card-${manager.id}`} className="text-subheading font-semibold">
                   {t("card.title")}
                 </h3>
                 <ul className="flex flex-col divide-y divide-border">
@@ -479,7 +479,7 @@ export function SettlementView({ settlement }: { settlement: WireSettlement }) {
           data-settle-form
           className="flex flex-col gap-4 rounded-xl bg-card p-4 sm:p-6"
         >
-          <h2 id={`${formId}-save`} className="text-[17px] leading-6 font-bold">
+          <h2 id={`${formId}-save`} className="text-subheading font-semibold">
             {t("saveTitle")}
           </h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -539,7 +539,7 @@ export function SettlementView({ settlement }: { settlement: WireSettlement }) {
               />
               {file ? (
                 <div className="flex items-center justify-between gap-3">
-                  <span className="truncate text-[15px] leading-[22px]">{file.name}</span>
+                  <span className="truncate text-sm">{file.name}</span>
                   <Button
                     type="button"
                     variant="ghost"
@@ -565,7 +565,7 @@ export function SettlementView({ settlement }: { settlement: WireSettlement }) {
               )}
             </div>
           ) : (
-            <p className="text-[13px] leading-[18px] text-muted-foreground">
+            <p className="text-small text-muted-foreground">
               {t("fileOneManager")}
             </p>
           )}
@@ -639,15 +639,15 @@ function TransferRow({
     >
       <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div className="flex flex-col gap-0.5">
-          <dt className="text-[13px] leading-[18px] text-muted-foreground">{t("number")}</dt>
-          <dd className="text-[15px] leading-[22px]">{order.number}</dd>
+          <dt className="text-small text-muted-foreground">{t("number")}</dt>
+          <dd className="text-sm">{order.number}</dd>
         </div>
         {(["planned", "transferred", "received"] as const).map((name) => (
           <div key={name} className="flex flex-col gap-0.5" data-fact={name}>
-            <dt className="text-[13px] leading-[18px] text-muted-foreground">
+            <dt className="text-small text-muted-foreground">
               {t(`transfer.${name}`)}
             </dt>
-            <dd className="text-[15px] leading-[22px] tabular-nums">
+            <dd className="text-sm tabular-nums">
               {format.money(BigInt(figures[name]))}
             </dd>
           </div>
@@ -744,7 +744,7 @@ function ConfirmBox({
 
   return (
     <div className="flex flex-col gap-1">
-      <label className="inline-flex min-h-11 min-w-11 items-center gap-3 text-[15px] leading-[22px] font-semibold sm:min-h-0">
+      <label className="inline-flex min-h-11 min-w-11 items-center gap-3 text-sm font-semibold sm:min-h-0">
         <input
           type="checkbox"
           data-confirm={`${block}:${order.id}`}
@@ -759,7 +759,7 @@ function ConfirmBox({
       {ticked && !confirmed ? (
         <p
           id={`stale-${block}-${order.id}`}
-          className="text-[13px] leading-[18px] text-muted-foreground"
+          className="text-small text-muted-foreground"
         >
           {t("transfer.changed")}
         </p>

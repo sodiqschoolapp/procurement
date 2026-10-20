@@ -160,7 +160,7 @@ export function AddDraftRow({
       aria-busy={busy || undefined}
       className="flex flex-col gap-4 rounded-xl bg-card p-4 sm:p-6"
     >
-      <h2 id="add-draft-title" className="text-[17px] leading-6 font-bold">
+      <h2 id="add-draft-title" className="text-subheading font-semibold">
         {t("add.title")}
       </h2>
       <fieldset disabled={busy} className="flex min-w-0 flex-wrap items-start gap-3">
@@ -268,7 +268,7 @@ export function AddDraftRow({
         </p>
       )}
       {picked && (
-        <p className="text-[13px] leading-4 text-muted-foreground">
+        <p className="text-xs text-muted-foreground">
           {[
             picked.product.categoryName,
             picked.subtype.inStock === null

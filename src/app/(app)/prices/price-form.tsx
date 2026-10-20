@@ -56,7 +56,7 @@ export function PriceForm({ variantId }: { variantId: string }) {
       className="flex flex-col gap-5 rounded-xl bg-card p-6 text-card-foreground"
     >
       <UnsavedChangesGuard dirty={formState.isDirty && !action.pending} />
-      <h2 className="text-[17px] leading-6 font-bold">{t("newPrice")}</h2>
+      <h2 className="text-subheading font-semibold">{t("newPrice")}</h2>
       <div className="flex flex-col gap-1.5">
         <Field id="price-price" label={t("price")} error={action.fieldTexts.price}>
           <Input

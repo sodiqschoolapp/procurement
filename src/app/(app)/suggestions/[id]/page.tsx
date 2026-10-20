@@ -32,7 +32,7 @@ export default async function SuggestionPage({ params }: { params: Promise<{ id:
   const fact = (label: string, value: React.ReactNode) => (
     <div className="flex flex-col gap-0.5">
       <dt className="text-sm leading-5 text-muted-foreground">{label}</dt>
-      <dd className="text-[15px] leading-[22px] break-words">{value}</dd>
+      <dd className="text-sm break-words">{value}</dd>
     </div>
   );
 
@@ -46,7 +46,7 @@ export default async function SuggestionPage({ params }: { params: Promise<{ id:
         {t("back")}
       </Link>
       <div className="flex flex-col gap-2">
-        <h1 className="text-[28px] leading-[34px] font-bold tracking-[-0.01em] break-words">
+        <h1 className="text-title break-words">
           {suggestion.name}
         </h1>
         <SuggestionStatusText status={suggestion.status} />

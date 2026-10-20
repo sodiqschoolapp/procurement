@@ -74,10 +74,10 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
         {t("back")}
       </Link>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="flex flex-wrap items-baseline gap-x-3 text-[28px] leading-[34px] font-bold tracking-[-0.01em]">
+        <h1 className="flex flex-wrap items-baseline gap-x-3 text-title">
           {t("kinds.products.title")}
           {!empty && (
-            <span className="text-[15px] leading-[22px] font-normal tracking-normal text-muted-foreground">
+            <span className="text-sm font-normal tracking-normal text-muted-foreground">
               {t("summary", { active: list.active, inactive: list.inactive })}
             </span>
           )}
@@ -169,7 +169,7 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
           ) : (
             <section className="overflow-x-auto rounded-xl bg-card text-card-foreground">
               <table className="w-full min-w-[44rem] border-collapse text-left text-sm leading-5">
-                <thead className="bg-muted text-[13px] leading-[18px] font-semibold text-muted-foreground">
+                <thead className="bg-muted text-small font-semibold text-muted-foreground">
                   <tr>
                     <th scope="col" className="w-16 px-4 py-3">
                       <span className="sr-only">{t("fields.photoFileId")}</span>

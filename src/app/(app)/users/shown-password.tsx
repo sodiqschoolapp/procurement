@@ -26,12 +26,12 @@ export function ShownPassword({ username, password }: { username: string; passwo
       role="status"
       className="flex flex-col gap-3 rounded-xl border border-primary/30 bg-card p-6 text-card-foreground"
     >
-      <h2 className="text-[17px] leading-6 font-bold">{t("shownTitle", { username })}</h2>
+      <h2 className="text-subheading font-semibold">{t("shownTitle", { username })}</h2>
       <p className="text-sm leading-5 text-muted-foreground">{t("shownText")}</p>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <output
           data-testid="shown-password"
-          className="rounded-md bg-muted px-3 py-2 text-[17px] leading-6 break-all select-all"
+          className="rounded-md bg-muted px-3 py-2 text-subheading break-all select-all"
         >
           {password}
         </output>

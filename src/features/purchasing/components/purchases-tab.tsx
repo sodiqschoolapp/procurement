@@ -26,8 +26,8 @@ export async function PurchasesTab({ order }: { order: OrderPage }) {
 
   const fact = (key: string, label: string, value: React.ReactNode) => (
     <div key={key} data-fact={key} className="flex flex-col gap-0.5">
-      <dt className="text-[13px] leading-[18px] text-muted-foreground">{label}</dt>
-      <dd className="text-[15px] leading-[22px] break-words">{value}</dd>
+      <dt className="text-small text-muted-foreground">{label}</dt>
+      <dd className="text-sm break-words">{value}</dd>
     </div>
   );
 
@@ -40,14 +40,14 @@ export async function PurchasesTab({ order }: { order: OrderPage }) {
           <span className="flex flex-col items-start gap-1">
             <ProgressLabel progress={order.progress} />
             {order.finishReason ? (
-              <span data-finish-reason className="text-[13px] leading-[18px]">
+              <span data-finish-reason className="text-small">
                 {t("finishReason", { text: order.finishReason })}
               </span>
             ) : null}
             {order.cancelledCount > 0 ? (
               <span
                 data-cancelled-count={order.cancelledCount}
-                className="inline-flex items-center gap-1 text-[13px] leading-[18px] text-muted-foreground"
+                className="inline-flex items-center gap-1 text-small text-muted-foreground"
               >
                 <Icon name="cancel" size={16} />
                 {t("cancelledCount", { count: order.cancelledCount })}
@@ -103,11 +103,11 @@ export async function PurchasesTab({ order }: { order: OrderPage }) {
       </dl>
 
       <section className="flex flex-col gap-3" aria-labelledby="purchase-records">
-        <h3 id="purchase-records" className="text-[17px] leading-6 font-bold">
+        <h3 id="purchase-records" className="text-subheading font-semibold">
           {t("records")}
         </h3>
         {order.purchases.length === 0 ? (
-          <p className="text-[15px] leading-[22px] text-muted-foreground">{t("empty")}</p>
+          <p className="text-sm text-muted-foreground">{t("empty")}</p>
         ) : (
           <ul className="flex flex-col divide-y divide-border">
             {order.purchases.map((record) => (
@@ -119,14 +119,14 @@ export async function PurchasesTab({ order }: { order: OrderPage }) {
                 className="grid grid-cols-1 gap-x-6 gap-y-2 py-3 sm:grid-cols-[minmax(7rem,auto)_1fr_auto]"
               >
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-[13px] leading-[18px] text-muted-foreground">
+                  <span className="text-small text-muted-foreground">
                     {t("date")}
                   </span>
-                  <span className="text-[15px] leading-[22px]">
+                  <span className="text-sm">
                     {format.date(record.purchasedOn)}
                   </span>
                   {record.isCancelled ? (
-                    <span className="inline-flex items-center gap-1 text-[13px] font-semibold text-muted-foreground">
+                    <span className="inline-flex items-center gap-1 text-small font-semibold text-muted-foreground">
                       <Icon name="cancel" size={16} />
                       {t("cancelled")}
                     </span>
@@ -134,7 +134,7 @@ export async function PurchasesTab({ order }: { order: OrderPage }) {
                 </div>
                 <div
                   className={cn(
-                    "flex flex-col gap-1 text-[15px] leading-[22px]",
+                    "flex flex-col gap-1 text-sm",
                     record.isCancelled && "text-muted-foreground line-through",
                   )}
                 >
@@ -145,12 +145,12 @@ export async function PurchasesTab({ order }: { order: OrderPage }) {
                     })}
                   </span>
                   {record.boughtSubtypeName ? (
-                    <span data-bought-subtype className="text-[13px] leading-[18px]">
+                    <span data-bought-subtype className="text-small">
                       {t("bought", { subtype: record.boughtSubtypeName })}
                     </span>
                   ) : null}
                   {record.extras.map((extra, index) => (
-                    <span key={index} className="text-[13px] leading-[18px] tabular-nums">
+                    <span key={index} className="text-small tabular-nums">
                       {t("extraLine", {
                         type: extra.typeName,
                         amount: format.money(extra.amount),
@@ -158,14 +158,14 @@ export async function PurchasesTab({ order }: { order: OrderPage }) {
                       })}
                     </span>
                   ))}
-                  <span className="text-[13px] leading-[18px] text-muted-foreground">
+                  <span className="text-small text-muted-foreground">
                     {t("tripLine", {
                       payment: tPayment(record.paymentType),
                       supplier: record.supplierName ?? t("none"),
                     })}
                   </span>
                   {record.comment ? (
-                    <span className="text-[13px] leading-[18px]">{record.comment}</span>
+                    <span className="text-small">{record.comment}</span>
                   ) : null}
                 </div>
                 <div className="flex flex-col gap-1 sm:items-end">
@@ -177,14 +177,14 @@ export async function PurchasesTab({ order }: { order: OrderPage }) {
                   >
                     {format.money(record.goods)}
                   </span>
-                  <span className="text-[13px] leading-[18px] text-muted-foreground">
+                  <span className="text-small text-muted-foreground">
                     {t("byLine", {
                       name: record.recordedBy,
                       date: format.date(record.recordedAt),
                       time: format.time(record.recordedAt),
                     })}
                   </span>
-                  <span className="flex flex-wrap gap-x-3 text-[13px] leading-[18px]">
+                  <span className="flex flex-wrap gap-x-3 text-small">
                     {record.receipts.length === 0
                       ? t("noReceipt")
                       : record.receipts.map((file, index) => (
@@ -200,7 +200,7 @@ export async function PurchasesTab({ order }: { order: OrderPage }) {
                         ))}
                   </span>
                   {record.cancelReason ? (
-                    <span className="text-[13px] leading-[18px]">
+                    <span className="text-small">
                       {t("cancelReason", { text: record.cancelReason })}
                     </span>
                   ) : null}

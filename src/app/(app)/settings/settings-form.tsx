@@ -115,7 +115,7 @@ function changesOf(form: FormValues, loaded: FormValues): Record<string, unknown
 function Group({ title, children }: { title: string; children: ReactNode }) {
   return (
     <fieldset className="flex flex-col gap-5 border-t pt-5 first:border-t-0 first:pt-0">
-      <legend className="float-left mb-1 w-full text-[17px] leading-6 font-bold">{title}</legend>
+      <legend className="float-left mb-1 w-full text-subheading font-semibold">{title}</legend>
       {children}
     </fieldset>
   );

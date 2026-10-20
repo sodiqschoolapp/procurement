@@ -223,7 +223,7 @@ export function MoveButton({
         onConfirm={() => void run()}
       >
         {move === "CLOSE_EXACT" ? (
-          <p data-close-confirm className="mt-4 text-[15px] leading-[22px] font-semibold">
+          <p data-close-confirm className="mt-4 text-sm font-semibold">
             {t("closeConfirm")}
           </p>
         ) : null}
@@ -243,7 +243,7 @@ export function MoveButton({
               onChange={(event) => setReason(event.target.value)}
               className={cn(FIELD_CLASSES, "min-h-20 py-2")}
             />
-            <p id={`${reasonId}-hint`} className="text-[13px] leading-[18px] text-muted-foreground">
+            <p id={`${reasonId}-hint`} className="text-small text-muted-foreground">
               {t("reasonHint", {
                 min: MOVE_REASON_MIN,
                 max: MOVE_REASON_MAX,
@@ -260,7 +260,7 @@ export function MoveButton({
                 <li key={order.id} className="flex flex-col gap-1">
                   <label
                     htmlFor={`note-${order.id}`}
-                    className="text-[13px] leading-[18px] text-muted-foreground"
+                    className="text-small text-muted-foreground"
                   >
                     {t("noteOf", { number: order.number })}
                   </label>

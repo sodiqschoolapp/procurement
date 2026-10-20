@@ -320,10 +320,10 @@ export function PurchaseFormView({
           suggestion form does). */}
       <UnsavedChangesGuard dirty={(formState.isDirty || receipts.length > 0) && !action.pending} />
       <header className="flex flex-col gap-1">
-        <h1 className="text-[28px] leading-[34px] font-bold tracking-[-0.01em]">{t("title")}</h1>
-        <p className="text-[15px] leading-[22px] text-muted-foreground">{subtitle}</p>
+        <h1 className="text-title">{t("title")}</h1>
+        <p className="text-sm text-muted-foreground">{subtitle}</p>
         {form.leftOut > 0 ? (
-          <p data-left-out className="text-[15px] leading-[22px] text-muted-foreground">
+          <p data-left-out className="text-sm text-muted-foreground">
             {t("leftOut", { count: form.leftOut })}
           </p>
         ) : null}
@@ -370,7 +370,7 @@ export function PurchaseFormView({
                     <h2
                       data-step-heading
                       tabIndex={-1}
-                      className="text-[17px] leading-6 font-semibold outline-none"
+                      className="text-subheading font-semibold outline-none"
                     >
                       {t("group", { product, count: block.members.length })}
                     </h2>
@@ -441,7 +441,7 @@ export function PurchaseFormView({
             shownStep !== last && "max-sm:hidden",
           )}
         >
-          <h2 id="purchase-visit" className="text-[17px] leading-6 font-semibold">
+          <h2 id="purchase-visit" className="text-subheading font-semibold">
             {t("visit")}
           </h2>
           <Field id="purchase-date" label={t("date")} error={fieldTexts.purchasedOn}>
@@ -478,7 +478,7 @@ export function PurchaseFormView({
                   <li
                     key={receipt.id}
                     data-receipt
-                    className="flex items-center justify-between gap-2 text-[15px]"
+                    className="flex items-center justify-between gap-2 text-sm"
                   >
                     <span className="truncate">{receipt.name}</span>
                     <Button
@@ -549,7 +549,7 @@ export function PurchaseFormView({
         <div className="flex flex-col gap-4 lg:col-start-2">
           {/* Outside the steps, so a refusal of the whole trip is never on a hidden step. */}
           {(fieldTexts.orders ?? (action.errorText && Object.keys(fieldTexts).length === 0)) ? (
-            <p role="alert" className="text-[15px] leading-[22px] text-destructive">
+            <p role="alert" className="text-sm text-destructive">
               {fieldTexts.orders ?? action.errorText}
             </p>
           ) : null}
@@ -573,7 +573,7 @@ export function PurchaseFormView({
               ) : (
                 <span />
               )}
-              <span data-step-count className="text-[15px] leading-[22px] tabular-nums">
+              <span data-step-count className="text-sm tabular-nums">
                 {t("step", { current: shownStep + 1, total: blocks.length })}
               </span>
               {shownStep < last ? (
@@ -674,7 +674,7 @@ function OrderLine({
           id={id("title")}
           data-step-heading
           tabIndex={-1}
-          className="text-[17px] leading-6 font-semibold outline-none"
+          className="text-subheading font-semibold outline-none"
         >
           {single ? t("plan") : order.number}
         </h2>
@@ -684,7 +684,7 @@ function OrderLine({
           </span>
         ) : null}
       </div>
-      <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-[15px] leading-[22px]">
+      <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-sm">
         <dt className="text-muted-foreground">{t("plannedQty")}</dt>
         <dd data-planned-qty className="tabular-nums">
           {format.quantity(order.plannedQty)} {unit}
@@ -807,7 +807,7 @@ function OrderLine({
 
       {order.canGiveToRequester ? (
         // 07 Purchase record: the items go straight to the order's department (plan of 5.4).
-        <label className="flex min-h-11 items-start gap-3 rounded-lg bg-muted p-3 text-[15px] leading-[22px]">
+        <label className="flex min-h-11 items-start gap-3 rounded-lg bg-muted p-3 text-sm">
           <input
             type="checkbox"
             {...register(`lines.${index}.giveToRequester`)}

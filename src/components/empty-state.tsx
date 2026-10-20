@@ -52,10 +52,10 @@ export function EmptyState({
       )}
     >
       <div className="flex min-w-0 flex-col gap-3">
-        <h2 className="font-slab text-[28px] leading-[34px] font-bold text-balance sm:text-[40px] sm:leading-[44px]">
+        <h2 className="font-slab text-title text-balance sm:text-[40px] sm:leading-[44px]">
           {title}
         </h2>
-        <p className="text-[15px] leading-[22px] text-muted-foreground">{line}</p>
+        <p className="text-sm text-muted-foreground">{line}</p>
         {(action || quietAction) && (
           <div className="mt-3 flex flex-wrap gap-3">
             {action && <ActionButton action={action} quiet={false} />}

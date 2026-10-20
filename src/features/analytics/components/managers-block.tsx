@@ -61,7 +61,7 @@ export async function ManagersView({
     </Link>
   );
   const under = (text: string) => (
-    <span className="block text-[13px] leading-[18px] text-muted-foreground">{text}</span>
+    <span className="block text-small text-muted-foreground">{text}</span>
   );
   const average = (amount: bigint) =>
     amount === 0n
@@ -77,7 +77,7 @@ export async function ManagersView({
       data-analytics-block="managers"
     >
       <div className="flex flex-col gap-1">
-        <h2 id="managers-title" className="text-[20px] leading-7 font-bold">
+        <h2 id="managers-title" className="text-heading font-semibold">
           {t("managers.title")}
         </h2>
         <p className="text-sm leading-5 text-muted-foreground">{t("managers.note")}</p>

@@ -82,7 +82,7 @@ export async function PrincipalSpendingView({
           rows={chart.rows}
         >
           {chart.rows.length === 0 ? (
-            <p className="text-[15px] leading-[22px] text-muted-foreground">{t("spending.none")}</p>
+            <p className="text-sm text-muted-foreground">{t("spending.none")}</p>
           ) : (
             <BarChartBlock points={chartPoints(chart.rows, t, format)} label={chart.title} />
           )}
@@ -106,7 +106,7 @@ export async function OrdersView({ block, period, filters }: Common & { block: O
       <p className="text-sm leading-5 font-semibold text-muted-foreground">{label}</p>
       <Link
         href={href}
-        className="inline-flex min-h-11 min-w-11 items-center text-[28px] leading-[34px] font-bold tabular-nums underline-offset-4 hover:underline"
+        className="inline-flex min-h-11 min-w-11 items-center text-title tabular-nums underline-offset-4 hover:underline"
       >
         {count(value)}
       </Link>
@@ -122,7 +122,7 @@ export async function OrdersView({ block, period, filters }: Common & { block: O
       data-analytics-block="orders"
     >
       <div className="flex flex-col gap-1">
-        <h2 id="orders-title" className="text-[20px] leading-7 font-bold">
+        <h2 id="orders-title" className="text-heading font-semibold">
           {t("principal.orders.title")}
         </h2>
         <p className="text-sm leading-5 text-muted-foreground">{t("principal.orders.note")}</p>
@@ -158,7 +158,7 @@ export async function OrdersView({ block, period, filters }: Common & { block: O
                     <Link href={list({ kind: "status", status: row.status })} className={linkClass}>
                       {count(row.count)}
                     </Link>
-                    <span className="block text-[13px] leading-[18px] text-muted-foreground">
+                    <span className="block text-small text-muted-foreground">
                       {countChangeText(row.change, t, format)}
                     </span>
                   </>,
@@ -172,7 +172,7 @@ export async function OrdersView({ block, period, filters }: Common & { block: O
                     <Link href={list({ kind: "status", status: null })} className={linkClass}>
                       {count(block.total.count)}
                     </Link>
-                    <span className="block text-[13px] leading-[18px] text-muted-foreground">
+                    <span className="block text-small text-muted-foreground">
                       {countChangeText(block.total.change, t, format)}
                     </span>
                   </>,
@@ -203,7 +203,7 @@ export async function MyApprovalsView({ block, period, filters }: Common & { blo
       className="flex flex-col gap-4"
       data-analytics-block="my-approvals"
     >
-      <h2 id="my-approvals-title" className="text-[20px] leading-7 font-bold">
+      <h2 id="my-approvals-title" className="text-heading font-semibold">
         {t("principal.approvals.title")}
       </h2>
       <Card id="my-approvals" title={t("principal.approvals.title")} excel={download}>
@@ -213,14 +213,14 @@ export async function MyApprovalsView({ block, period, filters }: Common & { blo
               {t("principal.approvals.myHours")}
             </p>
             {block.mine.hours === null ? (
-              <p className="text-[15px] leading-[22px] text-muted-foreground">
+              <p className="text-sm text-muted-foreground">
                 {t("principal.approvals.noDecision")}
               </p>
             ) : (
               <>
                 <Link
                   href={approvals({ kind: "mine" })}
-                  className="inline-flex min-h-11 min-w-11 items-center text-[28px] leading-[34px] font-bold tabular-nums underline-offset-4 hover:underline"
+                  className="inline-flex min-h-11 min-w-11 items-center text-title tabular-nums underline-offset-4 hover:underline"
                 >
                   {t("speed.hours", { hours: format.quantity(block.mine.hours) })}
                 </Link>
@@ -239,7 +239,7 @@ export async function MyApprovalsView({ block, period, filters }: Common & { blo
             </p>
             <Link
               href={approvals({ kind: "waiting", step: "PENDING_PRINCIPAL", group: null })}
-              className="inline-flex min-h-11 min-w-11 items-center text-[28px] leading-[34px] font-bold tabular-nums underline-offset-4 hover:underline"
+              className="inline-flex min-h-11 min-w-11 items-center text-title tabular-nums underline-offset-4 hover:underline"
             >
               {count(block.waiting.all)}
             </Link>

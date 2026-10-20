@@ -21,7 +21,7 @@ export function Avatar({ fullName, className }: { fullName: string; className?: 
       aria-hidden="true"
       data-initials={initialsOf(fullName)}
       className={cn(
-        "flex size-9 shrink-0 items-center justify-center rounded-full bg-sidebar-avatar text-[13px] font-semibold text-sidebar-accent-foreground before:content-[attr(data-initials)]",
+        "flex size-9 shrink-0 items-center justify-center rounded-full bg-sidebar-avatar text-small font-semibold text-sidebar-accent-foreground before:content-[attr(data-initials)]",
         className,
       )}
     />

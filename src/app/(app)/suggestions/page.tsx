@@ -44,7 +44,7 @@ export default async function SuggestionsPage({ searchParams }: { searchParams: 
     <div className="mx-auto flex max-w-5xl flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <h1 className="text-[28px] leading-[34px] font-bold tracking-[-0.01em]">{t("title")}</h1>
+          <h1 className="text-title">{t("title")}</h1>
           <p className="text-sm leading-5 text-muted-foreground">
             {branch ? t("oneBranch", { code: branch.code, name: branch.name }) : t("allBranches")}
           </p>
@@ -69,7 +69,7 @@ export default async function SuggestionsPage({ searchParams }: { searchParams: 
         <>
           <section className="hidden overflow-x-auto rounded-xl bg-card text-card-foreground sm:block">
             <table className="w-full min-w-[40rem] border-collapse text-left text-sm leading-5">
-              <thead className="bg-muted text-[13px] leading-[18px] font-semibold text-muted-foreground">
+              <thead className="bg-muted text-small font-semibold text-muted-foreground">
                 <tr>
                   <th scope="col" className="px-4 py-3">
                     {t("columns.name")}
@@ -153,7 +153,7 @@ export default async function SuggestionsPage({ searchParams }: { searchParams: 
                     </span>
                   )}
                   <span className="flex min-w-0 flex-1 flex-col gap-1">
-                    <span className="text-[15px] leading-[22px] font-semibold break-words">
+                    <span className="text-sm font-semibold break-words">
                       {row.name}
                     </span>
                     <span className="flex flex-wrap gap-x-3 text-sm leading-5 text-muted-foreground">

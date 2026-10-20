@@ -137,7 +137,7 @@ function LabelBox({
   return (
     <span
       className={cn(
-        "inline-flex h-6 items-center gap-1 rounded-sm px-2 text-[13px] leading-[18px] font-semibold whitespace-nowrap",
+        "inline-flex h-6 items-center gap-1 rounded-sm px-2 text-small font-semibold whitespace-nowrap",
         TONE_CLASSES[tone],
         className,
       )}

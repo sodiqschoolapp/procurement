@@ -94,10 +94,10 @@ export default async function ItemCardPage({
           <Icon name="arrow_back" size={18} />
           {t("back")}
         </Link>
-        <h1 className="text-[28px] leading-[34px] font-bold tracking-[-0.01em]">
+        <h1 className="text-title">
           {card.productName}
         </h1>
-        <dl className="flex flex-wrap gap-x-6 gap-y-1 text-[15px] leading-[22px]">
+        <dl className="flex flex-wrap gap-x-6 gap-y-1 text-sm">
           {card.subtypeName !== null && (
             <div className="flex gap-1">
               <dt className="text-muted-foreground">{t("subtype")}</dt>
@@ -156,7 +156,7 @@ export default async function ItemCardPage({
         <section className="overflow-x-auto rounded-xl bg-card text-card-foreground">
           <table className="w-full min-w-[46rem] border-collapse text-left text-sm leading-5">
             <caption className="sr-only">{t("summary", { count: card.found })}</caption>
-            <thead className="bg-muted text-[13px] leading-[18px] font-semibold text-muted-foreground">
+            <thead className="bg-muted text-small font-semibold text-muted-foreground">
               <tr>
                 <th scope="col" className="px-4 py-3">
                   {t("columns.moment")}

@@ -67,10 +67,10 @@ export default async function PricesPage({ searchParams }: { searchParams: Promi
     <div className="mx-auto flex max-w-5xl flex-col gap-6">
       <AdminNav current="prices" />
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="flex flex-wrap items-baseline gap-x-3 text-[28px] leading-[34px] font-bold tracking-[-0.01em]">
+        <h1 className="flex flex-wrap items-baseline gap-x-3 text-title">
           {t("title")}
           {!empty && (
-            <span className="text-[15px] leading-[22px] font-normal tracking-normal text-muted-foreground">
+            <span className="text-sm font-normal tracking-normal text-muted-foreground">
               {t("summary", { count: list.found })}
             </span>
           )}
@@ -120,7 +120,7 @@ export default async function PricesPage({ searchParams }: { searchParams: Promi
           ) : (
             <section className="overflow-x-auto rounded-xl bg-card text-card-foreground">
               <table className="w-full min-w-[44rem] border-collapse text-left text-sm leading-5">
-                <thead className="bg-muted text-[13px] leading-[18px] font-semibold text-muted-foreground">
+                <thead className="bg-muted text-small font-semibold text-muted-foreground">
                   <tr>
                     <th scope="col" className="px-4 py-3">
                       {t("product")}

@@ -142,7 +142,7 @@ export function MoveOwnerButton({
             {tOwner("manager")}
           </label>
           {choices !== null && choices.length === 0 ? (
-            <p data-no-managers className="text-[15px] leading-[22px] text-muted-foreground">
+            <p data-no-managers className="text-sm text-muted-foreground">
               {tOwner("noManagers")}
             </p>
           ) : (

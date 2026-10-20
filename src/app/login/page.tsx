@@ -72,7 +72,7 @@ export default async function LoginPage({
         </header>
         <div className="flex flex-1 items-center justify-center py-10">
           <div className="flex w-full max-w-sm flex-col gap-8">
-            <h1 className="font-slab text-[32px] leading-[38px] font-bold sm:text-[40px] sm:leading-[44px]">
+            <h1 className="font-slab text-[32px] leading-[38px] font-semibold sm:text-[40px] sm:leading-[44px]">
               {t("title")}
             </h1>
             <LoginForm returnPath={returnPathOf(next)} />

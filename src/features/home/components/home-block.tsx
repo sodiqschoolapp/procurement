@@ -36,17 +36,17 @@ export function HomeBlock({
       className={cn("flex flex-col gap-4 rounded-xl bg-card p-6 max-sm:p-4", className)}
     >
       <div className="flex items-baseline justify-between gap-3">
-        <h2 id={`${id}-title`} className="text-[17px] leading-6 font-bold">
+        <h2 id={`${id}-title`} className="text-subheading font-semibold">
           {title}
         </h2>
         {count !== undefined && (
-          <span data-home-count className="text-[17px] leading-6 font-bold tabular-nums">
+          <span data-home-count className="text-subheading font-semibold tabular-nums">
             {count}
           </span>
         )}
       </div>
       {empty ? (
-        <p className="text-[15px] leading-[22px] text-muted-foreground">{empty}</p>
+        <p className="text-sm text-muted-foreground">{empty}</p>
       ) : (
         children
       )}

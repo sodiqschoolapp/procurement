@@ -178,7 +178,7 @@ export function ImportForm({
         aria-labelledby="import-template"
         className="flex flex-col gap-3 rounded-xl bg-card p-6 text-card-foreground"
       >
-        <h2 id="import-template" className="text-[17px] leading-6 font-bold">
+        <h2 id="import-template" className="text-subheading font-semibold">
           {t("templateHeading")}
         </h2>
         <p className="text-sm leading-5 text-muted-foreground">{t(`templateText.${kind}`)}</p>
@@ -199,7 +199,7 @@ export function ImportForm({
         aria-labelledby="import-file"
         className="flex flex-col gap-3 rounded-xl bg-card p-6 text-card-foreground"
       >
-        <h2 id="import-file" className="text-[17px] leading-6 font-bold">
+        <h2 id="import-file" className="text-subheading font-semibold">
           {t("fileHeading")}
         </h2>
         <p id="import-file-hint" className="text-sm leading-5 text-muted-foreground">
@@ -254,7 +254,7 @@ export function ImportForm({
           className="flex flex-col gap-4 rounded-xl bg-card p-6 text-card-foreground"
         >
           <div className="flex flex-col gap-1">
-            <h2 id="import-preview" className="text-[17px] leading-6 font-bold">
+            <h2 id="import-preview" className="text-subheading font-semibold">
               {t("previewHeading")}
             </h2>
             <p className="text-sm leading-5 text-muted-foreground">
@@ -289,7 +289,7 @@ export function ImportForm({
           {rows.length > 0 && (
             <div className="overflow-x-auto rounded-lg border">
               <table className="w-full min-w-[44rem] border-collapse text-left text-sm leading-5">
-                <thead className="bg-muted text-[13px] leading-[18px] font-semibold text-muted-foreground">
+                <thead className="bg-muted text-small font-semibold text-muted-foreground">
                   <tr>
                     <th scope="col" className="px-3 py-2 text-right">
                       {t("row")}

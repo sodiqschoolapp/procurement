@@ -89,7 +89,7 @@ function Cell({
         <span
           aria-hidden="true"
           data-card-label
-          className="mb-1 block text-[13px] leading-4 font-semibold text-muted-foreground sm:hidden"
+          className="mb-1 block text-xs font-semibold text-muted-foreground sm:hidden"
         >
           {label}
         </span>
@@ -297,7 +297,7 @@ export function DraftRow(props: DraftRowProps) {
   const fieldError = (name: string) => errors[name] ?? props.marks?.[name];
   const errorText = (name: string) =>
     fieldError(name) && (
-      <span className="mt-1 block text-[13px] leading-4 text-destructive">{fieldError(name)}</span>
+      <span className="mt-1 block text-xs text-destructive">{fieldError(name)}</span>
     );
   const ro = (text: string | null) => (
     <span className="block min-h-10 py-2.5 text-sm leading-5">{text ?? t("none")}</span>
@@ -353,7 +353,7 @@ export function DraftRow(props: DraftRowProps) {
             )}
           </span>
           {row.label && <DraftGridLabel label={row.label} />}
-          <span className="text-[13px] leading-4 text-muted-foreground">
+          <span className="text-xs text-muted-foreground">
             {t("ownerAndDate", {
               owner: row.ownerName,
               date: format.date(new Date(row.createdAt)),
@@ -387,7 +387,7 @@ export function DraftRow(props: DraftRowProps) {
         )}
         {errorText("branchId")}
         {pendingBranch && (
-          <span className="mt-1 block text-[13px] leading-4 text-warning">
+          <span className="mt-1 block text-xs text-warning">
             {t("save.branchPending")}
           </span>
         )}
@@ -405,7 +405,7 @@ export function DraftRow(props: DraftRowProps) {
                 onPick={(picked) => void save({ variantId: picked.subtype.id })}
               />
               {fieldError("variantId") && (
-                <span className="text-[13px] leading-4 text-destructive">
+                <span className="text-xs text-destructive">
                   {fieldError("variantId")}
                 </span>
               )}
@@ -495,12 +495,12 @@ export function DraftRow(props: DraftRowProps) {
                 )}
             </Select>
             {fieldError("departmentId") && (
-              <span className="text-[13px] leading-4 text-destructive">
+              <span className="text-xs text-destructive">
                 {fieldError("departmentId")}
               </span>
             )}
             {!pendingBranch && row.responsibleName && (
-              <span className="text-[13px] leading-4 text-muted-foreground">
+              <span className="text-xs text-muted-foreground">
                 {t("responsible", { name: row.responsibleName })}
               </span>
             )}
@@ -517,7 +517,7 @@ export function DraftRow(props: DraftRowProps) {
           <span className="flex flex-col">
             {ro(row.departmentName)}
             {row.requesterName && (
-              <span className="text-[13px] text-muted-foreground">{row.requesterName}</span>
+              <span className="text-small text-muted-foreground">{row.requesterName}</span>
             )}
           </span>
         )}
@@ -579,7 +579,7 @@ export function DraftRow(props: DraftRowProps) {
           />
         </span>
         {fieldError("extras") && (
-          <span className="text-[13px] leading-4 text-destructive">{fieldError("extras")}</span>
+          <span className="text-xs text-destructive">{fieldError("extras")}</span>
         )}
       </Cell>
       <Cell col="paymentType" label={t("columns.paymentType")}>
@@ -634,14 +634,14 @@ export function DraftRow(props: DraftRowProps) {
               />
             )}
             {pendingUrgent && row.priority !== "URGENT" && (
-              <span className="text-[13px] leading-4 text-warning">{t("save.urgentPending")}</span>
+              <span className="text-xs text-warning">{t("save.urgentPending")}</span>
             )}
           </span>
         ) : (
           <span className="flex flex-col">
             {ro(t(`priority.${row.priority}`))}
             {row.urgentReason && (
-              <span className="text-[13px] text-muted-foreground">{row.urgentReason}</span>
+              <span className="text-small text-muted-foreground">{row.urgentReason}</span>
             )}
           </span>
         )}
@@ -666,7 +666,7 @@ export function DraftRow(props: DraftRowProps) {
           </span>
           {row.priceHint !== null && (
             <span
-              className="text-[13px] leading-4 whitespace-nowrap text-warning"
+              className="text-xs whitespace-nowrap text-warning"
               data-cell="price-hint"
             >
               {t("priceHint", { percent: BigInt(row.priceHint) as unknown as number })}

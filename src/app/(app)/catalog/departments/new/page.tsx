@@ -28,7 +28,7 @@ export default async function NewDepartmentPage() {
         <Icon name="chevron_left" />
         {t("kinds.departments.title")}
       </Link>
-      <h1 className="text-[28px] leading-[34px] font-bold tracking-[-0.01em]">
+      <h1 className="text-title">
         {t("kinds.departments.newTitle")}
       </h1>
       <CatalogForm kind="departments" entry={null} branches={branches} />

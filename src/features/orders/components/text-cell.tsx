@@ -87,7 +87,7 @@ export function TextCell({
           }
         }}
       />
-      {error && <span className="text-[13px] leading-4 text-destructive">{error}</span>}
+      {error && <span className="text-xs text-destructive">{error}</span>}
     </span>
   );
 }

@@ -120,8 +120,8 @@ export default async function OrderPageScreen({
 
   const fact = (key: string, label: string, value: React.ReactNode) => (
     <div key={key} data-fact={key} className="flex flex-col gap-0.5">
-      <dt className="text-[13px] leading-[18px] text-muted-foreground">{label}</dt>
-      <dd className="text-[15px] leading-[22px] break-words">{value}</dd>
+      <dt className="text-small text-muted-foreground">{label}</dt>
+      <dd className="text-sm break-words">{value}</dd>
     </div>
   );
 
@@ -149,7 +149,7 @@ export default async function OrderPageScreen({
           <span className="flex flex-wrap items-baseline gap-x-2">
             <span className="tabular-nums">{format.money(order.price)}</span>
             {hint ? (
-              <span data-price-hint className="text-[13px] font-semibold text-warning">
+              <span data-price-hint className="text-small font-semibold text-warning">
                 {hint}
               </span>
             ) : null}
@@ -246,7 +246,7 @@ export default async function OrderPageScreen({
       aria-current={tab === to ? "page" : undefined}
       className={cn(
         // Four tabs fit 375 px: narrow padding and no shrink floor on a phone (11 rule 13 keeps 44 px).
-        "flex h-11 min-w-0 flex-1 items-center justify-center truncate rounded-lg px-2 text-[15px] font-semibold sm:flex-none sm:px-4",
+        "flex h-11 min-w-0 flex-1 items-center justify-center truncate rounded-lg px-2 text-sm font-semibold sm:flex-none sm:px-4",
         tab === to ? "bg-card text-foreground" : "text-muted-foreground hover:text-foreground",
       )}
     >
@@ -258,11 +258,11 @@ export default async function OrderPageScreen({
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
       <header className="flex flex-col gap-4 rounded-xl bg-card p-4 sm:p-6">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-          <h1 data-order-number className="text-[28px] leading-[34px] font-bold tracking-[-0.01em]">
+          <h1 data-order-number className="text-title">
             {order.number ?? t("noNumber")}
           </h1>
           {order.number ? (
-            <span data-revision className="text-[15px] leading-[22px] text-muted-foreground">
+            <span data-revision className="text-sm text-muted-foreground">
               {tOrders("revision", { revision: order.revision })}
             </span>
           ) : null}
@@ -270,7 +270,7 @@ export default async function OrderPageScreen({
           {order.status === "PURCHASING" ? <ProgressLabel progress={order.progress} /> : null}
           {order.substituted ? <SubstitutedLabel /> : null}
           {order.priority === "URGENT" ? (
-            <span className="inline-flex items-center gap-1 text-[13px] font-semibold text-destructive">
+            <span className="inline-flex items-center gap-1 text-small font-semibold text-destructive">
               <Icon name="warning" size={16} />
               {t("urgent", { reason: order.urgentReason ?? "" })}
             </span>
@@ -278,7 +278,7 @@ export default async function OrderPageScreen({
           {order.overdue ? (
             <span
               data-overdue
-              className="inline-flex items-center gap-1 text-[13px] font-semibold text-warning"
+              className="inline-flex items-center gap-1 text-small font-semibold text-warning"
             >
               <Icon name="schedule" size={16} />
               {tOrders("overdue")}
@@ -301,7 +301,7 @@ export default async function OrderPageScreen({
                   {format.money(order.plannedTotal)}
                 </span>
                 {hint ? (
-                  <span className="text-[13px] font-semibold text-warning">{hint}</span>
+                  <span className="text-small font-semibold text-warning">{hint}</span>
                 ) : null}
               </span>
             ),

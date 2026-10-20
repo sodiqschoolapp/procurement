@@ -49,7 +49,7 @@ export default async function SettingsPage() {
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
       <AdminNav current="settings" />
-      <h1 className="text-[28px] leading-[34px] font-bold tracking-[-0.01em]">
+      <h1 className="text-title">
         {t("settings.title")}
       </h1>
       {/* 13-technology.md, Running it: "the Head's Settings page shows the date of the last copy". */}
@@ -67,7 +67,7 @@ export default async function SettingsPage() {
         }}
       />
       <section className="flex flex-col gap-4 rounded-xl bg-card p-6 text-card-foreground">
-        <h2 className="text-[17px] leading-6 font-bold">{t("settings.history")}</h2>
+        <h2 className="text-subheading font-semibold">{t("settings.history")}</h2>
         <ChangeHistory entries={history.rows} fields={FIELDS} />
       </section>
     </div>

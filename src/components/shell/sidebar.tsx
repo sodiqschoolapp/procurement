@@ -72,7 +72,7 @@ export function Sidebar({
       {schoolName && (
         <p
           title={schoolName}
-          className="-mt-2 truncate px-5 pb-2 text-[13px] leading-5 text-sidebar-foreground/70 rail:hidden"
+          className="-mt-2 truncate px-5 pb-2 text-small text-sidebar-foreground/70 rail:hidden"
         >
           {schoolName}
         </p>

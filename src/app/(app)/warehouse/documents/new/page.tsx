@@ -76,7 +76,7 @@ export default async function NewDocumentPage({ searchParams }: { searchParams: 
     const t = await getTranslations("warehouse.directEntry");
     return (
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-        <h1 className="text-[28px] leading-[34px] font-bold tracking-[-0.01em]">{t("title")}</h1>
+        <h1 className="text-title">{t("title")}</h1>
         <DirectEntryForm
           key={initialBranchId}
           branches={branches}
@@ -91,7 +91,7 @@ export default async function NewDocumentPage({ searchParams }: { searchParams: 
     const t = await getTranslations("warehouse.writeOff");
     return (
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-        <h1 className="text-[28px] leading-[34px] font-bold tracking-[-0.01em]">{t("title")}</h1>
+        <h1 className="text-title">{t("title")}</h1>
         <WriteOffForm
           key={initialBranchId}
           branches={branches}
@@ -112,7 +112,7 @@ export default async function NewDocumentPage({ searchParams }: { searchParams: 
     const t = await getTranslations("warehouse.transfer");
     return (
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-        <h1 className="text-[28px] leading-[34px] font-bold tracking-[-0.01em]">{t("title")}</h1>
+        <h1 className="text-title">{t("title")}</h1>
         <TransferForm
           key={initialBranchId}
           branches={branches}
@@ -131,7 +131,7 @@ export default async function NewDocumentPage({ searchParams }: { searchParams: 
     const t = await getTranslations("warehouse.return");
     return (
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-        <h1 className="text-[28px] leading-[34px] font-bold tracking-[-0.01em]">{t("title")}</h1>
+        <h1 className="text-title">{t("title")}</h1>
         <ReturnForm
           key={initialBranchId}
           branches={branches}
@@ -149,7 +149,7 @@ export default async function NewDocumentPage({ searchParams }: { searchParams: 
   const t = await getTranslations("warehouse.issue");
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-      <h1 className="text-[28px] leading-[34px] font-bold tracking-[-0.01em]">{t("title")}</h1>
+      <h1 className="text-title">{t("title")}</h1>
       <IssueForm
         key={initialBranchId}
         branches={branches}

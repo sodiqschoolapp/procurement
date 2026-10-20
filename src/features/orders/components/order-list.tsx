@@ -169,12 +169,12 @@ export function OrderList({
       className="flex flex-col gap-2 rounded-xl border border-destructive bg-card p-4"
     >
       <div className="flex items-start justify-between gap-3">
-        <h2 className="text-[15px] leading-[22px] font-bold text-destructive">{failed.title}</h2>
+        <h2 className="text-sm font-semibold text-destructive">{failed.title}</h2>
         <Button type="button" variant="ghost" size="sm" onClick={() => setFailed(null)}>
           {tCommon("close")}
         </Button>
       </div>
-      <ul className="flex flex-col gap-1 text-[15px] leading-[22px]">
+      <ul className="flex flex-col gap-1 text-sm">
         {failed.lines.map(({ orderId, line }) => (
           <li key={orderId} data-failed-order={orderId}>
             {line}
@@ -206,7 +206,7 @@ export function OrderList({
       <div className="overflow-x-auto rounded-xl bg-card max-sm:overflow-visible max-sm:bg-transparent">
         <table className="w-full border-collapse text-sm max-sm:block">
           <caption className="sr-only">{t("title")}</caption>
-          <thead className="bg-muted text-left text-[13px] leading-[18px] text-muted-foreground max-sm:hidden">
+          <thead className="bg-muted text-left text-small text-muted-foreground max-sm:hidden">
             <tr>
               <th scope="col" className="w-12 px-3 py-2 font-semibold">
                 <span className="sr-only">{t("columns.tick")}</span>
@@ -477,7 +477,7 @@ function GroupRows({
             <Icon name={open ? "expand_more" : "chevron_right"} className="shrink-0" />
             <span className="flex flex-col gap-1">
               <span>{product}</span>{" "}
-              <span className="text-[13px] leading-4 font-normal text-muted-foreground">
+              <span className="text-xs font-normal text-muted-foreground">
                 {group.branchCode}
               </span>
             </span>
@@ -487,7 +487,7 @@ function GroupRows({
           <span className="flex flex-wrap items-center gap-2">
             <RequestStatusLabel status={group.status} />
             {group.summary.urgent && (
-              <span className="inline-flex items-center gap-1 text-[13px] font-semibold text-destructive">
+              <span className="inline-flex items-center gap-1 text-small font-semibold text-destructive">
                 <Icon name="warning" size={16} />
                 {t("urgent")}
               </span>
@@ -495,7 +495,7 @@ function GroupRows({
             {group.summary.overdue && (
               <span
                 data-overdue
-                className="inline-flex items-center gap-1 text-[13px] font-semibold text-warning"
+                className="inline-flex items-center gap-1 text-small font-semibold text-warning"
               >
                 <Icon name="schedule" size={16} />
                 {tOrders("overdue")}
@@ -516,7 +516,7 @@ function GroupRows({
               {format.money(BigInt(group.summary.totals.grand))}
             </span>
             {group.summary.priceHint !== null && (
-              <span className="text-[13px] leading-4 whitespace-nowrap text-warning">
+              <span className="text-xs whitespace-nowrap text-warning">
                 {tOrders("priceHint", {
                   percent: BigInt(group.summary.priceHint) as unknown as number,
                 })}
@@ -541,7 +541,7 @@ function GroupRows({
       {open && (
         <tr id={ordersId} className="max-sm:mt-3 max-sm:block">
           <td colSpan={7} className="px-3 pb-4 max-sm:block max-sm:p-0">
-            <table className="w-full border-collapse text-[13px] leading-[18px] max-sm:block">
+            <table className="w-full border-collapse text-small max-sm:block">
               <caption className="sr-only">{t("ordersOf", { product })}</caption>
               <thead className="text-left text-muted-foreground max-sm:hidden">
                 <tr>

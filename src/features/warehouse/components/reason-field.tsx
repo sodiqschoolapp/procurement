@@ -46,7 +46,7 @@ export function ReasonField({
         onChange={(event) => onChange(event.target.value)}
         className={cn(FIELD_CLASSES, "min-h-20 py-2")}
       />
-      <p id={`${id}-hint`} className="text-[13px] leading-[18px] text-muted-foreground">
+      <p id={`${id}-hint`} className="text-small text-muted-foreground">
         {tAll(hint, {
           min: MOVE_REASON_MIN,
           max: MOVE_REASON_MAX,

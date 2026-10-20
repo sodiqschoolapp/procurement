@@ -66,7 +66,7 @@ export async function SpendingBlockView({
       className="flex flex-col gap-4"
       data-analytics-block="spending"
     >
-      <h2 id="spending-title" className="text-[20px] leading-7 font-bold">
+      <h2 id="spending-title" className="text-heading font-semibold">
         {t("spending.title")}
       </h2>
       <div className="rounded-xl bg-card p-6 max-sm:p-4">
@@ -75,7 +75,7 @@ export async function SpendingBlockView({
         </p>
         <Link
           href={records({ kind: "period" })}
-          className="inline-flex min-h-11 min-w-11 items-center text-[28px] leading-[34px] font-bold tabular-nums underline-offset-4 hover:underline"
+          className="inline-flex min-h-11 min-w-11 items-center text-title tabular-nums underline-offset-4 hover:underline"
           data-spending-total
         >
           {format.money(block.total.amount)}
@@ -85,7 +85,7 @@ export async function SpendingBlockView({
         </p>
       </div>
       {empty ? (
-        <p className="rounded-xl bg-card p-6 text-[15px] leading-[22px] text-muted-foreground max-sm:p-4">
+        <p className="rounded-xl bg-card p-6 text-sm text-muted-foreground max-sm:p-4">
           {t("spending.empty")}
         </p>
       ) : (
@@ -156,7 +156,7 @@ export async function ChartCard({
       data-chart-card={id}
     >
       <div className="flex items-baseline justify-between gap-3">
-        <h3 id={`${id}-title`} className="text-[17px] leading-6 font-bold">
+        <h3 id={`${id}-title`} className="text-subheading font-semibold">
           {title}
         </h3>
         <a
@@ -174,7 +174,7 @@ export async function ChartCard({
         className="overflow-x-auto rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
       >
         <table className="w-full min-w-[28rem] border-collapse text-left text-sm leading-5">
-          <thead className="bg-muted text-[13px] leading-[18px] font-semibold text-muted-foreground">
+          <thead className="bg-muted text-small font-semibold text-muted-foreground">
             <tr>
               <th scope="col" className="px-3 py-2">
                 {firstColumn}

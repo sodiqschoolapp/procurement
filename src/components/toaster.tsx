@@ -34,7 +34,7 @@ function ToastList() {
           className={cn("mt-2.5", error ? "text-destructive" : "text-success")}
         />
         <Toast.Content className="min-w-0 flex-1 py-2.5">
-          <Toast.Title className="text-[15px] leading-[22px]" />
+          <Toast.Title className="text-sm" />
         </Toast.Content>
         <Toast.Close render={<Button variant="ghost" size="icon" aria-label={t("close")} />}>
           <Icon name="close" />

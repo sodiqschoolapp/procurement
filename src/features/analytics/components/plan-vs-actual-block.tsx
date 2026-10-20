@@ -68,13 +68,13 @@ export async function PlanVsActualView({
       data-analytics-block="plan"
     >
       <div className="flex flex-col gap-1">
-        <h2 id="plan-title" className="text-[20px] leading-7 font-bold">
+        <h2 id="plan-title" className="text-heading font-semibold">
           {t("plan.title")}
         </h2>
         <p className="text-sm leading-5 text-muted-foreground">{t("plan.note")}</p>
       </div>
       {empty ? (
-        <p className="rounded-xl bg-card p-6 text-[15px] leading-[22px] text-muted-foreground max-sm:p-4">
+        <p className="rounded-xl bg-card p-6 text-sm text-muted-foreground max-sm:p-4">
           {t("plan.empty")}
         </p>
       ) : (
@@ -178,7 +178,7 @@ function Tile({
       <div className="text-sm leading-5 font-semibold text-muted-foreground">{label}</div>
       <Link
         href={href}
-        className="inline-flex min-h-11 min-w-11 items-center self-start text-[28px] leading-[34px] font-bold tabular-nums underline-offset-4 hover:underline"
+        className="inline-flex min-h-11 min-w-11 items-center self-start text-title tabular-nums underline-offset-4 hover:underline"
         data-plan-number
       >
         {value}
@@ -211,7 +211,7 @@ async function Card({
       data-chart-card={id}
     >
       <div className="flex items-baseline justify-between gap-3">
-        <h3 id={`${id}-title`} className="text-[17px] leading-6 font-bold">
+        <h3 id={`${id}-title`} className="text-subheading font-semibold">
           {title}
         </h3>
         <a
@@ -275,7 +275,7 @@ async function TallyTable({ firstColumn, rows }: { firstColumn: string; rows: Ta
       className="overflow-x-auto rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
     >
       <table className="w-full min-w-[48rem] border-collapse text-left text-sm leading-5">
-        <thead className="bg-muted text-[13px] leading-[18px] font-semibold text-muted-foreground">
+        <thead className="bg-muted text-small font-semibold text-muted-foreground">
           <tr>
             <th scope="col" className="px-3 py-2">
               {firstColumn}
@@ -301,7 +301,7 @@ async function TallyTable({ firstColumn, rows }: { firstColumn: string; rows: Ta
                   >
                     {cell.shown}
                   </Link>
-                  <span className="block text-[13px] leading-[18px] text-muted-foreground">
+                  <span className="block text-small text-muted-foreground">
                     {cell.change}
                   </span>
                 </td>

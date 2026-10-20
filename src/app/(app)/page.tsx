@@ -57,7 +57,7 @@ export default async function HomePage() {
   const branch = await currentBranchChoice(user.id, (await cookies()).get(BRANCH_COOKIE)?.value);
 
   const title = (
-    <h1 className="text-[28px] leading-[34px] font-bold tracking-[-0.01em]">{t("title")}</h1>
+    <h1 className="text-title">{t("title")}</h1>
   );
 
   if (user.role === "MANAGER") {
@@ -188,7 +188,7 @@ async function ManagerHome({ userId, branch }: { userId: string; branch: string 
           empty={home.drafts === 0 ? t("manager.drafts.empty") : null}
           link={{ href: "/orders#drafts-title", label: t("manager.drafts.open") }}
         >
-          <p className="text-[15px] leading-[22px]">
+          <p className="text-sm">
             {t("manager.drafts.count", { count: home.drafts })}
           </p>
         </HomeBlock>
@@ -209,7 +209,7 @@ async function ManagerHome({ userId, branch }: { userId: string; branch: string 
           empty={home.requested.length === 0 ? t("manager.requested.empty") : null}
           link={{ href: listHref(home.filters.mine), label: t("openList") }}
         >
-          <ul className="flex flex-col gap-2 text-[15px] leading-[22px]">
+          <ul className="flex flex-col gap-2 text-sm">
             {home.requested.map((line) => (
               <li key={line.variantId} data-home-requested={line.variantId}>
                 {t("manager.requested.line", {
@@ -231,23 +231,23 @@ async function ManagerHome({ userId, branch }: { userId: string; branch: string 
         >
           <dl className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-1">
-              <dt className="text-[13px] leading-4 text-muted-foreground">
+              <dt className="text-xs text-muted-foreground">
                 {t("manager.cash.held")}
               </dt>
-              <dd data-cash="held" className="text-[20px] leading-7 font-bold tabular-nums">
+              <dd data-cash="held" className="text-heading font-semibold tabular-nums">
                 {format.money(home.cash.held)}
               </dd>
             </div>
             <div className="flex flex-col gap-1">
-              <dt className="text-[13px] leading-4 text-muted-foreground">
+              <dt className="text-xs text-muted-foreground">
                 {t("manager.cash.owed")}
               </dt>
-              <dd data-cash="owed" className="text-[20px] leading-7 font-bold tabular-nums">
+              <dd data-cash="owed" className="text-heading font-semibold tabular-nums">
                 {format.money(home.cash.owed)}
               </dd>
             </div>
           </dl>
-          <p className="text-[13px] leading-4 text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             {t("manager.cash.orders", { count: home.cash.orders })}
           </p>
         </HomeBlock>
@@ -267,14 +267,14 @@ async function ManagerHome({ userId, branch }: { userId: string; branch: string 
               >
                 <Link
                   href={`/warehouse/items/${row.variantId}?branch=${row.branchId}`}
-                  className="text-[15px] leading-[22px] font-semibold underline-offset-2 hover:underline"
+                  className="text-sm font-semibold underline-offset-2 hover:underline"
                 >
                   {row.subtypeName ? `${row.productName}, ${row.subtypeName}` : row.productName}{" "}
-                  <span className="text-[13px] font-normal text-muted-foreground">
+                  <span className="text-small font-normal text-muted-foreground">
                     {row.branchCode}
                   </span>
                 </Link>
-                <span className="flex items-center gap-2 text-[13px] leading-4 tabular-nums">
+                <span className="flex items-center gap-2 text-xs tabular-nums">
                   {t("manager.low.row", {
                     quantity: format.quantity(row.quantity),
                     unit: row.unitShortName,
@@ -295,7 +295,7 @@ async function ManagerHome({ userId, branch }: { userId: string; branch: string 
           link={showAll(home.dueSoon.total, home.filters.dueSoon)}
           className={cn("lg:col-span-2")}
         >
-          <p className="text-[13px] leading-4 text-muted-foreground">{t("manager.dueSoon.hint")}</p>
+          <p className="text-xs text-muted-foreground">{t("manager.dueSoon.hint")}</p>
           <GroupLines groups={home.dueSoon.groups.map(wireGroup)} />
         </HomeBlock>
       </div>
@@ -318,7 +318,7 @@ async function PrincipalHome({ userId, branch }: { userId: string; branch: strin
         empty={home.waiting.count === 0 ? t("principal.waiting.empty") : null}
         link={{ href: waitingHref, label: t("showAll", { count: home.waiting.count }) }}
       >
-        <p data-waiting-total className="text-[20px] leading-7 font-bold tabular-nums">
+        <p data-waiting-total className="text-heading font-semibold tabular-nums">
           {t("principal.waiting.total", {
             count: home.waiting.count,
             total: format.money(home.waiting.totals.grand),
@@ -347,7 +347,7 @@ async function PrincipalHome({ userId, branch }: { userId: string; branch: strin
                   className="flex min-h-11 items-center justify-between gap-3 py-2"
                 >
                   <RequestStatusLabel status={row.status} />
-                  <span className="text-[15px] leading-[22px] font-semibold tabular-nums">
+                  <span className="text-sm font-semibold tabular-nums">
                     {row.count}
                   </span>
                 </Link>
@@ -357,16 +357,16 @@ async function PrincipalHome({ userId, branch }: { userId: string; branch: strin
         </HomeBlock>
 
         <HomeBlock id="spending" title={t("principal.spending.title")}>
-          <p data-spending className="text-[28px] leading-[34px] font-bold tabular-nums">
+          <p data-spending className="text-title tabular-nums">
             {format.money(home.spending)}
           </p>
-          <p className="text-[13px] leading-4 text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             {t("principal.spending.period", {
               from: format.date(home.month.first),
               to: format.date(home.month.last),
             })}
           </p>
-          <p className="text-[13px] leading-4 text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             {t("principal.spending.hint")}
           </p>
         </HomeBlock>
@@ -394,11 +394,11 @@ function LinkRow({
         className="flex min-h-11 flex-wrap items-center justify-between gap-x-3 gap-y-1"
       >
         <span className="flex min-w-48 flex-1 flex-col gap-1">
-          <span className="text-[15px] leading-[22px] font-semibold">{title}</span>
-          <span className="text-[13px] leading-4 text-muted-foreground tabular-nums">{line}</span>
+          <span className="text-sm font-semibold">{title}</span>
+          <span className="text-xs text-muted-foreground tabular-nums">{line}</span>
         </span>
         {aside && (
-          <span className="shrink-0 text-[15px] leading-[22px] font-semibold tabular-nums">
+          <span className="shrink-0 text-sm font-semibold tabular-nums">
             {aside}
           </span>
         )}
@@ -444,8 +444,8 @@ async function HeadHome({ userId, branch }: { userId: string; branch: string | n
                 data-waiting-branch={line.branchCode}
                 className="flex min-h-11 items-center justify-between gap-3 py-2"
               >
-                <span className="text-[15px] leading-[22px] font-semibold">{line.branchCode}</span>
-                <span className="text-[15px] leading-[22px] tabular-nums">
+                <span className="text-sm font-semibold">{line.branchCode}</span>
+                <span className="text-sm tabular-nums">
                   {t("head.waiting.line", {
                     count: line.count,
                     total: format.money(line.totals.grand),
@@ -579,7 +579,7 @@ async function HeadHome({ userId, branch }: { userId: string; branch: string | n
           label: t("showAll", { count: home.stuck.total }),
         }}
       >
-        <p className="text-[13px] leading-4 text-muted-foreground">{t("head.stuck.hint")}</p>
+        <p className="text-xs text-muted-foreground">{t("head.stuck.hint")}</p>
         <GroupLines groups={home.stuck.groups.map(wireGroup)} />
       </HomeBlock>
 
@@ -591,9 +591,9 @@ async function HeadHome({ userId, branch }: { userId: string; branch: string | n
               data-branch-counts={figures.branchCode}
               className="flex flex-col gap-2"
             >
-              <h3 className="text-[15px] leading-[22px] font-bold">{code(figures)}</h3>
+              <h3 className="text-sm font-semibold">{code(figures)}</h3>
               {figures.byStatus.length === 0 ? (
-                <p className="text-[13px] leading-4 text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   {t("head.byStatus.empty")}
                 </p>
               ) : (
@@ -610,7 +610,7 @@ async function HeadHome({ userId, branch }: { userId: string; branch: string | n
                         className="flex min-h-11 items-center justify-between gap-3 py-2"
                       >
                         <RequestStatusLabel status={row.status} />
-                        <span className="text-[15px] leading-[22px] font-semibold tabular-nums">
+                        <span className="text-sm font-semibold tabular-nums">
                           {row.count}
                         </span>
                       </Link>
@@ -624,20 +624,20 @@ async function HeadHome({ userId, branch }: { userId: string; branch: string | n
       </HomeBlock>
 
       <HomeBlock id="spending" title={t("head.spending.title")} className="lg:col-span-2">
-        <p className="text-[13px] leading-4 text-muted-foreground">
+        <p className="text-xs text-muted-foreground">
           {t("head.spending.period", {
             from: format.date(home.month.first),
             to: format.date(home.month.last),
           })}
         </p>
-        <p className="text-[13px] leading-4 text-muted-foreground">{t("head.spending.hint")}</p>
+        <p className="text-xs text-muted-foreground">{t("head.spending.hint")}</p>
         <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {home.branches.map((figures) => (
             <li key={figures.branchId} className="flex flex-col gap-1">
-              <span className="text-[13px] leading-4 text-muted-foreground">{code(figures)}</span>
+              <span className="text-xs text-muted-foreground">{code(figures)}</span>
               <span
                 data-spending={figures.branchCode}
-                className="text-[20px] leading-7 font-bold tabular-nums"
+                className="text-heading font-semibold tabular-nums"
               >
                 {format.money(figures.spending)}
               </span>

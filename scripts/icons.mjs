@@ -1,6 +1,7 @@
 // Writes src/components/icon-paths.ts: the SVG path of every Material Symbols Rounded icon the
-// app uses, filled, from the dev dependency @material-symbols/svg-400 (docs/design-system.md,
-// Icons: "drawn from SVG, never from a font ligature"; plan of 0.10a, decision 2). Run with
+// app uses, outlined, and the filled path of the icons that can be the active menu item, from the
+// dev dependency @material-symbols/svg-400 (docs/design-system.md, Icons: "Outlined at rest;
+// filled only for the active menu item"; "drawn from SVG paths, never a font ligature"). Run with
 // `npm run icons` after changing the list; src/components/icon-paths.test.ts fails while the
 // committed file differs from what this script writes.
 
@@ -56,6 +57,30 @@ export const ICONS = [
   "delete",
   "history",
   "add_photo_alternate",
+  // The redesign of 21.10.2026 (D60): filters, row actions, empty states, dates and trends.
+  "filter_list",
+  "check",
+  "arrow_forward",
+  "inbox",
+  "task_alt",
+  "calendar_month",
+  "trending_up",
+  "trending_down",
+  "local_shipping",
+];
+
+/** The icons that are drawn filled when they are the active menu item or tab (design system). */
+export const FILLED_ICONS = [
+  "home",
+  "receipt_long",
+  "inventory",
+  "payments",
+  "bar_chart",
+  "description",
+  "tune",
+  "person",
+  "notifications",
+  "more_horiz",
 ];
 
 /**
@@ -67,8 +92,8 @@ const FILE_NAMES = { expand_more: "keyboard_arrow_down" };
 const PACKAGE = new URL("../node_modules/@material-symbols/svg-400/rounded/", import.meta.url);
 const OUTPUT = new URL("../src/components/icon-paths.ts", import.meta.url);
 
-function pathOf(name) {
-  const file = `${FILE_NAMES[name] ?? name}-fill.svg`;
+function pathOf(name, filled = false) {
+  const file = `${FILE_NAMES[name] ?? name}${filled ? "-fill" : ""}.svg`;
   const svg = readFileSync(new URL(file, PACKAGE), "utf8");
   if (!svg.includes('viewBox="0 -960 960 960"')) throw new Error(`${file}: unexpected viewBox`);
   const paths = [...svg.matchAll(/<path d="([^"]+)"\/>/g)].map((match) => match[1]);
@@ -79,15 +104,21 @@ function pathOf(name) {
 /** The source of src/components/icon-paths.ts. */
 export function iconPathsSource() {
   const lines = ICONS.map((name) => `  ${name}: ${JSON.stringify(pathOf(name))},`);
+  const filled = FILLED_ICONS.map((name) => `  ${name}: ${JSON.stringify(pathOf(name, true))},`);
   return [
     "// Written by scripts/icons.mjs (`npm run icons`); do not edit by hand. Material Symbols",
-    "// Rounded, filled, weight 400 (Apache-2.0), viewBox 0 -960 960 960.",
+    "// Rounded, weight 400 (Apache-2.0), viewBox 0 -960 960 960: outlined, and filled for the",
+    "// icons that can be the active menu item.",
     "",
     "export const ICON_PATHS = {",
     ...lines,
     "} as const;",
     "",
     "export type IconName = keyof typeof ICON_PATHS;",
+    "",
+    "export const FILLED_ICON_PATHS: Partial<Record<IconName, string>> = {",
+    ...filled,
+    "};",
     "",
   ].join("\n");
 }

@@ -33,7 +33,7 @@ export default async function NewCatalogEntryPage({
         <Icon name="chevron_left" />
         {t(`kinds.${kind}.title`)}
       </Link>
-      <h1 className="text-[28px] leading-[34px] font-bold tracking-[-0.01em]">
+      <h1 className="text-title">
         {t(`kinds.${kind}.newTitle`)}
       </h1>
       <CatalogForm kind={kind} entry={null} />

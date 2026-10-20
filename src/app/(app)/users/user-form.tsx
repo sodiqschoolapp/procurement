@@ -282,7 +282,7 @@ export function UserForm({ user, choices }: Props) {
             return (
               <label
                 key={choice.id}
-                className="flex min-h-11 items-center gap-3 text-[15px] leading-[22px] sm:min-h-8"
+                className="flex min-h-11 items-center gap-3 text-sm sm:min-h-8"
               >
                 <input
                   type={role === "PRINCIPAL" ? "radio" : "checkbox"}
@@ -310,7 +310,7 @@ export function UserForm({ user, choices }: Props) {
       </fieldset>
 
       {needsReplace && (
-        <label className="flex items-start gap-3 rounded-lg bg-muted p-3 text-[15px] leading-[22px]">
+        <label className="flex items-start gap-3 rounded-lg bg-muted p-3 text-sm">
           <input
             type="checkbox"
             checked={replacePrincipal}

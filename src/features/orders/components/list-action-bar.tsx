@@ -48,8 +48,8 @@ export function ListActionBar({
       data-total={key}
       className={cn("flex items-baseline justify-between gap-4", folded && "max-sm:hidden")}
     >
-      <dt className={strong ? "font-bold" : "text-muted-foreground"}>{label}</dt>
-      <dd className={`tabular-nums ${strong ? "font-bold" : ""}`}>
+      <dt className={strong ? "font-semibold" : "text-muted-foreground"}>{label}</dt>
+      <dd className={`tabular-nums ${strong ? "font-semibold" : ""}`}>
         {format.money(BigInt(amount))}
       </dd>
     </div>
@@ -66,10 +66,10 @@ export function ListActionBar({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2
           id="list-bar-title"
-          className="flex flex-wrap items-baseline gap-x-3 text-[17px] leading-6 font-bold"
+          className="flex flex-wrap items-baseline gap-x-3 text-subheading font-semibold"
         >
           {t("title")}
-          <span className="text-[15px] font-normal text-muted-foreground" data-ticked-count>
+          <span className="text-sm font-normal text-muted-foreground" data-ticked-count>
             {matching !== null && matching > tickedCount
               ? t("countOf", { count: tickedCount, matching })
               : t("count", { count: tickedCount })}
@@ -86,13 +86,13 @@ export function ListActionBar({
       {summary?.colours && <ColourLabels colours={summary.colours} />}
       {/* 07 Finishing: how many of the ticked finished orders match exactly (plan of 4.4). */}
       {summary && summary.exactCount !== null && (
-        <p data-exact-count className="text-[15px] leading-[22px] text-muted-foreground">
+        <p data-exact-count className="text-sm text-muted-foreground">
           {t("exact", { exact: summary.exactCount, count: summary.count })}
         </p>
       )}
       {summary && (
         <div className="grid gap-x-12 gap-y-4 sm:grid-cols-2">
-          <dl className="flex flex-col gap-1 text-[15px] leading-[22px]">
+          <dl className="flex flex-col gap-1 text-sm">
             {line("goods", tTotals("goods"), summary.totals.goods, false, !details)}
             {line("extras", tTotals("extras"), summary.totals.extras, false, !details)}
             {line("grand", tTotals("grand"), summary.totals.grand, true)}
@@ -100,7 +100,7 @@ export function ListActionBar({
           <dl
             id="list-bar-split"
             className={cn(
-              "flex flex-col gap-1 text-[15px] leading-[22px]",
+              "flex flex-col gap-1 text-sm",
               !details && "max-sm:hidden",
             )}
           >

@@ -96,7 +96,7 @@ export async function HeadSpendingView({
           rows={chart.rows}
         >
           {chart.rows.length === 0 ? (
-            <p className="text-[15px] leading-[22px] text-muted-foreground">{t("spending.none")}</p>
+            <p className="text-sm text-muted-foreground">{t("spending.none")}</p>
           ) : (
             <BarChartBlock points={chartPoints(chart.rows, t, format)} label={chart.title} />
           )}

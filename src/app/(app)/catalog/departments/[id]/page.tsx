@@ -58,9 +58,9 @@ export default async function DepartmentPage({ params }: { params: Promise<{ id:
       </Link>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <h1 className="flex flex-wrap items-baseline gap-x-3 text-[28px] leading-[34px] font-bold tracking-[-0.01em]">
+          <h1 className="flex flex-wrap items-baseline gap-x-3 text-title">
             {department.name}
-            <span className="text-[15px] leading-[22px] font-normal tracking-normal text-muted-foreground">
+            <span className="text-sm font-normal tracking-normal text-muted-foreground">
               {department.isActive ? t("active") : t("inactive")}
             </span>
           </h1>
@@ -72,7 +72,7 @@ export default async function DepartmentPage({ params }: { params: Promise<{ id:
       </div>
       <CatalogForm kind="departments" entry={entry} />
       <section className="flex flex-col gap-4 rounded-xl bg-card p-6 text-card-foreground">
-        <h2 className="text-[17px] leading-6 font-bold">{t("history")}</h2>
+        <h2 className="text-subheading font-semibold">{t("history")}</h2>
         <ChangeHistory entries={history.rows} fields={FIELDS} />
       </section>
     </div>

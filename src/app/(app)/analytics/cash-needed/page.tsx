@@ -77,13 +77,13 @@ export default async function AnalyticsCashNeededPage({
       </Link>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <h1 className="text-[28px] leading-[34px] font-bold tracking-[-0.01em]">
+          <h1 className="text-title">
             {t("finance.neededList.title")}
           </h1>
-          <p className="text-[15px] leading-[22px] text-muted-foreground" data-needed-what>
+          <p className="text-sm text-muted-foreground" data-needed-what>
             {list.step ? tStatus(list.step) : t(`finance.needed.${list.stage}`)}
           </p>
-          <p className="text-[15px] leading-[22px] font-semibold tabular-nums" data-needed-summary>
+          <p className="text-sm font-semibold tabular-nums" data-needed-summary>
             {t("finance.neededList.summary", {
               count: list.count,
               amount: format.money(list.total),
@@ -104,7 +104,7 @@ export default async function AnalyticsCashNeededPage({
       ) : (
         <section className="rounded-xl bg-card text-card-foreground">
           <table className="w-full border-collapse text-left text-sm leading-5 max-sm:block">
-            <thead className="bg-muted text-[13px] leading-[18px] font-semibold text-muted-foreground max-sm:hidden">
+            <thead className="bg-muted text-small font-semibold text-muted-foreground max-sm:hidden">
               <tr>
                 {COLUMNS.map((column) => (
                   <th key={column} scope="col" className="px-4 py-3">

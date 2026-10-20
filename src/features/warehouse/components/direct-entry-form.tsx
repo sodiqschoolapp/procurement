@@ -209,7 +209,7 @@ export function DirectEntryForm({
         data-entry-saved
         className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 sm:p-6"
       >
-        <h2 className="flex items-center gap-2 text-[17px] leading-6 font-semibold">
+        <h2 className="flex items-center gap-2 text-subheading font-semibold">
           <Icon name="check_circle" className="text-success" />
           {t("savedTitle", { number: saved.number })}
         </h2>
@@ -267,7 +267,7 @@ export function DirectEntryForm({
           id="entry-step-0"
           data-step-heading
           tabIndex={-1}
-          className="text-[17px] leading-6 font-semibold outline-none"
+          className="text-subheading font-semibold outline-none"
         >
           {t("whatAndWhy")}
         </h2>
@@ -291,7 +291,7 @@ export function DirectEntryForm({
               </Select>
             </Field>
           ) : (
-            <p className="flex flex-col gap-1.5 text-[15px] leading-[22px]">
+            <p className="flex flex-col gap-1.5 text-sm">
               <span className="text-sm leading-5 font-semibold">{t("branch")}</span>
               {branches[0]
                 ? tAll("branch.option", { code: branches[0].code, name: branches[0].name })
@@ -333,7 +333,7 @@ export function DirectEntryForm({
           id="entry-step-1"
           data-step-heading
           tabIndex={-1}
-          className="text-[17px] leading-6 font-semibold outline-none"
+          className="text-subheading font-semibold outline-none"
         >
           {t("items")}
         </h2>
@@ -344,15 +344,15 @@ export function DirectEntryForm({
             onPick={addLine}
           />
         ) : (
-          <p className="text-[15px] leading-[22px] text-muted-foreground">{t("branchFirst")}</p>
+          <p className="text-sm text-muted-foreground">{t("branchFirst")}</p>
         )}
         {fieldTexts.lines ? (
-          <p role="alert" className="text-[15px] leading-[22px] text-destructive">
+          <p role="alert" className="text-sm text-destructive">
             {fieldTexts.lines}
           </p>
         ) : null}
         {lines.fields.length === 0 ? (
-          <p className="text-[15px] leading-[22px] text-muted-foreground">{t("noLines")}</p>
+          <p className="text-sm text-muted-foreground">{t("noLines")}</p>
         ) : (
           <ul className="flex flex-col gap-3">
             {lines.fields.map((field, index) => {
@@ -367,7 +367,7 @@ export function DirectEntryForm({
                   className="flex flex-col gap-3 rounded-lg border border-border p-3 sm:flex-row sm:items-start"
                 >
                   <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                    <span className="text-[15px] leading-[22px] font-semibold">{name}</span>
+                    <span className="text-sm font-semibold">{name}</span>
                     <span data-in-stock className="text-sm leading-5 text-muted-foreground">
                       {t("inStock", {
                         qty: format.quantity(line.inStock),
@@ -432,7 +432,7 @@ export function DirectEntryForm({
           id="entry-step-2"
           data-step-heading
           tabIndex={-1}
-          className="text-[17px] leading-6 font-semibold outline-none"
+          className="text-subheading font-semibold outline-none"
         >
           {t("commentStep")}
         </h2>
@@ -451,7 +451,7 @@ export function DirectEntryForm({
       </section>
 
       {action.errorText && Object.keys(fieldTexts).length === 0 ? (
-        <p role="alert" className="text-[15px] leading-[22px] text-destructive">
+        <p role="alert" className="text-sm text-destructive">
           {action.errorText}
         </p>
       ) : null}
@@ -468,7 +468,7 @@ export function DirectEntryForm({
         ) : (
           <span />
         )}
-        <span data-step-count className="text-[15px] leading-[22px] tabular-nums">
+        <span data-step-count className="text-sm tabular-nums">
           {t("step", { current: step + 1, total: DOCUMENT_STEPS })}
         </span>
         {step < DOCUMENT_STEPS - 1 ? (
@@ -586,7 +586,7 @@ function ItemSearch({
                   type="button"
                   data-pick={subtype.id}
                   onClick={() => onPick(item, subtype)}
-                  className="flex min-h-11 w-full flex-wrap items-center justify-between gap-x-3 gap-y-0.5 rounded-lg px-3 py-2 text-left text-[15px] leading-[22px] hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring"
+                  className="flex min-h-11 w-full flex-wrap items-center justify-between gap-x-3 gap-y-0.5 rounded-lg px-3 py-2 text-left text-sm hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring"
                 >
                   <span className="min-w-0">
                     {subtype.name ? `${item.name} · ${subtype.name}` : item.name}

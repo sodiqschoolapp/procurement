@@ -49,10 +49,10 @@ export function ConfirmDialogBody({
   const t = useTranslations("common");
   return (
     <>
-      <h2 id={titleId} className="text-[17px] leading-6 font-bold">
+      <h2 id={titleId} className="text-subheading font-semibold">
         {text.title}
       </h2>
-      <p id={resultId} className="mt-2 text-[15px] leading-[22px] text-muted-foreground">
+      <p id={resultId} className="mt-2 text-sm text-muted-foreground">
         {text.result}
       </p>
       {children}

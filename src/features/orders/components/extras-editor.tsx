@@ -102,7 +102,7 @@ export function ExtrasCell({
           aria-labelledby={titleId}
           className="fixed top-1/2 left-1/2 z-50 max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-xl bg-popover p-6 text-popover-foreground shadow-float"
         >
-          <h2 id={titleId} className="text-[17px] leading-6 font-bold">
+          <h2 id={titleId} className="text-subheading font-semibold">
             {t("extras.title")}
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">{product}</p>

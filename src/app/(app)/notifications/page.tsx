@@ -77,10 +77,10 @@ export default async function NotificationsPage({
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="flex flex-wrap items-baseline gap-x-3 text-[28px] leading-[34px] font-bold tracking-[-0.01em]">
+        <h1 className="flex flex-wrap items-baseline gap-x-3 text-title">
           {t("notifications.title")}
           {unread > 0 && (
-            <span className="text-[15px] leading-[22px] font-normal tracking-normal text-muted-foreground">
+            <span className="text-sm font-normal tracking-normal text-muted-foreground">
               {t("notifications.unreadFact", { count: unread })}
             </span>
           )}

@@ -6,10 +6,11 @@ import { RadioGroup } from "@base-ui/react/radio-group";
 import { Icon } from "@/components/icon";
 import { cn } from "@/components/utils";
 
-// docs/design-system.md, "Fields and switches": a segmented control of two to four choices is
-// an --accent track with 4 px padding; the chosen item is white with navy text, the others muted
-// text, 32 high (44 at phone width, where a long word may take two lines). A radio group: arrow keys move the choice and focus comes
-// from Base UI Radio Group (11-screens-and-ux.md rule 13).
+// docs/design-system.md, Fields: a segmented control of two to four short choices is a --muted
+// track with a hairline edge; the chosen item is white with navy text and a hairline edge, the
+// others muted text, at least 32 high (44 at phone width). When the words do not fit on one line
+// the choices wrap onto the next line instead of being cut or overlapping. A radio group: arrow
+// keys move the choice and focus comes from Base UI Radio Group (11-screens-and-ux.md rule 13).
 
 export type SegmentedOption<Value extends string> = { value: Value; label: string };
 
@@ -47,7 +48,7 @@ export function Segmented<Value extends string>({
       aria-busy={pending || undefined}
       onValueChange={(chosen) => onValueChange(chosen as Value)}
       className={cn(
-        "inline-flex rounded-lg bg-accent p-1",
+        "inline-flex flex-wrap gap-0.5 rounded-md border border-border bg-muted p-0.5",
         (pending || disabled) && "opacity-60",
         className,
       )}
@@ -57,9 +58,9 @@ export function Segmented<Value extends string>({
           key={option.value}
           value={option.value}
           className={cn(
-            "inline-flex h-11 min-w-0 flex-1 cursor-pointer items-center justify-center rounded-sm px-2 text-center text-sm leading-4 font-semibold sm:h-8 sm:px-3 sm:leading-5 sm:whitespace-nowrap",
+            "inline-flex min-h-11 flex-auto cursor-pointer items-center justify-center rounded-[5px] border border-transparent px-3 py-1 text-center text-sm leading-5 font-medium sm:min-h-8",
             "text-muted-foreground transition-colors duration-120 ease-out hover:text-foreground",
-            "data-checked:bg-card data-checked:text-foreground",
+            "data-checked:border-border data-checked:bg-card data-checked:text-foreground data-checked:shadow-xs",
             "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
           )}
         >

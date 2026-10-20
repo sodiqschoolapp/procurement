@@ -41,17 +41,17 @@ export function GroupLines({
             className="flex flex-col gap-1 py-3 first:pt-0 last:pb-0"
           >
             <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-              <span className="text-[15px] leading-[22px] font-semibold">
+              <span className="text-sm font-semibold">
                 {product}{" "}
-                <span className="text-[13px] font-normal text-muted-foreground">
+                <span className="text-small font-normal text-muted-foreground">
                   {group.branchCode}
                 </span>
               </span>
-              <span className="text-[15px] leading-[22px] font-semibold tabular-nums">
+              <span className="text-sm font-semibold tabular-nums">
                 {format.money(BigInt(group.summary.totals.grand))}
               </span>
             </div>
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] leading-4 text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
               <RequestStatusLabel status={group.status} />
               <span className="tabular-nums">
                 {format.quantity(group.summary.quantity)} {group.unitShortName}
@@ -78,7 +78,7 @@ export function GroupLines({
             {done && (
               <div
                 data-home-progress
-                className="flex flex-wrap gap-x-3 text-[13px] leading-4 tabular-nums"
+                className="flex flex-wrap gap-x-3 text-xs tabular-nums"
               >
                 <span>
                   {t("manager.open.progress", {

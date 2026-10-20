@@ -33,8 +33,8 @@ export default async function AddSuggestionPage({ params }: { params: Promise<{ 
         {suggestion.name}
       </Link>
       <div className="flex flex-col gap-1">
-        <h1 className="text-[28px] leading-[34px] font-bold tracking-[-0.01em]">{t("addTitle")}</h1>
-        <p className="text-[15px] leading-[22px] text-muted-foreground">
+        <h1 className="text-title">{t("addTitle")}</h1>
+        <p className="text-sm text-muted-foreground">
           {t("addIntro", { name: suggestion.suggestedByName })}
         </p>
       </div>

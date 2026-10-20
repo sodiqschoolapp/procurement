@@ -94,7 +94,7 @@ export async function PriceHistoryView({
         <EmptyState title={t("tabs.prices")} line={t("prices.empty")} />
       ) : (
         <>
-          <p className="text-[15px] leading-[22px] font-semibold tabular-nums" data-report-summary>
+          <p className="text-sm font-semibold tabular-nums" data-report-summary>
             {t("prices.summary", {
               count: report.recordCount,
               name: itemName(report.subtype),
@@ -167,7 +167,7 @@ export async function PriceHistoryView({
                   <td className={cn(CELL, "whitespace-nowrap tabular-nums")}>
                     {format.date(row.setOn)}
                     {row.inForce && (
-                      <span className="block text-[13px] leading-[18px] text-muted-foreground">
+                      <span className="block text-small text-muted-foreground">
                         {t("prices.inForce")}
                       </span>
                     )}
@@ -207,7 +207,7 @@ export async function MoneyWithManagersView({
   }
   return (
     <>
-      <p className="text-[15px] leading-[22px] font-semibold tabular-nums" data-report-summary>
+      <p className="text-sm font-semibold tabular-nums" data-report-summary>
         {t("cash.summary", { held: format.money(report.held), owed: format.money(report.owed) })}
       </p>
       <Table
@@ -297,7 +297,7 @@ export async function MoneyWithManagersView({
               <Link href={`/orders/${row.id}`} className={LINK}>
                 {row.number}
               </Link>
-              <span className="block text-[13px] leading-[18px] font-normal text-muted-foreground">
+              <span className="block text-small font-normal text-muted-foreground">
                 {row.branchCode}
               </span>
             </td>
@@ -307,7 +307,7 @@ export async function MoneyWithManagersView({
             <td className={NUMBER}>{row.cashCount < 0n ? format.money(-row.cashCount) : ""}</td>
             <td className={cn(CELL, "whitespace-nowrap tabular-nums")}>
               {format.date(row.since)}
-              <span className="block text-[13px] leading-[18px] text-muted-foreground">
+              <span className="block text-small text-muted-foreground">
                 {t("cash.days", { days: row.days })}
               </span>
             </td>
@@ -335,7 +335,7 @@ export async function ApprovalSpeedView({
   const hours = (cell: StepHours) => (
     <>
       {cell.hours === null ? t("speed.none") : t("speed.hours", { hours: cell.hours })}
-      <span className="block text-[13px] leading-[18px] text-muted-foreground">
+      <span className="block text-small text-muted-foreground">
         {t("speed.stayCount", { count: cell.count })}
       </span>
     </>
@@ -343,7 +343,7 @@ export async function ApprovalSpeedView({
   const moment = (value: Date) => `${format.date(value)} ${format.time(value)}`;
   return (
     <>
-      <p className="text-[15px] leading-[22px] font-semibold tabular-nums" data-report-summary>
+      <p className="text-sm font-semibold tabular-nums" data-report-summary>
         {t("speed.summary", { count: report.stayCount })}
       </p>
       <Table
@@ -402,7 +402,7 @@ export async function ApprovalSpeedView({
               <Link href={`/orders/${row.orderId}`} className={LINK}>
                 {row.orderNumber}
               </Link>
-              <span className="block text-[13px] leading-[18px] font-normal text-muted-foreground">
+              <span className="block text-small font-normal text-muted-foreground">
                 {row.branchCode}
               </span>
             </td>

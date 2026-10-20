@@ -51,7 +51,7 @@ export async function OrderStepper({ steps }: { steps: readonly StepView[] }) {
                 )}
               </span>
               <span className="flex min-w-0 flex-col">
-                <span className="text-[15px] leading-[22px]">
+                <span className="text-sm">
                   <span aria-hidden="true">{t(`steps.${view.step}`)}</span>
                   <span className="sr-only">
                     {t("line", { step: t(`steps.${view.step}`), state: t(`state.${view.state}`) })}
@@ -60,7 +60,7 @@ export async function OrderStepper({ steps }: { steps: readonly StepView[] }) {
                 {view.by ? (
                   <span
                     data-step-by
-                    className="text-[13px] leading-[18px] font-normal text-muted-foreground"
+                    className="text-small font-normal text-muted-foreground"
                   >
                     {t("by", {
                       name: view.by.name,
