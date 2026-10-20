@@ -62,7 +62,13 @@ export type DraftRowProps = {
   marks?: Readonly<Record<string, string>>;
 };
 
-const CELL = "px-2 py-2 align-top max-sm:block max-sm:min-w-0 max-sm:px-0 max-sm:py-1.5";
+const CELL = "px-2 py-2 align-top max-sm:block max-sm:min-w-0 max-sm:px-0 max-sm:py-1";
+
+/**
+ * The read-only facts of a draft (type, subtype, stock, measure): a quarter of a phone card each,
+ * so a card shows them on one line instead of four (redesign of 21.10.2026).
+ */
+const FACT = "max-sm:w-1/4 max-sm:pr-2";
 
 /** One cell: its column for Enter, its name above it on a phone card, half or full card width. */
 function Cell({
@@ -82,14 +88,19 @@ function Cell({
   return (
     <td
       data-col={col}
-      className={cn(CELL, half ? "max-sm:w-1/2 max-sm:pr-2" : "max-sm:w-full", className)}
+      className={cn(
+        CELL,
+        "bg-inherit",
+        half ? "max-sm:w-1/2 max-sm:pr-2" : "max-sm:w-full",
+        className,
+      )}
       {...rest}
     >
       {label && (
         <span
           aria-hidden="true"
           data-card-label
-          className="mb-1 block text-xs font-semibold text-muted-foreground sm:hidden"
+          className="mb-0.5 block truncate text-xs text-muted-foreground sm:hidden"
         >
           {label}
         </span>
@@ -300,22 +311,24 @@ export function DraftRow(props: DraftRowProps) {
       <span className="mt-1 block text-xs text-destructive">{fieldError(name)}</span>
     );
   const ro = (text: string | null) => (
-    <span className="block min-h-10 py-2.5 text-sm leading-5">{text ?? t("none")}</span>
+    <span className="block min-h-9 py-2 text-sm max-sm:min-h-0 max-sm:py-0.5">
+      {text ?? t("none")}
+    </span>
   );
 
   return (
     <tr
       className={cn(
-        "border-t border-border",
-        // A phone card (decided items 4 and 5; docs/design-system.md: a white panel, corner 12,
-        // no shadow and no side stripe; a ticked card is --muted, as a ticked row).
-        "max-sm:flex max-sm:flex-wrap max-sm:items-start max-sm:rounded-xl max-sm:border-t-0 max-sm:bg-card max-sm:p-4",
-        props.ticked && "bg-muted max-sm:bg-muted",
+        "border-t border-border bg-card",
+        // A phone card (decided items 4 and 5; docs/design-system.md: a white panel with a
+        // hairline edge, corner 8; a ticked card has the navy tint of a selected row).
+        "max-sm:flex max-sm:flex-wrap max-sm:items-start max-sm:gap-y-1 max-sm:rounded-xl max-sm:border max-sm:p-4",
+        props.ticked && "bg-sidebar-primary",
       )}
       onFocusCapture={loadChoices}
       data-draft={row.id}
     >
-      <Cell col="tick" className="max-sm:w-auto max-sm:pr-2">
+      <Cell col="tick" className="max-sm:w-auto max-sm:pr-2 sm:sticky sm:left-0 sm:z-[1]">
         {/* The tick's touch target is 44 px on a phone (11 rule 13). */}
         <label
           data-tick
@@ -326,13 +339,16 @@ export function DraftRow(props: DraftRowProps) {
             checked={props.ticked}
             onChange={(event) => props.onTick(event.target.checked)}
             aria-label={t("tickRow", { product: productText })}
-            className="mt-3 size-4 accent-foreground max-sm:mt-0 max-sm:size-5"
+            className="mt-2.5 size-4 accent-primary max-sm:mt-0 max-sm:size-5"
           />
         </label>
       </Cell>
-      <Cell col="number" className="min-w-36 max-sm:w-auto max-sm:flex-1">
-        <span className="flex flex-col gap-1 py-2">
-          <span className="flex flex-wrap items-center gap-2 text-sm font-semibold">
+      <Cell
+        col="number"
+        className="min-w-36 max-sm:w-auto max-sm:flex-1 sm:sticky sm:left-8 sm:z-[1] sm:border-r sm:border-border"
+      >
+        <span className="flex flex-col gap-1 py-1.5 max-sm:py-0">
+          <span className="flex flex-wrap items-center gap-2 text-sm font-medium">
             {/* A numbered row opens its order page, where its Cancel is (plan of 2.3b, decided
                 item 11). */}
             {row.number ? (
@@ -411,21 +427,21 @@ export function DraftRow(props: DraftRowProps) {
           )}
         </span>
       </Cell>
-      <Cell col="type" label={t("columns.type")} half>
+      <Cell col="type" label={t("columns.type")} half className={FACT}>
         {ro(row.productType ? tCatalog(`productType.${row.productType}`) : null)}
       </Cell>
-      <Cell col="subtype" label={t("columns.subtype")} half>
+      <Cell col="subtype" label={t("columns.subtype")} half className={FACT}>
         {ro(row.subtypeName)}
       </Cell>
       <Cell
         col="inStock"
         label={t("columns.inStock")}
         half
-        className="text-right tabular-nums max-sm:text-left"
+        className={cn("text-right tabular-nums max-sm:text-left", FACT)}
       >
         {ro(row.inStock === null ? null : format.quantity(row.inStock))}
       </Cell>
-      <Cell col="photo" label={t("columns.photo")}>
+      <Cell col="photo" label={t("columns.photo")} half className={FACT}>
         <ReferencePhoto
           fileId={row.referencePhotoFileId}
           product={productText}
@@ -433,14 +449,14 @@ export function DraftRow(props: DraftRowProps) {
           onSave={(fileId) => save({ referencePhotoFileId: fileId })}
         />
       </Cell>
-      <Cell col="company" label={t("columns.company")}>
+      <Cell col="company" label={t("columns.company")} half>
         {editable ? (
           <Select
             aria-label={t("columns.company")}
             value={row.companyId ?? ""}
             aria-invalid={fieldError("companyId") ? true : undefined}
             onChange={(event) => void save({ companyId: event.target.value || null })}
-            className="min-w-40"
+            className="sm:min-w-40"
           >
             <option value="">{t("noCompany")}</option>
             {(choices?.companies ?? []).map((company) => (
@@ -528,7 +544,7 @@ export function DraftRow(props: DraftRowProps) {
           ro(row.neededBy ? format.date(row.neededBy) : null)
         )}
       </Cell>
-      <Cell col="measure" label={t("columns.measure")} half>
+      <Cell col="measure" label={t("columns.measure")} half className={FACT}>
         {ro(row.unitShortName)}
       </Cell>
       <Cell col="quantity" label={t("columns.quantity")} half className="min-w-24">
@@ -562,7 +578,7 @@ export function DraftRow(props: DraftRowProps) {
         )}
       </Cell>
       <Cell col="extras" label={t("columns.extras")} half className="text-right max-sm:text-left">
-        <span className="flex min-h-10 items-center justify-end">
+        <span className="flex min-h-10 items-center justify-end max-sm:min-h-0 max-sm:justify-start">
           <ExtrasCell
             product={productText}
             extras={row.extras}
@@ -576,13 +592,13 @@ export function DraftRow(props: DraftRowProps) {
           <span className="text-xs text-destructive">{fieldError("extras")}</span>
         )}
       </Cell>
-      <Cell col="paymentType" label={t("columns.paymentType")}>
+      <Cell col="paymentType" label={t("columns.paymentType")} half>
         {editable ? (
           <Select
             aria-label={t("columns.paymentType")}
             value={row.paymentType}
             onChange={(event) => void save({ paymentType: event.target.value })}
-            className="min-w-40"
+            className="sm:min-w-40"
           >
             {PAYMENT_TYPES.map((type) => (
               <option key={type} value={type}>
@@ -594,7 +610,7 @@ export function DraftRow(props: DraftRowProps) {
           ro(tPayment(row.paymentType))
         )}
       </Cell>
-      <Cell col="priority" label={t("columns.priority")} className="min-w-36">
+      <Cell col="priority" label={t("columns.priority")} half className="min-w-36">
         {editable ? (
           <span className="flex flex-col gap-1">
             <Select
@@ -654,7 +670,7 @@ export function DraftRow(props: DraftRowProps) {
         )}
       </Cell>
       <Cell col="total" label={t("columns.total")} half className="text-right max-sm:text-left">
-        <span className="flex min-h-10 flex-col items-end justify-center gap-1 py-1">
+        <span className="flex min-h-10 flex-col items-end justify-center gap-1 py-1 max-sm:min-h-0 max-sm:items-start">
           <span className="text-sm font-semibold whitespace-nowrap tabular-nums" data-cell="total">
             {row.total === null ? t("none") : format.money(BigInt(row.total))}
           </span>

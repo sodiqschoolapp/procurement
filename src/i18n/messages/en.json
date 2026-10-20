@@ -1146,7 +1146,8 @@
       "added": "Draft added",
       "retrying": "No connection. The draft will be added when it is back; nothing is added twice.",
       "notAdded": "Not added: the server did not answer. Press Add to send the same draft again (it is never added twice), or Start over to see the list again.",
-      "startOver": "Start over"
+      "startOver": "Start over",
+      "needs": "Fill in every field to add the order."
     },
     "picker": {
       "placeholder": "Search by name",
@@ -1243,7 +1244,8 @@
         "owner": "Owner",
         "submitted": "Submitted",
         "stockAtSubmit": "Stock at submit",
-        "stockNow": "Stock now"
+        "stockNow": "Stock now",
+        "orders": "Orders"
       },
       "tickGroup": "Tick every order of {product}",
       "tickOrder": "Tick order {number}",
@@ -1312,10 +1314,27 @@
         "dueSoon": "Due within 7 days",
         "removeDueSoon": "Show all orders, not only those due soon",
         "stuck": "Stuck at a waiting step",
-        "removeStuck": "Show all orders, not only the stuck ones"
+        "removeStuck": "Show all orders, not only the stuck ones",
+        "search": "Search orders, products, suppliers",
+        "remove": "Remove the filter {filter}",
+        "numbers": "Numbers",
+        "more": "More filters",
+        "moreCount": "More filters ({count})",
+        "active": "Filters in use"
       },
       "noStock": "–",
-      "refusedMark": "Not approved"
+      "refusedMark": "Not approved",
+      "tabs": {
+        "label": "By status",
+        "all": "All"
+      },
+      "summary": {
+        "label": "Summary",
+        "waitingForMe": "Waiting for me",
+        "dueSoon": "Due within 7 days"
+      },
+      "rowFacts": "{branch} · {count, plural, one {# order} other {# orders}} · needed by {date}",
+      "yours": "Your turn"
     },
     "page": {
       "noNumber": "Draft without a number",
@@ -1711,7 +1730,9 @@
         "item": "{label}: {value}",
         "unknown": "—",
         "sort": "Sort: {sort}"
-      }
+      },
+      "excelShort": "Excel",
+      "pdfShort": "PDF"
     },
     "progress": {
       "OPEN": "Buying open",
@@ -1725,7 +1746,8 @@
       "choose": "Choose a Manager",
       "loading": "Loading…",
       "noManagers": "No other active Manager works in this branch."
-    }
+    },
+    "newOrder": "New order"
   },
   "purchase": {
     "form": {

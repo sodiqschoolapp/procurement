@@ -1146,7 +1146,8 @@
       "added": "Qoralama qoʻshildi",
       "retrying": "Aloqa yoʻq. Aloqa tiklanganda qoralama qoʻshiladi; hech narsa ikki marta qoʻshilmaydi.",
       "notAdded": "Qoʻshilmadi: server javob bermadi. Shu qoralamani yana yuborish uchun «Qoʻshish»ni bosing (u ikki marta qoʻshilmaydi) yoki roʻyxatni qayta koʻrish uchun «Boshidan boshlash»ni bosing.",
-      "startOver": "Boshidan boshlash"
+      "startOver": "Boshidan boshlash",
+      "needs": "Qoʻshish uchun har bir maydonni toʻldiring."
     },
     "picker": {
       "placeholder": "Nomi boʻyicha qidirish",
@@ -1243,7 +1244,8 @@
         "owner": "Egasi",
         "submitted": "Yuborilgan",
         "stockAtSubmit": "Yuborilgandagi qoldiq",
-        "stockNow": "Hozirgi qoldiq"
+        "stockNow": "Hozirgi qoldiq",
+        "orders": "Buyurtmalar"
       },
       "tickGroup": "Barcha buyurtmalarni belgilash: {product}",
       "tickOrder": "{number} buyurtmani belgilash",
@@ -1312,10 +1314,27 @@
         "dueSoon": "Muddati 7 kun ichida",
         "removeDueSoon": "Faqat muddati yaqinlarini emas, barcha buyurtmalarni koʻrsatish",
         "stuck": "Tasdiqlash bosqichida qotib qolgan",
-        "removeStuck": "Faqat qotib qolganlarini emas, barcha buyurtmalarni koʻrsatish"
+        "removeStuck": "Faqat qotib qolganlarini emas, barcha buyurtmalarni koʻrsatish",
+        "search": "Buyurtma, mahsulot yoki yetkazib beruvchini qidirish",
+        "remove": "Filtrni olib tashlash: {filter}",
+        "numbers": "Raqamlar",
+        "more": "Boshqa filtrlar",
+        "moreCount": "Boshqa filtrlar ({count})",
+        "active": "Qoʻllangan filtrlar"
       },
       "noStock": "–",
-      "refusedMark": "Tasdiqlanmadi"
+      "refusedMark": "Tasdiqlanmadi",
+      "tabs": {
+        "label": "Holat boʻyicha",
+        "all": "Hammasi"
+      },
+      "summary": {
+        "label": "Qisqacha",
+        "waitingForMe": "Mening tasdigʻimni kutmoqda",
+        "dueSoon": "7 kun ichida kerak"
+      },
+      "rowFacts": "{branch} · {count} ta buyurtma · {date} gacha kerak",
+      "yours": "Sizning navbatingiz"
     },
     "page": {
       "noNumber": "Raqamsiz qoralama",
@@ -1711,7 +1730,9 @@
         "item": "{label}: {value}",
         "unknown": "—",
         "sort": "Saralash: {sort}"
-      }
+      },
+      "excelShort": "Excel",
+      "pdfShort": "PDF"
     },
     "progress": {
       "OPEN": "Xarid ochiq",
@@ -1725,7 +1746,8 @@
       "choose": "Menejerni tanlang",
       "loading": "Yuklanmoqda…",
       "noManagers": "Bu filialda boshqa faol menejer yoʻq."
-    }
+    },
+    "newOrder": "Yangi buyurtma"
   },
   "purchase": {
     "form": {

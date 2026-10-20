@@ -97,7 +97,7 @@ export function ProductPicker({
   const optionId = (at: number) => `${listId}-${at}`;
 
   return (
-    <div className="relative min-w-56">
+    <div className="relative min-w-56 flex-1">
       <Input
         id={id}
         role="combobox"

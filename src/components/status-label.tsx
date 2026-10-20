@@ -154,22 +154,37 @@ function refuseContradiction(
   );
 }
 
+/** The text colour of each tone, for a label drawn without its tint (an outcome line). */
+const PLAIN_CLASSES: Record<Tone, string> = {
+  info: "text-info",
+  muted: "text-muted-foreground",
+  green: "text-success",
+  amber: "text-warning",
+  red: "text-destructive",
+  grey: "text-muted-foreground",
+};
+
 function LabelBox({
   tone,
   icon,
+  plain = false,
   className,
   children,
 }: {
   tone: Tone;
   icon: IconName;
+  /** Without its tint: the icon and the words in the tone's colour (an outcome line). */
+  plain?: boolean;
   className?: string;
   children: React.ReactNode;
 }) {
   return (
     <span
       className={cn(
-        "inline-flex h-6 items-center gap-1 rounded-sm px-2 text-xs font-medium whitespace-nowrap",
-        TONE_CLASSES[tone],
+        "inline-flex items-center gap-1 font-medium whitespace-nowrap",
+        plain
+          ? cn("text-small", PLAIN_CLASSES[tone])
+          : cn("h-6 rounded-sm px-2 text-xs", TONE_CLASSES[tone]),
         className,
       )}
     >
@@ -310,7 +325,7 @@ export function DocumentStatusLabel({
 }
 
 /** One of the three colour labels of a line or a request: Number, Price or Total. */
-export function ColourLabel(props: ColourLabelProps & { className?: string }) {
+export function ColourLabel(props: ColourLabelProps & { className?: string; plain?: boolean }) {
   const t = useTranslations("colourLabel");
   const format = useFormatters();
   let amount: string | null = null;
@@ -340,7 +355,12 @@ export function ColourLabel(props: ColourLabelProps & { className?: string }) {
   const word = COLOUR_WORDS[props.label][props.colour];
   const key = `${props.label}.${word}` as Parameters<typeof t>[0];
   return (
-    <LabelBox tone={props.colour} icon={COLOUR_ICONS[props.colour]} className={props.className}>
+    <LabelBox
+      tone={props.colour}
+      icon={COLOUR_ICONS[props.colour]}
+      plain={props.plain}
+      className={props.className}
+    >
       <span className="sr-only">{t(`${props.label}.name`)}</span>
       {t(key)}
       {amount !== null && <span className="tabular-nums">{amount}</span>}
@@ -439,5 +459,39 @@ export function LowLabel({ className }: { className?: string }) {
     <LabelBox tone="amber" icon="warning" className={className}>
       <span data-low>{t("label")}</span>
     </LabelBox>
+  );
+}
+
+/**
+ * The outcome of a list row (docs/design-system.md, Status and outcome): the Total label as the
+ * one phrase that says how the money ended ("Over by 15 000 so'm", "Left 50 000 so'm", "Even",
+ * "In progress"), then Number and Price as small words only when they are orange or red ("Less 2",
+ * "Dearer 1 order"). Every label keeps its icon, word and amount; the colours are the server's.
+ */
+export function ColourOutcome({
+  colours,
+  className,
+}: {
+  colours: WireColours;
+  className?: string;
+}) {
+  const telling = (["number", "price"] as const).filter(
+    (label) => colours[label].colour === "amber" || colours[label].colour === "red",
+  );
+  return (
+    <span data-colours data-outcome className={cn("flex flex-col gap-0.5", className)}>
+      <span data-colour-label="total" data-colour={colours.total.colour}>
+        <ColourLabel plain {...labelProps("total", colours.total)} />
+      </span>
+      {telling.length > 0 && (
+        <span className="flex flex-wrap [justify-content:inherit] gap-x-3">
+          {telling.map((label) => (
+            <span key={label} data-colour-label={label} data-colour={colours[label].colour}>
+              <ColourLabel plain {...labelProps(label, colours[label])} className="text-xs" />
+            </span>
+          ))}
+        </span>
+      )}
+    </span>
   );
 }

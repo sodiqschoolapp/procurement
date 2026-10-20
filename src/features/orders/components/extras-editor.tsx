@@ -97,7 +97,7 @@ export function ExtrasCell({
         {sum}
       </Button>
       <Dialog.Portal>
-        <Dialog.Backdrop className="fixed inset-0 z-50 bg-sidebar/50 transition-opacity duration-160 ease-out data-ending-style:opacity-0 data-starting-style:opacity-0" />
+        <Dialog.Backdrop className="fixed inset-0 z-50 bg-overlay backdrop-blur-[2px] transition-opacity duration-160 ease-out data-ending-style:opacity-0 data-starting-style:opacity-0" />
         <Dialog.Popup
           aria-labelledby={titleId}
           className="fixed top-1/2 left-1/2 z-50 max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-xl bg-popover p-6 text-popover-foreground shadow-float"

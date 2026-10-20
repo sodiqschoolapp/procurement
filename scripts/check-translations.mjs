@@ -27,6 +27,8 @@ export const SCRIPT_EXEMPT = new Set([
   "search.shortcut",
   "orders.list.filters.numberPlaceholder",
   "analytics.excel",
+  "orders.download.excelShort",
+  "orders.download.pdfShort",
 ]);
 
 const CYRILLIC = /[Ѐ-ӿ]/u;

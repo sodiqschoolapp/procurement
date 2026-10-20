@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { createDraftAction } from "@/app/(app)/orders/actions";
 import { createRetryWaits, retryWhileLost } from "@/components/retry-wait";
 import { toast } from "@/components/toast";
+import { Icon } from "@/components/icon";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -158,17 +159,22 @@ export function AddDraftRow({
       }}
       aria-labelledby="add-draft-title"
       aria-busy={busy || undefined}
-      className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 sm:p-5"
+      id="new-order"
+      className="flex scroll-mt-20 flex-col gap-4 rounded-xl border border-border bg-card p-4 sm:p-5"
     >
-      <h2 id="add-draft-title" className="text-subheading font-semibold">
+      <h2 id="add-draft-title" className="flex items-center gap-2 text-subheading">
+        <Icon name="add" size={18} className="text-muted-foreground" />
         {t("add.title")}
       </h2>
-      <fieldset disabled={busy} className="flex min-w-0 flex-wrap items-start gap-3">
+      <fieldset
+        disabled={busy}
+        className="grid min-w-0 grid-cols-2 items-start gap-3 sm:flex sm:flex-wrap"
+      >
         {!fixed && (
           <Field
             id="add-branch"
             label={t("columns.branch")}
-            className="w-full sm:w-40"
+            className="col-span-2 sm:w-40"
             error={add.fieldTexts.branchId}
           >
             <Select
@@ -192,7 +198,7 @@ export function AddDraftRow({
         <Field
           id="add-product"
           label={t("columns.product")}
-          className="w-full sm:w-auto"
+          className="col-span-2 sm:w-auto"
           error={add.fieldTexts.variantId}
         >
           <span className="flex items-start gap-2">
@@ -214,7 +220,7 @@ export function AddDraftRow({
         <Field
           id="add-department"
           label={t("columns.requestedBy")}
-          className="w-full sm:w-56"
+          className="col-span-2 sm:w-56"
           error={add.fieldTexts.departmentId}
         >
           <Select
@@ -233,7 +239,7 @@ export function AddDraftRow({
         <Field
           id="add-quantity"
           label={t("columns.quantity")}
-          className="w-full sm:w-32"
+          className="sm:w-32"
           error={add.fieldTexts.quantity}
         >
           <Input
@@ -244,8 +250,8 @@ export function AddDraftRow({
             onChange={(event) => setQuantity(event.target.value)}
           />
         </Field>
-        <span className="flex w-full flex-col gap-1.5 sm:w-auto">
-          <span aria-hidden="true" className="hidden h-5 sm:block" />
+        <span className="flex flex-col gap-1.5 sm:w-auto">
+          <span aria-hidden="true" className="h-5" />
           <Button
             type="submit"
             icon="add"
@@ -257,6 +263,13 @@ export function AddDraftRow({
           </Button>
         </span>
       </fieldset>
+      {/* A greyed-out "Add" says why (redesign of 21.10.2026: no disabled button without a reason). */}
+      {!ready && !busy && !unanswered && (
+        <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Icon name="info" size={16} />
+          {t("add.needs")}
+        </p>
+      )}
       {unanswered && !busy && (
         <Button type="button" variant="ghost" size="sm" onClick={startOver} className="self-start">
           {t("add.startOver")}

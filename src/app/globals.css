@@ -73,6 +73,8 @@
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
+  /* Behind a dialog: navy at 40% in both themes. */
+  --color-overlay: oklch(0.2026 0.0841 266.73 / 40%);
   --font-sans: "Golos Text Variable", "Golos Text", system-ui, sans-serif;
   /* The type scale (design system, Type): body is Tailwind's text-sm (14 / 20) and the caption its
      text-xs (12 / 16); the others are named here. */
@@ -315,8 +317,6 @@
   }
   html {
     @apply font-sans;
-    /* Every number lines up (design system, Type). */
-    font-variant-numeric: tabular-nums;
   }
   /* At phone width a link in a table cell or row heading is a finger's target: at least 44 × 44
      (design system, Buttons; plan of 9.1d). */
