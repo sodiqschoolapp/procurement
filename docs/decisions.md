@@ -2736,6 +2736,26 @@ Choices made during the build:
 - The measurement counts each load's statements between two marker statements of its own connection in PostgreSQL's log (`log_statement = 'all'` on the speed database only); without Docker the column says "not read".
 - `next start` needs `BETTER_AUTH_SECRET`: the speed config makes a throwaway one for the local run on invented data, never written or printed; the local `.env`'s is used when set.
 
+### 9.3 Monitoring (20.10.2026)
+
+The plan's decisions as the plan review of 20.10.2026 confirmed them, with its two corrections applied (the frames come from the `at …` lines only, never the stack's first line, `cause` or the request; `docs/monitoring.md` says the environment tag reads `SEED_DEMO_DATA`, so 9.4 keeps that name):
+
+1. **Look first** (Done-when reading). "A forced error in a production build … in a test" is read as the code path a production build runs: `src/monitoring.test.ts` sets `NODE_ENV=production` and the Node.js runtime, passes the forced error of the real `/health` route to the real `onRequestError` and the real client, with `fetch` stubbed. No `.github/workflows/` change: the Build line asks for no CI step (`review-pr`, loosening exception 3). Limit: no `next build` output is exercised; the owner's check during the trial proves Next.js's own call of the hook. Wording for a later build-plan task, if the owner wants it in CI: "Add to the `image` job of CI: the image started with `ERROR_REPORT_DSN` pointing at a stub receiver and `FORCED_ERROR=on`; `/health?forced-error` answers 500 and the stub receives the event."
+2. **Look first** (a dependency avoided). No `@sentry/nextjs`: our own client (`src/server/error-report.ts`) sends one event in Sentry's documented envelope format with `fetch`, only the fields listed in `docs/monitoring.md`.
+3. "If the owner wants it": the client is built and stays off until the owner types `ERROR_REPORT_DSN`; the Sentry and UptimeRobot accounts are the owner's, after 9.4.
+4. Server errors only; browser errors are not reported.
+5. The message sent is `describeForLog()`'s (moved to `src/server/log-error.ts`, still exported by `action.ts`); no header, cookie, body, query string or user is sent.
+6. The action wrappers and the scheduler report without awaiting the send; `onRequestError` awaits it. A send never throws and is given up after 2 seconds.
+7. Every line of the nightly stock check's mismatch is also an error event (`StockCheckMismatch`).
+8. The environment is `trial` while `SEED_DEMO_DATA` is set, `production` otherwise (D52).
+9. The uptime check is UptimeRobot on the existing `/health`, every 5 minutes.
+10. The forced error is on `/health`, only with `FORCED_ERROR=on` and the query `forced-error`; no new route.
+
+Choices made during the build:
+
+- `tests/helpers/error-reports.ts` (`catchErrorReports()`) sets an invented DSN and stubs `fetch`, so every catch site's test runs the real client; the send starts synchronously, so an unawaited report has already reached `fetch` when the action returns.
+- A send that is refused (not 2xx) or fails writes one log line with the status or the error's name only, never the DSN.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

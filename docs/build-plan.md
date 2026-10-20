@@ -633,7 +633,7 @@ Proof that it works, then the real environment and the real data.
   - **Build:** A script fills a database with several years of invented orders, purchases and movements; every page is measured; missing indexes and queries inside loops are fixed.
   - **Done when:** A table in `docs/` shows every page under 1 second with that volume, measured on a production build against a local database (no test copy, D52).
 
-- [ ] **9.3 Monitoring**
+- [x] **9.3 Monitoring**
   - **Read:** `18-hosting-and-costs.md` (table row 8).
   - **Build:** If the owner wants it: error alerts and an uptime check on free plans, as section 18 names them.
   - **Done when:** A forced error in a production build is handed to the error-reporting client (stubbed) in a test; the owner's check on the live app during the trial (after 9.4) is listed in the report under "For the owner" (no test copy, D52).
