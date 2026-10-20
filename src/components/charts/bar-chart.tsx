@@ -19,6 +19,7 @@ export function BarChartBlock({ points, label }: { points: readonly ChartPoint[]
     <div className="h-64 w-full" aria-hidden="true" data-chart="bar" title={label}>
       <ResponsiveContainer width="100%" height="100%">
         <BarChart
+          accessibilityLayer={false}
           data={[...points]}
           margin={{ top: 8, right: 8, bottom: 0, left: 0 }}
           onClick={(state) => {

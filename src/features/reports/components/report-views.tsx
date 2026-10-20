@@ -88,7 +88,7 @@ export async function OrderRegisterView({
       </p>
       <Link
         href={listHref}
-        className="inline-flex min-h-11 items-center self-start text-sm font-semibold text-primary underline-offset-2 hover:underline sm:min-h-0"
+        className="inline-flex min-h-11 min-w-11 items-center self-start text-sm font-semibold text-link underline-offset-2 hover:underline sm:min-h-0"
         data-order-list-link
       >
         {t("orders.openList")}
@@ -152,7 +152,7 @@ export async function PurchaseRegisterView({
               <td className={cn(CELL, "font-semibold whitespace-nowrap")}>
                 <Link
                   href={`/orders/${row.orderId}`}
-                  className="text-primary underline-offset-2 hover:underline"
+                  className="font-semibold text-link underline-offset-2 hover:underline"
                 >
                   {row.orderNumber}
                 </Link>
@@ -278,7 +278,7 @@ export async function PlanVsActualView({
             <td className={cn(CELL, "font-semibold whitespace-nowrap")}>
               <Link
                 href={`/orders/${row.orderId}`}
-                className="text-primary underline-offset-2 hover:underline"
+                className="font-semibold text-link underline-offset-2 hover:underline"
               >
                 {row.number}
               </Link>
@@ -502,7 +502,7 @@ export async function StockReportView({
               <td className={CELL}>
                 <Link
                   href={`/warehouse/items/${row.variantId}?branch=${row.branchId}`}
-                  className="text-primary underline-offset-2 hover:underline"
+                  className="font-semibold text-link underline-offset-2 hover:underline"
                 >
                   {itemName(row)}
                 </Link>
@@ -578,14 +578,14 @@ export async function StockMovementsView({
               {row.documentId ? (
                 <Link
                   href={`/warehouse/documents/${row.documentId}`}
-                  className="text-primary underline-offset-2 hover:underline"
+                  className="font-semibold text-link underline-offset-2 hover:underline"
                 >
                   {row.documentNumber}
                 </Link>
               ) : row.orderId ? (
                 <Link
                   href={`/orders/${row.orderId}`}
-                  className="text-primary underline-offset-2 hover:underline"
+                  className="font-semibold text-link underline-offset-2 hover:underline"
                 >
                   {row.orderNumber}
                 </Link>

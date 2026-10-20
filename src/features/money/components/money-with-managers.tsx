@@ -59,7 +59,7 @@ export async function MoneyWithManagers({ blocks }: { blocks: MoneyWithManagersB
                     >
                       <Link
                         href={`/orders/${order.id}`}
-                        className="inline-flex min-h-11 items-center font-semibold tabular-nums underline underline-offset-2 sm:min-h-0"
+                        className="inline-flex min-h-11 min-w-11 items-center font-semibold tabular-nums underline underline-offset-2 sm:min-h-0"
                       >
                         {order.number}
                       </Link>

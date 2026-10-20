@@ -55,7 +55,7 @@ export default async function PriceHistoryPage({
       <AdminNav current="prices" />
       <Link
         href={back}
-        className="inline-flex min-h-11 items-center gap-1 self-start text-sm leading-5 font-semibold text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:min-h-0"
+        className="inline-flex min-h-11 min-w-11 items-center gap-1 self-start text-sm leading-5 font-semibold text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:min-h-0"
       >
         <Icon name="chevron_left" />
         {found.subtypeName ?? found.productName}
@@ -84,7 +84,10 @@ export default async function PriceHistoryPage({
         {found.rows.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t("noRows")}</p>
         ) : (
-          <div className="-mx-6 overflow-x-auto">
+          <div
+            tabIndex={0}
+            className="-mx-6 overflow-x-auto rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          >
             <table className="w-full min-w-[36rem] border-collapse text-left text-sm leading-5">
               <thead className="text-[13px] leading-[18px] font-semibold text-muted-foreground">
                 <tr>

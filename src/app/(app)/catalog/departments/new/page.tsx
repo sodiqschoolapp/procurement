@@ -23,7 +23,7 @@ export default async function NewDepartmentPage() {
       <AdminNav current="catalog" />
       <Link
         href="/catalog/departments"
-        className="inline-flex min-h-11 items-center gap-1 self-start text-sm leading-5 font-semibold text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:min-h-0"
+        className="inline-flex min-h-11 min-w-11 items-center gap-1 self-start text-sm leading-5 font-semibold text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:min-h-0"
       >
         <Icon name="chevron_left" />
         {t("kinds.departments.title")}

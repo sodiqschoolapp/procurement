@@ -67,7 +67,7 @@ export default async function AnalyticsSettlementsPage({
     <div className="mx-auto flex max-w-6xl flex-col gap-6">
       <Link
         href={`/analytics?${analyticsSearch(params.period, params.filters)}`}
-        className="inline-flex min-h-11 items-center self-start text-sm font-semibold underline-offset-2 hover:underline sm:min-h-0"
+        className="inline-flex min-h-11 min-w-11 items-center self-start text-sm font-semibold underline-offset-2 hover:underline sm:min-h-0"
       >
         {t("approvals.back")}
       </Link>
@@ -94,7 +94,7 @@ export default async function AnalyticsSettlementsPage({
         </div>
         <a
           href={excel}
-          className="inline-flex min-h-11 items-center text-sm font-semibold underline-offset-2 hover:underline"
+          className="inline-flex min-h-11 min-w-11 items-center text-sm font-semibold underline-offset-2 hover:underline"
           data-excel="settlements"
         >
           {t("excel")}
@@ -136,7 +136,7 @@ export default async function AnalyticsSettlementsPage({
                   <td className="px-4 py-3 font-semibold whitespace-nowrap max-sm:p-0">
                     <Link
                       href={`/orders/${row.orderId}`}
-                      className="text-primary underline-offset-2 hover:underline"
+                      className="font-semibold text-link underline-offset-2 hover:underline"
                     >
                       {row.orderNumber}
                     </Link>

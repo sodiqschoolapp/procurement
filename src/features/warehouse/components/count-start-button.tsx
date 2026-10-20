@@ -134,6 +134,7 @@ export function CountStartButton({
           </Field>
           <Field id="count-comment" label={t("comment")} error={errorOf("comment")}>
             <textarea
+              id="count-comment"
               value={comment}
               rows={2}
               maxLength={DRAFT_COMMENT_MAX}

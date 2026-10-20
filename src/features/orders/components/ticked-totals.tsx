@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { Fragment, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/components/utils";
@@ -70,7 +70,7 @@ export function TickedTotals({ drafts }: { drafts: readonly TickedDraft[] }) {
           )}
         >
           {PAYMENT_TYPES.map((type) => (
-            <div key={type}>{line(type, tPayment(type), totals.byPaymentType[type])}</div>
+            <Fragment key={type}>{line(type, tPayment(type), totals.byPaymentType[type])}</Fragment>
           ))}
         </dl>
       </div>

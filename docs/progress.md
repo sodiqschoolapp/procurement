@@ -1936,4 +1936,20 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - A refusal toast's text shows twice in the page; read it inside the region "Notifications".
 - `OrderList` draws the list's empty page itself (`empty` prop), so a refusal it holds stays when the refresh empties the list.
 
-The next task is 9.1d.
+## 9.1d Accessibility pass (20.10.2026, pull request #134)
+
+**Built**
+- `tests/e2e/accessibility.spec.ts`: every `page.tsx` of `src/app` (a test fails when one is missing from its list) at 375 px and 1440 px, light and dark: axe with no serious or critical finding, 44 × 44 targets at 375 px, a Tab walk. The records the detail screens open come from a per-worker fixture (`makeWorld()`).
+- `tests/e2e/acceptance-keyboard.spec.ts`: S1 by keys only, axe at each dialog.
+- Fixes: names that hold their visible text, plain links navy (`text-link`), 44 px links at phone width, scrolling tables reachable by Tab, labelled textareas and photo inputs.
+- `@axe-core/playwright` (dev dependency).
+
+**What the next sessions must know**
+- A new screen goes into `SCREENS` of `accessibility.spec.ts` with the role that opens it; the test of the list fails otherwise.
+- A control's `aria-label` contains the text it shows (axe `label-content-name-mismatch`); decoration inside a control is drawn by CSS from a `data-` attribute (`Avatar`, the search button).
+- axe reads text without layout: adjacent spans need a space between them to read as two words.
+- A plain link is `font-semibold text-link`; orange text is never a link.
+- A wrapper with `overflow-x-auto` around content without links gets `tabIndex={0}` and the focus ring.
+- The Head's Analytics holds thousands of links on the kept e2e database: a test that tabs through a page sizes its stop to the page.
+
+The next task is 9.2.

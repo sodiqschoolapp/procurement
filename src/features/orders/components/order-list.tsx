@@ -468,12 +468,15 @@ function GroupRows({
             aria-expanded={open}
             aria-controls={ordersId}
             onClick={onToggle}
-            aria-label={t(open ? "hideOrders" : "showOrders", { product })}
+            // The name holds the visible product and branch code (WCAG 2.5.3; plan of 9.1d).
+            aria-label={t(open ? "hideOrders" : "showOrders", {
+              product: `${product} ${group.branchCode}`,
+            })}
             className="flex min-h-11 items-start gap-2 text-left font-semibold sm:min-h-0"
           >
             <Icon name={open ? "expand_more" : "chevron_right"} className="shrink-0" />
             <span className="flex flex-col gap-1">
-              <span>{product}</span>
+              <span>{product}</span>{" "}
               <span className="text-[13px] leading-4 font-normal text-muted-foreground">
                 {group.branchCode}
               </span>
@@ -588,7 +591,7 @@ function GroupRows({
                       {/* The order page (plan of 2.9; progress 2.8, "For 2.9"). */}
                       <Link
                         href={`/orders/${order.id}`}
-                        className="inline-flex min-h-11 items-center underline-offset-2 hover:underline sm:min-h-0"
+                        className="inline-flex min-h-11 min-w-11 items-center underline-offset-2 hover:underline sm:min-h-0"
                       >
                         {order.number}
                       </Link>

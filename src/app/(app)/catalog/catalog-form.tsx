@@ -169,12 +169,12 @@ export function CatalogForm({
         if (field.type === "boolean") {
           return (
             <div key={field.key} className="flex flex-col gap-1.5">
-              <label className="flex items-start gap-3 text-[15px] leading-[22px] font-semibold">
+              <label className="flex min-h-11 items-center gap-3 text-[15px] leading-[22px] font-semibold">
                 <input
                   type="checkbox"
                   {...register(field.key)}
                   aria-describedby={hint ? hintId : undefined}
-                  className="mt-0.5 size-5 shrink-0 accent-foreground"
+                  className="size-5 shrink-0 accent-foreground"
                 />
                 {t(`fields.${field.key}`)}
               </label>
@@ -200,6 +200,7 @@ export function CatalogForm({
                 </Select>
               ) : field.type === "long" ? (
                 <textarea
+                  id={id}
                   {...register(field.key)}
                   rows={4}
                   maxLength={MAX_LENGTH.long}

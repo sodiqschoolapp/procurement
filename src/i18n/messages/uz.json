@@ -461,8 +461,7 @@
         "since": "{date} dan beri",
         "empty": "Hech bir menejerda pul yoki qarz yoʻq.",
         "open": "«Menejerlardagi pul»ni ochish"
-      },
-      "openOrders": "Buyurtmalarni ochish: {name}, {branch}"
+      }
     }
   },
   "profile": {
@@ -475,6 +474,7 @@
   "notifications": {
     "title": "Bildirishnomalar",
     "bell": "{count, plural, =0 {Bildirishnomalar} other {Bildirishnomalar, # ta oʻqilmagan}}",
+    "bellMany": "Bildirishnomalar, {shown} ta oʻqilmagan",
     "unreadFact": "{count, plural, other {# ta oʻqilmagan}}",
     "unread": "Oʻqilmagan",
     "markAllRead": "Hammasini oʻqilgan deb belgilash",
@@ -1158,7 +1158,7 @@
       "alt": "{name} namuna rasmi"
     },
     "extras": {
-      "open": "{product} qoʻshimcha xarajatlarini tahrirlash",
+      "open": "{sum}, {product} qoʻshimcha xarajatlarini tahrirlash",
       "title": "Qoʻshimcha xarajatlar",
       "type": "Turi",
       "amount": "Summa",

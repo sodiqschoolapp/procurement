@@ -53,7 +53,7 @@ export function HomeBlock({
       {link && !empty && (
         <Link
           href={link.href}
-          className="inline-flex min-h-11 items-center self-start text-sm font-semibold text-foreground underline-offset-2 hover:underline sm:min-h-0"
+          className="inline-flex min-h-11 min-w-11 items-center self-start text-sm font-semibold text-foreground underline-offset-2 hover:underline sm:min-h-0"
         >
           {link.label}
         </Link>

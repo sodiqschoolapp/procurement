@@ -261,7 +261,7 @@ export default async function StockOnHandPage({ searchParams }: { searchParams: 
                         <td className="px-4 py-3 font-semibold">
                           <Link
                             href={`/warehouse/items/${row.variantId}?branch=${row.branchId}`}
-                            className="text-primary underline-offset-2 hover:underline"
+                            className="font-semibold text-link underline-offset-2 hover:underline"
                           >
                             {row.productName}
                           </Link>

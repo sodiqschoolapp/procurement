@@ -1,4 +1,3 @@
-import { useTranslations } from "next-intl";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
@@ -28,14 +27,12 @@ export function OwnerEntries({
   entries: readonly OwnerEntry[];
   limit?: number;
 }) {
-  const t = useTranslations("home.finance");
   return (
     <ul className="flex flex-col divide-y divide-border">
       {entries.slice(0, limit).map((entry) => (
         <li key={entry.key} data-home-entry={entry.key}>
           <Link
             href={entry.href}
-            aria-label={t("openOrders", { name: entry.ownerName, branch: entry.branchCode })}
             className="flex min-h-11 items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
           >
             <span className="flex min-w-0 flex-col gap-1">

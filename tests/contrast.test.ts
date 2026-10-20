@@ -208,6 +208,8 @@ const TEXT_PAIRS: readonly (readonly [string, string])[] = [
   ["info", "card"],
   ["info", "info-bg"],
   ["link", "card"],
+  // Plan of 9.1d: the plain links that were orange, on the canvas too.
+  ["link", "background"],
   ["sidebar-foreground", "sidebar"],
   ["sidebar-foreground", "sidebar-accent"],
   ["sidebar-accent-foreground", "sidebar-accent"],

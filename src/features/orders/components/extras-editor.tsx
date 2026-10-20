@@ -91,7 +91,7 @@ export function ExtrasCell({
         variant="ghost"
         size="sm"
         onClick={start}
-        aria-label={t("extras.open", { product })}
+        aria-label={t("extras.open", { product, sum })}
         className="tabular-nums"
       >
         {sum}

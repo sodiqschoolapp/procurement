@@ -186,9 +186,12 @@ export function Search() {
       >
         <Icon name="search" />
         <span className="hidden flex-1 text-left sm:inline">{t("placeholder")}</span>
-        <span aria-hidden="true" className="hidden text-xs sm:inline">
-          {t("shortcut")}
-        </span>
+        {/* Drawn by CSS, so the shortcut stays out of the button's name (WCAG 2.5.3; plan of 9.1d). */}
+        <span
+          aria-hidden="true"
+          data-shortcut={t("shortcut")}
+          className="hidden text-xs after:content-[attr(data-shortcut)] sm:inline"
+        />
       </Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.Backdrop

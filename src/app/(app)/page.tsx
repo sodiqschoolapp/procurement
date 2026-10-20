@@ -164,7 +164,7 @@ async function ManagerHome({ userId, branch }: { userId: string; branch: string 
         )}
         <Link
           href="/suggestions"
-          className="inline-flex min-h-11 items-center self-start text-sm font-semibold underline-offset-2 hover:underline sm:self-center"
+          className="inline-flex min-h-11 min-w-11 items-center self-start text-sm font-semibold underline-offset-2 hover:underline sm:self-center"
         >
           {t("suggest")}
         </Link>

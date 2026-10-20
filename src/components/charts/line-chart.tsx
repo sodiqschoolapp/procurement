@@ -31,6 +31,7 @@ export function LineChartBlock({
     <div className="h-64 w-full" aria-hidden="true" data-chart="line" title={label}>
       <ResponsiveContainer width="100%" height="100%">
         <LineChart
+          accessibilityLayer={false}
           data={[...points]}
           margin={{ top: 8, right: 16, bottom: 0, left: 16 }}
           onClick={(state) => {

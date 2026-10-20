@@ -251,7 +251,7 @@ export function SettlementView({ settlement }: { settlement: WireSettlement }) {
                   <div className="flex flex-col gap-1">
                     <Link
                       href={`/orders/${order.id}`}
-                      className="text-[15px] leading-[22px] font-semibold underline-offset-4 hover:underline"
+                      className="inline-flex min-h-11 items-center text-[15px] leading-[22px] font-semibold underline-offset-4 hover:underline sm:min-h-0"
                     >
                       {order.number}
                     </Link>
@@ -297,7 +297,7 @@ export function SettlementView({ settlement }: { settlement: WireSettlement }) {
                             <Link
                               key={record}
                               href={`/orders/${order.id}?tab=purchases#purchase-${record}`}
-                              className="inline-flex min-h-11 items-center underline underline-offset-4 sm:min-h-0"
+                              className="inline-flex min-h-11 min-w-11 items-center underline underline-offset-4 sm:min-h-0"
                             >
                               {t("cancelledLink", { index: index + 1 })}
                             </Link>
@@ -743,7 +743,7 @@ function ConfirmBox({
 
   return (
     <div className="flex flex-col gap-1">
-      <label className="inline-flex min-h-11 items-center gap-3 text-[15px] leading-[22px] font-semibold sm:min-h-0">
+      <label className="inline-flex min-h-11 min-w-11 items-center gap-3 text-[15px] leading-[22px] font-semibold sm:min-h-0">
         <input
           type="checkbox"
           data-confirm={`${block}:${order.id}`}

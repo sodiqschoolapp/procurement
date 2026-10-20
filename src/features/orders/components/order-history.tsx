@@ -69,7 +69,7 @@ export async function OrderHistory({ events }: { events: readonly OrderPageEvent
                     <a
                       href={`/warehouse/documents/${event.issue!.documentId}/note`}
                       download
-                      className="font-semibold text-primary underline underline-offset-2"
+                      className="font-semibold text-link underline underline-offset-2"
                     >
                       {chunks}
                     </a>

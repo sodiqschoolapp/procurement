@@ -102,7 +102,7 @@ export async function MoneyTab({ money }: { money: OrderMoney }) {
                       href={`/files/${row.file.id}/${row.file.isImage ? "large" : "original"}`}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex min-h-11 items-center text-[13px] leading-[18px] font-semibold underline underline-offset-2 sm:min-h-0"
+                      className="inline-flex min-h-11 min-w-11 items-center text-[13px] leading-[18px] font-semibold underline underline-offset-2 sm:min-h-0"
                     >
                       {t("file")}
                     </a>

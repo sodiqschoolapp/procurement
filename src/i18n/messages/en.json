@@ -461,8 +461,7 @@
         "since": "since {date}",
         "empty": "No Manager holds or is owed money.",
         "open": "Open Money with managers"
-      },
-      "openOrders": "Open the orders of {name}, {branch}"
+      }
     }
   },
   "profile": {
@@ -475,6 +474,7 @@
   "notifications": {
     "title": "Notifications",
     "bell": "{count, plural, =0 {Notifications} one {Notifications, # unread} other {Notifications, # unread}}",
+    "bellMany": "Notifications, {shown} unread",
     "unreadFact": "{count, plural, one {# unread} other {# unread}}",
     "unread": "Unread",
     "markAllRead": "Mark all as read",
@@ -1158,7 +1158,7 @@
       "alt": "Reference photo of {name}"
     },
     "extras": {
-      "open": "Edit the extra costs of {product}",
+      "open": "{sum}, edit the extra costs of {product}",
       "title": "Extra costs",
       "type": "Type",
       "amount": "Amount",

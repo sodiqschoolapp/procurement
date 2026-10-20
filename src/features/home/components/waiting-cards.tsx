@@ -135,7 +135,7 @@ function WaitingCard({ card, listHref }: { card: WaitingCardData; listHref: stri
             >
               <Link
                 href={`/orders/${order.id}`}
-                className="inline-flex min-h-11 items-center font-semibold underline-offset-2 hover:underline sm:min-h-0"
+                className="inline-flex min-h-11 min-w-11 items-center font-semibold underline-offset-2 hover:underline sm:min-h-0"
               >
                 {order.number}
               </Link>

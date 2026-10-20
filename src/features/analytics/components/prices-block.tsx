@@ -151,7 +151,7 @@ export async function PricesView({
                       month: point.month,
                       noSupplier: false,
                     })}
-                    className="text-primary underline-offset-2 hover:underline"
+                    className="font-semibold text-link underline-offset-2 hover:underline"
                   >
                     {monthLabel(point.month)}
                   </Link>,
@@ -208,7 +208,7 @@ export async function PricesView({
                         to: block.riseWindow.last,
                       },
                     )}
-                    className="font-semibold whitespace-nowrap text-primary underline-offset-2 hover:underline"
+                    className="font-semibold whitespace-nowrap text-link underline-offset-2 hover:underline"
                   >
                     {t("prices.riseBy", {
                       amount: format.money(rise.rise.difference),
@@ -246,7 +246,7 @@ export async function PricesView({
                       month: null,
                       noSupplier: false,
                     })}
-                    className="text-primary underline-offset-2 hover:underline"
+                    className="font-semibold text-link underline-offset-2 hover:underline"
                   >
                     {subtypeLabel(spread)}
                   </Link>,
@@ -282,7 +282,7 @@ function PairCell({ href, price, where }: { href: string; price: string; where: 
     <>
       <Link
         href={href}
-        className="font-semibold whitespace-nowrap text-primary underline-offset-2 hover:underline"
+        className="font-semibold whitespace-nowrap text-link underline-offset-2 hover:underline"
       >
         {price}
       </Link>
@@ -316,7 +316,7 @@ export async function Card({
         </h3>
         <a
           href={excel}
-          className="inline-flex min-h-11 items-center text-sm font-semibold underline-offset-2 hover:underline sm:min-h-0"
+          className="inline-flex min-h-11 min-w-11 items-center text-sm font-semibold underline-offset-2 hover:underline sm:min-h-0"
           data-excel={id}
         >
           {t("excel")}
@@ -338,7 +338,11 @@ export function Table({
   data: string;
 }) {
   return (
-    <div className="overflow-x-auto">
+    // A table wider than a phone scrolls; the keyboard reaches it too (WCAG 2.1.1; plan of 9.1d).
+    <div
+      tabIndex={0}
+      className="overflow-x-auto rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+    >
       <table
         className="w-full min-w-[32rem] border-collapse text-left text-sm leading-5"
         data-table={data}

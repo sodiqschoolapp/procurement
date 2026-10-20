@@ -89,7 +89,7 @@ export default async function ItemCardPage({
       <div className="flex flex-col gap-2">
         <Link
           href={`/warehouse/stock?branch=${card.branchId}`}
-          className="inline-flex min-h-11 items-center gap-1 self-start text-sm font-semibold text-primary sm:min-h-0"
+          className="inline-flex min-h-11 min-w-11 items-center gap-1 self-start text-sm font-semibold text-link sm:min-h-0"
         >
           <Icon name="arrow_back" size={18} />
           {t("back")}
@@ -189,7 +189,7 @@ export default async function ItemCardPage({
                     {movement.order ? (
                       <Link
                         href={`/orders/${movement.order.id}?tab=purchases`}
-                        className="font-semibold text-primary underline-offset-2 hover:underline"
+                        className="font-semibold text-link underline-offset-2 hover:underline"
                       >
                         {t("order", { number: movement.order.number })}
                       </Link>
@@ -199,7 +199,7 @@ export default async function ItemCardPage({
                           // The document's own page (plan of 5.12, decided item 3, Look first).
                           <Link
                             href={`/warehouse/documents/${movement.documentId}`}
-                            className="font-semibold text-primary underline-offset-2 hover:underline"
+                            className="font-semibold text-link underline-offset-2 hover:underline"
                           >
                             {movement.documentNumber}
                           </Link>

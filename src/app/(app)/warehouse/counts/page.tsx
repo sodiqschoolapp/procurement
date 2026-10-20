@@ -138,7 +138,7 @@ export default async function StockCountsPage({ searchParams }: { searchParams: 
                   <td className="px-4 py-3 font-semibold whitespace-nowrap">
                     <Link
                       href={`/warehouse/documents/${row.id}`}
-                      className="text-primary underline-offset-2 hover:underline"
+                      className="font-semibold text-link underline-offset-2 hover:underline"
                     >
                       {row.number}
                     </Link>

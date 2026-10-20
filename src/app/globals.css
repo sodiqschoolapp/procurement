@@ -245,6 +245,16 @@
   html {
     @apply font-sans;
   }
+  /* At phone width a link in a table cell or row heading is a finger's target: at least 44 × 44
+     (design system, Buttons; plan of 9.1d). */
+  @media (width < 40rem) {
+    :is(td, th) a[href] {
+      display: inline-flex;
+      min-height: 2.75rem;
+      min-width: 2.75rem;
+      align-items: center;
+    }
+  }
 }
 
 /* People who ask the system for reduced motion get none (design system "Motion"). */
