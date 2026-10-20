@@ -80,7 +80,8 @@ async function financeSpendingIn(
              as receiptless_before,
            count(*) filter (where (${now}) and not has_receipt)::text as receiptless_count_now,
            count(*) filter (where (${then}) and not has_receipt)::text as receiptless_count_before
-    from analytics_spending`);
+    from analytics_spending
+    where (${now}) or (${then})`);
   const payments = await paymentTotals(db, now, then);
   const transfers = await db.execute<{
     id: string | null;

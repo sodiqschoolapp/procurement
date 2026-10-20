@@ -50,7 +50,8 @@ async function topProductsIn(
   const totals = await db.execute<{ now: string; before: string }>(sql`
     select coalesce(sum(amount) filter (where ${now}), 0)::text as now,
            coalesce(sum(amount) filter (where ${then}), 0)::text as before
-    from analytics_spending`);
+    from analytics_spending
+    where (${now}) or (${then})`);
   const found = await db.execute<{
     id: string;
     name: string;

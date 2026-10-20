@@ -113,7 +113,8 @@ async function planIn(
   const then = outcomesWhere(actor, before, filters);
   const columns = tallyColumns(now, then);
 
-  const total = await db.execute<TallyRow>(sql`select ${columns} from analytics_outcomes`);
+  const total = await db.execute<TallyRow>(sql`
+    select ${columns} from analytics_outcomes where (${now}) or (${then})`);
   const branches = await db.execute<TallyRow & { id: string; name: string; is_active: boolean }>(
     sql`
       select b.id, b.name, b.is_active, ${columns}

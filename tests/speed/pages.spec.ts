@@ -144,8 +144,17 @@ function container(): string | null {
 }
 const postgres = container();
 
-/** The statements PostgreSQL logged since a moment (log_statement = 'all' on this database). */
-function statementsSince(since: string): number | null {
+/** A statement the log shows, sent from the run's own connection, around each measured load. */
+async function mark(text: string): Promise<void> {
+  await marker!.query(`select '${text}'`);
+}
+let marker: pg.Client | null = null;
+
+/**
+ * The statements PostgreSQL logged between two marks (log_statement = 'all' on this database),
+ * since a moment a little before the first.
+ */
+function statementsBetween(since: string, start: string, end: string): number | null {
   if (postgres === null) return null;
   // PostgreSQL logs to its stderr, which `docker logs` hands back on stderr.
   const log = spawnSync("docker", ["logs", "--since", since, postgres], {
@@ -153,7 +162,11 @@ function statementsSince(since: string): number | null {
     maxBuffer: 64 * 1024 * 1024,
   });
   const lines = `${log.stdout}\n${log.stderr}`.split("\n");
-  return lines.filter((line) => /LOG: {2}(statement|execute [^:]*):/.test(line)).length;
+  const from = lines.findIndex((line) => line.includes(start));
+  const to = lines.findIndex((line) => line.includes(end));
+  if (from < 0 || to < from) return null;
+  return lines.slice(from + 1, to).filter((line) => /LOG: {2}(statement|execute [^:]*):/.test(line))
+    .length;
 }
 
 /** One load: the milliseconds until the page and its streamed parts are there. */
@@ -190,18 +203,31 @@ async function measure(page: Page, entry: Omit<Result, "times" | "statements" | 
   let statements: number | null = null;
   for (let n = 0; n < TIMED; n += 1) {
     // eslint-disable-next-line no-restricted-syntax -- the moment the log is read from, not a business time
-    const since = new Date(Date.now() - 50).toISOString();
+    const since = new Date(Date.now() - 1000).toISOString();
+    const id = `${results.length}-${n}`;
+    await mark(`speed-start-${id}`);
     times.push(await load(page, entry.url));
+    // What the page sends after its load event (a streamed part's late statement) still counts.
     await page.waitForTimeout(300);
-    if (n === TIMED - 1) statements = statementsSince(since);
+    await mark(`speed-end-${id}`);
+    if (n === TIMED - 1) {
+      await page.waitForTimeout(200);
+      statements = statementsBetween(since, `speed-start-${id}`, `speed-end-${id}`);
+    }
   }
   const result: Result = { ...entry, times, statements, rows: await rowsOf(page) };
   results.push(result);
   return result;
 }
 
+test.afterAll(async () => {
+  await marker?.end();
+});
+
 test.beforeAll(async ({ browser }) => {
   ids = await readIds();
+  marker = new pg.Client({ connectionString: speedDatabaseUrl() });
+  await marker.connect();
   usernames = SPEED_PEOPLE;
   for (const who of Object.keys(usernames) as Who[]) {
     const context = await browser.newContext();
@@ -283,7 +309,10 @@ test("every page opens in under 1 second at the fill's volume (01-summary.md, Qu
     ...listUrls(),
   ];
   const contexts = new Map<Who | null, BrowserContext>();
+  // SPEED_ONLY=<text> measures only the addresses holding it (for a quick look; no table then).
+  const only = process.env.SPEED_ONLY;
   for (const entry of entries) {
+    if (only && !`${entry.url} ${entry.who}`.includes(only)) continue;
     let context = contexts.get(entry.who);
     if (context === undefined) {
       context = await browser.newContext({
@@ -300,7 +329,7 @@ test("every page opens in under 1 second at the fill's volume (01-summary.md, Qu
   }
   for (const context of contexts.values()) await context.close();
   writeFileSync(RESULTS, JSON.stringify(results, null, 2));
-  writeTable();
+  if (!only) writeTable();
 
   const slow = results.filter((result) => Math.max(...result.times) >= LIMIT_MS);
   expect(
@@ -351,7 +380,7 @@ Build plan 9.2: every page measured at the volume of several school years (01-su
 - ${measuredOn}, ${cpus().length} CPU threads (${cpus()[0]?.model ?? "unknown"}), ${Math.round(totalmem() / 1024 ** 3)} GiB memory; PostgreSQL 17 of \`docker-compose.yml\` on the same machine.
 - A production build (\`next build\`, then \`next start\`) against \`procurement_speed\`, filled by \`tests/speed/fill.ts\`; the scheduler off.
 - Chromium at 1440 × 900, one page at a time. Each address is opened once to warm up, then three times. A load runs from navigation start until the load event has ended and no loading area (\`aria-busy="true"\`) is left. Prefetch requests are aborted.
-- Statements: those PostgreSQL logged during the last of the three loads (sign-in check included).
+- Statements: those PostgreSQL logged between two marker statements around the last of the three loads, the page's sign-in check included.
 - One analytics refresh on this volume took ${refresh ? `${(refresh.refreshMs / 1000).toFixed(1)} s` : "a time not read in this run"} (it runs every 5 minutes in the background; no page waits for it).
 
 ## Volume

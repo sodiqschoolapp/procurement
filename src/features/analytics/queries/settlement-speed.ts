@@ -71,7 +71,8 @@ async function speedIn(
     coalesce(sum(analytics_settlements.seconds) filter (where ${then}), 0)::text as before_seconds,
     count(*) filter (where ${then})::text as before_count`;
 
-  const total = await db.execute<Sums>(sql`select ${columns} from analytics_settlements`);
+  const total = await db.execute<Sums>(sql`
+    select ${columns} from analytics_settlements where (${now}) or (${then})`);
   const branches = await db.execute<Sums & { id: string; name: string; is_active: boolean }>(sql`
     select b.id, b.name, b.is_active, ${columns}
     from analytics_settlements
