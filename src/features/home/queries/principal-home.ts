@@ -68,6 +68,8 @@ export async function getPrincipalHome(
             branchId: group.branchId,
             ownerId: order.ownerId,
             createdByHead: false,
+            // A waiting order always has its number (05 Order number).
+            numbered: true,
             buyingFinished: false,
             exactMatch: false,
             ownerClosesAlone: false,

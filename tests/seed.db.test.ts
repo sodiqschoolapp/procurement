@@ -1284,6 +1284,7 @@ describe("npm run db:seed: the orders (build-plan 2.15; plan of 2.15, decided it
                 branchId: owner.rows[0]!.branch_id,
                 ownerId: owner.rows[0]!.owner_id,
                 createdByHead: false,
+                numbered: event.from !== "DRAFT",
                 buyingFinished,
                 exactMatch: false,
                 ownerClosesAlone: true,

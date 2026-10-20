@@ -841,7 +841,13 @@ export async function tickedSummary(
       ),
       actions: allowedActions(
         actor,
-        found.map((row) => orderState({ ...row, exactMatch: exact.get(row.id) === true })),
+        found.map((row) =>
+          orderState({
+            ...row,
+            numbered: row.number !== null,
+            exactMatch: exact.get(row.id) === true,
+          }),
+        ),
       ),
       exactCount: found.some((row) => row.status === "PURCHASING" && row.progress !== "OPEN")
         ? found.filter((row) => exact.get(row.id) === true).length

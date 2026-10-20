@@ -91,6 +91,8 @@ export type LockedOrder = {
    * Must fix 1, Look first).
    */
   createdByHead: boolean;
+  /** The order has a number: a Draft with one was taken back (06 Allowed moves, Cancel row). */
+  numbered: boolean;
   /** The owner is the Head, or a Manager whose CLOSE_ALONE is not switched off. */
   ownerClosesAlone: boolean;
   /** 08 Exact match, when the action's `facts` step read it (plan of 4.4); otherwise unknown. */
@@ -242,10 +244,12 @@ export async function lockOrders(tx: Transaction, ids: readonly string[]): Promi
     revision: number;
     progress: LockedOrder["progress"];
     created_by_head: boolean;
+    numbered: boolean;
     owner_closes_alone: boolean;
   }>(sql`
     select o.id, o.branch_id, o.owner_id, o.status, o.version, o.revision, o.progress,
            (c.role = 'HEAD' and o.number is null) as created_by_head,
+           o.number is not null as numbered,
            (w.role = 'HEAD' or (w.role = 'MANAGER' and not exists (
              select 1 from manager_rights mr
              where mr.user_id = w.id and mr."right" = 'CLOSE_ALONE' and not mr.enabled
@@ -268,6 +272,7 @@ export async function lockOrders(tx: Transaction, ids: readonly string[]): Promi
     revision: row.revision,
     progress: row.progress,
     createdByHead: row.created_by_head,
+    numbered: row.numbered,
     ownerClosesAlone: row.owner_closes_alone,
   }));
 }
