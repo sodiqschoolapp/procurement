@@ -448,6 +448,20 @@ export function purchaseDateRefusal(
   return null;
 }
 
+/**
+ * Whether a trip needs a receipt file (07 Purchase record, Receipt; edge case "No receipt photo":
+ * "A setting can make receipts required for cash: for a trip paid in cash, and for a trip with an
+ * extra cost paid in cash"; D55 (16); plan of 4.10b): with `receipt_required_for_cash` on, when
+ * the trip's payment type or any of its extra costs' is Cash. Asked by the form and the action.
+ */
+export function receiptNeeded(
+  required: boolean,
+  paymentType: PaymentType,
+  extraPaymentTypes: readonly PaymentType[],
+): boolean {
+  return required && (paymentType === "CASH" || extraPaymentTypes.includes("CASH"));
+}
+
 /** What "Same as planned" fills (07 Purchase record). */
 export type SameAsPlanned = { qty: string; unitPrice: bigint; extras: readonly bigint[] };
 

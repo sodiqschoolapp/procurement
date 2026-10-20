@@ -28,6 +28,7 @@ import {
   sameAsPlanned,
   splitGroupQuantity,
   receivedTogether,
+  receiptNeeded,
 } from "./purchases";
 
 // 08-money-and-settlement.md, Numbers the system calculates and Worked example; 07-purchasing.md,
@@ -677,5 +678,24 @@ describe("a record split by payment type (07 Purchase record; 10 Analytics, Head
         extras: [{ amount: 0n, paymentType: "CARD" }],
       }),
     ).toThrow(RangeError);
+  });
+});
+
+describe('receiptNeeded() (07 Purchase record, Receipt; edge case "No receipt photo": "for a trip paid in cash, and for a trip with an extra cost paid in cash"; D55 (16); plan of 4.10b)', () => {
+  it("with the setting off, no trip needs a receipt", () => {
+    expect(receiptNeeded(false, "CASH", ["CASH"])).toBe(false);
+  });
+
+  it("with the setting on, a trip paid in cash needs one", () => {
+    expect(receiptNeeded(true, "CASH", [])).toBe(true);
+  });
+
+  it("with the setting on, a transfer-paid trip with a cash delivery fee needs one", () => {
+    expect(receiptNeeded(true, "TRANSFER", ["TRANSFER", "CASH"])).toBe(true);
+  });
+
+  it("with the setting on, a trip with no cash anywhere needs none", () => {
+    expect(receiptNeeded(true, "TRANSFER", ["TRANSFER", "CARD"])).toBe(false);
+    expect(receiptNeeded(true, "CARD", [])).toBe(false);
   });
 });
