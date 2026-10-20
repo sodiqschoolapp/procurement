@@ -1,25 +1,26 @@
-# The test copy on DigitalOcean App Platform (build-plan 0.16; 18-hosting-and-costs.md row 7;
-# docs/decisions.md D22 and "Decided ahead: task 0.16"). docs/deploy.md says how the owner creates
-# the app from this file. No value here is a secret: the database address and its certificate
-# are bound by DigitalOcean itself (`${db.…}`), so nobody types them and no file holds them. The
-# values the owner types (BETTER_AUTH_SECRET, three S3_*, two BACKUP_S3_*, four SEED_*_PASSWORD) are not declared
-# here: docs/deploy.md lists them, and says to type them again after this file is applied.
-# ERROR_REPORT_DSN (build-plan 9.3, optional) is typed the same way: docs/monitoring.md.
+# The live app on DigitalOcean App Platform (build-plan 9.4; 18-hosting-and-costs.md rows 1 to 3;
+# D52: no test copy, the live app runs in trial mode with invented data until 9.5). docs/deploy.md
+# says how the owner creates the app from this file. No value here is a secret: the database
+# address and its certificate are bound by DigitalOcean itself (`${db.…}`), so nobody types them
+# and no file holds them. The values the owner types (BETTER_AUTH_SECRET, three S3_*, two
+# BACKUP_S3_*, four SEED_*_PASSWORD, ERROR_REPORT_DSN) are not declared here: docs/deploy.md lists
+# them, and says to type them again after this file is applied.
 #
-# Unconfirmed from the session that wrote it (DigitalOcean's pages could not be read there):
-# the size slug, PostgreSQL 17 for a dev database, and the bindings CA_CERT and COMMIT_HASH.
-# The owner checks that the dashboard shows $17 a month before pressing Create (docs/deploy.md).
-name: ombor-test
+# Unconfirmed from the session that wrote it (DigitalOcean's pages could not be read there): the
+# size slug, the fields of a managed database (`production`, `cluster_name`, `db_name`,
+# `db_user`), and the bindings CA_CERT and COMMIT_HASH. The owner checks that the dashboard shows
+# $25 a month in all ($10 here, $15 for the database cluster) before pressing Create.
+name: ombor
 region: fra
 
 domains:
-  - domain: ombor-test.sodiqschool.uz
+  - domain: ombor.sodiqschool.uz
     type: PRIMARY
 
 services:
   - name: web
     # A new version on every push to main, through DigitalOcean's own GitHub app
-    # (Decided ahead 0.16, item 3): no deploy key, no GitHub secret.
+    # (Decided ahead 0.16, item 3; open question 10: every merge reaches the one live app).
     github:
       repo: sodiqschoolapp/procurement
       branch: main
@@ -27,7 +28,7 @@ services:
     dockerfile_path: Dockerfile
     source_dir: /
     http_port: 8080
-    # 1 GiB, shared CPU, the fixed kind: $10 a month (row 7). One container.
+    # 1 GiB, shared CPU, the fixed kind: $10 a month (row 1). One container.
     instance_size_slug: apps-s-1vcpu-1gb-fixed
     instance_count: 1
     # Traffic moves to a new version only after /health answers 200, which needs the migration
@@ -43,6 +44,8 @@ services:
       - key: NODE_ENV
         scope: RUN_TIME
         value: production
+      # Straight to the database, never through a connection pool, so the app's
+      # `-c timezone=UTC -c jit=off` reach the server (plan of 9.4, decided item 9).
       - key: DATABASE_URL
         scope: RUN_TIME
         value: ${db.DATABASE_URL}
@@ -52,32 +55,41 @@ services:
       - key: GIT_COMMIT
         scope: RUN_TIME
         value: ${_self.COMMIT_HASH}
-      # The demo users of the seed on every start (build-plan 0.15; scripts/start.sh). Production
-      # never sets it. The four SEED_*_PASSWORD values are typed by the owner, encrypted, in the
-      # dashboard (docs/deploy.md), never here.
+      # Trial mode (D52): the demo users and the invented data of the seed on every start
+      # (scripts/start.sh). Task 9.5 removes it before `npm run trial:reset`; after the reset the
+      # seed refuses whatever this says. The four SEED_*_PASSWORD values are typed by the owner,
+      # encrypted, in the dashboard (docs/deploy.md), never here. The error reports' environment
+      # tag reads it too (`trial` while it is set; docs/monitoring.md).
       - key: SEED_DEMO_DATA
         scope: RUN_TIME
         value: "yes"
-      # The file storage: the private Cloudflare R2 bucket of the test copy (build-plan 0.15).
-      # S3_ENDPOINT, S3_ACCESS_KEY_ID and S3_SECRET_ACCESS_KEY are typed by the owner, encrypted,
-      # in the dashboard (docs/deploy.md), never here.
+      # The file storage: the private Cloudflare R2 bucket of the photos and receipts. S3_ENDPOINT,
+      # S3_ACCESS_KEY_ID and S3_SECRET_ACCESS_KEY are typed by the owner, encrypted, in the
+      # dashboard (docs/deploy.md), never here.
       - key: S3_REGION
         scope: RUN_TIME
         value: auto
       - key: S3_BUCKET
         scope: RUN_TIME
-        value: ombor-test-files
+        value: ombor-files
       # The bucket of the weekly copies of the database, of its own (build-plan 8.2b). Its keys,
       # BACKUP_S3_ACCESS_KEY_ID and BACKUP_S3_SECRET_ACCESS_KEY, are typed by the owner, encrypted,
       # in the dashboard (docs/deploy.md), never here.
       - key: BACKUP_S3_BUCKET
         scope: RUN_TIME
-        value: ombor-test-backups
+        value: ombor-copies
 
 databases:
-  # The development database: $7 a month (row 7). PostgreSQL 17, the major version of the local
-  # image (docker-compose.yml).
+  # The managed PostgreSQL cluster `ombor-db` the owner creates first (docs/deploy.md, step 3):
+  # PostgreSQL 17, one node of 1 GiB in Frankfurt, $15 a month (row 2), with DigitalOcean's daily
+  # backups and restore to any moment of the last 7 days (13-technology.md, Running it). The app
+  # connects as the cluster's admin user to its first database: `npm run trial:reset` drops and
+  # makes again the `public` schema, which only the database's owner may do (plan of 9.4, decided
+  # item 1, Look first).
   - name: db
     engine: PG
     version: "17"
-    production: false
+    production: true
+    cluster_name: ombor-db
+    db_name: defaultdb
+    db_user: doadmin

@@ -372,6 +372,13 @@
       "when": 1792497982577,
       "tag": "0052_database_copies",
       "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "7",
+      "when": 1792515001352,
+      "tag": "0053_trial_end",
+      "breakpoints": true
     }
   ]
 }

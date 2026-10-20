@@ -71,7 +71,7 @@ PostgreSQL is published on port 5433 of this machine, not on the usual 5432, whi
 
 ## The test copy
 
-Every merge into `main` reaches the test copy at `https://ombor-test.sodiqschool.uz` by itself: DigitalOcean App Platform builds the `Dockerfile`, the container migrates its database and then starts the app, and `/health` names the commit that runs. `.do/app.yaml` describes it; `docs/deploy.md` has the owner's one-time steps.
+Every merge into `main` reaches the live app at `https://ombor.sodiqschool.uz` by itself (in trial, with invented data, until task 9.5; D52): DigitalOcean App Platform builds the `Dockerfile`, the container migrates its database and then starts the app, and `/health` names the commit that runs. `.do/app.yaml` describes it; `docs/deploy.md` has the owner's one-time steps.
 
 ## In a Claude Code cloud session
 

@@ -10,6 +10,7 @@ import { FIRST_HEAD_LOCK } from "./first-head.mjs";
 import { seedCatalogs, seedSuggestion } from "./seed-catalogs.mjs";
 import { seedOrders } from "./seed-orders.mjs";
 import { seedStock, seedWriteOff } from "./seed-stock.mjs";
+import { trialHasEnded } from "./trial-end.mjs";
 
 /** The variable of the local .env that holds each seed user's password (plan of 0.14, decision 3). */
 export const SEED_PASSWORD_VARIABLES = /** @type {const} */ ({
@@ -69,8 +70,8 @@ export const SEED_DEMO_DATA_ON = "yes";
 /**
  * Whether the seed may write to the database of `connectionString` (build-plan 0.15; the 0.14
  * permission review, Should fix 1; plan of 0.15, decision 3, Look first). A database on this
- * machine is allowed; any other only with `SEED_DEMO_DATA` exactly `yes`, which the test copy
- * sets and production never does, so demo users of known roles never reach the live system.
+ * machine is allowed; any other only with `SEED_DEMO_DATA` exactly `yes`, which the live app
+ * sets while it is in trial (D52) and loses when the trial ends (9.5).
  * The host is read with the parser `pg` itself uses, so a `?host=` elsewhere counts, and an
  * address with no host (which `pg` would send to `PGHOST`) is not local.
  * @param {string} connectionString
@@ -91,7 +92,7 @@ export function seedTargetAllowed(connectionString, env) {
     allowed: false,
     reason:
       "Refused: the database of DATABASE_URL is not on this machine, and SEED_DEMO_DATA is not yes. " +
-      "The demo users are written to a hosted database only on the test copy (docs/deploy.md). Nothing was written.",
+      "The demo users are written to a hosted database only while the live app is in trial (docs/deploy.md). Nothing was written.",
   };
 }
 
@@ -134,6 +135,15 @@ export async function seed(client, env, moment) {
   await client.query("begin");
   try {
     await client.query("select pg_advisory_xact_lock($1, 0)", [FIRST_HEAD_LOCK]);
+    // After `npm run trial:reset` the database is the real one: a SEED_DEMO_DATA left on must
+    // never put demo users and invented records beside the real data (build-plan 9.4; plan of
+    // 9.4, decided item 3). Read under the lock the reset holds until its record is written.
+    if (await trialHasEnded(query)) {
+      throw new Error(
+        "Refused: the trial of this database has ended (npm run trial:reset); demo data is never " +
+          "written to it. Remove SEED_DEMO_DATA from the app (docs/deploy.md). Nothing was written.",
+      );
+    }
 
     const foundUsers = new Map();
     const users = await client.query(

@@ -19,6 +19,9 @@ const ENTRY_POINTS = [
   "scripts/db-copy.mjs",
   // A Head's password renewed from the hosting console (build-plan 8.2b; 03 rule 4).
   "scripts/renew-head.mjs",
+  // The end of the trial and the first Head, run in the live console at 9.5 (build-plan 9.4).
+  "scripts/trial-reset.mjs",
+  "scripts/create-first-head.mjs",
 ];
 
 /** The sources of every COPY of the run stage that does not copy from another stage. */

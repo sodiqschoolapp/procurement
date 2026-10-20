@@ -1,7 +1,7 @@
 // npm run db:seed: the invented demo data (build-plan 0.14) on the database of DATABASE_URL.
 // The passwords come from the local .env (.env.example names them); none is ever printed.
 // It prints one line per branch and user, "created" or "kept", then "seed done". A database
-// not on this machine is refused unless SEED_DEMO_DATA is yes (the test copy, build-plan 0.15).
+// not on this machine is refused unless SEED_DEMO_DATA is yes (the live app in trial, build-plan 0.15 and 9.4).
 import pg from "pg";
 
 import { connectionOptions } from "../src/server/db/connection-options.mjs";
@@ -12,7 +12,7 @@ if (!connectionString) {
   console.error('DATABASE_URL is not set. Put it into the local .env file (README.md, "Run it").');
   process.exit(1);
 }
-// Before any connection: a hosted database without the test copy's switch is refused (build-plan
+// Before any connection: a hosted database without the trial's switch is refused (build-plan
 // 0.15, plan decision 3).
 const target = seedTargetAllowed(connectionString, process.env);
 if (!target.allowed) {
@@ -34,7 +34,7 @@ try {
   });
   await client.connect();
 } catch (error) {
-  // The error of a failed connection names the host and port; on the test copy this line goes to
+  // The error of a failed connection names the host and port; on the live app this line goes to
   // the runtime log, so only its kind is printed (permission review of 0.15, Should fix 3).
   const kind = error?.code ?? (error instanceof Error ? error.name : "Error");
   console.error(
