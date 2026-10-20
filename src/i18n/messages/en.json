@@ -2473,6 +2473,7 @@
   },
   "analytics": {
     "title": "Analytics",
+    "sameDays": "Against the same days of the period before: {first} – {last}",
     "refreshed": "Summary updated at {time}",
     "refreshing": "The summary is being prepared. Numbers appear within 5 minutes.",
     "filters": "Filters",

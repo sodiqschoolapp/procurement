@@ -5,6 +5,7 @@ import {
   type Period,
   changeAgainst,
   monthBefore,
+  runningMonthBefore,
   monthsOf,
 } from "@/domain/analytics";
 import { businessMonth } from "@/domain/business-date";
@@ -58,7 +59,7 @@ async function spendingIn(
   filters: AnalyticsFilters,
 ): Promise<SpendingBlock> {
   const actor = await authorizeAnalytics(db, userId, filters);
-  const { period, before } = await resolvePeriod(db, input);
+  const { period, before, today } = await resolvePeriod(db, input);
 
   const totals = await db.execute<{ now: string; before: string }>(sql`
     select coalesce(sum(amount) filter (where ${spendingWhere(actor, period, filters)}), 0)::text
@@ -70,15 +71,26 @@ async function spendingIn(
   const total = totals.rows[0]!;
 
   // The months of the period, and the whole month before its first one (decided item 16): a
-  // month's point counts its days inside the period, its change the month before it.
+  // month's point counts its days inside the period, its change the month before it; the point
+  // of the month holding today, while the period runs, the same days of the month before (10
+  // point 1; plan of 8.2b, decided item 2). `same` sums those days.
   const months = monthsOf(period);
   const firstMonth = months[0]!;
   const series = { first: businessMonth(`${monthBefore(firstMonth)}-01`).first, last: period.last };
-  const byMonth = await db.execute<{ month: string; inside: string; whole: string }>(sql`
+  const cut = months.map((month) => runningMonthBefore(period, month, today)).find(Boolean) ?? null;
+  const byMonth = await db.execute<{
+    month: string;
+    inside: string;
+    whole: string;
+    same: string;
+  }>(sql`
     select to_char(purchased_on, 'YYYY-MM') as month,
            coalesce(sum(amount) filter (where purchased_on >= ${period.first}::date), 0)::text
              as inside,
-           sum(amount)::text as whole
+           sum(amount)::text as whole,
+           coalesce(sum(amount) filter (where ${
+             cut ? sql`purchased_on between ${cut.first}::date and ${cut.last}::date` : sql`false`
+           }), 0)::text as same
     from analytics_spending
     where ${spendingWhere(actor, series, filters)}
     group by 1`);
@@ -86,7 +98,10 @@ async function spendingIn(
   let previous = BigInt(found.get(monthBefore(firstMonth))?.whole ?? "0");
   const monthRows = months.map((month) => {
     const amount = BigInt(found.get(month)?.inside ?? "0");
-    const row = { month, amount, change: changeAgainst(amount, previous) };
+    const against = runningMonthBefore(period, month, today)
+      ? BigInt(found.get(monthBefore(month))?.same ?? "0")
+      : previous;
+    const row = { month, amount, change: changeAgainst(amount, against) };
     previous = amount;
     return row;
   });

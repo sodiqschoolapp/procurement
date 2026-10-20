@@ -2473,6 +2473,7 @@
   },
   "analytics": {
     "title": "Tahlil",
+    "sameDays": "Oldingi davrning shu kunlari bilan solishtirilgan: {first} – {last}",
     "refreshed": "Jamlanma {time} da yangilandi",
     "refreshing": "Jamlanma tayyorlanmoqda. Raqamlar 5 daqiqa ichida chiqadi.",
     "filters": "Filtrlar",

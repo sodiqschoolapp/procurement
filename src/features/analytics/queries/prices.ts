@@ -7,6 +7,7 @@ import {
   type Period,
   changeAgainst,
   monthBefore,
+  runningMonthBefore,
   monthsOf,
   ninetyDaysSince,
 } from "@/domain/analytics";
@@ -14,7 +15,6 @@ import { type BusinessDate, businessMonth } from "@/domain/business-date";
 import { Exact } from "@/domain/order-totals";
 import { unitPriceOf } from "@/domain/purchases";
 import type { Executor } from "@/server/authorize";
-import { today } from "@/server/clock";
 import { readSnapshot } from "@/server/read-snapshot";
 
 import { type AnalyticsFilters, NO_ANALYTICS_FILTERS, type PeriodInput } from "../period-params";
@@ -128,7 +128,7 @@ async function pricesIn(
   chosen: string | null,
 ): Promise<Prices> {
   const actor = await authorizeAnalytics(db, userId, filters);
-  const { period } = await resolvePeriod(db, input);
+  const { period, today: day } = await resolvePeriod(db, input);
   const priced = sql`analytics_spending.unit_price > 0`;
 
   // The subtype of the trend: the one chosen (any subtype of the catalog, school-wide), or the
@@ -146,9 +146,9 @@ async function pricesIn(
       limit 1`);
     variantId = most.rows[0]?.variant_id ?? null;
   }
-  const trend = variantId ? await trendOf(db, actor, period, filters, variantId) : null;
+  const trend = variantId ? await trendOf(db, actor, period, day, filters, variantId) : null;
 
-  const window = { first: ninetyDaysSince(today()), last: today() };
+  const window = { first: ninetyDaysSince(day), last: day };
   const rises = await risesOf(db, actor, window, filters);
   const spreads = await spreadsOf(db, actor, period, filters);
   return { period, trend, riseWindow: window, rises, spreads };
@@ -158,6 +158,7 @@ async function trendOf(
   db: Executor,
   actor: Awaited<ReturnType<typeof authorizeAnalytics>>,
   period: Period,
+  today: BusinessDate,
   filters: AnalyticsFilters,
   variantId: string,
 ): Promise<(SubtypeName & { points: TrendPoint[] }) | null> {
@@ -167,13 +168,28 @@ async function trendOf(
     where v.id = ${variantId}`);
   if (!name.rows[0]) return null;
   const months = monthsOf(period);
-  // The whole month before the period gives the first point its change (6.3 decided item 6).
+  // The whole month before the period gives the first point its change (6.3 decided item 6); the
+  // point of the month holding today, while the period runs, is against the same days of the
+  // month before (10 point 1; plan of 8.2b, decided item 2): `same_*` are those days.
   const beforeMonth = monthBefore(months[0]!);
   const before = businessMonth(`${beforeMonth}-01`);
-  const found = await db.execute<{ month: string; goods: string; qty: string; count: string }>(sql`
+  const cut = months.map((month) => runningMonthBefore(period, month, today)).find(Boolean) ?? null;
+  const inCut = cut
+    ? sql`analytics_spending.purchased_on between ${cut.first}::date and ${cut.last}::date`
+    : sql`false`;
+  const found = await db.execute<{
+    month: string;
+    goods: string;
+    qty: string;
+    count: string;
+    same_goods: string;
+    same_qty: string;
+  }>(sql`
     select to_char(analytics_spending.purchased_on, 'YYYY-MM') as month,
            sum(analytics_spending.goods)::text as goods, sum(analytics_spending.qty)::text as qty,
-           count(*)::text as count
+           count(*)::text as count,
+           coalesce(sum(analytics_spending.goods) filter (where ${inCut}), 0)::text as same_goods,
+           coalesce(sum(analytics_spending.qty) filter (where ${inCut}), 0)::text as same_qty
     from analytics_spending
     where ${spendingWhere(actor, null, filters)} and analytics_spending.unit_price > 0
       and analytics_spending.variant_id = ${variantId}
@@ -183,14 +199,22 @@ async function trendOf(
   const byMonth = new Map(
     found.rows.map((row) => [
       row.month,
-      { price: unitPriceOf(BigInt(row.goods), row.qty), count: Number(row.count) },
+      {
+        price: unitPriceOf(BigInt(row.goods), row.qty),
+        count: Number(row.count),
+        // No record in the same days: no price to compare with.
+        samePrice: unitPriceOf(BigInt(row.same_goods), row.same_qty),
+      },
     ]),
   );
   let previous = byMonth.get(beforeMonth)?.price ?? null;
   const points = months.map((month) => {
     const point = byMonth.get(month);
     const price = point?.price ?? null;
-    const change = price !== null && previous !== null ? changeAgainst(price, previous) : null;
+    const against = runningMonthBefore(period, month, today)
+      ? (byMonth.get(monthBefore(month))?.samePrice ?? null)
+      : previous;
+    const change = price !== null && against !== null ? changeAgainst(price, against) : null;
     previous = price;
     return { month, price, count: point?.count ?? 0, change };
   });

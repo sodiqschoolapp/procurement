@@ -104,39 +104,42 @@ describe("a number equals the sum of the rows of its drill-down list (Done when 
 });
 
 describe("every number's change against the period before (10 point 1; decided item 16)", () => {
-  it("the total, a category and a month each against their own number before", async () => {
+  it("the total, a category and a month each against their own number of the same days before (D55 item 10)", async () => {
+    // 15 October: this month is still running, so it is against 1 to 15 September (10 point 1;
+    // plan of 8.2b, decided item 2). Before 8.2b it was against the whole of September.
     setClock(AT);
     const scene = await spendingScene();
     const principal = await insertUser("PRINCIPAL", { branches: [scene.branch.id] });
     const other = await insertCategory();
     await bought(scene, { purchasedOn: "2031-10-01", unitPrice: "150000" });
     await bought(scene, { purchasedOn: "2031-10-31", unitPrice: "20000", categoryId: other.id });
-    await bought(scene, { purchasedOn: "2031-09-30", unitPrice: "100000" });
-    await bought(scene, { purchasedOn: "2031-09-01", unitPrice: "40000", categoryId: other.id });
-    // Kept out of both periods: August, and November.
+    await bought(scene, { purchasedOn: "2031-09-15", unitPrice: "40000", categoryId: other.id });
+    // Kept out of both: 16 and 30 September (after the same days), August, and November.
+    await bought(scene, { purchasedOn: "2031-09-16", unitPrice: "100000" });
+    await bought(scene, { purchasedOn: "2031-09-30", unitPrice: "60000" });
     await bought(scene, { purchasedOn: "2031-08-31", unitPrice: "7000" });
     await bought(scene, { purchasedOn: "2031-11-01", unitPrice: "9000" });
     await refreshNow();
 
     const block = await getSpending(principal.id, THIS_MONTH, NO_ANALYTICS_FILTERS);
     expect(block.period).toMatchObject({ first: "2031-10-01", last: "2031-10-31" });
-    expect(block.before).toMatchObject({ first: "2031-09-01", last: "2031-09-30" });
+    expect(block.before).toMatchObject({ first: "2031-09-01", last: "2031-09-15" });
     expect(block.total).toEqual({
       amount: 170_000n,
-      change: { difference: 30_000n, percent: "21.4" },
+      change: { difference: 130_000n, percent: "325.0" },
     });
     const byId = new Map(block.categories.map((category) => [category.id, category]));
     expect(byId.get(scene.category.id)).toMatchObject({
       amount: 150_000n,
-      change: { difference: 50_000n, percent: "50.0" },
+      change: { difference: 150_000n, percent: null },
     });
     expect(byId.get(other.id)).toMatchObject({
       amount: 20_000n,
       change: { difference: -20_000n, percent: "-50.0" },
     });
-    // The one month's point against the whole month before it.
+    // The point of the month holding today against the same days of the month before it.
     expect(block.months).toEqual([
-      { month: "2031-10", amount: 170_000n, change: { difference: 30_000n, percent: "21.4" } },
+      { month: "2031-10", amount: 170_000n, change: { difference: 130_000n, percent: "325.0" } },
     ]);
   });
 
@@ -152,13 +155,16 @@ describe("every number's change against the period before (10 point 1; decided i
       ...NO_ANALYTICS_FILTERS,
       branch: scene.branch.id,
     });
+    // October holds today: against 1 to 15 September, which holds September's 1 000 (D55 item
+    // 10); November and December are against the month before them inside the period.
     expect(block.months.map((point) => [point.month, point.amount, point.change])).toEqual([
       ["2031-10", 4_000n, { difference: 3_000n, percent: "300.0" }],
       ["2031-11", 3_000n, { difference: -1_000n, percent: "-25.0" }],
       ["2031-12", 0n, { difference: -3_000n, percent: "-100.0" }],
     ]);
-    // The quarter against July to September, which holds September's 1 000.
-    expect(block.total.change).toEqual({ difference: 6_000n, percent: "600.0" });
+    // The quarter's 15 days so far against 1 to 15 July, which holds nothing (D55 item 10).
+    expect(block.before).toMatchObject({ first: "2031-07-01", last: "2031-07-15" });
+    expect(block.total.change).toEqual({ difference: 7_000n, percent: null });
   });
 
   it("custom dates of n days against the n days just before; a month's days inside the period", async () => {

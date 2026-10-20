@@ -436,6 +436,14 @@ export function analyticsReport(
     title: titled,
     captions: [
       ...fileLines.slice(0, 1),
+      ...(page.compared
+        ? [
+            t("sameDays", {
+              first: format.date(page.compared.first),
+              last: format.date(page.compared.last),
+            }),
+          ]
+        : []),
       options.refreshedAt
         ? t("refreshed", { time: format.time(options.refreshedAt) })
         : t("refreshing"),

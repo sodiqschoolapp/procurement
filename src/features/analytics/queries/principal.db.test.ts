@@ -84,9 +84,10 @@ async function branchScene(scene: SpendingScene, head: string, principal: string
     ],
     { submittedAt: "2031-10-01T05:00:00Z", neededBy: "2031-11-30" },
   );
-  // Submitted in September, Sent back, needed by 1 October: overdue.
+  // Submitted in September, inside 1 to 15 September (the same days this running month is
+  // compared with, D55 item 10), Sent back, needed by 1 October: overdue.
   await decided(scene, "RETURNED", [], {
-    submittedAt: "2031-09-20T05:00:00Z",
+    submittedAt: "2031-09-10T05:00:00Z",
     neededBy: "2031-10-01",
   });
   // Stock: 5 × 1 000 with a minimum of 5, one issued on 4 October: 4 left, 4 000, Low.

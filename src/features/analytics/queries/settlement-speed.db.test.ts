@@ -88,7 +88,8 @@ describe("Settlement speed, with the clock set (10 Finance, Settlement speed; de
       },
       { type: "CLOSE", from: "SETTLEMENT", to: "CLOSED", at: "2031-09-14T05:00:00Z" },
     ]);
-    await closedOrder(scene, "2031-09-20T05:00:00Z", "2031-09-21T05:00:00Z");
+    // Inside 1 to 15 September, the same days of this running month (D55 item 10).
+    await closedOrder(scene, "2031-09-10T05:00:00Z", "2031-09-11T05:00:00Z");
     // Still waiting for settlement, and closed by exact match without a send: none.
     await order(scene, "SETTLEMENT", [
       {
@@ -126,8 +127,9 @@ describe("Settlement speed, with the clock set (10 Finance, Settlement speed; de
     const { scene, finance } = await financeScene();
     // Closed at 20:00 UTC on 30 September: 1 October in Tashkent, so in this period.
     await closedOrder(scene, "2031-09-29T20:00:00Z", "2031-09-30T20:00:00Z");
-    // Closed at 18:00 UTC on 30 September: still 30 September in Tashkent.
-    await closedOrder(scene, "2031-09-28T18:00:00Z", "2031-09-30T18:00:00Z");
+    // Closed at 18:00 UTC on 15 September: still 15 September in Tashkent, the last of the same
+    // days this running month is compared with (D55 item 10), so in the period before.
+    await closedOrder(scene, "2031-09-13T18:00:00Z", "2031-09-15T18:00:00Z");
     await refreshNow();
     const block = await getSettlementSpeed(finance.id, THIS_MONTH, NO_ANALYTICS_FILTERS);
     expect(block.total).toEqual({ days: "1.0", count: 1, change: "-1.0" });

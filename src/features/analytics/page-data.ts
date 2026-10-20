@@ -1,5 +1,6 @@
 import { currentBranchChoice } from "@/features/catalog/queries/my-branches";
 import { AuthorizationError, authorizeList } from "@/server/authorize";
+import { db } from "@/server/db/client";
 
 import { parseAnalyticsParams } from "./period-params";
 import { getApprovalSpeed } from "./queries/approval-speed";
@@ -21,7 +22,7 @@ import { getSpending } from "./queries/spending";
 import { getStockPlanning } from "./queries/stock-planning";
 import { getTopProducts } from "./queries/top-products";
 import { getWarehouse } from "./queries/warehouse";
-import { PeriodRefusedError } from "./resolve-period";
+import { PeriodRefusedError, resolvePeriod } from "./resolve-period";
 
 // What the Analytics page reads, per role (10-notifications-analytics-reports.md, Analytics page
 // per role): the page (src/app/(app)/analytics/page.tsx) and its PDF (GET /analytics/report, build-
@@ -54,7 +55,8 @@ export async function readAnalyticsPage(
         branch: await currentBranchChoice(userId, branchCookie),
       };
   try {
-    const [options, block, head, principal, manager, finance] = await Promise.all([
+    const [resolved, options, block, head, principal, manager, finance] = await Promise.all([
+      resolvePeriod(db, params.period),
       getAnalyticsFilters(userId),
       role === "MANAGER" || role === "FINANCE" ? null : getSpending(userId, params.period, filters),
       role === "HEAD"
@@ -99,6 +101,8 @@ export async function readAnalyticsPage(
       period: params.period,
       filters,
       variant: params.variant,
+      // While the period runs, the same days it is compared with (10 point 1: "the page says so").
+      compared: resolved.running ? resolved.before : null,
       options,
       block,
       head,
