@@ -45,7 +45,7 @@ export default async function ImportPage({ params }: { params: Promise<{ kind: s
         ? tStock("title")
         : tCatalog(`kinds.${kind}.title`);
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-6">
+    <div className="flex w-full min-w-0 flex-col gap-6">
       {kind !== "stock" && <AdminNav current={kind === "prices" ? "prices" : "catalog"} />}
       <Link
         href={LISTS[kind]}
@@ -55,12 +55,8 @@ export default async function ImportPage({ params }: { params: Promise<{ kind: s
         {back}
       </Link>
       <div className="flex flex-col gap-2">
-        <h1 className="text-title">
-          {t(`title.${kind}`)}
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          {t(`description.${kind}`)}
-        </p>
+        <h1 className="text-title">{t(`title.${kind}`)}</h1>
+        <p className="text-sm text-muted-foreground">{t(`description.${kind}`)}</p>
       </div>
       <ImportForm
         kind={kind}

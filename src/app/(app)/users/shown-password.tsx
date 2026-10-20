@@ -24,7 +24,7 @@ export function ShownPassword({ username, password }: { username: string; passwo
   return (
     <div
       role="status"
-      className="flex flex-col gap-3 rounded-xl border border-primary/30 bg-card p-6 text-card-foreground"
+      className="flex flex-col gap-3 rounded-xl border border-primary/30 bg-card p-4 text-card-foreground sm:p-5"
     >
       <h2 className="text-subheading font-semibold">{t("shownTitle", { username })}</h2>
       <p className="text-sm leading-5 text-muted-foreground">{t("shownText")}</p>

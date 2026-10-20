@@ -23,7 +23,7 @@ export default async function NewSuggestionPage() {
   const chosen = await currentBranchChoice(user.id, (await cookies()).get(BRANCH_COOKIE)?.value);
   const t = await getTranslations("suggestions");
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-6">
+    <div className="flex w-full max-w-4xl min-w-0 flex-col gap-6">
       <Link
         href="/suggestions"
         className="inline-flex min-h-11 min-w-11 items-center gap-1 self-start text-sm leading-5 font-semibold text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:min-h-0"

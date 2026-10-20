@@ -115,7 +115,7 @@ export function ReceiveTransferForm({
     <section
       data-receive-transfer
       aria-labelledby="receive-transfer"
-      className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 sm:p-6"
+      className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 sm:p-5"
     >
       <UnsavedChangesGuard dirty={dirty} />
       <div className="flex flex-col gap-1">

@@ -51,7 +51,7 @@ export default async function PriceHistoryPage({
   const when = (moment: Date) => `${format.date(moment)} ${format.time(moment)}`;
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-6">
+    <div className="flex w-full max-w-4xl min-w-0 flex-col gap-6">
       <AdminNav current="prices" />
       <Link
         href={back}
@@ -79,7 +79,7 @@ export default async function PriceHistoryPage({
 
       <PriceForm variantId={found.variantId} />
 
-      <section className="flex flex-col gap-4 rounded-xl bg-card p-6 text-card-foreground">
+      <section className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 text-card-foreground sm:p-5">
         <h2 className="text-subheading font-semibold">{t("historyTitle")}</h2>
         {found.rows.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t("noRows")}</p>

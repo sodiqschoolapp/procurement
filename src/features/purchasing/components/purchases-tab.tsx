@@ -119,12 +119,8 @@ export async function PurchasesTab({ order }: { order: OrderPage }) {
                 className="grid grid-cols-1 gap-x-6 gap-y-2 py-3 sm:grid-cols-[minmax(7rem,auto)_1fr_auto]"
               >
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-small text-muted-foreground">
-                    {t("date")}
-                  </span>
-                  <span className="text-sm">
-                    {format.date(record.purchasedOn)}
-                  </span>
+                  <span className="text-small text-muted-foreground">{t("date")}</span>
+                  <span className="text-sm">{format.date(record.purchasedOn)}</span>
                   {record.isCancelled ? (
                     <span className="inline-flex items-center gap-1 text-small font-semibold text-muted-foreground">
                       <Icon name="cancel" size={16} />
@@ -164,9 +160,7 @@ export async function PurchasesTab({ order }: { order: OrderPage }) {
                       supplier: record.supplierName ?? t("none"),
                     })}
                   </span>
-                  {record.comment ? (
-                    <span className="text-small">{record.comment}</span>
-                  ) : null}
+                  {record.comment ? <span className="text-small">{record.comment}</span> : null}
                 </div>
                 <div className="flex flex-col gap-1 sm:items-end">
                   <span

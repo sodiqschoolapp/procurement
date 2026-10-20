@@ -42,12 +42,8 @@ export function OwnerEntries({
                   {entry.branchCode}
                 </span>
               </span>
-              <span className="text-xs text-muted-foreground tabular-nums">
-                {entry.line}
-              </span>
-              <span className="text-sm font-semibold tabular-nums">
-                {entry.amount}
-              </span>
+              <span className="text-xs text-muted-foreground tabular-nums">{entry.line}</span>
+              <span className="text-sm font-semibold tabular-nums">{entry.amount}</span>
             </span>
             <Icon name="chevron_right" size={20} className="shrink-0 text-muted-foreground" />
           </Link>

@@ -43,7 +43,7 @@ export function NotificationList({ items }: { items: readonly NotificationItem[]
   }
 
   return (
-    <ul className="flex flex-col overflow-hidden rounded-xl bg-card text-card-foreground">
+    <ul className="flex flex-col overflow-hidden rounded-xl border border-border bg-card text-card-foreground">
       {items.map((item) => (
         <li key={item.id} className="border-b last:border-b-0">
           <button
@@ -64,9 +64,7 @@ export function NotificationList({ items }: { items: readonly NotificationItem[]
               className={cn("mt-0.5 shrink-0", opening === item.id && "animate-spin")}
             />
             <span className="flex min-w-0 flex-1 flex-col gap-1">
-              <span className={cn("text-sm", item.unread && "font-semibold")}>
-                {item.text}
-              </span>
+              <span className={cn("text-sm", item.unread && "font-semibold")}>{item.text}</span>
               <span className="flex flex-wrap gap-x-3 text-sm leading-5 text-muted-foreground">
                 <span>{item.when}</span>
                 {item.unread && (

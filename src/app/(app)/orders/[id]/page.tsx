@@ -255,8 +255,8 @@ export default async function OrderPageScreen({
   );
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
-      <header className="flex flex-col gap-4 rounded-xl bg-card p-4 sm:p-6">
+    <div className="flex w-full min-w-0 flex-col gap-6">
+      <header className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 sm:p-5">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           <h1 data-order-number className="text-title">
             {order.number ?? t("noNumber")}
@@ -340,7 +340,7 @@ export default async function OrderPageScreen({
           {hasPurchases ? tabLink("money") : null}
           {tabLink("history")}
         </nav>
-        <div className="rounded-xl bg-card p-4 sm:p-6">
+        <div className="rounded-xl border border-border bg-card p-4 sm:p-5">
           <h2 className="sr-only">{t(`${tab}.title`)}</h2>
           {tab === "details" ? (
             details

@@ -213,9 +213,7 @@ export async function MyApprovalsView({ block, period, filters }: Common & { blo
               {t("principal.approvals.myHours")}
             </p>
             {block.mine.hours === null ? (
-              <p className="text-sm text-muted-foreground">
-                {t("principal.approvals.noDecision")}
-              </p>
+              <p className="text-sm text-muted-foreground">{t("principal.approvals.noDecision")}</p>
             ) : (
               <>
                 <Link

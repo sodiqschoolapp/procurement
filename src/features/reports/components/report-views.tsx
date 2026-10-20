@@ -43,7 +43,7 @@ export function Table({
   return (
     <section
       // min-w-0: in a grid or flex row the table scrolls inside its box, never the page.
-      className="flex min-w-0 flex-col gap-3 rounded-xl bg-card p-4 text-card-foreground"
+      className="flex min-w-0 flex-col gap-3 rounded-xl border border-border bg-card p-4 text-card-foreground"
       data-table={name}
     >
       <h2 className="text-lg leading-6 font-semibold">{title}</h2>
@@ -82,7 +82,7 @@ export async function OrderRegisterView({
   const t = await getTranslations("reports");
   const format = await getFormatters();
   return (
-    <section className="flex flex-col gap-3 rounded-xl bg-card p-4 text-card-foreground">
+    <section className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 text-card-foreground">
       <p className="text-sm font-semibold tabular-nums" data-report-summary>
         {t("orders.summary", { count, total: format.money(totals.grand) })}
       </p>
@@ -570,9 +570,7 @@ export async function StockMovementsView({
             <td className={cn(CELL, "whitespace-nowrap")}>{row.branchCode}</td>
             <td className={CELL}>
               {tRoot(`warehouse.item.types.${row.type}`)}
-              {row.undone && (
-                <span className="block text-small">{t("movements.undone")}</span>
-              )}
+              {row.undone && <span className="block text-small">{t("movements.undone")}</span>}
             </td>
             <td className={cn(CELL, "font-semibold whitespace-nowrap")}>
               {row.documentId ? (

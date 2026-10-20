@@ -133,7 +133,7 @@ export function CatalogForm({
     <form
       onSubmit={onSubmit}
       noValidate
-      className="flex flex-col gap-5 rounded-xl bg-card p-6 text-card-foreground"
+      className="flex flex-col gap-5 rounded-xl border border-border bg-card p-4 text-card-foreground sm:p-5"
     >
       <UnsavedChangesGuard dirty={formState.isDirty && !action.pending} />
       {withBranch && (

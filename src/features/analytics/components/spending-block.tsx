@@ -69,7 +69,7 @@ export async function SpendingBlockView({
       <h2 id="spending-title" className="text-heading font-semibold">
         {t("spending.title")}
       </h2>
-      <div className="rounded-xl bg-card p-6 max-sm:p-4">
+      <div className="rounded-xl border border-border bg-card p-4 sm:p-5">
         <p className="text-sm leading-5 font-semibold text-muted-foreground">
           {t("spending.total")}
         </p>
@@ -85,7 +85,7 @@ export async function SpendingBlockView({
         </p>
       </div>
       {empty ? (
-        <p className="rounded-xl bg-card p-6 text-sm text-muted-foreground max-sm:p-4">
+        <p className="rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground max-sm:p-4 sm:p-5">
           {t("spending.empty")}
         </p>
       ) : (
@@ -152,7 +152,7 @@ export async function ChartCard({
   return (
     <section
       aria-labelledby={`${id}-title`}
-      className="flex min-w-0 flex-col gap-3 rounded-xl bg-card p-6 max-sm:p-4"
+      className="flex min-w-0 flex-col gap-3 rounded-xl border border-border bg-card p-4 sm:p-5"
       data-chart-card={id}
     >
       <div className="flex items-baseline justify-between gap-3">

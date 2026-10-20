@@ -53,7 +53,7 @@ export async function SubtypeList({
   return (
     <section
       aria-labelledby="subtypes-title"
-      className="flex flex-col gap-4 rounded-xl bg-card p-6 text-card-foreground"
+      className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 text-card-foreground sm:p-5"
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 id="subtypes-title" className="text-subheading font-semibold">

@@ -20,6 +20,7 @@ import { toast } from "@/components/toast";
 import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard";
 import { useAction } from "@/components/use-action";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { DateInput } from "@/components/ui/date-input";
 import { Field } from "@/components/ui/field";
 import { FIELD_CLASSES, Input } from "@/components/ui/input";
 import { Segmented } from "@/components/ui/segmented";
@@ -165,6 +166,8 @@ export function PurchaseFormView({
     () => false,
   );
 
+  // The date field shows dd.mm.yyyy and gives YYYY-MM-DD (DateInput).
+  register("purchasedOn");
   const values = useWatch({ control }) as Values;
   const fieldTexts = action.fieldTexts;
   /** A line's field error: the server names lines by their place in what was sent. */
@@ -315,7 +318,7 @@ export function PurchaseFormView({
     : t("subtitleTrip", { count: shown.length, branch: form.branchCode });
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
+    <div className="flex w-full min-w-0 flex-col gap-6">
       {/* Not while saving, so the guard's history entry is gone before the form leaves (as the
           suggestion form does). */}
       <UnsavedChangesGuard dirty={(formState.isDirty || receipts.length > 0) && !action.pending} />
@@ -365,7 +368,7 @@ export function PurchaseFormView({
                 {block.members.length > 1 ? (
                   <div
                     data-group
-                    className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 sm:p-6"
+                    className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 sm:p-5"
                   >
                     <h2
                       data-step-heading
@@ -445,7 +448,17 @@ export function PurchaseFormView({
             {t("visit")}
           </h2>
           <Field id="purchase-date" label={t("date")} error={fieldTexts.purchasedOn}>
-            <Input type="date" min={earliest} max={form.today} {...register("purchasedOn")} />
+            <DateInput
+              min={earliest}
+              max={form.today}
+              value={values.purchasedOn}
+              onValueChange={(next) =>
+                setValue("purchasedOn", next, {
+                  shouldDirty: true,
+                  shouldValidate: formState.isSubmitted,
+                })
+              }
+            />
           </Field>
           <div className="flex flex-col gap-1.5">
             <span className="text-sm leading-5 font-semibold">{t("paymentType")}</span>

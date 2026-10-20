@@ -116,7 +116,7 @@ export function CountSheetForm({
     <section
       data-count-sheet
       aria-labelledby="count-sheet"
-      className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 sm:p-6"
+      className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 sm:p-5"
     >
       <UnsavedChangesGuard dirty={dirty} />
       <div className="flex flex-col gap-1">

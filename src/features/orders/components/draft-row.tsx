@@ -387,9 +387,7 @@ export function DraftRow(props: DraftRowProps) {
         )}
         {errorText("branchId")}
         {pendingBranch && (
-          <span className="mt-1 block text-xs text-warning">
-            {t("save.branchPending")}
-          </span>
+          <span className="mt-1 block text-xs text-warning">{t("save.branchPending")}</span>
         )}
       </Cell>
       <Cell col="product" label={t("columns.product")}>
@@ -405,9 +403,7 @@ export function DraftRow(props: DraftRowProps) {
                 onPick={(picked) => void save({ variantId: picked.subtype.id })}
               />
               {fieldError("variantId") && (
-                <span className="text-xs text-destructive">
-                  {fieldError("variantId")}
-                </span>
+                <span className="text-xs text-destructive">{fieldError("variantId")}</span>
               )}
             </span>
           ) : (
@@ -495,9 +491,7 @@ export function DraftRow(props: DraftRowProps) {
                 )}
             </Select>
             {fieldError("departmentId") && (
-              <span className="text-xs text-destructive">
-                {fieldError("departmentId")}
-              </span>
+              <span className="text-xs text-destructive">{fieldError("departmentId")}</span>
             )}
             {!pendingBranch && row.responsibleName && (
               <span className="text-xs text-muted-foreground">
@@ -665,10 +659,7 @@ export function DraftRow(props: DraftRowProps) {
             {row.total === null ? t("none") : format.money(BigInt(row.total))}
           </span>
           {row.priceHint !== null && (
-            <span
-              className="text-xs whitespace-nowrap text-warning"
-              data-cell="price-hint"
-            >
+            <span className="text-xs whitespace-nowrap text-warning" data-cell="price-hint">
               {t("priceHint", { percent: BigInt(row.priceHint) as unknown as number })}
             </span>
           )}

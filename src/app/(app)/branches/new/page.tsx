@@ -15,11 +15,9 @@ export default async function NewBranchPage() {
   await readOrNotFound(() => listBranches(user.id));
   const t = await getTranslations();
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-6">
+    <div className="flex w-full max-w-4xl min-w-0 flex-col gap-6">
       <AdminNav current="branches" />
-      <h1 className="text-title">
-        {t("branches.newTitle")}
-      </h1>
+      <h1 className="text-title">{t("branches.newTitle")}</h1>
       <BranchForm branch={null} />
     </div>
   );

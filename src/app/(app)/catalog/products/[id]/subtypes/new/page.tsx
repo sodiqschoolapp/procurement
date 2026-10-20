@@ -28,7 +28,7 @@ export default async function NewSubtypePage({ params }: { params: Promise<{ id:
   const held = first ? product.referencePrice : null;
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-6">
+    <div className="flex w-full max-w-4xl min-w-0 flex-col gap-6">
       <AdminNav current="catalog" />
       <Link
         href={`/catalog/products/${product.id}`}
@@ -37,9 +37,7 @@ export default async function NewSubtypePage({ params }: { params: Promise<{ id:
         <Icon name="chevron_left" />
         {product.name}
       </Link>
-      <h1 className="text-title">
-        {t("subtypes.newTitle", { product: product.name })}
-      </h1>
+      <h1 className="text-title">{t("subtypes.newTitle", { product: product.name })}</h1>
       {first && (
         <p className="flex gap-2 rounded-xl bg-muted p-4 text-sm">
           <Icon name="info" />

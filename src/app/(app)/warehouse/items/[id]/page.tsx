@@ -85,7 +85,7 @@ export default async function ItemCardPage({
     delta.startsWith("-") ? format.quantity(delta) : `+${format.quantity(delta)}`;
 
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-6">
+    <div className="flex w-full min-w-0 flex-col gap-6">
       <div className="flex flex-col gap-2">
         <Link
           href={`/warehouse/stock?branch=${card.branchId}`}
@@ -94,9 +94,7 @@ export default async function ItemCardPage({
           <Icon name="arrow_back" size={18} />
           {t("back")}
         </Link>
-        <h1 className="text-title">
-          {card.productName}
-        </h1>
+        <h1 className="text-title">{card.productName}</h1>
         <dl className="flex flex-wrap gap-x-6 gap-y-1 text-sm">
           {card.subtypeName !== null && (
             <div className="flex gap-1">
@@ -153,7 +151,7 @@ export default async function ItemCardPage({
       {card.found === 0 ? (
         <EmptyState title={t("emptyTitle")} line={t("emptyText")} />
       ) : (
-        <section className="overflow-x-auto rounded-xl bg-card text-card-foreground">
+        <section className="overflow-x-auto rounded-xl border border-border bg-card text-card-foreground">
           <table className="w-full min-w-[46rem] border-collapse text-left text-sm leading-5">
             <caption className="sr-only">{t("summary", { count: card.found })}</caption>
             <thead className="bg-muted text-small font-semibold text-muted-foreground">

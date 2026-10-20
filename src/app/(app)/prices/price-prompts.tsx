@@ -69,7 +69,7 @@ export function PricePrompts({ rows }: { rows: readonly PromptRow[] }) {
     <section
       aria-labelledby="price-prompts-title"
       data-price-prompts
-      className="flex flex-col gap-4 rounded-xl bg-card p-6 text-card-foreground"
+      className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 text-card-foreground sm:p-5"
     >
       <div className="flex flex-col gap-1">
         <h2 id="price-prompts-title" className="text-subheading font-semibold">

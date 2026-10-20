@@ -67,15 +67,13 @@ function WaitingCard({ card, listHref }: { card: WaitingCardData; listHref: stri
   return (
     <li
       data-waiting-card={group.key}
-      className="flex min-w-0 flex-col gap-4 rounded-xl bg-card p-4 sm:p-6"
+      className="flex min-w-0 flex-col gap-4 rounded-xl border border-border bg-card p-4 sm:p-5"
     >
       <div className="flex flex-col gap-2">
         <div className="flex items-start justify-between gap-3">
           <h3 className="min-w-0 text-subheading font-semibold break-words">
             {product}{" "}
-            <span className="text-small font-normal text-muted-foreground">
-              {group.branchCode}
-            </span>
+            <span className="text-small font-normal text-muted-foreground">{group.branchCode}</span>
           </h3>
           <span
             data-card-total
@@ -165,9 +163,7 @@ function WaitingCard({ card, listHref }: { card: WaitingCardData; listHref: stri
           className="flex flex-col gap-2 rounded-lg border border-destructive p-3"
         >
           <div className="flex items-start justify-between gap-3">
-            <h4 className="text-sm font-semibold text-destructive">
-              {failed.title}
-            </h4>
+            <h4 className="text-sm font-semibold text-destructive">{failed.title}</h4>
             <Button type="button" variant="ghost" size="sm" onClick={() => setFailed(null)}>
               {tCommon("close")}
             </Button>

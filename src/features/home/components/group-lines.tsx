@@ -76,10 +76,7 @@ export function GroupLines({
               )}
             </div>
             {done && (
-              <div
-                data-home-progress
-                className="flex flex-wrap gap-x-3 text-xs tabular-nums"
-              >
+              <div data-home-progress className="flex flex-wrap gap-x-3 text-xs tabular-nums">
                 <span>
                   {t("manager.open.progress", {
                     received: format.quantity(done.received),

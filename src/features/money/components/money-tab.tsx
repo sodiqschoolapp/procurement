@@ -52,9 +52,7 @@ export async function MoneyTab({ money }: { money: OrderMoney }) {
                 className="grid grid-cols-1 gap-x-6 gap-y-2 py-3 sm:grid-cols-[minmax(7rem,auto)_1fr_auto]"
               >
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-small text-muted-foreground">
-                    {t("date")}
-                  </span>
+                  <span className="text-small text-muted-foreground">{t("date")}</span>
                   <span className="text-sm">{format.date(row.occurredOn)}</span>
                   {row.isCancelled ? (
                     <span className="inline-flex items-center gap-1 text-small font-semibold text-muted-foreground">
@@ -73,13 +71,9 @@ export async function MoneyTab({ money }: { money: OrderMoney }) {
                     {tKinds(row.kind)}
                   </span>
                   {row.documentNo ? (
-                    <span className="text-small">
-                      {t("documentNo", { text: row.documentNo })}
-                    </span>
+                    <span className="text-small">{t("documentNo", { text: row.documentNo })}</span>
                   ) : null}
-                  {row.comment ? (
-                    <span className="text-small">{row.comment}</span>
-                  ) : null}
+                  {row.comment ? <span className="text-small">{row.comment}</span> : null}
                 </div>
                 <div className="flex flex-col gap-1 sm:items-end">
                   <span

@@ -98,9 +98,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
   );
   const filtered = activeFilterCount(parsed.filters) > 0;
 
-  const title = (
-    <h1 className="text-title">{t("title")}</h1>
-  );
+  const title = <h1 className="text-title">{t("title")}</h1>;
   const listSection = (
     <section aria-labelledby="order-list-title" className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">

@@ -1,7 +1,7 @@
 import { cn } from "@/components/utils";
 
-// The person in the menu and the top bar (docs/design-system.md, Layout shell: "a round avatar
-// with initials on #1B2A63").
+// The person in the menu and the top bar (docs/design-system.md, Colour: --sidebar-avatar, "the
+// round avatar behind white initials").
 
 /** The first letters of the first two words of a name, in capitals. */
 export function initialsOf(fullName: string): string {
@@ -21,7 +21,7 @@ export function Avatar({ fullName, className }: { fullName: string; className?: 
       aria-hidden="true"
       data-initials={initialsOf(fullName)}
       className={cn(
-        "flex size-9 shrink-0 items-center justify-center rounded-full bg-sidebar-avatar text-small font-semibold text-sidebar-accent-foreground before:content-[attr(data-initials)]",
+        "flex size-9 shrink-0 items-center justify-center rounded-full bg-sidebar-avatar text-xs font-semibold text-white before:content-[attr(data-initials)]",
         className,
       )}
     />

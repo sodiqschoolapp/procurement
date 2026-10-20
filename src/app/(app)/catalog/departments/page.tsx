@@ -49,7 +49,7 @@ export default async function DepartmentsPage({ searchParams }: { searchParams: 
   };
 
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-6">
+    <div className="flex w-full min-w-0 flex-col gap-6">
       <AdminNav current="catalog" />
       <Link
         href="/catalog"
@@ -133,7 +133,7 @@ export default async function DepartmentsPage({ searchParams }: { searchParams: 
           {list.rows.length === 0 ? (
             <EmptyState title={t("noResultsTitle")} line={t("noResultsText")} />
           ) : (
-            <section className="overflow-x-auto rounded-xl bg-card text-card-foreground">
+            <section className="overflow-x-auto rounded-xl border border-border bg-card text-card-foreground">
               <table className="w-full min-w-[40rem] border-collapse text-left text-sm leading-5">
                 <thead className="bg-muted text-small font-semibold text-muted-foreground">
                   <tr>

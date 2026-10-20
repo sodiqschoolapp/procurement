@@ -142,7 +142,7 @@ export default async function StockDocumentPage({ params }: { params: Promise<{ 
   );
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
+    <div className="flex w-full max-w-4xl min-w-0 flex-col gap-6">
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="text-title">
           {t("page.title", { type: t(`types.${document.type}`), number: document.number })}
@@ -150,7 +150,7 @@ export default async function StockDocumentPage({ params }: { params: Promise<{ 
         <DocumentStatusLabel type={document.type} status={document.status} />
       </div>
 
-      <section className="rounded-xl border border-border bg-card p-4 sm:p-6">
+      <section className="rounded-xl border border-border bg-card p-4 sm:p-5">
         <dl className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
           {fields.map((field) => (
             <div
@@ -187,7 +187,7 @@ export default async function StockDocumentPage({ params }: { params: Promise<{ 
       ) : (
         <section
           aria-labelledby="document-lines"
-          className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 sm:p-6"
+          className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 sm:p-5"
         >
           <h2 id="document-lines" className="text-subheading font-semibold">
             {t("page.lines")}

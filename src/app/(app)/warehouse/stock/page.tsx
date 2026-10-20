@@ -107,7 +107,7 @@ export default async function StockOnHandPage({ searchParams }: { searchParams: 
   };
 
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-6">
+    <div className="flex w-full min-w-0 flex-col gap-6">
       <WarehouseTabs current="stock" role={user.role} />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="flex flex-wrap items-baseline gap-x-3 text-title">
@@ -196,7 +196,7 @@ export default async function StockOnHandPage({ searchParams }: { searchParams: 
           {list.rows.length === 0 ? (
             <EmptyState title={t("noResultsTitle")} line={t("noResultsText")} />
           ) : (
-            <section className="overflow-x-auto rounded-xl bg-card text-card-foreground">
+            <section className="overflow-x-auto rounded-xl border border-border bg-card text-card-foreground">
               <table className="w-full min-w-[56rem] border-collapse text-left text-sm leading-5">
                 <thead className="bg-muted text-small font-semibold text-muted-foreground">
                   <tr>

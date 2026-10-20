@@ -47,11 +47,9 @@ export default async function SettingsPage() {
   const history = await listChangeHistory(user.id, { entity: "settings", entityId: "settings" });
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-6">
+    <div className="flex w-full max-w-4xl min-w-0 flex-col gap-6">
       <AdminNav current="settings" />
-      <h1 className="text-title">
-        {t("settings.title")}
-      </h1>
+      <h1 className="text-title">{t("settings.title")}</h1>
       {/* 13-technology.md, Running it: "the Head's Settings page shows the date of the last copy". */}
       <p className="text-sm leading-5 text-muted-foreground" data-last-copy>
         {lastCopy ? t("settings.lastCopy", { date: format.date(lastCopy) }) : t("settings.noCopy")}
@@ -66,7 +64,7 @@ export default async function SettingsPage() {
           ) as string,
         }}
       />
-      <section className="flex flex-col gap-4 rounded-xl bg-card p-6 text-card-foreground">
+      <section className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 text-card-foreground sm:p-5">
         <h2 className="text-subheading font-semibold">{t("settings.history")}</h2>
         <ChangeHistory entries={history.rows} fields={FIELDS} />
       </section>

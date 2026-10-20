@@ -10,21 +10,21 @@ import type { RequestStatus } from "@/domain/request-status";
 import type { DocumentStatus, DocumentType } from "@/domain/stock-documents";
 import { useFormatters } from "@/i18n/use-formatters";
 
-// The one status-label component (docs/design-system.md, "This app, Status labels";
-// 11-screens-and-ux.md rule 11: status labels look the same everywhere). A rectangle with corner
-// 6, its icon, its word and, for a colour label, the amount.
+// The one status-label component (docs/design-system.md, Parts: "Status and outcome";
+// 11-screens-and-ux.md rule 11: status labels look the same everywhere).
 //
-// - A request status (06-approval-workflow.md, Statuses) uses only the info and muted tokens;
-//   success, warning and danger are kept for the colour labels and alerts (plan of 0.10a,
-//   decision 8).
+// - A request status (06-approval-workflow.md, Statuses) is a coloured dot and its word: blue for
+//   the approval and buying flow, red for sent back and rejected, green for closed, grey for
+//   draft and cancelled (D60, 21.10.2026). Never colour alone: the word is always there.
 // - A colour label (08-money-and-settlement.md, The three colours) shows the colour its caller
-//   gives; it decides no colour (that is src/domain/colours.ts, plan of 3.8). Green, amber and red use the
-//   success, warning and danger tokens; "orange" of 08 is drawn amber (decision 7). The word
-//   follows the colour, the amount is shown without its sign, and a difference whose sign
-//   contradicts the word is refused (review correction 2). A difference is planned minus
-//   actual: above 0 means less was bought, paid or spent (08: "A positive difference means
-//   money is left"). Price orange may show 0: two prices that cancel out are "at or below" the
-//   plan (08, Price row; plan of 3.8, decided item 3, which replaces 0.10a's "above 0").
+//   gives; it decides no colour (that is src/domain/colours.ts, plan of 3.8). Green, amber and red
+//   use the success, warning and danger tokens; "orange" of 08 is drawn amber, never the brand
+//   orange. The word follows the colour, the amount is shown without its sign, and a difference
+//   whose sign contradicts the word is refused (review correction 2). A difference is planned
+//   minus actual: above 0 means less was bought, paid or spent (08: "A positive difference means
+//   money is left"). A green label of one order says its plain word without "0" ("Quantity as
+//   planned", "Even"). Price orange may show 0: two prices that cancel out are "at or below" the
+//   plan (08, Price row; plan of 3.8, decided item 3).
 // - A set's Number and Price carry how many of its orders have that colour, not an amount
 //   (plan of 3.8, decided item 2).
 
@@ -39,21 +39,52 @@ const TONE_CLASSES: Record<Tone, string> = {
   grey: "bg-muted text-muted-foreground",
 };
 
-export const REQUEST_STATUS_LOOK: Record<
-  RequestStatus,
-  { tone: "info" | "muted"; icon: IconName }
-> = {
-  DRAFT: { tone: "muted", icon: "edit" },
-  PENDING_HEAD: { tone: "info", icon: "schedule" },
-  PENDING_PRINCIPAL: { tone: "info", icon: "schedule" },
-  PENDING_FINANCE: { tone: "info", icon: "schedule" },
-  RETURNED: { tone: "info", icon: "undo" },
-  PURCHASING: { tone: "info", icon: "shopping_cart" },
-  SETTLEMENT: { tone: "info", icon: "schedule" },
-  CLOSED: { tone: "muted", icon: "check_circle" },
-  REJECTED: { tone: "muted", icon: "block" },
-  CANCELLED: { tone: "muted", icon: "cancel" },
+/** The dot of a status (design system, Status and outcome). */
+export type DotTone = "info" | "red" | "green" | "grey";
+
+const DOT_CLASSES: Record<DotTone, string> = {
+  info: "bg-info",
+  red: "bg-destructive",
+  green: "bg-success",
+  grey: "bg-muted-foreground/60",
 };
+
+export const REQUEST_STATUS_LOOK: Record<RequestStatus, { dot: DotTone }> = {
+  DRAFT: { dot: "grey" },
+  PENDING_HEAD: { dot: "info" },
+  PENDING_PRINCIPAL: { dot: "info" },
+  PENDING_FINANCE: { dot: "info" },
+  RETURNED: { dot: "red" },
+  PURCHASING: { dot: "info" },
+  SETTLEMENT: { dot: "info" },
+  CLOSED: { dot: "green" },
+  REJECTED: { dot: "red" },
+  CANCELLED: { dot: "grey" },
+};
+
+/** A status as a dot and its word. */
+export function StatusDot({
+  tone,
+  className,
+  children,
+}: {
+  tone: DotTone;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <span
+      data-status-dot={tone}
+      className={cn(
+        "inline-flex items-center gap-1.5 text-sm font-medium whitespace-nowrap text-foreground",
+        className,
+      )}
+    >
+      <span aria-hidden="true" className={cn("size-2 shrink-0 rounded-full", DOT_CLASSES[tone])} />
+      {children}
+    </span>
+  );
+}
 
 const COLOUR_ICONS = {
   green: "check_circle",
@@ -137,7 +168,7 @@ function LabelBox({
   return (
     <span
       className={cn(
-        "inline-flex h-6 items-center gap-1 rounded-sm px-2 text-small font-semibold whitespace-nowrap",
+        "inline-flex h-6 items-center gap-1 rounded-sm px-2 text-xs font-medium whitespace-nowrap",
         TONE_CLASSES[tone],
         className,
       )}
@@ -148,7 +179,7 @@ function LabelBox({
   );
 }
 
-/** The label of a request status, in the words of 06-approval-workflow.md. */
+/** The status of an order, in the words of 06-approval-workflow.md: a dot and the word. */
 export function RequestStatusLabel({
   status,
   className,
@@ -157,11 +188,10 @@ export function RequestStatusLabel({
   className?: string;
 }) {
   const t = useTranslations("requestStatus");
-  const look = REQUEST_STATUS_LOOK[status];
   return (
-    <LabelBox tone={look.tone} icon={look.icon} className={className}>
-      {t(status)}
-    </LabelBox>
+    <StatusDot tone={REQUEST_STATUS_LOOK[status].dot} className={className}>
+      <span data-request-status={status}>{t(status)}</span>
+    </StatusDot>
   );
 }
 
@@ -172,8 +202,8 @@ export function RequestStatusLabel({
  */
 export const DRAFT_LABEL_LOOK = {
   SENT_BACK: REQUEST_STATUS_LOOK.RETURNED,
-  TAKEN_BACK: { tone: "info", icon: "history" },
-} as const satisfies Record<string, { tone: "info" | "muted"; icon: IconName }>;
+  TAKEN_BACK: { dot: "info" },
+} as const satisfies Record<string, { dot: DotTone }>;
 
 export function DraftGridLabel({
   label,
@@ -183,11 +213,10 @@ export function DraftGridLabel({
   className?: string;
 }) {
   const t = useTranslations("orders.labels");
-  const look = DRAFT_LABEL_LOOK[label];
   return (
-    <LabelBox tone={look.tone} icon={look.icon} className={className}>
+    <StatusDot tone={DRAFT_LABEL_LOOK[label].dot} className={className}>
       {t(label)}
-    </LabelBox>
+    </StatusDot>
   );
 }
 
@@ -196,11 +225,11 @@ export function DraftGridLabel({
  * status, only the info and muted tokens: Open buying is info, a finished one muted.
  */
 export const PROGRESS_LOOK = {
-  OPEN: { tone: "info", icon: "shopping_cart" },
-  DONE: { tone: "muted", icon: "done_all" },
-  DONE_SHORT: { tone: "muted", icon: "check_circle" },
-  NOT_BOUGHT: { tone: "muted", icon: "block" },
-} as const satisfies Record<OrderProgress, { tone: "info" | "muted"; icon: IconName }>;
+  OPEN: { dot: "info" },
+  DONE: { dot: "green" },
+  DONE_SHORT: { dot: "green" },
+  NOT_BOUGHT: { dot: "grey" },
+} as const satisfies Record<OrderProgress, { dot: DotTone }>;
 
 export function ProgressLabel({
   progress,
@@ -210,11 +239,10 @@ export function ProgressLabel({
   className?: string;
 }) {
   const t = useTranslations("orders.progress");
-  const look = PROGRESS_LOOK[progress];
   return (
-    <LabelBox tone={look.tone} icon={look.icon} className={className}>
+    <StatusDot tone={PROGRESS_LOOK[progress].dot} className={className}>
       <span data-progress={progress}>{t(progress)}</span>
-    </LabelBox>
+    </StatusDot>
   );
 }
 
@@ -247,14 +275,14 @@ export function ReversedLabel({ className }: { className?: string }) {
  * "Posted".
  */
 const DOCUMENT_STATUS_LOOK = {
-  PENDING_APPROVAL: { tone: "info", icon: "schedule" },
-  POSTED: { tone: "muted", icon: "check_circle" },
-  IN_TRANSIT: { tone: "info", icon: "schedule" },
-  RECEIVED: { tone: "muted", icon: "check_circle" },
-  REJECTED: { tone: "muted", icon: "block" },
-  REVERSED: { tone: "muted", icon: "undo" },
-  CANCELLED: { tone: "muted", icon: "block" },
-} as const satisfies Record<DocumentStatus, { tone: "info" | "muted"; icon: IconName }>;
+  PENDING_APPROVAL: { dot: "info" },
+  POSTED: { dot: "green" },
+  IN_TRANSIT: { dot: "info" },
+  RECEIVED: { dot: "green" },
+  REJECTED: { dot: "red" },
+  REVERSED: { dot: "grey" },
+  CANCELLED: { dot: "grey" },
+} as const satisfies Record<DocumentStatus, { dot: DotTone }>;
 
 export function DocumentStatusLabel({
   type,
@@ -267,7 +295,6 @@ export function DocumentStatusLabel({
 }) {
   const tWriteOff = useTranslations("warehouse.writeOff.page.status");
   const t = useTranslations("warehouse.documents.status");
-  const look = DOCUMENT_STATUS_LOOK[status];
   const word =
     type === "WRITE_OFF" &&
     status !== "IN_TRANSIT" &&
@@ -276,9 +303,9 @@ export function DocumentStatusLabel({
       ? tWriteOff(status)
       : t(status);
   return (
-    <LabelBox tone={look.tone} icon={look.icon} className={className}>
+    <StatusDot tone={DOCUMENT_STATUS_LOOK[status].dot} className={className}>
       <span data-document-status={status}>{word}</span>
-    </LabelBox>
+    </StatusDot>
   );
 }
 
@@ -293,7 +320,12 @@ export function ColourLabel(props: ColourLabelProps & { className?: string }) {
     }
     amount = t("orders", { count: props.orders });
   } else if (props.colour !== "grey") {
-    if (props.label === "number") {
+    // A green label of one order is its plain word: "Quantity as planned", not "Matches 0".
+    if (props.colour === "green") {
+      if (props.label === "number")
+        refuseContradiction("number", "green", splitQuantity(props.difference).sign);
+      else refuseContradiction(props.label, "green", splitMoney(props.difference).sign);
+    } else if (props.label === "number") {
       const { sign, magnitude } = splitQuantity(props.difference);
       refuseContradiction(props.label, props.colour, sign);
       amount = format.quantity(magnitude);
@@ -303,8 +335,8 @@ export function ColourLabel(props: ColourLabelProps & { className?: string }) {
       amount = format.money(magnitude);
     }
   }
-  // A colour label always carries an icon, a word and the amount (08, The three colours), also
-  // green ("Even 0 so'm"); the grey state has no amount yet.
+  // A colour label always carries an icon and a word, and the amount when it has one (08, The
+  // three colours); green has nothing to count and the grey state no amount yet.
   const word = COLOUR_WORDS[props.label][props.colour];
   const key = `${props.label}.${word}` as Parameters<typeof t>[0];
   return (
@@ -340,7 +372,7 @@ export function OutcomeLabel({
     <LabelBox tone={colour} icon={COLOUR_ICONS[colour]} className={className}>
       <span className="sr-only">{t("total.name")}</span>
       {t(`total.${COLOUR_WORDS.total[colour]}`)}
-      <span className="tabular-nums">{format.money(amount)}</span>
+      {colour !== "green" && <span className="tabular-nums">{format.money(amount)}</span>}
     </LabelBox>
   );
 }

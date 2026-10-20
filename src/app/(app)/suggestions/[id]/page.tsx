@@ -37,7 +37,7 @@ export default async function SuggestionPage({ params }: { params: Promise<{ id:
   );
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-6">
+    <div className="flex w-full max-w-4xl min-w-0 flex-col gap-6">
       <Link
         href="/suggestions"
         className="inline-flex min-h-11 min-w-11 items-center gap-1 self-start text-sm leading-5 font-semibold text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:min-h-0"
@@ -46,13 +46,11 @@ export default async function SuggestionPage({ params }: { params: Promise<{ id:
         {t("back")}
       </Link>
       <div className="flex flex-col gap-2">
-        <h1 className="text-title break-words">
-          {suggestion.name}
-        </h1>
+        <h1 className="text-title break-words">{suggestion.name}</h1>
         <SuggestionStatusText status={suggestion.status} />
       </div>
 
-      <section className="flex flex-col gap-6 rounded-xl bg-card p-6 text-card-foreground sm:flex-row">
+      <section className="flex flex-col gap-6 rounded-xl border border-border bg-card p-4 text-card-foreground sm:flex-row sm:p-5">
         {suggestion.photoFileId ? (
           // eslint-disable-next-line @next/next/no-img-element -- a private file route, not an asset
           <img
@@ -82,7 +80,7 @@ export default async function SuggestionPage({ params }: { params: Promise<{ id:
       </section>
 
       {suggestion.status !== "PENDING" && (
-        <section className="flex flex-col gap-4 rounded-xl bg-card p-6 text-card-foreground">
+        <section className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 text-card-foreground sm:p-5">
           <dl className="flex flex-col gap-4">
             {suggestion.decidedByName && fact(t("decidedBy"), suggestion.decidedByName)}
             {suggestion.decidedAt &&
@@ -111,7 +109,7 @@ export default async function SuggestionPage({ params }: { params: Promise<{ id:
       )}
 
       {decides && (
-        <section className="flex flex-col gap-4 rounded-xl bg-card p-6 text-card-foreground">
+        <section className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 text-card-foreground sm:p-5">
           <Link
             href={`/suggestions/${suggestion.id}/add`}
             className={buttonVariants({ className: "w-full sm:w-auto sm:self-start" })}

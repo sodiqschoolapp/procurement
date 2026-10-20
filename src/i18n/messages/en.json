@@ -238,14 +238,14 @@
     "orders": "{count, plural, one {# order} other {# orders}}",
     "number": {
       "name": "Number",
-      "matches": "Matches",
+      "matches": "Quantity as planned",
       "less": "Less",
       "more": "More",
       "inProgress": "In progress"
     },
     "price": {
       "name": "Price",
-      "matches": "Matches",
+      "matches": "Price as planned",
       "cheaper": "Cheaper",
       "dearer": "Dearer",
       "notBought": "Not bought yet"
@@ -254,7 +254,7 @@
       "name": "Total",
       "even": "Even",
       "left": "Left",
-      "over": "Over",
+      "over": "Over by",
       "inProgress": "In progress"
     }
   },
@@ -3427,5 +3427,9 @@
         "count": "Orders"
       }
     }
+  },
+  "dateInput": {
+    "placeholder": "dd.mm.yyyy",
+    "pick": "Choose on the calendar"
   }
 }

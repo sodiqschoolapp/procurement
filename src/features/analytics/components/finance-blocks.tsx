@@ -250,9 +250,7 @@ export async function PaymentsView({
       <Link href={href} className={linkClass}>
         {format.money(value)}
       </Link>
-      <span className="block text-small text-muted-foreground">
-        {changeText(each, t, format)}
-      </span>
+      <span className="block text-small text-muted-foreground">{changeText(each, t, format)}</span>
     </>
   );
   const { transfers } = block;

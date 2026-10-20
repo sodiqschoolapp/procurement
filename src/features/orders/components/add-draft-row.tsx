@@ -158,7 +158,7 @@ export function AddDraftRow({
       }}
       aria-labelledby="add-draft-title"
       aria-busy={busy || undefined}
-      className="flex flex-col gap-4 rounded-xl bg-card p-4 sm:p-6"
+      className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 sm:p-5"
     >
       <h2 id="add-draft-title" className="text-subheading font-semibold">
         {t("add.title")}

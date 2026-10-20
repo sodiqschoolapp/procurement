@@ -2,6 +2,7 @@ import { getTranslations } from "next-intl/server";
 import Link from "next/link";
 
 import { buttonVariants } from "@/components/ui/button";
+import { DateInput } from "@/components/ui/date-input";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 
@@ -40,8 +41,7 @@ export async function ReportFilters({
         )}
         <label className={field}>
           {t("from")}
-          <Input
-            type="date"
+          <DateInput
             name="from"
             defaultValue={params.range.first}
             className="sm:w-40"
@@ -50,8 +50,7 @@ export async function ReportFilters({
         </label>
         <label className={field}>
           {t("to")}
-          <Input
-            type="date"
+          <DateInput
             name="to"
             defaultValue={params.range.last}
             className="sm:w-40"

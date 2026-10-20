@@ -16,6 +16,7 @@ import { toast } from "@/components/toast";
 import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard";
 import { useAction } from "@/components/use-action";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { DateInput } from "@/components/ui/date-input";
 import { Field } from "@/components/ui/field";
 import { FIELD_CLASSES, Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -111,6 +112,9 @@ export function IssueForm({
   const { register, handleSubmit, control, setValue, reset, formState } = useForm<Values>({
     defaultValues: empty(initialBranchId),
   });
+  // The date field shows dd.mm.yyyy and gives YYYY-MM-DD (DateInput); the form keeps the rule.
+  register("docDate", { required: true });
+  const docDate = useWatch({ control, name: "docDate" });
   const lines = useFieldArray({ control, name: "lines" });
   const values = useWatch({ control }) as Values;
   const fieldTexts = action.fieldTexts;
@@ -214,7 +218,7 @@ export function IssueForm({
     return (
       <section
         data-issue-saved
-        className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 sm:p-6"
+        className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 sm:p-5"
       >
         <h2 className="flex items-center gap-2 text-subheading font-semibold">
           <Icon name="check_circle" className="text-success" />
@@ -314,12 +318,15 @@ export function IssueForm({
             </p>
           )}
           <Field id="issue-date" label={t("date")} error={fieldTexts.docDate}>
-            <Input
-              type="date"
+            <DateInput
               max={today}
-              {...register("docDate", { required: true })}
-              fieldSize="default"
-              className="max-sm:h-12"
+              value={docDate}
+              onValueChange={(next) =>
+                setValue("docDate", next, {
+                  shouldDirty: true,
+                  shouldValidate: formState.isSubmitted,
+                })
+              }
             />
           </Field>
           <Field id="issue-department" label={t("department")} error={fieldTexts.departmentId}>

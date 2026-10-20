@@ -156,7 +156,7 @@ export function ImportForm({
       {needsBranch && (
         <section
           aria-label={t("branch")}
-          className="flex flex-col gap-3 rounded-xl bg-card p-6 text-card-foreground"
+          className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 text-card-foreground sm:p-5"
         >
           <Field id="import-branch" label={t("branch")}>
             <Select
@@ -176,7 +176,7 @@ export function ImportForm({
       )}
       <section
         aria-labelledby="import-template"
-        className="flex flex-col gap-3 rounded-xl bg-card p-6 text-card-foreground"
+        className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 text-card-foreground sm:p-5"
       >
         <h2 id="import-template" className="text-subheading font-semibold">
           {t("templateHeading")}
@@ -197,7 +197,7 @@ export function ImportForm({
 
       <section
         aria-labelledby="import-file"
-        className="flex flex-col gap-3 rounded-xl bg-card p-6 text-card-foreground"
+        className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 text-card-foreground sm:p-5"
       >
         <h2 id="import-file" className="text-subheading font-semibold">
           {t("fileHeading")}
@@ -251,7 +251,7 @@ export function ImportForm({
       {preview !== null && fileErrors.length === 0 && (
         <section
           aria-labelledby="import-preview"
-          className="flex flex-col gap-4 rounded-xl bg-card p-6 text-card-foreground"
+          className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 text-card-foreground sm:p-5"
         >
           <div className="flex flex-col gap-1">
             <h2 id="import-preview" className="text-subheading font-semibold">

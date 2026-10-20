@@ -53,7 +53,7 @@ export default async function CatalogEntryPage({
   });
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-6">
+    <div className="flex w-full max-w-4xl min-w-0 flex-col gap-6">
       <AdminNav current="catalog" />
       <Link
         href={`/catalog/${kind}`}
@@ -72,7 +72,7 @@ export default async function CatalogEntryPage({
         <CatalogActiveButton kind={kind} entry={entry} />
       </div>
       <CatalogForm kind={kind} entry={entry} />
-      <section className="flex flex-col gap-4 rounded-xl bg-card p-6 text-card-foreground">
+      <section className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 text-card-foreground sm:p-5">
         <h2 className="text-subheading font-semibold">{t("history")}</h2>
         <ChangeHistory entries={history.rows} fields={historyFields(kind)} />
       </section>

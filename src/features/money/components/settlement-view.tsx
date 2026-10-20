@@ -13,6 +13,7 @@ import { NoReceiptLabel } from "@/components/status-label";
 import { toast } from "@/components/toast";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Icon } from "@/components/icon";
+import { DateInput } from "@/components/ui/date-input";
 import { FIELD_CLASSES, Input } from "@/components/ui/input";
 import { cn } from "@/components/utils";
 import { FILE_MIMES } from "@/domain/files";
@@ -199,7 +200,7 @@ export function SettlementView({ settlement }: { settlement: WireSettlement }) {
   );
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6" data-settlement>
+    <div className="flex w-full min-w-0 flex-col gap-6" data-settlement>
       <header className="flex flex-col gap-1">
         <h1 className="text-title">{t("title")}</h1>
         <p className="text-sm text-muted-foreground">
@@ -235,7 +236,7 @@ export function SettlementView({ settlement }: { settlement: WireSettlement }) {
             key={manager.id}
             data-settle-manager={manager.id}
             aria-labelledby={`manager-${manager.id}`}
-            className="flex flex-col gap-6 rounded-xl bg-card p-4 sm:p-6"
+            className="flex flex-col gap-6 rounded-xl border border-border bg-card p-4 sm:p-5"
           >
             <h2 id={`manager-${manager.id}`} className="text-figure font-semibold">
               {manager.name}
@@ -380,9 +381,7 @@ export function SettlementView({ settlement }: { settlement: WireSettlement }) {
                             ) : null}
                           </div>
                         ) : (
-                          <p className="text-sm text-muted-foreground">
-                            {t("cash.settled")}
-                          </p>
+                          <p className="text-sm text-muted-foreground">{t("cash.settled")}</p>
                         )}
                       </li>
                     );
@@ -477,7 +476,7 @@ export function SettlementView({ settlement }: { settlement: WireSettlement }) {
         <section
           aria-labelledby={`${formId}-save`}
           data-settle-form
-          className="flex flex-col gap-4 rounded-xl bg-card p-4 sm:p-6"
+          className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 sm:p-5"
         >
           <h2 id={`${formId}-save`} className="text-subheading font-semibold">
             {t("saveTitle")}
@@ -487,13 +486,12 @@ export function SettlementView({ settlement }: { settlement: WireSettlement }) {
               <label htmlFor={`${formId}-date`} className="text-sm leading-5 font-semibold">
                 {t("date")}
               </label>
-              <Input
+              <DateInput
                 id={`${formId}-date`}
-                type="date"
                 max={settlement.today}
                 value={date}
                 disabled={pending}
-                onChange={(event) => setDate(event.target.value)}
+                onValueChange={setDate}
               />
             </div>
             <div className="flex flex-col gap-1.5">
@@ -565,9 +563,7 @@ export function SettlementView({ settlement }: { settlement: WireSettlement }) {
               )}
             </div>
           ) : (
-            <p className="text-small text-muted-foreground">
-              {t("fileOneManager")}
-            </p>
+            <p className="text-small text-muted-foreground">{t("fileOneManager")}</p>
           )}
           <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
             <Link
@@ -644,12 +640,8 @@ function TransferRow({
         </div>
         {(["planned", "transferred", "received"] as const).map((name) => (
           <div key={name} className="flex flex-col gap-0.5" data-fact={name}>
-            <dt className="text-small text-muted-foreground">
-              {t(`transfer.${name}`)}
-            </dt>
-            <dd className="text-sm tabular-nums">
-              {format.money(BigInt(figures[name]))}
-            </dd>
+            <dt className="text-small text-muted-foreground">{t(`transfer.${name}`)}</dt>
+            <dd className="text-sm tabular-nums">{format.money(BigInt(figures[name]))}</dd>
           </div>
         ))}
       </dl>
@@ -757,10 +749,7 @@ function ConfirmBox({
         {t("confirmed")}
       </label>
       {ticked && !confirmed ? (
-        <p
-          id={`stale-${block}-${order.id}`}
-          className="text-small text-muted-foreground"
-        >
+        <p id={`stale-${block}-${order.id}`} className="text-small text-muted-foreground">
           {t("transfer.changed")}
         </p>
       ) : null}

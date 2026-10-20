@@ -238,14 +238,14 @@
     "orders": "{count} ta buyurtma",
     "number": {
       "name": "Soni",
-      "matches": "Mos",
+      "matches": "Miqdor rejadagidek",
       "less": "Kam",
       "more": "Koʻp",
       "inProgress": "Jarayonda"
     },
     "price": {
       "name": "Narx",
-      "matches": "Mos",
+      "matches": "Narx rejadagidek",
       "cheaper": "Arzonroq",
       "dearer": "Qimmatroq",
       "notBought": "Hali sotib olinmagan"
@@ -3427,5 +3427,9 @@
         "count": "Buyurtmalar"
       }
     }
+  },
+  "dateInput": {
+    "placeholder": "kk.oo.yyyy",
+    "pick": "Taqvimdan tanlash"
   }
 }

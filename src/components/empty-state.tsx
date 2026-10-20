@@ -1,15 +1,15 @@
 import Link from "next/link";
 
-import { HexagonCluster } from "@/components/hexagons";
-import type { IconName } from "@/components/icon";
+import { Icon, type IconName } from "@/components/icon";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/components/utils";
 
-// The empty page, a brand moment (docs/design-system.md, "Empty page"; 11-screens-and-ux.md
-// rule 12: "An empty list explains what belongs there and offers the button to create it"). In
-// the page's white panel: a Bitter title that says what is missing, one short line, the first
-// action as a primary button and at most one quiet second action; at the right the hexagon
-// drawing, hidden at phone width. Every text comes from the message files.
+// The empty state (docs/design-system.md, Parts: "Empty state"; 11-screens-and-ux.md rule 12:
+// "An empty list explains what belongs there and offers the button to create it"). Inside the
+// panel, centred: an outlined icon in the muted colour, a title that says what belongs there, at
+// most one short line, the button that creates it and at most one quiet second action. `inline`
+// draws it without a panel of its own, for a panel that already holds it. Every text comes from
+// the message files.
 
 export type EmptyStateAction =
   | { label: string; href: string; icon?: IconName }
@@ -20,6 +20,7 @@ function ActionButton({ action, quiet }: { action: EmptyStateAction; quiet: bool
   if ("href" in action) {
     return (
       <Link href={action.href} className={buttonVariants({ variant })}>
+        {action.icon && <Icon name={action.icon} />}
         {action.label}
       </Link>
     );
@@ -34,36 +35,40 @@ function ActionButton({ action, quiet }: { action: EmptyStateAction; quiet: bool
 export function EmptyState({
   title,
   line,
+  icon = "inbox",
   action,
   quietAction,
+  inline = false,
   className,
 }: {
   title: string;
-  line: string;
+  /** One short line, only when it says what belongs here or what to do next. */
+  line?: string;
+  icon?: IconName;
   action?: EmptyStateAction;
   quietAction?: EmptyStateAction;
+  /** Inside a panel that already holds it: no panel of its own. */
+  inline?: boolean;
   className?: string;
 }) {
   return (
     <section
+      data-empty-state
       className={cn(
-        "flex items-center justify-between gap-6 rounded-xl bg-card p-6 text-card-foreground",
+        "flex flex-col items-center gap-2 px-4 py-10 text-center text-card-foreground sm:py-12",
+        !inline && "rounded-xl border border-border bg-card",
         className,
       )}
     >
-      <div className="flex min-w-0 flex-col gap-3">
-        <h2 className="font-slab text-title text-balance sm:text-[40px] sm:leading-[44px]">
-          {title}
-        </h2>
-        <p className="text-sm text-muted-foreground">{line}</p>
-        {(action || quietAction) && (
-          <div className="mt-3 flex flex-wrap gap-3">
-            {action && <ActionButton action={action} quiet={false} />}
-            {quietAction && <ActionButton action={quietAction} quiet />}
-          </div>
-        )}
-      </div>
-      <HexagonCluster className="hidden sm:block" />
+      <Icon name={icon} size={24} className="mb-1 text-muted-foreground" />
+      <h2 className="text-subheading text-balance">{title}</h2>
+      {line && <p className="max-w-md text-sm text-balance text-muted-foreground">{line}</p>}
+      {(action || quietAction) && (
+        <div className="mt-3 flex flex-wrap justify-center gap-2">
+          {action && <ActionButton action={action} quiet={false} />}
+          {quietAction && <ActionButton action={quietAction} quiet />}
+        </div>
+      )}
     </section>
   );
 }

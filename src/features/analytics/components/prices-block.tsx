@@ -174,9 +174,7 @@ export async function PricesView({
             })}
           </p>
           {block.rises.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              {t("prices.risesEmpty")}
-            </p>
+            <p className="text-sm text-muted-foreground">{t("prices.risesEmpty")}</p>
           ) : (
             <Table
               headings={[
@@ -224,9 +222,7 @@ export async function PricesView({
 
         <Card id="prices-spread" title={t("prices.spread")} excel={download("priceSpread")}>
           {block.spreads.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              {t("prices.spreadEmpty")}
-            </p>
+            <p className="text-sm text-muted-foreground">{t("prices.spreadEmpty")}</p>
           ) : (
             <Table
               headings={[
@@ -307,7 +303,7 @@ export async function Card({
   return (
     <section
       aria-labelledby={`${id}-title`}
-      className="flex min-w-0 flex-col gap-3 rounded-xl bg-card p-6 max-sm:p-4"
+      className="flex min-w-0 flex-col gap-3 rounded-xl border border-border bg-card p-4 sm:p-5"
       data-chart-card={id}
     >
       <div className="flex items-baseline justify-between gap-3">

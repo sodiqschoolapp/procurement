@@ -203,7 +203,7 @@ export function OrderList({
         </Button>
       </div>
 
-      <div className="overflow-x-auto rounded-xl bg-card max-sm:overflow-visible max-sm:bg-transparent">
+      <div className="overflow-x-auto rounded-xl border border-border bg-card max-sm:overflow-visible max-sm:border-0 max-sm:bg-transparent">
         <table className="w-full border-collapse text-sm max-sm:block">
           <caption className="sr-only">{t("title")}</caption>
           <thead className="bg-muted text-left text-small text-muted-foreground max-sm:hidden">
@@ -477,9 +477,7 @@ function GroupRows({
             <Icon name={open ? "expand_more" : "chevron_right"} className="shrink-0" />
             <span className="flex flex-col gap-1">
               <span>{product}</span>{" "}
-              <span className="text-xs font-normal text-muted-foreground">
-                {group.branchCode}
-              </span>
+              <span className="text-xs font-normal text-muted-foreground">{group.branchCode}</span>
             </span>
           </button>
         </td>

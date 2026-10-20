@@ -45,16 +45,14 @@ export function TickedTotals({ drafts }: { drafts: readonly TickedDraft[] }) {
       aria-labelledby="ticked-totals-title"
       aria-live="polite"
       data-ticked-totals
-      className="sticky bottom-0 z-10 flex flex-col gap-3 rounded-xl border-t border-border bg-card p-4 max-sm:bottom-[calc(4rem+env(safe-area-inset-bottom))] sm:p-6"
+      className="sticky bottom-0 z-10 flex flex-col gap-3 rounded-xl border border-t border-border bg-card p-4 max-sm:bottom-[calc(4rem+env(safe-area-inset-bottom))] sm:p-6"
     >
       <h2
         id="ticked-totals-title"
         className="flex flex-wrap items-baseline gap-x-3 text-subheading font-semibold"
       >
         {t("title")}
-        <span className="text-sm font-normal text-muted-foreground">
-          {t("count", { count })}
-        </span>
+        <span className="text-sm font-normal text-muted-foreground">{t("count", { count })}</span>
       </h2>
       <div className="grid gap-x-12 gap-y-4 sm:grid-cols-2">
         <dl className="flex flex-col gap-1 text-sm">
@@ -64,10 +62,7 @@ export function TickedTotals({ drafts }: { drafts: readonly TickedDraft[] }) {
         </dl>
         <dl
           id="ticked-totals-split"
-          className={cn(
-            "flex flex-col gap-1 text-sm",
-            !details && "max-sm:hidden",
-          )}
+          className={cn("flex flex-col gap-1 text-sm", !details && "max-sm:hidden")}
         >
           {PAYMENT_TYPES.map((type) => (
             <Fragment key={type}>{line(type, tPayment(type), totals.byPaymentType[type])}</Fragment>

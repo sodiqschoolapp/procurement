@@ -14,6 +14,7 @@ import { ConfirmDialog } from "@/components/confirm-dialog";
 import { uploadFile } from "@/components/files/upload";
 import { toast } from "@/components/toast";
 import { Button } from "@/components/ui/button";
+import { DateInput } from "@/components/ui/date-input";
 import { FIELD_CLASSES, Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { cn } from "@/components/utils";
@@ -289,13 +290,12 @@ export function RecordMoneyButton({
               <label htmlFor={`${formId}-date`} className="text-sm leading-5 font-semibold">
                 {t("date")}
               </label>
-              <Input
+              <DateInput
                 id={`${formId}-date`}
-                type="date"
                 max={today || undefined}
                 value={date}
                 disabled={pending}
-                onChange={(event) => setDate(event.target.value)}
+                onValueChange={setDate}
               />
             </div>
             <div className="flex flex-col gap-1.5">
@@ -368,14 +368,10 @@ export function RecordMoneyButton({
               )}
             </div>
           ) : blocks.size > 1 ? (
-            <p className="text-small text-muted-foreground">
-              {t("fileOneManager")}
-            </p>
+            <p className="text-small text-muted-foreground">{t("fileOneManager")}</p>
           ) : null}
           <section aria-label={t("rowsTitle")} className="flex flex-col gap-4">
-            {loading ? (
-              <p className="text-sm text-muted-foreground">{t("loading")}</p>
-            ) : null}
+            {loading ? <p className="text-sm text-muted-foreground">{t("loading")}</p> : null}
             {[...blocks].map(([ownerId, block]) => (
               <div key={ownerId} data-money-block={ownerId} className="flex flex-col gap-3">
                 <h3 className="text-sm font-semibold">{block.name}</h3>
@@ -415,10 +411,7 @@ export function RecordMoneyButton({
                           }
                         />
                         {invalid ? (
-                          <p
-                            id={`money-error-${order.id}`}
-                            className="text-small text-destructive"
-                          >
+                          <p id={`money-error-${order.id}`} className="text-small text-destructive">
                             {t("amountInvalid")}
                           </p>
                         ) : null}

@@ -95,9 +95,7 @@ export async function OrderHistory({ events }: { events: readonly OrderPageEvent
             {event.comment ? (
               <p className="text-sm">{t("reason", { text: event.comment })}</p>
             ) : null}
-            {event.note ? (
-              <p className="text-sm">{t("note", { text: event.note })}</p>
-            ) : null}
+            {event.note ? <p className="text-sm">{t("note", { text: event.note })}</p> : null}
           </li>
         );
       })}

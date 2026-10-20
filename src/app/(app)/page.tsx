@@ -56,13 +56,11 @@ export default async function HomePage() {
   const t = await getTranslations("home");
   const branch = await currentBranchChoice(user.id, (await cookies()).get(BRANCH_COOKIE)?.value);
 
-  const title = (
-    <h1 className="text-title">{t("title")}</h1>
-  );
+  const title = <h1 className="text-title">{t("title")}</h1>;
 
   if (user.role === "MANAGER") {
     return (
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+      <div className="flex w-full min-w-0 flex-col gap-6">
         {title}
         <Suspense fallback={<HomeLoading />}>
           <ManagerHome userId={user.id} branch={branch} />
@@ -72,7 +70,7 @@ export default async function HomePage() {
   }
   if (user.role === "HEAD" || user.role === "FINANCE") {
     return (
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+      <div className="flex w-full min-w-0 flex-col gap-6">
         {title}
         <Suspense fallback={<HomeLoading />}>
           {user.role === "HEAD" ? (
@@ -86,7 +84,7 @@ export default async function HomePage() {
   }
   // The Principal.
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+    <div className="flex w-full min-w-0 flex-col gap-6">
       {title}
       <Suspense fallback={<HomeLoading />}>
         <PrincipalHome userId={user.id} branch={branch} />
@@ -188,9 +186,7 @@ async function ManagerHome({ userId, branch }: { userId: string; branch: string 
           empty={home.drafts === 0 ? t("manager.drafts.empty") : null}
           link={{ href: "/orders#drafts-title", label: t("manager.drafts.open") }}
         >
-          <p className="text-sm">
-            {t("manager.drafts.count", { count: home.drafts })}
-          </p>
+          <p className="text-sm">{t("manager.drafts.count", { count: home.drafts })}</p>
         </HomeBlock>
 
         <HomeBlock
@@ -231,17 +227,13 @@ async function ManagerHome({ userId, branch }: { userId: string; branch: string 
         >
           <dl className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-1">
-              <dt className="text-xs text-muted-foreground">
-                {t("manager.cash.held")}
-              </dt>
+              <dt className="text-xs text-muted-foreground">{t("manager.cash.held")}</dt>
               <dd data-cash="held" className="text-heading font-semibold tabular-nums">
                 {format.money(home.cash.held)}
               </dd>
             </div>
             <div className="flex flex-col gap-1">
-              <dt className="text-xs text-muted-foreground">
-                {t("manager.cash.owed")}
-              </dt>
+              <dt className="text-xs text-muted-foreground">{t("manager.cash.owed")}</dt>
               <dd data-cash="owed" className="text-heading font-semibold tabular-nums">
                 {format.money(home.cash.owed)}
               </dd>
@@ -347,9 +339,7 @@ async function PrincipalHome({ userId, branch }: { userId: string; branch: strin
                   className="flex min-h-11 items-center justify-between gap-3 py-2"
                 >
                   <RequestStatusLabel status={row.status} />
-                  <span className="text-sm font-semibold tabular-nums">
-                    {row.count}
-                  </span>
+                  <span className="text-sm font-semibold tabular-nums">{row.count}</span>
                 </Link>
               </li>
             ))}
@@ -366,9 +356,7 @@ async function PrincipalHome({ userId, branch }: { userId: string; branch: strin
               to: format.date(home.month.last),
             })}
           </p>
-          <p className="text-xs text-muted-foreground">
-            {t("principal.spending.hint")}
-          </p>
+          <p className="text-xs text-muted-foreground">{t("principal.spending.hint")}</p>
         </HomeBlock>
       </div>
     </>
@@ -397,11 +385,7 @@ function LinkRow({
           <span className="text-sm font-semibold">{title}</span>
           <span className="text-xs text-muted-foreground tabular-nums">{line}</span>
         </span>
-        {aside && (
-          <span className="shrink-0 text-sm font-semibold tabular-nums">
-            {aside}
-          </span>
-        )}
+        {aside && <span className="shrink-0 text-sm font-semibold tabular-nums">{aside}</span>}
       </Link>
     </li>
   );
@@ -593,9 +577,7 @@ async function HeadHome({ userId, branch }: { userId: string; branch: string | n
             >
               <h3 className="text-sm font-semibold">{code(figures)}</h3>
               {figures.byStatus.length === 0 ? (
-                <p className="text-xs text-muted-foreground">
-                  {t("head.byStatus.empty")}
-                </p>
+                <p className="text-xs text-muted-foreground">{t("head.byStatus.empty")}</p>
               ) : (
                 <ul className="flex flex-col divide-y divide-border">
                   {figures.byStatus.map((row) => (
@@ -610,9 +592,7 @@ async function HeadHome({ userId, branch }: { userId: string; branch: string | n
                         className="flex min-h-11 items-center justify-between gap-3 py-2"
                       >
                         <RequestStatusLabel status={row.status} />
-                        <span className="text-sm font-semibold tabular-nums">
-                          {row.count}
-                        </span>
+                        <span className="text-sm font-semibold tabular-nums">{row.count}</span>
                       </Link>
                     </li>
                   ))}

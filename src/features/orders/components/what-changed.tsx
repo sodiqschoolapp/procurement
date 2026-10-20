@@ -51,12 +51,9 @@ export async function WhatChanged({
     <section
       aria-labelledby="what-changed-title"
       data-what-changed
-      className="rounded-xl border border-warning bg-card p-4 sm:p-6"
+      className="rounded-xl border border-warning bg-card p-4 sm:p-5"
     >
-      <h2
-        id="what-changed-title"
-        className="flex items-center gap-2 text-subheading font-semibold"
-      >
+      <h2 id="what-changed-title" className="flex items-center gap-2 text-subheading font-semibold">
         <Icon name="edit" className="size-5 text-warning" aria-hidden />
         {t("title", { revision: since })}
       </h2>

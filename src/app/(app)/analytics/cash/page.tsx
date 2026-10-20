@@ -62,7 +62,7 @@ export default async function AnalyticsCashPage({ searchParams }: { searchParams
   })}`;
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-6">
+    <div className="flex w-full min-w-0 flex-col gap-6">
       <Link
         href={`/analytics?${analyticsSearch(params.period, params.filters)}`}
         className="inline-flex min-h-11 min-w-11 items-center self-start text-sm font-semibold underline-offset-2 hover:underline sm:min-h-0"
@@ -71,9 +71,7 @@ export default async function AnalyticsCashPage({ searchParams }: { searchParams
       </Link>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <h1 className="text-title">
-            {t("cash.title")}
-          </h1>
+          <h1 className="text-title">{t("cash.title")}</h1>
           <p className="text-sm text-muted-foreground" data-cash-what>
             {age
               ? t("cash.ageWhat", {
@@ -111,7 +109,7 @@ export default async function AnalyticsCashPage({ searchParams }: { searchParams
       {list.rows.length === 0 ? (
         <EmptyState title={t("cash.title")} line={t("cash.empty")} />
       ) : (
-        <section className="rounded-xl bg-card text-card-foreground">
+        <section className="rounded-xl border border-border bg-card text-card-foreground">
           <table className="w-full border-collapse text-left text-sm leading-5 max-sm:block">
             <thead className="bg-muted text-small font-semibold text-muted-foreground max-sm:hidden">
               <tr>

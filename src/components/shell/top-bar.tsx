@@ -13,9 +13,9 @@ import { BranchSelect } from "./branch-select";
 import { Avatar } from "./person";
 import { Search } from "./search";
 
-// The top bar (docs/design-system.md, Layout shell; This app: "The branch switcher with 'All my
-// branches' for a person with several branches; the search field; at the right the bell"):
-// white (dark: --topbar), 64 high, a bottom border. The search (6.10) sits in the place 0.10b
+// The top bar (docs/design-system.md, Page shell: "white, 56 high, a hairline bottom edge: the
+// branch context on the left, the search field and the bell on the right"; 11 rule 1: the branch
+// switcher with "All my branches" for a person with several branches). The search (6.10) sits in the place 0.10b
 // kept, left of the bell: a field with "Ctrl K" from 640 px, a search button below (plan of
 // 6.10, decided item 7). The bell (0.11) stays at phone
 // width too: /notifications is in no role's menu (plan of 0.11, decision 7). At phone width the
@@ -29,8 +29,11 @@ async function BranchContext({ userId }: { userId: string }) {
   if (branches.length === 1) {
     const [only] = branches;
     return (
-      <p className="truncate text-sm leading-5 font-semibold">
-        {t("branch.option", { code: only!.code, name: only!.name })}
+      <p className="flex min-w-0 items-center gap-2 text-sm font-medium">
+        <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-brand" />
+        <span className="truncate">
+          {t("branch.option", { code: only!.code, name: only!.name })}
+        </span>
       </p>
     );
   }
@@ -46,12 +49,12 @@ async function BellCount({ userId }: { userId: string }) {
 export async function TopBar({ userId, fullName }: { userId: string; fullName: string }) {
   const t = await getTranslations();
   return (
-    <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-3 border-b bg-topbar px-4 sm:px-6">
+    <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-3 border-b border-border bg-topbar/95 px-4 backdrop-blur sm:px-6">
       <div className="flex min-w-0 flex-1 items-center">
         <Suspense
           fallback={
             <span aria-busy="true" className="block">
-              <Skeleton className="h-11 w-56 max-w-full bg-secondary sm:h-10" />
+              <Skeleton className="h-11 w-56 max-w-full sm:h-9" />
             </span>
           }
         >
@@ -63,7 +66,7 @@ export async function TopBar({ userId, fullName }: { userId: string; fullName: s
         <Suspense
           fallback={
             <span aria-busy="true" className="block">
-              <Skeleton className="size-11 bg-secondary sm:size-10" />
+              <Skeleton className="size-11 sm:size-9" />
             </span>
           }
         >
@@ -74,7 +77,7 @@ export async function TopBar({ userId, fullName }: { userId: string; fullName: s
           aria-label={t("shell.profile")}
           className="flex size-11 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:hidden"
         >
-          <Avatar fullName={fullName} />
+          <Avatar fullName={fullName} className="size-8" />
         </Link>
       </div>
     </header>

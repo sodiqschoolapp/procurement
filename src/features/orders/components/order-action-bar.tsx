@@ -116,7 +116,7 @@ export function OrderActionBar({
       aria-labelledby="order-bar-title"
       aria-live="polite"
       data-order-bar
-      className="sticky bottom-0 z-10 flex flex-col gap-3 rounded-xl border-t border-border bg-card p-4 max-sm:bottom-[calc(4rem+env(safe-area-inset-bottom))] sm:flex-row sm:items-center sm:justify-between sm:p-6"
+      className="sticky bottom-0 z-10 flex flex-col gap-3 rounded-xl border border-t border-border bg-card p-4 max-sm:bottom-[calc(4rem+env(safe-area-inset-bottom))] sm:flex-row sm:items-center sm:justify-between sm:p-6"
     >
       <h2 id="order-bar-title" className="sr-only">
         {t("title")}

@@ -258,10 +258,7 @@ export function MoveButton({
             <ul data-notes className="flex max-h-[40vh] flex-col gap-3 overflow-y-auto">
               {orders.map((order) => (
                 <li key={order.id} className="flex flex-col gap-1">
-                  <label
-                    htmlFor={`note-${order.id}`}
-                    className="text-small text-muted-foreground"
-                  >
+                  <label htmlFor={`note-${order.id}`} className="text-small text-muted-foreground">
                     {t("noteOf", { number: order.number })}
                   </label>
                   <textarea

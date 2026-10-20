@@ -22,10 +22,10 @@ export default async function CatalogsPage() {
   const t = await getTranslations("catalog");
 
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-6">
+    <div className="flex w-full min-w-0 flex-col gap-6">
       <AdminNav current="catalog" />
       <h1 className="text-title">{t("title")}</h1>
-      <ul className="flex flex-col overflow-hidden rounded-xl bg-card text-card-foreground">
+      <ul className="flex flex-col overflow-hidden rounded-xl border border-border bg-card text-card-foreground">
         {[...CATALOG_KINDS, "departments" as const, "products" as const].map((kind) => (
           <li key={kind} className="border-t first:border-t-0">
             <Link
@@ -33,9 +33,7 @@ export default async function CatalogsPage() {
               className="flex min-h-11 items-center gap-4 px-4 py-4 hover:bg-accent/50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
             >
               <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                <span className="text-sm font-semibold">
-                  {t(`kinds.${kind}.title`)}
-                </span>
+                <span className="text-sm font-semibold">{t(`kinds.${kind}.title`)}</span>
                 <span className="text-sm leading-5 text-muted-foreground">
                   {t(`kinds.${kind}.description`)}
                 </span>
@@ -53,9 +51,7 @@ export default async function CatalogsPage() {
             className="flex min-h-11 items-center gap-4 px-4 py-4 hover:bg-accent/50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
           >
             <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-              <span className="text-sm font-semibold">
-                {t("suggestionsRow.title")}
-              </span>
+              <span className="text-sm font-semibold">{t("suggestionsRow.title")}</span>
               <span className="text-sm leading-5 text-muted-foreground">
                 {t("suggestionsRow.description")}
               </span>

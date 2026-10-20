@@ -195,10 +195,7 @@ export function ApproveButton({
             <ul data-payment-types className="flex flex-col gap-3">
               {orders.map((order) => (
                 <li key={order.id} className="flex flex-col gap-1">
-                  <label
-                    htmlFor={`pay-${order.id}`}
-                    className="text-small text-muted-foreground"
-                  >
+                  <label htmlFor={`pay-${order.id}`} className="text-small text-muted-foreground">
                     {t("paymentOf", { number: order.number })}
                   </label>
                   <Select

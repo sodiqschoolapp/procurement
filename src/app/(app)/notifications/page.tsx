@@ -75,7 +75,7 @@ export default async function NotificationsPage({
   }));
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-6">
+    <div className="flex w-full max-w-4xl min-w-0 flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="flex flex-wrap items-baseline gap-x-3 text-title">
           {t("notifications.title")}

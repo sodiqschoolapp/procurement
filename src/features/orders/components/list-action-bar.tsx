@@ -61,7 +61,7 @@ export function ListActionBar({
       aria-live="polite"
       aria-busy={summary === null}
       data-list-bar
-      className="sticky bottom-0 z-10 flex flex-col gap-3 rounded-xl border-t border-border bg-card p-4 max-sm:bottom-[calc(4rem+env(safe-area-inset-bottom))] sm:p-6"
+      className="sticky bottom-0 z-10 flex flex-col gap-3 rounded-xl border border-t border-border bg-card p-4 max-sm:bottom-[calc(4rem+env(safe-area-inset-bottom))] sm:p-6"
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2
@@ -99,10 +99,7 @@ export function ListActionBar({
           </dl>
           <dl
             id="list-bar-split"
-            className={cn(
-              "flex flex-col gap-1 text-sm",
-              !details && "max-sm:hidden",
-            )}
+            className={cn("flex flex-col gap-1 text-sm", !details && "max-sm:hidden")}
           >
             {PAYMENT_TYPES.map((type) =>
               line(type, tPayment(type), summary.totals.byPaymentType[type]),

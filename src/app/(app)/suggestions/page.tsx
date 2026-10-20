@@ -41,7 +41,7 @@ export default async function SuggestionsPage({ searchParams }: { searchParams: 
   const href = (to: number) => (to > 1 ? `/suggestions?page=${to}` : "/suggestions");
 
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-6">
+    <div className="flex w-full min-w-0 flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-col gap-1">
           <h1 className="text-title">{t("title")}</h1>
@@ -67,7 +67,7 @@ export default async function SuggestionsPage({ searchParams }: { searchParams: 
         />
       ) : (
         <>
-          <section className="hidden overflow-x-auto rounded-xl bg-card text-card-foreground sm:block">
+          <section className="hidden overflow-x-auto rounded-xl border border-border bg-card text-card-foreground sm:block">
             <table className="w-full min-w-[40rem] border-collapse text-left text-sm leading-5">
               <thead className="bg-muted text-small font-semibold text-muted-foreground">
                 <tr>
@@ -136,7 +136,7 @@ export default async function SuggestionsPage({ searchParams }: { searchParams: 
               <li key={row.id}>
                 <Link
                   href={`/suggestions/${row.id}`}
-                  className="flex min-h-11 items-center gap-3 rounded-xl bg-card p-4 text-card-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                  className="flex min-h-11 items-center gap-3 rounded-xl border border-border bg-card p-4 text-card-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                 >
                   {row.photoFileId ? (
                     // eslint-disable-next-line @next/next/no-img-element -- a private file route, not an asset
@@ -153,9 +153,7 @@ export default async function SuggestionsPage({ searchParams }: { searchParams: 
                     </span>
                   )}
                   <span className="flex min-w-0 flex-1 flex-col gap-1">
-                    <span className="text-sm font-semibold break-words">
-                      {row.name}
-                    </span>
+                    <span className="text-sm font-semibold break-words">{row.name}</span>
                     <span className="flex flex-wrap gap-x-3 text-sm leading-5 text-muted-foreground">
                       <span>{row.unitText}</span>
                       <span>{row.branchCode}</span>

@@ -238,14 +238,14 @@
     "orders": "{count, plural, one {# заказ} few {# заказа} many {# заказов} other {# заказа}}",
     "number": {
       "name": "Количество",
-      "matches": "Совпадает",
+      "matches": "Количество по плану",
       "less": "Меньше",
       "more": "Больше",
       "inProgress": "В работе"
     },
     "price": {
       "name": "Цена",
-      "matches": "Совпадает",
+      "matches": "Цена по плану",
       "cheaper": "Дешевле",
       "dearer": "Дороже",
       "notBought": "Ещё не куплено"
@@ -3427,5 +3427,9 @@
         "count": "Заказов"
       }
     }
+  },
+  "dateInput": {
+    "placeholder": "дд.мм.гггг",
+    "pick": "Выбрать в календаре"
   }
 }

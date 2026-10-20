@@ -74,7 +74,7 @@ export async function PlanVsActualView({
         <p className="text-sm leading-5 text-muted-foreground">{t("plan.note")}</p>
       </div>
       {empty ? (
-        <p className="rounded-xl bg-card p-6 text-sm text-muted-foreground max-sm:p-4">
+        <p className="rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground max-sm:p-4 sm:p-5">
           {t("plan.empty")}
         </p>
       ) : (
@@ -174,7 +174,10 @@ function Tile({
   data: string;
 }) {
   return (
-    <div className="flex flex-col gap-1 rounded-xl bg-card p-6 max-sm:p-4" data-plan-tile={data}>
+    <div
+      className="flex flex-col gap-1 rounded-xl border border-border bg-card p-4 sm:p-5"
+      data-plan-tile={data}
+    >
       <div className="text-sm leading-5 font-semibold text-muted-foreground">{label}</div>
       <Link
         href={href}
@@ -207,7 +210,7 @@ async function Card({
   return (
     <section
       aria-labelledby={`${id}-title`}
-      className="flex min-w-0 flex-col gap-3 rounded-xl bg-card p-6 max-sm:p-4"
+      className="flex min-w-0 flex-col gap-3 rounded-xl border border-border bg-card p-4 sm:p-5"
       data-chart-card={id}
     >
       <div className="flex items-baseline justify-between gap-3">
@@ -301,9 +304,7 @@ async function TallyTable({ firstColumn, rows }: { firstColumn: string; rows: Ta
                   >
                     {cell.shown}
                   </Link>
-                  <span className="block text-small text-muted-foreground">
-                    {cell.change}
-                  </span>
+                  <span className="block text-small text-muted-foreground">{cell.change}</span>
                 </td>
               ))}
             </tr>

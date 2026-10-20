@@ -20,7 +20,7 @@ export async function MoneyWithManagers({ blocks }: { blocks: MoneyWithManagersB
   const format = await getFormatters();
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
+    <div className="flex w-full min-w-0 flex-col gap-6">
       <div className="flex flex-col gap-1">
         <h1 className="text-title">{t("title")}</h1>
         <p className="text-sm text-muted-foreground">{t("line")}</p>
@@ -30,15 +30,17 @@ export async function MoneyWithManagers({ blocks }: { blocks: MoneyWithManagersB
       ) : (
         <ul className="flex flex-col gap-3">
           {blocks.map((block) => (
-            <li key={block.ownerId} data-owner={block.ownerId} className="rounded-xl bg-card">
+            <li
+              key={block.ownerId}
+              data-owner={block.ownerId}
+              className="rounded-xl border border-border bg-card"
+            >
               <details className="group">
                 <summary className="grid min-h-11 cursor-pointer list-none grid-cols-[1fr_auto] items-center gap-x-4 gap-y-2 p-4 sm:grid-cols-[minmax(10rem,1fr)_repeat(3,minmax(8rem,auto))_auto] sm:px-6 [&::-webkit-details-marker]:hidden">
                   <span className="flex flex-col">
                     <span className="text-subheading font-semibold">{block.ownerName}</span>
                     {block.ownerIsActive ? null : (
-                      <span className="text-small text-muted-foreground">
-                        {t("inactive")}
-                      </span>
+                      <span className="text-small text-muted-foreground">{t("inactive")}</span>
                     )}
                   </span>
                   <Icon

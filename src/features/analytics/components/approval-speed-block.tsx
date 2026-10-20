@@ -184,9 +184,7 @@ export async function ApprovalSpeedView({
         <div className="grid gap-4 lg:grid-cols-2">
           {(["SEND_BACK", "REJECT"] as const).map((decision) => (
             <div key={decision} className="flex min-w-0 flex-col gap-2" data-reasons={decision}>
-              <h4 className="text-sm font-semibold">
-                {t(`speed.reasonsOf.${decision}`)}
-              </h4>
+              <h4 className="text-sm font-semibold">{t(`speed.reasonsOf.${decision}`)}</h4>
               {block.reasons[decision].length === 0 ? (
                 <p className="text-sm leading-5 text-muted-foreground">{t("speed.noReasons")}</p>
               ) : (

@@ -76,7 +76,7 @@ export function WriteOffDecision({
   return (
     <div
       data-write-off-decision
-      className="sticky bottom-0 z-10 flex flex-col-reverse gap-3 rounded-xl border-t border-border bg-card p-4 max-sm:bottom-[calc(4rem+env(safe-area-inset-bottom))] sm:flex-row sm:justify-end sm:p-6"
+      className="sticky bottom-0 z-10 flex flex-col-reverse gap-3 rounded-xl border border-t border-border bg-card p-4 max-sm:bottom-[calc(4rem+env(safe-area-inset-bottom))] sm:flex-row sm:justify-end sm:p-6"
     >
       <Button
         variant="secondary"

@@ -85,9 +85,7 @@ export async function MyOrdersView({
             {t("my.orders.approvalHours")}
           </p>
           {block.approval.hours === null ? (
-            <p className="text-sm text-muted-foreground">
-              {t("my.orders.noApproval")}
-            </p>
+            <p className="text-sm text-muted-foreground">{t("my.orders.noApproval")}</p>
           ) : (
             <>
               <Link href={orders({ kind: "approved" })} className={tileNumber}>
@@ -110,9 +108,7 @@ export async function MyOrdersView({
             {t("my.orders.sentBack")}
           </p>
           {block.sentBack.share === null ? (
-            <p className="text-sm text-muted-foreground">
-              {t("my.orders.noDecision")}
-            </p>
+            <p className="text-sm text-muted-foreground">{t("my.orders.noDecision")}</p>
           ) : (
             <>
               <Link href={sentBack()} className={tileNumber}>
@@ -243,9 +239,7 @@ export async function MyEstimatesView({
       price(each.actualPrice),
       <>
         <span className="font-semibold whitespace-nowrap">{gap(each)}</span>
-        <span className="block text-small text-muted-foreground">
-          {changeLine(each.change)}
-        </span>
+        <span className="block text-small text-muted-foreground">{changeLine(each.change)}</span>
       </>,
     ],
   });
@@ -344,9 +338,7 @@ export async function MyCashView({
           <p className="text-sm leading-5 font-semibold text-muted-foreground">
             {t("my.cash.owed")}
           </p>
-          <p className="text-title tabular-nums">
-            {format.money(block.owed)}
-          </p>
+          <p className="text-title tabular-nums">{format.money(block.owed)}</p>
         </div>
       </div>
       <Card id="my-cash" title={t("my.cash.perOrder")} excel={download}>
@@ -498,9 +490,7 @@ export async function StockPlanningView({
                           ? `${line.productName}, ${line.subtypeName}`
                           : line.productName}
                       </span>
-                      <span className="text-small text-muted-foreground">
-                        {line.branchName}
-                      </span>
+                      <span className="text-small text-muted-foreground">{line.branchName}</span>
                       {line.low && <LowLabel className="self-start" />}
                     </span>,
                     <span key="hand" className="flex flex-col whitespace-nowrap tabular-nums">

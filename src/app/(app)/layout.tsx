@@ -22,7 +22,10 @@ export default async function AppLayout({ children }: Readonly<{ children: React
       <Sidebar role={user.role} fullName={user.fullName} schoolName={schoolName} />
       <div className="flex min-w-0 flex-1 flex-col">
         <TopBar userId={user.id} fullName={user.fullName} />
-        <main className="flex-1 px-4 pt-6 pb-24 sm:px-8 sm:pt-8 sm:pb-8">{children}</main>
+        {/* One content column on every page (docs/design-system.md, Spacing: content width). */}
+        <main className="flex-1 px-4 pt-4 pb-28 sm:px-6 sm:pt-6 sm:pb-12 lg:px-8">
+          <div className="page-width">{children}</div>
+        </main>
       </div>
       <TabBar role={user.role} />
     </div>

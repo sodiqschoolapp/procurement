@@ -5,7 +5,7 @@ export default function OrdersLoading() {
   return (
     <div aria-busy="true" className="flex flex-col gap-6">
       <Skeleton className="h-[34px] w-48 bg-secondary" />
-      <div className="flex flex-col gap-px overflow-hidden rounded-xl bg-card">
+      <div className="flex flex-col gap-px overflow-hidden rounded-xl border border-border bg-card">
         <Skeleton className="h-9 w-full rounded-none bg-muted" />
         {Array.from({ length: 6 }, (_, index) => (
           <div key={index} className="flex items-center gap-3 px-4 py-3">

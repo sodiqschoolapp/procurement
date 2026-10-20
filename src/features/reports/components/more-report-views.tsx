@@ -102,7 +102,7 @@ export async function PriceHistoryView({
           </p>
           {report.points.length > 0 ? (
             <section
-              className="flex min-w-0 flex-col gap-3 rounded-xl bg-card p-4 text-card-foreground"
+              className="flex min-w-0 flex-col gap-3 rounded-xl border border-border bg-card p-4 text-card-foreground"
               data-table="price-chart"
             >
               <h2 className="text-lg leading-6 font-semibold">{t("prices.chart")}</h2>

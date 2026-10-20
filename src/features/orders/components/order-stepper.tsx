@@ -22,7 +22,10 @@ export async function OrderStepper({ steps }: { steps: readonly StepView[] }) {
   const t = await getTranslations("orders.page.stepper");
   const format = await getFormatters();
   return (
-    <section aria-labelledby="order-steps-title" className="rounded-xl bg-card p-4 sm:p-6">
+    <section
+      aria-labelledby="order-steps-title"
+      className="rounded-xl border border-border bg-card p-4 sm:p-5"
+    >
       <h2 id="order-steps-title" className="sr-only">
         {t("title")}
       </h2>
@@ -58,10 +61,7 @@ export async function OrderStepper({ steps }: { steps: readonly StepView[] }) {
                   </span>
                 </span>
                 {view.by ? (
-                  <span
-                    data-step-by
-                    className="text-small font-normal text-muted-foreground"
-                  >
+                  <span data-step-by className="text-small font-normal text-muted-foreground">
                     {t("by", {
                       name: view.by.name,
                       date: format.date(view.by.at),

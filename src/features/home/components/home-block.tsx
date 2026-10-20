@@ -45,11 +45,7 @@ export function HomeBlock({
           </span>
         )}
       </div>
-      {empty ? (
-        <p className="text-sm text-muted-foreground">{empty}</p>
-      ) : (
-        children
-      )}
+      {empty ? <p className="text-sm text-muted-foreground">{empty}</p> : children}
       {link && !empty && (
         <Link
           href={link.href}
