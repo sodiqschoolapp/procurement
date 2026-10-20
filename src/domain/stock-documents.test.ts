@@ -523,6 +523,24 @@ describe('countCorrection (09 Movement types: "Correction after a stock count | 
   it("refuses a line that is not counted", () => {
     expect(() => countCorrection("4", null)).toThrow(RangeError);
   });
+  it("a line found where the stock at start was 0 carries the last cost as its empty-stock cost (09 Stock value, the count bullet; plan of 7.4b, decided item 2)", () => {
+    expect(countCorrection("0", "20", 3000n)).toEqual({
+      type: "CORRECTION",
+      qtyDelta: "20",
+      unitCost: null,
+      emptyCost: 3000n,
+    });
+  });
+
+  it("a line of a stock above 0, a line down and a caller without a last cost carry none", () => {
+    expect(countCorrection("5", "25", 3000n)).toEqual({
+      type: "CORRECTION",
+      qtyDelta: "20",
+      unitCost: null,
+    });
+    expect(countCorrection("5", "0", 3000n)).not.toHaveProperty("emptyCost");
+    expect(countCorrection("0", "20")).not.toHaveProperty("emptyCost");
+  });
 });
 
 describe("countSeenMatches (plan of 7.4, decided item 2, Look first: the Head approves the differences shown)", () => {
