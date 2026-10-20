@@ -175,6 +175,9 @@ export const stockDocuments = pgTable(
     // Empty until the Head decides a write-off or count, or the receiver receives a transfer.
     decidedBy: uuid("decided_by").references(() => users.id),
     decidedAt: moment("decided_at"),
+    // Why the Head refused a write-off or count, or why a transfer was cancelled (09 Other
+    // documents; plan of 7.4c); empty for every other status.
+    decisionReason: text("decision_reason"),
     // Empty until the document is reversed.
     reversedBy: uuid("reversed_by").references(() => users.id),
     reversedAt: moment("reversed_at"),
@@ -224,6 +227,14 @@ export const stockDocuments = pgTable(
           AND COALESCE(btrim(${table.reverseReason}), '') <> ''
         ELSE ${table.reversedBy} IS NULL AND ${table.reversedAt} IS NULL
           AND ${table.reverseReason} IS NULL
+      END`,
+    ),
+    // Added NOT VALID: refusals made before 7.4c carry no reason (plan of 7.4c, decided item 4).
+    check(
+      "stock_documents_decision_reason_check",
+      sql`CASE WHEN ${table.status}::text IN ('REJECTED', 'CANCELLED')
+        THEN COALESCE(btrim(${table.decisionReason}), '') <> ''
+        ELSE ${table.decisionReason} IS NULL
       END`,
     ),
     check(

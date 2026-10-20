@@ -31,6 +31,7 @@ export const DOCUMENT_STATUSES = [
   "RECEIVED",
   "REJECTED",
   "REVERSED",
+  "CANCELLED",
 ] as const;
 export type DocumentStatus = (typeof DOCUMENT_STATUSES)[number];
 
@@ -158,6 +159,21 @@ export function transferReceiveMove(
   status: DocumentStatus,
 ): Extract<DocumentStatus, "RECEIVED"> | null {
   return status === "IN_TRANSIT" ? "RECEIVED" : null;
+}
+
+/**
+ * The status cancelling a transfer moves it to (09 Other documents, Transfer: "Until then the
+ * sender or the Head can cancel the transfer with a reason, and the stock goes back to the sender
+ * at the cost it left with"; plan of 7.4c, decided item 2, Look first): from IN_TRANSIT to
+ * CANCELLED; from any other status no move (null), so a received transfer and a second cancel are
+ * refused, and transferReceiveMove() refuses a cancelled one. The one place for this move
+ * (developer-rules.md rule 2): the cancel action asks it under the lock, the transfer's page asks it
+ * for its button. Who cancels is the permission `stock.transfer` on the sending branch.
+ */
+export function transferCancelMove(
+  status: DocumentStatus,
+): Extract<DocumentStatus, "CANCELLED"> | null {
+  return status === "IN_TRANSIT" ? "CANCELLED" : null;
 }
 
 /**

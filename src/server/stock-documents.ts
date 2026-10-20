@@ -12,6 +12,7 @@ import {
   documentNumber,
   lineMovement,
   reversalOf,
+  transferCancelMove,
 } from "@/domain/stock-documents";
 
 import { ActionError } from "./action";
@@ -23,8 +24,9 @@ import { type PostedMovement, postMovements } from "./stock-ledger";
 // The warehouse documents' writers (09-warehouse.md, Movement types; Issue to a department;
 // Other documents; 14-data-model.md, stock_documents and stock_document_lines; plan of 5.1). Every
 // issue, return, transfer, write-off, count and direct entry of later tasks is made by
-// createDocument(), posted by postLines() and undone by reverseDocument(), inside its own action's
-// transaction; stock changes only through postMovements() of ./stock-ledger.ts.
+// createDocument(), posted by postLines() and undone by reverseDocument(), and a transfer In
+// transit is cancelled by cancelTransferDocument() (plan of 7.4c), both through
+// reverseMovements(), inside its own action's transaction; stock changes only through postMovements() of ./stock-ledger.ts.
 //
 // The caller's contract, as for postMovement() (header of ./stock-ledger.ts; permission review of
 // 5.1). None of these functions authorizes; the caller's action has (developer-rules.md rule 4):
@@ -38,6 +40,9 @@ import { type PostedMovement, postMovements } from "./stock-ledger";
 //   transfer and an approved count by the Head alone. The caller takes lockDocument() first,
 //   decides on the row it returns (another branch is "Not found"; a transfer is of its sending
 //   branch, `branchId`), and only then calls reverseDocument(), in the same transaction.
+// - Who cancels a transfer In transit (plan of 7.4c, decided item 3, Look first): the Head, or a
+//   Manager of its sending branch with TRANSFER_STOCK (`stock.transfer` on `branchId`), after
+//   lockDocument(), then cancelTransferDocument() in the same transaction.
 // - `branchId`, `toBranchId`, `departmentId` and every `variantId` of createDocument() come from
 //   the browser: the caller checks the branch against the user's branches (and that it is active)
 //   and each id against what the user may use; the database ties the department to the branch.
@@ -299,15 +304,49 @@ type HeldMovement = {
 };
 
 /**
+ * Writes one REVERSAL for each movement of a document's lines (reversalOf(): the opposite quantity
+ * at its own unit cost, plan of 5.1, decided item 2, Look first), in its own branch and subtype,
+ * each pointing at the movement it undoes; the movements are read in a statement of their own. The
+ * one way of undoing a document's movements: Reverse and the cancel of a transfer both write
+ * through it. A stock that would go below 0 throws StockShortError.
+ */
+async function reverseMovements(
+  tx: Executor,
+  documentId: string,
+  reversedBy: string,
+): Promise<PostedMovement[]> {
+  const found = await tx.execute<HeldMovement>(sql`
+    select m.id, m.branch_id, m.variant_id, m.document_line_id, m.qty_delta::text as qty_delta,
+      m.unit_cost::text as unit_cost
+    from stock_movements m
+    join stock_document_lines l on l.id = m.document_line_id
+    where l.document_id = ${documentId} and m.type <> 'REVERSAL'
+    order by m.seq`);
+  // A document whose stock moved has its movements (decided item 8).
+  if (found.rows.length === 0) throw new ActionError("unexpected");
+
+  return postMovements(
+    tx,
+    found.rows.map((movement) => ({
+      ...reversalOf({ qtyDelta: movement.qty_delta, unitCost: BigInt(movement.unit_cost) }),
+      branchId: movement.branch_id,
+      variantId: movement.variant_id,
+      createdBy: reversedBy,
+      documentLineId: movement.document_line_id,
+      reversesMovementId: movement.id,
+    })),
+  );
+}
+
+/**
  * Undoes one document (09 Movement types, last paragraph: "A wrong document is fixed with
  * 'Reverse', which writes the opposite movement and needs a reason"; Issue to a department 3: "The
  * original is then marked 'Reversed'"). The caller has taken lockDocument() and authorized on its row
- * (header contract); the lock is taken again here, at no cost in the same transaction; then, in a statement of its
- * own, every movement of its lines is read and one REVERSAL is written for each (reversalOf(): the
- * opposite quantity at its own unit cost, plan of 5.1, decided item 2, Look first) in its own
- * branch and subtype; then the document is marked REVERSED with who, when and the reason (decided
- * item 1, Look first). Only POSTED and RECEIVED are reversed (decided item 8): another status is
- * `wrong_status`. A stock that would go below 0 throws StockShortError.
+ * (header contract); the lock is taken again here, at no cost in the same transaction; then
+ * reverseMovements() writes one REVERSAL for each movement of its lines; then the document is
+ * marked REVERSED with who, when and the reason (decided item 1, Look first). Only POSTED and
+ * RECEIVED are reversed (decided item 8): another status is `wrong_status`. A stock that would go
+ * below 0 throws StockShortError.
  */
 export async function reverseDocument(
   tx: Executor,
@@ -315,32 +354,38 @@ export async function reverseDocument(
 ): Promise<{ reversals: PostedMovement[] }> {
   const { status } = await lockDocument(tx, input.documentId);
   if (!REVERSIBLE_STATUSES.includes(status)) throw new ActionError("wrong_status");
-
-  const found = await tx.execute<HeldMovement>(sql`
-    select m.id, m.branch_id, m.variant_id, m.document_line_id, m.qty_delta::text as qty_delta,
-      m.unit_cost::text as unit_cost
-    from stock_movements m
-    join stock_document_lines l on l.id = m.document_line_id
-    where l.document_id = ${input.documentId} and m.type <> 'REVERSAL'
-    order by m.seq`);
-  // A document whose stock moved has its movements (decided item 8).
-  if (found.rows.length === 0) throw new ActionError("unexpected");
-
-  const reversals = await postMovements(
-    tx,
-    found.rows.map((movement) => ({
-      ...reversalOf({ qtyDelta: movement.qty_delta, unitCost: BigInt(movement.unit_cost) }),
-      branchId: movement.branch_id,
-      variantId: movement.variant_id,
-      createdBy: input.reversedBy,
-      documentLineId: movement.document_line_id,
-      reversesMovementId: movement.id,
-    })),
-  );
+  const reversals = await reverseMovements(tx, input.documentId, input.reversedBy);
   await tx.execute(sql`
     update stock_documents
     set status = 'REVERSED', reversed_by = ${input.reversedBy}, reversed_at = ${now()},
       reverse_reason = ${input.reason}
     where id = ${input.documentId}`);
   return { reversals };
+}
+
+/**
+ * Cancels a transfer still In transit (09 Other documents, Transfer: "Until then the sender or the
+ * Head can cancel the transfer with a reason, and the stock goes back to the sender at the cost it
+ * left with"; plan of 7.4c, decided items 1, 2 and 5, Look first). The caller has taken
+ * lockDocument() and authorized on its row (header contract); the lock is taken again here;
+ * transferCancelMove() decides the move (another status or type is `wrong_status`); then
+ * reverseMovements() puts each TRANSFER_OUT back into the sender's stock at its own unit cost, and
+ * the transfer is marked CANCELLED with who (`decided_by`), when (`decided_at`) and the reason
+ * (`decision_reason`). Movements into stock only, so no line can fall short.
+ */
+export async function cancelTransferDocument(
+  tx: Executor,
+  input: { documentId: string; reason: string; cancelledBy: string },
+): Promise<{ reversals: PostedMovement[]; number: string }> {
+  const { type, status } = await lockDocument(tx, input.documentId);
+  const move = type === "TRANSFER" ? transferCancelMove(status) : null;
+  if (move === null) throw new ActionError("wrong_status");
+  const reversals = await reverseMovements(tx, input.documentId, input.cancelledBy);
+  const updated = await tx.execute<{ number: string }>(sql`
+    update stock_documents
+    set status = ${move}, decided_by = ${input.cancelledBy}, decided_at = ${now()},
+      decision_reason = ${input.reason}
+    where id = ${input.documentId}
+    returning number`);
+  return { reversals, number: updated.rows[0]!.number };
 }

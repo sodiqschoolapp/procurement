@@ -33,11 +33,13 @@ import { checkMinimum } from "./stock-minimums";
 // `userId`, as for audit(). Each type is posted only by the action of its matrix row
 // (03-roles-and-permissions.md): DIRECT_ENTRY by the Head alone; WRITE_OFF and CORRECTION only
 // after the Head approves; ISSUE under ISSUE_STOCK; RETURN and REVERSAL under RETURN_REVERSE (a
-// cancelled purchase under CANCEL_PURCHASES); TRANSFER_OUT under TRANSFER_STOCK, its TRANSFER_IN
+// cancelled purchase under CANCEL_PURCHASES, a cancelled transfer's under TRANSFER_STOCK, plan of
+// 7.4c); TRANSFER_OUT under TRANSFER_STOCK, its TRANSFER_IN
 // in the receiving branch; RECEIPT under RECORD_PURCHASES. A StockShortError's `available` is
 // shown only for a branch the actor may see. A reversal's match to the movement it reverses is
 // checked by its task (3.7 for a cancelled purchase); a document's reversal takes them from the
-// movement it reverses (reverseDocument() of ./stock-documents.ts, 5.1).
+// movement it reverses (reverseDocument() and cancelTransferDocument() of ./stock-documents.ts,
+// 5.1 and 7.4c).
 
 export type PostedMovementInput = {
   branchId: string;
