@@ -37,6 +37,12 @@ describe("countTarget (decided item 8: always verified)", () => {
     expect(options.ssl).toEqual({ ca: OWN_CA, rejectUnauthorized: true });
   });
 
+  it("refuses a typed address when no CA can verify it (permission review of 9.6, nit 1)", () => {
+    expect(() => countTarget({ DATABASE_URL: APP }, { address: DRILL })).toThrow(
+      /^Refused: no CA certificate/,
+    );
+  });
+
   it("--database keeps the app's server, user and CA and replaces only the database name", () => {
     const options = countTarget(
       { DATABASE_URL: APP, DATABASE_CA_CERT: APP_CA },

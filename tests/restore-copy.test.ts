@@ -1,3 +1,7 @@
+import { chmod, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
 import { describe, expect, it } from "vitest";
 
 import {
@@ -6,6 +10,7 @@ import {
   newestCopyKey,
   refuseTarget,
   restoreEnv,
+  runPgRestore,
 } from "../scripts/restore-copy.mjs";
 
 // The restore of a weekly copy (build-plan 9.6: "into a new, empty database, never over the live
@@ -92,5 +97,64 @@ describe("pg_restore's call (decided item 7; plan of 8.2, nit 4)", () => {
       PGSSLROOTCERT: "/tmp/invented/ca.crt",
     });
     expect(PG_RESTORE_ARGS.join(" ")).not.toContain("invented");
+  });
+});
+
+describe("runPgRestore (decided item 8; permission review of 9.6, should fix 2)", () => {
+  it("calls pg_restore with its arguments, the new database's name and the file only, and removes the CA file", async () => {
+    // An invented pg_restore on PATH that writes down how it was called.
+    const folder = await mkdtemp(join(tmpdir(), "fake-pg-restore-"));
+    try {
+      const record = join(folder, "called.txt");
+      const fake = join(folder, "pg_restore");
+      await writeFile(
+        fake,
+        `#!/bin/sh\nprintf '%s\\n' "$@" > "${record}"\nenv | grep '^PG' | sort >> "${record}"\ncat "$PGSSLROOTCERT" >> "${record}"\n`,
+      );
+      await chmod(fake, 0o700);
+      const before = (await readdir(tmpdir())).filter((name) => name.startsWith("db-restore-ca-"));
+      const ca = "-----BEGIN CERTIFICATE-----invented-----END CERTIFICATE-----";
+
+      await runPgRestore(
+        { DATABASE_URL: ADDRESS, DATABASE_CA_CERT: ca, PATH: `${folder}:/usr/bin:/bin` },
+        "drill_20261019",
+        "/tmp/invented/copy.dump",
+      );
+
+      const lines = (await readFile(record, "utf8")).trim().split("\n");
+      expect(lines.slice(0, 6)).toEqual([
+        ...PG_RESTORE_ARGS,
+        "--dbname=drill_20261019",
+        "/tmp/invented/copy.dump",
+      ]);
+      expect(lines).toContain("PGDATABASE=drill_20261019");
+      expect(lines).toContain("PGSSLMODE=verify-full");
+      expect(lines.at(-1)).toBe(ca);
+      expect(lines.slice(0, 6).join(" ")).not.toContain("inv@nted-pass");
+      const after = (await readdir(tmpdir())).filter((name) => name.startsWith("db-restore-ca-"));
+      expect(after).toEqual(before);
+    } finally {
+      await rm(folder, { recursive: true, force: true });
+    }
+  });
+
+  it("tells only pg_restore's exit code when it fails", async () => {
+    const folder = await mkdtemp(join(tmpdir(), "fake-pg-restore-"));
+    try {
+      await writeFile(
+        join(folder, "pg_restore"),
+        "#!/bin/sh\necho invented-server-detail >&2\nexit 3\n",
+      );
+      await chmod(join(folder, "pg_restore"), 0o700);
+      await expect(
+        runPgRestore(
+          { DATABASE_URL: ADDRESS, PATH: `${folder}:/usr/bin:/bin` },
+          "drill_x",
+          "/tmp/x",
+        ),
+      ).rejects.toThrow(/^pg_restore ended with code 3$/);
+    } finally {
+      await rm(folder, { recursive: true, force: true });
+    }
   });
 });

@@ -84,6 +84,7 @@ What can fail:
 - `restore failed: BACKUP_S3_… is not set.`, or `(HTTP 403)`, `(HTTP 404)`: as for the weekly copy (`docs/deploy.md`, "When something is wrong"); the restore reads with the same token of step 6.5 there.
 - `restore failed: pg_restore ended with code …. Database "…" was created and is left as it is: delete it in the dashboard`: the copy did not restore whole. Delete that database (step 5) and post the line on issue #9. A half-restored copy is never a pass.
 - `restore failed: permission denied to create database`: `doadmin` may not create a database on this cluster; post the line on issue #9.
+- The console closed or the process killed during the restore: the downloaded copy (which holds password hashes and sessions) can stay in the `web` container's temporary folder until the next deploy or restart. Redeploy the app if that happens (the app → Actions → Force rebuild and deploy); the new database is left as above.
 - The cluster's disk is full: a copy needs about as much room as the live database. During the trial it is small; post what DigitalOcean shows on issue #9.
 
 ### When the two lines differ

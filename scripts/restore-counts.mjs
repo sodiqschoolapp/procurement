@@ -50,7 +50,15 @@ export function withDatabase(connectionString, name) {
  */
 export function countTarget(env, target = {}) {
   if (target.address) {
-    return connectionOptions(target.address, target.ca || env.DATABASE_CA_CERT);
+    // A typed address is never read unverified, whatever its own sslmode says (permission review
+    // of 9.6, nit 1): without a CA of the app or a pasted one it is refused.
+    const ca = target.ca || env.DATABASE_CA_CERT;
+    if (!ca) {
+      throw new Error(
+        "Refused: no CA certificate to verify that server; DATABASE_CA_CERT is not set. Run it again with --ask --own-ca.",
+      );
+    }
+    return connectionOptions(target.address, ca);
   }
   if (!env.DATABASE_URL) throw new Error("DATABASE_URL is not set.");
   if (target.database !== undefined) {

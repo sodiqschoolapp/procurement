@@ -65,10 +65,26 @@ function newName(): string {
   return name;
 }
 
-function holdsNoValue(line: string, env: Record<string, string>): void {
-  expect(line).not.toContain(env.S3_ENDPOINT);
-  expect(line).not.toContain(env.S3_ACCESS_KEY_ID);
-  expect(line).not.toContain(env.S3_SECRET_ACCESS_KEY);
+/** No line names the storage's endpoint or keys, nor the database's address or password. */
+function holdsNoValue(line: string, env: Record<string, string | undefined>): void {
+  const values = [
+    env.S3_ENDPOINT,
+    env.S3_ACCESS_KEY_ID,
+    env.S3_SECRET_ACCESS_KEY,
+    env.DATABASE_URL,
+  ];
+  if (env.DATABASE_URL) {
+    const password = decodeURIComponent(new URL(env.DATABASE_URL).password);
+    if (password) values.push(password);
+  }
+  for (const value of values) if (value) expect(line).not.toContain(value);
+}
+
+/** restoreCopy(), with every line it gives checked for values (permission review, should fix 1). */
+async function checked(...args: Parameters<typeof restoreCopy>): ReturnType<typeof restoreCopy> {
+  const result = await restoreCopy(...args);
+  holdsNoValue(result.line, args[0]);
+  return result;
 }
 
 const COPIES = "procurement-test-restore";
@@ -87,7 +103,7 @@ describe("restoreCopy (build-plan 9.6; 16 phase 8 row: into a new, empty databas
     const env = { ...storage, DATABASE_URL: app.url, PATH: process.env.PATH ?? "" };
     const seen: { name: string; bytes: string; env: Record<string, string | undefined> }[] = [];
 
-    const result = await restoreCopy(env, name, undefined, {
+    const result = await checked(env, name, undefined, {
       async restore(given, target, file) {
         seen.push({ name: target, bytes: (await readFile(file)).toString("latin1"), env: given });
         // What pg_restore would leave: the app's tables, here from the migrations.
@@ -99,7 +115,6 @@ describe("restoreCopy (build-plan 9.6; 16 phase 8 row: into a new, empty databas
     expect(result.ok && result.counts).toMatchObject({ orders: 0, users: 0, stockLines: 0 });
     expect(seen).toEqual([{ name, bytes: "PGDMP invented newest copy", env }]);
     expect(await testDatabaseExists(serverUrl, name)).toBe(true);
-    holdsNoValue(result.line, env);
   });
 
   it("restores the copy named, when one is given (decided item 5)", async () => {
@@ -109,7 +124,7 @@ describe("restoreCopy (build-plan 9.6; 16 phase 8 row: into a new, empty databas
     const name = newName();
     let bytes = "";
 
-    const result = await restoreCopy({ ...storage, DATABASE_URL: app.url }, name, OLDER, {
+    const result = await checked({ ...storage, DATABASE_URL: app.url }, name, OLDER, {
       async restore(_env, target, file) {
         bytes = (await readFile(file)).toString("latin1");
         await applyMigrations(addressOf(serverUrl, target));
@@ -130,17 +145,12 @@ describe("restoreCopy (build-plan 9.6; 16 phase 8 row: into a new, empty databas
       restored = true;
     };
 
-    const own = await restoreCopy({ ...storage, DATABASE_URL: app.url }, app.name, undefined, {
+    const own = await checked({ ...storage, DATABASE_URL: app.url }, app.name, undefined, {
       restore,
     });
-    const existing = await restoreCopy(
-      { ...storage, DATABASE_URL: app.url },
-      other.name,
-      undefined,
-      {
-        restore,
-      },
-    );
+    const existing = await checked({ ...storage, DATABASE_URL: app.url }, other.name, undefined, {
+      restore,
+    });
 
     expect(own.line).toMatch(/^Refused: ".*" is the app's database .*Nothing was written\.$/);
     expect(existing.line).toBe(
@@ -156,8 +166,8 @@ describe("restoreCopy (build-plan 9.6; 16 phase 8 row: into a new, empty databas
     const app = await appDatabase();
     const name = newName();
 
-    const none = await restoreCopy({ ...empty, DATABASE_URL: app.url }, name);
-    const missing = await restoreCopy(
+    const none = await checked({ ...empty, DATABASE_URL: app.url }, name);
+    const missing = await checked(
       { ...storage, DATABASE_URL: app.url },
       name,
       "backups/database-2001-01-01.dump",
@@ -177,7 +187,7 @@ describe("restoreCopy (build-plan 9.6; 16 phase 8 row: into a new, empty databas
     const app = await appDatabase();
     const name = newName();
 
-    const result = await restoreCopy({ ...storage, DATABASE_URL: app.url }, name, key);
+    const result = await checked({ ...storage, DATABASE_URL: app.url }, name, key);
 
     expect(result.line).toBe(
       `Refused: "${key}" is not a pg_dump custom-format file. Nothing was written.`,
@@ -191,7 +201,7 @@ describe("restoreCopy (build-plan 9.6; 16 phase 8 row: into a new, empty databas
     const app = await appDatabase();
     const name = newName();
 
-    const result = await restoreCopy({ ...storage, DATABASE_URL: app.url }, name, undefined, {
+    const result = await checked({ ...storage, DATABASE_URL: app.url }, name, undefined, {
       async restore() {
         throw new Error("pg_restore ended with code 1");
       },
@@ -213,7 +223,7 @@ describe("restoreCopy (build-plan 9.6; 16 phase 8 row: into a new, empty databas
     const env: Record<string, string | undefined> = { ...storage, DATABASE_URL: app.url };
     delete env.BACKUP_S3_SECRET_ACCESS_KEY;
 
-    const result = await restoreCopy(env, name);
+    const result = await checked(env, name);
 
     expect(result.line).toBe("restore failed: BACKUP_S3_SECRET_ACCESS_KEY is not set.");
     expect(await testDatabaseExists(serverUrl, name)).toBe(false);
