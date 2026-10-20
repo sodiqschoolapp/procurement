@@ -1,6 +1,5 @@
 import { currentBranchChoice } from "@/features/catalog/queries/my-branches";
 import { AuthorizationError, authorizeList } from "@/server/authorize";
-import { db } from "@/server/db/client";
 
 import { parseAnalyticsParams } from "./period-params";
 import { getApprovalSpeed } from "./queries/approval-speed";
@@ -56,7 +55,8 @@ export async function readAnalyticsPage(
       };
   try {
     const [resolved, options, block, head, principal, manager, finance] = await Promise.all([
-      resolvePeriod(db, params.period),
+      // Loaded here, not at the top: `next build` has no DATABASE_URL (progress 0.6).
+      import("@/server/db/client").then(({ db }) => resolvePeriod(db, params.period)),
       getAnalyticsFilters(userId),
       role === "MANAGER" || role === "FINANCE" ? null : getSpending(userId, params.period, filters),
       role === "HEAD"
