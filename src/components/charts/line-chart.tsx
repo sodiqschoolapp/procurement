@@ -27,6 +27,9 @@ export function LineChartBlock({
   label: string;
 }) {
   const router = useRouter();
+  // One point draws an empty-looking chart: the table under it carries the number alone
+  // (redesign of 21.10.2026).
+  if (points.length < 2) return null;
   return (
     <div className="h-64 w-full" aria-hidden="true" data-chart="line" title={label}>
       <ResponsiveContainer width="100%" height="100%">
@@ -52,9 +55,9 @@ export function LineChartBlock({
           <Tooltip content={<ChartTooltip />} cursor={{ stroke: "var(--muted-foreground)" }} />
           <Line
             dataKey="value"
-            stroke="var(--foreground)"
+            stroke="var(--chart-1)"
             strokeWidth={2}
-            dot={{ r: 4, fill: "var(--foreground)", stroke: "var(--card)", strokeWidth: 2 }}
+            dot={{ r: 4, fill: "var(--chart-1)", stroke: "var(--card)", strokeWidth: 2 }}
             activeDot={{ r: 6 }}
             isAnimationActive={false}
           />

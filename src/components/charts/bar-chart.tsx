@@ -15,6 +15,52 @@ import { ChartTooltip } from "./chart-tooltip";
 
 export function BarChartBlock({ points, label }: { points: readonly ChartPoint[]; label: string }) {
   const router = useRouter();
+  const onClick = (state: { activeIndex?: number | string | null }) => {
+    const point = pointAt(points, state.activeIndex);
+    if (point) router.push(point.href);
+  };
+  // Up to three bars lie across, one short row each, so one bar never stands alone in a tall
+  // empty chart (redesign of 21.10.2026); more stand up as columns.
+  if (points.length <= 3) {
+    return (
+      <div
+        className="w-full"
+        style={{ height: points.length * 44 + 8 }}
+        aria-hidden="true"
+        data-chart="bar"
+        title={label}
+      >
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart
+            accessibilityLayer={false}
+            layout="vertical"
+            data={[...points]}
+            margin={{ top: 4, right: 8, bottom: 4, left: 0 }}
+            onClick={onClick}
+          >
+            <XAxis type="number" hide />
+            <YAxis
+              type="category"
+              dataKey="label"
+              width={120}
+              tickLine={false}
+              axisLine={false}
+              tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
+            />
+            <Tooltip content={<ChartTooltip />} cursor={{ fill: "var(--muted)" }} />
+            <Bar
+              dataKey="value"
+              fill="var(--chart-1)"
+              radius={[0, 4, 4, 0]}
+              barSize={20}
+              className="cursor-pointer"
+              isAnimationActive={false}
+            />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    );
+  }
   return (
     <div className="h-64 w-full" aria-hidden="true" data-chart="bar" title={label}>
       <ResponsiveContainer width="100%" height="100%">
@@ -22,10 +68,7 @@ export function BarChartBlock({ points, label }: { points: readonly ChartPoint[]
           accessibilityLayer={false}
           data={[...points]}
           margin={{ top: 8, right: 8, bottom: 0, left: 0 }}
-          onClick={(state) => {
-            const point = pointAt(points, state.activeIndex);
-            if (point) router.push(point.href);
-          }}
+          onClick={onClick}
         >
           <CartesianGrid vertical={false} stroke="var(--border)" />
           <XAxis
@@ -39,7 +82,7 @@ export function BarChartBlock({ points, label }: { points: readonly ChartPoint[]
           <Tooltip content={<ChartTooltip />} cursor={{ fill: "var(--muted)" }} />
           <Bar
             dataKey="value"
-            fill="var(--foreground)"
+            fill="var(--chart-1)"
             radius={[4, 4, 0, 0]}
             maxBarSize={40}
             className="cursor-pointer"
