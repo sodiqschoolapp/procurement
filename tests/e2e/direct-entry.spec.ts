@@ -147,6 +147,23 @@ test("the Head enters 200 chairs EA already owns at the reference price, and the
   const entered = page.getByRole("row").filter({ hasText: uz.warehouse.item.types.DIRECT_ENTRY });
   await expect(entered).toContainText(number!);
   await expect(entered).toContainText("+200");
+
+  // The entry's page shows the Head its cost per unit (09 Direct entry by the Head 4; plan of
+  // 7.4b); the query sends it to nobody else (document.db.test.ts).
+  await entered.getByRole("link", { name: number! }).click();
+  await expect(page).toHaveURL(/\/warehouse\/documents\/[0-9a-f-]{36}$/);
+  await expect(page.locator("[data-unit-cost]")).toContainText(/150\s000/);
+  if (phone) {
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+      ),
+    ).toBe(false);
+  } else {
+    await expect(
+      page.getByRole("columnheader", { name: uz.warehouse.documents.page.unitCost }),
+    ).toBeVisible();
+  }
 });
 
 test("the Manager has no Direct entry button and the form is Not found (S15; 03 matrix: Enter stock directly)", async ({

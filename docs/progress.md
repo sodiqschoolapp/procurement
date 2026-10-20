@@ -2011,4 +2011,22 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - A refusal whose message names a value puts it in `values` beside `fields`; the screen passes it to `tAll(field, values)`.
 - Tests that cancel after a move advance the clock between every write and move: a move at the write's exact moment counts as after it.
 
-The next task is 7.4b.
+## 7.4b Inactive stock, counts into 0, a direct entry's cost (20.10.2026, pull request #140)
+
+**Built**
+- Issue, write-off and transfer take an inactive product or subtype up to the stock held (the ledger's stock check is the limit); a return takes one when the department's net received amount is above 0. Direct entry and the stock import still refuse inactive entries; ordering and buying unchanged.
+- The issue, write-off, transfer and return pickers list such items with `inactive: true`, shown with `warehouse.documents.inactiveOption`; the return picker only for a department that holds them (`departmentHoldsSql()`, `src/server/department-received.ts`, one SQL with `departmentReceived()`).
+- `lastCost()` and `replayedMovement()` live in `src/domain/stock.ts` (the nightly check imports them); a CORRECTION up may carry `emptyCost`; `countCorrection(stockAtStart, counted, lastCost?)`; `postLines()` reads the movements of count lines at 0 in one statement and posts them at the last cost.
+- `getStockDocument()` lines carry `unitCost`, a direct entry's cost for `stock.enter_direct` (the Head) only, chosen in the SQL; the page shows a "Cost per unit" column.
+
+**Left out, and the task that brings it**
+- Cancel a transfer, a refusal's reason: 7.4c.
+
+**Open for the owner**
+- None.
+
+**What the next sessions must know**
+- A movement type that comes in "at a cost only into an empty stock" uses `emptyCost`, and `replayedMovement()` must replay it the same way, or the nightly check reports a mismatch.
+- `postLines()` for a COUNT relies on the caller holding the balance locks and having checked that nothing moved (decideCount's lock step).
+
+The next task is 7.4c.
