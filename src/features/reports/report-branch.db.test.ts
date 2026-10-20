@@ -2,10 +2,19 @@ import { describe, expect, it } from "vitest";
 
 import { branchCookieValue } from "@/features/catalog/branch-cookie";
 
-import { bought, spendingScene } from "../../../tests/helpers/analytics";
+import {
+  bought,
+  moneyOn,
+  refreshNow,
+  spendingScene,
+  stocked,
+} from "../../../tests/helpers/analytics";
 import { setClock } from "../../../tests/helpers/clock";
 import { insertUser } from "../../../tests/helpers/users";
+import { getMoneyWithManagersReport } from "./queries/money-with-managers-report";
 import { getPurchaseRegister } from "./queries/purchase-register";
+import { getSpendingReport } from "./queries/spending-report";
+import { getStockReport } from "./queries/stock-report";
 import { withSwitcherBranch } from "./report-branch";
 import { parseReportParams } from "./report-params";
 
@@ -69,5 +78,56 @@ describe("reports start at the switcher's branch (10 Reports; D55 item 11)", () 
       expect(params.filters.branch).toBeNull();
       expect([register.count, register.total]).toEqual([2, 12000n]);
     }
+  });
+});
+
+// Every reader of the switcher's branch keeps its own wall (.claude/rules/tests.md: a value read
+// in a new way is tested at every reader; permission review of 8.2b, Should fix 1).
+describe("the switcher's branch at the other reports (03 rule 1; D55 item 11)", () => {
+  async function paramsOf(userId: string, report: string, branchId: string) {
+    const parsed = parseReportParams({ report }, TODAY)!;
+    return withSwitcherBranch(userId, parsed, branchCookieValue(userId, branchId));
+  }
+
+  it("Spending holds CHL alone", async () => {
+    const { chl, finance } = await scene();
+    await refreshNow();
+    const report = await getSpendingReport(
+      finance.id,
+      await paramsOf(finance.id, "spending", chl.branch.id),
+    );
+    expect(report.branches.map((line) => [line.id, line.amount])).toEqual([[chl.branch.id, 6000n]]);
+    expect(report.total).toBe(6000n);
+  });
+
+  it("Stock on hand holds CHL's stock alone", async () => {
+    const { chl, yun, finance } = await scene();
+    await stocked(chl, { qty: "2", unitCost: 1_000n });
+    await stocked(yun, { qty: "2", unitCost: 1_000n });
+    const report = await getStockReport(
+      finance.id,
+      await paramsOf(finance.id, "stock", chl.branch.id),
+      "all",
+    );
+    expect(report.branches.map((branch) => [branch.id, branch.value])).toEqual([
+      [chl.branch.id, 2000n],
+    ]);
+  });
+
+  it("Money with managers holds the cash of CHL alone, for Finance of both", async () => {
+    const { chl, yun, finance } = await scene();
+    // The same Manager's cash in each branch (D40).
+    const yunAsChl = { ...yun, manager: chl.manager };
+    const there = await bought(chl, { purchasedOn: "2031-05-03", unitPrice: "0" });
+    await moneyOn(there, finance.id, { amount: 40_000n, occurredOn: "2031-05-03" });
+    const elsewhere = await bought(yunAsChl, { purchasedOn: "2031-05-03", unitPrice: "0" });
+    await moneyOn(elsewhere, finance.id, { amount: 70_000n, occurredOn: "2031-05-03" });
+    await refreshNow();
+    const report = await getMoneyWithManagersReport(
+      finance.id,
+      await paramsOf(finance.id, "cash", chl.branch.id),
+      "all",
+    );
+    expect(report.held).toBe(40_000n);
   });
 });
