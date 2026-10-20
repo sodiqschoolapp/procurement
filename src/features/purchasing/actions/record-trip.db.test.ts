@@ -584,6 +584,29 @@ describe("recordPurchase: one trip, many orders (07 One trip, many orders; plan 
     });
   });
 
+  it("with receipt_required_for_cash on, a transfer trip with a cash fee on one of its orders needs its receipt (edge case 'No receipt photo'; D55 (16); plan of 4.10b)", async () => {
+    const s = await scene();
+    await setReceiptRequired(true);
+    const fee = await insertExtraCostType();
+    const ticked = [
+      {
+        ...s.older,
+        qty: "20",
+        comment: "o'tkazma",
+        extras: [{ extraCostTypeId: fee.id, amount: "10000", paymentType: "CASH" }],
+      },
+      { ...s.newer, qty: "10", comment: "o'tkazma" },
+    ];
+    expect(await trip(s.owner, ticked, { paymentType: "TRANSFER" })).toMatchObject({
+      ok: false,
+      error: { fields: { receiptFileIds: "errors.field.required" } },
+    });
+    const receipt = await insertFileRow(s.owner.id);
+    expect(
+      await trip(s.owner, ticked, { paymentType: "TRANSFER", receiptFileIds: [receipt.id] }),
+    ).toMatchObject({ ok: true });
+  });
+
   it("the same client key twice returns the first result and writes nothing more (developer-rules rule 8)", async () => {
     const s = await scene();
     const input = {

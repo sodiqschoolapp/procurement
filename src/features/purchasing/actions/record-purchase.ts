@@ -15,6 +15,7 @@ import {
   progressAfterBuying,
   purchaseCommentNeeds,
   purchaseDateRefusal,
+  receiptNeeded,
 } from "@/domain/purchases";
 import { ActionError } from "@/server/action";
 import type { FieldMessageKey } from "@/server/action-result";
@@ -433,11 +434,14 @@ export const recordPurchase = defineOrdersAction<RecordPurchaseInput>({
       await refuseInactive(tx, companies, [typed.supplierId], () => "supplierId");
     }
     const settings = await readSettings(tx);
-    // 07 Purchase record, Receipt; edge case "No receipt photo"; 3.3 decided item 4, Look first:
-    // a cash purchase is a trip paid in cash, whatever its extra costs' payment types.
+    // 07 Purchase record, Receipt; edge case "No receipt photo": a trip paid in cash, or with any
+    // extra cost paid in cash (`receiptNeeded()`; D55 (16); plan of 4.10b).
     if (
-      settings.receipt_required_for_cash &&
-      typed.paymentType === "CASH" &&
+      receiptNeeded(
+        settings.receipt_required_for_cash,
+        typed.paymentType,
+        typed.lines.flatMap((each) => each.extras.map((extra) => extra.paymentType)),
+      ) &&
       typed.receiptFileIds.length === 0
     ) {
       refuse("receiptFileIds", "errors.field.required");
