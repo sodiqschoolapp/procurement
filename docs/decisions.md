@@ -2758,6 +2758,27 @@ Choices made during the build:
 - `tests/helpers/error-reports.ts` (`catchErrorReports()`) sets an invented DSN and stubs `fetch`, so every catch site's test runs the real client; the send starts synchronously, so an unawaited report has already reached `fetch` when the action returns.
 - A send that is refused (not 2xx) or fails writes one log line with the status or the error's name only, never the DSN.
 
+### 4.10b Money corrections from issue #9 (20.10.2026)
+
+The plan's decisions as the plan review of 20.10.2026 confirmed them, with its three corrections applied (the cancel tests advance the clock between every step and `movedSince()` says a move at the write's exact moment is taken as after it; the prefill tests cover a row after a Cash returned and after a Paid back; `cashNeeded()`'s tests unchanged). The Look first items come first.
+
+1. **Look first** (money, prefill). "Already given" is `cashHanded()`: given + paid back − returned, rows not cancelled; a Paid back counts as given. 520 000 planned: 500 000 given → 20 000; 520 000 → 0; 600 000 → 0; 520 000 given and 100 000 returned → 100 000; 500 000 given and 20 000 paid back → 0. Reverses 4.3 item 2 (D55, 1).
+2. **Look first** (money, prefill). Planned cash fully given prefills 0 (writes nothing); no planned cash stays an empty row.
+3. **Look first** (money, cancel). The owner then is the `from` of the first `MOVE_OWNER` event at or after the write, else the owner now (`movedSince()`), for money actions and purchase records alike; a cancel is allowed when the owner now is that owner. Reverses 4.10 item 3's "a move back leaves the event, so the refusal stays" and its proposed `/spec-change`, superseded by the spec change of 20.10.2026 (D55, 2).
+4. **Look first** (money, cancel; a decision changed). Every purchase record and trip is checked, whatever its payment type: the edge case "A typo in a purchase record" names no exception, so 4.10's correction 1 (a Transfer record of a moved order is cancelled) ends, and its test changed.
+5. **Look first** (money, date). Record money and the settlement action refuse a date after today in Tashkent, inline in `storedFields()`; the approval's cash action takes today from the clock. Reverses 4.3 item 8 (D55, 15).
+6. **Look first** (rule 1). `receiptNeeded()` in `src/domain/purchases.ts`, asked by the action and the purchase form: the setting on and the trip's payment type or any extra cost's is Cash. Reverses 3.3 item 4 (D55, 16); its test changed.
+7. **Look first** (rule 1). `cashNotYetGiven()` is the one formula of `moneyPrefill()` and `cashNeeded()`.
+8. The refusal names the Manager through an optional `values` on `OrderFailure`, carried by the orders wrapper with `fields`.
+9. No notification and no audit change.
+10. The proposed `/spec-change` of 4.10 item 3 is superseded; nothing to propose.
+
+Choices made during the build:
+
+- `cashRecordsByIds()` (`src/features/purchasing/order-records.ts`) is removed: the purchase cancels no longer filter on cash, and nothing else read it.
+- A user refused the action itself (`forbidden` beside the moved refusal: a Principal, a Manager without the right) gets no `values`: the wrapper drops them, so the next step of another role is never told (permission review, Should fix 1).
+- The record dialog and the settlement screen set the date input's `max` to the server's today.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

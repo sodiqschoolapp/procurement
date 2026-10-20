@@ -323,7 +323,17 @@ export function cashNeeded(order: {
     return order.plannedCash;
   }
   if (order.status !== "PURCHASING" || order.progress !== "OPEN") return 0n;
-  const rest = order.plannedCash - order.handed;
+  return cashNotYetGiven(order.plannedCash, order.handed);
+}
+
+/**
+ * An order's planned cash not yet in its Manager's hands: the planned cash less `cashHanded()`,
+ * never below 0 (08 When Finance approves: "a later Cash given row is prefilled with the order's
+ * planned cash not yet given, never below 0"). One formula for the Money tab's prefill and Cash
+ * needed soon (plan of 4.10b, decided item 7, Look first).
+ */
+export function cashNotYetGiven(plannedCash: bigint, handed: bigint): bigint {
+  const rest = plannedCash - handed;
   return rest > 0n ? rest : 0n;
 }
 
@@ -449,18 +459,21 @@ export function moneyCancelAllows(
 }
 
 /**
- * The prefilled amount of one order's row in a Money tab action of `kind` (08 Closing 2; edge
- * cases "Finance gives cash for several orders"; D43; plan of 4.3, decided item 2, Look first):
- * Cash given is the order's planned cash, whatever was given before; Cash returned is the count
+ * The prefilled amount of one order's row in a Money tab action of `kind` (08 When Finance
+ * approves; 08 Closing 2; edge cases "Finance gives cash for several orders"; D55 (1); plan of
+ * 4.10b, decided items 1 and 2, Look first): Cash given is the order's planned cash not yet given
+ * (`cashNotYetGiven()`, 0 when all of it is), empty for an order with no planned cash; Cash returned is the count
  * when the Manager holds money, Paid back the count without its minus when he is owed, as
  * `settlementRows()` prefills them; the three information kinds have no amount in section 8. `null`
  * is an empty row.
  */
 export function moneyPrefill(
   kind: MoneyRowKind,
-  order: { plannedCash: bigint; cashCount: bigint },
+  order: { plannedCash: bigint; cashCount: bigint; handed: bigint },
 ): bigint | null {
-  if (kind === "CASH_GIVEN") return order.plannedCash > 0n ? order.plannedCash : null;
+  if (kind === "CASH_GIVEN") {
+    return order.plannedCash > 0n ? cashNotYetGiven(order.plannedCash, order.handed) : null;
+  }
   if (kind === "CASH_RETURNED" || kind === "PAID_BACK") {
     const [row] = settlementRows([{ id: "", cashCount: order.cashCount }]);
     return row?.kind === kind ? row.amount : null;

@@ -88,7 +88,7 @@
       "notBranchManager": "Buyurtmalar filialining faol menejerini tanlang.",
       "cashNotZero": "Uning naqd pul qoldigʻi 0 emas.",
       "alreadyOwner": "U allaqachon shu menejerga tegishli.",
-      "movedSince": "Bu buyurtma ushbu yozuvdan keyin boshqa menejerga oʻtkazilgan, shuning uchun uni bekor qilib boʻlmaydi. Moliyachi naqd pul qoldigʻini yangi pul amali bilan tuzatadi.",
+      "movedSince": "Bu yozuv buyurtma {manager}da boʻlganida kiritilgan. Avval rahbar buyurtmani {manager}ga qaytaradi; keyin uni bekor qilish mumkin.",
       "overReturn": "Boʻlim olganidan koʻp.",
       "overReturnComment": "Qatorda boʻlim olganidan koʻp: izoh yozing.",
       "reverseStockShort": "Storno qilish uchun omborda yetarli emas: mahsulotlar yana chiqib ketgan.",
@@ -1823,7 +1823,7 @@
       "fileOneManager": "Buyurtmalar bitta menejerniki boʻlganda fayl qoʻshish mumkin.",
       "rowsTitle": "Buyurtma boʻyicha summa",
       "loading": "Buyurtmalar yuklanmoqda…",
-      "rowFacts": "Rejadagi naqd {planned} · qoldiq {count}",
+      "rowFacts": "Rejadagi naqd {planned} · berilgan {given} · qoldiq {count}",
       "amountInvalid": "Butun soʻm kiriting, 0 yoki undan koʻp."
     },
     "cancel": {

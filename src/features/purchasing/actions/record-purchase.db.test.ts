@@ -410,20 +410,41 @@ describe("recordPurchase: receipts (07 Receipt; edge case 'No receipt photo'; 14
     ).toMatchObject({ ok: true });
   });
 
-  it("a Transfer trip with a cash extra cost saves without a receipt; the extra keeps its Cash (edge case 'Delivery for a bank-transfer item was paid in cash'; decided item 4)", async () => {
+  // Changed by D55 (16) and the spec change of 20.10.2026 (edge case "No receipt photo": "for a
+  // trip with an extra cost paid in cash"); 3.3 decided item 4 had let this trip through (plan of
+  // 4.10b, Look first).
+  it("a transfer-paid trip with a cash delivery fee and no receipt is refused with the setting on, saved with it off; the extra keeps its Cash (edge case 'No receipt photo'; D55 (16); plan of 4.10b)", async () => {
+    const opened = await openOrder({ paymentType: "TRANSFER" });
+    await setReceiptRequired(true);
+    const delivery = await insertExtraCostType();
+    const fee = {
+      paymentType: "TRANSFER",
+      extras: [{ extraCostTypeId: delivery.id, amount: "30000", paymentType: "CASH" }],
+    };
+    expect(await record(opened, fee)).toMatchObject({
+      ok: false,
+      error: { fields: { receiptFileIds: "errors.field.required" } },
+    });
+    expect(await recordsOf(opened.order.id)).toEqual([]);
+
+    await setReceiptRequired(false);
+    expect(await record(opened, fee)).toMatchObject({ ok: true });
+    const [saved] = await recordsOf(opened.order.id);
+    expect(
+      await db.select().from(purchaseExtras).where(eq(purchaseExtras.purchaseId, saved!.id)),
+    ).toMatchObject([{ amount: 30_000n, paymentType: "CASH" }]);
+  });
+
+  it("with the setting on, a transfer-paid trip whose extra costs are all by transfer needs no receipt (edge case 'No receipt photo')", async () => {
     const opened = await openOrder({ paymentType: "TRANSFER" });
     await setReceiptRequired(true);
     const delivery = await insertExtraCostType();
     expect(
       await record(opened, {
         paymentType: "TRANSFER",
-        extras: [{ extraCostTypeId: delivery.id, amount: "30000", paymentType: "CASH" }],
+        extras: [{ extraCostTypeId: delivery.id, amount: "30000", paymentType: "TRANSFER" }],
       }),
     ).toMatchObject({ ok: true });
-    const [saved] = await recordsOf(opened.order.id);
-    expect(
-      await db.select().from(purchaseExtras).where(eq(purchaseExtras.purchaseId, saved!.id)),
-    ).toMatchObject([{ amount: 30_000n, paymentType: "CASH" }]);
   });
 
   it("with the setting off, Cash without a receipt is saved", async () => {

@@ -88,7 +88,7 @@
       "notBranchManager": "Choose an active Manager of the orders' branch.",
       "cashNotZero": "Its cash count is not 0.",
       "alreadyOwner": "It already belongs to this Manager.",
-      "movedSince": "This order was moved to another Manager after this was recorded, so it cannot be cancelled. Finance corrects the cash count with a new money action.",
+      "movedSince": "This was recorded while the order was with {manager}. The Head first moves the order back to {manager}; then it can be cancelled.",
       "overReturn": "More than this department received.",
       "overReturnComment": "A line is more than the department received: write a comment.",
       "reverseStockShort": "Not enough in stock to reverse: the items have left again.",
@@ -1823,7 +1823,7 @@
       "fileOneManager": "A file can be added when the orders belong to one Manager.",
       "rowsTitle": "Amount per order",
       "loading": "Loading the orders…",
-      "rowFacts": "Planned cash {planned} · count {count}",
+      "rowFacts": "Planned cash {planned} · already given {given} · count {count}",
       "amountInvalid": "Type whole so'm, 0 or more."
     },
     "cancel": {

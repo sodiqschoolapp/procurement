@@ -314,6 +314,30 @@ describe("Record money (08 Money ledger)", () => {
   });
 });
 
+describe('the date (08 Money ledger: "one date, not later than today"; D55 (15); plan of 4.10b, decided item 5, Look first)', () => {
+  it("today in Tashkent is saved and tomorrow is refused, with the clock where the UTC and Tashkent dates differ (rule 10)", async () => {
+    const { branch, manager, finance } = await scene();
+    // 20:00 UTC on 20 May is 01:00 on 21 May in Tashkent.
+    setClock("2031-05-20T20:00:00Z");
+    const one = await order(branch.id, manager.id);
+    const tomorrow = input(
+      [one],
+      "CASH_GIVEN",
+      { [one.id]: "10000" },
+      { occurredOn: "2031-05-22" },
+    );
+    expect(await record(finance.id, tomorrow)).toMatchObject({
+      ok: false,
+      error: { code: "invalid_input", fields: { occurredOn: "errors.field.inFuture" } },
+    });
+    expect(await actionsOf(tomorrow.clientKey)).toEqual([]);
+
+    const today = input([one], "CASH_GIVEN", { [one.id]: "10000" }, { occurredOn: "2031-05-21" });
+    expect(await record(finance.id, today)).toMatchObject({ ok: true });
+    expect(await actionsOf(today.clientKey)).toMatchObject([{ occurredOn: "2031-05-21" }]);
+  });
+});
+
 describe("no crossing over (08 Money ledger 3; decided item 3, Look first)", () => {
   it("Cash returned at the count + 1 is refused; at the count it is allowed and the count is 0", async () => {
     const { branch, manager, finance } = await scene();

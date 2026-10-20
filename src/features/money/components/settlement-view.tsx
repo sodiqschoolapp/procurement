@@ -490,6 +490,7 @@ export function SettlementView({ settlement }: { settlement: WireSettlement }) {
               <Input
                 id={`${formId}-date`}
                 type="date"
+                max={settlement.today}
                 value={date}
                 disabled={pending}
                 onChange={(event) => setDate(event.target.value)}

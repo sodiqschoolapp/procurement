@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import { describe, expect, it } from "vitest";
 
+import { moneyPrefill } from "@/domain/money-ledger";
 import { runOrdersAction } from "@/server/order-action";
 
 import { insertBranch } from "../../../../tests/helpers/branches";
@@ -174,9 +175,26 @@ describe("moneyPrefillOrders (plan of 4.3, decided item 2)", () => {
     await recorded(finance.id, cash, "CASH_GIVEN", "60000");
     const answer = await moneyPrefillOrders(finance.id, [cash.id, transfer.id]);
     const byId = new Map(answer.map((order) => [order.id, order]));
-    expect(byId.get(cash.id)).toMatchObject({ plannedCash: 50_000n, cashCount: 60_000n });
-    expect(byId.get(transfer.id)).toMatchObject({ plannedCash: 0n, cashCount: 0n });
+    expect(byId.get(cash.id)).toMatchObject({
+      plannedCash: 50_000n,
+      cashCount: 60_000n,
+      handed: 60_000n,
+    });
+    expect(byId.get(transfer.id)).toMatchObject({ plannedCash: 0n, cashCount: 0n, handed: 0n });
     expect(await moneyPrefillOrders(otherFinance.id, [cash.id, transfer.id])).toEqual([]);
+  });
+
+  it("a later Cash given prefills the planned cash not yet given (08 When Finance approves; D55 (1); plan of 4.10b)", async () => {
+    const { branch, manager, finance } = await scene();
+    const order = await insertOrder({
+      branchId: branch.id,
+      ownerId: manager.id,
+      status: "PURCHASING",
+    });
+    await recorded(finance.id, order, "CASH_GIVEN", "30000");
+    const [read] = await moneyPrefillOrders(finance.id, [order.id]);
+    expect(read).toMatchObject({ plannedCash: 50_000n, handed: 30_000n });
+    expect(moneyPrefill("CASH_GIVEN", read!)).toBe(20_000n);
   });
 });
 

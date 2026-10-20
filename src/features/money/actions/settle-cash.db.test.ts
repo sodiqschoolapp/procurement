@@ -349,6 +349,21 @@ describe("the settlement action (08 Closing 2, the Cash block)", () => {
     expect(thirdEvents).toHaveLength(1);
   });
 
+  it('a date after today in Tashkent is refused, today is saved (08 Money ledger: "one date, not later than today"; D55 (15); plan of 4.10b, decided item 5, Look first)', async () => {
+    const { finance, o142 } = await workedExample();
+    // 20:00 UTC on 20 May is 01:00 on 21 May in Tashkent (rule 10).
+    setClock("2031-05-20T20:00:00Z");
+    const tomorrow = input([o142], { [o142.id]: receive("50000") }, { occurredOn: "2031-05-22" });
+    expect(await settle(finance.id, tomorrow)).toMatchObject({
+      ok: false,
+      error: { code: "invalid_input", fields: { occurredOn: "errors.field.inFuture" } },
+    });
+    expect(await actionsOf(tomorrow.clientKey)).toEqual([]);
+    const today = input([o142], { [o142.id]: receive("50000") }, { occurredOn: "2031-05-21" });
+    expect(await settle(finance.id, today)).toMatchObject({ ok: true });
+    expect(await actionsOf(today.clientKey)).toMatchObject([{ occurredOn: "2031-05-21" }]);
+  });
+
   it("no row above 0 is refused (08 Money ledger: an amount above 0)", async () => {
     const { finance, o142 } = await workedExample();
     const sent = input([o142], { [o142.id]: receive("0") });

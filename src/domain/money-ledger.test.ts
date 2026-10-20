@@ -569,33 +569,68 @@ describe("the Money tab: when money can be recorded or cancelled (08 Money ledge
   });
 });
 
-describe('the Money tab\'s prefilled rows (edge cases "Finance gives cash for several orders"; D43; plan of 4.3, decided item 2, Look first)', () => {
-  it("Cash given is the order's planned cash, also when cash was given before; empty for a non-cash order", () => {
-    expect(moneyPrefill("CASH_GIVEN", { plannedCash: 520_000n, cashCount: 520_000n })).toBe(
-      520_000n,
-    );
-    expect(moneyPrefill("CASH_GIVEN", { plannedCash: 0n, cashCount: 0n })).toBeNull();
+describe('the Money tab\'s prefilled rows (08 When Finance approves: "a later Cash given row is prefilled with the order\'s planned cash not yet given, never below 0"; edge cases "Finance gives cash for several orders"; D55 (1); plan of 4.10b, decided items 1 and 2, Look first)', () => {
+  // `handed` is cashHanded(): given + paid back − returned, rows not cancelled.
+  const given = (plannedCash: bigint, handed: bigint) =>
+    moneyPrefill("CASH_GIVEN", { plannedCash, cashCount: 0n, handed });
+
+  it("Cash given is the planned cash not yet given: 520 000 given at approval prefills 0, 500 000 given prefills 20 000", () => {
+    expect(given(520_000n, 520_000n)).toBe(0n);
+    expect(given(520_000n, 500_000n)).toBe(20_000n);
+    expect(given(520_000n, 0n)).toBe(520_000n);
+  });
+
+  it("never below 0: 600 000 given against 520 000 planned prefills 0", () => {
+    expect(given(520_000n, 600_000n)).toBe(0n);
+  });
+
+  it("after a Cash returned and after a Paid back (review correction 2)", () => {
+    const rows = (...each: [MoneyRowKind, bigint][]): MoneyRow[] =>
+      each.map(([kind, amount]) => ({ kind, amount, isCancelled: false }));
+    // 520 000 given, 100 000 returned: 100 000 is no longer in the Manager's hands.
+    expect(
+      given(520_000n, cashHanded(rows(["CASH_GIVEN", 520_000n], ["CASH_RETURNED", 100_000n]))),
+    ).toBe(100_000n);
+    // 500 000 given, 520 000 spent, 20 000 paid back: all 520 000 handed.
+    expect(
+      given(520_000n, cashHanded(rows(["CASH_GIVEN", 500_000n], ["PAID_BACK", 20_000n]))),
+    ).toBe(0n);
+  });
+
+  it("a non-cash order (no planned cash) stays an empty row, whatever was handed", () => {
+    expect(given(0n, 0n)).toBeNull();
+    expect(given(0n, 50_000n)).toBeNull();
   });
 
   it("Cash returned is the count above 0 (worked example, Cheaper: +50 000); empty at 0 and below", () => {
-    expect(moneyPrefill("CASH_RETURNED", { plannedCash: 520_000n, cashCount: 50_000n })).toBe(
-      50_000n,
-    );
-    expect(moneyPrefill("CASH_RETURNED", { plannedCash: 520_000n, cashCount: 0n })).toBeNull();
     expect(
-      moneyPrefill("CASH_RETURNED", { plannedCash: 520_000n, cashCount: -30_000n }),
+      moneyPrefill("CASH_RETURNED", { plannedCash: 520_000n, cashCount: 50_000n, handed: 0n }),
+    ).toBe(50_000n);
+    expect(
+      moneyPrefill("CASH_RETURNED", { plannedCash: 520_000n, cashCount: 0n, handed: 0n }),
+    ).toBeNull();
+    expect(
+      moneyPrefill("CASH_RETURNED", { plannedCash: 520_000n, cashCount: -30_000n, handed: 0n }),
     ).toBeNull();
   });
 
   it("Paid back is the count without its minus below 0 (worked example, Dearer: −30 000); empty at 0 and above", () => {
-    expect(moneyPrefill("PAID_BACK", { plannedCash: 520_000n, cashCount: -30_000n })).toBe(30_000n);
-    expect(moneyPrefill("PAID_BACK", { plannedCash: 520_000n, cashCount: 0n })).toBeNull();
-    expect(moneyPrefill("PAID_BACK", { plannedCash: 520_000n, cashCount: 50_000n })).toBeNull();
+    expect(
+      moneyPrefill("PAID_BACK", { plannedCash: 520_000n, cashCount: -30_000n, handed: 0n }),
+    ).toBe(30_000n);
+    expect(
+      moneyPrefill("PAID_BACK", { plannedCash: 520_000n, cashCount: 0n, handed: 0n }),
+    ).toBeNull();
+    expect(
+      moneyPrefill("PAID_BACK", { plannedCash: 520_000n, cashCount: 50_000n, handed: 0n }),
+    ).toBeNull();
   });
 
   it("Bank transfer, Card top-up and Card money returned are never prefilled (08 names no amount)", () => {
     for (const kind of ["BANK_TRANSFER", "CARD_TOPUP", "CARD_RETURNED"] as const) {
-      expect(moneyPrefill(kind, { plannedCash: 520_000n, cashCount: -30_000n })).toBeNull();
+      expect(
+        moneyPrefill(kind, { plannedCash: 520_000n, cashCount: -30_000n, handed: 0n }),
+      ).toBeNull();
     }
   });
 });

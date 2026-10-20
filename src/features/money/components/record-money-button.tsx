@@ -76,6 +76,7 @@ export function RecordMoneyButton({
   const [orders, setOrders] = useState<WireMoneyOrder[]>([]);
   const [kind, setKind] = useState<MoneyRowKind>(preset);
   const [date, setDate] = useState("");
+  const [today, setToday] = useState("");
   const [documentNo, setDocumentNo] = useState("");
   const [comment, setComment] = useState("");
   const [file, setFile] = useState<{ id: string; name: string } | null>(null);
@@ -86,6 +87,7 @@ export function RecordMoneyButton({
     moneyPrefill(kind, {
       plannedCash: BigInt(order.plannedCash),
       cashCount: BigInt(order.cashCount),
+      handed: BigInt(order.handed),
     });
   const textOf = (order: WireMoneyOrder) =>
     typed[`${kind}:${order.id}`] ?? prefilled(order)?.toString() ?? "";
@@ -131,6 +133,7 @@ export function RecordMoneyButton({
         return;
       }
       setDate(answer.data.today);
+      setToday(answer.data.today);
       setOrders(answer.data.orders);
     } catch {
       toast.error(tAll("errors.network"));
@@ -289,6 +292,7 @@ export function RecordMoneyButton({
               <Input
                 id={`${formId}-date`}
                 type="date"
+                max={today || undefined}
                 value={date}
                 disabled={pending}
                 onChange={(event) => setDate(event.target.value)}
@@ -388,6 +392,7 @@ export function RecordMoneyButton({
                         <span className="text-[13px] leading-[18px] text-muted-foreground">
                           {t("rowFacts", {
                             planned: format.money(BigInt(order.plannedCash)),
+                            given: format.money(BigInt(order.handed)),
                             count: format.money(BigInt(order.cashCount)),
                           })}
                         </span>

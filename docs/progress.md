@@ -1992,4 +1992,23 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - Never pass a request's path, query, headers or a `cause` to `reportError()`; the `where` is a route pattern or a name.
 - For 9.4: keep the names `SEED_DEMO_DATA` (the environment tag reads it) and `ERROR_REPORT_DSN`; add `ERROR_REPORT_DSN` to `docs/deploy.md`'s list of typed values.
 
-The next task is 9.4.
+## 4.10b Money corrections from issue #9 (20.10.2026, pull request #138)
+
+**Built**
+- `cashNotYetGiven()` (`src/domain/money-ledger.ts`): `moneyPrefill()` and `cashNeeded()` share it; the Money tab's Cash given row prefills the planned cash less `cashHanded()` and shows "already given".
+- `movedSince()` (`src/features/orders/moved-since.ts`) answers the orders whose owner now is not the owner at a moment, with that owner's name; cancelMoney, cancelPurchase and cancelTrip refuse with `values.manager` and allow once the order is back. Every purchase record is checked, Transfer and Card too.
+- `storedFields()` (record money, settlement) refuses a date after today in Tashkent.
+- `receiptNeeded()` (`src/domain/purchases.ts`): a cash extra cost needs a receipt with the setting on; the action and the purchase form ask it.
+- `OrderFailure.values`, carried by the orders wrapper with `fields`; dropped for an order also refused `forbidden`.
+
+**Left out, and the task that brings it**
+- The other D55 items: 7.4b, 7.4c, 2.3b, 8.2b.
+
+**Open for the owner**
+- None.
+
+**What the next sessions must know**
+- A refusal whose message names a value puts it in `values` beside `fields`; the screen passes it to `tAll(field, values)`.
+- Tests that cancel after a move advance the clock between every write and move: a move at the write's exact moment counts as after it.
+
+The next task is 7.4b.

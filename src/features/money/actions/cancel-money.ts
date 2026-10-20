@@ -28,7 +28,8 @@ import { movedSince } from "@/features/orders/moved-since";
 //            ones (decided item 10), so every order it changes passed the lock, the branch wall
 //            and the version; `moneyCancelAllows()`: an action cancelled before, or with an order
 //            Closed, is `wrong_status` (the Closed order named: the Head reopens it first); so is
-//            one whose order was moved to another Manager since (`movedSince()`; plan of 4.10)
+//            one whose order's owner now is not the owner it had when the action was written,
+//            naming that owner (`movedSince()`; 08 Money ledger; plan of 4.10b, Look first)
 //   write    the one cancel update the trigger money_actions_cancel_only of 0028 allows
 //
 // Nothing else changes: the action's rows are left out of every count from now on (08 Order's
@@ -95,16 +96,23 @@ export const cancelMoney = defineOrdersAction<CancelMoneyInput>({
         sent.map((order) => order.status),
       )
     ) {
-      // An order moved to another Manager since the action: its cash would land on the new
-      // owner's count (plan of 4.10, decided item 3, Look first).
-      const moved = await movedSince(context.tx, action.orderIds, action.createdAt);
-      return sent
-        .filter((order) => moved.has(order.id))
-        .map((order) => ({
-          orderId: order.id,
-          code: "wrong_status" as const,
-          fields: { status: "errors.field.movedSince" as const },
-        }));
+      // An order whose owner now is not the one it had when the action was written: its cash
+      // would land on the new owner's count; the Head first moves it back (08 Money ledger; D55
+      // (2); plan of 4.10b, decided item 3, Look first).
+      const moved = await movedSince(context.tx, sent, action.createdAt);
+      return sent.flatMap((order) => {
+        const then = moved.get(order.id);
+        return then
+          ? [
+              {
+                orderId: order.id,
+                code: "wrong_status" as const,
+                fields: { status: "errors.field.movedSince" as const },
+                values: { manager: then.name },
+              },
+            ]
+          : [];
+      });
     }
     const refused: OrderFailure[] = action.isCancelled
       ? sent.map((order) => ({ orderId: order.id, code: "wrong_status" }))

@@ -380,6 +380,7 @@ export type WireMoneyOrder = {
   ownerName: string;
   plannedCash: string;
   cashCount: string;
+  handed: string;
 };
 
 /**
@@ -396,6 +397,7 @@ export async function moneyPrefillAction(input: {
         ...order,
         plannedCash: order.plannedCash.toString(),
         cashCount: order.cashCount.toString(),
+        handed: order.handed.toString(),
       }),
     ),
   }));

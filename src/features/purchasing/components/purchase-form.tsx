@@ -32,6 +32,7 @@ import { PAYMENT_TYPES, type PaymentType } from "@/domain/payment-types";
 import {
   type CommentReason,
   purchaseCommentNeeds,
+  receiptNeeded,
   sameAsPlanned,
   splitGroupQuantity,
 } from "@/domain/purchases";
@@ -294,7 +295,14 @@ export function PurchaseFormView({
     router.push(backHref);
   });
 
-  const receiptNeeded = form.receiptRequiredForCash && values.paymentType === "CASH";
+  // The action asks the same rule (07 Receipt; edge case "No receipt photo"; plan of 4.10b).
+  const receiptRequired = receiptNeeded(
+    form.receiptRequiredForCash,
+    values.paymentType,
+    recorded.flatMap(({ index }) =>
+      (values.lines[index]?.extras ?? []).map((extra) => extra.paymentType ?? values.paymentType),
+    ),
+  );
   const paymentOptions = PAYMENT_TYPES.map((type) => ({ value: type, label: tPayment(type) }));
   const firstOrder = shown[0]!.order;
   const subtitle = single
@@ -462,7 +470,7 @@ export function PurchaseFormView({
 
           <div className="flex flex-col gap-2">
             <span className="text-sm leading-5 font-semibold">
-              {receiptNeeded ? t("receiptRequired") : t("receipt")}
+              {receiptRequired ? t("receiptRequired") : t("receipt")}
             </span>
             {receipts.length > 0 ? (
               <ul className="flex flex-col gap-1">
