@@ -2142,4 +2142,23 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - A new console script the owner runs in the image goes into `ENTRY_POINTS` of `tests/image-files.test.ts` and the Dockerfile's COPY line.
 - `endTrial()` holds `pg_advisory_lock(FIRST_HEAD_LOCK, 0)` for its whole run; a new writer that must never meet a half-reset database takes that lock first.
 
-The next task is 9.6.
+## 9.6 Restore drill (20.10.2026, pull request #149)
+
+**Built**
+- `docs/restore.md`: the drill (A: yesterday's daily backup into a new cluster `ombor-db-drill`; B: the newest weekly copy into a new database `drill_<date>`), "When the two lines differ", the drill's record table, "When it is real".
+- `npm run db:restore -- <new database> [<copy key>]` (`scripts/db-restore.mjs`, core `restoreCopy()` in `scripts/restore-copy.mjs`): newest copy of `BACKUP_S3_BUCKET`, `create database`, `pg_restore` 17, then the counts. Refuses an existing database, the app's own, `defaultdb`, `postgres`, `template0/1`.
+- `npm run db:counts [-- --database <name> | --ask [--own-ca]] [--until <ISO moment>]` (`scripts/db-counts.mjs`, core `countAt()` / `readCounts()` in `scripts/restore-counts.mjs`): orders, users, stock lines (from movements), movements, newest row, as of a moment.
+- An owner gate line before 9.5 in `docs/build-plan.md`.
+
+**Left out, and the task that brings it**
+- The real run of the drill: the owner (production, money), before the gate line goes.
+
+**Open for the owner**
+- `docs/restore.md` parts A and B on the live app; the four lines on issue #9; then delete the gate line before 9.5.
+
+**What the next sessions must know**
+- For 9.5: copy the four lines of the drill from issue #9 into the record table of `docs/restore.md`.
+- A copy's counts are compared with the live side by `db:counts -- --until <the copy's newest row>`; a deleted draft lowers only the live `orders`.
+- `restoreCopy()` takes `{ restore }` in place of `pg_restore`, as `databaseCopy()` takes `dump`.
+
+The next task is 9.5.

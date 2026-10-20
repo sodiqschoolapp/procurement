@@ -2940,6 +2940,28 @@ Choices made during the build:
 - A refusal prints its own line; any other failure prints `trial:reset failed: <reason>` through `failureReason()`, as `db:migrate` does.
 - The seed's hosted-database refusal and the comments of `start.sh` and `db-seed.mjs` say "the live app in trial" instead of "the test copy"; `tests/seed-guard.test.ts` follows the new text.
 
+### 9.6 Restore drill (20.10.2026)
+
+The plan's decisions as the plan review of 20.10.2026 confirmed them (its three corrections applied: a deleted draft named in "When the two lines differ" with its test, item 10 moved up among the Look first items, `tests/restore-counts.test.ts` in the size list).
+
+1. **Look first** (production: never over the live one). A weekly copy is restored only by `npm run db:restore` into a database that does not exist yet, on the cluster of `DATABASE_URL`; it refuses the app's own database, `defaultdb`, `postgres`, `template0`, `template1`, a name that is not a plain lower-case identifier, and an existing database, before anything is written, and never drops anything. A written step alone does not hold "never over the live one" (build-plan 9.6); a refusal with a test does.
+2. **Look first** (two console scripts beyond "a written procedure"). `db:restore` and `db:counts`, no new dependency (`pg_restore` 17 in the image since 8.2, `pg`, the S3 client). The Done when asks for counts "against the live one", which by hand at one moment is where a drill goes wrong.
+3. **Look first** (what "counted against the live one" means). Both sides are counted as of one moment, the newest `created_at` among the copy's orders, users and stock movements: orders and users created up to it, movements up to it, and stock lines rebuilt from the movements (the `balance_after` of the last one by `seq` per branch and item, above 0, with their total quantity), since `stock_balances` changes in place. Orders, users and movements are never deleted or are append-only (`CLAUDE.md` rules 7 and 11), except a never-submitted draft, named in `docs/restore.md` with the late-committed and back-dated seed rows as the known causes of a difference.
+4. **Look first** (money: the drill cluster). Yesterday's copy is DigitalOcean's daily backup, which it restores only into a new cluster billed by the hour (`18-hosting-and-costs.md` row 2: about $15 a month); the owner checks the price, runs the drill and destroys `ombor-db-drill` the same day. The dashboard's screens are described from memory.
+5. **Look first** (the order 9.6 before 9.5). The task cannot run the drill (production, money), so it builds the steps and the scripts, is ticked for them, and puts an owner gate line before 9.5 in `docs/build-plan.md`, which the owner deletes once both pairs of lines are on issue #9: 9.5 begins with `trial:reset`, which empties the database the drill runs against. The Done when's counts are the owner's, not met by the merge.
+6. Which copies: "yesterday's" is the daily backup at a moment of yesterday (Tashkent), chosen in DigitalOcean's dialog; "the newest weekly copy" is the newest `backups/database-<date>.dump` by the date in its name (`copyKeyOf()` of 8.2), or a key given.
+7. The weekly copy is restored into a database `drill_<date>` on `ombor-db`, deleted by the owner in the dashboard after the counts: it costs nothing, and the app never connects to it. Dropping a drill copy deletes none of the app's rows (rule 11).
+8. `pg_restore --no-owner --no-privileges --exit-on-error --no-password --dbname=<name>`, the address as PG* variables (`pgDumpEnv()` of 8.2, only the database name replaced), verified against `DATABASE_CA_CERT`. A failed restore says the new database was created and is to be deleted; a half-restored copy is never a pass.
+9. `db:counts --ask` reads the drill cluster's address at a hidden prompt (`askHidden()`), never as an argument, never printed; it is verified against `DATABASE_CA_CERT`, or with `--own-ca` against the drill cluster's own pasted CA; never without verification (`connection-options.mjs`).
+10. `db:counts` reads in one `REPEATABLE READ READ ONLY` transaction, so the live side is counted at one instant while the app writes.
+11. No comparison of `stock_balances` with the movements in `db:counts`: the nightly stock check of 8.2 does it (D44).
+
+Choices made during the build:
+
+- `db:counts` takes `--until` only as an ISO 8601 moment (`2026-10-19T23:00:00.000Z`), the form its own line prints, so the moment is copied from one line to the other unchanged.
+- The tests of `restoreCopy()` use buckets of their own (`procurement-test-restore`, `-empty`, `-bad`), so the copies the job tests of 8.2 write into the shared backups bucket cannot become "the newest".
+- A by-hand run on this machine with `pg_dump` and `pg_restore` 17 (the `postgres:17` image on `PATH`): `db:copy` of the seeded local database, `db:restore -- drill_local` and `db:counts -- --until <newest row>` printed equal lines (orders 12, users 4, stock lines 2, quantity 250.000, movements 4); the restore refused `drill_local` again, `procurement` and `defaultdb`.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.
