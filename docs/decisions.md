@@ -2709,6 +2709,7 @@ Choices made during the build:
 - `orders.extras.open` starts with the `{sum}` the button shows; the group row's name holds the branch code it shows; a space now separates the two spans, as axe reads text without layout.
 - The money page is checked as Head and Finance: the Manager has no money page.
 - The Tab walk's outer stop is one press per focusable element plus 100 (the Head's Analytics on a database many tests have filled holds over 2 000 links); a date field's parts are one stop.
+- S1 by keyboard waits for every finite animation to end before each axe check (a dialog fading in read as low contrast in CI), and presses Enter again from the password field until home opens (a first Enter can come before the form hydrates).
 
 ## Process changes
 
