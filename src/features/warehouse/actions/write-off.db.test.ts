@@ -273,16 +273,8 @@ describe("askWriteOff by a Manager (09 Other documents, Write-off: stock changes
     expect(await documentCount()).toBe(0);
   });
 
-  it("refuses an inactive subtype, a service, an inactive branch and a future date (plan of 5.11, decided items 8 and 9; 04 rule 2)", async () => {
-    const a = await inStock("4");
-    await db.execute(sql`update product_variants set is_active = false where id = ${a}`);
-    expect(
-      await runAction(askWriteOff, manager.id, writeOffInput([{ variantId: a, qty: "1" }])),
-    ).toMatchObject({
-      ok: false,
-      error: { fields: { "lines.0.variantId": "errors.field.inactive" } },
-    });
-
+  // An inactive subtype is written off up to the stock held since D55 (3): inactive-stock.db.test.ts.
+  it("refuses a service, an inactive branch and a future date (plan of 5.11, decided items 8 and 9)", async () => {
     const service = (await insertItem({ type: "SERVICE" })).variantId;
     expect(
       await runAction(askWriteOff, manager.id, writeOffInput([{ variantId: service, qty: "1" }])),

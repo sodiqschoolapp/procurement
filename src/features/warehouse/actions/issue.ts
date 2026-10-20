@@ -29,8 +29,10 @@ import { StockShortError } from "@/server/stock-ledger";
 //   1  the branch, active (FOR SHARE; decided item 13); the date, up to today in Tashkent
 //      (decided item 5); the department, active and of the branch (FOR SHARE)
 //   2  the products FOR SHARE in the order of their ids, then the subtypes FOR SHARE in the order
-//      of their ids: each an active subtype of an active product of goods (decided item 3, Look
-//      first), its quantity by the measure (edge case "Half a piece")
+//      of their ids: each a subtype of a product of goods, active or not: an inactive entry is
+//      issued up to the stock the branch holds, which the ledger checks in step 3 (04 rule 2; plan
+//      of 7.4b, decided item 3, Look first), its quantity by the measure (edge case "Half a
+//      piece")
 //   3  createDocument() of src/server/stock-documents.ts: the ISS number, the document, its lines
 //      and their ISSUE movements at the average (09 Stock value), under the balance locks of the
 //      ledger. A line the stock cannot cover is refused there, under the lock (09 Issue 1), as the
@@ -131,8 +133,6 @@ async function refuseLines(tx: Executor, typed: IssueInput) {
   const rows = await tx
     .select({
       id: productVariants.id,
-      isActive: productVariants.isActive,
-      productActive: products.isActive,
       type: products.type,
       allowDecimal: units.allowDecimal,
     })
@@ -146,9 +146,6 @@ async function refuseLines(tx: Executor, typed: IssueInput) {
     const row = rows.find((each) => each.id === line.variantId);
     // A service never enters stock (A7), so it is never issued.
     if (!row || row.type !== "GOODS") refuse(`lines.${at}.variantId`, "errors.field.notAllowed");
-    if (!row.isActive || !row.productActive) {
-      refuse(`lines.${at}.variantId`, "errors.field.inactive");
-    }
     const refusal = quantityRefusal(line.qty, row.allowDecimal);
     if (refusal) refuse(`lines.${at}.qty`, `errors.field.${refusal}`);
   }

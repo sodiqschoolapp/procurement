@@ -438,6 +438,70 @@ describe("returnStock (09 Other documents, Return from a department)", () => {
     expect(await returnCount()).toBe(0);
   });
 
+  it("an inactive item is returned by the department that received it, at that department's issue cost (04 rule 2; plan of 7.4b, decided item 4)", async () => {
+    const item = await goods();
+    await receive(branch.id, item, "20", 3000n);
+    await issue(item, "8");
+    await db.execute(sql`update products set is_active = false
+      where id = (select product_id from product_variants where id = ${item})`);
+
+    const result = await runAction(returnStock, manager, returnInput([{ variantId: item, qty: "3" }]));
+    expect(result.ok).toBe(true);
+    expect(await balanceOf(branch.id, item)).toEqual({ qty: "15.000", avg_cost: "3000" });
+  });
+
+  it("an inactive item a department never received is refused even with a comment, and one it gave all back is too (04 rule 2; plan of 7.4b, decided item 4; review of the plan, must fix 1 and 2)", async () => {
+    const item = await goods();
+    await receive(branch.id, item, "20", 3000n);
+    await issue(item, "5", { to: neighbour });
+    await issue(item, "10");
+    expect(
+      (await runAction(returnStock, manager, returnInput([{ variantId: item, qty: "10" }]))).ok,
+    ).toBe(true);
+    await db.execute(sql`update product_variants set is_active = false where id = ${item}`);
+
+    // The department received 10 and returned 10: it holds nothing. Comment given, so only the
+    // inactive check can refuse it (the over-return rule passes with a comment).
+    const given = await runAction(
+      returnStock,
+      manager,
+      returnInput([{ variantId: item, qty: "1" }], { comment: "Sinov izoh" }),
+    );
+    expect(given.ok ? null : given.error.fields).toEqual({
+      "lines.0.variantId": "errors.field.inactive",
+    });
+    // Another department that never received it.
+    const never = await insertDepartment(branch.id);
+    const stranger = await runAction(
+      returnStock,
+      manager,
+      returnInput([{ variantId: item, qty: "1" }], {
+        departmentId: never.id,
+        comment: "Sinov izoh",
+      }),
+    );
+    expect(stranger.ok ? null : stranger.error.fields).toEqual({
+      "lines.0.variantId": "errors.field.inactive",
+    });
+    // The neighbour holds 5: its return passes, and over 5 it still needs the comment (09 Return).
+    const over = await runAction(
+      returnStock,
+      manager,
+      returnInput([{ variantId: item, qty: "6" }], { departmentId: neighbour }),
+    );
+    expect(over.ok ? null : over.error.fields).toEqual({
+      "lines.0.qty": "errors.field.overReturn",
+      comment: "errors.field.overReturnComment",
+    });
+    const back = await runAction(
+      returnStock,
+      manager,
+      returnInput([{ variantId: item, qty: "5" }], { departmentId: neighbour }),
+    );
+    expect(back.ok).toBe(true);
+    expect(await balanceOf(branch.id, item)).toEqual({ qty: "20.000", avg_cost: "3000" });
+  });
+
   it("allows decimals where the measure does", async () => {
     const kg = await goods(true);
     await receive(branch.id, kg, "5", 4000n);

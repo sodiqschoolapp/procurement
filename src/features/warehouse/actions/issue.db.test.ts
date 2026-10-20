@@ -260,25 +260,13 @@ describe("issueStock (09 Issue to a department)", () => {
     ).toBe(true);
   });
 
-  it("refuses an inactive subtype, a service and a subtype twice (04 rule 2; A7; plan decided items 3 and 7)", async () => {
+  // An inactive subtype is issued up to the stock held since D55 (3): inactive-stock.db.test.ts.
+  it("refuses a service and a subtype twice (A7; plan decided item 7)", async () => {
     const product = await insertProduct({ unitId: (await insertUnit()).id });
-    const [kept, dropped] = await insertSubtypes(product.id, [{ name: "Ko'k" }, { name: "Qora" }]);
+    const [kept] = await insertSubtypes(product.id, [{ name: "Ko'k" }, { name: "Qora" }]);
     await stock(branch.id, kept!, "5", 1000n);
-    await stock(branch.id, dropped!, "5", 1000n);
-    await db.execute(sql`update product_variants set is_active = false where id = ${dropped!}`);
     const service = (await insertProduct({ type: "SERVICE" })).defaultVariantId;
 
-    const inactive = await runAction(
-      issueStock,
-      manager,
-      issueInput([
-        { variantId: kept!, qty: "1" },
-        { variantId: dropped!, qty: "1" },
-      ]),
-    );
-    expect(inactive.ok ? null : inactive.error.fields).toEqual({
-      "lines.1.variantId": "errors.field.inactive",
-    });
     const serviced = await runAction(
       issueStock,
       manager,

@@ -3,7 +3,7 @@ import * as z from "zod";
 
 import { businessDate, isBusinessDate } from "@/domain/business-date";
 import { draftComment, isDraftComment, quantityRefusal } from "@/domain/drafts";
-import { DOCUMENT_LINES_MAX, overReturn } from "@/domain/stock-documents";
+import { DOCUMENT_LINES_MAX, departmentHolds, overReturn } from "@/domain/stock-documents";
 import { ActionError, defineAction } from "@/server/action";
 import type { FieldMessageKey } from "@/server/action-result";
 import type { Executor } from "@/server/authorize";
@@ -31,8 +31,11 @@ import { createDocument } from "@/server/stock-documents";
 //      department, active and of the branch, FOR UPDATE (decided item 3): two returns of one
 //      department wait here, so the second counts the first; an issue takes it FOR SHARE
 //   2  the products FOR SHARE in the order of their ids, then the subtypes FOR SHARE in the order
-//      of their ids: each an active subtype of an active product of goods (decided item 8), its
-//      quantity by the measure (edge case "Half a piece")
+//      of their ids: each a subtype of a product of goods (decided item 8), its quantity by the
+//      measure (edge case "Half a piece"); an inactive subtype or product only when the
+//      department holds it (departmentReceived() above 0, read for every inactive line whatever
+//      the comment: 04 rule 2, "returned by a department that received it"; plan of 7.4b, decided
+//      item 4, Look first)
 //   3  the department's net received amount per subtype (departmentReceived(), decided item 2,
 //      Look first): a line over it needs the document's comment; without one the whole return is
 //      refused, each line over named with its amount (decided item 5)
@@ -138,15 +141,25 @@ async function refuseLines(tx: Executor, typed: ReturnInput) {
     .where(inArray(productVariants.id, ids))
     .orderBy(asc(productVariants.id))
     .for("share", { of: productVariants });
+  const inactive: number[] = [];
   for (const [at, line] of typed.lines.entries()) {
     const row = rows.find((each) => each.id === line.variantId);
     // A service never enters stock (A7), so it is never returned.
     if (!row || row.type !== "GOODS") refuse(`lines.${at}.variantId`, "errors.field.notAllowed");
-    if (!row.isActive || !row.productActive) {
-      refuse(`lines.${at}.variantId`, "errors.field.inactive");
-    }
+    if (!row.isActive || !row.productActive) inactive.push(at);
     const refusal = quantityRefusal(line.qty, row.allowDecimal);
     if (refusal) refuse(`lines.${at}.qty`, `errors.field.${refusal}`);
+  }
+  if (inactive.length === 0) return;
+  const received = await departmentReceived(tx, {
+    branchId: typed.branchId,
+    departmentId: typed.departmentId,
+    variantIds: inactive.map((at) => typed.lines[at]!.variantId),
+  });
+  for (const at of inactive) {
+    if (!departmentHolds(received.get(typed.lines[at]!.variantId)!)) {
+      refuse(`lines.${at}.variantId`, "errors.field.inactive");
+    }
   }
 }
 
