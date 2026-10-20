@@ -52,6 +52,7 @@ describe("two decisions of one write-off at the same moment", () => {
           runAction(decideWriteOff, second.id, {
             documentId: asked.data.documentId,
             outcome: "REFUSE",
+            reason: "Sinov sababi",
           }),
       ],
     );

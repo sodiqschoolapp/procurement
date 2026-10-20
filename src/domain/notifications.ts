@@ -43,6 +43,7 @@ export const NOTIFICATION_TYPES = [
   "CASH_SETTLED",
   "REQUEST_SENT_BACK_FOR_CORRECTION",
   "STOCK_CHECK_MISMATCH",
+  "TRANSFER_CANCELLED",
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
@@ -168,6 +169,11 @@ export type NotificationParamsOf = {
    * the sending branch's code, `actor` who sent it. No quantity and no amount.
    */
   TRANSFER_SENT: { actor: string; number: string; branch: string };
+  /**
+   * "Transfer cancelled" (plan of 7.4c, decided item 6, Look first): as TRANSFER_SENT, to every
+   * active Manager of the receiving branch, the notice's `branchId`; `actor` who cancelled.
+   */
+  TRANSFER_CANCELLED: { actor: string; number: string; branch: string };
   REQUEST_WAITING_24H: OrdersWaitingParams;
   REQUEST_WAITING_48H: OrdersWaitingParams;
   /**
@@ -221,6 +227,7 @@ export const NOTIFICATION_PARAMS: {
   STOCK_CHANGE_ASKED: ["actor", "number", "branch", "kind"],
   STOCK_CHANGE_DECIDED: ["number", "branch", "kind", "outcome"],
   TRANSFER_SENT: ["actor", "number", "branch"],
+  TRANSFER_CANCELLED: ["actor", "number", "branch"],
   REQUEST_WAITING_24H: ["count", "hours"],
   REQUEST_WAITING_48H: ["count", "hours"],
   NEEDED_BY_NEAR: ["count", "branch"],

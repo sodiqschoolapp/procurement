@@ -8,16 +8,20 @@ import { decideWriteOffAction } from "@/app/(app)/warehouse/documents/[id]/actio
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { toast } from "@/components/toast";
 import { Button } from "@/components/ui/button";
+import { isMoveReason } from "@/domain/order-moves";
 import type { WriteOffOutcome } from "@/domain/stock-documents";
 import type { DocumentLine } from "@/features/warehouse/queries/document";
 import { useFormatters } from "@/i18n/use-formatters";
+
+import { ReasonField } from "./reason-field";
 
 // Approve and Refuse on a waiting write-off (09-warehouse.md, Other documents, Write-off: "Stock
 // changes only after the Head approves"; 11-screens-and-ux.md rule 6: ask for confirmation, say
 // what it covers and state the result; plan of 5.11). Shown only where getStockDocument() offers it
 // (`canDecide`); the server asks again under the lock. A line the stock no longer covers is named
 // with what is left, and the write-off keeps waiting (decided item 2). Not a create: a second
-// press, or another Head's at the same moment, is refused as `wrong_status`.
+// press, or another Head's at the same moment, is refused as `wrong_status`. Refuse asks for a
+// reason, which the Manager sees on the page (plan of 7.4c).
 
 export function WriteOffDecision({
   documentId,
@@ -34,11 +38,16 @@ export function WriteOffDecision({
   const router = useRouter();
   const [asking, setAsking] = useState<WriteOffOutcome | null>(null);
   const [pending, setPending] = useState(false);
+  const [reason, setReason] = useState("");
 
   async function run(outcome: WriteOffOutcome) {
     setPending(true);
     try {
-      const answer = await decideWriteOffAction({ documentId, outcome });
+      const answer = await decideWriteOffAction({
+        documentId,
+        outcome,
+        reason: outcome === "REFUSE" ? reason : undefined,
+      });
       if (answer.ok) {
         toast.success(t(outcome === "APPROVE" ? "approved" : "refused", { number }));
         return;
@@ -73,7 +82,10 @@ export function WriteOffDecision({
         variant="secondary"
         icon="block"
         className="max-sm:h-12"
-        onClick={() => setAsking("REFUSE")}
+        onClick={() => {
+          setReason("");
+          setAsking("REFUSE");
+        }}
       >
         {t("refuse")}
       </Button>
@@ -84,6 +96,7 @@ export function WriteOffDecision({
         open={asking !== null}
         onOpenChange={(open) => !open && !pending && setAsking(null)}
         pending={pending}
+        confirmDisabled={asking === "REFUSE" && !isMoveReason(reason)}
         text={
           asking === "REFUSE"
             ? {
@@ -102,7 +115,16 @@ export function WriteOffDecision({
         onConfirm={() => {
           if (asking) void run(asking);
         }}
-      />
+      >
+        {asking === "REFUSE" && (
+          <ReasonField
+            value={reason}
+            onChange={setReason}
+            disabled={pending}
+            hint="warehouse.refuseReason.hint"
+          />
+        )}
+      </ConfirmDialog>
     </div>
   );
 }

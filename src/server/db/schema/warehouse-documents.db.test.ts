@@ -56,6 +56,7 @@ type Doc = {
   reversed_by?: string | null;
   reversed_at?: string | null;
   reverse_reason?: string | null;
+  decision_reason?: string | null;
 };
 
 const PREFIX: Record<string, string> = {
@@ -84,6 +85,7 @@ function document(type: string, overrides: Doc = {}): Required<Doc> {
     reversed_by: null,
     reversed_at: null,
     reverse_reason: null,
+    decision_reason: null,
     ...overrides,
   };
 }
@@ -92,11 +94,11 @@ async function insertDocument(row: Required<Doc>): Promise<string> {
   const inserted = await db.execute<{ id: string }>(sql`
     insert into stock_documents (number, type, branch_id, to_branch_id, department_id, doc_date,
       status, reason, client_key, created_by, decided_by, decided_at, reversed_by, reversed_at,
-      reverse_reason, created_at)
+      reverse_reason, decision_reason, created_at)
     values (${row.number}, ${row.type}, ${row.branch_id}, ${row.to_branch_id},
       ${row.department_id}, '2031-05-02', ${row.status}, ${row.reason}, ${row.client_key},
       ${userId}, ${row.decided_by}, ${row.decided_at}, ${row.reversed_by}, ${row.reversed_at},
-      ${row.reverse_reason}, ${AT})
+      ${row.reverse_reason}, ${row.decision_reason}, ${AT})
     returning id`);
   return inserted.rows[0]!.id;
 }
@@ -281,6 +283,62 @@ describe("stock_documents: decided and reversed (plan of 5.1, decided item 1)", 
     await update(
       id,
       sql`status = 'REVERSED', reversed_by = ${userId}, reversed_at = ${AT}, reverse_reason = 'Xato'`,
+    );
+  });
+});
+
+describe("stock_documents_decision_reason_check (09 Other documents: a refusal and a cancel carry a reason; 14 decision_reason; plan of 7.4c, D39)", () => {
+  it("on insert: REJECTED and CANCELLED with a reason pass; without one, with a blank one, or a reason on another status is refused", async () => {
+    const by = { decided_by: userId, decided_at: AT };
+    expect(
+      await insertDocument(
+        document("WRITE_OFF", { status: "REJECTED", ...by, decision_reason: "Sabab bor" }),
+      ),
+    ).toBeTruthy();
+    expect(
+      await insertDocument(
+        document("TRANSFER", { status: "CANCELLED", ...by, decision_reason: "Sabab bor" }),
+      ),
+    ).toBeTruthy();
+    for (const row of [
+      document("WRITE_OFF", { status: "REJECTED", ...by }),
+      document("COUNT", { status: "REJECTED", ...by, decision_reason: "   " }),
+      document("TRANSFER", { status: "CANCELLED", ...by }),
+      document("WRITE_OFF", { status: "POSTED", ...by, decision_reason: "Sabab bor" }),
+      document("TRANSFER", { status: "IN_TRANSIT", decision_reason: "Sabab bor" }),
+    ]) {
+      expect(await refusalOf(insertDocument(row))).toMatchObject({
+        code: CHECK,
+        constraint: "stock_documents_decision_reason_check",
+      });
+    }
+  });
+
+  it("on update: a refusal or a cancel without a reason, with a blank one, and a reason on a POSTED row are refused", async () => {
+    const writeOff = await insertDocument(document("WRITE_OFF", { status: "PENDING_APPROVAL" }));
+    const transfer = await insertDocument(document("TRANSFER"));
+    const posted = await insertDocument(document("ISSUE"));
+    for (const [id, set] of [
+      [writeOff, sql`status = 'REJECTED', decided_by = ${userId}, decided_at = ${AT}`],
+      [
+        writeOff,
+        sql`status = 'REJECTED', decided_by = ${userId}, decided_at = ${AT}, decision_reason = ''`,
+      ],
+      [transfer, sql`status = 'CANCELLED', decided_by = ${userId}, decided_at = ${AT}`],
+      [posted, sql`decision_reason = 'Sabab bor'`],
+    ] as const) {
+      expect(await refusalOf(update(id, set))).toMatchObject({
+        code: CHECK,
+        constraint: "stock_documents_decision_reason_check",
+      });
+    }
+    await update(
+      writeOff,
+      sql`status = 'REJECTED', decided_by = ${userId}, decided_at = ${AT}, decision_reason = 'Sabab bor'`,
+    );
+    await update(
+      transfer,
+      sql`status = 'CANCELLED', decided_by = ${userId}, decided_at = ${AT}, decision_reason = 'Sabab bor'`,
     );
   });
 });

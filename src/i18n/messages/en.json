@@ -518,7 +518,8 @@
       "CASH_SETTLED": "Finance ({actor}) settled cash for {count, plural, one {# order} other {# orders}} in {branch}: {direction, select, TO_FINANCE {you hand Finance {amount}} TO_MANAGER {Finance pays you {amount}} other {nothing changes hands}}.",
       "REQUEST_SENT_BACK_FOR_CORRECTION": "{actor} sent back {count, plural, one {# order} other {# orders}} in {branch} for correction.",
       "OVERSPEND_ABOVE_GUARD": "{actor} sent {count, plural, one {# order} other {# orders}} in {branch} to settlement above the overspend guard. Finance cannot close {count, plural, one {it} other {them}} until you acknowledge the overspend.",
-      "OVERSPEND_ACKNOWLEDGED": "The Procurement Head {actor} acknowledged the overspend of {count, plural, one {# order} other {# orders}} in {branch}."
+      "OVERSPEND_ACKNOWLEDGED": "The Procurement Head {actor} acknowledged the overspend of {count, plural, one {# order} other {# orders}} in {branch}.",
+      "TRANSFER_CANCELLED": "{actor} cancelled transfer {number} from {branch}. Nothing will arrive."
     }
   },
   "months": {
@@ -2262,7 +2263,9 @@
       "to": "To branch",
       "sentBy": "Sent by",
       "sent": "Sent",
-      "received": "Received"
+      "received": "Received",
+      "cancelled": "Cancelled",
+      "status": "Status"
     },
     "reverse": {
       "button": "Reverse",
@@ -2338,7 +2341,8 @@
         "IN_TRANSIT": "In transit",
         "RECEIVED": "Received",
         "REJECTED": "Refused",
-        "REVERSED": "Reversed"
+        "REVERSED": "Reversed",
+        "CANCELLED": "Cancelled"
       },
       "columns": {
         "number": "Number",
@@ -2383,7 +2387,11 @@
         "sent": "Sent",
         "received": "Received",
         "short": "Short",
-        "confirmedBy": "Receipt confirmed by"
+        "confirmedBy": "Receipt confirmed by",
+        "cancelledBy": "Cancelled by",
+        "cancelReason": "Why it was cancelled",
+        "refuseReason": "Why it was refused",
+        "cancelled": "Cancelled. The items went back into the stock of {from}; {to} can no longer receive this transfer."
       },
       "receive": {
         "title": "Receive",
@@ -2449,6 +2457,15 @@
         "waiting": "Every item is counted. Waiting for the Head's decision; the stock has not changed.",
         "countAgain": "Count again"
       }
+    },
+    "cancelTransfer": {
+      "button": "Cancel transfer",
+      "title": "Cancel transfer {number}?",
+      "result": "These items go back into the stock of {from} at the cost they left with, and {to} can no longer receive the transfer. The Managers of {to} are told. This cannot be undone.",
+      "done": "Transfer {number} is cancelled and the items are back in stock."
+    },
+    "refuseReason": {
+      "hint": "A reason is required: {min} to {max} characters. {count} / {max}. The Manager sees it."
     }
   },
   "analytics": {

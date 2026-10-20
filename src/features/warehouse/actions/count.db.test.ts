@@ -340,10 +340,10 @@ describe("saveCountedQuantities (09 Stock count: types the counted quantities)",
 
   it("a count the Head has decided takes no more typing (wrong_status)", async () => {
     const { documentId, pieces } = await scene();
-    // As 7.4's refusal would leave it.
+    // As 7.4's refusal would leave it, with 7.4c's reason.
     await db.execute(sql`
       update stock_documents set status = 'REJECTED', decided_by = ${manager.id},
-        decided_at = ${AT}
+        decided_at = ${AT}, decision_reason = 'Sinov sababi'
       where id = ${documentId}`);
     expect(await save(documentId, [{ lineId: pieces.id, countedQty: "9" }])).toMatchObject({
       ok: false,

@@ -14,6 +14,7 @@ import {
   countDifference,
   countTypingAllowed,
   reverseAllows,
+  transferCancelMove,
   transferReceiveMove,
   transferShort,
   writeOffDecisionMove,
@@ -54,7 +55,11 @@ import { documentWall } from "../document-wall";
 // - `canDownloadNote`: an issue or a transfer, and `data.export` on a branch through which the
 //   user sees it (plan of 5.4, decided item 8; plan of 7.1, decided item 12);
 // - `canReceive`: a transfer, `stock.receive_transfer` on its receiving branch and
-//   transferReceiveMove(), the function the receive action asks (plan of 7.2).
+//   transferReceiveMove(), the function the receive action asks (plan of 7.2);
+// - `canCancel`: a transfer, `stock.transfer` on its sending branch and transferCancelMove(), the
+//   function the cancel action asks (plan of 7.4c).
+// A refused write-off or count and a cancelled transfer carry their `decisionReason`, read for
+// everyone who sees the document, the Manager who asked included (plan of 7.4c, decided item 8).
 // A transfer is seen by its sending and its receiving branch (documentWall(); plan of 7.2, decided
 // item 3, Look first). Its lines read no stock at all: the sender's stock is not the receiver's to
 // see (review of the plan of 7.2, must fix 1).
@@ -124,6 +129,8 @@ export type StockDocument = {
   reversedBy: string | null;
   reversedAt: Date | null;
   reverseReason: string | null;
+  /** Why a write-off or count was refused, or a transfer cancelled (plan of 7.4c). */
+  decisionReason: string | null;
   lines: DocumentLine[];
   /** The Head may decide it now: Refuse on a count, both answers on a write-off. */
   canDecide: boolean;
@@ -136,6 +143,8 @@ export type StockDocument = {
   canReverse: boolean;
   canDownloadNote: boolean;
   canReceive: boolean;
+  /** An In-transit transfer the user may cancel (plan of 7.4c). */
+  canCancel: boolean;
   canCount: boolean;
 };
 
@@ -179,6 +188,7 @@ export async function getStockDocument(
         reversedBy: reverser.fullName,
         reversedAt: stockDocuments.reversedAt,
         reverseReason: stockDocuments.reverseReason,
+        decisionReason: stockDocuments.decisionReason,
       })
       .from(stockDocuments)
       .innerJoin(branches, eq(branches.id, stockDocuments.branchId))
@@ -280,6 +290,10 @@ export async function getStockDocument(
         receiving !== null &&
         decide("stock.receive_transfer", actor, receiving) === "allow" &&
         transferReceiveMove(document.status) !== null,
+      canCancel:
+        transfer &&
+        decide("stock.transfer", actor, target) === "allow" &&
+        transferCancelMove(document.status) !== null,
       canCount:
         count &&
         decide("stock.start_count", actor, target) === "allow" &&

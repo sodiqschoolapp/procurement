@@ -321,6 +321,7 @@ describe("decideCount: refusals (developer-rules rule 2 and 3)", () => {
     const result = await runAction(decideCount, head.id, {
       documentId: count.documentId,
       outcome: "REFUSE",
+      reason: "Sinov sababi",
     });
     expect(result).toEqual({
       ok: true,
@@ -338,6 +339,53 @@ describe("decideCount: refusals (developer-rules rule 2 and 3)", () => {
       select params from notifications
       where type = 'STOCK_CHANGE_DECIDED' and user_id = ${manager.id}`);
     expect(told.rows.map((row) => row.params.outcome)).toEqual(["refused"]);
+  });
+
+  it('a refusal without a reason, with 4 or with 501 characters is refused; the count still waits (09 Other documents: "A refusal of … a count correction carries a reason"; plan of 7.4c, Done when)', async () => {
+    const item = await inStock("10");
+    const count = await started();
+    await counted(count.documentId, { [item]: "8" });
+    for (const [reason, kind] of [
+      [undefined, "errors.field.required"],
+      ["abcd", "errors.field.tooShort"],
+      ["a".repeat(501), "errors.field.tooLong"],
+    ] as const) {
+      const result = await runAction(decideCount, head.id, {
+        documentId: count.documentId,
+        outcome: "REFUSE",
+        ...(reason === undefined ? {} : { reason }),
+      });
+      expect(result).toMatchObject({
+        ok: false,
+        error: { code: "invalid_input", fields: { reason: kind } },
+      });
+    }
+    expect((await documentOf(count.documentId)).status).toBe("PENDING_APPROVAL");
+
+    expect(
+      (
+        await runAction(decideCount, head.id, {
+          documentId: count.documentId,
+          outcome: "REFUSE",
+          reason: "  Hammasi qayta sanalsin  ",
+        })
+      ).ok,
+    ).toBe(true);
+    const stored = await db.execute<{ decision_reason: string | null }>(
+      sql`select decision_reason from stock_documents where id = ${count.documentId}`,
+    );
+    expect(stored.rows[0]!.decision_reason).toBe("Hammasi qayta sanalsin");
+  });
+
+  it("an approval stores no reason (plan of 7.4c, decided item 7)", async () => {
+    const item = await inStock("10");
+    const count = await started();
+    await counted(count.documentId, { [item]: "8" });
+    expect((await approve(count.documentId)).ok).toBe(true);
+    const stored = await db.execute<{ status: string; decision_reason: string | null }>(
+      sql`select status, decision_reason from stock_documents where id = ${count.documentId}`,
+    );
+    expect(stored.rows[0]).toEqual({ status: "POSTED", decision_reason: null });
   });
 
   it("approve of an incomplete count is wrong_status; nothing moves", async () => {
@@ -359,6 +407,7 @@ describe("decideCount: refusals (developer-rules rule 2 and 3)", () => {
     const again = await runAction(decideCount, head.id, {
       documentId: count.documentId,
       outcome: "REFUSE",
+      reason: "Sinov sababi",
     });
     expect(again.ok ? null : again.error.code).toBe("wrong_status");
     const lines = await linesOf(count.documentId);

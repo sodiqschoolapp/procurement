@@ -24,6 +24,7 @@ import {
   reverseAllows,
   transferReceipt,
   transferShort,
+  transferCancelMove,
   transferReceiveMove,
   WRITE_OFF_OUTCOMES,
   writeOffCommentRefusal,
@@ -348,6 +349,19 @@ describe("transferReceiveMove (09 Other documents, Transfer: In transit until re
     for (const status of DOCUMENT_STATUSES.filter((each) => each !== "IN_TRANSIT")) {
       expect(transferReceiveMove(status)).toBeNull();
     }
+  });
+});
+
+describe('transferCancelMove (09 Other documents, Transfer: "Until then the sender or the Head can cancel the transfer"; plan of 7.4c, decided item 2; developer-rules rule 2)', () => {
+  it("moves an In-transit transfer to Cancelled, and nothing else", () => {
+    expect(transferCancelMove("IN_TRANSIT")).toBe("CANCELLED");
+    for (const status of DOCUMENT_STATUSES.filter((each) => each !== "IN_TRANSIT")) {
+      expect(transferCancelMove(status)).toBeNull();
+    }
+  });
+
+  it("leaves a cancelled transfer nothing to receive", () => {
+    expect(transferReceiveMove("CANCELLED")).toBeNull();
   });
 });
 

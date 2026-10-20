@@ -14,7 +14,8 @@ import { E2E_ROLES, e2eDatabaseUrl, serverDatabaseUrl } from "./global-setup";
 // for this run, adds 4 of 10, sends through the confirmation; the transfer's page shows In transit
 // and 6 are left in EA. Build plan 7.2 (Transfer: receive): a transfer of 10 from a branch made
 // for this run arrives at EA short; the Manager of EA receives 8 through the confirmation, and the
-// page shows Received with 2 short. Run at 375 px (one step at a time) and at 1440 px by the two
+// page shows Received with 2 short. Build plan 7.4c: the sent transfer is cancelled with a reason
+// and its 4 come back to EA. Run at 375 px (one step at a time) and at 1440 px by the two
 // projects.
 
 type Person = { username: string; password: string };
@@ -166,9 +167,35 @@ test("a Manager sends 4 of 10 to another branch through the confirmation; the tr
   await expect(page.locator("[data-transfer-in-transit]")).toBeVisible();
   await noSideScroll(page);
 
+  const documentUrl = page.url();
+
   // The stock left EA at once.
   await page.goto(`/warehouse/stock?q=${encodeURIComponent(seeded.tag)}`);
   await expect(page.getByRole("row").filter({ hasText: seeded.name })).toContainText("6");
+
+  // Build plan 7.4c: the sender cancels it with a reason, and the 4 come back to EA.
+  const cancel = uz.warehouse.cancelTransfer;
+  await page.goto(documentUrl);
+  await page.getByRole("button", { name: cancel.button, exact: true }).click();
+  const asked = page.getByRole("alertdialog");
+  await expect(asked).toContainText(seeded.toCode);
+  const done = asked.getByRole("button", { name: cancel.button, exact: true });
+  await asked.getByRole("textbox").fill("Yoq");
+  await expect(done).toBeDisabled();
+  await asked.getByRole("textbox").fill("Yuk mashinasi kelmadi");
+  await noSideScroll(page);
+  await done.click();
+  await expect(page.locator("[data-document-status]")).toHaveText(
+    uz.warehouse.documents.status.CANCELLED,
+  );
+  await expect(page.locator('[data-field="decisionReason"]')).toContainText(
+    "Yuk mashinasi kelmadi",
+  );
+  await expect(page.locator("[data-transfer-cancelled]")).toBeVisible();
+  await expect(page.getByRole("button", { name: cancel.button, exact: true })).toHaveCount(0);
+  await noSideScroll(page);
+  await page.goto(`/warehouse/stock?q=${encodeURIComponent(seeded.tag)}`);
+  await expect(page.getByRole("row").filter({ hasText: seeded.name })).toContainText("10");
 });
 
 test("the transfer form is Not found for the Principal and Finance, and their Stock on hand has no Transfer (03 matrix: Issue, return, transfer stock)", async ({

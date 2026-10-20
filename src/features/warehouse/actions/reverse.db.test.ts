@@ -492,6 +492,7 @@ describe("reverseStockDocument of a write-off (Decided ahead, question 19: the H
     const decided = await runAction(decideWriteOff, head, {
       documentId: refused.documentId,
       outcome: "REFUSE",
+      reason: "Sinov sababi",
     });
     expect(decided.ok).toBe(true);
     expect(await reverse(refused.documentId, head)).toMatchObject({

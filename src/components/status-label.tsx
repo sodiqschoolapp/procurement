@@ -253,6 +253,7 @@ const DOCUMENT_STATUS_LOOK = {
   RECEIVED: { tone: "muted", icon: "check_circle" },
   REJECTED: { tone: "muted", icon: "block" },
   REVERSED: { tone: "muted", icon: "undo" },
+  CANCELLED: { tone: "muted", icon: "block" },
 } as const satisfies Record<DocumentStatus, { tone: "info" | "muted"; icon: IconName }>;
 
 export function DocumentStatusLabel({
@@ -268,7 +269,10 @@ export function DocumentStatusLabel({
   const t = useTranslations("warehouse.documents.status");
   const look = DOCUMENT_STATUS_LOOK[status];
   const word =
-    type === "WRITE_OFF" && status !== "IN_TRANSIT" && status !== "RECEIVED"
+    type === "WRITE_OFF" &&
+    status !== "IN_TRANSIT" &&
+    status !== "RECEIVED" &&
+    status !== "CANCELLED"
       ? tWriteOff(status)
       : t(status);
   return (

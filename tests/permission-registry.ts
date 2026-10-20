@@ -142,6 +142,9 @@ export const SERVER_ACTIONS: Record<string, Entry> = {
   // (receive-transfer-matrix.db.test.ts).
   "src/app/(app)/warehouse/documents/[id]/actions.ts#receiveTransferAction":
     "stock.receive_transfer",
+  // Cancel a transfer In transit (plan of 7.4c): stock.transfer on its sending branch
+  // (cancel-transfer-matrix.db.test.ts).
+  "src/app/(app)/warehouse/documents/[id]/actions.ts#cancelTransferAction": "stock.transfer",
   // Start a count and type its counted quantities (plan of 7.3): stock.start_count on the input's
   // branch, and on the count's branch (count-matrix.db.test.ts).
   "src/app/(app)/warehouse/counts/actions.ts#startCountAction": "stock.start_count",

@@ -215,6 +215,7 @@ describe("decideWriteOff: refuse (Done when 3)", () => {
     const result = await runAction(decideWriteOff, head.id, {
       documentId: writeOff.documentId,
       outcome: "REFUSE",
+      reason: "Sinov sababi",
     });
     expect(result).toMatchObject({ ok: true, data: { outcome: "REFUSE" } });
     expect(await documentOf(writeOff.documentId)).toEqual({
@@ -224,6 +225,71 @@ describe("decideWriteOff: refuse (Done when 3)", () => {
     });
     expect(await movementsOf(writeOff.documentId)).toEqual([]);
     expect(await balanceOf(a)).toEqual({ qty: "10.000", avg_cost: "1000" });
+  });
+});
+
+async function reasonOf(documentId: string): Promise<string | null> {
+  const found = await db.execute<{ decision_reason: string | null }>(
+    sql`select decision_reason from stock_documents where id = ${documentId}`,
+  );
+  return found.rows[0]!.decision_reason;
+}
+
+describe('decideWriteOff: the reason of a refusal (09 Other documents, Write-off: "A refusal of a write-off … carries a reason"; plan of 7.4c)', () => {
+  it("refuses a refusal without a reason, with 4 or with 501 characters; the write-off still waits (Done when)", async () => {
+    const { variantId: a } = await insertItem();
+    await receive(branch.id, a, "10", 1000n, manager.id);
+    const writeOff = await asked([{ variantId: a, qty: "4" }]);
+    for (const [reason, kind] of [
+      [undefined, "errors.field.required"],
+      ["   ", "errors.field.required"],
+      ["abcd", "errors.field.tooShort"],
+      ["a".repeat(501), "errors.field.tooLong"],
+    ] as const) {
+      const result = await runAction(decideWriteOff, head.id, {
+        documentId: writeOff.documentId,
+        outcome: "REFUSE",
+        ...(reason === undefined ? {} : { reason }),
+      });
+      expect(result).toMatchObject({
+        ok: false,
+        error: { code: "invalid_input", fields: { reason: kind } },
+      });
+    }
+    expect(await documentOf(writeOff.documentId)).toEqual({
+      status: "PENDING_APPROVAL",
+      decided_by: null,
+      decided_at: null,
+    });
+    expect(await reasonOf(writeOff.documentId)).toBeNull();
+  });
+
+  it("stores the reason trimmed on a refusal, and none on an approval", async () => {
+    const { variantId: a } = await insertItem();
+    await receive(branch.id, a, "10", 1000n, manager.id);
+    const refused = await asked([{ variantId: a, qty: "1" }]);
+    expect(
+      (
+        await runAction(decideWriteOff, head.id, {
+          documentId: refused.documentId,
+          outcome: "REFUSE",
+          reason: "  Singan emas, ishlaydi  ",
+        })
+      ).ok,
+    ).toBe(true);
+    expect(await reasonOf(refused.documentId)).toBe("Singan emas, ishlaydi");
+
+    const approved = await asked([{ variantId: a, qty: "1" }]);
+    expect(
+      (
+        await runAction(decideWriteOff, head.id, {
+          documentId: approved.documentId,
+          outcome: "APPROVE",
+          reason: "Sinov sababi",
+        })
+      ).ok,
+    ).toBe(true);
+    expect(await reasonOf(approved.documentId)).toBeNull();
   });
 });
 
@@ -238,6 +304,7 @@ describe("decideWriteOff: one decision only (plan of 5.11, decided item 4; devel
           await runAction(decideWriteOff, head.id, {
             documentId: writeOff.documentId,
             outcome: first,
+            reason: "Sinov sababi",
           })
         ).ok,
       ).toBe(true);
@@ -247,6 +314,7 @@ describe("decideWriteOff: one decision only (plan of 5.11, decided item 4; devel
           await runAction(decideWriteOff, head.id, {
             documentId: writeOff.documentId,
             outcome: second,
+            reason: "Sinov sababi",
           }),
         ).toMatchObject({ ok: false, error: { code: "wrong_status" } });
       }
@@ -280,7 +348,8 @@ describe("decideWriteOff: one decision only (plan of 5.11, decided item 4; devel
     expect(
       await refusalOf(
         db.execute(sql`
-          update stock_documents set status = 'REJECTED', decided_by = ${head.id}
+          update stock_documents set status = 'REJECTED', decided_by = ${head.id},
+            decision_reason = 'Sinov sababi'
           where id = ${writeOff.documentId}`),
       ),
     ).toMatchObject({ code: "23514", constraint: "stock_documents_decided_check" });
@@ -298,7 +367,13 @@ describe("decideWriteOff: the decision goes back to the Manager (10 Notification
     ] as const) {
       const writeOff = await asked([{ variantId: a, qty: "1" }]);
       expect(
-        (await runAction(decideWriteOff, head.id, { documentId: writeOff.documentId, outcome })).ok,
+        (
+          await runAction(decideWriteOff, head.id, {
+            documentId: writeOff.documentId,
+            outcome,
+            reason: "Sinov sababi",
+          })
+        ).ok,
       ).toBe(true);
       const link = `/warehouse/documents/${writeOff.documentId}`;
       const told = await db.execute<{ user_id: string; params: Record<string, unknown> }>(sql`
@@ -333,6 +408,7 @@ describe("decideWriteOff: an asker who left the branch is not told (03 rule 1; n
         await runAction(decideWriteOff, head.id, {
           documentId: writeOff.documentId,
           outcome: "REFUSE",
+          reason: "Sinov sababi",
         })
       ).ok,
     ).toBe(true);

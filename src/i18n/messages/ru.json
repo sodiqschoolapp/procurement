@@ -518,7 +518,8 @@
       "CASH_SETTLED": "Финансы ({actor}) провели расчёт наличных: {count, plural, one {# заказ} few {# заказа} many {# заказов} other {# заказа}}, {branch}. {direction, select, TO_FINANCE {Вы передаёте финансам {amount}} TO_MANAGER {Финансы выплачивают вам {amount}} other {Деньги не передаются}}.",
       "REQUEST_SENT_BACK_FOR_CORRECTION": "Возвращено на исправление ({actor}): {count, plural, one {# заказ} few {# заказа} many {# заказов} other {# заказа}}, {branch}.",
       "OVERSPEND_ABOVE_GUARD": "Перерасход выше порога ({actor}): {count, plural, one {# заказ} few {# заказа} many {# заказов} other {# заказа}}, {branch}, переданы на расчёт. Финансы не смогут закрыть их, пока вы не подтвердите перерасход.",
-      "OVERSPEND_ACKNOWLEDGED": "Начальник закупок {actor} подтвердил перерасход: {count, plural, one {# заказ} few {# заказа} many {# заказов} other {# заказа}}, {branch}."
+      "OVERSPEND_ACKNOWLEDGED": "Начальник закупок {actor} подтвердил перерасход: {count, plural, one {# заказ} few {# заказа} many {# заказов} other {# заказа}}, {branch}.",
+      "TRANSFER_CANCELLED": "{actor} отменил(а) перемещение {number} из {branch}. Ничего не поступит."
     }
   },
   "months": {
@@ -2262,7 +2263,9 @@
       "to": "В филиал",
       "sentBy": "Отправил(а)",
       "sent": "Отправлено",
-      "received": "Получено"
+      "received": "Получено",
+      "cancelled": "Отменено",
+      "status": "Статус"
     },
     "reverse": {
       "button": "Сторнировать",
@@ -2338,7 +2341,8 @@
         "IN_TRANSIT": "В пути",
         "RECEIVED": "Получен",
         "REJECTED": "Отклонён",
-        "REVERSED": "Сторнирован"
+        "REVERSED": "Сторнирован",
+        "CANCELLED": "Отменено"
       },
       "columns": {
         "number": "Номер",
@@ -2383,7 +2387,11 @@
         "sent": "Отправлено",
         "received": "Получено",
         "short": "Недостача",
-        "confirmedBy": "Приём подтвердил(а)"
+        "confirmedBy": "Приём подтвердил(а)",
+        "cancelledBy": "Отменил(а)",
+        "cancelReason": "Причина отмены",
+        "refuseReason": "Причина отказа",
+        "cancelled": "Отменено. Товары вернулись на склад {from}; {to} больше не может принять это перемещение."
       },
       "receive": {
         "title": "Приём",
@@ -2449,6 +2457,15 @@
         "waiting": "Все позиции посчитаны. Ждёт решения руководителя; остаток не изменился.",
         "countAgain": "Пересчитать"
       }
+    },
+    "cancelTransfer": {
+      "button": "Отменить перемещение",
+      "title": "Отменить перемещение {number}?",
+      "result": "Эти товары вернутся на склад {from} по той стоимости, с которой ушли, и {to} больше не сможет принять перемещение. Менеджеры {to} получат уведомление. Это нельзя отменить.",
+      "done": "Перемещение {number} отменено, товары вернулись на склад."
+    },
+    "refuseReason": {
+      "hint": "Причина обязательна: от {min} до {max} символов. {count} / {max}. Менеджер её увидит."
     }
   },
   "analytics": {
