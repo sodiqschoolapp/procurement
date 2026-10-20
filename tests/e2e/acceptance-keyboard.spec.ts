@@ -39,6 +39,16 @@ async function tabTo(page: Page, control: Locator, back = false): Promise<void> 
 }
 
 async function noSeriousFinding(page: Page, step: string): Promise<void> {
+  // A dialog fades and scales in: axe reads colours mid-way and finds low contrast. Wait until
+  // every finite animation and transition of the page has ended.
+  await page.evaluate(() =>
+    Promise.all(
+      document
+        .getAnimations()
+        .filter((animation) => animation.effect?.getComputedTiming().iterations !== Infinity)
+        .map((animation) => animation.finished.catch(() => undefined)),
+    ),
+  );
   const result = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
     .analyze();
