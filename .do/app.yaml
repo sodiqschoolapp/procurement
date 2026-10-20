@@ -6,10 +6,10 @@
 # BACKUP_S3_*, four SEED_*_PASSWORD, ERROR_REPORT_DSN) are not declared here: docs/deploy.md lists
 # them, and says to type them again after this file is applied.
 #
-# Unconfirmed from the session that wrote it (DigitalOcean's pages could not be read there): the
-# size slug, the fields of a managed database (`production`, `cluster_name`, `db_name`,
-# `db_user`), and the bindings CA_CERT and COMMIT_HASH. The owner checks that the dashboard shows
-# $25 a month in all ($10 here, $15 for the database cluster) before pressing Create.
+# Checked on 20.10.2026 against DigitalOcean's documentation and the live app (D59): the size slug
+# ($10), the fields of a managed database, and the bindings CA_CERT and COMMIT_HASH. The database
+# component is named `ombor-db`, as the dashboard named it when the app was created: App Platform
+# refuses a spec that renames it ("cannot create and delete a database in a single spec change").
 name: ombor
 region: fra
 
@@ -48,10 +48,10 @@ services:
       # `-c timezone=UTC -c jit=off` reach the server (plan of 9.4, decided item 9).
       - key: DATABASE_URL
         scope: RUN_TIME
-        value: ${db.DATABASE_URL}
+        value: ${ombor-db.DATABASE_URL}
       - key: DATABASE_CA_CERT
         scope: RUN_TIME
-        value: ${db.CA_CERT}
+        value: ${ombor-db.CA_CERT}
       - key: GIT_COMMIT
         scope: RUN_TIME
         value: ${_self.COMMIT_HASH}
@@ -86,7 +86,7 @@ databases:
   # connects as the cluster's admin user to its first database: `npm run trial:reset` drops and
   # makes again the `public` schema, which only the database's owner may do (plan of 9.4, decided
   # item 1, Look first).
-  - name: db
+  - name: ombor-db
     engine: PG
     version: "17"
     production: true
