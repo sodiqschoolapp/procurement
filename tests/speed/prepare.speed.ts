@@ -17,6 +17,20 @@ import { SPEED_SIZES, fill } from "./fill";
 
 export const REFRESH_FILE = "test-results/speed-refresh.json";
 
+/** The tables whose rows docs/speed.md names (its Volume). */
+const COUNTED = [
+  "orders",
+  "order_events",
+  "order_actions",
+  "purchases",
+  "stock_movements",
+  "stock_documents",
+  "money_rows",
+  "notifications",
+  "product_variants",
+  "users",
+];
+
 async function onMaintenance<T>(work: (client: pg.Client) => Promise<T>): Promise<T> {
   const client = new pg.Client({ connectionString: addressOf(serverUrl(), "postgres") });
   await client.connect();
@@ -48,27 +62,31 @@ it("the speed database is filled, refreshed and consistent (build plan 9.2)", as
   const client = new pg.Client({ connectionString: address, options: "-c timezone=UTC" });
   await client.connect();
   try {
-    const { rows } = await client.query<{ n: number }>("select count(*)::int as n from orders");
-    if (rows[0]!.n > 0) {
-      console.log(`${SPEED_DATABASE} is kept: ${rows[0]!.n} orders (SPEED_REFILL=1 rebuilds it).`);
-      return;
-    }
-    // The statements of the fill are not logged; the measurement's are.
+    // The statements of the fill and the jobs are not logged; the measurement's are.
     await client.query(`alter database "${SPEED_DATABASE}" reset log_statement`);
     process.env.DATABASE_URL = address;
     const { now } = await import("@/server/clock");
-    const started = performance.now();
-    await client.query("begin");
-    let counts;
-    try {
-      counts = await fill((text, values) => client.query(text, values), now(), SPEED_SIZES);
-      await client.query("commit");
-    } catch (error) {
-      await client.query("rollback");
-      throw error;
+    const { rows } = await client.query<{ n: number }>("select count(*)::int as n from orders");
+    if (rows[0]!.n > 0) {
+      console.log(`${SPEED_DATABASE} is kept: ${rows[0]!.n} orders (SPEED_REFILL=1 rebuilds it).`);
+    } else {
+      const started = performance.now();
+      await client.query("begin");
+      try {
+        await fill((text, values) => client.query(text, values), now(), SPEED_SIZES);
+        await client.query("commit");
+      } catch (error) {
+        await client.query("rollback");
+        throw error;
+      }
+      console.log(`filled in ${Math.round((performance.now() - started) / 1000)} s`);
+      await client.query("vacuum analyze");
     }
-    console.log(`filled in ${Math.round((performance.now() - started) / 1000)} s:`, counts);
-    await client.query("vacuum analyze");
+    const counts: Record<string, number> = {};
+    for (const table of COUNTED) {
+      const found = await client.query<{ n: number }>(`select count(*)::int as n from "${table}"`);
+      counts[table] = found.rows[0]!.n;
+    }
 
     const { db, closeDatabase } = await import("@/server/db/client");
     const { refreshAnalytics } = await import("@/server/jobs/analytics-refresh");
