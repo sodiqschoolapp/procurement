@@ -2090,4 +2090,19 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - The test storage env has `BACKUP_S3_*` (`<bucket>-backups`); the Vitest setup makes `procurement-test-backups`.
 - A module of a page must not import `@/server/db/client` at the top: `next build` has no DATABASE_URL.
 
-The next task is 5.4b.
+## 5.4b "Give straight to requester": stored, and its cancel (20.10.2026, pull request #144)
+
+**Built**
+- `recordPurchase` writes `purchases.give_to_requester` from the line's tick.
+- `cancelPurchase` / `cancelTrip`: `givenIssues()` in the inspect step refuses a record whose ISSUE (`client_key` = record id, same branch) is POSTED: `not_ready`, `fields.stock` = `errors.field.givenIssuePosted`, `values.number` = the issue number; whatever the stock. The cancel dialog shows it.
+
+**Left out, and the task that brings it**
+- A guard on 5.7's reverse of an issue after an unreversed Return of the same items: none yet; on issue #9.
+
+**Open for the owner**
+- The `/spec-change` of 07 Fixing a mistake 2 (decisions 5.4b item 2).
+
+**What the next sessions must know**
+- A purchase record's issue is found by `stock_documents.client_key = purchases.id`; `give_to_requester` is false on records saved before 5.4b.
+
+The next task is 9.4.
