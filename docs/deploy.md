@@ -139,13 +139,13 @@ The first version that carries the job copies on its first night, so a file is t
 1. In Cloudflare: R2 → `ombor-copies` → the folder `backups/` holds `database-<date>.dump`; `ombor-files` holds no `backups/` folder. Settings in the app (as the Head) shows the same date.
 2. Also, in the app → component `web` → Console: `node scripts/db-copy.mjs` makes a copy now, named by today's date, and prints `copy ok backups/database-….dump (<size> bytes)`. Anything else is one line `copy failed: …` (below). A copy made here does not change the date on the Settings page.
 
-To restore a copy into an **empty** database (the restore drill and its written steps are task 9.6; never into the running app's database): download the file from R2, then `pg_restore --no-owner --dbname=<the empty database's address> database-<date>.dump`, with `pg_restore` 17.
+To restore a copy, always into a new database and never into the running app's database: `docs/restore.md` (task 9.6), with `npm run db:restore` in the console.
 
 The copies hold everything in the database, password hashes and sign-in sessions included. That is why they are in a bucket of their own, reached by a token of their own (step 6.5).
 
 ## The end of the trial (task 9.5)
 
-When the owner is satisfied with the trial and the restore drill (9.6) is done, the trial ends, in this order (D52):
+When the owner is satisfied with the trial and the restore drill (9.6, `docs/restore.md`) is done, the trial ends, in this order (D52):
 
 1. **`SEED_DEMO_DATA` removed.** Task 9.5 removes it from `.do/app.yaml`; apply the file (step 7), then check that the variable is gone from the component's Environment Variables and that the typed values of step 8 are all still there. The four `SEED_*_PASSWORD` values can be deleted. Wait until Activity shows the new deploy as "Deployed": its log has no `seed` line.
 2. **No deploy in progress.** Activity shows nothing building or deploying. A deploy that starts during the reset migrates the database at the same moment, and one of the two fails (decision 5 of 9.4's plan); nothing worse, but run it at a quiet time, when nobody is signed in.

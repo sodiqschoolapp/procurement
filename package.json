@@ -24,6 +24,8 @@
     "storage:bucket": "node --env-file-if-exists=.env scripts/storage-bucket.mjs",
     "storage:check": "node --env-file-if-exists=.env scripts/storage-check.mjs",
     "db:copy": "node --env-file-if-exists=.env scripts/db-copy.mjs",
+    "db:restore": "node --env-file-if-exists=.env scripts/db-restore.mjs",
+    "db:counts": "node --env-file-if-exists=.env scripts/db-counts.mjs",
     "user:first-head": "node --env-file-if-exists=.env scripts/create-first-head.mjs",
     "user:renew-head": "node --env-file-if-exists=.env scripts/renew-head.mjs",
     "trial:reset": "node --env-file-if-exists=.env scripts/trial-reset.mjs",

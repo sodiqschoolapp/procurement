@@ -22,6 +22,9 @@ const ENTRY_POINTS = [
   // The end of the trial and the first Head, run in the live console at 9.5 (build-plan 9.4).
   "scripts/trial-reset.mjs",
   "scripts/create-first-head.mjs",
+  // The restore drill, run in the live console (build-plan 9.6; docs/restore.md).
+  "scripts/db-restore.mjs",
+  "scripts/db-counts.mjs",
 ];
 
 /** The sources of every COPY of the run stage that does not copy from another stage. */

@@ -685,10 +685,12 @@ Proof that it works, then the real environment and the real data.
   - **Build:** `.do/app.yaml` and `docs/deploy.md` turned from the test copy into the live app: app `ombor`, 1 GiB container, Managed PostgreSQL with 1 GiB (daily backups), Frankfurt, the R2 buckets `ombor-files` and `ombor-copies` (the weekly copies, with a key of their own, 8.2b), the error and uptime alerts of 9.3 switched on (the owner creates the two free accounts; owner, 20.10.2026, D55), the address `ombor.sodiqschool.uz`; it starts in trial mode with `SEED_DEMO_DATA` on, the demo users and the invented data. The end of the trial as one script (`npm run trial:reset`): it drops the `public` and `drizzle` schemas, applies the migrations from zero and records in the new database that the trial has ended; it runs only when the database's name is typed as the confirmation, and refuses, writing nothing, once that record exists, so it can never run over the real data. No test copy (D52).
   - **Done when:** The demo users sign in at the live address; the database dashboard shows a daily backup; a database test shows that the reset empties a database with demo data, and refuses a second run and a wrong confirmation.
 
-- [ ] **9.6 Restore drill**
+- [x] **9.6 Restore drill**
   - **Read:** `13-technology.md` (Running it); `16-build-order.md` (phase 8 row); `18-hosting-and-costs.md` (table row 2; Total).
   - **Build:** A written restore procedure in `docs/`, and one real run of it during the trial, before 9.5: yesterday's copy of the live database restored into a new, empty database, never over the live one; and once the newest weekly copy from `ombor-copies` restored the same way (D55).
   - **Done when:** The restored database holds yesterday's demo orders, users and stock lines, counted against the live one, and the restored weekly copy holds the demo orders of its Sunday; the owner has the written steps.
+
+> **Owner gate.** The restore drill of 9.6 has run (`docs/restore.md`, parts A and B): both pairs of count lines are on issue #9. The owner deletes this line; the start routine takes 9.5 only then, because 9.5 begins with `npm run trial:reset`, which empties the trial database the drill runs against (plan of 9.6, decided item 10).
 
 - [ ] **9.5 Real data**
   - **Read:** `04-catalogs.md` (Rules: 7); `09-warehouse.md` (Direct entry by the Head); `edge-cases/warehouse.md` ("The school already has stock on launch day").
