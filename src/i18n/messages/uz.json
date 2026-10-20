@@ -93,6 +93,7 @@
       "overReturn": "Boʻlim olganidan koʻp.",
       "overReturnComment": "Qatorda boʻlim olganidan koʻp: izoh yozing.",
       "reverseStockShort": "Storno qilish uchun omborda yetarli emas: mahsulotlar yana chiqib ketgan.",
+      "reverseOverHeld": "Boʻlimdagidan koʻp: avval qaytarishni storno qiling.",
       "unfinishedOrders": "Filialda tugallanmagan buyurtmalar bor.",
       "stockLeft": "Filial omborida hali tovar bor.",
       "transfersInTransit": "Filialdan yoki filialga koʻchirish hali yoʻlda.",
@@ -2285,8 +2286,9 @@
         "DIRECT_ENTRY": "Bu tovarlar ombordan chiqadi va toʻgʻridan-toʻgʻri kiritish bekor qilingan deb belgilanadi. Buni qaytarib boʻlmaydi.",
         "COUNT": "Har bir mahsulot qoldigʻi tuzatish miqdoriga qaytariladi va inventarizatsiya bekor qilingan deb belgilanadi. Buni qaytarib boʻlmaydi."
       },
-      "held": "Boʻlimda faqat {held} bor: sababini yozing.",
+      "overHeld": "Boʻlimda faqat {held} bor: avval qaytarishni storno qiling.",
       "short": "{item}: omborda faqat {left} qoldi. Hech narsa storno qilinmadi.",
+      "overHeldShort": "{item}: boʻlimda faqat {held} bor. Avval qaytarishni storno qiling. Hech narsa storno qilinmadi.",
       "done": "{number} storno qilindi",
       "reasonHint": "Sabab majburiy: {min} dan {max} gacha belgi. {count} / {max}."
     },

@@ -356,7 +356,6 @@ describe("reverseStockDocument (09 Movement types, last paragraph; Issue to a de
     expect((await balanceOf(pens))!.qty).toBe("4.000");
     expect((await documentOf(back.documentId)).status).toBe("REVERSED");
   });
-
 });
 
 describe("reversing an issue after a return (09 Issue to a department 3: refused past what the department still holds; D57; plan of 5.7b)", () => {

@@ -24,8 +24,9 @@ import { ReasonField } from "./reason-field";
 // to a department 3; 11-screens-and-ux.md rule 6: "ask for confirmation and state the result";
 // plan of 5.7, decided item 6). Shown only where getItemCard() offers it (`canReverse`); the
 // server asks again. The dialog reads the document's lines first, since one press reverses them
-// all; an issue's line over what the department holds is warned about, the reason serving as the
-// comment (review of the plan, correction 1). The confirm button is the danger kind: a reverse
+// all. An issue's line over what the department still holds is refused by the server (09 Issue to a
+// department 3; plan of 5.7b): the dialog names it, says to reverse the return first, and keeps
+// its Reverse button disabled, since a press could only be refused (decided item 7). The confirm button is the danger kind: a reverse
 // cannot be undone. Not a create, so no client key: a second press is refused as `wrong_status`.
 
 /**
@@ -88,14 +89,16 @@ export function ReverseDocumentButton({
       }
       const lines = Object.entries(answer.error.fields ?? {}).flatMap(([field, key]) => {
         const line = preview?.lines.find((each) => field === `lines.${each.id}.qty`);
-        if (!line || key !== "errors.field.reverseStockShort") return [];
-        const left = answer.error.available?.[field] ?? "0";
-        return [
-          t("short", {
-            item: itemName(line),
-            left: `${format.quantity(left)} ${line.unitShortName}`,
-          }),
-        ];
+        if (!line) return [];
+        const amount = `${format.quantity(answer.error.available?.[field] ?? "0")} ${line.unitShortName}`;
+        if (key === "errors.field.reverseStockShort") {
+          return [t("short", { item: itemName(line), left: amount })];
+        }
+        // A return saved between the preview and the press (plan of 5.7b).
+        if (key === "errors.field.reverseOverHeld") {
+          return [t("overHeldShort", { item: itemName(line), held: amount })];
+        }
+        return [];
       });
       toast.error(lines.length > 0 ? lines.join(" ") : tAll(answer.error.messageKey));
     } catch {
@@ -116,7 +119,11 @@ export function ReverseDocumentButton({
         open={asking}
         onOpenChange={setAsking}
         pending={pending}
-        confirmDisabled={preview === null || !isMoveReason(reason)}
+        confirmDisabled={
+          preview === null ||
+          !isMoveReason(reason) ||
+          preview.lines.some((line) => line.held !== null)
+        }
         text={{
           title: t("title", { number }),
           result: preview ? t(`result.${resultKey(preview.type)}`) : "",
@@ -151,8 +158,8 @@ export function ReverseDocumentButton({
                     </span>
                   </span>
                   {line.held !== null && (
-                    <span className="text-[13px] leading-[18px] text-warning" data-held>
-                      {t("held", {
+                    <span className="text-[13px] leading-[18px] text-destructive" data-held>
+                      {t("overHeld", {
                         held: `${format.quantity(line.held)} ${line.unitShortName}`,
                       })}
                     </span>
