@@ -1823,7 +1823,7 @@
       "fileOneManager": "Buyurtmalar bitta menejerniki boʻlganda fayl qoʻshish mumkin.",
       "rowsTitle": "Buyurtma boʻyicha summa",
       "loading": "Buyurtmalar yuklanmoqda…",
-      "rowFacts": "Rejadagi naqd {planned} · qoldiq {count}",
+      "rowFacts": "Rejadagi naqd {planned} · berilgan {given} · qoldiq {count}",
       "amountInvalid": "Butun soʻm kiriting, 0 yoki undan koʻp."
     },
     "cancel": {

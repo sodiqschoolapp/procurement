@@ -1823,7 +1823,7 @@
       "fileOneManager": "A file can be added when the orders belong to one Manager.",
       "rowsTitle": "Amount per order",
       "loading": "Loading the orders…",
-      "rowFacts": "Planned cash {planned} · count {count}",
+      "rowFacts": "Planned cash {planned} · already given {given} · count {count}",
       "amountInvalid": "Type whole so'm, 0 or more."
     },
     "cancel": {
