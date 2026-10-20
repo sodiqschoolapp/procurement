@@ -105,7 +105,7 @@ stock_movements      branch_id, variant_id,
 ## System
 
 ```text
-notifications        user_id, type, params JSONB, link, read_at
+notifications        user_id, branch_id (empty for a notice of no branch), type, params JSONB, link, read_at
 settings             key KEY, value JSONB
 audit_log            actor_id, action, entity, entity_id, before JSONB, after JSONB
 sessions, accounts, verifications                            -- created by the login library

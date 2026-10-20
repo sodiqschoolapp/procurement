@@ -67,7 +67,7 @@ In the permission matrix below, a "Yes" for the Manager means "yes, when that ri
 | Ask for a write-off or stock correction | Yes | Yes, own branches | No | No |
 | Approve a write-off or stock correction | Yes | No | No | No |
 | See orders, stock and reports | All branches | Own branches | Own branch | Own branches |
-| See each Manager's cash and the Head's price notes | All branches | No | No | Own branches |
+| See every Manager's cash (Money with managers) and the Head's price notes | All branches | Own cash only | No | Own branches |
 | Export to Excel, download PDF, print | Yes | Yes | Yes | Yes |
 | Enter stock directly, without an order | Yes | No | No | No |
 | Add a new price for a product | Yes | No | No | No |

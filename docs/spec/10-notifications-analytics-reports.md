@@ -31,6 +31,7 @@ One action sends one notification to each person told, never one per order: "Dil
 | Product suggested | Head; the decision goes back to the Manager |
 | Write-off or correction asked | Head; the decision goes back to the Manager |
 | Transfer sent | Managers of the receiving branch |
+| Transfer cancelled | Managers of the receiving branch |
 | Item reached its minimum stock | Managers of the branch, once per item until restocked |
 | Branch has no active user for a role | Head |
 | Purchase record cancelled | Head |

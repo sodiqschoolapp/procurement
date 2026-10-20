@@ -38,7 +38,7 @@ An order matches exactly when Number and Price are green, actual extra costs equ
 
 ## Money ledger
 
-Finance records every movement of money as an **action**: one date, not later than today, an optional document number, an optional file and a comment, split into **rows**, one per order. Each row has its order, its kind and an amount above 0. The action's total is the sum of its rows; nobody types a total that could disagree with them. Actions are never deleted; a wrong one is cancelled whole, with a reason, while none of its orders is Closed, and entered again. When one of its orders is already Closed, the Head reopens that order first.
+Finance records every movement of money as an **action**: one date, not later than today, an optional document number, an optional file and a comment, split into **rows**, one per order. Each row has its order, its kind and an amount above 0. The action's total is the sum of its rows; nobody types a total that could disagree with them. Actions are never deleted; a wrong one is cancelled whole, with a reason, while none of its orders is Closed, and entered again. When one of its orders is already Closed, the Head reopens that order first. When one of its orders was moved to another Manager since, the Head first moves it back.
 
 | Kind of row | Direction | Changes the order's cash count |
 | --- | --- | --- |

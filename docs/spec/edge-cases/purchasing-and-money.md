@@ -24,6 +24,6 @@ From spec chapter 12, which says: "These 41 situations are the ones most likely 
 | Faulty goods go back to the supplier | While Open: cancel the purchase record. After closing: a write-off with reason "Returned to supplier". |
 | An error is found after closing | The Head reopens the order with a reason. Its counts are recalculated, earlier settlement confirmations and the overspend acknowledgment are cleared, and Finance settles it again. |
 | A money action must be cancelled but one of its orders is already Closed | The Head reopens that order first; then Finance cancels the action and enters it again. |
-| Finance gives cash for several orders | One row per order, prefilled with that order's planned cash and changeable; no single amount is typed, so every so'm belongs to one order. |
+| Finance gives cash for several orders | One row per order, prefilled with that order's planned cash not yet given, and changeable; no single amount is typed, so every so'm belongs to one order. |
 | One order holds money and another of the same Manager is owed | One settlement action receives on the first and pays on the second; only the net changes hands. Neither order crosses from holding to owed. |
 | The ticked orders in settlement belong to two Managers | One block and one action per Manager, saved together. |
