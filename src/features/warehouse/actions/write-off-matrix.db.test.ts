@@ -136,7 +136,9 @@ describePermissionMatrix("decideWriteOffAction", {
   async run({ user, branchId }) {
     const documentId = await waiting(branchId);
     signedIn(user);
-    asMatrixAnswer(await decideWriteOffAction({ documentId, outcome: "REFUSE" }));
+    asMatrixAnswer(
+      await decideWriteOffAction({ documentId, outcome: "REFUSE", reason: "Sinov sababi" }),
+    );
   },
 });
 
@@ -149,7 +151,11 @@ describe("the asker cannot decide their own write-off (03 matrix: approve is the
     if (!asked.ok) throw new Error(`fixture: ${asked.error.code}`);
     for (const outcome of ["APPROVE", "REFUSE"] as const) {
       expect(
-        await runAction(decideWriteOff, manager.id, { documentId: asked.data.documentId, outcome }),
+        await runAction(decideWriteOff, manager.id, {
+          documentId: asked.data.documentId,
+          outcome,
+          reason: "Sinov sababi",
+        }),
       ).toMatchObject({ ok: false, error: { code: "forbidden" } });
     }
     const status = await db.execute<{ status: string }>(

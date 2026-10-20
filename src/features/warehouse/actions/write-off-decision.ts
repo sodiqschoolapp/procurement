@@ -6,9 +6,11 @@ import {
   type WriteOffOutcome,
   writeOffDecisionMove,
 } from "@/domain/stock-documents";
+import { isMoveReason, moveReason } from "@/domain/order-moves";
 import { ActionError, defineAction } from "@/server/action";
 import { now } from "@/server/clock";
 import { notify } from "@/server/notify";
+import { reasonFields } from "@/server/order-moves";
 import { type LockedDocument, lockDocument, postLines } from "@/server/stock-documents";
 import { StockShortError } from "@/server/stock-ledger";
 
@@ -23,8 +25,11 @@ import { StockShortError } from "@/server/stock-ledger";
 //   lock       lockDocument() (FOR UPDATE)
 //   check      a WRITE_OFF, else `not_found`; writeOffDecisionMove() of src/domain/
 //              stock-documents.ts (the one place for its moves; decided item 4, Look first): from
-//              PENDING_APPROVAL only, else `wrong_status`
-//   write      the status (POSTED or REJECTED) with `decided_by` and `decided_at`; on approval
+//              PENDING_APPROVAL only, else `wrong_status`; on Refuse a reason of 5 to 500 (09
+//              Other documents, Write-off: "A refusal … carries a reason"; plan of 7.4c, decided
+//              item 7), else `invalid_input` on `reason`
+//   write      the status (POSTED or REJECTED) with `decided_by` and `decided_at`, a refusal's
+//              reason in `decision_reason` (shown on the write-off's page, decided item 8); on approval
 //              then postLines(), its WRITE_OFF movements made by the approving Head at the average
 //              of this moment (09 Stock value), under the ledger's locks. A line the stock no longer
 //              covers refuses the whole approval, naming the line and what is left; nothing is
@@ -38,7 +43,12 @@ import { StockShortError } from "@/server/stock-ledger";
 // No audit row (decided item 10). The one who asked is told the outcome; the Head who asked for
 // their own write-off had it posted at once and never comes here.
 
-export type WriteOffDecisionInput = { documentId: string; outcome: WriteOffOutcome };
+export type WriteOffDecisionInput = {
+  documentId: string;
+  outcome: WriteOffOutcome;
+  /** On Refuse, why: 5 to 500 (plan of 7.4c, decided item 7); ignored on Approve. */
+  reason?: string;
+};
 export type WriteOffDecisionResult = {
   documentId: string;
   number: string;
@@ -48,6 +58,7 @@ export type WriteOffDecisionResult = {
 const input = z.object({
   documentId: z.uuid(),
   outcome: z.enum(WRITE_OFF_OUTCOMES),
+  reason: z.string().max(4000).optional(),
 });
 
 export const decideWriteOff = defineAction({
@@ -71,13 +82,17 @@ export const decideWriteOff = defineAction({
     if (writeOffDecisionMove(document.status, typed.outcome) === null) {
       throw new ActionError("wrong_status");
     }
+    if (typed.outcome === "REFUSE" && !isMoveReason(typed.reason)) {
+      throw new ActionError("invalid_input", reasonFields(typed.reason));
+    }
   },
   async write({ tx, input: typed, userId, locked }): Promise<WriteOffDecisionResult> {
     const document = locked!.rows;
     const status = writeOffDecisionMove(document.status, typed.outcome)!;
     const updated = await tx.execute<{ number: string }>(sql`
       update stock_documents
-      set status = ${status}, decided_by = ${userId}, decided_at = ${now()}
+      set status = ${status}, decided_by = ${userId}, decided_at = ${now()},
+        decision_reason = ${status === "REJECTED" ? moveReason(typed.reason!) : null}
       where id = ${document.id}
       returning number`);
     if (status === "POSTED") {

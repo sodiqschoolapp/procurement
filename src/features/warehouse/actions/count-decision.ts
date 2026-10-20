@@ -9,9 +9,11 @@ import {
   countLineMoved,
   countSeenMatches,
 } from "@/domain/stock-documents";
+import { isMoveReason, moveReason } from "@/domain/order-moves";
 import { ActionError, defineAction } from "@/server/action";
 import { now } from "@/server/clock";
 import { notify } from "@/server/notify";
+import { reasonFields } from "@/server/order-moves";
 import { type LockedDocument, lockDocument, postLines } from "@/server/stock-documents";
 
 // The Head approves or refuses a stock count (09-warehouse.md, Movement types: "Correction after a
@@ -30,8 +32,12 @@ import { type LockedDocument, lockDocument, postLines } from "@/server/stock-doc
 //   check      countDecisionMove() of src/domain/stock-documents.ts (the one place for its moves):
 //              else `wrong_status`; on Approve, `seen` names exactly the count's lines with the
 //              counted quantities held now, else `conflict`: the Head posts only what was shown,
-//              while typing stays open (decided item 2, Look first)
-//   write      Refuse: REJECTED with `decided_by` and `decided_at`. Approve: the lines whose item
+//              while typing stays open (decided item 2, Look first); on Refuse a reason of 5 to
+//              500 (09 Other documents, Write-off: "A refusal of a write-off or a count
+//              correction carries a reason"; plan of 7.4c, decided items 7 and 12), else
+//              `invalid_input` on `reason`
+//   write      Refuse: REJECTED with `decided_by`, `decided_at` and the reason in
+//              `decision_reason`. Approve: the lines whose item
 //              moved after the start (countLineMoved()) are sent back: stock at start and
 //              `start_seq` read again, counted quantity cleared, `recount` set; nothing is posted
 //              and the count keeps waiting (outcome RECOUNT). None moved: POSTED with `decided_by`
@@ -50,6 +56,8 @@ export type CountOutcome = WriteOffOutcome | "RECOUNT";
 export type CountDecisionInput = {
   documentId: string;
   outcome: WriteOffOutcome;
+  /** On Refuse, why: 5 to 500 (plan of 7.4c, decided item 7); ignored on Approve. */
+  reason?: string;
   /** On Approve: each line with the counted quantity the Head was shown. */
   seen?: { lineId: string; countedQty: string }[];
 };
@@ -68,6 +76,7 @@ const SEEN_LINES_MAX = 5_000;
 const input = z.object({
   documentId: z.uuid(),
   outcome: z.enum(WRITE_OFF_OUTCOMES),
+  reason: z.string().max(4000).optional(),
   seen: z
     .array(z.object({ lineId: z.uuid(), countedQty: z.string().max(40) }))
     .max(SEEN_LINES_MAX)
@@ -136,7 +145,12 @@ export const decideCount = defineAction({
     if (countDecisionMove(document.status, typed.outcome, complete) === null) {
       throw new ActionError("wrong_status");
     }
-    if (typed.outcome !== "APPROVE") return;
+    if (typed.outcome === "REFUSE") {
+      if (!isMoveReason(typed.reason)) {
+        throw new ActionError("invalid_input", reasonFields(typed.reason));
+      }
+      return;
+    }
     const held = lines.map((line) => ({ id: line.id, countedQty: line.counted_qty }));
     if (!countSeenMatches(held, typed.seen ?? [])) throw new ActionError("conflict");
   },
@@ -178,7 +192,8 @@ export const decideCount = defineAction({
     const status = countDecisionMove(document.status, typed.outcome, true)!;
     const updated = await tx.execute<{ number: string }>(sql`
       update stock_documents
-      set status = ${status}, decided_by = ${userId}, decided_at = ${at}
+      set status = ${status}, decided_by = ${userId}, decided_at = ${at},
+        decision_reason = ${status === "REJECTED" ? moveReason(typed.reason!) : null}
       where id = ${document.id}
       returning number`);
     // Nothing moved since the start under the balance locks, so a correction cannot take a stock

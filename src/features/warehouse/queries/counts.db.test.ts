@@ -140,7 +140,7 @@ describe("a count on its page (09 Stock count: the system shows the differences)
     expect((await getStockDocument(manager.id, documentId))?.canCount).toBe(true);
     await db.execute(sql`
       update stock_documents set status = 'REJECTED', decided_by = ${manager.id},
-        decided_at = '2031-05-03T06:00:00Z'
+        decided_at = '2031-05-03T06:00:00Z', decision_reason = 'Sinov sababi'
       where id = ${documentId}`);
     expect((await getStockDocument(manager.id, documentId))?.canCount).toBe(false);
   });

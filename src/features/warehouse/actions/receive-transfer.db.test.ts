@@ -263,6 +263,7 @@ describe("the phase 7 check (16-build-order.md: send 10, receive 8, see the writ
     const refused = await runAction(decideWriteOff, head.id, {
       documentId: (await writeOffsOf(sender.id))[0]!.id,
       outcome: "REFUSE",
+      reason: "Sinov sababi",
     });
     expect(refused.ok).toBe(true);
     expect(await balanceOf(sender.id, a)).toEqual({ qty: "12.000", avg_cost: "5000" });
@@ -526,6 +527,7 @@ describe("the decision of a 'Lost in transfer' write-off (10 Notifications: the 
           (each) => each.status === "PENDING_APPROVAL",
         )!.id,
         outcome,
+        reason: "Sinov sababi",
       });
       expect(decided.ok).toBe(true);
     }
