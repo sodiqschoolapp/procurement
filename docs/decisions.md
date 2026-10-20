@@ -2964,6 +2964,31 @@ Choices made during the build:
 - The tests of `restoreCopy()` use only the buckets the test setup makes: the local SeaweedFS gives each bucket volumes of its own, and three more buckets ran it out of them (HTTP 500 in every storage test). Their copies are dated 2998 and 2999, after any day the job tests of 8.2 write, and the files bucket stands for an empty bucket of copies.
 - A by-hand run on this machine with `pg_dump` and `pg_restore` 17 (the `postgres:17` image on `PATH`): `db:copy` of the seeded local database, `db:restore -- drill_local` and `db:counts -- --until <newest row>` printed equal lines (orders 12, users 4, stock lines 2, quantity 250.000, movements 4); the restore refused `drill_local` again, `procurement` and `defaultdb`.
 
+### Visual redesign, `ui/visual-redesign` (21.10.2026)
+
+Not a task of the build plan: the owner's redesign brief of 21.10.2026 on top of D60 (sodiqschoolapp/procurement#152). No server action, query result, formula, status move, permission or table changed. The Look first items come first; each names the `/spec-change` wording it would need.
+
+1. **Look first.** Status labels are a dot and a word: blue in the approval and buying flow, red for Sent back and Rejected, green for Closed, grey for Draft and Cancelled (11 rule 11 keeps green, amber and red for the three labels and alerts). Proposed: "Status labels look the same everywhere: a dot and the word. Blue for the approval and buying flow, red for sent back and rejected, green for closed, grey for draft and cancelled; amber is kept for the three labels and alerts; the brand orange is never a status colour."
+2. **Look first.** A list row shows one outcome, the Total label, and Number and Price only when orange or red; the order page, the selection bar and the PDF keep all three (08 The three colours). Proposed: "Each order shows three labels on its page; a list row shows the Total label and, beside it, Number and Price when they are orange or red; the totals of ticked orders show all three."
+3. **Look first.** A green label carries no amount: "Quantity as planned", "Price as planned", "Even" (08: "an icon, a word and the amount"). Proposed: "…the amount, except a green label, which has nothing to count."
+4. **Look first.** The order page's action bar stands under the header and stays in view under the top bar on a desktop, not at the bottom (11 Order page layout 4). Proposed: "Action bar, under the header and kept in view: only the actions…"
+5. **Look first.** A home list with nothing in it is not drawn; when nothing waits, one "Nothing needs you right now" state; the Head's branch figures always show (10 Home page per role). Proposed: "Each list on a home page with something in it shows…; an empty one is left out."
+6. **Look first.** The analytics screens show short change texts (`analytics.short.change.*`); the PDF and Excel keep the long sentences of `analytics.change.*` (10 point 1), since PDFs were out of scope.
+7. **Look first.** The order list marks a group row "Your turn" when its status is one the person's role acts on; a Manager gets the mark on Sent back rows only with the right to add drafts in some branch. It reads the same role and rights the server already checks and adds no action.
+8. The order list keeps its status select behind "More filters" beside the new status tabs, so filtered links and the keyboard keep working. The tab counts come from `countOrdersByStatus` under the other filters, inside the branch wall; `tests/e2e/branch-wall.spec.ts` checks them with another branch in the address.
+
+Technical choices:
+
+- `cn` is built with `createCn` from `cn/config` and knows the app's own type sizes (`text-small`, `text-subheading`, `text-heading`, `text-figure`, `text-title`), so a size beside a colour is never merged away (`src/components/utils.test.ts`).
+- `DateInput` (`src/components/ui/date-input.tsx`) replaces every `type="date"`: it shows and takes dd.mm.yyyy (also a typed YYYY-MM-DD), opens the browser's own picker from a calendar button, and sends the same YYYY-MM-DD as before (a hidden field in GET forms, the same form value in React Hook Form).
+- Golos Text has no U+02BB. A second family, `Golos Text Uzbek`, with `unicode-range: U+02BB`, loads the TTFs already in `src/features/orders/download/fonts/` and sits second in the font stack. Declaring them inside the Golos family broke the variable face in the browser test.
+- `tabular-nums` is set per number, not on the page: on the whole page it widened the hyphens of order numbers.
+- Bitter is removed (`@fontsource-variable/bitter`), as D60 asks: one dependency fewer, none added.
+- Tables become cards below 640 px through one CSS class, `table-cards`, with `data-label` on the cells; no second markup of the same table.
+- `MoveButton` takes an `onDone` that skips the page refresh after a success, so settlement shows a "closed" state with links instead of reloading into "Not found". The move itself is the same call.
+- A catch-all `(app)/[...missing]` page signs the person in first (`requireUser`) and then shows the app's own not-found page inside the shell; it is in the permission registry and the placeholder list.
+- The before and after screenshots live in `docs/redesign/` as JPEG (about 2 MB), taken from the invented seed on a separate local database.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.
