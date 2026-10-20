@@ -26,8 +26,8 @@ The whole project as ordered tasks. One task is one Claude Code session and one 
 | 6. Home, analytics, reports | 17 | What each role sees first, and the numbers behind the work. |
 | 7. Transfers and counts | 4 | Stock moving between branches, and stock checked against the shelf. |
 | 8. Jobs and polish | 3 | The scheduled work, and the translation pass. |
-| 9. Before go-live | 14 | Proof that it works, then the real environment and the real data. |
-| **Total** | **116** | |
+| 9. Before go-live | 15 | Proof that it works, then the real environment and the real data. |
+| **Total** | **117** | |
 
 ## Phase 0: Foundations
 
@@ -667,6 +667,12 @@ Proof that it works, then the real environment and the real data.
   - **Build:** (1) The weekly copy (`src/server/jobs/database-copy.ts`) writes to a bucket of its own, with its own bucket and access-key settings of the environment, and a second bucket of the local SeaweedFS and of the test setups (`npm run storage:bucket`, `tests/helpers/local-storage.ts`); a failed copy tells every active Head in the bell and is tried again the next night until one succeeds; the Head's Settings page shows the date of the last copy. (2) `npm run user:renew-head`: a command run in the hosting console that renews one named active Head's password (typed at the prompt, never printed), deletes that Head's sessions and writes an audit row, the script copied into the image's run stage (`tests/image-files.test.ts`); nothing in the app changes (D9). (3) Receipt photos are stored at up to 2 500 px on the longest side beside the 160 px thumbnail, and the browser's shrink (`SHRINK_SIDE`, `src/domain/files.ts`) lets a receipt photo keep 2 500 px; catalog photos keep 160 and 1 200 px. (4) A period still running is compared with the same number of days at the start of the period before, capped at the end of the period before (`src/domain/analytics.ts`), and the page says "against the same days of …"; finished periods and custom dates stay as built. (5) Reports start at the branch picked in the branch switcher, as Analytics does.
   - **Done when:** a test per item names its rule: a forced copy failure sends one notice per active Head and a retry the next night, and a success shows its date; the command renews a Head's password, signs that Head out and refuses an unknown or inactive username; a 1 000 × 4 000 receipt keeps 2 500 px on its long side; on 18 October "this month" compares 1 to 18 October with 1 to 18 September, and on 31 March compares 1 to 31 March with the whole of February; a report opened with CHL picked filters to CHL.
   - Added by the owner on 20.10.2026 (D55): answers 6, 7, 8, 10 and 11 on issue #9.
+
+- [ ] **5.4b "Give straight to requester": stored, and its cancel**
+  - **Read:** `07-purchasing.md` (Purchase record: Give straight to requester; Fixing a mistake); `09-warehouse.md` (Issue to a department; Reverse); `14-data-model.md` (`purchases`); `docs/decisions.md` (D56); the audit report in D56, findings 1 and 2.
+  - **Build:** (1) Saving a record with "Give straight to requester" writes `purchases.give_to_requester` true (`record-purchase.ts`; it is left out of the insert today). (2) Cancelling a record whose "Give straight to requester" issue is still posted is refused, the message naming that issue and the two ways out (07 Fixing a mistake 2), whatever other stock the branch holds; once the issue is reversed, the cancel goes through as today (`cancel-purchase.ts`).
+  - **Done when:** a database test per item names its rule and fails without its fix: a record with the tick reads `give_to_requester` true and one without reads false; with 50 notebooks in CHL, a record of 10 with the tick cannot be cancelled while its issue is posted (stock stays 50 and the issue stays), and after the issue is reversed the cancel leaves 50 and the department's received count back where it was.
+  - Added by the owner on 20.10.2026 (D56): the money and stock audit.
 
 > **Owner gate.** The start routine stops here until the owner, after the go-live review of every Look first decision with the owner's reviewer, deletes this line. From here on the live system, real data and secrets start.
 
