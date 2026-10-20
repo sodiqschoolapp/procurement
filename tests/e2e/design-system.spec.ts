@@ -2,19 +2,19 @@ import { type Page, expect, test } from "@playwright/test";
 
 import uz from "../../src/i18n/messages/uz.json" with { type: "json" };
 
-// docs/design-system.md on the sign-in page, its first brand moment (build-plan 0.10a, Done
-// when): Type (Bitter for the title, Golos Text for the fields; "If Bitter lacks a letter of a
-// language (checked in the browser test with 'Oʻgʻil, Ўзбекистон, Қашқадарё, Ғулом, Ҳамид')");
-// Brand moments, Sign-in (the navy panel hidden at phone width); Colour (the theme follows the
-// device; the choice is kept in the browser); Buttons and Accessibility (44 px touch targets at
-// phone width); Motion (none for people who ask for reduced motion; review correction 4).
-// 11-screens-and-ux.md rules 13 and 15. Both widths are the projects of playwright.config.ts.
+// docs/design-system.md on the sign-in page (build-plan 0.10a, Done when; the app's own look of
+// 21.10.2026, D60, which drops Bitter): Type (Golos Text only; every letter of "Oʻgʻil,
+// Ўзбекистон, Қашқадарё, Ғулом, Ҳамид" from the app's own font files, U+02BB included, at the
+// weights in use); This app, Sign-in (the brand panel hidden at phone width); Colour (the theme
+// follows the device; the choice is kept in the browser); Buttons and Accessibility (44 px touch
+// targets at phone width); Motion (none for people who ask for reduced motion; review correction
+// 4). 11-screens-and-ux.md rules 13 and 15. Both widths are the projects of playwright.config.ts.
 
 const SAMPLE = "Oʻgʻil, Ўзбекистон, Қашқадарё, Ғулом, Ҳамид";
 
-// The canvas, --background, of each theme (docs/design-system.md, Colour).
-const LIGHT_CANVAS = "#ECECEC";
-const DARK_CANVAS = "#040920";
+// The page colour, --background, of each theme (docs/design-system.md, Colour).
+const LIGHT_CANVAS = "#F5F6F8";
+const DARK_CANVAS = "#0A0F1E";
 
 function isPhone(page: Page): boolean {
   return (page.viewportSize()?.width ?? 0) < 640;
@@ -38,44 +38,51 @@ async function canvasOf(page: Page): Promise<string> {
   });
 }
 
-test("Bitter draws every letter of the Uzbek and Cyrillic sample (design system, Type)", async ({
-  page,
-}) => {
-  await page.goto("/login");
-  await page.evaluate(async (text) => {
-    const probe = document.createElement("p");
-    probe.id = "bitter-probe";
-    probe.className = "font-slab font-bold";
-    probe.textContent = text;
-    document.body.append(probe);
-    await document.fonts.load('700 40px "Bitter Variable"', text);
-    await document.fonts.ready;
-  }, SAMPLE);
+for (const weight of [400, 500, 600] as const) {
+  test(`Golos Text draws every letter of the Uzbek and Cyrillic sample at ${weight} (design system, Type)`, async ({
+    page,
+  }) => {
+    await page.goto("/login");
+    await page.evaluate(
+      async ({ text, weight: shown }) => {
+        const probe = document.createElement("p");
+        probe.id = "golos-probe";
+        probe.style.fontWeight = String(shown);
+        probe.textContent = text;
+        document.body.append(probe);
+        await document.fonts.load(`${shown} 16px "Golos Text Variable"`, text);
+        await document.fonts.load(`${shown} 16px "Golos Text Uzbek"`, text);
+        await document.fonts.ready;
+      },
+      { text: SAMPLE, weight },
+    );
 
-  const cdp = await page.context().newCDPSession(page);
-  await cdp.send("DOM.enable");
-  await cdp.send("CSS.enable");
-  const { root } = await cdp.send("DOM.getDocument");
-  const { nodeId } = await cdp.send("DOM.querySelector", {
-    nodeId: root.nodeId,
-    selector: "#bitter-probe",
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send("DOM.enable");
+    await cdp.send("CSS.enable");
+    const { root } = await cdp.send("DOM.getDocument");
+    const { nodeId } = await cdp.send("DOM.querySelector", {
+      nodeId: root.nodeId,
+      selector: "#golos-probe",
+    });
+    const { fonts } = await cdp.send("CSS.getPlatformFontsForNode", { nodeId });
+
+    // Every glyph of the sample comes from the app's own files, none from a system fallback:
+    // Golos Text, and for U+02BB the "Golos Text Uzbek" face of the PDF fonts globals.css adds.
+    expect(fonts.length).toBeGreaterThan(0);
+    for (const font of fonts) {
+      expect(font, JSON.stringify(fonts)).toMatchObject({ isCustomFont: true });
+      expect(font.familyName).toMatch(/^Golos/);
+    }
   });
-  const { fonts } = await cdp.send("CSS.getPlatformFontsForNode", { nodeId });
+}
 
-  // Every glyph of the sample comes from the app's own Bitter file, none from a fallback.
-  expect(fonts.length).toBeGreaterThan(0);
-  for (const font of fonts) {
-    expect(font, JSON.stringify(fonts)).toMatchObject({ isCustomFont: true });
-    expect(font.familyName).toMatch(/^Bitter/);
-  }
-});
-
-test("the title is set in Bitter and the fields in Golos Text (design system, Type)", async ({
+test("the title, the fields and the button are set in Golos Text (design system, Type)", async ({
   page,
 }) => {
   await page.goto("/login");
   const title = page.getByRole("heading", { level: 1, name: uz.login.title });
-  await expect(title).toHaveCSS("font-family", /^"Bitter Variable"/);
+  await expect(title).toHaveCSS("font-family", /^"Golos Text Variable"/);
   await expect(page.getByLabel(uz.login.username)).toHaveCSS(
     "font-family",
     /^"Golos Text Variable"/,
@@ -86,7 +93,7 @@ test("the title is set in Bitter and the fields in Golos Text (design system, Ty
   );
 });
 
-test("the navy panel shows on a desktop and is hidden at phone width (design system, Sign-in)", async ({
+test("the brand panel shows on a desktop and is hidden at phone width (design system, This app, Sign-in)", async ({
   page,
 }) => {
   await page.goto("/login");
@@ -96,7 +103,10 @@ test("the navy panel shows on a desktop and is hidden at phone width (design sys
   } else {
     await expect(panel).toBeVisible();
     await expect(panel.getByText(uz.login.slogan)).toHaveCSS("text-transform", "uppercase");
-    await expect(panel.getByText(uz.login.slogan)).toHaveCSS("font-family", /^"Bitter Variable"/);
+    await expect(panel.getByText(uz.login.slogan)).toHaveCSS(
+      "font-family",
+      /^"Golos Text Variable"/,
+    );
   }
   const sizes = await page.evaluate(() => ({
     content: document.documentElement.scrollWidth,

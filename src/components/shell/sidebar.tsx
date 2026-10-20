@@ -125,6 +125,23 @@ export function Sidebar({
         </ul>
       </nav>
       <div className="flex shrink-0 flex-col gap-1 border-t border-sidebar-border p-3 rail:px-2">
+        <button
+          type="button"
+          onClick={toggle}
+          aria-label={toggleLabel}
+          aria-expanded={!rail}
+          title={toggleLabel}
+          className={cn(
+            "flex h-8 items-center gap-2 rounded-md px-2 text-xs text-muted-foreground rail:justify-center rail:px-0",
+            FOCUS,
+            QUIET,
+          )}
+        >
+          <Icon name={rail ? "chevron_right" : "chevron_left"} size={18} />
+          <span className="rail:sr-only" aria-hidden="true">
+            {toggleLabel}
+          </span>
+        </button>
         <div className="flex items-center gap-1 rail:flex-col">
           <Link
             href="/profile"
@@ -146,23 +163,6 @@ export function Sidebar({
             className={cn("flex size-9 items-center justify-center rounded-md", FOCUS, QUIET)}
           />
         </div>
-        <button
-          type="button"
-          onClick={toggle}
-          aria-label={toggleLabel}
-          aria-expanded={!rail}
-          title={toggleLabel}
-          className={cn(
-            "flex h-8 items-center gap-2 rounded-md px-2 text-xs text-muted-foreground rail:justify-center rail:px-0",
-            FOCUS,
-            QUIET,
-          )}
-        >
-          <Icon name={rail ? "chevron_right" : "chevron_left"} size={18} />
-          <span className="rail:sr-only" aria-hidden="true">
-            {toggleLabel}
-          </span>
-        </button>
       </div>
     </aside>
   );

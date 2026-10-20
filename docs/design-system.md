@@ -60,7 +60,7 @@ The theme follows the device by default; the person can choose light or dark on 
 
 ## Type
 
-**Golos Text** only (ParaType, SIL Open Font License), served from the app's own files. It covers Latin and Cyrillic. It has no U+02BB (the Uzbek oʻ and gʻ), so the app adds one face of the same family, limited to U+02BB, from the PDF fonts in `src/features/orders/download/fonts/`, where U+02BB is mapped to the turned comma; the browser test checks every letter of "Oʻgʻil, Ўзбекистон, Қашқадарё, Ғулом, Ҳамид" comes from the app's own files at 400, 500 and 600.
+**Golos Text** only (ParaType, SIL Open Font License), served from the app's own files. It covers Latin and Cyrillic. It has no U+02BB (the Uzbek oʻ and gʻ), so the app adds a family of its own, "Golos Text Uzbek", next in the font stack and limited to U+02BB, from the PDF fonts in `src/features/orders/download/fonts/`, where U+02BB is mapped to the turned comma; the browser test checks every letter of "Oʻgʻil, Ўзбекистон, Қашқадарё, Ғулом, Ҳамид" comes from the app's own files at 400, 500 and 600.
 
 Every number and amount is set with `tabular-nums` (not the whole page: Golos Text's tabular figures widen the hyphen of "CHL-26-0142"), and amounts in tables are right-aligned.
 

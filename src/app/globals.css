@@ -75,7 +75,7 @@
   --color-chart-5: var(--chart-5);
   /* Behind a dialog: navy at 40% in both themes. */
   --color-overlay: oklch(0.2026 0.0841 266.73 / 40%);
-  --font-sans: "Golos Text Variable", "Golos Text", system-ui, sans-serif;
+  --font-sans: "Golos Text Variable", "Golos Text Uzbek", "Golos Text", system-ui, sans-serif;
   /* The type scale (design system, Type): body is Tailwind's text-sm (14 / 20) and the caption its
      text-xs (12 / 16); the others are named here. */
   --text-xs: 0.75rem;
@@ -288,10 +288,11 @@
   color-scheme: dark;
 }
 
-/* Golos Text has no U+02BB (the Uzbek oʻ and gʻ). One face of the same family, for that letter
-   only, from the PDF fonts where it is mapped to the turned comma (design system, Type). */
+/* Golos Text has no U+02BB (the Uzbek oʻ and gʻ). A family of its own, next in the font stack and
+   limited to that letter, from the PDF fonts where it is mapped to the turned comma (design
+   system, Type). */
 @font-face {
-  font-family: "Golos Text Variable";
+  font-family: "Golos Text Uzbek";
   font-style: normal;
   font-weight: 100 549;
   font-display: swap;
@@ -300,7 +301,7 @@
 }
 
 @font-face {
-  font-family: "Golos Text Variable";
+  font-family: "Golos Text Uzbek";
   font-style: normal;
   font-weight: 550 900;
   font-display: swap;
