@@ -134,7 +134,8 @@ export function nextBalance(balance: StockBalance, movement: StockMovement): Nex
     throw new RangeError(`A unit cost of ${String(movement.unitCost)}: below 0`);
   }
   if (movement.emptyCost !== undefined) {
-    const into = movement.type === "RETURN" || (movement.type === "CORRECTION" && delta.isPositive());
+    const into =
+      movement.type === "RETURN" || (movement.type === "CORRECTION" && delta.isPositive());
     if (!into || priced || movement.emptyCost < 0n) {
       throw new RangeError(`A ${movement.type} with an empty-stock cost`);
     }
