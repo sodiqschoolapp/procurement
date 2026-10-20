@@ -1,6 +1,6 @@
 # Monitoring
 
-Build-plan 9.3; `docs/spec/18-hosting-and-costs.md`, row 8 ("Error and uptime alerts, for example Sentry and UptimeRobot … Free plans are enough to start … Optional"). Everything here is done by the owner after the live app exists (task 9.4). Until then nothing is sent anywhere, and nothing here costs money.
+Build-plan 9.3; `docs/spec/18-hosting-and-costs.md`, row 8 ("Error and uptime alerts, for example Sentry and UptimeRobot … Free plans are enough to start … Yes, from the trial"; D55 item 21). Everything here is done by the owner when the live app is set up (task 9.4; `docs/deploy.md`, step 9). Until then nothing is sent anywhere, and nothing here costs money.
 
 ## What the app does
 
@@ -10,16 +10,16 @@ Build-plan 9.3; `docs/spec/18-hosting-and-costs.md`, row 8 ("Error and uptime al
 - **A slow or broken Sentry** changes nothing for the users: a send is given up after 2 seconds, and a failed send only writes one line in the app's log.
 - **Uptime.** `/health` answers 200 only when the app reaches its database (task 0.16). The uptime check calls it.
 
-## For the owner, after task 9.4
+## For the owner, when the live app is set up (task 9.4)
 
-### 1. Sentry (error alerts), optional
+### 1. Sentry (error alerts)
 
 1. Create a free account at `sentry.io` (the Developer plan). Create one project, platform **Node.js**, named `ombor`. Alert rule: the default "alert on every new issue", sent to your e-mail.
 2. Sentry shows the project's **DSN**, an address like `https://<key>@<something>.ingest.sentry.io/<number>`. Copy it.
 3. In DigitalOcean: the app → component `web` → Settings → Environment Variables → Edit. Add `ERROR_REPORT_DSN` with the DSN as its value, **Encrypt** ticked. Save; the app restarts.
 4. Applying `.do/app.yaml` again replaces the list of variables (`docs/deploy.md`): check afterwards that `ERROR_REPORT_DSN` is still there.
 
-### 2. UptimeRobot (uptime alerts), optional
+### 2. UptimeRobot (uptime alerts)
 
 1. Create a free account at `uptimerobot.com`.
 2. Add New Monitor: type **HTTP(s)**, friendly name `ombor`, URL `https://ombor.sodiqschool.uz/health`, interval **5 minutes** (the free plan's), alert contact: your e-mail.
