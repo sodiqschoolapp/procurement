@@ -14,6 +14,7 @@ import {
   ColourLabel,
   type ColourLabelProps,
   ColourLabels,
+  DocumentStatusLabel,
   RequestStatusLabel,
   SubstitutedLabel,
 } from "./status-label";
@@ -238,5 +239,20 @@ describe("colour labels (08 The three colours; review correction 2)", () => {
     expect(() => render(<ColourLabel label="number" colour="amber" difference="1e3" />)).toThrow(
       /not a quantity/,
     );
+  });
+});
+
+describe("DocumentStatusLabel (plan of 7.4c: a cancelled transfer)", () => {
+  it("shows Cancelled with its icon in every language", () => {
+    for (const [locale, word] of [
+      ["en", "Cancelled"],
+      ["ru", "Отменено"],
+      ["uz", "Bekor qilindi"],
+    ] as const) {
+      const html = render(<DocumentStatusLabel type="TRANSFER" status="CANCELLED" />, locale);
+      expect(html).toContain('data-document-status="CANCELLED"');
+      expect(visibleText(html)).toBe(word);
+      expect(html).toMatch(/<svg[^>]*aria-hidden="true"/);
+    }
   });
 });

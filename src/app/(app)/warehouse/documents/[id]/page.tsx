@@ -7,6 +7,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/components/utils";
 import type { WriteOffReason } from "@/domain/stock-documents";
 import { signedQuantity } from "@/features/warehouse/components/count-difference";
+import { CancelTransferButton } from "@/features/warehouse/components/cancel-transfer-button";
 import { CountAgainMark } from "@/features/warehouse/components/count-again-mark";
 import { CountDecision } from "@/features/warehouse/components/count-decision";
 import { CountSheetForm } from "@/features/warehouse/components/count-sheet-form";
@@ -34,7 +35,9 @@ import { requireUser } from "@/server/auth/session";
 // unless the Head may approve it now (`canApprove`): then the lines are read and Approve and
 // Refuse sit at the bottom (plan of 7.4). The Head typing an incomplete count gets Refuse below
 // the form, not fixed. A line sent back is marked "Count again"; a complete count tells everyone
-// else it waits for the Head. A direct entry shows the Head each line's cost per unit, which the
+// else it waits for the Head. A refused write-off or count shows why, to everyone who reads it;
+// an In-transit transfer offers Cancel with a reason to whom the query offers it (`canCancel`), and
+// a cancelled one shows who cancelled it and why (plan of 7.4c). A direct entry shows the Head each line's cost per unit, which the
 // query reads for the Head only (plan of 7.4b). At phone width the lines are cards.
 
 export default async function StockDocumentPage({ params }: { params: Promise<{ id: string }> }) {
@@ -93,11 +96,24 @@ export default async function StockDocumentPage({ params }: { params: Promise<{ 
           : t("page.createdBy"),
     value: t("page.byAt", { name: document.createdBy, at: at(document.createdAt) }),
   });
+  const cancelled = document.status === "CANCELLED";
   if (document.decidedBy && document.decidedAt) {
     fields.push({
       key: "decidedBy",
-      label: transfer ? t("page.confirmedBy") : t("page.decidedBy"),
+      label: cancelled
+        ? t("page.cancelledBy")
+        : transfer
+          ? t("page.confirmedBy")
+          : t("page.decidedBy"),
       value: t("page.byAt", { name: document.decidedBy, at: at(document.decidedAt) }),
+    });
+  }
+  if (document.decisionReason) {
+    fields.push({
+      key: "decisionReason",
+      label: cancelled ? t("page.cancelReason") : t("page.refuseReason"),
+      value: document.decisionReason,
+      wide: true,
     });
   }
   if (document.reversedBy && document.reversedAt) {
@@ -317,7 +333,7 @@ export default async function StockDocumentPage({ params }: { params: Promise<{ 
         </section>
       )}
 
-      {(document.canReverse || document.canDownloadNote) && (
+      {(document.canReverse || document.canDownloadNote || document.canCancel) && (
         <div
           aria-label={t("page.actions")}
           role="group"
@@ -335,6 +351,14 @@ export default async function StockDocumentPage({ params }: { params: Promise<{ 
           )}
           {document.canReverse && (
             <ReverseDocumentButton documentId={document.id} number={document.number} />
+          )}
+          {document.canCancel && (
+            <CancelTransferButton
+              documentId={document.id}
+              number={document.number}
+              fromBranch={document.branchCode}
+              toBranch={document.toBranchCode ?? ""}
+            />
           )}
         </div>
       )}
@@ -372,6 +396,13 @@ export default async function StockDocumentPage({ params }: { params: Promise<{ 
       ) : transfer && document.status === "IN_TRANSIT" ? (
         <p data-transfer-in-transit className="text-[15px] leading-[22px] text-muted-foreground">
           {t("page.inTransit", {
+            from: document.branchCode,
+            to: document.toBranchCode ?? "",
+          })}
+        </p>
+      ) : transfer && cancelled ? (
+        <p data-transfer-cancelled className="text-[15px] leading-[22px] text-muted-foreground">
+          {t("page.cancelled", {
             from: document.branchCode,
             to: document.toBranchCode ?? "",
           })}

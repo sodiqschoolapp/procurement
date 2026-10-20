@@ -19,6 +19,7 @@ import { returnStock } from "../actions/return";
 import { receiveTransfer } from "../actions/receive-transfer";
 import { reverseStockDocument } from "../actions/reverse";
 import { sendTransfer } from "../actions/transfer";
+import { cancelTransfer } from "../actions/cancel-transfer";
 import { askWriteOff } from "../actions/write-off";
 import { decideWriteOff } from "../actions/write-off-decision";
 import { getStockDocument } from "./document";
@@ -120,6 +121,25 @@ describe("getStockDocument: a write-off (plan of 5.11)", () => {
         canDecide: false,
       });
     }
+  });
+
+  it('a refused write-off shows its reason to the Manager who asked (09 Other documents, Write-off: "the Manager sees it"; plan of 7.4c, decided item 8)', async () => {
+    const branch = await insertBranch();
+    const head = await insertUser("HEAD");
+    const w = await waiting(branch.id);
+    expect((await getStockDocument(w.asker.id, w.documentId))?.decisionReason).toBeNull();
+    const refused = await runAction(decideWriteOff, head.id, {
+      documentId: w.documentId,
+      outcome: "REFUSE",
+      reason: "Muddati hali tugamagan",
+    });
+    expect(refused.ok).toBe(true);
+    expect(await getStockDocument(w.asker.id, w.documentId)).toMatchObject({
+      status: "REJECTED",
+      decidedBy: head.fullName,
+      decisionReason: "Muddati hali tugamagan",
+      canDecide: false,
+    });
   });
 
   it("answers Not found for another branch's write-off and an id that is no uuid (03 rule 1)", async () => {
@@ -490,6 +510,45 @@ describe("getStockDocument: a transfer (plans of 7.1 and 7.2; 7.2 decided item 3
     expect(await getStockDocument(head.id, t.documentId)).toMatchObject({
       canReceive: false,
       canReverse: true,
+    });
+  });
+
+  it('offers Cancel to the Head and a sending Manager with TRANSFER_STOCK, while In transit only (09 Transfer: "the sender or the Head can cancel"; plan of 7.4c, decided items 2 and 3)', async () => {
+    const from = await insertBranch();
+    const to = await insertBranch();
+    const head = await insertUser("HEAD");
+    const t = await sent(from.id, to.id);
+    const colleague = await insertUser("MANAGER", { branches: [from.id] });
+    const rightOff = await insertUser("MANAGER", { branches: [from.id] });
+    await setManagerRight(rightOff.id, "TRANSFER_STOCK", false);
+    const there = await insertUser("MANAGER", { branches: [to.id] });
+    const principal = await insertUser("PRINCIPAL", { branches: [from.id] });
+    for (const user of [head, t.sender, colleague]) {
+      expect(await getStockDocument(user.id, t.documentId)).toMatchObject({ canCancel: true });
+    }
+    for (const user of [rightOff, there, principal]) {
+      expect(await getStockDocument(user.id, t.documentId)).toMatchObject({ canCancel: false });
+    }
+
+    setClock("2031-05-04T09:00:00Z");
+    const cancelled = await runAction(cancelTransfer, colleague.id, {
+      documentId: t.documentId,
+      reason: "Boshqa filialga kerak emas",
+    });
+    expect(cancelled.ok).toBe(true);
+    // The receiving branch reads who cancelled and why, and may no longer receive.
+    expect(await getStockDocument(there.id, t.documentId)).toMatchObject({
+      status: "CANCELLED",
+      decidedBy: colleague.fullName,
+      decidedAt: new Date("2031-05-04T09:00:00Z"),
+      decisionReason: "Boshqa filialga kerak emas",
+      canReceive: false,
+      canCancel: false,
+    });
+    expect(await getStockDocument(head.id, t.documentId)).toMatchObject({
+      canCancel: false,
+      canReceive: false,
+      canReverse: false,
     });
   });
 });

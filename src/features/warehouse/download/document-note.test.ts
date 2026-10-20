@@ -52,6 +52,15 @@ describe("documentNoteSheet for a transfer (plan of 7.1, decided item 12)", () =
     expect(JSON.stringify(sheet)).not.toMatch(/signature/i);
   });
 
+  it("says a cancelled transfer is cancelled (plan of 7.4c, decided item 11)", () => {
+    const sheet = documentNoteSheet({ ...TRANSFER, status: "CANCELLED" }, "en", AT);
+    expect(sheet.fields.at(-1)).toEqual({ label: "Status", value: "Cancelled" });
+    expect(documentNoteSheet(TRANSFER, "en", AT).fields).not.toContainEqual({
+      label: "Status",
+      value: "Cancelled",
+    });
+  });
+
   it("shows the receiver as typed (09 Transfer: 'as typed')", () => {
     const sheet = documentNoteSheet({ ...TRANSFER, receivedBy: "Sinov Haydovchi" }, "en", AT);
     expect(sheet.fields.at(-1)).toEqual({ label: "Received by", value: "Sinov Haydovchi" });

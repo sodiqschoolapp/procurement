@@ -77,6 +77,11 @@ export function documentNoteSheet(note: DocumentNote, locale: Locale, at: Date):
     { label: t("receivedBy"), value: note.receivedBy ?? "—" },
   ];
   if (note.status === "REVERSED") fields.push({ label: t("status"), value: t("reversed") });
+  // A cancelled transfer says so, so that its note is not read as one still under way (plan of
+  // 7.4c, decided item 11).
+  if (note.status === "CANCELLED") {
+    fields.push({ label: tTransfer("status"), value: tTransfer("cancelled") });
+  }
   if (note.comment) fields.push({ label: t("comment"), value: note.comment });
   return {
     locale,

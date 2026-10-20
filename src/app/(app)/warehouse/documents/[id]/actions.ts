@@ -3,6 +3,10 @@
 import { revalidatePath } from "next/cache";
 
 import {
+  type CancelTransferResult,
+  cancelTransfer,
+} from "@/features/warehouse/actions/cancel-transfer";
+import {
   type SaveCountedQuantitiesResult,
   saveCountedQuantities,
 } from "@/features/warehouse/actions/count";
@@ -74,6 +78,21 @@ export async function decideCountAction(
   input: unknown,
 ): Promise<ActionResult<CountDecisionResult>> {
   const result = await decideCountServer(input);
+  if (result.ok) revalidatePath("/warehouse", "layout");
+  return result;
+}
+
+// The sending branch or the Head cancels a transfer still In transit (09 Other documents,
+// Transfer; plan of 7.4c): the definition's wrapper checks everything again: `stock.transfer` on
+// the sending branch, the status under the lock, the reason.
+
+const cancelTransferServer = serverAction(cancelTransfer);
+
+/** Cancels one In-transit transfer with a reason; its stock goes back to the sender. */
+export async function cancelTransferAction(
+  input: unknown,
+): Promise<ActionResult<CancelTransferResult>> {
+  const result = await cancelTransferServer(input);
   if (result.ok) revalidatePath("/warehouse", "layout");
   return result;
 }

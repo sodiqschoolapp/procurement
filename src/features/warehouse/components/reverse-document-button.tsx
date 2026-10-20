@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { useId, useState } from "react";
+import { useState } from "react";
 
 import {
   reversePreviewAction,
@@ -12,13 +12,12 @@ import { ConfirmDialog } from "@/components/confirm-dialog";
 import { Skeleton } from "@/components/skeleton";
 import { toast } from "@/components/toast";
 import { Button } from "@/components/ui/button";
-import { FIELD_CLASSES } from "@/components/ui/input";
-import { cn } from "@/components/utils";
-import { MOVE_REASON_MAX, MOVE_REASON_MIN, isMoveReason } from "@/domain/order-moves";
+import { isMoveReason } from "@/domain/order-moves";
 import type { ReversePreview } from "@/features/warehouse/queries/reverse-preview";
 import { useFormatters } from "@/i18n/use-formatters";
 
 import { signedQuantity } from "./count-difference";
+import { ReasonField } from "./reason-field";
 
 // Reverse on a row of the item card and on a document's page (09-warehouse.md, Movement types, last paragraph: "A wrong
 // document is fixed with 'Reverse', which writes the opposite movement and needs a reason"; Issue
@@ -50,11 +49,9 @@ export function ReverseDocumentButton({
   number: string;
 }) {
   const t = useTranslations("warehouse.reverse");
-  const tMoves = useTranslations("orders.moves");
   const tAll = useTranslations();
   const format = useFormatters();
   const router = useRouter();
-  const reasonId = useId();
   const [asking, setAsking] = useState(false);
   const [pending, setPending] = useState(false);
   const [reason, setReason] = useState("");
@@ -163,32 +160,13 @@ export function ReverseDocumentButton({
                 </li>
               ))}
             </ul>
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor={reasonId} className="text-sm leading-5 font-semibold">
-                {tMoves("reason")}
-              </label>
-              <textarea
-                id={reasonId}
-                data-reason
-                value={reason}
-                rows={3}
-                maxLength={MOVE_REASON_MAX}
-                disabled={pending}
-                aria-describedby={`${reasonId}-hint`}
-                onChange={(event) => setReason(event.target.value)}
-                className={cn(FIELD_CLASSES, "min-h-20 py-2")}
-              />
-              <p
-                id={`${reasonId}-hint`}
-                className="text-[13px] leading-[18px] text-muted-foreground"
-              >
-                {t("reasonHint", {
-                  min: MOVE_REASON_MIN,
-                  max: MOVE_REASON_MAX,
-                  count: Array.from(reason.trim()).length,
-                })}
-              </p>
-            </div>
+            <ReasonField
+              value={reason}
+              onChange={setReason}
+              disabled={pending}
+              hint="warehouse.reverse.reasonHint"
+              className=""
+            />
           </div>
         )}
       </ConfirmDialog>

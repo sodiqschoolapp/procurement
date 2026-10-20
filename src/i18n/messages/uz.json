@@ -518,7 +518,8 @@
       "CASH_SETTLED": "{branch}: moliya ({actor}) {count, plural, other {# ta buyurtma}} boʻyicha naqd pul hisob-kitobini qildi: {direction, select, TO_FINANCE {siz moliyaga {amount} topshirasiz} TO_MANAGER {moliya sizga {amount} toʻlaydi} other {pul berilmaydi}}.",
       "REQUEST_SENT_BACK_FOR_CORRECTION": "{branch}: {actor} {count, plural, other {# ta buyurtmani}} tuzatish uchun qaytardi.",
       "OVERSPEND_ABOVE_GUARD": "{branch}: {actor} {count, plural, other {# ta buyurtmani}} ortiqcha xarajat chegarasidan yuqori holda hisob-kitobga yubordi. Siz tasdiqlamaguningizcha Moliya ularni yopa olmaydi.",
-      "OVERSPEND_ACKNOWLEDGED": "{branch}: Xaridlar rahbari {actor} {count, plural, other {# ta buyurtma}} boʻyicha ortiqcha xarajatni tasdiqladi."
+      "OVERSPEND_ACKNOWLEDGED": "{branch}: Xaridlar rahbari {actor} {count, plural, other {# ta buyurtma}} boʻyicha ortiqcha xarajatni tasdiqladi.",
+      "TRANSFER_CANCELLED": "{actor} {branch} filialidan {number} koʻchirishni bekor qildi. Hech narsa kelmaydi."
     }
   },
   "months": {
@@ -2262,7 +2263,9 @@
       "to": "Qaysi filialga",
       "sentBy": "Yuborgan",
       "sent": "Yuborilgan",
-      "received": "Qabul qilingan"
+      "received": "Qabul qilingan",
+      "cancelled": "Bekor qilindi",
+      "status": "Holati"
     },
     "reverse": {
       "button": "Storno qilish",
@@ -2338,7 +2341,8 @@
         "IN_TRANSIT": "Yoʻlda",
         "RECEIVED": "Qabul qilingan",
         "REJECTED": "Rad etilgan",
-        "REVERSED": "Bekor qilingan"
+        "REVERSED": "Bekor qilingan",
+        "CANCELLED": "Bekor qilindi"
       },
       "columns": {
         "number": "Raqam",
@@ -2383,7 +2387,11 @@
         "sent": "Yuborilgan",
         "received": "Qabul qilingan",
         "short": "Kamomad",
-        "confirmedBy": "Qabulni tasdiqlagan"
+        "confirmedBy": "Qabulni tasdiqlagan",
+        "cancelledBy": "Bekor qilgan",
+        "cancelReason": "Bekor qilish sababi",
+        "refuseReason": "Rad etish sababi",
+        "cancelled": "Bekor qilindi. Tovarlar {from} omboriga qaytdi; {to} bu koʻchirishni endi qabul qila olmaydi."
       },
       "receive": {
         "title": "Qabul qilish",
@@ -2449,6 +2457,15 @@
         "waiting": "Hamma mahsulot sanaldi. Rahbar qarorini kutmoqda; qoldiq oʻzgarmagan.",
         "countAgain": "Qayta sanash"
       }
+    },
+    "cancelTransfer": {
+      "button": "Koʻchirishni bekor qilish",
+      "title": "{number} koʻchirish bekor qilinsinmi?",
+      "result": "Bu tovarlar chiqib ketgan narxida {from} omboriga qaytadi va {to} koʻchirishni endi qabul qila olmaydi. {to} menejerlariga xabar beriladi. Buni qaytarib boʻlmaydi.",
+      "done": "{number} koʻchirish bekor qilindi, tovarlar omborga qaytdi."
+    },
+    "refuseReason": {
+      "hint": "Sabab majburiy: {min} dan {max} gacha belgi. {count} / {max}. Menejer uni koʻradi."
     }
   },
   "analytics": {

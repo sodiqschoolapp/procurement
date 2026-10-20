@@ -9,8 +9,11 @@ import { ConfirmDialog } from "@/components/confirm-dialog";
 import { toast } from "@/components/toast";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/components/utils";
+import { isMoveReason } from "@/domain/order-moves";
 import type { WriteOffOutcome } from "@/domain/stock-documents";
 import type { DocumentLine } from "@/features/warehouse/queries/document";
+
+import { ReasonField } from "./reason-field";
 
 // Approve and Refuse on a waiting count (09-warehouse.md, Other documents, Stock count: "the Head
 // approves them as corrections"; 11-screens-and-ux.md rule 6: ask for confirmation, say what it
@@ -18,7 +21,8 @@ import type { DocumentLine } from "@/features/warehouse/queries/document";
 // (`canDecide`; Approve where `canApprove`); the server asks again under the lock. Approve sends the
 // counted quantities on the screen: a Manager's save since then is refused as `conflict` and the
 // page reloads (decided item 2). An item that moved since the start sends the count back, and the
-// toast says how many.
+// toast says how many. Refuse asks for a reason, which the Manager sees on the page (plan of
+// 7.4c).
 
 export function CountDecision({
   documentId,
@@ -41,6 +45,7 @@ export function CountDecision({
   const router = useRouter();
   const [asking, setAsking] = useState<WriteOffOutcome | null>(null);
   const [pending, setPending] = useState(false);
+  const [reason, setReason] = useState("");
 
   async function run(outcome: WriteOffOutcome) {
     setPending(true);
@@ -48,6 +53,7 @@ export function CountDecision({
       const answer = await decideCountAction({
         documentId,
         outcome,
+        reason: outcome === "REFUSE" ? reason : undefined,
         seen:
           outcome === "APPROVE"
             ? lines.map((line) => ({ lineId: line.id, countedQty: line.countedQty ?? "" }))
@@ -83,7 +89,10 @@ export function CountDecision({
         variant="secondary"
         icon="block"
         className="max-sm:h-12"
-        onClick={() => setAsking("REFUSE")}
+        onClick={() => {
+          setReason("");
+          setAsking("REFUSE");
+        }}
       >
         {t("refuse")}
       </Button>
@@ -96,6 +105,7 @@ export function CountDecision({
         open={asking !== null}
         onOpenChange={(open) => !open && !pending && setAsking(null)}
         pending={pending}
+        confirmDisabled={asking === "REFUSE" && !isMoveReason(reason)}
         text={
           asking === "REFUSE"
             ? {
@@ -114,7 +124,16 @@ export function CountDecision({
         onConfirm={() => {
           if (asking) void run(asking);
         }}
-      />
+      >
+        {asking === "REFUSE" && (
+          <ReasonField
+            value={reason}
+            onChange={setReason}
+            disabled={pending}
+            hint="warehouse.refuseReason.hint"
+          />
+        )}
+      </ConfirmDialog>
     </div>
   );
 }
