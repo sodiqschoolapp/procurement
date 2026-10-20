@@ -4,6 +4,7 @@ import { afterAll, describe, expect, inject, it } from "vitest";
 import { seed } from "../scripts/seed.mjs";
 import { endTrial } from "../scripts/trial-end.mjs";
 import { FIRST_HEAD_LOCK } from "../scripts/first-head.mjs";
+import { refusalOf } from "./helpers/database-error";
 import { createTestDatabase, dropTestDatabase } from "./helpers/test-database";
 
 // build-plan 9.4, Done when: "a database test shows that the reset empties a database with demo
@@ -192,5 +193,42 @@ describe("the seed after the end of the trial (plan of 9.4, decided item 3)", ()
       "select count(*)::int as count from users",
     );
     expect(users.rows[0]!.count).toBe(0);
+  });
+});
+
+// Plan of 9.4, decided item 2 (Look first): the end of the trial is one row at most. The primary
+// key on `id` and `trial_end_one_row_check` keep it so; each case tries the forbidden write
+// directly on a migrated database and writes nothing (.claude/rules/database.md; CLAUDE.md rule 5).
+describe("the trial_end record holds one row at most (plan of 9.4, decided item 2)", () => {
+  const rows = async (client: pg.Client) =>
+    (await client.query<{ count: number }>("select count(*)::int as count from trial_end")).rows[0]!
+      .count;
+
+  it("refuses a row whose id is false (trial_end_one_row_check)", async () => {
+    const client = await connect((await freshDatabase()).url);
+
+    const refusal = await refusalOf(
+      client.query("insert into trial_end (id, ended_at) values (false, $1)", [MOMENT]),
+    );
+
+    expect(refusal).toMatchObject({
+      code: "23514",
+      constraint: "trial_end_one_row_check",
+      table: "trial_end",
+    });
+    expect(await rows(client)).toBe(0);
+  });
+
+  it("refuses a second row with the default id (trial_end_pkey)", async () => {
+    const client = await connect((await freshDatabase()).url);
+    await client.query("insert into trial_end (ended_at) values ($1)", [MOMENT]);
+
+    const refusal = await refusalOf(
+      client.query("insert into trial_end (id, ended_at) values (true, $1)", [LATER]),
+    );
+
+    expect(refusal).toMatchObject({ code: "23505", constraint: "trial_end_pkey" });
+    const record = await client.query<{ ended_at: Date }>("select ended_at from trial_end");
+    expect(record.rows.map((row) => row.ended_at.toISOString())).toEqual([MOMENT.toISOString()]);
   });
 });
