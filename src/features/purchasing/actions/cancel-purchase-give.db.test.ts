@@ -260,6 +260,40 @@ describe("A record given straight to the department cannot be cancelled while it
     expect(await reversalsOf(record.id)).toBe(0);
   });
 
+  it("after a Return its issue cannot be reversed either; the Return reversed, then the issue, then the cancel goes through: 50, 60, 50, 60, 50 (09 Issue 3; D57; 5.4b item 2's gap)", async () => {
+    const s = await scene();
+    await receive(s.branch.id, s.notebooks.variantId, "50", 1_000n, s.owner.id);
+    const order = await openOrder(s);
+    const record = (await buy(s, [{ order, give: true }])).recordOf(order);
+    const issue = await issueOf(record.id);
+    const back = await postDocument({
+      type: "RETURN",
+      branchId: s.branch.id,
+      departmentId: s.department.id,
+      createdBy: s.owner.id,
+      lines: [{ variantId: s.notebooks.variantId, qty: "10" }],
+    });
+    expect(await stockOf(s)).toBe("60.000");
+
+    const reverse = (documentId: string) =>
+      runAction(reverseStockDocument, s.owner.id, { documentId, reason: REASON });
+    const refused = await reverse(issue.id);
+    expect(refused).toMatchObject({ ok: false, error: { code: "invalid_input" } });
+    if (refused.ok) throw new Error("refused");
+    expect(Object.values(refused.error.fields ?? {})).toEqual(["errors.field.reverseOverHeld"]);
+    expect(Object.values(refused.error.available ?? {})).toEqual(["0.000"]);
+    expect(await stockOf(s)).toBe("60.000");
+    expect((await issueOf(record.id)).status).toBe("POSTED");
+
+    expect((await reverse(back.documentId)).ok).toBe(true);
+    expect(await stockOf(s)).toBe("50.000");
+    expect((await reverse(issue.id)).ok).toBe(true);
+    expect(await stockOf(s)).toBe("60.000");
+    expect((await cancelRecord(s, order, record.id)).ok).toBe(true);
+    expect(await stockOf(s)).toBe("50.000");
+    expect(await receivedBy(s)).toBe("0.000");
+  });
+
   it("Cancel trip with one ticked record whose issue is posted cancels none, naming only that order (07 Fixing a mistake 1; 06 rule 8)", async () => {
     const s = await scene();
     const pens = await insertItem();

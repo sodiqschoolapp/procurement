@@ -13,7 +13,8 @@ import { E2E_ROLES, e2eDatabaseUrl, serverDatabaseUrl } from "./global-setup";
 // dialog lists the line, Confirm waits for a reason of 5, and afterwards the issue carries
 // "Reversed" and the stock is back. Run at 375 px and at 1440 px by the two projects. A receipt
 // of 5 and an issue of 2 are written straight into the tables, as createDocument() and
-// postMovement() write them.
+// postMovement() write them. Plan of 5.7b: once the department returned 1 of the 2, the dialog
+// names the line it holds only 1 of, says to reverse the return first, and offers no press.
 
 type Person = { username: string; password: string };
 
@@ -29,8 +30,11 @@ async function withDatabase<T>(work: (client: pg.Client) => Promise<T>): Promise
   }
 }
 
-/** An item of EA with 5 received and 2 issued to a department by the EA Manager. */
-async function seedIssue() {
+/**
+ * An item of EA with 5 received and 2 issued to a department by the EA Manager; with `returned`,
+ * a return of 1 from that department after it.
+ */
+async function seedIssue(returned = false) {
   return withDatabase(async (client) => {
     await client.query("begin");
     try {
@@ -92,10 +96,37 @@ async function seedIssue() {
          values ($1, $2, 'ISSUE', -2, 4000, 3, $3, $4, now())`,
         [branchId, variantId, line.rows[0]!.id, managerId],
       );
+      if (returned) {
+        const back = await client.query<{ id: string }>(
+          `insert into stock_documents (number, type, branch_id, department_id, doc_date, status,
+                                        client_key, created_by, created_at)
+           values ($1, 'RETURN', $2, $3, (now() at time zone 'Asia/Tashkent')::date, 'POSTED',
+                   $4, $5, now())
+           returning id`,
+          [
+            `RET-EA-26-${9_000_000 + Math.floor(Math.random() * 999_999)}`,
+            branchId,
+            departmentId,
+            randomUUID(),
+            managerId,
+          ],
+        );
+        const backLine = await client.query<{ id: string }>(
+          `insert into stock_document_lines (document_id, variant_id, qty, created_at)
+           values ($1, $2, 1, now()) returning id`,
+          [back.rows[0]!.id, variantId],
+        );
+        await client.query(
+          `insert into stock_movements (branch_id, variant_id, type, qty_delta, unit_cost,
+                                        balance_after, document_line_id, created_by, created_at)
+           values ($1, $2, 'RETURN', 1, 4000, 4, $3, $4, now())`,
+          [branchId, variantId, backLine.rows[0]!.id, managerId],
+        );
+      }
       await client.query(
         `insert into stock_balances (branch_id, variant_id, qty, avg_cost, created_at, updated_at)
-         values ($1, $2, 3, 4000, now(), now())`,
-        [branchId, variantId],
+         values ($1, $2, $3, 4000, now(), now())`,
+        [branchId, variantId, returned ? 4 : 3],
       );
       await client.query("commit");
       return { name, number, variantId, branchId };
@@ -157,4 +188,34 @@ test("the Manager reverses their issue from the item card with a reason: the iss
       () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
     ),
   ).toBe(false);
+});
+
+test("after a return of 1 of the 2, the dialog names the line held only once, says to reverse the return first, and its Reverse stays disabled (09 Issue to a department 3; plan of 5.7b)", async ({
+  page,
+}) => {
+  const seeded = await seedIssue(true);
+  await signIn(page, E2E_ROLES.MANAGER);
+  await page.goto(`/warehouse/items/${seeded.variantId}?branch=${seeded.branchId}`);
+  await expect(page.getByRole("heading", { name: seeded.name })).toBeVisible();
+
+  const issueRow = page
+    .getByRole("row")
+    .filter({ hasText: uz.warehouse.item.types.ISSUE })
+    .filter({ hasText: seeded.number });
+  await issueRow.getByRole("button", { name: uz.warehouse.reverse.button }).click();
+
+  const dialog = page.getByRole("alertdialog");
+  const held = dialog.locator("[data-held]");
+  await expect(held).toHaveCount(1);
+  await expect(held).toContainText(uz.warehouse.reverse.overHeld.split(":")[1]!.trim());
+  const confirm = dialog.getByRole("button", { name: uz.warehouse.reverse.button });
+  await dialog.locator("[data-reason]").fill("Xato bo'lim");
+  await expect(confirm).toBeDisabled();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+    ),
+  ).toBe(false);
+  await dialog.getByRole("button", { name: uz.common.cancel }).click();
+  await expect(issueRow.locator("[data-reversed]")).toHaveCount(0);
 });

@@ -29,7 +29,7 @@ import { getReversePreview } from "./reverse-preview";
 beforeEach(() => setClock("2031-05-03T06:00:00Z"));
 
 describe("getReversePreview", () => {
-  it("names the number, the department and every line; an issue's line over what the department holds carries that amount", async () => {
+  it("names the number, the department and every line; an issue's line over what the department holds carries that amount, the line the reverse refuses (plan of 5.7b)", async () => {
     const branch = await insertBranch();
     const manager = await insertUser("MANAGER", { branches: [branch.id] });
     const department = await insertDepartment(branch.id, { name: "Sinov bo'lim" });

@@ -2105,4 +2105,20 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 **What the next sessions must know**
 - A purchase record's issue is found by `stock_documents.client_key = purchases.id`; `give_to_requester` is false on records saved before 5.4b.
 
+## 5.7b Reversing an issue after a return (20.10.2026, pull request #146)
+
+**Built**
+- `reverseStockDocument`: the department FOR NO KEY UPDATE (was FOR SHARE), then `lockDocument()`; in `check`, for an ISSUE, `refuseOverHeld()` reads `departmentReceived()` and refuses every line over it (`overReturn()`): `invalid_input`, `lines.<lineId>.qty` = `errors.field.reverseOverHeld`, `available` = what is held. A return reverses as before.
+- The Reverse dialog: such a line in red, "reverse the return first", Reverse disabled; the server's refusal as a toast (`warehouse.reverse.overHeld`, `overHeldShort`; the old `held` warning is gone).
+
+**Left out, and the task that brings it**
+- `returnStock` takes the department FOR UPDATE and can deadlock (40P01) with a "Give straight to requester" purchase of the same department and item: no task; on issue #9.
+
+**Open for the owner**
+- None.
+
+**What the next sessions must know**
+- A department lock that a foreign-key insert can meet under a balance lock is FOR NO KEY UPDATE, never FOR UPDATE: a "Give straight" purchase locks the balance, then inserts an ISSUE pointing at the department (FOR KEY SHARE).
+- A reverse of an issue after a return: reverse the return first (09 Issue 3). Test scenes that reverse an issue after an unreversed return now get `reverseOverHeld`.
+
 The next task is 9.4.

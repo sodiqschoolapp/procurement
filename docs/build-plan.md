@@ -674,7 +674,7 @@ Proof that it works, then the real environment and the real data.
   - **Done when:** a database test per item names its rule and fails without its fix: a record with the tick reads `give_to_requester` true and one without reads false; with 50 notebooks in CHL, a record of 10 with the tick cannot be cancelled while its issue is posted (stock stays 50 and the issue stays), and after the issue is reversed the cancel leaves 50 and the department's received count back where it was.
   - Added by the owner on 20.10.2026 (D56): the money and stock audit.
 
-- [ ] **5.7b Reversing an issue after a return**
+- [x] **5.7b Reversing an issue after a return**
   - **Read:** `09-warehouse.md` (Issue to a department: 3; Other documents: Return); `docs/decisions.md` (D57; 5.7 item 2, which this reverses; 5.4b item 2).
   - **Build:** The reverse of an issue (`src/features/warehouse/actions/reverse.ts`, `reverseAllows()` or a rule beside it in `src/domain/`) is refused, under the locks it already takes, when a line is more than the department's net received amount of that subtype (`departmentReceived()`), the message naming the line, what the department holds, and "reverse the return first"; the warning of 5.7 item 2 for an issue goes. A return keeps its warning and comment (09 Return). This also closes the gap left open by 5.4b item 2 (an issue "given straight" reversed after a return).
   - **Done when:** a database test names the rule and fails without the fix: 10 notebooks issued to Maths, 4 returned, the reverse of the issue is refused and stock stays where it is; after the return is reversed, the issue's reverse goes through and stock is back to before the issue; an issue with nothing returned reverses as today.

@@ -2896,6 +2896,25 @@ Choices made during the build:
 
 - The permission review's Should fix 1 (a hand-made issue whose browser key equals a purchase record's id would block that record's cancel) is not built: it needs a random UUID of a record in the user's own branch, it only blocks (no stock or money goes wrong), the refusal names that issue, and reversing it unblocks. Reported for the reviewer.
 
+### 5.7b Reversing an issue after a return (20.10.2026)
+
+The plan's decisions as the plan review of 20.10.2026 confirmed them (its two corrections applied: the header comment of `reverse.ts` rewritten; the Done-when test run once before the fix and seen to fail), and those of the build. The Look first items come first.
+
+1. **Look first** (stock rule). An issue's reverse is refused when a line's quantity is more than `departmentReceived()` of its subtype in the document's branch, which counts this issue itself; equal passes. One line over refuses the whole reverse (5.7 item 6; `CLAUDE.md` rule 3). 09 Issue to a department 3; D57.
+2. **Look first** (lock order; changes 5.7 item 3). The reverse takes the department FOR NO KEY UPDATE, not FOR SHARE: under FOR SHARE two reverses of two issues of one department both read the same held amount and both pass (issues 5 and 5, return 2: the department at -2, stock 2 too high). FOR NO KEY UPDATE serializes two reverses, a reverse and a return, a reverse and an issue, and lets through the FOR KEY SHARE of a foreign-key check, so it does not deadlock with a "Give straight" purchase (FOR UPDATE would: seen as 40P01 in the build). Order: department, document, balances.
+3. **Look first** (stock rule; reverses 5.7 item 2, D57). An issue's over-held warning and its reason-as-comment are gone; a return keeps its warning and comment (09 Return).
+4. The check runs for an ISSUE only (09 Issue 3 names the issue; a return only raises what is held; the other types have no department).
+5. The rule is `overReturn()`, already the preview's comparison; no new function (D44).
+6. The refusal is `invalid_input` on `lines.<lineId>.qty` with `available`, the shape of `reverseStockShort`; the ledger's short-stock check stays behind it.
+7. The item card and the document page still offer Reverse on such an issue (the amounts would need a read per row); the dialog names the line, says to reverse the return first, and disables its Reverse (`.claude/rules/ui.md`, a refusal only the server would give is not offered).
+8. No audit row, notification or history event (5.7 item 5).
+
+Choices made during the build:
+
+- **Look first** (a test changed because a requirement changed, D57): 5.7's test "an issue partly returned still reverses, its reason the comment" (review of 5.7's plan, correction 1) is replaced by the Done-when test of the refusal.
+- The read of what is held is in the `check` step, after the lock step and before `write`.
+- The dialog's line is red (`text-destructive`), no longer the warning colour: it is a refusal now.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

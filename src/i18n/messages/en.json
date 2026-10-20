@@ -93,6 +93,7 @@
       "overReturn": "More than this department received.",
       "overReturnComment": "A line is more than the department received: write a comment.",
       "reverseStockShort": "Not enough in stock to reverse: the items have left again.",
+      "reverseOverHeld": "More than the department holds: reverse the return first.",
       "unfinishedOrders": "The branch still has unfinished orders.",
       "stockLeft": "The branch still has stock.",
       "transfersInTransit": "A transfer from or to the branch is still in transit.",
@@ -2285,8 +2286,9 @@
         "DIRECT_ENTRY": "These items leave stock and the direct entry is marked Reversed. This cannot be undone.",
         "COUNT": "Each item's stock goes back by its correction and the count is marked Reversed. This cannot be undone."
       },
-      "held": "The department holds only {held} of it: say why in the reason.",
+      "overHeld": "The department holds only {held} of it: reverse the return first.",
       "short": "{item}: only {left} left in stock. Nothing was reversed.",
+      "overHeldShort": "{item}: the department holds only {held}. Reverse the return first. Nothing was reversed.",
       "done": "{number} reversed",
       "reasonHint": "A reason is required: {min} to {max} characters. {count} / {max}."
     },

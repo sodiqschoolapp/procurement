@@ -16,9 +16,9 @@ import { readSnapshot } from "@/server/read-snapshot";
 // 11-screens-and-ux.md rule 6, "state the result"; plan of 5.7, decided item 6): the document's
 // number, department and every line, since one press reverses them all. Under
 // `stock.return_reverse` on the document's branch, read from the database; another branch or an
-// unknown id is "Not found" (03 rule 1); a document reverseAllows() refuses is "forbidden". On an issue, a line more than the department now holds
-// carries that amount: the dialog warns, as a return over what was received does (09 Other
-// documents, Return; review of the plan, correction 1, Look first), and the reason is the comment.
+// unknown id is "Not found" (03 rule 1); a document reverseAllows() refuses is "forbidden". On an
+// issue, a line more than the department now holds carries that amount: the action refuses such a
+// reverse (09 Issue to a department 3; plan of 5.7b), so the dialog names it and offers no press.
 
 export type ReverseLine = {
   id: string;
@@ -32,7 +32,10 @@ export type ReverseLine = {
    */
   qty: string;
   unitShortName: string;
-  /** On an issue whose line is more than the department holds: what it holds; else null. */
+  /**
+   * On an issue whose line is more than the department holds: what it holds, and the reverse is
+   * refused (plan of 5.7b); else null.
+   */
   held: string | null;
 };
 
