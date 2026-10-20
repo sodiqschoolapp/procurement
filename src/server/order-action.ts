@@ -11,6 +11,7 @@ import type { db as Database } from "@/server/db/client";
 import { orderActions, orderEvents, orders } from "@/server/db/schema";
 
 import { ActionError, describeForLog } from "./action";
+import { reportError } from "./error-report";
 import { fieldErrors } from "./action-input";
 import {
   type ActionFailure,
@@ -450,6 +451,7 @@ export function ordersFailure(name: string, error: unknown): { ok: false; error:
   if (error instanceof ActionError) return failure(error.code, error.fields);
   if (error instanceof AuthorizationError) return failure(error.kind);
   console.error(`Action ${name} failed: ${describeForLog(error)}`);
+  void reportError(error, `action ${name}`);
   return failure("unexpected");
 }
 

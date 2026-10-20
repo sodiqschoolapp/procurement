@@ -20,7 +20,21 @@ async function readTimeZone(): Promise<string> {
   return timezone;
 }
 
-export async function GET(): Promise<Response> {
+/** The error the owner's check of 9.3 raises (docs/monitoring.md). */
+export const FORCED_ERROR_MESSAGE = "Forced error for the monitoring check";
+
+/**
+ * Whether this request asks for the forced error of 9.3 (plan decision 10): only with
+ * FORCED_ERROR=on in the environment and the query `forced-error`. App Platform's and
+ * UptimeRobot's checks never send that query, and without the variable nothing changes.
+ */
+function forcesError(request: Request | undefined): boolean {
+  if (process.env.FORCED_ERROR !== "on" || !request) return false;
+  return new URL(request.url).searchParams.has("forced-error");
+}
+
+export async function GET(request?: Request): Promise<Response> {
+  if (forcesError(request)) throw new Error(FORCED_ERROR_MESSAGE);
   const answer = await checkHealth(readTimeZone);
   return Response.json(answer.body, {
     status: answer.httpStatus,

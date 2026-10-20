@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 
 import { tickOf } from "@/domain/schedule";
 import { describeForLog } from "@/server/action";
+import { reportError } from "@/server/error-report";
 import { now } from "@/server/clock";
 import { db } from "@/server/db/client";
 import { scheduledJobs } from "@/server/db/schema";
@@ -32,6 +33,7 @@ export async function runDueJobs(jobs: readonly Job[]): Promise<Record<string, J
     await makeMissingRows(jobs);
   } catch (error) {
     console.error(`Scheduler could not make the job rows: ${describeForLog(error)}`);
+    void reportError(error, "scheduler job rows");
     for (const job of jobs) outcomes[job.name] = "error";
     return outcomes;
   }
@@ -41,6 +43,7 @@ export async function runDueJobs(jobs: readonly Job[]): Promise<Record<string, J
     } catch (error) {
       // The record itself could not be written: nothing of this round is saved for the job.
       console.error(`Job ${job.name} could not be recorded: ${describeForLog(error)}`);
+      void reportError(error, `job ${job.name}`);
       outcomes[job.name] = "error";
     }
   }
@@ -80,6 +83,7 @@ async function runOne(job: Job): Promise<JobOutcome> {
       // The failure is recorded under the lock that is still held, so no other instance runs
       // this tick again (review of the plan, correction 1). Not tried again until the next tick.
       console.error(`Job ${job.name} failed: ${describeForLog(error)}`);
+      void reportError(error, `job ${job.name}`);
       await tx
         .update(scheduledJobs)
         .set({ schedule: job.schedule, lastFailedTick: tick, lastFailedAt: now() })
