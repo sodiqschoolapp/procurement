@@ -23,7 +23,7 @@ The stack is one TypeScript codebase on Next.js and PostgreSQL, chosen because C
 | Charts | Recharts |  |
 | Numbers | decimal.js for quantity × price; money stored as whole numbers | No floating-point errors. |
 | Tests | Vitest for unit and database tests, Playwright for full flows | See section 15. |
-| Running it | DigitalOcean, Frankfurt: App Platform runs the app's Docker image, Managed PostgreSQL holds the data. Cloudflare R2 holds the files. Docker Compose with MinIO on the developer's computer | The managed database is backed up daily and can be restored to any moment of the last 7 days. A weekly copy is also saved to R2. |
+| Running it | DigitalOcean, Frankfurt: App Platform runs the app's Docker image, Managed PostgreSQL holds the data. Cloudflare R2 holds the files. Docker Compose with MinIO on the developer's computer | The managed database is backed up daily and can be restored to any moment of the last 7 days. A weekly copy is also saved to R2, in a bucket of its own; if it fails, every active Head is told and it is tried again the next night, and the Head's Settings page shows the date of the last copy. |
 | Scheduled jobs | A scheduler inside the app, guarded by a database lock | Runs the reminders, the 5-minute analytics refresh and the nightly stock check. The lock makes sure a job never runs twice at once. |
 
 ## Architecture rules

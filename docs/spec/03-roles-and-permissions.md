@@ -17,7 +17,7 @@ Four roles exist, and what each user sees is limited to their branches on the se
 1. Every read and every write checks role and branch on the server. Opening the address of another branch's order shows "Not found".
 2. A branch has exactly one Principal. It can have several Managers and several Finance users; when users share a role, any of them can act and the first action wins.
 3. Tasks belong to a role in a branch, not to a person. If one Finance user is away, another Finance user of that branch sees the same task. The Head can replace a branch's Principal at any time, for example with an acting Principal during leave. Waiting orders pass to the new Principal, and past approvals keep the old name.
-4. At least one active Head must always exist. The last one cannot be deactivated.
+4. At least one active Head must always exist. The last one cannot be deactivated. A Head who forgot the password gets a new one from a command run in the hosting console, which signs that Head out everywhere and writes an audit row.
 5. The Head sees a warning when a branch has no active Manager, Principal or Finance user.
 6. When the Head creates an order, the Head step is approved automatically and logged as "Created by Head".
 7. An order has one owner: the Manager who created it. The Head can move ticked orders to another Manager of the same branch, but only orders whose cash count is zero.
@@ -67,6 +67,7 @@ In the permission matrix below, a "Yes" for the Manager means "yes, when that ri
 | Ask for a write-off or stock correction | Yes | Yes, own branches | No | No |
 | Approve a write-off or stock correction | Yes | No | No | No |
 | See orders, stock and reports | All branches | Own branches | Own branch | Own branches |
+| See every Manager's cash (Money with managers) and the Head's price notes | All branches | Own cash only | No | Own branches |
 | Export to Excel, download PDF, print | Yes | Yes | Yes | Yes |
 | Enter stock directly, without an order | Yes | No | No | No |
 | Add a new price for a product | Yes | No | No | No |

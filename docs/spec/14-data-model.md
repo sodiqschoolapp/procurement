@@ -91,8 +91,9 @@ stock_balances       branch_id, variant_id, qty CHECK (qty >= 0), avg_cost, upda
                      KEY (branch_id, variant_id)
 stock_documents      number UNIQUE, type [ISSUE|RETURN|TRANSFER|WRITE_OFF|COUNT|DIRECT_ENTRY],
                      branch_id, to_branch_id, department_id, received_by_name, doc_date,
-                     status [PENDING_APPROVAL|POSTED|IN_TRANSIT|RECEIVED|REJECTED|REVERSED],
-                     reason, comment, client_key UNIQUE, created_by, decided_by, decided_at
+                     status [PENDING_APPROVAL|POSTED|IN_TRANSIT|RECEIVED|REJECTED|REVERSED|CANCELLED],
+                     reason, comment, client_key UNIQUE, created_by, decided_by, decided_at,
+                     decision_reason
 stock_document_lines document_id, variant_id, qty, counted_qty, received_qty, unit_cost
 stock_movements      branch_id, variant_id,
                      type [RECEIPT|ISSUE|RETURN|TRANSFER_OUT|TRANSFER_IN|WRITE_OFF|
@@ -104,7 +105,7 @@ stock_movements      branch_id, variant_id,
 ## System
 
 ```text
-notifications        user_id, type, params JSONB, link, read_at
+notifications        user_id, branch_id (empty for a notice of no branch), type, params JSONB, link, read_at
 settings             key KEY, value JSONB
 audit_log            actor_id, action, entity, entity_id, before JSONB, after JSONB
 sessions, accounts, verifications                            -- created by the login library

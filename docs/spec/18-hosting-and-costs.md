@@ -16,7 +16,7 @@ The app and the database are on DigitalOcean, in its Frankfurt data centre, and 
 | 5 | Claude plan with Claude Code | Builds and later changes the app. | You already have it | Yes |
 | 6 | GitHub account | Keeps the code and its history. DigitalOcean reads new versions from it. | Free plan | Yes |
 | 7 | ~~Test copy of the app: a second 1 GiB container and a development database~~ | ~~New versions are tried here before staff see them.~~ | None | No. Dropped on 19.10.2026: the live app is tried with invented data before the real data, then emptied. |
-| 8 | Error and uptime alerts, for example Sentry and UptimeRobot | Tell you when something breaks before a user calls. | Free plans are enough to start | Optional |
+| 8 | Error and uptime alerts, for example Sentry and UptimeRobot | Tell you when something breaks before a user calls. | Free plans are enough to start | Yes, from the trial (owner, 20.10.2026) |
 | 9 | Next.js, PostgreSQL and every library in section 13 | The building blocks. | Free, open source | Yes |
 
 - **Total, required:** $25 per month from the day the live app is set up (task 9.4), about $300 per year. Nothing runs before it, and nothing runs beside it.

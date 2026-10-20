@@ -55,8 +55,8 @@ Each move applies to one order. An action on ticked orders makes the same move o
 | Any "Waiting for" step | Send back | The approver of that step | Sent back for editing | Reason; optional note per order |
 | Any "Waiting for" step | Reject | The approver of that step | Rejected | Reason |
 | Waiting for Head | Take back | Owner | Draft | Only before the Head decides. The number is kept. |
-| Sent back for editing | Submit again | Owner | Waiting for Head | Revision number goes up by 1 |
-| Any "Waiting for" step, Sent back | Cancel | Owner or Head | Cancelled | Reason |
+| Sent back for editing | Submit again | Owner or Head | Waiting for Head | Revision number goes up by 1 |
+| Any "Waiting for" step, Sent back, Draft with a number (taken back) | Cancel | Owner or Head | Cancelled | Reason |
 | Open | Close (exact match) | Owner or Head | Closed | Section 8 rules |
 | Open | Send to settlement | Owner or Head | Waiting for settlement | The order's buying is finished (section 7) |
 | Waiting for settlement | Send back for correction | Finance | Open | Reason |

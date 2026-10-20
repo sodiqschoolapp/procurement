@@ -89,7 +89,7 @@ Every term the spec defines, in the spec's own words, with the file that defines
 | Issue | Giving items to a department. Numbered like `ISS-CHL-26-0031`. | `09-warehouse.md` |
 | Direct entry | Stock the Head puts in without an order. Numbered like `ENT-CHL-26-0004`. | `09-warehouse.md` |
 | Reverse | Fixing a wrong document by writing the opposite movement, with a reason. | `09-warehouse.md` |
-| Transfer | Moving stock to another branch. "In transit" until the receiving Manager enters what arrived. | `09-warehouse.md` |
+| Transfer | Moving stock to another branch. "In transit" until the receiving Manager enters what arrived, or the sender or the Head cancels it. | `09-warehouse.md` |
 | Write-off | Removing stock (damaged, expired, lost, returned to supplier). The Manager asks; the Head approves. | `09-warehouse.md` |
 | Stock count | Typing counted quantities for a branch or a category; the Head approves the differences as corrections. | `09-warehouse.md` |
 | Give straight to requester | A tick on a purchase record that also creates an issue to the order's department. | `07-purchasing.md` |
@@ -104,7 +104,7 @@ Every term the spec defines, in the spec's own words, with the file that defines
 | `client_key` | The browser-made id that makes repeated saves safe. | `14-data-model.md`, `developer-rules.md` rule 8 |
 | Version | A number on an order that rises on every change. A write with an old version is refused. | `developer-rules.md` rule 9 |
 | Business date | A date in the `Asia/Tashkent` time zone. Timestamps are stored in UTC. | `developer-rules.md` rule 10 |
-| Password | Created by the Head, typed or generated, and renewed by the Head at any time; a renewal signs that user out on every device at once. Users cannot change their own. There are no password rules. | `02-assumptions.md` A8, `13-technology.md` |
+| Password | Created by the Head, typed or generated, and renewed by the Head at any time; a renewal signs that user out on every device at once. Users cannot change their own. A Head's password can also be renewed from a command in the hosting console (03 rule 4). There are no password rules. | `02-assumptions.md` A8, `13-technology.md` |
 | Session | Ends 24 hours after sign-in. Several devices can be signed in at once. | `02-assumptions.md` A8, `13-technology.md` |
 | Bell | The in-app notification list with an unread count. No messenger, email or SMS is used. | `10-notifications-analytics-reports.md` |
 | School year | A period choice in Analytics. Its first day is set in Settings; hidden until set. | `10-notifications-analytics-reports.md` |

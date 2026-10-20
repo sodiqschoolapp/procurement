@@ -20,7 +20,7 @@ Only the Head creates and edits catalogs; everyone else picks from them. "Catego
 ## Rules
 
 1. **Subtype rule.** Inside the database every product has at least one subtype. A product without subtypes gets one hidden subtype called "default". Orders and stock always point to a subtype, so there is one rule everywhere.
-2. **Nothing used is deleted.** Entries are deactivated instead. Inactive entries leave the pickers but stay visible in old records.
+2. **Nothing used is deleted.** Entries are deactivated instead. Inactive entries leave the pickers but stay visible in old records. An inactive product or subtype can still be issued, written off and transferred up to the stock the branch holds, and returned by a department that received it; the stock pickers list it marked "inactive". It can no longer be ordered or bought.
 3. **No duplicates.** Names are unique inside their catalog, ignoring capital letters and extra spaces. Subtype names are unique inside a product; department names inside a branch.
 4. **Price memory.** Each subtype has one reference price, set by the Head. When a price changes, the Head adds the new price with a short note, and older prices stay in the price history. The system also saves every real purchase price. When recent purchases differ from the reference price by more than 20%, the Head sees a prompt to update it in one click. New prices for many products can be loaded at once from Excel.
 5. **Minimum stock.** The Head, or a Manager for their own branches, can set a minimum level per subtype per branch. It drives the low-stock alert in section 9.

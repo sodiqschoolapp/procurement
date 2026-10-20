@@ -34,7 +34,7 @@ The Head can put items into any branch's stock without an order. This is how eve
 1. A few items are typed in a form. Many items are imported from an Excel template, with the same preview and error check as catalog imports.
 2. Each entry gets a number like `ENT-CHL-26-0004`, appears in the item card marked "Direct entry", and is written to the audit log.
 3. A wrong entry is fixed with "Reverse", like any other document.
-4. Only the Head can do this. For Managers, stock comes in through a purchase record, a return or a transfer.
+4. Only the Head can do this. For Managers, stock comes in through a purchase record, a return or a transfer. The entry's page shows the Head its cost per unit.
 5. The stock value report shows direct entries as their own line, so they are easy to tell from purchases.
 
 ## Issue to a department
@@ -57,8 +57,8 @@ This is the function you described, extended so one document can hold several it
 ## Other documents
 
 - **Return from a department.** Pick the department, items and quantities; stock goes up. Returning more than that department ever received shows a warning and needs a comment.
-- **Transfer.** The sender picks the other branch and the items; stock leaves the sender at once and the transfer shows "In transit". The transfer gets a number like `TRF-CHL-26-0007` and a PDF transfer note naming who sent the items and who received them, as typed, with no signature lines. The receiving Manager enters what really arrived. Any shortage becomes a write-off request "Lost in transfer" on the sending branch for the Head to decide.
-- **Write-off.** The Manager picks items, quantities and a reason from a fixed list plus a comment. Stock changes only after the Head approves.
+- **Transfer.** The sender picks the other branch and the items; stock leaves the sender at once and the transfer shows "In transit". The transfer gets a number like `TRF-CHL-26-0007` and a PDF transfer note naming who sent the items and who received them, as typed, with no signature lines. The receiving Manager enters what really arrived. Until then the sender or the Head can cancel the transfer with a reason, and the stock goes back to the sender at the cost it left with. Any shortage becomes a write-off request "Lost in transfer" on the sending branch for the Head to decide.
+- **Write-off.** The Manager picks items, quantities and a reason from a fixed list plus a comment. Stock changes only after the Head approves. A refusal of a write-off or a count correction carries a reason, as a rejected order does, and the Manager sees it.
 - **Stock count.** The Manager starts a count for a branch or a category and types the counted quantities. The system shows the differences, and the Head approves them as corrections. If an item moved between the start of the count and the approval, the system asks the Manager to count that item again.
 
 ## Stock screens
@@ -76,5 +76,6 @@ When a quantity falls to its minimum or below, the item gets a "Low" label and a
 Value is shown in reports only and never affects settlement. Each branch keeps a moving average cost per subtype:
 
 - On a receipt: new average = (old quantity × old average + received quantity × purchase price) ÷ (old quantity + received quantity). Extra costs are not included.
+- A count correction that adds stock to a quantity of 0 comes in at the subtype's last cost in that branch, the average it had before its stock last reached 0; at 0 only when it never had a cost.
 - Issues, write-offs and transfers out use the average at that moment. A transfer arrives at the receiver with the sender's average.
 - A cancelled purchase record removes its quantity at its own price and the average is recalculated. If stock reaches 0, the average resets to 0.
