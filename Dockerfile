@@ -52,7 +52,7 @@ COPY src/server/db/connection-options.mjs ./src/server/db/connection-options.mjs
 # console (8.2), a Head's password renewed from the console (8.2b), and the end of the trial and
 # the first Head, run in the console at 9.5 (9.4). tests/image-files.test.ts checks that every
 # file these import is copied here.
-COPY scripts/db-seed.mjs scripts/seed.mjs scripts/seed-catalogs.mjs scripts/seed-orders.mjs scripts/seed-stock.mjs scripts/first-head.mjs scripts/head-password.mjs scripts/renew-head.mjs scripts/ask-hidden.mjs scripts/storage-check.mjs scripts/ensure-bucket.mjs scripts/db-copy.mjs scripts/trial-end.mjs scripts/trial-reset.mjs scripts/create-first-head.mjs ./scripts/
+COPY scripts/db-seed.mjs scripts/seed.mjs scripts/seed-catalogs.mjs scripts/seed-orders.mjs scripts/seed-stock.mjs scripts/first-head.mjs scripts/head-password.mjs scripts/renew-head.mjs scripts/ask-hidden.mjs scripts/storage-check.mjs scripts/ensure-bucket.mjs scripts/db-copy.mjs scripts/restore-copy.mjs scripts/db-restore.mjs scripts/restore-counts.mjs scripts/db-counts.mjs scripts/trial-end.mjs scripts/trial-reset.mjs scripts/create-first-head.mjs ./scripts/
 COPY src/server/audit-row.mjs ./src/server/audit-row.mjs
 COPY src/server/auth/password-user.mjs ./src/server/auth/password-user.mjs
 COPY src/domain/audit-secrets.mjs ./src/domain/audit-secrets.mjs
