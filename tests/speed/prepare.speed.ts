@@ -57,7 +57,7 @@ it("the speed database is filled, refreshed and consistent (build plan 9.2)", as
     await client.query(`alter database "${SPEED_DATABASE}" reset log_statement`);
     process.env.DATABASE_URL = address;
     const { now } = await import("@/server/clock");
-    const started = Date.now();
+    const started = performance.now();
     await client.query("begin");
     let counts;
     try {
@@ -67,16 +67,16 @@ it("the speed database is filled, refreshed and consistent (build plan 9.2)", as
       await client.query("rollback");
       throw error;
     }
-    console.log(`filled in ${Math.round((Date.now() - started) / 1000)} s:`, counts);
+    console.log(`filled in ${Math.round((performance.now() - started) / 1000)} s:`, counts);
     await client.query("vacuum analyze");
 
     const { db, closeDatabase } = await import("@/server/db/client");
     const { refreshAnalytics } = await import("@/server/jobs/analytics-refresh");
     const { stockCheck } = await import("@/server/jobs/stock-check");
     try {
-      const refreshStarted = Date.now();
+      const refreshStarted = performance.now();
       await db.transaction((tx) => refreshAnalytics(tx));
-      const refreshMs = Date.now() - refreshStarted;
+      const refreshMs = Math.round(performance.now() - refreshStarted);
       mkdirSync("test-results", { recursive: true });
       writeFileSync(REFRESH_FILE, JSON.stringify({ refreshMs, counts }, null, 2));
       console.log(`one analytics refresh: ${refreshMs} ms`);
