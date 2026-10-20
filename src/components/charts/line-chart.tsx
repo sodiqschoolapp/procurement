@@ -27,9 +27,6 @@ export function LineChartBlock({
   label: string;
 }) {
   const router = useRouter();
-  // One point draws an empty-looking chart: the table under it carries the number alone
-  // (redesign of 21.10.2026).
-  if (points.length < 2) return null;
   return (
     <div className="h-64 w-full" aria-hidden="true" data-chart="line" title={label}>
       <ResponsiveContainer width="100%" height="100%">
