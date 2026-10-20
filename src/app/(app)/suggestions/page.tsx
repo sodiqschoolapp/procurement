@@ -67,9 +67,9 @@ export default async function SuggestionsPage({ searchParams }: { searchParams: 
         />
       ) : (
         <>
-          <section className="hidden overflow-x-auto rounded-xl border border-border bg-card text-card-foreground sm:block">
-            <table className="w-full min-w-[40rem] border-collapse text-left text-sm leading-5">
-              <thead className="bg-muted text-small font-semibold text-muted-foreground">
+          <section className="table-cards-panel hidden overflow-x-auto rounded-xl border border-border bg-card text-card-foreground sm:block">
+            <table className="table-cards w-full min-w-[40rem] border-collapse text-left text-sm leading-5">
+              <thead className="border-b border-border bg-muted text-xs font-medium text-muted-foreground">
                 <tr>
                   <th scope="col" className="px-4 py-3">
                     {t("columns.name")}
@@ -94,7 +94,7 @@ export default async function SuggestionsPage({ searchParams }: { searchParams: 
               <tbody>
                 {rows.map((row) => (
                   <tr key={row.id} className="border-t hover:bg-accent/50">
-                    <td className="px-4 py-3 font-semibold">
+                    <td data-card="head" className="px-4 py-3 font-semibold">
                       <Link
                         href={`/suggestions/${row.id}`}
                         className="inline-flex items-center gap-3 underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
@@ -116,13 +116,23 @@ export default async function SuggestionsPage({ searchParams }: { searchParams: 
                         {row.name}
                       </Link>
                     </td>
-                    <td className="px-4 py-3">{row.unitText}</td>
-                    <td className="px-4 py-3" title={row.branchName}>
+                    <td data-label={t("columns.unitText")} className="px-4 py-3">
+                      {row.unitText}
+                    </td>
+                    <td
+                      data-label={t("columns.branch")}
+                      className="px-4 py-3"
+                      title={row.branchName}
+                    >
                       {row.branchCode}
                     </td>
-                    <td className="px-4 py-3">{row.suggestedByName}</td>
-                    <td className="px-4 py-3 tabular-nums">{format.date(row.createdAt)}</td>
-                    <td className="px-4 py-3">
+                    <td data-label={t("columns.by")} className="px-4 py-3">
+                      {row.suggestedByName}
+                    </td>
+                    <td data-label={t("columns.date")} className="px-4 py-3 tabular-nums">
+                      {format.date(row.createdAt)}
+                    </td>
+                    <td data-label={t("columns.status")} className="px-4 py-3">
                       <SuggestionStatusText status={row.status} />
                     </td>
                   </tr>

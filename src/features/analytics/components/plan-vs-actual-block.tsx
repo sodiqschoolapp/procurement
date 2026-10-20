@@ -278,7 +278,7 @@ async function TallyTable({ firstColumn, rows }: { firstColumn: string; rows: Ta
       className="overflow-x-auto rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
     >
       <table className="w-full min-w-[48rem] border-collapse text-left text-sm leading-5">
-        <thead className="bg-muted text-small font-semibold text-muted-foreground">
+        <thead className="border-b border-border bg-muted text-xs font-medium text-muted-foreground">
           <tr>
             <th scope="col" className="px-3 py-2">
               {firstColumn}

@@ -55,9 +55,9 @@ export default async function BranchesPage({
           action={{ label: t("branches.new"), href: "/branches/new", icon: "add" }}
         />
       ) : (
-        <section className="overflow-x-auto rounded-xl border border-border bg-card text-card-foreground">
-          <table className="w-full min-w-[36rem] border-collapse text-left text-sm leading-5">
-            <thead className="bg-muted text-small font-semibold text-muted-foreground">
+        <section className="table-cards-panel overflow-x-auto rounded-xl border border-border bg-card text-card-foreground">
+          <table className="table-cards w-full min-w-[36rem] border-collapse text-left text-sm leading-5">
+            <thead className="border-b border-border bg-muted text-xs font-medium text-muted-foreground">
               <tr>
                 <th scope="col" className="px-4 py-3">
                   {t("branches.code")}
@@ -76,7 +76,7 @@ export default async function BranchesPage({
             <tbody>
               {list.rows.map((branch) => (
                 <tr key={branch.id} className="border-t hover:bg-accent/50">
-                  <td className="px-4 py-3 font-semibold">
+                  <td data-card="head" className="px-4 py-3 font-semibold">
                     <Link
                       href={`/branches/${branch.id}`}
                       className="inline-flex min-h-11 min-w-11 items-center underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:min-h-0"
@@ -84,9 +84,16 @@ export default async function BranchesPage({
                       {branch.code}
                     </Link>
                   </td>
-                  <td className="px-4 py-3">{branch.name}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{branch.address}</td>
-                  <td className="px-4 py-3">
+                  <td data-label={t("branches.name")} className="px-4 py-3">
+                    {branch.name}
+                  </td>
+                  <td
+                    data-label={t("branches.address")}
+                    className="px-4 py-3 text-muted-foreground"
+                  >
+                    {branch.address}
+                  </td>
+                  <td data-label={t("branches.status")} className="px-4 py-3">
                     {branch.isActive ? t("branches.active") : t("branches.inactive")}
                   </td>
                 </tr>

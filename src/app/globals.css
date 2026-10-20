@@ -330,6 +330,66 @@
   }
 }
 
+/* A table that becomes cards below 640 px (docs/design-system.md, Panels and lists: "a list of
+   more than three columns becomes cards, never a table that scrolls sideways"). Each cell names
+   its column through `data-label`, the same words as the header; a cell with `data-card="wide"`
+   takes the card's whole width, `data-card="head"` is the card's title line. */
+@layer components {
+  @media (width < 40rem) {
+    .table-cards {
+      display: block;
+      min-width: 0 !important;
+    }
+    .table-cards > thead {
+      display: none;
+    }
+    .table-cards > tbody {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .table-cards > tbody > tr {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 0.5rem 0.75rem;
+      padding: 0.875rem 1rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-panel);
+      background: var(--card);
+    }
+    .table-cards > tbody > tr > td {
+      display: block;
+      padding: 0 !important;
+      text-align: left !important;
+      white-space: normal !important;
+    }
+    .table-cards > tbody > tr > td:empty {
+      display: none;
+    }
+    .table-cards > tbody > tr > td[data-label]::before {
+      content: attr(data-label);
+      display: block;
+      margin-bottom: 0.125rem;
+      font-size: 0.75rem;
+      line-height: 1rem;
+      color: var(--muted-foreground);
+    }
+    .table-cards > tbody > tr > td[data-card="wide"],
+    .table-cards > tbody > tr > td[data-card="head"] {
+      grid-column: 1 / -1;
+    }
+    .table-cards > tbody > tr > td[data-card="head"] {
+      font-weight: 600;
+    }
+    /* The panel around such a table gives its edge to the cards. */
+    .table-cards-panel {
+      overflow: visible !important;
+      border: 0 !important;
+      background: transparent !important;
+    }
+  }
+}
+
 /* People who ask the system for reduced motion get none (design system "Motion"). */
 @media (prefers-reduced-motion: reduce) {
   *,

@@ -6,6 +6,7 @@ import * as z from "zod";
 import { EmptyState } from "@/components/empty-state";
 import { Icon } from "@/components/icon";
 import { buttonVariants } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { LowLabel } from "@/components/status-label";
 import { cn } from "@/components/utils";
@@ -108,7 +109,6 @@ export default async function StockOnHandPage({ searchParams }: { searchParams: 
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-6">
-      <WarehouseTabs current="stock" role={user.role} />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="flex flex-wrap items-baseline gap-x-3 text-title">
           {t("title")}
@@ -132,6 +132,7 @@ export default async function StockOnHandPage({ searchParams }: { searchParams: 
           )}
         </div>
       </div>
+      <WarehouseTabs current="stock" role={user.role} />
 
       {list.found === 0 && !filtered ? (
         <EmptyState title={t("emptyTitle")} line={t("emptyText")} />
@@ -142,14 +143,14 @@ export default async function StockOnHandPage({ searchParams }: { searchParams: 
             <label htmlFor="stock-search" className="sr-only">
               {t("search")}
             </label>
-            <input
+            <Input
               id="stock-search"
               name="q"
               type="search"
               defaultValue={q}
               placeholder={t("searchHint")}
               maxLength={200}
-              className="h-11 w-full min-w-0 flex-1 rounded-lg border border-input bg-card px-3 text-base leading-6 text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:h-10 sm:max-w-72 sm:text-sm sm:leading-5"
+              className="min-w-0 flex-1 sm:max-w-72"
             />
             <label htmlFor="stock-filter-category" className="sr-only">
               {t("filterCategory")}
@@ -167,7 +168,7 @@ export default async function StockOnHandPage({ searchParams }: { searchParams: 
                 </option>
               ))}
             </Select>
-            <label className="flex h-11 items-center gap-2 px-1 text-sm leading-5 sm:h-10">
+            <label className="flex h-11 items-center gap-2 px-1 text-sm sm:h-9">
               <input
                 type="checkbox"
                 name="low"
@@ -196,9 +197,9 @@ export default async function StockOnHandPage({ searchParams }: { searchParams: 
           {list.rows.length === 0 ? (
             <EmptyState title={t("noResultsTitle")} line={t("noResultsText")} />
           ) : (
-            <section className="overflow-x-auto rounded-xl border border-border bg-card text-card-foreground">
-              <table className="w-full min-w-[56rem] border-collapse text-left text-sm leading-5">
-                <thead className="bg-muted text-small font-semibold text-muted-foreground">
+            <section className="table-cards-panel overflow-x-auto rounded-xl border border-border bg-card text-card-foreground">
+              <table className="table-cards w-full min-w-[56rem] border-collapse text-left text-sm">
+                <thead className="border-b border-border bg-muted text-xs font-medium text-muted-foreground">
                   <tr>
                     <th scope="col" className="w-16 px-4 py-3">
                       <span className="sr-only">{t("columns.photo")}</span>
@@ -241,7 +242,7 @@ export default async function StockOnHandPage({ searchParams }: { searchParams: 
                         className="border-t"
                         data-stock-row={`${row.branchId}:${row.variantId}`}
                       >
-                        <td className="px-4 py-2">
+                        <td className="px-4 py-2 max-sm:hidden">
                           {row.photoFileId ? (
                             // eslint-disable-next-line @next/next/no-img-element -- a private file route, not an asset
                             <img
@@ -258,7 +259,7 @@ export default async function StockOnHandPage({ searchParams }: { searchParams: 
                             </span>
                           )}
                         </td>
-                        <td className="px-4 py-3 font-semibold">
+                        <td className="px-4 py-3 font-semibold" data-card="head">
                           <Link
                             href={`/warehouse/items/${row.variantId}?branch=${row.branchId}`}
                             className="font-semibold text-link underline-offset-2 hover:underline"
@@ -266,18 +267,32 @@ export default async function StockOnHandPage({ searchParams }: { searchParams: 
                             {row.productName}
                           </Link>
                         </td>
-                        <td className="px-4 py-3">{row.subtypeName ?? ""}</td>
-                        <td className="px-4 py-3">{row.branchCode}</td>
-                        <td className="px-4 py-3 text-right whitespace-nowrap tabular-nums">
+                        <td className="px-4 py-3" data-label={t("columns.subtype")}>
+                          {row.subtypeName ?? ""}
+                        </td>
+                        <td className="px-4 py-3" data-label={t("columns.branch")}>
+                          {row.branchCode}
+                        </td>
+                        <td
+                          className="px-4 py-3 text-right whitespace-nowrap tabular-nums"
+                          data-label={t("columns.quantity")}
+                        >
                           <span className="inline-flex items-center gap-2">
                             {row.low && <LowLabel />}
                             {format.quantity(row.quantity)}
                           </span>
                         </td>
-                        <td className="px-4 py-3" title={row.unitName}>
+                        <td
+                          className="px-4 py-3"
+                          title={row.unitName}
+                          data-label={t("columns.measure")}
+                        >
                           {row.unitShortName}
                         </td>
-                        <td className="px-4 py-3 text-right whitespace-nowrap tabular-nums">
+                        <td
+                          className="px-4 py-3 text-right whitespace-nowrap tabular-nums"
+                          data-label={t("columns.minimum")}
+                        >
                           <span className="inline-flex items-center gap-1" data-minimum>
                             {row.minimum === null ? "—" : format.quantity(row.minimum)}
                             {row.canSetMinimum && (
@@ -292,10 +307,13 @@ export default async function StockOnHandPage({ searchParams }: { searchParams: 
                             )}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-right whitespace-nowrap tabular-nums">
+                        <td
+                          className="px-4 py-3 text-right whitespace-nowrap tabular-nums"
+                          data-label={t("columns.value")}
+                        >
                           {format.money(row.value)}
                         </td>
-                        <td className="px-4 py-2 text-right">
+                        <td className="px-4 py-2 text-right" data-card="wide">
                           {row.low && row.canAddDraft && (
                             <AddToDraftButton
                               branchId={row.branchId}

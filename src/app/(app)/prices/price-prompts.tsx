@@ -104,8 +104,8 @@ export function PricePrompts({ rows }: { rows: readonly PromptRow[] }) {
         ))}
       </ul>
 
-      <div className="-mx-6 hidden overflow-x-auto sm:block">
-        <table className="w-full min-w-[44rem] border-collapse text-left text-sm leading-5">
+      <div className="table-cards-panel -mx-6 hidden overflow-x-auto sm:block">
+        <table className="table-cards w-full min-w-[44rem] border-collapse text-left text-sm leading-5">
           <thead className="text-small font-semibold text-muted-foreground">
             <tr>
               <th scope="col" className="px-6 py-2">
@@ -131,18 +131,31 @@ export function PricePrompts({ rows }: { rows: readonly PromptRow[] }) {
           <tbody>
             {rows.map((row) => (
               <tr key={row.key} data-price-prompt className="border-t">
-                <td className="px-6 py-3 font-semibold">{row.title}</td>
-                <td className="px-3 py-3">{row.branchCode}</td>
-                <td className="px-3 py-3 text-right whitespace-nowrap tabular-nums">
+                <td data-card="head" className="px-6 py-3 font-semibold">
+                  {row.title}
+                </td>
+                <td data-label={t("prompt.branch")} className="px-3 py-3">
+                  {row.branchCode}
+                </td>
+                <td
+                  data-label={t("current")}
+                  className="px-3 py-3 text-right whitespace-nowrap tabular-nums"
+                >
                   {row.referenceText}
                 </td>
-                <td className="px-3 py-3 text-right whitespace-nowrap tabular-nums">
+                <td
+                  data-label={t("prompt.average")}
+                  className="px-3 py-3 text-right whitespace-nowrap tabular-nums"
+                >
                   {row.averageText}
                   <span className="block text-small text-muted-foreground">
                     {t("prompt.purchases", { count: row.count })}
                   </span>
                 </td>
-                <td className="px-3 py-3 text-right font-semibold whitespace-nowrap tabular-nums">
+                <td
+                  data-label={t("prompt.difference")}
+                  className="px-3 py-3 text-right font-semibold whitespace-nowrap tabular-nums"
+                >
                   {t("prompt.percent", { percent: row.percent })}
                 </td>
                 <td className="px-6 py-3 text-right">

@@ -5,6 +5,7 @@ import * as z from "zod";
 import { AdminNav } from "@/components/admin-nav";
 import { EmptyState } from "@/components/empty-state";
 import { Icon } from "@/components/icon";
+import { Input } from "@/components/ui/input";
 import { buttonVariants } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { PRODUCT_TYPES } from "@/domain/products";
@@ -113,14 +114,14 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
             <label htmlFor="catalog-search" className="sr-only">
               {t("search")}
             </label>
-            <input
+            <Input
               id="catalog-search"
               name="q"
               type="search"
               defaultValue={q}
               placeholder={t("searchHint")}
               maxLength={200}
-              className="h-11 w-full min-w-0 flex-1 rounded-lg border border-input bg-card px-3 text-base leading-6 text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:h-10 sm:max-w-72 sm:text-sm sm:leading-5"
+              className="min-w-0 flex-1 sm:max-w-72"
             />
             <label htmlFor="product-filter-category" className="sr-only">
               {t("filterCategory")}
@@ -167,9 +168,9 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
           {list.rows.length === 0 ? (
             <EmptyState title={t("noResultsTitle")} line={t("noResultsText")} />
           ) : (
-            <section className="overflow-x-auto rounded-xl border border-border bg-card text-card-foreground">
-              <table className="w-full min-w-[44rem] border-collapse text-left text-sm leading-5">
-                <thead className="bg-muted text-small font-semibold text-muted-foreground">
+            <section className="table-cards-panel overflow-x-auto rounded-xl border border-border bg-card text-card-foreground">
+              <table className="table-cards w-full min-w-[44rem] border-collapse text-left text-sm leading-5">
+                <thead className="border-b border-border bg-muted text-xs font-medium text-muted-foreground">
                   <tr>
                     <th scope="col" className="w-16 px-4 py-3">
                       <span className="sr-only">{t("fields.photoFileId")}</span>
@@ -197,7 +198,7 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
                 <tbody>
                   {list.rows.map((row) => (
                     <tr key={row.id} className="border-t hover:bg-accent/50">
-                      <td className="px-4 py-2">
+                      <td data-card="head" className="px-4 py-2">
                         {row.photoFileId ? (
                           // eslint-disable-next-line @next/next/no-img-element -- a private file route, not an asset
                           <img
@@ -214,7 +215,7 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
                           </span>
                         )}
                       </td>
-                      <td className="px-4 py-3 font-semibold">
+                      <td data-label={t("fields.name")} className="px-4 py-3 font-semibold">
                         <Link
                           href={`/catalog/products/${row.id}`}
                           className="inline-flex min-h-11 min-w-11 items-center underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:min-h-0"
@@ -222,19 +223,32 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
                           {row.name}
                         </Link>
                       </td>
-                      <td className="px-4 py-3">{t(`productType.${row.type}`)}</td>
-                      <td className="px-4 py-3">{row.categoryName}</td>
-                      <td className="px-4 py-3" title={row.unitName}>
+                      <td data-label={t("fields.type")} className="px-4 py-3">
+                        {t(`productType.${row.type}`)}
+                      </td>
+                      <td data-label={t("fields.categoryId")} className="px-4 py-3">
+                        {row.categoryName}
+                      </td>
+                      <td
+                        data-label={t("fields.unitId")}
+                        className="px-4 py-3"
+                        title={row.unitName}
+                      >
                         {row.unitShortName}
                       </td>
-                      <td className="px-4 py-3 text-right whitespace-nowrap tabular-nums">
+                      <td
+                        data-label={t("fields.referencePrice")}
+                        className="px-4 py-3 text-right whitespace-nowrap tabular-nums"
+                      >
                         {row.hasVariants
                           ? t("subtypes.count", { count: row.subtypeCount })
                           : row.referencePrice === null
                             ? ""
                             : format.money(row.referencePrice)}
                       </td>
-                      <td className="px-4 py-3">{row.isActive ? t("active") : t("inactive")}</td>
+                      <td data-label={t("status")} className="px-4 py-3">
+                        {row.isActive ? t("active") : t("inactive")}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

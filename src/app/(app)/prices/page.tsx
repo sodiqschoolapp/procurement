@@ -4,6 +4,7 @@ import * as z from "zod";
 
 import { AdminNav } from "@/components/admin-nav";
 import { EmptyState } from "@/components/empty-state";
+import { Input } from "@/components/ui/input";
 import { buttonVariants } from "@/components/ui/button";
 import { getPricePrompts } from "@/features/catalog/queries/price-prompts";
 import { listPrices } from "@/features/catalog/queries/prices";
@@ -96,14 +97,14 @@ export default async function PricesPage({ searchParams }: { searchParams: Promi
             <label htmlFor="price-search" className="sr-only">
               {t("search")}
             </label>
-            <input
+            <Input
               id="price-search"
               name="q"
               type="search"
               defaultValue={q}
               placeholder={t("searchHint")}
               maxLength={200}
-              className="h-11 w-full min-w-0 flex-1 rounded-lg border border-input bg-card px-3 text-base leading-6 text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:h-10 sm:max-w-72 sm:text-sm sm:leading-5"
+              className="min-w-0 flex-1 sm:max-w-72"
             />
             <button type="submit" className={buttonVariants({ variant: "secondary" })}>
               {tCatalog("find")}
@@ -118,9 +119,9 @@ export default async function PricesPage({ searchParams }: { searchParams: Promi
           {list.rows.length === 0 ? (
             <EmptyState title={tCatalog("noResultsTitle")} line={tCatalog("noResultsText")} />
           ) : (
-            <section className="overflow-x-auto rounded-xl border border-border bg-card text-card-foreground">
-              <table className="w-full min-w-[44rem] border-collapse text-left text-sm leading-5">
-                <thead className="bg-muted text-small font-semibold text-muted-foreground">
+            <section className="table-cards-panel overflow-x-auto rounded-xl border border-border bg-card text-card-foreground">
+              <table className="table-cards w-full min-w-[44rem] border-collapse text-left text-sm leading-5">
+                <thead className="border-b border-border bg-muted text-xs font-medium text-muted-foreground">
                   <tr>
                     <th scope="col" className="px-4 py-3">
                       {t("product")}
@@ -145,7 +146,7 @@ export default async function PricesPage({ searchParams }: { searchParams: Promi
                 <tbody>
                   {list.rows.map((row) => (
                     <tr key={row.variantId} className="border-t hover:bg-accent/50">
-                      <td className="px-4 py-3 font-semibold">
+                      <td data-card="head" className="px-4 py-3 font-semibold">
                         <Link
                           href={`/prices/${row.variantId}`}
                           className="inline-flex min-h-11 min-w-11 items-center underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:min-h-0"
@@ -153,19 +154,29 @@ export default async function PricesPage({ searchParams }: { searchParams: Promi
                           {row.productName}
                         </Link>
                       </td>
-                      <td className="px-4 py-3">{row.subtypeName}</td>
-                      <td className="px-4 py-3 text-right whitespace-nowrap tabular-nums">
+                      <td data-label={t("subtype")} className="px-4 py-3">
+                        {row.subtypeName}
+                      </td>
+                      <td
+                        data-label={t("current")}
+                        className="px-4 py-3 text-right whitespace-nowrap tabular-nums"
+                      >
                         {row.referencePrice === null ? (
                           <span className="text-muted-foreground">{t("noPrice")}</span>
                         ) : (
                           format.money(row.referencePrice)
                         )}
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap tabular-nums">
+                      <td
+                        data-label={t("setOn")}
+                        className="px-4 py-3 whitespace-nowrap tabular-nums"
+                      >
                         {row.setAt ? when(row.setAt) : ""}
                       </td>
-                      <td className="px-4 py-3">{row.setByName}</td>
-                      <td className="px-4 py-3">
+                      <td data-label={t("setBy")} className="px-4 py-3">
+                        {row.setByName}
+                      </td>
+                      <td data-label={tCatalog("status")} className="px-4 py-3">
                         {row.isActive ? tCatalog("active") : tCatalog("inactive")}
                       </td>
                     </tr>

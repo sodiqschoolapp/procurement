@@ -80,9 +80,9 @@ export default async function UsersPage({
           action={{ label: t("users.new"), href: "/users/new", icon: "add" }}
         />
       ) : (
-        <section className="overflow-x-auto rounded-xl border border-border bg-card text-card-foreground">
-          <table className="w-full min-w-[40rem] border-collapse text-left text-sm leading-5">
-            <thead className="bg-muted text-small font-semibold text-muted-foreground">
+        <section className="table-cards-panel overflow-x-auto rounded-xl border border-border bg-card text-card-foreground">
+          <table className="table-cards w-full min-w-[40rem] border-collapse text-left text-sm leading-5">
+            <thead className="border-b border-border bg-muted text-xs font-medium text-muted-foreground">
               <tr>
                 <th scope="col" className="px-4 py-3">
                   {t("users.fullName")}
@@ -104,7 +104,7 @@ export default async function UsersPage({
             <tbody>
               {list.rows.map((row) => (
                 <tr key={row.id} className="border-t hover:bg-accent/50">
-                  <td className="px-4 py-3 font-semibold">
+                  <td data-card="head" className="px-4 py-3 font-semibold">
                     <Link
                       href={`/users/${row.id}`}
                       className="inline-flex min-h-11 min-w-11 items-center underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:min-h-0"
@@ -112,12 +112,16 @@ export default async function UsersPage({
                       {row.fullName}
                     </Link>
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground">{row.username}</td>
-                  <td className="px-4 py-3">{t(`roles.${row.role}`)}</td>
-                  <td className="px-4 py-3">
+                  <td data-label={t("users.username")} className="px-4 py-3 text-muted-foreground">
+                    {row.username}
+                  </td>
+                  <td data-label={t("users.role")} className="px-4 py-3">
+                    {t(`roles.${row.role}`)}
+                  </td>
+                  <td data-label={t("users.branches")} className="px-4 py-3">
                     {row.branches.map((branch) => branch.code).join(", ")}
                   </td>
-                  <td className="px-4 py-3">
+                  <td data-label={t("users.status")} className="px-4 py-3">
                     {row.isActive ? t("users.active") : t("users.inactive")}
                   </td>
                 </tr>

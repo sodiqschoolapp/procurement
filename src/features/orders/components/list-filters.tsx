@@ -363,7 +363,7 @@ export function ListFiltersBar({
                 aria-label={item.remove}
                 title={item.remove}
                 onClick={item.clear}
-                className="flex size-7 items-center justify-center rounded-[5px] text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring max-sm:size-10"
+                className="flex size-7 items-center justify-center rounded-[5px] text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring max-sm:size-11"
               >
                 <Icon name="close" size={16} />
               </button>

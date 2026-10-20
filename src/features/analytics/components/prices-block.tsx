@@ -343,7 +343,7 @@ export function Table({
         className="w-full min-w-[32rem] border-collapse text-left text-sm leading-5"
         data-table={data}
       >
-        <thead className="bg-muted text-small font-semibold text-muted-foreground">
+        <thead className="border-b border-border bg-muted text-xs font-medium text-muted-foreground">
           <tr>
             {headings.map((heading, index) => (
               <th

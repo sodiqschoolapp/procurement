@@ -263,7 +263,8 @@
     "cancel": "Bekor qilish",
     "whyNot": {
       "branch": "Davom etish uchun filialni tanlang.",
-      "fields": "Davom etish uchun har bir maydonni toʻldiring."
+      "fields": "Davom etish uchun har bir maydonni toʻldiring.",
+      "noItems": "Saqlash uchun kamida bitta tovar qoʻshing."
     }
   },
   "unsavedChanges": {

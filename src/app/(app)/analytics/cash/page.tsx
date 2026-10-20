@@ -111,7 +111,7 @@ export default async function AnalyticsCashPage({ searchParams }: { searchParams
       ) : (
         <section className="rounded-xl border border-border bg-card text-card-foreground">
           <table className="w-full border-collapse text-left text-sm leading-5 max-sm:block">
-            <thead className="bg-muted text-small font-semibold text-muted-foreground max-sm:hidden">
+            <thead className="border-b border-border bg-muted text-xs font-medium text-muted-foreground max-sm:hidden">
               <tr>
                 {(["order", "product", "branch", "owner", "status", "since"] as const).map(
                   (column) => (

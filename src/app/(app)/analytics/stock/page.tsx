@@ -89,7 +89,7 @@ export default async function AnalyticsStockPage({ searchParams }: { searchParam
       ) : (
         <section className="rounded-xl border border-border bg-card text-card-foreground">
           <table className="w-full border-collapse text-left text-sm leading-5 max-sm:block">
-            <thead className="bg-muted text-small font-semibold text-muted-foreground max-sm:hidden">
+            <thead className="border-b border-border bg-muted text-xs font-medium text-muted-foreground max-sm:hidden">
               <tr>
                 {COLUMNS.map((column) => (
                   <th key={column} scope="col" className="px-4 py-3">

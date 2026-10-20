@@ -289,7 +289,7 @@ export function ImportForm({
           {rows.length > 0 && (
             <div className="overflow-x-auto rounded-lg border">
               <table className="w-full min-w-[44rem] border-collapse text-left text-sm leading-5">
-                <thead className="bg-muted text-small font-semibold text-muted-foreground">
+                <thead className="border-b border-border bg-muted text-xs font-medium text-muted-foreground">
                   <tr>
                     <th scope="col" className="px-3 py-2 text-right">
                       {t("row")}

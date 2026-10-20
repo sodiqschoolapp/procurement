@@ -86,9 +86,9 @@ export default async function PriceHistoryPage({
         ) : (
           <div
             tabIndex={0}
-            className="-mx-6 overflow-x-auto rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            className="table-cards-panel -mx-6 overflow-x-auto rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
           >
-            <table className="w-full min-w-[36rem] border-collapse text-left text-sm leading-5">
+            <table className="table-cards w-full min-w-[36rem] border-collapse text-left text-sm leading-5">
               <thead className="text-small font-semibold text-muted-foreground">
                 <tr>
                   <th scope="col" className="px-6 py-2 text-right">
@@ -111,13 +111,22 @@ export default async function PriceHistoryPage({
               <tbody>
                 {found.rows.map((row) => (
                   <tr key={row.id} className="border-t">
-                    <td className="px-6 py-3 text-right font-semibold whitespace-nowrap tabular-nums">
+                    <td
+                      data-card="head"
+                      className="px-6 py-3 text-right font-semibold whitespace-nowrap tabular-nums"
+                    >
                       {format.money(row.price)}
                     </td>
-                    <td className="px-3 py-3">{t(`sources.${row.source}`)}</td>
-                    <td className="px-3 py-3">{row.note}</td>
-                    <td className="px-3 py-3">{row.setByName}</td>
-                    <td className="px-6 py-3 whitespace-nowrap tabular-nums">
+                    <td data-label={t("source")} className="px-3 py-3">
+                      {t(`sources.${row.source}`)}
+                    </td>
+                    <td data-label={t("note")} className="px-3 py-3">
+                      {row.note}
+                    </td>
+                    <td data-label={t("who")} className="px-3 py-3">
+                      {row.setByName}
+                    </td>
+                    <td data-label={t("when")} className="px-6 py-3 whitespace-nowrap tabular-nums">
                       {when(row.createdAt)}
                     </td>
                   </tr>

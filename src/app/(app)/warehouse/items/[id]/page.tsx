@@ -151,10 +151,10 @@ export default async function ItemCardPage({
       {card.found === 0 ? (
         <EmptyState title={t("emptyTitle")} line={t("emptyText")} />
       ) : (
-        <section className="overflow-x-auto rounded-xl border border-border bg-card text-card-foreground">
-          <table className="w-full min-w-[46rem] border-collapse text-left text-sm leading-5">
+        <section className="table-cards-panel overflow-x-auto rounded-xl border border-border bg-card text-card-foreground">
+          <table className="table-cards w-full min-w-[46rem] border-collapse text-left text-sm leading-5">
             <caption className="sr-only">{t("summary", { count: card.found })}</caption>
-            <thead className="bg-muted text-small font-semibold text-muted-foreground">
+            <thead className="border-b border-border bg-muted text-xs font-medium text-muted-foreground">
               <tr>
                 <th scope="col" className="px-4 py-3">
                   {t("columns.moment")}
@@ -179,11 +179,13 @@ export default async function ItemCardPage({
             <tbody>
               {card.movements.map((movement) => (
                 <tr key={movement.id} className="border-t">
-                  <td className="px-4 py-3 whitespace-nowrap tabular-nums">
+                  <td data-card="head" className="px-4 py-3 whitespace-nowrap tabular-nums">
                     {format.date(movement.at)} {format.time(movement.at)}
                   </td>
-                  <td className="px-4 py-3">{t(`types.${movement.type}`)}</td>
-                  <td className="px-4 py-3 whitespace-nowrap">
+                  <td data-label={t("columns.movement")} className="px-4 py-3">
+                    {t(`types.${movement.type}`)}
+                  </td>
+                  <td data-label={t("columns.source")} className="px-4 py-3 whitespace-nowrap">
                     {movement.order ? (
                       <Link
                         href={`/orders/${movement.order.id}?tab=purchases`}
@@ -208,10 +210,16 @@ export default async function ItemCardPage({
                       </span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-right whitespace-nowrap tabular-nums">
+                  <td
+                    data-label={t("columns.change")}
+                    className="px-4 py-3 text-right whitespace-nowrap tabular-nums"
+                  >
                     {change(movement.qtyDelta)}
                   </td>
-                  <td className="px-4 py-3 text-right font-semibold whitespace-nowrap tabular-nums">
+                  <td
+                    data-label={t("columns.balance")}
+                    className="px-4 py-3 text-right font-semibold whitespace-nowrap tabular-nums"
+                  >
                     {format.quantity(movement.balanceAfter)}
                   </td>
                   <td className="px-4 py-2 text-right whitespace-nowrap">

@@ -263,7 +263,8 @@
     "cancel": "Cancel",
     "whyNot": {
       "branch": "To go on, choose the branch.",
-      "fields": "To go on, fill in every field."
+      "fields": "To go on, fill in every field.",
+      "noItems": "To save, add at least one item."
     }
   },
   "unsavedChanges": {

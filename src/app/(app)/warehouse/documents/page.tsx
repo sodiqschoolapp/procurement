@@ -129,7 +129,6 @@ export default async function WarehouseDocumentsPage({
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-6">
-      <WarehouseTabs current="documents" role={user.role} />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="flex flex-wrap items-baseline gap-x-3 text-title">
           {t("title")}
@@ -143,6 +142,7 @@ export default async function WarehouseDocumentsPage({
           <NewDocumentButtons userId={user.id} />
         </div>
       </div>
+      <WarehouseTabs current="documents" role={user.role} />
 
       {list.found === 0 && !filtered ? (
         <EmptyState title={t("emptyTitle")} line={t("emptyText")} />
@@ -209,9 +209,9 @@ export default async function WarehouseDocumentsPage({
           {list.rows.length === 0 ? (
             <EmptyState title={t("noResultsTitle")} line={t("noResultsText")} />
           ) : (
-            <section className="overflow-x-auto rounded-xl border border-border bg-card text-card-foreground">
-              <table className="w-full min-w-[52rem] border-collapse text-left text-sm leading-5">
-                <thead className="bg-muted text-small font-semibold text-muted-foreground">
+            <section className="table-cards-panel overflow-x-auto rounded-xl border border-border bg-card text-card-foreground">
+              <table className="table-cards w-full min-w-[52rem] border-collapse text-left text-sm leading-5">
+                <thead className="border-b border-border bg-muted text-xs font-medium text-muted-foreground">
                   <tr>
                     <th scope="col" className="px-4 py-3">
                       {t("columns.number")}
@@ -239,7 +239,7 @@ export default async function WarehouseDocumentsPage({
                 <tbody>
                   {list.rows.map((row) => (
                     <tr key={row.id} className="border-t" data-document-row={row.number}>
-                      <td className="px-4 py-3 font-semibold whitespace-nowrap">
+                      <td data-card="head" className="px-4 py-3 font-semibold whitespace-nowrap">
                         <Link
                           href={`/warehouse/documents/${row.id}`}
                           className="font-semibold text-link underline-offset-2 hover:underline"
@@ -247,22 +247,33 @@ export default async function WarehouseDocumentsPage({
                           {row.number}
                         </Link>
                       </td>
-                      <td className="px-4 py-3" data-document-type={row.type}>
+                      <td
+                        data-label={t("columns.type")}
+                        className="px-4 py-3"
+                        data-document-type={row.type}
+                      >
                         {typeLabel(row.type)}
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap tabular-nums">
+                      <td
+                        data-label={t("columns.date")}
+                        className="px-4 py-3 whitespace-nowrap tabular-nums"
+                      >
                         {format.date(row.docDate)}
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
+                      <td data-label={t("columns.branch")} className="px-4 py-3 whitespace-nowrap">
                         {row.toBranchCode
                           ? t("transferBranches", { from: row.branchCode, to: row.toBranchCode })
                           : row.branchCode}
                       </td>
-                      <td className="px-4 py-3">{row.departmentName ?? ""}</td>
-                      <td className="px-4 py-3">
+                      <td data-label={t("columns.department")} className="px-4 py-3">
+                        {row.departmentName ?? ""}
+                      </td>
+                      <td data-label={t("columns.status")} className="px-4 py-3">
                         <DocumentStatusLabel type={row.type} status={row.status} />
                       </td>
-                      <td className="px-4 py-3">{row.createdBy}</td>
+                      <td data-label={t("columns.createdBy")} className="px-4 py-3">
+                        {row.createdBy}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

@@ -81,6 +81,7 @@ export function TransferForm({
   today: string;
 }) {
   const t = useTranslations("warehouse.transfer");
+  const tWhy = useTranslations("common.whyNot");
   const tAll = useTranslations();
   const format = useFormatters();
   const action = useAction(sendTransferAction, { create: true });
@@ -524,7 +525,14 @@ export function TransferForm({
         )}
       </nav>
 
-      <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+      <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-end">
+        {/* A greyed-out Save says why (redesign of 21.10.2026). */}
+        {hydrated && lines.fields.length === 0 && (
+          <p className="flex items-center gap-1.5 text-small text-muted-foreground sm:mr-auto">
+            <Icon name="info" size={16} className="shrink-0" />
+            {tWhy("noItems")}
+          </p>
+        )}
         <Link
           href="/warehouse/stock"
           className={cn(buttonVariants({ variant: "ghost" }), "max-sm:h-12")}
@@ -535,7 +543,7 @@ export function TransferForm({
           type="submit"
           pending={action.pending}
           disabled={!hydrated || lines.fields.length === 0}
-          className={cn("h-12 sm:h-10", step !== DOCUMENT_STEPS - 1 && "max-sm:hidden")}
+          className={cn("h-12 sm:h-9", step !== DOCUMENT_STEPS - 1 && "max-sm:hidden")}
         >
           {t("save")}
         </Button>

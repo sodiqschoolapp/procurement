@@ -95,8 +95,8 @@ export async function SubtypeList({
               </li>
             ))}
           </ul>
-          <table className="hidden w-full border-collapse text-left text-sm leading-5 sm:table">
-            <thead className="bg-muted text-small font-semibold text-muted-foreground">
+          <table className="table-cards hidden w-full border-collapse text-left text-sm leading-5 sm:table">
+            <thead className="border-b border-border bg-muted text-xs font-medium text-muted-foreground">
               <tr>
                 <th scope="col" className="w-16 px-4 py-3">
                   <span className="sr-only">{t("fields.photoFileId")}</span>
@@ -115,8 +115,10 @@ export async function SubtypeList({
             <tbody>
               {rows.map((row) => (
                 <tr key={row.id} className="border-t hover:bg-accent/50">
-                  <td className="px-4 py-2">{photo(row)}</td>
-                  <td className="px-4 py-3 font-semibold">
+                  <td data-card="head" className="px-4 py-2">
+                    {photo(row)}
+                  </td>
+                  <td data-label={t("fields.name")} className="px-4 py-3 font-semibold">
                     <Link
                       href={href(row.id)}
                       className="underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
@@ -124,10 +126,15 @@ export async function SubtypeList({
                       {row.name}
                     </Link>
                   </td>
-                  <td className="px-4 py-3 text-right whitespace-nowrap tabular-nums">
+                  <td
+                    data-label={t("fields.referencePrice")}
+                    className="px-4 py-3 text-right whitespace-nowrap tabular-nums"
+                  >
                     {price(row)}
                   </td>
-                  <td className="px-4 py-3">{row.isActive ? t("active") : t("inactive")}</td>
+                  <td data-label={t("status")} className="px-4 py-3">
+                    {row.isActive ? t("active") : t("inactive")}
+                  </td>
                 </tr>
               ))}
             </tbody>
