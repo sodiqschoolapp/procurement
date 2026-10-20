@@ -515,7 +515,7 @@ function GroupRows({
       data-ticked={tickedHere > 0 || undefined}
       className="border-t border-border first-of-type:border-t-0 data-ticked:bg-sidebar-primary/60 max-sm:mb-3 max-sm:block max-sm:rounded-xl max-sm:border max-sm:border-border max-sm:bg-card max-sm:p-4 max-sm:first-of-type:border-t"
     >
-      <tr className="transition-colors duration-120 ease-out hover:bg-accent/60 max-sm:grid max-sm:grid-cols-[auto_1fr_auto] max-sm:gap-x-3 max-sm:gap-y-1 max-sm:hover:bg-transparent">
+      <tr className="transition-colors duration-120 ease-out hover:bg-accent/60 max-sm:grid max-sm:grid-cols-[auto_minmax(0,1fr)_auto] max-sm:gap-x-3 max-sm:gap-y-1 max-sm:hover:bg-transparent">
         <td
           className={cn(
             cell,
@@ -535,7 +535,7 @@ function GroupRows({
             />
           </label>
         </td>
-        <td className={cn(cell, "max-sm:col-start-2")}>
+        <td className={cn(cell, "max-sm:col-start-2 max-sm:min-w-0")}>
           <span className="flex flex-col gap-0.5">
             <span className="font-medium">{product}</span>
             <span className="text-small text-muted-foreground">
@@ -560,9 +560,9 @@ function GroupRows({
         <td className={cn(cell, "text-right whitespace-nowrap tabular-nums max-sm:hidden")}>
           {format.quantity(group.summary.quantity)} {group.unitShortName}
         </td>
-        <td className={cn(cell, "text-right max-sm:col-start-2 max-sm:text-left")}>
+        <td className={cn(cell, "text-right max-sm:col-start-2 max-sm:min-w-0 max-sm:text-left")}>
           <span className="flex flex-col items-end gap-0.5 max-sm:items-start">
-            <span className="whitespace-nowrap max-sm:flex max-sm:gap-2">
+            <span className="whitespace-nowrap max-sm:flex max-sm:flex-wrap max-sm:gap-x-2">
               <span className="text-muted-foreground sm:hidden">
                 {format.quantity(group.summary.quantity)} {group.unitShortName}
               </span>
@@ -571,7 +571,7 @@ function GroupRows({
               </span>
             </span>
             {group.summary.priceHint !== null && (
-              <span className="text-xs whitespace-nowrap text-warning">
+              <span className="text-xs whitespace-nowrap text-warning max-sm:whitespace-normal">
                 {tOrders("priceHint", {
                   percent: BigInt(group.summary.priceHint) as unknown as number,
                 })}

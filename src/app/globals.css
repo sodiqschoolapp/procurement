@@ -341,8 +341,14 @@
       display: block;
       min-width: 0 !important;
     }
+    /* Hidden from sight only: the column names stay a header row for screen readers. */
     .table-cards > thead {
-      display: none;
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
     }
     .table-cards > tbody {
       display: flex;
