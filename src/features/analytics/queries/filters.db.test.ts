@@ -81,3 +81,15 @@ describe("the last refresh of the summary (decided item 13)", () => {
     expect((await getAnalyticsFilters(head.id)).refreshedAt).toEqual(moment);
   });
 });
+
+describe("the Money with managers tab (03 matrix: Head and Finance; D55 item 22; plan of 2.3b)", () => {
+  it("is the Head's and Finance's, not the Manager's or the Principal's, in the same branch", async () => {
+    const scene = await spendingScene();
+    const seen: Record<string, boolean> = {};
+    for (const role of ["HEAD", "FINANCE", "MANAGER", "PRINCIPAL"] as const) {
+      const user = await insertUser(role, { branches: role === "HEAD" ? [] : [scene.branch.id] });
+      seen[role] = (await getAnalyticsFilters(user.id)).seesManagersCash;
+    }
+    expect(seen).toEqual({ HEAD: true, FINANCE: true, MANAGER: false, PRINCIPAL: false });
+  });
+});
