@@ -13,6 +13,7 @@ import {
   STORED_AMOUNT,
 } from "@/domain/settings";
 
+import { branches } from "./organisation";
 import { users } from "./users";
 
 // The "System" group of docs/spec/14-data-model.md. The other tables of the group arrive with
@@ -166,7 +167,9 @@ export const auditLog = pgTable(
 // control character that a browser strips into another host (review of the plan, Should fix 6;
 // PostgreSQL and JavaScript name different Unicode characters "space", so neither list is used). Rows are never deleted and change only once,
 // `read_at` from NULL to a moment: the trigger notifications_guard of migration 0004, written by
-// hand (decision 3, Look first; CLAUDE.md rule 11).
+// hand (decision 3, Look first; CLAUDE.md rule 11). `branch_id` (14: "empty for a notice of no
+// branch"; build-plan 2.3b): the bell shows a row only to a reader who has its branch now, and a
+// row from before migration 0051 has none and always shows (plan of 2.3b, decided item 7).
 export const notificationType = pgEnum("notification_type", NOTIFICATION_TYPES);
 
 export const notifications = pgTable(
@@ -179,6 +182,7 @@ export const notifications = pgTable(
       .notNull()
       .references(() => users.id),
     type: notificationType("type").notNull(),
+    branchId: uuid("branch_id").references(() => branches.id),
     params: jsonb("params").notNull().default({}),
     link: text("link").notNull(),
     readAt: timestamp("read_at", { withTimezone: true }),
@@ -199,6 +203,7 @@ export const notifications = pgTable(
       table.createdAt.desc(),
       table.id.desc(),
     ),
+    index("notifications_branch_id_idx").on(table.branchId),
     index("notifications_user_id_unread_idx")
       .on(table.userId)
       .where(sql`${table.readAt} IS NULL`),

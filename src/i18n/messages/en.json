@@ -519,7 +519,10 @@
       "REQUEST_SENT_BACK_FOR_CORRECTION": "{actor} sent back {count, plural, one {# order} other {# orders}} in {branch} for correction.",
       "OVERSPEND_ABOVE_GUARD": "{actor} sent {count, plural, one {# order} other {# orders}} in {branch} to settlement above the overspend guard. Finance cannot close {count, plural, one {it} other {them}} until you acknowledge the overspend.",
       "OVERSPEND_ACKNOWLEDGED": "The Procurement Head {actor} acknowledged the overspend of {count, plural, one {# order} other {# orders}} in {branch}.",
-      "TRANSFER_CANCELLED": "{actor} cancelled transfer {number} from {branch}. Nothing will arrive."
+      "TRANSFER_CANCELLED": "{actor} cancelled transfer {number} from {branch}. Nothing will arrive.",
+      "REQUEST_CANCELLED": "{actor} cancelled {count, plural, one {# of your orders} other {# of your orders}} in {branch}.",
+      "REQUEST_MOVED_IN": "{actor} moved {count, plural, one {# order} other {# orders}} in {branch} to you.",
+      "REQUEST_MOVED_OUT": "{actor} moved {count, plural, one {# of your orders} other {# of your orders}} in {branch} to {manager}."
     }
   },
   "months": {

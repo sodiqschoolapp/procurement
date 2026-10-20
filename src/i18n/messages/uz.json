@@ -519,7 +519,10 @@
       "REQUEST_SENT_BACK_FOR_CORRECTION": "{branch}: {actor} {count, plural, other {# ta buyurtmani}} tuzatish uchun qaytardi.",
       "OVERSPEND_ABOVE_GUARD": "{branch}: {actor} {count, plural, other {# ta buyurtmani}} ortiqcha xarajat chegarasidan yuqori holda hisob-kitobga yubordi. Siz tasdiqlamaguningizcha Moliya ularni yopa olmaydi.",
       "OVERSPEND_ACKNOWLEDGED": "{branch}: Xaridlar rahbari {actor} {count, plural, other {# ta buyurtma}} boʻyicha ortiqcha xarajatni tasdiqladi.",
-      "TRANSFER_CANCELLED": "{actor} {branch} filialidan {number} koʻchirishni bekor qildi. Hech narsa kelmaydi."
+      "TRANSFER_CANCELLED": "{actor} {branch} filialidan {number} koʻchirishni bekor qildi. Hech narsa kelmaydi.",
+      "REQUEST_CANCELLED": "{branch}: {actor} {count, plural, other {# ta buyurtmangizni}} bekor qildi.",
+      "REQUEST_MOVED_IN": "{branch}: {actor} {count, plural, other {# ta buyurtmani}} sizga oʻtkazdi.",
+      "REQUEST_MOVED_OUT": "{branch}: {actor} {count, plural, other {# ta buyurtmangizni}} {manager}ga oʻtkazdi."
     }
   },
   "months": {

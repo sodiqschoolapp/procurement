@@ -5,8 +5,10 @@ import { GLOBAL_TARGET, defineAction } from "@/server/action";
 import { now } from "@/server/clock";
 import { notifications } from "@/server/db/schema";
 
+import { visibleToItsUser } from "../visible";
+
 // "Mark all as read" on /notifications (plan of 0.11, decision 8). The signed-in user's unread
-// rows only, locked and then marked in one statement, through the wrapper's global form
+// rows the bell shows only (plan of 2.3b, decided item 6), locked and then marked in one statement, through the wrapper's global form
 // (decision 2, Look first). It loses nothing, so it asks no confirmation.
 
 export const markAllNotificationsRead = defineAction({
@@ -20,7 +22,7 @@ export const markAllNotificationsRead = defineAction({
     const rows = await tx
       .select({ id: notifications.id })
       .from(notifications)
-      .where(and(eq(notifications.userId, userId), isNull(notifications.readAt)))
+      .where(and(eq(notifications.userId, userId), isNull(notifications.readAt), visibleToItsUser))
       .for("update");
     return { target: GLOBAL_TARGET, rows: rows.map((row) => row.id) };
   },

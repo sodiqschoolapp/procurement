@@ -1,11 +1,11 @@
-import { inArray, sql } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 import * as z from "zod";
 
 import { orderCashCount } from "@/domain/money-ledger";
 import { ownerMoveAllows } from "@/domain/order-moves";
 import { ActionError } from "@/server/action";
 import type { OrderFailure } from "@/server/action-result";
-import { orders } from "@/server/db/schema";
+import { orders, users } from "@/server/db/schema";
 import {
   type OrdersContext,
   type OrdersInput,
@@ -15,6 +15,8 @@ import {
 
 import { moneyRowsOf } from "@/features/money/money-rows";
 import { cashRecordsOf } from "@/features/purchasing/order-records";
+
+import { noticePerBranch, noticePerOwner } from "./notices";
 
 // The Head moves ticked orders to another Manager of the same branch, only orders whose cash
 // count is 0, all or nothing (03-roles-and-permissions.md rules 7 and 8; Permission matrix: "Move
@@ -32,8 +34,13 @@ import { cashRecordsOf } from "@/features/purchasing/order-records";
 //            Manager owns already → `not_ready` (03 rule 7: "another Manager")
 //   write    `owner_id`; the event's payload names the old and the new owner
 //
-// It moves no status and tells nobody (decided item 5). Past money actions keep their Manager and
-// past purchases their creator (decided item 8).
+//   notify   per branch, the new owner (REQUEST_MOVED_IN) and each old owner (REQUEST_MOVED_OUT,
+//            with the new owner's name): 10 Notifications, "Orders moved to another Manager | The
+//            new owner and the old one" (plan of 2.3b, decided item 9; it replaces decided item 5
+//            of 4.10, D55 item 14)
+//
+// It moves no status. Past money actions keep their Manager and past purchases their creator
+// (decided item 8).
 
 export type MoveOwnerInput = OrdersInput & { managerId: string };
 
@@ -110,5 +117,16 @@ export const moveOrdersToManager = defineOrdersAction<MoveOwnerInput>({
           [order.id, { payload: { owner: { from: order.ownerId, to: managerId } } }] as const,
       ),
     );
+  },
+  async notify(context, result) {
+    const managerId = context.input.managerId;
+    await noticePerBranch(context, result.actionId, "REQUEST_MOVED_IN", async () => [managerId]);
+    const [manager] = await context.tx
+      .select({ name: users.fullName })
+      .from(users)
+      .where(eq(users.id, managerId));
+    await noticePerOwner(context, result.actionId, "REQUEST_MOVED_OUT", {
+      manager: manager!.name,
+    });
   },
 });

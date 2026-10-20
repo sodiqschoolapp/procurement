@@ -103,3 +103,37 @@ export function submitRefusals(
   }
   return refused;
 }
+
+/** What a Cancel of a Draft reads of its plan, each column as the order row holds it. */
+export type CancelPlan = {
+  variantId: string | null;
+  departmentId: string | null;
+  neededBy: string | null;
+  quantity: string | null;
+  price: bigint | null;
+  total: bigint | null;
+  priority: "NORMAL" | "URGENT";
+  urgentReason: string | null;
+};
+
+/**
+ * The cells a taken-back Draft must have filled before it is cancelled (06 Allowed moves, Cancel
+ * row; plan of 2.3b, decided item 14, Look first): a cancelled order keeps a whole plan, as
+ * `orders_submitted_plan_check` and `orders_urgent_reason_check` ask of every status but Draft.
+ * Unlike Submit, a date in the past and an inactive entry are no refusal: nothing is bought.
+ */
+export function cancelPlanGaps(plan: CancelPlan): Record<string, SubmitRefusal> {
+  const refused: Record<string, SubmitRefusal> = {};
+  if (plan.variantId === null) refused.variantId = "required";
+  if (plan.departmentId === null) refused.departmentId = "required";
+  if (plan.neededBy === null) refused.neededBy = "required";
+  if (plan.quantity === null) refused.quantity = "required";
+  // The total is the grid's draftTotal(): empty only without a quantity or a price.
+  if (plan.price === null || (plan.total === null && plan.quantity !== null)) {
+    refused.price = "required";
+  }
+  if (plan.priority === "URGENT" && !isUrgentReason(plan.urgentReason)) {
+    refused.urgentReason = "required";
+  }
+  return refused;
+}

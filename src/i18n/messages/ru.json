@@ -519,7 +519,10 @@
       "REQUEST_SENT_BACK_FOR_CORRECTION": "Возвращено на исправление ({actor}): {count, plural, one {# заказ} few {# заказа} many {# заказов} other {# заказа}}, {branch}.",
       "OVERSPEND_ABOVE_GUARD": "Перерасход выше порога ({actor}): {count, plural, one {# заказ} few {# заказа} many {# заказов} other {# заказа}}, {branch}, переданы на расчёт. Финансы не смогут закрыть их, пока вы не подтвердите перерасход.",
       "OVERSPEND_ACKNOWLEDGED": "Начальник закупок {actor} подтвердил перерасход: {count, plural, one {# заказ} few {# заказа} many {# заказов} other {# заказа}}, {branch}.",
-      "TRANSFER_CANCELLED": "{actor} отменил(а) перемещение {number} из {branch}. Ничего не поступит."
+      "TRANSFER_CANCELLED": "{actor} отменил(а) перемещение {number} из {branch}. Ничего не поступит.",
+      "REQUEST_CANCELLED": "Отменено ({actor}): {count, plural, one {# ваш заказ} few {# ваших заказа} many {# ваших заказов} other {# ваших заказа}}, {branch}.",
+      "REQUEST_MOVED_IN": "Передано вам ({actor}): {count, plural, one {# заказ} few {# заказа} many {# заказов} other {# заказа}}, {branch}.",
+      "REQUEST_MOVED_OUT": "Передано менеджеру {manager} ({actor}): {count, plural, one {# ваш заказ} few {# ваших заказа} many {# ваших заказов} other {# ваших заказа}}, {branch}."
     }
   },
   "months": {
