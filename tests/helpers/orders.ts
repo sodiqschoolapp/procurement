@@ -123,7 +123,8 @@ export async function insertOrder(row: OrderRow) {
       urgentReason: row.urgentReason ?? null,
       version: row.version ?? 1,
       revision: row.revision ?? 1,
-      submittedAt: submitted ? (row.submittedAt ?? now()) : null,
+      // A Draft with a number was submitted and taken back: it keeps its submit time (06 Take back).
+      submittedAt: submitted || row.number ? (row.submittedAt ?? now()) : null,
       approvedAt: row.approvedAt ?? null,
       closedAt: row.closedAt ?? null,
       progress: row.progress ?? "OPEN",

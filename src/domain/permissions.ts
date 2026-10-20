@@ -84,9 +84,10 @@ export const PERMISSIONS = {
   "request.approve_step3": { scope: "branch", roles: FINANCE_ONLY },
   // "Record money given, returned, paid back"
   "money.record": { scope: "branch", roles: FINANCE_ONLY },
-  // The page Money with managers: not a row of 03. 11 Screens: "Money with managers, /money,
-  // Finance, Head"; 08 Money with managers: "Finance and the Head have a page" (plan of 4.9,
-  // decided item 1, Look first).
+  // "See every Manager's cash (Money with managers) and the Head's price notes": the page /money
+  // (11 Screens; plan of 4.9, decided item 1), the report Money with managers and the Head's notes
+  // in Price history (10 Reports; plan of 2.3b, decided item 4, Look first). The Manager's "Own
+  // cash only" is the cash on their own home and analytics, not this permission.
   "money.managers": {
     scope: "branch",
     roles: { HEAD: "all", MANAGER: "no", PRINCIPAL: "no", FINANCE: "own" },

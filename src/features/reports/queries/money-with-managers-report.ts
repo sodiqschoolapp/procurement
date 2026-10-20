@@ -8,7 +8,7 @@ import {
   managerCashBalance,
 } from "@/domain/money-ledger";
 import type { RequestStatus } from "@/domain/request-status";
-import { authorizeList } from "@/server/authorize";
+import { authorize, authorizeList } from "@/server/authorize";
 import { readSnapshot } from "@/server/read-snapshot";
 
 import { authorizeAnalytics } from "../../analytics/authorize-filters";
@@ -79,7 +79,13 @@ export async function getMoneyWithManagersReport(
   page: number | "all",
 ): Promise<MoneyWithManagersReport> {
   return readSnapshot(async (db) => {
-    await authorizeList(userId, "money.managers", db);
+    // The chosen branch first, as the /money page asks (another branch is "Not found"); without
+    // one, the role (plan of 2.3b, decided item 4).
+    if (params.filters.branch) {
+      await authorize(userId, "money.managers", { branchId: params.filters.branch }, db);
+    } else {
+      await authorizeList(userId, "money.managers", db);
+    }
     const actor = await authorizeAnalytics(db, userId, params.filters);
     const found = await db.execute<Row>(sql`
       select analytics_cash.order_id, o.number, o.status, analytics_cash.owner_id,

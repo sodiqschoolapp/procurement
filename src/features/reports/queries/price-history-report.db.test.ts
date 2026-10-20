@@ -159,7 +159,29 @@ describe("Price history: the records and the reference prices (04 rule 4; decide
       [set, 1_050n, "2031-10-01", false],
       [same, 1_100n, "2031-10-01", false],
     ]);
-    expect(report.references[1]!.note).toBe("Yangi narx");
+    // The Head's note and who set it: the Head and Finance only (03 matrix "… and the Head's price
+    // notes"; 10 Reports, Price history; D55 item 22; plan of 2.3b, decided item 4). The prices
+    // themselves stay open to every role.
+    expect(report.showsNotes).toBe(false);
+    expect(report.references.map((row) => [row.note, row.setByName])).toEqual([
+      [null, null],
+      [null, null],
+      [null, null],
+    ]);
+    const manager = await insertUser("MANAGER", { branches: [a.branch.id] });
+    const finance = await insertUser("FINANCE", { branches: [a.branch.id] });
+    for (const reader of [manager, finance, head]) {
+      const read = await getPriceHistoryReport(reader.id, params(first.variantId), 1);
+      const sees = reader !== manager;
+      expect(read.showsNotes, reader.role).toBe(sees);
+      expect(
+        read.references.map((row) => row.price),
+        reader.role,
+      ).toEqual([950n, 1_050n, 1_100n]);
+      expect([read.references[1]!.note, read.references[1]!.setByName], reader.role).toEqual(
+        sees ? ["Yangi narx", head.fullName] : [null, null],
+      );
+    }
   });
 
   it("shows a subtype with no record in the dates by its reference prices alone", async () => {
