@@ -1,6 +1,3 @@
-import { readdirSync } from "node:fs";
-import { join, relative, sep } from "node:path";
-
 import AxeBuilder from "@axe-core/playwright";
 import { type Browser, type BrowserContext, type Page, test as base } from "@playwright/test";
 
@@ -24,6 +21,7 @@ import {
   tag,
   withDatabase,
 } from "./acceptance-fixtures";
+import { SCREENS, type ScreenIds, type Who, appRoutes } from "./screens";
 
 // Build plan 9.1d, the accessibility pass (the former 8.3, D47): every screen of src/app at 375 px
 // and 1440 px (the two projects), in the light and the dark theme, checked by axe on the WCAG 2.0
@@ -33,8 +31,6 @@ import {
 // indicator, <main> within 40 presses, no trap (decided item 7). 11-screens-and-ux.md rule 13;
 // docs/design-system.md, Buttons and Accessibility. One test per screen and role, so the four CI
 // shards share them (review correction 1).
-
-type Who = "head" | "manager" | "principal" | "finance";
 
 type World = {
   scene: Scene;
@@ -52,7 +48,6 @@ type World = {
 
 // The canvas, --background, of the dark theme (docs/design-system.md, Colour).
 const DARK_CANVAS = "#040920";
-const PERIOD = "period=this_month&branch=all";
 
 /**
  * The records the detail screens open, made once per worker: a branch of its own with one person
@@ -161,118 +156,6 @@ const test = base.extend<object, { world: World }>({
     { scope: "worker", timeout: 240_000 },
   ],
 });
-
-type Screen = { route: string; who: Who | null; url: (w: World) => string; note?: string };
-
-const s = (route: string, who: Who | null, url: (w: World) => string = () => route, note = "") => ({
-  route,
-  who,
-  url,
-  note,
-});
-
-/** Every screen of src/app, as the role that opens it (plan of 9.1d, decided item 5). */
-const SCREENS: Screen[] = [
-  s("/login", null),
-  ...(["head", "manager", "principal", "finance"] as const).flatMap((who) => [
-    s("/", who),
-    s("/analytics", who),
-  ]),
-  s("/analytics/approvals", "head", () => `/analytics/approvals?${PERIOD}&key=step:all`),
-  s("/analytics/cancelled", "head", () => `/analytics/cancelled?${PERIOD}`),
-  s("/analytics/cash-needed", "finance", () => `/analytics/cash-needed?${PERIOD}&key=needed:all`),
-  s("/analytics/cash", "finance", () => `/analytics/cash?${PERIOD}`),
-  s("/analytics/money", "finance", () => `/analytics/money?${PERIOD}&key=money:given`),
-  s("/analytics/moves", "head", () => `/analytics/moves?${PERIOD}&key=moves:use`),
-  s(
-    "/analytics/order-status",
-    "principal",
-    () => `/analytics/order-status?${PERIOD}&key=status:all`,
-  ),
-  s("/analytics/orders", "head", () => `/analytics/orders?${PERIOD}`),
-  s("/analytics/records", "head", () => `/analytics/records?${PERIOD}`),
-  s("/analytics/settlements", "finance", () => `/analytics/settlements?${PERIOD}&key=settled`),
-  s("/analytics/stock", "head", () => `/analytics/stock?${PERIOD}&key=stock:value`),
-  s("/branches", "head"),
-  s("/branches/new", "head"),
-  s("/branches/[id]", "head", (w) => `/branches/${w.scene.branch.id}`),
-  s("/catalog", "head"),
-  s("/catalog/[catalog]", "head", () => "/catalog/measures"),
-  s("/catalog/[catalog]/new", "head", () => "/catalog/companies/new"),
-  s("/catalog/[catalog]/[id]", "head", (w) => `/catalog/measures/${w.unit}`),
-  s("/catalog/departments", "head"),
-  s("/catalog/departments/new", "head"),
-  s("/catalog/departments/[id]", "head", (w) => `/catalog/departments/${w.scene.department}`),
-  s("/catalog/import/[kind]", "head", () => "/catalog/import/products"),
-  s("/catalog/products", "head"),
-  s("/catalog/products/new", "head"),
-  s("/catalog/products/[id]", "head", (w) => `/catalog/products/${w.product}`),
-  s(
-    "/catalog/products/[id]/subtypes/new",
-    "head",
-    (w) => `/catalog/products/${w.product}/subtypes/new`,
-  ),
-  s(
-    "/catalog/products/[id]/subtypes/[subtypeId]",
-    "head",
-    (w) => `/catalog/products/${w.product}/subtypes/${w.subtype}`,
-  ),
-  s("/money", "head"),
-  s("/money", "finance"),
-  s("/notifications", "manager"),
-  s("/orders", "manager"),
-  s("/orders", "head"),
-  s("/orders/[id]", "manager", (w) => `/orders/${w.draft.id}`, "draft"),
-  s("/orders/[id]", "head", (w) => `/orders/${w.waiting.id}`, "waiting for Head"),
-  s("/orders/[id]", "manager", (w) => `/orders/${w.open.id}`, "open"),
-  s("/orders/[id]", "finance", (w) => `/orders/${w.settling.id}`, "waiting for settlement"),
-  s("/orders/[id]/purchase", "manager", (w) => `/orders/${w.open.id}/purchase`),
-  s("/orders/purchase", "manager", (w) => `/orders/purchase?ids=${w.open.id}`),
-  s("/orders/settle", "finance", (w) => `/orders/settle?ids=${w.settling.id}`),
-  s("/prices", "head"),
-  s("/prices/[variantId]", "head", (w) => `/prices/${w.subtype}`),
-  s("/profile", "manager"),
-  s("/reports", "head"),
-  s("/settings", "head"),
-  s("/suggestions", "manager"),
-  s("/suggestions/new", "manager"),
-  s("/suggestions/[id]", "head", (w) => `/suggestions/${w.suggestion}`),
-  s("/suggestions/[id]/add", "head", (w) => `/suggestions/${w.suggestion}/add`),
-  s("/users", "head"),
-  s("/users/new", "head"),
-  s("/users/[id]", "head", (w) => `/users/${w.scene.manager.id}`),
-  s("/warehouse/counts", "manager"),
-  s("/warehouse/documents", "manager"),
-  s("/warehouse/documents/new", "manager", () => "/warehouse/documents/new?type=ISSUE"),
-  s("/warehouse/documents/[id]", "manager", (w) => `/warehouse/documents/${w.document}`),
-  s(
-    "/warehouse/items/[id]",
-    "manager",
-    (w) => `/warehouse/items/${w.settling.variantId}?branch=${w.scene.branch.id}`,
-  ),
-  s("/warehouse/stock", "manager"),
-  s("/warehouse/stock", "head"),
-];
-
-/** Every page.tsx under src/app as its address pattern, route groups left out. */
-function appRoutes(): string[] {
-  const root = join(process.cwd(), "src", "app");
-  const found: string[] = [];
-  const walk = (dir: string) => {
-    for (const entry of readdirSync(dir, { withFileTypes: true })) {
-      const path = join(dir, entry.name);
-      if (entry.isDirectory()) walk(path);
-      else if (entry.name === "page.tsx") {
-        const parts = relative(root, dir)
-          .split(sep)
-          .filter((part) => part !== "" && !/^\(.*\)$/.test(part));
-        found.push(`/${parts.join("/")}`);
-      }
-    }
-  };
-  walk(root);
-  return found.sort();
-}
 
 test("every screen of src/app is in the accessibility check (build plan 9.1d: every screen)", () => {
   expect(appRoutes()).toEqual([...new Set(SCREENS.map((screen) => screen.route))].sort());
@@ -449,13 +332,32 @@ async function tabWalk(page: Page): Promise<void> {
   throw new Error(`Tab never came back to the first element in ${focusable + 100} presses`);
 }
 
+/** The ids of the shared list, from this run's records. */
+function idsOf(w: World): ScreenIds {
+  return {
+    branch: w.scene.branch.id,
+    department: w.scene.department,
+    manager: w.scene.manager.id,
+    unit: w.unit,
+    product: w.product,
+    subtype: w.subtype,
+    suggestion: w.suggestion,
+    document: w.document,
+    draft: w.draft.id,
+    waiting: w.waiting.id,
+    open: w.open.id,
+    settling: w.settling.id,
+    settlingVariant: w.settling.variantId,
+  };
+}
+
 for (const screen of SCREENS) {
   const title = `${screen.route}${screen.note ? ` (${screen.note})` : ""} as ${screen.who ?? "nobody signed in"}: no serious axe finding in both themes, 44 px targets, the Tab walk (9.1d; 11 rule 13)`;
   test(title, async ({ browser, world }, info) => {
     test.setTimeout(300_000);
     const viewport = info.project.use.viewport!;
     const phone = viewport.width < 640;
-    const url = screen.url(world);
+    const url = screen.url(idsOf(world));
     for (const theme of ["light", "dark"] as const) {
       const context = await browser.newContext({
         viewport,

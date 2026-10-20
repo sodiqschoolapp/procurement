@@ -21,7 +21,7 @@ import { PeriodRefusedError, resolvePeriod } from "../resolve-period";
 // items 2 and 10): the rows of `analytics_money` of one cash kind in the period or one month of it,
 // under the same moneyWhere() as the amount, so their Σ is the amount clicked. The action's
 // document number, the order, product and Manager are read live. Under `data.view`, the branch
-// wall in the SQL, in one snapshot; newest first, 50 a page, or every row for the export.
+// wall in the SQL, in one snapshot; newest first, 25 a page, or every row for the export.
 
 export type MoneyRowLine = {
   moneyRowId: string;

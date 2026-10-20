@@ -72,7 +72,8 @@ async function headSpendingIn(
   const totals = await db.execute<{ now: string; before: string }>(sql`
     select coalesce(sum(amount) filter (where ${now}), 0)::text as now,
            coalesce(sum(amount) filter (where ${then}), 0)::text as before
-    from analytics_spending`);
+    from analytics_spending
+    where (${now}) or (${then})`);
   const branches = await grouped(sql`branches`, sql`analytics_spending.branch_id`);
   const departments = await db.execute<GroupRow & { branch_name: string }>(sql`
     select k.id, k.name, k.is_active, b.name as branch_name,

@@ -21,8 +21,9 @@ function createPool(address: string): Pool {
     ...connectionOptions(address, process.env.DATABASE_CA_CERT),
     max: 10,
     // Every connection speaks UTC, whatever the server's default is
-    // (developer-rules.md rule 10: "Timestamps are stored in UTC").
-    options: "-c timezone=UTC",
+    // (developer-rules.md rule 10: "Timestamps are stored in UTC"). JIT is off: on the Analytics
+    // counts its compiling took most of the time of a page (build plan 9.2, docs/speed.md).
+    options: "-c timezone=UTC -c jit=off",
   });
 }
 

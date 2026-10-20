@@ -1952,4 +1952,26 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - A wrapper with `overflow-x-auto` around content without links gets `tabIndex={0}` and the focus ring.
 - The Head's Analytics holds thousands of links on the kept e2e database: a test that tabs through a page sizes its stop to the page.
 
-The next task is 9.2.
+## 9.2 Speed (20.10.2026, pull request #135)
+
+**Built**
+- `npm run speed`: `next build` and `next start` against `procurement_speed` (36 000 invented orders over three school years, `tests/speed/fill.ts`), every screen of `tests/e2e/screens.ts` and the large lists at first, last and filtered pages; writes `docs/speed.md`. `npm run speed:fill` builds the database alone.
+- Migration `0049_speed_indexes.sql`; `tests/indexes.db.test.ts` (every foreign key, every filter column); `tests/analytics-summary-reads.test.ts`; `tests/image-small-first.test.ts`; `tests/placeholders.test.ts`.
+- Fixes: Analytics drill-downs 25 a page; eight Analytics totals read only their periods' rows; JIT off on the app's connections; a `loading.tsx` for Profile.
+
+**Left out, and the task that brings it**
+- The speed of the live app on DigitalOcean: the owner's check during the trial (after 9.4).
+- Monitoring: 9.3.
+
+**Open for the owner**
+- Rule 8 against the 50-row pages left (item card movements, change history), and the sections without placeholders because of their 404 status: decisions 9.2.
+
+**What the next sessions must know**
+- A new screen goes into `SCREENS` of `tests/e2e/screens.ts` (both runs read it); `ScreenIds` names the records its address needs.
+- A new filter column goes into `FILTER_COLUMNS` of `tests/indexes.db.test.ts` with its own index or the index of the key it is read through.
+- A `loading.tsx` above a page that calls `notFound()` for another role turns its 404 into a 200: the browser tests of the 404 fail.
+- An Analytics total with `filter (where …)` also gets `where (now) or (then)`, or it reads the whole summary table.
+- `SPEED_SKIP_FILL=1 SPEED_ONLY=<text> npm run speed` measures a few addresses without writing the table; `alter database procurement_speed set log_min_duration_statement = 100` shows the slow statements in `docker compose logs postgres` (reset it before a full run: the long statements it logs push the run's marks out of the log it reads).
+- For 9.4: whether the managed database's pooler passes `-c jit=off` and `-c timezone=UTC` on.
+
+The next task is 9.3.

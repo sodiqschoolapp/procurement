@@ -22,6 +22,23 @@ describe("the database client", () => {
     );
   });
 
+  // developer-rules.md rule 12 and 01-summary.md, Quality bar: Fast (build plan 9.2). JIT spent
+  // about 270 of 310 ms of an Analytics count on three years of orders whose cost estimate passed
+  // jit_above_cost; the client turns it off on every connection, as it sets UTC.
+  it("turns JIT off itself on every connection of the pool", async () => {
+    const atOnce = Array.from({ length: 12 }, () =>
+      db.execute<{ pid: number; setting: string; source: string }>(
+        sql`select pg_backend_pid() as pid, setting, source, pg_sleep(0.2) from pg_settings where name = 'jit'`,
+      ),
+    );
+    const rows = (await Promise.all(atOnce)).flatMap((result) => result.rows);
+
+    expect(new Set(rows.map((row) => row.pid)).size).toBe(10);
+    expect(new Set(rows.map((row) => `${row.setting} by ${row.source}`))).toEqual(
+      new Set(["off by client"]),
+    );
+  });
+
   // developer-rules.md rule 6 ("JavaScript floating-point numbers never touch money").
   // 9007199254740993 is the first whole number a JavaScript float cannot hold: as a float it
   // would come back as ...992.

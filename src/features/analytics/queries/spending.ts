@@ -65,7 +65,8 @@ async function spendingIn(
              as now,
            coalesce(sum(amount) filter (where ${spendingWhere(actor, before, filters)}), 0)::text
              as before
-    from analytics_spending`);
+    from analytics_spending
+    where (${spendingWhere(actor, period, filters)}) or (${spendingWhere(actor, before, filters)})`);
   const total = totals.rows[0]!;
 
   // The months of the period, and the whole month before its first one (decided item 16): a

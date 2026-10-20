@@ -628,7 +628,7 @@ Proof that it works, then the real environment and the real data.
   - **Done when:** An automated accessibility check runs in Playwright on every screen with no serious finding; S1 passes with the keyboard only.
   - Merged with the former 8.3 by the owner on 17.10.2026 (D47).
 
-- [ ] **9.2 Speed**
+- [x] **9.2 Speed**
   - **Read:** `01-summary.md` (Quality bar: Fast); `edge-cases/developer-rules.md` (rule 12); `11-screens-and-ux.md` (Rules for a smooth feel: 5, 8).
   - **Build:** A script fills a database with several years of invented orders, purchases and movements; every page is measured; missing indexes and queries inside loops are fixed.
   - **Done when:** A table in `docs/` shows every page under 1 second with that volume, measured on a production build against a local database (no test copy, D52).

@@ -14,7 +14,7 @@ import { stockWhere } from "../stock-where";
 // reports.md, Analytics page per role, point 3; build-plan 6.4d; plan of 6.4d, decided items 1, 3,
 // 7 and 9): the rows of `analytics_stock` under the same stockWhere() as the number, so their
 // count and their Σ value are the number clicked. Names are read live. Under `data.view`, the
-// branch wall in the SQL, in one snapshot; 50 a page, or every row for the export.
+// branch wall in the SQL, in one snapshot; 25 a page, or every row for the export.
 
 export type StockLine = {
   branchId: string;

@@ -21,7 +21,7 @@ import { spendingWhere } from "../spending-where";
 // that make it up. Every number can be traced to its source"; build-plan 6.3). The rows are those
 // of `analytics_spending` under the same spendingWhere() as the number (review of the plan,
 // correction 3), so their total is the number clicked (plan of 6.3, decided item 10); the names
-// are read live. Under `data.view`, the branch wall in the SQL, in one snapshot; 50 a page
+// are read live. Under `data.view`, the branch wall in the SQL, in one snapshot; 25 a page
 // (developer-rules.md rule 12), or every row for the export. A price key of 6.4b lists the priced
 // records of one subtype (a gift is no price), with their quantity and unit price, and its summary
 // is the price `unitPriceOf()` of their goods and quantity, the number clicked (plan of 6.4b,

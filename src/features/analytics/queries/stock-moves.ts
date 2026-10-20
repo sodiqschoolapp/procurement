@@ -20,7 +20,7 @@ import { resolvePeriod } from "../resolve-period";
 // items 4, 5 and 9): the rows of `analytics_stock_moves` under the same movesWhere() as the
 // number, so their Σ is the number clicked: in use a return counts against (`SIGNED_VALUE`). A
 // department row of use sets the department filter. Names and the document's number are read
-// live. Under `data.view`, the branch wall in the SQL, in one snapshot; 50 a page, or every row
+// live. Under `data.view`, the branch wall in the SQL, in one snapshot; 25 a page, or every row
 // for the export. With a subtype (a Stock planning line's, build-plan 6.5c) the list of use also
 // sums its quantity, issue + and return −: the number of that line that was clicked.
 

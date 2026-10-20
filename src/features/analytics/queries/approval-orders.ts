@@ -23,7 +23,7 @@ import { stepsWhere } from "../steps-where";
 // waiting now at a step in an age group; a `mine` key the stays the user decided in the period,
 // the Principal's "my average time to decide" (plan of 6.5a, decided item 3). The rows are those of `analytics_steps` under the same
 // stepsWhere() as the number, branch and draft walls in the SQL, so their count is the number
-// clicked and their average its hours. Names read live. 50 a page (developer-rules.md rule 12), or
+// clicked and their average its hours. Names read live. 25 a page (developer-rules.md rule 12), or
 // every row for the export. Under `data.view`, in one snapshot.
 
 export type ApprovalRow = {

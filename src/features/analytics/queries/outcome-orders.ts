@@ -23,7 +23,7 @@ import { PeriodRefusedError, resolvePeriod } from "../resolve-period";
 // (red) or the saved (orange) ones; a branch or Manager cell sets that filter, "Other owners"
 // sets `otherOwners`. Its count is the count clicked; its sum is the amount clicked (overspent
 // −difference, saved the difference, otherwise the net difference). Names read live. Under
-// `data.view`, the branch wall in the SQL, in one snapshot; 50 a page, or every row for the export.
+// `data.view`, the branch wall in the SQL, in one snapshot; 25 a page, or every row for the export.
 
 export type OutcomeOrder = {
   orderId: string;

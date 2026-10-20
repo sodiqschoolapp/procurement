@@ -56,7 +56,9 @@ async function statusesIn(
              as soon,
            count(*) filter (where ${ordersWhere(actor, { due: "overdue", today: day }, filters)})::text
              as overdue
-    from analytics_orders`);
+    from analytics_orders
+    where (${ordersWhere(actor, { due: "soon", today: day }, filters)})
+       or (${ordersWhere(actor, { due: "overdue", today: day }, filters)})`);
 
   return {
     period,

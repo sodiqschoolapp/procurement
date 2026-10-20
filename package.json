@@ -17,6 +17,8 @@
     "icons": "node scripts/icons.mjs",
     "test": "vitest run",
     "test:e2e": "playwright test",
+    "speed": "playwright test -c playwright.speed.config.ts",
+    "speed:fill": "vitest run -c vitest.speed.config.mts",
     "db:migrate": "node --env-file-if-exists=.env scripts/db-migrate.mjs",
     "db:seed": "node --env-file-if-exists=.env scripts/db-seed.mjs",
     "storage:bucket": "node --env-file-if-exists=.env scripts/storage-bucket.mjs",

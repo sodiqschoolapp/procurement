@@ -28,7 +28,7 @@ import { PeriodRefusedError, resolvePeriod } from "../resolve-period";
 // the orders that first entered Open in the period, each with its hours from the first submit,
 // and their average `averageHours()` of Σ seconds and count, the number clicked. The rows are those of `analytics_orders` under the same ordersWhere() as the
 // number, branch and draft walls in the SQL, so their count is the number clicked. Names read
-// live. 50 a page (developer-rules.md rule 12), or every row for the export. Under `data.view`, in
+// live. 25 a page (developer-rules.md rule 12), or every row for the export. Under `data.view`, in
 // one snapshot.
 
 export type StatusOrderRow = {

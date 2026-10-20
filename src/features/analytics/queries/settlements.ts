@@ -16,7 +16,7 @@ import { settlementsWhere } from "../settlements-where";
 // settlementsWhere() as the number, so their count and `averageDays()` of their Σ seconds are the
 // number clicked. Each row's days are `averageDays()` of its one settlement. The order, product,
 // branch and owner are read live. Under `data.view`, the branch wall in the SQL, in one snapshot;
-// newest close first, 50 a page, or every row for the export.
+// newest close first, 25 a page, or every row for the export.
 
 export type SettlementLine = {
   orderId: string;

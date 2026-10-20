@@ -90,7 +90,8 @@ async function cashIn(
       ]),
       sql`, `,
     )}
-    from analytics_money`);
+    from analytics_money
+    where (${now}) or (${then})`);
   const sums = found.rows[0]!;
   const totals = Object.fromEntries(
     CASH_KIND_KEYS.map((kind) => [kind, counted(sums[`${kind}_now`]!, sums[`${kind}_before`]!)]),

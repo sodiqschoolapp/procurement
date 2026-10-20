@@ -67,6 +67,8 @@ export const units = pgTable(
       sql`lower(regexp_replace(btrim(${table.shortName}), '\\s+', ' ', 'g'))`,
     ),
     index("units_is_active_idx").on(table.isActive),
+    // A filter column of its list (developer-rules.md rule 12; plan of 9.2, decided item 3).
+    index("units_name_idx").on(table.name),
   ],
 );
 
@@ -87,6 +89,8 @@ export const categories = pgTable(
       sql`lower(regexp_replace(btrim(${table.name}), '\\s+', ' ', 'g'))`,
     ),
     index("categories_is_active_idx").on(table.isActive),
+    // A filter column of its list (developer-rules.md rule 12; plan of 9.2, decided item 3).
+    index("categories_name_idx").on(table.name),
   ],
 );
 
@@ -107,6 +111,8 @@ export const extraCostTypes = pgTable(
       sql`lower(regexp_replace(btrim(${table.name}), '\\s+', ' ', 'g'))`,
     ),
     index("extra_cost_types_is_active_idx").on(table.isActive),
+    // A filter column of its list (developer-rules.md rule 12; plan of 9.2, decided item 3).
+    index("extra_cost_types_name_idx").on(table.name),
   ],
 );
 
@@ -137,6 +143,8 @@ export const companies = pgTable(
     ),
     // The picker filters on both (a brand or a supplier picker, active only).
     index("companies_is_active_kind_idx").on(table.isActive, table.kind),
+    // A filter column of its list (developer-rules.md rule 12; plan of 9.2, decided item 3).
+    index("companies_name_idx").on(table.name),
   ],
 );
 
@@ -237,6 +245,8 @@ export const products = pgTable(
     index("products_default_company_id_idx").on(table.defaultCompanyId),
     index("products_is_active_idx").on(table.isActive),
     index("products_type_idx").on(table.type),
+    // A filter column of its list (developer-rules.md rule 12; plan of 9.2, decided item 3).
+    index("products_name_idx").on(table.name),
   ],
 );
 

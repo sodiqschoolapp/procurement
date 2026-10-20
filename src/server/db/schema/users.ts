@@ -65,6 +65,8 @@ export const users = pgTable(
       sql`${table.username} = lower(${table.username}) AND ${table.username} <> ''`,
     ),
     check("users_phone_check", sql`btrim(${table.phone}) <> ''`),
+    // A filter column of its list (developer-rules.md rule 12; plan of 9.2, decided item 3).
+    index("users_full_name_idx").on(table.fullName),
   ],
 );
 

@@ -278,7 +278,7 @@ export const analyticsCancelled = pgTable(
     }),
     check("analytics_cancelled_amount_check", sql`${table.amount} >= 0`),
     index("analytics_cancelled_branch_id_cancelled_on_idx").on(table.branchId, table.cancelledOn),
-    index("analytics_cancelled_order_id_idx").on(table.orderId),
+    index("analytics_cancelled_order_id_branch_id_idx").on(table.orderId, table.branchId),
     index("analytics_cancelled_category_id_idx").on(table.categoryId),
     index("analytics_cancelled_department_id_idx").on(table.departmentId),
     index("analytics_cancelled_owner_id_idx").on(table.ownerId),
@@ -422,8 +422,11 @@ export const analyticsStockMoves = pgTable(
     check("analytics_stock_moves_qty_check", sql`${table.qty} > 0`),
     check("analytics_stock_moves_value_check", sql`${table.value} >= 0`),
     index("analytics_stock_moves_branch_id_moved_on_idx").on(table.branchId, table.movedOn),
-    index("analytics_stock_moves_document_id_idx").on(table.documentId),
-    index("analytics_stock_moves_department_id_idx").on(table.departmentId),
+    index("analytics_stock_moves_document_id_branch_id_idx").on(table.documentId, table.branchId),
+    index("analytics_stock_moves_department_id_branch_id_idx").on(
+      table.departmentId,
+      table.branchId,
+    ),
     index("analytics_stock_moves_category_id_idx").on(table.categoryId),
     index("analytics_stock_moves_variant_id_idx").on(table.variantId),
   ],
@@ -494,7 +497,7 @@ export const analyticsOrders = pgTable(
     index("analytics_orders_branch_id_needed_by_idx").on(table.branchId, table.neededBy),
     index("analytics_orders_branch_id_opened_on_idx").on(table.branchId, table.openedOn),
     index("analytics_orders_category_id_idx").on(table.categoryId),
-    index("analytics_orders_department_id_idx").on(table.departmentId),
+    index("analytics_orders_department_id_branch_id_idx").on(table.departmentId, table.branchId),
     index("analytics_orders_owner_id_idx").on(table.ownerId),
     check("analytics_orders_cash_needed_check", sql`${table.cashNeeded} >= 0`),
     index("analytics_orders_branch_id_cash_needed_idx")
@@ -550,10 +553,10 @@ export const analyticsMoney = pgTable(
     ),
     check("analytics_money_amount_check", sql`${table.amount} > 0`),
     index("analytics_money_branch_id_occurred_on_idx").on(table.branchId, table.occurredOn),
-    index("analytics_money_order_id_idx").on(table.orderId),
+    index("analytics_money_order_id_branch_id_idx").on(table.orderId, table.branchId),
     index("analytics_money_manager_id_idx").on(table.managerId),
     index("analytics_money_category_id_idx").on(table.categoryId),
-    index("analytics_money_department_id_idx").on(table.departmentId),
+    index("analytics_money_department_id_branch_id_idx").on(table.departmentId, table.branchId),
   ],
 );
 
@@ -605,7 +608,12 @@ export const analyticsSettlements = pgTable(
     ),
     index("analytics_settlements_branch_id_closed_on_idx").on(table.branchId, table.closedOn),
     index("analytics_settlements_category_id_idx").on(table.categoryId),
-    index("analytics_settlements_department_id_idx").on(table.departmentId),
+    index("analytics_settlements_department_id_branch_id_idx").on(
+      table.departmentId,
+      table.branchId,
+    ),
+    // The key of analytics_settlements_order_branch_fk leads an index (rule 12; plan of 9.2).
+    index("analytics_settlements_order_id_branch_id_idx").on(table.orderId, table.branchId),
     index("analytics_settlements_owner_id_idx").on(table.ownerId),
   ],
 );
