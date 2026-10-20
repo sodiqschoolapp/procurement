@@ -2070,4 +2070,24 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - A new notice of a branch passes `branchId`: the bell shows it only to readers of that branch.
 - A numbered Draft in a test is `insertOrder({ status: "DRAFT", number: inventedNumber() })`; it gets a submit time.
 
-The next task is 8.2b.
+## 8.2b Backups, a Head's lost password, receipt photos, running periods, the report branch (20.10.2026, pull request #143)
+
+**Built**
+- Job `database_copy` daily at 04:00: `copyDue()` (`src/domain/database-copy.ts`) copies on a Sunday, the night after a failure, when nothing was recorded, and when the last good copy is 7 days old. One `database_copies` row per attempt (migration 0052, also DATABASE_COPY_FAILED). A failure does not throw: its row, one notice to every active Head (`/settings`, no branch) and an alert. `databaseCopy()` returns `{ ok, key, size, line }` and writes to `BACKUP_S3_*` (`backupStorageConfigOf()`, endpoint and region of `S3_*`). `/settings` shows `getLastDatabaseCopy()`.
+- `npm run user:renew-head` (`scripts/renew-head.mjs`, core `renewHeadPassword()` in `scripts/head-password.mjs`, prompt `scripts/ask-hidden.mjs`), copied into the image.
+- `document` uploads keep a 2 500 px `large.jpg` (`versionSide()`, `shrinkSideOf()`).
+- `periodBefore(period, schoolYearStart, today)`, `isRunning()`, `sameDaysBefore()`, `runningMonthBefore()`; `ResolvedPeriod` carries `running` and `today`; the page and PDF say "against the same days"; the month holding today in Spending, Finance's cash, stock planning and prices compares with the same days.
+- Reports: `withSwitcherBranch()` on the page and `/reports/download`; `ReportParams.branchGiven`; `reportSearch()` writes `branch=all`.
+
+**Left out, and the task that brings it**
+- The restore drill from the backup bucket: 9.6. The R2 bucket and token of the copies: the owner, at 9.4.
+
+**Open for the owner**
+- None.
+
+**What the next sessions must know**
+- A test whose "period before" data sits after today's day of the month before now falls out of a running month: put it in the same days, or use last month.
+- The test storage env has `BACKUP_S3_*` (`<bucket>-backups`); the Vitest setup makes `procurement-test-backups`.
+- A module of a page must not import `@/server/db/client` at the top: `next build` has no DATABASE_URL.
+
+The next task is 5.4b.

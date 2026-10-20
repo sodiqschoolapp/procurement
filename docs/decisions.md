@@ -2849,6 +2849,36 @@ Choices made during the build:
 - The download of Money with managers answers 404 to the Manager and the Principal, as every refusal of that route.
 - `insertOrder()` (`tests/helpers/orders.ts`) gives a Draft with a number a submit time, as a taken-back order keeps one.
 
+### 8.2b Backups, a Head's lost password, receipt photos, running periods, the report branch (20.10.2026)
+
+The plan's decisions as the plan review of 20.10.2026 confirmed them (its two corrections applied: the 7-day edge of `copyDue()` tested; the download route itself tested without `branch=` and with the CHL cookie), and those of the build. The Look first items come first.
+
+1. **Look first** (tests changed because a requirement changed, D55 items 7, 10 and 11). The cases of a running month against the whole month before (6.3 items 3 and 6), of the reports starting at All my branches (6.8 build choice), of the copy's Sunday schedule and its failure as a failed tick (8.2 items 5 and 9) are replaced by their new rules, each naming D55. In 13 analytics tests whose subject is not the comparison (head spending, Finance's cash, managers, my orders, plan vs actual, principal, settlement speed, top products, warehouse) the fixture of the period before moved into 1 to 15 September, the same days of 15 October, so each still tests what it tested; the Tashkent-midnight edge of the period before moved to 15 September 23:30.
+2. **Look first** (reading of 10 point 1). Running: this month, this quarter or this school year with today inside it. The period before is cut to as many days from its start as the period has run to today, never past its end (18 October: 1 to 18 September; 31 March: all of February; 15 November, this quarter: 1 July to 15 August). The month point holding today compares the same way with the month before it (`runningMonthBefore()`); finished points keep the whole month. Last month and custom dates stay as built.
+3. One daily job, `{ dailyAt: "04:00" }`, with the rule in `copyDue()` of `src/domain/`.
+4. A failed copy writes its row, tells every active Head and reports the alert, and does not throw (reverses 8.2 item 9; D55, 6).
+5. The bucket of the copies: `BACKUP_S3_BUCKET`, `BACKUP_S3_ACCESS_KEY_ID`, `BACKUP_S3_SECRET_ACCESS_KEY`, on `S3_ENDPOINT` and `S3_REGION`. `copyRuns()` stays "production with `S3_BUCKET`", so missing backup settings fail loudly every night.
+6. A console copy writes no `database_copies` row.
+7. The date on Settings is the Tashkent date of the newest good attempt's tick.
+8. The notice names no cause; link `/settings`.
+9. The console command refuses unknown, inactive and not-a-Head with one message; the audit row's actor is the Head itself, `before {}` `after {}`; an empty password, one over 4 096 characters and a Head with no password account are refused (plan review, Should fix 3 of the spec review).
+10. Every `document` upload is a receipt and keeps 2 500 px; a `photo` keeps 160 and 1 200 px.
+11. The 2 MB redraw stays; a document is redrawn only above 2 500 px.
+12. Reports take the cookie's branch only without `branch=`; the page and the download route share `withSwitcherBranch()`; `reportSearch()` writes `branch=all`.
+13. One `database_copies` row per attempt, a CHECK on its outcome and a unique tick.
+14. The 7-day rule: a copy is due when the last good one is 7 days old or more (the edge counts as due).
+15. Not split: about 45 files, one session.
+
+Choices made during the build:
+
+- `databaseCopy()` returns `{ ok, key, size, line }` instead of the line, so the job records the key and the size without reading its own text.
+- `getLastDatabaseCopy()` asks `catalog.manage`, the permission of `getSettingsForHead()` (the Head's Settings page).
+- The page data loads `@/server/db/client` lazily for `resolvePeriod()`: a top import broke `next build`, which has no DATABASE_URL (the image job of CI).
+- `npm run storage:bucket` makes the backup bucket only when `BACKUP_S3_BUCKET` is set, and says so otherwise, so an older local `.env` still works; the Vitest setup makes `procurement-test-backups`, and the e2e setup `procurement-e2e-backups` through the same script.
+- `.do/app.yaml` declares `BACKUP_S3_BUCKET: ombor-test-backups`; `docs/deploy.md` has the bucket, its token, the retry and "A Head forgot the password".
+- Prices: the running month's point is compared with the average price of the same days of the month before; none when no record was priced in those days.
+- Permission review: Should fix 1 (a cookie-branch case at more readers) is built for Spending, Stock on hand and Money with managers; the other reports pass the same `ReportParams` to queries whose walls are unchanged. Nit 1 (an unreachable `case "orders"` in the download route) stays: TypeScript needs it to see every report handled after the parsed params are replaced.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.
