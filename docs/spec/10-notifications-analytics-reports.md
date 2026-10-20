@@ -9,7 +9,7 @@ Every user is told the moment something waits for them, and each role's home pag
 
 Notifications appear in an in-app bell with an unread count. No messenger, email or SMS is used.
 
-One action sends one notification to each person told, never one per order: "Dilnoza submitted 15 orders in CHL", "Principal approved 8 orders in CHL", "Finance gave 650 000 for 3 orders". Its link opens the order list filtered to those orders.
+One action sends one notification to each person told, never one per order: "Dilnoza submitted 15 orders in CHL", "Principal approved 8 orders in CHL", "Finance gave 650 000 for 3 orders". Its link opens the order list filtered to those orders. The bell shows only notifications of branches the reader has now.
 
 | Event | Who is told |
 | --- | --- |
@@ -18,6 +18,8 @@ One action sends one notification to each person told, never one per order: "Dil
 | Principal approved | Finance users of the branch |
 | Finance approved | Owner, Head |
 | Sent back, rejected | Owner, Head |
+| Cancelled by someone other than its owner | Owner |
+| Orders moved to another Manager | The new owner and the old one |
 | Cash given, cash returned, paid back | Owner |
 | Sent to settlement | Finance users of the branch |
 | Overspend above the guard | Head |
@@ -34,6 +36,7 @@ One action sends one notification to each person told, never one per order: "Dil
 | Purchase record cancelled | Head |
 | Recent purchases differ from the reference price by more than 20% | Head |
 | A Manager's right is switched on or off | That Manager |
+| The weekly copy of the database failed | Every active Head, each night until a copy succeeds |
 
 ## Home page per role
 
@@ -50,7 +53,7 @@ Each list on a home page shows counts and group rows, with a link to the filtere
 
 Each role has its own Analytics page, separate from the home page: home is "what must I do now", Analytics is "what is happening and why". All four pages behave the same way.
 
-1. **Period.** This month, last month, this quarter, this school year, or custom dates. The first day of the school year is set in Settings; until it is set, the school-year choice is hidden. Every number shows its change against the period before.
+1. **Period.** This month, last month, this quarter, this school year, or custom dates. The first day of the school year is set in Settings; until it is set, the school-year choice is hidden. Every number shows its change against the period before. While a period is still running, it is compared with the same number of days at the start of the period before (1 to 18 October against 1 to 18 September), and the page says so.
 2. **Filters.** Branch (within the user's branches), category, department, Manager, supplier.
 3. **Click to see behind.** Clicking any bar, slice or number opens the list of orders or records that make it up. Every number can be traced to its source.
 4. **Export.** Each chart and table exports to Excel. The whole page downloads as a PDF report, without signature lines.
@@ -99,7 +102,7 @@ Each role has its own Analytics page, separate from the home page: home is "what
 
 ## Reports
 
-Every report filters by branch, date range and category, respects the user's branches, and exports to Excel.
+Every report filters by branch, date range and category, respects the user's branches, and exports to Excel. The branch filter starts at the branch picked in the branch switcher on top.
 
 | Report | Answers |
 | --- | --- |
@@ -107,9 +110,9 @@ Every report filters by branch, date range and category, respects the user's bra
 | Purchase register | Every purchase record with supplier, price and payment type |
 | Planned vs actual | Differences per order, product and Manager |
 | Spending | Totals by branch, category, department, supplier and month |
-| Price history | How the price of one product changed over time, as a chart |
+| Price history | How the price of one product changed over time, as a chart; the Head's notes on reference prices and who set them are shown to the Head and Finance only |
 | Stock on hand | Quantities and value per branch |
 | Stock movements | Everything that went in and out in a period |
 | Use by department | What each department received, in quantity and value |
-| Money with managers | Open cash balances and their age |
+| Money with managers | Open cash balances and their age; Head and Finance only |
 | Approval speed | Average hours an order waits at each step |

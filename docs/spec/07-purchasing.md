@@ -18,7 +18,7 @@ One record belongs to one order. An order can have many records, for example 60 
 | Payment type used | Default from the order. Can differ, for example planned by card but paid in cash. |
 | Supplier | Optional, from the companies catalog. Default is the order's brand or company. |
 | Subtype bought | Default is the ordered subtype. See "Substitution" below. |
-| Receipt | 0 to 5 photos or PDF files. On a phone the camera opens directly. |
+| Receipt | 0 to 5 photos or PDF files. On a phone the camera opens directly. A receipt photo is kept at up to 2 500 px on its longest side, so its small print stays readable. |
 | Give straight to requester | Optional tick. Also creates an issue to the order's department (section 9). |
 | Comment | Required when price or quantity differs from the plan, on a substitution, on price 0, or when the payment type changed. |
 | Actual total | Automatic: quantity × price, rounded, plus extra costs. |

@@ -38,7 +38,7 @@ An order matches exactly when Number and Price are green, actual extra costs equ
 
 ## Money ledger
 
-Finance records every movement of money as an **action**: one date, an optional document number, an optional file and a comment, split into **rows**, one per order. Each row has its order, its kind and an amount above 0. The action's total is the sum of its rows; nobody types a total that could disagree with them. Actions are never deleted; a wrong one is cancelled whole, with a reason, while none of its orders is Closed, and entered again. When one of its orders is already Closed, the Head reopens that order first.
+Finance records every movement of money as an **action**: one date, not later than today, an optional document number, an optional file and a comment, split into **rows**, one per order. Each row has its order, its kind and an amount above 0. The action's total is the sum of its rows; nobody types a total that could disagree with them. Actions are never deleted; a wrong one is cancelled whole, with a reason, while none of its orders is Closed, and entered again. When one of its orders is already Closed, the Head reopens that order first.
 
 | Kind of row | Direction | Changes the order's cash count |
 | --- | --- | --- |
@@ -63,7 +63,7 @@ Finance records every movement of money as an **action**: one date, an optional 
 
 ## When Finance approves
 
-The approval dialog shows the planned totals of the ticked orders per payment type, and a table "Cash given to the Manager now" with one row per order that has planned cash, prefilled with that order's planned cash: its planned total when its payment type is Cash, else 0. Finance can change any row or set it to 0, and give cash later; rows of 0 write nothing. The cash action is saved in the same transaction as the approval. Finance can add more actions at any time while the orders are Open. The Manager may buy before cash is given; the count then goes below 0 until Finance pays.
+The approval dialog shows the planned totals of the ticked orders per payment type, and a table "Cash given to the Manager now" with one row per order that has planned cash, prefilled with that order's planned cash: its planned total when its payment type is Cash, else 0. Finance can change any row or set it to 0, and give cash later; rows of 0 write nothing. The cash action is saved in the same transaction as the approval. Finance can add more actions at any time while the orders are Open; a later Cash given row is prefilled with the order's planned cash not yet given, never below 0. The Manager may buy before cash is given; the count then goes below 0 until Finance pays.
 
 ## Closing
 
