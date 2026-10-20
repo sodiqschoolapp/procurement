@@ -234,6 +234,24 @@ describe("one upload makes both sizes (04-catalogs.md rule 6; build plan 0.12, D
   });
 });
 
+describe("a receipt keeps 2 500 px (07-purchasing.md, Receipt; D55 item 7; plan of 8.2b)", () => {
+  it("a 1 000 × 4 000 receipt stores 625 × 2 500 beside the 160 px thumbnail; as a photo, 300 × 1 200", async () => {
+    const { cookie } = await signedIn();
+    const bytes = await picture("png", 1000, 4000);
+    const receipt = await uploaded(
+      await POST(uploadRequest(bytes, { name: "chek.png", purpose: "document", cookie })),
+    );
+    const photo = await uploaded(await POST(uploadRequest(bytes, { name: "rasm.png", cookie })));
+
+    const small = await imageOf(await download(receipt, "small", cookie));
+    expect([small.width, small.height]).toEqual([40, 160]);
+    const large = await imageOf(await download(receipt, "large", cookie));
+    expect([large.width, large.height]).toEqual([625, 2500]);
+    const catalog = await imageOf(await download(photo, "large", cookie));
+    expect([catalog.width, catalog.height]).toEqual([300, 1200]);
+  });
+});
+
 describe("safe repeats (developer-rules.md rule 8; plan of 0.12, decisions 6 and 9)", () => {
   it("the same client key twice gives one row and the first id", async () => {
     const { user, cookie } = await signedIn();

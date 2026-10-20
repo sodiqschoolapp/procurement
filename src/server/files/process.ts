@@ -3,14 +3,16 @@ import sharp, { type Metadata, type Sharp } from "sharp";
 
 import {
   type FileMime,
+  type FilePurpose,
   type ImageVersion,
   MAX_INPUT_PIXELS,
-  VERSION_SIDES,
   isImageMime,
+  versionSide,
 } from "@/domain/files";
 
 // What is stored of an upload (04-catalogs.md rule 6; plan of 0.12, decision 8): for an image the
-// two versions, 160 px and 1200 px on the longest side, as JPEG, turned upright by their EXIF
+// two versions, 160 px and 1200 px on the longest side (2 500 px for a receipt, 07 Receipt; plan
+// of 8.2b), as JPEG, turned upright by their EXIF
 // orientation and with every metadata block (GPS, camera) left out; for a PDF the file as it is.
 // The original of an image is not kept.
 
@@ -95,13 +97,19 @@ async function version(pixels: Sharp, side: number): Promise<Uint8Array> {
 }
 
 /** The objects to store for an upload whose type was read from its content. */
-export async function objectsOf(bytes: Uint8Array, mime: FileMime): Promise<StoredObject[]> {
+export async function objectsOf(
+  bytes: Uint8Array,
+  mime: FileMime,
+  purpose: FilePurpose,
+): Promise<StoredObject[]> {
   if (!isImageMime(mime)) {
     return [{ name: OBJECT_NAMES.original, body: bytes, contentType: mime }];
   }
   const pixels = mime === "image/heic" ? await heicPixels(bytes) : await imagePixels(bytes);
   const sizes: ImageVersion[] = ["small", "large"];
-  const bodies = await Promise.all(sizes.map((size) => version(pixels, VERSION_SIDES[size])));
+  const bodies = await Promise.all(
+    sizes.map((size) => version(pixels, versionSide(size, purpose))),
+  );
   return sizes.map((size, index) => ({
     name: OBJECT_NAMES[size],
     body: bodies[index]!,

@@ -107,7 +107,7 @@ export async function POST(request: NextRequest): Promise<Response> {
 
   let objects: Awaited<ReturnType<typeof objectsOf>>;
   try {
-    objects = await objectsOf(bytes, mime);
+    objects = await objectsOf(bytes, mime, parsed.data.purpose);
   } catch (error) {
     if (error instanceof NotAnImage) return refuse("not_an_image");
     throw error;

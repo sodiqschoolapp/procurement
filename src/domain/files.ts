@@ -34,6 +34,18 @@ export const MAX_FILE_BYTES = 10 * 1024 * 1024;
 export const VERSION_SIDES = { small: 160, large: 1200 } as const;
 export type ImageVersion = keyof typeof VERSION_SIDES;
 
+/**
+ * "A receipt photo is kept at up to 2 500 px on its longest side, so its small print stays
+ * readable" (07-purchasing.md, Receipt; D55 item 7). Every image uploaded as a `document` is a
+ * receipt: of a trip, a money action or a settlement (plan of 8.2b, decided item 10).
+ */
+export const RECEIPT_SIDE = 2500;
+
+/** The longest side of a stored version of an image uploaded for a purpose. */
+export function versionSide(version: ImageVersion, purpose: FilePurpose): number {
+  return version === "large" && purpose === "document" ? RECEIPT_SIDE : VERSION_SIDES[version];
+}
+
 /** The sizes the download route answers: the two versions of an image, the file of a PDF. */
 export const DOWNLOAD_SIZES = ["small", "large", "original"] as const;
 export type DownloadSize = (typeof DOWNLOAD_SIZES)[number];
@@ -91,8 +103,16 @@ export function storedName(name: string): string {
   return Array.from(trimmed).slice(0, 255).join("");
 }
 
-/** The longest side the browser redraws a large photo to (plan of 0.12, decision 12). */
+/**
+ * The longest side the browser redraws a large photo to (plan of 0.12, decision 12); a receipt
+ * keeps the 2 500 px it is stored at (07 Receipt; plan of 8.2b).
+ */
 export const SHRINK_SIDE = 2400;
+
+/** The longest side the browser redraws an image of a purpose to. */
+export function shrinkSideOf(purpose: FilePurpose): number {
+  return purpose === "document" ? RECEIPT_SIDE : SHRINK_SIDE;
+}
 /** A photo above this many bytes is redrawn even when its sides are small (decision 12). */
 export const SHRINK_BYTES = 2 * 1024 * 1024;
 /** The JPEG quality of a redrawn photo (decision 12). */
@@ -106,11 +126,13 @@ export function shrinkTarget(
   width: number,
   height: number,
   bytes: number,
+  purpose: FilePurpose,
 ): { width: number; height: number } | null {
+  const side = shrinkSideOf(purpose);
   const longest = Math.max(width, height);
-  if (longest <= SHRINK_SIDE && bytes <= SHRINK_BYTES) return null;
-  if (longest <= SHRINK_SIDE) return { width, height };
-  const scale = SHRINK_SIDE / longest;
+  if (longest <= side && bytes <= SHRINK_BYTES) return null;
+  if (longest <= side) return { width, height };
+  const scale = side / longest;
   return {
     width: Math.max(1, Math.round(width * scale)),
     height: Math.max(1, Math.round(height * scale)),
