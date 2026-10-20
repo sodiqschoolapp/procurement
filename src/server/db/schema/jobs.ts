@@ -70,3 +70,17 @@ export const databaseCopies = pgTable(
     ),
   ],
 );
+
+// trial_end: the record that the trial of the live app has ended (build-plan 9.4; D52; plan of
+// 9.4, decided item 2, Look first). Not a table of 14-data-model.md. Written once, by
+// `npm run trial:reset` (scripts/trial-end.mjs) right after it emptied and migrated the database;
+// its row makes the reset and the seed refuse, so neither can run over the real data. One row at
+// most: the key is always true. Never updated, never deleted.
+export const trialEnd = pgTable(
+  "trial_end",
+  {
+    id: boolean("id").primaryKey().default(true),
+    endedAt: timestamp("ended_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [check("trial_end_one_row_check", sql`${table.id}`)],
+);

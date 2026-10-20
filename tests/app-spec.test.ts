@@ -2,9 +2,10 @@ import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
-// build-plan 0.16: "the DigitalOcean App Platform spec for the test copy, kept in the repository
-// (1 GiB container, development database, Frankfurt, a new version on every push to `main`, …,
-// the address `ombor-test.sodiqschool.uz`)"; 18-hosting-and-costs.md row 7; docs/decisions.md,
+// build-plan 9.4: "`.do/app.yaml` … turned from the test copy into the live app: app `ombor`,
+// 1 GiB container, Managed PostgreSQL with 1 GiB (daily backups), Frankfurt, the R2 buckets
+// `ombor-files` and `ombor-copies` …, the address `ombor.sodiqschool.uz`; it starts in trial mode
+// with `SEED_DEMO_DATA` on"; 18-hosting-and-costs.md rows 1 to 3; D52; docs/decisions.md,
 // "Decided ahead: task 0.16", item 2: no secret in the repository. The file is read as text: no
 // YAML library is a dependency of this project. A price is not checked here; the owner checks
 // the dashboard's total before creating the app (docs/deploy.md).
@@ -21,30 +22,34 @@ function valuesOf(key: string): string[] {
   });
 }
 
-describe("the App Platform spec of the test copy (build-plan 0.16; 18-hosting row 7)", () => {
-  it("runs in Frankfurt at ombor-test.sodiqschool.uz", () => {
+describe("the App Platform spec of the live app (build-plan 9.4; 18-hosting rows 1 to 3; D52)", () => {
+  it("is the app ombor, in Frankfurt, at ombor.sodiqschool.uz", () => {
     expect(valuesOf("region")).toEqual(["fra"]);
-    expect(valuesOf("domain")).toEqual(["ombor-test.sodiqschool.uz"]);
+    expect(valuesOf("domain")).toEqual(["ombor.sodiqschool.uz"]);
+    expect(valuesOf("name")[0]).toBe("ombor");
   });
 
-  it("builds this repository's Dockerfile on every push to main", () => {
+  it("builds this repository's Dockerfile on every push to main (open question 10)", () => {
     expect(valuesOf("repo")).toEqual(["sodiqschoolapp/procurement"]);
     expect(valuesOf("branch")).toEqual(["main"]);
     expect(valuesOf("deploy_on_push")).toEqual(["true"]);
     expect(valuesOf("dockerfile_path")).toEqual(["Dockerfile"]);
   });
 
-  it("has one service of one 1 GiB container", () => {
+  it("has one service of one 1 GiB container (row 1)", () => {
     const slugs = valuesOf("instance_size_slug");
     expect(slugs).toHaveLength(1);
     expect(slugs[0]).toMatch(/-1gb(-|$)/);
     expect(valuesOf("instance_count")).toEqual(["1"]);
   });
 
-  it("has one development database, PostgreSQL 17", () => {
+  it("uses the managed PostgreSQL 17 cluster ombor-db as its owner (row 2; plan of 9.4, decided item 1)", () => {
     expect(valuesOf("engine")).toEqual(["PG"]);
     expect(valuesOf("version")).toEqual(['"17"']);
-    expect(valuesOf("production")).toEqual(["false"]);
+    expect(valuesOf("production")).toEqual(["true"]);
+    expect(valuesOf("cluster_name")).toEqual(["ombor-db"]);
+    expect(valuesOf("db_name")).toEqual(["defaultdb"]);
+    expect(valuesOf("db_user")).toEqual(["doadmin"]);
   });
 
   it("sends traffic to a new version only when /health answers", () => {
@@ -52,7 +57,7 @@ describe("the App Platform spec of the test copy (build-plan 0.16; 18-hosting ro
     expect(valuesOf("http_port")).toEqual(["8080"]);
   });
 
-  it("holds no secret: every value is a DigitalOcean binding or a plain word (Decided ahead 0.16, item 2; build-plan 0.15)", () => {
+  it("holds no secret: every value is a DigitalOcean binding or a plain word (Decided ahead 0.16, item 2)", () => {
     expect(valuesOf("value")).toEqual([
       "production",
       "${db.DATABASE_URL}",
@@ -60,14 +65,16 @@ describe("the App Platform spec of the test copy (build-plan 0.16; 18-hosting ro
       "${_self.COMMIT_HASH}",
       '"yes"',
       "auto",
-      "ombor-test-files",
-      "ombor-test-backups",
+      "ombor-files",
+      "ombor-copies",
     ]);
     expect(text).not.toMatch(/postgres(ql)?:\/\//);
     expect(text).not.toMatch(/BEGIN CERTIFICATE/);
   });
 
-  it("seeds the demo users and names the R2 bucket, leaving every typed value to the dashboard (build-plan 0.15)", () => {
+  // D52 replaces the 0.15 note "the production app spec must not carry SEED_DEMO_DATA": the live
+  // app starts in trial mode with it on, and 9.5 removes it (plan of 9.4, decided item 4, Look first).
+  it("starts in trial mode and names both R2 buckets, leaving every typed value to the dashboard (D52; build-plan 8.2b)", () => {
     expect(valuesOf("key")).toEqual([
       "NODE_ENV",
       "DATABASE_URL",
@@ -76,11 +83,14 @@ describe("the App Platform spec of the test copy (build-plan 0.16; 18-hosting ro
       "SEED_DEMO_DATA",
       "S3_REGION",
       "S3_BUCKET",
-      // The bucket of the weekly copies (build-plan 8.2b); its two keys are typed in the dashboard.
       "BACKUP_S3_BUCKET",
     ]);
     expect(text).not.toMatch(
-      /PASSWORD|S3_ENDPOINT|S3_ACCESS_KEY_ID|S3_SECRET_ACCESS_KEY|BETTER_AUTH_SECRET/,
+      /PASSWORD|S3_ENDPOINT|S3_ACCESS_KEY_ID|S3_SECRET_ACCESS_KEY|BETTER_AUTH_SECRET|ERROR_REPORT_DSN/,
     );
+  });
+
+  it("keeps no trace of the test copy (D52)", () => {
+    expect(spec).not.toMatch(/ombor-test/);
   });
 });

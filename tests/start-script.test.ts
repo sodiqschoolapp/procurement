@@ -77,7 +77,7 @@ function runStart(env: Record<string, string>, outcome: Outcome) {
 
 const NEXT = "next start --hostname 0.0.0.0 --port 8080";
 
-describe("the container's start seeds the test copy only (build-plan 0.15; plan of 0.15, decision 1)", () => {
+describe("the container's start seeds only in trial mode (build-plan 0.15 and 9.4; plan of 0.15, decision 1)", () => {
   it("with SEED_DEMO_DATA=yes: migrates, seeds, then starts the app", () => {
     const run = runStart({ SEED_DEMO_DATA: "yes" }, { migrate: 0, seed: 0 });
 

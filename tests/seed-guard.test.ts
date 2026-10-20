@@ -18,9 +18,9 @@ const PASSWORDS = {
 };
 const REFUSAL =
   "Refused: the database of DATABASE_URL is not on this machine, and SEED_DEMO_DATA is not yes. " +
-  "The demo users are written to a hosted database only on the test copy (docs/deploy.md). Nothing was written.";
+  "The demo users are written to a hosted database only while the live app is in trial (docs/deploy.md). Nothing was written.";
 
-describe("the seed writes to a hosted database only on the test copy (build-plan 0.15; rule 14; 0.14 review, Should fix 1)", () => {
+describe("the seed writes to a hosted database only while the live app is in trial (build-plan 0.15; rule 14; 0.14 review, Should fix 1)", () => {
   it("allows a database on this machine without the switch", () => {
     for (const address of [
       "postgres://procurement@127.0.0.1:5433/procurement",
