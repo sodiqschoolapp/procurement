@@ -8,8 +8,7 @@ import { getFormatters } from "@/i18n/get-formatters";
 // The stepper of the order page (11-screens-and-ux.md, Order page layout 2: "Draft, Head,
 // Principal, Finance, Open, Closed, with the name and time of each finished step"). The steps come
 // from orderSteps() of src/domain/order-steps.ts; this only draws them. One row on a desktop, one
-// step per line on a phone. Status colours are info and muted only: green, amber and red are kept
-// for the three labels and alerts (11 rule 11).
+// step per line on a phone. The current step is blue, as its status dot; done steps navy.
 
 const LOOK: Record<StepState, { icon: IconName | null; className: string }> = {
   done: { icon: "check_circle", className: "text-foreground" },
@@ -39,7 +38,7 @@ export async function OrderStepper({ steps }: { steps: readonly StepView[] }) {
               data-state={view.state}
               aria-current={view.state === "current" ? "step" : undefined}
               className={cn(
-                "flex min-w-0 flex-1 items-start gap-2 sm:flex-col sm:border-t-4 sm:pt-3",
+                "flex min-w-0 flex-1 items-start gap-2 sm:flex-col sm:border-t-2 sm:pt-3",
                 view.state === "done" && "sm:border-foreground",
                 view.state === "current" && "sm:border-info",
                 (view.state === "todo" || view.state === "stopped") && "sm:border-border",

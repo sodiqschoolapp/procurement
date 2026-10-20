@@ -1548,7 +1548,10 @@
       },
       "money": {
         "title": "Pul"
-      }
+      },
+      "back": "Buyurtmalar",
+      "totals": "Summalar",
+      "outcome": "Rejaga nisbatan"
     },
     "approve": {
       "button": "Tasdiqlash",

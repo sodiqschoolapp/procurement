@@ -1548,7 +1548,10 @@
       },
       "money": {
         "title": "Money"
-      }
+      },
+      "back": "Orders",
+      "totals": "Totals",
+      "outcome": "Against the plan"
     },
     "approve": {
       "button": "Approve",
