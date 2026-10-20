@@ -254,6 +254,9 @@ test("S17: the list filtered to one week downloads as Excel and PDF with exactly
   await page.goto("/orders");
   if (info.project.name === "phone-375") {
     await page.getByRole("button", { name: e.list.filters.open, exact: true }).click();
+  } else {
+    // The dates stand behind "More filters" on a desktop (redesign of 21.10.2026).
+    await page.getByRole("button", { name: e.list.filters.more, exact: true }).click();
   }
   await page.getByLabel(e.list.filters.from, { exact: true }).fill("12.10.2026");
   await page.getByLabel(e.list.filters.from, { exact: true }).press("Enter");

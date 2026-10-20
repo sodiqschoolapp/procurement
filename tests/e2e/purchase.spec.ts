@@ -131,8 +131,10 @@ test("the owner records a purchase with Same as planned; the order shows Receive
   await page.locator("[data-record-purchase]").click();
   await expect(page).toHaveURL(new RegExp(`/orders/${orderId}/purchase$`));
 
-  // The two defaults of 07: today, and the order's payment type.
-  await expect(page.locator("#purchase-date")).toHaveValue(today);
+  // The two defaults of 07: today, and the order's payment type. The field shows the date as
+  // dd.mm.yyyy (11 rule 10, Formats; redesign of 21.10.2026) and sends the same YYYY-MM-DD.
+  const [year, month, day] = today.split("-");
+  await expect(page.locator("#purchase-date")).toHaveValue(`${day}.${month}.${year}`);
   await expect(page.getByRole("radio", { name: en.paymentTypes.CARD }).first()).toBeChecked();
 
   await page.getByRole("button", { name: f.sameAsPlanned }).click();

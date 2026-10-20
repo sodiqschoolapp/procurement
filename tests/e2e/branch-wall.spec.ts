@@ -330,7 +330,9 @@ test("S7, the order list's tabs and summary: EB's branch in the address shows on
   // Another branch in the address: the list, its status tabs and its counts read as nothing.
   await page.goto(`/orders?branch=${eb}`);
   await expect(page.getByRole("heading", { level: 1, name: uz.orders.title })).toBeVisible();
-  await expect(page.getByRole("heading", { name: uz.orders.list.empty.title })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: uz.orders.list.emptyFiltered.title }),
+  ).toBeVisible();
   const tabs = page.getByRole("navigation", { name: uz.orders.list.tabs.label });
   await expect(tabs.locator("[data-tab]")).toHaveCount(1);
   await expect(tabs.locator('[data-tab="all"]')).toBeVisible();

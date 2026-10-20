@@ -32,6 +32,8 @@ type Result = {
   who: Who | null;
   note: string;
   url: string;
+  /** The not-found screen, which answers 404 (tests/e2e/screens.ts). */
+  missing?: boolean;
   times: number[];
   statements: number | null;
   rows: number | null;
@@ -171,9 +173,10 @@ function statementsBetween(start: string, end: string, tail = 20_000): number | 
 }
 
 /** One load: the milliseconds until the page and its streamed parts are there. */
-async function load(page: Page, url: string): Promise<number> {
+async function load(page: Page, url: string, missing = false): Promise<number> {
   const response = await page.goto(url, { waitUntil: "load" });
-  expect(response?.ok(), url).toBe(true);
+  if (missing) expect(response?.status(), url).toBe(404);
+  else expect(response?.ok(), url).toBe(true);
   const handle = await page.waitForFunction(
     () =>
       document.readyState === "complete" && document.querySelector('[aria-busy="true"]') === null
@@ -199,13 +202,13 @@ function rowsOf(page: Page): Promise<number> {
 }
 
 async function measure(page: Page, entry: Omit<Result, "times" | "statements" | "rows">) {
-  await load(page, entry.url);
+  await load(page, entry.url, entry.missing);
   const times: number[] = [];
   let statements: number | null = null;
   for (let n = 0; n < TIMED; n += 1) {
     const id = `${RUN}-${results.length}-${n}`;
     await mark(`speed-start-${id}`);
-    times.push(await load(page, entry.url));
+    times.push(await load(page, entry.url, entry.missing));
     // What the page sends after its load event (a streamed part's late statement) still counts.
     await page.waitForTimeout(300);
     await mark(`speed-end-${id}`);
@@ -309,6 +312,7 @@ test("every page opens in under 1 second at the fill's volume (01-summary.md, Qu
       who: screen.who,
       note: screen.note,
       url: screen.url(ids),
+      missing: screen.missing === true,
     })),
     ...listUrls(),
   ];
