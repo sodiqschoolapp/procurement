@@ -96,6 +96,7 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - 17.10.2026: D50: before acting on a review, and before the first commit, re-read the comments; act on the newest verdict at the head sha; stop when another session posted "Resumed by the start routine." after it.
 - 19.10.2026: D51: a reviewer claims a commit ("Reviewing <sha>.") before reviewing it; a stricter verdict is posted even after another run's. For 6.5a-2: the finding is in decision D51. 6.5a-2 sits above the finished 6.5b in `docs/build-plan.md`, so it is the next task after the one running when D51 merged.
 - 20.10.2026: D53: CI runs in parts (`lint-and-migrations`, `tests (N/3)`, `e2e (N/4)`, `image`); the last jobs are still `checks` and `e2e`. A failure names its part; after every push the job `checks` appears only once its parts have finished.
+- 20.10.2026: D54: the reviewer claims a commit only after its CI is green, the claim lives 40 minutes, and the wait for CI is up to 30 minutes.
 
 ## 0.3 CI (14.10.2026, pull request #12)
 
