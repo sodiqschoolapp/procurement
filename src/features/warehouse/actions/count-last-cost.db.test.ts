@@ -204,10 +204,7 @@ describe("a count correction into a stock of 0 comes in at the last cost (09 Sto
       reason: "Typed the wrong quantity",
     });
     expect(cancelled.ok).toBe(true);
-    expect((await movementsOf(variantId)).map((row) => row.type)).toEqual([
-      "RECEIPT",
-      "REVERSAL",
-    ]);
+    expect((await movementsOf(variantId)).map((row) => row.type)).toEqual(["RECEIPT", "REVERSAL"]);
     expect(await balanceOf(variantId)).toEqual({ qty: "0.000", avg_cost: "0" });
 
     expect((await countAndApprove(variantId, "20")).unit_cost).toBe("3000");

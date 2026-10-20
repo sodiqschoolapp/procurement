@@ -445,7 +445,11 @@ describe("returnStock (09 Other documents, Return from a department)", () => {
     await db.execute(sql`update products set is_active = false
       where id = (select product_id from product_variants where id = ${item})`);
 
-    const result = await runAction(returnStock, manager, returnInput([{ variantId: item, qty: "3" }]));
+    const result = await runAction(
+      returnStock,
+      manager,
+      returnInput([{ variantId: item, qty: "3" }]),
+    );
     expect(result.ok).toBe(true);
     expect(await balanceOf(branch.id, item)).toEqual({ qty: "15.000", avg_cost: "3000" });
   });

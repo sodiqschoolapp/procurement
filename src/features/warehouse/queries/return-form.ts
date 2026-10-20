@@ -1,10 +1,10 @@
-import { and, asc, eq, ilike, inArray } from "drizzle-orm";
+import { and, asc, eq, exists, ilike, inArray, or } from "drizzle-orm";
 import * as z from "zod";
 
 import { DRAFT_PICKER_MAX } from "@/domain/drafts";
 import { departmentHolds } from "@/domain/stock-documents";
 import { AuthorizationError, authorize, authorizeList, branchFilter } from "@/server/authorize";
-import { departmentReceived } from "@/server/department-received";
+import { departmentHoldsSql, departmentReceived } from "@/server/department-received";
 import {
   branches,
   departments,
@@ -19,8 +19,11 @@ import { readSnapshot } from "@/server/read-snapshot";
 // documents: Return from a department; plan of 5.6). All under `stock.return_reverse` (03
 // Permission matrix, "Issue, return, transfer stock"; Manager right RETURN_REVERSE: decided item
 // 4, Look first), so a branch the user may not return in is refused as authorize() refuses it.
-// Active entries only (04 rule 2; decided item 8). Unlike the issue's search, a subtype with no
-// stock is listed: a return raises it.
+// Active departments and active items (decided item 8), and an inactive product or subtype only
+// where the department holds it, marked (04 rule 2: "returned by a department that received it;
+// the stock pickers list it marked 'inactive'"; plan of 7.4b, decided item 4, Look first), by the
+// SQL of departmentHoldsSql(), the amount the return action checks. Unlike the issue's search, a
+// subtype with no stock is listed: a return raises it.
 
 export type ReturnBranch = { id: string; code: string; name: string };
 
@@ -34,6 +37,8 @@ export type ReturnSubtype = {
   inStock: string;
   /** The department's net received amount (departmentReceived(), decided item 2, Look first). */
   received: string;
+  /** The subtype or its product is switched off (04 rule 2: listed "marked inactive"). */
+  inactive: boolean;
 };
 
 export type ReturnItem = {
@@ -100,6 +105,7 @@ export async function searchReturnItems(
       .from(departments)
       .where(and(eq(departments.id, departmentId), eq(departments.branchId, branchId)));
     if (!department) throw new AuthorizationError("not_found");
+    const scope = { branchId, departmentId };
 
     const found = await executor
       .select({
@@ -107,12 +113,26 @@ export async function searchReturnItems(
         name: products.name,
         unitShortName: units.shortName,
         allowsDecimals: units.allowDecimal,
+        isActive: products.isActive,
       })
       .from(products)
       .innerJoin(units, eq(units.id, products.unitId))
       .where(
         and(
-          eq(products.isActive, true),
+          or(
+            eq(products.isActive, true),
+            exists(
+              executor
+                .select({ id: productVariants.id })
+                .from(productVariants)
+                .where(
+                  and(
+                    eq(productVariants.productId, products.id),
+                    departmentHoldsSql(scope, productVariants.id),
+                  ),
+                ),
+            ),
+          ),
           eq(products.type, "GOODS"),
           q === "" ? undefined : ilike(products.name, containing(q)),
         ),
@@ -127,9 +147,11 @@ export async function searchReturnItems(
         productId: productVariants.productId,
         name: productVariants.name,
         isDefault: productVariants.isDefault,
+        isActive: productVariants.isActive,
         inStock: stockBalances.qty,
       })
       .from(productVariants)
+      .innerJoin(products, eq(products.id, productVariants.productId))
       .leftJoin(
         stockBalances,
         and(eq(stockBalances.variantId, productVariants.id), eq(stockBalances.branchId, branchId)),
@@ -140,7 +162,10 @@ export async function searchReturnItems(
             productVariants.productId,
             found.map((product) => product.id),
           ),
-          eq(productVariants.isActive, true),
+          or(
+            and(eq(productVariants.isActive, true), eq(products.isActive, true)),
+            departmentHoldsSql(scope, productVariants.id),
+          ),
         ),
       )
       .orderBy(asc(productVariants.name), asc(productVariants.id));
@@ -151,7 +176,7 @@ export async function searchReturnItems(
     });
 
     const items = found
-      .map((product) => ({
+      .map(({ isActive, ...product }) => ({
         ...product,
         subtypes: subtypes
           .filter((subtype) => subtype.productId === product.id)
@@ -160,6 +185,7 @@ export async function searchReturnItems(
             name: subtype.isDefault ? null : subtype.name,
             inStock: subtype.inStock ?? "0",
             received: received.get(subtype.id)!,
+            inactive: !isActive || !subtype.isActive,
           })),
       }))
       .filter((item) => item.subtypes.length > 0);

@@ -47,6 +47,8 @@ type Line = {
   /** What the line shows: the product and subtype, the stock, the measure. */
   productName: string;
   subtypeName: string | null;
+  /** Switched off: shown marked "inactive" (04 rule 2). */
+  inactive: boolean;
   inStock: string;
   unitShortName: string;
   allowsDecimals: boolean;
@@ -142,6 +144,7 @@ export function WriteOffForm({
       qty: "",
       productName: item.name,
       subtypeName: subtype.name,
+      inactive: subtype.inactive,
       inStock: subtype.inStock,
       unitShortName: item.unitShortName,
       allowsDecimals: item.allowsDecimals,
@@ -370,9 +373,12 @@ export function WriteOffForm({
           <ul className="flex flex-col gap-3">
             {lines.fields.map((field, index) => {
               const line = values.lines[index] ?? field;
-              const name = line.subtypeName
+              const named = line.subtypeName
                 ? `${line.productName} · ${line.subtypeName}`
                 : line.productName;
+              const name = line.inactive
+                ? tAll("warehouse.documents.inactiveOption", { name: named })
+                : named;
               return (
                 <li
                   key={field.id}
@@ -584,7 +590,13 @@ function ItemSearch({
                   className="flex min-h-11 w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-[15px] leading-[22px] hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring"
                 >
                   <span className="min-w-0">
-                    {subtype.name ? `${item.name} · ${subtype.name}` : item.name}
+                    {subtype.inactive
+                      ? tAll("warehouse.documents.inactiveOption", {
+                          name: subtype.name ? `${item.name} · ${subtype.name}` : item.name,
+                        })
+                      : subtype.name
+                        ? `${item.name} · ${subtype.name}`
+                        : item.name}
                   </span>
                   <span className="shrink-0 text-sm leading-5 text-muted-foreground tabular-nums">
                     {t("inStock", {

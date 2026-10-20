@@ -17,8 +17,9 @@ import {
 // department: Branch, Department, Received by, Lines "Current stock is shown beside each line";
 // plan of 5.4). All under `stock.issue` (03 Permission matrix, "Issue, return, transfer stock":
 // the Head any branch, a Manager own branches with ISSUE_STOCK), so a branch the user may not issue
-// in is refused as authorize() refuses it. Active entries only: inactive ones leave the pickers
-// (04 rule 2; decided item 3, Look first). The write-off form (09 Other documents, Write-off; plan
+// in is refused as authorize() refuses it. Active departments only. The stock items take inactive
+// products and subtypes too, marked, since their stock can still go out (04 rule 2: "the stock
+// pickers list it marked 'inactive'"; plan of 7.4b, decided items 3 and 6). The write-off form (09 Other documents, Write-off; plan
 // of 5.11) picks from the same items in stock under `stock.ask_write_off` (the Head any branch, a
 // Manager own branches with WRITE_OFF_COUNT), and the transfer form (09 Other documents,
 // Transfer; plan of 7.1) under `stock.transfer` (a Manager with TRANSFER_STOCK): one reader,
@@ -34,6 +35,8 @@ export type IssueSubtype = {
   name: string | null;
   /** The stock of the branch, numeric(14,3) text as stored, above 0. */
   inStock: string;
+  /** The subtype or its product is switched off (04 rule 2: listed "marked inactive"). */
+  inactive: boolean;
 };
 
 export type IssueItem = {
@@ -108,8 +111,9 @@ export async function issueFormChoices(
 }
 
 /**
- * Up to 20 active goods products whose name holds `q` (any case), by name, each with its active
- * subtypes whose stock in the branch is above 0, and that stock. A product with none is left out.
+ * Up to 20 goods products whose name holds `q` (any case), by name, each with its subtypes whose
+ * stock in the branch is above 0, that stock and whether it is inactive. A product with none is
+ * left out.
  */
 export async function searchIssueItems(
   userId: string,
@@ -150,25 +154,19 @@ async function itemsInStock(
       stockBalances,
       and(eq(stockBalances.variantId, productVariants.id), eq(stockBalances.branchId, branchId)),
     )
-    .where(
-      and(
-        eq(productVariants.productId, products.id),
-        eq(productVariants.isActive, true),
-        gt(stockBalances.qty, "0"),
-      ),
-    );
+    .where(and(eq(productVariants.productId, products.id), gt(stockBalances.qty, "0")));
   const found = await db
     .select({
       id: products.id,
       name: products.name,
       unitShortName: units.shortName,
       allowsDecimals: units.allowDecimal,
+      isActive: products.isActive,
     })
     .from(products)
     .innerJoin(units, eq(units.id, products.unitId))
     .where(
       and(
-        eq(products.isActive, true),
         eq(products.type, "GOODS"),
         q === "" ? undefined : ilike(products.name, containing(q)),
         exists(inStock),
@@ -184,6 +182,7 @@ async function itemsInStock(
       productId: productVariants.productId,
       name: productVariants.name,
       isDefault: productVariants.isDefault,
+      isActive: productVariants.isActive,
       inStock: stockBalances.qty,
     })
     .from(productVariants)
@@ -197,13 +196,12 @@ async function itemsInStock(
           productVariants.productId,
           found.map((product) => product.id),
         ),
-        eq(productVariants.isActive, true),
         gt(stockBalances.qty, "0"),
       ),
     )
     .orderBy(asc(productVariants.name), asc(productVariants.id));
 
-  return found.map((product) => ({
+  return found.map(({ isActive, ...product }) => ({
     ...product,
     subtypes: subtypes
       .filter((subtype) => subtype.productId === product.id)
@@ -211,6 +209,7 @@ async function itemsInStock(
         id: subtype.id,
         name: subtype.isDefault ? null : subtype.name,
         inStock: subtype.inStock,
+        inactive: !isActive || !subtype.isActive,
       })),
   }));
 }
