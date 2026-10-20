@@ -42,7 +42,7 @@ export function TabLinks({
               aria-current={tab.current ? "page" : undefined}
               data-tab={tab.id}
               className={cn(
-                "relative -mb-px flex h-11 items-center gap-2 px-2.5 text-sm font-medium whitespace-nowrap transition-colors duration-120 ease-out sm:h-10",
+                "relative -mb-px flex h-11 min-w-11 items-center justify-center gap-2 px-2.5 text-sm font-medium whitespace-nowrap transition-colors duration-120 ease-out sm:h-10",
                 "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring",
                 tab.current
                   ? "text-foreground after:absolute after:inset-x-2 after:bottom-0 after:h-0.5 after:rounded-full after:bg-brand"

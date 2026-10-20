@@ -105,7 +105,7 @@ export function DateInput({
           const dotted = typed.length < text.length ? typed : withDots(typed);
           take(isoOf(dotted), dotted);
         }}
-        className={cn(FIELD_CLASSES, FIELD_SIZES[fieldSize], "pr-10")}
+        className={cn(FIELD_CLASSES, FIELD_SIZES[fieldSize], "pr-12 sm:pr-10")}
       />
       <button
         type="button"
@@ -122,7 +122,7 @@ export function DateInput({
             field.focus();
           }
         }}
-        className="absolute top-1/2 right-1 flex size-9 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground disabled:pointer-events-none sm:size-7"
+        className="absolute top-1/2 right-0 flex size-11 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground disabled:pointer-events-none sm:right-1 sm:size-7"
       >
         <Icon name="calendar_month" size={18} />
       </button>
