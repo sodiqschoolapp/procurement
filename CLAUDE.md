@@ -48,7 +48,7 @@ src/i18n/           messages/uz.json, ru.json, en.json and the formatters
 drizzle/            SQL migrations, never edited after merge
 tests/              helpers (database, clock, invented users) and e2e/ for Playwright
 scripts/            seed, first Head, checks
-docs/               spec, build plan, progress, decisions; design-system.md, shared with sodiq-platform
+docs/               spec, build plan, progress, decisions; design-system.md (this app's own)
 public/brand/       the logo files and app icons
 ```
 
