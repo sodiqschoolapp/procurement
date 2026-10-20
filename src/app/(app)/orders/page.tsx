@@ -325,9 +325,16 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
           </h2>
           {user.role === "HEAD" && <OwnersSwitch all={everyOwner} />}
         </div>
-        {drafts.total === 0 && !canAdd && (
-          // A Manager who may only view orders is not told to add one (spec review, Should fix 7).
-          <EmptyState icon="edit" title={t("empty.title")} line={t("empty.lineViewOnly")} />
+        {drafts.total === 0 && (
+          // 11 rule 12: the empty grid says what belongs there; the New order form below is its
+          // button. A Manager who may only view orders is not told to add one (spec review, Should
+          // fix 7).
+          <EmptyState
+            icon="edit"
+            title={t("empty.title")}
+            line={canAdd ? undefined : t("empty.lineViewOnly")}
+            className="py-6 sm:py-8"
+          />
         )}
         <DraftsGrid
           rows={rows}

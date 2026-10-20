@@ -464,6 +464,9 @@
         "empty": "No Manager holds or is owed money.",
         "open": "Open Money with managers"
       }
+    },
+    "allClear": {
+      "title": "Nothing needs you right now"
     }
   },
   "profile": {

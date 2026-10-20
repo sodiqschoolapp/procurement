@@ -3,10 +3,11 @@ import { cookies } from "next/headers";
 import Link from "next/link";
 import { Suspense } from "react";
 
+import { EmptyState } from "@/components/empty-state";
+import { Icon } from "@/components/icon";
 import { Skeleton } from "@/components/skeleton";
 import { LowLabel, RequestStatusLabel } from "@/components/status-label";
 import { buttonVariants } from "@/components/ui/button";
-import { cn } from "@/components/utils";
 import { BRANCH_COOKIE } from "@/features/catalog/branch-cookie";
 import { currentBranchChoice } from "@/features/catalog/queries/my-branches";
 import { GroupLines } from "@/features/home/components/group-lines";
@@ -96,15 +97,15 @@ export default async function HomePage() {
 /** Grey panels in the shape of the home lists while they load (11-screens-and-ux.md rule 5). */
 function HomeLoading() {
   return (
-    <div aria-busy="true" className="flex flex-col gap-6">
+    <div aria-busy="true" className="flex flex-col gap-4">
       <div className="flex flex-col gap-3 sm:flex-row">
         {Array.from({ length: 3 }, (_, index) => (
-          <Skeleton key={index} className="h-12 w-full bg-secondary sm:w-48" />
+          <Skeleton key={index} className="h-12 w-full sm:w-48" />
         ))}
       </div>
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-2">
         {Array.from({ length: 4 }, (_, index) => (
-          <Skeleton key={index} className="h-48 w-full bg-card" />
+          <Skeleton key={index} className="h-48 w-full" />
         ))}
       </div>
     </div>
@@ -116,6 +117,16 @@ async function ManagerHome({ userId, branch }: { userId: string; branch: string 
   const format = await getFormatters();
   const home = await getManagerHome(userId, branch);
   const low = await listStockOnHand(userId, { branch, low: true });
+  // Nothing waits and nothing is held: one calm empty state instead of empty panels.
+  const cashHeld = home.cash.held !== 0n || home.cash.owed !== 0n;
+  const nothing =
+    home.sentBack.total === 0 &&
+    home.dueSoon.total === 0 &&
+    home.open.total === 0 &&
+    home.drafts === 0 &&
+    low.found === 0 &&
+    home.requested.length === 0 &&
+    !cashHeld;
   const showAll = (count: number, filters: ListFilters) => ({
     href: listHref(filters),
     label: t("showAll", { count }),
@@ -124,7 +135,7 @@ async function ManagerHome({ userId, branch }: { userId: string; branch: string 
   return (
     <>
       {/* 11 Interface per role: three large buttons; "New order" primary (design system, Home buttons). */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+      <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-3">
         {home.buttons.newOrder && (
           <Link
             href="/orders#drafts-title"
@@ -162,135 +173,135 @@ async function ManagerHome({ userId, branch }: { userId: string; branch: string 
         )}
         <Link
           href="/suggestions"
-          className="inline-flex min-h-11 min-w-11 items-center self-start text-sm font-semibold underline-offset-2 hover:underline sm:self-center"
+          className={buttonVariants({ variant: "ghost", className: "justify-self-start" })}
         >
+          <Icon name="add" size={18} />
           {t("suggest")}
         </Link>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <HomeBlock
-          id="sent-back"
-          title={t("manager.sentBack.title")}
-          count={home.sentBack.total}
-          empty={home.sentBack.total === 0 ? t("manager.sentBack.empty") : null}
-          link={showAll(home.sentBack.total, home.filters.sentBack)}
-        >
-          <GroupLines groups={home.sentBack.groups.map(wireGroup)} />
-        </HomeBlock>
-
-        <HomeBlock
-          id="drafts"
-          title={t("manager.drafts.title")}
-          count={home.drafts}
-          empty={home.drafts === 0 ? t("manager.drafts.empty") : null}
-          link={{ href: "/orders#drafts-title", label: t("manager.drafts.open") }}
-        >
-          <p className="text-sm">{t("manager.drafts.count", { count: home.drafts })}</p>
-        </HomeBlock>
-
-        <HomeBlock
-          id="open"
-          title={t("manager.open.title")}
-          count={home.open.total}
-          empty={home.open.total === 0 ? t("manager.open.empty") : null}
-          link={showAll(home.open.total, home.filters.open)}
-        >
-          <GroupLines groups={home.open.groups.map(wireGroup)} progress={home.openProgress} />
-        </HomeBlock>
-
-        <HomeBlock
-          id="requested"
-          title={t("manager.requested.title")}
-          empty={home.requested.length === 0 ? t("manager.requested.empty") : null}
-          link={{ href: listHref(home.filters.mine), label: t("openList") }}
-        >
-          <ul className="flex flex-col gap-2 text-sm">
-            {home.requested.map((line) => (
-              <li key={line.variantId} data-home-requested={line.variantId}>
-                {t("manager.requested.line", {
-                  product: line.subtypeName
-                    ? `${line.productName}, ${line.subtypeName}`
-                    : line.productName,
-                  quantity: format.quantity(line.quantity),
-                  unit: line.unitShortName,
-                })}
-              </li>
-            ))}
-          </ul>
-        </HomeBlock>
-
-        <HomeBlock
-          id="cash"
-          title={t("manager.cash.title")}
-          link={{ href: listHref(home.filters.mine), label: t("openList") }}
-        >
-          <dl className="grid grid-cols-2 gap-4">
-            <div className="flex flex-col gap-1">
-              <dt className="text-xs text-muted-foreground">{t("manager.cash.held")}</dt>
-              <dd data-cash="held" className="text-heading font-semibold tabular-nums">
-                {format.money(home.cash.held)}
-              </dd>
-            </div>
-            <div className="flex flex-col gap-1">
-              <dt className="text-xs text-muted-foreground">{t("manager.cash.owed")}</dt>
-              <dd data-cash="owed" className="text-heading font-semibold tabular-nums">
-                {format.money(home.cash.owed)}
-              </dd>
-            </div>
-          </dl>
-          <p className="text-xs text-muted-foreground">
-            {t("manager.cash.orders", { count: home.cash.orders })}
-          </p>
-        </HomeBlock>
-
-        <HomeBlock
-          id="low"
-          title={t("manager.low.title")}
-          count={low.found}
-          empty={low.found === 0 ? t("manager.low.empty") : null}
-          link={{ href: "/warehouse/stock?low=1", label: t("showAll", { count: low.found }) }}
-        >
-          <ul className="flex flex-col divide-y divide-border">
-            {low.rows.slice(0, 5).map((row) => (
-              <li
-                key={`${row.branchId}:${row.variantId}`}
-                className="flex flex-wrap items-center justify-between gap-2 py-3 first:pt-0 last:pb-0"
-              >
-                <Link
-                  href={`/warehouse/items/${row.variantId}?branch=${row.branchId}`}
-                  className="text-sm font-semibold underline-offset-2 hover:underline"
+      {nothing ? (
+        <EmptyState icon="task_alt" title={t("allClear.title")} />
+      ) : (
+        <div className="grid items-start gap-4 lg:grid-cols-2">
+          <HomeBlock
+            id="sent-back"
+            now
+            title={t("manager.sentBack.title")}
+            count={home.sentBack.total}
+            hidden={home.sentBack.total === 0}
+            link={showAll(home.sentBack.total, home.filters.sentBack)}
+          >
+            <GroupLines groups={home.sentBack.groups.map(wireGroup)} />
+          </HomeBlock>
+          <HomeBlock
+            id="due-soon"
+            now
+            title={t("manager.dueSoon.title")}
+            count={home.dueSoon.total}
+            hidden={home.dueSoon.total === 0}
+            link={showAll(home.dueSoon.total, home.filters.dueSoon)}
+          >
+            <GroupLines groups={home.dueSoon.groups.map(wireGroup)} />
+          </HomeBlock>
+          <HomeBlock
+            id="open"
+            title={t("manager.open.title")}
+            count={home.open.total}
+            hidden={home.open.total === 0}
+            link={showAll(home.open.total, home.filters.open)}
+          >
+            <GroupLines groups={home.open.groups.map(wireGroup)} progress={home.openProgress} />
+          </HomeBlock>
+          <HomeBlock
+            id="drafts"
+            title={t("manager.drafts.title")}
+            count={home.drafts}
+            hidden={home.drafts === 0}
+            link={{ href: "/orders#drafts-title", label: t("manager.drafts.open") }}
+          >
+            <p className="text-sm">{t("manager.drafts.count", { count: home.drafts })}</p>
+          </HomeBlock>
+          <HomeBlock
+            id="cash"
+            hidden={!cashHeld}
+            title={t("manager.cash.title")}
+            link={{ href: listHref(home.filters.mine), label: t("openList") }}
+          >
+            <dl className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1">
+                <dt className="text-xs text-muted-foreground">{t("manager.cash.held")}</dt>
+                <dd data-cash="held" className="text-heading font-semibold tabular-nums">
+                  {format.money(home.cash.held)}
+                </dd>
+              </div>
+              <div className="flex flex-col gap-1">
+                <dt className="text-xs text-muted-foreground">{t("manager.cash.owed")}</dt>
+                <dd data-cash="owed" className="text-heading font-semibold tabular-nums">
+                  {format.money(home.cash.owed)}
+                </dd>
+              </div>
+            </dl>
+            <p className="text-xs text-muted-foreground">
+              {t("manager.cash.orders", { count: home.cash.orders })}
+            </p>
+          </HomeBlock>
+          <HomeBlock
+            id="low"
+            title={t("manager.low.title")}
+            count={low.found}
+            hidden={low.found === 0}
+            link={{ href: "/warehouse/stock?low=1", label: t("showAll", { count: low.found }) }}
+          >
+            <ul className="flex flex-col divide-y divide-border">
+              {low.rows.slice(0, 5).map((row) => (
+                <li
+                  key={`${row.branchId}:${row.variantId}`}
+                  className="flex flex-wrap items-center justify-between gap-2 py-3 first:pt-0 last:pb-0"
                 >
-                  {row.subtypeName ? `${row.productName}, ${row.subtypeName}` : row.productName}{" "}
-                  <span className="text-small font-normal text-muted-foreground">
-                    {row.branchCode}
+                  <Link
+                    href={`/warehouse/items/${row.variantId}?branch=${row.branchId}`}
+                    className="text-sm font-semibold underline-offset-2 hover:underline"
+                  >
+                    {row.subtypeName ? `${row.productName}, ${row.subtypeName}` : row.productName}{" "}
+                    <span className="text-small font-normal text-muted-foreground">
+                      {row.branchCode}
+                    </span>
+                  </Link>
+                  <span className="flex items-center gap-2 text-xs tabular-nums">
+                    {t("manager.low.row", {
+                      quantity: format.quantity(row.quantity),
+                      unit: row.unitShortName,
+                      minimum: format.quantity(row.minimum ?? "0"),
+                    })}
+                    <LowLabel />
                   </span>
-                </Link>
-                <span className="flex items-center gap-2 text-xs tabular-nums">
-                  {t("manager.low.row", {
-                    quantity: format.quantity(row.quantity),
-                    unit: row.unitShortName,
-                    minimum: format.quantity(row.minimum ?? "0"),
+                </li>
+              ))}
+            </ul>
+          </HomeBlock>
+          <HomeBlock
+            id="requested"
+            title={t("manager.requested.title")}
+            hidden={home.requested.length === 0}
+            link={{ href: listHref(home.filters.mine), label: t("openList") }}
+          >
+            <ul className="flex flex-col gap-2 text-sm">
+              {home.requested.map((line) => (
+                <li key={line.variantId} data-home-requested={line.variantId}>
+                  {t("manager.requested.line", {
+                    product: line.subtypeName
+                      ? `${line.productName}, ${line.subtypeName}`
+                      : line.productName,
+                    quantity: format.quantity(line.quantity),
+                    unit: line.unitShortName,
                   })}
-                  <LowLabel />
-                </span>
-              </li>
-            ))}
-          </ul>
-        </HomeBlock>
-
-        <HomeBlock
-          id="due-soon"
-          title={t("manager.dueSoon.title")}
-          count={home.dueSoon.total}
-          empty={home.dueSoon.total === 0 ? t("manager.dueSoon.empty") : null}
-          link={showAll(home.dueSoon.total, home.filters.dueSoon)}
-          className={cn("lg:col-span-2")}
-        >
-          <p className="text-xs text-muted-foreground">{t("manager.dueSoon.hint")}</p>
-          <GroupLines groups={home.dueSoon.groups.map(wireGroup)} />
-        </HomeBlock>
-      </div>
+                </li>
+              ))}
+            </ul>
+          </HomeBlock>
+        </div>
+      )}
     </>
   );
 }
@@ -303,14 +314,16 @@ async function PrincipalHome({ userId, branch }: { userId: string; branch: strin
 
   return (
     <>
+      {home.waiting.count === 0 && <EmptyState icon="task_alt" title={t("allClear.title")} />}
       <HomeBlock
         id="waiting"
+        now
         title={t("principal.waiting.title")}
         count={home.waiting.count}
-        empty={home.waiting.count === 0 ? t("principal.waiting.empty") : null}
+        hidden={home.waiting.count === 0}
         link={{ href: waitingHref, label: t("showAll", { count: home.waiting.count }) }}
       >
-        <p data-waiting-total className="text-heading font-semibold tabular-nums">
+        <p data-waiting-total className="text-figure font-semibold tabular-nums">
           {t("principal.waiting.total", {
             count: home.waiting.count,
             total: format.money(home.waiting.totals.grand),
@@ -324,11 +337,11 @@ async function PrincipalHome({ userId, branch }: { userId: string; branch: strin
         />
       )}
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid items-start gap-4 lg:grid-cols-2">
         <HomeBlock
           id="by-status"
           title={t("principal.byStatus.title")}
-          empty={home.byStatus.length === 0 ? t("principal.byStatus.empty") : null}
+          hidden={home.byStatus.length === 0}
         >
           <ul className="flex flex-col divide-y divide-border">
             {home.byStatus.map((row) => (
@@ -346,8 +359,12 @@ async function PrincipalHome({ userId, branch }: { userId: string; branch: strin
           </ul>
         </HomeBlock>
 
-        <HomeBlock id="spending" title={t("principal.spending.title")}>
-          <p data-spending className="text-title tabular-nums">
+        <HomeBlock
+          id="spending"
+          title={t("principal.spending.title")}
+          hidden={home.spending === 0n}
+        >
+          <p data-spending className="text-figure font-semibold tabular-nums">
             {format.money(home.spending)}
           </p>
           <p className="text-xs text-muted-foreground">
@@ -356,7 +373,6 @@ async function PrincipalHome({ userId, branch }: { userId: string; branch: strin
               to: format.date(home.month.last),
             })}
           </p>
-          <p className="text-xs text-muted-foreground">{t("principal.spending.hint")}</p>
         </HomeBlock>
       </div>
     </>
@@ -407,13 +423,31 @@ async function HeadHome({ userId, branch }: { userId: string; branch: string | n
   const code = (figures: { branchCode: string; isActive: boolean }) =>
     figures.isActive ? figures.branchCode : t("head.inactive", { code: figures.branchCode });
 
+  // Nothing waits for a decision: one calm empty state before the branch figures.
+  const nothing =
+    home.waiting.count === 0 &&
+    home.overspends.length === 0 &&
+    home.writeOffs.count === 0 &&
+    suggestionCount === 0 &&
+    prompts.length === 0 &&
+    home.stuck.total === 0;
+
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
+    <div className="grid items-start gap-4 lg:grid-cols-2">
+      {nothing && (
+        <EmptyState
+          icon="task_alt"
+          title={t("allClear.title")}
+
+          className="lg:col-span-2"
+        />
+      )}
       <HomeBlock
         id="waiting"
+        now
         title={t("head.waiting.title")}
         count={home.waiting.count}
-        empty={home.waiting.count === 0 ? t("head.waiting.empty") : null}
+        hidden={home.waiting.count === 0}
         link={{
           href: listHref(home.filters.waiting),
           label: t("showAll", { count: home.waiting.count }),
@@ -444,9 +478,10 @@ async function HeadHome({ userId, branch }: { userId: string; branch: string | n
 
       <HomeBlock
         id="overspends"
+        now
         title={t("head.overspends.title")}
         count={home.overspends.length}
-        empty={home.overspends.length === 0 ? t("head.overspends.empty") : null}
+        hidden={home.overspends.length === 0}
         link={{
           href: listHref(home.filters.settlement),
           label: t("openList"),
@@ -474,9 +509,10 @@ async function HeadHome({ userId, branch }: { userId: string; branch: string | n
 
       <HomeBlock
         id="write-offs"
+        now
         title={t("head.writeOffs.title")}
         count={home.writeOffs.count}
-        empty={home.writeOffs.count === 0 ? t("head.writeOffs.empty") : null}
+        hidden={home.writeOffs.count === 0}
         link={{
           href: "/warehouse/documents",
           label: t("showAll", { count: home.writeOffs.count }),
@@ -509,7 +545,7 @@ async function HeadHome({ userId, branch }: { userId: string; branch: string | n
         id="suggestions"
         title={t("head.suggestions.title")}
         count={suggestionCount}
-        empty={suggestionCount === 0 ? t("head.suggestions.empty") : null}
+        hidden={suggestionCount === 0}
         link={{ href: "/suggestions", label: t("showAll", { count: suggestionCount }) }}
       >
         <ul className="flex flex-col divide-y divide-border">
@@ -531,7 +567,7 @@ async function HeadHome({ userId, branch }: { userId: string; branch: string | n
         id="prompts"
         title={t("head.prompts.title")}
         count={prompts.length}
-        empty={prompts.length === 0 ? t("head.prompts.empty") : null}
+        hidden={prompts.length === 0}
         link={{ href: "/prices", label: t("showAll", { count: prompts.length }) }}
       >
         <ul className="flex flex-col divide-y divide-border">
@@ -557,13 +593,12 @@ async function HeadHome({ userId, branch }: { userId: string; branch: string | n
         id="stuck"
         title={t("head.stuck.title", { hours: home.escalationHours })}
         count={home.stuck.total}
-        empty={home.stuck.total === 0 ? t("head.stuck.empty") : null}
+        hidden={home.stuck.total === 0}
         link={{
           href: listHref(home.filters.stuck),
           label: t("showAll", { count: home.stuck.total }),
         }}
       >
-        <p className="text-xs text-muted-foreground">{t("head.stuck.hint")}</p>
         <GroupLines groups={home.stuck.groups.map(wireGroup)} />
       </HomeBlock>
 
@@ -610,7 +645,6 @@ async function HeadHome({ userId, branch }: { userId: string; branch: string | n
             to: format.date(home.month.last),
           })}
         </p>
-        <p className="text-xs text-muted-foreground">{t("head.spending.hint")}</p>
         <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {home.branches.map((figures) => (
             <li key={figures.branchId} className="flex flex-col gap-1">
@@ -638,12 +672,21 @@ async function FinanceHome({ userId, branch }: { userId: string; branch: string 
   const settlementCount = home.settlements.reduce((sum, entry) => sum + entry.count, 0);
 
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
+    <div className="grid items-start gap-4 lg:grid-cols-2">
+      {approvalCount === 0 && settlementCount === 0 && money.length === 0 && (
+        <EmptyState
+          icon="task_alt"
+          title={t("allClear.title")}
+
+          className="lg:col-span-2"
+        />
+      )}
       <HomeBlock
         id="approvals"
+        now
         title={t("finance.approvals.title")}
         count={approvalCount}
-        empty={approvalCount === 0 ? t("finance.approvals.empty") : null}
+        hidden={approvalCount === 0}
         link={{
           href: listHref(home.filters.approvals),
           label: t("showAll", { count: approvalCount }),
@@ -669,9 +712,10 @@ async function FinanceHome({ userId, branch }: { userId: string; branch: string 
 
       <HomeBlock
         id="settlements"
+        now
         title={t("finance.settlements.title")}
         count={settlementCount}
-        empty={settlementCount === 0 ? t("finance.settlements.empty") : null}
+        hidden={settlementCount === 0}
         link={{
           href: listHref(home.filters.settlements),
           label: t("showAll", { count: settlementCount }),
@@ -698,7 +742,7 @@ async function FinanceHome({ userId, branch }: { userId: string; branch: string 
         id="money"
         title={t("finance.money.title")}
         count={money.length}
-        empty={money.length === 0 ? t("finance.money.empty") : null}
+        hidden={money.length === 0}
         link={{ href: "/money", label: t("finance.money.open") }}
         className="lg:col-span-2"
       >

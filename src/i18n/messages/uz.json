@@ -464,6 +464,9 @@
         "empty": "Hech bir menejerda pul yoki qarz yoʻq.",
         "open": "«Menejerlardagi pul»ni ochish"
       }
+    },
+    "allClear": {
+      "title": "Hozircha sizni kutayotgan ish yoʻq"
     }
   },
   "profile": {

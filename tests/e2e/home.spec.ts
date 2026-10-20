@@ -223,16 +223,19 @@ test("the Head's home: Waiting for my approval shows the branch's line, which op
   await expect(
     waiting.locator("[data-home-group]").filter({ hasText: seeded.product }),
   ).toBeVisible();
-  for (const block of [
-    "overspends",
-    "write-offs",
-    "suggestions",
-    "prompts",
-    "stuck",
-    "by-status",
-    "spending",
-  ]) {
+  // The branch figures always show; a list block shows only when it holds something, with its
+  // count above 0 (docs/design-system.md, This app, Home: empty sections are hidden; redesign of
+  // 21.10.2026).
+  for (const block of ["by-status", "spending"]) {
     await expect(page.locator(`[data-home-block="${block}"]`)).toBeVisible();
+  }
+  for (const block of ["overspends", "write-offs", "suggestions", "prompts", "stuck"]) {
+    const shown = page.locator(`[data-home-block="${block}"]`);
+    if ((await shown.count()) === 1) {
+      expect(Number(await shown.locator("[data-home-count]").innerText())).toBeGreaterThan(0);
+    } else {
+      await expect(shown).toHaveCount(0);
+    }
   }
   expect(await scrollsSideways(page)).toBe(false);
 
