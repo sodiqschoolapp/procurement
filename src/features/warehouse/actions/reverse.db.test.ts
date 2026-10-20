@@ -357,29 +357,117 @@ describe("reverseStockDocument (09 Movement types, last paragraph; Issue to a de
     expect((await documentOf(back.documentId)).status).toBe("REVERSED");
   });
 
-  it("an issue partly returned still reverses, its reason the comment: stock and the department's amount follow (review of the plan, correction 1)", async () => {
-    // The review's own example: stock 100, issue 10 (90), the department returns 4 (94); the
-    // issue was wrong, so the true stock is 104.
-    const pens = await goods();
-    await receive(branch.id, pens, "100", 1000n, manager);
-    const wrong = await issued([{ variantId: pens, qty: "10" }]);
-    await postDocument({
+});
+
+describe("reversing an issue after a return (09 Issue to a department 3: refused past what the department still holds; D57; plan of 5.7b)", () => {
+  async function returned(variantId: string, qty: string) {
+    return postDocument({
       type: "RETURN",
       branchId: branch.id,
       departmentId: department,
       createdBy: manager,
-      lines: [{ variantId: pens, qty: "4" }],
+      lines: [{ variantId, qty }],
     });
-    expect((await balanceOf(pens))!.qty).toBe("94.000");
+  }
 
-    expect((await reverse(wrong.documentId, manager)).ok).toBe(true);
-    expect((await balanceOf(pens))!.qty).toBe("104.000");
+  async function lineOf(documentId: string) {
+    const found = await db.execute<{ id: string }>(
+      sql`select id from stock_document_lines where document_id = ${documentId}`,
+    );
+    return found.rows[0]!.id;
+  }
+
+  it("10 notebooks issued to Maths and 4 returned: the issue's reverse is refused on its line with the 6 held, nothing moves; once the return is reversed, the issue reverses and stock is back to before the issue (Done when)", async () => {
+    const notebooks = await goods();
+    await receive(branch.id, notebooks, "50", 1000n, manager);
+    const issue = await issued([{ variantId: notebooks, qty: "10" }]);
+    const back = await returned(notebooks, "4");
+    expect(await balanceOf(notebooks)).toEqual({ qty: "44.000", avg_cost: "1000" });
+
+    const field = `lines.${await lineOf(issue.documentId)}.qty`;
+    const refused = await reverse(issue.documentId, manager);
+    expect(refused).toMatchObject({
+      ok: false,
+      error: {
+        code: "invalid_input",
+        fields: { [field]: "errors.field.reverseOverHeld" },
+        available: { [field]: "6.000" },
+      },
+    });
+    expect(await balanceOf(notebooks)).toEqual({ qty: "44.000", avg_cost: "1000" });
+    expect((await documentOf(issue.documentId)).status).toBe("POSTED");
+    expect(await reversalsOf(issue.documentId)).toEqual([]);
+
+    expect((await reverse(back.documentId, manager)).ok).toBe(true);
+    expect((await balanceOf(notebooks))!.qty).toBe("40.000");
+    expect((await reverse(issue.documentId, manager)).ok).toBe(true);
+    expect(await balanceOf(notebooks)).toEqual({ qty: "50.000", avg_cost: "1000" });
     const held = await departmentReceived(db, {
       branchId: branch.id,
       departmentId: department,
-      variantIds: [pens],
+      variantIds: [notebooks],
     });
-    expect(held.get(pens)).toBe("-4.000");
+    expect(held.get(notebooks)).toBe("0.000");
+  });
+
+  it("an issue whose whole quantity the department still holds reverses: equal is not over (09 Issue 3)", async () => {
+    // Another issue of the same department and item makes it hold 10 after a return of 4, so the
+    // first issue's 10 is not over (D40: a return of 4 stands beside it).
+    const pens = await goods();
+    await receive(branch.id, pens, "30", 1000n, manager);
+    const first = await issued([{ variantId: pens, qty: "10" }]);
+    await issued([{ variantId: pens, qty: "4" }]);
+    await returned(pens, "4");
+    expect((await balanceOf(pens))!.qty).toBe("20.000");
+
+    expect((await reverse(first.documentId, manager)).ok).toBe(true);
+    expect((await balanceOf(pens))!.qty).toBe("30.000");
+  });
+
+  it("one line over refuses the whole reverse: the line the department returned nothing of stays too (CLAUDE.md rule 3)", async () => {
+    const pens = await goods();
+    const paper = await goods();
+    await receive(branch.id, pens, "20", 1000n, manager);
+    await receive(branch.id, paper, "20", 700n, manager);
+    const issue = await issued([
+      { variantId: pens, qty: "5" },
+      { variantId: paper, qty: "3" },
+    ]);
+    await returned(pens, "1");
+
+    const refused = await reverse(issue.documentId, manager);
+    expect(refused).toMatchObject({ ok: false, error: { code: "invalid_input" } });
+    if (refused.ok) throw new Error("refused");
+    expect(Object.values(refused.error.fields ?? {})).toEqual(["errors.field.reverseOverHeld"]);
+    expect((await balanceOf(pens))!.qty).toBe("16.000");
+    expect((await balanceOf(paper))!.qty).toBe("17.000");
+    expect(await reversalsOf(issue.documentId)).toEqual([]);
+  });
+
+  it("the Head is refused the same way (09 Issue 3 names no one who may reverse past it)", async () => {
+    const pens = await goods();
+    await receive(branch.id, pens, "20", 1000n, manager);
+    const issue = await issued([{ variantId: pens, qty: "5" }]);
+    await returned(pens, "2");
+    expect(await reverse(issue.documentId, head)).toMatchObject({
+      ok: false,
+      error: { code: "invalid_input" },
+    });
+    expect((await balanceOf(pens))!.qty).toBe("17.000");
+  });
+
+  it("a return over what the department holds still reverses: the rule is the issue's (09 Other documents, Return keeps its warning)", async () => {
+    // The department returned 6 of 6, then 2 more with a comment (holds -2): reversing the first
+    // return lowers the stock and is not refused, though 6 is more than the -2 held.
+    const pens = await goods();
+    await receive(branch.id, pens, "20", 1000n, manager);
+    await issued([{ variantId: pens, qty: "6" }]);
+    const first = await returned(pens, "6");
+    await returned(pens, "2");
+    expect((await balanceOf(pens))!.qty).toBe("22.000");
+
+    expect((await reverse(first.documentId, manager)).ok).toBe(true);
+    expect((await balanceOf(pens))!.qty).toBe("16.000");
   });
 });
 
