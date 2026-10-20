@@ -52,7 +52,7 @@ This is the function you described, extended so one document can hold several it
 
 1. Quantity cannot be more than the stock. The server checks again under a lock at the moment of saving and names the item and the available amount if it fails.
 2. Each issue gets a number like `ISS-CHL-26-0031` and a PDF issue note naming who gave the items and who received them, as typed. There are no signature lines (owner's decision of 15 October 2026).
-3. A posted issue can be reversed by its creator or the Head. The original is then marked "Reversed".
+3. A posted issue can be reversed by its creator or the Head. The original is then marked "Reversed". A reverse that would take more of an item back than the department still holds from its issues and returns (what it received less what it returned) is refused; the message says to reverse the return first.
 
 ## Other documents
 
