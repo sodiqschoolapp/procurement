@@ -118,6 +118,9 @@ export const FIELD_ERROR_KINDS = [
   "cashNotZero",
   "alreadyOwner",
   "movedSince",
+  // A cancel of a record given straight to the department while that record's issue is posted,
+  // whatever the stock (07 Fixing a mistake 2; plan of 5.4b, decided items 2 and 3, Look first).
+  "givenIssuePosted",
   // A return of more than the department received (09 Other documents, Return; plan of 5.6,
   // decided items 2 and 5, Look first): the line over, and the comment it needs.
   "overReturn",
@@ -160,7 +163,8 @@ export type OrderFailure = {
   fields?: Record<string, FieldMessageKey>;
   /**
    * The values the message of `fields` names, by name: the Manager to move the order back to
-   * before a cancel (`errors.field.movedSince`; 08 Money ledger; plan of 4.10b, decided item 8).
+   * before a cancel (`errors.field.movedSince`; 08 Money ledger; plan of 4.10b, decided item 8);
+   * the number of the record's posted issue (`errors.field.givenIssuePosted`; plan of 5.4b).
    */
   values?: Record<string, string>;
 };

@@ -45,6 +45,8 @@ import { noticePriceDiffers } from "../price-prompts";
 //            fix 1); a record on an order whose owner now is not the one it had when the record
 //            was written is `wrong_status`, naming that owner (`movedSince()`; plan of 4.10b,
 //            decided items 3 and 4, Look first)
+//            a record given straight to the department whose issue is still posted is
+//            `not_ready`, naming that issue (`givenIssues()`; plan of 5.4b, Look first)
 //   write    the products FOR SHARE and the subtypes bought FOR UPDATE, each in id order (the lock
 //            order of .claude/rules/server-actions.md); each record's one cancel update (the
 //            trigger purchases_cancel_only of 0024 allows nothing else); for a product a priced
@@ -242,6 +244,37 @@ async function movedAway(
   }));
 }
 
+/**
+ * A record given straight to the department whose issue is still POSTED is refused `not_ready`,
+ * naming that issue, whatever stock the branch holds: its cancel would reverse the receipt and
+ * leave the issue standing, so the items would leave the stock twice (07 Fixing a mistake 2; D56
+ * finding 1; plan of 5.4b, decided items 1 to 5, Look first). The record's issue is the ISSUE of
+ * its branch whose client key is the record's id (5.4 decided item 7), not `give_to_requester`,
+ * which records saved before 5.4b read false. Read without a lock: a POSTED issue only ever becomes
+ * REVERSED (09 Issue 3), so a stale read can only refuse; asked once, before the write step.
+ */
+async function givenIssues(
+  context: OrdersContext<CancelInput>,
+  records: readonly HeldRecord[],
+): Promise<OrderFailure[]> {
+  if (records.length === 0) return [];
+  const ids = sql.join(
+    records.map((record) => sql`${record.id}::uuid`),
+    sql`, `,
+  );
+  const posted = await context.tx.execute<{ client_key: string; number: string }>(sql`
+    select d.client_key, d.number from stock_documents d
+    join purchases p on p.id = d.client_key and p.branch_id = d.branch_id
+    where d.client_key in (${ids}) and d.type = 'ISSUE' and d.status = 'POSTED'
+    order by d.number`);
+  return posted.rows.map((row) => ({
+    orderId: records.find((record) => record.id === row.client_key)!.orderId,
+    code: "not_ready" as const,
+    fields: { stock: "errors.field.givenIssuePosted" as const },
+    values: { number: row.number },
+  }));
+}
+
 function compare(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
 }
@@ -376,7 +409,11 @@ function defineCancel<Input extends CancelInput>(
     check: (context) => statusCheck(context),
     async inspect(context) {
       const { failures, records } = chosen(context, await lockRecords(context));
-      return [...failures, ...(await movedAway(context, records))];
+      return [
+        ...failures,
+        ...(await movedAway(context, records)),
+        ...(await givenIssues(context, records)),
+      ];
     },
     async write(context) {
       const reason = storedReason(context.input);

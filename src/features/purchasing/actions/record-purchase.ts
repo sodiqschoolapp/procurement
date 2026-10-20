@@ -489,6 +489,8 @@ export const recordPurchase = defineOrdersAction<RecordPurchaseInput>({
           qty,
           unitPrice: typedLine.unitPrice,
           comment: typedLine.comment,
+          // 07 Purchase record, Give straight to requester (build plan 5.4b; D56 finding 2).
+          giveToRequester: typedLine.giveToRequester,
           createdBy: userId,
           createdAt: savedAt,
         })

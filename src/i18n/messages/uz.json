@@ -89,6 +89,7 @@
       "cashNotZero": "Uning naqd pul qoldigʻi 0 emas.",
       "alreadyOwner": "U allaqachon shu menejerga tegishli.",
       "movedSince": "Bu yozuv buyurtma {manager}da boʻlganida kiritilgan. Avval rahbar buyurtmani {manager}ga qaytaradi; keyin uni bekor qilish mumkin.",
+      "givenIssuePosted": "{number} berish hujjati bu mahsulotlarni boʻlimga bergan. Avval shu berishni storno qiling, keyin yozuvni bekor qiling; agar mahsulotlar boʻlimdan qaytarish bilan qaytgan boʻlsa, avval oʻsha qaytarishni storno qiling. Yoki yozuvni qoldirib, hisobdan chiqaring.",
       "overReturn": "Boʻlim olganidan koʻp.",
       "overReturnComment": "Qatorda boʻlim olganidan koʻp: izoh yozing.",
       "reverseStockShort": "Storno qilish uchun omborda yetarli emas: mahsulotlar yana chiqib ketgan.",

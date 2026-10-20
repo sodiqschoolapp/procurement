@@ -2879,6 +2879,22 @@ Choices made during the build:
 - Prices: the running month's point is compared with the average price of the same days of the month before; none when no record was priced in those days.
 - Permission review: Should fix 1 (a cookie-branch case at more readers) is built for Spending, Stock on hand and Money with managers; the other reports pass the same `ReportParams` to queries whose walls are unchanged. Nit 1 (an unreachable `case "orders"` in the download route) stays: TypeScript needs it to see every report handled after the parsed params are replaced.
 
+### 5.4b "Give straight to requester": stored, and its cancel (20.10.2026)
+
+The plan's decisions as the plan review of 20.10.2026 confirmed them (its two corrections applied: the message also names reversing a return first; a test that a return does not unlock the cancel), and those of the build. The Look first items come first.
+
+1. **Look first** (stock rule). The record's issue is the ISSUE of the record's branch whose `client_key` is the record's id (5.4 decided item 7), not `give_to_requester`, which records saved before 5.4b read false (D56 finding 2).
+2. **Look first** (stock rule; a spec text that should change). A record given straight to the department cannot be cancelled while its issue is posted, whatever the stock; only a reverse of that issue lets the cancel through. A Return does not, even of the same quantity: after a Return the user reverses the Return, then the issue, then cancels (50, 60, 50, 60, 50 on the worked example). A reverse of the issue after an unreversed Return still counts the items twice: that guard belongs to 5.7's reverse and is left out (issue #9). Proposed `/spec-change` of 07, Fixing a mistake, second bullet, appended: "A record given straight to the department cannot be cancelled while its issue is posted, whatever the stock: the message says to reverse that issue first (and a return of those items before it), or to keep the record and use a write-off."
+3. **Look first** (stock rule). The message (`errors.field.givenIssuePosted`) names the issue number, the reverse of that issue, the reverse of a return first, and the write-off.
+4. One check, in the inspect step under the orders' and records' locks; the issue row read without a lock (POSTED only ever becomes REVERSED, so a stale read can only refuse).
+5. `not_ready` with `fields.stock` and `values.number`, as `stockShort` and `movedSince`.
+6. The cancel button stays offered on such a record: the user gets past the refusal by reversing the issue, and the message says how.
+7. No backfill of `give_to_requester`: the trigger `purchases_cancel_only` refuses it, rule 7 forbids it, and nothing reads the column yet.
+
+Choices made during the build:
+
+- The permission review's Should fix 1 (a hand-made issue whose browser key equals a purchase record's id would block that record's cancel) is not built: it needs a random UUID of a record in the user's own branch, it only blocks (no stock or money goes wrong), the refusal names that issue, and reversing it unblocks. Reported for the reviewer.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.
