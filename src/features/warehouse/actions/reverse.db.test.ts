@@ -455,6 +455,27 @@ describe("reversing an issue after a return (09 Issue to a department 3: refused
     expect((await balanceOf(pens))!.qty).toBe("17.000");
   });
 
+  it("on an issue over what is held, a Manager of another branch is Not found and a colleague is forbidden, neither told the amount (03 rule 1; permission review of 5.7b)", async () => {
+    const pens = await goods();
+    await receive(branch.id, pens, "20", 1000n, manager);
+    const issue = await issued([{ variantId: pens, qty: "5" }]);
+    await returned(pens, "2");
+    const elsewhere = await insertBranch();
+    const stranger = (await insertUser("MANAGER", { branches: [elsewhere.id] })).id;
+    await setManagerRight(colleague, "RETURN_REVERSE", true);
+
+    const notFound = await reverse(issue.documentId, stranger);
+    expect(notFound).toMatchObject({ ok: false, error: { code: "not_found" } });
+    if (notFound.ok) throw new Error("refused");
+    expect(notFound.error.fields).toBeUndefined();
+    expect(notFound.error.available).toBeUndefined();
+    const forbidden = await reverse(issue.documentId, colleague);
+    expect(forbidden).toMatchObject({ ok: false, error: { code: "forbidden" } });
+    if (forbidden.ok) throw new Error("refused");
+    expect(forbidden.error.available).toBeUndefined();
+    expect((await balanceOf(pens))!.qty).toBe("17.000");
+  });
+
   it("a return over what the department holds still reverses: the rule is the issue's (09 Other documents, Return keeps its warning)", async () => {
     // The department returned 6 of 6, then 2 more with a comment (holds -2): reversing the first
     // return lowers the stock and is not refused, though 6 is more than the -2 held.
