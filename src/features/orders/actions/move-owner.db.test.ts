@@ -420,6 +420,37 @@ describe('Cancels after a move (08 Money ledger: "When one of its orders was mov
     expect(await count(s, order)).toBe(0n);
   });
 
+  it("a Principal and a Manager without the right, sending a moved order, are not told whom to move it back to (permission review of 4.10b, Should fix 1)", async () => {
+    const s = await scene();
+    const { order, actionId, purchaseId } = await movedAfterCash(s);
+    const principal = await insertUser("PRINCIPAL", { branches: [s.branch.id] });
+    const answers = [
+      await runOrdersAction(cancelMoney, principal.id, {
+        ...(await ticked([order.id])),
+        moneyActionId: actionId,
+        reason: REASON,
+      }),
+      await runOrdersAction(cancelPurchase, principal.id, {
+        ...(await ticked([order.id])),
+        purchaseId,
+        reason: REASON,
+      }),
+      await runOrdersAction(cancelMoney, s.next.id, {
+        ...(await ticked([order.id])),
+        moneyActionId: actionId,
+        reason: REASON,
+      }),
+    ];
+    for (const answer of answers) {
+      expect(answer.ok).toBe(false);
+      const [failed] = (answer as { ok: false; error: { orders: { values?: unknown }[] } }).error
+        .orders;
+      expect(failed).toBeDefined();
+      expect(failed!.values).toBeUndefined();
+    }
+    expect(await count(s, order)).toBe(0n);
+  });
+
   // Changed by D55 (2) and the spec change of 20.10.2026: 4.10 kept the refusal after a move back
   // (plan of 4.10b, Look first).
   it("Aziz's typo is refused while the order is with Dilnoza and cancelled once it is back with Aziz; an order still with Dilnoza beside it stays refused", async () => {

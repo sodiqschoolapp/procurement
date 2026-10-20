@@ -221,7 +221,11 @@ export class Failures {
     for (const { id } of sent) {
       const code = firstCode(this.byOrder.get(id) ?? []);
       const given = code ? this.fieldsOf.get(`${id}:${code}`) : undefined;
-      if (code) named.push({ orderId: id, code, ...given });
+      // Someone refused the action itself is never told the next step of another role (the
+      // Manager to move the order back to; permission review of 4.10b, Should fix 1).
+      const told =
+        given?.values && this.byOrder.get(id)?.has("forbidden") ? { fields: given.fields } : given;
+      if (code) named.push({ orderId: id, code, ...told });
     }
     throw new OrdersRefusal(firstCode(named.map((order) => order.code))!, named);
   }
