@@ -229,7 +229,9 @@ test("the Head imports 3 new prices from Excel: an unknown product saves nothing
   await expect(page).toHaveURL(/\/prices$/);
   await page.getByLabel(uz.prices.search).fill(sized);
   await page.getByLabel(uz.prices.search).press("Enter");
-  await expect(page.getByText(/9\s?500/)).toBeVisible();
-  await expect(page.getByText(/7\s?500/)).toBeVisible();
+  // Anchored to the start of the money text: a random name of another test's branch in the
+  // switcher ("… 5d950038") also holds "9500" (e2e of 5.4b's CI).
+  await expect(page.getByText(/^9\s?500\s/)).toBeVisible();
+  await expect(page.getByText(/^7\s?500\s/)).toBeVisible();
   await noSideScroll(page);
 });
