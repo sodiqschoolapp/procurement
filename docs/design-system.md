@@ -103,7 +103,7 @@ Weights in use: 400, 500 (links, menu items, labels of fields) and 600 (titles, 
 
 - **Panel:** `--card`, 1 px `--border`, corner 8. A panel title is `text-subheading` with 16 px (phone) or 20 px (desktop) padding; the content keeps the same side padding.
 - **Table:** in a panel; header row 40 high on `--muted`, `text-xs` medium `--muted-foreground` words in sentence case; rows at least 48 high with hairline dividers and `--accent` on hover; numbers and amounts right-aligned. Below 640 px a list of more than three columns becomes **cards** (one per row: the name and status on top, two or three facts, the row's action at the bottom), never a table that scrolls sideways.
-- **Tabs:** words in a row over a hairline; the current tab is navy with a 2 px orange underline, the others `--muted-foreground`. A count follows the word as a plain number. On a phone the row scrolls sideways inside itself.
+- **Tabs:** words in a row over a hairline; the current tab is navy with a 2 px orange underline, the others `--muted-foreground`. A count follows the word as a plain number. On a phone the row scrolls sideways inside itself; from 640 px up it wraps onto a second line, so every tab can be reached with a mouse.
 - **Summary strip:** at the top of a list, three or four figures the person acts on (needs action, to buy, cash in hand, due this week), each a caption over a `text-figure` value, side by side in one panel divided by hairlines (two by two on a phone). Each figure that has a list behind it is a link to that list; a figure of 0 is plain. Built only from figures the app already shows.
 - **Filter bar:** a search field, two or three key filters, and a secondary "More filters" button with the count of active ones that opens the rest. Each active filter shows below as a removable chip (word, value, ✕), and "Clear all" ends the row.
 - **Selection bar:** when rows are ticked, a bar floats at the bottom of the page (above the phone tab bar): the count and the total in `text-subheading`, the actions this person can take on all of them now, and a quiet "Clear". `--card`, a hairline edge, the floating shadow, corner 8.
@@ -137,7 +137,7 @@ Weights in use: 400, 500 (links, menu items, labels of fields) and 600 (titles, 
 
 ### Fields
 
-- Fields and selects: 40 high (44 on a phone, 44 on sign-in), `--card` fill, 1 px `--input` border, corner 6; focus is the 2 px ring. An error is a `--destructive` border and one line under the field.
+- Fields and selects: 40 high (44 on a phone, 44 on sign-in), `--card` fill, 1 px `--input` border, corner 6; focus is the 2 px ring. An error is a `--destructive` border and one line under the field. A money field (`MoneyInput`) shows the digits grouped as they are typed, `60 000`, and holds and sends the plain digits.
 - A label sits above its field (`text-sm` 500). A hint, only when it prevents a mistake, sits under the field in `text-xs`.
 - **Dates** are shown and typed as dd.mm.yyyy everywhere, never the browser's own date format.
 - A **segmented control** (two to four short choices): a `--muted` track with a hairline edge, the chosen item `--card` with navy text and a hairline edge; when the words do not fit on one line the choices stack, one per line, so no word is ever cut or overlapped.
