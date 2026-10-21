@@ -3,12 +3,13 @@
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useSyncExternalStore } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 
 import { toast } from "@/components/toast";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/money-input";
 import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard";
 import { useAction } from "@/components/use-action";
 
@@ -28,7 +29,7 @@ export function PriceForm({ variantId }: { variantId: string }) {
   const tAll = useTranslations();
   const router = useRouter();
   const action = useAction(addPriceAction, { create: true });
-  const { register, handleSubmit, reset, formState } = useForm<Values>({
+  const { register, handleSubmit, reset, control, formState } = useForm<Values>({
     defaultValues: { price: "", note: "" },
   });
   const hydrated = useSyncExternalStore(
@@ -59,13 +60,21 @@ export function PriceForm({ variantId }: { variantId: string }) {
       <h2 className="text-subheading font-semibold">{t("newPrice")}</h2>
       <div className="flex flex-col gap-1.5">
         <Field id="price-price" label={t("price")} error={action.fieldTexts.price}>
-          <Input
-            {...register("price")}
-            inputMode="numeric"
-            maxLength={24}
-            autoComplete="off"
-            className="tabular-nums sm:max-w-60"
-            aria-describedby="price-price-hint"
+          <Controller
+            control={control}
+            name="price"
+            render={({ field }) => (
+              <MoneyInput
+                name={field.name}
+                ref={field.ref}
+                value={field.value}
+                onValueChange={field.onChange}
+                onBlur={field.onBlur}
+                maxLength={24}
+                className="sm:max-w-60"
+                aria-describedby="price-price-hint"
+              />
+            )}
           />
         </Field>
         <p id="price-price-hint" className="text-sm leading-5 text-muted-foreground">

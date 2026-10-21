@@ -5,6 +5,7 @@ import { type Page, expect, test } from "@playwright/test";
 import uz from "../../src/i18n/messages/uz.json" with { type: "json" };
 import { withGuardLock } from "./acceptance-fixtures";
 import { E2E_ROLES } from "./global-setup";
+import { shownAmount } from "./shown-amount";
 
 // Build-plan 1.1, Done when (the by-hand check, automated): "set the school name and see it in
 // the shell". 11-screens-and-ux.md, Screens ("Settings, /settings, Head"), rules 4, 6 and 13;
@@ -124,21 +125,26 @@ test("the Head sets the overspend guard amount beside the percent; a negative on
 
     const field = page.getByLabel(uz.settings.overspendGuardMinAmount);
     await expect(page.getByLabel(uz.settings.overspendGuardPercent)).toBeVisible();
+    // The field shows the amount grouped, 250 000 (redesign of 21.10.2026), and saves the digits.
     const before = await field.inputValue();
-    const amount = before === "250000" ? "150000" : "250000";
+    const amount = before === shownAmount("250000") ? "150000" : "250000";
     await field.fill(amount);
     await page.getByRole("button", { name: uz.settings.save }).click();
     await expect(page.getByText(uz.settings.saved)).toBeVisible();
 
     await openSettings(page);
-    await expect(page.getByLabel(uz.settings.overspendGuardMinAmount)).toHaveValue(amount);
+    await expect(page.getByLabel(uz.settings.overspendGuardMinAmount)).toHaveValue(
+      shownAmount(amount),
+    );
 
     // 08, Overspend guard: whole so'm, 0 or more; "-5" is refused under its field, nothing saved.
     await page.getByLabel(uz.settings.overspendGuardMinAmount).fill("-5");
     await page.getByRole("button", { name: uz.settings.save }).click();
     await expect(page.getByText(uz.errors.field.wrongFormat)).toBeVisible();
     await openSettings(page);
-    await expect(page.getByLabel(uz.settings.overspendGuardMinAmount)).toHaveValue(amount);
+    await expect(page.getByLabel(uz.settings.overspendGuardMinAmount)).toHaveValue(
+      shownAmount(amount),
+    );
     await noSideScroll(page);
   });
 });

@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { type KeyboardEvent, useEffect, useRef, useState } from "react";
 
 import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/money-input";
 
 import { createSentGuard } from "./sent-guard";
 
@@ -20,6 +21,7 @@ export function TextCell({
   onDirty,
   error,
   inputMode,
+  money = false,
   placeholder,
   className,
   disabled,
@@ -31,6 +33,8 @@ export function TextCell({
   onDirty(dirty: boolean): void;
   error?: string;
   inputMode?: "numeric" | "decimal" | "text";
+  /** A money cell: the digits shown grouped as typed, the same digits saved (MoneyInput). */
+  money?: boolean;
   placeholder?: string;
   className?: string;
   disabled?: boolean;
@@ -60,33 +64,41 @@ export function TextCell({
     });
   }
 
+  const shared = {
+    "aria-label": label,
+    "aria-invalid": error ? true : undefined,
+    title: error,
+    placeholder,
+    disabled,
+    className,
+    onFocus: () => {
+      typing.current = true;
+      sent.reset();
+    },
+    onBlur: commit,
+    onKeyDown: (event: KeyboardEvent<HTMLInputElement>) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        commit();
+        typing.current = true;
+      } else if (event.key === "Escape") {
+        setText(value);
+      }
+    },
+  };
+
   return (
     <span className="flex flex-col gap-1">
-      <Input
-        aria-label={label}
-        aria-invalid={error ? true : undefined}
-        title={error}
-        value={text}
-        inputMode={inputMode}
-        placeholder={placeholder}
-        disabled={disabled}
-        className={className}
-        onFocus={() => {
-          typing.current = true;
-          sent.reset();
-        }}
-        onChange={(event) => setText(event.target.value)}
-        onBlur={commit}
-        onKeyDown={(event) => {
-          if (event.key === "Enter") {
-            event.preventDefault();
-            commit();
-            typing.current = true;
-          } else if (event.key === "Escape") {
-            setText(value);
-          }
-        }}
-      />
+      {money ? (
+        <MoneyInput {...shared} value={text} onValueChange={setText} />
+      ) : (
+        <Input
+          {...shared}
+          value={text}
+          inputMode={inputMode}
+          onChange={(event) => setText(event.target.value)}
+        />
+      )}
       {error && <span className="text-xs text-destructive">{error}</span>}
     </span>
   );

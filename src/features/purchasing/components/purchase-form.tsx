@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import {
   type Control,
+  Controller,
   type UseFormRegister,
   type UseFormSetValue,
   useFieldArray,
@@ -23,6 +24,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { DateInput } from "@/components/ui/date-input";
 import { Field } from "@/components/ui/field";
 import { FIELD_CLASSES, Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/money-input";
 import { Segmented } from "@/components/ui/segmented";
 import { Select } from "@/components/ui/select";
 import { cn } from "@/components/utils";
@@ -389,10 +391,9 @@ export function PurchaseFormView({
                         />
                       </Field>
                       <Field id={`purchase-group-price-${block.variantId}`} label={t("groupPrice")}>
-                        <Input
-                          inputMode="numeric"
+                        <MoneyInput
                           value={typed.price}
-                          onChange={(event) => typeGroup(block, typed.qty, event.target.value)}
+                          onValueChange={(price) => typeGroup(block, typed.qty, price)}
                         />
                       </Field>
                     </div>
@@ -737,7 +738,19 @@ function OrderLine({
           />
         </Field>
         <Field id={id("price")} label={t("price")} error={errorOf("unitPrice")}>
-          <Input inputMode="numeric" {...register(`lines.${index}.unitPrice`)} />
+          <Controller
+            control={control}
+            name={`lines.${index}.unitPrice`}
+            render={({ field }) => (
+              <MoneyInput
+                name={field.name}
+                ref={field.ref}
+                value={field.value}
+                onValueChange={field.onChange}
+                onBlur={field.onBlur}
+              />
+            )}
+          />
         </Field>
         {order.subtypes.length > 1 ? (
           <Field
@@ -784,7 +797,19 @@ function OrderLine({
               label={t("extraAmount")}
               error={errorOf(`extras.${at}.amount`)}
             >
-              <Input inputMode="numeric" {...register(`lines.${index}.extras.${at}.amount`)} />
+              <Controller
+                control={control}
+                name={`lines.${index}.extras.${at}.amount`}
+                render={({ field }) => (
+                  <MoneyInput
+                    name={field.name}
+                    ref={field.ref}
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    onBlur={field.onBlur}
+                  />
+                )}
+              />
             </Field>
             <Button
               type="button"

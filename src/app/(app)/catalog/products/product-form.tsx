@@ -12,6 +12,7 @@ import { toast } from "@/components/toast";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { FIELD_CLASSES, Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/money-input";
 import { Segmented } from "@/components/ui/segmented";
 import { Select } from "@/components/ui/select";
 import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard";
@@ -289,13 +290,21 @@ export function ProductForm({
               label={t("fields.referencePrice")}
               error={action.fieldTexts.referencePrice}
             >
-              <Input
-                {...register("referencePrice")}
-                inputMode="numeric"
-                maxLength={24}
-                autoComplete="off"
-                className="tabular-nums sm:max-w-60"
-                aria-describedby="product-referencePrice-hint"
+              <Controller
+                control={control}
+                name="referencePrice"
+                render={({ field }) => (
+                  <MoneyInput
+                    name={field.name}
+                    ref={field.ref}
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    onBlur={field.onBlur}
+                    maxLength={24}
+                    className="sm:max-w-60"
+                    aria-describedby="product-referencePrice-hint"
+                  />
+                )}
               />
             </Field>
             {hint("product-referencePrice-hint", t("hints.referencePrice"))}

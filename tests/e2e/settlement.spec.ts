@@ -6,6 +6,7 @@ import pg from "pg";
 import en from "../../src/i18n/messages/en.json" with { type: "json" };
 import { connectionOptions } from "../../src/server/db/connection-options.mjs";
 import { E2E_PAGE_USERS, e2eDatabaseUrl, serverDatabaseUrl } from "./global-setup";
+import { shownAmount } from "./shown-amount";
 
 // Build plan 4.5 (Settlement screen), the plan's Playwright line: Finance ticks two cash orders
 // Waiting for settlement on the list, opens Settle, sees the net (08 Money ledger 2: "the Manager
@@ -203,8 +204,12 @@ test("Finance settles two cash orders with one action and the net, confirms a tr
   await expect(page.locator("[data-settlement] h1")).toHaveText(t.title);
 
   // The prefilled rows: Receive 2 000 on one, Pay 1 000 on the other; the net is 1 000 to Finance.
-  await expect(page.locator(`[data-settle-amount="${seeded.more.id}"]`)).toHaveValue("2000");
-  await expect(page.locator(`[data-settle-amount="${seeded.less.id}"]`)).toHaveValue("1000");
+  await expect(page.locator(`[data-settle-amount="${seeded.more.id}"]`)).toHaveValue(
+    shownAmount("2000"),
+  );
+  await expect(page.locator(`[data-settle-amount="${seeded.less.id}"]`)).toHaveValue(
+    shownAmount("1000"),
+  );
   const net = page.locator("[data-settle-net]");
   await expect(net).toContainText("hands Finance");
   await expect(net).toContainText("1 000");

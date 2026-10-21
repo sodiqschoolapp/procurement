@@ -3,7 +3,7 @@
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { type ComponentProps, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { useFieldArray, useForm, useWatch } from "react-hook-form";
+import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form";
 
 import {
   enterStockDirectlyAction,
@@ -18,6 +18,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { DateInput } from "@/components/ui/date-input";
 import { Field, useFieldControl } from "@/components/ui/field";
 import { FIELD_CLASSES, Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/money-input";
 import { Segmented } from "@/components/ui/segmented";
 import { Select } from "@/components/ui/select";
 import { cn } from "@/components/utils";
@@ -412,11 +413,19 @@ export function DirectEntryForm({
                     error={costError(index)}
                     className="sm:w-44"
                   >
-                    <Input
-                      inputMode="numeric"
-                      autoComplete="off"
-                      {...register(`lines.${index}.unitCost`)}
-                      className="max-sm:h-12"
+                    <Controller
+                      control={control}
+                      name={`lines.${index}.unitCost`}
+                      render={({ field }) => (
+                        <MoneyInput
+                          name={field.name}
+                          ref={field.ref}
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          onBlur={field.onBlur}
+                          className="max-sm:h-12"
+                        />
+                      )}
                     />
                   </Field>
                   <Button

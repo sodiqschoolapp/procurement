@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { useId, useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/money-input";
 import { Select } from "@/components/ui/select";
 import { cn } from "@/components/utils";
 import { DRAFT_EXTRAS_MAX } from "@/domain/drafts";
@@ -140,16 +140,15 @@ export function ExtrasCell({
                   </Select>
                 </div>
                 <div className="w-36">
-                  <Input
+                  <MoneyInput
                     aria-label={t("extras.amount")}
-                    inputMode="numeric"
                     value={row.amount}
                     aria-invalid={error(at, "amount") ? true : undefined}
-                    className="text-right tabular-nums"
-                    onChange={(event) =>
+                    className="text-right"
+                    onValueChange={(value) =>
                       setRows((current) =>
                         current.map((one) =>
-                          one.key === row.key ? { ...one, amount: event.target.value } : one,
+                          one.key === row.key ? { ...one, amount: value } : one,
                         ),
                       )
                     }

@@ -3,7 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { useForm, useWatch } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 
 import { newClientKey } from "@/components/client-key";
 import { uploadFile } from "@/components/files/upload";
@@ -12,6 +12,7 @@ import { toast } from "@/components/toast";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/money-input";
 import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard";
 import { useAction } from "@/components/use-action";
 import { IMAGE_MIMES } from "@/domain/files";
@@ -164,13 +165,21 @@ export function SubtypeForm({
               label={t("fields.referencePrice")}
               error={action.fieldTexts.referencePrice}
             >
-              <Input
-                {...register("referencePrice")}
-                inputMode="numeric"
-                maxLength={24}
-                autoComplete="off"
-                className="tabular-nums sm:max-w-60"
-                aria-describedby="subtype-referencePrice-hint"
+              <Controller
+                control={control}
+                name="referencePrice"
+                render={({ field }) => (
+                  <MoneyInput
+                    name={field.name}
+                    ref={field.ref}
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    onBlur={field.onBlur}
+                    maxLength={24}
+                    className="sm:max-w-60"
+                    aria-describedby="subtype-referencePrice-hint"
+                  />
+                )}
               />
             </Field>
             {hint("subtype-referencePrice-hint", t("hints.subtypePrice"))}

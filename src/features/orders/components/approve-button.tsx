@@ -9,7 +9,7 @@ import { type ClientKey, newClientKey } from "@/components/client-key";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { toast } from "@/components/toast";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/money-input";
 import { Select } from "@/components/ui/select";
 import { parseSomOrZero } from "@/domain/money";
 import { actionTotal, approvalCashRows, plannedCashOf } from "@/domain/money-ledger";
@@ -255,19 +255,17 @@ export function ApproveButton({
                             </span>
                           </label>
                           <div className="flex flex-col gap-1 sm:w-40">
-                            <Input
+                            <MoneyInput
                               id={`cash-${order.id}`}
-                              inputMode="numeric"
-                              autoComplete="off"
                               value={textOf(order)}
                               disabled={pending}
                               aria-invalid={invalid || undefined}
                               aria-describedby={invalid ? `cash-error-${order.id}` : undefined}
-                              className="text-right tabular-nums"
-                              onChange={(event) =>
+                              className="text-right"
+                              onValueChange={(value) =>
                                 setTyped((current) => ({
                                   ...current,
-                                  [order.id]: event.target.value,
+                                  [order.id]: value,
                                 }))
                               }
                             />

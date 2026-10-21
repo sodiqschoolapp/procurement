@@ -6,6 +6,7 @@ import pg from "pg";
 import uz from "../../src/i18n/messages/uz.json" with { type: "json" };
 import { connectionOptions } from "../../src/server/db/connection-options.mjs";
 import { E2E_PAGE_USERS, E2E_ROLES, e2eDatabaseUrl, serverDatabaseUrl } from "./global-setup";
+import { shownAmount } from "./shown-amount";
 
 // Build plan 2.10 (Approvals), the plan's Playwright line: the Head ticks two orders and approves
 // them; the stepper moves to the Principal; stock at submit and stock now are shown; the owner
@@ -207,8 +208,8 @@ test("Finance approves two Cash orders with cash: the table is prefilled, a row 
   await expect(table.locator("[data-cash-block]")).toHaveCount(1);
   const firstAmount = table.locator(`[data-cash-row="${first}"] input`);
   const secondAmount = table.locator(`[data-cash-row="${second}"] input`);
-  await expect(firstAmount).toHaveValue("10000");
-  await expect(secondAmount).toHaveValue("10000");
+  await expect(firstAmount).toHaveValue(shownAmount("10000"));
+  await expect(secondAmount).toHaveValue(shownAmount("10000"));
   await expect(dialog).toContainText(/20\s000/);
 
   // A row set to 0 stays and can be typed again; a wrong amount stops Approve.

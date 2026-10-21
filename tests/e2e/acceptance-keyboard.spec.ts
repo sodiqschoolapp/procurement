@@ -15,6 +15,7 @@ import {
   statusOf,
   stockOf,
 } from "./acceptance-fixtures";
+import { shownAmount } from "./shown-amount";
 
 // Build plan 9.1d, Done when: "S1 passes with the keyboard only" (15-quality-and-acceptance.md S1;
 // 11-screens-and-ux.md rule 13, "Everything works with the keyboard"). The same scenario as
@@ -157,7 +158,9 @@ test("S1 with the keyboard only: three approvals, 520 000 given, bought exactly,
   // Finance approves with the 520 000 in cash prefilled (08 When Finance approves).
   await signInByKeys(page, scene.finance);
   const finance = await approveByKeys(page, scene, order, "PENDING_FINANCE");
-  await expect(finance.locator(`[data-cash-row="${order.id}"] input`)).toHaveValue("520000");
+  await expect(finance.locator(`[data-cash-row="${order.id}"] input`)).toHaveValue(
+    shownAmount("520000"),
+  );
   await noSeriousFinding(page, "Finance's approval with cash");
   await confirmByKeys(page, finance, o.approve.button, "Approved 1 order.");
 

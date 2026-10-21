@@ -6,6 +6,7 @@ import pg from "pg";
 import en from "../../src/i18n/messages/en.json" with { type: "json" };
 import { connectionOptions } from "../../src/server/db/connection-options.mjs";
 import { E2E_PURCHASE_USERS, e2eDatabaseUrl, serverDatabaseUrl } from "./global-setup";
+import { shownAmount } from "./shown-amount";
 
 // Build plans 3.3 and 3.4, the purchase form (07-purchasing.md, Purchase record: "Date bought: Default
 // today", "Payment type used: Default from the order", the comment rule, "Same as planned";
@@ -139,7 +140,7 @@ test("the owner records a purchase with Same as planned; the order shows Receive
 
   await page.getByRole("button", { name: f.sameAsPlanned }).click();
   await expect(page.locator(`#purchase-qty-${orderId}`)).toHaveValue("2");
-  await expect(page.locator(`#purchase-price-${orderId}`)).toHaveValue("5000");
+  await expect(page.locator(`#purchase-price-${orderId}`)).toHaveValue(shownAmount("5000"));
   await expect(page.locator("[data-comment-reasons]")).toHaveCount(0);
 
   // Another price marks the comment required, by the domain's rule; back to the plan, it is not.
@@ -278,7 +279,7 @@ test("30 Tata pens recorded on a group row of 20 and 10 fill both orders (build 
   await page.getByLabel(f.groupPrice).fill("5000");
   await expect(page.locator(`#purchase-qty-${older}`)).toHaveValue("20");
   await expect(page.locator(`#purchase-qty-${newer}`)).toHaveValue("10");
-  await expect(page.locator(`#purchase-price-${newer}`)).toHaveValue("5000");
+  await expect(page.locator(`#purchase-price-${newer}`)).toHaveValue(shownAmount("5000"));
   await expect(page.locator("[data-comment-reasons]")).toHaveCount(0);
   expect(await scrollsSideways(page)).toBe(false);
 

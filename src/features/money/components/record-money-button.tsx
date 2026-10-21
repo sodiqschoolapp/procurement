@@ -16,6 +16,7 @@ import { toast } from "@/components/toast";
 import { Button } from "@/components/ui/button";
 import { DateInput } from "@/components/ui/date-input";
 import { FIELD_CLASSES, Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/money-input";
 import { Select } from "@/components/ui/select";
 import { cn } from "@/components/utils";
 import { FILE_MIMES } from "@/domain/files";
@@ -410,19 +411,17 @@ export function RecordMoneyButton({
                         </span>
                       </label>
                       <div className="flex flex-col gap-1 sm:w-40">
-                        <Input
+                        <MoneyInput
                           id={`money-${order.id}`}
-                          inputMode="numeric"
-                          autoComplete="off"
                           value={textOf(order)}
                           disabled={pending}
                           aria-invalid={invalid || undefined}
                           aria-describedby={invalid ? `money-error-${order.id}` : undefined}
-                          className="text-right tabular-nums max-sm:h-12"
-                          onChange={(event) =>
+                          className="text-right max-sm:h-12"
+                          onValueChange={(value) =>
                             setTyped((current) => ({
                               ...current,
-                              [`${kind}:${order.id}`]: event.target.value,
+                              [`${kind}:${order.id}`]: value,
                             }))
                           }
                         />

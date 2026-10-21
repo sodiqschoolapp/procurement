@@ -34,6 +34,7 @@ import {
   withDatabase,
   withGuardLock,
 } from "./acceptance-fixtures";
+import { shownAmount } from "./shown-amount";
 
 // Build plan 9.1b: the acceptance scenarios of phase 4 (16-build-order.md), money and settlement,
 // clicked through as each role (15-quality-and-acceptance.md, Test layers: Full flow). Both
@@ -194,7 +195,9 @@ test('S2: bought at 4 500: Total orange "Left 50 000"; Finance records 50 000 re
 
   // The settlement asks for the count back: Receive 50 000, prefilled (08 Closing 2).
   await openSettle(page, scene, [order]);
-  await expect(page.locator(`[data-settle-amount="${order.id}"]`)).toHaveValue("50000");
+  await expect(page.locator(`[data-settle-amount="${order.id}"]`)).toHaveValue(
+    shownAmount("50000"),
+  );
   expect(await scrollsSideways(page)).toBe(false);
   await saveSettlement(page, [order]);
   await closeOnSettle(page);
@@ -238,7 +241,9 @@ test('S3: bought at 5 200 with 30 000 delivery: Total red "Over 30 000"; Finance
 
   // Finance pays back 30 000, prefilled, and closes with no Head step (08 Closing 2, 3).
   await openSettle(page, scene, [order]);
-  await expect(page.locator(`[data-settle-amount="${order.id}"]`)).toHaveValue("30000");
+  await expect(page.locator(`[data-settle-amount="${order.id}"]`)).toHaveValue(
+    shownAmount("30000"),
+  );
   await expect(page.locator(`[data-settle-order="${order.id}"] [data-overspend]`)).toHaveCount(0);
   await saveSettlement(page, [order]);
   await closeOnSettle(page);
@@ -273,7 +278,9 @@ test("S13: 520 000 given, nothing bought: settlement asks for 520 000 back; clos
   await sendToSettlement(page, scene, [order]);
 
   await openSettle(page, scene, [order]);
-  await expect(page.locator(`[data-settle-amount="${order.id}"]`)).toHaveValue("520000");
+  await expect(page.locator(`[data-settle-amount="${order.id}"]`)).toHaveValue(
+    shownAmount("520000"),
+  );
   await saveSettlement(page, [order]);
   await closeOnSettle(page);
   await expect(page.getByText("Closed 1 order.")).toBeVisible();
@@ -305,7 +312,7 @@ test('S9: a cash order 10 000 over and a card order 40 000 under: "Pay Manager 1
 
   await openSettle(page, scene, [cash, card]);
   // The cash block: Pay 10 000, and the net "Finance pays the Manager 10 000" (08 Money ledger 2).
-  await expect(page.locator(`[data-settle-amount="${cash.id}"]`)).toHaveValue("10000");
+  await expect(page.locator(`[data-settle-amount="${cash.id}"]`)).toHaveValue(shownAmount("10000"));
   const net = page.locator("[data-settle-net]");
   await expect(net).toContainText(
     s.net.TO_MANAGER.replace("{name}", scene.manager.fullName).replace(" {amount}.", ""),
@@ -423,7 +430,9 @@ test("S12: 600 000 actual: at 100 000 Finance closes without the Head; at 50 000
     await expect(total).toContainText(/80\s000/);
     await sendToSettlement(page, scene, [first]);
     await openSettle(page, scene, [first]);
-    await expect(page.locator(`[data-settle-amount="${first.id}"]`)).toHaveValue("80000");
+    await expect(page.locator(`[data-settle-amount="${first.id}"]`)).toHaveValue(
+      shownAmount("80000"),
+    );
     await saveSettlement(page, [first]);
     await closeOnSettle(page);
     await expect(page.getByText("Closed 1 order.")).toBeVisible();
@@ -491,7 +500,9 @@ test("S20: four ticked, one approved a moment earlier by another Finance user: r
   await as(page, scene.finance);
   await listAt(page, scene, "PENDING_FINANCE");
   const dialog = await openApprove(page, [...three, rulers]);
-  await expect(dialog.locator(`[data-cash-row="${rulers.id}"] input`)).toHaveValue("10000");
+  await expect(dialog.locator(`[data-cash-row="${rulers.id}"] input`)).toHaveValue(
+    shownAmount("10000"),
+  );
   const context = await browser.newContext({ viewport: info.project.use.viewport ?? null });
   const otherPage = await context.newPage();
   try {
@@ -559,8 +570,10 @@ test("S20: four ticked, one approved a moment earlier by another Finance user: r
 
   // One settlement action: Receive 50 000 and Pay 30 000; the net, the Manager hands 20 000.
   await openSettle(page, scene, [notes, pens]);
-  await expect(page.locator(`[data-settle-amount="${notes.id}"]`)).toHaveValue("50000");
-  await expect(page.locator(`[data-settle-amount="${pens.id}"]`)).toHaveValue("30000");
+  await expect(page.locator(`[data-settle-amount="${notes.id}"]`)).toHaveValue(
+    shownAmount("50000"),
+  );
+  await expect(page.locator(`[data-settle-amount="${pens.id}"]`)).toHaveValue(shownAmount("30000"));
   const net = page.locator("[data-settle-net]");
   await expect(net).toContainText(
     s.net.TO_FINANCE.replace("{name}", scene.manager.fullName).replace(" {amount}.", ""),

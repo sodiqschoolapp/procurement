@@ -567,7 +567,7 @@ export function DraftRow(props: DraftRowProps) {
           <TextCell
             value={row.price ?? ""}
             label={t("columns.price")}
-            inputMode="numeric"
+            money
             className="text-right tabular-nums"
             error={fieldError("price")}
             onDirty={typedOf("price")}

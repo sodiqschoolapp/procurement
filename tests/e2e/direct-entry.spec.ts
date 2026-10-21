@@ -6,6 +6,7 @@ import pg from "pg";
 import uz from "../../src/i18n/messages/uz.json" with { type: "json" };
 import { connectionOptions } from "../../src/server/db/connection-options.mjs";
 import { E2E_ROLES, e2eDatabaseUrl, serverDatabaseUrl } from "./global-setup";
+import { shownAmount } from "./shown-amount";
 
 // Build plan 5.8 (Direct entry by the Head). 09-warehouse.md, Direct entry by the Head: branch,
 // date, reason, lines with a cost prefilled from the reference price; 15-quality-and-acceptance.md
@@ -113,7 +114,7 @@ test("the Head enters 200 chairs EA already owns at the reference price, and the
   await page.getByLabel(texts.search).fill(seeded.tag);
   await page.locator(`[data-pick="${seeded.variantId}"]`).click();
   const line = page.locator(`[data-entry-line="${seeded.variantId}"]`);
-  await expect(line.getByLabel(texts.unitCost)).toHaveValue("150000");
+  await expect(line.getByLabel(texts.unitCost)).toHaveValue(shownAmount("150000"));
   await line.getByLabel(/^Miqdori/).fill("200");
   if (phone) {
     expect(
