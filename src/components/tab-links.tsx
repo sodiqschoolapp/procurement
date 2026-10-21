@@ -4,8 +4,9 @@ import { cn } from "@/components/utils";
 
 // Tabs that are links (docs/design-system.md, Parts: "Tabs"): words in a row over a hairline; the
 // current tab is navy with a 2 px orange underline, the others muted. A count follows the word as
-// a plain number. On a phone the row scrolls sideways inside itself, so the page never does. Each
-// tab is a link, so the address keeps the view (11-screens-and-ux.md rule 8).
+// a plain number. On a phone the row scrolls sideways inside itself, so the page never does; from
+// sm up it wraps onto a second line, so every tab can be reached with a mouse. Each tab is a link,
+// so the address keeps the view (11-screens-and-ux.md rule 8).
 
 export type TabLink = {
   id: string;
@@ -30,11 +31,11 @@ export function TabLinks({
     <nav
       aria-label={label}
       className={cn(
-        "-mx-4 [scrollbar-width:none] overflow-x-auto border-b border-border px-4 sm:mx-0 sm:px-0",
+        "-mx-4 [scrollbar-width:none] overflow-x-auto border-b border-border px-4 sm:mx-0 sm:overflow-visible sm:px-0",
         className,
       )}
     >
-      <ul className="flex w-max min-w-full gap-1 sm:gap-2">
+      <ul className="flex w-max min-w-full gap-1 sm:w-auto sm:flex-wrap sm:gap-x-2">
         {tabs.map((tab) => (
           <li key={tab.id} className="flex shrink-0">
             <Link
