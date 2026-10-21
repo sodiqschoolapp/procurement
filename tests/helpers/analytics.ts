@@ -47,6 +47,8 @@ export type Bought = {
   cancelled?: boolean;
   /** The moment of the cancel, the record's entry moment unless given (plan of 6.4c, item 5). */
   cancelledAt?: string;
+  /** The entry moment of a record `recordOn()` adds, the helpers' one moment unless given. */
+  createdAt?: string;
   /** Defaults: the scene's own. */
   categoryId?: string;
   departmentId?: string;
@@ -105,13 +107,13 @@ export async function recordOn(
     insert into purchase_trips (client_key, branch_id, purchased_on, supplier_id, payment_type,
       created_by, created_at)
     values (${randomUUID()}, ${scene.branch.id}, ${row.purchasedOn}, ${supplierId},
-      ${row.paymentType ?? "CASH"}, ${ownerId}, ${AT})
+      ${row.paymentType ?? "CASH"}, ${ownerId}, ${row.createdAt ?? AT})
     returning id`);
   const purchase = await db.execute<{ id: string }>(sql`
     insert into purchases (trip_id, order_id, branch_id, variant_id, qty, unit_price, created_by,
       created_at)
     values (${trip.rows[0]!.id}, ${order.id}, ${scene.branch.id}, ${order.variantId},
-      ${row.qty ?? "1.000"}, ${row.unitPrice ?? "10000"}, ${ownerId}, ${AT})
+      ${row.qty ?? "1.000"}, ${row.unitPrice ?? "10000"}, ${ownerId}, ${row.createdAt ?? AT})
     returning id`);
   const purchaseId = purchase.rows[0]!.id;
   if (row.receipt) {

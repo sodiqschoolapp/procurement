@@ -207,6 +207,40 @@ describe("the biggest price rises of the last 90 days (decided item 4)", () => {
   });
 });
 
+describe("a rise is between two trip dates (D61, a change to decided item 4; live test, issue 6)", () => {
+  /** Two records of one subtype, the second entered an hour later, as in the live test. */
+  async function twoRecords(scene: SpendingScene, firstOn: string, secondOn: string) {
+    const order = await bought(scene, { purchasedOn: firstOn, unitPrice: "3500" });
+    // The helpers enter every record at one moment; the live 4 000 was entered after the 3 500.
+    await recordOn(
+      scene,
+      { id: order.orderId, ownerId: order.ownerId, variantId: order.variantId },
+      { purchasedOn: secondOn, unitPrice: "4000", createdAt: "2031-05-02T06:00:00Z" },
+    );
+    return order;
+  }
+
+  it("two purchases of one subtype on the same date at 3 500 and 4 000 are no rise; on two dates they are +500, +14.3 %", async () => {
+    setClock("2031-10-15T05:00:00Z");
+    const scene = await spendingScene();
+    const head = await insertUser("HEAD");
+    // One shop visit, two prices: those differences show under "different prices", not as a rise.
+    await twoRecords(scene, "2031-10-10", "2031-10-10");
+    // The same two prices on two trip dates: a rise.
+    const twoDates = await twoRecords(scene, "2031-10-01", "2031-10-10");
+    await refreshNow();
+    const { rises } = await getPrices(head.id, THIS_MONTH, only(scene), null);
+    expect(rises).toEqual([
+      expect.objectContaining({
+        variantId: twoDates.variantId,
+        earlier: { price: 3500n, purchasedOn: "2031-10-01" },
+        newest: { price: 4000n, purchasedOn: "2031-10-10" },
+        rise: { difference: 500n, percent: "14.3" },
+      }),
+    ]);
+  });
+});
+
 describe("the same product at different prices (decided item 5)", () => {
   it("names the cheapest and dearest branch-and-supplier pairs; one price leaves it out", async () => {
     setClock("2031-10-15T05:00:00Z");

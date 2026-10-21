@@ -230,11 +230,13 @@ async function risesOf(
   filters: AnalyticsFilters,
 ): Promise<PriceRise[]> {
   // Per subtype with a record in the 90 days: its newest record there; the earlier one is its
-  // newest record before the 90 days, or its oldest record in them (decided item 4). Records are
-  // ordered by trip date, entry time and id.
+  // newest record before the 90 days, or its oldest record in them on a trip date before the
+  // newest one's (decided item 4, changed by D61: records of the newest one's date are one visit,
+  // shown under different prices, never a rise). Records are ordered by trip date, entry time and
+  // id.
   const order = sql`purchased_on desc, created_at desc, purchase_id desc`;
   const found = await db.execute<
-    NameRow & { newest: RecordRow; before: RecordRow | null; oldest: RecordRow; one: boolean }
+    NameRow & { newest: RecordRow; before: RecordRow | null; oldest: RecordRow | null }
   >(sql`
     with priced as (
       select analytics_spending.variant_id, analytics_spending.purchase_id,
@@ -246,8 +248,9 @@ async function risesOf(
     inside as (select * from priced where purchased_on >= ${window.first}),
     newest as (select distinct on (variant_id) * from inside order by variant_id, ${order}),
     oldest as (
-      select distinct on (variant_id) * from inside
-      order by variant_id, purchased_on, created_at, purchase_id),
+      select distinct on (i.variant_id) i.* from inside i
+      join newest n on n.variant_id = i.variant_id and i.purchased_on < n.purchased_on
+      order by i.variant_id, i.purchased_on, i.created_at, i.purchase_id),
     earlier as (
       select distinct on (variant_id) * from priced where purchased_on < ${window.first}
       order by variant_id, ${order})
@@ -257,11 +260,11 @@ async function risesOf(
            case when e.variant_id is null then null
                 else jsonb_build_object('goods', e.goods::text, 'qty', e.qty::text,
                                         'purchased_on', e.purchased_on::text) end as before,
-           jsonb_build_object('goods', o.goods::text, 'qty', o.qty::text,
-                              'purchased_on', o.purchased_on::text) as oldest,
-           o.purchase_id = n.purchase_id as one
+           case when o.variant_id is null then null
+                else jsonb_build_object('goods', o.goods::text, 'qty', o.qty::text,
+                                        'purchased_on', o.purchased_on::text) end as oldest
     from newest n
-    join oldest o on o.variant_id = n.variant_id
+    left join oldest o on o.variant_id = n.variant_id
     left join earlier e on e.variant_id = n.variant_id
     join product_variants v on v.id = n.variant_id
     join products pr on pr.id = v.product_id`);
@@ -271,8 +274,8 @@ async function risesOf(
     purchasedOn: row.purchased_on,
   });
   const rises = found.rows.flatMap((row) => {
-    // A single record in the 90 days with none before has nothing to rise from.
-    const from = row.before ?? (row.one ? null : row.oldest);
+    // No record before the 90 days and none on an earlier date in them: nothing to rise from.
+    const from = row.before ?? row.oldest;
     if (!from) return [];
     const earlier = priceOf(from);
     const newest = priceOf(row.newest);

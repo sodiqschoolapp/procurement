@@ -15,7 +15,7 @@ Read first, under `docs/spec/`: `11-screens-and-ux.md` (the whole file); `10-not
 - A screen never calculates a total or decides a permission. It shows what the domain and the server return.
 - A page a role cannot use is absent from the menu, not greyed out. Hiding it is not the protection; the server check is.
 - Every screen works at 375 px and 1440 px, with the keyboard, with 44 px touch targets on phones, and with skeleton placeholders instead of a full-page spinner.
-- Irreversible actions ask for confirmation and state the result. A colour label always carries an icon, a word and the amount.
+- Irreversible actions ask for confirmation and state the result. A colour label always carries an icon, a word and the amount, except a green label, which has nothing to count.
 - Whatever a screen holds while a call runs (a held save queue, a pending flag, an open dialog) is released in a `finally`, so a dropped connection never leaves a row waiting for ever. (Spec review of 2.5b.)
 - A refusal that only the server would give is not offered: a button that every chosen row would refuse is not shown (read the rights the page computed for each row). (Spec review of 2.5b.)
 - A callback a child puts in an effect's dependencies is stable: never a function made anew on every render (a factory such as `typedOf(name)` returns the same function each time). Otherwise the effect runs on every render and can loop. (Build of 2.6.)
