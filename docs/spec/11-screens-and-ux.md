@@ -51,7 +51,7 @@ A page a role cannot use is not shown greyed out; it is simply absent from the m
 1. **Top:** order number and revision, status label, branch, owner, department, product and subtype, planned and actual totals, the three colour labels.
 2. **Stepper:** Draft, Head, Principal, Finance, Open, Closed, with the name and time of each finished step.
 3. **Tabs:** Details, Purchases, Money, History.
-4. **Action bar,** fixed at the bottom: only the actions this user can take on this order now. If there are none, a line says who the order is waiting for.
+4. **Action bar,** under the header and kept in view: only the actions this user can take on this order now. If there are none, a line says who the order is waiting for.
 
 ## Rules for a smooth feel
 
@@ -65,8 +65,8 @@ A page a role cannot use is not shown greyed out; it is simply absent from the m
 8. **Lists.** 25 rows per page, loaded from the server. Filters and sorting stay in the address, so a link reopens the same view.
 9. **Search.** Ctrl+K or Cmd+K opens a search for order numbers, products and suppliers.
 10. **Formats.** Money as `1 250 000 so'm`. Dates as `08.10.2026`. Time in 24 hours, Tashkent. Quantities without trailing zeros.
-11. **Colours.** Status labels look the same everywhere. Green, amber and red are kept for the three labels and for alerts; the brand orange marks only the action to take and is never a status colour.
-12. **Empty screens.** An empty list explains what belongs there and offers the button to create it.
+11. **Colours.** Status labels look the same everywhere: a dot and the word. Blue for the approval and buying flow, red for sent back and rejected, green for closed, grey for draft and cancelled; amber is kept for the three labels and alerts; the brand orange is a small highlight (active tab, active menu item, the one thing that needs you now) and is never a status colour.
+12. **Empty screens.** An empty list explains what belongs there and offers the button to create it; on a home page an empty list is left out, and when every list is empty one line says nothing needs the person now.
 13. **Access for everyone.** Everything works with the keyboard, text contrast meets WCAG AA, and touch targets are at least 44 px on phones.
 14. **Languages.** Every label comes from translation files for Uzbek, Russian and English. No text is written directly in a screen.
 15. **Look.** A clean, neutral look of this app's own that keeps the school's brand, written in `docs/design-system.md`: white and light grey surfaces, the school's navy for text and main actions, the school's orange as a small highlight, other colour used only for meaning (status, over or under plan, warnings), the Golos Text font and the school's logo built in. Light and dark themes; the theme follows the device until the user chooses one.
