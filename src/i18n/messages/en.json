@@ -1921,6 +1921,9 @@
         "uploading": "Wait for the file to upload."
       },
       "closedDone": "{count, plural, one {# order closed} other {# orders closed}}",
+      "closeTitle": "Close the orders",
+      "closeAfterSave": "After the settlement is saved.",
+      "closeCount": "{count, plural, one {Close # order} other {Close # orders}}",
       "seeClosed": "See the closed orders"
     },
     "managers": {

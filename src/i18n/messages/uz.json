@@ -1921,6 +1921,9 @@
         "uploading": "Fayl yuklanishini kuting."
       },
       "closedDone": "{count} ta buyurtma yopildi",
+      "closeTitle": "Buyurtmalarni yopish",
+      "closeAfterSave": "Hisob-kitob saqlangandan keyin.",
+      "closeCount": "{count, plural, other {# ta buyurtmani yopish}}",
       "seeClosed": "Yopilgan buyurtmalarni koʻrish"
     },
     "managers": {

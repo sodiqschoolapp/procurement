@@ -107,6 +107,7 @@ export function MoveButton({
   onDone,
   size,
   variant = "secondary",
+  buttonLabel,
   className,
 }: {
   move: MoveKind;
@@ -124,6 +125,11 @@ export function MoveButton({
   /** Small in a desktop selection bar beside Clear (design system: one size in one row). */
   size?: "sm";
   variant?: "default" | "secondary";
+  /**
+   * The words of the button itself where the screen names the move more fully (the settlement
+   * screen's "Close 3 orders"); the confirm dialog keeps the move's own word.
+   */
+  buttonLabel?: string;
   className?: string;
 }) {
   const t = useTranslations("orders.moves");
@@ -218,7 +224,7 @@ export function MoveButton({
         className={className}
         data-move={move}
       >
-        {count > 1 ? t("buttonCount", { label, count }) : label}
+        {buttonLabel ?? (count > 1 ? t("buttonCount", { label, count }) : label)}
       </Button>
       <ConfirmDialog
         open={asking}

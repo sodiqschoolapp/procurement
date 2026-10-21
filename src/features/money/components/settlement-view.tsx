@@ -15,6 +15,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Icon } from "@/components/icon";
 import { DateInput } from "@/components/ui/date-input";
 import { FIELD_CLASSES, Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/money-input";
 import { cn } from "@/components/utils";
 import { FILE_MIMES } from "@/domain/files";
 import { parseSomOrZero } from "@/domain/money";
@@ -389,20 +390,18 @@ export function SettlementView({ settlement }: { settlement: WireSettlement }) {
                             >
                               {t(`cash.${order.prefill.kind}`)}
                             </label>
-                            <Input
+                            <MoneyInput
                               id={`settle-${order.id}`}
                               data-settle-amount={order.id}
-                              inputMode="numeric"
-                              autoComplete="off"
                               value={textOf(order)}
                               disabled={pending}
                               aria-invalid={invalid || undefined}
                               aria-describedby={invalid ? `settle-error-${order.id}` : undefined}
-                              className="text-right tabular-nums max-sm:h-12"
-                              onChange={(event) =>
+                              className="text-right max-sm:h-12"
+                              onValueChange={(value) =>
                                 setTyped((current) => ({
                                   ...current,
-                                  [order.id]: event.target.value,
+                                  [order.id]: value,
                                 }))
                               }
                             />
@@ -629,8 +628,21 @@ export function SettlementView({ settlement }: { settlement: WireSettlement }) {
         </section>
       ) : null}
 
-      {/* 08 Closing 3: Close of every order the screen shows; the server names those not ready. */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:justify-end" data-settle-close>
+      {/* 08 Closing 3: Close of every order the screen shows; the server names those not ready.
+          Its own last step, under the settlement, so the order of the two actions is plain. */}
+      <section
+        aria-labelledby={`${formId}-close`}
+        data-settle-close
+        className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5"
+      >
+        <div className="flex flex-col gap-0.5">
+          <h2 id={`${formId}-close`} className="text-subheading font-semibold">
+            {t("closeTitle")}
+          </h2>
+          {cashOrders.length > 0 && (
+            <p className="text-small text-muted-foreground">{t("closeAfterSave")}</p>
+          )}
+        </div>
         <MoveButton
           move="CLOSE"
           variant="default"
@@ -638,9 +650,10 @@ export function SettlementView({ settlement }: { settlement: WireSettlement }) {
           versionOf={(id) => allOrders.find((order) => order.id === id)?.version ?? 0}
           onAnswer={setFailed}
           onDone={setClosed}
+          buttonLabel={t("closeCount", { count: allOrders.length })}
           className="max-sm:h-12 max-sm:w-full"
         />
-      </div>
+      </section>
 
       <ConfirmDialog
         open={asking}

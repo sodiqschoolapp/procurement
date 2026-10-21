@@ -1921,6 +1921,9 @@
         "uploading": "Дождитесь загрузки файла."
       },
       "closedDone": "{count, plural, one {# заказ закрыт} few {# заказа закрыты} many {# заказов закрыты} other {# заказа закрыты}}",
+      "closeTitle": "Закрыть заказы",
+      "closeAfterSave": "После сохранения расчёта.",
+      "closeCount": "{count, plural, one {Закрыть # заказ} few {Закрыть # заказа} many {Закрыть # заказов} other {Закрыть # заказа}}",
       "seeClosed": "Показать закрытые заказы"
     },
     "managers": {
