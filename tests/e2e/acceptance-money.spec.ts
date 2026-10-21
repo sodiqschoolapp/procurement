@@ -544,7 +544,9 @@ test("S20: four ticked, one approved a moment earlier by another Finance user: r
     [pens, "100000"],
     [folders, "30000"],
   ] as const) {
-    await expect(again.locator(`[data-cash-row="${order.id}"] input`)).toHaveValue(amount);
+    await expect(again.locator(`[data-cash-row="${order.id}"] input`)).toHaveValue(
+      shownAmount(amount),
+    );
   }
   await expect(again).toContainText(/650\s000/);
   await confirmApprove(page, again, 3);
