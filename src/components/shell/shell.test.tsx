@@ -33,6 +33,14 @@ function linkLabels(html: string): string[] {
     .map((tag) => /aria-label="([^"]+)"/.exec(tag)?.[1] ?? /href="([^"]+)"/.exec(tag)![1]!);
 }
 
+/** An invented person of a role, for the menu and their own panel. */
+const personOf = (role: Role) => ({
+  fullName: "Sinov Sinovov",
+  username: "sinov_user",
+  role,
+  locale: "en" as const,
+});
+
 describe("the sidebar (Interface per role; design system, Layout shell)", () => {
   const cases: Record<Role, string[]> = {
     MANAGER: ["Home", "Orders", "Warehouse", "Analytics", "Reports"],
@@ -43,16 +51,14 @@ describe("the sidebar (Interface per role; design system, Layout shell)", () => 
   for (const [role, labels] of Object.entries(cases)) {
     it(`${role}: exactly its items, each named for the rail`, () => {
       expect(
-        linkLabels(
-          wrap(<Sidebar role={role as Role} fullName="Sinov Sinovov" schoolName={null} />),
-        ),
+        linkLabels(wrap(<Sidebar person={personOf(role as Role)} schoolName={null} />)),
       ).toEqual(labels);
     });
   }
 
   it("marks the active item as the current page, and only that one", () => {
     pathname.current = "/warehouse/documents";
-    const html = wrap(<Sidebar role="HEAD" fullName="Sinov Sinovov" schoolName={null} />);
+    const html = wrap(<Sidebar person={personOf("HEAD")} schoolName={null} />);
     pathname.current = "/";
     expect(html.match(/aria-current="page"/g)).toHaveLength(1);
     expect(html).toMatch(/aria-label="Warehouse"[^>]*aria-current="page"/);
@@ -60,16 +66,14 @@ describe("the sidebar (Interface per role; design system, Layout shell)", () => 
 
   // build-plan 1.1, Done when: "set the school name and see it in the shell" (plan, decision 13).
   it("shows the school name under the logo once set, and nothing before", () => {
-    const named = wrap(
-      <Sidebar role="MANAGER" fullName="Sinov Sinovov" schoolName="Invented School" />,
-    );
+    const named = wrap(<Sidebar person={personOf("MANAGER")} schoolName="Invented School" />);
     expect(named).toMatch(/<p[^>]*title="Invented School"[^>]*>Invented School<\/p>/);
-    const unnamed = wrap(<Sidebar role="MANAGER" fullName="Sinov Sinovov" schoolName={null} />);
+    const unnamed = wrap(<Sidebar person={personOf("MANAGER")} schoolName={null} />);
     expect(unnamed).not.toContain("Invented School");
   });
 
   it("has the collapse button and the sign-out button, both named", () => {
-    const html = wrap(<Sidebar role="FINANCE" fullName="Sinov Sinovov" schoolName={null} />);
+    const html = wrap(<Sidebar person={personOf("FINANCE")} schoolName={null} />);
     expect(html).toContain('aria-label="Collapse the menu"');
     expect(html).toContain('aria-expanded="true"');
     expect(html).toContain('aria-label="Sign out"');

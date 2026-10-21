@@ -1,6 +1,5 @@
 import { getTranslations } from "next-intl/server";
 import { cookies } from "next/headers";
-import Link from "next/link";
 import { Suspense } from "react";
 
 import { Skeleton } from "@/components/skeleton";
@@ -11,6 +10,7 @@ import { countMyUnread } from "@/features/notifications/queries/my-notifications
 import { Bell } from "./bell";
 import { BranchSelect } from "./branch-select";
 import { Avatar } from "./person";
+import { type PanelPerson, ProfilePanel } from "./profile-panel";
 import { Search } from "./search";
 
 // The top bar (docs/design-system.md, Page shell: "white, 56 high, a hairline bottom edge: the
@@ -46,7 +46,7 @@ async function BellCount({ userId }: { userId: string }) {
   return <Bell count={await countMyUnread(userId)} />;
 }
 
-export async function TopBar({ userId, fullName }: { userId: string; fullName: string }) {
+export async function TopBar({ userId, person }: { userId: string; person: PanelPerson }) {
   const t = await getTranslations();
   return (
     <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-3 border-b border-border bg-topbar/95 px-4 backdrop-blur sm:px-6">
@@ -72,13 +72,13 @@ export async function TopBar({ userId, fullName }: { userId: string; fullName: s
         >
           <BellCount userId={userId} />
         </Suspense>
-        <Link
-          href="/profile"
-          aria-label={t("shell.profile")}
-          className="flex size-11 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:hidden"
+        <ProfilePanel
+          {...person}
+          triggerLabel={t("shell.profile")}
+          triggerClassName="flex size-11 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:hidden"
         >
-          <Avatar fullName={fullName} className="size-8" />
-        </Link>
+          <Avatar fullName={person.fullName} className="size-8" />
+        </ProfilePanel>
       </div>
     </header>
   );

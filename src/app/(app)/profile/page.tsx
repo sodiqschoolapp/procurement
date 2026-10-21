@@ -3,8 +3,8 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { SignOutButton } from "@/components/shell/sign-out-button";
 import { requireUser } from "@/server/auth/session";
 
-import { LanguageChoice } from "./language-choice";
-import { ThemeChoice } from "./theme-choice";
+import { LanguageChoice } from "@/components/shell/language-choice";
+import { ThemeChoice } from "@/components/shell/theme-choice";
 
 // The profile (11-screens-and-ux.md, Screens: "Notifications, profile: All"): the person's name,
 // username and role, the language (A2), the theme (rule 15), and sign-out, the only one at phone

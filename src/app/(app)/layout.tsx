@@ -1,4 +1,5 @@
 import { headers } from "next/headers";
+import { getLocale } from "next-intl/server";
 import type { ReactNode } from "react";
 
 import { Sidebar } from "@/components/shell/sidebar";
@@ -16,12 +17,19 @@ export default async function AppLayout({ children }: Readonly<{ children: React
   const user = await requireUser((await headers()).get(RETURN_PATH_HEADER) ?? "/");
   // The school name under the logo, once the Head has set it (plan of 1.1, decision 13).
   const schoolName = await getSchoolName(user.id);
+  // The person's own panel in the menu and the top bar (ProfilePanel).
+  const person = {
+    fullName: user.fullName,
+    username: user.username,
+    role: user.role,
+    locale: await getLocale(),
+  };
 
   return (
     <div className="flex min-h-dvh bg-background">
-      <Sidebar role={user.role} fullName={user.fullName} schoolName={schoolName} />
+      <Sidebar person={person} schoolName={schoolName} />
       <div className="flex min-w-0 flex-1 flex-col">
-        <TopBar userId={user.id} fullName={user.fullName} />
+        <TopBar userId={user.id} person={person} />
         {/* One content column on every page (docs/design-system.md, Spacing: content width). */}
         <main className="flex-1 px-4 pt-4 pb-28 sm:px-6 sm:pt-6 sm:pb-12 lg:px-8">
           <div className="page-width">{children}</div>

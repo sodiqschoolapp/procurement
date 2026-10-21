@@ -9,7 +9,7 @@ import { Segmented } from "@/components/ui/segmented";
 import { useAction } from "@/components/use-action";
 import { LOCALES, type Locale } from "@/i18n/locale";
 
-import { chooseOwnLanguageAction } from "./actions";
+import { chooseOwnLanguageAction } from "@/app/(app)/profile/actions";
 
 // The person's language (A2), each language by its own name. Saved at once: the control dims
 // while it saves (11 rule 4); success re-renders the page and the menu in the new language, the
