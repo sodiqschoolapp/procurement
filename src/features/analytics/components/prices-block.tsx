@@ -324,7 +324,10 @@ export async function Card({
   );
 }
 
-/** A table that scrolls sideways inside its card on a phone; the first cell heads the row. */
+/**
+ * A table of a card; the first cell heads the row. On a phone each row is a short card of label and
+ * value (`table-cards`), so nothing is cut off at 375 px; wider screens keep the columns.
+ */
 export function Table({
   headings,
   rows,
@@ -341,7 +344,7 @@ export function Table({
       className="overflow-x-auto rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
     >
       <table
-        className="w-full min-w-[32rem] border-collapse text-left text-sm leading-5"
+        className="table-cards table-cards-flat w-full min-w-[32rem] border-collapse text-left text-sm leading-5"
         data-table={data}
       >
         <thead className="border-b border-border bg-muted text-xs font-medium text-muted-foreground">
@@ -362,11 +365,15 @@ export function Table({
             <tr key={row.key} className="border-t align-top" data-row={row.key}>
               {row.cells.map((cell, index) =>
                 index === 0 ? (
-                  <th key={index} scope="row" className="px-3 py-2 font-normal">
+                  <th key={index} scope="row" data-card="head" className="px-3 py-2 font-normal">
                     {cell}
                   </th>
                 ) : (
-                  <td key={index} className="px-3 py-2 text-right tabular-nums">
+                  <td
+                    key={index}
+                    data-label={headings[index]}
+                    className="px-3 py-2 text-right tabular-nums"
+                  >
                     {cell}
                   </td>
                 ),

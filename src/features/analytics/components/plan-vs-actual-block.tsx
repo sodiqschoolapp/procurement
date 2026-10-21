@@ -274,12 +274,13 @@ async function TallyTable({ firstColumn, rows }: { firstColumn: string; rows: Ta
     t("plan.columns.saved"),
   ];
   return (
-    // A table wider than a phone scrolls; the keyboard reaches it too (WCAG 2.1.1; plan of 9.1d).
+    // A table wider than its card scrolls; the keyboard reaches it too (WCAG 2.1.1; plan of 9.1d).
+    // On a phone each row is a short card of label and value (table-cards).
     <div
       tabIndex={0}
       className="overflow-x-auto rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
     >
-      <table className="w-full min-w-[48rem] border-collapse text-left text-sm leading-5">
+      <table className="table-cards table-cards-flat w-full min-w-[48rem] border-collapse text-left text-sm leading-5">
         <thead className="border-b border-border bg-muted text-xs font-medium text-muted-foreground">
           <tr>
             <th scope="col" className="px-3 py-2">
@@ -295,11 +296,16 @@ async function TallyTable({ firstColumn, rows }: { firstColumn: string; rows: Ta
         <tbody>
           {rows.map((row) => (
             <tr key={row.key} className="border-t align-top" data-tally-row={row.key}>
-              <th scope="row" className="px-3 py-2 font-normal">
+              <th scope="row" data-card="head" className="px-3 py-2 font-normal">
                 {row.label}
               </th>
-              {cells(row.tally).map((cell) => (
-                <td key={cell.id} className="px-3 py-2 text-right tabular-nums" data-cell={cell.id}>
+              {cells(row.tally).map((cell, index) => (
+                <td
+                  key={cell.id}
+                  className="px-3 py-2 text-right tabular-nums"
+                  data-cell={cell.id}
+                  data-label={headings[index]}
+                >
                   <Link
                     href={row.href(cell.key)}
                     className="font-semibold whitespace-nowrap text-link underline-offset-2 hover:underline"

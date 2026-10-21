@@ -170,12 +170,13 @@ export async function ChartCard({
         </a>
       </div>
       {children}
-      {/* A table wider than a phone scrolls; the keyboard reaches it too (WCAG 2.1.1; plan of 9.1d). */}
+      {/* A table wider than its card scrolls; the keyboard reaches it too (WCAG 2.1.1; plan of
+          9.1d). On a phone each row is a short card of label and value (table-cards). */}
       <div
         tabIndex={0}
         className="overflow-x-auto rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
       >
-        <table className="w-full min-w-[28rem] border-collapse text-left text-sm leading-5">
+        <table className="table-cards table-cards-flat w-full min-w-[28rem] border-collapse text-left text-sm leading-5">
           <thead className="border-b border-border bg-muted text-xs font-medium text-muted-foreground">
             <tr>
               <th scope="col" className="px-3 py-2">
@@ -192,7 +193,7 @@ export async function ChartCard({
           <tbody>
             {rows.map((row) => (
               <tr key={row.href} className="border-t" data-chart-row={row.label}>
-                <th scope="row" className="px-3 py-2 font-normal">
+                <th scope="row" data-card="head" className="px-3 py-2 font-normal">
                   <Link
                     href={row.href}
                     className="font-semibold text-link underline-offset-2 hover:underline"
@@ -200,10 +201,17 @@ export async function ChartCard({
                     {row.label}
                   </Link>
                 </th>
-                <td className="px-3 py-2 text-right whitespace-nowrap tabular-nums" data-amount>
+                <td
+                  className="px-3 py-2 text-right whitespace-nowrap tabular-nums"
+                  data-amount
+                  data-label={t("spending.columns.amount")}
+                >
                   {format.money(row.counted.amount)}
                 </td>
-                <td className="px-3 py-2 text-muted-foreground tabular-nums">
+                <td
+                  className="px-3 py-2 text-muted-foreground tabular-nums"
+                  data-label={t("spending.columns.change")}
+                >
                   {changeText(row.counted.change, tShort, format)}
                 </td>
               </tr>

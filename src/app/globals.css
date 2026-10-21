@@ -365,16 +365,16 @@
       border-radius: var(--radius-panel);
       background: var(--card);
     }
-    .table-cards > tbody > tr > td {
+    .table-cards > tbody > tr > :is(td, th) {
       display: block;
       padding: 0 !important;
       text-align: left !important;
       white-space: normal !important;
     }
-    .table-cards > tbody > tr > td:empty {
+    .table-cards > tbody > tr > :is(td, th):empty {
       display: none;
     }
-    .table-cards > tbody > tr > td[data-label]::before {
+    .table-cards > tbody > tr > :is(td, th)[data-label]::before {
       /* Seen, not read: the header row names the column for screen readers. */
       content: attr(data-label) / "";
       display: block;
@@ -383,12 +383,23 @@
       line-height: 1rem;
       color: var(--muted-foreground);
     }
-    .table-cards > tbody > tr > td[data-card="wide"],
-    .table-cards > tbody > tr > td[data-card="head"] {
+    .table-cards > tbody > tr > :is(td, th)[data-card="wide"],
+    .table-cards > tbody > tr > :is(td, th)[data-card="head"] {
       grid-column: 1 / -1;
     }
-    .table-cards > tbody > tr > td[data-card="head"] {
+    .table-cards > tbody > tr > :is(td, th)[data-card="head"] {
       font-weight: 600;
+    }
+    /* Inside a card (the analytics blocks): rows divided by hairlines, not cards in a card. */
+    .table-cards-flat > tbody {
+      gap: 0;
+    }
+    .table-cards-flat > tbody > tr {
+      padding: 0.75rem 0;
+      border: 0;
+      border-top: 1px solid var(--border);
+      border-radius: 0;
+      background: transparent;
     }
     /* The panel around such a table gives its edge to the cards. */
     .table-cards-panel {
