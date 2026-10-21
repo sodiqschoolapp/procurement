@@ -37,7 +37,7 @@ type Common = { period: PeriodInput; filters: AnalyticsFilters; userId: string }
 
 const linkClass = "font-semibold whitespace-nowrap text-link underline-offset-2 hover:underline";
 const tileNumber =
-  "inline-flex min-h-11 min-w-11 items-center text-[28px] leading-[34px] font-bold tabular-nums underline-offset-4 hover:underline";
+  "inline-flex min-h-11 min-w-11 items-center text-title tabular-nums underline-offset-4 hover:underline";
 
 /** The filters with the user as the Manager: the lists behind the blocks' numbers. */
 const mineOf = (filters: AnalyticsFilters, userId: string): AnalyticsFilters => ({
@@ -53,6 +53,7 @@ export async function MyOrdersView({
   userId,
 }: Common & { block: MyOrders }) {
   const t = await getTranslations("analytics");
+  const tShort = await getTranslations("analytics.short");
   const tStatus = await getTranslations("requestStatus");
   const format = await getFormatters();
   const mine = mineOf(filters, userId);
@@ -74,7 +75,7 @@ export async function MyOrdersView({
       data-analytics-block="my-orders"
     >
       <div className="flex flex-col gap-1">
-        <h2 id="my-orders-title" className="text-[20px] leading-7 font-bold">
+        <h2 id="my-orders-title" className="text-heading font-semibold">
           {t("my.orders.title")}
         </h2>
         <p className="text-sm leading-5 text-muted-foreground">{t("my.orders.note")}</p>
@@ -85,9 +86,7 @@ export async function MyOrdersView({
             {t("my.orders.approvalHours")}
           </p>
           {block.approval.hours === null ? (
-            <p className="text-[15px] leading-[22px] text-muted-foreground">
-              {t("my.orders.noApproval")}
-            </p>
+            <p className="text-sm text-muted-foreground">{t("my.orders.noApproval")}</p>
           ) : (
             <>
               <Link href={orders({ kind: "approved" })} className={tileNumber}>
@@ -96,7 +95,7 @@ export async function MyOrdersView({
               <p className="text-sm leading-5 text-muted-foreground">
                 {t("joined", {
                   first: t("speed.stays", { count: block.approval.count }),
-                  second: hoursChangeText(block.approval.change, t, format),
+                  second: hoursChangeText(block.approval.change, tShort, format),
                 })}
               </p>
             </>
@@ -110,9 +109,7 @@ export async function MyOrdersView({
             {t("my.orders.sentBack")}
           </p>
           {block.sentBack.share === null ? (
-            <p className="text-[15px] leading-[22px] text-muted-foreground">
-              {t("my.orders.noDecision")}
-            </p>
+            <p className="text-sm text-muted-foreground">{t("my.orders.noDecision")}</p>
           ) : (
             <>
               <Link href={sentBack()} className={tileNumber}>
@@ -125,7 +122,7 @@ export async function MyOrdersView({
               <p className="text-sm leading-5 text-muted-foreground">
                 {block.sentBack.change === null
                   ? t("my.orders.noDecisionBefore")
-                  : shareChangeText(block.sentBack.change, t, format)}
+                  : shareChangeText(block.sentBack.change, tShort, format)}
               </p>
             </>
           )}
@@ -150,8 +147,8 @@ export async function MyOrdersView({
                       >
                         {count(row.count)}
                       </Link>
-                      <span className="block text-[13px] leading-[18px] text-muted-foreground">
-                        {countChangeText(row.change, t, format)}
+                      <span className="block text-small text-muted-foreground">
+                        {countChangeText(row.change, tShort, format)}
                       </span>
                     </>,
                   ],
@@ -164,8 +161,8 @@ export async function MyOrdersView({
                       <Link href={orders({ kind: "status", status: null })} className={linkClass}>
                         {count(block.total.count)}
                       </Link>
-                      <span className="block text-[13px] leading-[18px] text-muted-foreground">
-                        {countChangeText(block.total.change, t, format)}
+                      <span className="block text-small text-muted-foreground">
+                        {countChangeText(block.total.change, tShort, format)}
                       </span>
                     </>,
                   ],
@@ -188,7 +185,7 @@ export async function MyOrdersView({
                       {t("speed.times", { count: reason.count })}
                     </Link>{" "}
                     <span className="text-muted-foreground">
-                      {countChangeText(reason.change, t, format)}
+                      {countChangeText(reason.change, tShort, format)}
                     </span>
                   </span>
                 </li>
@@ -243,9 +240,7 @@ export async function MyEstimatesView({
       price(each.actualPrice),
       <>
         <span className="font-semibold whitespace-nowrap">{gap(each)}</span>
-        <span className="block text-[13px] leading-[18px] text-muted-foreground">
-          {changeLine(each.change)}
-        </span>
+        <span className="block text-small text-muted-foreground">{changeLine(each.change)}</span>
       </>,
     ],
   });
@@ -257,7 +252,7 @@ export async function MyEstimatesView({
       data-analytics-block="my-estimates"
     >
       <div className="flex flex-col gap-1">
-        <h2 id="my-estimates-title" className="text-[20px] leading-7 font-bold">
+        <h2 id="my-estimates-title" className="text-heading font-semibold">
           {t("my.estimates.title")}
         </h2>
         <p className="text-sm leading-5 text-muted-foreground">{t("my.estimates.note")}</p>
@@ -326,7 +321,7 @@ export async function MyCashView({
       data-analytics-block="my-cash"
     >
       <div className="flex flex-col gap-1">
-        <h2 id="my-cash-title" className="text-[20px] leading-7 font-bold">
+        <h2 id="my-cash-title" className="text-heading font-semibold">
           {t("my.cash.title")}
         </h2>
         <p className="text-sm leading-5 text-muted-foreground">{t("my.cash.note")}</p>
@@ -344,9 +339,7 @@ export async function MyCashView({
           <p className="text-sm leading-5 font-semibold text-muted-foreground">
             {t("my.cash.owed")}
           </p>
-          <p className="text-[28px] leading-[34px] font-bold tabular-nums">
-            {format.money(block.owed)}
-          </p>
+          <p className="text-title tabular-nums">{format.money(block.owed)}</p>
         </div>
       </div>
       <Card id="my-cash" title={t("my.cash.perOrder")} excel={download}>
@@ -441,7 +434,7 @@ export async function StockPlanningView({
       data-analytics-block="stock-planning"
     >
       <div className="flex flex-col gap-1">
-        <h2 id="stock-planning-title" className="text-[20px] leading-7 font-bold">
+        <h2 id="stock-planning-title" className="text-heading font-semibold">
           {t("my.planning.title")}
         </h2>
         <p className="text-sm leading-5 text-muted-foreground">
@@ -498,14 +491,12 @@ export async function StockPlanningView({
                           ? `${line.productName}, ${line.subtypeName}`
                           : line.productName}
                       </span>
-                      <span className="text-[13px] leading-[18px] text-muted-foreground">
-                        {line.branchName}
-                      </span>
+                      <span className="text-small text-muted-foreground">{line.branchName}</span>
                       {line.low && <LowLabel className="self-start" />}
                     </span>,
                     <span key="hand" className="flex flex-col whitespace-nowrap tabular-nums">
                       {qty(line.onHand, line.unitShortName)}
-                      <span className="text-[13px] leading-[18px] text-muted-foreground">
+                      <span className="text-small text-muted-foreground">
                         {line.minimum === null
                           ? t("stock.noMinimum")
                           : t("stock.minimum", { qty: format.quantity(line.minimum) })}
@@ -523,7 +514,7 @@ export async function StockPlanningView({
                         >
                           {qty(month.used, line.unitShortName)}
                         </Link>
-                        <span className="text-[13px] leading-[18px] text-muted-foreground">
+                        <span className="text-small text-muted-foreground">
                           {change(month.change, line.unitShortName)}
                         </span>
                       </span>
@@ -536,7 +527,7 @@ export async function StockPlanningView({
                       <Link href={moves(line, period, filters)} className={linkClass}>
                         {qty(line.used, line.unitShortName)}
                       </Link>
-                      <span className="text-[13px] leading-[18px] text-muted-foreground">
+                      <span className="text-small text-muted-foreground">
                         {change(line.change, line.unitShortName)}
                       </span>
                     </span>,

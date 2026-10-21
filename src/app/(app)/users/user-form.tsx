@@ -199,7 +199,7 @@ export function UserForm({ user, choices }: Props) {
     <form
       onSubmit={onSubmit}
       noValidate
-      className="flex flex-col gap-5 rounded-xl bg-card p-6 text-card-foreground"
+      className="flex flex-col gap-5 rounded-xl border border-border bg-card p-4 text-card-foreground sm:p-5"
     >
       <UnsavedChangesGuard dirty={formState.isDirty && !action.pending} />
       <Field id="user-full-name" label={t("users.fullName")} error={error("fullName")}>
@@ -282,7 +282,7 @@ export function UserForm({ user, choices }: Props) {
             return (
               <label
                 key={choice.id}
-                className="flex min-h-11 items-center gap-3 text-[15px] leading-[22px] sm:min-h-8"
+                className="flex min-h-11 items-center gap-3 text-sm sm:min-h-8"
               >
                 <input
                   type={role === "PRINCIPAL" ? "radio" : "checkbox"}
@@ -310,7 +310,7 @@ export function UserForm({ user, choices }: Props) {
       </fieldset>
 
       {needsReplace && (
-        <label className="flex items-start gap-3 rounded-lg bg-muted p-3 text-[15px] leading-[22px]">
+        <label className="flex items-start gap-3 rounded-lg bg-muted p-3 text-sm">
           <input
             type="checkbox"
             checked={replacePrincipal}

@@ -103,7 +103,7 @@ export default async function AnalyticsOrderStatusPage({
       : t(`principal.columns.${column}`);
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-6">
+    <div className="flex w-full min-w-0 flex-col gap-6">
       <Link
         href={`/analytics?${analyticsSearch(params.period, params.filters)}`}
         className="inline-flex min-h-11 min-w-11 items-center self-start text-sm font-semibold underline-offset-2 hover:underline sm:min-h-0"
@@ -112,13 +112,11 @@ export default async function AnalyticsOrderStatusPage({
       </Link>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <h1 className="text-[28px] leading-[34px] font-bold tracking-[-0.01em]">
-            {t("approvals.title")}
-          </h1>
-          <p className="text-[15px] leading-[22px] text-muted-foreground" data-status-what>
+          <h1 className="text-title">{t("approvals.title")}</h1>
+          <p className="text-sm text-muted-foreground" data-status-what>
             {what}
           </p>
-          <p className="text-[15px] leading-[22px] font-semibold tabular-nums" data-status-summary>
+          <p className="text-sm font-semibold tabular-nums" data-status-summary>
             {approved
               ? t("my.list.approvedSummary", {
                   count: list.count,
@@ -139,9 +137,9 @@ export default async function AnalyticsOrderStatusPage({
       {list.rows.length === 0 ? (
         <EmptyState title={t("approvals.title")} line={t("principal.list.empty")} />
       ) : (
-        <section className="rounded-xl bg-card text-card-foreground">
+        <section className="rounded-xl border border-border bg-card text-card-foreground">
           <table className="w-full border-collapse text-left text-sm leading-5 max-sm:block">
-            <thead className="bg-muted text-[13px] leading-[18px] font-semibold text-muted-foreground max-sm:hidden">
+            <thead className="border-b border-border bg-muted text-xs font-medium text-muted-foreground max-sm:hidden">
               <tr>
                 {columns.map((column) => (
                   <th key={column} scope="col" className="px-4 py-3">
@@ -177,7 +175,7 @@ export default async function AnalyticsOrderStatusPage({
                       {row.overdue && (
                         <span
                           data-overdue
-                          className="inline-flex items-center gap-1 text-[13px] font-semibold text-warning"
+                          className="inline-flex items-center gap-1 text-small font-semibold text-warning"
                         >
                           <Icon name="schedule" size={16} />
                           {tOrders("overdue")}

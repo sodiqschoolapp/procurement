@@ -6,6 +6,7 @@ import pg from "pg";
 import uz from "../../src/i18n/messages/uz.json" with { type: "json" };
 import { connectionOptions } from "../../src/server/db/connection-options.mjs";
 import { E2E_PAGE_USERS, e2eDatabaseUrl, serverDatabaseUrl } from "./global-setup";
+import { shownAmount } from "./shown-amount";
 
 // Build plan 4.3 (Money tab and money actions), the plan's Playwright line: Finance ticks two Open
 // orders of one Manager, records Cash given with the prefill after the dialog that names the 2
@@ -124,8 +125,12 @@ test("Finance records Cash given on two ticked orders, sees it in the Money tab 
 
   // One block for the one Manager, each row prefilled with the order's planned cash.
   await expect(dialog.locator("[data-money-block]")).toHaveCount(1);
-  await expect(dialog.locator(`[data-money-row="${first.id}"] input`)).toHaveValue("10000");
-  await expect(dialog.locator(`[data-money-row="${second.id}"] input`)).toHaveValue("10000");
+  await expect(dialog.locator(`[data-money-row="${first.id}"] input`)).toHaveValue(
+    shownAmount("10000"),
+  );
+  await expect(dialog.locator(`[data-money-row="${second.id}"] input`)).toHaveValue(
+    shownAmount("10000"),
+  );
   const confirm = dialog.getByRole("button", { name: t.record.confirm, exact: true });
   // The comment is required (plan of 4.1, decided item 9).
   await expect(confirm).toBeDisabled();

@@ -35,6 +35,7 @@ export async function SpendingBlockView({
   filters: AnalyticsFilters;
 }) {
   const t = await getTranslations("analytics");
+  const tShort = await getTranslations("analytics.short");
   const tMonths = await getTranslations("months");
   const format = await getFormatters();
   const records = (key: DrillKey) =>
@@ -57,7 +58,7 @@ export async function SpendingBlockView({
     label: category.isActive ? category.name : t("inactive", { name: category.name }),
     counted: category,
   }));
-  const pointsOf = (rows: ChartRow[]) => chartPoints(rows, t, format);
+  const pointsOf = (rows: ChartRow[]) => chartPoints(rows, tShort, format);
   const empty = block.total.amount === 0n && block.categories.length === 0;
 
   return (
@@ -66,26 +67,26 @@ export async function SpendingBlockView({
       className="flex flex-col gap-4"
       data-analytics-block="spending"
     >
-      <h2 id="spending-title" className="text-[20px] leading-7 font-bold">
+      <h2 id="spending-title" className="text-heading font-semibold">
         {t("spending.title")}
       </h2>
-      <div className="rounded-xl bg-card p-6 max-sm:p-4">
+      <div className="rounded-xl border border-border bg-card p-4 sm:p-5">
         <p className="text-sm leading-5 font-semibold text-muted-foreground">
           {t("spending.total")}
         </p>
         <Link
           href={records({ kind: "period" })}
-          className="inline-flex min-h-11 min-w-11 items-center text-[28px] leading-[34px] font-bold tabular-nums underline-offset-4 hover:underline"
+          className="inline-flex min-h-11 min-w-11 items-center text-title tabular-nums underline-offset-4 hover:underline"
           data-spending-total
         >
           {format.money(block.total.amount)}
         </Link>
         <p className="text-sm leading-5 text-muted-foreground tabular-nums" data-spending-change>
-          {changeText(block.total.change, t, format)}
+          {changeText(block.total.change, tShort, format)}
         </p>
       </div>
       {empty ? (
-        <p className="rounded-xl bg-card p-6 text-[15px] leading-[22px] text-muted-foreground max-sm:p-4">
+        <p className="rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground max-sm:p-4 sm:p-5">
           {t("spending.empty")}
         </p>
       ) : (
@@ -148,15 +149,16 @@ export async function ChartCard({
   children: React.ReactNode;
 }) {
   const t = await getTranslations("analytics");
+  const tShort = await getTranslations("analytics.short");
   const format = await getFormatters();
   return (
     <section
       aria-labelledby={`${id}-title`}
-      className="flex min-w-0 flex-col gap-3 rounded-xl bg-card p-6 max-sm:p-4"
+      className="flex min-w-0 flex-col gap-3 rounded-xl border border-border bg-card p-4 sm:p-5"
       data-chart-card={id}
     >
       <div className="flex items-baseline justify-between gap-3">
-        <h3 id={`${id}-title`} className="text-[17px] leading-6 font-bold">
+        <h3 id={`${id}-title`} className="text-subheading font-semibold">
           {title}
         </h3>
         <a
@@ -168,13 +170,14 @@ export async function ChartCard({
         </a>
       </div>
       {children}
-      {/* A table wider than a phone scrolls; the keyboard reaches it too (WCAG 2.1.1; plan of 9.1d). */}
+      {/* A table wider than its card scrolls; the keyboard reaches it too (WCAG 2.1.1; plan of
+          9.1d). On a phone each row is a short card of label and value (table-cards). */}
       <div
         tabIndex={0}
         className="overflow-x-auto rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
       >
-        <table className="w-full min-w-[28rem] border-collapse text-left text-sm leading-5">
-          <thead className="bg-muted text-[13px] leading-[18px] font-semibold text-muted-foreground">
+        <table className="table-cards table-cards-flat w-full min-w-[28rem] border-collapse text-left text-sm leading-5">
+          <thead className="border-b border-border bg-muted text-xs font-medium text-muted-foreground">
             <tr>
               <th scope="col" className="px-3 py-2">
                 {firstColumn}
@@ -190,7 +193,7 @@ export async function ChartCard({
           <tbody>
             {rows.map((row) => (
               <tr key={row.href} className="border-t" data-chart-row={row.label}>
-                <th scope="row" className="px-3 py-2 font-normal">
+                <th scope="row" data-card="head" className="px-3 py-2 font-normal">
                   <Link
                     href={row.href}
                     className="font-semibold text-link underline-offset-2 hover:underline"
@@ -198,11 +201,18 @@ export async function ChartCard({
                     {row.label}
                   </Link>
                 </th>
-                <td className="px-3 py-2 text-right whitespace-nowrap tabular-nums" data-amount>
+                <td
+                  className="px-3 py-2 text-right whitespace-nowrap tabular-nums"
+                  data-amount
+                  data-label={t("spending.columns.amount")}
+                >
                   {format.money(row.counted.amount)}
                 </td>
-                <td className="px-3 py-2 text-muted-foreground tabular-nums">
-                  {changeText(row.counted.change, t, format)}
+                <td
+                  className="px-3 py-2 text-muted-foreground tabular-nums"
+                  data-label={t("spending.columns.change")}
+                >
+                  {changeText(row.counted.change, tShort, format)}
                 </td>
               </tr>
             ))}

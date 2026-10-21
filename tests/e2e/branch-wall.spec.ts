@@ -314,3 +314,46 @@ test("S7, the reports part: the Principal of EA gets Not found for EB's branch, 
   await expect(page.getByText(ebNumber)).toHaveCount(0);
   await expect(page.locator("[data-report-summary]")).toContainText(/4\s000/);
 });
+
+test("S7, the order list's tabs and summary: EB's branch in the address shows only an empty list, and the status counts hold EA's orders only (03 rule 1; redesign of 21.10.2026)", async ({
+  page,
+}, info) => {
+  const owner = E2E_WALL_USERS[info.project.name as keyof typeof E2E_WALL_USERS];
+  const seeded = await seedWaiting(owner);
+  const eb = await withDatabase(async (client) => {
+    const found = await client.query<{ id: string }>("select id from branches where code = 'EB'");
+    return found.rows[0]!.id;
+  });
+
+  await signIn(page, E2E_ROLES.PRINCIPAL);
+
+  // Another branch in the address: the list, its status tabs and its counts read as nothing.
+  await page.goto(`/orders?branch=${eb}`);
+  await expect(page.getByRole("heading", { level: 1, name: uz.orders.title })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: uz.orders.list.emptyFiltered.title }),
+  ).toBeVisible();
+  const tabs = page.getByRole("navigation", { name: uz.orders.list.tabs.label });
+  await expect(tabs.locator("[data-tab]")).toHaveCount(1);
+  await expect(tabs.locator('[data-tab="all"]')).toBeVisible();
+  await expect(page.getByText(seeded.behind.number)).toHaveCount(0);
+  await expect(page.getByText(seeded.product)).toHaveCount(0);
+
+  // Without a branch: the Waiting for Principal tab counts the owner's EA orders, never the EB
+  // ones (other tests of this file leave some of the same owner's orders waiting too).
+  const counts = await withDatabase(async (client) => {
+    const found = await client.query<{ code: string; count: number }>(
+      `select b.code, count(*)::int as count from orders o join branches b on b.id = o.branch_id
+        where o.owner_id = $1 and o.status = 'PENDING_PRINCIPAL' group by b.code`,
+      [seeded.ownerId],
+    );
+    return Object.fromEntries(found.rows.map((row) => [row.code, row.count]));
+  });
+  expect(counts.EB ?? 0).toBeGreaterThan(0);
+  await page.goto(`/orders?owner=${seeded.ownerId}`);
+  const waiting = page
+    .getByRole("navigation", { name: uz.orders.list.tabs.label })
+    .locator('[data-tab="PENDING_PRINCIPAL"]');
+  await expect(waiting).toHaveText(`${uz.requestStatus.PENDING_PRINCIPAL}${counts.EA}`);
+  await expect(page.getByText(seeded.behind.number)).toHaveCount(0);
+});

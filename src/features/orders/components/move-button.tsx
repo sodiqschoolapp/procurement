@@ -104,8 +104,10 @@ export function MoveButton({
   orders,
   versionOf,
   onAnswer,
+  onDone,
   size,
   variant = "secondary",
+  buttonLabel,
   className,
 }: {
   move: MoveKind;
@@ -115,9 +117,19 @@ export function MoveButton({
   versionOf: (orderId: string) => number;
   /** Called after every answer: null on success, else one line per refused order. */
   onAnswer: (failed: { title: string; lines: { orderId: string; line: string }[] } | null) => void;
+  /**
+   * Called after a success with how many orders moved, in place of reading the page again: a
+   * screen whose orders leave it (the settlement screen after Close) shows its own success state.
+   */
+  onDone?: (count: number) => void;
   /** Small in a desktop selection bar beside Clear (design system: one size in one row). */
   size?: "sm";
   variant?: "default" | "secondary";
+  /**
+   * The words of the button itself where the screen names the move more fully (the settlement
+   * screen's "Close 3 orders"); the confirm dialog keeps the move's own word.
+   */
+  buttonLabel?: string;
   className?: string;
 }) {
   const t = useTranslations("orders.moves");
@@ -143,6 +155,7 @@ export function MoveButton({
     setPending(true);
     key.current ??= newClientKey();
     let answered = false;
+    let done = false;
     try {
       const written = Object.fromEntries(
         Object.entries(notes).filter(([, text]) => text.trim() !== ""),
@@ -157,6 +170,10 @@ export function MoveButton({
       if (answer.ok) {
         toast.success(t(`done.${move}`, { count: answer.data.orders.length }));
         onAnswer(null);
+        if (onDone) {
+          done = true;
+          onDone(answer.data.orders.length);
+        }
         return;
       }
       const numberOf = new Map(orders.map((order) => [order.id, order.number]));
@@ -192,7 +209,7 @@ export function MoveButton({
       if (answered) key.current = null;
       setAsking(false);
       setPending(false);
-      router.refresh();
+      if (!done) router.refresh();
     }
   }
 
@@ -207,7 +224,7 @@ export function MoveButton({
         className={className}
         data-move={move}
       >
-        {count > 1 ? t("buttonCount", { label, count }) : label}
+        {buttonLabel ?? (count > 1 ? t("buttonCount", { label, count }) : label)}
       </Button>
       <ConfirmDialog
         open={asking}
@@ -223,7 +240,7 @@ export function MoveButton({
         onConfirm={() => void run()}
       >
         {move === "CLOSE_EXACT" ? (
-          <p data-close-confirm className="mt-4 text-[15px] leading-[22px] font-semibold">
+          <p data-close-confirm className="mt-4 text-sm font-semibold">
             {t("closeConfirm")}
           </p>
         ) : null}
@@ -243,7 +260,7 @@ export function MoveButton({
               onChange={(event) => setReason(event.target.value)}
               className={cn(FIELD_CLASSES, "min-h-20 py-2")}
             />
-            <p id={`${reasonId}-hint`} className="text-[13px] leading-[18px] text-muted-foreground">
+            <p id={`${reasonId}-hint`} className="text-small text-muted-foreground">
               {t("reasonHint", {
                 min: MOVE_REASON_MIN,
                 max: MOVE_REASON_MAX,
@@ -258,10 +275,7 @@ export function MoveButton({
             <ul data-notes className="flex max-h-[40vh] flex-col gap-3 overflow-y-auto">
               {orders.map((order) => (
                 <li key={order.id} className="flex flex-col gap-1">
-                  <label
-                    htmlFor={`note-${order.id}`}
-                    className="text-[13px] leading-[18px] text-muted-foreground"
-                  >
+                  <label htmlFor={`note-${order.id}`} className="text-small text-muted-foreground">
                     {t("noteOf", { number: order.number })}
                   </label>
                   <textarea

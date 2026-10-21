@@ -56,7 +56,7 @@ export default async function SubtypePage({
   });
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-6">
+    <div className="flex w-full max-w-4xl min-w-0 flex-col gap-6">
       <AdminNav current="catalog" />
       <Link
         href={`/catalog/products/${subtype.productId}`}
@@ -66,9 +66,9 @@ export default async function SubtypePage({
         {subtype.productName}
       </Link>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="flex flex-wrap items-baseline gap-x-3 text-[28px] leading-[34px] font-bold tracking-[-0.01em]">
+        <h1 className="flex flex-wrap items-baseline gap-x-3 text-title">
           {subtype.name}
-          <span className="text-[15px] leading-[22px] font-normal tracking-normal text-muted-foreground">
+          <span className="text-sm font-normal tracking-normal text-muted-foreground">
             {subtype.isActive ? t("active") : t("inactive")}
           </span>
         </h1>
@@ -91,8 +91,8 @@ export default async function SubtypePage({
         productPhotoFileId={subtype.productPhotoFileId}
       />
       <PriceHistoryLink variantId={subtype.id} />
-      <section className="flex flex-col gap-4 rounded-xl bg-card p-6 text-card-foreground">
-        <h2 className="text-[17px] leading-6 font-bold">{t("history")}</h2>
+      <section className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 text-card-foreground sm:p-5">
+        <h2 className="text-subheading font-semibold">{t("history")}</h2>
         <ChangeHistory entries={history.rows} fields={FIELDS} />
       </section>
     </div>

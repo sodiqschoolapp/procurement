@@ -35,6 +35,14 @@ function hitsOf(results: WireSearchResults | null): Hit[] {
   ];
 }
 
+/** The window event that opens the search from another place on the page. */
+export const OPEN_SEARCH_EVENT = "procurement:open-search";
+
+/** Opens the search of the top bar, as Ctrl+K does. */
+export function openSearch(): void {
+  window.dispatchEvent(new Event(OPEN_SEARCH_EVENT));
+}
+
 /** Ctrl+K, or Cmd+K on a Mac, without another modifier. */
 export function isSearchShortcut(
   event: Pick<KeyboardEvent, "key" | "ctrlKey" | "metaKey" | "altKey" | "shiftKey">,
@@ -65,8 +73,16 @@ export function Search() {
       event.preventDefault();
       setOpen(true);
     }
+    // A search field elsewhere on the page (the order list's filter bar) opens this same search.
+    function onOpenSearch() {
+      setOpen(true);
+    }
     window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    window.addEventListener(OPEN_SEARCH_EVENT, onOpenSearch);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener(OPEN_SEARCH_EVENT, onOpenSearch);
+    };
   }, []);
 
   const query = text.trim();
@@ -145,7 +161,7 @@ export function Search() {
           onMouseMove={() => setActive(at)}
           className={cn(
             "flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-sm leading-5",
-            hitKey === activeKey && "bg-secondary",
+            hitKey === activeKey && "bg-accent",
           )}
         >
           {children}
@@ -181,7 +197,7 @@ export function Search() {
         data-testid="search-open"
         className={cn(
           buttonVariants({ variant: "ghost", size: "icon" }),
-          "sm:h-10 sm:w-64 sm:justify-start sm:border sm:border-input sm:bg-card sm:px-3 sm:font-normal sm:text-muted-foreground",
+          "sm:h-10 sm:w-64 sm:justify-start sm:border sm:border-border-strong sm:bg-muted sm:px-3 sm:font-normal sm:text-muted-foreground sm:hover:bg-accent",
         )}
       >
         <Icon name="search" />
@@ -196,14 +212,14 @@ export function Search() {
       <Dialog.Portal>
         <Dialog.Backdrop
           className={cn(
-            "fixed inset-0 z-50 bg-sidebar/50 transition-opacity duration-160 ease-out",
+            "fixed inset-0 z-50 bg-overlay backdrop-blur-[2px] transition-opacity duration-160 ease-out",
             "data-ending-style:opacity-0 data-starting-style:opacity-0",
           )}
         />
         <Dialog.Popup
           className={cn(
             "fixed top-4 left-1/2 z-50 w-[calc(100vw-2rem)] max-w-xl -translate-x-1/2 sm:top-24",
-            "rounded-xl bg-popover p-3 text-popover-foreground shadow-float",
+            "rounded-xl border border-border bg-popover p-3 text-popover-foreground shadow-float",
             "transition-[opacity,scale] duration-160 ease-out",
             "data-ending-style:scale-[0.98] data-ending-style:opacity-0 data-starting-style:scale-[0.98] data-starting-style:opacity-0",
           )}

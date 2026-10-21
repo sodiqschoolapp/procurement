@@ -6,6 +6,7 @@ import * as z from "zod";
 import { AdminNav } from "@/components/admin-nav";
 import { EmptyState } from "@/components/empty-state";
 import { Icon } from "@/components/icon";
+import { Input } from "@/components/ui/input";
 import { buttonVariants } from "@/components/ui/button";
 import { BRANCH_COOKIE } from "@/features/catalog/branch-cookie";
 import { listDepartments } from "@/features/catalog/queries/departments";
@@ -49,7 +50,7 @@ export default async function DepartmentsPage({ searchParams }: { searchParams: 
   };
 
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-6">
+    <div className="flex w-full min-w-0 flex-col gap-6">
       <AdminNav current="catalog" />
       <Link
         href="/catalog"
@@ -60,10 +61,10 @@ export default async function DepartmentsPage({ searchParams }: { searchParams: 
       </Link>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <h1 className="flex flex-wrap items-baseline gap-x-3 text-[28px] leading-[34px] font-bold tracking-[-0.01em]">
+          <h1 className="flex flex-wrap items-baseline gap-x-3 text-title">
             {t("kinds.departments.title")}
             {!empty && (
-              <span className="text-[15px] leading-[22px] font-normal tracking-normal text-muted-foreground">
+              <span className="text-sm font-normal tracking-normal text-muted-foreground">
                 {t("summary", { active: list.active, inactive: list.inactive })}
               </span>
             )}
@@ -111,14 +112,14 @@ export default async function DepartmentsPage({ searchParams }: { searchParams: 
             <label htmlFor="catalog-search" className="sr-only">
               {t("search")}
             </label>
-            <input
+            <Input
               id="catalog-search"
               name="q"
               type="search"
               defaultValue={q}
               placeholder={t("searchHint")}
               maxLength={200}
-              className="h-11 w-full min-w-0 flex-1 rounded-lg border border-input bg-card px-3 text-base leading-6 text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:h-10 sm:max-w-80 sm:text-sm sm:leading-5"
+              className="min-w-0 flex-1 sm:max-w-80"
             />
             <button type="submit" className={buttonVariants({ variant: "secondary" })}>
               {t("find")}
@@ -133,9 +134,9 @@ export default async function DepartmentsPage({ searchParams }: { searchParams: 
           {list.rows.length === 0 ? (
             <EmptyState title={t("noResultsTitle")} line={t("noResultsText")} />
           ) : (
-            <section className="overflow-x-auto rounded-xl bg-card text-card-foreground">
-              <table className="w-full min-w-[40rem] border-collapse text-left text-sm leading-5">
-                <thead className="bg-muted text-[13px] leading-[18px] font-semibold text-muted-foreground">
+            <section className="table-cards-panel overflow-x-auto rounded-xl border border-border bg-card text-card-foreground">
+              <table className="table-cards w-full min-w-[40rem] border-collapse text-left text-sm leading-5">
+                <thead className="border-b border-border bg-muted text-xs font-medium text-muted-foreground">
                   <tr>
                     <th scope="col" className="px-4 py-3">
                       {t("fields.name")}
@@ -157,7 +158,7 @@ export default async function DepartmentsPage({ searchParams }: { searchParams: 
                 <tbody>
                   {list.rows.map((row) => (
                     <tr key={row.id} className="border-t hover:bg-accent/50">
-                      <td className="px-4 py-3 font-semibold">
+                      <td data-card="head" className="px-4 py-3 font-semibold">
                         <Link
                           href={`/catalog/departments/${row.id}`}
                           className="inline-flex min-h-11 min-w-11 items-center underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:min-h-0"
@@ -165,12 +166,22 @@ export default async function DepartmentsPage({ searchParams }: { searchParams: 
                           {row.name}
                         </Link>
                       </td>
-                      <td className="px-4 py-3" title={row.branchName}>
+                      <td
+                        data-label={t("fields.branch")}
+                        className="px-4 py-3"
+                        title={row.branchName}
+                      >
                         {row.branchCode}
                       </td>
-                      <td className="px-4 py-3">{row.responsibleName}</td>
-                      <td className="px-4 py-3 tabular-nums">{row.responsiblePhone}</td>
-                      <td className="px-4 py-3">{row.isActive ? t("active") : t("inactive")}</td>
+                      <td data-label={t("fields.responsibleName")} className="px-4 py-3">
+                        {row.responsibleName}
+                      </td>
+                      <td data-label={t("fields.phone")} className="px-4 py-3 tabular-nums">
+                        {row.responsiblePhone}
+                      </td>
+                      <td data-label={t("status")} className="px-4 py-3">
+                        {row.isActive ? t("active") : t("inactive")}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

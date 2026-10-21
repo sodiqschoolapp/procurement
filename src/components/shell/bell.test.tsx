@@ -7,9 +7,9 @@ import en from "@/i18n/messages/en.json";
 import { Bell } from "./bell";
 
 // 10-notifications-analytics-reports.md, Notifications ("an in-app bell with an unread count");
-// docs/design-system.md, "What we never do" 4 and 12 (a count is a plain number; no dot that only
-// says "something"); plan of 0.11, Screens and review of the plan, Must fix 1: no pill, no
-// orange. The refresh on focus and every 60 seconds needs a browser (tests/e2e/notifications.spec.ts).
+// docs/design-system.md, Page shell and Colour (D60, 21.10.2026: the unread count is the "needs
+// you now" highlight, a number on orange with navy text, never a dot that only says "something").
+// The refresh on focus and every 60 seconds needs a browser (tests/e2e/notifications.spec.ts).
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: () => undefined }) }));
 
@@ -44,13 +44,18 @@ describe("the bell (plan of 0.11, Screens)", () => {
     const html = render(count);
     expect(visibleText(html)).toBe(shown);
     expect(html).toContain(`aria-label="${label}"`);
-    // The medium button: 44 high at phone width, 40 from sm up (Buttons).
+    // The default button: 44 high at phone width, 40 from sm up (Buttons).
     expect(html).toContain("h-11");
     expect(html).toContain("sm:h-10");
   });
 
-  it("the number is plain text: no orange, no pill (What we never do 4; 11 rule 11)", () => {
+  it("the number sits on the orange highlight with navy text, never a status colour (design system, Colour)", () => {
     const html = render(3);
-    expect(html).not.toMatch(/bg-primary|rounded-full|bg-warning|bg-destructive/);
+    expect(html).toMatch(/bg-brand[^"]*text-brand-foreground/);
+    expect(html).not.toMatch(/bg-warning|bg-destructive/);
+  });
+
+  it("with nothing unread there is no highlight at all (no dot that only says something)", () => {
+    expect(render(0)).not.toContain("bg-brand");
   });
 });

@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { useId, useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/money-input";
 import { Select } from "@/components/ui/select";
 import { cn } from "@/components/utils";
 import { DRAFT_EXTRAS_MAX } from "@/domain/drafts";
@@ -97,12 +97,12 @@ export function ExtrasCell({
         {sum}
       </Button>
       <Dialog.Portal>
-        <Dialog.Backdrop className="fixed inset-0 z-50 bg-sidebar/50 transition-opacity duration-160 ease-out data-ending-style:opacity-0 data-starting-style:opacity-0" />
+        <Dialog.Backdrop className="fixed inset-0 z-50 bg-overlay backdrop-blur-[2px] transition-opacity duration-160 ease-out data-ending-style:opacity-0 data-starting-style:opacity-0" />
         <Dialog.Popup
           aria-labelledby={titleId}
           className="fixed top-1/2 left-1/2 z-50 max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-xl bg-popover p-6 text-popover-foreground shadow-float"
         >
-          <h2 id={titleId} className="text-[17px] leading-6 font-bold">
+          <h2 id={titleId} className="text-subheading font-semibold">
             {t("extras.title")}
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">{product}</p>
@@ -140,16 +140,15 @@ export function ExtrasCell({
                   </Select>
                 </div>
                 <div className="w-36">
-                  <Input
+                  <MoneyInput
                     aria-label={t("extras.amount")}
-                    inputMode="numeric"
                     value={row.amount}
                     aria-invalid={error(at, "amount") ? true : undefined}
-                    className="text-right tabular-nums"
-                    onChange={(event) =>
+                    className="text-right"
+                    onValueChange={(value) =>
                       setRows((current) =>
                         current.map((one) =>
-                          one.key === row.key ? { ...one, amount: event.target.value } : one,
+                          one.key === row.key ? { ...one, amount: value } : one,
                         ),
                       )
                     }

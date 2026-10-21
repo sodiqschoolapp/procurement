@@ -19,7 +19,7 @@ export default async function NewDepartmentPage() {
   const branches = choices.map(({ id, code, name }) => ({ id, code, name }));
   const t = await getTranslations("catalog");
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-6">
+    <div className="flex w-full max-w-4xl min-w-0 flex-col gap-6">
       <AdminNav current="catalog" />
       <Link
         href="/catalog/departments"
@@ -28,9 +28,7 @@ export default async function NewDepartmentPage() {
         <Icon name="chevron_left" />
         {t("kinds.departments.title")}
       </Link>
-      <h1 className="text-[28px] leading-[34px] font-bold tracking-[-0.01em]">
-        {t("kinds.departments.newTitle")}
-      </h1>
+      <h1 className="text-title">{t("kinds.departments.newTitle")}</h1>
       <CatalogForm kind="departments" entry={null} branches={branches} />
     </div>
   );

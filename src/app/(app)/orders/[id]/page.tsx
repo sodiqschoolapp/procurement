@@ -9,7 +9,7 @@ import {
   RequestStatusLabel,
   SubstitutedLabel,
 } from "@/components/status-label";
-import { cn } from "@/components/utils";
+import { TabLinks } from "@/components/tab-links";
 import { waitingFor } from "@/domain/order-steps";
 import { BUYING_STATUSES } from "@/domain/purchases";
 import { OrderActionBar } from "@/features/orders/components/order-action-bar";
@@ -118,16 +118,19 @@ export default async function OrderPageScreen({
       ? t("details.at", { date: format.date(moment), time: format.time(moment) })
       : t("details.notSet");
 
-  const fact = (key: string, label: string, value: React.ReactNode) => (
-    <div key={key} data-fact={key} className="flex flex-col gap-0.5">
-      <dt className="text-[13px] leading-[18px] text-muted-foreground">{label}</dt>
-      <dd className="text-[15px] leading-[22px] break-words">{value}</dd>
-    </div>
-  );
+  // A field with nothing in it is not shown (redesign of 21.10.2026: no "Not given" rows).
+  const NONE = Symbol("none");
+  const fact = (key: string, label: string, value: React.ReactNode | typeof NONE) =>
+    value === NONE ? null : (
+      <div key={key} data-fact={key} className="flex flex-col gap-0.5">
+        <dt className="text-xs text-muted-foreground">{label}</dt>
+        <dd className="text-sm break-words">{value}</dd>
+      </div>
+    );
 
   const details = (
-    <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {fact("requester", t("details.requester"), order.requesterName ?? t("details.notSet"))}
+    <dl className="grid grid-cols-2 gap-x-4 gap-y-5 lg:grid-cols-4">
+      {fact("requester", t("details.requester"), order.requesterName ?? NONE)}
       {fact(
         "neededBy",
         t("details.neededBy"),
@@ -149,7 +152,7 @@ export default async function OrderPageScreen({
           <span className="flex flex-wrap items-baseline gap-x-2">
             <span className="tabular-nums">{format.money(order.price)}</span>
             {hint ? (
-              <span data-price-hint className="text-[13px] font-semibold text-warning">
+              <span data-price-hint className="text-small font-semibold text-warning">
                 {hint}
               </span>
             ) : null}
@@ -160,7 +163,7 @@ export default async function OrderPageScreen({
         "extras",
         t("details.extras"),
         order.extras.length === 0 ? (
-          t("details.extrasNone")
+          NONE
         ) : (
           <ul className="flex flex-col">
             {order.extras.map((extra, index) => (
@@ -211,10 +214,10 @@ export default async function OrderPageScreen({
         order.priority === "URGENT" ? t("details.urgent") : t("details.normal"),
       )}
       {order.priority === "URGENT"
-        ? fact("urgentReason", t("details.urgentReason"), order.urgentReason ?? t("details.notSet"))
+        ? fact("urgentReason", t("details.urgentReason"), order.urgentReason ?? NONE)
         : null}
-      {fact("company", t("details.company"), order.companyName ?? t("details.notSet"))}
-      {fact("comment", t("details.comment"), order.comment ?? t("details.notSet"))}
+      {fact("company", t("details.company"), order.companyName ?? NONE)}
+      {fact("comment", t("details.comment"), order.comment ?? NONE)}
       {fact(
         "photo",
         t("details.photo"),
@@ -228,10 +231,14 @@ export default async function OrderPageScreen({
             {t("details.openPhoto")}
           </a>
         ) : (
-          t("details.notSet")
+          NONE
         ),
       )}
-      {fact("submittedAt", t("details.submittedAt"), when(order.submittedAt))}
+      {fact(
+        "submittedAt",
+        t("details.submittedAt"),
+        order.submittedAt ? when(order.submittedAt) : NONE,
+      )}
       {order.approvedAt
         ? fact("approvedAt", t("details.approvedAt"), when(order.approvedAt))
         : null}
@@ -239,30 +246,27 @@ export default async function OrderPageScreen({
     </dl>
   );
 
-  const tabLink = (to: Tab) => (
-    <Link
-      key={to}
-      href={to === "details" ? `/orders/${order.id}` : `/orders/${order.id}?tab=${to}`}
-      aria-current={tab === to ? "page" : undefined}
-      className={cn(
-        // Four tabs fit 375 px: narrow padding and no shrink floor on a phone (11 rule 13 keeps 44 px).
-        "flex h-11 min-w-0 flex-1 items-center justify-center truncate rounded-lg px-2 text-[15px] font-semibold sm:flex-none sm:px-4",
-        tab === to ? "bg-card text-foreground" : "text-muted-foreground hover:text-foreground",
-      )}
-    >
-      {t(`tabs.${to}`)}
-    </Link>
-  );
+  const branchText = `${order.branchCode} · ${order.branchName}`;
+  const tabs: Tab[] = hasPurchases
+    ? ["details", "purchases", "money", "history"]
+    : ["details", "history"];
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
-      <header className="flex flex-col gap-4 rounded-xl bg-card p-4 sm:p-6">
+    <div className="flex w-full min-w-0 flex-col gap-5">
+      <header className="flex flex-col gap-3">
+        <Link
+          href="/orders"
+          className="-ml-1 inline-flex min-h-11 items-center gap-1 self-start rounded-md px-1 text-sm font-medium text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:min-h-0"
+        >
+          <Icon name="arrow_back" size={16} />
+          {t("back")}
+        </Link>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-          <h1 data-order-number className="text-[28px] leading-[34px] font-bold tracking-[-0.01em]">
+          <h1 data-order-number className="text-title">
             {order.number ?? t("noNumber")}
           </h1>
           {order.number ? (
-            <span data-revision className="text-[15px] leading-[22px] text-muted-foreground">
+            <span data-revision className="text-sm text-muted-foreground">
               {tOrders("revision", { revision: order.revision })}
             </span>
           ) : null}
@@ -270,7 +274,7 @@ export default async function OrderPageScreen({
           {order.status === "PURCHASING" ? <ProgressLabel progress={order.progress} /> : null}
           {order.substituted ? <SubstitutedLabel /> : null}
           {order.priority === "URGENT" ? (
-            <span className="inline-flex items-center gap-1 text-[13px] font-semibold text-destructive">
+            <span className="inline-flex items-center gap-1 text-small font-medium text-destructive">
               <Icon name="warning" size={16} />
               {t("urgent", { reason: order.urgentReason ?? "" })}
             </span>
@@ -278,81 +282,34 @@ export default async function OrderPageScreen({
           {order.overdue ? (
             <span
               data-overdue
-              className="inline-flex items-center gap-1 text-[13px] font-semibold text-warning"
+              className="inline-flex items-center gap-1 text-small font-medium text-warning"
             >
               <Icon name="schedule" size={16} />
               {tOrders("overdue")}
             </span>
           ) : null}
         </div>
-        <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {fact("product", t("product"), product)}
-          {fact("branch", t("branch"), `${order.branchCode} · ${order.branchName}`)}
-          {fact("owner", t("owner"), order.ownerName)}
-          {fact("department", t("department"), order.departmentName ?? t("details.notSet"))}
-          {fact(
-            "plannedTotal",
-            t("plannedTotal"),
-            order.plannedTotal === null ? (
-              t("details.notSet")
-            ) : (
-              <span className="flex flex-wrap items-baseline gap-x-2">
-                <span className="font-semibold tabular-nums">
-                  {format.money(order.plannedTotal)}
-                </span>
-                {hint ? (
-                  <span className="text-[13px] font-semibold text-warning">{hint}</span>
-                ) : null}
-              </span>
-            ),
-          )}
-          {fact(
-            "actualTotal",
-            t("actualTotal"),
-            order.actualTotal === null || order.received === "0" ? (
-              <span className="text-muted-foreground">{t("notBought")}</span>
-            ) : (
-              <span className="tabular-nums">{format.money(order.actualTotal)}</span>
-            ),
-          )}
+        <p data-fact="product" className="text-heading">
+          <span className="sr-only">{t("product")} </span>
+          {product}
+        </p>
+        <dl className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted-foreground">
+          <div data-fact="branch" className="flex gap-1.5">
+            <dt className="sr-only">{t("branch")}</dt>
+            <dd>{branchText}</dd>
+          </div>
+          <div data-fact="owner" className="flex gap-1.5">
+            <dt>{t("owner")}</dt>
+            <dd className="text-foreground">{order.ownerName}</dd>
+          </div>
+          {order.departmentName ? (
+            <div data-fact="department" className="flex gap-1.5">
+              <dt>{t("department")}</dt>
+              <dd className="text-foreground">{order.departmentName}</dd>
+            </div>
+          ) : null}
         </dl>
-        {/* 08 The three colours, from Open on (11 Order page layout 1; plan of 3.8). */}
-        {order.colours ? <ColourLabels colours={wireColours(order.colours)!} /> : null}
       </header>
-
-      <OrderStepper steps={order.steps} />
-
-      {order.changes && order.changes.list.length > 0 ? (
-        <WhatChanged
-          since={order.changes.since}
-          changes={order.changes.list}
-          unit={order.unitShortName}
-        />
-      ) : null}
-
-      <section className="flex flex-col gap-4">
-        <nav
-          aria-label={t("tabs.label")}
-          className="flex gap-1 rounded-xl bg-muted p-1 sm:self-start"
-        >
-          {tabLink("details")}
-          {hasPurchases ? tabLink("purchases") : null}
-          {hasPurchases ? tabLink("money") : null}
-          {tabLink("history")}
-        </nav>
-        <div className="rounded-xl bg-card p-4 sm:p-6">
-          <h2 className="sr-only">{t(`${tab}.title`)}</h2>
-          {tab === "details" ? (
-            details
-          ) : tab === "purchases" ? (
-            <PurchasesTab order={order} />
-          ) : tab === "money" && money ? (
-            <MoneyTab money={money} />
-          ) : (
-            <OrderHistory events={order.events} />
-          )}
-        </div>
-      </section>
 
       <OrderActionBar
         orderId={order.id}
@@ -387,6 +344,80 @@ export default async function OrderPageScreen({
         settle={order.canSettle ? `/orders/settle?ids=${order.id}` : null}
         waitingLine={line}
       />
+
+      <section
+        aria-label={t("totals")}
+        className="grid grid-cols-2 overflow-hidden rounded-xl border border-border bg-card sm:grid-cols-[repeat(2,minmax(0,1fr))_minmax(0,2fr)]"
+      >
+        <div
+          data-fact="plannedTotal"
+          className="flex flex-col gap-1 border-r border-border px-4 py-3 sm:px-5 sm:py-4"
+        >
+          <span className="text-xs text-muted-foreground">{t("plannedTotal")}</span>
+          {order.plannedTotal === null ? (
+            <span className="py-1 text-sm text-muted-foreground">{t("details.notSet")}</span>
+          ) : (
+            <span className="text-figure font-semibold tabular-nums">
+              {format.money(order.plannedTotal)}
+            </span>
+          )}
+          {hint ? <span className="text-xs text-warning">{hint}</span> : null}
+        </div>
+        <div
+          data-fact="actualTotal"
+          className="flex flex-col gap-1 px-4 py-3 sm:border-r sm:border-border sm:px-5 sm:py-4"
+        >
+          <span className="text-xs text-muted-foreground">{t("actualTotal")}</span>
+          {order.actualTotal === null || order.received === "0" ? (
+            <span className="py-1 text-sm text-muted-foreground">{t("notBought")}</span>
+          ) : (
+            <span className="text-figure font-semibold tabular-nums">
+              {format.money(order.actualTotal)}
+            </span>
+          )}
+        </div>
+        {/* 08 The three colours, from Open on (11 Order page layout 1; plan of 3.8). */}
+        {order.colours ? (
+          <div className="col-span-2 flex flex-col justify-center gap-2 border-t border-border px-4 py-3 sm:col-span-1 sm:border-t-0 sm:px-5 sm:py-4">
+            <span className="text-xs text-muted-foreground">{t("outcome")}</span>
+            <ColourLabels colours={wireColours(order.colours)!} />
+          </div>
+        ) : null}
+      </section>
+
+      <OrderStepper steps={order.steps} />
+
+      {order.changes && order.changes.list.length > 0 ? (
+        <WhatChanged
+          since={order.changes.since}
+          changes={order.changes.list}
+          unit={order.unitShortName}
+        />
+      ) : null}
+
+      <section className="flex flex-col gap-4">
+        <TabLinks
+          label={t("tabs.label")}
+          tabs={tabs.map((to) => ({
+            id: to,
+            href: to === "details" ? `/orders/${order.id}` : `/orders/${order.id}?tab=${to}`,
+            label: t(`tabs.${to}`),
+            current: tab === to,
+          }))}
+        />
+        <div className="rounded-xl border border-border bg-card p-4 sm:p-5">
+          <h2 className="sr-only">{t(`${tab}.title`)}</h2>
+          {tab === "details" ? (
+            details
+          ) : tab === "purchases" ? (
+            <PurchasesTab order={order} />
+          ) : tab === "money" && money ? (
+            <MoneyTab money={money} />
+          ) : (
+            <OrderHistory events={order.events} />
+          )}
+        </div>
+      </section>
     </div>
   );
 }

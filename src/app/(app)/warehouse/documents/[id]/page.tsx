@@ -142,16 +142,16 @@ export default async function StockDocumentPage({ params }: { params: Promise<{ 
   );
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
+    <div className="flex w-full max-w-4xl min-w-0 flex-col gap-6">
       <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-[28px] leading-[34px] font-bold tracking-[-0.01em]">
+        <h1 className="text-title">
           {t("page.title", { type: t(`types.${document.type}`), number: document.number })}
         </h1>
         <DocumentStatusLabel type={document.type} status={document.status} />
       </div>
 
-      <section className="rounded-xl border border-border bg-card p-4 sm:p-6">
-        <dl className="grid grid-cols-1 gap-4 text-[15px] leading-[22px] sm:grid-cols-2">
+      <section className="rounded-xl border border-border bg-card p-4 sm:p-5">
+        <dl className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
           {fields.map((field) => (
             <div
               key={field.key}
@@ -187,12 +187,12 @@ export default async function StockDocumentPage({ params }: { params: Promise<{ 
       ) : (
         <section
           aria-labelledby="document-lines"
-          className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 sm:p-6"
+          className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 sm:p-5"
         >
-          <h2 id="document-lines" className="text-[17px] leading-6 font-semibold">
+          <h2 id="document-lines" className="text-subheading font-semibold">
             {t("page.lines")}
           </h2>
-          <table className="w-full text-[15px] leading-[22px] max-sm:block">
+          <table className="w-full text-sm max-sm:block">
             <thead className="max-sm:sr-only">
               <tr className="border-b border-border text-left text-sm leading-5 text-muted-foreground">
                 <th scope="col" className="py-2 pr-3 font-semibold">
@@ -394,25 +394,25 @@ export default async function StockDocumentPage({ params }: { params: Promise<{ 
           }))}
         />
       ) : transfer && document.status === "IN_TRANSIT" ? (
-        <p data-transfer-in-transit className="text-[15px] leading-[22px] text-muted-foreground">
+        <p data-transfer-in-transit className="text-sm text-muted-foreground">
           {t("page.inTransit", {
             from: document.branchCode,
             to: document.toBranchCode ?? "",
           })}
         </p>
       ) : transfer && cancelled ? (
-        <p data-transfer-cancelled className="text-[15px] leading-[22px] text-muted-foreground">
+        <p data-transfer-cancelled className="text-sm text-muted-foreground">
           {t("page.cancelled", {
             from: document.branchCode,
             to: document.toBranchCode ?? "",
           })}
         </p>
       ) : document.countAsked ? (
-        <p data-count-waiting className="text-[15px] leading-[22px] text-muted-foreground">
+        <p data-count-waiting className="text-sm text-muted-foreground">
           {tCount("decision.waiting")}
         </p>
       ) : document.type === "WRITE_OFF" && waiting ? (
-        <p data-write-off-waiting className="text-[15px] leading-[22px] text-muted-foreground">
+        <p data-write-off-waiting className="text-sm text-muted-foreground">
           {tWriteOff("page.waiting")}
         </p>
       ) : null}

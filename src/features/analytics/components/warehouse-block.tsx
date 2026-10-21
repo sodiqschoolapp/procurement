@@ -41,6 +41,7 @@ export async function WarehouseView({
   principal?: boolean;
 }) {
   const t = await getTranslations("analytics");
+  const tShort = await getTranslations("analytics.short");
   const format = await getFormatters();
   const stock = (branch: string | null, key: DrillKey) =>
     `/analytics/stock?${analyticsSearch(period, { ...filters, branch }, { key })}`;
@@ -57,7 +58,7 @@ export async function WarehouseView({
     </Link>
   );
   const under = (text: string) => (
-    <span className="block text-[13px] leading-[18px] text-muted-foreground">{text}</span>
+    <span className="block text-small text-muted-foreground">{text}</span>
   );
   const nowCells = (branch: string | null, row: WarehouseTotals) => [
     link(stock(branch, { kind: "stock", view: "value" }), format.money(row.value)),
@@ -77,7 +78,7 @@ export async function WarehouseView({
         moves({ ...filters, branch }, { kind: "moves", move: "writeoff" }),
         format.money(row.writtenOff),
       )}
-      {under(changeText(row.writtenOffChange, t, format))}
+      {under(changeText(row.writtenOffChange, tShort, format))}
     </>,
   ];
   const usedHref = (row: DepartmentUseRow) =>
@@ -89,8 +90,8 @@ export async function WarehouseView({
     });
   const usedChange = (row: DepartmentUseRow) =>
     row.change
-      ? changeText(row.change, t, format)
-      : amountChangeText(row.used - row.before, t, format);
+      ? changeText(row.change, tShort, format)
+      : amountChangeText(row.used - row.before, tShort, format);
   const points: ChartPoint[] = block.departments.map((row) => ({
     key: row.id,
     label: usedLabel(row),
@@ -109,7 +110,7 @@ export async function WarehouseView({
       data-analytics-block="warehouse"
     >
       <div className="flex flex-col gap-1">
-        <h2 id="warehouse-title" className="text-[20px] leading-7 font-bold">
+        <h2 id="warehouse-title" className="text-heading font-semibold">
           {t("warehouse.title")}
         </h2>
         <p className="text-sm leading-5 text-muted-foreground">

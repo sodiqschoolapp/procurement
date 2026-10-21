@@ -238,14 +238,14 @@
     "orders": "{count} ta buyurtma",
     "number": {
       "name": "Soni",
-      "matches": "Mos",
+      "matches": "Miqdor rejadagidek",
       "less": "Kam",
       "more": "Koʻp",
       "inProgress": "Jarayonda"
     },
     "price": {
       "name": "Narx",
-      "matches": "Mos",
+      "matches": "Narx rejadagidek",
       "cheaper": "Arzonroq",
       "dearer": "Qimmatroq",
       "notBought": "Hali sotib olinmagan"
@@ -260,7 +260,12 @@
   },
   "common": {
     "close": "Yopish",
-    "cancel": "Bekor qilish"
+    "cancel": "Bekor qilish",
+    "whyNot": {
+      "branch": "Davom etish uchun filialni tanlang.",
+      "fields": "Davom etish uchun har bir maydonni toʻldiring.",
+      "noItems": "Saqlash uchun kamida bitta tovar qoʻshing."
+    }
   },
   "unsavedChanges": {
     "title": "Saqlamasdan chiqasizmi?",
@@ -335,25 +340,21 @@
         "issue": "Ombordan berish"
       },
       "sentBack": {
-        "title": "Menga qaytarilganlar",
-        "empty": "Sizga qaytarilgan buyurtma yoʻq. Tasdiqlovchi oʻzgartirish uchun qaytargan buyurtma shu yerda chiqadi."
+        "title": "Menga qaytarilganlar"
       },
       "drafts": {
         "title": "Qoralamalarim",
         "count": "{count, plural, =0 {Qoralama yoʻq} other {# ta qoralama}}",
-        "open": "Qoralamalarimni ochish",
-        "empty": "Qoralama yoʻq. Yangi buyurtma qoralamalar jadvalida qoralama boʻlib boshlanadi."
+        "open": "Qoralamalarimni ochish"
       },
       "open": {
         "title": "Ochiq buyurtmalarim",
-        "empty": "Ochiq buyurtma yoʻq. Moliyachi tasdiqlagan, xaridga tayyor buyurtmalar shu yerda chiqadi.",
         "progress": "{planned} {unit} dan {received} olindi",
         "finished": "{count} tadan {finished} tasi tugadi"
       },
       "requested": {
         "title": "Soʻralgan, barcha bosqichlarda",
-        "line": "{product}: {quantity} {unit} soʻralgan",
-        "empty": "Hech narsa soʻralmagan. Yuborilgan buyurtmalaringiz yopilguncha shu yerda jamlanadi."
+        "line": "{product}: {quantity} {unit} soʻralgan"
       },
       "cash": {
         "title": "Qoʻlimdagi pul",
@@ -364,20 +365,16 @@
       "low": {
         "title": "Kam qolgan",
         "count": "{count, plural, other {# ta tovar minimumda yoki undan kam}}",
-        "row": "{quantity} {unit}, minimum {minimum}",
-        "empty": "Kam qolgan tovar yoʻq. Minimumda yoki undan kam tovar shu yerda chiqadi."
+        "row": "{quantity} {unit}, minimum {minimum}"
       },
       "dueSoon": {
-        "title": "Muddati yaqin buyurtmalar",
-        "hint": "7 kun ichida kerak yoki muddati oʻtgan",
-        "empty": "7 kun ichida kerak boʻladigan buyurtma yoʻq."
+        "title": "Muddati yaqin buyurtmalar"
       }
     },
     "principal": {
       "waiting": {
         "title": "Tasdiqimni kutayotganlar",
-        "total": "{count, plural, other {# ta buyurtma}}, jami {total}",
-        "empty": "Tasdiqingizni kutayotgan buyurtma yoʻq. Xarid boshligʻi tasdiqlagan buyurtmalar shu yerda chiqadi."
+        "total": "{count, plural, other {# ta buyurtma}}, jami {total}"
       },
       "card": {
         "neededBy": "{date} gacha kerak",
@@ -386,47 +383,38 @@
         "tooMany": "200 dan ortiq buyurtma: ularni buyurtmalar roʻyxatida, bir safarda 200 tagacha tasdiqlang."
       },
       "byStatus": {
-        "title": "Filialim buyurtmalari holat boʻyicha",
-        "empty": "Hozircha buyurtma yoʻq."
+        "title": "Filialim buyurtmalari holat boʻyicha"
       },
       "spending": {
         "title": "Filialimning shu oydagi xarajati",
-        "period": "{from} – {to}",
-        "hint": "Shu oyda xarid qilingan, xarid yozuvlari boʻyicha"
+        "period": "{from} – {to}"
       }
     },
     "head": {
       "waiting": {
         "title": "Mening tasdigʻimni kutmoqda",
-        "line": "{count} ta buyurtma, jami {total}",
-        "empty": "Tasdigʻingizni kutayotgan buyurtma yoʻq. Barcha filiallarning yuborilgan buyurtmalari shu yerda chiqadi."
+        "line": "{count} ta buyurtma, jami {total}"
       },
       "overspends": {
         "title": "Tasdiqlanadigan ortiqcha xarajatlar",
         "row": "{over} ortiqcha ({percent}%)",
-        "rowNoPercent": "{over} ortiqcha",
-        "empty": "Ortiqcha xarajat yoʻq. Hisob-kitobdagi chegaradan oshgan buyurtma shu yerda chiqadi."
+        "rowNoPercent": "{over} ortiqcha"
       },
       "writeOffs": {
         "title": "Tasdiqlanadigan hisobdan chiqarish va tuzatishlar",
         "row": "{date} · {reason} · {name}",
-        "empty": "Sizni hech narsa kutmayapti. Menejer soʻragan hisobdan chiqarish yoki hamma mahsuloti sanalgan inventarizatsiya shu yerda chiqadi.",
         "countRow": "{date} · Inventarizatsiya · {name}"
       },
       "suggestions": {
         "title": "Mahsulot takliflari",
-        "row": "{name} · {person}",
-        "empty": "Taklif yoʻq. Menejer taklif qilgan mahsulot shu yerda chiqadi."
+        "row": "{name} · {person}"
       },
       "prompts": {
         "title": "Narx eslatmalari",
-        "row": "Narx {price}, soʻnggi oʻrtacha {average} ({percent, number, ::sign-always}%)",
-        "empty": "Narxlar farq qilmaydi. Soʻnggi xaridlari narxdan 20% dan koʻproq farq qilgan tur shu yerda chiqadi."
+        "row": "Narx {price}, soʻnggi oʻrtacha {average} ({percent, number, ::sign-always}%)"
       },
       "stuck": {
-        "title": "{hours} soatdan ortiq qotib qolgan buyurtmalar",
-        "hint": "Tasdiqlash bosqichida sozlamadagidan uzoqroq",
-        "empty": "Qotib qolgan buyurtma yoʻq. Bir bosqichda sozlamadagidan uzoq kutgan buyurtma shu yerda chiqadi."
+        "title": "{hours} soatdan ortiq qotib qolgan buyurtmalar"
       },
       "byStatus": {
         "title": "Holatlar boʻyicha buyurtmalar, filiallar kesimida",
@@ -434,8 +422,7 @@
       },
       "spending": {
         "title": "Shu oydagi xarajat, filiallar kesimida",
-        "period": "{from} – {to}",
-        "hint": "Shu oyda xarid qilingan, xarid yozuvlari boʻyicha"
+        "period": "{from} – {to}"
       },
       "inactive": "{code} (faol emas)",
       "pair": "{first} · {second}"
@@ -445,25 +432,25 @@
         "title": "Mening tasdigʻimni kutmoqda",
         "entry": "{count} ta buyurtma, jami {total}",
         "give": "{amount} naqd berish",
-        "noCash": "Naqd pul berilmaydi",
-        "empty": "Tasdigʻingizni kutayotgan buyurtma yoʻq. Direktor tasdiqlagan buyurtmalar shu yerda chiqadi."
+        "noCash": "Naqd pul berilmaydi"
       },
       "settlements": {
         "title": "Hisob-kitobni kutmoqda",
         "entry": "{count} ta buyurtma",
         "receive": "Menejerdan {amount} olish",
         "pay": "Menejerga {amount} toʻlash",
-        "none": "Naqd pulni tenglash kerak emas",
-        "empty": "Hisob-kitobni kutayotgan buyurtma yoʻq. Xaridi tugab, rejadan farq qilgan buyurtma shu yerda chiqadi."
+        "none": "Naqd pulni tenglash kerak emas"
       },
       "money": {
         "title": "Menejerlardagi pul",
         "held": "Qoʻlida {amount}",
         "owed": "Unga qarz {amount}",
         "since": "{date} dan beri",
-        "empty": "Hech bir menejerda pul yoki qarz yoʻq.",
         "open": "«Menejerlardagi pul»ni ochish"
       }
+    },
+    "allClear": {
+      "title": "Hozircha sizni kutayotgan ish yoʻq"
     }
   },
   "profile": {
@@ -1018,7 +1005,6 @@
   },
   "suggestions": {
     "title": "Tovar takliflari",
-    "intro": "Katalogda yoʻq tovarni qoʻshishni xaridlar rahbaridan soʻrang.",
     "new": "Tovar taklif qilish",
     "newTitle": "Tovar taklif qilish",
     "back": "Takliflarga qaytish",
@@ -1146,7 +1132,8 @@
       "added": "Qoralama qoʻshildi",
       "retrying": "Aloqa yoʻq. Aloqa tiklanganda qoralama qoʻshiladi; hech narsa ikki marta qoʻshilmaydi.",
       "notAdded": "Qoʻshilmadi: server javob bermadi. Shu qoralamani yana yuborish uchun «Qoʻshish»ni bosing (u ikki marta qoʻshilmaydi) yoki roʻyxatni qayta koʻrish uchun «Boshidan boshlash»ni bosing.",
-      "startOver": "Boshidan boshlash"
+      "startOver": "Boshidan boshlash",
+      "needs": "Qoʻshish uchun har bir maydonni toʻldiring."
     },
     "picker": {
       "placeholder": "Nomi boʻyicha qidirish",
@@ -1234,7 +1221,6 @@
         "status": "Holat",
         "quantity": "Miqdor",
         "total": "Jami",
-        "count": "Buyurtmalar",
         "neededBy": "Kerak sana",
         "number": "Raqam",
         "department": "Boʻlim",
@@ -1243,7 +1229,8 @@
         "owner": "Egasi",
         "submitted": "Yuborilgan",
         "stockAtSubmit": "Yuborilgandagi qoldiq",
-        "stockNow": "Hozirgi qoldiq"
+        "stockNow": "Hozirgi qoldiq",
+        "orders": "Buyurtmalar"
       },
       "tickGroup": "Barcha buyurtmalarni belgilash: {product}",
       "tickOrder": "{number} buyurtmani belgilash",
@@ -1251,7 +1238,6 @@
       "hideOrders": "Buyurtmalarni yashirish: {product}",
       "ordersOf": "Buyurtmalar: {product}",
       "urgent": "Shoshilinch",
-      "orderCount": "{count} ta buyurtma",
       "tooMany": "Bitta amalda koʻpi bilan 200 ta buyurtma. Baʼzilarining belgisini oling yoki filtrni toraytiring.",
       "refreshed": "Belgilangan baʼzi buyurtmalar oʻzgarib, roʻyxatdan chiqdi. Belgilar olindi, roʻyxat yangilandi.",
       "summaryFailed": "Belgilangan buyurtmalarni oʻqib boʻlmadi. Aloqani tekshirib, qayta belgilang.",
@@ -1312,10 +1298,28 @@
         "dueSoon": "Muddati 7 kun ichida",
         "removeDueSoon": "Faqat muddati yaqinlarini emas, barcha buyurtmalarni koʻrsatish",
         "stuck": "Tasdiqlash bosqichida qotib qolgan",
-        "removeStuck": "Faqat qotib qolganlarini emas, barcha buyurtmalarni koʻrsatish"
+        "removeStuck": "Faqat qotib qolganlarini emas, barcha buyurtmalarni koʻrsatish",
+        "search": "Buyurtma, mahsulot yoki yetkazib beruvchini qidirish",
+        "remove": "Filtrni olib tashlash: {filter}",
+        "numbers": "Raqamlar",
+        "more": "Boshqa filtrlar",
+        "moreCount": "Boshqa filtrlar ({count})",
+        "active": "Qoʻllangan filtrlar"
       },
       "noStock": "–",
-      "refusedMark": "Tasdiqlanmadi"
+      "refusedMark": "Tasdiqlanmadi",
+      "tabs": {
+        "label": "Holat boʻyicha",
+        "all": "Hammasi"
+      },
+      "summary": {
+        "label": "Qisqacha",
+        "waitingForMe": "Mening tasdigʻimni kutmoqda",
+        "dueSoon": "7 kun ichida kerak"
+      },
+      "rowFacts": "{branch} · {orders} · {date} gacha kerak",
+      "yours": "Sizning navbatingiz",
+      "orderCount": "{count} ta buyurtma"
     },
     "page": {
       "noNumber": "Raqamsiz qoralama",
@@ -1526,7 +1530,10 @@
       },
       "money": {
         "title": "Pul"
-      }
+      },
+      "back": "Buyurtmalar",
+      "totals": "Summalar",
+      "outcome": "Rejaga nisbatan"
     },
     "approve": {
       "button": "Tasdiqlash",
@@ -1711,7 +1718,9 @@
         "item": "{label}: {value}",
         "unknown": "—",
         "sort": "Saralash: {sort}"
-      }
+      },
+      "excelShort": "Excel",
+      "pdfShort": "PDF"
     },
     "progress": {
       "OPEN": "Xarid ochiq",
@@ -1725,7 +1734,8 @@
       "choose": "Menejerni tanlang",
       "loading": "Yuklanmoqda…",
       "noManagers": "Bu filialda boshqa faol menejer yoʻq."
-    }
+    },
+    "newOrder": "Yangi buyurtma"
   },
   "purchase": {
     "form": {
@@ -1902,11 +1912,22 @@
       "overspend": {
         "waits": "Rejadan {amount} ({percent}%) ortiq: Xaridlar rahbari tasdigʻini kutmoqda.",
         "acknowledged": "Rejadan {amount} ({percent}%) ortiq: {name} tasdiqladi."
-      }
+      },
+      "whyNot": {
+        "amounts": "Saqlash uchun qizil bilan belgilangan summalarni tuzating.",
+        "nothing": "Saqlash uchun kamida bitta summani 0 dan katta qilib yozing.",
+        "date": "Saqlash uchun sanani tanlang.",
+        "comment": "Saqlash uchun izoh yozing.",
+        "uploading": "Fayl yuklanishini kuting."
+      },
+      "closedDone": "{count} ta buyurtma yopildi",
+      "closeTitle": "Buyurtmalarni yopish",
+      "closeAfterSave": "Hisob-kitob saqlangandan keyin.",
+      "closeCount": "{count, plural, other {# ta buyurtmani yopish}}",
+      "seeClosed": "Yopilgan buyurtmalarni koʻrish"
     },
     "managers": {
       "title": "Menejerlardagi pul",
-      "line": "Hozir maktab puli kimda va qachondan beri. Yopilgan buyurtmalar hisobga olinmaydi.",
       "holds": "Qoʻlida",
       "owed": "Maktab qarzi",
       "since": "Sanadan",
@@ -1917,8 +1938,7 @@
       "orderOwed": "Maktab qarzi {amount}",
       "orderSince": "{date} dan",
       "empty": {
-        "title": "Hech kimda maktab puli yoʻq",
-        "line": "Yopilmagan har bir buyurtmaning naqd pul qoldigʻi 0."
+        "title": "Hech kimda maktab puli yoʻq"
       }
     }
   },
@@ -2237,7 +2257,7 @@
       "cancel": "Bekor qilish",
       "save": "Yuborish",
       "confirmTitle": "{count} ta tovar {to} ga yuborilsinmi?",
-      "confirmResult": "Tovar hozir {from} omboridan chiqadi. Koʻchirish {to} da qabul qilinmaguncha «Yoʻlda» boʻladi. Uni bekor qilib boʻlmaydi.",
+      "confirmResult": "Tovar hozir {from} omboridan chiqadi. Koʻchirish {to} da qabul qilinmaguncha «Yoʻlda» boʻladi; shu vaqtgacha uni bekor qilish mumkin.",
       "confirmButton": "Hozir yuborish",
       "saved": "{number} koʻchirish yuborildi.",
       "savedTitle": "{number} koʻchirish yuborildi va yoʻlda. {from} qoldigʻi kamaydi.",
@@ -3170,6 +3190,32 @@
           "days": "Kunlar"
         }
       }
+    },
+    "short": {
+      "change": {
+        "up": "+{amount} (+{percent} %)",
+        "down": "−{amount} (−{percent} %)",
+        "same": "Oʻzgarishsiz",
+        "upFromNothing": "+{amount} (yangi)",
+        "countUp": "+{count} (+{percent} %)",
+        "countDown": "−{count} (−{percent} %)",
+        "countUpFromNothing": "+{count} (yangi)",
+        "shareUp": "+{points} punkt",
+        "shareDown": "−{points} punkt",
+        "shareSame": "Oʻzgarishsiz",
+        "shareNone": "Avval yoʻq edi",
+        "hoursUp": "+{hours} soat",
+        "hoursDown": "−{hours} soat",
+        "hoursSame": "Oʻzgarishsiz",
+        "hoursNone": "Avval yoʻq edi",
+        "amountUp": "+{amount}",
+        "amountDown": "−{amount}",
+        "amountNone": "Solishtirib boʻlmaydi",
+        "daysUp": "+{days} kun",
+        "daysDown": "−{days} kun",
+        "daysSame": "Oʻzgarishsiz",
+        "daysNone": "Avval yoʻq edi"
+      }
     }
   },
   "reports": {
@@ -3427,5 +3473,9 @@
         "count": "Buyurtmalar"
       }
     }
+  },
+  "dateInput": {
+    "placeholder": "kk.oo.yyyy",
+    "pick": "Taqvimdan tanlash"
   }
 }

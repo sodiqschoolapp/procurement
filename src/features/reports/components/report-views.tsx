@@ -20,7 +20,7 @@ import type { StockReport } from "../queries/stock-report";
 // rules/ui.md). Each table scrolls sideways inside its own box at phone width, so the page never
 // does (plan of 6.8, Screens); the lists are 25 a page (11 rule 8).
 
-const HEAD = "bg-muted text-[13px] leading-[18px] font-semibold text-muted-foreground";
+const HEAD = "bg-muted text-small font-semibold text-muted-foreground";
 export const CELL = "px-4 py-3";
 export const NUMBER = "px-4 py-3 text-right whitespace-nowrap tabular-nums";
 
@@ -43,7 +43,7 @@ export function Table({
   return (
     <section
       // min-w-0: in a grid or flex row the table scrolls inside its box, never the page.
-      className="flex min-w-0 flex-col gap-3 rounded-xl bg-card p-4 text-card-foreground"
+      className="flex min-w-0 flex-col gap-3 rounded-xl border border-border bg-card p-4 text-card-foreground"
       data-table={name}
     >
       <h2 className="text-lg leading-6 font-semibold">{title}</h2>
@@ -82,8 +82,8 @@ export async function OrderRegisterView({
   const t = await getTranslations("reports");
   const format = await getFormatters();
   return (
-    <section className="flex flex-col gap-3 rounded-xl bg-card p-4 text-card-foreground">
-      <p className="text-[15px] leading-[22px] font-semibold tabular-nums" data-report-summary>
+    <section className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 text-card-foreground">
+      <p className="text-sm font-semibold tabular-nums" data-report-summary>
         {t("orders.summary", { count, total: format.money(totals.grand) })}
       </p>
       <Link
@@ -110,7 +110,7 @@ export async function PurchaseRegisterView({
   return (
     <>
       <div className="flex flex-col gap-1">
-        <p className="text-[15px] leading-[22px] font-semibold tabular-nums" data-report-summary>
+        <p className="text-sm font-semibold tabular-nums" data-report-summary>
           {t("purchases.summary", { count: register.count, total: format.money(register.total) })}
         </p>
         {register.cancelledCount > 0 && (
@@ -161,7 +161,7 @@ export async function PurchaseRegisterView({
               <td className={CELL}>
                 {row.subtypeName ? `${row.productName}, ${row.subtypeName}` : row.productName}
                 {row.cancelReason !== null && (
-                  <span className="block text-[13px] leading-[18px]">
+                  <span className="block text-small">
                     {t("purchases.cancelled", { reason: row.cancelReason })}
                   </span>
                 )}
@@ -250,7 +250,7 @@ export async function PlanVsActualView({
   }
   return (
     <>
-      <p className="text-[15px] leading-[22px] font-semibold tabular-nums" data-report-summary>
+      <p className="text-sm font-semibold tabular-nums" data-report-summary>
         {t("plan.summary", {
           count: report.total.orders,
           planned: format.money(report.total.planned),
@@ -368,7 +368,7 @@ export async function SpendingView({ report }: { report: SpendingReport }) {
   );
   return (
     <>
-      <p className="text-[15px] leading-[22px] font-semibold tabular-nums" data-report-summary>
+      <p className="text-sm font-semibold tabular-nums" data-report-summary>
         {t("spending.summary", { count: report.records, total: format.money(report.total) })}
       </p>
       <div className="grid gap-4 lg:grid-cols-2">
@@ -449,7 +449,7 @@ export async function StockReportView({
   );
   return (
     <>
-      <p className="text-[15px] leading-[22px] font-semibold tabular-nums" data-report-summary>
+      <p className="text-sm font-semibold tabular-nums" data-report-summary>
         {t("stock.summary", { count: report.lineCount, value: format.money(report.all.value) })}
       </p>
       <Table
@@ -539,7 +539,7 @@ export async function StockMovementsView({
   }
   return (
     <>
-      <p className="text-[15px] leading-[22px] font-semibold tabular-nums" data-report-summary>
+      <p className="text-sm font-semibold tabular-nums" data-report-summary>
         {t("movements.summary", { count: report.count })}
       </p>
       <Table
@@ -570,9 +570,7 @@ export async function StockMovementsView({
             <td className={cn(CELL, "whitespace-nowrap")}>{row.branchCode}</td>
             <td className={CELL}>
               {tRoot(`warehouse.item.types.${row.type}`)}
-              {row.undone && (
-                <span className="block text-[13px] leading-[18px]">{t("movements.undone")}</span>
-              )}
+              {row.undone && <span className="block text-small">{t("movements.undone")}</span>}
             </td>
             <td className={cn(CELL, "font-semibold whitespace-nowrap")}>
               {row.documentId ? (
@@ -624,7 +622,7 @@ export async function DepartmentUseView({
   }
   return (
     <>
-      <p className="text-[15px] leading-[22px] font-semibold tabular-nums" data-report-summary>
+      <p className="text-sm font-semibold tabular-nums" data-report-summary>
         {t("use.summary", {
           count: report.departments.length,
           value: format.money(report.total),

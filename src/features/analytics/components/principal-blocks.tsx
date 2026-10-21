@@ -40,6 +40,7 @@ export async function PrincipalSpendingView({
   filters,
 }: Common & { spending: HeadSpending; products: TopProducts }) {
   const t = await getTranslations("analytics");
+  const tShort = await getTranslations("analytics.short");
   const format = await getFormatters();
   const records = (scope: AnalyticsFilters, key: DrillKey = { kind: "period" }) =>
     `/analytics/records?${analyticsSearch(period, scope, { key })}`;
@@ -82,9 +83,9 @@ export async function PrincipalSpendingView({
           rows={chart.rows}
         >
           {chart.rows.length === 0 ? (
-            <p className="text-[15px] leading-[22px] text-muted-foreground">{t("spending.none")}</p>
+            <p className="text-sm text-muted-foreground">{t("spending.none")}</p>
           ) : (
-            <BarChartBlock points={chartPoints(chart.rows, t, format)} label={chart.title} />
+            <BarChartBlock points={chartPoints(chart.rows, tShort, format)} label={chart.title} />
           )}
         </ChartCard>
       ))}
@@ -95,6 +96,7 @@ export async function PrincipalSpendingView({
 /** Orders: by status of the orders first submitted in the period; coming up and overdue now. */
 export async function OrdersView({ block, period, filters }: Common & { block: OrderStatuses }) {
   const t = await getTranslations("analytics");
+  const tShort = await getTranslations("analytics.short");
   const tStatus = await getTranslations("requestStatus");
   const format = await getFormatters();
   const list = (key: DrillKey) =>
@@ -106,7 +108,7 @@ export async function OrdersView({ block, period, filters }: Common & { block: O
       <p className="text-sm leading-5 font-semibold text-muted-foreground">{label}</p>
       <Link
         href={href}
-        className="inline-flex min-h-11 min-w-11 items-center text-[28px] leading-[34px] font-bold tabular-nums underline-offset-4 hover:underline"
+        className="inline-flex min-h-11 min-w-11 items-center text-title tabular-nums underline-offset-4 hover:underline"
       >
         {count(value)}
       </Link>
@@ -122,7 +124,7 @@ export async function OrdersView({ block, period, filters }: Common & { block: O
       data-analytics-block="orders"
     >
       <div className="flex flex-col gap-1">
-        <h2 id="orders-title" className="text-[20px] leading-7 font-bold">
+        <h2 id="orders-title" className="text-heading font-semibold">
           {t("principal.orders.title")}
         </h2>
         <p className="text-sm leading-5 text-muted-foreground">{t("principal.orders.note")}</p>
@@ -158,8 +160,8 @@ export async function OrdersView({ block, period, filters }: Common & { block: O
                     <Link href={list({ kind: "status", status: row.status })} className={linkClass}>
                       {count(row.count)}
                     </Link>
-                    <span className="block text-[13px] leading-[18px] text-muted-foreground">
-                      {countChangeText(row.change, t, format)}
+                    <span className="block text-small text-muted-foreground">
+                      {countChangeText(row.change, tShort, format)}
                     </span>
                   </>,
                 ],
@@ -172,8 +174,8 @@ export async function OrdersView({ block, period, filters }: Common & { block: O
                     <Link href={list({ kind: "status", status: null })} className={linkClass}>
                       {count(block.total.count)}
                     </Link>
-                    <span className="block text-[13px] leading-[18px] text-muted-foreground">
-                      {countChangeText(block.total.change, t, format)}
+                    <span className="block text-small text-muted-foreground">
+                      {countChangeText(block.total.change, tShort, format)}
                     </span>
                   </>,
                 ],
@@ -190,6 +192,7 @@ export async function OrdersView({ block, period, filters }: Common & { block: O
 /** My approvals: the orders waiting for me by age, and my average time to decide. */
 export async function MyApprovalsView({ block, period, filters }: Common & { block: MyApprovals }) {
   const t = await getTranslations("analytics");
+  const tShort = await getTranslations("analytics.short");
   const format = await getFormatters();
   const approvals = (key: DrillKey) =>
     `/analytics/approvals?${analyticsSearch(period, filters, { key })}`;
@@ -203,7 +206,7 @@ export async function MyApprovalsView({ block, period, filters }: Common & { blo
       className="flex flex-col gap-4"
       data-analytics-block="my-approvals"
     >
-      <h2 id="my-approvals-title" className="text-[20px] leading-7 font-bold">
+      <h2 id="my-approvals-title" className="text-heading font-semibold">
         {t("principal.approvals.title")}
       </h2>
       <Card id="my-approvals" title={t("principal.approvals.title")} excel={download}>
@@ -213,21 +216,19 @@ export async function MyApprovalsView({ block, period, filters }: Common & { blo
               {t("principal.approvals.myHours")}
             </p>
             {block.mine.hours === null ? (
-              <p className="text-[15px] leading-[22px] text-muted-foreground">
-                {t("principal.approvals.noDecision")}
-              </p>
+              <p className="text-sm text-muted-foreground">{t("principal.approvals.noDecision")}</p>
             ) : (
               <>
                 <Link
                   href={approvals({ kind: "mine" })}
-                  className="inline-flex min-h-11 min-w-11 items-center text-[28px] leading-[34px] font-bold tabular-nums underline-offset-4 hover:underline"
+                  className="inline-flex min-h-11 min-w-11 items-center text-title tabular-nums underline-offset-4 hover:underline"
                 >
                   {t("speed.hours", { hours: format.quantity(block.mine.hours) })}
                 </Link>
                 <p className="text-sm leading-5 text-muted-foreground">
                   {t("joined", {
                     first: t("speed.stays", { count: block.mine.count }),
-                    second: hoursChangeText(block.mine.change, t, format),
+                    second: hoursChangeText(block.mine.change, tShort, format),
                   })}
                 </p>
               </>
@@ -239,7 +240,7 @@ export async function MyApprovalsView({ block, period, filters }: Common & { blo
             </p>
             <Link
               href={approvals({ kind: "waiting", step: "PENDING_PRINCIPAL", group: null })}
-              className="inline-flex min-h-11 min-w-11 items-center text-[28px] leading-[34px] font-bold tabular-nums underline-offset-4 hover:underline"
+              className="inline-flex min-h-11 min-w-11 items-center text-title tabular-nums underline-offset-4 hover:underline"
             >
               {count(block.waiting.all)}
             </Link>

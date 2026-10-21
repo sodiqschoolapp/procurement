@@ -34,6 +34,7 @@ export async function ApprovalSpeedView({
   filters: AnalyticsFilters;
 }) {
   const t = await getTranslations("analytics");
+  const tShort = await getTranslations("analytics.short");
   const format = await getFormatters();
   const approvals = (key: DrillKey, scope: AnalyticsFilters = filters, reason?: string) =>
     `/analytics/approvals?${analyticsSearch(period, scope, { key, reason })}`;
@@ -54,10 +55,10 @@ export async function ApprovalSpeedView({
     ) : (
       <>
         {link(href, t("speed.hours", { hours: format.quantity(hours.hours) }))}
-        <span className="block text-[13px] leading-[18px] text-muted-foreground">
+        <span className="block text-small text-muted-foreground">
           {t("joined", {
             first: t("speed.stays", { count: hours.count }),
-            second: hoursChangeText(hours.change, t, format),
+            second: hoursChangeText(hours.change, tShort, format),
           })}
         </span>
       </>
@@ -72,7 +73,7 @@ export async function ApprovalSpeedView({
       data-analytics-block="speed"
     >
       <div className="flex flex-col gap-1">
-        <h2 id="speed-title" className="text-[20px] leading-7 font-bold">
+        <h2 id="speed-title" className="text-heading font-semibold">
           {t("speed.title")}
         </h2>
         <p className="text-sm leading-5 text-muted-foreground">{t("speed.note")}</p>
@@ -160,8 +161,8 @@ export async function ApprovalSpeedView({
                           count: value.count,
                         }),
                   )}
-                  <span className="block text-[13px] leading-[18px] text-muted-foreground">
-                    {shareChangeText(value.change, t, format)}
+                  <span className="block text-small text-muted-foreground">
+                    {shareChangeText(value.change, tShort, format)}
                   </span>
                 </>
               );
@@ -184,9 +185,7 @@ export async function ApprovalSpeedView({
         <div className="grid gap-4 lg:grid-cols-2">
           {(["SEND_BACK", "REJECT"] as const).map((decision) => (
             <div key={decision} className="flex min-w-0 flex-col gap-2" data-reasons={decision}>
-              <h4 className="text-[15px] leading-[22px] font-semibold">
-                {t(`speed.reasonsOf.${decision}`)}
-              </h4>
+              <h4 className="text-sm font-semibold">{t(`speed.reasonsOf.${decision}`)}</h4>
               {block.reasons[decision].length === 0 ? (
                 <p className="text-sm leading-5 text-muted-foreground">{t("speed.noReasons")}</p>
               ) : (
@@ -200,7 +199,7 @@ export async function ApprovalSpeedView({
                           t("speed.times", { count: reason.count }),
                         )}{" "}
                         <span className="text-muted-foreground">
-                          {countChangeText(reason.change, t, format)}
+                          {countChangeText(reason.change, tShort, format)}
                         </span>
                       </span>
                     </li>

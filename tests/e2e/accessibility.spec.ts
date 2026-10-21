@@ -46,8 +46,8 @@ type World = {
   states: Record<Who, Awaited<ReturnType<BrowserContext["storageState"]>>>;
 };
 
-// The canvas, --background, of the dark theme (docs/design-system.md, Colour).
-const DARK_CANVAS = "#040920";
+// The canvas, --background, of the dark theme (docs/design-system.md, Colour; D60).
+const DARK_CANVAS = "#0A0F1E";
 
 /**
  * The records the detail screens open, made once per worker: a branch of its own with one person
@@ -161,8 +161,16 @@ test("every screen of src/app is in the accessibility check (build plan 9.1d: ev
   expect(appRoutes()).toEqual([...new Set(SCREENS.map((screen) => screen.route))].sort());
 });
 
-async function open(page: Page, url: string): Promise<void> {
+async function open(page: Page, url: string, missing = false): Promise<void> {
   const response = await page.goto(url);
+  if (missing) {
+    // The not-found screen itself: 404, the address kept, and its heading (11 rule 12).
+    expect(response?.status()).toBe(404);
+    await page.waitForLoadState("networkidle");
+    expect(new URL(page.url()).pathname).toBe(new URL(url, "http://x").pathname);
+    await expect(page.getByRole("heading", { name: en.notFoundPage.title })).toHaveCount(1);
+    return;
+  }
   expect(response?.ok()).toBe(true);
   await page.waitForLoadState("networkidle");
   // A refused address redirects (the analytics drill-downs) or shows "Not found": neither is the
@@ -367,7 +375,7 @@ for (const screen of SCREENS) {
       });
       try {
         const page = await context.newPage();
-        await open(page, url);
+        await open(page, url, screen.missing === true);
         // The dark pass is dark: no kept light choice, and the canvas is the dark one (review
         // correction 2).
         const kept = await page.evaluate(() => document.documentElement.dataset.theme ?? null);

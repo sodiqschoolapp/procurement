@@ -9,7 +9,7 @@ import { type ClientKey, newClientKey } from "@/components/client-key";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { toast } from "@/components/toast";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/money-input";
 import { Select } from "@/components/ui/select";
 import { parseSomOrZero } from "@/domain/money";
 import { actionTotal, approvalCashRows, plannedCashOf } from "@/domain/money-ledger";
@@ -195,10 +195,7 @@ export function ApproveButton({
             <ul data-payment-types className="flex flex-col gap-3">
               {orders.map((order) => (
                 <li key={order.id} className="flex flex-col gap-1">
-                  <label
-                    htmlFor={`pay-${order.id}`}
-                    className="text-[13px] leading-[18px] text-muted-foreground"
-                  >
+                  <label htmlFor={`pay-${order.id}`} className="text-small text-muted-foreground">
                     {t("paymentOf", { number: order.number })}
                   </label>
                   <Select
@@ -222,10 +219,10 @@ export function ApproveButton({
               ))}
             </ul>
             <section aria-labelledby="approve-type-totals" data-type-totals>
-              <h3 id="approve-type-totals" className="text-[15px] leading-[22px] font-bold">
+              <h3 id="approve-type-totals" className="text-sm font-semibold">
                 {t("totalsTitle")}
               </h3>
-              <dl className="mt-2 flex flex-col gap-1 text-[15px] leading-[22px]">
+              <dl className="mt-2 flex flex-col gap-1 text-sm">
                 {PAYMENT_TYPES.filter((type) => byType[type] > 0n).map((type) => (
                   <div key={type} data-type-total={type} className="flex justify-between gap-4">
                     <dt className="text-muted-foreground">{tPayment(type)}</dt>
@@ -236,13 +233,13 @@ export function ApproveButton({
             </section>
             {cashOrders.length > 0 ? (
               <section aria-labelledby="approve-cash" data-cash-table>
-                <h3 id="approve-cash" className="text-[15px] leading-[22px] font-bold">
+                <h3 id="approve-cash" className="text-sm font-semibold">
                   {t("cashTitle")}
                 </h3>
-                <p className="text-[13px] leading-[18px] text-muted-foreground">{t("cashHint")}</p>
+                <p className="text-small text-muted-foreground">{t("cashHint")}</p>
                 {[...blocks].map(([ownerId, block]) => (
                   <div key={ownerId} data-cash-block={ownerId} className="mt-3 flex flex-col gap-3">
-                    <h4 className="text-[13px] leading-[18px] font-bold">{block.name}</h4>
+                    <h4 className="text-small font-semibold">{block.name}</h4>
                     {block.orders.map((order) => {
                       const invalid = parseSomOrZero(textOf(order)) === null;
                       return (
@@ -252,32 +249,30 @@ export function ApproveButton({
                           className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
                         >
                           <label htmlFor={`cash-${order.id}`} className="flex flex-col">
-                            <span className="text-[15px] leading-[22px]">{order.number}</span>
-                            <span className="text-[13px] leading-[18px] text-muted-foreground">
+                            <span className="text-sm">{order.number}</span>
+                            <span className="text-small text-muted-foreground">
                               {t("plannedCash", { amount: format.money(prefilled(order)) })}
                             </span>
                           </label>
                           <div className="flex flex-col gap-1 sm:w-40">
-                            <Input
+                            <MoneyInput
                               id={`cash-${order.id}`}
-                              inputMode="numeric"
-                              autoComplete="off"
                               value={textOf(order)}
                               disabled={pending}
                               aria-invalid={invalid || undefined}
                               aria-describedby={invalid ? `cash-error-${order.id}` : undefined}
-                              className="text-right tabular-nums"
-                              onChange={(event) =>
+                              className="text-right"
+                              onValueChange={(value) =>
                                 setTyped((current) => ({
                                   ...current,
-                                  [order.id]: event.target.value,
+                                  [order.id]: value,
                                 }))
                               }
                             />
                             {invalid ? (
                               <p
                                 id={`cash-error-${order.id}`}
-                                className="text-[13px] leading-[18px] text-destructive"
+                                className="text-small text-destructive"
                               >
                                 {t("cashInvalid")}
                               </p>

@@ -39,6 +39,7 @@ export function AddToDraftButton({
   unitShortName: string;
 }) {
   const t = useTranslations("warehouse.addToDraft");
+  const tWhy = useTranslations("common.whyNot");
   const tAll = useTranslations();
   const format = useFormatters();
   const departmentId = useId();
@@ -129,6 +130,7 @@ export function AddToDraftButton({
         onOpenChange={setAsking}
         pending={pending}
         confirmDisabled={departments === null || department === "" || quantity.trim() === ""}
+        disabledReason={departments === null ? null : tWhy("fields")}
         text={{ title: t("title", { item: itemName }), result: t("result"), confirm: t("confirm") }}
         onConfirm={() => void run()}
       >

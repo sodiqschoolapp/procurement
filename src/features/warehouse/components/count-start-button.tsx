@@ -35,6 +35,7 @@ export function CountStartButton({
   initialBranchId: string;
 }) {
   const t = useTranslations("warehouse.count");
+  const tWhy = useTranslations("common.whyNot");
   const tAll = useTranslations();
   const router = useRouter();
   const [asking, setAsking] = useState(false);
@@ -91,6 +92,7 @@ export function CountStartButton({
         onOpenChange={(next) => !next && !pending && setAsking(false)}
         pending={pending}
         confirmDisabled={branchId === ""}
+        disabledReason={tWhy("branch")}
         text={{ title: t("startTitle"), result: t("startResult"), confirm: t("start") }}
         onConfirm={() => void run()}
       >

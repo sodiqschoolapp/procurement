@@ -116,14 +116,14 @@ export function CountSheetForm({
     <section
       data-count-sheet
       aria-labelledby="count-sheet"
-      className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 sm:p-6"
+      className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 sm:p-5"
     >
       <UnsavedChangesGuard dirty={dirty} />
       <div className="flex flex-col gap-1">
-        <h2 id="count-sheet" className="text-[17px] leading-6 font-semibold">
+        <h2 id="count-sheet" className="text-subheading font-semibold">
           {t("sheetTitle")}
         </h2>
-        <p className="text-[15px] leading-[22px] text-muted-foreground">{t("sheetIntro")}</p>
+        <p className="text-sm text-muted-foreground">{t("sheetIntro")}</p>
       </div>
       <ul className="flex flex-col gap-3">
         {lines.map((line) => {
@@ -135,7 +135,7 @@ export function CountSheetForm({
               className="flex flex-col gap-2 rounded-lg border border-border p-3 sm:flex-row sm:items-start sm:gap-4"
             >
               <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                <span className="text-[15px] leading-[22px] font-semibold">{line.name}</span>
+                <span className="text-sm font-semibold">{line.name}</span>
                 {line.recount && line.countedQty === null && (
                   <CountAgainMark label={t("decision.countAgain")} />
                 )}
@@ -167,7 +167,7 @@ export function CountSheetForm({
               </Field>
               <div className="flex flex-col gap-0.5 sm:w-32 sm:text-right">
                 <span className="text-sm leading-5 font-semibold">{t("difference")}</span>
-                <span className="text-[15px] leading-[22px] tabular-nums" data-count-difference>
+                <span className="text-sm tabular-nums" data-count-difference>
                   {difference === null
                     ? t("notCounted")
                     : `${signedQuantity(difference, format.quantity)} ${line.unitShortName}`}

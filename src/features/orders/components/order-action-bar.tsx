@@ -9,6 +9,7 @@ import { submitDraftsAction } from "@/app/(app)/orders/actions";
 import { type ClientKey, newClientKey } from "@/components/client-key";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { toast } from "@/components/toast";
+import { Icon } from "@/components/icon";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/components/utils";
 
@@ -19,9 +20,11 @@ import { CopyButton } from "./copy-button";
 import { type MoveKind, MoveButton } from "./move-button";
 import { cellOfField } from "./grid-rules";
 
-// The action bar of the order page (11-screens-and-ux.md, Order page layout 4: "fixed at the
-// bottom: only the actions this user can take on this order now. If there are none, a line says
-// who the order is waiting for"). Which moves are allowed is allowedActions() of the server; a
+// The action bar of the order page (11-screens-and-ux.md, Order page layout 4: "only the actions
+// this user can take on this order now. If there are none, a line says who the order is waiting
+// for"). It stands under the order's header and stays in view under the top bar on a desktop, so
+// the next action comes right after the status (redesign of 21.10.2026; the spec's "fixed at the
+// bottom" is a Look first reading). Which moves are allowed is allowedActions() of the server; a
 // button is shown only for a move with a server action: Submit (plan of 2.9, decided item 4,
 // Look first; a taken-back Draft too since 2.11), Approve (2.10), Send back, Reject, Cancel, Take
 // back and Submit again (2.11); Copy as new (2.13), beside them and on a Rejected, Cancelled or
@@ -116,18 +119,19 @@ export function OrderActionBar({
       aria-labelledby="order-bar-title"
       aria-live="polite"
       data-order-bar
-      className="sticky bottom-0 z-10 flex flex-col gap-3 rounded-xl border-t border-border bg-card p-4 max-sm:bottom-[calc(4rem+env(safe-area-inset-bottom))] sm:flex-row sm:items-center sm:justify-between sm:p-6"
+      className="z-10 flex flex-col gap-3 rounded-xl border border-border-strong bg-card p-3 sm:sticky sm:top-[4.5rem] sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-6 sm:p-4 sm:shadow-float"
     >
       <h2 id="order-bar-title" className="sr-only">
         {t("title")}
       </h2>
       {waitingLine ? (
-        <p data-waiting className="text-[15px] leading-[22px] text-muted-foreground">
-          {waitingLine}
+        <p className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Icon name="schedule" size={18} className="shrink-0" />
+          <span data-waiting>{waitingLine}</span>
         </p>
       ) : null}
       {failure ? (
-        <p role="alert" className="text-[15px] leading-[22px] text-destructive">
+        <p role="alert" className="text-sm text-destructive">
           {failure}{" "}
           <Link href="/orders" className="font-semibold underline underline-offset-2">
             {t("editInList")}
@@ -135,7 +139,7 @@ export function OrderActionBar({
         </p>
       ) : null}
       {refused ? (
-        <p role="alert" data-approve-failed className="text-[15px] leading-[22px] text-destructive">
+        <p role="alert" data-approve-failed className="text-sm text-destructive">
           {refused}
         </p>
       ) : null}
@@ -144,7 +148,7 @@ export function OrderActionBar({
       canRecordMoney ||
       settle ||
       ((moves.length > 0 || canCopy) && number) ? (
-        <div className="flex flex-wrap gap-3 sm:ml-auto">
+        <div className="flex flex-wrap gap-2 sm:gap-3">
           {recordPurchase ? (
             <Link
               href={recordPurchase}
@@ -203,7 +207,7 @@ export function OrderActionBar({
         </div>
       ) : null}
       {canSubmit ? (
-        <div className="flex flex-wrap gap-3 sm:ml-auto">
+        <div className="flex flex-wrap gap-2 sm:gap-3">
           <Button
             pending={pending}
             onClick={() => setAsking(true)}

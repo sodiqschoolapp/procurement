@@ -148,25 +148,35 @@ test("the sidebar collapses to the rail, stays a rail after a reload, and is rea
   const expand = page.getByRole("button", { name: uz.shell.expand });
   await expect(expand).toHaveAttribute("aria-expanded", "false");
   expect(await page.locator("aside").evaluate((aside) => aside.getBoundingClientRect().width)).toBe(
-    72,
+    64,
   );
 
-  // In the rail the current item is its icon on the solid orange fill of an item, corner 8
-  // (design system, Layout shell, 14.10.2026; build-plan 0.10b, Done when).
+  // In the rail the current item is its icon on the light navy tint of the active item, corner 6,
+  // with the small orange marker at its left edge (design system, Page shell; D60, 21.10.2026).
   const current = page.locator('aside a[aria-current="page"]');
   await expect(current).toHaveAttribute("aria-label", uz.shell.menu.home);
   await expect(current.locator("svg")).toBeVisible();
   const fill = await current.evaluate((link) => {
-    const probe = document.createElement("span");
-    probe.style.background = "var(--sidebar-primary)";
-    document.body.append(probe);
-    const orange = getComputedStyle(probe).backgroundColor;
-    probe.remove();
+    const colourOf = (value: string) => {
+      const probe = document.createElement("span");
+      probe.style.background = value;
+      document.body.append(probe);
+      const colour = getComputedStyle(probe).backgroundColor;
+      probe.remove();
+      return colour;
+    };
     const style = getComputedStyle(link);
-    return { background: style.backgroundColor, orange, radius: style.borderRadius };
+    return {
+      background: style.backgroundColor,
+      tint: colourOf("var(--sidebar-primary)"),
+      marker: getComputedStyle(link, "::before").backgroundColor,
+      orange: colourOf("var(--brand)"),
+      radius: style.borderRadius,
+    };
   });
-  expect(fill.background).toBe(fill.orange);
-  expect(fill.radius).toBe("8px");
+  expect(fill.background).toBe(fill.tint);
+  expect(fill.marker).toBe(fill.orange);
+  expect(fill.radius).toBe("6px");
   // The icon alone: the word is kept for screen readers only, so the item is rail-wide.
   expect((await current.boundingBox())!.width).toBeLessThanOrEqual(48);
 

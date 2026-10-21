@@ -153,13 +153,13 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
     pages > 1 ? <PageLinks page={page} pages={pages} href={pageHref} /> : null;
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl min-w-0 flex-col gap-6">
+    <div className="flex w-full min-w-0 flex-col gap-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <h1 className="flex flex-wrap items-baseline gap-x-3 text-[28px] leading-[34px] font-bold tracking-[-0.01em]">
+          <h1 className="flex flex-wrap items-baseline gap-x-3 text-title">
             {t("title")}
             <span
-              className="text-[15px] leading-[22px] font-normal tracking-normal text-muted-foreground"
+              className="text-sm font-normal tracking-normal text-muted-foreground"
               data-period-line
             >
               {params.report === "cash"

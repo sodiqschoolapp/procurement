@@ -52,9 +52,9 @@ export function LineChartBlock({
           <Tooltip content={<ChartTooltip />} cursor={{ stroke: "var(--muted-foreground)" }} />
           <Line
             dataKey="value"
-            stroke="var(--foreground)"
+            stroke="var(--chart-1)"
             strokeWidth={2}
-            dot={{ r: 4, fill: "var(--foreground)", stroke: "var(--card)", strokeWidth: 2 }}
+            dot={{ r: 4, fill: "var(--chart-1)", stroke: "var(--card)", strokeWidth: 2 }}
             activeDot={{ r: 6 }}
             isAnimationActive={false}
           />

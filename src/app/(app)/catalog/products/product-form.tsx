@@ -12,6 +12,7 @@ import { toast } from "@/components/toast";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { FIELD_CLASSES, Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/money-input";
 import { Segmented } from "@/components/ui/segmented";
 import { Select } from "@/components/ui/select";
 import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard";
@@ -200,7 +201,7 @@ export function ProductForm({
     <form
       onSubmit={onSubmit}
       noValidate
-      className="flex flex-col gap-5 rounded-xl bg-card p-6 text-card-foreground"
+      className="flex flex-col gap-5 rounded-xl border border-border bg-card p-4 text-card-foreground sm:p-5"
     >
       <UnsavedChangesGuard dirty={formState.isDirty && !action.pending} />
       <Field id="product-name" label={t("fields.name")} error={action.fieldTexts.name}>
@@ -279,7 +280,7 @@ export function ProductForm({
         {entry ? (
           <>
             <span className="text-sm leading-5 font-semibold">{t("fields.referencePrice")}</span>
-            <span className="text-[15px] leading-[22px] tabular-nums">{price ?? t("noPrice")}</span>
+            <span className="text-sm tabular-nums">{price ?? t("noPrice")}</span>
             {hint("product-referencePrice-hint", t("hints.referencePriceLater"))}
           </>
         ) : (
@@ -289,13 +290,21 @@ export function ProductForm({
               label={t("fields.referencePrice")}
               error={action.fieldTexts.referencePrice}
             >
-              <Input
-                {...register("referencePrice")}
-                inputMode="numeric"
-                maxLength={24}
-                autoComplete="off"
-                className="tabular-nums sm:max-w-60"
-                aria-describedby="product-referencePrice-hint"
+              <Controller
+                control={control}
+                name="referencePrice"
+                render={({ field }) => (
+                  <MoneyInput
+                    name={field.name}
+                    ref={field.ref}
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    onBlur={field.onBlur}
+                    maxLength={24}
+                    className="sm:max-w-60"
+                    aria-describedby="product-referencePrice-hint"
+                  />
+                )}
               />
             </Field>
             {hint("product-referencePrice-hint", t("hints.referencePrice"))}

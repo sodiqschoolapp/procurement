@@ -19,6 +19,7 @@ import {
   withDatabase,
 } from "./acceptance-fixtures";
 import { E2E_ROLES } from "./global-setup";
+import { shownAmount } from "./shown-amount";
 
 // Build plan 9.1a: the acceptance scenarios of phase 2 (16-build-order.md) that had no browser
 // test, clicked through as each role (15-quality-and-acceptance.md, Test layers: Full flow). Both
@@ -254,6 +255,9 @@ test("S17: the list filtered to one week downloads as Excel and PDF with exactly
   await page.goto("/orders");
   if (info.project.name === "phone-375") {
     await page.getByRole("button", { name: e.list.filters.open, exact: true }).click();
+  } else {
+    // The dates stand behind "More filters" on a desktop (redesign of 21.10.2026).
+    await page.getByRole("button", { name: e.list.filters.more, exact: true }).click();
   }
   await page.getByLabel(e.list.filters.from, { exact: true }).fill("12.10.2026");
   await page.getByLabel(e.list.filters.from, { exact: true }).press("Enter");
@@ -376,7 +380,7 @@ test("S18: the Head changes the price from 5 000 to 6 500; a new draft suggests 
   await addDraft(science, "100");
   await expect.poll(async () => (await ordersOf(manager.id, variantId)).length).toBe(1);
   const older = await draftRow(science);
-  await expect(older.getByLabel(t.columns.price)).toHaveValue("5000");
+  await expect(older.getByLabel(t.columns.price)).toHaveValue(shownAmount("5000"));
   await page.context().clearCookies();
 
   // The Head adds the new price with a note (04 rule 4).
@@ -394,8 +398,8 @@ test("S18: the Head changes the price from 5 000 to 6 500; a new draft suggests 
   await addDraft(music, "10");
   await expect.poll(async () => (await ordersOf(manager.id, variantId)).length).toBe(2);
   const fresh = await draftRow(music);
-  await expect(fresh.getByLabel(t.columns.price)).toHaveValue("6500");
-  await expect(older.getByLabel(t.columns.price)).toHaveValue("5000");
+  await expect(fresh.getByLabel(t.columns.price)).toHaveValue(shownAmount("6500"));
+  await expect(older.getByLabel(t.columns.price)).toHaveValue(shownAmount("5000"));
   await expect(older.locator('[data-cell="price-hint"]')).toHaveText(
     new RegExp(`^${t.priceHint.split("{")[0]}[-−]23%$`),
   );

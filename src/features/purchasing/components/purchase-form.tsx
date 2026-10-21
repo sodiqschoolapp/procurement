@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import {
   type Control,
+  Controller,
   type UseFormRegister,
   type UseFormSetValue,
   useFieldArray,
@@ -20,8 +21,10 @@ import { toast } from "@/components/toast";
 import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard";
 import { useAction } from "@/components/use-action";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { DateInput } from "@/components/ui/date-input";
 import { Field } from "@/components/ui/field";
 import { FIELD_CLASSES, Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/money-input";
 import { Segmented } from "@/components/ui/segmented";
 import { Select } from "@/components/ui/select";
 import { cn } from "@/components/utils";
@@ -165,6 +168,8 @@ export function PurchaseFormView({
     () => false,
   );
 
+  // The date field shows dd.mm.yyyy and gives YYYY-MM-DD (DateInput).
+  register("purchasedOn");
   const values = useWatch({ control }) as Values;
   const fieldTexts = action.fieldTexts;
   /** A line's field error: the server names lines by their place in what was sent. */
@@ -315,15 +320,15 @@ export function PurchaseFormView({
     : t("subtitleTrip", { count: shown.length, branch: form.branchCode });
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
+    <div className="flex w-full min-w-0 flex-col gap-6">
       {/* Not while saving, so the guard's history entry is gone before the form leaves (as the
           suggestion form does). */}
       <UnsavedChangesGuard dirty={(formState.isDirty || receipts.length > 0) && !action.pending} />
       <header className="flex flex-col gap-1">
-        <h1 className="text-[28px] leading-[34px] font-bold tracking-[-0.01em]">{t("title")}</h1>
-        <p className="text-[15px] leading-[22px] text-muted-foreground">{subtitle}</p>
+        <h1 className="text-title">{t("title")}</h1>
+        <p className="text-sm text-muted-foreground">{subtitle}</p>
         {form.leftOut > 0 ? (
-          <p data-left-out className="text-[15px] leading-[22px] text-muted-foreground">
+          <p data-left-out className="text-sm text-muted-foreground">
             {t("leftOut", { count: form.leftOut })}
           </p>
         ) : null}
@@ -365,12 +370,12 @@ export function PurchaseFormView({
                 {block.members.length > 1 ? (
                   <div
                     data-group
-                    className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 sm:p-6"
+                    className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 sm:p-5"
                   >
                     <h2
                       data-step-heading
                       tabIndex={-1}
-                      className="text-[17px] leading-6 font-semibold outline-none"
+                      className="text-subheading font-semibold outline-none"
                     >
                       {t("group", { product, count: block.members.length })}
                     </h2>
@@ -386,10 +391,9 @@ export function PurchaseFormView({
                         />
                       </Field>
                       <Field id={`purchase-group-price-${block.variantId}`} label={t("groupPrice")}>
-                        <Input
-                          inputMode="numeric"
+                        <MoneyInput
                           value={typed.price}
-                          onChange={(event) => typeGroup(block, typed.qty, event.target.value)}
+                          onValueChange={(price) => typeGroup(block, typed.qty, price)}
                         />
                       </Field>
                     </div>
@@ -441,11 +445,21 @@ export function PurchaseFormView({
             shownStep !== last && "max-sm:hidden",
           )}
         >
-          <h2 id="purchase-visit" className="text-[17px] leading-6 font-semibold">
+          <h2 id="purchase-visit" className="text-subheading font-semibold">
             {t("visit")}
           </h2>
           <Field id="purchase-date" label={t("date")} error={fieldTexts.purchasedOn}>
-            <Input type="date" min={earliest} max={form.today} {...register("purchasedOn")} />
+            <DateInput
+              min={earliest}
+              max={form.today}
+              value={values.purchasedOn}
+              onValueChange={(next) =>
+                setValue("purchasedOn", next, {
+                  shouldDirty: true,
+                  shouldValidate: formState.isSubmitted,
+                })
+              }
+            />
           </Field>
           <div className="flex flex-col gap-1.5">
             <span className="text-sm leading-5 font-semibold">{t("paymentType")}</span>
@@ -478,7 +492,7 @@ export function PurchaseFormView({
                   <li
                     key={receipt.id}
                     data-receipt
-                    className="flex items-center justify-between gap-2 text-[15px]"
+                    className="flex items-center justify-between gap-2 text-sm"
                   >
                     <span className="truncate">{receipt.name}</span>
                     <Button
@@ -549,7 +563,7 @@ export function PurchaseFormView({
         <div className="flex flex-col gap-4 lg:col-start-2">
           {/* Outside the steps, so a refusal of the whole trip is never on a hidden step. */}
           {(fieldTexts.orders ?? (action.errorText && Object.keys(fieldTexts).length === 0)) ? (
-            <p role="alert" className="text-[15px] leading-[22px] text-destructive">
+            <p role="alert" className="text-sm text-destructive">
               {fieldTexts.orders ?? action.errorText}
             </p>
           ) : null}
@@ -573,7 +587,7 @@ export function PurchaseFormView({
               ) : (
                 <span />
               )}
-              <span data-step-count className="text-[15px] leading-[22px] tabular-nums">
+              <span data-step-count className="text-sm tabular-nums">
                 {t("step", { current: shownStep + 1, total: blocks.length })}
               </span>
               {shownStep < last ? (
@@ -674,7 +688,7 @@ function OrderLine({
           id={id("title")}
           data-step-heading
           tabIndex={-1}
-          className="text-[17px] leading-6 font-semibold outline-none"
+          className="text-subheading font-semibold outline-none"
         >
           {single ? t("plan") : order.number}
         </h2>
@@ -684,7 +698,7 @@ function OrderLine({
           </span>
         ) : null}
       </div>
-      <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-[15px] leading-[22px]">
+      <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-sm">
         <dt className="text-muted-foreground">{t("plannedQty")}</dt>
         <dd data-planned-qty className="tabular-nums">
           {format.quantity(order.plannedQty)} {unit}
@@ -724,7 +738,19 @@ function OrderLine({
           />
         </Field>
         <Field id={id("price")} label={t("price")} error={errorOf("unitPrice")}>
-          <Input inputMode="numeric" {...register(`lines.${index}.unitPrice`)} />
+          <Controller
+            control={control}
+            name={`lines.${index}.unitPrice`}
+            render={({ field }) => (
+              <MoneyInput
+                name={field.name}
+                ref={field.ref}
+                value={field.value}
+                onValueChange={field.onChange}
+                onBlur={field.onBlur}
+              />
+            )}
+          />
         </Field>
         {order.subtypes.length > 1 ? (
           <Field
@@ -771,7 +797,19 @@ function OrderLine({
               label={t("extraAmount")}
               error={errorOf(`extras.${at}.amount`)}
             >
-              <Input inputMode="numeric" {...register(`lines.${index}.extras.${at}.amount`)} />
+              <Controller
+                control={control}
+                name={`lines.${index}.extras.${at}.amount`}
+                render={({ field }) => (
+                  <MoneyInput
+                    name={field.name}
+                    ref={field.ref}
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    onBlur={field.onBlur}
+                  />
+                )}
+              />
             </Field>
             <Button
               type="button"
@@ -807,7 +845,7 @@ function OrderLine({
 
       {order.canGiveToRequester ? (
         // 07 Purchase record: the items go straight to the order's department (plan of 5.4).
-        <label className="flex min-h-11 items-start gap-3 rounded-lg bg-muted p-3 text-[15px] leading-[22px]">
+        <label className="flex min-h-11 items-start gap-3 rounded-lg bg-muted p-3 text-sm">
           <input
             type="checkbox"
             {...register(`lines.${index}.giveToRequester`)}

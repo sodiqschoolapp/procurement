@@ -9,7 +9,11 @@ import {
   formatMoney,
   formatQuantity,
   formatTime,
+  formatTypedAmount,
+  NBSP,
   parseTypedDate,
+  retypeAmount,
+  typedAmountValue,
 } from "./format";
 
 // 11-screens-and-ux.md rule 10: "Money as `1 250 000 so'm`. Dates as `08.10.2026`. Time in 24
@@ -153,5 +157,43 @@ describe("parseTypedDate (11 rule 10: dates as 08.10.2026, typed back)", () => {
     ]) {
       expect(parseTypedDate(text)).toBeNull();
     }
+  });
+});
+
+// The money fields show the digits grouped as they are typed (redesign of 21.10.2026, 11 rule 10)
+// and send exactly the digits they sent before: the grouping is only what the field shows.
+describe("a money field groups the digits as they are typed and sends the same digits", () => {
+  it('typed "1 500 000" sends 1500000, and shows 1 500 000', () => {
+    const typed = retypeAmount("1 500 000", 9);
+    expect(typed.value).toBe("1500000");
+    expect(BigInt(typed.value)).toBe(1_500_000n);
+    expect(typed.shown).toBe(`1${NBSP}500${NBSP}000`);
+  });
+
+  it("typed without spaces, the value is the same digits; the field shows them grouped", () => {
+    expect(retypeAmount("60000", 5)).toEqual({ value: "60000", shown: `60${NBSP}000`, caret: 6 });
+    expect(retypeAmount("520000", 6).value).toBe("520000");
+  });
+
+  it("no-break, thin and narrow spaces are grouping too", () => {
+    expect(typedAmountValue(`1${NBSP}500\u2009000\u202F`)).toBe("1500000");
+  });
+
+  it("a text that is not digits is kept as typed, for the field's own check to refuse", () => {
+    expect(typedAmountValue("12a")).toBe("12a");
+    expect(formatTypedAmount("12a")).toBe("12a");
+    expect(typedAmountValue("-500")).toBe("-500");
+    expect(formatTypedAmount("")).toBe("");
+  });
+
+  it("the caret stays after the digit just typed when a group space appears before it", () => {
+    // "6000" shown; the person types 0 at the end: "60000" becomes "60 000", caret at the end.
+    expect(retypeAmount(`6${NBSP}0000`, 6).caret).toBe(6);
+    // A 9 typed after "1 5" of "1 500": "1 5900" becomes "15 900", the caret still after the 9.
+    expect(retypeAmount(`1${NBSP}5900`, 4)).toEqual({
+      value: "15900",
+      shown: `15${NBSP}900`,
+      caret: 4,
+    });
   });
 });

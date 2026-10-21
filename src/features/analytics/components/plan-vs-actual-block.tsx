@@ -43,6 +43,7 @@ export async function PlanVsActualView({
   filters: AnalyticsFilters;
 }) {
   const t = await getTranslations("analytics");
+  const tShort = await getTranslations("analytics.short");
   const format = await getFormatters();
   const orders = (key: DrillKey, scope: AnalyticsFilters = filters, otherOwners = false) =>
     `/analytics/orders?${analyticsSearch(period, scope, { key, otherOwners })}`;
@@ -57,7 +58,7 @@ export async function PlanVsActualView({
     label: t(`plan.outcome.${colour}`),
     value: total.colours[colour].count,
     shown: count(total.colours[colour].count),
-    change: countChangeText(total.colours[colour].change, t, format),
+    change: countChangeText(total.colours[colour].change, tShort, format),
     href: orders({ kind: "colour", colour }),
   }));
 
@@ -68,13 +69,13 @@ export async function PlanVsActualView({
       data-analytics-block="plan"
     >
       <div className="flex flex-col gap-1">
-        <h2 id="plan-title" className="text-[20px] leading-7 font-bold">
+        <h2 id="plan-title" className="text-heading font-semibold">
           {t("plan.title")}
         </h2>
         <p className="text-sm leading-5 text-muted-foreground">{t("plan.note")}</p>
       </div>
       {empty ? (
-        <p className="rounded-xl bg-card p-6 text-[15px] leading-[22px] text-muted-foreground max-sm:p-4">
+        <p className="rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground max-sm:p-4 sm:p-5">
           {t("plan.empty")}
         </p>
       ) : (
@@ -84,7 +85,7 @@ export async function PlanVsActualView({
               label={t("plan.ended")}
               href={orders({ kind: "period" })}
               value={count(total.orders.count)}
-              lines={[countChangeText(total.orders.change, t, format)]}
+              lines={[countChangeText(total.orders.change, tShort, format)]}
               data="ended"
             />
             {OUTCOME_COLOURS.map((colour) => {
@@ -99,8 +100,8 @@ export async function PlanVsActualView({
                     each.share === null
                       ? t("plan.noShare")
                       : t("plan.share", { share: format.quantity(each.share) }),
-                    countChangeText(each.change, t, format),
-                    shareChangeText(each.shareChange, t, format),
+                    countChangeText(each.change, tShort, format),
+                    shareChangeText(each.shareChange, tShort, format),
                   ]}
                   data={colour}
                 />
@@ -110,14 +111,14 @@ export async function PlanVsActualView({
               label={t("plan.overspent")}
               href={orders({ kind: "overspent" })}
               value={format.money(total.overspent.amount)}
-              lines={[changeText(total.overspent.change, t, format)]}
+              lines={[changeText(total.overspent.change, tShort, format)]}
               data="overspent"
             />
             <Tile
               label={t("plan.saved")}
               href={orders({ kind: "saved" })}
               value={format.money(total.saved.amount)}
-              lines={[changeText(total.saved.change, t, format)]}
+              lines={[changeText(total.saved.change, tShort, format)]}
               data="saved"
             />
           </div>
@@ -174,11 +175,14 @@ function Tile({
   data: string;
 }) {
   return (
-    <div className="flex flex-col gap-1 rounded-xl bg-card p-6 max-sm:p-4" data-plan-tile={data}>
+    <div
+      className="flex flex-col gap-1 rounded-xl border border-border bg-card p-4 sm:p-5"
+      data-plan-tile={data}
+    >
       <div className="text-sm leading-5 font-semibold text-muted-foreground">{label}</div>
       <Link
         href={href}
-        className="inline-flex min-h-11 min-w-11 items-center self-start text-[28px] leading-[34px] font-bold tabular-nums underline-offset-4 hover:underline"
+        className="inline-flex min-h-11 min-w-11 items-center self-start text-title tabular-nums underline-offset-4 hover:underline"
         data-plan-number
       >
         {value}
@@ -207,11 +211,11 @@ async function Card({
   return (
     <section
       aria-labelledby={`${id}-title`}
-      className="flex min-w-0 flex-col gap-3 rounded-xl bg-card p-6 max-sm:p-4"
+      className="flex min-w-0 flex-col gap-3 rounded-xl border border-border bg-card p-4 sm:p-5"
       data-chart-card={id}
     >
       <div className="flex items-baseline justify-between gap-3">
-        <h3 id={`${id}-title`} className="text-[17px] leading-6 font-bold">
+        <h3 id={`${id}-title`} className="text-subheading font-semibold">
           {title}
         </h3>
         <a
@@ -231,6 +235,7 @@ type TallyRow = { key: string; label: string; tally: Tally; href: (key: DrillKey
 
 async function TallyTable({ firstColumn, rows }: { firstColumn: string; rows: TallyRow[] }) {
   const t = await getTranslations("analytics");
+  const tShort = await getTranslations("analytics.short");
   const format = await getFormatters();
   const count = (value: number) => format.quantity(String(value));
   type Cell = { id: string; key: DrillKey; shown: string; change: string };
@@ -239,25 +244,25 @@ async function TallyTable({ firstColumn, rows }: { firstColumn: string; rows: Ta
       id: "orders",
       key: { kind: "period" },
       shown: count(tally.orders.count),
-      change: countChangeText(tally.orders.change, t, format),
+      change: countChangeText(tally.orders.change, tShort, format),
     },
     ...OUTCOME_COLOURS.map((colour) => ({
       id: colour,
       key: { kind: "colour", colour } as const,
       shown: count(tally.colours[colour].count),
-      change: countChangeText(tally.colours[colour].change, t, format),
+      change: countChangeText(tally.colours[colour].change, tShort, format),
     })),
     {
       id: "overspent",
       key: { kind: "overspent" },
       shown: format.money(tally.overspent.amount),
-      change: changeText(tally.overspent.change, t, format),
+      change: changeText(tally.overspent.change, tShort, format),
     },
     {
       id: "saved",
       key: { kind: "saved" },
       shown: format.money(tally.saved.amount),
-      change: changeText(tally.saved.change, t, format),
+      change: changeText(tally.saved.change, tShort, format),
     },
   ];
   const headings = [
@@ -269,13 +274,14 @@ async function TallyTable({ firstColumn, rows }: { firstColumn: string; rows: Ta
     t("plan.columns.saved"),
   ];
   return (
-    // A table wider than a phone scrolls; the keyboard reaches it too (WCAG 2.1.1; plan of 9.1d).
+    // A table wider than its card scrolls; the keyboard reaches it too (WCAG 2.1.1; plan of 9.1d).
+    // On a phone each row is a short card of label and value (table-cards).
     <div
       tabIndex={0}
       className="overflow-x-auto rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
     >
-      <table className="w-full min-w-[48rem] border-collapse text-left text-sm leading-5">
-        <thead className="bg-muted text-[13px] leading-[18px] font-semibold text-muted-foreground">
+      <table className="table-cards table-cards-flat w-full min-w-[48rem] border-collapse text-left text-sm leading-5">
+        <thead className="border-b border-border bg-muted text-xs font-medium text-muted-foreground">
           <tr>
             <th scope="col" className="px-3 py-2">
               {firstColumn}
@@ -290,20 +296,23 @@ async function TallyTable({ firstColumn, rows }: { firstColumn: string; rows: Ta
         <tbody>
           {rows.map((row) => (
             <tr key={row.key} className="border-t align-top" data-tally-row={row.key}>
-              <th scope="row" className="px-3 py-2 font-normal">
+              <th scope="row" data-card="head" className="px-3 py-2 font-normal">
                 {row.label}
               </th>
-              {cells(row.tally).map((cell) => (
-                <td key={cell.id} className="px-3 py-2 text-right tabular-nums" data-cell={cell.id}>
+              {cells(row.tally).map((cell, index) => (
+                <td
+                  key={cell.id}
+                  className="px-3 py-2 text-right tabular-nums"
+                  data-cell={cell.id}
+                  data-label={headings[index]}
+                >
                   <Link
                     href={row.href(cell.key)}
                     className="font-semibold whitespace-nowrap text-link underline-offset-2 hover:underline"
                   >
                     {cell.shown}
                   </Link>
-                  <span className="block text-[13px] leading-[18px] text-muted-foreground">
-                    {cell.change}
-                  </span>
+                  <span className="block text-small text-muted-foreground">{cell.change}</span>
                 </td>
               ))}
             </tr>

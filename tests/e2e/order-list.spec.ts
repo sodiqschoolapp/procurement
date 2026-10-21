@@ -180,6 +180,9 @@ test("ticks survive a change of page; a change of filter clears them (review of 
   await expect(page.locator("tbody[data-group]")).toHaveCount(1);
   await expect(bar.locator("[data-ticked-count]")).toHaveText("3 orders");
 
+  // The status select stands behind "More filters" beside the status tabs (redesign of
+  // 21.10.2026); the status is the one filter in force there.
+  await page.getByRole("button", { name: t.filters.moreCount.replace("{count}", "1") }).click();
   await page.getByLabel(t.filters.status, { exact: true }).selectOption("PENDING_PRINCIPAL");
   await expect(page).toHaveURL(/status=PENDING_PRINCIPAL/);
   await expect(bar).toHaveCount(0);

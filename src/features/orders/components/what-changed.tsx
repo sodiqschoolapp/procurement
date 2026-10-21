@@ -51,12 +51,9 @@ export async function WhatChanged({
     <section
       aria-labelledby="what-changed-title"
       data-what-changed
-      className="rounded-xl border border-warning bg-card p-4 sm:p-6"
+      className="rounded-xl border border-warning bg-card p-4 sm:p-5"
     >
-      <h2
-        id="what-changed-title"
-        className="flex items-center gap-2 text-[17px] leading-6 font-bold"
-      >
+      <h2 id="what-changed-title" className="flex items-center gap-2 text-subheading font-semibold">
         <Icon name="edit" className="size-5 text-warning" aria-hidden />
         {t("title", { revision: since })}
       </h2>
@@ -67,10 +64,10 @@ export async function WhatChanged({
             data-change={change.kind === "field" ? change.field : change.kind}
             className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:gap-4"
           >
-            <dt className="text-[13px] leading-[18px] text-muted-foreground sm:w-48 sm:shrink-0">
+            <dt className="text-small text-muted-foreground sm:w-48 sm:shrink-0">
               {label(change)}
             </dt>
-            <dd className="flex flex-wrap items-baseline gap-x-2 text-[15px] leading-[22px] tabular-nums">
+            <dd className="flex flex-wrap items-baseline gap-x-2 text-sm tabular-nums">
               <span className="sr-only">{t("before")}</span>
               <del data-old className="text-muted-foreground">
                 {shown(change, change.from)}

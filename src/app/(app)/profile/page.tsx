@@ -15,12 +15,10 @@ export default async function ProfilePage() {
   const locale = await getLocale();
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-6">
-      <h1 className="text-[28px] leading-[34px] font-bold tracking-[-0.01em]">
-        {t("profile.title")}
-      </h1>
-      <section className="flex flex-col gap-6 rounded-xl bg-card p-6 text-card-foreground">
-        <h2 className="text-[17px] leading-6 font-bold">{user.fullName}</h2>
+    <div className="flex w-full max-w-4xl min-w-0 flex-col gap-6">
+      <h1 className="text-title">{t("profile.title")}</h1>
+      <section className="flex flex-col gap-6 rounded-xl border border-border bg-card p-4 text-card-foreground sm:p-5">
+        <h2 className="text-subheading font-semibold">{user.fullName}</h2>
         <dl className="grid gap-x-4 gap-y-1 sm:grid-cols-[10rem_1fr] sm:gap-y-3">
           <dt className="text-sm text-muted-foreground">{t("profile.username")}</dt>
           <dd className="mb-2 font-semibold sm:mb-0">{user.username}</dd>

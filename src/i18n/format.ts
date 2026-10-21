@@ -32,6 +32,44 @@ export function formatMoney(amount: bigint, unit: string): string {
   return `${sign}${groupDigits(digits)}${NBSP}${unit}`;
 }
 
+/** The spaces a typed amount may hold: a space, a no-break space, a thin or narrow one. */
+const AMOUNT_SPACE = /[\s\u00A0\u2009\u202F]/;
+const AMOUNT_SPACES = new RegExp(AMOUNT_SPACE.source, "g");
+
+/**
+ * The text a money field holds and sends, from what was typed: the same characters without the
+ * spaces of the grouping, so `1 500 000` is `1500000`. Nothing else is touched: a text that is not
+ * digits stays for the field's own check to refuse, as before.
+ */
+export function typedAmountValue(text: string): string {
+  return text.replace(AMOUNT_SPACES, "");
+}
+
+/** What a money field shows of its value: digits grouped by three (`1 500 000`), else as typed. */
+export function formatTypedAmount(value: string): string {
+  return /^\d+$/.test(value) ? groupDigits(value) : value;
+}
+
+/**
+ * One keystroke in a money field: the value to keep and send, the text to show, and where the caret
+ * goes (after as many digits as stood before it), so grouping never moves the caret back.
+ */
+export function retypeAmount(
+  typed: string,
+  caret: number,
+): { value: string; shown: string; caret: number } {
+  const value = typedAmountValue(typed);
+  const shown = formatTypedAmount(value);
+  const before = typedAmountValue(typed.slice(0, caret)).length;
+  let at = 0;
+  let kept = 0;
+  while (at < shown.length && kept < before) {
+    if (!AMOUNT_SPACE.test(shown[at]!)) kept += 1;
+    at += 1;
+  }
+  return { value, shown, caret: at };
+}
+
 /** A moment (as its Tashkent business date) or a `YYYY-MM-DD` business date: `08.10.2026`. */
 export function formatDate(value: Date | BusinessDate): string {
   let date: BusinessDate;

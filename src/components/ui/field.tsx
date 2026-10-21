@@ -46,7 +46,7 @@ export function Field({
   const errorId = `${id}-error`;
   return (
     <div className={cn("flex flex-col gap-1.5", className)}>
-      <label htmlFor={id} className="text-sm leading-5 font-semibold">
+      <label htmlFor={id} className="text-sm font-medium">
         {label}
       </label>
       <FieldContext.Provider
@@ -55,7 +55,7 @@ export function Field({
         {children}
       </FieldContext.Provider>
       {hasError && (
-        <p id={errorId} className="text-sm leading-5 text-destructive">
+        <p id={errorId} className="text-small text-destructive">
           {error}
         </p>
       )}

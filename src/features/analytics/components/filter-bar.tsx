@@ -2,7 +2,7 @@ import { getTranslations } from "next-intl/server";
 import Link from "next/link";
 
 import { buttonVariants } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { DateInput } from "@/components/ui/date-input";
 import { Select } from "@/components/ui/select";
 
 import type { AnalyticsFilterOptions, FilterOption } from "../queries/filters";
@@ -57,8 +57,7 @@ export async function AnalyticsFilterBar({
         </label>
         <label className={field}>
           {t("from")}
-          <Input
-            type="date"
+          <DateInput
             name="from"
             defaultValue={period.from ?? ""}
             className="sm:w-40"
@@ -67,13 +66,7 @@ export async function AnalyticsFilterBar({
         </label>
         <label className={field}>
           {t("to")}
-          <Input
-            type="date"
-            name="to"
-            defaultValue={period.to ?? ""}
-            className="sm:w-40"
-            data-filter-to
-          />
+          <DateInput name="to" defaultValue={period.to ?? ""} className="sm:w-40" data-filter-to />
         </label>
         <label className={field}>
           {t("branch")}

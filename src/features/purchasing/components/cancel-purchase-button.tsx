@@ -161,7 +161,7 @@ export function CancelPurchaseButton({ target }: { target: CancelTarget }) {
             onChange={(event) => setReason(event.target.value)}
             className={cn(FIELD_CLASSES, "min-h-20 py-2")}
           />
-          <p id={`${reasonId}-hint`} className="text-[13px] leading-[18px] text-muted-foreground">
+          <p id={`${reasonId}-hint`} className="text-small text-muted-foreground">
             {tMoves("reasonHint", {
               min: MOVE_REASON_MIN,
               max: MOVE_REASON_MAX,

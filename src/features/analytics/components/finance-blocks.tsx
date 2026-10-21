@@ -36,7 +36,7 @@ type Common = { period: PeriodInput; filters: AnalyticsFilters };
 
 const linkClass = "font-semibold whitespace-nowrap text-link underline-offset-2 hover:underline";
 const tileNumber =
-  "inline-flex min-h-11 min-w-11 items-center text-[28px] leading-[34px] font-bold tabular-nums underline-offset-4 hover:underline";
+  "inline-flex min-h-11 min-w-11 items-center text-title tabular-nums underline-offset-4 hover:underline";
 
 /** The period of the page for the lists of now, kept only for the way back. */
 const NOW: PeriodInput = { choice: "this_month", from: null, to: null };
@@ -44,12 +44,13 @@ const NOW: PeriodInput = { choice: "this_month", from: null, to: null };
 /** Cash: the three kinds of the period and by month, and money with managers by age. */
 export async function FinanceCashView({ block, period, filters }: Common & { block: FinanceCash }) {
   const t = await getTranslations("analytics");
+  const tShort = await getTranslations("analytics.short");
   const tMonths = await getTranslations("months");
   const format = await getFormatters();
   const rows = (key: DrillKey) => `/analytics/money?${analyticsSearch(period, filters, { key })}`;
   const download = (which: ExportBlock) =>
     `/analytics/download?${analyticsSearch(period, filters, { block: which })}`;
-  const change = (each: Change) => changeText(each, t, format);
+  const change = (each: Change) => changeText(each, tShort, format);
   const monthLabel = (month: string) =>
     t("monthLabel", {
       month: tMonths(String(Number(month.slice(5))) as "1"),
@@ -64,7 +65,7 @@ export async function FinanceCashView({ block, period, filters }: Common & { blo
       data-analytics-block="finance-cash"
     >
       <div className="flex flex-col gap-1">
-        <h2 id="finance-cash-title" className="text-[20px] leading-7 font-bold">
+        <h2 id="finance-cash-title" className="text-heading font-semibold">
           {t("finance.cash.title")}
         </h2>
         <p className="text-sm leading-5 text-muted-foreground">{t("finance.cash.note")}</p>
@@ -106,7 +107,7 @@ export async function FinanceCashView({ block, period, filters }: Common & { blo
                   >
                     {format.money(row[kind].amount)}
                   </Link>
-                  <span className="block text-[13px] leading-[18px] text-muted-foreground">
+                  <span className="block text-small text-muted-foreground">
                     {change(row[kind].change)}
                   </span>
                 </>
@@ -135,7 +136,7 @@ export async function FinanceCashView({ block, period, filters }: Common & { blo
                 >
                   {format.money(row.held)}
                 </Link>
-                <span className="block text-[13px] leading-[18px] text-muted-foreground">
+                <span className="block text-small text-muted-foreground">
                   {t("finance.orders", { count: row.heldCount })}
                 </span>
               </>,
@@ -146,7 +147,7 @@ export async function FinanceCashView({ block, period, filters }: Common & { blo
                 >
                   {format.money(row.owed)}
                 </Link>
-                <span className="block text-[13px] leading-[18px] text-muted-foreground">
+                <span className="block text-small text-muted-foreground">
                   {t("finance.orders", { count: row.owedCount })}
                 </span>
               </>,
@@ -183,7 +184,7 @@ export async function CashNeededView({
       data-analytics-block="cash-needed"
     >
       <div className="flex flex-col gap-1">
-        <h2 id="cash-needed-title" className="text-[20px] leading-7 font-bold">
+        <h2 id="cash-needed-title" className="text-heading font-semibold">
           {t("finance.needed.title")}
         </h2>
         <p className="text-sm leading-5 text-muted-foreground">{t("finance.needed.note")}</p>
@@ -219,7 +220,7 @@ export async function CashNeededView({
                 >
                   {format.money(row.amount)}
                 </Link>
-                <span className="block text-[13px] leading-[18px] text-muted-foreground">
+                <span className="block text-small text-muted-foreground">
                   {t("finance.orders", { count: row.count })}
                 </span>
               </>,
@@ -239,6 +240,7 @@ export async function PaymentsView({
   filters,
 }: Common & { block: FinanceSpending }) {
   const t = await getTranslations("analytics");
+  const tShort = await getTranslations("analytics.short");
   const tRoot = await getTranslations();
   const format = await getFormatters();
   const records = (key: DrillKey, scope: AnalyticsFilters = filters) =>
@@ -250,8 +252,8 @@ export async function PaymentsView({
       <Link href={href} className={linkClass}>
         {format.money(value)}
       </Link>
-      <span className="block text-[13px] leading-[18px] text-muted-foreground">
-        {changeText(each, t, format)}
+      <span className="block text-small text-muted-foreground">
+        {changeText(each, tShort, format)}
       </span>
     </>
   );
@@ -264,7 +266,7 @@ export async function PaymentsView({
       data-analytics-block="payments"
     >
       <div className="flex flex-col gap-1">
-        <h2 id="payments-title" className="text-[20px] leading-7 font-bold">
+        <h2 id="payments-title" className="text-heading font-semibold">
           {t("finance.payments.title")}
         </h2>
         <p className="text-sm leading-5 text-muted-foreground">{t("finance.payments.note")}</p>
@@ -367,6 +369,7 @@ export async function FinancePlanView({
   filters,
 }: Common & { block: PlanVsActual; noReceipt: FinanceSpending["noReceipt"] }) {
   const t = await getTranslations("analytics");
+  const tShort = await getTranslations("analytics.short");
   const format = await getFormatters();
   const orders = (key: DrillKey, scope: AnalyticsFilters = filters, otherOwners = false) =>
     `/analytics/orders?${analyticsSearch(period, scope, { key, otherOwners })}`;
@@ -384,11 +387,11 @@ export async function FinancePlanView({
         <Link href={orders({ kind: which }, scope, otherOwners)} className={linkClass}>
           {format.money(tally[which].amount)}
         </Link>
-        <span className="block text-[13px] leading-[18px] text-muted-foreground">
+        <span className="block text-small text-muted-foreground">
           {t("finance.orders", { count: tally.colours[colour].count })}
         </span>
-        <span className="block text-[13px] leading-[18px] text-muted-foreground">
-          {changeText(tally[which].change, t, format)}
+        <span className="block text-small text-muted-foreground">
+          {changeText(tally[which].change, tShort, format)}
         </span>
       </>
     );
@@ -406,7 +409,7 @@ export async function FinancePlanView({
       data-analytics-block="finance-plan"
     >
       <div className="flex flex-col gap-1">
-        <h2 id="finance-plan-title" className="text-[20px] leading-7 font-bold">
+        <h2 id="finance-plan-title" className="text-heading font-semibold">
           {t("finance.plan.title")}
         </h2>
         <p className="text-sm leading-5 text-muted-foreground">{t("finance.plan.note")}</p>
@@ -428,7 +431,7 @@ export async function FinancePlanView({
               })}
             </p>
             <p className="text-sm leading-5 text-muted-foreground">
-              {changeText(block.total[which].change, t, format)}
+              {changeText(block.total[which].change, tShort, format)}
             </p>
           </div>
         ))}
@@ -449,10 +452,10 @@ export async function FinancePlanView({
             {t("finance.records", { count: noReceipt.count })}
           </p>
           <p className="text-sm leading-5 text-muted-foreground" data-receipt-count-change>
-            {countChangeText(noReceipt.countChange, t, format)}
+            {countChangeText(noReceipt.countChange, tShort, format)}
           </p>
           <p className="text-sm leading-5 text-muted-foreground">
-            {changeText(noReceipt.change, t, format)}
+            {changeText(noReceipt.change, tShort, format)}
           </p>
         </div>
       </div>
@@ -520,6 +523,7 @@ export async function SettlementSpeedView({
   filters,
 }: Common & { block: SettlementSpeed }) {
   const t = await getTranslations("analytics");
+  const tShort = await getTranslations("analytics.short");
   const format = await getFormatters();
   const list = (scope: AnalyticsFilters = filters) =>
     `/analytics/settlements?${analyticsSearch(period, scope, { key: { kind: "settled" } })}`;
@@ -537,7 +541,7 @@ export async function SettlementSpeedView({
       data-analytics-block="settlement-speed"
     >
       <div className="flex flex-col gap-1">
-        <h2 id="settlement-speed-title" className="text-[20px] leading-7 font-bold">
+        <h2 id="settlement-speed-title" className="text-heading font-semibold">
           {t("finance.speed.title")}
         </h2>
         <p className="text-sm leading-5 text-muted-foreground">{t("finance.speed.note")}</p>
@@ -554,7 +558,7 @@ export async function SettlementSpeedView({
             {t("finance.speed.settlements", { count: total.count })}
           </p>
           <p className="text-sm leading-5 text-muted-foreground">
-            {daysChangeText(total.change, t, format)}
+            {daysChangeText(total.change, tShort, format)}
           </p>
         </div>
       </div>
@@ -569,11 +573,11 @@ export async function SettlementSpeedView({
                 <Link href={list({ ...filters, branch: row.id })} className={linkClass}>
                   {days(row.days)}
                 </Link>
-                <span className="block text-[13px] leading-[18px] text-muted-foreground">
+                <span className="block text-small text-muted-foreground">
                   {t("finance.speed.settlements", { count: row.count })}
                 </span>
-                <span className="block text-[13px] leading-[18px] text-muted-foreground">
-                  {daysChangeText(row.change, t, format)}
+                <span className="block text-small text-muted-foreground">
+                  {daysChangeText(row.change, tShort, format)}
                 </span>
               </>,
             ],

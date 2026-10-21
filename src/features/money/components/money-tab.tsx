@@ -24,9 +24,9 @@ export async function MoneyTab({ money }: { money: OrderMoney }) {
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-3">
         <dl data-cash-count={count.toString()} className="flex flex-col gap-0.5">
-          <dt className="text-[13px] leading-[18px] text-muted-foreground">{t("count")}</dt>
-          <dd className="text-[22px] leading-7 font-bold tabular-nums">{format.money(count)}</dd>
-          <dd className="text-[15px] leading-[22px]">
+          <dt className="text-small text-muted-foreground">{t("count")}</dt>
+          <dd className="text-figure font-semibold tabular-nums">{format.money(count)}</dd>
+          <dd className="text-sm">
             {count > 0n
               ? t("holds", { amount: format.money(count) })
               : count < 0n
@@ -37,11 +37,11 @@ export async function MoneyTab({ money }: { money: OrderMoney }) {
       </div>
 
       <section className="flex flex-col gap-3" aria-labelledby="money-rows">
-        <h3 id="money-rows" className="text-[17px] leading-6 font-bold">
+        <h3 id="money-rows" className="text-subheading font-semibold">
           {t("rows")}
         </h3>
         {money.rows.length === 0 ? (
-          <p className="text-[15px] leading-[22px] text-muted-foreground">{t("empty")}</p>
+          <p className="text-sm text-muted-foreground">{t("empty")}</p>
         ) : (
           <ul className="flex flex-col divide-y divide-border">
             {money.rows.map((row) => (
@@ -52,12 +52,10 @@ export async function MoneyTab({ money }: { money: OrderMoney }) {
                 className="grid grid-cols-1 gap-x-6 gap-y-2 py-3 sm:grid-cols-[minmax(7rem,auto)_1fr_auto]"
               >
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-[13px] leading-[18px] text-muted-foreground">
-                    {t("date")}
-                  </span>
-                  <span className="text-[15px] leading-[22px]">{format.date(row.occurredOn)}</span>
+                  <span className="text-small text-muted-foreground">{t("date")}</span>
+                  <span className="text-sm">{format.date(row.occurredOn)}</span>
                   {row.isCancelled ? (
-                    <span className="inline-flex items-center gap-1 text-[13px] font-semibold text-muted-foreground">
+                    <span className="inline-flex items-center gap-1 text-small font-semibold text-muted-foreground">
                       <Icon name="cancel" size={16} />
                       {t("cancelled")}
                     </span>
@@ -65,7 +63,7 @@ export async function MoneyTab({ money }: { money: OrderMoney }) {
                 </div>
                 <div
                   className={cn(
-                    "flex flex-col gap-1 text-[15px] leading-[22px]",
+                    "flex flex-col gap-1 text-sm",
                     row.isCancelled && "text-muted-foreground line-through",
                   )}
                 >
@@ -73,13 +71,9 @@ export async function MoneyTab({ money }: { money: OrderMoney }) {
                     {tKinds(row.kind)}
                   </span>
                   {row.documentNo ? (
-                    <span className="text-[13px] leading-[18px]">
-                      {t("documentNo", { text: row.documentNo })}
-                    </span>
+                    <span className="text-small">{t("documentNo", { text: row.documentNo })}</span>
                   ) : null}
-                  {row.comment ? (
-                    <span className="text-[13px] leading-[18px]">{row.comment}</span>
-                  ) : null}
+                  {row.comment ? <span className="text-small">{row.comment}</span> : null}
                 </div>
                 <div className="flex flex-col gap-1 sm:items-end">
                   <span
@@ -90,7 +84,7 @@ export async function MoneyTab({ money }: { money: OrderMoney }) {
                   >
                     {format.money(row.amount)}
                   </span>
-                  <span className="text-[13px] leading-[18px] text-muted-foreground">
+                  <span className="text-small text-muted-foreground">
                     {t("byLine", {
                       name: row.recordedBy,
                       date: format.date(row.recordedAt),
@@ -102,13 +96,13 @@ export async function MoneyTab({ money }: { money: OrderMoney }) {
                       href={`/files/${row.file.id}/${row.file.isImage ? "large" : "original"}`}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex min-h-11 min-w-11 items-center text-[13px] leading-[18px] font-semibold underline underline-offset-2 sm:min-h-0"
+                      className="inline-flex min-h-11 min-w-11 items-center text-small font-semibold underline underline-offset-2 sm:min-h-0"
                     >
                       {t("file")}
                     </a>
                   ) : null}
                   {row.isCancelled && row.cancelledAt ? (
-                    <span className="text-[13px] leading-[18px]">
+                    <span className="text-small">
                       {t("cancelLine", {
                         name: row.cancelledBy ?? "",
                         date: format.date(row.cancelledAt),

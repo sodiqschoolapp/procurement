@@ -11,7 +11,7 @@ import { cn } from "@/components/utils";
 export function FilterFold({ label, children }: { label: string; children: ReactNode }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="rounded-xl bg-card p-4" data-filter-bar>
+    <div className="rounded-xl border border-border bg-card p-4" data-filter-bar>
       <button
         type="button"
         aria-expanded={open}

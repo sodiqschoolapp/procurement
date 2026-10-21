@@ -9,6 +9,7 @@ import { toast } from "@/components/toast";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/money-input";
 import { Segmented } from "@/components/ui/segmented";
 import { Select } from "@/components/ui/select";
 import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard";
@@ -115,7 +116,7 @@ function changesOf(form: FormValues, loaded: FormValues): Record<string, unknown
 function Group({ title, children }: { title: string; children: ReactNode }) {
   return (
     <fieldset className="flex flex-col gap-5 border-t pt-5 first:border-t-0 first:pt-0">
-      <legend className="float-left mb-1 w-full text-[17px] leading-6 font-bold">{title}</legend>
+      <legend className="float-left mb-1 w-full text-subheading font-semibold">{title}</legend>
       {children}
     </fieldset>
   );
@@ -179,7 +180,7 @@ export function SettingsForm({ values }: { values: SettingsFormValues }) {
     <form
       onSubmit={onSubmit}
       noValidate
-      className="flex flex-col gap-6 rounded-xl bg-card p-6 text-card-foreground"
+      className="flex flex-col gap-6 rounded-xl border border-border bg-card p-4 text-card-foreground sm:p-5"
     >
       <UnsavedChangesGuard dirty={formState.isDirty && !action.pending} />
 
@@ -312,17 +313,25 @@ export function SettingsForm({ values }: { values: SettingsFormValues }) {
             label={t("settings.overspendGuardMinAmount")}
             error={error("overspend_guard_min_amount")}
           >
-            <Input
-              {...register("guard_amount")}
-              inputMode="numeric"
-              maxLength={24}
-              autoComplete="off"
-              className="tabular-nums sm:max-w-60"
-              aria-describedby={
-                error("overspend_guard_min_amount")
-                  ? "guard_amount-error guard_percent-hint"
-                  : "guard_percent-hint"
-              }
+            <Controller
+              control={control}
+              name="guard_amount"
+              render={({ field }) => (
+                <MoneyInput
+                  name={field.name}
+                  ref={field.ref}
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  onBlur={field.onBlur}
+                  maxLength={24}
+                  className="sm:max-w-60"
+                  aria-describedby={
+                    error("overspend_guard_min_amount")
+                      ? "guard_amount-error guard_percent-hint"
+                      : "guard_percent-hint"
+                  }
+                />
+              )}
             />
           </Field>
         )}

@@ -20,25 +20,26 @@ export async function MoneyWithManagers({ blocks }: { blocks: MoneyWithManagersB
   const format = await getFormatters();
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
+    <div className="flex w-full min-w-0 flex-col gap-6">
       <div className="flex flex-col gap-1">
-        <h1 className="text-[28px] leading-[34px] font-bold tracking-[-0.01em]">{t("title")}</h1>
-        <p className="text-[15px] leading-[22px] text-muted-foreground">{t("line")}</p>
+        <h1 className="text-title">{t("title")}</h1>
       </div>
       {blocks.length === 0 ? (
-        <EmptyState title={t("empty.title")} line={t("empty.line")} />
+        <EmptyState icon="payments" title={t("empty.title")} />
       ) : (
         <ul className="flex flex-col gap-3">
           {blocks.map((block) => (
-            <li key={block.ownerId} data-owner={block.ownerId} className="rounded-xl bg-card">
+            <li
+              key={block.ownerId}
+              data-owner={block.ownerId}
+              className="rounded-xl border border-border bg-card"
+            >
               <details className="group">
                 <summary className="grid min-h-11 cursor-pointer list-none grid-cols-[1fr_auto] items-center gap-x-4 gap-y-2 p-4 sm:grid-cols-[minmax(10rem,1fr)_repeat(3,minmax(8rem,auto))_auto] sm:px-6 [&::-webkit-details-marker]:hidden">
                   <span className="flex flex-col">
-                    <span className="text-[17px] leading-6 font-bold">{block.ownerName}</span>
+                    <span className="text-subheading font-semibold">{block.ownerName}</span>
                     {block.ownerIsActive ? null : (
-                      <span className="text-[13px] leading-[18px] text-muted-foreground">
-                        {t("inactive")}
-                      </span>
+                      <span className="text-small text-muted-foreground">{t("inactive")}</span>
                     )}
                   </span>
                   <Icon
@@ -63,7 +64,7 @@ export async function MoneyWithManagers({ blocks }: { blocks: MoneyWithManagersB
                       >
                         {order.number}
                       </Link>
-                      <span className="text-[15px] leading-[22px]">
+                      <span className="text-sm">
                         {t("orderLine", {
                           branch: order.branchCode,
                           product: order.subtypeName
@@ -81,7 +82,7 @@ export async function MoneyWithManagers({ blocks }: { blocks: MoneyWithManagersB
                             ? t("orderHolds", { amount: format.money(order.cashCount) })
                             : t("orderOwed", { amount: format.money(-order.cashCount) })}
                         </span>
-                        <span className="text-[13px] leading-[18px] text-muted-foreground">
+                        <span className="text-small text-muted-foreground">
                           {t("orderSince", { date: format.date(order.since) })}
                         </span>
                       </span>
@@ -103,8 +104,8 @@ function Figure({ label, value, data }: { label: string; value: string; data: st
       data-figure={data}
       className="col-span-2 flex justify-between gap-3 sm:col-span-1 sm:flex-col sm:justify-start"
     >
-      <span className="text-[13px] leading-[18px] text-muted-foreground">{label}</span>
-      <span className="text-[15px] leading-[22px] font-semibold tabular-nums">{value}</span>
+      <span className="text-small text-muted-foreground">{label}</span>
+      <span className="text-sm font-semibold tabular-nums">{value}</span>
     </span>
   );
 }

@@ -6,6 +6,7 @@ import { AdminNav } from "@/components/admin-nav";
 import { CatalogValue } from "@/components/catalog/catalog-value";
 import { EmptyState } from "@/components/empty-state";
 import { Icon } from "@/components/icon";
+import { Input } from "@/components/ui/input";
 import { buttonVariants } from "@/components/ui/button";
 import { CATALOGS } from "@/domain/catalogs";
 import { listCatalogEntries } from "@/features/catalog/queries/catalog-entries";
@@ -55,7 +56,7 @@ export default async function CatalogListPage({
   };
 
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-6">
+    <div className="flex w-full min-w-0 flex-col gap-6">
       <AdminNav current="catalog" />
       <Link
         href="/catalog"
@@ -65,10 +66,10 @@ export default async function CatalogListPage({
         {t("back")}
       </Link>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="flex flex-wrap items-baseline gap-x-3 text-[28px] leading-[34px] font-bold tracking-[-0.01em]">
+        <h1 className="flex flex-wrap items-baseline gap-x-3 text-title">
           {t(`kinds.${kind}.title`)}
           {!empty && (
-            <span className="text-[15px] leading-[22px] font-normal tracking-normal text-muted-foreground">
+            <span className="text-sm font-normal tracking-normal text-muted-foreground">
               {t("summary", { active: list.active, inactive: list.inactive })}
             </span>
           )}
@@ -99,14 +100,14 @@ export default async function CatalogListPage({
             <label htmlFor="catalog-search" className="sr-only">
               {t("search")}
             </label>
-            <input
+            <Input
               id="catalog-search"
               name="q"
               type="search"
               defaultValue={q}
               placeholder={t("searchHint")}
               maxLength={200}
-              className="h-11 w-full min-w-0 flex-1 rounded-lg border border-input bg-card px-3 text-base leading-6 text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:h-10 sm:max-w-80 sm:text-sm sm:leading-5"
+              className="min-w-0 flex-1 sm:max-w-80"
             />
             <button type="submit" className={buttonVariants({ variant: "secondary" })}>
               {t("find")}
@@ -121,9 +122,9 @@ export default async function CatalogListPage({
           {list.rows.length === 0 ? (
             <EmptyState title={t("noResultsTitle")} line={t("noResultsText")} />
           ) : (
-            <section className="overflow-x-auto rounded-xl bg-card text-card-foreground">
-              <table className="w-full min-w-[32rem] border-collapse text-left text-sm leading-5">
-                <thead className="bg-muted text-[13px] leading-[18px] font-semibold text-muted-foreground">
+            <section className="table-cards-panel overflow-x-auto rounded-xl border border-border bg-card text-card-foreground">
+              <table className="table-cards w-full min-w-[32rem] border-collapse text-left text-sm leading-5">
+                <thead className="border-b border-border bg-muted text-xs font-medium text-muted-foreground">
                   <tr>
                     {columns.map((field) => (
                       <th key={field.key} scope="col" className="px-4 py-3">

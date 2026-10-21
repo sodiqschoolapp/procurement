@@ -7,15 +7,14 @@ import { useEffect } from "react";
 
 import { Icon } from "@/components/icon";
 import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/components/utils";
 import { hasUnsavedChanges } from "@/components/unsaved-changes-guard";
 import { unreadCountLabel } from "@/domain/notifications";
 
 // The bell (10-notifications-analytics-reports.md, Notifications: "an in-app bell with an unread
-// count"; docs/design-system.md, Layout shell: "at the right the notifications button"). With
-// nothing unread a quiet icon button; with unread an icon-and-text button of the medium size, the
-// count a plain number in the text colour: no pill, no dot, no orange ("What we never do" 4 and
-// 12; 11-screens-and-ux.md rule 11; plan of 0.11, review of the plan, Must fix 1). It opens
-// /notifications.
+// count"; docs/design-system.md, Page shell). With nothing unread a quiet icon button; with unread
+// the icon and the count as a small number on the orange highlight ("needs you now"), navy text on
+// it, never a dot that only says "something". It opens /notifications.
 //
 // The count is read by the server. App Router keeps the layout across client navigation, so the
 // bell refreshes the page's server parts on window focus and every 60 seconds while the tab is
@@ -51,11 +50,17 @@ export function Bell({ count }: { count: number }) {
           : t("notifications.bellMany", { shown: label })
       }
       data-testid="bell"
-      className={buttonVariants({ variant: "ghost", size: label === null ? "icon" : "default" })}
+      className={cn(
+        buttonVariants({ variant: "ghost", size: label === null ? "icon" : "default" }),
+        label !== null && "gap-1.5 px-2.5",
+      )}
     >
       <Icon name="notifications" />
       {label !== null && (
-        <span aria-hidden="true" className="tabular-nums">
+        <span
+          aria-hidden="true"
+          className="min-w-5 rounded-full bg-brand px-1.5 text-center text-xs leading-5 font-semibold text-brand-foreground"
+        >
           {label}
         </span>
       )}

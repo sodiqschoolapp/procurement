@@ -61,9 +61,9 @@ export function RenewPassword({
   }
 
   return (
-    <section className="flex flex-col gap-4 rounded-xl bg-card p-6 text-card-foreground">
+    <section className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 text-card-foreground sm:p-5">
       <UnsavedChangesGuard dirty={password !== "" && !action.pending} />
-      <h2 className="text-[17px] leading-6 font-bold">{t("renewTitle")}</h2>
+      <h2 className="text-subheading font-semibold">{t("renewTitle")}</h2>
       <p className="text-sm leading-5 text-muted-foreground">{t("renewText")}</p>
       {shown && <ShownPassword username={user.username} password={shown} />}
       <form

@@ -14,7 +14,9 @@ import { ConfirmDialog } from "@/components/confirm-dialog";
 import { uploadFile } from "@/components/files/upload";
 import { toast } from "@/components/toast";
 import { Button } from "@/components/ui/button";
+import { DateInput } from "@/components/ui/date-input";
 import { FIELD_CLASSES, Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/money-input";
 import { Select } from "@/components/ui/select";
 import { cn } from "@/components/utils";
 import { FILE_MIMES } from "@/domain/files";
@@ -61,6 +63,7 @@ export function RecordMoneyButton({
   className?: string;
 }) {
   const t = useTranslations("money.record");
+  const tSettle = useTranslations("money.settle");
   const tKinds = useTranslations("money.kinds");
   const tMoves = useTranslations("orders.moves");
   const tAll = useTranslations();
@@ -258,6 +261,21 @@ export function RecordMoneyButton({
         onOpenChange={setAsking}
         pending={pending}
         confirmDisabled={!ready}
+        disabledReason={
+          loading
+            ? null
+            : !valid
+              ? tSettle("whyNot.amounts")
+              : given.length === 0
+                ? tSettle("whyNot.nothing")
+                : date === ""
+                  ? tSettle("whyNot.date")
+                  : comment.trim() === ""
+                    ? tSettle("whyNot.comment")
+                    : uploading
+                      ? tSettle("whyNot.uploading")
+                      : null
+        }
         text={{
           title: t("title", { count: count || orderIds.length }),
           result,
@@ -289,13 +307,12 @@ export function RecordMoneyButton({
               <label htmlFor={`${formId}-date`} className="text-sm leading-5 font-semibold">
                 {t("date")}
               </label>
-              <Input
+              <DateInput
                 id={`${formId}-date`}
-                type="date"
                 max={today || undefined}
                 value={date}
                 disabled={pending}
-                onChange={(event) => setDate(event.target.value)}
+                onValueChange={setDate}
               />
             </div>
             <div className="flex flex-col gap-1.5">
@@ -342,7 +359,7 @@ export function RecordMoneyButton({
               />
               {file ? (
                 <div className="flex items-center justify-between gap-3">
-                  <span className="truncate text-[15px] leading-[22px]">{file.name}</span>
+                  <span className="truncate text-sm">{file.name}</span>
                   <Button
                     type="button"
                     variant="ghost"
@@ -368,17 +385,13 @@ export function RecordMoneyButton({
               )}
             </div>
           ) : blocks.size > 1 ? (
-            <p className="text-[13px] leading-[18px] text-muted-foreground">
-              {t("fileOneManager")}
-            </p>
+            <p className="text-small text-muted-foreground">{t("fileOneManager")}</p>
           ) : null}
           <section aria-label={t("rowsTitle")} className="flex flex-col gap-4">
-            {loading ? (
-              <p className="text-[15px] leading-[22px] text-muted-foreground">{t("loading")}</p>
-            ) : null}
+            {loading ? <p className="text-sm text-muted-foreground">{t("loading")}</p> : null}
             {[...blocks].map(([ownerId, block]) => (
               <div key={ownerId} data-money-block={ownerId} className="flex flex-col gap-3">
-                <h3 className="text-[15px] leading-[22px] font-bold">{block.name}</h3>
+                <h3 className="text-sm font-semibold">{block.name}</h3>
                 {block.orders.map((order) => {
                   const invalid = amountOf(order) === null;
                   return (
@@ -388,8 +401,8 @@ export function RecordMoneyButton({
                       className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
                     >
                       <label htmlFor={`money-${order.id}`} className="flex flex-col">
-                        <span className="text-[15px] leading-[22px]">{order.number}</span>
-                        <span className="text-[13px] leading-[18px] text-muted-foreground">
+                        <span className="text-sm">{order.number}</span>
+                        <span className="text-small text-muted-foreground">
                           {t("rowFacts", {
                             planned: format.money(BigInt(order.plannedCash)),
                             given: format.money(BigInt(order.handed)),
@@ -398,27 +411,22 @@ export function RecordMoneyButton({
                         </span>
                       </label>
                       <div className="flex flex-col gap-1 sm:w-40">
-                        <Input
+                        <MoneyInput
                           id={`money-${order.id}`}
-                          inputMode="numeric"
-                          autoComplete="off"
                           value={textOf(order)}
                           disabled={pending}
                           aria-invalid={invalid || undefined}
                           aria-describedby={invalid ? `money-error-${order.id}` : undefined}
-                          className="text-right tabular-nums max-sm:h-12"
-                          onChange={(event) =>
+                          className="text-right max-sm:h-12"
+                          onValueChange={(value) =>
                             setTyped((current) => ({
                               ...current,
-                              [`${kind}:${order.id}`]: event.target.value,
+                              [`${kind}:${order.id}`]: value,
                             }))
                           }
                         />
                         {invalid ? (
-                          <p
-                            id={`money-error-${order.id}`}
-                            className="text-[13px] leading-[18px] text-destructive"
-                          >
+                          <p id={`money-error-${order.id}`} className="text-small text-destructive">
                             {t("amountInvalid")}
                           </p>
                         ) : null}

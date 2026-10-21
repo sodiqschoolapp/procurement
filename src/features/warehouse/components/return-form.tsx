@@ -16,6 +16,7 @@ import { toast } from "@/components/toast";
 import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard";
 import { useAction } from "@/components/use-action";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { DateInput } from "@/components/ui/date-input";
 import { Field, useFieldControl } from "@/components/ui/field";
 import { FIELD_CLASSES, Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -85,6 +86,7 @@ export function ReturnForm({
   today: string;
 }) {
   const t = useTranslations("warehouse.return");
+  const tWhy = useTranslations("common.whyNot");
   const tAll = useTranslations();
   const format = useFormatters();
   const action = useAction(returnStockAction, { create: true });
@@ -111,6 +113,9 @@ export function ReturnForm({
   const { register, handleSubmit, control, setValue, reset, formState } = useForm<Values>({
     defaultValues: empty(initialBranchId),
   });
+  // The date field shows dd.mm.yyyy and gives YYYY-MM-DD (DateInput); the form keeps the rule.
+  register("docDate", { required: true });
+  const docDate = useWatch({ control, name: "docDate" });
   const lines = useFieldArray({ control, name: "lines" });
   const values = useWatch({ control }) as Values;
   const fieldTexts = action.fieldTexts;
@@ -217,9 +222,9 @@ export function ReturnForm({
     return (
       <section
         data-return-saved
-        className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 sm:p-6"
+        className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 sm:p-5"
       >
-        <h2 className="flex items-center gap-2 text-[17px] leading-6 font-semibold">
+        <h2 className="flex items-center gap-2 text-subheading font-semibold">
           <Icon name="check_circle" className="text-success" />
           {t("savedTitle", { number: saved.number })}
         </h2>
@@ -293,7 +298,7 @@ export function ReturnForm({
           id="return-step-0"
           data-step-heading
           tabIndex={-1}
-          className="text-[17px] leading-6 font-semibold outline-none"
+          className="text-subheading font-semibold outline-none"
         >
           {t("whoAndWhen")}
         </h2>
@@ -317,7 +322,7 @@ export function ReturnForm({
               </Select>
             </Field>
           ) : (
-            <p className="flex flex-col gap-1.5 text-[15px] leading-[22px]">
+            <p className="flex flex-col gap-1.5 text-sm">
               <span className="text-sm leading-5 font-semibold">{t("branch")}</span>
               {branches[0]
                 ? tAll("branch.option", { code: branches[0].code, name: branches[0].name })
@@ -325,12 +330,15 @@ export function ReturnForm({
             </p>
           )}
           <Field id="return-date" label={t("date")} error={fieldTexts.docDate}>
-            <Input
-              type="date"
+            <DateInput
               max={today}
-              {...register("docDate", { required: true })}
-              fieldSize="default"
-              className="max-sm:h-12"
+              value={docDate}
+              onValueChange={(next) =>
+                setValue("docDate", next, {
+                  shouldDirty: true,
+                  shouldValidate: formState.isSubmitted,
+                })
+              }
             />
           </Field>
           <Field id="return-department" label={t("department")} error={fieldTexts.departmentId}>
@@ -359,7 +367,7 @@ export function ReturnForm({
           id="return-step-1"
           data-step-heading
           tabIndex={-1}
-          className="text-[17px] leading-6 font-semibold outline-none"
+          className="text-subheading font-semibold outline-none"
         >
           {t("items")}
         </h2>
@@ -371,15 +379,15 @@ export function ReturnForm({
             onPick={addLine}
           />
         ) : (
-          <p className="text-[15px] leading-[22px] text-muted-foreground">{t("departmentFirst")}</p>
+          <p className="text-sm text-muted-foreground">{t("departmentFirst")}</p>
         )}
         {fieldTexts.lines ? (
-          <p role="alert" className="text-[15px] leading-[22px] text-destructive">
+          <p role="alert" className="text-sm text-destructive">
             {fieldTexts.lines}
           </p>
         ) : null}
         {lines.fields.length === 0 ? (
-          <p className="text-[15px] leading-[22px] text-muted-foreground">{t("noLines")}</p>
+          <p className="text-sm text-muted-foreground">{t("noLines")}</p>
         ) : (
           <ul className="flex flex-col gap-3">
             {lines.fields.map((field, index) => {
@@ -398,7 +406,7 @@ export function ReturnForm({
                   className="flex flex-col gap-3 rounded-lg border border-border p-3 sm:flex-row sm:items-start"
                 >
                   <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                    <span className="text-[15px] leading-[22px] font-semibold">{name}</span>
+                    <span className="text-sm font-semibold">{name}</span>
                     <span data-received className="text-sm leading-5 text-muted-foreground">
                       {t("received", {
                         qty: format.quantity(receivedOf(index)),
@@ -457,7 +465,7 @@ export function ReturnForm({
           id="return-step-2"
           data-step-heading
           tabIndex={-1}
-          className="text-[17px] leading-6 font-semibold outline-none"
+          className="text-subheading font-semibold outline-none"
         >
           {t("commentStep")}
         </h2>
@@ -476,7 +484,7 @@ export function ReturnForm({
       </section>
 
       {action.errorText && Object.keys(fieldTexts).length === 0 ? (
-        <p role="alert" className="text-[15px] leading-[22px] text-destructive">
+        <p role="alert" className="text-sm text-destructive">
           {action.errorText}
         </p>
       ) : null}
@@ -493,7 +501,7 @@ export function ReturnForm({
         ) : (
           <span />
         )}
-        <span data-step-count className="text-[15px] leading-[22px] tabular-nums">
+        <span data-step-count className="text-sm tabular-nums">
           {t("step", { current: step + 1, total: DOCUMENT_STEPS })}
         </span>
         {step < DOCUMENT_STEPS - 1 ? (
@@ -505,7 +513,14 @@ export function ReturnForm({
         )}
       </nav>
 
-      <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+      <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-end">
+        {/* A greyed-out Save says why (redesign of 21.10.2026). */}
+        {hydrated && lines.fields.length === 0 && (
+          <p className="flex items-center gap-1.5 text-small text-muted-foreground sm:mr-auto">
+            <Icon name="info" size={16} className="shrink-0" />
+            {tWhy("noItems")}
+          </p>
+        )}
         <Link
           href="/warehouse/stock"
           className={cn(buttonVariants({ variant: "ghost" }), "max-sm:h-12")}
@@ -613,7 +628,7 @@ function ItemSearch({
                   type="button"
                   data-pick={subtype.id}
                   onClick={() => onPick(item, subtype)}
-                  className="flex min-h-11 w-full flex-wrap items-center justify-between gap-x-3 gap-y-0.5 rounded-lg px-3 py-2 text-left text-[15px] leading-[22px] hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring"
+                  className="flex min-h-11 w-full flex-wrap items-center justify-between gap-x-3 gap-y-0.5 rounded-lg px-3 py-2 text-left text-sm hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring"
                 >
                   <span className="min-w-0">
                     {subtype.inactive

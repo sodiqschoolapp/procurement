@@ -1,8 +1,7 @@
 import { getTranslations } from "next-intl/server";
-import Link from "next/link";
 
 import { seesStockCounts } from "@/components/shell/menu";
-import { cn } from "@/components/utils";
+import { TabLinks } from "@/components/tab-links";
 import type { Role } from "@/domain/permissions";
 
 // Stock on hand | Documents above both warehouse lists (11-screens-and-ux.md, Screens: both for
@@ -24,22 +23,14 @@ export async function WarehouseTabs({
     ...(seesStockCounts(role) ? [{ id: "counts", href: "/warehouse/counts" } as const] : []),
   ] as const;
   return (
-    <nav aria-label={t("label")} className="flex gap-1 border-b border-border">
-      {tabs.map((tab) => (
-        <Link
-          key={tab.id}
-          href={tab.href}
-          aria-current={tab.id === current ? "page" : undefined}
-          className={cn(
-            "-mb-px flex h-11 items-center border-b-2 px-4 text-[15px] leading-[22px] font-semibold",
-            tab.id === current
-              ? "border-primary text-foreground"
-              : "border-transparent text-muted-foreground hover:text-foreground",
-          )}
-        >
-          {t(tab.id)}
-        </Link>
-      ))}
-    </nav>
+    <TabLinks
+      label={t("label")}
+      tabs={tabs.map((tab) => ({
+        id: tab.id,
+        href: tab.href,
+        label: t(tab.id),
+        current: tab.id === current,
+      }))}
+    />
   );
 }

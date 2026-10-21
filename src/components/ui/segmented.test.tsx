@@ -3,9 +3,10 @@ import { describe, expect, it } from "vitest";
 
 import { Segmented } from "./segmented";
 
-// docs/design-system.md, "Fields and switches": two to four choices; the chosen item white with
-// navy text, the others muted; 32 high, 44 at phone width (11-screens-and-ux.md rule 13). A
-// radio group, so the choices are announced and the arrow keys move between them.
+// docs/design-system.md, Fields: two to four choices; the chosen item white with navy text, the
+// others muted; at least 32 high, 44 at phone width (11-screens-and-ux.md rule 13); long words
+// wrap instead of overlapping (D60, 21.10.2026). A radio group, so the choices are announced and
+// the arrow keys move between them.
 
 const THEMES = [
   { value: "device", label: "Like my device" },
@@ -28,9 +29,11 @@ describe("the segmented control (design system, Fields and switches)", () => {
     expect(html.match(/aria-checked="true"/g)).toHaveLength(1);
   });
 
-  it("items are 44 high at phone width and 32 from 640 px on", () => {
-    expect(render(THEMES)).toContain("h-11");
-    expect(render(THEMES)).toContain("sm:h-8");
+  it("items are at least 44 high at phone width and 32 from 640 px on, and wrap when long", () => {
+    expect(render(THEMES)).toContain("min-h-11");
+    expect(render(THEMES)).toContain("sm:min-h-8");
+    expect(render(THEMES)).toContain("flex-wrap");
+    expect(render(THEMES)).not.toContain("whitespace-nowrap");
   });
 
   it("the chosen item is white with navy text, the others muted", () => {

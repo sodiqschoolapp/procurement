@@ -6,6 +6,7 @@ import pg from "pg";
 import en from "../../src/i18n/messages/en.json" with { type: "json" };
 import { connectionOptions } from "../../src/server/db/connection-options.mjs";
 import { E2E_DRAFT_USERS, E2E_ROLES, e2eDatabaseUrl, serverDatabaseUrl } from "./global-setup";
+import { shownAmount } from "./shown-amount";
 
 // Build-plan 2.5b, Done when: the drafts grid on /orders. 05-order-request-form.md (Order fields
 // 2, 7, 10, 11, 13, 16; Drafts 1 to 3; the totals under the list; Ticking and filters: Price
@@ -218,7 +219,7 @@ test("Done when: add through the picker, merge, ticked totals, delete (05 Drafts
 
   // 05 field 11 and 16; Price hint: 10 × 6 750 = 67 500 so'm, 35% above the reference 5 000.
   const price = penRow.getByLabel(t.columns.price);
-  await expect(price).toHaveValue("5000");
+  await expect(price).toHaveValue(shownAmount("5000"));
   await price.fill("6750");
   await price.press("Tab");
   await expect(penRow.locator('[data-cell="total"]')).toHaveText(som("67500"));
@@ -428,17 +429,17 @@ test("a save made offline keeps what was typed and is sent when the connection i
   await page.goto("/orders");
   const row = rows(page).nth(1);
   const price = row.getByLabel(t.columns.price);
-  await expect(price).toHaveValue("9000");
+  await expect(price).toHaveValue(shownAmount("9000"));
 
   await context.setOffline(true);
   await price.fill("9500");
   await price.press("Tab");
   await expect(row).toContainText(t.save.retrying);
-  await expect(price).toHaveValue("9500");
+  await expect(price).toHaveValue(shownAmount("9500"));
 
   await context.setOffline(false);
   await expect(row).toContainText(t.save.saved);
-  await expect(price).toHaveValue("9500");
+  await expect(price).toHaveValue(shownAmount("9500"));
   const after = await draftsOf(manager);
   expect(after).toHaveLength(3);
   expect(after[1]).toMatchObject({ product: marker, price: "9500" });

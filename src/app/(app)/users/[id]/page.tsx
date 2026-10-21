@@ -52,12 +52,12 @@ export default async function UserPage({ params }: { params: Promise<{ id: strin
       : null;
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-6">
+    <div className="flex w-full max-w-4xl min-w-0 flex-col gap-6">
       <AdminNav current="users" />
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="flex flex-wrap items-baseline gap-x-3 text-[28px] leading-[34px] font-bold tracking-[-0.01em]">
+        <h1 className="flex flex-wrap items-baseline gap-x-3 text-title">
           {shown.fullName}
-          <span className="text-[15px] leading-[22px] font-normal tracking-normal text-muted-foreground">
+          <span className="text-sm font-normal tracking-normal text-muted-foreground">
             {t("users.fact", {
               role: t(`roles.${shown.role}`),
               state: shown.isActive ? t("users.active") : t("users.inactive"),
@@ -75,14 +75,14 @@ export default async function UserPage({ params }: { params: Promise<{ id: strin
       <UserForm user={shown} choices={choices} />
       {rights && <ManagerRights user={shown} rights={rights} />}
       {own ? (
-        <p className="rounded-xl bg-card p-6 text-sm leading-5 text-muted-foreground">
+        <p className="rounded-xl border border-border bg-card p-4 text-sm leading-5 text-muted-foreground sm:p-5">
           {t("users.renewOwn")}
         </p>
       ) : (
         <RenewPassword user={shown} />
       )}
-      <section className="flex flex-col gap-4 rounded-xl bg-card p-6 text-card-foreground">
-        <h2 className="text-[17px] leading-6 font-bold">{t("users.history")}</h2>
+      <section className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 text-card-foreground sm:p-5">
+        <h2 className="text-subheading font-semibold">{t("users.history")}</h2>
         <ChangeHistory entries={history.rows} fields={FIELDS} />
       </section>
     </div>

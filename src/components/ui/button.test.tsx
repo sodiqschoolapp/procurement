@@ -3,9 +3,10 @@ import { describe, expect, it } from "vitest";
 
 import { BUTTON_KINDS, BUTTON_SIZES, Button } from "./button";
 
-// docs/design-system.md, Buttons ("Three sizes, four kinds, one shape. Every button is a fill
-// with no border"; "What we never do" 6 and 7) and 11-screens-and-ux.md rule 4 ("Every button
-// shows a loading state at once") and rule 13 (44 px touch targets on phones).
+// docs/design-system.md, Buttons ("three sizes, four kinds, one shape"; the app's own look of
+// 21.10.2026, D60: the secondary button is white with a hairline edge) and 11-screens-and-ux.md
+// rule 4 ("Every button shows a loading state at once") and rule 13 (44 px touch targets on
+// phones).
 
 function render(element: React.ReactElement): string {
   return renderToStaticMarkup(element);
@@ -24,9 +25,9 @@ describe("the shared button (design system, Buttons)", () => {
     ]);
   });
 
-  it("sizes: medium 40 and 44 at phone width, large 48, icon 40 and 44", () => {
+  it("sizes: default 40 and 44 at phone width, large 44 and 48 at phone width, icon 40 and 44", () => {
     expect(BUTTON_SIZES.default.split(" ")).toEqual(expect.arrayContaining(["h-11", "sm:h-10"]));
-    expect(BUTTON_SIZES.lg.split(" ")).toContain("h-12");
+    expect(BUTTON_SIZES.lg.split(" ")).toEqual(expect.arrayContaining(["h-12", "sm:h-11"]));
     expect(BUTTON_SIZES.icon.split(" ")).toEqual(expect.arrayContaining(["size-11", "sm:size-10"]));
   });
 
@@ -39,10 +40,11 @@ describe("the shared button (design system, Buttons)", () => {
     expect(BUTTON_SIZES["icon-sm"].split(" ")).not.toContain("size-8");
   });
 
-  it("no kind draws a border (What we never do 6)", () => {
+  it("only the secondary kind draws a hairline edge (design system, Buttons)", () => {
     for (const variant of Object.keys(BUTTON_KINDS) as (keyof typeof BUTTON_KINDS)[]) {
       const html = render(<Button variant={variant}>{variant}</Button>);
-      expect(html, variant).not.toMatch(/\bborder\b|\bborder-/);
+      if (variant === "secondary") expect(html).toMatch(/\bborder border-border-strong\b/);
+      else expect(html, variant).not.toMatch(/\bborder\b|\bborder-/);
     }
   });
 

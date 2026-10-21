@@ -24,7 +24,7 @@ export function SaveStateText({ state, onTryAgain }: { state: SaveState; onTryAg
     <span className="flex flex-col items-start gap-1">
       <span
         className={cn(
-          "block py-2.5 text-[13px] leading-5",
+          "block py-2.5 text-small",
           state.kind === "saved" && "text-success",
           (state.kind === "error" || state.kind === "notSaved") && "text-destructive",
           (state.kind === "saving" || state.kind === "retrying") && "text-muted-foreground",

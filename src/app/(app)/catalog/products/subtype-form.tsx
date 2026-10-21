@@ -3,7 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { useForm, useWatch } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 
 import { newClientKey } from "@/components/client-key";
 import { uploadFile } from "@/components/files/upload";
@@ -12,6 +12,7 @@ import { toast } from "@/components/toast";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/money-input";
 import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard";
 import { useAction } from "@/components/use-action";
 import { IMAGE_MIMES } from "@/domain/files";
@@ -138,7 +139,7 @@ export function SubtypeForm({
     <form
       onSubmit={onSubmit}
       noValidate
-      className="flex flex-col gap-5 rounded-xl bg-card p-6 text-card-foreground"
+      className="flex flex-col gap-5 rounded-xl border border-border bg-card p-4 text-card-foreground sm:p-5"
     >
       <UnsavedChangesGuard dirty={formState.isDirty && !action.pending} />
       <Field id="subtype-name" label={t("fields.name")} error={action.fieldTexts.name}>
@@ -149,7 +150,7 @@ export function SubtypeForm({
         {entry || priceLocked ? (
           <>
             <span className="text-sm leading-5 font-semibold">{t("fields.referencePrice")}</span>
-            <span className="text-[15px] leading-[22px] tabular-nums">{price ?? t("noPrice")}</span>
+            <span className="text-sm tabular-nums">{price ?? t("noPrice")}</span>
             {action.fieldTexts.referencePrice && (
               <p className="text-sm leading-5 text-destructive">
                 {action.fieldTexts.referencePrice}
@@ -164,13 +165,21 @@ export function SubtypeForm({
               label={t("fields.referencePrice")}
               error={action.fieldTexts.referencePrice}
             >
-              <Input
-                {...register("referencePrice")}
-                inputMode="numeric"
-                maxLength={24}
-                autoComplete="off"
-                className="tabular-nums sm:max-w-60"
-                aria-describedby="subtype-referencePrice-hint"
+              <Controller
+                control={control}
+                name="referencePrice"
+                render={({ field }) => (
+                  <MoneyInput
+                    name={field.name}
+                    ref={field.ref}
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    onBlur={field.onBlur}
+                    maxLength={24}
+                    className="sm:max-w-60"
+                    aria-describedby="subtype-referencePrice-hint"
+                  />
+                )}
               />
             </Field>
             {hint("subtype-referencePrice-hint", t("hints.subtypePrice"))}

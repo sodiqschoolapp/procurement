@@ -23,10 +23,10 @@ function returnPathOf(next: string | string[] | undefined): string | undefined {
   return path === "/" ? undefined : path;
 }
 
-// The sign-in page (11-screens-and-ux.md: Login `/login`, All), a brand moment of
-// docs/design-system.md: on the left the horizontal colour logo (the on-dark one in the dark
-// theme), the language select and the theme button, a Bitter title, two fields 48 high and a
-// large primary button the full width of the form; on the right, from 640 px on, the navy panel.
+// The sign-in page (11-screens-and-ux.md: Login `/login`, All; docs/design-system.md, This app,
+// Sign-in): on the left the horizontal colour logo (the on-dark one in the dark theme), the
+// language select and the theme button, the title, two fields and a large primary button the full
+// width of the form; on the right, from 640 px on, the quiet brand panel.
 // No "Forgot your password?" link (A8: the Head renews passwords). A signed-in person who opens
 // it goes to the home page. The version caption at the bottom of the form column names the
 // commit; CI's container step reads it here (plan of 0.10b, decision 13).
@@ -45,7 +45,7 @@ export default async function LoginPage({
 
   return (
     <main className="flex min-h-dvh bg-card text-card-foreground">
-      <div className="flex min-w-0 flex-1 flex-col px-4 py-6 sm:px-12 sm:py-8">
+      <div className="flex min-w-0 flex-1 flex-col px-4 py-5 sm:px-12 sm:py-8">
         <header className="flex flex-wrap items-center justify-between gap-3">
           <Image
             src="/brand/sodiq-logo-horizontal.svg"
@@ -54,7 +54,7 @@ export default async function LoginPage({
             height={31}
             unoptimized
             priority
-            className="h-[31px] w-auto dark:hidden"
+            className="h-7 w-auto dark:hidden"
           />
           <Image
             src="/brand/sodiq-logo-horizontal-on-dark.svg"
@@ -63,7 +63,7 @@ export default async function LoginPage({
             height={31}
             unoptimized
             priority
-            className="hidden h-[31px] w-auto dark:block"
+            className="hidden h-7 w-auto dark:block"
           />
           <div className="flex items-center gap-2">
             <LanguageSelect current={locale} />
@@ -71,10 +71,8 @@ export default async function LoginPage({
           </div>
         </header>
         <div className="flex flex-1 items-center justify-center py-10">
-          <div className="flex w-full max-w-sm flex-col gap-8">
-            <h1 className="font-slab text-[32px] leading-[38px] font-bold sm:text-[40px] sm:leading-[44px]">
-              {t("title")}
-            </h1>
+          <div className="flex w-full max-w-sm flex-col gap-6">
+            <h1 className="text-title">{t("title")}</h1>
             <LoginForm returnPath={returnPathOf(next)} />
           </div>
         </div>
@@ -84,7 +82,7 @@ export default async function LoginPage({
           </p>
         )}
       </div>
-      <BrandPanel className="hidden w-[44%] max-w-[720px] sm:flex" />
+      <BrandPanel className="hidden w-[44%] max-w-[640px] sm:flex" />
     </main>
   );
 }

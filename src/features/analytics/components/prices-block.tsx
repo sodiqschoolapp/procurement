@@ -43,6 +43,7 @@ export async function PricesView({
   filters: AnalyticsFilters;
 }) {
   const t = await getTranslations("analytics");
+  const tShort = await getTranslations("analytics.short");
   const tMonths = await getTranslations("months");
   const format = await getFormatters();
   const records = (key: DrillKey, scope: AnalyticsFilters = filters, at: PeriodInput = period) =>
@@ -65,7 +66,7 @@ export async function PricesView({
             // The drawing's height only (src/components/charts/chart-point.ts).
             value: Number(point.price),
             shown: format.money(point.price),
-            change: point.change ? changeText(point.change, t, format) : "",
+            change: point.change ? changeText(point.change, tShort, format) : "",
             href: records({
               kind: "price",
               variant: trend!.variantId,
@@ -94,7 +95,7 @@ export async function PricesView({
       data-analytics-block="prices"
     >
       <div className="flex flex-col gap-1">
-        <h2 id="prices-title" className="text-[20px] leading-7 font-bold">
+        <h2 id="prices-title" className="text-heading font-semibold">
           {t("prices.title")}
         </h2>
         <p className="text-sm leading-5 text-muted-foreground">{t("prices.note")}</p>
@@ -110,7 +111,7 @@ export async function PricesView({
             <select
               name="variant"
               defaultValue={trend?.variantId ?? ""}
-              className="min-h-11 rounded-md border bg-background px-3 text-[15px] font-normal sm:min-h-9"
+              className="min-h-11 rounded-md border bg-background px-3 text-sm font-normal sm:min-h-9"
             >
               {!trend && <option value="">{t("prices.choose")}</option>}
               {choices.map((choice) => (
@@ -128,7 +129,7 @@ export async function PricesView({
           </button>
         </form>
         {!trend || points.length === 0 ? (
-          <p className="text-[15px] leading-[22px] text-muted-foreground" data-trend-empty>
+          <p className="text-sm text-muted-foreground" data-trend-empty>
             {trend ? t("prices.trendEmpty", { name: subtypeLabel(trend) }) : t("prices.noRecords")}
           </p>
         ) : (
@@ -156,7 +157,7 @@ export async function PricesView({
                     {monthLabel(point.month)}
                   </Link>,
                   point.price === null ? t("prices.noPrice") : format.money(point.price),
-                  point.change ? changeText(point.change, t, format) : "",
+                  point.change ? changeText(point.change, tShort, format) : "",
                 ],
               }))}
               data="trend"
@@ -174,9 +175,7 @@ export async function PricesView({
             })}
           </p>
           {block.rises.length === 0 ? (
-            <p className="text-[15px] leading-[22px] text-muted-foreground">
-              {t("prices.risesEmpty")}
-            </p>
+            <p className="text-sm text-muted-foreground">{t("prices.risesEmpty")}</p>
           ) : (
             <Table
               headings={[
@@ -224,9 +223,7 @@ export async function PricesView({
 
         <Card id="prices-spread" title={t("prices.spread")} excel={download("priceSpread")}>
           {block.spreads.length === 0 ? (
-            <p className="text-[15px] leading-[22px] text-muted-foreground">
-              {t("prices.spreadEmpty")}
-            </p>
+            <p className="text-sm text-muted-foreground">{t("prices.spreadEmpty")}</p>
           ) : (
             <Table
               headings={[
@@ -286,7 +283,7 @@ function PairCell({ href, price, where }: { href: string; price: string; where: 
       >
         {price}
       </Link>
-      <span className="block text-[13px] leading-[18px] text-muted-foreground">{where}</span>
+      <span className="block text-small text-muted-foreground">{where}</span>
     </>
   );
 }
@@ -307,11 +304,11 @@ export async function Card({
   return (
     <section
       aria-labelledby={`${id}-title`}
-      className="flex min-w-0 flex-col gap-3 rounded-xl bg-card p-6 max-sm:p-4"
+      className="flex min-w-0 flex-col gap-3 rounded-xl border border-border bg-card p-4 sm:p-5"
       data-chart-card={id}
     >
       <div className="flex items-baseline justify-between gap-3">
-        <h3 id={`${id}-title`} className="text-[17px] leading-6 font-bold">
+        <h3 id={`${id}-title`} className="text-subheading font-semibold">
           {title}
         </h3>
         <a
@@ -327,7 +324,10 @@ export async function Card({
   );
 }
 
-/** A table that scrolls sideways inside its card on a phone; the first cell heads the row. */
+/**
+ * A table of a card; the first cell heads the row. On a phone each row is a short card of label and
+ * value (`table-cards`), so nothing is cut off at 375 px; wider screens keep the columns.
+ */
 export function Table({
   headings,
   rows,
@@ -344,10 +344,10 @@ export function Table({
       className="overflow-x-auto rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
     >
       <table
-        className="w-full min-w-[32rem] border-collapse text-left text-sm leading-5"
+        className="table-cards table-cards-flat w-full min-w-[32rem] border-collapse text-left text-sm leading-5"
         data-table={data}
       >
-        <thead className="bg-muted text-[13px] leading-[18px] font-semibold text-muted-foreground">
+        <thead className="border-b border-border bg-muted text-xs font-medium text-muted-foreground">
           <tr>
             {headings.map((heading, index) => (
               <th
@@ -365,11 +365,15 @@ export function Table({
             <tr key={row.key} className="border-t align-top" data-row={row.key}>
               {row.cells.map((cell, index) =>
                 index === 0 ? (
-                  <th key={index} scope="row" className="px-3 py-2 font-normal">
+                  <th key={index} scope="row" data-card="head" className="px-3 py-2 font-normal">
                     {cell}
                   </th>
                 ) : (
-                  <td key={index} className="px-3 py-2 text-right tabular-nums">
+                  <td
+                    key={index}
+                    data-label={headings[index]}
+                    className="px-3 py-2 text-right tabular-nums"
+                  >
                     {cell}
                   </td>
                 ),

@@ -14,7 +14,7 @@ export async function OrderHistory({ events }: { events: readonly OrderPageEvent
   const tProgress = await getTranslations("orders.progress");
   const format = await getFormatters();
   if (events.length === 0) {
-    return <p className="text-[15px] leading-[22px] text-muted-foreground">{t("empty")}</p>;
+    return <p className="text-sm text-muted-foreground">{t("empty")}</p>;
   }
   return (
     <ol className="flex flex-col divide-y divide-border">
@@ -28,7 +28,7 @@ export async function OrderHistory({ events }: { events: readonly OrderPageEvent
             : t(`moves.${event.type}`);
         return (
           <li key={event.id} data-event={event.type} className="flex flex-col gap-1 py-3">
-            <p className="text-[15px] leading-[22px]">
+            <p className="text-sm">
               <span className="font-semibold">{t("by", { move, name: event.actorName })}</span>
               {event.othersSeen > 0 ? (
                 <span data-with-others className="ml-1">
@@ -36,7 +36,7 @@ export async function OrderHistory({ events }: { events: readonly OrderPageEvent
                 </span>
               ) : null}
             </p>
-            <p className="flex flex-wrap gap-x-3 text-[13px] leading-[18px] text-muted-foreground">
+            <p className="flex flex-wrap gap-x-3 text-small text-muted-foreground">
               <time dateTime={event.at.toISOString()}>
                 {t("at", { date: format.date(event.at), time: format.time(event.at) })}
               </time>
@@ -44,7 +44,7 @@ export async function OrderHistory({ events }: { events: readonly OrderPageEvent
             </p>
             {event.paymentType ? (
               // Finance's change of the payment type while approving (06 rules 1 and 11).
-              <p data-payment-change className="text-[15px] leading-[22px]">
+              <p data-payment-change className="text-sm">
                 {t("paymentType", {
                   from: tPayment(event.paymentType.from),
                   to: tPayment(event.paymentType.to),
@@ -53,7 +53,7 @@ export async function OrderHistory({ events }: { events: readonly OrderPageEvent
             ) : null}
             {event.purchase ? (
               // The record a Record purchase saved (07 What saving a record does 6; plan of 3.3).
-              <p data-purchase className="text-[15px] leading-[22px] tabular-nums">
+              <p data-purchase className="text-sm tabular-nums">
                 {t("purchase", {
                   qty: format.quantity(event.purchase.qty),
                   price: format.money(BigInt(event.purchase.unitPrice)),
@@ -62,7 +62,7 @@ export async function OrderHistory({ events }: { events: readonly OrderPageEvent
             ) : null}
             {event.issue ? (
               // The issue a ticked "Give straight to requester" made (07; plan of 5.4).
-              <p data-issue className="text-[15px] leading-[22px]">
+              <p data-issue className="text-sm">
                 {t.rich("issue", {
                   number: event.issue.number,
                   note: (chunks) => (
@@ -79,7 +79,7 @@ export async function OrderHistory({ events }: { events: readonly OrderPageEvent
             ) : null}
             {event.progress ? (
               // The progress a buying action set (07 Order progress; plan of 3.5).
-              <p data-progress-change className="text-[15px] leading-[22px]">
+              <p data-progress-change className="text-sm">
                 {t("progress", {
                   from: tProgress(event.progress.from),
                   to: tProgress(event.progress.to),
@@ -88,16 +88,14 @@ export async function OrderHistory({ events }: { events: readonly OrderPageEvent
             ) : null}
             {event.owner ? (
               // A move to another Manager (03 rule 7; plan of 4.10).
-              <p data-owner-change className="text-[15px] leading-[22px]">
+              <p data-owner-change className="text-sm">
                 {t("owner", { from: event.owner.from, to: event.owner.to })}
               </p>
             ) : null}
             {event.comment ? (
-              <p className="text-[15px] leading-[22px]">{t("reason", { text: event.comment })}</p>
+              <p className="text-sm">{t("reason", { text: event.comment })}</p>
             ) : null}
-            {event.note ? (
-              <p className="text-[15px] leading-[22px]">{t("note", { text: event.note })}</p>
-            ) : null}
+            {event.note ? <p className="text-sm">{t("note", { text: event.note })}</p> : null}
           </li>
         );
       })}

@@ -19,8 +19,9 @@ import {
   SubstitutedLabel,
 } from "./status-label";
 
-// 11-screens-and-ux.md rule 11 (status labels look the same everywhere; green, amber and red are
-// kept for the three labels and alerts); docs/design-system.md "This app, Status labels";
+// 11-screens-and-ux.md rule 11 (status labels look the same everywhere) and rule 15 (colour only
+// for meaning); docs/design-system.md, Parts, "Status and outcome" (D60, 21.10.2026: a status is a
+// dot and its word; a green label of one order is its plain word without "0");
 // 06-approval-workflow.md, Statuses; 08-money-and-settlement.md, The three colours ("A label is
 // never colour alone. It carries an icon, a word and the amount"); review of 0.10a corrections
 // 2 and 3. Rendered with react-dom/server.
@@ -50,25 +51,34 @@ const COLOUR_TOKENS = /\b(bg|text)-(primary|success|warning|destructive)/;
 
 describe("request status labels (06 Statuses; 11-screens rule 11)", () => {
   for (const locale of ["uz", "ru", "en"] as const) {
-    it(`each of the ten statuses shows its ${locale} word with an icon`, () => {
+    it(`each of the ten statuses shows its ${locale} word beside its dot`, () => {
       for (const status of REQUEST_STATUSES) {
         const html = render(<RequestStatusLabel status={status} />, locale);
         expect(visibleText(html), status).toBe(MESSAGES[locale].requestStatus[status]);
-        expect(html, status).toMatch(/<svg[^>]*aria-hidden="true"/);
+        expect(html, status).toMatch(/<span aria-hidden="true" class="[^"]*rounded-full/);
       }
     });
   }
 
-  it("uses only the info or muted tokens, never primary, success, warning or danger", () => {
-    for (const status of REQUEST_STATUSES) {
-      const html = render(<RequestStatusLabel status={status} />);
-      expect(html, status).toMatch(/bg-(info-bg|muted)/);
-      expect(html, status).not.toMatch(COLOUR_TOKENS);
-    }
+  it("the dot's colour means something: blue in the flow, red sent back or rejected, green closed, grey otherwise", () => {
+    const dotOf = (status: (typeof REQUEST_STATUSES)[number]) =>
+      /data-status-dot="(\w+)"/.exec(render(<RequestStatusLabel status={status} />))?.[1];
+    expect(dotOf("PENDING_HEAD")).toBe("info");
+    expect(dotOf("PURCHASING")).toBe("info");
+    expect(dotOf("SETTLEMENT")).toBe("info");
+    expect(dotOf("RETURNED")).toBe("red");
+    expect(dotOf("REJECTED")).toBe("red");
+    expect(dotOf("CLOSED")).toBe("green");
+    expect(dotOf("DRAFT")).toBe("grey");
+    expect(dotOf("CANCELLED")).toBe("grey");
   });
 
-  it("is a rectangle with corner 6", () => {
-    expect(render(<RequestStatusLabel status="DRAFT" />)).toContain("rounded-sm");
+  it("never uses the brand orange (11 rule 11: orange is never a status colour)", () => {
+    for (const status of REQUEST_STATUSES) {
+      expect(render(<RequestStatusLabel status={status} />), status).not.toMatch(
+        /\b(bg|text)-(brand|primary)\b/,
+      );
+    }
   });
 });
 
@@ -98,9 +108,10 @@ describe("colour labels (08 The three colours; review correction 2)", () => {
       text: "Over 30 000 so'm",
       tokens: "bg-destructive-bg text-destructive",
     },
+    // Green says its plain word, without "0" (D60, 21.10.2026).
     {
       props: { label: "total", colour: "green", difference: 0n },
-      text: "Even 0 so'm",
+      text: "Even",
       tokens: "bg-success-bg text-success",
     },
     // Fewer: 90 of 100 → amber "Less 10"; the quantity format drops trailing zeros.
@@ -116,7 +127,7 @@ describe("colour labels (08 The three colours; review correction 2)", () => {
     },
     {
       props: { label: "number", colour: "green", difference: "0.000" },
-      text: "Matches 0",
+      text: "Quantity as planned",
       tokens: "bg-success-bg",
     },
     {
@@ -143,7 +154,7 @@ describe("colour labels (08 The three colours; review correction 2)", () => {
     },
     {
       props: { label: "price", colour: "green", orders: 1 },
-      text: "Matches 1 order",
+      text: "Price as planned 1 order",
       tokens: "bg-success-bg",
     },
     // Grey: "In progress" for Number and Total, "Not bought yet" for Price; no amount yet.
@@ -207,7 +218,7 @@ describe("colour labels (08 The three colours; review correction 2)", () => {
         }}
       />,
     );
-    expect(visibleText(html)).toBe("Matches 0 Cheaper 50 000 so'm Left 50 000 so'm");
+    expect(visibleText(html)).toBe("Quantity as planned Cheaper 50 000 so'm Left 50 000 so'm");
   });
 
   const refusals: { props: ColourLabelProps; needs: RegExp }[] = [
@@ -243,7 +254,7 @@ describe("colour labels (08 The three colours; review correction 2)", () => {
 });
 
 describe("DocumentStatusLabel (plan of 7.4c: a cancelled transfer)", () => {
-  it("shows Cancelled with its icon in every language", () => {
+  it("shows Cancelled beside its dot in every language", () => {
     for (const [locale, word] of [
       ["en", "Cancelled"],
       ["ru", "Отменено"],
@@ -252,7 +263,7 @@ describe("DocumentStatusLabel (plan of 7.4c: a cancelled transfer)", () => {
       const html = render(<DocumentStatusLabel type="TRANSFER" status="CANCELLED" />, locale);
       expect(html).toContain('data-document-status="CANCELLED"');
       expect(visibleText(html)).toBe(word);
-      expect(html).toMatch(/<svg[^>]*aria-hidden="true"/);
+      expect(html).toContain('data-status-dot="grey"');
     }
   });
 });

@@ -5,9 +5,9 @@ import { Field } from "./field";
 import { Input } from "./input";
 import { Select } from "./select";
 
-// docs/design-system.md, "Fields and switches": 40 high (44 at phone width, 48 on sign-in),
-// 1 px --input border, an error is a 2 px --destructive border and one line under the field;
-// a select draws the filled "expand more" icon, never a text caret. 11-screens-and-ux.md
+// docs/design-system.md, Fields: 40 high (44 at phone width and on sign-in), 1 px --input
+// border, an error is a --destructive border and one line under the field; a select draws the
+// "expand more" icon, never a text caret (D60, 21.10.2026). 11-screens-and-ux.md
 // rule 13 (keyboard and screen readers: the label and the error line are tied to the field).
 
 describe("fields (design system, Fields and switches)", () => {
@@ -25,7 +25,7 @@ describe("fields (design system, Fields and switches)", () => {
     expect(html).toEqual(expect.stringContaining("h-11 sm:h-10"));
   });
 
-  it("an error sets aria-invalid, the 2 px danger border and exactly one error line", () => {
+  it("an error sets aria-invalid, the danger border and exactly one error line", () => {
     const html = renderToStaticMarkup(
       <Field id="username" label="Username" error="Fill in this field">
         <Input />
@@ -33,12 +33,12 @@ describe("fields (design system, Fields and switches)", () => {
     );
     expect(html).toContain('aria-invalid="true"');
     expect(html).toContain('aria-describedby="username-error"');
-    expect(html).toContain("aria-invalid:border-2 aria-invalid:border-destructive");
+    expect(html).toContain("aria-invalid:border-destructive");
     expect(html.match(/id="username-error"/g)).toHaveLength(1);
     expect(html.match(/Fill in this field/g)).toHaveLength(1);
   });
 
-  it("the sign-in size is 48 high", () => {
+  it("the sign-in size is 48 high at phone width", () => {
     expect(renderToStaticMarkup(<Input fieldSize="lg" />)).toContain("h-12");
   });
 

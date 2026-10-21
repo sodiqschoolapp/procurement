@@ -3,10 +3,10 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 // docs/design-system.md, "Colour" and "Accessibility": "Text 4.5 : 1 and controls 3 : 1 in both
-// themes (checked by the app's contrast test)"; 11-screens-and-ux.md rule 13 (contrast meets
-// WCAG AA) and rule 15 (light and dark themes). The tokens are read from src/app/globals.css,
-// converted from oklch to sRGB and checked against the hex values of the design system's tables
-// and against each other (plan of 0.10a; review corrections 6 and decision 6).
+// themes (checked by tests/contrast.test.ts)"; 11-screens-and-ux.md rule 13 (contrast meets WCAG
+// AA) and rule 15 (light and dark themes). The tokens are read from src/app/globals.css, converted
+// from oklch to sRGB and checked against the hex values of the design system's table and against
+// each other. Rewritten for the app's own look of 21.10.2026 (D60): the requirement changed.
 
 const CSS = readFileSync(new URL("../src/app/globals.css", import.meta.url), "utf8");
 
@@ -90,78 +90,88 @@ function contrast(first: [number, number, number], second: [number, number, numb
 
 // --- the design system's values ---
 
+// docs/design-system.md, Colour (D60, 21.10.2026): the table's light and dark hex values.
 const LIGHT_HEX: Record<string, string> = {
-  background: "#ECECEC",
+  background: "#F5F6F8",
   foreground: "#06113C",
   card: "#FFFFFF",
   "card-foreground": "#06113C",
   popover: "#FFFFFF",
   "popover-foreground": "#06113C",
-  primary: "#FF8A32",
-  "primary-foreground": "#06113C",
-  "primary-hover": "#DE7230",
-  secondary: "#DCDFE8",
-  "secondary-hover": "#CDD1DD",
+  primary: "#06113C",
+  "primary-foreground": "#FFFFFF",
+  "primary-hover": "#1B2754",
+  secondary: "#FFFFFF",
   "secondary-foreground": "#06113C",
-  muted: "#F6F6F6",
-  "muted-foreground": "#4A5270",
-  accent: "#ECECEC",
+  "secondary-hover": "#F1F3F7",
+  muted: "#F8F9FB",
+  "muted-foreground": "#5A6278",
+  accent: "#F1F3F7",
   "accent-foreground": "#06113C",
-  destructive: "#A3221A",
-  "destructive-bg": "#FDE7E4",
-  success: "#146C2E",
-  "success-bg": "#E6F4EA",
-  warning: "#7A4A00",
-  "warning-bg": "#FFF1CC",
-  info: "#1D4FA8",
-  "info-bg": "#E3ECFB",
-  today: "#FFF4E8",
-  // Decision 5: the light values the design system implies for the four named tokens.
-  "today-muted": "#4A5270",
+  destructive: "#B42318",
+  "destructive-bg": "#FEF1F0",
+  success: "#13703A",
+  "success-bg": "#EBF7EF",
+  warning: "#8A4B00",
+  "warning-bg": "#FFF5DB",
+  info: "#2348A8",
+  "info-bg": "#EEF3FD",
+  today: "#FFF6EE",
+  "today-muted": "#5A6278",
   topbar: "#FFFFFF",
   link: "#06113C",
-  border: "#DBDBDB",
-  input: "#7C849C",
+  border: "#E3E6EC",
+  "border-strong": "#D2D7E0",
+  input: "#868EA3",
   ring: "#06113C",
-  sidebar: "#06113C",
-  "sidebar-foreground": "#C9CFE3",
-  "sidebar-primary": "#FF8A32",
+  brand: "#FF8A32",
+  "brand-foreground": "#06113C",
+  sidebar: "#FFFFFF",
+  "sidebar-foreground": "#3D4560",
+  "sidebar-primary": "#EDF0F7",
   "sidebar-primary-foreground": "#06113C",
-  "sidebar-accent": "#0E1B4D",
-  "sidebar-accent-foreground": "#FFFFFF",
-  "sidebar-border": "#16224F",
-  "sidebar-ring": "#FF8A32",
-  "sidebar-avatar": "#1B2A63",
+  "sidebar-accent": "#F1F3F7",
+  "sidebar-accent-foreground": "#06113C",
+  "sidebar-border": "#E3E6EC",
+  "sidebar-ring": "#06113C",
+  "sidebar-avatar": "#06113C",
+  "chart-1": "#34498A",
+  "chart-2": "#7C8DBF",
+  "chart-3": "#B9C3DE",
+  "chart-4": "#5A6278",
+  "chart-5": "#C9CED9",
 };
 
-const DARK_CARD = "#0B1438";
+const DARK_CARD = "#111831";
 
-/** "The colour at 16% over the card", composited in sRGB and rounded (review decision 6). */
-function tintOverDarkCard(hex: string): string {
+/** "The colour at 16% over the dark card", composited in sRGB and rounded (design system, Colour). */
+function tintOverDarkCard(hex: string, share = 0.16): string {
   const colour = rgbOfHex(hex);
   const card = rgbOfHex(DARK_CARD);
   return `#${colour
-    .map((channel, i) => Math.round(0.16 * channel + 0.84 * (card[i] ?? 0)))
+    .map((channel, i) => Math.round(share * channel + (1 - share) * (card[i] ?? 0)))
     .map((channel) => channel.toString(16).padStart(2, "0"))
     .join("")
     .toUpperCase()}`;
 }
 
 const DARK_HEX: Record<string, string> = {
-  ...LIGHT_HEX,
-  background: "#040920",
-  foreground: "#ECECEC",
+  background: "#0A0F1E",
+  foreground: "#E8EBF3",
   card: DARK_CARD,
-  "card-foreground": "#ECECEC",
-  popover: DARK_CARD,
-  "popover-foreground": "#ECECEC",
-  secondary: "#1C2856",
-  "secondary-hover": "#26346A",
-  "secondary-foreground": "#ECECEC",
-  muted: "#16224F",
-  "muted-foreground": "#A9B1CC",
-  accent: "#16224F",
-  "accent-foreground": "#ECECEC",
+  "card-foreground": "#E8EBF3",
+  popover: "#151D3A",
+  "popover-foreground": "#E8EBF3",
+  primary: "#E8ECF6",
+  "primary-foreground": "#06113C",
+  "primary-hover": "#CBD3E8",
+  secondary: "#172041",
+  "secondary-foreground": "#E8EBF3",
+  "secondary-hover": "#1F2A50",
+  muted: "#151C36",
+  "muted-foreground": "#9AA3BC",
+  accent: "#1A2343",
+  "accent-foreground": "#E8EBF3",
   destructive: "#FF8F85",
   "destructive-bg": tintOverDarkCard("#FF8F85"),
   success: "#6FD08C",
@@ -170,36 +180,54 @@ const DARK_HEX: Record<string, string> = {
   "warning-bg": tintOverDarkCard("#FFD27A"),
   info: "#9DBBFF",
   "info-bg": tintOverDarkCard("#9DBBFF"),
-  today: "#2A1C14",
-  "today-muted": "#D9C2B0",
-  topbar: "#08102F",
-  link: "#FFB37A",
-  border: "#1C2856",
-  input: "#5A6690",
+  today: tintOverDarkCard("#FF8A32", 0.12),
+  "today-muted": "#C9C2C4",
+  topbar: DARK_CARD,
+  link: "#E8EBF3",
+  border: "#232C4A",
+  "border-strong": "#2E3858",
+  input: "#5E6990",
   ring: "#FF8A32",
+  brand: "#FF8A32",
+  "brand-foreground": "#06113C",
+  sidebar: "#0D1328",
+  "sidebar-foreground": "#B7BFD4",
+  "sidebar-primary": "#1C2547",
+  "sidebar-primary-foreground": "#FFFFFF",
+  "sidebar-accent": "#161E38",
+  "sidebar-accent-foreground": "#FFFFFF",
+  "sidebar-border": "#1E2642",
+  "sidebar-ring": "#FF8A32",
+  "sidebar-avatar": "#2A3561",
+  "chart-1": "#8EA2DA",
+  "chart-2": "#5D6FA6",
+  "chart-3": "#3A4877",
+  "chart-4": "#9AA3BC",
+  "chart-5": "#2E3858",
 };
 
 /** Text pairs, 4.5 : 1: [text, background]. `#FFFFFF` stands for the avatar's white initials. */
 const TEXT_PAIRS: readonly (readonly [string, string])[] = [
   ["foreground", "background"],
   ["foreground", "card"],
+  ["foreground", "popover"],
   ["foreground", "topbar"],
   ["foreground", "accent"],
+  ["foreground", "muted"],
   ["foreground", "today"],
   ["muted-foreground", "background"],
   ["muted-foreground", "card"],
   ["muted-foreground", "muted"],
   ["muted-foreground", "today"],
-  // Review correction 6: the unchosen items of the segmented control's track.
   ["muted-foreground", "accent"],
   ["today-muted", "today"],
   ["primary-foreground", "primary"],
   ["primary-foreground", "primary-hover"],
   ["secondary-foreground", "secondary"],
   ["secondary-foreground", "secondary-hover"],
+  ["brand-foreground", "brand"],
   ["destructive", "card"],
   ["destructive", "destructive-bg"],
-  // Review correction 6: a danger quiet button in a page header on the canvas.
   ["destructive", "background"],
   ["success", "card"],
   ["success", "success-bg"],
@@ -208,22 +236,22 @@ const TEXT_PAIRS: readonly (readonly [string, string])[] = [
   ["info", "card"],
   ["info", "info-bg"],
   ["link", "card"],
-  // Plan of 9.1d: the plain links that were orange, on the canvas too.
   ["link", "background"],
   ["sidebar-foreground", "sidebar"],
   ["sidebar-foreground", "sidebar-accent"],
-  ["sidebar-accent-foreground", "sidebar-accent"],
   ["sidebar-primary-foreground", "sidebar-primary"],
+  ["sidebar-accent-foreground", "sidebar-accent"],
   ["#FFFFFF", "sidebar-avatar"],
 ];
 
-/** Control pairs, 3 : 1: field borders and focus rings. */
+/** Control pairs, 3 : 1: field borders, focus rings and chart marks. */
 const CONTROL_PAIRS: readonly (readonly [string, string])[] = [
   ["input", "card"],
   ["input", "background"],
   ["ring", "card"],
   ["ring", "background"],
   ["sidebar-ring", "sidebar"],
+  ["chart-1", "card"],
 ];
 
 const THEMES = [
@@ -238,7 +266,7 @@ function colourOf(tokens: Tokens, name: string): [number, number, number] {
   return rgbOf(value);
 }
 
-describe("the design system's colours (docs/design-system.md, Colour; 11-screens rule 15)", () => {
+describe("the design system's colours (docs/design-system.md, Colour; 11-screens rule 15; D60)", () => {
   it("the dark tokens under the device setting equal those under data-theme=dark", () => {
     expect(DARK_BY_DEVICE).toEqual(DARK);
   });
@@ -255,10 +283,15 @@ describe("the design system's colours (docs/design-system.md, Colour; 11-screens
     });
   }
 
-  it("the dark tints are the colour at 16% over the card (review decision 6)", () => {
-    // Worked through once by hand: danger #FF8F85 over #0B1438 is #322844.
-    expect(tintOverDarkCard("#FF8F85")).toBe("#322844");
-    expect(hexOf(DARK["destructive-bg"] ?? "")).toBe("#322844");
+  it("the dark tints are the colour at 16% over the card (design system, Colour)", () => {
+    // Worked through once by hand: danger #FF8F85 over #111831 is #372B3E.
+    expect(tintOverDarkCard("#FF8F85")).toBe("#372B3E");
+    expect(hexOf(DARK["destructive-bg"] ?? "")).toBe("#372B3E");
+  });
+
+  it("orange is never text on a light surface: it fails 4.5 : 1 on white (design system, Colour)", () => {
+    // The reason --ring is navy in the light theme and orange text is never used there.
+    expect(contrast(rgbOf(LIGHT.brand ?? ""), rgbOf(LIGHT.card ?? ""))).toBeLessThan(3);
   });
 });
 

@@ -33,13 +33,13 @@ export default async function UsersPage({
   const { page, pages } = list;
 
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-6">
+    <div className="flex w-full min-w-0 flex-col gap-6">
       <AdminNav current="users" />
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="flex flex-wrap items-baseline gap-x-3 text-[28px] leading-[34px] font-bold tracking-[-0.01em]">
+        <h1 className="flex flex-wrap items-baseline gap-x-3 text-title">
           {t("users.title")}
           {list.rows.length > 0 && (
-            <span className="text-[15px] leading-[22px] font-normal tracking-normal text-muted-foreground">
+            <span className="text-sm font-normal tracking-normal text-muted-foreground">
               {t("users.summary", { active: list.active, inactive: list.inactive })}
             </span>
           )}
@@ -56,7 +56,7 @@ export default async function UsersPage({
         >
           <Icon name="warning" className="mt-0.5 shrink-0 text-warning" />
           <div className="flex flex-col gap-1">
-            <h2 id="vacancies-title" className="text-[15px] leading-[22px] font-semibold">
+            <h2 id="vacancies-title" className="text-sm font-semibold">
               {t("users.vacancyTitle")}
             </h2>
             <ul className="flex flex-col gap-0.5 text-sm leading-5">
@@ -80,9 +80,9 @@ export default async function UsersPage({
           action={{ label: t("users.new"), href: "/users/new", icon: "add" }}
         />
       ) : (
-        <section className="overflow-x-auto rounded-xl bg-card text-card-foreground">
-          <table className="w-full min-w-[40rem] border-collapse text-left text-sm leading-5">
-            <thead className="bg-muted text-[13px] leading-[18px] font-semibold text-muted-foreground">
+        <section className="table-cards-panel overflow-x-auto rounded-xl border border-border bg-card text-card-foreground">
+          <table className="table-cards w-full min-w-[40rem] border-collapse text-left text-sm leading-5">
+            <thead className="border-b border-border bg-muted text-xs font-medium text-muted-foreground">
               <tr>
                 <th scope="col" className="px-4 py-3">
                   {t("users.fullName")}
@@ -104,7 +104,7 @@ export default async function UsersPage({
             <tbody>
               {list.rows.map((row) => (
                 <tr key={row.id} className="border-t hover:bg-accent/50">
-                  <td className="px-4 py-3 font-semibold">
+                  <td data-card="head" className="px-4 py-3 font-semibold">
                     <Link
                       href={`/users/${row.id}`}
                       className="inline-flex min-h-11 min-w-11 items-center underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:min-h-0"
@@ -112,12 +112,16 @@ export default async function UsersPage({
                       {row.fullName}
                     </Link>
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground">{row.username}</td>
-                  <td className="px-4 py-3">{t(`roles.${row.role}`)}</td>
-                  <td className="px-4 py-3">
+                  <td data-label={t("users.username")} className="px-4 py-3 text-muted-foreground">
+                    {row.username}
+                  </td>
+                  <td data-label={t("users.role")} className="px-4 py-3">
+                    {t(`roles.${row.role}`)}
+                  </td>
+                  <td data-label={t("users.branches")} className="px-4 py-3">
                     {row.branches.map((branch) => branch.code).join(", ")}
                   </td>
-                  <td className="px-4 py-3">
+                  <td data-label={t("users.status")} className="px-4 py-3">
                     {row.isActive ? t("users.active") : t("users.inactive")}
                   </td>
                 </tr>

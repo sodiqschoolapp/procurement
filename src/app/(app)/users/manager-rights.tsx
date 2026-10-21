@@ -55,8 +55,8 @@ export function ManagerRights({
   }
 
   return (
-    <section className="flex flex-col gap-4 rounded-xl bg-card p-6 text-card-foreground">
-      <h2 className="text-[17px] leading-6 font-bold">{t("title")}</h2>
+    <section className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 text-card-foreground sm:p-5">
+      <h2 className="text-subheading font-semibold">{t("title")}</h2>
       <p className="text-sm leading-5 text-muted-foreground">
         {t(user.isActive ? "intro" : "inactive")}
       </p>

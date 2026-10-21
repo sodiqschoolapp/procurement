@@ -17,8 +17,9 @@ import { useFormatters } from "@/i18n/use-formatters";
 // come from allowedActions() of the state machine; a button is shown only for a move that has a
 // server action (plan of 2.8, decided item 7, Look first): Approve from 2.10, Send back, Reject,
 // Cancel and Take back from 2.11, which the list
-// passes in as `actions`. White panel with a top border, no shadow (design system "What we never do" 8); on a
-// phone the count and the grand total, "Show details" opens the rest (as the drafts' totals).
+// passes in as `actions`. The selection bar of docs/design-system.md (Parts): it floats at the
+// bottom of the list with the count, the grand total and the actions; the colours, goods, extra
+// costs and the split by payment type follow under a hairline, behind "Show details" on a phone.
 
 export function ListActionBar({
   summary,
@@ -42,16 +43,10 @@ export function ListActionBar({
   const format = useFormatters();
   const [details, setDetails] = useState(false);
 
-  const line = (key: string, label: string, amount: string, strong = false, folded = false) => (
-    <div
-      key={key}
-      data-total={key}
-      className={cn("flex items-baseline justify-between gap-4", folded && "max-sm:hidden")}
-    >
-      <dt className={strong ? "font-bold" : "text-muted-foreground"}>{label}</dt>
-      <dd className={`tabular-nums ${strong ? "font-bold" : ""}`}>
-        {format.money(BigInt(amount))}
-      </dd>
+  const line = (key: string, label: string, amount: string) => (
+    <div key={key} data-total={key} className="flex items-baseline gap-1.5">
+      <dt className="text-muted-foreground">{label}</dt>
+      <dd className="font-medium tabular-nums">{format.money(BigInt(amount))}</dd>
     </div>
   );
 
@@ -61,49 +56,51 @@ export function ListActionBar({
       aria-live="polite"
       aria-busy={summary === null}
       data-list-bar
-      className="sticky bottom-0 z-10 flex flex-col gap-3 rounded-xl border-t border-border bg-card p-4 max-sm:bottom-[calc(4rem+env(safe-area-inset-bottom))] sm:p-6"
+      className="sticky bottom-4 z-20 flex flex-col gap-3 rounded-xl border border-border-strong bg-card p-3 shadow-float max-sm:bottom-[calc(4.75rem+env(safe-area-inset-bottom))] sm:p-4"
     >
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2
-          id="list-bar-title"
-          className="flex flex-wrap items-baseline gap-x-3 text-[17px] leading-6 font-bold"
-        >
-          {t("title")}
-          <span className="text-[15px] font-normal text-muted-foreground" data-ticked-count>
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+        <h2 id="list-bar-title" className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          <span className="sr-only">{t("title")}</span>
+          <span className="text-subheading" data-ticked-count>
             {matching !== null && matching > tickedCount
               ? t("countOf", { count: tickedCount, matching })
               : t("count", { count: tickedCount })}
           </span>
+          {summary && (
+            <span data-total="grand" className="flex items-baseline gap-1.5 text-sm">
+              <span className="text-muted-foreground">{tTotals("grand")}</span>
+              <span className="text-subheading tabular-nums">
+                {format.money(BigInt(summary.totals.grand))}
+              </span>
+            </span>
+          )}
         </h2>
-        <div className="flex flex-wrap items-center gap-3 max-sm:w-full">
+        <div className="flex flex-wrap items-center gap-2 max-sm:w-full">
           {actions}
           <Button type="button" variant="ghost" size="sm" onClick={onClear}>
             {t("clear")}
           </Button>
         </div>
       </div>
-      {/* 08 The three colours of the ticked orders, from Open on (plan of 3.8). */}
-      {summary?.colours && <ColourLabels colours={summary.colours} />}
-      {/* 07 Finishing: how many of the ticked finished orders match exactly (plan of 4.4). */}
-      {summary && summary.exactCount !== null && (
-        <p data-exact-count className="text-[15px] leading-[22px] text-muted-foreground">
-          {t("exact", { exact: summary.exactCount, count: summary.count })}
-        </p>
-      )}
       {summary && (
-        <div className="grid gap-x-12 gap-y-4 sm:grid-cols-2">
-          <dl className="flex flex-col gap-1 text-[15px] leading-[22px]">
-            {line("goods", tTotals("goods"), summary.totals.goods, false, !details)}
-            {line("extras", tTotals("extras"), summary.totals.extras, false, !details)}
-            {line("grand", tTotals("grand"), summary.totals.grand, true)}
-          </dl>
-          <dl
-            id="list-bar-split"
-            className={cn(
-              "flex flex-col gap-1 text-[15px] leading-[22px]",
-              !details && "max-sm:hidden",
-            )}
-          >
+        <div
+          id="list-bar-split"
+          className={cn(
+            "flex flex-col gap-2 border-t border-border pt-3 text-small",
+            !details && "max-sm:hidden",
+          )}
+        >
+          {/* 08 The three colours of the ticked orders, from Open on (plan of 3.8). */}
+          {summary.colours && <ColourLabels colours={summary.colours} />}
+          {/* 07 Finishing: how many of the ticked finished orders match exactly (plan of 4.4). */}
+          {summary.exactCount !== null && (
+            <p data-exact-count className="text-muted-foreground">
+              {t("exact", { exact: summary.exactCount, count: summary.count })}
+            </p>
+          )}
+          <dl className="flex flex-wrap gap-x-5 gap-y-1">
+            {line("goods", tTotals("goods"), summary.totals.goods)}
+            {line("extras", tTotals("extras"), summary.totals.extras)}
             {PAYMENT_TYPES.map((type) =>
               line(type, tPayment(type), summary.totals.byPaymentType[type]),
             )}

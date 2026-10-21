@@ -33,6 +33,7 @@ export async function ManagersView({
   filters: AnalyticsFilters;
 }) {
   const t = await getTranslations("analytics");
+  const tShort = await getTranslations("analytics.short");
   const format = await getFormatters();
   const scope = (row: ManagerRow) => ({
     filters: { ...filters, manager: row.id },
@@ -61,7 +62,7 @@ export async function ManagersView({
     </Link>
   );
   const under = (text: string) => (
-    <span className="block text-[13px] leading-[18px] text-muted-foreground">{text}</span>
+    <span className="block text-small text-muted-foreground">{text}</span>
   );
   const average = (amount: bigint) =>
     amount === 0n
@@ -77,7 +78,7 @@ export async function ManagersView({
       data-analytics-block="managers"
     >
       <div className="flex flex-col gap-1">
-        <h2 id="managers-title" className="text-[20px] leading-7 font-bold">
+        <h2 id="managers-title" className="text-heading font-semibold">
           {t("managers.title")}
         </h2>
         <p className="text-sm leading-5 text-muted-foreground">{t("managers.note")}</p>
@@ -106,19 +107,19 @@ export async function ManagersView({
                     : t("inactive", { name: row.name! }),
                 <>
                   {link(orders(row), format.quantity(String(row.orders.count)))}
-                  {under(countChangeText(row.orders.change, t, format))}
+                  {under(countChangeText(row.orders.change, tShort, format))}
                 </>,
                 row.average === null ? (
                   <span className="text-muted-foreground">{t("managers.noOrder")}</span>
                 ) : (
                   <>
                     {link(orders(row), average(row.average))}
-                    {under(amountChangeText(row.averageChange, t, format))}
+                    {under(amountChangeText(row.averageChange, tShort, format))}
                   </>
                 ),
                 <>
                   {link(cancelled(row), format.quantity(String(row.cancelled.count)))}
-                  {under(countChangeText(row.cancelled.change, t, format))}
+                  {under(countChangeText(row.cancelled.change, tShort, format))}
                 </>,
                 row.held === 0n ? (
                   <span className="text-muted-foreground">{t("managers.noCash")}</span>

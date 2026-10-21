@@ -24,7 +24,7 @@ export default async function NewCatalogEntryPage({
   await readOrNotFound(() => countActiveCatalogEntries(user.id));
   const t = await getTranslations("catalog");
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-6">
+    <div className="flex w-full max-w-4xl min-w-0 flex-col gap-6">
       <AdminNav current="catalog" />
       <Link
         href={`/catalog/${kind}`}
@@ -33,9 +33,7 @@ export default async function NewCatalogEntryPage({
         <Icon name="chevron_left" />
         {t(`kinds.${kind}.title`)}
       </Link>
-      <h1 className="text-[28px] leading-[34px] font-bold tracking-[-0.01em]">
-        {t(`kinds.${kind}.newTitle`)}
-      </h1>
+      <h1 className="text-title">{t(`kinds.${kind}.newTitle`)}</h1>
       <CatalogForm kind={kind} entry={null} />
     </div>
   );

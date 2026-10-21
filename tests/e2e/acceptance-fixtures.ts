@@ -8,6 +8,7 @@ import en from "../../src/i18n/messages/en.json" with { type: "json" };
 import { insertPasswordUser } from "../../src/server/auth/password-user.mjs";
 import { connectionOptions } from "../../src/server/db/connection-options.mjs";
 import { E2E_ROLES, e2eDatabaseUrl, serverDatabaseUrl } from "./global-setup";
+import { shownAmount } from "./shown-amount";
 
 // The fixtures of the acceptance scenarios (build plan 9.1a, 9.1b; plan of 9.1b, decided item
 // 12). The e2e database is kept between runs and CI retries a failed test, so every attempt
@@ -582,7 +583,9 @@ export async function financeApproves(
   await listAt(page, scene, "PENDING_FINANCE");
   const dialog = await openApprove(page, orders);
   for (const [orderId, amount] of Object.entries(prefilled)) {
-    await expect(dialog.locator(`[data-cash-row="${orderId}"] input`)).toHaveValue(amount);
+    await expect(dialog.locator(`[data-cash-row="${orderId}"] input`)).toHaveValue(
+      shownAmount(amount),
+    );
   }
   expect(await scrollsSideways(page)).toBe(false);
   await confirmApprove(page, dialog, orders.length);

@@ -133,7 +133,7 @@ export function CatalogForm({
     <form
       onSubmit={onSubmit}
       noValidate
-      className="flex flex-col gap-5 rounded-xl bg-card p-6 text-card-foreground"
+      className="flex flex-col gap-5 rounded-xl border border-border bg-card p-4 text-card-foreground sm:p-5"
     >
       <UnsavedChangesGuard dirty={formState.isDirty && !action.pending} />
       {withBranch && (
@@ -169,7 +169,7 @@ export function CatalogForm({
         if (field.type === "boolean") {
           return (
             <div key={field.key} className="flex flex-col gap-1.5">
-              <label className="flex min-h-11 items-center gap-3 text-[15px] leading-[22px] font-semibold">
+              <label className="flex min-h-11 items-center gap-3 text-sm font-semibold">
                 <input
                   type="checkbox"
                   {...register(field.key)}

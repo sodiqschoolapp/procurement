@@ -10,7 +10,11 @@ import { ConfirmDialogBody, type ConfirmDialogText } from "./confirm-dialog";
 // docs/design-system.md, Buttons (primary, or danger for a loss; buttons in one row have one
 // size). The body is rendered with react-dom/server; the Base UI popup around it needs a browser.
 
-function render(text: ConfirmDialogText, pending = false): string {
+function render(
+  text: ConfirmDialogText,
+  pending = false,
+  extra: { confirmDisabled?: boolean; disabledReason?: string } = {},
+): string {
   return renderToStaticMarkup(
     <NextIntlClientProvider locale="en" messages={en} timeZone="Asia/Tashkent">
       <ConfirmDialogBody
@@ -18,6 +22,7 @@ function render(text: ConfirmDialogText, pending = false): string {
         resultId="r"
         text={text}
         pending={pending}
+        {...extra}
         onConfirm={() => {}}
         onCancel={() => {}}
       />
@@ -43,11 +48,12 @@ describe("the confirm dialog (11-screens rule 6)", () => {
     expect(html).toContain(">Submit</button>");
   });
 
-  it("the confirm button is primary, Cancel secondary, both the medium size", () => {
+  it("the confirm button is primary, Cancel secondary, both the default size", () => {
     const html = render(SUBMIT);
     expect(html.match(/bg-primary /g)).toHaveLength(1);
     expect(html.match(/bg-secondary /g)).toHaveLength(1);
-    expect(html.match(/h-11 px-4/g)).toHaveLength(2);
+    // The default button of docs/design-system.md, Buttons (D60): 44 at phone width, 40 from sm.
+    expect(html.match(/h-11 px-3\.5 text-sm sm:h-10/g)).toHaveLength(2);
   });
 
   it("an irreversible loss uses the danger kind and no primary fill", () => {
@@ -60,5 +66,22 @@ describe("the confirm dialog (11-screens rule 6)", () => {
     const html = render(SUBMIT, true);
     expect(html).toContain('aria-busy="true"');
     expect(html.match(/disabled=""/g)).toHaveLength(2);
+  });
+
+  // 11-screens rule 6 with the owner's redesign brief (D60): a disabled button says why.
+  it("a confirm button that cannot be pressed yet says why beside it", () => {
+    const why = "Type a reason of at least 5 letters.";
+    const html = render(SUBMIT, false, { confirmDisabled: true, disabledReason: why });
+    expect(html).toContain("data-confirm-why");
+    expect(html).toContain(why);
+    expect(html).toMatch(/<button[^>]*disabled=""[^>]*>Submit<\/button>/);
+  });
+
+  it("no reason line while the button can be pressed, or while the action runs", () => {
+    const why = "Type a reason of at least 5 letters.";
+    expect(render(SUBMIT, false, { disabledReason: why })).not.toContain("data-confirm-why");
+    expect(render(SUBMIT, true, { confirmDisabled: true, disabledReason: why })).not.toContain(
+      "data-confirm-why",
+    );
   });
 });

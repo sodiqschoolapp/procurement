@@ -6,10 +6,9 @@ import type { ReactNode } from "react";
 import { THEME_SCRIPT } from "@/components/theme";
 import { Toaster } from "@/components/toaster";
 
-// Golos Text and Bitter from the app's own files, never from Google Fonts at run time
-// (docs/design-system.md, Type; plan of 0.10a, decision 2).
+// Golos Text from the app's own files, never from Google Fonts at run time (docs/design-system.md,
+// Type; plan of 0.10a, decision 2).
 import "@fontsource-variable/golos-text";
-import "@fontsource-variable/bitter";
 import "./globals.css";
 
 export async function generateMetadata(): Promise<Metadata> {

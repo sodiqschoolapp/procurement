@@ -22,8 +22,10 @@ export async function DownloadButtons({ query }: { query: string }) {
           data-download={format}
           className={buttonVariants({ variant: "secondary" })}
         >
-          <Icon name="download" />
-          {t(format)}
+          <Icon name="download" size={18} />
+          {/* The short word shows; the full name is read (WCAG 2.5.3: the name holds the word). */}
+          <span className="sr-only">{t(format)}</span>
+          <span aria-hidden="true">{t(`${format}Short`)}</span>
         </a>
       ))}
     </div>
