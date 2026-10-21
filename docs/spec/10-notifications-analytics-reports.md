@@ -41,7 +41,7 @@ One action sends one notification to each person told, never one per order: "Dil
 
 ## Home page per role
 
-Each list on a home page shows counts and group rows, with a link to the filtered order list.
+Each list on a home page with something in it shows counts and group rows, with a link to the filtered order list; an empty one is left out.
 
 | Role | What the home page shows, in order |
 | --- | --- |
@@ -54,7 +54,7 @@ Each list on a home page shows counts and group rows, with a link to the filtere
 
 Each role has its own Analytics page, separate from the home page: home is "what must I do now", Analytics is "what is happening and why". All four pages behave the same way.
 
-1. **Period.** This month, last month, this quarter, this school year, or custom dates. The first day of the school year is set in Settings; until it is set, the school-year choice is hidden. Every number shows its change against the period before. While a period is still running, it is compared with the same number of days at the start of the period before (1 to 18 October against 1 to 18 September), and the page says so.
+1. **Period.** This month, last month, this quarter, this school year, or custom dates. The first day of the school year is set in Settings; until it is set, the school-year choice is hidden. Every number shows its change against the period before: on screen in short ("+1 285 000 (+12 %)", "+29 333 (new)"), in the PDF and Excel in a sentence. While a period is still running, it is compared with the same number of days at the start of the period before (1 to 18 October against 1 to 18 September), and the page says so.
 2. **Filters.** Branch (within the user's branches), category, department, Manager, supplier.
 3. **Click to see behind.** Clicking any bar, slice or number opens the list of orders or records that make it up. Every number can be traced to its source.
 4. **Export.** Each chart and table exports to Excel. The whole page downloads as a PDF report, without signature lines.

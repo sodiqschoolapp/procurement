@@ -20,7 +20,7 @@ A positive difference means money is left. A negative difference means more was 
 
 ## The three colours
 
-Each order shows three labels; a group row and the totals of ticked orders show the same three for all of their orders.
+Each order shows three labels on its page; a list row shows the Total label and, beside it, Number and Price when they are orange or red; the totals of ticked orders show all three.
 
 | Label | Green | Orange | Red |
 | --- | --- | --- | --- |
@@ -30,7 +30,7 @@ Each order shows three labels; a group row and the totals of ticked orders show 
 
 - While an order's buying is still Open, Number and Total show grey "In progress". Price shows grey until something is bought.
 - For a group row or ticked orders, Total uses the summed difference. Number and Price take the worst colour among the orders: red beats orange, orange beats green.
-- A label is never colour alone. It carries an icon, a word and the amount, for example "Left 50 000" or "Over 30 000".
+- A label is never colour alone. It carries an icon, a word and the amount, except a green label, which has nothing to count. For example "Left 50 000" or "Over 30 000".
 
 ## Exact match
 
