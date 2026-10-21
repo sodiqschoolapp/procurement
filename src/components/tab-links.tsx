@@ -6,7 +6,8 @@ import { cn } from "@/components/utils";
 // current tab is navy with a 2 px orange underline, the others muted. A count follows the word as
 // a plain number. On a phone the row scrolls sideways inside itself, so the page never does; from
 // sm up it wraps onto a second line, so every tab can be reached with a mouse. Each tab is a link,
-// so the address keeps the view (11-screens-and-ux.md rule 8).
+// so the address keeps the view (11-screens-and-ux.md rule 8); a tab keeps the page where it is
+// scrolled, so a tab low on the page does not jump to the top.
 
 export type TabLink = {
   id: string;
@@ -40,6 +41,7 @@ export function TabLinks({
           <li key={tab.id} className="flex shrink-0">
             <Link
               href={tab.href}
+              scroll={false}
               aria-current={tab.current ? "page" : undefined}
               data-tab={tab.id}
               className={cn(

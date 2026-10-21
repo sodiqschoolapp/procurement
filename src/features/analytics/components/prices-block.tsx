@@ -1,4 +1,5 @@
 import { getTranslations } from "next-intl/server";
+import Form from "next/form";
 import Link from "next/link";
 
 import type { ChartPoint } from "@/components/charts/chart-point";
@@ -102,7 +103,12 @@ export async function PricesView({
       </div>
 
       <Card id="prices-trend" title={t("prices.trend")} excel={download("priceTrend")}>
-        <form action="/analytics" className="flex flex-wrap items-end gap-3" data-price-picker>
+        <Form
+          scroll={false}
+          action="/analytics"
+          className="flex flex-wrap items-end gap-3"
+          data-price-picker
+        >
           {kept.map(([name, value]) => (
             <input key={name} type="hidden" name={name} value={value} />
           ))}
@@ -127,7 +133,7 @@ export async function PricesView({
           >
             {t("prices.show")}
           </button>
-        </form>
+        </Form>
         {!trend || points.length === 0 ? (
           <p className="text-sm text-muted-foreground" data-trend-empty>
             {trend ? t("prices.trendEmpty", { name: subtypeLabel(trend) }) : t("prices.noRecords")}

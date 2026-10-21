@@ -1,3 +1,4 @@
+import Form from "next/form";
 import { cookies } from "next/headers";
 import { getTranslations } from "next-intl/server";
 import Link from "next/link";
@@ -138,7 +139,12 @@ export default async function StockOnHandPage({ searchParams }: { searchParams: 
         <EmptyState title={t("emptyTitle")} line={t("emptyText")} />
       ) : (
         <>
-          <form role="search" action="/warehouse/stock" className="flex flex-wrap items-end gap-2">
+          <Form
+            scroll={false}
+            role="search"
+            action="/warehouse/stock"
+            className="flex flex-wrap items-end gap-2"
+          >
             {addressBranch && <input type="hidden" name="branch" value={addressBranch} />}
             <label htmlFor="stock-search" className="sr-only">
               {t("search")}
@@ -192,7 +198,7 @@ export default async function StockOnHandPage({ searchParams }: { searchParams: 
                 {t("clear")}
               </Link>
             )}
-          </form>
+          </Form>
 
           {list.rows.length === 0 ? (
             <EmptyState title={t("noResultsTitle")} line={t("noResultsText")} />

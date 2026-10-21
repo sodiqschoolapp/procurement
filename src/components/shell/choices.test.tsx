@@ -11,7 +11,9 @@ import { ThemeChoice } from "./theme-choice";
 // (the theme follows the device until the user chooses one); plan of 0.10b, decision 17.
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh() {} }) }));
-vi.mock("./actions", () => ({ chooseOwnLanguageAction: async () => ({ ok: true, data: null }) }));
+vi.mock("@/app/(app)/profile/actions", () => ({
+  chooseOwnLanguageAction: async () => ({ ok: true, data: null }),
+}));
 
 function wrap(node: React.ReactNode): string {
   return renderToStaticMarkup(

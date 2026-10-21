@@ -1,4 +1,5 @@
 import { getTranslations } from "next-intl/server";
+import Form from "next/form";
 import Link from "next/link";
 import * as z from "zod";
 
@@ -93,7 +94,12 @@ export default async function PricesPage({ searchParams }: { searchParams: Promi
         <EmptyState title={t("emptyTitle")} line={t("emptyText")} />
       ) : (
         <>
-          <form role="search" action="/prices" className="flex flex-wrap items-end gap-2">
+          <Form
+            scroll={false}
+            role="search"
+            action="/prices"
+            className="flex flex-wrap items-end gap-2"
+          >
             <label htmlFor="price-search" className="sr-only">
               {t("search")}
             </label>
@@ -114,7 +120,7 @@ export default async function PricesPage({ searchParams }: { searchParams: Promi
                 {tCatalog("clear")}
               </Link>
             )}
-          </form>
+          </Form>
 
           {list.rows.length === 0 ? (
             <EmptyState title={tCatalog("noResultsTitle")} line={tCatalog("noResultsText")} />

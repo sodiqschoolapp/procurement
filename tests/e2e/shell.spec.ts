@@ -247,3 +247,84 @@ test("a session that ended while its cookie stayed returns to the same page afte
 
   await expect(page).toHaveURL(/\/login\?next=%2Fprofile%3Ftab%3Dx$/);
 });
+
+// Owner, 21.10.2026: "Profile page should instead be floating bar on the left when clicked." The
+// person in the menu (the avatar of the top bar on a phone) opens the profile as a panel from the
+// left; /profile stays for its address. The panel is the dialog named by the person's name.
+test("the person's panel opens from the left with name, username, role, language, theme and sign-out, and Escape closes it", async ({
+  page,
+}) => {
+  const head = E2E_ROLES.HEAD;
+  await signIn(page, head);
+  await page.goto("/orders");
+  const trigger = page.locator("[data-profile-trigger]:visible");
+  const panel = page.getByRole("dialog", { name: head.fullName });
+  // A click before the page has hydrated opens nothing: try again until the panel shows.
+  await expect(async () => {
+    if (!(await panel.isVisible())) await trigger.click();
+    await expect(panel).toBeVisible({ timeout: 1000 });
+  }).toPass();
+
+  await expect(panel).toContainText(head.username);
+  await expect(panel).toContainText(uz.roles.HEAD);
+  await expect(panel.getByRole("radio", { name: uz.languages.uz })).toHaveAttribute(
+    "aria-checked",
+    "true",
+  );
+  await expect(panel.getByRole("button", { name: uz.session.signOut })).toBeVisible();
+  // Against the left edge, the full height of the screen.
+  await expect.poll(async () => (await panel.boundingBox())?.x).toBe(0);
+
+  // The theme is chosen in the panel as on /profile, and the page stays where it was.
+  await panel.getByRole("radio", { name: uz.theme.dark }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await panel.getByRole("radio", { name: uz.theme.device }).click();
+  await expect(page.locator("html")).not.toHaveAttribute("data-theme", /./);
+  await expect(page).toHaveURL(/\/orders$/);
+
+  await page.keyboard.press("Escape");
+  await expect(panel).toBeHidden();
+  await noSideScroll(page);
+});
+
+// Owner, 21.10.2026: moving from tab to tab "is reloading the page kinda", and a tab low on the
+// page jumped to the top. A tab and a filter form now keep the page where it stands, without a
+// reload. The clicks go through the page, not Playwright's pointer, which would scroll the target
+// into view first.
+test("a report tab and the report filters keep the page where it is: no reload, no jump to the top", async ({
+  page,
+}) => {
+  await signIn(page, E2E_ROLES.HEAD);
+  await page.goto("/reports");
+  await page.waitForLoadState("networkidle");
+  // Room below the page, so it can stand scrolled whatever the data; a mark that a reload clears.
+  await page.evaluate(() => {
+    document.body.style.paddingBottom = "3000px";
+    Object.assign(window, { notReloaded: true });
+  });
+  const scrolledTo = async (y: number) => {
+    await page.evaluate((to) => window.scrollTo(0, to), y);
+    await expect.poll(() => page.evaluate(() => Math.round(window.scrollY))).toBe(y);
+  };
+
+  await scrolledTo(600);
+  await page.evaluate(() =>
+    document.querySelector<HTMLAnchorElement>('[data-report-tab="movements"]')!.click(),
+  );
+  await expect(page).toHaveURL(/report=movements/);
+  await expect(page.locator('[data-report-tab="movements"]')).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+  expect(await page.evaluate(() => Math.round(window.scrollY))).toBe(600);
+
+  await scrolledTo(600);
+  await page.evaluate(() =>
+    document
+      .querySelector<HTMLFormElement>('form[role="search"][action="/reports"]')!
+      .requestSubmit(),
+  );
+  await expect(page).toHaveURL(/report=movements&.*category=/);
+  expect(await page.evaluate(() => Math.round(window.scrollY))).toBe(600);
+  expect(await page.evaluate(() => "notReloaded" in window)).toBe(true);
+});

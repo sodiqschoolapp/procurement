@@ -9,10 +9,10 @@ import { useSyncExternalStore } from "react";
 import { Icon } from "@/components/icon";
 import { applySidebar, subscribeToRoot } from "@/components/theme";
 import { cn } from "@/components/utils";
-import type { Role } from "@/domain/permissions";
 
 import { isActive, menuFor } from "./menu";
 import { Avatar } from "./person";
+import { type PanelPerson, ProfilePanel } from "./profile-panel";
 import { SignOutButton } from "./sign-out-button";
 
 // The menu from 640 px on (docs/design-system.md, Page shell): white with a hairline edge (dark:
@@ -29,17 +29,17 @@ const QUIET =
   "transition-colors duration-120 ease-out hover:bg-sidebar-accent hover:text-sidebar-accent-foreground";
 
 export function Sidebar({
-  role,
-  fullName,
+  person,
   schoolName,
 }: {
-  role: Role;
-  fullName: string;
+  /** The person, for the menu and their own panel (ProfilePanel). */
+  person: PanelPerson;
   /** The school name of the settings, or `null` until set (plan of 1.1, decision 13). */
   schoolName: string | null;
 }) {
   const t = useTranslations();
   const pathname = usePathname();
+  const { fullName, role } = person;
   // Read from <html> in the browser; the server cannot know the browser's choice.
   const rail = useSyncExternalStore(
     subscribeToRoot,
@@ -143,11 +143,11 @@ export function Sidebar({
           </span>
         </button>
         <div className="flex items-center gap-1 rail:flex-col">
-          <Link
-            href="/profile"
-            title={t("shell.profile")}
-            className={cn(
-              "flex min-w-0 flex-1 items-center gap-3 rounded-md p-1.5 rail:flex-none",
+          <ProfilePanel
+            {...person}
+            triggerTitle={t("shell.profile")}
+            triggerClassName={cn(
+              "flex min-w-0 flex-1 items-center gap-3 rounded-md p-1.5 text-left rail:flex-none",
               FOCUS,
               QUIET,
             )}
@@ -157,7 +157,7 @@ export function Sidebar({
               <span className="truncate text-sm font-medium text-foreground">{fullName}</span>
               <span className="truncate text-xs text-muted-foreground">{t(`roles.${role}`)}</span>
             </span>
-          </Link>
+          </ProfilePanel>
           <SignOutButton
             kind="icon"
             className={cn("flex size-9 items-center justify-center rounded-md", FOCUS, QUIET)}

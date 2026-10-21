@@ -193,6 +193,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
           <Link
             key={report}
             href={`/reports?${reportSearch({ ...params, report, page: 1 })}`}
+            scroll={false}
             aria-current={report === params.report ? "page" : undefined}
             className={buttonVariants({
               variant: report === params.report ? "default" : "secondary",

@@ -1,4 +1,5 @@
 import { getTranslations } from "next-intl/server";
+import Form from "next/form";
 import Link from "next/link";
 import * as z from "zod";
 
@@ -110,7 +111,12 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
         />
       ) : (
         <>
-          <form role="search" action="/catalog/products" className="flex flex-wrap items-end gap-2">
+          <Form
+            scroll={false}
+            role="search"
+            action="/catalog/products"
+            className="flex flex-wrap items-end gap-2"
+          >
             <label htmlFor="catalog-search" className="sr-only">
               {t("search")}
             </label>
@@ -163,7 +169,7 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
                 {t("clear")}
               </Link>
             )}
-          </form>
+          </Form>
 
           {list.rows.length === 0 ? (
             <EmptyState title={t("noResultsTitle")} line={t("noResultsText")} />

@@ -33,7 +33,7 @@ export function OwnersSwitch({ all }: { all: boolean }) {
         { value: "mine", label: t("mine") },
         { value: "all", label: t("all") },
       ]}
-      onValueChange={(value) => start(() => router.push(hrefOf(value)))}
+      onValueChange={(value) => start(() => router.push(hrefOf(value), { scroll: false }))}
     />
   );
 }
