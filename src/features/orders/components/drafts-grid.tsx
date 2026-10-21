@@ -226,7 +226,8 @@ export function DraftsGrid({
       // A new draft sorts last (oldest first): go to the page it lands on (Should fix 2).
       const last = Math.ceil((total + 1) / DRAFTS_PAGE_SIZE);
       if (last !== page) {
-        router.push(pageHref(last));
+        // The grid stays where it is on the page (no jump to the top).
+        router.push(pageHref(last), { scroll: false });
         return;
       }
     }

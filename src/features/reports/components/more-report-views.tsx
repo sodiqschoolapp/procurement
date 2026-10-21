@@ -1,4 +1,5 @@
 import { getTranslations } from "next-intl/server";
+import Form from "next/form";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
@@ -64,7 +65,8 @@ export async function PriceHistoryView({
 
   return (
     <>
-      <form
+      <Form
+        scroll={false}
         action="/reports"
         className="flex flex-wrap items-end gap-3 max-sm:flex-col max-sm:items-stretch"
         data-price-picker
@@ -89,7 +91,7 @@ export async function PriceHistoryView({
         <button type="submit" className={buttonVariants({ variant: "secondary" })}>
           {t("prices.show")}
         </button>
-      </form>
+      </Form>
       {!report.subtype ? (
         <EmptyState title={t("tabs.prices")} line={t("prices.empty")} />
       ) : (

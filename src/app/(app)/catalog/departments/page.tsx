@@ -1,4 +1,5 @@
 import { getTranslations } from "next-intl/server";
+import Form from "next/form";
 import { cookies } from "next/headers";
 import Link from "next/link";
 import * as z from "zod";
@@ -104,7 +105,8 @@ export default async function DepartmentsPage({ searchParams }: { searchParams: 
         />
       ) : (
         <>
-          <form
+          <Form
+            scroll={false}
             role="search"
             action="/catalog/departments"
             className="flex flex-wrap items-center gap-2"
@@ -129,7 +131,7 @@ export default async function DepartmentsPage({ searchParams }: { searchParams: 
                 {t("clear")}
               </Link>
             )}
-          </form>
+          </Form>
 
           {list.rows.length === 0 ? (
             <EmptyState title={t("noResultsTitle")} line={t("noResultsText")} />

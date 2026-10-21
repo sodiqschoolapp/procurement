@@ -1,3 +1,4 @@
+import Form from "next/form";
 import { cookies } from "next/headers";
 import { getTranslations } from "next-intl/server";
 import Link from "next/link";
@@ -147,7 +148,8 @@ export default async function WarehouseDocumentsPage({
         <EmptyState title={t("emptyTitle")} line={t("emptyText")} />
       ) : (
         <>
-          <form
+          <Form
+            scroll={false}
             role="search"
             action="/warehouse/documents"
             className="flex flex-wrap items-end gap-2 max-sm:flex-col max-sm:items-stretch"
@@ -203,7 +205,7 @@ export default async function WarehouseDocumentsPage({
                 {t("clear")}
               </Link>
             )}
-          </form>
+          </Form>
 
           {list.rows.length === 0 ? (
             <EmptyState title={t("noResultsTitle")} line={t("noResultsText")} />

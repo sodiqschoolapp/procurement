@@ -1,4 +1,5 @@
 import { getTranslations } from "next-intl/server";
+import Form from "next/form";
 import Link from "next/link";
 
 import { buttonVariants } from "@/components/ui/button";
@@ -29,7 +30,8 @@ export async function ReportFilters({
   const field = "flex flex-col gap-1 text-sm leading-5 font-semibold";
   return (
     <FilterFold label={t("filters")}>
-      <form
+      <Form
+        scroll={false}
         role="search"
         action="/reports"
         className="flex flex-wrap items-end gap-3 max-sm:flex-col max-sm:items-stretch"
@@ -97,7 +99,7 @@ export async function ReportFilters({
         >
           {t("reset")}
         </Link>
-      </form>
+      </Form>
     </FilterFold>
   );
 }

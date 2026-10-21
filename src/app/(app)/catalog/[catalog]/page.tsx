@@ -1,4 +1,5 @@
 import { getTranslations } from "next-intl/server";
+import Form from "next/form";
 import Link from "next/link";
 import * as z from "zod";
 
@@ -92,7 +93,8 @@ export default async function CatalogListPage({
         />
       ) : (
         <>
-          <form
+          <Form
+            scroll={false}
             role="search"
             action={`/catalog/${kind}`}
             className="flex flex-wrap items-center gap-2"
@@ -117,7 +119,7 @@ export default async function CatalogListPage({
                 {t("clear")}
               </Link>
             )}
-          </form>
+          </Form>
 
           {list.rows.length === 0 ? (
             <EmptyState title={t("noResultsTitle")} line={t("noResultsText")} />
