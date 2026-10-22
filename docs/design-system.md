@@ -38,11 +38,11 @@ The tokens keep the names of shadcn/ui and are written in `src/app/globals.css` 
 | `--ring` | #06113C | #FF8A32 | Focus: 2 px outline, 2 px offset. Navy in the light theme, because orange on white is 2.35 : 1; orange in the dark theme. |
 | `--brand` | #FF8A32 | #FF8A32 | The orange highlight: active tab underline, active menu marker, the "needs you now" accent. Fills and lines only. |
 | `--brand-foreground` | #06113C | #06113C | Text on an orange fill (7.75 : 1). |
-| `--destructive`, `--destructive-bg` | #B42318 on #FEF1F0 | #FF8F85 on #372B3E | Refused, sent back, over plan, danger buttons. |
-| `--warning`, `--warning-bg` | #8A4B00 on #FFF5DB | #FFD27A on #37363D | Overdue, due soon, waiting on you, money left. Amber, never the brand orange. |
-| `--success`, `--success-bg` | #13703A on #EBF7EF | #6FD08C on #203540 | Done, even, saved. |
-| `--info`, `--info-bg` | #2348A8 on #EEF3FD | #9DBBFF on #273252 | In approval, open, in settlement; notices. |
-| `--today`, `--today-muted` | #FFF6EE, #5A6278 | #2E2631, #C9C2C4 | A row or item that needs the person now (an orange tint). |
+| `--destructive`, `--destructive-bg` | #B42318 on #FEF1F0 | #FF8F85 on #4B1D1B | Refused, sent back, over plan, danger buttons. |
+| `--warning`, `--warning-bg` | #8A4B00 on #FFF5DB | #FFD27A on #402C05 | Overdue, due soon, waiting on you, money left. Amber, never the brand orange. |
+| `--success`, `--success-bg` | #13703A on #EBF7EF | #6FD08C on #12361E | Done, even, saved. |
+| `--info`, `--info-bg` | #2348A8 on #EEF3FD | #9DBBFF on #1F2E54 | In approval, open, in settlement; notices. |
+| `--today`, `--today-muted` | #FFF6EE, #5A6278 | #382315, #C9C2C4 | A row or item that needs the person now (an orange tint). |
 | `--topbar` | #FFFFFF | #111831 | The top bar. |
 | `--link` | #06113C | #E8EBF3 | Plain links: weight 500, underlined on hover. |
 | `--sidebar` | #FFFFFF | #0D1328 | The menu. |
@@ -54,7 +54,7 @@ The tokens keep the names of shadcn/ui and are written in `src/app/globals.css` 
 | `--sidebar-avatar` | #06113C | #2A3561 | The round avatar behind white initials. |
 | `--chart-1` … `--chart-5` | #34498A, #7C8DBF, #B9C3DE, #5A6278, #C9CED9 | #8EA2DA, #5D6FA6, #3A4877, #9AA3BC, #2E3858 | Chart marks: one navy-blue series; the others for a second series or a total. |
 
-The dark tints of danger, warning, success and info are the colour at 16% over the dark card, composited in sRGB; `--today` dark is the orange at 12% over the card.
+The dark tints of danger, warning, success and info, and `--today`, are dark colours in each colour's own hue (oklch lightness about 0.30), chosen by hand so red stays red and amber amber; a mix of the colour over the navy card had turned them grey or purple. `tests/contrast.test.ts` checks each tint's hue against its colour's and the contrast of the text on it.
 
 The theme follows the device by default; the person can choose light or dark on Profile or on the sign-in page, and the choice is kept in the browser.
 

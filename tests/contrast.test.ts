@@ -144,17 +144,6 @@ const LIGHT_HEX: Record<string, string> = {
 
 const DARK_CARD = "#111831";
 
-/** "The colour at 16% over the dark card", composited in sRGB and rounded (design system, Colour). */
-function tintOverDarkCard(hex: string, share = 0.16): string {
-  const colour = rgbOfHex(hex);
-  const card = rgbOfHex(DARK_CARD);
-  return `#${colour
-    .map((channel, i) => Math.round(share * channel + (1 - share) * (card[i] ?? 0)))
-    .map((channel) => channel.toString(16).padStart(2, "0"))
-    .join("")
-    .toUpperCase()}`;
-}
-
 const DARK_HEX: Record<string, string> = {
   background: "#0A0F1E",
   foreground: "#E8EBF3",
@@ -173,14 +162,14 @@ const DARK_HEX: Record<string, string> = {
   accent: "#1A2343",
   "accent-foreground": "#E8EBF3",
   destructive: "#FF8F85",
-  "destructive-bg": tintOverDarkCard("#FF8F85"),
+  "destructive-bg": "#4B1D1B",
   success: "#6FD08C",
-  "success-bg": tintOverDarkCard("#6FD08C"),
+  "success-bg": "#12361E",
   warning: "#FFD27A",
-  "warning-bg": tintOverDarkCard("#FFD27A"),
+  "warning-bg": "#402C05",
   info: "#9DBBFF",
-  "info-bg": tintOverDarkCard("#9DBBFF"),
-  today: tintOverDarkCard("#FF8A32", 0.12),
+  "info-bg": "#1F2E54",
+  today: "#382315",
   "today-muted": "#C9C2C4",
   topbar: DARK_CARD,
   link: "#E8EBF3",
@@ -283,10 +272,24 @@ describe("the design system's colours (docs/design-system.md, Colour; 11-screens
     });
   }
 
-  it("the dark tints are the colour at 16% over the card (design system, Colour)", () => {
-    // Worked through once by hand: danger #FF8F85 over #111831 is #372B3E.
-    expect(tintOverDarkCard("#FF8F85")).toBe("#372B3E");
-    expect(hexOf(DARK["destructive-bg"] ?? "")).toBe("#372B3E");
+  it("each dark tint keeps its colour's hue, not the card's (design system, Colour; 22.10.2026)", () => {
+    // The hue of a tint is within 10° of its colour's own: red stays red, amber amber, green
+    // green, blue blue, the orange highlight orange. The old 16% mix over the card read as grey
+    // (amber, hue 292) or purple (red, hue 313).
+    const hueOf = (value: string) => Number(/^oklch\([\d.]+ [\d.]+ ([\d.]+)\)$/.exec(value)?.[1]);
+    const apart = (one: number, other: number) => {
+      const turn = Math.abs(one - other) % 360;
+      return Math.min(turn, 360 - turn);
+    };
+    for (const [tint, colour] of [
+      ["destructive-bg", "destructive"],
+      ["warning-bg", "warning"],
+      ["success-bg", "success"],
+      ["info-bg", "info"],
+      ["today", "brand"],
+    ] as const) {
+      expect(apart(hueOf(DARK[tint] ?? ""), hueOf(DARK[colour] ?? "")), tint).toBeLessThan(10);
+    }
   });
 
   it("orange is never text on a light surface: it fails 4.5 : 1 on white (design system, Colour)", () => {
