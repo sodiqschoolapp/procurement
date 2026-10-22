@@ -7,6 +7,7 @@ import uz from "../../src/i18n/messages/uz.json" with { type: "json" };
 import { connectionOptions } from "../../src/server/db/connection-options.mjs";
 import { E2E_ROLES, e2eDatabaseUrl, serverDatabaseUrl } from "./global-setup";
 import { shownAmount } from "./shown-amount";
+import { clickDocumentAction, documentAction } from "./document-actions";
 
 // Build plan 5.8 (Direct entry by the Head). 09-warehouse.md, Direct entry by the Head: branch,
 // date, reason, lines with a cost prefilled from the reference price; 15-quality-and-acceptance.md
@@ -95,7 +96,7 @@ test("the Head enters 200 chairs EA already owns at the reference price, and the
   await signIn(page, E2E_ROLES.HEAD);
 
   await page.goto("/warehouse/stock");
-  await page.getByRole("link", { name: uz.warehouse.stock.directEntry }).click();
+  await clickDocumentAction(page, uz.warehouse.stock.directEntry);
   await expect(page).toHaveURL(/\/warehouse\/documents\/new\?type=DIRECT_ENTRY$/);
   await expect(page.getByRole("heading", { level: 1, name: texts.title })).toBeVisible();
 
@@ -172,8 +173,9 @@ test("the Manager has no Direct entry button and the form is Not found (S15; 03 
 }) => {
   await signIn(page, E2E_ROLES.MANAGER);
   await page.goto("/warehouse/stock");
-  await expect(page.getByRole("link", { name: uz.warehouse.stock.newReturn })).toBeVisible();
-  await expect(page.getByRole("link", { name: uz.warehouse.stock.directEntry })).toHaveCount(0);
+  // Shown or folded behind More on a phone (redesign of 22.10.2026).
+  await expect(documentAction(page, "RETURN")).toHaveCount(1);
+  await expect(documentAction(page, "DIRECT_ENTRY")).toHaveCount(0);
   await page.goto("/warehouse/documents/new?type=DIRECT_ENTRY");
   await expect(page.getByRole("heading", { name: uz.notFoundPage.title })).toBeVisible();
   await expect(page.getByRole("heading", { name: texts.title })).toHaveCount(0);

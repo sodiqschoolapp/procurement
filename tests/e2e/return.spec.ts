@@ -6,6 +6,7 @@ import pg from "pg";
 import uz from "../../src/i18n/messages/uz.json" with { type: "json" };
 import { connectionOptions } from "../../src/server/db/connection-options.mjs";
 import { E2E_ROLES, e2eDatabaseUrl, serverDatabaseUrl } from "./global-setup";
+import { clickDocumentAction, documentAction } from "./document-actions";
 
 // Build plan 5.6 (Return from a department). 09-warehouse.md, Other documents: "Pick the
 // department, items and quantities; stock goes up. Returning more than that department ever
@@ -125,7 +126,7 @@ test("a Manager takes 2 of 4 back from a department after the over-return warnin
   await signIn(page, E2E_ROLES.MANAGER);
 
   await page.goto(`/warehouse/stock?q=${encodeURIComponent(seeded.tag)}`);
-  await page.getByRole("link", { name: uz.warehouse.stock.newReturn }).click();
+  await clickDocumentAction(page, uz.warehouse.stock.newReturn);
   await expect(page).toHaveURL(/\/warehouse\/documents\/new\?type=RETURN$/);
   await expect(page.getByRole("heading", { level: 1, name: texts.title })).toBeVisible();
 
@@ -185,7 +186,8 @@ test("the return form is Not found for the Principal and Finance, and their Stoc
     await page.context().clearCookies();
     await signIn(page, person);
     await page.goto("/warehouse/stock");
-    await expect(page.getByRole("link", { name: uz.warehouse.stock.newReturn })).toHaveCount(0);
+    // Shown or folded behind More on a phone: the count is of either (redesign of 22.10.2026).
+    await expect(documentAction(page, "RETURN")).toHaveCount(0);
     await page.goto("/warehouse/documents/new?type=RETURN");
     await expect(page.getByRole("heading", { name: uz.notFoundPage.title })).toBeVisible();
     await expect(page.getByRole("heading", { name: texts.title })).toHaveCount(0);

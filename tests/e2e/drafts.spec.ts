@@ -699,3 +699,34 @@ test("Submit at 375 px: the card's Submit sends the draft, no horizontal page sc
   await expect(rows(page)).toHaveCount(0);
   expect(await scrollsSideways(page)).toBe(false);
 });
+
+test("a phone card is folded to its summary, opens with a tap and folds with Done; from 640 px every field shows (redesign of 22.10.2026)", async ({
+  page,
+}, info) => {
+  const manager = E2E_DRAFT_USERS[info.project.name as keyof typeof E2E_DRAFT_USERS];
+  await freshGrid(manager);
+  await insertCompleteDraft(manager, stapler, "2031-05-01");
+  await signIn(page, manager);
+  await page.goto("/orders");
+  const card = rowOf(page, stapler);
+  const quantity = card.locator('td[data-col="quantity"] input');
+  if (info.project.name !== "phone-375") {
+    // A desktop row: every field, no summary.
+    await expect(quantity).toBeVisible();
+    await expect(card.locator("[data-card-open]")).toBeHidden();
+    return;
+  }
+  // Folded: the summary says what the draft is (2 × 5 000 = 10 000), the fields are hidden.
+  const summary = card.locator("[data-card-open]");
+  await expect(summary).toContainText(stapler);
+  await expect(summary).toContainText(som("10000"));
+  await expect(quantity).toBeHidden();
+  expect((await summary.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  // A tap opens the fields; Done folds them again.
+  await summary.click();
+  await expect(quantity).toBeVisible();
+  await expect(quantity).toHaveValue("2");
+  await card.locator("[data-card-close]").click();
+  await expect(quantity).toBeHidden();
+  expect(await scrollsSideways(page)).toBe(false);
+});

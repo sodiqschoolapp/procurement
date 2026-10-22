@@ -6,6 +6,7 @@ import pg from "pg";
 import uz from "../../src/i18n/messages/uz.json" with { type: "json" };
 import { connectionOptions } from "../../src/server/db/connection-options.mjs";
 import { E2E_ROLES, e2eDatabaseUrl, serverDatabaseUrl } from "./global-setup";
+import { clickDocumentAction, documentAction } from "./document-actions";
 
 // Build plan 7.1 (Transfer: send). 09-warehouse.md, Other documents, Transfer: "The sender picks
 // the other branch and the items; stock leaves the sender at once and the transfer shows 'In
@@ -122,7 +123,7 @@ test("a Manager sends 4 of 10 to another branch through the confirmation; the tr
   await signIn(page, E2E_ROLES.MANAGER);
 
   await page.goto(`/warehouse/stock?q=${encodeURIComponent(seeded.tag)}`);
-  await page.getByRole("link", { name: uz.warehouse.stock.transfer, exact: true }).click();
+  await clickDocumentAction(page, uz.warehouse.stock.transfer);
   await expect(page).toHaveURL(/\/warehouse\/documents\/new\?type=TRANSFER$/);
   await expect(page.getByRole("heading", { level: 1, name: texts.title })).toBeVisible();
 
@@ -205,9 +206,8 @@ test("the transfer form is Not found for the Principal and Finance, and their St
     await page.context().clearCookies();
     await signIn(page, person);
     await page.goto("/warehouse/stock");
-    await expect(
-      page.getByRole("link", { name: uz.warehouse.stock.transfer, exact: true }),
-    ).toHaveCount(0);
+    // Shown or folded behind More on a phone: the count is of either (redesign of 22.10.2026).
+    await expect(documentAction(page, "TRANSFER")).toHaveCount(0);
     await page.goto("/warehouse/documents/new?type=TRANSFER");
     await expect(page.getByRole("heading", { name: uz.notFoundPage.title })).toBeVisible();
   }
