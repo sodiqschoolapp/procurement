@@ -136,3 +136,16 @@ test("the Head creates, renames and deactivates a branch, and sees the history (
   await page.goto(address);
   await expect(page.getByRole("heading", { level: 1 })).toContainText(`Sinov filiali ${suffix}`);
 });
+
+test("a click anywhere on a branch's row opens it, as its link does (design system, Panels and lists: a row with one destination; redesign of 22.10.2026)", async ({
+  page,
+}) => {
+  await signIn(page, E2E_ROLES.HEAD);
+  await page.goto("/branches");
+  const row = page.locator("tbody tr[data-row]").first();
+  const href = await row.locator("a[data-row-link]").getAttribute("href");
+  expect(href).toMatch(/^\/branches\/[0-9a-f-]{36}$/);
+  // The name, not the link: the row takes the click.
+  await row.locator("td").nth(1).click();
+  await expect(page).toHaveURL(new RegExp(`${href}$`));
+});

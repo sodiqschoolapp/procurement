@@ -16,11 +16,15 @@ export type WireTotals = {
   byPaymentType: Record<PaymentType, string>;
 };
 
-export type WireListOrder = Omit<ListOrder, "price" | "plannedTotal" | "priceHint" | "colours"> & {
+export type WireListOrder = Omit<
+  ListOrder,
+  "price" | "plannedTotal" | "priceHint" | "colours" | "actual"
+> & {
   price: string;
   plannedTotal: string;
   priceHint: string | null;
   colours: WireColours | null;
+  actual: { unitPrice: string; oneUnitPrice: boolean; total: string } | null;
 };
 
 export type WireOrderGroup = Omit<OrderGroup, "summary" | "orders" | "colours"> & {
@@ -82,6 +86,11 @@ export function wireGroup(group: OrderGroup): WireOrderGroup {
       plannedTotal: order.plannedTotal.toString(),
       priceHint: order.priceHint?.toString() ?? null,
       colours: wireColours(order.colours),
+      actual: order.actual && {
+        unitPrice: order.actual.unitPrice.toString(),
+        oneUnitPrice: order.actual.oneUnitPrice,
+        total: order.actual.total.toString(),
+      },
     })),
   };
 }

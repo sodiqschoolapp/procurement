@@ -6,6 +6,7 @@ import * as z from "zod";
 
 import { EmptyState } from "@/components/empty-state";
 import { Icon } from "@/components/icon";
+import { RowLinks } from "@/components/row-links";
 import { buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -204,136 +205,140 @@ export default async function StockOnHandPage({ searchParams }: { searchParams: 
             <EmptyState title={t("noResultsTitle")} line={t("noResultsText")} />
           ) : (
             <section className="table-cards-panel overflow-x-auto rounded-xl border border-border bg-card text-card-foreground">
-              <table className="table-cards w-full min-w-[56rem] border-collapse text-left text-sm">
-                <thead className="border-b border-border bg-muted text-xs font-medium text-muted-foreground">
-                  <tr>
-                    <th scope="col" className="w-16 px-4 py-3">
-                      <span className="sr-only">{t("columns.photo")}</span>
-                    </th>
-                    <th scope="col" className="px-4 py-3">
-                      {t("columns.product")}
-                    </th>
-                    <th scope="col" className="px-4 py-3">
-                      {t("columns.subtype")}
-                    </th>
-                    <th scope="col" className="px-4 py-3">
-                      {t("columns.branch")}
-                    </th>
-                    <th scope="col" className="px-4 py-3 text-right">
-                      {t("columns.quantity")}
-                    </th>
-                    <th scope="col" className="px-4 py-3">
-                      {t("columns.measure")}
-                    </th>
-                    <th scope="col" className="px-4 py-3 text-right">
-                      {t("columns.minimum")}
-                    </th>
-                    <th scope="col" className="px-4 py-3 text-right">
-                      {t("columns.value")}
-                    </th>
-                    {/* `relative`: the hidden label stays inside the scrolling panel (as the item card). */}
-                    <th scope="col" className="relative px-4 py-3">
-                      <span className="sr-only">{t("columns.actions")}</span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {list.rows.map((row) => {
-                    const itemName = row.subtypeName
-                      ? `${row.productName}, ${row.subtypeName}`
-                      : row.productName;
-                    return (
-                      <tr
-                        key={`${row.branchId}-${row.variantId}`}
-                        className="border-t"
-                        data-stock-row={`${row.branchId}:${row.variantId}`}
-                      >
-                        <td className="px-4 py-2 max-sm:hidden">
-                          {row.photoFileId ? (
-                            // eslint-disable-next-line @next/next/no-img-element -- a private file route, not an asset
-                            <img
-                              src={`/files/${row.photoFileId}/small`}
-                              alt={t("photoAlt", { name: row.productName })}
-                              width={40}
-                              height={40}
-                              loading="lazy"
-                              className="size-10 rounded-lg bg-muted object-cover"
-                            />
-                          ) : (
-                            <span className="flex size-10 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-                              <Icon name="inventory_2" size={18} label={t("noPhoto")} />
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 font-semibold" data-card="head">
-                          <Link
-                            href={`/warehouse/items/${row.variantId}?branch=${row.branchId}`}
-                            className="font-semibold text-link underline-offset-2 hover:underline"
+              <RowLinks>
+                <table className="table-cards w-full min-w-[56rem] border-collapse text-left text-sm">
+                  <thead className="border-b border-border bg-muted text-xs font-medium text-muted-foreground">
+                    <tr>
+                      <th scope="col" className="w-16 px-4 py-3">
+                        <span className="sr-only">{t("columns.photo")}</span>
+                      </th>
+                      <th scope="col" className="px-4 py-3">
+                        {t("columns.product")}
+                      </th>
+                      <th scope="col" className="px-4 py-3">
+                        {t("columns.subtype")}
+                      </th>
+                      <th scope="col" className="px-4 py-3">
+                        {t("columns.branch")}
+                      </th>
+                      <th scope="col" className="px-4 py-3 text-right">
+                        {t("columns.quantity")}
+                      </th>
+                      <th scope="col" className="px-4 py-3">
+                        {t("columns.measure")}
+                      </th>
+                      <th scope="col" className="px-4 py-3 text-right">
+                        {t("columns.minimum")}
+                      </th>
+                      <th scope="col" className="px-4 py-3 text-right">
+                        {t("columns.value")}
+                      </th>
+                      {/* `relative`: the hidden label stays inside the scrolling panel (as the item card). */}
+                      <th scope="col" className="relative px-4 py-3">
+                        <span className="sr-only">{t("columns.actions")}</span>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {list.rows.map((row) => {
+                      const itemName = row.subtypeName
+                        ? `${row.productName}, ${row.subtypeName}`
+                        : row.productName;
+                      return (
+                        <tr
+                          data-row
+                          key={`${row.branchId}-${row.variantId}`}
+                          className="border-t hover:bg-accent/50"
+                          data-stock-row={`${row.branchId}:${row.variantId}`}
+                        >
+                          <td className="px-4 py-2 max-sm:hidden">
+                            {row.photoFileId ? (
+                              // eslint-disable-next-line @next/next/no-img-element -- a private file route, not an asset
+                              <img
+                                src={`/files/${row.photoFileId}/small`}
+                                alt={t("photoAlt", { name: row.productName })}
+                                width={40}
+                                height={40}
+                                loading="lazy"
+                                className="size-10 rounded-lg bg-muted object-cover"
+                              />
+                            ) : (
+                              <span className="flex size-10 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                                <Icon name="inventory_2" size={18} label={t("noPhoto")} />
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 font-semibold" data-card="head">
+                            <Link
+                              data-row-link
+                              href={`/warehouse/items/${row.variantId}?branch=${row.branchId}`}
+                              className="font-semibold text-link underline-offset-2 hover:underline"
+                            >
+                              {row.productName}
+                            </Link>
+                          </td>
+                          <td className="px-4 py-3" data-label={t("columns.subtype")}>
+                            {row.subtypeName ?? ""}
+                          </td>
+                          <td className="px-4 py-3" data-label={t("columns.branch")}>
+                            {row.branchCode}
+                          </td>
+                          <td
+                            className="px-4 py-3 text-right whitespace-nowrap tabular-nums"
+                            data-label={t("columns.quantity")}
                           >
-                            {row.productName}
-                          </Link>
-                        </td>
-                        <td className="px-4 py-3" data-label={t("columns.subtype")}>
-                          {row.subtypeName ?? ""}
-                        </td>
-                        <td className="px-4 py-3" data-label={t("columns.branch")}>
-                          {row.branchCode}
-                        </td>
-                        <td
-                          className="px-4 py-3 text-right whitespace-nowrap tabular-nums"
-                          data-label={t("columns.quantity")}
-                        >
-                          <span className="inline-flex items-center gap-2">
-                            {row.low && <LowLabel />}
-                            {format.quantity(row.quantity)}
-                          </span>
-                        </td>
-                        <td
-                          className="px-4 py-3"
-                          title={row.unitName}
-                          data-label={t("columns.measure")}
-                        >
-                          {row.unitShortName}
-                        </td>
-                        <td
-                          className="px-4 py-3 text-right whitespace-nowrap tabular-nums"
-                          data-label={t("columns.minimum")}
-                        >
-                          <span className="inline-flex items-center gap-1" data-minimum>
-                            {row.minimum === null ? "—" : format.quantity(row.minimum)}
-                            {row.canSetMinimum && (
-                              <MinimumButton
+                            <span className="inline-flex items-center gap-2">
+                              {row.low && <LowLabel />}
+                              {format.quantity(row.quantity)}
+                            </span>
+                          </td>
+                          <td
+                            className="px-4 py-3"
+                            title={row.unitName}
+                            data-label={t("columns.measure")}
+                          >
+                            {row.unitShortName}
+                          </td>
+                          <td
+                            className="px-4 py-3 text-right whitespace-nowrap tabular-nums"
+                            data-label={t("columns.minimum")}
+                          >
+                            <span className="inline-flex items-center gap-1" data-minimum>
+                              {row.minimum === null ? "—" : format.quantity(row.minimum)}
+                              {row.canSetMinimum && (
+                                <MinimumButton
+                                  branchId={row.branchId}
+                                  variantId={row.variantId}
+                                  itemName={itemName}
+                                  minimum={row.minimum === null ? "" : plainQuantity(row.minimum)}
+                                  unitShortName={row.unitShortName}
+                                  save={setStockMinimumAction}
+                                />
+                              )}
+                            </span>
+                          </td>
+                          <td
+                            className="px-4 py-3 text-right whitespace-nowrap tabular-nums"
+                            data-label={t("columns.value")}
+                          >
+                            {format.money(row.value)}
+                          </td>
+                          <td className="px-4 py-2 text-right" data-card="wide">
+                            {row.low && row.canAddDraft && (
+                              <AddToDraftButton
                                 branchId={row.branchId}
                                 variantId={row.variantId}
                                 itemName={itemName}
-                                minimum={row.minimum === null ? "" : plainQuantity(row.minimum)}
                                 unitShortName={row.unitShortName}
-                                save={setStockMinimumAction}
                               />
                             )}
-                          </span>
-                        </td>
-                        <td
-                          className="px-4 py-3 text-right whitespace-nowrap tabular-nums"
-                          data-label={t("columns.value")}
-                        >
-                          {format.money(row.value)}
-                        </td>
-                        <td className="px-4 py-2 text-right" data-card="wide">
-                          {row.low && row.canAddDraft && (
-                            <AddToDraftButton
-                              branchId={row.branchId}
-                              variantId={row.variantId}
-                              itemName={itemName}
-                              unitShortName={row.unitShortName}
-                            />
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </RowLinks>
             </section>
           )}
         </>

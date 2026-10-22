@@ -6,13 +6,22 @@
 // ./purchases.ts; the one comparison of its own, round(planned price × actual quantity), is made
 // with their `Exact` clone, rounded half up (developer-rules.md rule 6).
 
-import { Exact, type OrderPlan, orderTotal, quantityOf } from "./order-totals";
+import {
+  Exact,
+  type OrderPlan,
+  orderExtras,
+  orderGoods,
+  orderTotal,
+  quantityOf,
+} from "./order-totals";
 import {
   BUYING_STATUSES,
   type OrderProgress,
   type PurchaseRecord,
+  actualExtra,
   actualGoods,
   actualQuantity,
+  actualUnitPrice,
   actualTotal,
   difference,
   liveRecords,
@@ -55,6 +64,12 @@ export type ColourOrder = {
   records: readonly PurchaseRecord[];
 };
 
+/** round(planned price × actual quantity), half up: the actual quantity at the planned price. */
+function goodsAtPlannedPrice(plan: OrderPlan, received: string): bigint {
+  const atPlan = new Exact(received).times(plan.price.toString());
+  return BigInt(atPlan.toDecimalPlaces(0, Exact.ROUND_HALF_UP).toFixed(0));
+}
+
 /** The colour of a difference by its sign: 0 green, above 0 amber, below 0 red. */
 function bySign(value: bigint): Colour {
   return value === 0n ? "green" : value > 0n ? "amber" : "red";
@@ -87,9 +102,7 @@ export function orderColours(order: ColourOrder): OrderColours | null {
     if (liveRecords(records).every((record) => record.unitPrice === plan.price)) {
       price = { colour: "green", difference: 0n };
     } else {
-      const atPlan = new Exact(received).times(plan.price.toString());
-      const saved =
-        BigInt(atPlan.toDecimalPlaces(0, Exact.ROUND_HALF_UP).toFixed(0)) - actualGoods(records);
+      const saved = goodsAtPlannedPrice(plan, received) - actualGoods(records);
       price = { colour: saved >= 0n ? "amber" : "red", difference: saved };
     }
   }
@@ -101,6 +114,64 @@ export function orderColours(order: ColourOrder): OrderColours | null {
   }
 
   return { number, price, total };
+}
+
+/**
+ * An order's plan beside what was bought, line by line, for the order page's Plan and actual
+ * table (redesign of 22.10.2026). Every number is one of 08's, and the three effects split 08's
+ * Difference exactly: planned total − actual total = quantity + price + extras, each planned −
+ * actual (above 0 less was spent, below 0 more):
+ * - quantity: planned goods − round(planned price × actual quantity), what buying more or fewer
+ *   units did at the planned price;
+ * - price: round(planned price × actual quantity) − actual goods, the Price label's amount;
+ * - extras: planned extra costs − actual extra costs.
+ */
+export type PlanVsActual = {
+  quantity: { planned: string; actual: string };
+  /**
+   * The actual price is actualUnitPrice(): goods ÷ quantity, half up; `difference` is planned −
+   * actual per unit (above 0 cheaper, below 0 dearer), each already whole so'm.
+   */
+  unitPrice: { planned: bigint; actual: bigint; difference: bigint; oneUnitPrice: boolean };
+  extras: { planned: bigint; actual: bigint };
+  /** `difference` is 08's Difference: planned − actual, the sum of the three effects. */
+  total: { planned: bigint; actual: bigint; difference: bigint };
+  effects: { quantity: bigint; price: bigint; extras: bigint };
+};
+
+/**
+ * The plan beside the actual numbers, or null before Open or while nothing counted is bought
+ * (the table compares something bought with its plan). `oneUnitPrice` is false when the live
+ * records were bought at more than one price, so the actual price is an average.
+ */
+export function planVsActual(order: ColourOrder): PlanVsActual | null {
+  if (!BUYING_STATUSES.has(order.status)) return null;
+  const { plan, records } = order;
+  const received = actualQuantity(records);
+  const actualPrice = actualUnitPrice(records);
+  if (actualPrice === null) return null;
+  const atPlan = goodsAtPlannedPrice(plan, received);
+  const goods = actualGoods(records);
+  const extras = actualExtra(records);
+  const prices = new Set(liveRecords(records).map((record) => record.unitPrice));
+  const planned = orderTotal(plan);
+  const actual = actualTotal(records);
+  return {
+    quantity: { planned: quantityOf(plan.quantity).toFixed(), actual: received },
+    unitPrice: {
+      planned: plan.price,
+      actual: actualPrice,
+      difference: plan.price - actualPrice,
+      oneUnitPrice: prices.size === 1,
+    },
+    extras: { planned: orderExtras(plan), actual: extras },
+    total: { planned, actual, difference: difference(planned, actual) },
+    effects: {
+      quantity: orderGoods(plan) - atPlan,
+      price: atPlan - goods,
+      extras: orderExtras(plan) - extras,
+    },
+  };
 }
 
 const RANK: Record<Colour, number> = { green: 0, amber: 1, red: 2 };

@@ -242,9 +242,11 @@ async function smallTargets(page: Page): Promise<string[]> {
       if (control.closest("[aria-hidden=true], nextjs-portal")) continue;
       // WCAG 2.5.5's inline exception: a link inside running text.
       if (control.tagName === "A" && control.closest("p")) continue;
-      // A control inside a label is pressed through its label.
+      // A control inside a label is pressed through its label, and a row's one link through its
+      // whole row, which takes the click (src/components/row-links.tsx; redesign of 22.10.2026).
       const label = control.closest("label");
-      const hit = label ? label.getBoundingClientRect() : box;
+      const row = control.matches("[data-row-link]") ? control.closest("[data-row]") : null;
+      const hit = (label ?? row ?? control).getBoundingClientRect();
       // A visually hidden control (sr-only) is no target of its own: its label is.
       if (!label && box.width <= 1 && box.height <= 1) continue;
       if (hit.width + 0.5 < 44 || hit.height + 0.5 < 44) {

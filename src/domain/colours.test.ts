@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { type ColourOrder, orderColours, orderOutcome, setColours } from "./colours";
+import {
+  type ColourOrder,
+  type PlanVsActual,
+  orderColours,
+  orderOutcome,
+  planVsActual,
+  setColours,
+} from "./colours";
 import type { OrderPlan } from "./order-totals";
 import { type OrderProgress, type PurchaseRecord, actualGoods } from "./purchases";
 import type { RequestStatus } from "./request-status";
@@ -272,6 +279,96 @@ describe("how an order ended against its plan (10 Analytics, Head, Plan vs actua
   it("is none before Open, though buying reads Done", () => {
     expect(
       orderOutcome(order([record("100", 5_200n)], "DONE", NOTEBOOKS, "PENDING_FINANCE")),
+    ).toBeNull();
+  });
+});
+
+describe("plan beside actual, and the three effects (08 Numbers the system calculates; The three colours; redesign of 22.10.2026)", () => {
+  /** The effects split 08's Difference exactly: planned total − actual total. */
+  function addsUp(table: PlanVsActual | null): PlanVsActual {
+    expect(table).not.toBeNull();
+    const { effects, total } = table!;
+    expect(total.difference).toBe(total.planned - total.actual);
+    expect(effects.quantity + effects.price + effects.extras).toBe(total.difference);
+    return table!;
+  }
+
+  it("the owner's row: 20 × 2 500 planned, 30 bought for 60 000: quantity −25 000, price +15 000, total −10 000", () => {
+    const plan: OrderPlan = { quantity: "20", price: 2_500n, extras: [], paymentType: "CASH" };
+    const table = addsUp(planVsActual(order([record("30", 2_000n)], "DONE", plan)));
+    expect(table).toEqual({
+      quantity: { planned: "20", actual: "30" },
+      unitPrice: { planned: 2_500n, actual: 2_000n, difference: 500n, oneUnitPrice: true },
+      extras: { planned: 0n, actual: 0n },
+      total: { planned: 50_000n, actual: 60_000n, difference: -10_000n },
+      effects: { quantity: -25_000n, price: 15_000n, extras: 0n },
+    });
+    // The price effect is the Price label's amount, and the sum the Total label's.
+    const colours = orderColours(order([record("30", 2_000n)], "DONE", plan))!;
+    expect(colours.price).toEqual({ colour: "amber", difference: table.effects.price });
+    expect(colours.total).toEqual({ colour: "red", difference: -10_000n });
+  });
+
+  it("08 Worked example, Dearer: 100 × 5 200 + 30 000: price −20 000, extras −10 000", () => {
+    const table = addsUp(planVsActual(order([record("100", 5_200n, [30_000n])])));
+    expect(table.effects).toEqual({ quantity: 0n, price: -20_000n, extras: -10_000n });
+    // 200 dearer per unit: below 0.
+    expect(table.unitPrice.difference).toBe(-200n);
+    expect(table.extras).toEqual({ planned: 20_000n, actual: 30_000n });
+  });
+
+  it("08 Worked example, Fewer: 90 × 5 000: quantity +50 000, price 0", () => {
+    const table = addsUp(planVsActual(order([record("90", 5_000n, [20_000n])], "DONE_SHORT")));
+    expect(table.effects).toEqual({ quantity: 50_000n, price: 0n, extras: 0n });
+  });
+
+  it("two prices: the actual price is the average, half up, and not one price", () => {
+    const plan: OrderPlan = { quantity: "3", price: 1_000n, extras: [], paymentType: "CASH" };
+    const table = addsUp(
+      planVsActual(order([record("1", 900n), record("2", 1_001n)], "DONE", plan)),
+    );
+    // (900 + 2 002) ÷ 3 = 967.33 → 967.
+    expect(table.unitPrice).toEqual({
+      planned: 1_000n,
+      actual: 967n,
+      difference: 33n,
+      oneUnitPrice: false,
+    });
+    expect(table.effects.price).toBe(98n);
+  });
+
+  it("a quantity with decimals rounds at the planned price half up, and still adds up", () => {
+    const plan: OrderPlan = { quantity: "1.5", price: 3n, extras: [], paymentType: "CASH" };
+    // Planned goods round(4.5) = 5; 2.5 at the planned 3 is round(7.5) = 8; bought for 5.
+    const table = addsUp(planVsActual(order([record("2.5", 2n)], "DONE", plan)));
+    expect(table.effects).toEqual({ quantity: -3n, price: 3n, extras: 0n });
+  });
+
+  it("a cancelled record is left out of every column", () => {
+    const records = [record("50", 9_000n, [5_000n], true), record("100", 5_000n, [20_000n])];
+    const table = addsUp(planVsActual(order(records)));
+    expect(table.quantity.actual).toBe("100");
+    expect(table.effects).toEqual({ quantity: 0n, price: 0n, extras: 0n });
+  });
+
+  it("while buying is Open it shows what is bought so far", () => {
+    const table = addsUp(planVsActual(order([record("40", 5_000n)], "OPEN")));
+    expect(table.quantity).toEqual({ planned: "100", actual: "40" });
+  });
+
+  it("two prices that cancel out: the same price per unit on average, 0 apart", () => {
+    const plan: OrderPlan = { quantity: "2", price: 1_000n, extras: [], paymentType: "CASH" };
+    const table = addsUp(
+      planVsActual(order([record("1", 900n), record("1", 1_100n)], "DONE", plan)),
+    );
+    expect(table.unitPrice).toMatchObject({ actual: 1_000n, difference: 0n, oneUnitPrice: false });
+  });
+
+  it("nothing bought, or before Open: no table", () => {
+    expect(planVsActual(order([], "OPEN"))).toBeNull();
+    expect(planVsActual(order([record("100", 5_000n, [], true)], "OPEN"))).toBeNull();
+    expect(
+      planVsActual(order([record("100", 5_000n)], "DONE", NOTEBOOKS, "PENDING_FINANCE")),
     ).toBeNull();
   });
 });

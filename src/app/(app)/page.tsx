@@ -192,7 +192,10 @@ async function ManagerHome({ userId, branch }: { userId: string; branch: string 
             hidden={home.sentBack.total === 0}
             link={showAll(home.sentBack.total, home.filters.sentBack)}
           >
-            <GroupLines groups={home.sentBack.groups.map(wireGroup)} />
+            <GroupLines
+              groups={home.sentBack.groups.map(wireGroup)}
+              listHref={listHref(home.filters.sentBack)}
+            />
           </HomeBlock>
           <HomeBlock
             id="due-soon"
@@ -202,7 +205,10 @@ async function ManagerHome({ userId, branch }: { userId: string; branch: string 
             hidden={home.dueSoon.total === 0}
             link={showAll(home.dueSoon.total, home.filters.dueSoon)}
           >
-            <GroupLines groups={home.dueSoon.groups.map(wireGroup)} />
+            <GroupLines
+              groups={home.dueSoon.groups.map(wireGroup)}
+              listHref={listHref(home.filters.dueSoon)}
+            />
           </HomeBlock>
           <HomeBlock
             id="open"
@@ -211,7 +217,11 @@ async function ManagerHome({ userId, branch }: { userId: string; branch: string 
             hidden={home.open.total === 0}
             link={showAll(home.open.total, home.filters.open)}
           >
-            <GroupLines groups={home.open.groups.map(wireGroup)} progress={home.openProgress} />
+            <GroupLines
+              groups={home.open.groups.map(wireGroup)}
+              listHref={listHref(home.filters.open)}
+              progress={home.openProgress}
+            />
           </HomeBlock>
           <HomeBlock
             id="drafts"
@@ -473,7 +483,10 @@ async function HeadHome({ userId, branch }: { userId: string; branch: string | n
             </li>
           ))}
         </ul>
-        <GroupLines groups={home.waiting.groups.groups.map(wireGroup)} />
+        <GroupLines
+          groups={home.waiting.groups.groups.map(wireGroup)}
+          listHref={listHref(home.filters.waiting)}
+        />
       </HomeBlock>
 
       <HomeBlock
@@ -599,7 +612,10 @@ async function HeadHome({ userId, branch }: { userId: string; branch: string | n
           label: t("showAll", { count: home.stuck.total }),
         }}
       >
-        <GroupLines groups={home.stuck.groups.map(wireGroup)} />
+        <GroupLines
+          groups={home.stuck.groups.map(wireGroup)}
+          listHref={listHref(home.filters.stuck)}
+        />
       </HomeBlock>
 
       <HomeBlock id="by-status" title={t("head.byStatus.title")} className="lg:col-span-2">

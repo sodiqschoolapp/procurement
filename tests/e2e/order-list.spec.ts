@@ -160,6 +160,38 @@ test("a filtered link reopens the same view; a group row opens to its orders and
   await expect(group).toContainText("3 orders");
 });
 
+test("a click anywhere on a group row opens it, on an order row opens the order; a tick box only ticks (design system, Panels and lists; redesign of 22.10.2026)", async ({
+  page,
+}, info) => {
+  const person = E2E_LIST_USERS[info.project.name as keyof typeof E2E_LIST_USERS];
+  const run = randomUUID().slice(0, 8);
+  const ownerId = await seedOrders(person, run, 1);
+  const pens = `Ruchka ${run} 00`;
+  await signIn(page, person);
+  await page.goto(`/orders?status=PENDING_HEAD&owner=${ownerId}`);
+
+  const group = page.locator("tbody[data-group]").filter({ has: tickGroup(page, pens) });
+  const toggle = page.getByRole("button", { name: t.showOrders.replace("{product}", pens) });
+  // The tick box ticks and leaves the row closed.
+  await tickGroup(page, pens).check();
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await tickGroup(page, pens).uncheck();
+
+  // The product's name opens the row, as the toggle does.
+  await group.getByText(pens, { exact: true }).click();
+  await expect(group.locator("tr[data-order]")).toHaveCount(3);
+
+  // An order row's department opens the order, as its number does.
+  const first = group.locator("tr[data-order]").first();
+  const href = await first.locator("a[data-row-link]").getAttribute("href");
+  await first
+    .locator("td")
+    .filter({ hasText: /Bo'lim/ })
+    .first()
+    .click();
+  await expect(page).toHaveURL(new RegExp(`${href}$`));
+});
+
 test("ticks survive a change of page; a change of filter clears them (review of the plan, correction 1)", async ({
   page,
 }, info) => {

@@ -2,7 +2,7 @@ import { and, asc, desc, eq, inArray, ne, or, sql } from "drizzle-orm";
 import { type AnyPgColumn, alias } from "drizzle-orm/pg-core";
 import * as z from "zod";
 
-import { type OrderColours, orderColours } from "@/domain/colours";
+import { type OrderColours, type PlanVsActual, orderColours, planVsActual } from "@/domain/colours";
 import { businessDate } from "@/domain/business-date";
 import { isImageMime } from "@/domain/files";
 import { addsDraftsIn, inStock, plainQuantity } from "@/domain/drafts";
@@ -227,6 +227,8 @@ export type OrderPage = {
   substituted: boolean;
   /** Number, Price and Total by orderColours(), from Open on; null before (plan of 3.8). */
   colours: OrderColours | null;
+  /** The plan beside what was bought, by planVsActual(); null before Open or with nothing bought. */
+  planVsActual: PlanVsActual | null;
   isService: boolean;
   /** Against today's reference price (decided item 8); null when none applies. */
   priceHint: bigint | null;
@@ -445,6 +447,21 @@ async function readPage(db: Executor, actor: Actor, id: string): Promise<OrderPa
   const records = buying ? await orderRecords(db, row.id) : null;
   const received = records ? actualQuantity(records) : null;
   const total = records ? actualTotal(records) : null;
+  // From Open on the plan is complete (`orders_submitted_plan_check`).
+  const colourOrder =
+    records && row.quantity !== null && row.price !== null
+      ? {
+          status: row.status,
+          progress: row.progress,
+          plan: {
+            quantity: row.quantity,
+            price: row.price,
+            extras: amounts,
+            paymentType: row.paymentType,
+          },
+          records,
+        }
+      : null;
 
   return {
     id: row.id,
@@ -496,21 +513,8 @@ async function readPage(db: Executor, actor: Actor, id: string): Promise<OrderPa
           }
         : null,
     purchases: recordLines,
-    // From Open on the plan is complete (`orders_submitted_plan_check`).
-    colours:
-      records && row.quantity !== null && row.price !== null
-        ? orderColours({
-            status: row.status,
-            progress: row.progress,
-            plan: {
-              quantity: row.quantity,
-              price: row.price,
-              extras: amounts,
-              paymentType: row.paymentType,
-            },
-            records,
-          })
-        : null,
+    colours: colourOrder ? orderColours(colourOrder) : null,
+    planVsActual: colourOrder ? planVsActual(colourOrder) : null,
     cancelledCount: cancelledCount(recordLines),
     substituted: row.variantId !== null && isSubstituted(row.variantId, recordLines),
     isService: row.productType === "SERVICE",

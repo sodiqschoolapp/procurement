@@ -16,6 +16,7 @@ import { OrderActionBar } from "@/features/orders/components/order-action-bar";
 import type { StatusMoveKind } from "@/features/orders/components/move-button";
 import { OrderHistory } from "@/features/orders/components/order-history";
 import { OrderStepper } from "@/features/orders/components/order-stepper";
+import { PlanActualTable } from "@/features/orders/components/plan-actual-table";
 import { WhatChanged } from "@/features/orders/components/what-changed";
 import { type OrderPage, getOrderPage } from "@/features/orders/queries/order-page";
 import { PurchasesTab } from "@/features/purchasing/components/purchases-tab";
@@ -271,7 +272,10 @@ export default async function OrderPageScreen({
             </span>
           ) : null}
           <RequestStatusLabel status={order.status} />
-          {order.status === "PURCHASING" ? <ProgressLabel progress={order.progress} /> : null}
+          {/* Open buying says no more than the status Open beside it (redesign of 22.10.2026). */}
+          {order.status === "PURCHASING" && order.progress !== "OPEN" ? (
+            <ProgressLabel progress={order.progress} />
+          ) : null}
           {order.substituted ? <SubstitutedLabel /> : null}
           {order.priority === "URGENT" ? (
             <span className="inline-flex items-center gap-1 text-small font-medium text-destructive">
@@ -384,6 +388,14 @@ export default async function OrderPageScreen({
           </div>
         ) : null}
       </section>
+
+      {order.planVsActual && order.colours ? (
+        <PlanActualTable
+          table={order.planVsActual}
+          colours={order.colours}
+          unit={order.unitShortName ?? ""}
+        />
+      ) : null}
 
       <OrderStepper steps={order.steps} />
 

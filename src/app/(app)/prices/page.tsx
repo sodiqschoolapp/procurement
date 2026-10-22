@@ -5,6 +5,7 @@ import * as z from "zod";
 
 import { AdminNav } from "@/components/admin-nav";
 import { EmptyState } from "@/components/empty-state";
+import { RowLinks } from "@/components/row-links";
 import { Input } from "@/components/ui/input";
 import { buttonVariants } from "@/components/ui/button";
 import { getPricePrompts } from "@/features/catalog/queries/price-prompts";
@@ -126,69 +127,72 @@ export default async function PricesPage({ searchParams }: { searchParams: Promi
             <EmptyState title={tCatalog("noResultsTitle")} line={tCatalog("noResultsText")} />
           ) : (
             <section className="table-cards-panel overflow-x-auto rounded-xl border border-border bg-card text-card-foreground">
-              <table className="table-cards w-full min-w-[44rem] border-collapse text-left text-sm leading-5">
-                <thead className="border-b border-border bg-muted text-xs font-medium text-muted-foreground">
-                  <tr>
-                    <th scope="col" className="px-4 py-3">
-                      {t("product")}
-                    </th>
-                    <th scope="col" className="px-4 py-3">
-                      {t("subtype")}
-                    </th>
-                    <th scope="col" className="px-4 py-3 text-right">
-                      {t("current")}
-                    </th>
-                    <th scope="col" className="px-4 py-3">
-                      {t("setOn")}
-                    </th>
-                    <th scope="col" className="px-4 py-3">
-                      {t("setBy")}
-                    </th>
-                    <th scope="col" className="px-4 py-3">
-                      {tCatalog("status")}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {list.rows.map((row) => (
-                    <tr key={row.variantId} className="border-t hover:bg-accent/50">
-                      <td data-card="head" className="px-4 py-3 font-semibold">
-                        <Link
-                          href={`/prices/${row.variantId}`}
-                          className="inline-flex min-h-11 min-w-11 items-center underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:min-h-0"
-                        >
-                          {row.productName}
-                        </Link>
-                      </td>
-                      <td data-label={t("subtype")} className="px-4 py-3">
-                        {row.subtypeName}
-                      </td>
-                      <td
-                        data-label={t("current")}
-                        className="px-4 py-3 text-right whitespace-nowrap tabular-nums"
-                      >
-                        {row.referencePrice === null ? (
-                          <span className="text-muted-foreground">{t("noPrice")}</span>
-                        ) : (
-                          format.money(row.referencePrice)
-                        )}
-                      </td>
-                      <td
-                        data-label={t("setOn")}
-                        className="px-4 py-3 whitespace-nowrap tabular-nums"
-                      >
-                        {row.setAt ? when(row.setAt) : ""}
-                      </td>
-                      <td data-label={t("setBy")} className="px-4 py-3">
-                        {row.setByName}
-                      </td>
-                      <td data-label={tCatalog("status")} className="px-4 py-3">
-                        {row.isActive ? tCatalog("active") : tCatalog("inactive")}
-                      </td>
+              <RowLinks>
+                <table className="table-cards w-full min-w-[44rem] border-collapse text-left text-sm leading-5">
+                  <thead className="border-b border-border bg-muted text-xs font-medium text-muted-foreground">
+                    <tr>
+                      <th scope="col" className="px-4 py-3">
+                        {t("product")}
+                      </th>
+                      <th scope="col" className="px-4 py-3">
+                        {t("subtype")}
+                      </th>
+                      <th scope="col" className="px-4 py-3 text-right">
+                        {t("current")}
+                      </th>
+                      <th scope="col" className="px-4 py-3">
+                        {t("setOn")}
+                      </th>
+                      <th scope="col" className="px-4 py-3">
+                        {t("setBy")}
+                      </th>
+                      <th scope="col" className="px-4 py-3">
+                        {tCatalog("status")}
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {list.rows.map((row) => (
+                      <tr data-row key={row.variantId} className="border-t hover:bg-accent/50">
+                        <td data-card="head" className="px-4 py-3 font-semibold">
+                          <Link
+                            data-row-link
+                            href={`/prices/${row.variantId}`}
+                            className="inline-flex min-h-11 min-w-11 items-center underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:min-h-0"
+                          >
+                            {row.productName}
+                          </Link>
+                        </td>
+                        <td data-label={t("subtype")} className="px-4 py-3">
+                          {row.subtypeName}
+                        </td>
+                        <td
+                          data-label={t("current")}
+                          className="px-4 py-3 text-right whitespace-nowrap tabular-nums"
+                        >
+                          {row.referencePrice === null ? (
+                            <span className="text-muted-foreground">{t("noPrice")}</span>
+                          ) : (
+                            format.money(row.referencePrice)
+                          )}
+                        </td>
+                        <td
+                          data-label={t("setOn")}
+                          className="px-4 py-3 whitespace-nowrap tabular-nums"
+                        >
+                          {row.setAt ? when(row.setAt) : ""}
+                        </td>
+                        <td data-label={t("setBy")} className="px-4 py-3">
+                          {row.setByName}
+                        </td>
+                        <td data-label={tCatalog("status")} className="px-4 py-3">
+                          {row.isActive ? tCatalog("active") : tCatalog("inactive")}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </RowLinks>
             </section>
           )}
         </>

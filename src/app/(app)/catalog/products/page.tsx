@@ -6,10 +6,12 @@ import * as z from "zod";
 import { AdminNav } from "@/components/admin-nav";
 import { EmptyState } from "@/components/empty-state";
 import { Icon } from "@/components/icon";
+import { RowLinks } from "@/components/row-links";
 import { Input } from "@/components/ui/input";
 import { buttonVariants } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { PRODUCT_TYPES } from "@/domain/products";
+import { FilterFold } from "@/features/analytics/components/filter-fold";
 import { listCategoryFilter, listProducts } from "@/features/catalog/queries/products";
 import { getFormatters } from "@/i18n/get-formatters";
 import { requireUser } from "@/server/auth/session";
@@ -54,7 +56,8 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
   const format = await getFormatters();
   const { page, pages } = list;
   const empty = list.active + list.inactive === 0;
-  const filtered = q !== "" || category !== "" || type !== "";
+  const folded = [category, type].filter((value) => value !== "").length;
+  const filtered = q !== "" || folded > 0;
   const href = (to: number) => {
     const query = new URLSearchParams();
     if (q) query.set("q", q);
@@ -129,38 +132,44 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
               maxLength={200}
               className="min-w-0 flex-1 sm:max-w-72"
             />
-            <label htmlFor="product-filter-category" className="sr-only">
-              {t("filterCategory")}
-            </label>
-            <Select
-              id="product-filter-category"
-              name="category"
-              defaultValue={category}
-              className="w-full sm:w-56"
+            {/* On a phone category and type fold behind Filters (redesign of 22.10.2026). */}
+            <FilterFold
+              bare
+              label={folded === 0 ? t("filters") : t("filtersOn", { count: folded })}
             >
-              <option value="">{t("allCategories")}</option>
-              {categories.map((choice) => (
-                <option key={choice.id} value={choice.id}>
-                  {choice.isActive ? choice.name : t("inactiveOption", { name: choice.name })}
-                </option>
-              ))}
-            </Select>
-            <label htmlFor="product-filter-type" className="sr-only">
-              {t("filterType")}
-            </label>
-            <Select
-              id="product-filter-type"
-              name="type"
-              defaultValue={type}
-              className="w-full sm:w-40"
-            >
-              <option value="">{t("allTypes")}</option>
-              {PRODUCT_TYPES.map((value) => (
-                <option key={value} value={value}>
-                  {t(`productType.${value}`)}
-                </option>
-              ))}
-            </Select>
+              <label htmlFor="product-filter-category" className="sr-only">
+                {t("filterCategory")}
+              </label>
+              <Select
+                id="product-filter-category"
+                name="category"
+                defaultValue={category}
+                className="w-full sm:w-56"
+              >
+                <option value="">{t("allCategories")}</option>
+                {categories.map((choice) => (
+                  <option key={choice.id} value={choice.id}>
+                    {choice.isActive ? choice.name : t("inactiveOption", { name: choice.name })}
+                  </option>
+                ))}
+              </Select>
+              <label htmlFor="product-filter-type" className="sr-only">
+                {t("filterType")}
+              </label>
+              <Select
+                id="product-filter-type"
+                name="type"
+                defaultValue={type}
+                className="w-full sm:w-40"
+              >
+                <option value="">{t("allTypes")}</option>
+                {PRODUCT_TYPES.map((value) => (
+                  <option key={value} value={value}>
+                    {t(`productType.${value}`)}
+                  </option>
+                ))}
+              </Select>
+            </FilterFold>
             <button type="submit" className={buttonVariants({ variant: "secondary" })}>
               {t("find")}
             </button>
@@ -175,90 +184,98 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
             <EmptyState title={t("noResultsTitle")} line={t("noResultsText")} />
           ) : (
             <section className="table-cards-panel overflow-x-auto rounded-xl border border-border bg-card text-card-foreground">
-              <table className="table-cards w-full min-w-[44rem] border-collapse text-left text-sm leading-5">
-                <thead className="border-b border-border bg-muted text-xs font-medium text-muted-foreground">
-                  <tr>
-                    <th scope="col" className="w-16 px-4 py-3">
-                      <span className="sr-only">{t("fields.photoFileId")}</span>
-                    </th>
-                    <th scope="col" className="px-4 py-3">
-                      {t("fields.name")}
-                    </th>
-                    <th scope="col" className="px-4 py-3">
-                      {t("fields.type")}
-                    </th>
-                    <th scope="col" className="px-4 py-3">
-                      {t("fields.categoryId")}
-                    </th>
-                    <th scope="col" className="px-4 py-3">
-                      {t("fields.unitId")}
-                    </th>
-                    <th scope="col" className="px-4 py-3 text-right">
-                      {t("fields.referencePrice")}
-                    </th>
-                    <th scope="col" className="px-4 py-3">
-                      {t("status")}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {list.rows.map((row) => (
-                    <tr key={row.id} className="border-t hover:bg-accent/50">
-                      <td data-card="head" className="px-4 py-2">
-                        {row.photoFileId ? (
-                          // eslint-disable-next-line @next/next/no-img-element -- a private file route, not an asset
-                          <img
-                            src={`/files/${row.photoFileId}/small`}
-                            alt={t("photoAlt", { name: row.name })}
-                            width={40}
-                            height={40}
-                            loading="lazy"
-                            className="size-10 rounded-lg bg-muted object-cover"
-                          />
-                        ) : (
-                          <span className="flex size-10 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-                            <Icon name="inventory_2" size={18} label={t("noPhoto")} />
-                          </span>
-                        )}
-                      </td>
-                      <td data-label={t("fields.name")} className="px-4 py-3 font-semibold">
-                        <Link
-                          href={`/catalog/products/${row.id}`}
-                          className="inline-flex min-h-11 min-w-11 items-center underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:min-h-0"
-                        >
-                          {row.name}
-                        </Link>
-                      </td>
-                      <td data-label={t("fields.type")} className="px-4 py-3">
-                        {t(`productType.${row.type}`)}
-                      </td>
-                      <td data-label={t("fields.categoryId")} className="px-4 py-3">
-                        {row.categoryName}
-                      </td>
-                      <td
-                        data-label={t("fields.unitId")}
-                        className="px-4 py-3"
-                        title={row.unitName}
-                      >
-                        {row.unitShortName}
-                      </td>
-                      <td
-                        data-label={t("fields.referencePrice")}
-                        className="px-4 py-3 text-right whitespace-nowrap tabular-nums"
-                      >
-                        {row.hasVariants
-                          ? t("subtypes.count", { count: row.subtypeCount })
-                          : row.referencePrice === null
-                            ? ""
-                            : format.money(row.referencePrice)}
-                      </td>
-                      <td data-label={t("status")} className="px-4 py-3">
-                        {row.isActive ? t("active") : t("inactive")}
-                      </td>
+              <RowLinks>
+                <table className="table-cards w-full min-w-[44rem] border-collapse text-left text-sm leading-5">
+                  <thead className="border-b border-border bg-muted text-xs font-medium text-muted-foreground">
+                    <tr>
+                      <th scope="col" className="w-16 px-4 py-3">
+                        <span className="sr-only">{t("fields.photoFileId")}</span>
+                      </th>
+                      <th scope="col" className="px-4 py-3">
+                        {t("fields.name")}
+                      </th>
+                      <th scope="col" className="px-4 py-3">
+                        {t("fields.type")}
+                      </th>
+                      <th scope="col" className="px-4 py-3">
+                        {t("fields.categoryId")}
+                      </th>
+                      <th scope="col" className="px-4 py-3">
+                        {t("fields.unitId")}
+                      </th>
+                      <th scope="col" className="px-4 py-3 text-right">
+                        {t("fields.referencePrice")}
+                      </th>
+                      <th scope="col" className="px-4 py-3">
+                        {t("status")}
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {list.rows.map((row) => {
+                      const photo = row.photoFileId ? (
+                        // eslint-disable-next-line @next/next/no-img-element -- a private file route, not an asset
+                        <img
+                          src={`/files/${row.photoFileId}/small`}
+                          alt={t("photoAlt", { name: row.name })}
+                          width={40}
+                          height={40}
+                          loading="lazy"
+                          className="size-10 rounded-lg bg-muted object-cover"
+                        />
+                      ) : (
+                        <span className="flex size-10 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                          <Icon name="inventory_2" size={18} label={t("noPhoto")} />
+                        </span>
+                      );
+                      return (
+                        <tr data-row key={row.id} className="border-t hover:bg-accent/50">
+                          {/* On a phone the photo stands on the name's line, the card's title. */}
+                          <td className="px-4 py-2 max-sm:hidden">{photo}</td>
+                          <td data-card="head" className="px-4 py-3 font-semibold">
+                            <span className="flex items-center gap-3">
+                              <span className="shrink-0 sm:hidden">{photo}</span>
+                              <Link
+                                data-row-link
+                                href={`/catalog/products/${row.id}`}
+                                className="inline-flex min-h-11 min-w-11 items-center underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:min-h-0"
+                              >
+                                {row.name}
+                              </Link>
+                            </span>
+                          </td>
+                          <td data-label={t("fields.type")} className="px-4 py-3">
+                            {t(`productType.${row.type}`)}
+                          </td>
+                          <td data-label={t("fields.categoryId")} className="px-4 py-3">
+                            {row.categoryName}
+                          </td>
+                          <td
+                            data-label={t("fields.unitId")}
+                            className="px-4 py-3"
+                            title={row.unitName}
+                          >
+                            {row.unitShortName}
+                          </td>
+                          <td
+                            data-label={t("fields.referencePrice")}
+                            className="px-4 py-3 text-right whitespace-nowrap tabular-nums"
+                          >
+                            {row.hasVariants
+                              ? t("subtypes.count", { count: row.subtypeCount })
+                              : row.referencePrice === null
+                                ? ""
+                                : format.money(row.referencePrice)}
+                          </td>
+                          <td data-label={t("status")} className="px-4 py-3">
+                            {row.isActive ? t("active") : t("inactive")}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </RowLinks>
             </section>
           )}
         </>

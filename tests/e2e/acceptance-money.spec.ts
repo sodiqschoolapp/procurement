@@ -231,6 +231,13 @@ test('S3: bought at 5 200 with 30 000 delivery: Total red "Over 30 000"; Finance
   await expect(total).toHaveAttribute("data-colour", "red");
   await expect(total).toContainText(en.colourLabel.total.over);
   await expect(total).toContainText(/30\s000/);
+  // The Plan and actual table splits the 30 000: price 200 dearer each, 20 000 more; delivery
+  // 10 000 more; the effects add up to the total (redesign of 22.10.2026).
+  const effect = (line: string) => page.locator(`[data-plan-line="${line}"] [data-plan-effect]`);
+  await expect(page.locator('[data-plan-line="unitPrice"]')).toContainText(/200\sso'm dearer each/);
+  await expect(effect("unitPrice")).toHaveText(/^20\s000\sso'm more$/);
+  await expect(effect("extras")).toHaveText(/^10\s000\sso'm more$/);
+  await expect(effect("total")).toHaveText(/^30\s000\sso'm more$/);
   await sendToSettlement(page, scene, [order]);
 
   // 5.8% and 30 000 so'm are under the guard: the Head is offered no acknowledgment.

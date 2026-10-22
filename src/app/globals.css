@@ -421,3 +421,19 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* A row or card with one destination is that destination (docs/design-system.md, Panels and
+   lists): src/components/row-links.tsx sends a click on a `data-row` to its `data-row-link`. */
+[data-row]:has([data-row-link]) {
+  cursor: pointer;
+}
+
+/* On a phone the whole card is the finger's target, so its link needs no 44 px box of its own
+   (design system, Buttons: 44 px touch targets). Outside every layer, so it wins over the base
+   rule for links in table cells and over a link's own min-h utility. */
+@media (width < 40rem) {
+  [data-row] [data-row-link] {
+    min-height: 0;
+    min-width: 0;
+  }
+}

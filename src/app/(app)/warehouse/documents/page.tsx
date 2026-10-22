@@ -5,12 +5,14 @@ import Link from "next/link";
 import * as z from "zod";
 
 import { EmptyState } from "@/components/empty-state";
+import { RowLinks } from "@/components/row-links";
 import { DocumentStatusLabel } from "@/components/status-label";
 import { buttonVariants } from "@/components/ui/button";
 import { DateInput } from "@/components/ui/date-input";
 import { Select } from "@/components/ui/select";
 import { isBusinessDate } from "@/domain/business-date";
 import { DOCUMENT_TYPES, type DocumentType } from "@/domain/stock-documents";
+import { FilterFold } from "@/features/analytics/components/filter-fold";
 import { BRANCH_COOKIE } from "@/features/catalog/branch-cookie";
 import { currentBranchChoice } from "@/features/catalog/queries/my-branches";
 import { NewDocumentButtons } from "@/features/warehouse/components/new-document-buttons";
@@ -106,7 +108,8 @@ export default async function WarehouseDocumentsPage({
   );
   const t = await getTranslations("warehouse.documents");
   const format = await getFormatters();
-  const filtered = type !== "" || from !== "" || to !== "" || department !== "";
+  const active = [type, from, to, department].filter((value) => value !== "").length;
+  const filtered = active > 0;
   const manyBranches = new Set(departments.map((choice) => choice.branchCode)).size > 1;
   const href = (to_: number) => {
     const query = new URLSearchParams();
@@ -155,44 +158,50 @@ export default async function WarehouseDocumentsPage({
             className="flex flex-wrap items-end gap-2 max-sm:flex-col max-sm:items-stretch"
           >
             {addressBranch && <input type="hidden" name="branch" value={addressBranch} />}
-            <label className="flex flex-col gap-1 text-sm leading-5 font-semibold">
-              {t("filterType")}
-              <Select name="type" defaultValue={type} className="w-full sm:w-48" data-filter-type>
-                <option value="">{t("allTypes")}</option>
-                {DOCUMENT_TYPES.map((value) => (
-                  <option key={value} value={value}>
-                    {typeLabel(value)}
-                  </option>
-                ))}
-              </Select>
-            </label>
-            <label className="flex flex-col gap-1 text-sm leading-5 font-semibold">
-              {t("from")}
-              <DateInput name="from" defaultValue={from} className="sm:w-40" data-filter-from />
-            </label>
-            <label className="flex flex-col gap-1 text-sm leading-5 font-semibold">
-              {t("to")}
-              <DateInput name="to" defaultValue={to} className="sm:w-40" data-filter-to />
-            </label>
-            <label className="flex flex-col gap-1 text-sm leading-5 font-semibold">
-              {t("filterDepartment")}
-              <Select
-                name="department"
-                defaultValue={department}
-                className="w-full sm:w-56"
-                data-filter-department
-              >
-                <option value="">{t("allDepartments")}</option>
-                {departments.map((choice) => (
-                  <option key={choice.id} value={choice.id}>
-                    {departmentLabel(choice)}
-                  </option>
-                ))}
-              </Select>
-            </label>
-            <button type="submit" className={buttonVariants({ variant: "secondary" })}>
-              {t("find")}
-            </button>
+            {/* On a phone the four fields fold behind Filters (redesign of 22.10.2026). */}
+            <FilterFold
+              bare
+              label={active === 0 ? t("filters") : t("filtersOn", { count: active })}
+            >
+              <label className="flex flex-col gap-1 text-sm leading-5 font-semibold">
+                {t("filterType")}
+                <Select name="type" defaultValue={type} className="w-full sm:w-48" data-filter-type>
+                  <option value="">{t("allTypes")}</option>
+                  {DOCUMENT_TYPES.map((value) => (
+                    <option key={value} value={value}>
+                      {typeLabel(value)}
+                    </option>
+                  ))}
+                </Select>
+              </label>
+              <label className="flex flex-col gap-1 text-sm leading-5 font-semibold">
+                {t("from")}
+                <DateInput name="from" defaultValue={from} className="sm:w-40" data-filter-from />
+              </label>
+              <label className="flex flex-col gap-1 text-sm leading-5 font-semibold">
+                {t("to")}
+                <DateInput name="to" defaultValue={to} className="sm:w-40" data-filter-to />
+              </label>
+              <label className="flex flex-col gap-1 text-sm leading-5 font-semibold">
+                {t("filterDepartment")}
+                <Select
+                  name="department"
+                  defaultValue={department}
+                  className="w-full sm:w-56"
+                  data-filter-department
+                >
+                  <option value="">{t("allDepartments")}</option>
+                  {departments.map((choice) => (
+                    <option key={choice.id} value={choice.id}>
+                      {departmentLabel(choice)}
+                    </option>
+                  ))}
+                </Select>
+              </label>
+              <button type="submit" className={buttonVariants({ variant: "secondary" })}>
+                {t("find")}
+              </button>
+            </FilterFold>
             {filtered && (
               <Link
                 href={
@@ -211,74 +220,85 @@ export default async function WarehouseDocumentsPage({
             <EmptyState title={t("noResultsTitle")} line={t("noResultsText")} />
           ) : (
             <section className="table-cards-panel overflow-x-auto rounded-xl border border-border bg-card text-card-foreground">
-              <table className="table-cards w-full min-w-[52rem] border-collapse text-left text-sm leading-5">
-                <thead className="border-b border-border bg-muted text-xs font-medium text-muted-foreground">
-                  <tr>
-                    <th scope="col" className="px-4 py-3">
-                      {t("columns.number")}
-                    </th>
-                    <th scope="col" className="px-4 py-3">
-                      {t("columns.type")}
-                    </th>
-                    <th scope="col" className="px-4 py-3">
-                      {t("columns.date")}
-                    </th>
-                    <th scope="col" className="px-4 py-3">
-                      {t("columns.branch")}
-                    </th>
-                    <th scope="col" className="px-4 py-3">
-                      {t("columns.department")}
-                    </th>
-                    <th scope="col" className="px-4 py-3">
-                      {t("columns.status")}
-                    </th>
-                    <th scope="col" className="px-4 py-3">
-                      {t("columns.createdBy")}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {list.rows.map((row) => (
-                    <tr key={row.id} className="border-t" data-document-row={row.number}>
-                      <td data-card="head" className="px-4 py-3 font-semibold whitespace-nowrap">
-                        <Link
-                          href={`/warehouse/documents/${row.id}`}
-                          className="font-semibold text-link underline-offset-2 hover:underline"
-                        >
-                          {row.number}
-                        </Link>
-                      </td>
-                      <td
-                        data-label={t("columns.type")}
-                        className="px-4 py-3"
-                        data-document-type={row.type}
-                      >
-                        {typeLabel(row.type)}
-                      </td>
-                      <td
-                        data-label={t("columns.date")}
-                        className="px-4 py-3 whitespace-nowrap tabular-nums"
-                      >
-                        {format.date(row.docDate)}
-                      </td>
-                      <td data-label={t("columns.branch")} className="px-4 py-3 whitespace-nowrap">
-                        {row.toBranchCode
-                          ? t("transferBranches", { from: row.branchCode, to: row.toBranchCode })
-                          : row.branchCode}
-                      </td>
-                      <td data-label={t("columns.department")} className="px-4 py-3">
-                        {row.departmentName ?? ""}
-                      </td>
-                      <td data-label={t("columns.status")} className="px-4 py-3">
-                        <DocumentStatusLabel type={row.type} status={row.status} />
-                      </td>
-                      <td data-label={t("columns.createdBy")} className="px-4 py-3">
-                        {row.createdBy}
-                      </td>
+              <RowLinks>
+                <table className="table-cards w-full min-w-[52rem] border-collapse text-left text-sm leading-5">
+                  <thead className="border-b border-border bg-muted text-xs font-medium text-muted-foreground">
+                    <tr>
+                      <th scope="col" className="px-4 py-3">
+                        {t("columns.number")}
+                      </th>
+                      <th scope="col" className="px-4 py-3">
+                        {t("columns.type")}
+                      </th>
+                      <th scope="col" className="px-4 py-3">
+                        {t("columns.date")}
+                      </th>
+                      <th scope="col" className="px-4 py-3">
+                        {t("columns.branch")}
+                      </th>
+                      <th scope="col" className="px-4 py-3">
+                        {t("columns.department")}
+                      </th>
+                      <th scope="col" className="px-4 py-3">
+                        {t("columns.status")}
+                      </th>
+                      <th scope="col" className="px-4 py-3">
+                        {t("columns.createdBy")}
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {list.rows.map((row) => (
+                      <tr
+                        data-row
+                        key={row.id}
+                        className="border-t hover:bg-accent/50"
+                        data-document-row={row.number}
+                      >
+                        <td data-card="head" className="px-4 py-3 font-semibold whitespace-nowrap">
+                          <Link
+                            data-row-link
+                            href={`/warehouse/documents/${row.id}`}
+                            className="font-semibold text-link underline-offset-2 hover:underline"
+                          >
+                            {row.number}
+                          </Link>
+                        </td>
+                        <td
+                          data-label={t("columns.type")}
+                          className="px-4 py-3"
+                          data-document-type={row.type}
+                        >
+                          {typeLabel(row.type)}
+                        </td>
+                        <td
+                          data-label={t("columns.date")}
+                          className="px-4 py-3 whitespace-nowrap tabular-nums"
+                        >
+                          {format.date(row.docDate)}
+                        </td>
+                        <td
+                          data-label={t("columns.branch")}
+                          className="px-4 py-3 whitespace-nowrap"
+                        >
+                          {row.toBranchCode
+                            ? t("transferBranches", { from: row.branchCode, to: row.toBranchCode })
+                            : row.branchCode}
+                        </td>
+                        <td data-label={t("columns.department")} className="px-4 py-3">
+                          {row.departmentName ?? ""}
+                        </td>
+                        <td data-label={t("columns.status")} className="px-4 py-3">
+                          <DocumentStatusLabel type={row.type} status={row.status} />
+                        </td>
+                        <td data-label={t("columns.createdBy")} className="px-4 py-3">
+                          {row.createdBy}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </RowLinks>
             </section>
           )}
           {list.pages > 1 && <PageLinks page={list.page} pages={list.pages} href={href} />}

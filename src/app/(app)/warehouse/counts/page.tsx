@@ -5,6 +5,7 @@ import Link from "next/link";
 import * as z from "zod";
 
 import { EmptyState } from "@/components/empty-state";
+import { RowLinks } from "@/components/row-links";
 import { seesStockCounts } from "@/components/shell/menu";
 import { DocumentStatusLabel } from "@/components/status-label";
 import { BRANCH_COOKIE } from "@/features/catalog/branch-cookie";
@@ -109,69 +110,77 @@ export default async function StockCountsPage({ searchParams }: { searchParams: 
         <EmptyState title={t("emptyTitle")} line={t("emptyText")} />
       ) : (
         <section className="table-cards-panel overflow-x-auto rounded-xl border border-border bg-card text-card-foreground">
-          <table className="table-cards w-full min-w-[44rem] border-collapse text-left text-sm leading-5">
-            <thead className="border-b border-border bg-muted text-xs font-medium text-muted-foreground">
-              <tr>
-                <th scope="col" className="px-4 py-3">
-                  {t("columns.number")}
-                </th>
-                <th scope="col" className="px-4 py-3">
-                  {t("columns.date")}
-                </th>
-                <th scope="col" className="px-4 py-3">
-                  {t("columns.branch")}
-                </th>
-                <th scope="col" className="px-4 py-3">
-                  {t("columns.status")}
-                </th>
-                <th scope="col" className="px-4 py-3 text-right">
-                  {t("columns.progress")}
-                </th>
-                <th scope="col" className="px-4 py-3">
-                  {t("columns.createdBy")}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {list.rows.map((row) => (
-                <tr key={row.id} className="border-t" data-count-row={row.number}>
-                  <td data-card="head" className="px-4 py-3 font-semibold whitespace-nowrap">
-                    <Link
-                      href={`/warehouse/documents/${row.id}`}
-                      className="font-semibold text-link underline-offset-2 hover:underline"
-                    >
-                      {row.number}
-                    </Link>
-                  </td>
-                  <td
-                    data-label={t("columns.date")}
-                    className="px-4 py-3 whitespace-nowrap tabular-nums"
-                  >
-                    {format.date(row.docDate)}
-                  </td>
-                  <td data-label={t("columns.branch")} className="px-4 py-3 whitespace-nowrap">
-                    {row.branchCode}
-                  </td>
-                  <td data-label={t("columns.status")} className="px-4 py-3">
-                    <DocumentStatusLabel type="COUNT" status={row.status} />
-                  </td>
-                  <td
-                    data-label={t("columns.progress")}
-                    className="px-4 py-3 text-right tabular-nums"
-                    data-count-progress
-                  >
-                    {t("progress", {
-                      counted: format.quantity(String(row.counted)),
-                      lines: format.quantity(String(row.lines)),
-                    })}
-                  </td>
-                  <td data-label={t("columns.createdBy")} className="px-4 py-3">
-                    {row.createdBy}
-                  </td>
+          <RowLinks>
+            <table className="table-cards w-full min-w-[44rem] border-collapse text-left text-sm leading-5">
+              <thead className="border-b border-border bg-muted text-xs font-medium text-muted-foreground">
+                <tr>
+                  <th scope="col" className="px-4 py-3">
+                    {t("columns.number")}
+                  </th>
+                  <th scope="col" className="px-4 py-3">
+                    {t("columns.date")}
+                  </th>
+                  <th scope="col" className="px-4 py-3">
+                    {t("columns.branch")}
+                  </th>
+                  <th scope="col" className="px-4 py-3">
+                    {t("columns.status")}
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-right">
+                    {t("columns.progress")}
+                  </th>
+                  <th scope="col" className="px-4 py-3">
+                    {t("columns.createdBy")}
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {list.rows.map((row) => (
+                  <tr
+                    data-row
+                    key={row.id}
+                    className="border-t hover:bg-accent/50"
+                    data-count-row={row.number}
+                  >
+                    <td data-card="head" className="px-4 py-3 font-semibold whitespace-nowrap">
+                      <Link
+                        data-row-link
+                        href={`/warehouse/documents/${row.id}`}
+                        className="font-semibold text-link underline-offset-2 hover:underline"
+                      >
+                        {row.number}
+                      </Link>
+                    </td>
+                    <td
+                      data-label={t("columns.date")}
+                      className="px-4 py-3 whitespace-nowrap tabular-nums"
+                    >
+                      {format.date(row.docDate)}
+                    </td>
+                    <td data-label={t("columns.branch")} className="px-4 py-3 whitespace-nowrap">
+                      {row.branchCode}
+                    </td>
+                    <td data-label={t("columns.status")} className="px-4 py-3">
+                      <DocumentStatusLabel type="COUNT" status={row.status} />
+                    </td>
+                    <td
+                      data-label={t("columns.progress")}
+                      className="px-4 py-3 text-right tabular-nums"
+                      data-count-progress
+                    >
+                      {t("progress", {
+                        counted: format.quantity(String(row.counted)),
+                        lines: format.quantity(String(row.lines)),
+                      })}
+                    </td>
+                    <td data-label={t("columns.createdBy")} className="px-4 py-3">
+                      {row.createdBy}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </RowLinks>
         </section>
       )}
       {list.pages > 1 && <PageLinks page={list.page} pages={list.pages} href={href} />}

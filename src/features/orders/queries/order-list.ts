@@ -18,8 +18,10 @@ import * as z from "zod";
 import {
   type ColourOrder,
   type OrderColours,
+  type PlanVsActual,
   type SetColours,
   orderColours,
+  planVsActual,
   setColours,
 } from "@/domain/colours";
 import { businessDate, businessDayStart, nextBusinessDate } from "@/domain/business-date";
@@ -57,10 +59,12 @@ import type { PaymentType } from "@/domain/payment-types";
 import { type Actor, decide } from "@/domain/permissions";
 import { moneyRecordAllows, overspendNeedsAck, settlementAllows } from "@/domain/money-ledger";
 import {
+  BUYING_STATUSES,
   type BuyingAction,
   type OrderProgress,
   actualQuantity,
   buyingActions,
+  receivedTogether,
 } from "@/domain/purchases";
 import { type Executor, authorize, authorizeList, branchFilter } from "@/server/authorize";
 import { now } from "@/server/clock";
@@ -129,6 +133,11 @@ export type ListOrder = {
   overdue: boolean;
   /** Number, Price and Total by orderColours(), from Open on; null before (plan of 3.8). */
   colours: OrderColours | null;
+  /**
+   * What was bought beside the plan, from planVsActual(): the actual price per unit (an average
+   * over several prices) and the actual total; null before Open or with nothing bought.
+   */
+  actual: { unitPrice: bigint; oneUnitPrice: boolean; total: bigint } | null;
 };
 
 export type OrderGroup = {
@@ -145,10 +154,22 @@ export type OrderGroup = {
   summary: GroupSummary;
   /** The three colours of its orders by setColours(), from Open on; null before (plan of 3.8). */
   colours: SetColours | null;
+  /** From Open on, its orders' received quantities added up by receivedTogether(); else null. */
+  received: string | null;
   orders: ListOrder[];
 };
 
 export type OrderGroupPage = { groups: OrderGroup[]; page: number; pages: number; total: number };
+
+/** The list's actual numbers of one order, from planVsActual() (redesign of 22.10.2026). */
+function actualOf(table: PlanVsActual | null): ListOrder["actual"] {
+  if (!table) return null;
+  return {
+    unitPrice: table.unitPrice.actual,
+    oneUnitPrice: table.unitPrice.oneUnitPrice,
+    total: table.total.actual,
+  };
+}
 
 const pageInput = z.number().int().min(1).catch(1);
 const idsInput = z
@@ -605,6 +626,7 @@ async function readGroups(
       priceHint: priceHintPercent(member.price, member.referencePrice, threshold),
       overdue: isOverdue(member.status, member.progress, member.neededBy, today),
       colours: orderColours(colour),
+      actual: actualOf(planVsActual(colour)),
     };
     const key = groupKey(member.branchId, member.variantId!, member.status);
     byGroup.set(key, [
@@ -638,6 +660,9 @@ async function readGroups(
         })),
       ),
       colours: setColours(held.map(({ colour }) => colour)),
+      received: BUYING_STATUSES.has(head.status as ListStatus)
+        ? receivedTogether(held.map(({ order }) => order.received))
+        : null,
       orders: held.map(({ order }) => order),
     };
   });

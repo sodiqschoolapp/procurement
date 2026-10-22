@@ -126,7 +126,10 @@ test("S4: in parts, 60 bought, 10 issued, 40 more: stock 60, then 50, then 90; t
   await stockPageShows(page, scene, order.product, "50");
   expect(await stockOf(scene.branch.id, order.variantId)).toBe("50.000");
   await page.goto(`/orders/${order.id}`);
-  await expect(page.locator('[data-progress="OPEN"]')).toBeVisible();
+  // Still Open: the header says Open once, without "Buying open" beside it (redesign of
+  // 22.10.2026); the Purchases tab names the buying progress.
+  await expect(page.locator('[data-request-status="PURCHASING"]')).toBeVisible();
+  await expect(page.locator("header [data-progress]")).toHaveCount(0);
   expect(await statusOf(order.id)).toBe("PURCHASING");
 
   // "Friday": Same as planned fills the 40 still lacking and no extra cost a second time.

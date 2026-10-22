@@ -7,6 +7,7 @@ import * as z from "zod";
 import { AdminNav } from "@/components/admin-nav";
 import { EmptyState } from "@/components/empty-state";
 import { Icon } from "@/components/icon";
+import { RowLinks } from "@/components/row-links";
 import { Input } from "@/components/ui/input";
 import { buttonVariants } from "@/components/ui/button";
 import { BRANCH_COOKIE } from "@/features/catalog/branch-cookie";
@@ -137,57 +138,60 @@ export default async function DepartmentsPage({ searchParams }: { searchParams: 
             <EmptyState title={t("noResultsTitle")} line={t("noResultsText")} />
           ) : (
             <section className="table-cards-panel overflow-x-auto rounded-xl border border-border bg-card text-card-foreground">
-              <table className="table-cards w-full min-w-[40rem] border-collapse text-left text-sm leading-5">
-                <thead className="border-b border-border bg-muted text-xs font-medium text-muted-foreground">
-                  <tr>
-                    <th scope="col" className="px-4 py-3">
-                      {t("fields.name")}
-                    </th>
-                    <th scope="col" className="px-4 py-3">
-                      {t("fields.branch")}
-                    </th>
-                    <th scope="col" className="px-4 py-3">
-                      {t("fields.responsibleName")}
-                    </th>
-                    <th scope="col" className="px-4 py-3">
-                      {t("fields.phone")}
-                    </th>
-                    <th scope="col" className="px-4 py-3">
-                      {t("status")}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {list.rows.map((row) => (
-                    <tr key={row.id} className="border-t hover:bg-accent/50">
-                      <td data-card="head" className="px-4 py-3 font-semibold">
-                        <Link
-                          href={`/catalog/departments/${row.id}`}
-                          className="inline-flex min-h-11 min-w-11 items-center underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:min-h-0"
-                        >
-                          {row.name}
-                        </Link>
-                      </td>
-                      <td
-                        data-label={t("fields.branch")}
-                        className="px-4 py-3"
-                        title={row.branchName}
-                      >
-                        {row.branchCode}
-                      </td>
-                      <td data-label={t("fields.responsibleName")} className="px-4 py-3">
-                        {row.responsibleName}
-                      </td>
-                      <td data-label={t("fields.phone")} className="px-4 py-3 tabular-nums">
-                        {row.responsiblePhone}
-                      </td>
-                      <td data-label={t("status")} className="px-4 py-3">
-                        {row.isActive ? t("active") : t("inactive")}
-                      </td>
+              <RowLinks>
+                <table className="table-cards w-full min-w-[40rem] border-collapse text-left text-sm leading-5">
+                  <thead className="border-b border-border bg-muted text-xs font-medium text-muted-foreground">
+                    <tr>
+                      <th scope="col" className="px-4 py-3">
+                        {t("fields.name")}
+                      </th>
+                      <th scope="col" className="px-4 py-3">
+                        {t("fields.branch")}
+                      </th>
+                      <th scope="col" className="px-4 py-3">
+                        {t("fields.responsibleName")}
+                      </th>
+                      <th scope="col" className="px-4 py-3">
+                        {t("fields.phone")}
+                      </th>
+                      <th scope="col" className="px-4 py-3">
+                        {t("status")}
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {list.rows.map((row) => (
+                      <tr data-row key={row.id} className="border-t hover:bg-accent/50">
+                        <td data-card="head" className="px-4 py-3 font-semibold">
+                          <Link
+                            data-row-link
+                            href={`/catalog/departments/${row.id}`}
+                            className="inline-flex min-h-11 min-w-11 items-center underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:min-h-0"
+                          >
+                            {row.name}
+                          </Link>
+                        </td>
+                        <td
+                          data-label={t("fields.branch")}
+                          className="px-4 py-3"
+                          title={row.branchName}
+                        >
+                          {row.branchCode}
+                        </td>
+                        <td data-label={t("fields.responsibleName")} className="px-4 py-3">
+                          {row.responsibleName}
+                        </td>
+                        <td data-label={t("fields.phone")} className="px-4 py-3 tabular-nums">
+                          {row.responsiblePhone}
+                        </td>
+                        <td data-label={t("status")} className="px-4 py-3">
+                          {row.isActive ? t("active") : t("inactive")}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </RowLinks>
             </section>
           )}
         </>
