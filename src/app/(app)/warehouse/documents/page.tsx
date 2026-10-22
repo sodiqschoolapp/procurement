@@ -5,6 +5,7 @@ import Link from "next/link";
 import * as z from "zod";
 
 import { EmptyState } from "@/components/empty-state";
+import { RowLinks } from "@/components/row-links";
 import { DocumentStatusLabel } from "@/components/status-label";
 import { buttonVariants } from "@/components/ui/button";
 import { DateInput } from "@/components/ui/date-input";
@@ -211,74 +212,85 @@ export default async function WarehouseDocumentsPage({
             <EmptyState title={t("noResultsTitle")} line={t("noResultsText")} />
           ) : (
             <section className="table-cards-panel overflow-x-auto rounded-xl border border-border bg-card text-card-foreground">
-              <table className="table-cards w-full min-w-[52rem] border-collapse text-left text-sm leading-5">
-                <thead className="border-b border-border bg-muted text-xs font-medium text-muted-foreground">
-                  <tr>
-                    <th scope="col" className="px-4 py-3">
-                      {t("columns.number")}
-                    </th>
-                    <th scope="col" className="px-4 py-3">
-                      {t("columns.type")}
-                    </th>
-                    <th scope="col" className="px-4 py-3">
-                      {t("columns.date")}
-                    </th>
-                    <th scope="col" className="px-4 py-3">
-                      {t("columns.branch")}
-                    </th>
-                    <th scope="col" className="px-4 py-3">
-                      {t("columns.department")}
-                    </th>
-                    <th scope="col" className="px-4 py-3">
-                      {t("columns.status")}
-                    </th>
-                    <th scope="col" className="px-4 py-3">
-                      {t("columns.createdBy")}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {list.rows.map((row) => (
-                    <tr key={row.id} className="border-t" data-document-row={row.number}>
-                      <td data-card="head" className="px-4 py-3 font-semibold whitespace-nowrap">
-                        <Link
-                          href={`/warehouse/documents/${row.id}`}
-                          className="font-semibold text-link underline-offset-2 hover:underline"
-                        >
-                          {row.number}
-                        </Link>
-                      </td>
-                      <td
-                        data-label={t("columns.type")}
-                        className="px-4 py-3"
-                        data-document-type={row.type}
-                      >
-                        {typeLabel(row.type)}
-                      </td>
-                      <td
-                        data-label={t("columns.date")}
-                        className="px-4 py-3 whitespace-nowrap tabular-nums"
-                      >
-                        {format.date(row.docDate)}
-                      </td>
-                      <td data-label={t("columns.branch")} className="px-4 py-3 whitespace-nowrap">
-                        {row.toBranchCode
-                          ? t("transferBranches", { from: row.branchCode, to: row.toBranchCode })
-                          : row.branchCode}
-                      </td>
-                      <td data-label={t("columns.department")} className="px-4 py-3">
-                        {row.departmentName ?? ""}
-                      </td>
-                      <td data-label={t("columns.status")} className="px-4 py-3">
-                        <DocumentStatusLabel type={row.type} status={row.status} />
-                      </td>
-                      <td data-label={t("columns.createdBy")} className="px-4 py-3">
-                        {row.createdBy}
-                      </td>
+              <RowLinks>
+                <table className="table-cards w-full min-w-[52rem] border-collapse text-left text-sm leading-5">
+                  <thead className="border-b border-border bg-muted text-xs font-medium text-muted-foreground">
+                    <tr>
+                      <th scope="col" className="px-4 py-3">
+                        {t("columns.number")}
+                      </th>
+                      <th scope="col" className="px-4 py-3">
+                        {t("columns.type")}
+                      </th>
+                      <th scope="col" className="px-4 py-3">
+                        {t("columns.date")}
+                      </th>
+                      <th scope="col" className="px-4 py-3">
+                        {t("columns.branch")}
+                      </th>
+                      <th scope="col" className="px-4 py-3">
+                        {t("columns.department")}
+                      </th>
+                      <th scope="col" className="px-4 py-3">
+                        {t("columns.status")}
+                      </th>
+                      <th scope="col" className="px-4 py-3">
+                        {t("columns.createdBy")}
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {list.rows.map((row) => (
+                      <tr
+                        data-row
+                        key={row.id}
+                        className="border-t hover:bg-accent/50"
+                        data-document-row={row.number}
+                      >
+                        <td data-card="head" className="px-4 py-3 font-semibold whitespace-nowrap">
+                          <Link
+                            data-row-link
+                            href={`/warehouse/documents/${row.id}`}
+                            className="font-semibold text-link underline-offset-2 hover:underline"
+                          >
+                            {row.number}
+                          </Link>
+                        </td>
+                        <td
+                          data-label={t("columns.type")}
+                          className="px-4 py-3"
+                          data-document-type={row.type}
+                        >
+                          {typeLabel(row.type)}
+                        </td>
+                        <td
+                          data-label={t("columns.date")}
+                          className="px-4 py-3 whitespace-nowrap tabular-nums"
+                        >
+                          {format.date(row.docDate)}
+                        </td>
+                        <td
+                          data-label={t("columns.branch")}
+                          className="px-4 py-3 whitespace-nowrap"
+                        >
+                          {row.toBranchCode
+                            ? t("transferBranches", { from: row.branchCode, to: row.toBranchCode })
+                            : row.branchCode}
+                        </td>
+                        <td data-label={t("columns.department")} className="px-4 py-3">
+                          {row.departmentName ?? ""}
+                        </td>
+                        <td data-label={t("columns.status")} className="px-4 py-3">
+                          <DocumentStatusLabel type={row.type} status={row.status} />
+                        </td>
+                        <td data-label={t("columns.createdBy")} className="px-4 py-3">
+                          {row.createdBy}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </RowLinks>
             </section>
           )}
           {list.pages > 1 && <PageLinks page={list.page} pages={list.pages} href={href} />}

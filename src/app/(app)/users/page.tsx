@@ -5,6 +5,7 @@ import * as z from "zod";
 import { AdminNav } from "@/components/admin-nav";
 import { EmptyState } from "@/components/empty-state";
 import { Icon } from "@/components/icon";
+import { RowLinks } from "@/components/row-links";
 import { buttonVariants } from "@/components/ui/button";
 import { listBranchVacancies, listUsers } from "@/features/users/queries/users";
 import { requireUser } from "@/server/auth/session";
@@ -81,53 +82,59 @@ export default async function UsersPage({
         />
       ) : (
         <section className="table-cards-panel overflow-x-auto rounded-xl border border-border bg-card text-card-foreground">
-          <table className="table-cards w-full min-w-[40rem] border-collapse text-left text-sm leading-5">
-            <thead className="border-b border-border bg-muted text-xs font-medium text-muted-foreground">
-              <tr>
-                <th scope="col" className="px-4 py-3">
-                  {t("users.fullName")}
-                </th>
-                <th scope="col" className="px-4 py-3">
-                  {t("users.username")}
-                </th>
-                <th scope="col" className="px-4 py-3">
-                  {t("users.role")}
-                </th>
-                <th scope="col" className="px-4 py-3">
-                  {t("users.branches")}
-                </th>
-                <th scope="col" className="px-4 py-3">
-                  {t("users.status")}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {list.rows.map((row) => (
-                <tr key={row.id} className="border-t hover:bg-accent/50">
-                  <td data-card="head" className="px-4 py-3 font-semibold">
-                    <Link
-                      href={`/users/${row.id}`}
-                      className="inline-flex min-h-11 min-w-11 items-center underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:min-h-0"
-                    >
-                      {row.fullName}
-                    </Link>
-                  </td>
-                  <td data-label={t("users.username")} className="px-4 py-3 text-muted-foreground">
-                    {row.username}
-                  </td>
-                  <td data-label={t("users.role")} className="px-4 py-3">
-                    {t(`roles.${row.role}`)}
-                  </td>
-                  <td data-label={t("users.branches")} className="px-4 py-3">
-                    {row.branches.map((branch) => branch.code).join(", ")}
-                  </td>
-                  <td data-label={t("users.status")} className="px-4 py-3">
-                    {row.isActive ? t("users.active") : t("users.inactive")}
-                  </td>
+          <RowLinks>
+            <table className="table-cards w-full min-w-[40rem] border-collapse text-left text-sm leading-5">
+              <thead className="border-b border-border bg-muted text-xs font-medium text-muted-foreground">
+                <tr>
+                  <th scope="col" className="px-4 py-3">
+                    {t("users.fullName")}
+                  </th>
+                  <th scope="col" className="px-4 py-3">
+                    {t("users.username")}
+                  </th>
+                  <th scope="col" className="px-4 py-3">
+                    {t("users.role")}
+                  </th>
+                  <th scope="col" className="px-4 py-3">
+                    {t("users.branches")}
+                  </th>
+                  <th scope="col" className="px-4 py-3">
+                    {t("users.status")}
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {list.rows.map((row) => (
+                  <tr data-row key={row.id} className="border-t hover:bg-accent/50">
+                    <td data-card="head" className="px-4 py-3 font-semibold">
+                      <Link
+                        data-row-link
+                        href={`/users/${row.id}`}
+                        className="inline-flex min-h-11 min-w-11 items-center underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:min-h-0"
+                      >
+                        {row.fullName}
+                      </Link>
+                    </td>
+                    <td
+                      data-label={t("users.username")}
+                      className="px-4 py-3 text-muted-foreground"
+                    >
+                      {row.username}
+                    </td>
+                    <td data-label={t("users.role")} className="px-4 py-3">
+                      {t(`roles.${row.role}`)}
+                    </td>
+                    <td data-label={t("users.branches")} className="px-4 py-3">
+                      {row.branches.map((branch) => branch.code).join(", ")}
+                    </td>
+                    <td data-label={t("users.status")} className="px-4 py-3">
+                      {row.isActive ? t("users.active") : t("users.inactive")}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </RowLinks>
         </section>
       )}
 

@@ -2,6 +2,7 @@ import { getTranslations } from "next-intl/server";
 import Link from "next/link";
 
 import { Icon } from "@/components/icon";
+import { RowLinks } from "@/components/row-links";
 import { buttonVariants } from "@/components/ui/button";
 import type { SubtypeRow } from "@/features/catalog/queries/subtypes";
 import { getFormatters } from "@/i18n/get-formatters";
@@ -95,50 +96,53 @@ export async function SubtypeList({
               </li>
             ))}
           </ul>
-          <table className="table-cards hidden w-full border-collapse text-left text-sm leading-5 sm:table">
-            <thead className="border-b border-border bg-muted text-xs font-medium text-muted-foreground">
-              <tr>
-                <th scope="col" className="w-16 px-4 py-3">
-                  <span className="sr-only">{t("fields.photoFileId")}</span>
-                </th>
-                <th scope="col" className="px-4 py-3">
-                  {t("fields.name")}
-                </th>
-                <th scope="col" className="px-4 py-3 text-right">
-                  {t("fields.referencePrice")}
-                </th>
-                <th scope="col" className="px-4 py-3">
-                  {t("status")}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => (
-                <tr key={row.id} className="border-t hover:bg-accent/50">
-                  <td data-card="head" className="px-4 py-2">
-                    {photo(row)}
-                  </td>
-                  <td data-label={t("fields.name")} className="px-4 py-3 font-semibold">
-                    <Link
-                      href={href(row.id)}
-                      className="underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-                    >
-                      {row.name}
-                    </Link>
-                  </td>
-                  <td
-                    data-label={t("fields.referencePrice")}
-                    className="px-4 py-3 text-right whitespace-nowrap tabular-nums"
-                  >
-                    {price(row)}
-                  </td>
-                  <td data-label={t("status")} className="px-4 py-3">
-                    {row.isActive ? t("active") : t("inactive")}
-                  </td>
+          <RowLinks>
+            <table className="table-cards hidden w-full border-collapse text-left text-sm leading-5 sm:table">
+              <thead className="border-b border-border bg-muted text-xs font-medium text-muted-foreground">
+                <tr>
+                  <th scope="col" className="w-16 px-4 py-3">
+                    <span className="sr-only">{t("fields.photoFileId")}</span>
+                  </th>
+                  <th scope="col" className="px-4 py-3">
+                    {t("fields.name")}
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-right">
+                    {t("fields.referencePrice")}
+                  </th>
+                  <th scope="col" className="px-4 py-3">
+                    {t("status")}
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {rows.map((row) => (
+                  <tr data-row key={row.id} className="border-t hover:bg-accent/50">
+                    <td data-card="head" className="px-4 py-2">
+                      {photo(row)}
+                    </td>
+                    <td data-label={t("fields.name")} className="px-4 py-3 font-semibold">
+                      <Link
+                        data-row-link
+                        href={href(row.id)}
+                        className="underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                      >
+                        {row.name}
+                      </Link>
+                    </td>
+                    <td
+                      data-label={t("fields.referencePrice")}
+                      className="px-4 py-3 text-right whitespace-nowrap tabular-nums"
+                    >
+                      {price(row)}
+                    </td>
+                    <td data-label={t("status")} className="px-4 py-3">
+                      {row.isActive ? t("active") : t("inactive")}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </RowLinks>
         </>
       )}
     </section>

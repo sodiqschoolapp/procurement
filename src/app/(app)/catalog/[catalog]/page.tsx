@@ -7,6 +7,7 @@ import { AdminNav } from "@/components/admin-nav";
 import { CatalogValue } from "@/components/catalog/catalog-value";
 import { EmptyState } from "@/components/empty-state";
 import { Icon } from "@/components/icon";
+import { RowLinks } from "@/components/row-links";
 import { Input } from "@/components/ui/input";
 import { buttonVariants } from "@/components/ui/button";
 import { CATALOGS } from "@/domain/catalogs";
@@ -125,43 +126,46 @@ export default async function CatalogListPage({
             <EmptyState title={t("noResultsTitle")} line={t("noResultsText")} />
           ) : (
             <section className="table-cards-panel overflow-x-auto rounded-xl border border-border bg-card text-card-foreground">
-              <table className="table-cards w-full min-w-[32rem] border-collapse text-left text-sm leading-5">
-                <thead className="border-b border-border bg-muted text-xs font-medium text-muted-foreground">
-                  <tr>
-                    {columns.map((field) => (
-                      <th key={field.key} scope="col" className="px-4 py-3">
-                        {t(`fields.${field.key}`)}
+              <RowLinks>
+                <table className="table-cards w-full min-w-[32rem] border-collapse text-left text-sm leading-5">
+                  <thead className="border-b border-border bg-muted text-xs font-medium text-muted-foreground">
+                    <tr>
+                      {columns.map((field) => (
+                        <th key={field.key} scope="col" className="px-4 py-3">
+                          {t(`fields.${field.key}`)}
+                        </th>
+                      ))}
+                      <th scope="col" className="px-4 py-3">
+                        {t("status")}
                       </th>
-                    ))}
-                    <th scope="col" className="px-4 py-3">
-                      {t("status")}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {list.rows.map((row) => (
-                    <tr key={row.id} className="border-t hover:bg-accent/50">
-                      {columns.map((field, index) =>
-                        index === 0 ? (
-                          <td key={field.key} className="px-4 py-3 font-semibold">
-                            <Link
-                              href={`/catalog/${kind}/${row.id}`}
-                              className="inline-flex min-h-11 min-w-11 items-center underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:min-h-0"
-                            >
-                              {row.name}
-                            </Link>
-                          </td>
-                        ) : (
-                          <td key={field.key} className="px-4 py-3">
-                            <CatalogValue type={field.type} value={row[field.key] ?? null} />
-                          </td>
-                        ),
-                      )}
-                      <td className="px-4 py-3">{row.isActive ? t("active") : t("inactive")}</td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {list.rows.map((row) => (
+                      <tr data-row key={row.id} className="border-t hover:bg-accent/50">
+                        {columns.map((field, index) =>
+                          index === 0 ? (
+                            <td key={field.key} className="px-4 py-3 font-semibold">
+                              <Link
+                                data-row-link
+                                href={`/catalog/${kind}/${row.id}`}
+                                className="inline-flex min-h-11 min-w-11 items-center underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:min-h-0"
+                              >
+                                {row.name}
+                              </Link>
+                            </td>
+                          ) : (
+                            <td key={field.key} className="px-4 py-3">
+                              <CatalogValue type={field.type} value={row[field.key] ?? null} />
+                            </td>
+                          ),
+                        )}
+                        <td className="px-4 py-3">{row.isActive ? t("active") : t("inactive")}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </RowLinks>
             </section>
           )}
         </>

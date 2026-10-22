@@ -4,6 +4,7 @@ import * as z from "zod";
 
 import { AdminNav } from "@/components/admin-nav";
 import { EmptyState } from "@/components/empty-state";
+import { RowLinks } from "@/components/row-links";
 import { buttonVariants } from "@/components/ui/button";
 import { listBranches } from "@/features/catalog/queries/branches";
 import { requireUser } from "@/server/auth/session";
@@ -56,50 +57,53 @@ export default async function BranchesPage({
         />
       ) : (
         <section className="table-cards-panel overflow-x-auto rounded-xl border border-border bg-card text-card-foreground">
-          <table className="table-cards w-full min-w-[36rem] border-collapse text-left text-sm leading-5">
-            <thead className="border-b border-border bg-muted text-xs font-medium text-muted-foreground">
-              <tr>
-                <th scope="col" className="px-4 py-3">
-                  {t("branches.code")}
-                </th>
-                <th scope="col" className="px-4 py-3">
-                  {t("branches.name")}
-                </th>
-                <th scope="col" className="px-4 py-3">
-                  {t("branches.address")}
-                </th>
-                <th scope="col" className="px-4 py-3">
-                  {t("branches.status")}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {list.rows.map((branch) => (
-                <tr key={branch.id} className="border-t hover:bg-accent/50">
-                  <td data-card="head" className="px-4 py-3 font-semibold">
-                    <Link
-                      href={`/branches/${branch.id}`}
-                      className="inline-flex min-h-11 min-w-11 items-center underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:min-h-0"
-                    >
-                      {branch.code}
-                    </Link>
-                  </td>
-                  <td data-label={t("branches.name")} className="px-4 py-3">
-                    {branch.name}
-                  </td>
-                  <td
-                    data-label={t("branches.address")}
-                    className="px-4 py-3 text-muted-foreground"
-                  >
-                    {branch.address}
-                  </td>
-                  <td data-label={t("branches.status")} className="px-4 py-3">
-                    {branch.isActive ? t("branches.active") : t("branches.inactive")}
-                  </td>
+          <RowLinks>
+            <table className="table-cards w-full min-w-[36rem] border-collapse text-left text-sm leading-5">
+              <thead className="border-b border-border bg-muted text-xs font-medium text-muted-foreground">
+                <tr>
+                  <th scope="col" className="px-4 py-3">
+                    {t("branches.code")}
+                  </th>
+                  <th scope="col" className="px-4 py-3">
+                    {t("branches.name")}
+                  </th>
+                  <th scope="col" className="px-4 py-3">
+                    {t("branches.address")}
+                  </th>
+                  <th scope="col" className="px-4 py-3">
+                    {t("branches.status")}
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {list.rows.map((branch) => (
+                  <tr data-row key={branch.id} className="border-t hover:bg-accent/50">
+                    <td data-card="head" className="px-4 py-3 font-semibold">
+                      <Link
+                        data-row-link
+                        href={`/branches/${branch.id}`}
+                        className="inline-flex min-h-11 min-w-11 items-center underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:min-h-0"
+                      >
+                        {branch.code}
+                      </Link>
+                    </td>
+                    <td data-label={t("branches.name")} className="px-4 py-3">
+                      {branch.name}
+                    </td>
+                    <td
+                      data-label={t("branches.address")}
+                      className="px-4 py-3 text-muted-foreground"
+                    >
+                      {branch.address}
+                    </td>
+                    <td data-label={t("branches.status")} className="px-4 py-3">
+                      {branch.isActive ? t("branches.active") : t("branches.inactive")}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </RowLinks>
         </section>
       )}
 

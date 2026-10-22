@@ -5,6 +5,7 @@ import * as z from "zod";
 
 import { EmptyState } from "@/components/empty-state";
 import { Icon } from "@/components/icon";
+import { RowLinks } from "@/components/row-links";
 import { buttonVariants } from "@/components/ui/button";
 import { BRANCH_COOKIE } from "@/features/catalog/branch-cookie";
 import { currentBranchChoice, listMyBranches } from "@/features/catalog/queries/my-branches";
@@ -68,77 +69,80 @@ export default async function SuggestionsPage({ searchParams }: { searchParams: 
       ) : (
         <>
           <section className="table-cards-panel hidden overflow-x-auto rounded-xl border border-border bg-card text-card-foreground sm:block">
-            <table className="table-cards w-full min-w-[40rem] border-collapse text-left text-sm leading-5">
-              <thead className="border-b border-border bg-muted text-xs font-medium text-muted-foreground">
-                <tr>
-                  <th scope="col" className="px-4 py-3">
-                    {t("columns.name")}
-                  </th>
-                  <th scope="col" className="px-4 py-3">
-                    {t("columns.unitText")}
-                  </th>
-                  <th scope="col" className="px-4 py-3">
-                    {t("columns.branch")}
-                  </th>
-                  <th scope="col" className="px-4 py-3">
-                    {t("columns.by")}
-                  </th>
-                  <th scope="col" className="px-4 py-3">
-                    {t("columns.date")}
-                  </th>
-                  <th scope="col" className="px-4 py-3">
-                    {t("columns.status")}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row) => (
-                  <tr key={row.id} className="border-t hover:bg-accent/50">
-                    <td data-card="head" className="px-4 py-3 font-semibold">
-                      <Link
-                        href={`/suggestions/${row.id}`}
-                        className="inline-flex items-center gap-3 underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-                      >
-                        {row.photoFileId ? (
-                          // eslint-disable-next-line @next/next/no-img-element -- a private file route, not an asset
-                          <img
-                            src={`/files/${row.photoFileId}/small`}
-                            alt=""
-                            width={40}
-                            height={40}
-                            className="size-10 shrink-0 rounded-md bg-muted object-cover"
-                          />
-                        ) : (
-                          <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
-                            <Icon name="inventory_2" size={18} />
-                          </span>
-                        )}
-                        {row.name}
-                      </Link>
-                    </td>
-                    <td data-label={t("columns.unitText")} className="px-4 py-3">
-                      {row.unitText}
-                    </td>
-                    <td
-                      data-label={t("columns.branch")}
-                      className="px-4 py-3"
-                      title={row.branchName}
-                    >
-                      {row.branchCode}
-                    </td>
-                    <td data-label={t("columns.by")} className="px-4 py-3">
-                      {row.suggestedByName}
-                    </td>
-                    <td data-label={t("columns.date")} className="px-4 py-3 tabular-nums">
-                      {format.date(row.createdAt)}
-                    </td>
-                    <td data-label={t("columns.status")} className="px-4 py-3">
-                      <SuggestionStatusText status={row.status} />
-                    </td>
+            <RowLinks>
+              <table className="table-cards w-full min-w-[40rem] border-collapse text-left text-sm leading-5">
+                <thead className="border-b border-border bg-muted text-xs font-medium text-muted-foreground">
+                  <tr>
+                    <th scope="col" className="px-4 py-3">
+                      {t("columns.name")}
+                    </th>
+                    <th scope="col" className="px-4 py-3">
+                      {t("columns.unitText")}
+                    </th>
+                    <th scope="col" className="px-4 py-3">
+                      {t("columns.branch")}
+                    </th>
+                    <th scope="col" className="px-4 py-3">
+                      {t("columns.by")}
+                    </th>
+                    <th scope="col" className="px-4 py-3">
+                      {t("columns.date")}
+                    </th>
+                    <th scope="col" className="px-4 py-3">
+                      {t("columns.status")}
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {rows.map((row) => (
+                    <tr data-row key={row.id} className="border-t hover:bg-accent/50">
+                      <td data-card="head" className="px-4 py-3 font-semibold">
+                        <Link
+                          data-row-link
+                          href={`/suggestions/${row.id}`}
+                          className="inline-flex items-center gap-3 underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                        >
+                          {row.photoFileId ? (
+                            // eslint-disable-next-line @next/next/no-img-element -- a private file route, not an asset
+                            <img
+                              src={`/files/${row.photoFileId}/small`}
+                              alt=""
+                              width={40}
+                              height={40}
+                              className="size-10 shrink-0 rounded-md bg-muted object-cover"
+                            />
+                          ) : (
+                            <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
+                              <Icon name="inventory_2" size={18} />
+                            </span>
+                          )}
+                          {row.name}
+                        </Link>
+                      </td>
+                      <td data-label={t("columns.unitText")} className="px-4 py-3">
+                        {row.unitText}
+                      </td>
+                      <td
+                        data-label={t("columns.branch")}
+                        className="px-4 py-3"
+                        title={row.branchName}
+                      >
+                        {row.branchCode}
+                      </td>
+                      <td data-label={t("columns.by")} className="px-4 py-3">
+                        {row.suggestedByName}
+                      </td>
+                      <td data-label={t("columns.date")} className="px-4 py-3 tabular-nums">
+                        {format.date(row.createdAt)}
+                      </td>
+                      <td data-label={t("columns.status")} className="px-4 py-3">
+                        <SuggestionStatusText status={row.status} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </RowLinks>
           </section>
 
           <ul className="flex flex-col gap-3 sm:hidden">
