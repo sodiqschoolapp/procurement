@@ -15,6 +15,7 @@ import {
   type ColourLabelProps,
   ColourLabels,
   DocumentStatusLabel,
+  ListColourLabel,
   RequestStatusLabel,
   SubstitutedLabel,
 } from "./status-label";
@@ -268,5 +269,35 @@ describe("DocumentStatusLabel (plan of 7.4c: a cancelled transfer)", () => {
       expect(visibleText(html)).toBe(word);
       expect(html).toContain('data-status-dot="grey"');
     }
+  });
+});
+
+describe("ListColourLabel (08 The three colours: a list row shows Total, and Number and Price when orange or red; redesign of 22.10.2026)", () => {
+  const colours = {
+    number: { colour: "green", difference: "0" },
+    price: { colour: "red", difference: "-15000" },
+    total: { colour: "grey" },
+  } as const;
+
+  it("Total always shows, grey too", () => {
+    expect(visibleText(render(<ListColourLabel colours={colours} of="total" />))).toBe(
+      "In progress",
+    );
+  });
+
+  it("Number and Price show only when orange or red", () => {
+    expect(render(<ListColourLabel colours={colours} of="number" />)).toBe("");
+    expect(visibleText(render(<ListColourLabel colours={colours} of="price" />))).toBe(
+      "Paid 15 000 so'm more on price",
+    );
+    const grey = { ...colours, number: { colour: "grey" } } as const;
+    expect(render(<ListColourLabel colours={grey} of="number" />)).toBe("");
+  });
+
+  it("a group row's label counts its orders", () => {
+    const set = { ...colours, number: { colour: "amber", orders: 1 } } as const;
+    expect(visibleText(render(<ListColourLabel colours={set} of="number" />))).toBe(
+      "Bought fewer: 1 order",
+    );
   });
 });

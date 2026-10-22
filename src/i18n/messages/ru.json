@@ -889,7 +889,9 @@
       "title": "Предложения товаров",
       "description": "Товары, которые менеджеры просят добавить в каталог.",
       "pending": "{count, plural, =0 {Ничего не ждёт} one {# ждёт} few {# ждут} many {# ждут} other {# ждут}}"
-    }
+    },
+    "filters": "Фильтры",
+    "filtersOn": "Фильтры ({count})"
   },
   "prices": {
     "title": "Цены",
@@ -2471,7 +2473,9 @@
         "receivedShort": "Перемещение {number} принято. Списание {writeOff} ждёт руководителя.",
         "receivedShortAsked": "Перемещение {number} принято. Руководителю отправлено списание недостачи на решение."
       },
-      "transferBranches": "{from} → {to}"
+      "transferBranches": "{from} → {to}",
+      "filters": "Фильтры",
+      "filtersOn": "Фильтры ({count})"
     },
     "count": {
       "title": "Пересчёты склада",

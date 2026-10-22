@@ -12,6 +12,7 @@ import { DateInput } from "@/components/ui/date-input";
 import { Select } from "@/components/ui/select";
 import { isBusinessDate } from "@/domain/business-date";
 import { DOCUMENT_TYPES, type DocumentType } from "@/domain/stock-documents";
+import { FilterFold } from "@/features/analytics/components/filter-fold";
 import { BRANCH_COOKIE } from "@/features/catalog/branch-cookie";
 import { currentBranchChoice } from "@/features/catalog/queries/my-branches";
 import { NewDocumentButtons } from "@/features/warehouse/components/new-document-buttons";
@@ -107,7 +108,8 @@ export default async function WarehouseDocumentsPage({
   );
   const t = await getTranslations("warehouse.documents");
   const format = await getFormatters();
-  const filtered = type !== "" || from !== "" || to !== "" || department !== "";
+  const active = [type, from, to, department].filter((value) => value !== "").length;
+  const filtered = active > 0;
   const manyBranches = new Set(departments.map((choice) => choice.branchCode)).size > 1;
   const href = (to_: number) => {
     const query = new URLSearchParams();
@@ -156,44 +158,50 @@ export default async function WarehouseDocumentsPage({
             className="flex flex-wrap items-end gap-2 max-sm:flex-col max-sm:items-stretch"
           >
             {addressBranch && <input type="hidden" name="branch" value={addressBranch} />}
-            <label className="flex flex-col gap-1 text-sm leading-5 font-semibold">
-              {t("filterType")}
-              <Select name="type" defaultValue={type} className="w-full sm:w-48" data-filter-type>
-                <option value="">{t("allTypes")}</option>
-                {DOCUMENT_TYPES.map((value) => (
-                  <option key={value} value={value}>
-                    {typeLabel(value)}
-                  </option>
-                ))}
-              </Select>
-            </label>
-            <label className="flex flex-col gap-1 text-sm leading-5 font-semibold">
-              {t("from")}
-              <DateInput name="from" defaultValue={from} className="sm:w-40" data-filter-from />
-            </label>
-            <label className="flex flex-col gap-1 text-sm leading-5 font-semibold">
-              {t("to")}
-              <DateInput name="to" defaultValue={to} className="sm:w-40" data-filter-to />
-            </label>
-            <label className="flex flex-col gap-1 text-sm leading-5 font-semibold">
-              {t("filterDepartment")}
-              <Select
-                name="department"
-                defaultValue={department}
-                className="w-full sm:w-56"
-                data-filter-department
-              >
-                <option value="">{t("allDepartments")}</option>
-                {departments.map((choice) => (
-                  <option key={choice.id} value={choice.id}>
-                    {departmentLabel(choice)}
-                  </option>
-                ))}
-              </Select>
-            </label>
-            <button type="submit" className={buttonVariants({ variant: "secondary" })}>
-              {t("find")}
-            </button>
+            {/* On a phone the four fields fold behind Filters (redesign of 22.10.2026). */}
+            <FilterFold
+              bare
+              label={active === 0 ? t("filters") : t("filtersOn", { count: active })}
+            >
+              <label className="flex flex-col gap-1 text-sm leading-5 font-semibold">
+                {t("filterType")}
+                <Select name="type" defaultValue={type} className="w-full sm:w-48" data-filter-type>
+                  <option value="">{t("allTypes")}</option>
+                  {DOCUMENT_TYPES.map((value) => (
+                    <option key={value} value={value}>
+                      {typeLabel(value)}
+                    </option>
+                  ))}
+                </Select>
+              </label>
+              <label className="flex flex-col gap-1 text-sm leading-5 font-semibold">
+                {t("from")}
+                <DateInput name="from" defaultValue={from} className="sm:w-40" data-filter-from />
+              </label>
+              <label className="flex flex-col gap-1 text-sm leading-5 font-semibold">
+                {t("to")}
+                <DateInput name="to" defaultValue={to} className="sm:w-40" data-filter-to />
+              </label>
+              <label className="flex flex-col gap-1 text-sm leading-5 font-semibold">
+                {t("filterDepartment")}
+                <Select
+                  name="department"
+                  defaultValue={department}
+                  className="w-full sm:w-56"
+                  data-filter-department
+                >
+                  <option value="">{t("allDepartments")}</option>
+                  {departments.map((choice) => (
+                    <option key={choice.id} value={choice.id}>
+                      {departmentLabel(choice)}
+                    </option>
+                  ))}
+                </Select>
+              </label>
+              <button type="submit" className={buttonVariants({ variant: "secondary" })}>
+                {t("find")}
+              </button>
+            </FilterFold>
             {filtered && (
               <Link
                 href={

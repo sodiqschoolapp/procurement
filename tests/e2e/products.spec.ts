@@ -144,6 +144,8 @@ test("the Head adds a product with a photo, sees its small version in the list, 
     .poll(() => small.evaluate((image: HTMLImageElement) => image.naturalWidth))
     .toBe(160);
   await noSideScroll(page);
+  // On a phone category and type fold behind Filters (redesign of 22.10.2026).
+  if (info.project.name === "phone-375") await page.locator("[data-filter-toggle]").click();
   await page.getByLabel(t.filterType).selectOption({ label: t.productType.SERVICE });
   await page.getByRole("button", { name: t.find }).click();
   await expect(page).toHaveURL(/type=SERVICE/);

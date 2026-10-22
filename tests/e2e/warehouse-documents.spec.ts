@@ -149,6 +149,8 @@ test("a Manager filters the documents to the issues of one department, opens one
   await expect(page.getByRole("heading", { level: 1, name: texts.title })).toBeVisible();
   await noSideScroll(page);
 
+  // On a phone the filters fold behind Filters (redesign of 22.10.2026).
+  if (test.info().project.name === "phone-375") await page.locator("[data-filter-toggle]").click();
   await page.locator("[data-filter-type]").selectOption("ISSUE");
   await page.locator("[data-filter-department]").selectOption(seeded.science.departmentId);
   await page.getByRole("button", { name: texts.find }).click();

@@ -889,7 +889,9 @@
       "title": "Tovar takliflari",
       "description": "Menejerlar katalogga qoʻshishni soʻragan tovarlar.",
       "pending": "{count, plural, =0 {Kutayotgani yoʻq} other {# ta kutmoqda}}"
-    }
+    },
+    "filters": "Filtrlar",
+    "filtersOn": "Filtrlar ({count})"
   },
   "prices": {
     "title": "Narxlar",
@@ -2471,7 +2473,9 @@
         "receivedShort": "{number} koʻchirish qabul qilindi. {writeOff} hisobdan chiqarish rahbarni kutmoqda.",
         "receivedShortAsked": "{number} koʻchirish qabul qilindi. Kamomadni hisobdan chiqarish rahbarga qaror uchun yuborildi."
       },
-      "transferBranches": "{from} → {to}"
+      "transferBranches": "{from} → {to}",
+      "filters": "Filtrlar",
+      "filtersOn": "Filtrlar ({count})"
     },
     "count": {
       "title": "Ombor sanoqlari",
