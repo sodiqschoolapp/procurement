@@ -96,16 +96,17 @@ describe("the Substituted label (07 Substitution; plan of 3.6, decided item 8)",
 
 describe("colour labels (08 The three colours; review correction 2)", () => {
   const cases: { props: ColourLabelProps; text: string; tokens: string }[] = [
-    // 08 worked through by the review: Cheaper → Total +50 000 → amber "Left 50 000 so'm".
+    // 08 worked through by the review: Cheaper → Total +50 000 → amber "Left 50 000 so'm". Each
+    // label says what it compares (redesign of 22.10.2026).
     {
       props: { label: "total", colour: "amber", difference: 50_000n },
       text: "Left 50 000 so'm",
       tokens: "bg-warning-bg text-warning",
     },
-    // Dearer → −30 000 → red "Over 30 000 so'm", shown without its sign.
+    // Dearer → −30 000 → red "Over plan by 30 000 so'm", shown without its sign.
     {
       props: { label: "total", colour: "red", difference: -30_000n },
-      text: "Over 30 000 so'm",
+      text: "Over plan by 30 000 so'm",
       tokens: "bg-destructive-bg text-destructive",
     },
     // Green says its plain word, without "0" (D60, 21.10.2026).
@@ -114,15 +115,15 @@ describe("colour labels (08 The three colours; review correction 2)", () => {
       text: "Even",
       tokens: "bg-success-bg text-success",
     },
-    // Fewer: 90 of 100 → amber "Less 10"; the quantity format drops trailing zeros.
+    // Fewer: 90 of 100 → amber "Bought 10 fewer"; the quantity format drops trailing zeros.
     {
       props: { label: "number", colour: "amber", difference: "10.000" },
-      text: "Less 10",
+      text: "Bought 10 fewer",
       tokens: "bg-warning-bg",
     },
     {
       props: { label: "number", colour: "red", difference: "-2.500" },
-      text: "More 2.5",
+      text: "Bought 2.5 more",
       tokens: "bg-destructive-bg",
     },
     {
@@ -132,39 +133,39 @@ describe("colour labels (08 The three colours; review correction 2)", () => {
     },
     {
       props: { label: "price", colour: "amber", difference: 1_250_000n },
-      text: "Cheaper 1 250 000 so'm",
+      text: "Saved 1 250 000 so'm on price",
       tokens: "bg-warning-bg",
     },
     {
       props: { label: "price", colour: "red", difference: -5n },
-      text: "Dearer 5 so'm",
+      text: "Paid 5 so'm more on price",
       tokens: "bg-destructive-bg",
     },
     // Two prices that cancel out: orange with 0 (08 Price row "at or below"; plan of 3.8, item 3).
     {
       props: { label: "price", colour: "amber", difference: 0n },
-      text: "Cheaper 0 so'm",
+      text: "Saved 0 so'm on price",
       tokens: "bg-warning-bg",
     },
     // A set's Number and Price: the worst colour and how many orders carry it (3.8, item 2).
     {
       props: { label: "number", colour: "red", orders: 2 },
-      text: "More 2 orders",
+      text: "Bought more: 2 orders",
       tokens: "bg-destructive-bg",
     },
     {
       props: { label: "price", colour: "green", orders: 1 },
-      text: "Price as planned 1 order",
+      text: "Price as planned: 1 order",
       tokens: "bg-success-bg",
     },
-    // Grey: "In progress" for Number and Total, "Not bought yet" for Price; no amount yet.
+    // Grey: "In progress" for Number and Total, "Nothing bought yet" for Price; no amount yet.
     {
       props: { label: "number", colour: "grey" },
       text: "In progress",
       tokens: "bg-muted text-muted-foreground",
     },
     { props: { label: "total", colour: "grey" }, text: "In progress", tokens: "bg-muted" },
-    { props: { label: "price", colour: "grey" }, text: "Not bought yet", tokens: "bg-muted" },
+    { props: { label: "price", colour: "grey" }, text: "Nothing bought yet", tokens: "bg-muted" },
   ];
 
   for (const { props, text, tokens } of cases) {
@@ -193,13 +194,13 @@ describe("colour labels (08 The three colours; review correction 2)", () => {
     expect(visibleText(html)).toBe("Остаток 1 so'm");
     expect(
       visibleText(render(<ColourLabel label="number" colour="red" difference="-1" />, "uz")),
-    ).toBe("Koʻp 1");
+    ).toBe("Rejadan 1 koʻp olindi");
   });
 
   it("a set's count in all three languages (plan of 3.8, decided item 2)", () => {
     const set = <ColourLabel label="number" colour="amber" orders={5} />;
-    expect(visibleText(render(set, "ru"))).toBe("Меньше 5 заказов");
-    expect(visibleText(render(set, "uz"))).toBe(`${uz.colourLabel.number.less} 5 ta buyurtma`);
+    expect(visibleText(render(set, "ru"))).toBe("Куплено меньше: 5 заказов");
+    expect(visibleText(render(set, "uz"))).toBe("Kam olindi: 5 ta buyurtma");
   });
 
   it("refuses a set's count below 1", () => {
@@ -218,7 +219,9 @@ describe("colour labels (08 The three colours; review correction 2)", () => {
         }}
       />,
     );
-    expect(visibleText(html)).toBe("Quantity as planned Cheaper 50 000 so'm Left 50 000 so'm");
+    expect(visibleText(html)).toBe(
+      "Quantity as planned Saved 50 000 so'm on price Left 50 000 so'm",
+    );
   });
 
   const refusals: { props: ColourLabelProps; needs: RegExp }[] = [

@@ -239,23 +239,31 @@
     "number": {
       "name": "Soni",
       "matches": "Miqdor rejadagidek",
-      "less": "Kam",
-      "more": "Koʻp",
-      "inProgress": "Jarayonda"
+      "inProgress": "Jarayonda",
+      "lessBy": "Rejadan <n>{amount}</n> kam olindi",
+      "moreBy": "Rejadan <n>{amount}</n> koʻp olindi",
+      "lessOrders": "Kam olindi: <n>{amount}</n>",
+      "moreOrders": "Koʻp olindi: <n>{amount}</n>",
+      "matchesOrders": "Miqdor rejadagidek: <n>{amount}</n>"
     },
     "price": {
       "name": "Narx",
       "matches": "Narx rejadagidek",
-      "cheaper": "Arzonroq",
-      "dearer": "Qimmatroq",
-      "notBought": "Hali sotib olinmagan"
+      "notBought": "Hali hech narsa olinmagan",
+      "cheaperBy": "Narxda <n>{amount}</n> tejaldi",
+      "dearerBy": "Narxda <n>{amount}</n> ortiq toʻlandi",
+      "cheaperOrders": "Narxda tejaldi: <n>{amount}</n>",
+      "dearerOrders": "Narxda ortiq toʻlandi: <n>{amount}</n>",
+      "matchesOrders": "Narx rejadagidek: <n>{amount}</n>"
     },
     "total": {
       "name": "Jami",
       "even": "Teng",
       "left": "Qoldiq",
       "over": "Ortiqcha",
-      "inProgress": "Jarayonda"
+      "inProgress": "Jarayonda",
+      "leftBy": "Qoldiq <n>{amount}</n>",
+      "overBy": "Ortiqcha <n>{amount}</n>"
     }
   },
   "common": {
@@ -1319,7 +1327,10 @@
       },
       "rowFacts": "{branch} · {orders} · {date} gacha kerak",
       "yours": "Sizning navbatingiz",
-      "orderCount": "{count} ta buyurtma"
+      "orderCount": "{count} ta buyurtma",
+      "receivedOf": "{planned} {unit} dan {received}",
+      "plan": "reja {amount}",
+      "average": "Oʻrtacha {amount}"
     },
     "page": {
       "noNumber": "Raqamsiz qoralama",
@@ -1533,7 +1544,31 @@
       },
       "back": "Buyurtmalar",
       "totals": "Summalar",
-      "outcome": "Rejaga nisbatan"
+      "outcome": "Rejaga nisbatan",
+      "planActual": {
+        "title": "Reja va haqiqat",
+        "sums": "Oxirgi ustun jamidagi farqni beradi.",
+        "line": "Qator",
+        "planned": "Reja",
+        "actual": "Haqiqat",
+        "difference": "Farq",
+        "effect": "Jamiga taʼsiri",
+        "quantity": "Miqdor",
+        "unitPrice": "Birlik narxi",
+        "extras": "Qoʻshimcha xarajatlar",
+        "total": "Jami",
+        "average": "Oʻrtacha {amount}",
+        "more": "{amount} koʻp",
+        "fewer": "{amount} kam",
+        "cheaperEach": "Har biri {amount} arzon",
+        "dearerEach": "Har biri {amount} qimmat",
+        "sameOnAverage": "Oʻrtacha bir xil",
+        "asPlanned": "Rejadagidek",
+        "inProgress": "Jarayonda",
+        "spentMore": "{amount} koʻp",
+        "spentLess": "{amount} kam",
+        "none": "—"
+      }
     },
     "approve": {
       "button": "Tasdiqlash",

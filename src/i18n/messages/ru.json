@@ -239,23 +239,31 @@
     "number": {
       "name": "Количество",
       "matches": "Количество по плану",
-      "less": "Меньше",
-      "more": "Больше",
-      "inProgress": "В работе"
+      "inProgress": "В работе",
+      "lessBy": "Куплено на <n>{amount}</n> меньше",
+      "moreBy": "Куплено на <n>{amount}</n> больше",
+      "lessOrders": "Куплено меньше: <n>{amount}</n>",
+      "moreOrders": "Куплено больше: <n>{amount}</n>",
+      "matchesOrders": "Количество по плану: <n>{amount}</n>"
     },
     "price": {
       "name": "Цена",
       "matches": "Цена по плану",
-      "cheaper": "Дешевле",
-      "dearer": "Дороже",
-      "notBought": "Ещё не куплено"
+      "notBought": "Ещё ничего не куплено",
+      "cheaperBy": "Экономия на цене <n>{amount}</n>",
+      "dearerBy": "Переплата по цене <n>{amount}</n>",
+      "cheaperOrders": "Экономия на цене: <n>{amount}</n>",
+      "dearerOrders": "Переплата по цене: <n>{amount}</n>",
+      "matchesOrders": "Цена по плану: <n>{amount}</n>"
     },
     "total": {
       "name": "Итог",
       "even": "Сходится",
       "left": "Остаток",
       "over": "Перерасход",
-      "inProgress": "В работе"
+      "inProgress": "В работе",
+      "leftBy": "Остаток <n>{amount}</n>",
+      "overBy": "Перерасход <n>{amount}</n>"
     }
   },
   "common": {
@@ -1319,7 +1327,10 @@
       },
       "rowFacts": "{branch} · {orders} · нужно к {date}",
       "yours": "Ваш ход",
-      "orderCount": "{count, plural, one {# заказ} few {# заказа} many {# заказов} other {# заказа}}"
+      "orderCount": "{count, plural, one {# заказ} few {# заказа} many {# заказов} other {# заказа}}",
+      "receivedOf": "{received} из {planned} {unit}",
+      "plan": "план {amount}",
+      "average": "В среднем {amount}"
     },
     "page": {
       "noNumber": "Черновик без номера",
@@ -1533,7 +1544,31 @@
       },
       "back": "Заказы",
       "totals": "Суммы",
-      "outcome": "По сравнению с планом"
+      "outcome": "По сравнению с планом",
+      "planActual": {
+        "title": "План и факт",
+        "sums": "Последний столбец складывается в разницу итога.",
+        "line": "Строка",
+        "planned": "План",
+        "actual": "Факт",
+        "difference": "Разница",
+        "effect": "Влияние на итог",
+        "quantity": "Количество",
+        "unitPrice": "Цена за единицу",
+        "extras": "Доп. расходы",
+        "total": "Итог",
+        "average": "В среднем {amount}",
+        "more": "На {amount} больше",
+        "fewer": "На {amount} меньше",
+        "cheaperEach": "На {amount} дешевле за единицу",
+        "dearerEach": "На {amount} дороже за единицу",
+        "sameOnAverage": "В среднем так же",
+        "asPlanned": "По плану",
+        "inProgress": "В работе",
+        "spentMore": "На {amount} больше",
+        "spentLess": "На {amount} меньше",
+        "none": "—"
+      }
     },
     "approve": {
       "button": "Утвердить",

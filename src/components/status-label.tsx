@@ -324,6 +324,23 @@ export function DocumentStatusLabel({
   );
 }
 
+/**
+ * The message key of a label: its plain word (green and grey), the word around an amount (`…By`)
+ * or the word before a set's count of orders (`…Orders`). Each says what it compares: "Bought 10
+ * more", "Saved 15 000 so'm on price", "Over plan by 10 000 so'm" (redesign of 22.10.2026).
+ */
+function labelKey(props: ColourLabelProps): string {
+  const word = COLOUR_WORDS[props.label][props.colour];
+  if ("orders" in props) return `${props.label}.${word}Orders`;
+  if (props.colour === "green" || props.colour === "grey") return `${props.label}.${word}`;
+  return `${props.label}.${word}By`;
+}
+
+/** An amount inside a label's words, in tabular figures. */
+function amountTag(chunks: React.ReactNode) {
+  return <span className="tabular-nums">{chunks}</span>;
+}
+
 /** One of the three colour labels of a line or a request: Number, Price or Total. */
 export function ColourLabel(props: ColourLabelProps & { className?: string; plain?: boolean }) {
   const t = useTranslations("colourLabel");
@@ -352,8 +369,7 @@ export function ColourLabel(props: ColourLabelProps & { className?: string; plai
   }
   // A colour label always carries an icon and a word, and the amount when it has one (08, The
   // three colours); green has nothing to count and the grey state no amount yet.
-  const word = COLOUR_WORDS[props.label][props.colour];
-  const key = `${props.label}.${word}` as Parameters<typeof t>[0];
+  const key = labelKey(props) as Parameters<typeof t>[0];
   return (
     <LabelBox
       tone={props.colour}
@@ -362,8 +378,7 @@ export function ColourLabel(props: ColourLabelProps & { className?: string; plai
       className={props.className}
     >
       <span className="sr-only">{t(`${props.label}.name`)}</span>
-      {t(key)}
-      {amount !== null && <span className="tabular-nums">{amount}</span>}
+      <span>{amount === null ? t(key) : t.rich(key, { amount, n: amountTag })}</span>
     </LabelBox>
   );
 }
@@ -391,8 +406,14 @@ export function OutcomeLabel({
   return (
     <LabelBox tone={colour} icon={COLOUR_ICONS[colour]} className={className}>
       <span className="sr-only">{t("total.name")}</span>
-      {t(`total.${COLOUR_WORDS.total[colour]}`)}
-      {colour !== "green" && <span className="tabular-nums">{format.money(amount)}</span>}
+      <span>
+        {colour === "green"
+          ? t("total.even")
+          : t.rich(colour === "amber" ? "total.leftBy" : "total.overBy", {
+              amount: format.money(amount),
+              n: amountTag,
+            })}
+      </span>
     </LabelBox>
   );
 }
@@ -463,35 +484,36 @@ export function LowLabel({ className }: { className?: string }) {
 }
 
 /**
- * The outcome of a list row (docs/design-system.md, Status and outcome): the Total label as the
- * one phrase that says how the money ended ("Over by 15 000 so'm", "Left 50 000 so'm", "Even",
- * "In progress"), then Number and Price as small words only when they are orange or red ("Less 2",
- * "Dearer 1 order"). Every label keeps its icon, word and amount; the colours are the server's.
+ * One of the three labels in its own column of a list row (08 The three colours: "a list row shows
+ * the Total label and, beside it, Number and Price when they are orange or red"; redesign of
+ * 22.10.2026): Number under the quantity, Price under the price, Total under the total, so each
+ * label sits under the header it compares. Number and Price draw nothing when green or grey. The
+ * label keeps its icon, words and amount; the colours are the server's.
  */
-export function ColourOutcome({
+export function ListColourLabel({
   colours,
+  of: label,
   className,
 }: {
   colours: WireColours;
+  /** Which of the three labels. */
+  of: "number" | "price" | "total";
   className?: string;
 }) {
-  const telling = (["number", "price"] as const).filter(
-    (label) => colours[label].colour === "amber" || colours[label].colour === "red",
-  );
+  const wire = colours[label];
+  if (label !== "total" && wire.colour !== "amber" && wire.colour !== "red") return null;
   return (
-    <span data-colours data-outcome className={cn("flex flex-col gap-0.5", className)}>
-      <span data-colour-label="total" data-colour={colours.total.colour}>
-        <ColourLabel plain {...labelProps("total", colours.total)} />
+    <span data-colours className={cn("flex [justify-content:inherit]", className)}>
+      <span data-colour-label={label} data-colour={wire.colour}>
+        <ColourLabel
+          plain
+          {...labelProps(label, wire)}
+          className={cn(
+            "items-start text-left whitespace-normal sm:whitespace-nowrap [&>svg]:mt-px",
+            label !== "total" && "text-xs",
+          )}
+        />
       </span>
-      {telling.length > 0 && (
-        <span className="flex flex-wrap [justify-content:inherit] gap-x-3">
-          {telling.map((label) => (
-            <span key={label} data-colour-label={label} data-colour={colours[label].colour}>
-              <ColourLabel plain {...labelProps(label, colours[label])} className="text-xs" />
-            </span>
-          ))}
-        </span>
-      )}
     </span>
   );
 }

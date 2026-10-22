@@ -628,7 +628,13 @@ export async function recordPurchase(
   expect(await scrollsSideways(page)).toBe(false);
   await page.getByRole("button", { name: en.purchase.form.save }).click();
   await expect(page).toHaveURL(new RegExp(`/orders/${order.id}$`));
-  await expect(page.locator(`[data-progress="${bought.progress ?? "DONE"}"]`)).toBeVisible();
+  if (bought.progress === "OPEN") {
+    // Open buying is the status Open alone in the header (redesign of 22.10.2026).
+    await expect(page.locator('header [data-request-status="PURCHASING"]')).toBeVisible();
+    await expect(page.locator("header [data-progress]")).toHaveCount(0);
+  } else {
+    await expect(page.locator(`[data-progress="${bought.progress ?? "DONE"}"]`)).toBeVisible();
+  }
 }
 
 /** The order page's label (Number, Price or Total): its colour and its text. */

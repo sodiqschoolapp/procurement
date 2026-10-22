@@ -239,23 +239,31 @@
     "number": {
       "name": "Number",
       "matches": "Quantity as planned",
-      "less": "Less",
-      "more": "More",
-      "inProgress": "In progress"
+      "inProgress": "In progress",
+      "lessBy": "Bought <n>{amount}</n> fewer",
+      "moreBy": "Bought <n>{amount}</n> more",
+      "lessOrders": "Bought fewer: <n>{amount}</n>",
+      "moreOrders": "Bought more: <n>{amount}</n>",
+      "matchesOrders": "Quantity as planned: <n>{amount}</n>"
     },
     "price": {
       "name": "Price",
       "matches": "Price as planned",
-      "cheaper": "Cheaper",
-      "dearer": "Dearer",
-      "notBought": "Not bought yet"
+      "notBought": "Nothing bought yet",
+      "cheaperBy": "Saved <n>{amount}</n> on price",
+      "dearerBy": "Paid <n>{amount}</n> more on price",
+      "cheaperOrders": "Saved on price: <n>{amount}</n>",
+      "dearerOrders": "Paid more on price: <n>{amount}</n>",
+      "matchesOrders": "Price as planned: <n>{amount}</n>"
     },
     "total": {
       "name": "Total",
       "even": "Even",
       "left": "Left",
       "over": "Over",
-      "inProgress": "In progress"
+      "inProgress": "In progress",
+      "leftBy": "Left <n>{amount}</n>",
+      "overBy": "Over plan by <n>{amount}</n>"
     }
   },
   "common": {
@@ -1319,7 +1327,10 @@
       },
       "rowFacts": "{branch} · {orders} · needed by {date}",
       "yours": "Your turn",
-      "orderCount": "{count, plural, one {# order} other {# orders}}"
+      "orderCount": "{count, plural, one {# order} other {# orders}}",
+      "receivedOf": "{received} of {planned} {unit}",
+      "plan": "plan {amount}",
+      "average": "{amount} on average"
     },
     "page": {
       "noNumber": "Draft without a number",
@@ -1533,7 +1544,31 @@
       },
       "back": "Orders",
       "totals": "Totals",
-      "outcome": "Against the plan"
+      "outcome": "Against the plan",
+      "planActual": {
+        "title": "Plan and actual",
+        "sums": "The last column adds up to the difference of the total.",
+        "line": "Line",
+        "planned": "Plan",
+        "actual": "Actual",
+        "difference": "Difference",
+        "effect": "Effect on the total",
+        "quantity": "Quantity",
+        "unitPrice": "Price per unit",
+        "extras": "Extra costs",
+        "total": "Total",
+        "average": "{amount} on average",
+        "more": "{amount} more",
+        "fewer": "{amount} fewer",
+        "cheaperEach": "{amount} cheaper each",
+        "dearerEach": "{amount} dearer each",
+        "sameOnAverage": "Same on average",
+        "asPlanned": "As planned",
+        "inProgress": "In progress",
+        "spentMore": "{amount} more",
+        "spentLess": "{amount} less",
+        "none": "—"
+      }
     },
     "approve": {
       "button": "Approve",
