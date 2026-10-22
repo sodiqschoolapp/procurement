@@ -7,14 +7,15 @@ import { useEffect, useRef, useState } from "react";
 
 import { selectAllOnFilterAction, tickedSummaryAction } from "@/app/(app)/orders/actions";
 import { EmptyState } from "@/components/empty-state";
+import { rowClick } from "@/components/row-links";
 import { Icon } from "@/components/icon";
-import { ColourOutcome, RequestStatusLabel } from "@/components/status-label";
+import { ListColourLabel, RequestStatusLabel } from "@/components/status-label";
 import { toast } from "@/components/toast";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/components/utils";
 import { tickFits } from "@/domain/order-list";
 import type { Role } from "@/domain/permissions";
-import type { WireOrderGroup, WireTickedSummary } from "@/features/orders/list-wire";
+import type { WireListOrder, WireOrderGroup, WireTickedSummary } from "@/features/orders/list-wire";
 import { useFormatters } from "@/i18n/use-formatters";
 
 import { ApproveButton } from "./approve-button";
@@ -216,7 +217,8 @@ export function OrderList({
       </div>
 
       <div className="rounded-xl border border-border bg-card max-sm:border-0 max-sm:bg-transparent">
-        <table className="w-full border-collapse text-sm max-sm:block">
+        {/* A click on a row is a click on its one link or toggle (row-links.tsx). */}
+        <table onClick={rowClick} className="w-full border-collapse text-sm max-sm:block">
           <caption className="sr-only">{t("title")}</caption>
           <thead className="border-b border-border text-left text-xs text-muted-foreground max-sm:hidden">
             <tr>
@@ -231,6 +233,9 @@ export function OrderList({
               </th>
               <th scope="col" className="px-3 py-2.5 text-right font-medium">
                 {t("columns.quantity")}
+              </th>
+              <th scope="col" className="px-3 py-2.5 text-right font-medium">
+                {t("columns.price")}
               </th>
               <th scope="col" className="px-3 py-2.5 text-right font-medium">
                 {t("columns.total")}
@@ -444,7 +449,6 @@ function GroupRows({
 }) {
   const t = useTranslations("orders.list");
   const tOrders = useTranslations("orders");
-  const tPayment = useTranslations("paymentTypes");
   const format = useFormatters();
   const ids = group.orders.map((order) => order.id);
   const tickedHere = ids.filter((id) => ticked.has(id)).length;
@@ -459,7 +463,16 @@ function GroupRows({
     ? `${group.productName}, ${group.subtypeName}`
     : group.productName;
   const ordersId = `group-${group.key.replaceAll(":", "-")}`;
+  const unit = group.unitShortName;
   const cell = "px-3 py-3 align-top max-sm:p-0";
+  // A caption that names a value on a phone, where the header row is hidden.
+  const caption = (column: "quantity" | "price" | "total") => (
+    <span className="block text-xs text-muted-foreground sm:hidden">{t(`columns.${column}`)}</span>
+  );
+  const telling = (label: "number" | "price") =>
+    group.colours !== null &&
+    (group.colours[label].colour === "amber" || group.colours[label].colour === "red");
+  const hasPrice = group.summary.priceHint !== null || telling("price");
   const flags = (
     <>
       {group.summary.urgent && (
@@ -493,13 +506,18 @@ function GroupRows({
     <tbody
       data-group={group.key}
       data-ticked={tickedHere > 0 || undefined}
-      className="border-t border-border first-of-type:border-t-0 data-ticked:bg-sidebar-primary/60 max-sm:mb-3 max-sm:block max-sm:rounded-xl max-sm:border max-sm:border-border max-sm:bg-card max-sm:p-4 max-sm:first-of-type:border-t"
+      className="border-t border-border first-of-type:border-t-0 data-ticked:bg-sidebar-primary/60 max-sm:mb-3 max-sm:block max-sm:rounded-xl max-sm:border max-sm:border-border max-sm:bg-card max-sm:p-3 max-sm:first-of-type:border-t"
     >
-      <tr className="transition-colors duration-120 ease-out hover:bg-accent/60 max-sm:grid max-sm:grid-cols-[auto_minmax(0,1fr)_auto] max-sm:gap-x-3 max-sm:gap-y-1 max-sm:hover:bg-transparent">
+      {/* The whole row opens and closes its orders, as its toggle does; the tick box keeps its own
+          click (design system, Panels and lists: a row with one destination; row-links.tsx). */}
+      <tr
+        data-row
+        className="transition-colors duration-120 ease-out hover:bg-accent/60 max-sm:grid max-sm:grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)_auto] max-sm:gap-x-3 max-sm:gap-y-3 max-sm:hover:bg-transparent"
+      >
         <td
           className={cn(
             cell,
-            "relative w-12 pl-4 max-sm:row-span-3 max-sm:pl-0",
+            "relative w-12 pl-4 max-sm:col-start-1 max-sm:row-start-1 max-sm:w-auto max-sm:pl-0",
             yours &&
               "sm:before:absolute sm:before:inset-y-3 sm:before:left-0 sm:before:w-[3px] sm:before:rounded-r-full sm:before:bg-brand",
           )}
@@ -515,7 +533,12 @@ function GroupRows({
             />
           </label>
         </td>
-        <td className={cn(cell, "max-sm:col-start-2 max-sm:min-w-0")}>
+        <td
+          className={cn(
+            cell,
+            "max-sm:col-span-2 max-sm:col-start-2 max-sm:row-start-1 max-sm:min-w-0 max-sm:pt-0.5",
+          )}
+        >
           <span className="flex flex-col gap-0.5">
             <span className="font-medium">{product}</span>
             <span className="text-small text-muted-foreground">
@@ -537,38 +560,75 @@ function GroupRows({
             {flags}
           </span>
         </td>
-        <td className={cn(cell, "text-right whitespace-nowrap tabular-nums max-sm:hidden")}>
-          {format.quantity(group.summary.quantity)} {group.unitShortName}
-        </td>
-        <td className={cn(cell, "text-right max-sm:col-start-2 max-sm:min-w-0 max-sm:text-left")}>
+        {/* Quantity, Price and Total each in its own column, with its own label (08 The three
+            colours; redesign of 22.10.2026). */}
+        <td
+          data-cell="group-quantity"
+          className={cn(
+            cell,
+            "text-right max-sm:col-span-2 max-sm:col-start-1 max-sm:row-start-2 max-sm:text-left",
+          )}
+        >
+          {caption("quantity")}
           <span className="flex flex-col items-end gap-0.5 max-sm:items-start">
-            <span className="whitespace-nowrap max-sm:flex max-sm:flex-wrap max-sm:gap-x-2">
-              <span className="text-muted-foreground sm:hidden">
-                {format.quantity(group.summary.quantity)} {group.unitShortName}
-              </span>
-              <span className="font-semibold tabular-nums" data-cell="group-total">
-                {format.money(BigInt(group.summary.totals.grand))}
-              </span>
+            <span className="whitespace-nowrap tabular-nums">
+              {group.received === null
+                ? `${format.quantity(group.summary.quantity)} ${unit}`
+                : t("receivedOf", {
+                    received: format.quantity(group.received),
+                    planned: format.quantity(group.summary.quantity),
+                    unit,
+                  })}
             </span>
+            {group.colours && <ListColourLabel colours={group.colours} of="number" />}
+          </span>
+        </td>
+        <td
+          data-cell="group-price"
+          className={cn(
+            cell,
+            "text-right max-sm:col-span-4 max-sm:col-start-1 max-sm:row-start-3 max-sm:text-left",
+            !hasPrice && "max-sm:hidden",
+          )}
+        >
+          {hasPrice && caption("price")}
+          <span className="flex flex-col items-end gap-0.5 max-sm:items-start">
             {group.summary.priceHint !== null && (
-              <span className="text-xs whitespace-nowrap text-warning max-sm:whitespace-normal">
+              <span className="text-xs text-warning">
                 {tOrders("priceHint", {
                   percent: BigInt(group.summary.priceHint) as unknown as number,
                 })}
               </span>
             )}
-            {/* 08 The three colours, for all of its orders (plan of 3.8): the outcome first. */}
-            {group.colours && (
-              <ColourOutcome colours={group.colours} className="items-end max-sm:items-start" />
-            )}
+            {group.colours && <ListColourLabel colours={group.colours} of="price" />}
           </span>
         </td>
-        <td className={cn(cell, "w-14 pr-4 text-right max-sm:col-start-3 max-sm:row-start-1")}>
+        <td
+          className={cn(
+            cell,
+            "text-right max-sm:col-span-2 max-sm:col-start-3 max-sm:row-start-2 max-sm:text-left",
+          )}
+        >
+          {caption("total")}
+          <span className="flex flex-col items-end gap-0.5 max-sm:items-start">
+            <span className="font-semibold whitespace-nowrap tabular-nums" data-cell="group-total">
+              {format.money(BigInt(group.summary.totals.grand))}
+            </span>
+            {group.colours && <ListColourLabel colours={group.colours} of="total" />}
+          </span>
+        </td>
+        <td
+          className={cn(
+            cell,
+            "w-14 pr-4 text-right max-sm:col-start-4 max-sm:row-start-1 max-sm:w-auto max-sm:pr-0",
+          )}
+        >
           <button
             type="button"
             aria-expanded={open}
             aria-controls={ordersId}
             onClick={onToggle}
+            data-row-link
             // The name holds the visible product and branch code (WCAG 2.5.3; plan of 9.1d).
             aria-label={t(open ? "hideOrders" : "showOrders", {
               product: `${product} ${group.branchCode}`,
@@ -588,7 +648,7 @@ function GroupRows({
       </tr>
       {open && (
         <tr id={ordersId} className="max-sm:mt-3 max-sm:block">
-          <td colSpan={6} className="px-4 pb-4 max-sm:block max-sm:p-0">
+          <td colSpan={7} className="px-4 pb-4 max-sm:block max-sm:p-0">
             <table className="w-full border-collapse overflow-hidden rounded-lg text-small max-sm:block sm:bg-muted">
               <caption className="sr-only">{t("ordersOf", { product })}</caption>
               <thead className="text-left text-xs text-muted-foreground max-sm:hidden">
@@ -596,118 +656,30 @@ function GroupRows({
                   <th scope="col" className="w-12 py-2 pr-2 pl-3 font-medium">
                     <span className="sr-only">{t("columns.tick")}</span>
                   </th>
-                  {(
-                    [
-                      "number",
-                      "department",
-                      "quantity",
-                      "stockAtSubmit",
-                      "stockNow",
-                      "price",
-                      "paymentType",
-                      "neededBy",
-                      "owner",
-                      "submitted",
-                    ] as const
-                  ).map((column) => (
-                    <th key={column} scope="col" className="py-2 pr-3 font-medium">
+                  {ORDER_COLUMNS.map((column) => (
+                    <th
+                      key={column}
+                      scope="col"
+                      className={cn(
+                        "py-2 pr-3 font-medium",
+                        RIGHT_COLUMNS.has(column) && "text-right",
+                      )}
+                    >
                       {t(`columns.${column}`)}
                     </th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="max-sm:flex max-sm:flex-col max-sm:gap-2">
+              <tbody className="max-sm:block">
                 {group.orders.map((order) => (
-                  <tr
+                  <OrderRow
                     key={order.id}
-                    data-order={order.id}
-                    data-refused={refused.has(order.id) || undefined}
-                    className="border-t border-border data-refused:bg-destructive-bg max-sm:grid max-sm:grid-cols-2 max-sm:gap-1 max-sm:rounded-lg max-sm:border max-sm:bg-muted max-sm:p-3"
-                  >
-                    <td className="py-2 pr-2 pl-3 max-sm:col-span-2 max-sm:p-0">
-                      <label className="flex size-11 cursor-pointer items-center justify-center sm:size-6">
-                        <input
-                          type="checkbox"
-                          checked={ticked.has(order.id)}
-                          onChange={(event) => onTick([order.id], event.target.checked)}
-                          aria-label={t("tickOrder", { number: order.number })}
-                          className="size-5 accent-primary sm:size-4"
-                        />
-                      </label>
-                    </td>
-                    <td className="py-2 pr-3 font-medium whitespace-nowrap max-sm:col-span-2">
-                      {/* The order page (plan of 2.9; progress 2.8, "For 2.9"). */}
-                      <Link
-                        href={`/orders/${order.id}`}
-                        className="inline-flex min-h-11 min-w-11 items-center gap-1 underline decoration-border-strong underline-offset-4 hover:decoration-foreground sm:min-h-0"
-                      >
-                        {order.number}
-                      </Link>
-                      {order.revision > 1 && (
-                        <span className="ml-2 font-normal text-muted-foreground">
-                          {tOrders("revision", { revision: order.revision })}
-                        </span>
-                      )}
-                      {order.priority === "URGENT" && (
-                        <span className="ml-2 text-destructive">{t("urgent")}</span>
-                      )}
-                      {order.overdue && (
-                        <span
-                          data-overdue
-                          className="ml-2 inline-flex items-center gap-1 text-warning"
-                        >
-                          <Icon name="schedule" size={16} />
-                          {tOrders("overdue")}
-                        </span>
-                      )}
-                      {refused.has(order.id) && (
-                        <span className="ml-2 inline-flex items-center gap-1 text-destructive">
-                          <Icon name="error" size={16} />
-                          {t("refusedMark")}
-                        </span>
-                      )}
-                    </td>
-                    <td className="py-2 pr-3">{order.departmentName}</td>
-                    <td className="py-2 pr-3 tabular-nums">
-                      {format.quantity(order.quantity)} {group.unitShortName}
-                    </td>
-                    {/* Stock at submit and now (06 rule 10; plan of 2.10, decided item 4). */}
-                    {[
-                      ["stockAtSubmit", order.stockAtSubmit],
-                      ["stockNow", order.stockNow],
-                    ].map(([column, stock]) => (
-                      <td
-                        key={column}
-                        data-cell={column!}
-                        className="py-2 pr-3 tabular-nums sm:whitespace-nowrap"
-                      >
-                        <span className="text-muted-foreground sm:hidden">
-                          {t(`columns.${column as "stockAtSubmit" | "stockNow"}`)}{" "}
-                        </span>
-                        {stock === null
-                          ? t("noStock")
-                          : `${format.quantity(stock!)} ${group.unitShortName}`}
-                      </td>
-                    ))}
-                    <td className="py-2 pr-3 whitespace-nowrap tabular-nums">
-                      {format.money(BigInt(order.price))}
-                      {order.priceHint !== null && (
-                        <span className="block text-warning">
-                          {tOrders("priceHint", {
-                            percent: BigInt(order.priceHint) as unknown as number,
-                          })}
-                        </span>
-                      )}
-                      {/* 08 The three colours of the order (plan of 3.8): the outcome first. */}
-                      {order.colours && <ColourOutcome colours={order.colours} className="mt-1" />}
-                    </td>
-                    <td className="py-2 pr-3">{tPayment(order.paymentType)}</td>
-                    <td className="py-2 pr-3 tabular-nums">{format.date(order.neededBy)}</td>
-                    <td className="py-2 pr-3">{order.ownerName}</td>
-                    <td className="py-2 pr-3 whitespace-nowrap tabular-nums">
-                      {format.date(order.submittedAt)} {format.time(order.submittedAt)}
-                    </td>
-                  </tr>
+                    order={order}
+                    unit={unit}
+                    ticked={ticked.has(order.id)}
+                    refused={refused.has(order.id)}
+                    onTick={onTick}
+                  />
                 ))}
               </tbody>
             </table>
@@ -715,5 +687,207 @@ function GroupRows({
         </tr>
       )}
     </tbody>
+  );
+}
+
+/** The columns of an order row under its group (05 Group rows 2; redesign of 22.10.2026). */
+const ORDER_COLUMNS = [
+  "number",
+  "department",
+  "quantity",
+  "stockAtSubmit",
+  "stockNow",
+  "price",
+  "total",
+  "paymentType",
+  "neededBy",
+  "owner",
+  "submitted",
+] as const;
+
+const RIGHT_COLUMNS: ReadonlySet<string> = new Set(["quantity", "price", "total"]);
+
+/**
+ * One order under its group row. The whole row opens the order page, as its number does, the one
+ * link; the tick box keeps its own click (design system, Panels and lists; row-links.tsx).
+ * On a phone it is a flat block divided by a hairline, each value under its column's name.
+ */
+function OrderRow({
+  order,
+  unit,
+  ticked,
+  refused,
+  onTick,
+}: {
+  order: WireListOrder;
+  unit: string;
+  ticked: boolean;
+  refused: boolean;
+  onTick: (ids: readonly string[], on: boolean) => void;
+}) {
+  const t = useTranslations("orders.list");
+  const tOrders = useTranslations("orders");
+  const tPayment = useTranslations("paymentTypes");
+  const format = useFormatters();
+  const td = "py-2 pr-3 align-top max-sm:p-0";
+  // The column's name above a value on a phone, where the header row is hidden.
+  const named = (column: (typeof ORDER_COLUMNS)[number]) => (
+    <span className="block text-xs text-muted-foreground sm:hidden">{t(`columns.${column}`)}</span>
+  );
+  const plan = (amount: string) => (
+    <span className="block text-xs text-muted-foreground">{t("plan", { amount })}</span>
+  );
+  return (
+    <tr
+      data-order={order.id}
+      data-row
+      data-refused={refused || undefined}
+      className="border-t border-border transition-colors duration-120 ease-out hover:bg-accent data-refused:bg-destructive-bg max-sm:grid max-sm:grid-cols-2 max-sm:gap-x-3 max-sm:gap-y-2 max-sm:py-3 max-sm:hover:bg-transparent"
+    >
+      <td className="py-2 pr-2 pl-3 align-top max-sm:hidden">
+        <label className="flex size-6 cursor-pointer items-center justify-center">
+          <input
+            type="checkbox"
+            checked={ticked}
+            onChange={(event) => onTick([order.id], event.target.checked)}
+            aria-label={t("tickOrder", { number: order.number })}
+            className="size-4 accent-primary"
+          />
+        </label>
+      </td>
+      <td
+        className={cn(
+          td,
+          "font-medium max-sm:col-span-2 max-sm:flex max-sm:items-center max-sm:gap-2",
+        )}
+      >
+        {/* On a phone the tick box stands on the number's line (redesign of 22.10.2026). */}
+        <label className="-my-2 -ml-2 flex size-11 shrink-0 cursor-pointer items-center justify-center sm:hidden">
+          <input
+            type="checkbox"
+            checked={ticked}
+            onChange={(event) => onTick([order.id], event.target.checked)}
+            aria-label={t("tickOrder", { number: order.number })}
+            className="size-5 accent-primary"
+          />
+        </label>
+        <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          {/* The order page (plan of 2.9; progress 2.8, "For 2.9"). */}
+          <Link
+            href={`/orders/${order.id}`}
+            data-row-link
+            className="inline-flex min-h-11 items-center whitespace-nowrap underline decoration-border-strong underline-offset-4 hover:decoration-foreground sm:min-h-0"
+          >
+            {order.number}
+          </Link>
+          {order.revision > 1 && (
+            <span className="font-normal text-muted-foreground">
+              {tOrders("revision", { revision: order.revision })}
+            </span>
+          )}
+          {order.priority === "URGENT" && <span className="text-destructive">{t("urgent")}</span>}
+          {order.overdue && (
+            <span data-overdue className="inline-flex items-center gap-1 text-warning">
+              <Icon name="schedule" size={16} />
+              {tOrders("overdue")}
+            </span>
+          )}
+          {refused && (
+            <span className="inline-flex items-center gap-1 text-destructive">
+              <Icon name="error" size={16} />
+              {t("refusedMark")}
+            </span>
+          )}
+        </span>
+      </td>
+      <td className={td}>
+        {named("department")}
+        {order.departmentName}
+      </td>
+      <td className={cn(td, "tabular-nums sm:text-right")}>
+        {named("quantity")}
+        <span className="flex flex-col gap-0.5 sm:items-end">
+          <span className="whitespace-nowrap">
+            {order.colours
+              ? t("receivedOf", {
+                  received: format.quantity(order.received),
+                  planned: format.quantity(order.quantity),
+                  unit,
+                })
+              : `${format.quantity(order.quantity)} ${unit}`}
+          </span>
+          {order.colours && <ListColourLabel colours={order.colours} of="number" />}
+        </span>
+      </td>
+      {/* Stock at submit and now (06 rule 10; plan of 2.10, decided item 4). */}
+      {(
+        [
+          ["stockAtSubmit", order.stockAtSubmit],
+          ["stockNow", order.stockNow],
+        ] as const
+      ).map(([column, stock]) => (
+        <td key={column} data-cell={column} className={cn(td, "tabular-nums sm:whitespace-nowrap")}>
+          {named(column)}
+          {stock === null ? t("noStock") : `${format.quantity(stock)} ${unit}`}
+        </td>
+      ))}
+      <td className={cn(td, "tabular-nums sm:text-right")}>
+        {named("price")}
+        <span className="flex flex-col gap-0.5 sm:items-end">
+          {order.actual ? (
+            <>
+              <span className="whitespace-nowrap">
+                {order.actual.oneUnitPrice
+                  ? format.money(BigInt(order.actual.unitPrice))
+                  : t("average", { amount: format.money(BigInt(order.actual.unitPrice)) })}
+              </span>
+              {plan(format.money(BigInt(order.price)))}
+            </>
+          ) : (
+            <span className="whitespace-nowrap">{format.money(BigInt(order.price))}</span>
+          )}
+          {order.priceHint !== null && (
+            <span className="text-xs text-warning">
+              {tOrders("priceHint", { percent: BigInt(order.priceHint) as unknown as number })}
+            </span>
+          )}
+          {order.colours && <ListColourLabel colours={order.colours} of="price" />}
+        </span>
+      </td>
+      <td className={cn(td, "tabular-nums sm:text-right")}>
+        {named("total")}
+        <span className="flex flex-col gap-0.5 sm:items-end">
+          {order.actual ? (
+            <>
+              <span className="font-medium whitespace-nowrap">
+                {format.money(BigInt(order.actual.total))}
+              </span>
+              {plan(format.money(BigInt(order.plannedTotal)))}
+            </>
+          ) : (
+            <span className="font-medium whitespace-nowrap">
+              {format.money(BigInt(order.plannedTotal))}
+            </span>
+          )}
+          {order.colours && <ListColourLabel colours={order.colours} of="total" />}
+        </span>
+      </td>
+      <td className={td}>
+        {named("paymentType")}
+        {tPayment(order.paymentType)}
+      </td>
+      <td className={cn(td, "tabular-nums")}>
+        {named("neededBy")}
+        {format.date(order.neededBy)}
+      </td>
+      <td className={td}>
+        {named("owner")}
+        {order.ownerName}
+      </td>
+      <td className={cn(td, "tabular-nums sm:whitespace-nowrap")}>
+        {named("submitted")}
+        {format.date(order.submittedAt)} {format.time(order.submittedAt)}
+      </td>
+    </tr>
   );
 }
