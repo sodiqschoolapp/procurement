@@ -327,10 +327,12 @@ export function DraftRow(props: DraftRowProps) {
     </span>
   );
 
-  // A phone card shows its summary until it is opened; one that holds an error, a mark of the
-  // last Submit or a half-made change shows its fields, so nothing that needs the person hides.
+  // A phone card shows its summary until it is opened; one sent back by an approver, or one that
+  // holds an error, a mark of the last Submit or a half-made change, shows its fields, so nothing
+  // that needs the person hides.
   const folded =
     !props.open &&
+    row.label !== "SENT_BACK" &&
     Object.keys(errors).length === 0 &&
     Object.keys(props.marks ?? {}).length === 0 &&
     pendingBranch === null &&
@@ -403,7 +405,7 @@ export function DraftRow(props: DraftRowProps) {
       </Cell>
       {/* A phone card's summary: tapped, the card opens to its fields (redesign of 22.10.2026). */}
       {folded ? (
-        <td data-col="summary" className="w-full pt-2 sm:hidden">
+        <td data-col="summary" className="w-full pt-2 max-sm:order-2 sm:hidden">
           <button
             type="button"
             aria-expanded={false}
@@ -773,10 +775,20 @@ export function DraftRow(props: DraftRowProps) {
           )}
         </span>
       </Cell>
-      <Cell col="state" half className="min-w-28" aria-live="polite">
+      {/* On a folded phone card the save state and Delete stand on the title's line. */}
+      <Cell
+        col="state"
+        half
+        className={cn("min-w-28", folded && "max-sm:order-1 max-sm:w-auto max-sm:min-w-0")}
+        aria-live="polite"
+      >
         <SaveStateText state={state} onTryAgain={tryAgain} />
       </Cell>
-      <Cell col="actions" half className="max-sm:text-right">
+      <Cell
+        col="actions"
+        half
+        className={cn("max-sm:text-right", folded && "max-sm:order-1 max-sm:w-auto")}
+      >
         {deletable && (
           <>
             <Button
