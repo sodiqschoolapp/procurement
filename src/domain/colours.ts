@@ -128,10 +128,14 @@ export function orderColours(order: ColourOrder): OrderColours | null {
  */
 export type PlanVsActual = {
   quantity: { planned: string; actual: string };
-  /** The actual price is actualUnitPrice(): goods ÷ quantity, half up. */
-  unitPrice: { planned: bigint; actual: bigint; oneUnitPrice: boolean };
+  /**
+   * The actual price is actualUnitPrice(): goods ÷ quantity, half up; `difference` is planned −
+   * actual per unit (above 0 cheaper, below 0 dearer), each already whole so'm.
+   */
+  unitPrice: { planned: bigint; actual: bigint; difference: bigint; oneUnitPrice: boolean };
   extras: { planned: bigint; actual: bigint };
-  total: { planned: bigint; actual: bigint };
+  /** `difference` is 08's Difference: planned − actual, the sum of the three effects. */
+  total: { planned: bigint; actual: bigint; difference: bigint };
   effects: { quantity: bigint; price: bigint; extras: bigint };
 };
 
@@ -150,11 +154,18 @@ export function planVsActual(order: ColourOrder): PlanVsActual | null {
   const goods = actualGoods(records);
   const extras = actualExtra(records);
   const prices = new Set(liveRecords(records).map((record) => record.unitPrice));
+  const planned = orderTotal(plan);
+  const actual = actualTotal(records);
   return {
     quantity: { planned: quantityOf(plan.quantity).toFixed(), actual: received },
-    unitPrice: { planned: plan.price, actual: actualPrice, oneUnitPrice: prices.size === 1 },
+    unitPrice: {
+      planned: plan.price,
+      actual: actualPrice,
+      difference: plan.price - actualPrice,
+      oneUnitPrice: prices.size === 1,
+    },
     extras: { planned: orderExtras(plan), actual: extras },
-    total: { planned: orderTotal(plan), actual: actualTotal(records) },
+    total: { planned, actual, difference: difference(planned, actual) },
     effects: {
       quantity: orderGoods(plan) - atPlan,
       price: atPlan - goods,

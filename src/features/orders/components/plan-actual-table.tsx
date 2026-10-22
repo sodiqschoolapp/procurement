@@ -51,6 +51,7 @@ export async function PlanActualTable({
   const t = await getTranslations("orders.page.planActual");
   const format = await getFormatters();
   const quantity = (value: string) => `${format.quantity(value)} ${unit}`.trim();
+  // An amount without its sign, for its words; every difference itself is planVsActual()'s.
   const magnitude = (amount: bigint) => (amount < 0n ? -amount : amount);
   // An effect is planned − actual (08 Difference): below 0 more was spent, above 0 less.
   const effect = (amount: bigint, shown: boolean) =>
@@ -74,7 +75,7 @@ export async function PlanActualTable({
     );
 
   const { planned: plannedPrice, actual: actualPrice, oneUnitPrice } = table.unitPrice;
-  const perUnit = magnitude(actualPrice - plannedPrice);
+  const perUnit = magnitude(table.unitPrice.difference);
   const priceDifference =
     colours.price.colour === "grey" ? (
       <Coloured colour="grey">{t("inProgress")}</Coloured>
@@ -89,8 +90,6 @@ export async function PlanActualTable({
             })}
       </Coloured>
     );
-
-  const extrasDifference = table.extras.planned - table.extras.actual;
 
   // Extra costs neither planned nor bought are not shown (a field with nothing in it, 21.10.2026).
   const hasExtras = table.extras.planned !== 0n || table.extras.actual !== 0n;
@@ -128,7 +127,7 @@ export async function PlanActualTable({
             planned: format.money(table.extras.planned),
             actual: format.money(table.extras.actual),
             difference: (
-              <span className="text-muted-foreground">{effect(extrasDifference, true)}</span>
+              <span className="text-muted-foreground">{effect(table.effects.extras, true)}</span>
             ),
             effect: effect(table.effects.extras, counting),
           },
@@ -232,9 +231,9 @@ export async function PlanActualTable({
               data-plan-effect
               className={cn(cell, "pr-0 text-right font-semibold whitespace-nowrap tabular-nums")}
             >
-              {counting && table.total.planned === table.total.actual
+              {counting && table.total.difference === 0n
                 ? format.money(0n)
-                : effect(table.total.planned - table.total.actual, counting)}
+                : effect(table.total.difference, counting)}
             </td>
           </tr>
         </tbody>

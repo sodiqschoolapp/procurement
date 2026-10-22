@@ -288,7 +288,8 @@ describe("plan beside actual, and the three effects (08 Numbers the system calcu
   function addsUp(table: PlanVsActual | null): PlanVsActual {
     expect(table).not.toBeNull();
     const { effects, total } = table!;
-    expect(effects.quantity + effects.price + effects.extras).toBe(total.planned - total.actual);
+    expect(total.difference).toBe(total.planned - total.actual);
+    expect(effects.quantity + effects.price + effects.extras).toBe(total.difference);
     return table!;
   }
 
@@ -297,9 +298,9 @@ describe("plan beside actual, and the three effects (08 Numbers the system calcu
     const table = addsUp(planVsActual(order([record("30", 2_000n)], "DONE", plan)));
     expect(table).toEqual({
       quantity: { planned: "20", actual: "30" },
-      unitPrice: { planned: 2_500n, actual: 2_000n, oneUnitPrice: true },
+      unitPrice: { planned: 2_500n, actual: 2_000n, difference: 500n, oneUnitPrice: true },
       extras: { planned: 0n, actual: 0n },
-      total: { planned: 50_000n, actual: 60_000n },
+      total: { planned: 50_000n, actual: 60_000n, difference: -10_000n },
       effects: { quantity: -25_000n, price: 15_000n, extras: 0n },
     });
     // The price effect is the Price label's amount, and the sum the Total label's.
@@ -311,6 +312,8 @@ describe("plan beside actual, and the three effects (08 Numbers the system calcu
   it("08 Worked example, Dearer: 100 × 5 200 + 30 000: price −20 000, extras −10 000", () => {
     const table = addsUp(planVsActual(order([record("100", 5_200n, [30_000n])])));
     expect(table.effects).toEqual({ quantity: 0n, price: -20_000n, extras: -10_000n });
+    // 200 dearer per unit: below 0.
+    expect(table.unitPrice.difference).toBe(-200n);
     expect(table.extras).toEqual({ planned: 20_000n, actual: 30_000n });
   });
 
@@ -325,7 +328,12 @@ describe("plan beside actual, and the three effects (08 Numbers the system calcu
       planVsActual(order([record("1", 900n), record("2", 1_001n)], "DONE", plan)),
     );
     // (900 + 2 002) ÷ 3 = 967.33 → 967.
-    expect(table.unitPrice).toEqual({ planned: 1_000n, actual: 967n, oneUnitPrice: false });
+    expect(table.unitPrice).toEqual({
+      planned: 1_000n,
+      actual: 967n,
+      difference: 33n,
+      oneUnitPrice: false,
+    });
     expect(table.effects.price).toBe(98n);
   });
 
@@ -346,6 +354,14 @@ describe("plan beside actual, and the three effects (08 Numbers the system calcu
   it("while buying is Open it shows what is bought so far", () => {
     const table = addsUp(planVsActual(order([record("40", 5_000n)], "OPEN")));
     expect(table.quantity).toEqual({ planned: "100", actual: "40" });
+  });
+
+  it("two prices that cancel out: the same price per unit on average, 0 apart", () => {
+    const plan: OrderPlan = { quantity: "2", price: 1_000n, extras: [], paymentType: "CASH" };
+    const table = addsUp(
+      planVsActual(order([record("1", 900n), record("1", 1_100n)], "DONE", plan)),
+    );
+    expect(table.unitPrice).toMatchObject({ actual: 1_000n, difference: 0n, oneUnitPrice: false });
   });
 
   it("nothing bought, or before Open: no table", () => {
