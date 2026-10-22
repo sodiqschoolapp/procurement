@@ -3019,6 +3019,14 @@ Technical choices:
 - `ListColourLabel` replaces `ColourOutcome`; labels keep their text on one line from 640 px and wrap below it with the icon on the first line.
 - The browser tests: a row click on the order list and on the branches list, at both widths; the Plan and actual table's effects on 08's Dearer scenario (S3); the fixtures read Open buying from the status alone.
 
+### Next.js 16.4.2 for a critical advisory (22.10.2026)
+
+Not a task of the build plan. `npm audit` (CI's "Audit the production dependencies", `--audit-level=high`) reports `next` 16.0.0 – 16.4.0 critical: unauthenticated remote code execution in the image optimization API with SVG files (GHSA-2464-fhr4-w9xw) and in `use cache` functions returning typed arrays (GHSA-673q-mjm6-r5xr), and a denial of service through Server Actions (GHSA-p3m5-59mp-jv5r). It turned every pull request red, and the test site ran the version. The owner said to upgrade on 22.10.2026.
+
+- `next` and `eslint-config-next` from `^16.4.0` to `^16.4.2`, the newest 16.x: a patch release, no new dependency. The lockfile changes only Next.js's own packages (`next`, `@next/env`, `@next/eslint-plugin-next`, `@next/swc-*`, `eslint-config-next`).
+- After it `npm audit --omit=dev --audit-level=high` passes. The four moderate findings left are the old ones under `drizzle-kit` (esbuild in its build tooling, a dev dependency), below the gate as before.
+- Checked: lint, typecheck, `next build`, the unit tests, and the browser tests of sign-in, the shell, accessibility, orders, approvals, purchases, settlement, the money scenarios, files, products and drafts.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.
