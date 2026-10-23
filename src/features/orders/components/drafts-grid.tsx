@@ -87,6 +87,18 @@ export function DraftsGrid({
   const [rows, setRows] = useState<WireDraftRow[]>(() => sent.map((one) => one.row));
   const [ticked, setTicked] = useState<ReadonlySet<string>>(new Set());
   const [justAdded, setJustAdded] = useState<ReadonlySet<string>>(new Set());
+  // The drafts opened to their fields on a phone; the others show their summary (redesign of
+  // 22.10.2026). From 640 px every row shows every field, whatever this holds.
+  const [opened, setOpened] = useState<ReadonlySet<string>>(new Set());
+  const openRow = useCallback((id: string, open: boolean) => {
+    setOpened((current) => {
+      if (current.has(id) === open) return current;
+      const next = new Set(current);
+      if (open) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  }, []);
   const [dirtyRows, setDirtyRows] = useState<ReadonlySet<string>>(new Set());
   const [neededBy, setNeededBy] = useState("");
   const [neededByWrong, setNeededByWrong] = useState(false);
@@ -156,10 +168,20 @@ export function DraftsGrid({
       document.getElementById("add-product")?.focus();
       return;
     }
-    const next = shown[to]!.querySelector<HTMLElement>(
-      `td[data-col="${cell.dataset.col}"] input:not([type=hidden]):not([tabindex="-1"]), td[data-col="${cell.dataset.col}"] select`,
-    );
-    next?.focus();
+    const goal = shown[to]!;
+    const focus = () =>
+      goal
+        .querySelector<HTMLElement>(
+          `td[data-col="${cell.dataset.col}"] input:not([type=hidden]):not([tabindex="-1"]), td[data-col="${cell.dataset.col}"] select`,
+        )
+        ?.focus();
+    // A folded phone card opens first, so its cell can take the focus.
+    if (goal.dataset.open === "false" && goal.dataset.draft) {
+      openRow(goal.dataset.draft, true);
+      requestAnimationFrame(focus);
+    } else {
+      focus();
+    }
   }
 
   const rights = useMemo(() => new Map(sent.map((one) => [one.row.id, one])), [sent]);
@@ -223,6 +245,8 @@ export function DraftsGrid({
       });
     } else {
       setJustAdded((current) => new Set([...current, created.id]));
+      // A new draft opens on a phone; Done folds it like any other (review of d14a85a).
+      openRow(created.id, true);
       // A new draft sorts last (oldest first): go to the page it lands on (Should fix 2).
       const last = Math.ceil((total + 1) / DRAFTS_PAGE_SIZE);
       if (last !== page) {
@@ -563,6 +587,8 @@ export function DraftsGrid({
                       deletable={right?.deletable ?? false}
                       ticked={ticked.has(row.id)}
                       justAdded={justAdded.has(row.id)}
+                      open={opened.has(row.id)}
+                      onOpen={(open) => openRow(row.id, open)}
                       onTick={(on) => tick(row.id, on)}
                       onRow={onRow}
                       onGone={onGone}

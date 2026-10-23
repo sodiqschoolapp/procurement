@@ -7,6 +7,7 @@ import pg from "pg";
 import uz from "../../src/i18n/messages/uz.json" with { type: "json" };
 import { connectionOptions } from "../../src/server/db/connection-options.mjs";
 import { E2E_ROLES, e2eDatabaseUrl, serverDatabaseUrl } from "./global-setup";
+import { documentAction } from "./document-actions";
 
 // Build-plan 5.9 (Direct entry from Excel). 09-warehouse.md, Direct entry by the Head 1: "Many
 // items are imported from an Excel template, with the same preview and error check as catalog
@@ -176,7 +177,8 @@ test("the Manager has no import button and the page is Not found (03 matrix: Ent
 }) => {
   await signIn(page, E2E_ROLES.MANAGER);
   await page.goto("/warehouse/stock");
-  await expect(page.getByRole("link", { name: uz.warehouse.stock.newReturn })).toBeVisible();
+  // Shown or folded behind More on a phone (redesign of 22.10.2026).
+  await expect(documentAction(page, "RETURN")).toHaveCount(1);
   await expect(page.getByRole("link", { name: uz.warehouse.stock.importStock })).toHaveCount(0);
   const response = await page.goto("/catalog/import/stock");
   expect(response?.status()).toBe(404);

@@ -180,8 +180,9 @@
   color-scheme: light;
 }
 
-/* Dark theme. The tints of danger, warning, success and info are the colour at 16% over the
-   card (#111831), composited in sRGB; --today is the orange at 12% over the card. */
+/* Dark theme. The tints of danger, warning, success and info, and --today, are dark colours in
+   each colour's own hue (oklch lightness about 0.30), chosen by hand: a mix of the colour over the
+   navy card turned them grey or purple (22.10.2026). */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --background: oklch(0.1721 0.0324 268.8777);
@@ -201,14 +202,14 @@
     --accent: oklch(0.266 0.0611 270.0238);
     --accent-foreground: oklch(0.9401 0.0112 269.5465);
     --destructive: oklch(0.7681 0.137 26.0934);
-    --destructive-bg: oklch(0.3107 0.037 312.7935);
+    --destructive-bg: oklch(0.2989 0.0706 24.7585);
     --success: oklch(0.7806 0.1343 151.8637);
-    --success-bg: oklch(0.3163 0.0332 232.0799);
+    --success-bg: oklch(0.2991 0.0601 151.9504);
     --warning: oklch(0.8847 0.118 82.9305);
-    --warning-bg: oklch(0.3366 0.0122 292.2906);
+    --warning-bg: oklch(0.3092 0.0596 79.2516);
     --info: oklch(0.7953 0.1027 265.7916);
-    --info-bg: oklch(0.3234 0.0591 268.5789);
-    --today: oklch(0.2822 0.0228 316.7752);
+    --info-bg: oklch(0.3092 0.0714 266.1107);
+    --today: oklch(0.2788 0.04 54.0291);
     --today-muted: oklch(0.8203 0.0083 357.8516);
     --topbar: oklch(0.2172 0.0502 270.0422);
     --link: oklch(0.9401 0.0112 269.5465);
@@ -254,14 +255,14 @@
   --accent: oklch(0.266 0.0611 270.0238);
   --accent-foreground: oklch(0.9401 0.0112 269.5465);
   --destructive: oklch(0.7681 0.137 26.0934);
-  --destructive-bg: oklch(0.3107 0.037 312.7935);
+  --destructive-bg: oklch(0.2989 0.0706 24.7585);
   --success: oklch(0.7806 0.1343 151.8637);
-  --success-bg: oklch(0.3163 0.0332 232.0799);
+  --success-bg: oklch(0.2991 0.0601 151.9504);
   --warning: oklch(0.8847 0.118 82.9305);
-  --warning-bg: oklch(0.3366 0.0122 292.2906);
+  --warning-bg: oklch(0.3092 0.0596 79.2516);
   --info: oklch(0.7953 0.1027 265.7916);
-  --info-bg: oklch(0.3234 0.0591 268.5789);
-  --today: oklch(0.2822 0.0228 316.7752);
+  --info-bg: oklch(0.3092 0.0714 266.1107);
+  --today: oklch(0.2788 0.04 54.0291);
   --today-muted: oklch(0.8203 0.0083 357.8516);
   --topbar: oklch(0.2172 0.0502 270.0422);
   --link: oklch(0.9401 0.0112 269.5465);

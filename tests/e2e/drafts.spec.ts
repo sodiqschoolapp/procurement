@@ -699,3 +699,80 @@ test("Submit at 375 px: the card's Submit sends the draft, no horizontal page sc
   await expect(rows(page)).toHaveCount(0);
   expect(await scrollsSideways(page)).toBe(false);
 });
+
+test("a phone card is folded to its summary, opens with a tap and folds with Done; from 640 px every field shows (redesign of 22.10.2026)", async ({
+  page,
+}, info) => {
+  const manager = E2E_DRAFT_USERS[info.project.name as keyof typeof E2E_DRAFT_USERS];
+  await freshGrid(manager);
+  await insertCompleteDraft(manager, stapler, "2031-05-01");
+  await signIn(page, manager);
+  await page.goto("/orders");
+  const card = rowOf(page, stapler);
+  const quantity = card.locator('td[data-col="quantity"] input');
+  if (info.project.name !== "phone-375") {
+    // A desktop row: every field, no summary.
+    await expect(quantity).toBeVisible();
+    await expect(card.locator("[data-card-open]")).toBeHidden();
+    return;
+  }
+  // Folded: the summary says what the draft is (2 × 5 000 = 10 000), the fields are hidden.
+  const summary = card.locator("[data-card-open]");
+  await expect(summary).toContainText(stapler);
+  await expect(summary).toContainText(som("10000"));
+  await expect(quantity).toBeHidden();
+  expect((await summary.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  // A tap opens the fields; Done folds them again.
+  await summary.click();
+  await expect(quantity).toBeVisible();
+  await expect(quantity).toHaveValue("2");
+  await card.locator("[data-card-close]").click();
+  await expect(quantity).toBeHidden();
+  expect(await scrollsSideways(page)).toBe(false);
+});
+
+test("at 375 px Done folds a just-added card, and a sent-back card, which stays open, offers no Done (review of d14a85a; .claude/rules/ui.md: a button that cannot act is not offered)", async ({
+  page,
+}, info) => {
+  test.skip(info.project.name !== "phone-375", "The phone width.");
+  const manager = E2E_DRAFT_USERS["phone-375"];
+  // The sent-back order is numbered, so it is cancelled, never deleted, to leave the grid of the
+  // other tests of this person; an earlier run's is cancelled first.
+  const cancelSentBack = () =>
+    withDatabase(async (client) => {
+      await client.query(
+        `update orders set status = 'CANCELLED'
+          where owner_id = (select id from users where username = $1) and status = 'RETURNED'`,
+        [manager.username],
+      );
+    });
+  await cancelSentBack();
+  await freshGrid(manager);
+  // A sent-back order: a numbered RETURNED row, which the grid labels Sent back.
+  await insertCompleteDraft(manager, stapler, "2031-05-01");
+  await withDatabase(async (client) => {
+    await client.query(
+      `update orders set status = 'RETURNED', number = $2, submitted_at = now(), planned_total = 10000
+        where owner_id = (select id from users where username = $1) and status = 'DRAFT'`,
+      [manager.username, `EA-26-${String(Math.floor(Math.random() * 9e8) + 1e8)}`],
+    );
+  });
+  try {
+    await signIn(page, manager);
+    await page.goto("/orders");
+    const sentBack = rowOf(page, stapler);
+    await expect(sentBack.locator('td[data-col="quantity"] input')).toBeVisible();
+    await expect(sentBack.locator("[data-card-close]")).toHaveCount(0);
+
+    // A draft added on this visit opens with its fields; Done folds it to its summary.
+    await addDraft(page, notebook, science, "4");
+    const added = rowOf(page, notebook);
+    const quantity = added.locator('td[data-col="quantity"] input');
+    await expect(quantity).toBeVisible();
+    await added.locator("[data-card-close]").click();
+    await expect(quantity).toBeHidden();
+    await expect(added.locator("[data-card-open]")).toBeVisible();
+  } finally {
+    await cancelSentBack();
+  }
+});

@@ -3019,6 +3019,14 @@ Technical choices:
 - `ListColourLabel` replaces `ColourOutcome`; labels keep their text on one line from 640 px and wrap below it with the icon on the first line.
 - The browser tests: a row click on the order list and on the branches list, at both widths; the Plan and actual table's effects on 08's Dearer scenario (S3); the fixtures read Open buying from the status alone.
 
+### Phone draft cards, warehouse actions behind More, dark tints in their own hue (22.10.2026)
+
+Not a task of the build plan: the owner's three asks of 22.10.2026 after #157. No server action, query, permission, status move or table changed.
+
+1. **Look first.** On a phone a draft of the grid is a summary card until it is opened (05 Drafts; 11 Order list layout 3 and rule 2): the photo, the product, quantity × price, department and needed-by, the total and "Edit". A tap opens the card's fields; "Done" folds them. A draft that was just added or sent back by an approver (the one that needs fixing now), holds a save error, a mark of the last Submit, a branch or urgency change not yet saved, or typing not yet saved stays open, so nothing that needs the person is hidden, and offers no "Done" (review of d14a85a: a button that cannot act is not offered); a just-added draft opens like any other, so its "Done" folds it. Enter from the row above opens the next card before it moves into it (11 rule 2). From 640 px the grid is unchanged. Before, every draft showed its 18 fields, about 800 px each.
+2. On a phone the warehouse's new-document actions show the first (New issue) and a secondary "More" menu with the rest (Base UI's menu, as the tab bar's More); with two or fewer, each keeps its button. From 640 px unchanged. The browser tests open More on a phone (`tests/e2e/document-actions.ts`) and count a button by `data-document-action`, shown or folded, so a folded button still counts.
+3. **Look first.** The dark tints of danger, warning, success, info and today are chosen in each colour's own hue (oklch lightness about 0.30), no longer the colour at 16% over the navy card, which read grey (amber, hue 292) or purple (red, hue 313). The contrast test checks each tint's hue against its colour's (within 10°) besides the 4.5 : 1 of its text. The design system's table changed with them.
+
 ### Next.js 16.4.2 for a critical advisory (22.10.2026)
 
 Not a task of the build plan. `npm audit` (CI's "Audit the production dependencies", `--audit-level=high`) reports `next` 16.0.0 – 16.4.0 critical: unauthenticated remote code execution in the image optimization API with SVG files (GHSA-2464-fhr4-w9xw) and in `use cache` functions returning typed arrays (GHSA-673q-mjm6-r5xr), and a denial of service through Server Actions (GHSA-p3m5-59mp-jv5r). It turned every pull request red, and the test site ran the version. The owner said to upgrade on 22.10.2026.

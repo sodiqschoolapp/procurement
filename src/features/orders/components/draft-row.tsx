@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { deleteDraftAction, getDraftAction, updateDraftAction } from "@/app/(app)/orders/actions";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { Icon } from "@/components/icon";
 import { DraftGridLabel } from "@/components/status-label";
 import { toast } from "@/components/toast";
 import { Button } from "@/components/ui/button";
@@ -52,6 +53,12 @@ export type DraftRowProps = {
   onGone(id: string): void;
   onDirty(id: string, dirty: boolean): void;
   registerQueue(id: string, queue: RowSaveQueue | null): void;
+  /**
+   * Whether the phone card shows its fields; folded it shows a summary (redesign of 22.10.2026).
+   * From 640 px every field shows. A row with an error or a mark opens by itself.
+   */
+  open: boolean;
+  onOpen(open: boolean): void;
   /** True while the add row retries an add: deletes wait (plan of 2.6, decided item 1). */
   deleteHeld?: boolean;
   /**
@@ -75,6 +82,7 @@ function Cell({
   col,
   label,
   half = false,
+  folded = false,
   className,
   children,
   ...rest
@@ -82,6 +90,8 @@ function Cell({
   col: string;
   label?: string;
   half?: boolean;
+  /** Hidden on a folded phone card; from 640 px always shown. */
+  folded?: boolean;
   className?: string;
   children?: React.ReactNode;
 } & Omit<React.ComponentProps<"td">, "children" | "className">) {
@@ -93,6 +103,7 @@ function Cell({
         "bg-inherit",
         half ? "max-sm:w-1/2 max-sm:pr-2" : "max-sm:w-full",
         className,
+        folded && "max-sm:hidden",
       )}
       {...rest}
     >
@@ -316,8 +327,24 @@ export function DraftRow(props: DraftRowProps) {
     </span>
   );
 
+  // A phone card shows its summary until it is opened. One sent back by an approver, or one that
+  // holds an error, a mark of the last Submit or a half-made change, stays open whatever was
+  // pressed, so nothing that needs the person hides; it offers no Done, which could not fold it
+  // (review of d14a85a; .claude/rules/ui.md: a button that cannot act is not offered).
+  const staysOpen =
+    row.label === "SENT_BACK" ||
+    Object.keys(errors).length > 0 ||
+    Object.keys(props.marks ?? {}).length > 0 ||
+    pendingBranch !== null ||
+    pendingUrgent ||
+    Object.values(typed).some(Boolean) ||
+    state.kind === "error" ||
+    state.kind === "notSaved";
+  const folded = !props.open && !staysOpen;
+
   return (
     <tr
+      data-open={!folded}
       className={cn(
         "border-t border-border bg-card",
         // A phone card (decided items 4 and 5; docs/design-system.md: a white panel with a
@@ -377,7 +404,62 @@ export function DraftRow(props: DraftRowProps) {
           </span>
         </span>
       </Cell>
-      <Cell col="branch" label={t("columns.branch")}>
+      {/* A phone card's summary: tapped, the card opens to its fields (redesign of 22.10.2026). */}
+      {folded ? (
+        <td data-col="summary" className="w-full pt-2 max-sm:order-2 sm:hidden">
+          <button
+            type="button"
+            aria-expanded={false}
+            onClick={() => props.onOpen(true)}
+            data-card-open
+            className="flex min-h-11 w-full items-start gap-3 rounded-md text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          >
+            <Thumb fileId={row.photoFileId} alt={t("photo.alt", { name: productText })} />
+            <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+              <span className="text-sm font-medium">{productText}</span>
+              <span className="text-small text-muted-foreground tabular-nums">
+                {t("card.amounts", {
+                  quantity: row.quantity === null ? t("none") : format.quantity(row.quantity),
+                  unit: row.unitShortName ?? "",
+                  price: row.price === null ? t("none") : format.money(BigInt(row.price)),
+                })}
+              </span>
+              <span className="text-small text-muted-foreground">
+                {[
+                  row.departmentName,
+                  row.neededBy ? t("card.neededBy", { date: format.date(row.neededBy) }) : null,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </span>
+            </span>
+            <span className="flex flex-col items-end gap-1">
+              <span className="text-sm font-semibold whitespace-nowrap tabular-nums">
+                {row.total === null ? t("none") : format.money(BigInt(row.total))}
+              </span>
+              <span className="inline-flex items-center gap-0.5 text-xs font-medium text-muted-foreground">
+                {editable ? t("card.edit") : t("card.show")}
+                <Icon name="chevron_right" size={16} />
+              </span>
+            </span>
+          </button>
+        </td>
+      ) : staysOpen ? null : (
+        <td className="w-auto sm:hidden">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            aria-expanded
+            aria-label={t("card.doneLabel", { product: productText })}
+            onClick={() => props.onOpen(false)}
+            data-card-close
+          >
+            {t("card.done")}
+          </Button>
+        </td>
+      )}
+      <Cell folded={folded} col="branch" label={t("columns.branch")}>
         {editable && neverSubmitted && creatable.length > 1 ? (
           <Select
             aria-label={t("columns.branch")}
@@ -406,7 +488,7 @@ export function DraftRow(props: DraftRowProps) {
           <span className="mt-1 block text-xs text-warning">{t("save.branchPending")}</span>
         )}
       </Cell>
-      <Cell col="product" label={t("columns.product")}>
+      <Cell folded={folded} col="product" label={t("columns.product")}>
         <span className="flex items-start gap-2">
           <Thumb fileId={row.photoFileId} alt={t("photo.alt", { name: productText })} />
           {editable ? (
@@ -427,13 +509,14 @@ export function DraftRow(props: DraftRowProps) {
           )}
         </span>
       </Cell>
-      <Cell col="type" label={t("columns.type")} half className={FACT}>
+      <Cell folded={folded} col="type" label={t("columns.type")} half className={FACT}>
         {ro(row.productType ? tCatalog(`productType.${row.productType}`) : null)}
       </Cell>
-      <Cell col="subtype" label={t("columns.subtype")} half className={FACT}>
+      <Cell folded={folded} col="subtype" label={t("columns.subtype")} half className={FACT}>
         {ro(row.subtypeName)}
       </Cell>
       <Cell
+        folded={folded}
         col="inStock"
         label={t("columns.inStock")}
         half
@@ -441,7 +524,7 @@ export function DraftRow(props: DraftRowProps) {
       >
         {ro(row.inStock === null ? null : format.quantity(row.inStock))}
       </Cell>
-      <Cell col="photo" label={t("columns.photo")} half className={FACT}>
+      <Cell folded={folded} col="photo" label={t("columns.photo")} half className={FACT}>
         <ReferencePhoto
           fileId={row.referencePhotoFileId}
           product={productText}
@@ -449,7 +532,7 @@ export function DraftRow(props: DraftRowProps) {
           onSave={(fileId) => save({ referencePhotoFileId: fileId })}
         />
       </Cell>
-      <Cell col="company" label={t("columns.company")} half>
+      <Cell folded={folded} col="company" label={t("columns.company")} half>
         {editable ? (
           <Select
             aria-label={t("columns.company")}
@@ -474,7 +557,7 @@ export function DraftRow(props: DraftRowProps) {
         )}
         {errorText("companyId")}
       </Cell>
-      <Cell col="requestedBy" label={t("columns.requestedBy")} className="min-w-48">
+      <Cell folded={folded} col="requestedBy" label={t("columns.requestedBy")} className="min-w-48">
         {editable ? (
           <span className="flex flex-col gap-1">
             <Select
@@ -532,7 +615,7 @@ export function DraftRow(props: DraftRowProps) {
           </span>
         )}
       </Cell>
-      <Cell col="neededBy" label={t("columns.neededBy")} className="min-w-32">
+      <Cell folded={folded} col="neededBy" label={t("columns.neededBy")} className="min-w-32">
         {editable ? (
           <NeededByCell
             value={row.neededBy ? format.date(row.neededBy) : ""}
@@ -544,10 +627,10 @@ export function DraftRow(props: DraftRowProps) {
           ro(row.neededBy ? format.date(row.neededBy) : null)
         )}
       </Cell>
-      <Cell col="measure" label={t("columns.measure")} half className={FACT}>
+      <Cell folded={folded} col="measure" label={t("columns.measure")} half className={FACT}>
         {ro(row.unitShortName)}
       </Cell>
-      <Cell col="quantity" label={t("columns.quantity")} half className="min-w-24">
+      <Cell folded={folded} col="quantity" label={t("columns.quantity")} half className="min-w-24">
         {editable ? (
           <TextCell
             value={row.quantity ?? ""}
@@ -562,7 +645,7 @@ export function DraftRow(props: DraftRowProps) {
           ro(row.quantity === null ? null : format.quantity(row.quantity))
         )}
       </Cell>
-      <Cell col="price" label={t("columns.price")} half className="min-w-28">
+      <Cell folded={folded} col="price" label={t("columns.price")} half className="min-w-28">
         {editable ? (
           <TextCell
             value={row.price ?? ""}
@@ -577,7 +660,13 @@ export function DraftRow(props: DraftRowProps) {
           ro(row.price === null ? null : format.money(BigInt(row.price)))
         )}
       </Cell>
-      <Cell col="extras" label={t("columns.extras")} half className="text-right max-sm:text-left">
+      <Cell
+        folded={folded}
+        col="extras"
+        label={t("columns.extras")}
+        half
+        className="text-right max-sm:text-left"
+      >
         <span className="flex min-h-10 items-center justify-end max-sm:min-h-0 max-sm:justify-start">
           <ExtrasCell
             product={productText}
@@ -592,7 +681,7 @@ export function DraftRow(props: DraftRowProps) {
           <span className="text-xs text-destructive">{fieldError("extras")}</span>
         )}
       </Cell>
-      <Cell col="paymentType" label={t("columns.paymentType")} half>
+      <Cell folded={folded} col="paymentType" label={t("columns.paymentType")} half>
         {editable ? (
           <Select
             aria-label={t("columns.paymentType")}
@@ -610,7 +699,7 @@ export function DraftRow(props: DraftRowProps) {
           ro(tPayment(row.paymentType))
         )}
       </Cell>
-      <Cell col="priority" label={t("columns.priority")} half className="min-w-36">
+      <Cell folded={folded} col="priority" label={t("columns.priority")} half className="min-w-36">
         {editable ? (
           <span className="flex flex-col gap-1">
             <Select
@@ -656,7 +745,7 @@ export function DraftRow(props: DraftRowProps) {
           </span>
         )}
       </Cell>
-      <Cell col="comment" label={t("columns.comment")} className="min-w-48">
+      <Cell folded={folded} col="comment" label={t("columns.comment")} className="min-w-48">
         {editable ? (
           <TextCell
             value={row.comment ?? ""}
@@ -669,7 +758,13 @@ export function DraftRow(props: DraftRowProps) {
           ro(row.comment)
         )}
       </Cell>
-      <Cell col="total" label={t("columns.total")} half className="text-right max-sm:text-left">
+      <Cell
+        folded={folded}
+        col="total"
+        label={t("columns.total")}
+        half
+        className="text-right max-sm:text-left"
+      >
         <span className="flex min-h-10 flex-col items-end justify-center gap-1 py-1 max-sm:min-h-0 max-sm:items-start">
           <span className="text-sm font-semibold whitespace-nowrap tabular-nums" data-cell="total">
             {row.total === null ? t("none") : format.money(BigInt(row.total))}
@@ -681,10 +776,20 @@ export function DraftRow(props: DraftRowProps) {
           )}
         </span>
       </Cell>
-      <Cell col="state" half className="min-w-28" aria-live="polite">
+      {/* On a folded phone card the save state and Delete stand on the title's line. */}
+      <Cell
+        col="state"
+        half
+        className={cn("min-w-28", folded && "max-sm:order-1 max-sm:w-auto max-sm:min-w-0")}
+        aria-live="polite"
+      >
         <SaveStateText state={state} onTryAgain={tryAgain} />
       </Cell>
-      <Cell col="actions" half className="max-sm:text-right">
+      <Cell
+        col="actions"
+        half
+        className={cn("max-sm:text-right", folded && "max-sm:order-1 max-sm:w-auto")}
+      >
         {deletable && (
           <>
             <Button

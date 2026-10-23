@@ -38,11 +38,11 @@ The tokens keep the names of shadcn/ui and are written in `src/app/globals.css` 
 | `--ring` | #06113C | #FF8A32 | Focus: 2 px outline, 2 px offset. Navy in the light theme, because orange on white is 2.35 : 1; orange in the dark theme. |
 | `--brand` | #FF8A32 | #FF8A32 | The orange highlight: active tab underline, active menu marker, the "needs you now" accent. Fills and lines only. |
 | `--brand-foreground` | #06113C | #06113C | Text on an orange fill (7.75 : 1). |
-| `--destructive`, `--destructive-bg` | #B42318 on #FEF1F0 | #FF8F85 on #372B3E | Refused, sent back, over plan, danger buttons. |
-| `--warning`, `--warning-bg` | #8A4B00 on #FFF5DB | #FFD27A on #37363D | Overdue, due soon, waiting on you, money left. Amber, never the brand orange. |
-| `--success`, `--success-bg` | #13703A on #EBF7EF | #6FD08C on #203540 | Done, even, saved. |
-| `--info`, `--info-bg` | #2348A8 on #EEF3FD | #9DBBFF on #273252 | In approval, open, in settlement; notices. |
-| `--today`, `--today-muted` | #FFF6EE, #5A6278 | #2E2631, #C9C2C4 | A row or item that needs the person now (an orange tint). |
+| `--destructive`, `--destructive-bg` | #B42318 on #FEF1F0 | #FF8F85 on #4B1D1B | Refused, sent back, over plan, danger buttons. |
+| `--warning`, `--warning-bg` | #8A4B00 on #FFF5DB | #FFD27A on #402C05 | Overdue, due soon, waiting on you, money left. Amber, never the brand orange. |
+| `--success`, `--success-bg` | #13703A on #EBF7EF | #6FD08C on #12361E | Done, even, saved. |
+| `--info`, `--info-bg` | #2348A8 on #EEF3FD | #9DBBFF on #1F2E54 | In approval, open, in settlement; notices. |
+| `--today`, `--today-muted` | #FFF6EE, #5A6278 | #382315, #C9C2C4 | A row or item that needs the person now (an orange tint). |
 | `--topbar` | #FFFFFF | #111831 | The top bar. |
 | `--link` | #06113C | #E8EBF3 | Plain links: weight 500, underlined on hover. |
 | `--sidebar` | #FFFFFF | #0D1328 | The menu. |
@@ -54,7 +54,7 @@ The tokens keep the names of shadcn/ui and are written in `src/app/globals.css` 
 | `--sidebar-avatar` | #06113C | #2A3561 | The round avatar behind white initials. |
 | `--chart-1` … `--chart-5` | #34498A, #7C8DBF, #B9C3DE, #5A6278, #C9CED9 | #8EA2DA, #5D6FA6, #3A4877, #9AA3BC, #2E3858 | Chart marks: one navy-blue series; the others for a second series or a total. |
 
-The dark tints of danger, warning, success and info are the colour at 16% over the dark card, composited in sRGB; `--today` dark is the orange at 12% over the card.
+The dark tints of danger, warning, success and info, and `--today`, are dark colours in each colour's own hue (oklch lightness about 0.30), chosen by hand so red stays red and amber amber; a mix of the colour over the navy card had turned them grey or purple. `tests/contrast.test.ts` checks each tint's hue against its colour's and the contrast of the text on it.
 
 The theme follows the device by default; the person can choose light or dark on Profile or on the sign-in page, and the choice is kept in the browser.
 
@@ -105,6 +105,8 @@ Weights in use: 400, 500 (links, menu items, labels of fields) and 600 (titles, 
 - **Table:** in a panel; header row 40 high on `--muted`, `text-xs` medium `--muted-foreground` words in sentence case; rows at least 48 high with hairline dividers and `--accent` on hover; numbers and amounts right-aligned. Below 640 px a list of more than three columns becomes **cards** (one per row: the name and status on top, two or three facts, the row's action at the bottom), never a table that scrolls sideways. On a card the tick box stands on the title's line and the toggle at its right, so every line below uses the card's whole width; rows inside a card are divided by hairlines, never cards in a card.
 - **A row with one destination is that destination.** A click anywhere on a row or card whose only way on is one link (or one open/close toggle) goes there (`RowLinks`, `src/components/row-links.tsx`: the row is `data-row`, its control `data-row-link`). The control stays the one thing the keyboard and a screen reader meet; a click on another control, at the end of a text selection, or with Ctrl, Cmd or Shift (a new tab) is left as it is. On a phone the card is the finger's target, so its link needs no 44 px box of its own. **Never** on a card that holds actions such as Approve, Send back or Reject, on rows whose click would tick them, or on a form or a grid with fields: there a click means something else.
 - **Tabs:** words in a row over a hairline; the current tab is navy with a 2 px orange underline, the others `--muted-foreground`. A count follows the word as a plain number. On a phone the row scrolls sideways inside itself; from 640 px up it wraps onto a second line, so every tab can be reached with a mouse. A tab, like a filter of the same page, keeps the page where it is scrolled: no jump to the top, no reload (`scroll={false}`; a GET filter form is `next/form`).
+- **Page actions on a phone:** when a page has three or more actions of the same weight (the warehouse's New issue, New return, Transfer, Write-off, Direct entry), the first stands alone and the others open from a secondary "More" menu, so the list starts on the first screen; with two or fewer each keeps its own button. From 640 px every action is its own button.
+- **Draft cards on a phone:** each draft shows a summary (photo, product, quantity × price, department and needed-by, total, "Edit") and opens to its fields with a tap; "Done" folds it. A draft that was just added or sent back, holds an error, a mark of the last Submit, a half-made change or something typed and not saved stays open and offers no "Done", which could not fold it. Enter from the row above opens the next draft before it moves into it. From 640 px the grid shows every field of every row.
 - **Profile panel:** the person in the menu (the avatar of the top bar on a phone) opens the profile as a panel from the left: the person's name and role, the username, the language, the theme and sign-out, over a dimmed page; Escape, the backdrop or Close shuts it. `/profile` keeps the same contents for its address.
 - **Summary strip:** at the top of a list, three or four figures the person acts on (needs action, to buy, cash in hand, due this week), each a caption over a `text-figure` value, side by side in one panel divided by hairlines (two by two on a phone). Each figure that has a list behind it is a link to that list; a figure of 0 is plain. Built only from figures the app already shows.
 - **Filter bar:** a search field, two or three key filters, and a secondary "More filters" button with the count of active ones that opens the rest. Each active filter shows below as a removable chip (word, value, ✕), and "Clear all" ends the row. On a phone a list's filters beyond its search fold behind a secondary "Filters (n)" button (`FilterFold`, `bare` inside a list's own form), so the list starts on the first screen.

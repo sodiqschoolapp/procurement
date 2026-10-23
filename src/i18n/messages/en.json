@@ -1772,7 +1772,15 @@
       "loading": "Loading…",
       "noManagers": "No other active Manager works in this branch."
     },
-    "newOrder": "New order"
+    "newOrder": "New order",
+    "card": {
+      "amounts": "{quantity} {unit} × {price}",
+      "neededBy": "needed by {date}",
+      "edit": "Edit",
+      "show": "Open",
+      "done": "Done",
+      "doneLabel": "Fold the fields of {product}"
+    }
   },
   "purchase": {
     "form": {

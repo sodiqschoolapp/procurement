@@ -1772,7 +1772,15 @@
       "loading": "Yuklanmoqda…",
       "noManagers": "Bu filialda boshqa faol menejer yoʻq."
     },
-    "newOrder": "Yangi buyurtma"
+    "newOrder": "Yangi buyurtma",
+    "card": {
+      "amounts": "{quantity} {unit} × {price}",
+      "neededBy": "{date} gacha kerak",
+      "edit": "Tahrirlash",
+      "show": "Ochish",
+      "done": "Tayyor",
+      "doneLabel": "{product} maydonlarini yigʻish"
+    }
   },
   "purchase": {
     "form": {

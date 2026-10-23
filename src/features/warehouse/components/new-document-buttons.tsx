@@ -1,9 +1,5 @@
 import { getTranslations } from "next-intl/server";
-import Link from "next/link";
 
-import { Icon } from "@/components/icon";
-import { buttonVariants } from "@/components/ui/button";
-import { cn } from "@/components/utils";
 import { directEntryBranchChoices } from "@/features/warehouse/queries/direct-entry-form";
 import {
   issueBranchChoices,
@@ -13,11 +9,13 @@ import {
 import { returnBranchChoices } from "@/features/warehouse/queries/return-form";
 import { AuthorizationError } from "@/server/authorize";
 
+import { type DocumentAction, DocumentActions } from "./document-actions";
+
 // New issue, New return, Transfer, Write-off and Direct entry, each for whoever may make it in some branch,
 // opening /warehouse/documents/new?type= (11-screens-and-ux.md, Screens: "New issue, return,
 // transfer, write-off | Manager, Head"; plans of 5.4, 5.6, 5.8, 5.11, 7.1; shared by Stock on hand and
 // the documents list, plan of 5.12, decided item 10). Each choices function asks its own
-// permission; the form asks again.
+// permission; the form asks again. DocumentActions draws them, folded behind More on a phone.
 
 /** Whether the user may use the type in any branch. */
 async function mayUse(choices: (userId: string) => Promise<unknown[]>, userId: string) {
@@ -38,55 +36,20 @@ export async function NewDocumentButtons({ userId }: { userId: string }) {
     mayUse(transferBranchChoices, userId),
   ]);
   const t = await getTranslations("warehouse.stock");
-  return (
-    <>
-      {canIssue && (
-        <Link
-          href="/warehouse/documents/new?type=ISSUE"
-          className={cn(buttonVariants(), "max-sm:h-12")}
-        >
-          <Icon name="add" />
-          {t("newIssue")}
-        </Link>
-      )}
-      {canReturn && (
-        <Link
-          href="/warehouse/documents/new?type=RETURN"
-          className={cn(buttonVariants({ variant: "secondary" }), "max-sm:h-12")}
-        >
-          <Icon name="undo" />
-          {t("newReturn")}
-        </Link>
-      )}
-      {canTransfer && (
-        <Link
-          href="/warehouse/documents/new?type=TRANSFER"
-          className={cn(buttonVariants({ variant: "secondary" }), "max-sm:h-12")}
-        >
-          <Icon name="swap_horiz" />
-          {t("transfer")}
-        </Link>
-      )}
-      {canWriteOff && (
-        <Link
-          href="/warehouse/documents/new?type=WRITE_OFF"
-          className={cn(buttonVariants({ variant: "secondary" }), "max-sm:h-12")}
-        >
-          <Icon name="delete" />
-          {t("writeOff")}
-        </Link>
-      )}
-      {canEnterDirectly && (
-        <Link
-          href="/warehouse/documents/new?type=DIRECT_ENTRY"
-          className={cn(buttonVariants({ variant: "secondary" }), "max-sm:h-12")}
-        >
-          <Icon name="inventory_2" />
-          {t("directEntry")}
-        </Link>
-      )}
-    </>
-  );
+  const actions: DocumentAction[] = [
+    canIssue && { type: "ISSUE", label: t("newIssue"), icon: "add" as const },
+    canReturn && { type: "RETURN", label: t("newReturn"), icon: "undo" as const },
+    canTransfer && { type: "TRANSFER", label: t("transfer"), icon: "swap_horiz" as const },
+    canWriteOff && { type: "WRITE_OFF", label: t("writeOff"), icon: "delete" as const },
+    canEnterDirectly && {
+      type: "DIRECT_ENTRY",
+      label: t("directEntry"),
+      icon: "inventory_2" as const,
+    },
+  ]
+    .filter((action) => action !== false)
+    .map((action) => ({ ...action, href: `/warehouse/documents/new?type=${action.type}` }));
+  return <DocumentActions actions={actions} />;
 }
 
 /** Whether the user may make a direct entry anywhere: the Head's Excel import button. */

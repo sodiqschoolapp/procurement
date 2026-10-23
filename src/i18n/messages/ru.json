@@ -1772,7 +1772,15 @@
       "loading": "Загрузка…",
       "noManagers": "В этом филиале нет другого активного менеджера."
     },
-    "newOrder": "Новый заказ"
+    "newOrder": "Новый заказ",
+    "card": {
+      "amounts": "{quantity} {unit} × {price}",
+      "neededBy": "нужно к {date}",
+      "edit": "Изменить",
+      "show": "Открыть",
+      "done": "Готово",
+      "doneLabel": "Свернуть поля: {product}"
+    }
   },
   "purchase": {
     "form": {

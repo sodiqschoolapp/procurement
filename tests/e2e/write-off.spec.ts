@@ -6,6 +6,7 @@ import pg from "pg";
 import uz from "../../src/i18n/messages/uz.json" with { type: "json" };
 import { connectionOptions } from "../../src/server/db/connection-options.mjs";
 import { E2E_ROLES, e2eDatabaseUrl, serverDatabaseUrl } from "./global-setup";
+import { clickDocumentAction, documentAction } from "./document-actions";
 
 // Build plan 5.11 (Write-off). 09-warehouse.md, Other documents, Write-off: "The Manager picks
 // items, quantities and a reason from a fixed list plus a comment. Stock changes only after the
@@ -106,7 +107,7 @@ test("a Manager asks to write off 4 of 10, the stock waits; the Head approves fr
   await signIn(page, E2E_ROLES.MANAGER);
 
   await page.goto(`/warehouse/stock?q=${encodeURIComponent(seeded.tag)}`);
-  await page.getByRole("link", { name: uz.warehouse.stock.writeOff }).click();
+  await clickDocumentAction(page, uz.warehouse.stock.writeOff);
   await expect(page).toHaveURL(/\/warehouse\/documents\/new\?type=WRITE_OFF$/);
   await expect(page.getByRole("heading", { level: 1, name: texts.title })).toBeVisible();
   if (phone) await page.getByRole("button", { name: texts.next }).click();
@@ -178,7 +179,8 @@ test("the write-off form is Not found for the Principal and Finance, and their S
     await page.context().clearCookies();
     await signIn(page, person);
     await page.goto("/warehouse/stock");
-    await expect(page.getByRole("link", { name: uz.warehouse.stock.writeOff })).toHaveCount(0);
+    // Shown or folded behind More on a phone: the count is of either (redesign of 22.10.2026).
+    await expect(documentAction(page, "WRITE_OFF")).toHaveCount(0);
     await page.goto("/warehouse/documents/new?type=WRITE_OFF");
     await expect(page.getByRole("heading", { name: uz.notFoundPage.title })).toBeVisible();
   }
