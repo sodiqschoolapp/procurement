@@ -1182,7 +1182,6 @@
       "done": "Qoralama oʻchirildi"
     },
     "ticked": {
-      "count": "{count, plural, other {# ta qoralama belgilandi}}",
       "neededBy": "Belgilangan qoralamalar uchun kerakli sana",
       "apply": "Belgilanganlarga qoʻllash",
       "applied": "{count, plural, other {# ta qoralamaga kerakli sana qoʻyildi}}",
@@ -1219,7 +1218,8 @@
       "againButton": "Qayta yuborish ({count})",
       "confirmTitle": "{count} ta buyurtma yuborilsinmi?",
       "confirmResult": "{count, plural, one {U raqam oladi va tasdiqlashga ketadi. Shundan keyin faqat qaytarib olinsa yoki qaytarilsa tahrirlanadi.} other {Har biri oʻz raqamini oladi va tasdiqlashga ketadi. Shundan keyin ular faqat qaytarib olinsa yoki qaytarilsa tahrirlanadi.}}",
-      "confirm": "Yuborish"
+      "confirm": "Yuborish",
+      "mixed": "Qoralamalar va tuzatishga qaytarilgan buyurtmalar alohida yuboriladi. Faqat qoralamalarni yoki faqat qaytarilganlarni belgilang."
     },
     "list": {
       "title": "Buyurtmalar roʻyxati",

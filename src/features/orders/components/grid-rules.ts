@@ -40,6 +40,23 @@ export function canSubmitAgainTicked(
   return ticked.length > 0 && ticked.every((id) => rights.get(id)?.submittableAgain === true);
 }
 
+/**
+ * Whether the ticks hold drafts and sent-back orders together, each of which this person may
+ * submit: then neither Submit nor Submit again is offered (one action makes one move) and the bar
+ * says to submit them apart (owner's report of 23.10.2026: "submit is not appearing").
+ */
+export function ticksMixDraftsAndSentBack(
+  ticked: readonly string[],
+  rights: ReadonlyMap<string, { submittable: boolean; submittableAgain: boolean }>,
+): boolean {
+  const kinds = ticked.map((id) => rights.get(id));
+  return (
+    kinds.every((right) => right?.submittable === true || right?.submittableAgain === true) &&
+    kinds.some((right) => right?.submittable === true) &&
+    kinds.some((right) => right?.submittableAgain === true)
+  );
+}
+
 /** The ticked set as one text, so a kept Submit key belongs to these drafts only (correction 4). */
 export function submitKeyFor(ids: readonly string[]): string {
   return [...ids].sort().join(",");

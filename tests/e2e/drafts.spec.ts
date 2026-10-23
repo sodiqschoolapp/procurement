@@ -776,3 +776,74 @@ test("at 375 px Done folds a just-added card, and a sent-back card, which stays 
     await cancelSentBack();
   }
 });
+
+// Owner's report of 23.10.2026: "When I tick them, submit is not appearing." The bar with Submit
+// stood above the grid, out of sight once a card further down was ticked; the selection bar
+// floats at the bottom of the window (11 Order list layout 4; design system, Selection bar).
+test("at 375 px a draft ticked far down the grid shows Submit without scrolling (11 Order list layout 4)", async ({
+  page,
+}, info) => {
+  test.skip(info.project.name !== "phone-375", "The phone width.");
+  const manager = E2E_DRAFT_USERS["phone-375"];
+  await freshGrid(manager);
+  for (const product of [stapler, tape, glue, ruler]) {
+    await insertCompleteDraft(manager, product, "2031-05-01");
+  }
+  await signIn(page, manager);
+  await page.goto("/orders");
+  await expect(rows(page)).toHaveCount(4);
+  const last = tickOf(page, ruler);
+  await last.scrollIntoViewIfNeeded();
+  await last.check();
+  await expect(
+    page.getByRole("button", { name: t.submit.button.replace("{count}", "1") }),
+  ).toBeInViewport();
+  await expect(page.getByRole("region", { name: t.totals.title })).toBeInViewport();
+  expect(await scrollsSideways(page)).toBe(false);
+});
+
+// The same report: a draft and a sent-back order ticked together offer neither Submit nor Submit
+// again, as one action makes one move (06 rule 8; plan of 2.11, decided item 9). The bar says so
+// rather than showing nothing.
+test("a draft and a sent-back order ticked together: the bar says they are submitted apart (06 rule 8)", async ({
+  page,
+}, info) => {
+  const manager = E2E_DRAFT_USERS[info.project.name as keyof typeof E2E_DRAFT_USERS];
+  const cancelSentBack = () =>
+    withDatabase(async (client) => {
+      await client.query(
+        `update orders set status = 'CANCELLED'
+          where owner_id = (select id from users where username = $1) and status = 'RETURNED'`,
+        [manager.username],
+      );
+    });
+  await cancelSentBack();
+  await freshGrid(manager);
+  await insertCompleteDraft(manager, stapler, "2031-05-01");
+  await withDatabase(async (client) => {
+    await client.query(
+      `update orders set status = 'RETURNED', number = $2, submitted_at = now(), planned_total = 10000
+        where owner_id = (select id from users where username = $1) and status = 'DRAFT'`,
+      [manager.username, `EA-26-${String(Math.floor(Math.random() * 9e8) + 1e8)}`],
+    );
+  });
+  await insertCompleteDraft(manager, tape, "2031-05-01");
+  try {
+    await signIn(page, manager);
+    await page.goto("/orders");
+    await expect(rows(page)).toHaveCount(2);
+    await tickOf(page, stapler).check();
+    await tickOf(page, tape).check();
+    const bar = page.getByRole("region", { name: t.totals.title });
+    await expect(bar).toContainText(t.submit.mixed);
+    await expect(bar.getByRole("button", { name: /^Submit/ })).toHaveCount(0);
+
+    await tickOf(page, stapler).uncheck();
+    await expect(bar).not.toContainText(t.submit.mixed);
+    await expect(
+      bar.getByRole("button", { name: t.submit.button.replace("{count}", "1") }),
+    ).toBeVisible();
+  } finally {
+    await cancelSentBack();
+  }
+});

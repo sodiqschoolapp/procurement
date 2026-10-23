@@ -1182,7 +1182,6 @@
       "done": "Draft deleted"
     },
     "ticked": {
-      "count": "{count, plural, one {# draft ticked} other {# drafts ticked}}",
       "neededBy": "Needed-by date for the ticked drafts",
       "apply": "Apply to ticked",
       "applied": "{count, plural, one {Needed-by date set on # draft} other {Needed-by date set on # drafts}}",
@@ -1219,7 +1218,8 @@
       "againButton": "Submit again ({count})",
       "confirmTitle": "{count, plural, one {Submit # order?} other {Submit # orders?}}",
       "confirmResult": "{count, plural, one {It gets its number and goes for approval. After that it is edited only if it is taken back or sent back.} other {Each gets its own number and goes for approval. After that they are edited only if they are taken back or sent back.}}",
-      "confirm": "Submit"
+      "confirm": "Submit",
+      "mixed": "Drafts and sent-back orders are submitted separately. Tick only drafts, or only sent-back orders."
     },
     "list": {
       "title": "Order list",
