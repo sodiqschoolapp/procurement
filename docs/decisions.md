@@ -3027,6 +3027,14 @@ Not a task of the build plan: the owner's three asks of 22.10.2026 after #157. N
 2. On a phone the warehouse's new-document actions show the first (New issue) and a secondary "More" menu with the rest (Base UI's menu, as the tab bar's More); with two or fewer, each keeps its button. From 640 px unchanged. The browser tests open More on a phone (`tests/e2e/document-actions.ts`) and count a button by `data-document-action`, shown or folded, so a folded button still counts.
 3. **Look first.** The dark tints of danger, warning, success, info and today are chosen in each colour's own hue (oklch lightness about 0.30), no longer the colour at 16% over the navy card, which read grey (amber, hue 292) or purple (red, hue 313). The contrast test checks each tint's hue against its colour's (within 10°) besides the 4.5 : 1 of its text. The design system's table changed with them.
 
+### Next.js 16.4.2 for a critical advisory (22.10.2026)
+
+Not a task of the build plan. `npm audit` (CI's "Audit the production dependencies", `--audit-level=high`) reports `next` 16.0.0 – 16.4.0 critical: unauthenticated remote code execution in the image optimization API with SVG files (GHSA-2464-fhr4-w9xw) and in `use cache` functions returning typed arrays (GHSA-673q-mjm6-r5xr), and a denial of service through Server Actions (GHSA-p3m5-59mp-jv5r). It turned every pull request red, and the test site ran the version. The owner said to upgrade on 22.10.2026.
+
+- `next` and `eslint-config-next` from `^16.4.0` to `^16.4.2`, the newest 16.x: a patch release, no new dependency. The lockfile changes only Next.js's own packages (`next`, `@next/env`, `@next/eslint-plugin-next`, `@next/swc-*`, `eslint-config-next`).
+- After it `npm audit --omit=dev --audit-level=high` passes. The four moderate findings left are the old ones under `drizzle-kit` (esbuild in its build tooling, a dev dependency), below the gate as before.
+- Checked: lint, typecheck, `next build`, the unit tests, and the browser tests of sign-in, the shell, accessibility, orders, approvals, purchases, settlement, the money scenarios, files, products and drafts.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.
