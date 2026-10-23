@@ -327,19 +327,20 @@ export function DraftRow(props: DraftRowProps) {
     </span>
   );
 
-  // A phone card shows its summary until it is opened; one sent back by an approver, or one that
-  // holds an error, a mark of the last Submit or a half-made change, shows its fields, so nothing
-  // that needs the person hides.
-  const folded =
-    !props.open &&
-    row.label !== "SENT_BACK" &&
-    Object.keys(errors).length === 0 &&
-    Object.keys(props.marks ?? {}).length === 0 &&
-    pendingBranch === null &&
-    !pendingUrgent &&
-    !Object.values(typed).some(Boolean) &&
-    state.kind !== "error" &&
-    state.kind !== "notSaved";
+  // A phone card shows its summary until it is opened. One sent back by an approver, or one that
+  // holds an error, a mark of the last Submit or a half-made change, stays open whatever was
+  // pressed, so nothing that needs the person hides; it offers no Done, which could not fold it
+  // (review of d14a85a; .claude/rules/ui.md: a button that cannot act is not offered).
+  const staysOpen =
+    row.label === "SENT_BACK" ||
+    Object.keys(errors).length > 0 ||
+    Object.keys(props.marks ?? {}).length > 0 ||
+    pendingBranch !== null ||
+    pendingUrgent ||
+    Object.values(typed).some(Boolean) ||
+    state.kind === "error" ||
+    state.kind === "notSaved";
+  const folded = !props.open && !staysOpen;
 
   return (
     <tr
@@ -443,7 +444,7 @@ export function DraftRow(props: DraftRowProps) {
             </span>
           </button>
         </td>
-      ) : (
+      ) : staysOpen ? null : (
         <td className="w-auto sm:hidden">
           <Button
             type="button"

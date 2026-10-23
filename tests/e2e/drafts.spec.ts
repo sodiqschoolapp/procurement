@@ -730,3 +730,49 @@ test("a phone card is folded to its summary, opens with a tap and folds with Don
   await expect(quantity).toBeHidden();
   expect(await scrollsSideways(page)).toBe(false);
 });
+
+test("at 375 px Done folds a just-added card, and a sent-back card, which stays open, offers no Done (review of d14a85a; .claude/rules/ui.md: a button that cannot act is not offered)", async ({
+  page,
+}, info) => {
+  test.skip(info.project.name !== "phone-375", "The phone width.");
+  const manager = E2E_DRAFT_USERS["phone-375"];
+  // The sent-back order is numbered, so it is cancelled, never deleted, to leave the grid of the
+  // other tests of this person; an earlier run's is cancelled first.
+  const cancelSentBack = () =>
+    withDatabase(async (client) => {
+      await client.query(
+        `update orders set status = 'CANCELLED'
+          where owner_id = (select id from users where username = $1) and status = 'RETURNED'`,
+        [manager.username],
+      );
+    });
+  await cancelSentBack();
+  await freshGrid(manager);
+  // A sent-back order: a numbered RETURNED row, which the grid labels Sent back.
+  await insertCompleteDraft(manager, stapler, "2031-05-01");
+  await withDatabase(async (client) => {
+    await client.query(
+      `update orders set status = 'RETURNED', number = $2, submitted_at = now(), planned_total = 10000
+        where owner_id = (select id from users where username = $1) and status = 'DRAFT'`,
+      [manager.username, `EA-26-${String(Math.floor(Math.random() * 9e8) + 1e8)}`],
+    );
+  });
+  try {
+    await signIn(page, manager);
+    await page.goto("/orders");
+    const sentBack = rowOf(page, stapler);
+    await expect(sentBack.locator('td[data-col="quantity"] input')).toBeVisible();
+    await expect(sentBack.locator("[data-card-close]")).toHaveCount(0);
+
+    // A draft added on this visit opens with its fields; Done folds it to its summary.
+    await addDraft(page, notebook, science, "4");
+    const added = rowOf(page, notebook);
+    const quantity = added.locator('td[data-col="quantity"] input');
+    await expect(quantity).toBeVisible();
+    await added.locator("[data-card-close]").click();
+    await expect(quantity).toBeHidden();
+    await expect(added.locator("[data-card-open]")).toBeVisible();
+  } finally {
+    await cancelSentBack();
+  }
+});

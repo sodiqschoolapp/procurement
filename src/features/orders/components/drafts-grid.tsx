@@ -245,6 +245,8 @@ export function DraftsGrid({
       });
     } else {
       setJustAdded((current) => new Set([...current, created.id]));
+      // A new draft opens on a phone; Done folds it like any other (review of d14a85a).
+      openRow(created.id, true);
       // A new draft sorts last (oldest first): go to the page it lands on (Should fix 2).
       const last = Math.ceil((total + 1) / DRAFTS_PAGE_SIZE);
       if (last !== page) {
@@ -585,7 +587,7 @@ export function DraftsGrid({
                       deletable={right?.deletable ?? false}
                       ticked={ticked.has(row.id)}
                       justAdded={justAdded.has(row.id)}
-                      open={opened.has(row.id) || justAdded.has(row.id)}
+                      open={opened.has(row.id)}
                       onOpen={(open) => openRow(row.id, open)}
                       onTick={(on) => tick(row.id, on)}
                       onRow={onRow}
