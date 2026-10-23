@@ -87,11 +87,11 @@ export function TickedTotals({
       <div
         id="ticked-totals-split"
         className={cn(
-          "flex flex-col gap-3 border-t border-border pt-3 text-sm",
+          "flex flex-col gap-3 border-t border-border pt-3 text-sm lg:flex-row lg:items-start lg:gap-12",
           !details && "max-sm:hidden",
         )}
       >
-        <div className="grid gap-x-12 gap-y-1 sm:grid-cols-2">
+        <div className="grid gap-x-12 gap-y-1 sm:grid-cols-2 lg:flex-1">
           <dl className="flex flex-col gap-1">
             {line("goods", t("goods"), totals.goods)}
             {line("extras", t("extras"), totals.extras)}
@@ -105,7 +105,9 @@ export function TickedTotals({
           </dl>
         </div>
         {withoutPrice > 0 && (
-          <p className="text-muted-foreground">{t("withoutPrice", { count: withoutPrice })}</p>
+          <p className="text-muted-foreground lg:order-last lg:max-w-48">
+            {t("withoutPrice", { count: withoutPrice })}
+          </p>
         )}
         {tools}
       </div>
