@@ -7,6 +7,7 @@ import {
   canSubmitAgainTicked,
   canSubmitTicked,
   rowHoldsSent,
+  ticksMixDraftsAndSentBack,
 } from "./grid-rules";
 
 // 03 Manager rights: CREATE_REQUESTS off "can only view orders"; plan of 2.5b, decided item 2
@@ -94,5 +95,16 @@ describe("Submit and Submit again on ticked rows (05 Drafts 5; plan of 2.11, dec
   it("a mixed tick of a draft and a sent-back order offers neither", () => {
     expect(canSubmitTicked(["draft", "mine"], rights)).toBe(false);
     expect(canSubmitAgainTicked(["draft", "mine"], rights)).toBe(false);
+  });
+
+  // Owner's report of 23.10.2026: the bar says why it offers neither, instead of showing nothing.
+  it("names the mix only when a draft and a sent-back order this person may submit are both ticked", () => {
+    expect(ticksMixDraftsAndSentBack(["draft", "mine"], rights)).toBe(true);
+    expect(ticksMixDraftsAndSentBack(["draft"], rights)).toBe(false);
+    expect(ticksMixDraftsAndSentBack(["mine"], rights)).toBe(false);
+    // A row neither button would take is not a mix of the two kinds: no word about it.
+    expect(ticksMixDraftsAndSentBack(["draft", "managers"], rights)).toBe(false);
+    expect(ticksMixDraftsAndSentBack(["draft", "mine", "managers"], rights)).toBe(false);
+    expect(ticksMixDraftsAndSentBack([], rights)).toBe(false);
   });
 });

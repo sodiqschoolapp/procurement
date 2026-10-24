@@ -3035,6 +3035,15 @@ Not a task of the build plan. `npm audit` (CI's "Audit the production dependenci
 - After it `npm audit --omit=dev --audit-level=high` passes. The four moderate findings left are the old ones under `drizzle-kit` (esbuild in its build tooling, a dev dependency), below the gate as before.
 - Checked: lint, typecheck, `next build`, the unit tests, and the browser tests of sign-in, the shell, accessibility, orders, approvals, purchases, settlement, the money scenarios, files, products and drafts.
 
+### The drafts' Submit in the floating bar (23.10.2026)
+
+Not a task of the build plan: the owner's report of 23.10.2026, "When I tick them, submit is not appearing." No server action, query, permission, status move or table changed.
+
+1. The actions on the ticked drafts (Submit or Submit again, Clear, Apply a needed-by date) stood in a bar above the grid. On a phone, with the cards one under another, ticking a card further down left that bar far above, out of sight; only the totals floated at the bottom. 11 Order list layout 4 and the design system's selection bar ask for one bar "fixed at the bottom when something is ticked: the count and totals of the ticked orders, and only the actions this user can take on all of them now". The totals panel of the grid (`TickedTotals`) is now that bar, laid out as the order list's: the count, the grand total, Submit and Clear on one line; goods, extra costs, the split by payment type and the needed-by date under a hairline, behind "Show details" on a phone. It floats with the selection bar's edge and shadow. The first try, the whole old bar under the totals, stood so high on a phone that it covered the next card's tick box (S14 at 375 px could not tick it); folding the details keeps it low. Test: `drafts.spec.ts`, "at 375 px a draft ticked far down the grid shows Submit without scrolling", which failed before (the button's viewport ratio 0).
+2. **Look first.** Ticks of a draft and a sent-back order together still offer neither Submit nor Submit again: one action makes one move (06 rule 8; plan of 2.11, decided item 9), and Submit and Submit again are two moves. Before, the bar then showed nothing and gave no reason (design system: a button that cannot be pressed now says why). It now says "Drafts and sent-back orders are submitted separately. Tick only drafts, or only sent-back orders." (`ticksMixDraftsAndSentBack()`, `grid-rules.ts`, with its unit test; `orders.submit.mixed` in the three languages, Uzbek and Russian first drafts). The other reading, one Submit that sends each ticked order by its own move in one transaction, would change the server action and a decided item; not done without the owner.
+3. From 1440 px the needed-by date stands beside the totals, so the bar keeps about the height of the old totals panel. Screenshots: `docs/redesign/2026-10-23/`.
+4. Submit is the bar's primary button now (it was secondary), as Approve is on the order list's bar. The grid's own count line `orders.ticked.count` is no longer used and left the three files.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

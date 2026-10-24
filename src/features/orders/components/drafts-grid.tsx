@@ -12,6 +12,7 @@ import {
 } from "@/app/(app)/orders/actions";
 import { newClientKey } from "@/components/client-key";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { Icon } from "@/components/icon";
 import { toast } from "@/components/toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +32,7 @@ import {
   canSubmitTicked,
   cellOfField,
   submitKeyFor,
+  ticksMixDraftsAndSentBack,
 } from "./grid-rules";
 import type { RowSaveQueue } from "./row-save-queue";
 import { TickedTotals } from "./ticked-totals";
@@ -39,8 +41,9 @@ import { TickedTotals } from "./ticked-totals";
 // orders and the orders sent back or taken back to them, edited like a spreadsheet"; plan of
 // 2.5b). Rows come from the server page; a row with typing or a save in flight keeps its own
 // state when the page is sent again (review of the plan, Must fix 3). Ticks belong to the page
-// shown (decided item 5). The selection bar above the table holds the count, "Apply to ticked"
-// and "Clear"; the totals stand under the grid, as 05 says (Must fix 2).
+// shown (decided item 5). The totals stand under the grid, as 05 says (Must fix 2), in a panel
+// that floats at the bottom of the window and holds "Apply to ticked", Submit and "Clear" (11
+// Order list layout 4; owner's report of 23.10.2026: above the table they were out of sight).
 //
 // Plan of 2.6: Enter moves to the same column of the next draft, Shift+Enter up, and the last
 // draft's Enter goes to the add row (11 rule 2; grid-keys.ts). Below 640 px the table is a list
@@ -428,6 +431,10 @@ export function DraftsGrid({
     tickedRows.map((row) => row.id),
     rights,
   );
+  const mixed = ticksMixDraftsAndSentBack(
+    tickedRows.map((row) => row.id),
+    rights,
+  );
   const canApply = canApplyToTicked(
     tickedRows.map((row) => row.id),
     rights,
@@ -470,68 +477,6 @@ export function DraftsGrid({
     <GridProvider branches={branches} actorId={actorId}>
       <UnsavedChangesGuard dirty={dirtyRows.size > 0 || adding} />
       <div className="flex flex-col gap-4">
-        {ticked.size > 0 && (
-          <div
-            role="region"
-            aria-label={t("ticked.count", { count: ticked.size })}
-            className="flex flex-wrap items-center gap-3 rounded-xl border border-border-strong bg-card px-4 py-3 shadow-float"
-          >
-            <span className="text-sm font-semibold">
-              {t("ticked.count", { count: ticked.size })}
-            </span>
-            <span className="flex flex-wrap items-center gap-2">
-              {canApply && (
-                <>
-                  <label htmlFor="ticked-needed-by" className="sr-only">
-                    {t("ticked.neededBy")}
-                  </label>
-                  <Input
-                    id="ticked-needed-by"
-                    value={neededBy}
-                    placeholder={t("date.placeholder")}
-                    aria-invalid={neededByWrong || undefined}
-                    aria-describedby={neededByWrong ? "ticked-needed-by-error" : undefined}
-                    onChange={(event) => setNeededBy(event.target.value)}
-                    className="w-36"
-                  />
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    pending={applying}
-                    onClick={() => void apply()}
-                  >
-                    {t("ticked.apply")}
-                  </Button>
-                </>
-              )}
-              {(canSubmit || canSubmitAgain) && (
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  pending={submitting}
-                  onClick={() =>
-                    setAsking({ ids: tickedRows.map((row) => row.id), again: canSubmitAgain })
-                  }
-                >
-                  {t(canSubmitAgain ? "submit.againButton" : "submit.button", {
-                    count: ticked.size,
-                  })}
-                </Button>
-              )}
-              <Button type="button" variant="ghost" size="sm" onClick={() => setTicked(new Set())}>
-                {t("ticked.clear")}
-              </Button>
-            </span>
-            {neededByWrong && (
-              <span id="ticked-needed-by-error" className="w-full text-sm text-destructive">
-                {t("date.invalid")}
-              </span>
-            )}
-          </div>
-        )}
-
         {submitFailures.length > 0 && (
           <div
             ref={failuresTop}
@@ -640,6 +585,70 @@ export function DraftsGrid({
             extras: row.extras.map((extra) => extra.amount),
             paymentType: row.paymentType,
           }))}
+          actions={
+            <>
+              {(canSubmit || canSubmitAgain) && (
+                <Button
+                  type="button"
+                  size="sm"
+                  pending={submitting}
+                  onClick={() =>
+                    setAsking({ ids: tickedRows.map((row) => row.id), again: canSubmitAgain })
+                  }
+                >
+                  {t(canSubmitAgain ? "submit.againButton" : "submit.button", {
+                    count: ticked.size,
+                  })}
+                </Button>
+              )}
+              <Button type="button" variant="ghost" size="sm" onClick={() => setTicked(new Set())}>
+                {t("ticked.clear")}
+              </Button>
+              {mixed && (
+                <p
+                  data-ticked-mixed
+                  className="flex basis-full items-start gap-1.5 text-xs text-muted-foreground"
+                >
+                  <Icon name="info" size={16} />
+                  <span>{t("submit.mixed")}</span>
+                </p>
+              )}
+            </>
+          }
+          tools={
+            canApply && (
+              <div className="flex flex-col gap-2">
+                <label htmlFor="ticked-needed-by" className="text-muted-foreground">
+                  {t("ticked.neededBy")}
+                </label>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Input
+                    id="ticked-needed-by"
+                    value={neededBy}
+                    placeholder={t("date.placeholder")}
+                    aria-invalid={neededByWrong || undefined}
+                    aria-describedby={neededByWrong ? "ticked-needed-by-error" : undefined}
+                    onChange={(event) => setNeededBy(event.target.value)}
+                    className="w-36"
+                  />
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    pending={applying}
+                    onClick={() => void apply()}
+                  >
+                    {t("ticked.apply")}
+                  </Button>
+                </div>
+                {neededByWrong && (
+                  <p id="ticked-needed-by-error" className="text-destructive">
+                    {t("date.invalid")}
+                  </p>
+                )}
+              </div>
+            )
+          }
         />
       </div>
     </GridProvider>
