@@ -64,6 +64,11 @@ export const SERVER_ACTIONS: Record<string, Entry> = {
   // before the file is read (plan review, correction 1).
   "src/app/(app)/catalog/import/actions.ts#previewImportAction": "catalog.manage",
   "src/app/(app)/catalog/import/actions.ts#saveImportAction": "catalog.manage",
+  // The product search's Add (04 rule 8; plan of 1.12b): catalog.add, guarded by ADD_PRODUCTS;
+  // the form's categories and measures are catalog.pick.
+  "src/app/(app)/orders/actions.ts#addProductWhileOrderingAction": "catalog.add",
+  "src/app/(app)/orders/actions.ts#addSubtypeWhileOrderingAction": "catalog.add",
+  "src/app/(app)/orders/actions.ts#listAddChoicesAction": "catalog.pick",
   // The Head marks entries Managers added checked (04 rule 8; plan of 1.12b).
   "src/app/(app)/home-actions.ts#markAddedCheckedAction": "catalog.manage",
   // Product suggestions (plan of 1.12, decisions 1 and 2, Look first): adding and declining are

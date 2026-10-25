@@ -10,11 +10,17 @@ import { cn } from "@/components/utils";
 import type { WireProduct, WireSubtype } from "@/features/orders/draft-wire";
 import { useFormatters } from "@/i18n/use-formatters";
 
+import { AddCatalogEntryDialog } from "./add-catalog-entry-dialog";
+import { useGrid } from "./grid-context";
+
 // The product cell of the drafts grid (05-order-request-form.md field 2: "search by name, shows
 // photo, category and stock"; 11-screens-and-ux.md rule 2: "Typing in the product cell opens the
 // search with photo, name, category and stock"). A combobox: each hit is one subtype of a
 // product, so one pick names the product and its subtype (field 3) together. Arrow keys move,
-// Enter picks, Escape closes (rule 13).
+// Enter picks, Escape closes (rule 13). When nothing active matches the text typed now, and the
+// person may add to the catalog, the last line "Add …" opens the add form (04-catalogs.md rule
+// 8; 11 rule 2: "when nothing matches, its last line adds the product or subtype"; plan of
+// 1.12b, decided items 8 and 10).
 
 export type PickedSubtype = { product: WireProduct; subtype: WireSubtype };
 
@@ -47,16 +53,23 @@ export function ProductPicker({
   const [loading, setLoading] = useState(false);
   const [hits, setHits] = useState<PickedSubtype[]>([]);
   const [active, setActive] = useState(0);
+  // The text the newest answer is for: "nothing found" and "Add …" only for the text typed now
+  // (.claude/rules/ui.md), never during the pause or while an earlier answer stands in.
+  const [answeredFor, setAnsweredFor] = useState<string | null>(null);
+  const [adding, setAdding] = useState<string | null>(null);
+  const { canAddToCatalog } = useGrid();
   const asked = useRef(0);
 
   useEffect(() => {
     if (!open || !branchId) return;
     const ask = ++asked.current;
+    const typedNow = text === shown ? "" : text;
     const timer = setTimeout(async () => {
       setLoading(true);
-      const result = await searchDraftProductsAction({ branchId, q: text === shown ? "" : text });
+      const result = await searchDraftProductsAction({ branchId, q: typedNow });
       if (ask !== asked.current) return;
       setLoading(false);
+      setAnsweredFor(typedNow);
       setActive(0);
       setHits(
         result.ok
@@ -75,6 +88,21 @@ export function ProductPicker({
     onPick(hit);
   }
 
+  const typed = open && text !== shown ? text.trim() : "";
+  // "Add …" is the last line, after every hit: only when nothing matches (decided item 8).
+  const offersAdd =
+    canAddToCatalog &&
+    branchId !== null &&
+    typed !== "" &&
+    !loading &&
+    answeredFor === text &&
+    hits.length === 0;
+
+  function openAdd() {
+    setOpen(false);
+    setAdding(typed);
+  }
+
   function onKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
     if (event.key === "ArrowDown") {
       event.preventDefault();
@@ -88,6 +116,10 @@ export function ProductPicker({
       event.preventDefault();
       event.stopPropagation();
       pick(hits[active]!);
+    } else if (event.key === "Enter" && open && offersAdd) {
+      event.preventDefault();
+      event.stopPropagation();
+      openAdd();
     } else if (event.key === "Escape") {
       setOpen(false);
       setText(shown);
@@ -106,7 +138,9 @@ export function ProductPicker({
         aria-controls={listId}
         aria-autocomplete="list"
         aria-invalid={invalid || undefined}
-        aria-activedescendant={open && hits[active] ? optionId(active) : undefined}
+        aria-activedescendant={
+          open && hits[active] ? optionId(active) : offersAdd ? optionId(0) : undefined
+        }
         autoComplete="off"
         placeholder={t("picker.placeholder")}
         value={open ? text : shown}
@@ -134,9 +168,37 @@ export function ProductPicker({
           aria-busy={loading || undefined}
           className="absolute top-full left-0 z-40 mt-1 max-h-80 w-[min(26rem,calc(100vw-2rem))] overflow-y-auto rounded-xl bg-popover p-1 text-popover-foreground shadow-float max-sm:w-full"
         >
-          {hits.length === 0 ? (
+          {offersAdd ? (
+            <li
+              id={optionId(0)}
+              role="option"
+              aria-selected
+              data-add-line
+              onMouseDown={(event) => {
+                event.preventDefault();
+                openAdd();
+              }}
+              className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg bg-accent px-2 py-2"
+            >
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                <Icon name="add" size={18} />
+              </span>
+              <span className="flex min-w-0 flex-col">
+                <span className="truncate text-sm leading-5 font-semibold">
+                  {t("picker.add", { name: typed })}
+                </span>
+                <span className="truncate text-xs text-muted-foreground">
+                  {t("picker.addLine")}
+                </span>
+              </span>
+            </li>
+          ) : hits.length === 0 ? (
             <li className="px-3 py-2 text-sm text-muted-foreground">
-              {t(loading ? "picker.loading" : "picker.empty")}
+              {t(
+                loading || answeredFor !== (text === shown ? "" : text)
+                  ? "picker.loading"
+                  : "picker.empty",
+              )}
             </li>
           ) : (
             hits.map((hit, at) => (
@@ -179,6 +241,23 @@ export function ProductPicker({
             ))
           )}
         </ul>
+      )}
+      {adding !== null && branchId && (
+        <AddCatalogEntryDialog
+          open
+          typed={adding}
+          branchId={branchId}
+          onClose={() => setAdding(null)}
+          onPicked={(picked) => {
+            setAdding(null);
+            onPick(picked);
+          }}
+          onSearch={(name) => {
+            setAdding(null);
+            setText(name);
+            setOpen(true);
+          }}
+        />
       )}
     </div>
   );

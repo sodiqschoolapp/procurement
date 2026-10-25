@@ -1176,7 +1176,9 @@
       "empty": "Nothing found",
       "loading": "Searching…",
       "stock": "In stock: {stock}",
-      "noStock": "In stock: —"
+      "noStock": "In stock: —",
+      "add": "Add “{name}” to the catalog",
+      "addLine": "A new product, or a new subtype of a product"
     },
     "photo": {
       "none": "No photo",
@@ -1818,6 +1820,28 @@
       "show": "Open",
       "done": "Done",
       "doneLabel": "Fold the fields of {product}"
+    },
+    "addEntry": {
+      "title": "Add to the catalog",
+      "intro": "What you add can be ordered at once. The Procurement Head adds a price and a brand later.",
+      "kind": "What to add",
+      "newProduct": "New product",
+      "newSubtype": "New subtype",
+      "ofProduct": "Product",
+      "otherProduct": "Pick another",
+      "productName": "Product name",
+      "subtypeName": "Name of the new subtype",
+      "existingName": "What are the existing ones called?",
+      "existingHint": "This product has no subtypes yet. The stock and the earlier orders take this name, for example “48 sheets”.",
+      "choose": "Choose",
+      "save": "Add",
+      "added": "Added to the catalog",
+      "exists": "Already in the catalog: {name}.",
+      "existsInactive": "Already in the catalog, but inactive: {name}. Only the Procurement Head can switch it on again.",
+      "useIt": "Use it",
+      "discardQuestion": "What you typed is not saved. Close it?",
+      "keepEditing": "Keep editing",
+      "discard": "Close"
     }
   },
   "purchase": {

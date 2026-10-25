@@ -1176,7 +1176,9 @@
       "empty": "Hech narsa topilmadi",
       "loading": "Qidirilmoqda…",
       "stock": "Omborda: {stock}",
-      "noStock": "Omborda: —"
+      "noStock": "Omborda: —",
+      "add": "«{name}» ni katalogga qoʻshish",
+      "addLine": "Yangi mahsulot yoki mahsulotning yangi turi"
     },
     "photo": {
       "none": "Rasm yoʻq",
@@ -1818,6 +1820,28 @@
       "show": "Ochish",
       "done": "Tayyor",
       "doneLabel": "{product} maydonlarini yigʻish"
+    },
+    "addEntry": {
+      "title": "Katalogga qoʻshish",
+      "intro": "Qoʻshilgan narsani darhol buyurtma qilish mumkin. Narx va brendni xaridlar rahbari keyinroq qoʻshadi.",
+      "kind": "Nima qoʻshiladi",
+      "newProduct": "Yangi mahsulot",
+      "newSubtype": "Yangi tur",
+      "ofProduct": "Mahsulot",
+      "otherProduct": "Boshqasini tanlash",
+      "productName": "Mahsulot nomi",
+      "subtypeName": "Yangi tur nomi",
+      "existingName": "Mavjudlari qanday ataladi?",
+      "existingHint": "Bu mahsulotda hali tur yoʻq. Ombordagi va buyurtmalardagilar shu nomni oladi, masalan «48 varaq».",
+      "choose": "Tanlang",
+      "save": "Qoʻshish",
+      "added": "Katalogga qoʻshildi",
+      "exists": "Katalogda allaqachon bor: {name}.",
+      "existsInactive": "Katalogda allaqachon bor, lekin faol emas: {name}. Uni faqat xaridlar rahbari qayta yoqadi.",
+      "useIt": "Shuni olish",
+      "discardQuestion": "Yozganlaringiz saqlanmaydi. Yopilsinmi?",
+      "keepEditing": "Davom etish",
+      "discard": "Yopish"
     }
   },
   "purchase": {

@@ -39,7 +39,7 @@ import {
   orderTotalsOnFilter,
 } from "@/features/orders/queries/order-list";
 import type { ListStatus } from "@/domain/order-list";
-import type { Role } from "@/domain/permissions";
+import { type Role, actorMay } from "@/domain/permissions";
 import { getFormatters } from "@/i18n/get-formatters";
 import { requireUser } from "@/server/auth/session";
 import { AuthorizationError, authorizeList } from "@/server/authorize";
@@ -356,6 +356,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
           total={drafts.total}
           branches={branches}
           actorId={actor.userId}
+          canAddToCatalog={actorMay("catalog.add", actor)}
           defaultBranchId={defaultBranchId}
           canAdd={canAdd}
           query={query}
