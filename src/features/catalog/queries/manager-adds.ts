@@ -1,8 +1,8 @@
-import { and, count, desc, eq, isNotNull, isNull } from "drizzle-orm";
+import { and, asc, count, desc, eq, isNotNull, isNull } from "drizzle-orm";
 import * as z from "zod";
 
 import { authorize } from "@/server/authorize";
-import { productVariants, products, users } from "@/server/db/schema";
+import { categories, productVariants, products, units, users } from "@/server/db/schema";
 import { readSnapshot } from "@/server/read-snapshot";
 
 // The Head's home list of products and subtypes added by Managers, until the Head marks them
@@ -80,4 +80,32 @@ export async function listUncheckedAdded(
       .slice(0, limit);
     return { rows, total: productCount!.n + subtypeCount!.n };
   });
+}
+
+export type AddChoices = {
+  categories: { id: string; name: string }[];
+  measures: { id: string; name: string }[];
+};
+
+/**
+ * Every active category and measure, by name, for the add from an order's product search (04 rule
+ * 8: "category and measure picked from their catalogs"; rule 2: inactive ones leave the pickers).
+ * catalog.pick, every role, as the other pickers (plan of 1.5, decision 2, Look first). No cap: a
+ * picker of 50 would hide the rest from a select that cannot search (plan of 1.12b, decided item
+ * 15, changed during the build).
+ */
+export async function listAddChoices(userId: string): Promise<AddChoices> {
+  await authorize(userId, "catalog.pick");
+  return readSnapshot(async (db) => ({
+    categories: await db
+      .select({ id: categories.id, name: categories.name })
+      .from(categories)
+      .where(eq(categories.isActive, true))
+      .orderBy(asc(categories.name), asc(categories.id)),
+    measures: await db
+      .select({ id: units.id, name: units.name })
+      .from(units)
+      .where(eq(units.isActive, true))
+      .orderBy(asc(units.name), asc(units.id)),
+  }));
 }

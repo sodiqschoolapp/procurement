@@ -994,8 +994,8 @@ describe("the seed's catalogs in the app (build-plan 1.13, Done when)", () => {
       expect(seedKabel).toEqual({ ...actionKabel, name: "Kabel" });
       expect(seedKabel.referencePrice).toBeNull();
 
-      // A subtype of a product that already has real ones: the first turns the default real, the
-      // second is a new row, as each seed subtype is.
+      // A subtype of a product that already has real ones: the first names the default for the
+      // existing items (04 rule 1; D64), the second is a new row, as each seed subtype is.
       const subtype = kabel.subtypes![0]!;
       for (const name of ["Birinchi", subtype.name]) {
         const added = await runAction(createSubtype, headId, {
@@ -1003,6 +1003,7 @@ describe("the seed's catalogs in the app (build-plan 1.13, Done when)", () => {
           productId: kabelId,
           name,
           referencePrice: String(subtype.price),
+          existingName: "Avvalgi",
         });
         expect(added).toMatchObject({ ok: true });
       }

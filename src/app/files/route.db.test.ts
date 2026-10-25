@@ -353,6 +353,7 @@ describe("who may download (build plan 0.12; plan of 0.12, decision 5, Look firs
         productId: product.id,
         name: "A4",
         photoFileId: id,
+        existingName: "A5",
       })) as ActionResult<unknown>,
     );
     const { id: branchId } = await insertBranch();

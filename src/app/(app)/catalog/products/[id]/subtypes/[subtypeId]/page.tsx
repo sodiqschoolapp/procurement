@@ -88,7 +88,7 @@ export default async function SubtypePage({
         productId={subtype.productId}
         entry={{ id: subtype.id, name: subtype.name, photoFileId: subtype.photoFileId }}
         price={subtype.referencePrice === null ? null : format.money(subtype.referencePrice)}
-        priceLocked
+        first={false}
         productPhotoFileId={subtype.productPhotoFileId}
       />
       <PriceHistoryLink variantId={subtype.id} />

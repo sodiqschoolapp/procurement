@@ -23,13 +23,14 @@ import { createSubtypeAction, updateSubtypeAction } from "./[id]/subtypes/action
 // (optional), own reference price (optional)"; 11-screens-and-ux.md rules 4, 6, 7 and 13). A new
 // subtype carries one client key until it is saved (developer-rules.md rule 8); an edit sends only
 // the fields the Head changed. The server checks every value; the form checks nothing a second
-// time (CLAUDE.md rule 1). The price is typed on a new subtype only, and only when the product's
-// hidden default holds none; otherwise it is shown as text (plan of 1.8, decision 2, Look first).
-// Without its own photo the product's is shown (decision 8).
+// time (CLAUDE.md rule 1). The price is typed on a new subtype only (plan of 1.8, decision 2, Look
+// first). On a product without subtypes the Head also names the existing items, which keep their
+// stock, orders and price under that name (04 rule 1; D64; build-plan 1.12b, Build 6). Without its
+// own photo the product's is shown (decision 8).
 
 const noSubscription = () => () => undefined;
 
-type Values = { name: string; referencePrice: string; photoFileId: string };
+type Values = { name: string; referencePrice: string; photoFileId: string; existingName: string };
 
 const EDITED = ["name", "photoFileId"] as const;
 
@@ -39,15 +40,15 @@ export function SubtypeForm({
   productId,
   entry,
   price,
-  priceLocked,
+  first,
   productPhotoFileId,
 }: {
   productId: string;
   entry: SubtypeEntry | null;
   /** The price shown as text, already formatted, or null when none is set. */
   price: string | null;
-  /** A new subtype whose price is the default's held one: shown, not typed (decision 2). */
-  priceLocked: boolean;
+  /** The product has no subtypes yet: the existing items are named too (04 rule 1; D64). */
+  first: boolean;
   productPhotoFileId: string | null;
 }) {
   const t = useTranslations("catalog");
@@ -60,6 +61,7 @@ export function SubtypeForm({
     name: entry?.name ?? "",
     referencePrice: "",
     photoFileId: entry?.photoFileId ?? "",
+    existingName: "",
   };
   const { register, handleSubmit, reset, setValue, control, formState } = useForm<Values>({
     defaultValues: loaded,
@@ -101,7 +103,8 @@ export function SubtypeForm({
         productId,
         name: current.name,
         photoFileId: current.photoFileId,
-        ...(priceLocked ? {} : { referencePrice: current.referencePrice }),
+        referencePrice: current.referencePrice,
+        ...(first ? { existingName: current.existingName } : {}),
       });
       if (!result) return;
       if (!result.ok) {
@@ -146,8 +149,26 @@ export function SubtypeForm({
         <Input {...register("name")} maxLength={200} autoComplete="off" />
       </Field>
 
+      {!entry && first && (
+        <div className="flex flex-col gap-1.5">
+          <Field
+            id="subtype-existingName"
+            label={t("fields.existingName")}
+            error={action.fieldTexts.existingName}
+          >
+            <Input
+              {...register("existingName")}
+              maxLength={200}
+              autoComplete="off"
+              aria-describedby="subtype-existingName-hint"
+            />
+          </Field>
+          {hint("subtype-existingName-hint", t("hints.existingName"))}
+        </div>
+      )}
+
       <div className="flex flex-col gap-1.5">
-        {entry || priceLocked ? (
+        {entry ? (
           <>
             <span className="text-sm leading-5 font-semibold">{t("fields.referencePrice")}</span>
             <span className="text-sm tabular-nums">{price ?? t("noPrice")}</span>

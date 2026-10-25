@@ -2189,6 +2189,7 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - Permission `catalog.add` (global, Head and Manager, right `ADD_PRODUCTS`); a global rule may carry a `right`, read by `decide()`/`decideList()`; `actorMay()` for screens.
 - `addProductWhileOrdering`, `addSubtypeWhileOrdering` (`addSubtypeFromSearch()` in subtypes.ts: the default renamed to the existing items' name, the new name a new row holding the client key), `markAddedChecked`; query `listUncheckedAdded`; `findTaken()` of the catalog factory.
 - The product search's Add line and `AddCatalogEntryDialog`; the Head's home block "Added by Managers"; the tenth switch; `suggestProduct`, `/suggestions/new` and the Manager's link removed.
+- Build (6), D64: the Head's first subtype on the catalog page names the existing items too (`createSubtype` takes `existingName`); `listAddChoices()` with no cap.
 
 **Left out, and the task that brings it**
 - Nothing of the Build line.

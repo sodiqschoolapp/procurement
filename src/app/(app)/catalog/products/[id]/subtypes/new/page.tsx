@@ -5,16 +5,15 @@ import { notFound } from "next/navigation";
 import { AdminNav } from "@/components/admin-nav";
 import { Icon } from "@/components/icon";
 import { getProduct } from "@/features/catalog/queries/products";
-import { getFormatters } from "@/i18n/get-formatters";
 import { requireUser } from "@/server/auth/session";
 
 import { readOrNotFound } from "../../../../../branches/read-or-not-found";
 import { SubtypeForm } from "../../../subtype-form";
 
 // /catalog/products/[id]/subtypes/new (build-plan 1.8; plan of 1.8, decision 11: a page, not the
-// side panel). For a product without subtypes a note says that this one becomes its first
-// subtype and keeps what was recorded so far, and a price the hidden default holds is shown, not
-// typed (decisions 1 and 2, Look first). An inactive product takes no new subtype (decision 5):
+// side panel). For a product without subtypes a note asks the Head to name the existing items too:
+// they keep their stock, orders and price under that name, and the new subtype is a new row (04
+// rule 1; D64, replacing decisions 1.8 item 1). An inactive product takes no new subtype (decision 5):
 // the page is "not found" for it, as for an unknown product or a role without "Manage catalogs …".
 
 export default async function NewSubtypePage({ params }: { params: Promise<{ id: string }> }) {
@@ -23,9 +22,7 @@ export default async function NewSubtypePage({ params }: { params: Promise<{ id:
   const product = await readOrNotFound(() => getProduct(user.id, id));
   if (!product || !product.isActive) notFound();
   const t = await getTranslations("catalog");
-  const format = await getFormatters();
   const first = !product.hasVariants;
-  const held = first ? product.referencePrice : null;
 
   return (
     <div className="flex w-full max-w-4xl min-w-0 flex-col gap-6">
@@ -47,8 +44,8 @@ export default async function NewSubtypePage({ params }: { params: Promise<{ id:
       <SubtypeForm
         productId={product.id}
         entry={null}
-        price={held === null ? null : format.money(held)}
-        priceLocked={held !== null}
+        price={null}
+        first={first}
         productPhotoFileId={product.photoFileId}
       />
     </div>

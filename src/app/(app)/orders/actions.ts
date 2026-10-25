@@ -65,7 +65,7 @@ import {
   addSubtypeWhileOrdering,
   subtypeAddShown,
 } from "@/features/catalog/actions/manager-adds";
-import { listCatalogChoices } from "@/features/catalog/queries/catalog-entries";
+import { type AddChoices, listAddChoices } from "@/features/catalog/queries/manager-adds";
 import { type DecidedVerb, alreadyDecidedBy } from "@/domain/already-decided";
 import { serverAction } from "@/server/action";
 import { type ActionFailure, type ActionResult, failure } from "@/server/action-result";
@@ -527,20 +527,6 @@ export async function addSubtypeWhileOrderingAction(
  * The active categories and measures of the add's form (04 rule 8: "category and measure picked
  * from their catalogs"): catalog.pick, every role, active only (plan of 1.12b, decided item 15).
  */
-export async function listAddChoicesAction(): Promise<
-  ActionResult<{
-    categories: { id: string; name: string }[];
-    measures: { id: string; name: string }[];
-  }>
-> {
-  return asked(async (userId) => {
-    const [categories, measures] = await Promise.all([
-      listCatalogChoices(userId, "categories"),
-      listCatalogChoices(userId, "measures"),
-    ]);
-    return {
-      categories: categories.map(({ id, name }) => ({ id, name })),
-      measures: measures.map(({ id, name }) => ({ id, name })),
-    };
-  });
+export async function listAddChoicesAction(): Promise<ActionResult<AddChoices>> {
+  return asked((userId) => listAddChoices(userId));
 }

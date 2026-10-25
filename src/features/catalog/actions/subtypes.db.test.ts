@@ -6,7 +6,14 @@ import { runAction } from "@/server/action";
 import type { ActionResult } from "@/server/action-result";
 import { AuthorizationError } from "@/server/authorize";
 import { db } from "@/server/db/client";
-import { auditLog, productVariants, products } from "@/server/db/schema";
+import {
+  auditLog,
+  orders,
+  priceHistory,
+  productVariants,
+  products,
+  stockBalances,
+} from "@/server/db/schema";
 import { accessOf } from "@/server/files/owners";
 
 import {
@@ -16,7 +23,10 @@ import {
   insertSubtypes,
   insertUnit,
 } from "../../../../tests/helpers/catalog";
+import { insertBranch } from "../../../../tests/helpers/branches";
+import { insertOrder } from "../../../../tests/helpers/orders";
 import { describePermissionMatrix } from "../../../../tests/helpers/permission-matrix";
+import { receive } from "../../../../tests/helpers/stock-documents";
 import { runTogether } from "../../../../tests/helpers/together";
 import { insertUser } from "../../../../tests/helpers/users";
 import { createProduct, updateProduct } from "./products";
@@ -53,6 +63,8 @@ function tryAdd(headId: string, productId: string, input: Record<string, unknown
     clientKey: newClientKey(),
     productId,
     name: `Turi ${newClientKey().slice(0, 8)}`,
+    // Asked only on a product without subtypes (04 rule 1; D64); ignored on one with subtypes.
+    existingName: `Mavjud ${newClientKey().slice(0, 8)}`,
     ...input,
   }) as Promise<ActionResult<Created>>;
 }
@@ -105,27 +117,91 @@ describe("the hidden default subtype (04 rule 1; build-plan 1.8, Done when)", ()
   });
 });
 
-describe("adding subtypes to a product that had none (open question 18; decision 1, Look first)", () => {
-  it("the first subtype is the default made real: same id, same price, one row; the second adds a row", async () => {
+describe("adding subtypes to a product that had none (04 rule 1; D64, replacing decisions 1.8 item 1, Look first)", () => {
+  it("the existing items are named: the default keeps its id and price under that name, the new subtype is a new row; the second adds a row", async () => {
     const head = await insertUser("HEAD");
     const product = await insertProduct({ referencePrice: 50_000n });
-    const a4 = await add(head.id, product.id, { name: "A4" });
-    expect(a4).toMatchObject({ id: product.defaultVariantId, name: "A4", referencePrice: 50_000n });
-    expect(await rowsOf(product.id)).toHaveLength(1);
-    expect((await rowsOf(product.id))[0]).toMatchObject({ isDefault: false });
+    const a4 = await add(head.id, product.id, { name: "A4", existingName: "A5" });
+    expect(a4.id).not.toBe(product.defaultVariantId);
+    expect(a4).toMatchObject({ name: "A4", referencePrice: null });
+    expect(await rowsOf(product.id)).toHaveLength(2);
+    expect((await rowsOf(product.id))[0]).toMatchObject({
+      id: product.defaultVariantId,
+      name: "A5",
+      isDefault: false,
+      referencePrice: 50_000n,
+    });
     expect((await productRow(product.id)).hasVariants).toBe(true);
     const a3 = await add(head.id, product.id, { name: "A3" });
-    expect(a3.id).not.toBe(product.defaultVariantId);
     expect(a3.referencePrice).toBeNull();
-    expect((await rowsOf(product.id)).map((row) => row.name)).toEqual(["A4", "A3"]);
+    expect((await rowsOf(product.id)).map((row) => row.name)).toEqual(["A5", "A4", "A3"]);
   });
 
-  it("history: the first subtype's row shows what the default was, and the product shows hasVariants", async () => {
+  it("S22 from the catalog page: 'black' added to 'Pen' with 40 in stock and two orders leaves both and the stock on the default, now 'blue' (build-plan 1.12b, Done when)", async () => {
+    const head = await insertUser("HEAD");
+    const branch = await insertBranch();
+    const manager = await insertUser("MANAGER", { branches: [branch.id] });
+    const pen = await insertProduct({ referencePrice: 3_000n });
+    await receive(branch.id, pen.defaultVariantId, "40", 2_500n, head.id);
+    const first = await insertOrder({
+      branchId: branch.id,
+      ownerId: manager.id,
+      status: "PENDING_HEAD",
+      variantId: pen.defaultVariantId,
+    });
+    const second = await insertOrder({
+      branchId: branch.id,
+      ownerId: manager.id,
+      variantId: pen.defaultVariantId,
+    });
+    const black = await add(head.id, pen.id, { name: "black", existingName: "blue" });
+    expect(black.id).not.toBe(pen.defaultVariantId);
+    expect((await rowsOf(pen.id))[0]).toMatchObject({
+      id: pen.defaultVariantId,
+      name: "blue",
+      isDefault: false,
+      referencePrice: 3_000n,
+    });
+    for (const order of [first, second]) {
+      const [row] = await db
+        .select({ variantId: orders.variantId })
+        .from(orders)
+        .where(eq(orders.id, order.id));
+      expect(row!.variantId).toBe(pen.defaultVariantId);
+    }
+    const [stock] = await db
+      .select({ qty: stockBalances.qty })
+      .from(stockBalances)
+      .where(
+        and(
+          eq(stockBalances.branchId, branch.id),
+          eq(stockBalances.variantId, pen.defaultVariantId),
+        ),
+      );
+    expect(stock!.qty).toBe("40.000");
+    // The Head's own add writes no added_by: it is not on the Head's list (04 rule 8).
+    expect((await rowsOf(pen.id))[1]).toMatchObject({ id: black.id, addedBy: null });
+  });
+
+  it("the existing items' name is required on the first subtype and must differ from the new one", async () => {
     const head = await insertUser("HEAD");
     const product = await insertProduct({ referencePrice: 50_000n });
-    const a4 = await add(head.id, product.id, { name: "A4" });
-    const [created] = await auditRowsOf("product_variants", a4.id);
-    expect(created).toMatchObject({
+    expect(await tryAdd(head.id, product.id, { name: "A4", existingName: null })).toMatchObject(
+      refused({ existingName: "errors.field.required" }),
+    );
+    expect(await tryAdd(head.id, product.id, { name: "A4", existingName: " a4 " })).toMatchObject(
+      refused({ existingName: "errors.field.taken" }),
+    );
+    expect(await rowsOf(product.id)).toMatchObject([{ isDefault: true, name: "default" }]);
+    expect((await productRow(product.id)).hasVariants).toBe(false);
+  });
+
+  it("history: the default's row shows it named for the existing items, the new row is a plain create, and the product shows hasVariants", async () => {
+    const head = await insertUser("HEAD");
+    const product = await insertProduct({ referencePrice: 50_000n });
+    const a4 = await add(head.id, product.id, { name: "A4", existingName: "A5" });
+    const [named] = await auditRowsOf("product_variants", product.defaultVariantId);
+    expect(named).toMatchObject({
       action: "subtype.create",
       actorId: head.id,
       before: {
@@ -137,11 +213,16 @@ describe("adding subtypes to a product that had none (open question 18; decision
       after: {
         productId: product.id,
         product: product.name,
-        name: "A4",
+        name: "A5",
         referencePrice: "50000",
         isActive: true,
         fromDefault: true,
       },
+    });
+    expect((await auditRowsOf("product_variants", a4.id))[0]).toMatchObject({
+      action: "subtype.create",
+      before: null,
+      after: { name: "A4", referencePrice: null },
     });
     const productRows = await auditRowsOf("products", product.id);
     expect(productRows).toHaveLength(1);
@@ -150,9 +231,8 @@ describe("adding subtypes to a product that had none (open question 18; decision
       before: { hasVariants: false },
       after: { hasVariants: true },
     });
-    // A second subtype is a plain create (before null) and leaves the product's history alone.
-    const a3 = await add(head.id, product.id, { name: "A3" });
-    expect((await auditRowsOf("product_variants", a3.id))[0]).toMatchObject({ before: null });
+    // A later subtype leaves the product's history alone.
+    await add(head.id, product.id, { name: "A3" });
     expect(await auditRowsOf("products", product.id)).toHaveLength(1);
   });
 
@@ -164,26 +244,30 @@ describe("adding subtypes to a product that had none (open question 18; decision
 });
 
 describe("the subtype's reference price (04 rule 4; decisions 2 and 4, Look first)", () => {
-  it("default at 50 000 and the first subtype sent at 60 000: refused, nothing changes", async () => {
+  it("default at 50 000 and the first subtype sent at 60 000: the new row takes 60 000 with its HEAD row, the default keeps 50 000 (D64)", async () => {
     const head = await insertUser("HEAD");
     const product = await insertProduct({ referencePrice: 50_000n });
+    const a4 = await add(head.id, product.id, { name: "A4", referencePrice: "60 000" });
+    expect(a4.referencePrice).toBe(60_000n);
     expect(
-      await tryAdd(head.id, product.id, { name: "A4", referencePrice: "60 000" }),
-    ).toMatchObject(refused({ referencePrice: "errors.field.locked" }));
+      await db.select().from(priceHistory).where(eq(priceHistory.variantId, a4.id)),
+    ).toMatchObject([{ price: 60_000n, source: "HEAD", setBy: head.id }]);
     expect((await rowsOf(product.id))[0]).toMatchObject({
-      isDefault: true,
-      name: "default",
+      id: product.defaultVariantId,
       referencePrice: 50_000n,
     });
-    expect((await productRow(product.id)).hasVariants).toBe(false);
   });
 
-  it("default empty and the first subtype sent at 60 000: accepted at 60 000", async () => {
+  it("default empty and the first subtype sent at 60 000: the new row at 60 000, the default still empty", async () => {
     const head = await insertUser("HEAD");
     const product = await insertProduct({ referencePrice: null });
     expect((await add(head.id, product.id, { referencePrice: "60 000" })).referencePrice).toBe(
       60_000n,
     );
+    expect((await rowsOf(product.id))[0]).toMatchObject({
+      id: product.defaultVariantId,
+      referencePrice: null,
+    });
   });
 
   it("a later subtype without a price has none: no fallback to the product's (decision 4)", async () => {
@@ -211,9 +295,13 @@ describe("the subtype's reference price (04 rule 4; decisions 2 and 4, Look firs
   it("an update cannot change the price: a sent one is dropped (decision 2)", async () => {
     const head = await insertUser("HEAD");
     const product = await insertProduct({ referencePrice: 50_000n });
-    const a4 = await add(head.id, product.id, { name: "A4" });
+    await add(head.id, product.id, { name: "A3", existingName: "A4" });
     expectOk(
-      await runAction(updateSubtype, head.id, { id: a4.id, name: "A4 80 g", referencePrice: "1" }),
+      await runAction(updateSubtype, head.id, {
+        id: product.defaultVariantId,
+        name: "A4 80 g",
+        referencePrice: "1",
+      }),
     );
     expect((await rowsOf(product.id))[0]).toMatchObject({
       name: "A4 80 g",
@@ -268,12 +356,17 @@ describe("names are unique inside a product (04 rule 3)", () => {
     );
   });
 
-  it("two first subtypes of one product at once: one turns the default real, the other is a new row (spec review, Should fix 2)", async () => {
+  it("two first subtypes of one product at once: one names the default, both are new rows (spec review, Should fix 2; D64)", async () => {
     const head = await insertUser("HEAD");
     const product = await insertProduct({ referencePrice: 50_000n });
     const outcomes = await runTogether(
       ["Birinchi", "Ikkinchi"].map((name) => async (meet: () => Promise<void>) => {
-        const input = { clientKey: newClientKey(), productId: product.id, name };
+        const input = {
+          clientKey: newClientKey(),
+          productId: product.id,
+          name,
+          existingName: "Eski",
+        };
         await meet();
         return runAction(createSubtype, head.id, input);
       }),
@@ -284,8 +377,9 @@ describe("names are unique inside a product (04 rule 3)", () => {
     });
     expect(answers.every((answer) => answer.ok)).toBe(true);
     const rows = await rowsOf(product.id);
-    expect(rows).toHaveLength(2);
+    expect(rows).toHaveLength(3);
     expect(rows.filter((row) => row.isDefault)).toHaveLength(0);
+    expect(rows.find((row) => row.id === product.defaultVariantId)!.name).toBe("Eski");
     expect(rows.filter((row) => row.id === product.defaultVariantId)).toHaveLength(1);
     expect(rows.find((row) => row.id === product.defaultVariantId)!.referencePrice).toBe(50_000n);
     expect((await productRow(product.id)).hasVariants).toBe(true);
@@ -470,7 +564,12 @@ describe("the same client key twice (developer-rules rule 8)", () => {
   it("gives the first subtype and writes nothing more", async () => {
     const head = await insertUser("HEAD");
     const product = await insertProduct();
-    const input = { clientKey: newClientKey(), productId: product.id, name: "Bir marta" };
+    const input = {
+      clientKey: newClientKey(),
+      productId: product.id,
+      name: "Bir marta",
+      existingName: "Avvalgi",
+    };
     const first = expectOk(
       (await runAction(createSubtype, head.id, input)) as ActionResult<Created>,
     );
@@ -478,7 +577,9 @@ describe("the same client key twice (developer-rules rule 8)", () => {
       (await runAction(createSubtype, head.id, input)) as ActionResult<Created>,
     );
     expect(again.entry).toEqual(first.entry);
-    expect(await rowsOf(product.id)).toHaveLength(1);
+    // The new row and the default named for the existing items; the key is on the new row only.
+    expect(await rowsOf(product.id)).toHaveLength(2);
+    expect(first.entry.id).not.toBe(product.defaultVariantId);
     expect(await auditRowsOf("product_variants", first.entry.id)).toHaveLength(1);
   });
 });
@@ -500,6 +601,7 @@ describePermissionMatrix("createSubtype", {
         clientKey: newClientKey(),
         productId: product.id,
         name: `Matritsa ${newClientKey()}`,
+        existingName: "Mavjud",
       }),
     );
   },

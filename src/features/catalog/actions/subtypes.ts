@@ -114,11 +114,19 @@ export type Created = {
   entry: SavedSubtype;
   /** The default row's fields before it was made real; null for a new row. */
   fromDefault: { name: string; referencePrice: bigint | null } | null;
+  /**
+   * The hidden default named for the existing items, when this was the product's first real
+   * subtype (04 rule 1; D64); written to the history before the new row. Absent otherwise.
+   */
+  named?: Created | null;
 };
 
 /**
  * Adds a subtype to a product. The same client key twice gives the first result (developer-rules
- * rule 8): the maker is the actor of the subtype's `subtype.create` row.
+ * rule 8): the maker is the actor of the subtype's `subtype.create` row. On a product without
+ * subtypes the Head also names the existing items: the hidden default takes that name and keeps
+ * its lines, stock and price, and the new subtype is a new row (04 rule 1; D64, replacing decisions
+ * 1.8 item 1; build-plan 1.12b, Build 6). A name the product holds is `errors.field.taken`.
  */
 export const createSubtype = defineAction({
   name: "createSubtype",
@@ -129,6 +137,7 @@ export const createSubtype = defineAction({
     name: nameField,
     referencePrice: priceField,
     photoFileId: optionalId,
+    existingName: nameField.nullish(),
   }),
   async target() {
     return GLOBAL_TARGET;
@@ -154,9 +163,14 @@ export const createSubtype = defineAction({
     },
   },
   async write({ tx, input, userId }): Promise<Created> {
-    return addSubtype(tx, userId, input, input.clientKey);
+    const added = await addSubtypeFromSearch(tx, userId, input, input.clientKey, null);
+    if (added.outcome === "exists") {
+      throw new ActionError("invalid_input", { name: "errors.field.taken" });
+    }
+    return { entry: added.entry, fromDefault: null, named: added.named };
   },
   async history({ tx, userId }, created) {
+    if (created.named) await recordSubtypeCreate(tx, userId, created.named);
     await recordSubtypeCreate(tx, userId, created);
   },
 });
@@ -299,7 +313,7 @@ export async function recordSubtypeCreate(
   }
 }
 
-/** What the add from an order's product search gives (04 rule 8; plan of 1.12b). */
+/** What the add from an order's product search, and the Head's page, give (04 rules 1 and 8). */
 export type SubtypeFromSearch =
   | {
       outcome: "made";
@@ -311,7 +325,8 @@ export type SubtypeFromSearch =
   | { outcome: "exists"; variantId: string; name: string; isActive: boolean };
 
 /**
- * The body of the add of a subtype from an order's product search (04 rule 8: "When the product has
+ * The body of the add of a subtype from an order's product search and from the Head's catalog page
+ * (04 rule 1, since D64: "from the catalog page or from an order"; rule 8: "When the product has
  * no subtypes yet, the Manager also names what its existing items are ...: the hidden default
  * subtype takes that name, so existing orders, stock and prices keep pointing at the same items";
  * plan of 1.12b, decided items 2, 4, 7, Look first). The table's lock, then the product FOR UPDATE,
@@ -329,6 +344,8 @@ export async function addSubtypeFromSearch(
     name: string;
     photoFileId: string | null;
     existingName?: string | null;
+    /** The Head's page sends one (1.8); the add from an order never does (04 rule 8). */
+    referencePrice?: bigint | null;
   },
   clientKey: string,
   addedBy: string | null,
@@ -375,7 +392,7 @@ export async function addSubtypeFromSearch(
     // Compared as the unique index compares, never by a JavaScript copy (catalog-entries.ts).
     const [same] = (
       await tx.execute<{ same: boolean }>(
-        sql`select lower(regexp_replace(btrim(${existingName}), '\s+', ' ', 'g')) = lower(regexp_replace(btrim(${input.name}), '\s+', ' ', 'g')) as same`,
+        sql`select lower(regexp_replace(btrim(${existingName}), '\\s+', ' ', 'g')) = lower(regexp_replace(btrim(${input.name}), '\\s+', ' ', 'g')) as same`,
       )
     ).rows;
     if (same!.same) throw new ActionError("invalid_input", { existingName: "errors.field.taken" });
@@ -394,11 +411,20 @@ export async function addSubtypeFromSearch(
       productId: input.productId,
       name: input.name,
       photoFileId: input.photoFileId,
+      referencePrice: input.referencePrice ?? null,
       addedBy,
       clientKey,
       createdAt: now(),
     })
     .returning(columns);
+  // A price set here is the Head setting one: its HEAD row (plan of 1.9, decision 1, Look first).
+  if (entry!.referencePrice !== null) {
+    await recordHeadPrice(tx, {
+      variantId: entry!.id,
+      price: entry!.referencePrice,
+      setBy: userId,
+    });
+  }
   return { outcome: "made", entry: entry!, named };
 }
 

@@ -809,7 +809,8 @@
       "productId": "Mahsulot",
       "hasVariants": "Turlari bor",
       "fromDefault": "Mahsulotning oʻz yozuvidan yaratilgan",
-      "checked": "Rahbar tekshirgan"
+      "checked": "Rahbar tekshirgan",
+      "existingName": "Mavjudlari qanday ataladi?"
     },
     "hints": {
       "shortName": "Miqdor yonida yoziladi, masalan kg yoki dona.",
@@ -828,7 +829,8 @@
       "photoFileId": "Ixtiyoriy. JPG, PNG, WebP yoki HEIC, 10 MB gacha.",
       "locked": "Qulflangan: mahsulot allaqachon ishlatilgan.",
       "subtypePrice": "Ixtiyoriy. Butun soʻmda. Narxsiz turning maʼlumotnoma narxi boʻlmaydi. Keyin u izohli yangi narx sifatida oʻzgaradi.",
-      "subtypePhoto": "Ixtiyoriy. Rasm boʻlmasa, mahsulot rasmi koʻrsatiladi. JPG, PNG, WebP yoki HEIC, 10 MB gacha."
+      "subtypePhoto": "Ixtiyoriy. Rasm boʻlmasa, mahsulot rasmi koʻrsatiladi. JPG, PNG, WebP yoki HEIC, 10 MB gacha.",
+      "existingName": "Hozirgacha yozilgan qoldiq, buyurtmalar va narx shu nom bilan qoladi, masalan «48 varaq»."
     },
     "companyKind": {
       "choose": "Tanlang…",
@@ -915,7 +917,7 @@
       "new": "Tur qoʻshish",
       "newTitle": "{product}: yangi tur",
       "none": "Turlari yoʻq. Mahsulot oʻzicha tanlanadi.",
-      "firstNote": "Bu mahsulotning birinchi turi boʻladi. Mahsulot uchun shu paytgacha yozilgan qoldiq, buyurtmalar va narx unda qoladi.",
+      "firstNote": "Bu mahsulotda hali tur yoʻq. Yangi turdan tashqari mavjudlarini ham nomlang: hozirgacha yozilgan qoldiq, buyurtmalar va narx ularda qoladi.",
       "pricePerSubtype": "Har bir turda oʻzi",
       "count": "{count, plural, other {# tur}}",
       "lastActive": "Oxirgi faol tur faol qoladi. Mahsulotdan foydalanishni toʻxtatish uchun mahsulotni faolsizlantiring.",

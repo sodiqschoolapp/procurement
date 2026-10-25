@@ -228,6 +228,7 @@ export const QUERIES: Record<string, Permission> = {
   "src/features/catalog/queries/suggestions.ts#countPendingSuggestions": "catalog.manage",
   // The Head's home list of entries Managers added, until checked (04 rule 8; plan of 1.12b).
   "src/features/catalog/queries/manager-adds.ts#listUncheckedAdded": "catalog.manage",
+  "src/features/catalog/queries/manager-adds.ts#listAddChoices": "catalog.pick",
   // The preview of an Excel import (plan of 1.10); each kind asks its own permission
   // (IMPORT_PERMISSIONS): prices price.add (1.11), stock stock.enter_direct on its branch (5.9).
   "src/features/catalog/queries/imports.ts#previewImport": "catalog.manage",

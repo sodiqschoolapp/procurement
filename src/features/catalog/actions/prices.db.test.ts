@@ -160,7 +160,7 @@ describe("a new price (04 rule 4; build-plan 1.9 Done when)", () => {
     ]);
   });
 
-  it("the history keeps the subtype made from the default (1.8 decision 1): same id, one list", async () => {
+  it("the history stays with the default named for the existing items (04 rule 1; D64): same id, one list; the new subtype has its own", async () => {
     const head = await insertUser("HEAD");
     const product = await insertProduct({ referencePrice: 50_000n });
     expectOk(await tryPrice(head.id, product.defaultVariantId, { price: "55 000" }));
@@ -169,10 +169,16 @@ describe("a new price (04 rule 4; build-plan 1.9 Done when)", () => {
         clientKey: newClientKey(),
         productId: product.id,
         name: "Oq",
+        existingName: "Qora",
       }),
-    ) as { entry: { id: string; referencePrice: bigint } };
-    expect(made.entry).toMatchObject({ id: product.defaultVariantId, referencePrice: 55_000n });
-    expect((await historyOf(made.entry.id)).map((row) => row.price)).toEqual([55_000n, 50_000n]);
+    ) as { entry: { id: string; referencePrice: bigint | null } };
+    expect(made.entry).toMatchObject({ referencePrice: null });
+    expect(made.entry.id).not.toBe(product.defaultVariantId);
+    expect((await historyOf(product.defaultVariantId)).map((row) => row.price)).toEqual([
+      55_000n,
+      50_000n,
+    ]);
+    expect(await historyOf(made.entry.id)).toEqual([]);
   });
 });
 
@@ -303,7 +309,7 @@ describe("prices written by the catalog actions (plan of 1.9, decision 1, Look f
     }
   });
 
-  it("a new subtype with a price has one row; the first subtype taking a price has one; keeping the default's adds none", async () => {
+  it("a new subtype with a price has one row, the first one too; the default keeps its own rows (D64)", async () => {
     const head = await insertUser("HEAD");
     const add = async (productId: string, referencePrice?: string) =>
       (
@@ -313,23 +319,26 @@ describe("prices written by the catalog actions (plan of 1.9, decision 1, Look f
             productId,
             name: `Turi ${newClientKey().slice(0, 8)}`,
             referencePrice,
+            existingName: `Mavjud ${newClientKey().slice(0, 8)}`,
           }),
         ) as { entry: { id: string } }
       ).entry.id;
 
-    // The default held none: the first subtype's price gets its row.
+    // The default held none: the first subtype's price gets its row, the default none.
     const unpriced = await insertProduct();
     const taking = await add(unpriced.id, "30 000");
     expect((await historyOf(taking)).map((row) => row.price)).toEqual([30_000n]);
+    expect(await historyOf(unpriced.defaultVariantId)).toEqual([]);
     // A later subtype with a price, and one without.
     const later = await add(unpriced.id, "20 000");
     expect((await historyOf(later)).map((row) => row.price)).toEqual([20_000n]);
     expect(await historyOf(await add(unpriced.id))).toEqual([]);
-    // The default held 40 000: the first subtype keeps it and its one row.
+    // The default held 40 000: it keeps it and its one row; the first subtype without a price none.
     const priced = await insertProduct({ referencePrice: 40_000n });
-    const keeping = await add(priced.id);
-    expect(keeping).toBe(priced.defaultVariantId);
-    expect((await historyOf(keeping)).map((row) => row.price)).toEqual([40_000n]);
+    const first = await add(priced.id);
+    expect(first).not.toBe(priced.defaultVariantId);
+    expect(await historyOf(first)).toEqual([]);
+    expect((await historyOf(priced.defaultVariantId)).map((row) => row.price)).toEqual([40_000n]);
   });
 });
 

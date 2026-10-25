@@ -809,7 +809,8 @@
       "productId": "Product",
       "hasVariants": "Has subtypes",
       "fromDefault": "Made from the product's own entry",
-      "checked": "Checked by the Head"
+      "checked": "Checked by the Head",
+      "existingName": "What are the existing ones called?"
     },
     "hints": {
       "shortName": "Shown next to quantities, for example kg or pcs.",
@@ -828,7 +829,8 @@
       "photoFileId": "Optional. JPG, PNG, WebP or HEIC up to 10 MB.",
       "locked": "Locked: the item is already used.",
       "subtypePrice": "Optional. Whole so'm. Without one the subtype has no reference price. Later it changes as a new price with a note.",
-      "subtypePhoto": "Optional. Without one the product's photo is shown. JPG, PNG, WebP or HEIC up to 10 MB."
+      "subtypePhoto": "Optional. Without one the product's photo is shown. JPG, PNG, WebP or HEIC up to 10 MB.",
+      "existingName": "The stock, orders and price recorded so far stay under this name, for example “48 sheets”."
     },
     "companyKind": {
       "choose": "Choose…",
@@ -915,7 +917,7 @@
       "new": "Add subtype",
       "newTitle": "New subtype of {product}",
       "none": "No subtypes. The product is picked as it is.",
-      "firstNote": "This becomes the product's first subtype. The stock, orders and price recorded for the product so far stay with it.",
+      "firstNote": "This product has no subtypes yet. Besides the new subtype, name the existing items too: the stock, orders and price recorded so far stay with them.",
       "pricePerSubtype": "Set per subtype",
       "count": "{count, plural, one {# subtype} other {# subtypes}}",
       "lastActive": "The last active subtype stays active. To stop using the item, deactivate the product.",

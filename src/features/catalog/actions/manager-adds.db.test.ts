@@ -30,7 +30,7 @@ import { addDraft, insertDepartment, insertOrder } from "../../../../tests/helpe
 import { describePermissionMatrix } from "../../../../tests/helpers/permission-matrix";
 import { receive } from "../../../../tests/helpers/stock-documents";
 import { insertUser } from "../../../../tests/helpers/users";
-import { listUncheckedAdded } from "../queries/manager-adds";
+import { listAddChoices, listUncheckedAdded } from "../queries/manager-adds";
 import {
   type ProductAdd,
   type SubtypeAdd,
@@ -528,8 +528,22 @@ describe("addSubtypeWhileOrdering (04 rule 8: a new subtype)", () => {
       ok: false,
       error: { code: "invalid_input", fields: { existingName: "errors.field.taken" } },
     });
+    // Spaces inside fold as the unique index folds them, and an "s" is not a space.
+    expect(
+      await addSubtype(manager.id, {
+        productId: product.id,
+        name: "48 varaq",
+        existingName: "48   VARAQ",
+      }),
+    ).toMatchObject({
+      ok: false,
+      error: { code: "invalid_input", fields: { existingName: "errors.field.taken" } },
+    });
     const default_ = await variantRow(product.defaultVariantId);
     expect(default_).toMatchObject({ isDefault: true, name: "default" });
+    expect(
+      (await addSubtype(manager.id, { productId: product.id, name: "ss", existingName: "s" })).ok,
+    ).toBe(true);
   });
 
   it("decided item 7: on a product with subtypes the existing name is ignored and no subtype is renamed", async () => {
@@ -730,4 +744,24 @@ describePermissionMatrix("markAddedChecked", {
 describePermissionMatrix("listUncheckedAdded", {
   permission: "catalog.manage",
   run: ({ user }) => listUncheckedAdded(user.id, { limit: 5 }),
+});
+
+describePermissionMatrix("listAddChoices", {
+  permission: "catalog.pick",
+  run: ({ user }) => listAddChoices(user.id),
+});
+
+describe("listAddChoices (04 rule 8; rule 2)", () => {
+  it("lists every active category and measure, more than 50 too, and no inactive one", async () => {
+    const { head } = await scene();
+    const made = [];
+    for (let at = 0; at < 51; at += 1) made.push((await insertUnit()).id);
+    const inactive = await insertUnit({ isActive: false });
+    const oldCategory = await insertCategory({ isActive: false });
+    const choices = await listAddChoices(head.id);
+    const measureIds = choices.measures.map((row) => row.id);
+    for (const id of made) expect(measureIds).toContain(id);
+    expect(measureIds).not.toContain(inactive.id);
+    expect(choices.categories.map((row) => row.id)).not.toContain(oldCategory.id);
+  });
 });
