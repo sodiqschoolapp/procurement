@@ -7,6 +7,8 @@ import { E2E_BUCKET, testStorageEnv } from "./tests/helpers/local-storage";
 // (plan of 0.10b, decision 14), so a dev server on the dev database is never reused by mistake.
 const PORT = 3100;
 const baseURL = `http://localhost:${PORT}`;
+/** S21, the one test that switches the Finance step (15 S21; plan of 4.10c). */
+const FINANCE_STEP = /acceptance-finance-step\.spec\.ts/;
 
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -21,10 +23,25 @@ export default defineConfig({
     browserName: "chromium",
     trace: "on-first-retry",
   },
-  // The two widths every screen is checked at (01-summary.md, Quality bar).
+  // The two widths every screen is checked at (01-summary.md, Quality bar). S21 switches the
+  // school's Finance step, which every other test's approvals read, so it runs alone: as the
+  // teardown of `start`, after every other test of the run, and in full in each shard, whose
+  // database is its own (plan of 4.10c; docs/decisions.md, 4.10c).
   projects: [
-    { name: "phone-375", use: { viewport: { width: 375, height: 812 } } },
-    { name: "desktop-1440", use: { viewport: { width: 1440, height: 900 } } },
+    { name: "start", testMatch: /run-order\.setup\.ts/, teardown: "finance-step" },
+    {
+      name: "phone-375",
+      dependencies: ["start"],
+      testIgnore: FINANCE_STEP,
+      use: { viewport: { width: 375, height: 812 } },
+    },
+    {
+      name: "desktop-1440",
+      dependencies: ["start"],
+      testIgnore: FINANCE_STEP,
+      use: { viewport: { width: 1440, height: 900 } },
+    },
+    { name: "finance-step", testMatch: FINANCE_STEP },
   ],
   webServer: {
     command: `npx next dev --hostname 127.0.0.1 --port ${PORT}`,
