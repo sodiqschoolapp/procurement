@@ -36,6 +36,8 @@ const ALLOWED = new Set([
   "src/features/catalog/actions/price-rows.ts",
   // The add of a product suggestion writes its product through the create's body (plan of 1.12).
   "src/features/catalog/actions/suggestions.ts",
+  // A Manager's add from an order's product search writes through the same bodies (plan of 1.12b).
+  "src/features/catalog/actions/manager-adds.ts",
 ]);
 
 /** The files of src/ that import one of the shared write bodies by name. */

@@ -114,7 +114,6 @@ export const SCREENS: Screen[] = [
   s("/reports", "head"),
   s("/settings", "head"),
   s("/suggestions", "manager"),
-  s("/suggestions/new", "manager"),
   s("/suggestions/[id]", "head", (w) => `/suggestions/${w.suggestion}`),
   s("/suggestions/[id]/add", "head", (w) => `/suggestions/${w.suggestion}/add`),
   s("/users", "head"),
