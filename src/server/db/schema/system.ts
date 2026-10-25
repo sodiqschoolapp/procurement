@@ -80,6 +80,12 @@ export const settings = pgTable(
       "settings_receipt_required_for_cash_check",
       forKey("receipt_required_for_cash", sql`jsonb_typeof(${VALUE}) = 'boolean'`),
     ),
+    // 06-approval-workflow.md, Finance step switched off; 14 Notes for the build: `finance_step`
+    // (true: on) is a boolean (plan of 4.10c).
+    check(
+      "settings_finance_step_check",
+      forKey("finance_step", sql`jsonb_typeof(${VALUE}) = 'boolean'`),
+    ),
     // Whole so'm as a JSON text of digits, 0 to 15 digits with no leading zero, never a JSON
     // number (plan of 2.1, decision 1, Look first; CLAUDE.md rule 6).
     check(

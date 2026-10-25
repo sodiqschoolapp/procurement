@@ -98,6 +98,10 @@ export const PERMISSIONS = {
   "purchase.cancel": { scope: "branch", roles: HEAD_AND_OWNER, right: "CANCEL_PURCHASES" },
   // "Close a request that matches exactly"
   "request.close_exact": { scope: "branch", roles: HEAD_AND_OWNER, right: "CLOSE_ALONE" },
+  // "Close a finished order that skipped Finance" (06 Finance step switched off 3; plan of 4.10c,
+  // decided item 4, Look first): CLOSE_ALONE off stops the Manager, never the Head ("An order
+  // that skipped Finance is closed by the Head", 03 Manager rights).
+  "request.close_skipped": { scope: "branch", roles: HEAD_AND_OWNER, right: "CLOSE_ALONE" },
   // "Send to settlement" (06 Allowed moves: "Open | Send to settlement | Owner or Head"): not a row
   // of 03. No Manager right: CLOSE_ALONE off sends the Manager's orders here ("these orders go to
   // settlement instead", 08 Closing 1), and no switch names it (plan of 2.3, decision 4, Look first).

@@ -107,6 +107,18 @@ describe("orderDownloadRow (05 Download 1 and 3)", () => {
     });
   });
 
+  it("the Finance step of an order that skipped Finance is 'skipped' (06 Finance step switched off; 11 Order page layout 2; plan of 4.10c)", () => {
+    const principal = event("APPROVE", "PENDING_PRINCIPAL", "PURCHASING", "Principal One");
+    const events = [
+      event("SUBMIT", "DRAFT", "PENDING_HEAD", "Manager"),
+      event("APPROVE", "PENDING_HEAD", "PENDING_PRINCIPAL", "Head Invented"),
+      principal,
+    ];
+    const row = orderDownloadRow("PURCHASING", plan, events, NONE, true);
+    expect(row.approvals.PRINCIPAL).toEqual({ name: "Principal One", at: principal.at });
+    expect(row.approvals.FINANCE).toBe("skipped");
+  });
+
   it("an Open order names all three steps", () => {
     const finance = event("APPROVE", "PENDING_FINANCE", "PURCHASING", "Finance One");
     const row = orderDownloadRow(

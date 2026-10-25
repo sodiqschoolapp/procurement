@@ -34,10 +34,17 @@ const REASON = "Wrong department";
 // The oracle: one line per row of the table and per "from" status.
 //   who: "owner" Owner; "edit" Owner or Head (CREATE_REQUESTS); "close" Owner or Head
 //   (CLOSE_ALONE); "settle" Owner or Head (no right); "step1/2/3" the approver of that step;
-//   "finance" Finance; "head" Head.
+//   "finance" Finance; "head" Head. `skipped`: the row is only for an order that skipped Finance
+//   (true) or only for one that did not (false); 06 Finance step switched off (plan of 4.10c).
 
 type Who = "owner" | "edit" | "close" | "settle" | "step1" | "step2" | "step3" | "finance" | "head";
-type Row = { from: RequestStatus; action: OrderAction; to: RequestStatus; who: Who };
+type Row = {
+  from: RequestStatus;
+  action: OrderAction;
+  to: RequestStatus;
+  who: Who;
+  skipped?: boolean;
+};
 
 const TABLE: readonly Row[] = [
   { from: "DRAFT", action: "SUBMIT", to: "PENDING_HEAD", who: "edit" },
@@ -57,8 +64,16 @@ const TABLE: readonly Row[] = [
   { from: "PENDING_FINANCE", action: "CANCEL", to: "CANCELLED", who: "edit" },
   { from: "RETURNED", action: "CANCEL", to: "CANCELLED", who: "edit" },
   { from: "DRAFT", action: "CANCEL", to: "CANCELLED", who: "edit" },
-  { from: "PURCHASING", action: "CLOSE_EXACT", to: "CLOSED", who: "close" },
-  { from: "PURCHASING", action: "SEND_TO_SETTLEMENT", to: "SETTLEMENT", who: "settle" },
+  { from: "PURCHASING", action: "CLOSE_EXACT", to: "CLOSED", who: "close", skipped: false },
+  // Open, skipped Finance | Close | Owner or Head | Closed | buying finished (06 Allowed moves).
+  { from: "PURCHASING", action: "CLOSE_SKIPPED", to: "CLOSED", who: "close", skipped: true },
+  {
+    from: "PURCHASING",
+    action: "SEND_TO_SETTLEMENT",
+    to: "SETTLEMENT",
+    who: "settle",
+    skipped: false,
+  },
   { from: "SETTLEMENT", action: "SEND_BACK_FOR_CORRECTION", to: "PURCHASING", who: "finance" },
   { from: "SETTLEMENT", action: "CLOSE", to: "CLOSED", who: "finance" },
   { from: "CLOSED", action: "REOPEN", to: "PURCHASING", who: "head" },
@@ -82,10 +97,19 @@ type Case = {
   exactMatch: boolean;
   ownerClosesAlone: boolean;
   readyToClose: boolean;
+  skippedFinance: boolean;
+  /** The setting `finance_step` the move reads (06 Finance step switched off). */
+  financeStep: boolean;
 };
 
 type Expected =
-  | { ok: true; to: RequestStatus; revisionUp: boolean; headStepAuto: boolean }
+  | {
+      ok: true;
+      to: RequestStatus;
+      revisionUp: boolean;
+      headStepAuto: boolean;
+      skipsFinance: boolean;
+    }
   | { ok: false; reason: "not_found" | "wrong_status" | "forbidden" | "not_ready" };
 
 function mayAct(who: Who, c: Case): boolean {
@@ -118,6 +142,10 @@ function expected(status: RequestStatus, action: OrderAction, c: Case, screen = 
   }
   const row = TABLE.find((each) => each.from === status && each.action === action);
   if (!row) return { ok: false, reason: "wrong_status" };
+  // "Open, skipped Finance" is its own "from" (06 Allowed moves).
+  if (row.skipped !== undefined && row.skipped !== c.skippedFinance) {
+    return { ok: false, reason: "wrong_status" };
+  }
   if (!mayAct(row.who, c)) return { ok: false, reason: "forbidden" };
   if (action === "SEND_TO_SETTLEMENT" && !c.buyingFinished) {
     return { ok: false, reason: "not_ready" };
@@ -125,13 +153,19 @@ function expected(status: RequestStatus, action: OrderAction, c: Case, screen = 
   if (action === "CLOSE_EXACT" && !(c.buyingFinished && c.exactMatch && c.ownerClosesAlone)) {
     return { ok: false, reason: "not_ready" };
   }
+  // Whatever the difference, no exact match and no CLOSE_ALONE of the owner asked: the Head
+  // closes for a Manager whose right is off (06 Finance step switched off 3).
+  if (action === "CLOSE_SKIPPED" && !c.buyingFinished) return { ok: false, reason: "not_ready" };
   if (action === "CLOSE" && !screen && !c.readyToClose) return { ok: false, reason: "not_ready" };
   const headStepAuto = action === "SUBMIT" && c.createdByHead;
+  // The Principal's Approve goes to Open when the Finance step is off (06 Allowed moves).
+  const skipsFinance = status === "PENDING_PRINCIPAL" && action === "APPROVE" && !c.financeStep;
   return {
     ok: true,
-    to: headStepAuto ? "PENDING_PRINCIPAL" : row.to,
+    to: headStepAuto ? "PENDING_PRINCIPAL" : skipsFinance ? "PURCHASING" : row.to,
     revisionUp: action === "SUBMIT_AGAIN",
     headStepAuto,
+    skipsFinance,
   };
 }
 
@@ -161,6 +195,7 @@ function order(status: RequestStatus, overrides: Partial<OrderState> = {}): Orde
     exactMatch: true,
     ownerClosesAlone: true,
     readyToClose: true,
+    skippedFinance: false,
     ...overrides,
   };
 }
@@ -174,6 +209,7 @@ function orderFor(status: RequestStatus, c: Case): OrderState {
     exactMatch: c.exactMatch,
     ownerClosesAlone: c.ownerClosesAlone,
     readyToClose: c.readyToClose,
+    skippedFinance: c.skippedFinance,
   });
 }
 
@@ -190,17 +226,21 @@ function* cases(): Generator<Case> {
               for (const exactMatch of flags)
                 for (const ownerClosesAlone of flags)
                   for (const readyToClose of flags)
-                    yield {
-                      role,
-                      place,
-                      isOwner,
-                      off,
-                      createdByHead,
-                      buyingFinished,
-                      exactMatch,
-                      ownerClosesAlone,
-                      readyToClose,
-                    };
+                    for (const skippedFinance of flags)
+                      for (const financeStep of flags)
+                        yield {
+                          role,
+                          place,
+                          isOwner,
+                          off,
+                          createdByHead,
+                          buyingFinished,
+                          exactMatch,
+                          ownerClosesAlone,
+                          readyToClose,
+                          skippedFinance,
+                          financeStep,
+                        };
   }
 }
 
@@ -213,7 +253,13 @@ function asExpected(check: ReturnType<typeof checkMoves>): Expected {
   if (check.ok) {
     const [move] = check.moves;
     if (!move) throw new Error("expected one move");
-    return { ok: true, to: move.to, revisionUp: move.revisionUp, headStepAuto: move.headStepAuto };
+    return {
+      ok: true,
+      to: move.to,
+      revisionUp: move.revisionUp,
+      headStepAuto: move.headStepAuto,
+      skipsFinance: move.skipsFinance,
+    };
   }
   if (check.refusal.kind !== "orders") throw new Error(`unexpected ${check.refusal.kind}`);
   const [refused] = check.refusal.orders;
@@ -222,7 +268,7 @@ function asExpected(check: ReturnType<typeof checkMoves>): Expected {
 }
 
 describe("ORDER_MOVES (06-approval-workflow.md, Allowed moves)", () => {
-  it("has exactly the 22 entries of the table, each from a status of request-status.ts", () => {
+  it("has exactly the 23 entries of the table, each from a status of request-status.ts", () => {
     const pairs = (rows: readonly { from: string; action: string; to: string }[]) =>
       rows.map((row) => `${row.from} ${row.action} ${row.to}`).toSorted();
     expect(pairs(ORDER_MOVES)).toEqual(pairs(TABLE));
@@ -233,7 +279,7 @@ describe("ORDER_MOVES (06-approval-workflow.md, Allowed moves)", () => {
     }
   });
 
-  it("lists the twelve actions of the table, in its order (decisions 9 and 12)", () => {
+  it("lists the thirteen actions of the table, in its order (decisions 9 and 12; 06 Finance step switched off)", () => {
     expect(ORDER_ACTIONS).toEqual([
       "SUBMIT",
       "APPROVE",
@@ -243,6 +289,7 @@ describe("ORDER_MOVES (06-approval-workflow.md, Allowed moves)", () => {
       "SUBMIT_AGAIN",
       "CANCEL",
       "CLOSE_EXACT",
+      "CLOSE_SKIPPED",
       "SEND_TO_SETTLEMENT",
       "SEND_BACK_FOR_CORRECTION",
       "CLOSE",
@@ -265,10 +312,11 @@ describe("every row of the table passes (06, Allowed moves)", () => {
   };
   it.each(TABLE)("$from × $action → $to", (row) => {
     const role = ROLE_OF[row.who];
-    const check = checkMoves(actor(role), [order(row.from)], row.action, { reason: REASON });
+    const one = order(row.from, { skippedFinance: row.skipped === true });
+    const check = checkMoves(actor(role), [one], row.action, { reason: REASON });
     expect(check.ok).toBe(true);
     expect(movesOf(check)[0]).toMatchObject({ from: row.from, to: row.to });
-    expect(allowedActions(actor(role), [order(row.from)])).toContain(row.action);
+    expect(allowedActions(actor(role), [one])).toContain(row.action);
   });
 });
 
@@ -282,7 +330,10 @@ describe("every other combination is refused, generated (06: any move not in the
         for (const action of ORDER_ACTIONS) {
           const label = `${status} ${action} ${JSON.stringify(c)}`;
           const answer = asExpected(
-            checkMoves(who, [orderFor(status, c)], action, { reason: REASON }),
+            checkMoves(who, [orderFor(status, c)], action, {
+              reason: REASON,
+              financeStep: c.financeStep,
+            }),
           );
           expect(answer, label).toEqual(expected(status, action, c));
           expect(offered.includes(action), label).toBe(expected(status, action, c, true).ok);
@@ -290,7 +341,7 @@ describe("every other combination is refused, generated (06: any move not in the
         }
       }
     }
-    expect(checked).toBe(10 * 12 * 6 * 2 ** 7);
+    expect(checked).toBe(10 * 13 * 6 * 2 ** 9);
   });
 
   it("reaches exactly the (from, to, role) triples of the table", () => {
@@ -300,6 +351,7 @@ describe("every other combination is refused, generated (06: any move not in the
         for (const action of ORDER_ACTIONS) {
           const check = checkMoves(actor(c.role, c.off), [orderFor(status, c)], action, {
             reason: REASON,
+            financeStep: c.financeStep,
           });
           for (const move of check.ok ? check.moves : [])
             reached.add(`${status} ${move.to} ${c.role}`);
@@ -316,6 +368,8 @@ describe("every other combination is refused, generated (06: any move not in the
         "DRAFT PENDING_PRINCIPAL MANAGER",
         "PENDING_HEAD PENDING_PRINCIPAL HEAD",
         "PENDING_PRINCIPAL PENDING_FINANCE PRINCIPAL",
+        // The Finance step switched off (06 Allowed moves, Principal's Approve).
+        "PENDING_PRINCIPAL PURCHASING PRINCIPAL",
         "PENDING_FINANCE PURCHASING FINANCE",
         "PENDING_HEAD RETURNED HEAD",
         "PENDING_PRINCIPAL RETURNED PRINCIPAL",
@@ -409,6 +463,7 @@ describe("Owner only: Take back (06 Allowed moves; decision 5)", () => {
           to: "PENDING_HEAD",
           revisionUp: true,
           headStepAuto: false,
+          skipsFinance: false,
         },
       ]);
     }
@@ -570,6 +625,7 @@ describe("Cancel of a Draft with a number (06 Allowed moves, Cancel row; D55 ite
           to: "CANCELLED",
           revisionUp: false,
           headStepAuto: false,
+          skipsFinance: false,
         },
       ]);
     }
@@ -670,6 +726,7 @@ describe("assertMove() for the server (developer-rules.md rule 2)", () => {
         to: "PURCHASING",
         revisionUp: false,
         headStepAuto: false,
+        skipsFinance: false,
       },
     ]);
   });
@@ -728,4 +785,103 @@ describe("ownerMoveAllows (03-roles-and-permissions.md rule 7; plan of 4.10, dec
       expect(ownerMoveAllows(status)).toBe(allowed);
     },
   );
+});
+
+describe("The Finance step switched off (06-approval-workflow.md, Finance step switched off; Allowed moves; plan of 4.10c)", () => {
+  it("rule 1: the Principal's Approve opens the order and marks it when the step is off; with it on it waits for Finance", () => {
+    const waiting = order("PENDING_PRINCIPAL");
+    const off = movesOf(
+      checkMoves(actor("PRINCIPAL"), [waiting], "APPROVE", { financeStep: false }),
+    );
+    expect(off[0]).toMatchObject({
+      from: "PENDING_PRINCIPAL",
+      to: "PURCHASING",
+      skipsFinance: true,
+    });
+    const on = movesOf(checkMoves(actor("PRINCIPAL"), [waiting], "APPROVE", { financeStep: true }));
+    expect(on[0]).toMatchObject({ to: "PENDING_FINANCE", skipsFinance: false });
+    // The step is on unless the caller read it off (14 Notes for the build: true by default).
+    expect(movesOf(checkMoves(actor("PRINCIPAL"), [waiting], "APPROVE"))[0]?.to).toBe(
+      "PENDING_FINANCE",
+    );
+  });
+
+  it("the Head's and Finance's approvals do not read the step: Head, then Principal, are never skipped (D62)", () => {
+    const head = movesOf(
+      checkMoves(actor("HEAD"), [order("PENDING_HEAD")], "APPROVE", { financeStep: false }),
+    );
+    expect(head[0]).toMatchObject({ to: "PENDING_PRINCIPAL", skipsFinance: false });
+    const finance = movesOf(
+      checkMoves(actor("FINANCE"), [order("PENDING_FINANCE")], "APPROVE", { financeStep: false }),
+    );
+    expect(finance[0]).toMatchObject({ to: "PURCHASING", skipsFinance: false });
+    // A Head-created order still waits for the Principal at its first Submit (03 rule 6).
+    const submitted = movesOf(
+      checkMoves(
+        actor("HEAD"),
+        [order("DRAFT", { createdByHead: true, numbered: false })],
+        "SUBMIT",
+        {
+          financeStep: false,
+        },
+      ),
+    );
+    expect(submitted[0]?.to).toBe("PENDING_PRINCIPAL");
+  });
+
+  it("rule 3: the owner closes a finished skipped order whatever the difference; an unfinished one is not ready", () => {
+    const finished = order("PURCHASING", { skippedFinance: true, exactMatch: false });
+    expect(allowedActions(actor("MANAGER"), [finished])).toEqual(["CLOSE_SKIPPED"]);
+    expect(movesOf(checkMoves(actor("MANAGER"), [finished], "CLOSE_SKIPPED"))[0]?.to).toBe(
+      "CLOSED",
+    );
+    const buying = order("PURCHASING", { skippedFinance: true, buyingFinished: false });
+    expect(checkMoves(actor("MANAGER"), [buying], "CLOSE_SKIPPED")).toEqual({
+      ok: false,
+      refusal: { kind: "orders", orders: [{ orderId: buying.id, reason: "not_ready" }] },
+    });
+  });
+
+  it("rule 3 and 03 CLOSE_ALONE: with the owner's right off the Manager is refused and the Head closes", () => {
+    const blocked = order("PURCHASING", {
+      skippedFinance: true,
+      exactMatch: false,
+      ownerClosesAlone: false,
+    });
+    expect(checkMoves(actor("MANAGER", "CLOSE_ALONE"), [blocked], "CLOSE_SKIPPED")).toEqual({
+      ok: false,
+      refusal: { kind: "orders", orders: [{ orderId: blocked.id, reason: "forbidden" }] },
+    });
+    const colleagues = { ...blocked, ownerId: COLLEAGUE };
+    expect(movesOf(checkMoves(actor("HEAD"), [colleagues], "CLOSE_SKIPPED"))[0]?.to).toBe("CLOSED");
+    for (const role of ["PRINCIPAL", "FINANCE"] as const) {
+      expect(allowedActions(actor(role), [blocked])).not.toContain("CLOSE_SKIPPED");
+    }
+  });
+
+  it("rule 2: Send to settlement and Close (exact match) are refused on a skipped order; Close is refused on one that did not skip", () => {
+    const skipped = order("PURCHASING", { skippedFinance: true });
+    for (const action of ["SEND_TO_SETTLEMENT", "CLOSE_EXACT"] as const) {
+      expect(checkMoves(actor("HEAD"), [skipped], action)).toEqual({
+        ok: false,
+        refusal: { kind: "orders", orders: [{ orderId: skipped.id, reason: "wrong_status" }] },
+      });
+    }
+    const ordinary = order("PURCHASING");
+    expect(checkMoves(actor("HEAD"), [ordinary], "CLOSE_SKIPPED")).toEqual({
+      ok: false,
+      refusal: { kind: "orders", orders: [{ orderId: ordinary.id, reason: "wrong_status" }] },
+    });
+    // Ticked together, neither close is common to both (06 rule 8).
+    expect(allowedActions(actor("HEAD"), [skipped, ordinary])).toEqual([]);
+  });
+
+  it("rule 6: a reopened skipped order keeps the rules: the Head reopens it, and it closes again without settlement", () => {
+    const closed = order("CLOSED", { skippedFinance: true });
+    expect(movesOf(checkMoves(actor("HEAD"), [closed], "REOPEN", { reason: REASON }))[0]?.to).toBe(
+      "PURCHASING",
+    );
+    const reopened = order("PURCHASING", { skippedFinance: true });
+    expect(allowedActions(actor("MANAGER"), [reopened])).toEqual(["CLOSE_SKIPPED"]);
+  });
 });

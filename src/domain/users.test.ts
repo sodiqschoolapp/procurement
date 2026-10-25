@@ -7,6 +7,7 @@ import {
   isFullName,
   isPhone,
   phone,
+  staffedRoles,
   vacatedPlaces,
 } from "./users";
 
@@ -76,10 +77,29 @@ describe("vacatedPlaces (10, Notifications: Branch has no active user for a role
       { branchId: "b2", role: "FINANCE" as const },
     ];
     const after = [{ branchId: "b1", role: "MANAGER" as const }];
-    expect(vacatedPlaces(before, after)).toEqual([
+    expect(vacatedPlaces(before, after, true)).toEqual([
       { branchId: "b1", role: "FINANCE" },
       { branchId: "b2", role: "FINANCE" },
     ]);
-    expect(vacatedPlaces([], after)).toEqual([]);
+    expect(vacatedPlaces([], after, true)).toEqual([]);
+  });
+
+  it("names no Finance place while the Finance step is off; a Manager or Principal place still (03 rule 5; 10 Notifications; plan of 4.10c)", () => {
+    const before = [
+      { branchId: "b1", role: "FINANCE" as const },
+      { branchId: "b1", role: "MANAGER" as const },
+      { branchId: "b1", role: "PRINCIPAL" as const },
+    ];
+    expect(vacatedPlaces(before, [], false)).toEqual([
+      { branchId: "b1", role: "MANAGER" },
+      { branchId: "b1", role: "PRINCIPAL" },
+    ]);
+  });
+});
+
+describe("staffedRoles (03 rule 5: 'while the Finance step is off, not for Finance'; plan of 4.10c)", () => {
+  it("is Manager, Principal and Finance with the step on, and leaves Finance out with it off", () => {
+    expect(staffedRoles(true)).toEqual(["MANAGER", "PRINCIPAL", "FINANCE"]);
+    expect(staffedRoles(false)).toEqual(["MANAGER", "PRINCIPAL"]);
   });
 });

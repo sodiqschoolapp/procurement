@@ -116,6 +116,14 @@ export const EXPECTED_MATRIX: Record<Permission, Expected> = {
     FINANCE: "no",
     right: "CLOSE_ALONE",
   },
+  "request.close_skipped": {
+    row: "Close a finished order that skipped Finance (06 Finance step switched off 3; 03 CLOSE_ALONE: when it is off, the Head closes)",
+    HEAD: "all",
+    MANAGER: "owner",
+    PRINCIPAL: "no",
+    FINANCE: "no",
+    right: "CLOSE_ALONE",
+  },
   "request.send_to_settlement": {
     row: "Send an order to settlement (not in 03: 06 Allowed moves; plan of 2.3, decision 4, Look first)",
     HEAD: "all",

@@ -22,7 +22,8 @@ export type StepEvent = {
   headStepAuto: boolean;
 };
 
-export type StepState = "done" | "current" | "stopped" | "todo";
+/** `skipped`: the Finance step of an order that skipped Finance (06 Finance step switched off). */
+export type StepState = "done" | "current" | "stopped" | "todo" | "skipped";
 
 export type StepView = {
   step: OrderStep;
@@ -72,9 +73,15 @@ function finishes(step: OrderStep, event: StepEvent): boolean {
     case "FINANCE":
       return event.type === "APPROVE" && event.from === "PENDING_FINANCE";
     case "OPEN":
-      return event.type === "CLOSE_EXACT" || event.type === "SEND_TO_SETTLEMENT";
+      return (
+        event.type === "CLOSE_EXACT" ||
+        event.type === "CLOSE_SKIPPED" ||
+        event.type === "SEND_TO_SETTLEMENT"
+      );
     case "CLOSED":
-      return event.type === "CLOSE_EXACT" || event.type === "CLOSE";
+      return (
+        event.type === "CLOSE_EXACT" || event.type === "CLOSE_SKIPPED" || event.type === "CLOSE"
+      );
   }
 }
 
@@ -84,9 +91,15 @@ function finishes(step: OrderStep, event: StepEvent): boolean {
  * (06 rule 4; decided item 2, Look first). Every step before the one the order stands at is
  * finished, by the newest event that finishes it; no later step is ever finished, so a reopened
  * order stands at Open with Closed empty. A Rejected or Cancelled order is "stopped" at the step
- * its last move came from.
+ * its last move came from. On an order that skipped Finance (`orders.skipped_finance`, never
+ * changed after the Principal's approval) the Finance step reads "skipped" once the order is past
+ * it (11 Order page layout 2; 06 Finance step switched off 1 and 6; plan of 4.10c).
  */
-export function orderSteps(status: RequestStatus, events: readonly StepEvent[]): StepView[] {
+export function orderSteps(
+  status: RequestStatus,
+  events: readonly StepEvent[],
+  skippedFinance = false,
+): StepView[] {
   let start = -1;
   events.forEach((event, index) => {
     if (event.type === "SUBMIT" || event.type === "SUBMIT_AGAIN") start = index;
@@ -107,6 +120,7 @@ export function orderSteps(status: RequestStatus, events: readonly StepEvent[]):
   return ORDER_STEPS.map((step, index): StepView => {
     if (index > at) return { step, state: "todo", by: null };
     if (index === at) return { step, state: atState, by: null };
+    if (step === "FINANCE" && skippedFinance) return { step, state: "skipped", by: null };
     const finisher = counted.findLast((event) => finishes(step, event));
     return {
       step,
