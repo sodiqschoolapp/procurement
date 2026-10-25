@@ -47,7 +47,7 @@ orders               number UNIQUE (empty while Draft), revision, branch_id, own
                      planned_qty, planned_price, payment_type [CASH|TRANSFER|CARD], comment,
                      reference_photo_file_id, stock_at_submit,
                      progress [OPEN|DONE|DONE_SHORT|NOT_BOUGHT], finish_reason,
-                     planned_total, actual_total, submitted_at, approved_at, closed_at,
+                     planned_total, actual_total, submitted_at, approved_at, closed_at, skipped_finance,
                      created_by, updated_at
                      -- one never-submitted draft (number empty) per owner, branch, subtype and
                      -- department (partial unique index)
@@ -116,4 +116,4 @@ sessions, accounts, verifications                            -- created by the l
 - `stock_balances` is a running total kept in step with `stock_movements` inside the same transaction. A nightly job recomputes it from the movements and reports any mismatch.
 - `orders.planned_total` and `orders.actual_total` are cached values for fast lists. They are recalculated by the shared domain functions in the same transaction as any change.
 - `client_key` is the browser-made ID that makes repeated saves safe (rule 8 in section 13). A partial unique index allows only one active Principal per branch. The analytics summary tables are materialized views built from these tables and are not counted above. One more settings key, `school_year_start`, holds the first day of the school year as a month and day; it has no default.
-- Settings keys: `default_payment_type`, `price_hint_percent` (20), `overspend_guard_percent` (10), `overspend_guard_min_amount` (100 000), `reminder_hours` (24), `escalation_hours` (48), `receipt_required_for_cash` (false), `school_name`. The logo and the colours are part of the design system, not settings.
+- Settings keys: `default_payment_type`, `price_hint_percent` (20), `overspend_guard_percent` (10), `overspend_guard_min_amount` (100 000), `reminder_hours` (24), `escalation_hours` (48), `receipt_required_for_cash` (false), `finance_step` (true: on; section 6), `school_name`. The logo and the colours are part of the design system, not settings.

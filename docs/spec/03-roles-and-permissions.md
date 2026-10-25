@@ -18,7 +18,7 @@ Four roles exist, and what each user sees is limited to their branches on the se
 2. A branch has exactly one Principal. It can have several Managers and several Finance users; when users share a role, any of them can act and the first action wins.
 3. Tasks belong to a role in a branch, not to a person. If one Finance user is away, another Finance user of that branch sees the same task. The Head can replace a branch's Principal at any time, for example with an acting Principal during leave. Waiting orders pass to the new Principal, and past approvals keep the old name.
 4. At least one active Head must always exist. The last one cannot be deactivated. A Head who forgot the password gets a new one from a command run in the hosting console, which signs that Head out everywhere and writes an audit row.
-5. The Head sees a warning when a branch has no active Manager, Principal or Finance user.
+5. The Head sees a warning when a branch has no active Manager, Principal or Finance user; while the Finance step is off (section 6), not for Finance.
 6. When the Head creates an order, the Head step is approved automatically and logged as "Created by Head".
 7. An order has one owner: the Manager who created it. The Head can move ticked orders to another Manager of the same branch, but only orders whose cash count is zero.
 8. Every action can cover many ticked orders, but only orders the user may act on: one order outside the user's branches or role refuses the whole action.
@@ -32,7 +32,7 @@ On each Manager's user page the Head sees nine switches, all on by default. Swit
 | Add and submit orders | `CREATE_REQUESTS` | The Manager can only view orders. |
 | Record purchases | `RECORD_PURCHASES` | The Head records them, or moves the orders to another Manager. |
 | Cancel purchase records | `CANCEL_PURCHASES` | Only the Head can cancel a record. |
-| Close exact-match orders alone | `CLOSE_ALONE` | Every order of this Manager goes to Finance for closing, even when all labels are green. |
+| Close exact-match orders alone | `CLOSE_ALONE` | Every order of this Manager goes to Finance for closing, even when all labels are green. An order that skipped Finance (section 6) is closed by the Head. |
 | Issue stock to departments | `ISSUE_STOCK` | The Manager can view stock but not give items out. |
 | Take returns and reverse documents | `RETURN_REVERSE` | Only the Head can do these. |
 | Send transfers to other branches | `TRANSFER_STOCK` | Only the Head can send transfers. |
@@ -59,6 +59,7 @@ In the permission matrix below, a "Yes" for the Manager means "yes, when that ri
 | Record money given, returned, paid back | No | No | No | Yes, own branches |
 | Record purchases | Yes | Yes, own orders | No | No |
 | Close an order that matches exactly | Yes | Yes, own orders | No | No |
+| Close a finished order that skipped Finance (section 6) | Yes | Yes, own orders | No | No |
 | Settle and close an order with differences | No | No | No | Yes, own branches |
 | Acknowledge a big overspend | Yes | No | No | No |
 | Reopen a closed order | Yes | No | No | No |

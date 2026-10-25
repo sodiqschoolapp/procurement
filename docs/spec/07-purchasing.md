@@ -11,7 +11,7 @@ One record belongs to one order. An order can have many records, for example 60 
 
 | Field | Rule |
 | --- | --- |
-| Date bought | Default today. Not in the future, not before the Finance approval of the order. |
+| Date bought | Default today. Not in the future, not before the Finance approval of the order (the Principal's, for an order that skipped Finance, section 6). |
 | Actual quantity | More than 0. Decimals only when the measure allows. |
 | Actual price per unit | 0 or more, whole so'm. A price of 0 (a gift) needs a comment. |
 | Extra costs | Zero or more rows: type, amount, payment type. Covers delivery the Manager paid from his own pocket. |
@@ -60,7 +60,7 @@ While the order is Open, the Manager can reopen a finished order's buying when m
 
 ## Substitution
 
-When the shop has black pens instead of the ordered blue ones, the Manager picks the subtype really bought. It must belong to the same product. Stock rises for the subtype bought, the order shows a "Substituted" label, and the order cannot be closed by the Manager alone; Finance reviews it. For a different product, mark the order "Not bought" and add a new order.
+When the shop has black pens instead of the ordered blue ones, the Manager picks the subtype really bought. It must belong to the same product. Stock rises for the subtype bought, the order shows a "Substituted" label, and the order cannot be closed by the Manager alone; Finance reviews it. An order that skipped Finance is closed as section 6 says. For a different product, mark the order "Not bought" and add a new order.
 
 ## Fixing a mistake
 

@@ -58,6 +58,7 @@ Finance records every movement of money as an **action**: one date, not later th
 - Above 0: the Manager holds school money for this order and must return it.
 - Below 0: the Manager spent his own money and Finance pays him back.
 - The count must be 0 before the order can close.
+- An order that skipped Finance (section 6, "Finance step switched off") has no cash count and closes as section 6 says, never through settlement.
 
 **Manager's cash balance** is shown as two numbers, never netted: what the Manager holds (the sum of the positive counts of his orders that are not Closed) and what he is owed (the sum of the negative ones).
 
@@ -83,7 +84,7 @@ The settlement screen also shows how many purchase records were cancelled on eac
 
 ## Overspend guard
 
-When an order's actual total is above its planned total by more than 10% **and** by more than 100 000 so'm, the Head is notified and must click "Acknowledge overspend" with a comment before Finance can close it. Both numbers are settings. With the percent at 0 only the amount counts; with the amount at 0 only the percent counts; with both at 0 every overspend needs the Head; the guard can be switched off. The Head can acknowledge several ticked orders with one comment. A reopen by the Head clears the acknowledgment together with the settlement confirmations, so a reopened order is checked again.
+When an order's actual total is above its planned total by more than 10% **and** by more than 100 000 so'm, the Head is notified and must click "Acknowledge overspend" with a comment before Finance can close it. Both numbers are settings. With the percent at 0 only the amount counts; with the amount at 0 only the percent counts; with both at 0 every overspend needs the Head; the guard can be switched off. The Head can acknowledge several ticked orders with one comment. An order that skipped Finance needs no acknowledgment; the Head is still notified. A reopen by the Head clears the acknowledgment together with the settlement confirmations, so a reopened order is checked again.
 
 ## Worked example
 
