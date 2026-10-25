@@ -77,6 +77,7 @@ Every term the spec defines, in the spec's own words, with the file that defines
 | Manager's cash balance | What a Manager holds (the sum of the positive cash counts of his orders that are not Closed) and what he is owed (the sum of the negative ones), shown apart, never netted. | `08-money-and-settlement.md` |
 | Cash spent | Every purchase and extra cost with payment type Cash that is not cancelled. | `08-money-and-settlement.md` |
 | Settlement | The step where Finance and the Manager even out the money difference. | `01-summary.md`, `08-money-and-settlement.md` |
+| Skipped Finance | An order the Principal approved while the Head had switched the Finance step off (setting `finance_step`): it goes straight to Open, has no cash count, and the owner or the Head closes it when its buying is finished, whatever the difference. | `06-approval-workflow.md` |
 | Overspend guard | An order more than 10% and more than 100 000 so'm (two settings) over its planned total: the Head must acknowledge before Finance can close. | `08-money-and-settlement.md`, `02-assumptions.md` A10 |
 | Rounding | Always half up, to whole so'm. | `08-money-and-settlement.md` |
 

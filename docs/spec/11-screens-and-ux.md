@@ -49,8 +49,8 @@ A page a role cannot use is not shown greyed out; it is simply absent from the m
 ## Order page layout
 
 1. **Top:** order number and revision, status label, branch, owner, department, product and subtype, planned and actual totals, the three colour labels.
-2. **Stepper:** Draft, Head, Principal, Finance, Open, Closed, with the name and time of each finished step.
-3. **Tabs:** Details, Purchases, Money, History.
+2. **Stepper:** Draft, Head, Principal, Finance, Open, Closed, with the name and time of each finished step. On an order that skipped Finance (section 6) the Finance step reads "Skipped".
+3. **Tabs:** Details, Purchases, Money, History. An order that skipped Finance has no Money tab.
 4. **Action bar,** under the header and kept in view: only the actions this user can take on this order now. If there are none, a line says who the order is waiting for.
 
 ## Rules for a smooth feel
