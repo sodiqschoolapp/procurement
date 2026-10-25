@@ -50,7 +50,7 @@ Each line names the first build-plan task that needs the answer.
 
 ## Catalog
 
-18. **Adding subtypes to a product that had none.** A product without subtypes has one hidden subtype called "default". When the Head later adds real subtypes to it, what happens to the default one, and to the orders, stock and price that point to it? Needed by task 1.8.
+18. ~~**Adding subtypes to a product that had none.** A product without subtypes has one hidden subtype called "default". When the Head later adds real subtypes to it, what happens to the default one, and to the orders, stock and price that point to it? Needed by task 1.8.~~ **Answered 25.10.2026:** the one who adds the first real subtype also names the existing items; the hidden default takes that name and keeps its orders, stock and price, and the new subtype is a new one. Written into `04-catalogs.md` rule 1.
 
 ## Warehouse documents
 
