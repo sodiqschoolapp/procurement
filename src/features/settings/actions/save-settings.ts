@@ -1,4 +1,3 @@
-import { sql } from "drizzle-orm";
 import * as z from "zod";
 
 import { parseSomOrZero } from "@/domain/money";
@@ -21,7 +20,7 @@ import { GLOBAL_TARGET, defineAction } from "@/server/action";
 import { audit } from "@/server/audit";
 import { now } from "@/server/clock";
 import { settings } from "@/server/db/schema";
-import { parsedSettingRows, selectSettingRows } from "@/server/settings";
+import { SETTINGS_LOCK, parsedSettingRows, selectSettingRows } from "@/server/settings";
 
 // The Head saves the settings on /settings (build-plan 1.1; 03-roles-and-permissions.md,
 // Permission matrix: "Manage catalogs, users, branches, settings", Head only). Through the
@@ -64,9 +63,6 @@ export type SettingsInput = z.input<typeof settingsInput>;
 
 /** Values as the settings row and the audit row hold them: the amount as decimal text. */
 type StoredSettings = { [Key in SettingKey]?: unknown };
-
-/** The settings advisory lock: seed 1, apart from the wrapper's client-key locks (seed 0). */
-const SETTINGS_LOCK = sql`select pg_advisory_xact_lock(hashtextextended('settings', 1))`;
 
 export type SavedSettings = {
   changed: SettingKey[];

@@ -11,6 +11,7 @@ import {
   isDueSoon,
   isOverdue,
   orderSteps,
+  skippedFinanceBy,
   stuckBefore,
   waitingFor,
 } from "./order-steps";
@@ -258,6 +259,70 @@ describe("orderSteps (11 Order page layout 2; 06 rule 4)", () => {
       OPEN: "done:Sender",
       CLOSED: "done:Second closer",
     });
+  });
+});
+
+describe("orderSteps of an order that skipped Finance (11 Order page layout 2: 'the Finance step reads Skipped'; 06 Finance step switched off; plan of 4.10c)", () => {
+  const principalOpens = () => event("APPROVE", "PENDING_PRINCIPAL", "PURCHASING", "Principal");
+  const opened = () => [submit(), headOk(), principalOpens()];
+
+  it("Open: Principal finished by the approval that opened it, Finance skipped, Open current", () => {
+    expect(shape(orderSteps("PURCHASING", opened(), true))).toEqual({
+      DRAFT: "done:Manager",
+      HEAD: "done:Head",
+      PRINCIPAL: "done:Principal",
+      FINANCE: "skipped",
+      OPEN: "current",
+      CLOSED: "todo",
+    });
+  });
+
+  it("a Close of a skipped order finishes Open and Closed with its name and time (06 Allowed moves, 'Open, skipped Finance | Close')", () => {
+    const close = event("CLOSE_SKIPPED", "PURCHASING", "CLOSED", "Closer");
+    const steps = orderSteps("CLOSED", [...opened(), close], true);
+    expect(shape(steps)).toEqual({
+      DRAFT: "done:Manager",
+      HEAD: "done:Head",
+      PRINCIPAL: "done:Principal",
+      FINANCE: "skipped",
+      OPEN: "done:Closer",
+      CLOSED: "done:Closer",
+    });
+    expect(steps.find((view) => view.step === "CLOSED")?.by?.at).toEqual(close.at);
+  });
+
+  it("rule 6: reopened, Finance still reads Skipped and Closed is empty", () => {
+    const reopened = [
+      ...opened(),
+      event("CLOSE_SKIPPED", "PURCHASING", "CLOSED", "Closer"),
+      event("REOPEN", "CLOSED", "PURCHASING", "Head"),
+    ];
+    expect(shape(orderSteps("PURCHASING", reopened, true))).toMatchObject({
+      FINANCE: "skipped",
+      OPEN: "current",
+      CLOSED: "todo",
+    });
+  });
+
+  it("an order that did not skip shows its Finance step as before; before the Principal decides nothing is skipped", () => {
+    expect(
+      shape(orderSteps("PURCHASING", [...opened().slice(0, 2), principalOk(), financeOk()])),
+    ).toMatchObject({
+      FINANCE: "done:Finance",
+    });
+    expect(shape(orderSteps("PENDING_PRINCIPAL", [submit(), headOk()], false))).toMatchObject({
+      PRINCIPAL: "current",
+      FINANCE: "todo",
+    });
+  });
+});
+
+describe("skippedFinanceBy (06 rule 11; History tab 'Finance step skipped'; plan of 4.10c, decided item 13)", () => {
+  it("is the Principal's approval straight to Open, and no other move", () => {
+    expect(skippedFinanceBy(event("APPROVE", "PENDING_PRINCIPAL", "PURCHASING", "P"))).toBe(true);
+    expect(skippedFinanceBy(principalOk())).toBe(false);
+    expect(skippedFinanceBy(financeOk())).toBe(false);
+    expect(skippedFinanceBy(event("REOPEN", "CLOSED", "PURCHASING", "H"))).toBe(false);
   });
 });
 

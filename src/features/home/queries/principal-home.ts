@@ -5,6 +5,7 @@ import type { OrdersTotals } from "@/domain/order-totals";
 import { authorize, authorizeList } from "@/server/authorize";
 import { now } from "@/server/clock";
 import { readSnapshot } from "@/server/read-snapshot";
+import { readSettings } from "@/server/settings";
 
 import { type ListFilters, NO_FILTERS } from "@/features/orders/list-filters";
 import {
@@ -38,6 +39,8 @@ export type PrincipalHome = {
   cardCount: number;
   waiting: { count: number; totals: OrdersTotals };
   byStatus: { status: ListStatus; count: number }[];
+  /** The setting `finance_step` now: the Approve dialog says where orders go (plan of 4.10c). */
+  financeStep: boolean;
   /** 08 Actual total of the records bought this Tashkent month (decided item 6, Look first). */
   spending: bigint;
   month: { first: BusinessDate; last: BusinessDate };
@@ -73,6 +76,7 @@ export async function getPrincipalHome(
             buyingFinished: false,
             exactMatch: false,
             ownerClosesAlone: false,
+            skippedFinance: false,
             readyToClose: false,
           })),
         ).filter((action): action is CardMove =>
@@ -84,6 +88,7 @@ export async function getPrincipalHome(
       byStatus: await countOrdersByStatus(userId, scope, db),
       spending: await branchSpending(db, actor, branch, month),
       month,
+      financeStep: (await readSettings(db)).finance_step,
     };
   });
 }

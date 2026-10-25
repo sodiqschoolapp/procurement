@@ -237,6 +237,13 @@ export type OrderPage = {
   submittedAt: Date | null;
   approvedAt: Date | null;
   closedAt: Date | null;
+  /**
+   * The Principal approved it while the Finance step was off: no Money tab, no cash count, the
+   * Finance step "Skipped" (11 Order page layout 2 and 3; 06 Finance step switched off; 4.10c).
+   */
+  skippedFinance: boolean;
+  /** The setting `finance_step` now: the Principal's Approve dialog says where orders go. */
+  financeStep: boolean;
   steps: StepView[];
   /** Newest first (decided item 11). */
   events: OrderPageEvent[];
@@ -254,7 +261,8 @@ export type OrderPage = {
   canRecordPurchase: boolean;
   /**
    * Record money is offered (08 Money ledger; plan of 4.3): `money.record` on the order and
-   * `moneyRecordAllows()` (Open or Waiting for settlement). The server asks again.
+   * `moneyRecordAllows()` (Open or Waiting for settlement, never an order that skipped Finance).
+   * The server asks again.
    */
   canRecordMoney: boolean;
   /**
@@ -316,6 +324,7 @@ async function readPage(db: Executor, actor: Actor, id: string): Promise<OrderPa
       finishReason: orders.finishReason,
       createdByHead: createdByHeadSql,
       ownerClosesAlone: ownerClosesAloneSql,
+      skippedFinance: orders.skippedFinance,
       branchCode: branches.code,
       branchName: branches.name,
       branchActive: branches.isActive,
@@ -429,7 +438,8 @@ async function readPage(db: Executor, actor: Actor, id: string): Promise<OrderPa
       ),
     );
 
-  const threshold = (await readSettings(db)).price_hint_percent;
+  const settings = await readSettings(db);
+  const threshold = settings.price_hint_percent;
   const changes = row.revision >= 2 ? await readChanges(db, row.id, row.revision) : null;
   const stepEvents: StepEvent[] = events.map((event) => ({
     type: event.type,
@@ -523,7 +533,9 @@ async function readPage(db: Executor, actor: Actor, id: string): Promise<OrderPa
     submittedAt: row.submittedAt,
     approvedAt: row.approvedAt,
     closedAt: row.closedAt,
-    steps: orderSteps(row.status, stepEvents),
+    skippedFinance: row.skippedFinance,
+    financeStep: settings.finance_step,
+    steps: orderSteps(row.status, stepEvents, row.skippedFinance),
     events: events.toReversed(),
     actions: allowedActions(actor, [
       orderState({
@@ -534,6 +546,7 @@ async function readPage(db: Executor, actor: Actor, id: string): Promise<OrderPa
         createdByHead: row.createdByHead === true,
         numbered: row.number !== null,
         ownerClosesAlone: row.ownerClosesAlone === true,
+        skippedFinance: row.skippedFinance,
         version: row.version,
         revision: row.revision,
         progress: row.progress,
@@ -542,7 +555,7 @@ async function readPage(db: Executor, actor: Actor, id: string): Promise<OrderPa
     ]),
     canCopy: addsDraftsIn(actor, { id: row.branchId, isActive: row.branchActive }),
     canRecordMoney:
-      moneyRecordAllows(row.status) &&
+      moneyRecordAllows(row.status, row.skippedFinance) &&
       decide("money.record", actor, { branchId: row.branchId, ownerId: row.ownerId }) === "allow",
     canSettle:
       settlementAllows(row.status) &&

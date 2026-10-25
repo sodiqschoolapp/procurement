@@ -436,15 +436,20 @@ export function finishReasonAfter(progress: OrderProgress, reason: string | null
  * Why a date bought is refused, or null (07 Purchase record, Date bought: "Not in the future, not
  * before the Finance approval of the order"; plan of 3.3, decided item 7). All three are business
  * dates in Tashkent (YYYY-MM-DD, which compare as text); an order without an approval date is
- * refused, never let through.
+ * refused, never let through. For orders that skipped Finance the approval is the Principal's, and
+ * the refusal says so (07 Date bought; plan of 4.10c); `approvedOn` is that approval's date all the
+ * same (`orders.approved_at`).
  */
 export function purchaseDateRefusal(
   date: string,
   today: string,
   approvedOn: string | null,
-): "inFuture" | "beforeApproval" | null {
+  skippedFinance = false,
+): "inFuture" | "beforeApproval" | "beforePrincipalApproval" | null {
   if (date > today) return "inFuture";
-  if (approvedOn === null || date < approvedOn) return "beforeApproval";
+  if (approvedOn === null || date < approvedOn) {
+    return skippedFinance ? "beforePrincipalApproval" : "beforeApproval";
+  }
   return null;
 }
 

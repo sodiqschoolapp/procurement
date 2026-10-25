@@ -2,9 +2,10 @@ import { and, asc, count, desc, eq, inArray, or, sql } from "drizzle-orm";
 import * as z from "zod";
 
 import { MANAGER_RIGHTS, type ManagerRight, type Role } from "@/domain/permissions";
-import { STAFFED_ROLES, type StaffedRole, USERS_PAGE_SIZE } from "@/domain/users";
+import { type StaffedRole, USERS_PAGE_SIZE, staffedRoles } from "@/domain/users";
 import { authorize } from "@/server/authorize";
 import { branches, managerRights, userBranches, users } from "@/server/db/schema";
+import { readSettings } from "@/server/settings";
 
 import { staffedPlaces } from "../vacancies";
 
@@ -165,7 +166,8 @@ export type BranchVacancy = { id: string; code: string; name: string; roles: Sta
 
 /**
  * Each active branch with the roles among Manager, Principal and Finance that have no active user
- * there, for the warning of /users (03 rule 5; plan of 1.3, decision 8). Ordered by code.
+ * there, for the warning of /users (03 rule 5; plan of 1.3, decision 8); Finance not while the
+ * Finance step is off (`staffedRoles()`; plan of 4.10c). Ordered by code.
  */
 export async function listBranchVacancies(userId: string): Promise<BranchVacancy[]> {
   await authorize(userId, "catalog.manage");
@@ -180,10 +182,11 @@ export async function listBranchVacancies(userId: string): Promise<BranchVacancy
     open.map((branch) => branch.id),
   );
   const held = new Set(staffed.map((place) => `${place.branchId} ${place.role}`));
+  const roles = staffedRoles((await readSettings(db)).finance_step);
   return open
     .map((branch) => ({
       ...branch,
-      roles: STAFFED_ROLES.filter((role) => !held.has(`${branch.id} ${role}`)),
+      roles: roles.filter((role) => !held.has(`${branch.id} ${role}`)),
     }))
     .filter((branch) => branch.roles.length > 0);
 }

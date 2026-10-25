@@ -3,6 +3,7 @@ import type * as z from "zod";
 
 import {
   ORDER_MOVES,
+  type MoveInput,
   type OrderAction,
   type OrderState,
   type PlannedMove,
@@ -67,6 +68,19 @@ export function orderState(order: LockedOrder): OrderState {
     exactMatch: order.exactMatch ?? false,
     ownerClosesAlone: order.ownerClosesAlone,
     readyToClose: order.readyToClose ?? false,
+    skippedFinance: order.skippedFinance,
+  };
+}
+
+/**
+ * What the move reads besides the orders: the reason, and the setting `finance_step` as the
+ * approval's facts step read it, once for the whole action under the settings lock (plan of
+ * 4.10c, decided item 1, Look first). Unread is on: no other move reads it.
+ */
+function moveInput<Input extends MoveActionInput>(context: OrdersContext<Input>): MoveInput {
+  return {
+    reason: context.input.reason,
+    financeStep: !context.orders.some((order) => order.financeStep === false),
   };
 }
 
@@ -85,9 +99,12 @@ function checkOf<Input extends MoveActionInput>(
   action: OrderAction,
   context: OrdersContext<Input>,
 ): readonly OrderFailure[] {
-  const check = checkMoves(context.actor, context.orders.map(orderState), action, {
-    reason: context.input.reason,
-  });
+  const check = checkMoves(
+    context.actor,
+    context.orders.map(orderState),
+    action,
+    moveInput(context),
+  );
   if (check.ok) return [];
   const refusal = check.refusal;
   if (refusal.kind === "reason") {
@@ -161,9 +178,12 @@ export function orderMoveAction<Input extends MoveActionInput>(options: {
     facts: options.facts,
     check: (context) => checkOf(action, context),
     async write(context) {
-      const moves = assertMove(context.actor, context.orders.map(orderState), action, {
-        reason: context.input.reason,
-      });
+      const moves = assertMove(
+        context.actor,
+        context.orders.map(orderState),
+        action,
+        moveInput(context),
+      );
       const before = await options.beforeMove?.(context, moves);
       await writeMoves(context, moves);
       const extras = new Map<string, OrderEventExtra>();

@@ -273,6 +273,7 @@ function gridRowActions(actor: Actor, row: GridRow) {
       buyingFinished: false,
       exactMatch: false,
       ownerClosesAlone: false,
+      skippedFinance: false,
       readyToClose: false,
     },
   ]);

@@ -16,6 +16,7 @@ import { actionTotal, approvalCashRows, plannedCashOf } from "@/domain/money-led
 import { totalsByPaymentType } from "@/domain/order-totals";
 import { PAYMENT_TYPES, type PaymentType } from "@/domain/payment-types";
 import { moveFailureLines } from "@/features/orders/move-lines";
+import { approveResultKey } from "@/features/orders/move-texts";
 import { useFormatters } from "@/i18n/use-formatters";
 
 // Approve of ticked orders or of one order (06-approval-workflow.md, Allowed moves: the three
@@ -48,6 +49,7 @@ export function ApproveButton({
   orders,
   versionOf,
   total,
+  financeStep = true,
   onAnswer,
   size,
   className,
@@ -60,6 +62,8 @@ export function ApproveButton({
   versionOf: (orderId: string) => number;
   /** The grand total of the ticked orders, as the server computed it, formatted. */
   total: string;
+  /** The setting `finance_step` the server read: the Principal's result says where orders go. */
+  financeStep?: boolean;
   /** Called after every answer: null on success, else one line per refused order. */
   onAnswer: (failed: { title: string; lines: { orderId: string; line: string }[] } | null) => void;
   className?: string;
@@ -182,7 +186,13 @@ export function ApproveButton({
         text={{
           title: t("title", { count: orders.length }),
           result:
-            t(finance ? "resultFinance" : "result", { count: orders.length, total }) +
+            t(
+              approveResultKey(
+                orders.map((order) => order.status),
+                financeStep,
+              ),
+              { count: orders.length, total },
+            ) +
             (givenTotal > 0n
               ? ` ${t("resultCash", { amount: format.money(givenTotal), managers: given.length })}`
               : ""),

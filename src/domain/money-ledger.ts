@@ -311,14 +311,18 @@ export const APPROVAL_STATUSES = [
  * not yet paid, plus orders still in approval"; plan of 6.6a, decided items 4 and 5, Look first):
  * an order waiting at Head, Principal or Finance needs its whole planned cash; an Open order whose
  * buying is still Open needs its planned cash less what was handed, never below 0; any other order
- * (Returned, buying finished, Settlement and on) needs nothing.
+ * (Returned, buying finished, Settlement and on) needs nothing. An order that skipped Finance has
+ * no cash count and needs nothing (06 Finance step switched off 2; plan of 4.10c, decided item 5,
+ * Look first); an order still in approval keeps its planned cash, whatever the step.
  */
 export function cashNeeded(order: {
   status: RequestStatus;
   progress: OrderProgress;
   plannedCash: bigint;
   handed: bigint;
+  skippedFinance?: boolean;
 }): bigint {
+  if (order.skippedFinance) return 0n;
   if ((APPROVAL_STATUSES as readonly RequestStatus[]).includes(order.status)) {
     return order.plannedCash;
   }
@@ -439,9 +443,12 @@ export function settlementNet(rows: readonly SettlementRow[]): SettlementNet {
  * actions at any time while the orders are Open"; Closing 2 records money in settlement): Open or
  * Waiting for settlement. An order before Open has no approval yet; a Closed one is settled and
  * changes only after the Head reopens it (plan of 4.3, decided item 1, Look first). The screen asks
- * this for its buttons, the action asks it again (review of the plan, correction 1).
+ * this for its buttons, the action asks it again (review of the plan, correction 1). Never on an
+ * order that skipped Finance: "no money action has a row on it" (06 Finance step switched off 2;
+ * plan of 4.10c).
  */
-export function moneyRecordAllows(status: RequestStatus): boolean {
+export function moneyRecordAllows(status: RequestStatus, skippedFinance: boolean): boolean {
+  if (skippedFinance) return false;
   return status === "PURCHASING" || status === "SETTLEMENT";
 }
 

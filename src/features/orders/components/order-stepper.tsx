@@ -15,6 +15,8 @@ const LOOK: Record<StepState, { icon: IconName | null; className: string }> = {
   current: { icon: "schedule", className: "text-info font-semibold" },
   stopped: { icon: "block", className: "text-muted-foreground font-semibold" },
   todo: { icon: null, className: "text-muted-foreground" },
+  // 11 Order page layout 2: "On an order that skipped Finance the Finance step reads Skipped".
+  skipped: { icon: "arrow_forward", className: "text-muted-foreground" },
 };
 
 export async function OrderStepper({ steps }: { steps: readonly StepView[] }) {
@@ -41,7 +43,8 @@ export async function OrderStepper({ steps }: { steps: readonly StepView[] }) {
                 "flex min-w-0 flex-1 items-start gap-2 sm:flex-col sm:border-t-2 sm:pt-3",
                 view.state === "done" && "sm:border-foreground",
                 view.state === "current" && "sm:border-info",
-                (view.state === "todo" || view.state === "stopped") && "sm:border-border",
+                (view.state === "todo" || view.state === "stopped" || view.state === "skipped") &&
+                  "sm:border-border",
                 look.className,
               )}
             >
@@ -54,7 +57,11 @@ export async function OrderStepper({ steps }: { steps: readonly StepView[] }) {
               </span>
               <span className="flex min-w-0 flex-col">
                 <span className="text-sm">
-                  <span aria-hidden="true">{t(`steps.${view.step}`)}</span>
+                  <span aria-hidden="true">
+                    {view.state === "skipped"
+                      ? t("skippedStep", { step: t(`steps.${view.step}`) })
+                      : t(`steps.${view.step}`)}
+                  </span>
                   <span className="sr-only">
                     {t("line", { step: t(`steps.${view.step}`), state: t(`state.${view.state}`) })}
                   </span>

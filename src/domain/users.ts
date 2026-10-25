@@ -18,6 +18,14 @@ export const USERS_PAGE_SIZE = 25;
 export const STAFFED_ROLES = ["MANAGER", "PRINCIPAL", "FINANCE"] as const satisfies readonly Role[];
 export type StaffedRole = (typeof STAFFED_ROLES)[number];
 
+/**
+ * The roles a branch is warned about now: all three, but not Finance while the Finance step is off
+ * (03 rule 5; 10 Notifications, "Branch has no active user for a role"; plan of 4.10c).
+ */
+export function staffedRoles(financeStep: boolean): StaffedRole[] {
+  return STAFFED_ROLES.filter((role) => financeStep || role !== "FINANCE");
+}
+
 /** Digits, spaces and `+ ( ) -`, such as "+998 90 123-45-67" (decision 11). */
 const PHONE_PATTERN = /^[0-9+()\- ]+$/;
 
@@ -95,15 +103,21 @@ function placeKey(place: Place): string {
 /**
  * The places held before a change and empty after it, each once, in the order of `before`
  * (10, Notifications: "Branch has no active user for a role"; plan of 1.3, decision 7). A place
- * empty before is no news.
+ * empty before is no news. A role `staffedRoles()` leaves out (Finance while the Finance step is
+ * off) is no news either.
  */
-export function vacatedPlaces(before: readonly Place[], after: readonly Place[]): Place[] {
+export function vacatedPlaces(
+  before: readonly Place[],
+  after: readonly Place[],
+  financeStep: boolean,
+): Place[] {
+  const warned = new Set<string>(staffedRoles(financeStep));
   const held = new Set(after.map(placeKey));
   const seen = new Set<string>();
   const vacated: Place[] = [];
   for (const place of before) {
     const key = placeKey(place);
-    if (held.has(key) || seen.has(key)) continue;
+    if (held.has(key) || seen.has(key) || !warned.has(place.role)) continue;
     seen.add(key);
     vacated.push(place);
   }

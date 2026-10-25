@@ -379,6 +379,13 @@
       "when": 1792515001352,
       "tag": "0053_trial_end",
       "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1792953069443,
+      "tag": "0054_finance_step",
+      "breakpoints": true
     }
   ]
 }

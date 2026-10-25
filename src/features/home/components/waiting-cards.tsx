@@ -28,17 +28,39 @@ export type WaitingCardData = { group: WireOrderGroup; moves: CardMove[] };
 
 type Failed = { title: string; lines: { orderId: string; line: string }[] } | null;
 
-export function WaitingCards({ cards, listHref }: { cards: WaitingCardData[]; listHref: string }) {
+export function WaitingCards({
+  cards,
+  listHref,
+  financeStep = true,
+}: {
+  cards: WaitingCardData[];
+  listHref: string;
+  /** The setting `finance_step` the server read (plan of 4.10c). */
+  financeStep?: boolean;
+}) {
   return (
     <ul className="grid grid-cols-1 gap-4 lg:grid-cols-2">
       {cards.map((card) => (
-        <WaitingCard key={card.group.key} card={card} listHref={listHref} />
+        <WaitingCard
+          key={card.group.key}
+          card={card}
+          listHref={listHref}
+          financeStep={financeStep}
+        />
       ))}
     </ul>
   );
 }
 
-function WaitingCard({ card, listHref }: { card: WaitingCardData; listHref: string }) {
+function WaitingCard({
+  card,
+  listHref,
+  financeStep,
+}: {
+  card: WaitingCardData;
+  listHref: string;
+  financeStep: boolean;
+}) {
   const t = useTranslations("home.principal.card");
   const tHome = useTranslations("home");
   const tList = useTranslations("orders.list");
@@ -183,6 +205,7 @@ function WaitingCard({ card, listHref }: { card: WaitingCardData; listHref: stri
               orders={approveOrders}
               versionOf={versionOf}
               total={format.money(BigInt(group.summary.totals.grand))}
+              financeStep={financeStep}
               onAnswer={setFailed}
             />
           )}

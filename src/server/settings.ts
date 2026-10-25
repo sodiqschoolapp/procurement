@@ -36,3 +36,14 @@ export function parsedSettingRows(rows: readonly { key: string; json: string }[]
 export async function readSettings(executor: Executor): Promise<SettingValues> {
   return settingsFrom(parsedSettingRows(await selectSettingRows(executor)));
 }
+
+/**
+ * The settings advisory lock: seed 1, apart from the wrapper's client-key locks (seed 0). A write
+ * of the settings takes it exclusive (`saveSettings`, `switchFinanceStep`). The Principal's approval
+ * takes it shared before it reads `finance_step`, so the switch and the approval cannot cross:
+ * the switch counts the orders Waiting for Finance only once no approval holds it, and an
+ * approval reads the step only once no switch holds it (06 Finance step switched off 5; plan of
+ * 4.10c, decided item 1, Look first). Shared, so approvals never wait for each other.
+ */
+export const SETTINGS_LOCK = sql`select pg_advisory_xact_lock(hashtextextended('settings', 1))`;
+export const SETTINGS_LOCK_SHARED = sql`select pg_advisory_xact_lock_shared(hashtextextended('settings', 1))`;

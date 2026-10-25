@@ -18,6 +18,7 @@ const locked: LockedOrder = {
   createdByHead: false,
   numbered: true,
   ownerClosesAlone: true,
+  skippedFinance: false,
 };
 
 describe("orderState() reads exactMatch from the facts step (08 Exact match)", () => {
@@ -44,5 +45,12 @@ describe("orderState() reads readyToClose from the facts step (08 Closing 3)", (
   it("is what the step read", () => {
     expect(orderState({ ...locked, readyToClose: true }).readyToClose).toBe(true);
     expect(orderState({ ...locked, readyToClose: false }).readyToClose).toBe(false);
+  });
+});
+
+describe("orderState() reads the mark of an order that skipped Finance (06 Finance step switched off 1; plan of 4.10c)", () => {
+  it("is the locked row's skipped_finance", () => {
+    expect(orderState(locked).skippedFinance).toBe(false);
+    expect(orderState({ ...locked, skippedFinance: true }).skippedFinance).toBe(true);
   });
 });

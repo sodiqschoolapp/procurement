@@ -14,7 +14,7 @@ import { settings } from "@/server/db/schema";
 
 import { refusalOf } from "../../../../tests/helpers/database-error";
 
-// The value CHECKs of migrations 0007 and 0018 (plan of 1.1, decision 3, Look first; CLAUDE.md rule 5:
+// The value CHECKs of migrations 0007, 0018 and 0054 (plan of 1.1, decision 3, Look first; CLAUDE.md rule 5:
 // the database is the last defence). D39: every refused case reaches the database directly, by an
 // insert and by an update, and is refused as a check violation (23514) by its named constraint,
 // never as a cast error. D40: each refused value is tried beside an accepted value of the same key.
@@ -73,6 +73,12 @@ const CASES: Case[] = [
     key: "receipt_required_for_cash",
     good: [true, false],
     bad: ["true", 1, 0],
+  },
+  {
+    // Migration 0054: the Finance step switch (06 Finance step switched off; plan of 4.10c).
+    key: "finance_step",
+    good: [true, false],
+    bad: ["true", "off", 1, 0, { on: true }],
   },
   {
     key: "school_name",

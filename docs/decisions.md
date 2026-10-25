@@ -3045,6 +3045,32 @@ Not a task of the build plan: the owner's report of 23.10.2026, "When I tick the
 3. From 1440 px the needed-by date stands beside the totals, so the bar keeps about the height of the old totals panel. Screenshots: `docs/redesign/2026-10-23/`.
 4. Submit is the bar's primary button now (it was secondary), as Approve is on the order list's bar. The grid's own count line `orders.ticked.count` is no longer used and left the three files.
 
+### 4.10c The Finance step switch (25.10.2026)
+
+The plan's decisions as the plan review of 25.10.2026 confirmed them (no corrections). The Look first items come first.
+
+1. **Look first** (approval order). The switch and the Principal's approval cannot cross: `switchFinanceStep` takes the settings advisory lock exclusive and then counts the orders Waiting for Finance or for settlement; the Principal's approval takes the same lock shared in its `facts` step and reads `finance_step` in the action's transaction (READ COMMITTED). Shared, so Principals never wait for each other. `SETTINGS_LOCK` and `SETTINGS_LOCK_SHARED` live in `src/server/settings.ts`; `saveSettings` takes the same exclusive lock as before. Test: `switch-finance-step.db.test.ts`, both orders of the same moment, each seen to fail with the shared lock removed.
+2. **Look first** (approval order). An Open order that went through Finance before the step was switched off keeps its Finance rules: it is still sent to settlement, settled and closed by Finance, sent back for correction and reopened, while the step is off (06 Finance step switched off 5 and 6).
+3. **Look first** (approval order). The close of an order that skipped Finance is its own action `CLOSE_SKIPPED` (enum value in migration 0054), a row of `ORDER_MOVES` with the needs `skipped_finance` and `buying_finished`; Close (exact match) and Send to settlement need `not_skipped`. A mismatch is `wrong_status`: "Open, skipped Finance" is a "from" of its own.
+4. **Look first** (permission matrix). `request.close_skipped`: Head every branch; Manager own orders with `CLOSE_ALONE` on; Principal and Finance never. The Head closes the orders of a Manager whose right is off.
+5. **Look first** (money). "No cash count" leaves the order out of every cash reader, not counted as 0: Money with managers (`not orders.skipped_finance`), the Manager's home, the analytics refresh's `analytics_cash` (so the report, the Managers, Cash, My cash and cash-orders readers follow); `cashNeeded()` is 0 for it. Orders still in approval keep their planned cash in Cash needed soon whatever the step. `cashWhere()` is unchanged (review of the plan, Should fix 1).
+6. **Look first** (money). Moving a skipped order to another Manager is allowed whatever was bought in cash: it has no cash count (03 rule 7).
+7. **Look first** (money). Two database guards: the trigger `money_rows_not_skipped` refuses a money row on a skipped order, and the CHECK `orders_skipped_finance_status_check` refuses a skipped order at Waiting for Finance or Waiting for settlement. No guard on the mark itself (review of the plan, Should fix 2).
+8. **Look first** (approval order). The overspend notice of a skipped order is sent by its Close, to every active Head, under the guard of that moment (`orderOverspend().needsHead`); no acknowledgment is asked.
+9. The switch is its own action with its own confirmation (`switchFinanceStep`, `catalog.manage`), not a key of the settings form, whose Zod schema stays strict; the audit row has the form's shape (`settings.change`, `{ finance_step }` before and after). The same value again writes nothing.
+10. The refusal names the waiting orders of the whole school as a field refusal (`errors.field.financeStepWaiting`, the numbers in `available.orders`), and the Settings page lists them with links while the step is on (`getFinanceStepWaiting()`).
+11. The Closed notice of a skipped order goes to the owner, the Heads and the branch's Finance users, as every close.
+12. Switching on sends no vacancy notice; the Users page warning comes back at once. `staffedRoles()` and `vacatedPlaces(…, financeStep)` in `src/domain/users.ts`.
+13. The History tab marks the Principal's approval that opened the order (`skippedFinanceBy()` of `src/domain/order-steps.ts`); no new event type.
+14. The seed is unchanged: no `finance_step` row means on.
+
+Choices made during the build:
+
+- `MoveInput.financeStep` carries the setting into the state machine; the approval's `facts` step writes it on every locked order (`LockedOrder.financeStep`), and the move reads it once for the action. `PlannedMove.skipsFinance` marks the orders `afterMove` writes `skipped_finance` on.
+- The confirmations state the result (11 rule 6): the Principal's Approve with the step off ("opens for buying at once"), Close of skipped orders, Reopen of skipped or mixed orders (`move-texts.ts`, `approveResultKey()`, `reopenResultKey()`), and the switch both ways. The order page, the list's ticked summary and the Principal's home pass the step and the mark to the buttons.
+- A purchase date before the Principal's approval of an order that skipped Finance says "before the Principal approved the order" (`beforePrincipalApproval`), when every order of the trip skipped Finance; the rule is the same `approved_at`.
+- S21 in the browser runs as the project `finance-step`, the teardown of a new project `start` (`tests/e2e/run-order.setup.ts`) on which both widths depend: the step is the whole school's and every other browser test's approvals read it, so S21 runs after every other test of the run, and in full in each of CI's four shards, each with its own database. It first moves orders other tests left Waiting for Finance or for settlement (Rejected, Closed) and puts the step back on at its end.
+
 ## Process changes
 
 Changes to the working method itself. Each is a `process/` pull request that the owner merges.

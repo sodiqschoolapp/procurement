@@ -21,6 +21,7 @@ export const ORDER_ACTIONS = [
   "SUBMIT_AGAIN",
   "CANCEL",
   "CLOSE_EXACT",
+  "CLOSE_SKIPPED",
   "SEND_TO_SETTLEMENT",
   "SEND_BACK_FOR_CORRECTION",
   "CLOSE",
@@ -71,7 +72,11 @@ export type MoveNeed =
   | "ready_to_close"
   | "cash_optional"
   /** A Draft has a number: it was submitted and taken back (06 Allowed moves, Cancel row). */
-  | "numbered";
+  | "numbered"
+  /** "Open, skipped Finance" (06 Allowed moves; Finance step switched off 3). */
+  | "skipped_finance"
+  /** "the order did not skip Finance" (06 Allowed moves, Send to settlement row). */
+  | "not_skipped";
 
 export type OrderMove = {
   from: RequestStatus;
@@ -79,6 +84,8 @@ export type OrderMove = {
   to: RequestStatus;
   /** Submit of an order the Head created: the Head step is approved automatically (03 rule 6). */
   toWhenHeadCreated?: RequestStatus;
+  /** The Principal's Approve while the Finance step is off: straight to Open (06 Allowed moves). */
+  toWhenFinanceOff?: RequestStatus;
   who: MoveWho;
   permission: Permission;
   needs: readonly MoveNeed[];
@@ -88,7 +95,7 @@ export type OrderMove = {
 
 const REASON = ["reason"] as const;
 
-/** The allowed-moves table of 06, one entry per row and per "from" status: 22 entries. */
+/** The allowed-moves table of 06, one entry per row and per "from" status: 23 entries. */
 export const ORDER_MOVES: readonly OrderMove[] = [
   // Draft | Submit | Owner or Head | Waiting for Head (Waiting for Principal when the Head is the
   // creator) | The order passes all checks
@@ -110,10 +117,12 @@ export const ORDER_MOVES: readonly OrderMove[] = [
     permission: "request.approve_step1",
     needs: [],
   },
+  // (Open when the Finance step is off: 06 Finance step switched off 1; plan of 4.10c.)
   {
     from: "PENDING_PRINCIPAL",
     action: "APPROVE",
     to: "PENDING_FINANCE",
+    toWhenFinanceOff: "PURCHASING",
     who: "step_approver",
     permission: "request.approve_step2",
     needs: [],
@@ -247,16 +256,29 @@ export const ORDER_MOVES: readonly OrderMove[] = [
     to: "CLOSED",
     who: "owner_or_head",
     permission: "request.close_exact",
-    needs: ["buying_finished", "exact_match"],
+    needs: ["not_skipped", "buying_finished", "exact_match"],
   },
-  // Open | Send to settlement | Owner or Head | Waiting for settlement | Buying is finished
+  // Open, skipped Finance | Close | Owner or Head | Closed | The order's buying is finished. Its
+  // own action, so the one Close of such an order closes it whatever the difference (plan of
+  // 4.10c, decided item 3, Look first); `request.close_skipped` lets the Head close the orders of
+  // a Manager whose CLOSE_ALONE is off (06 Finance step switched off 3).
+  {
+    from: "PURCHASING",
+    action: "CLOSE_SKIPPED",
+    to: "CLOSED",
+    who: "owner_or_head",
+    permission: "request.close_skipped",
+    needs: ["skipped_finance", "buying_finished"],
+  },
+  // Open | Send to settlement | Owner or Head | Waiting for settlement | Buying is finished; the
+  // order did not skip Finance
   {
     from: "PURCHASING",
     action: "SEND_TO_SETTLEMENT",
     to: "SETTLEMENT",
     who: "owner_or_head",
     permission: "request.send_to_settlement",
-    needs: ["buying_finished"],
+    needs: ["not_skipped", "buying_finished"],
   },
   // Waiting for settlement | Send back for correction | Finance | Open | Reason
   {
@@ -326,6 +348,8 @@ export type OrderState = {
   ownerClosesAlone: boolean;
   /** Cash count 0, every block confirmed, any required Head acknowledgment given (08 Closing 3). */
   readyToClose: boolean;
+  /** The Principal approved it while the Finance step was off (06 Finance step switched off 1). */
+  skippedFinance: boolean;
 };
 
 /** At most 200 orders in one action (06 rule 8). */
@@ -362,12 +386,18 @@ export type PlannedMove = {
   revisionUp: boolean;
   /** Logged as "Created by Head" (03 rule 6). */
   headStepAuto: boolean;
+  /** The Principal's Approve with the Finance step off: the order is marked (06 Finance step switched off 1). */
+  skipsFinance: boolean;
 };
 
 export type MoveCheck =
   { ok: true; moves: readonly PlannedMove[] } | { ok: false; refusal: MoveRefusal };
 
-export type MoveInput = { reason?: string };
+/**
+ * `financeStep` is the setting `finance_step` the caller read in the move's own transaction, under
+ * the lock its switch takes (plan of 4.10c, decided item 1, Look first); on when not given.
+ */
+export type MoveInput = { reason?: string; financeStep?: boolean };
 
 function moveOf(status: RequestStatus, action: OrderAction): OrderMove | undefined {
   return ORDER_MOVES.find((move) => move.from === status && move.action === action);
@@ -400,6 +430,11 @@ function judge(
   if (!move) return { reason: "wrong_status" };
   // A never-submitted Draft has no Cancel: it is deleted (plan of 2.3b, decided item 1).
   if (move.needs.includes("numbered") && !order.numbered) return { reason: "wrong_status" };
+  // "Open, skipped Finance" is a "from" of its own (06 Allowed moves).
+  if (move.needs.includes("skipped_finance") && !order.skippedFinance) {
+    return { reason: "wrong_status" };
+  }
+  if (move.needs.includes("not_skipped") && order.skippedFinance) return { reason: "wrong_status" };
 
   const target = { branchId: order.branchId, ownerId: order.ownerId };
   if (decide(move.permission, actor, target) !== "allow") return { reason: "forbidden" };
@@ -460,12 +495,19 @@ export function checkMoves(
     }
     const { move } = answer;
     const headStepAuto = move.toWhenHeadCreated !== undefined && order.createdByHead;
+    const skipsFinance = move.toWhenFinanceOff !== undefined && input.financeStep === false;
     moves.push({
       orderId: order.id,
       from: move.from,
-      to: headStepAuto && move.toWhenHeadCreated ? move.toWhenHeadCreated : move.to,
+      to:
+        headStepAuto && move.toWhenHeadCreated
+          ? move.toWhenHeadCreated
+          : skipsFinance && move.toWhenFinanceOff
+            ? move.toWhenFinanceOff
+            : move.to,
       revisionUp: move.revisionUp === true,
       headStepAuto,
+      skipsFinance,
     });
   }
   if (failed.length > 0) return { ok: false, refusal: { kind: "orders", orders: failed } };

@@ -546,8 +546,8 @@ describe("exact match (08 Exact match; decided item 1, Look first)", () => {
 
 describe("the Money tab: when money can be recorded or cancelled (08 Money ledger; plan of 4.3, decided item 1, Look first)", () => {
   it("recorded on Open and Waiting for settlement only", () => {
-    expect(moneyRecordAllows("PURCHASING")).toBe(true);
-    expect(moneyRecordAllows("SETTLEMENT")).toBe(true);
+    expect(moneyRecordAllows("PURCHASING", false)).toBe(true);
+    expect(moneyRecordAllows("SETTLEMENT", false)).toBe(true);
     for (const status of [
       "DRAFT",
       "PENDING_HEAD",
@@ -558,7 +558,13 @@ describe("the Money tab: when money can be recorded or cancelled (08 Money ledge
       "REJECTED",
       "CANCELLED",
     ] as const) {
-      expect(moneyRecordAllows(status)).toBe(false);
+      expect(moneyRecordAllows(status, false)).toBe(false);
+    }
+  });
+
+  it("never on an order that skipped Finance, Open or reopened (06 Finance step switched off 2: 'no money action has a row on it'; plan of 4.10c)", () => {
+    for (const status of ["PURCHASING", "CLOSED"] as const) {
+      expect(moneyRecordAllows(status, true)).toBe(false);
     }
   });
 
@@ -1044,6 +1050,20 @@ describe("Cash needed soon (10 Finance; 08 When Finance approves, Money ledger t
 
   it("does not count a cancelled action", () => {
     expect(open(cashHanded([row("CASH_GIVEN", 520_000n, true)]))).toBe(520_000n);
+  });
+
+  it("is 0 for an Open order that skipped Finance: it has no cash count (06 Finance step switched off 2; plan of 4.10c, decided item 5, Look first)", () => {
+    expect(
+      cashNeeded({
+        status: "PURCHASING",
+        progress: "OPEN",
+        plannedCash: PLANNED,
+        handed: 0n,
+        skippedFinance: true,
+      }),
+    ).toBe(0n);
+    // The same order that went through Finance needs its planned cash (D40).
+    expect(open(0n)).toBe(520_000n);
   });
 
   it("is 0 for a Returned order, a Settlement order and an Open order whose buying is finished", () => {

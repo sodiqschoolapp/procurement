@@ -24,7 +24,7 @@ import {
 // decisions 1, 2, 6, 7, 9 and 10.
 
 describe("the settings keys and defaults (14-data-model.md, Notes for the build)", () => {
-  it("has exactly the nine keys of the spec and D10", () => {
+  it("has exactly the ten keys of the spec and D10, `finance_step` among them (06 Finance step switched off; D62)", () => {
     expect([...SETTING_KEYS].sort()).toEqual(
       [
         "default_payment_type",
@@ -36,6 +36,7 @@ describe("the settings keys and defaults (14-data-model.md, Notes for the build)
         "reminder_hours",
         "school_name",
         "school_year_start",
+        "finance_step",
       ].sort(),
     );
     expect(Object.keys(SETTING_DEFAULTS).sort()).toEqual([...SETTING_KEYS].sort());
@@ -55,7 +56,18 @@ describe("the settings keys and defaults (14-data-model.md, Notes for the build)
       receipt_required_for_cash: false,
       school_name: null,
       school_year_start: null,
+      // 06 Finance step switched off: "It is the setting `finance_step`, on by default."
+      finance_step: true,
     });
+  });
+
+  it("takes only a boolean for `finance_step` (14 Notes for the build; migration 0054)", () => {
+    for (const ok of [true, false]) expect(SETTING_CHECKS.finance_step(ok)).toBe(true);
+    for (const bad of ["true", 1, 0, null, "off"]) {
+      expect(SETTING_CHECKS.finance_step(bad)).toBe(false);
+    }
+    expect(settingsFrom([{ key: "finance_step", value: false }]).finance_step).toBe(false);
+    expect(() => settingsFrom([{ key: "finance_step", value: "off" }])).toThrow();
   });
 
   it("every default with a value passes its own check", () => {

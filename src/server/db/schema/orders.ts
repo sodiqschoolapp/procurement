@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
   bigint,
+  boolean,
   check,
   date,
   foreignKey,
@@ -136,6 +137,12 @@ export const orders = pgTable(
     submittedAt: moment("submitted_at"),
     approvedAt: moment("approved_at"),
     closedAt: moment("closed_at"),
+    /**
+     * The Principal approved the order while the Finance step was switched off: it went straight
+     * to Open, has no cash count and never goes to settlement (06-approval-workflow.md, Finance
+     * step switched off 1 and 2; plan of 4.10c). Written once, by that approval.
+     */
+    skippedFinance: boolean("skipped_finance").notNull().default(false),
     clientKey: uuid("client_key"),
     createdBy: uuid("created_by")
       .notNull()
@@ -159,6 +166,12 @@ export const orders = pgTable(
     check(
       "orders_number_status_check",
       sql`${table.number} IS NOT NULL OR ${table.status} = 'DRAFT'`,
+    ),
+    // 06 Finance step switched off 2: an order that skipped Finance never waits for Finance and
+    // never goes to settlement (plan of 4.10c, decided item 7, Look first).
+    check(
+      "orders_skipped_finance_status_check",
+      sql`NOT ${table.skippedFinance} OR ${table.status} NOT IN ('PENDING_FINANCE', 'SETTLEMENT')`,
     ),
     check("orders_revision_check", sql`${table.revision} >= 1`),
     check("orders_version_check", sql`${table.version} >= 1`),

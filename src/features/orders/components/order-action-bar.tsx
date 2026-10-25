@@ -44,6 +44,7 @@ export function OrderActionBar({
   canRecordMoney = false,
   settle = null,
   waitingLine,
+  skippedFinance = false,
 }: {
   orderId: string;
   version: number;
@@ -52,8 +53,11 @@ export function OrderActionBar({
   moves: readonly MoveKind[];
   /** The order's number; null for a draft never submitted, which none of `moves` applies to. */
   number: string | null;
-  /** The order as Approve sends it, with its planned total formatted; null without the move. */
-  approve: { order: ApproveOrder; total: string } | null;
+  /**
+   * The order as Approve sends it, with its planned total formatted and the Finance step the
+   * server read (plan of 4.10c); null without the move.
+   */
+  approve: { order: ApproveOrder; total: string; financeStep: boolean } | null;
   /** Copy as new is offered (05 Ticking and filters; plan of 2.13): the server's `canCopy`. */
   canCopy: boolean;
   /** The purchase form's address when the server's `canRecordPurchase` is set (plan of 3.3). */
@@ -64,6 +68,8 @@ export function OrderActionBar({
   settle?: string | null;
   /** Shown when the user has no allowed move; null otherwise. */
   waitingLine: string | null;
+  /** The order skipped Finance: the Reopen dialog says so (06 Finance step switched off 6). */
+  skippedFinance?: boolean;
 }) {
   const t = useTranslations("orders.page.bar");
   const tColumns = useTranslations("orders.columns");
@@ -179,6 +185,7 @@ export function OrderActionBar({
               orders={[approve.order]}
               versionOf={() => version}
               total={approve.total}
+              financeStep={approve.financeStep}
               onAnswer={(answer) => setRefused(answer?.lines[0]?.line ?? null)}
               className="max-sm:h-11 max-sm:w-full"
             />
@@ -190,6 +197,7 @@ export function OrderActionBar({
                   move={move}
                   variant={move === "SUBMIT_AGAIN" ? "default" : "secondary"}
                   orders={[{ id: orderId, number }]}
+                  skipped={skippedFinance ? "all" : "none"}
                   versionOf={() => version}
                   onAnswer={(answer) => setRefused(answer?.lines[0]?.line ?? null)}
                   className="max-sm:h-11 max-sm:w-full"

@@ -23,6 +23,7 @@ import {
 import { approveOrders } from "@/features/orders/actions/approve";
 import { cancelOrders } from "@/features/orders/actions/cancel";
 import { closeExactOrders } from "@/features/orders/actions/close-exact";
+import { closeSkippedOrders } from "@/features/orders/actions/close-skipped";
 import { copyOrdersAsNew } from "@/features/orders/actions/copy-as-new";
 import { rejectOrders } from "@/features/orders/actions/reject";
 import { sendBackOrders } from "@/features/orders/actions/send-back";
@@ -88,6 +89,7 @@ const finish = ordersServerAction(finishOrders);
 const notBought = ordersServerAction(markNotBought);
 const reopen = ordersServerAction(reopenBuying);
 const closeExact = ordersServerAction(closeExactOrders);
+const closeSkipped = ordersServerAction(closeSkippedOrders);
 const toSettlement = ordersServerAction(sendToSettlementOrders);
 const cancelRecord = ordersServerAction(cancelPurchase);
 const cancelWholeTrip = ordersServerAction(cancelTrip);
@@ -285,6 +287,14 @@ export async function submitAgainOrdersAction(input: unknown): Promise<MoveAnswe
 /** Closes the ticked finished orders that match exactly (08 Closing 1; plan of 4.4). */
 export async function closeExactOrdersAction(input: unknown): Promise<MoveAnswer> {
   return moveAnswer(closeExact, input);
+}
+
+/**
+ * Closes the ticked finished orders that skipped Finance, whatever their difference (06 Finance
+ * step switched off 3; plan of 4.10c).
+ */
+export async function closeSkippedOrdersAction(input: unknown): Promise<MoveAnswer> {
+  return moveAnswer(closeSkipped, input);
 }
 
 /** Sends the ticked finished orders to Finance for settlement (06 Allowed moves; plan of 4.4). */

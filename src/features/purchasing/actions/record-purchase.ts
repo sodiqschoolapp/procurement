@@ -186,6 +186,7 @@ type Plan = {
   plannedPrice: bigint;
   paymentType: PaymentType;
   approvedAt: Date | null;
+  skippedFinance: boolean;
   progress: "OPEN" | "DONE" | "DONE_SHORT" | "NOT_BOUGHT";
   isService: boolean;
   allowDecimal: boolean;
@@ -209,6 +210,7 @@ async function plansOf(tx: Executor, orderIds: readonly string[]): Promise<Plan[
       plannedPrice: orders.plannedPrice,
       paymentType: orders.paymentType,
       approvedAt: orders.approvedAt,
+      skippedFinance: orders.skippedFinance,
       progress: orders.progress,
       productType: products.type,
       allowDecimal: units.allowDecimal,
@@ -231,6 +233,7 @@ async function plansOf(tx: Executor, orderIds: readonly string[]): Promise<Plan[
       plannedPrice: row.plannedPrice!,
       paymentType: row.paymentType,
       approvedAt: row.approvedAt,
+      skippedFinance: row.skippedFinance,
       progress: row.progress,
       isService: row.productType === "SERVICE",
       allowDecimal: row.allowDecimal,
@@ -428,7 +431,14 @@ export const recordPurchase = defineOrdersAction<RecordPurchaseInput>({
     const newestApproval = approvals.includes(null)
       ? null
       : approvals.reduce((newest, day) => (day! > newest! ? day : newest));
-    const dateRefusal = purchaseDateRefusal(typed.purchasedOn, today, newestApproval);
+    // The message names the Principal's approval when every order of the trip skipped Finance
+    // (07 Date bought; plan of 4.10c); the date rule is the same.
+    const dateRefusal = purchaseDateRefusal(
+      typed.purchasedOn,
+      today,
+      newestApproval,
+      plans.every((plan) => plan.skippedFinance),
+    );
     if (dateRefusal) refuse("purchasedOn", `errors.field.${dateRefusal}`);
     if (typed.supplierId) {
       await refuseInactive(tx, companies, [typed.supplierId], () => "supplierId");

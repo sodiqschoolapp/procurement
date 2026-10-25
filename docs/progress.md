@@ -2162,4 +2162,24 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - `restoreCopy()` takes `{ restore }` in place of `pg_restore`, as `databaseCopy()` takes `dump`.
 - A test never makes a new bucket: the local SeaweedFS runs out of volumes (HTTP 500 everywhere). Use `TEST_BUCKET` / `TEST_BACKUP_BUCKET`.
 
+## 4.10c The Finance step switch (25.10.2026, pull request #162)
+
+**Built**
+- Migration 0054: `orders.skipped_finance`, CHECK `orders_skipped_finance_status_check`, trigger `money_rows_not_skipped`, `settings_finance_step_check`, enum value `CLOSE_SKIPPED`.
+- `switchFinanceStep` (Head, own confirmation, audit row) on /settings with the waiting orders listed; refused while any order waits for Finance or settlement, under `SETTINGS_LOCK`, which the Principal's approval takes shared (`src/server/settings.ts`).
+- State machine: the Principal's Approve goes to Open with the step off (`toWhenFinanceOff`, `skipsFinance`); `CLOSE_SKIPPED` (`request.close_skipped`); Close (exact match) and Send to settlement refuse a skipped order.
+- Skipped orders: no money rows, left out of every cash reader, Cash needed soon 0; moved whatever was bought in cash; overspend notice at their Close; stepper, History, Excel and PDF read "Skipped"; no Money tab.
+- No Finance vacancy warning or notice while the step is off.
+
+**Left out, and the task that brings it**
+- Nothing of the Build line.
+
+**Open for the owner**
+- Decided items 2 and 5 (Look first) on issue #9.
+
+**What the next sessions must know**
+- A move that reads a setting: read it in the action's `facts` step under the setting's lock and carry it in `MoveInput` (`LockedOrder.financeStep`).
+- A browser test that changes a school-wide setting other tests read runs as the teardown project `finance-step` of `start` (playwright.config.ts); add such a spec to that project, never to the two widths.
+- Tests that need a skipped order: `tests/helpers/finance-step.ts` (`openedSkipped()`, `setFinanceStep()`).
+
 The next task is 9.5.

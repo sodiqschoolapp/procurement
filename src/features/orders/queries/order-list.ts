@@ -92,6 +92,7 @@ import { settlementFactsOf } from "@/features/money/settlement-facts";
 import { recordsOfListed, recordsOfOrders } from "@/features/purchasing/order-records";
 
 import { exactMatchOf } from "../exact-match";
+import { type SkippedShare, skippedShare } from "../move-texts";
 import { createdByHeadSql, headStepAutoSql, ownerClosesAloneSql } from "../order-facts";
 
 // The order list on /orders (05-order-request-form.md, Group rows; Ticking and filters;
@@ -709,6 +710,10 @@ export type TickedSummary = {
    * differences"; plan of 4.4, decided item 4): null until a ticked Open order's buying is finished.
    */
   exactCount: number | null;
+  /** How many ticked orders skipped Finance: the Reopen dialog says so (plan of 4.10c). */
+  skippedFinance: SkippedShare;
+  /** The setting `finance_step` now: the Principal's Approve dialog says where orders go. */
+  financeStep: boolean;
   /**
    * Copy as new is offered: the user may add drafts in the branch of every ticked order, which is
    * active (05 Ticking and filters; plan of 2.13, decided item 1, Look first). The server asks again.
@@ -784,6 +789,8 @@ export async function tickedSummary(
     colours: null,
     actions: [],
     exactCount: null,
+    skippedFinance: "none",
+    financeStep: true,
     canCopy: false,
     recordTrip: false,
     canRecordMoney: false,
@@ -807,6 +814,7 @@ export async function tickedSummary(
         progress: orders.progress,
         createdByHead: createdByHeadSql,
         ownerClosesAlone: ownerClosesAloneSql,
+        skippedFinance: orders.skippedFinance,
         number: orders.number,
         quantity: orders.plannedQty,
         price: orders.plannedPrice,
@@ -838,7 +846,8 @@ export async function tickedSummary(
           found.map((row) => row.id),
         )
       : null;
-    const guard = settlement ? await readSettings(db) : null;
+    const settings = await readSettings(db);
+    const guard = settlement ? settings : null;
     const seen = new Set(found.map((row) => row.id));
     return {
       count: found.length,
@@ -874,6 +883,8 @@ export async function tickedSummary(
           }),
         ),
       ),
+      skippedFinance: skippedShare(found.map((row) => row.skippedFinance)),
+      financeStep: settings.finance_step,
       exactCount: found.some((row) => row.status === "PURCHASING" && row.progress !== "OPEN")
         ? found.filter((row) => exact.get(row.id) === true).length
         : null,
@@ -897,7 +908,7 @@ export async function tickedSummary(
         found.length > 0 &&
         found.every(
           (row) =>
-            moneyRecordAllows(row.status) &&
+            moneyRecordAllows(row.status, row.skippedFinance) &&
             decide("money.record", actor, { branchId: row.branchId, ownerId: row.ownerId }) ===
               "allow",
         ),
@@ -1077,6 +1088,7 @@ export async function orderDownload(
         quantity: orders.plannedQty,
         price: orders.plannedPrice,
         paymentType: orders.paymentType,
+        skippedFinance: orders.skippedFinance,
       })
       .from(orders)
       .innerJoin(branches, eq(branches.id, orders.branchId))
@@ -1154,6 +1166,7 @@ export async function orderDownload(
           plan,
           events.get(row.id) ?? [],
           records.get(row.id) ?? [],
+          row.skippedFinance,
         ),
       };
     });

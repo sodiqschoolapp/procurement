@@ -1,9 +1,10 @@
-import { desc, eq } from "drizzle-orm";
+import { asc, desc, eq, inArray } from "drizzle-orm";
 
 import { type BusinessDate, businessDate } from "@/domain/business-date";
+import type { RequestStatus } from "@/domain/request-status";
 import type { SettingValues } from "@/domain/settings";
 import { authorize } from "@/server/authorize";
-import { databaseCopies } from "@/server/db/schema";
+import { branches, databaseCopies, orders } from "@/server/db/schema";
 import { readSettings } from "@/server/settings";
 
 // The settings for screens (build-plan 1.1). Every query calls authorize() (developer-rules.md
@@ -44,4 +45,35 @@ export async function getSchoolName(userId: string): Promise<string | null> {
   await authorize(userId, "profile.edit");
   const { db } = await import("@/server/db/client");
   return (await readSettings(db)).school_name;
+}
+
+/** One order that keeps the Finance step from being switched off. */
+export type FinanceStepWaiting = {
+  id: string;
+  number: string;
+  branchCode: string;
+  status: RequestStatus;
+};
+
+/**
+ * The orders Waiting for Finance or Waiting for settlement, of every branch, by number: "the Head
+ * sees those orders listed and switches off once none is left" (06 Finance step switched off 5;
+ * plan of 4.10c, decided item 10). The Head only, as the page; the Head sees every branch.
+ */
+export async function getFinanceStepWaiting(userId: string): Promise<FinanceStepWaiting[]> {
+  await authorize(userId, "catalog.manage");
+  const { db } = await import("@/server/db/client");
+  const rows = await db
+    .select({
+      id: orders.id,
+      number: orders.number,
+      branchCode: branches.code,
+      status: orders.status,
+    })
+    .from(orders)
+    .innerJoin(branches, eq(branches.id, orders.branchId))
+    .where(inArray(orders.status, ["PENDING_FINANCE", "SETTLEMENT"]))
+    .orderBy(asc(orders.number));
+  // A waiting order always has its number (05 Order number).
+  return rows.map((row) => ({ ...row, number: row.number! }));
 }

@@ -29,7 +29,9 @@ import { datedMoneyRowsOf } from "../money-rows";
 // in two branches shows Finance of one only that branch's orders (decided item 3). A chosen branch
 // is authorized first, as the order list does (decided item 6). Read in one snapshot, so each
 // count and the balance made of it are of one moment. The counts are `orderCashCount()` and the
-// balance `managerCashBalance()` inside `managerBalances()`: cash is never counted a second way.
+// balance `managerCashBalance()` inside `managerBalances()`: cash is never counted a second way. An
+// order that skipped Finance is left out: it has no cash count (06 Finance step switched off 2;
+// plan of 4.10c, decided item 5, Look first).
 
 /** One order behind a balance, with what the page shows of it. */
 export type MoneyWithManagersOrder = ManagerOrder & {
@@ -84,6 +86,7 @@ export async function getMoneyWithManagers(
       join product_variants v on v.id = orders.variant_id
       join products p on p.id = v.product_id
       where orders.status not in ('DRAFT', 'CLOSED')
+        and not orders.skipped_finance
         and ${wall ?? sql`true`}
         and ${chosen ? sql`orders.branch_id = ${chosen}` : sql`true`}
         and (exists (select 1 from money_rows r where r.order_id = orders.id)

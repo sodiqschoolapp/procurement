@@ -528,6 +528,14 @@ describe("purchaseDateRefusal (07 Purchase record, Date bought; plan of 3.3, dec
   it("an order without an approval date is refused", () => {
     expect(purchaseDateRefusal("2026-10-17", "2026-10-17", null)).toBe("beforeApproval");
   });
+
+  it("an order that skipped Finance is refused before the Principal's approval, which the message names (07 Date bought: 'the Principal's, for an order that skipped Finance'; plan of 4.10c)", () => {
+    expect(purchaseDateRefusal("2026-09-30", "2026-10-17", "2026-10-01", true)).toBe(
+      "beforePrincipalApproval",
+    );
+    expect(purchaseDateRefusal("2026-10-01", "2026-10-17", "2026-10-01", true)).toBeNull();
+    expect(purchaseDateRefusal("2026-10-18", "2026-10-17", "2026-10-01", true)).toBe("inFuture");
+  });
 });
 
 describe("sameAsPlanned (07 Purchase record, 'Same as planned'; plan of 3.3, decided item 5)", () => {

@@ -84,6 +84,8 @@ export const FIELD_ERROR_KINDS = [
   // decided item 7).
   "inFuture",
   "beforeApproval",
+  // ... before the Principal's approval of orders that skipped Finance (plan of 4.10c).
+  "beforePrincipalApproval",
   // A trip over orders of two branches or two owners (07 One trip, many orders; plan of 3.4,
   // decided item 2, Look first).
   "tripOneOwner",
@@ -140,6 +142,9 @@ export const FIELD_ERROR_KINDS = [
   "aboveSent",
   // A count of a branch or category that holds no item of the stock (plan of 7.3).
   "nothingToCount",
+  // The Finance step switched off while orders wait for Finance or for settlement (06 Finance
+  // step switched off 5; plan of 4.10c): the numbers of those orders.
+  "financeStepWaiting",
 ] as const;
 export type FieldErrorKind = (typeof FIELD_ERROR_KINDS)[number];
 export type FieldMessageKey = `errors.field.${FieldErrorKind}`;
@@ -190,8 +195,9 @@ export type ActionFailure = {
    * amount of that line's item (plan of 5.6, decided item 5), and for a `reverseOverHeld` field
    * what it still holds (plan of 5.7b). For the `orders` and `stock` fields
    * of a branch's deactivation: counts, not quantities, the branch's unfinished orders and its
-   * subtypes with stock above 0, as whole-number text (plan of 5.12, decided items 1 and 2). Set
-   * only after the action's authorize() passed on the branch.
+   * subtypes with stock above 0, as whole-number text (plan of 5.12, decided items 1 and 2). For a
+   * `financeStepWaiting` field: the numbers of the orders that wait for Finance or for settlement,
+   * comma-separated (plan of 4.10c). Set only after the action's authorize() passed.
    */
   available?: Record<string, string>;
 };

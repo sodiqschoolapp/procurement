@@ -49,11 +49,17 @@ export type SettingValues = {
   school_name: string | null;
   /** No default: `null` until the Head sets it; the school-year period is hidden till then (10). */
   school_year_start: MonthDay | null;
+  /**
+   * The Finance step of the approval, on by default (06-approval-workflow.md, Finance step
+   * switched off; D62). Switched by its own action with its confirmation (plan of 4.10c, decided
+   * item 9), never by the settings form.
+   */
+  finance_step: boolean;
 };
 
 export type SettingKey = keyof SettingValues;
 
-/** The nine keys, in the order the screen shows them. */
+/** The ten keys, in the order the screen shows them; the Finance step has its own block, last. */
 export const SETTING_KEYS = [
   "school_name",
   "school_year_start",
@@ -64,6 +70,7 @@ export const SETTING_KEYS = [
   "receipt_required_for_cash",
   "reminder_hours",
   "escalation_hours",
+  "finance_step",
 ] as const satisfies readonly SettingKey[];
 
 /**
@@ -80,6 +87,7 @@ export const SETTING_DEFAULTS: SettingValues = {
   receipt_required_for_cash: false,
   school_name: null,
   school_year_start: null,
+  finance_step: true,
 };
 
 const DAYS_IN_MONTH = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31] as const;
@@ -139,6 +147,7 @@ export const SETTING_CHECKS: { [Key in SettingKey]: (value: unknown) => boolean 
   receipt_required_for_cash: (value) => typeof value === "boolean",
   school_name: isSchoolName,
   school_year_start: isMonthDay,
+  finance_step: (value) => typeof value === "boolean",
 };
 
 export function isSettingKey(key: string): key is SettingKey {

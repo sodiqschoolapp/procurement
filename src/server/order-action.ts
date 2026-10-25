@@ -99,6 +99,13 @@ export type LockedOrder = {
   exactMatch?: boolean;
   /** 08 Closing 3, when Close's `facts` step read it (plan of 4.6); otherwise unknown. */
   readyToClose?: boolean;
+  /** `orders.skipped_finance` (06 Finance step switched off 1; plan of 4.10c). */
+  skippedFinance: boolean;
+  /**
+   * The setting `finance_step`, when the approval's `facts` step read it under the settings lock
+   * (plan of 4.10c, decided item 1, Look first); otherwise on. One read for the whole action.
+   */
+  financeStep?: boolean;
 };
 
 /** What the history step writes for one order besides its statuses. */
@@ -246,8 +253,10 @@ export async function lockOrders(tx: Transaction, ids: readonly string[]): Promi
     created_by_head: boolean;
     numbered: boolean;
     owner_closes_alone: boolean;
+    skipped_finance: boolean;
   }>(sql`
     select o.id, o.branch_id, o.owner_id, o.status, o.version, o.revision, o.progress,
+           o.skipped_finance,
            (c.role = 'HEAD' and o.number is null) as created_by_head,
            o.number is not null as numbered,
            (w.role = 'HEAD' or (w.role = 'MANAGER' and not exists (
@@ -274,6 +283,7 @@ export async function lockOrders(tx: Transaction, ids: readonly string[]): Promi
     createdByHead: row.created_by_head,
     numbered: row.numbered,
     ownerClosesAlone: row.owner_closes_alone,
+    skippedFinance: row.skipped_finance,
   }));
 }
 

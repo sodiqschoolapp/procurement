@@ -98,7 +98,9 @@
       "stockLeft": "Filial omborida hali tovar bor.",
       "transfersInTransit": "Filialdan yoki filialga koʻchirish hali yoʻlda.",
       "aboveSent": "Yuborilganidan koʻp.",
-      "nothingToCount": "Bu yerda sanash uchun ombordagi mahsulot yoʻq."
+      "nothingToCount": "Bu yerda sanash uchun ombordagi mahsulot yoʻq.",
+      "financeStepWaiting": "Buyurtmalar hali moliyani yoki hisob-kitobni kutmoqda.",
+      "beforePrincipalApproval": "Sana buyurtma direktor tomonidan tasdiqlanishidan oldin. Shu kunni yoki keyingisini tanlang."
     },
     "file": {
       "tooLarge": "Fayl 10 MB dan katta. Kichikroq fayl tanlang yoki suratni qaytadan oling.",
@@ -574,7 +576,24 @@
     "save": "Saqlash",
     "saved": "Sozlamalar saqlandi",
     "nothingChanged": "Hech narsa oʻzgarmadi",
-    "history": "Oʻzgarishlar tarixi"
+    "history": "Oʻzgarishlar tarixi",
+    "financeStep": {
+      "title": "Moliya bosqichi",
+      "isOn": "Yoqilgan: direktor tasdiqlagan buyurtmalar moliyani kutadi.",
+      "isOff": "Oʻchirilgan: direktor tasdiqlagan buyurtmalar darhol xarid uchun ochiladi, naqd pul hisobisiz.",
+      "hint": "Butun maktab uchun. Moliya boʻlimi ilovadan foydalanmaguncha oʻchirib qoʻying. Oʻzgartirish faqat direktor bundan keyin tasdiqlaydigan buyurtmalarga taʼsir qiladi.",
+      "waiting": "{count, plural, other {# ta buyurtma}} moliyani yoki hisob-kitobni kutmoqda. Bunday buyurtma qolmaganda bosqichni oʻchirish mumkin.",
+      "waitingLine": "{branch} · {status}",
+      "switchOff": "Oʻchirish",
+      "switchOn": "Yoqish",
+      "switchOffTitle": "Moliya bosqichini oʻchirasizmi?",
+      "switchOnTitle": "Moliya bosqichini yoqasizmi?",
+      "switchOffResult": "Direktor tasdiqlagan yangi buyurtmalar darhol xarid uchun ochiladi, naqd pul hisobisiz, egasi yoki rahbar ularni hisob-kitobsiz yopadi. Allaqachon ochiq buyurtmalar moliya bosqichini saqlaydi.",
+      "switchOnResult": "Direktor bundan keyin tasdiqlaydigan buyurtmalar moliyani kutadi. Moliyani oʻtkazib yuborgan buyurtmalar avvalgidek hisob-kitobsiz yopiladi.",
+      "refused": "Oʻchirilmadi: {orders} buyurtmalari hali moliyani yoki hisob-kitobni kutmoqda.",
+      "switchedOff": "Moliya bosqichi oʻchirildi",
+      "switchedOn": "Moliya bosqichi yoqildi"
+    }
   },
   "admin": {
     "label": "Boshqaruv sahifalari",
@@ -1359,10 +1378,12 @@
           "done": "Bajarildi",
           "current": "Hozir",
           "stopped": "Shu yerda toʻxtadi",
-          "todo": "Hali emas"
+          "todo": "Hali emas",
+          "skipped": "Oʻtkazib yuborildi"
         },
         "by": "{name}, {date} {time}",
-        "line": "{step}: {state}"
+        "line": "{step}: {state}",
+        "skippedStep": "{step}: oʻtkazib yuborildi"
       },
       "tabs": {
         "label": "Buyurtma boʻlimlari",
@@ -1427,7 +1448,8 @@
           "SETTLE_CASH": "Naqd pul hisob-kitobi",
           "CONFIRM_SETTLEMENT": "Hisob-kitob tasdigʻi oʻzgartirildi",
           "ACKNOWLEDGE_OVERSPEND": "Ortiqcha xarajat tasdiqlandi",
-          "MOVE_OWNER": "Boshqa menejerga oʻtkazildi"
+          "MOVE_OWNER": "Boshqa menejerga oʻtkazildi",
+          "CLOSE_SKIPPED": "Hisob-kitobsiz yopildi"
         },
         "approved": {
           "PENDING_HEAD": "Rahbar bosqichida tasdiqlandi",
@@ -1444,7 +1466,8 @@
         "purchase": "{qty} × {price}",
         "progress": "Xarid: {from} → {to}",
         "owner": "{from} dan {to} ga",
-        "issue": "Toʻgʻridan-toʻgʻri boʻlimga berildi: <note>{number}</note>"
+        "issue": "Toʻgʻridan-toʻgʻri boʻlimga berildi: <note>{number}</note>",
+        "financeSkipped": "Moliya bosqichi oʻtkazib yuborildi"
       },
       "waiting": {
         "HEAD": "Rahbarni kutmoqda.",
@@ -1594,7 +1617,8 @@
         "wrong_status": "Endi bu bosqichda kutmayapti. Roʻyxat yangilandi.",
         "forbidden": "Bu buyurtmani uning bosqichida tasdiqlay olmaysiz.",
         "not_ready": "Bu buyurtmani hozircha tasdiqlab boʻlmaydi."
-      }
+      },
+      "resultSkipFinance": "Jami {total}. Moliya bosqichi oʻchirilgan, shuning uchun {count, plural, other {buyurtmalar}} darhol xarid uchun ochiladi, naqd pul hisobisiz. Egasi va rahbarga xabar boradi."
     },
     "moves": {
       "already": {
@@ -1619,7 +1643,8 @@
         "CLOSE": "Yopish",
         "REOPEN": "Qayta ochish",
         "ACKNOWLEDGE_OVERSPEND": "Ortiqcha xarajatni tasdiqlash",
-        "MOVE_OWNER": "Boshqa menejerga oʻtkazish"
+        "MOVE_OWNER": "Boshqa menejerga oʻtkazish",
+        "CLOSE_SKIPPED": "Yopish"
       },
       "buttonCount": "{label} ({count})",
       "title": {
@@ -1637,7 +1662,8 @@
         "CLOSE": "{count, plural, other {# ta buyurtma yopilsinmi?}}",
         "REOPEN": "{count, plural, other {# ta buyurtma qayta ochilsinmi?}}",
         "ACKNOWLEDGE_OVERSPEND": "{count, plural, other {# ta buyurtmaning ortiqcha xarajati tasdiqlansinmi?}}",
-        "MOVE_OWNER": "{count, plural, one {1 ta buyurtmani boshqa menejerga oʻtkazasizmi?} other {# ta buyurtmani boshqa menejerga oʻtkazasizmi?}}"
+        "MOVE_OWNER": "{count, plural, one {1 ta buyurtmani boshqa menejerga oʻtkazasizmi?} other {# ta buyurtmani boshqa menejerga oʻtkazasizmi?}}",
+        "CLOSE_SKIPPED": "{count, plural, other {# ta buyurtmani yopasizmi?}}"
       },
       "result": {
         "SEND_BACK": "{count, plural, other {Buyurtmalar}} tuzatish uchun egasiga qaytadi. Egasi va rahbarga xabar boradi. Keyingi yuborishdan soʻng tasdiqlash yana rahbardan boshlanadi.",
@@ -1654,7 +1680,10 @@
         "CLOSE": "{count, plural, other {# ta buyurtma yopiladi}} va boshqa oʻzgarmaydi. Biror buyurtma tayyor boʻlmasa, hech narsa yopilmaydi va oʻsha buyurtmalar koʻrsatiladi. Egasi, rahbar va moliya boʻlimiga xabar boradi.",
         "REOPEN": "{count, plural, other {Buyurtma}} xatoni tuzatish uchun «Ochiq» holatiga qaytadi. Hisob-kitob tasdiqlari va ortiqcha xarajat tasdigʻi bekor qilinadi, moliya boʻlimi qayta hisob-kitob qiladi. Egasi, rahbar va moliya boʻlimiga xabar boradi.",
         "ACKNOWLEDGE_OVERSPEND": "Shundan soʻng Moliya {count, plural, =1 {bu buyurtmani} other {bu buyurtmalarni}} rejadan yuqori haqiqiy summa bilan yopa oladi. Izohingiz har bir buyurtma tarixida saqlanadi, filial Moliyasiga xabar boradi.",
-        "MOVE_OWNER": "Tanlangan menejer {count, plural, one {bu buyurtmaning} other {bu buyurtmalarning}} egasi boʻladi. Faqat naqd pul qoldigʻi 0 boʻlgan buyurtmalar oʻtkaziladi; oʻtkazish har bir buyurtma tarixida saqlanadi."
+        "MOVE_OWNER": "Tanlangan menejer {count, plural, one {bu buyurtmaning} other {bu buyurtmalarning}} egasi boʻladi. Faqat naqd pul qoldigʻi 0 boʻlgan buyurtmalar oʻtkaziladi; oʻtkazish har bir buyurtma tarixida saqlanadi.",
+        "CLOSE_SKIPPED": "{count, plural, other {Moliyani oʻtkazib yuborgan # ta buyurtma}} farqidan qatʼi nazar hisob-kitobsiz yopiladi va boshqa oʻzgarmaydi. Egasi, rahbar va moliya boʻlimiga xabar boradi; katta ortiqcha xarajat haqida rahbarga ham xabar boradi.",
+        "REOPEN_SKIPPED": "{count, plural, other {Buyurtma}} xatoni tuzatish uchun «Ochiq» holatiga qaytadi. U moliyani oʻtkazib yuborgan, shuning uchun xarid tugagach egasi uni hisob-kitobsiz qayta yopadi. Egasi, rahbar va moliya boʻlimiga xabar boradi.",
+        "REOPEN_MIXED": "Buyurtmalar xatoni tuzatish uchun «Ochiq» holatiga qaytadi. Hisob-kitob tasdiqlari va ortiqcha xarajat tasdigʻi bekor qilinadi, moliyadan oʻtgan buyurtmalarni moliya boʻlimi qayta hisob-kitob qiladi; moliyani oʻtkazib yuborganlarini egasi hisob-kitobsiz qayta yopadi. Egasi, rahbar va moliya boʻlimiga xabar boradi."
       },
       "done": {
         "SEND_BACK": "{count, plural, other {# ta buyurtma qaytarildi.}}",
@@ -1671,7 +1700,8 @@
         "CLOSE": "{count, plural, other {# ta buyurtma yopildi.}}",
         "REOPEN": "{count, plural, other {# ta buyurtma qayta ochildi.}}",
         "ACKNOWLEDGE_OVERSPEND": "{count, plural, other {# ta buyurtmaning ortiqcha xarajati tasdiqlandi.}}",
-        "MOVE_OWNER": "{count, plural, one {1 ta buyurtma oʻtkazildi.} other {# ta buyurtma oʻtkazildi.}}"
+        "MOVE_OWNER": "{count, plural, one {1 ta buyurtma oʻtkazildi.} other {# ta buyurtma oʻtkazildi.}}",
+        "CLOSE_SKIPPED": "{count, plural, other {# ta buyurtma yopildi.}}"
       },
       "failedTitle": "{count, plural, other {Hech narsa saqlanmadi: # ta buyurtma quyida koʻrsatilgan.}}",
       "failedLine": "{number} — {problem}",
@@ -1757,7 +1787,8 @@
         "sort": "Saralash: {sort}"
       },
       "excelShort": "Excel",
-      "pdfShort": "PDF"
+      "pdfShort": "PDF",
+      "skipped": "Oʻtkazib yuborildi"
     },
     "progress": {
       "OPEN": "Xarid ochiq",
