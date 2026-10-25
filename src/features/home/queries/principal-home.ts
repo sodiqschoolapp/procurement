@@ -73,6 +73,7 @@ export async function getPrincipalHome(
             buyingFinished: false,
             exactMatch: false,
             ownerClosesAlone: false,
+            skippedFinance: false,
             readyToClose: false,
           })),
         ).filter((action): action is CardMove =>

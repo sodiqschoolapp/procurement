@@ -90,7 +90,12 @@ export const moveOrdersToManager = defineOrdersAction<MoveOwnerInput>({
           code: "not_ready",
           fields: { managerId: "errors.field.alreadyOwner" },
         });
-      } else if (orderCashCount(rows.get(order.id) ?? [], records.get(order.id) ?? []) !== 0n) {
+      } else if (
+        // An order that skipped Finance has no cash count, so nobody holds cash on it (03 rule 7;
+        // 06 Finance step switched off 2; plan of 4.10c, decided item 6, Look first).
+        !order.skippedFinance &&
+        orderCashCount(rows.get(order.id) ?? [], records.get(order.id) ?? []) !== 0n
+      ) {
         refused.push({
           orderId: order.id,
           code: "not_ready",

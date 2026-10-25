@@ -807,6 +807,7 @@ export async function tickedSummary(
         progress: orders.progress,
         createdByHead: createdByHeadSql,
         ownerClosesAlone: ownerClosesAloneSql,
+        skippedFinance: orders.skippedFinance,
         number: orders.number,
         quantity: orders.plannedQty,
         price: orders.plannedPrice,
@@ -897,7 +898,7 @@ export async function tickedSummary(
         found.length > 0 &&
         found.every(
           (row) =>
-            moneyRecordAllows(row.status) &&
+            moneyRecordAllows(row.status, row.skippedFinance) &&
             decide("money.record", actor, { branchId: row.branchId, ownerId: row.ownerId }) ===
               "allow",
         ),
@@ -1077,6 +1078,7 @@ export async function orderDownload(
         quantity: orders.plannedQty,
         price: orders.plannedPrice,
         paymentType: orders.paymentType,
+        skippedFinance: orders.skippedFinance,
       })
       .from(orders)
       .innerJoin(branches, eq(branches.id, orders.branchId))
@@ -1154,6 +1156,7 @@ export async function orderDownload(
           plan,
           events.get(row.id) ?? [],
           records.get(row.id) ?? [],
+          row.skippedFinance,
         ),
       };
     });

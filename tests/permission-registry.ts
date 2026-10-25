@@ -28,6 +28,8 @@ export const SERVER_ACTIONS: Record<string, Entry> = {
   "src/app/(app)/notifications/actions.ts#markAllNotificationsReadAction": "notification.own",
   // "Manage catalogs, users, branches, settings" (03; plan of 1.1).
   "src/app/(app)/settings/actions.ts#saveSettingsAction": "catalog.manage",
+  // The Finance step switch (06 Finance step switched off; plan of 4.10c).
+  "src/app/(app)/settings/actions.ts#switchFinanceStepAction": "catalog.manage",
   // The Head's branches (plan of 1.2).
   "src/app/(app)/branches/actions.ts#createBranchAction": "catalog.manage",
   "src/app/(app)/branches/actions.ts#updateBranchAction": "catalog.manage",
@@ -161,6 +163,7 @@ export const SERVER_ACTIONS: Record<string, Entry> = {
   // Close of exact matches and Send to settlement (06 Allowed moves, the two rows from Open; plan
   // of 4.4).
   "src/app/(app)/orders/actions.ts#closeExactOrdersAction": "request.close_exact",
+  "src/app/(app)/orders/actions.ts#closeSkippedOrdersAction": "request.close_skipped",
   "src/app/(app)/orders/actions.ts#sendToSettlementOrdersAction": "request.send_to_settlement",
   // Cancel record and Cancel trip (plan of 3.7, decided item 5, Look first).
   "src/app/(app)/orders/actions.ts#cancelPurchaseAction": "purchase.cancel",

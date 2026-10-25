@@ -10,6 +10,7 @@ import type { OrderFailure } from "@/server/action-result";
 import { now, today } from "@/server/clock";
 import { moneyActions, moneyRows, orders, userBranches, users } from "@/server/db/schema";
 import { notify } from "@/server/notify";
+import { SETTINGS_LOCK_SHARED, readSettings } from "@/server/settings";
 import {
   type LockedOrder,
   type OrderEventExtra,
@@ -33,16 +34,23 @@ import { actionLink, branchNotices } from "./notices";
 // `forbidden` and the whole action is refused. Its lock, repeat, authorize, version and status
 // check run first. Then:
 //
+//   facts       for the Principal's step, the setting `finance_step`, read under the settings lock
+//               taken shared, so a Head's switch and this approval cannot cross (06 Finance step
+//               switched off 1 and 5; plan of 4.10c, decided item 1, Look first)
 //   beforeMove  Finance's payment type per order (06 rule 1; 05 field 13), while the order is
 //               still PENDING_FINANCE, the only status at which `orders_guard` of migration 0019
 //               lets it change (decided item 2, Look first); the total does not change
 //               and the checks of Finance's cash (4.2): only at Finance's step, `money.record` for
 //               each order given cash, one branch per Manager (plan of 4.2, decided item 5)
 //   afterMove   `approved_at` of the orders Finance opens, from the clock (review of the plan,
-//               correction 1; decisions 2.8 item 6); the cash given now, one money action per
+//               correction 1; decisions 2.8 item 6), and of those the Principal opens with the
+//               Finance step off, which are marked `skipped_finance` (06 Finance step switched off
+//               1; 07 Purchase record, Date bought; plan of 4.10c); the cash given now, one money action per
 //               Manager naming this approval (08 When Finance approves; Money ledger 1; plan of 4.2)
 //   notify      one notice per branch to the next step (10 Notifications; decided item 5); an
-//               owner given cash gets CASH_GIVEN instead (plan of 4.2, decided item 4, Look first)
+//               owner given cash gets CASH_GIVEN instead (plan of 4.2, decided item 4, Look first);
+//               "Principal approved" of orders that skipped Finance goes to their owners and the
+//               Heads (10 Notifications; plan of 4.10c)
 
 /**
  * The input: the ticked orders and, at Finance's step only, a payment type per order and the
@@ -223,14 +231,32 @@ async function paymentTypesOf(
   return new Map(rows.map((row) => [row.id, row.paymentType]));
 }
 
-/** The users told when orders of one branch leave a step (10 Notifications; decided item 5). */
+/**
+ * The setting `finance_step` for the Principal's step, read in the action's transaction after the
+ * settings lock is taken shared (plan of 4.10c, decided item 1, Look first). An action with no
+ * order at the Principal's step reads nothing: no other approval asks the step.
+ */
+async function financeStepOf(
+  context: OrdersContext<ApproveInput>,
+): Promise<readonly LockedOrder[]> {
+  if (!context.orders.some((order) => order.status === "PENDING_PRINCIPAL")) return context.orders;
+  await context.tx.execute(SETTINGS_LOCK_SHARED);
+  const financeStep = (await readSettings(context.tx)).finance_step;
+  return context.orders.map((order) => ({ ...order, financeStep }));
+}
+
+/**
+ * The users told when orders of one branch leave a step (10 Notifications; decided item 5).
+ * `skipped`: the Principal opened them with the Finance step off (plan of 4.10c).
+ */
 async function recipientsOf(
   tx: Transaction,
   from: RequestStatus,
   branchId: string,
   ownerIds: readonly string[],
+  skipped: boolean,
 ): Promise<string[]> {
-  if (from === "PENDING_HEAD" || from === "PENDING_PRINCIPAL") {
+  if (from === "PENDING_HEAD" || (from === "PENDING_PRINCIPAL" && !skipped)) {
     // Head approved → the Principal of the branch; Principal approved → its Finance users.
     const rows = await tx
       .select({ id: userBranches.userId })
@@ -244,8 +270,9 @@ async function recipientsOf(
       );
     return rows.map((row) => row.id);
   }
-  // Finance approved → the owners of the orders and every Head; one row each (notify() drops a
-  // name given twice, an inactive user and the actor).
+  // Finance approved, or the Principal approved orders that skipped Finance → the owners of the
+  // orders and every Head; one row each (notify() drops a name given twice, an inactive user and
+  // the actor).
   const heads = await tx
     .select({ id: users.id })
     .from(users)
@@ -268,11 +295,20 @@ export const approveOrders = orderMoveAction<ApproveInput>({
   name: "approveOrders",
   action: "APPROVE",
   input,
+  facts: financeStepOf,
   beforeMove: beforeApprove,
   async afterMove(context, moves) {
     const opened = moves.filter((move) => move.to === "PURCHASING").map((move) => move.orderId);
     if (opened.length > 0) {
       await context.tx.update(orders).set({ approvedAt: now() }).where(inArray(orders.id, opened));
+    }
+    // The mark is saved with the approval and never changes (06 Finance step switched off 1).
+    const skipped = moves.filter((move) => move.skipsFinance).map((move) => move.orderId);
+    if (skipped.length > 0) {
+      await context.tx
+        .update(orders)
+        .set({ skippedFinance: true })
+        .where(inArray(orders.id, skipped));
     }
     await giveCash(context);
   },
@@ -280,12 +316,18 @@ export const approveOrders = orderMoveAction<ApproveInput>({
     const { tx, userId } = context;
     const at = now();
     // Every order of one action stands at one step: each role approves one step only (03 matrix).
-    // Grouped by step all the same, so a notice never names the wrong one.
-    const byStep = new Map<RequestStatus, (typeof context.orders)[number][]>();
+    // Grouped by step all the same, so a notice never names the wrong one; the Principal's orders
+    // that skipped Finance (now Open) apart from those now waiting for Finance (plan of 4.10c).
+    const nowOf = new Map(result.orders.map((order) => [order.id, order.status]));
+    const byStep = new Map<string, (typeof context.orders)[number][]>();
     for (const order of context.orders) {
-      byStep.set(order.status, [...(byStep.get(order.status) ?? []), order]);
+      const skipped = order.status === "PENDING_PRINCIPAL" && nowOf.get(order.id) === "PURCHASING";
+      const key = `${order.status}:${skipped}`;
+      byStep.set(key, [...(byStep.get(key) ?? []), order]);
     }
-    for (const [from, moved] of byStep) {
+    for (const [key, moved] of byStep) {
+      const from = moved[0]!.status;
+      const skipped = key.endsWith(":true");
       const type = NOTICE_OF[from];
       if (!type) continue;
       for (const { branchId, params } of await branchNotices(tx, userId, moved)) {
@@ -297,7 +339,9 @@ export const approveOrders = orderMoveAction<ApproveInput>({
         await notify(
           { tx, userId },
           {
-            to: (await recipientsOf(tx, from, branchId, owners)).filter((id) => !cashOf.has(id)),
+            to: (await recipientsOf(tx, from, branchId, owners, skipped)).filter(
+              (id) => !cashOf.has(id),
+            ),
             type,
             params,
             branchId,

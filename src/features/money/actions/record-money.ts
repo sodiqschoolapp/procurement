@@ -38,7 +38,8 @@ import { moneyRowsOf } from "../money-rows";
 // lock, repeat, authorize `money.record` per order, version, then:
 //
 //   check    the comment (1 to 1000), the date, the document number, at least one amount above
-//            0; every order Open or Waiting for settlement (`moneyRecordAllows()`; decided item 1,
+//            0; every order Open or Waiting for settlement and none that skipped Finance
+//            (`moneyRecordAllows()`; 06 Finance step switched off 2; plan of 4.10c; decided item 1,
 //            Look first); one Manager's orders in one branch (decided item 4, Look first); a file
 //            only for one Manager (decided item 5, Look first)
 //   write    first no crossing over: each Cash returned or Paid back row against the order's
@@ -205,7 +206,7 @@ export const recordMoney = defineOrdersAction<RecordMoneyInput>({
     storedFields(context.input);
     const blocks = blocksOf(context);
     const refused = context.orders
-      .filter((order) => !moneyRecordAllows(order.status))
+      .filter((order) => !moneyRecordAllows(order.status, order.skippedFinance))
       .map((order) => ({ orderId: order.id, code: "wrong_status" as const }));
     if (refused.length > 0) return refused;
     if (blocks.length === 0) {

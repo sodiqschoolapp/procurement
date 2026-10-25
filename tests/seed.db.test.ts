@@ -1288,6 +1288,7 @@ describe("npm run db:seed: the orders (build-plan 2.15; plan of 2.15, decided it
                 buyingFinished,
                 exactMatch: false,
                 ownerClosesAlone: true,
+                skippedFinance: false,
                 // 08 Closing 3: the seed closes only an order with no purchase, no transfer or card
                 // block and no overspend.
                 readyToClose: count === 0n,

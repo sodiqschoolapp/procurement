@@ -26,6 +26,7 @@ import { bound } from "@/server/bound-sql";
 import { now } from "@/server/clock";
 import { accounts, auditLog, branches, sessions, userBranches, users } from "@/server/db/schema";
 import { notify } from "@/server/notify";
+import { readSettings } from "@/server/settings";
 
 import { staffedPlaces } from "../vacancies";
 
@@ -499,7 +500,10 @@ export const updateUser = defineAction({
       changed,
       before: auditFields(current, changed, branchRows),
       after: auditFields(user, changed, branchRows),
-      vacated: named(vacatedPlaces(before, after), branchRows),
+      vacated: named(
+        vacatedPlaces(before, after, (await readSettings(tx)).finance_step),
+        branchRows,
+      ),
     };
   },
   async history({ tx, userId }, result) {
@@ -578,7 +582,10 @@ export const setUserActive = defineAction({
     const after = await staffedPlaces(tx, current.branchIds);
     return {
       user: { ...current, isActive: input.active },
-      vacated: named(vacatedPlaces(before, after), branchRows),
+      vacated: named(
+        vacatedPlaces(before, after, (await readSettings(tx)).finance_step),
+        branchRows,
+      ),
     };
   },
   async history({ tx, userId }, result) {
