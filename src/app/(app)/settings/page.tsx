@@ -5,11 +5,16 @@ import { AdminNav } from "@/components/admin-nav";
 import { ChangeHistory, type HistoryField } from "@/components/change-history";
 import { listChangeHistory } from "@/features/audit/queries/change-history";
 import { storedSettingValue } from "@/domain/settings";
-import { getLastDatabaseCopy, getSettingsForHead } from "@/features/settings/queries/settings";
+import {
+  getFinanceStepWaiting,
+  getLastDatabaseCopy,
+  getSettingsForHead,
+} from "@/features/settings/queries/settings";
 import { getFormatters } from "@/i18n/get-formatters";
 import { requireUser } from "@/server/auth/session";
 import { AuthorizationError } from "@/server/authorize";
 
+import { FinanceStepSwitch } from "./finance-step-switch";
 import { SettingsForm } from "./settings-form";
 
 // /settings (11-screens-and-ux.md, Screens: "Settings, /settings, Head"; build-plan 1.1). The
@@ -27,6 +32,7 @@ const FIELDS: Record<string, HistoryField> = {
   receipt_required_for_cash: { label: "settings.receiptRequiredForCash", kind: "boolean" },
   reminder_hours: { label: "settings.reminderHours", kind: "hours" },
   escalation_hours: { label: "settings.escalationHours", kind: "hours" },
+  finance_step: { label: "settings.financeStep.title", kind: "boolean" },
 };
 
 async function readOrNotFound<T>(read: () => Promise<T>): Promise<T> {
@@ -43,6 +49,9 @@ export default async function SettingsPage() {
   const t = await getTranslations();
   const values = await readOrNotFound(() => getSettingsForHead(user.id));
   const lastCopy = await readOrNotFound(() => getLastDatabaseCopy(user.id));
+  const waiting = values.finance_step
+    ? await readOrNotFound(() => getFinanceStepWaiting(user.id))
+    : [];
   const format = await getFormatters();
   const history = await listChangeHistory(user.id, { entity: "settings", entityId: "settings" });
 
@@ -64,6 +73,7 @@ export default async function SettingsPage() {
           ) as string,
         }}
       />
+      <FinanceStepSwitch on={values.finance_step} waiting={waiting} />
       <section className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 text-card-foreground sm:p-5">
         <h2 className="text-subheading font-semibold">{t("settings.history")}</h2>
         <ChangeHistory entries={history.rows} fields={FIELDS} />

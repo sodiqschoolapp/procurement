@@ -10,6 +10,7 @@ import {
   cancelOrdersAction,
   closeExactOrdersAction,
   closeOrdersAction,
+  closeSkippedOrdersAction,
   finishOrdersAction,
   markNotBoughtAction,
   rejectOrdersAction,
@@ -30,6 +31,7 @@ import { cn } from "@/components/utils";
 import { MOVE_REASON_MAX, MOVE_REASON_MIN, isMoveReason } from "@/domain/order-moves";
 import type { BuyingAction } from "@/domain/purchases";
 import { moveFailureLines } from "@/features/orders/move-lines";
+import { type SkippedShare, reopenResultKey } from "@/features/orders/move-texts";
 import { useFormatters } from "@/i18n/use-formatters";
 
 // Send back, Reject, Cancel, Take back and Submit again of ticked orders or of one order
@@ -49,7 +51,9 @@ import { useFormatters } from "@/i18n/use-formatters";
 // Since 4.6 Finance's Close, whose "not ready" line says what readiness needs (08 Closing 3).
 // Since 4.7 the Head's Acknowledge overspend, which moves no status: one comment for every ticked
 // order (08 Overspend guard; plan of 4.7, decided item 4). Since 4.8 the Head's Reopen of Closed
-// orders, with one reason (06 Allowed moves, Closed row; rule 3).
+// orders, with one reason (06 Allowed moves, Closed row; rule 3). Since 4.10c Close of orders that
+// skipped Finance, whatever the difference, with 08 Closing 1's sentence, and a Reopen dialog that
+// says such orders close again without settlement (06 Finance step switched off 3 and 6).
 
 /** The state machine's moves this button makes. */
 export type StatusMoveKind =
@@ -59,6 +63,7 @@ export type StatusMoveKind =
   | "TAKE_BACK"
   | "SUBMIT_AGAIN"
   | "CLOSE_EXACT"
+  | "CLOSE_SKIPPED"
   | "SEND_TO_SETTLEMENT"
   | "SEND_BACK_FOR_CORRECTION"
   | "CLOSE"
@@ -72,6 +77,7 @@ const RUN: Record<MoveKind, (input: unknown) => Promise<MoveAnswer>> = {
   TAKE_BACK: takeBackOrdersAction,
   SUBMIT_AGAIN: submitAgainOrdersAction,
   CLOSE_EXACT: closeExactOrdersAction,
+  CLOSE_SKIPPED: closeSkippedOrdersAction,
   SEND_TO_SETTLEMENT: sendToSettlementOrdersAction,
   SEND_BACK_FOR_CORRECTION: sendBackForCorrectionOrdersAction,
   CLOSE: closeOrdersAction,
@@ -108,6 +114,7 @@ export function MoveButton({
   size,
   variant = "secondary",
   buttonLabel,
+  skipped = "none",
   className,
 }: {
   move: MoveKind;
@@ -130,6 +137,8 @@ export function MoveButton({
    * screen's "Close 3 orders"); the confirm dialog keeps the move's own word.
    */
   buttonLabel?: string;
+  /** How many of the orders skipped Finance, as the server read them (plan of 4.10c). */
+  skipped?: SkippedShare;
   className?: string;
 }) {
   const t = useTranslations("orders.moves");
@@ -233,13 +242,13 @@ export function MoveButton({
         confirmDisabled={needsReason && !isMoveReason(reason)}
         text={{
           title: t(`title.${move}`, { count }),
-          result: t(`result.${move}`, { count }),
+          result: t(`result.${move === "REOPEN" ? reopenResultKey(skipped) : move}`, { count }),
           confirm: label,
           danger: FINAL.has(move),
         }}
         onConfirm={() => void run()}
       >
-        {move === "CLOSE_EXACT" ? (
+        {move === "CLOSE_EXACT" || move === "CLOSE_SKIPPED" ? (
           <p data-close-confirm className="mt-4 text-sm font-semibold">
             {t("closeConfirm")}
           </p>

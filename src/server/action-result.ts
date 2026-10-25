@@ -84,6 +84,8 @@ export const FIELD_ERROR_KINDS = [
   // decided item 7).
   "inFuture",
   "beforeApproval",
+  // ... before the Principal's approval of orders that skipped Finance (plan of 4.10c).
+  "beforePrincipalApproval",
   // A trip over orders of two branches or two owners (07 One trip, many orders; plan of 3.4,
   // decided item 2, Look first).
   "tripOneOwner",

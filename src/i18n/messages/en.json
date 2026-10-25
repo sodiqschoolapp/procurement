@@ -98,7 +98,9 @@
       "stockLeft": "The branch still has stock.",
       "transfersInTransit": "A transfer from or to the branch is still in transit.",
       "aboveSent": "More than was sent.",
-      "nothingToCount": "No items in stock here to count."
+      "nothingToCount": "No items in stock here to count.",
+      "financeStepWaiting": "Orders still wait for Finance or for settlement.",
+      "beforePrincipalApproval": "The date is before the Principal approved the order. Pick that day or a later one."
     },
     "file": {
       "tooLarge": "The file is larger than 10 MB. Choose a smaller file or take the photo again.",
@@ -574,7 +576,24 @@
     "save": "Save",
     "saved": "Settings saved",
     "nothingChanged": "Nothing changed",
-    "history": "Change history"
+    "history": "Change history",
+    "financeStep": {
+      "title": "Finance step",
+      "isOn": "On: orders the Principal approves wait for Finance.",
+      "isOff": "Off: orders the Principal approves open for buying at once, with no cash tracking.",
+      "hint": "For the whole school. Switch it off while the Finance team does not use the app. Switching changes only the orders the Principal approves from then on.",
+      "waiting": "{count, plural, one {1 order waits} other {# orders wait}} for Finance or for settlement. The step can be switched off once none is left.",
+      "waitingLine": "{branch} · {status}",
+      "switchOff": "Switch off",
+      "switchOn": "Switch on",
+      "switchOffTitle": "Switch the Finance step off?",
+      "switchOnTitle": "Switch the Finance step on?",
+      "switchOffResult": "New orders the Principal approves will open for buying at once, with no cash tracking, and their owner or the Head closes them without settlement. Orders already Open keep their Finance step.",
+      "switchOnResult": "Orders the Principal approves from now on wait for Finance. Orders that skipped Finance keep closing without settlement.",
+      "refused": "Not switched off: orders {orders} still wait for Finance or for settlement.",
+      "switchedOff": "The Finance step is switched off",
+      "switchedOn": "The Finance step is switched on"
+    }
   },
   "admin": {
     "label": "Admin pages",
@@ -1359,10 +1378,12 @@
           "done": "Done",
           "current": "Now",
           "stopped": "Stopped here",
-          "todo": "Not yet"
+          "todo": "Not yet",
+          "skipped": "Skipped"
         },
         "by": "{name}, {date} {time}",
-        "line": "{step}: {state}"
+        "line": "{step}: {state}",
+        "skippedStep": "{step}: Skipped"
       },
       "tabs": {
         "label": "Order sections",
@@ -1427,7 +1448,8 @@
           "SETTLE_CASH": "Cash settled",
           "CONFIRM_SETTLEMENT": "Settlement confirmation changed",
           "ACKNOWLEDGE_OVERSPEND": "Overspend acknowledged",
-          "MOVE_OWNER": "Moved to another Manager"
+          "MOVE_OWNER": "Moved to another Manager",
+          "CLOSE_SKIPPED": "Closed without settlement"
         },
         "approved": {
           "PENDING_HEAD": "Approved at the Head step",
@@ -1444,7 +1466,8 @@
         "purchase": "{qty} × {price}",
         "progress": "Buying: {from} → {to}",
         "owner": "From {from} to {to}",
-        "issue": "Given straight to the department: <note>{number}</note>"
+        "issue": "Given straight to the department: <note>{number}</note>",
+        "financeSkipped": "Finance step skipped"
       },
       "waiting": {
         "HEAD": "Waiting for the Head.",
@@ -1594,7 +1617,8 @@
         "wrong_status": "No longer waiting at this step. The list is refreshed.",
         "forbidden": "You cannot approve this order at its step.",
         "not_ready": "This order cannot be approved yet."
-      }
+      },
+      "resultSkipFinance": "Total {total}. The Finance step is switched off, so {count, plural, one {it opens} other {they open}} for buying at once, with no cash tracking. The owner and the Head are told."
     },
     "moves": {
       "already": {
@@ -1619,7 +1643,8 @@
         "CLOSE": "Close",
         "REOPEN": "Reopen",
         "ACKNOWLEDGE_OVERSPEND": "Acknowledge overspend",
-        "MOVE_OWNER": "Move to another Manager"
+        "MOVE_OWNER": "Move to another Manager",
+        "CLOSE_SKIPPED": "Close"
       },
       "buttonCount": "{label} ({count})",
       "title": {
@@ -1637,7 +1662,8 @@
         "CLOSE": "{count, plural, one {Close 1 order?} other {Close # orders?}}",
         "REOPEN": "{count, plural, one {Reopen 1 order?} other {Reopen # orders?}}",
         "ACKNOWLEDGE_OVERSPEND": "{count, plural, one {Acknowledge the overspend of 1 order?} other {Acknowledge the overspend of # orders?}}",
-        "MOVE_OWNER": "{count, plural, one {Move 1 order to another Manager?} other {Move # orders to another Manager?}}"
+        "MOVE_OWNER": "{count, plural, one {Move 1 order to another Manager?} other {Move # orders to another Manager?}}",
+        "CLOSE_SKIPPED": "{count, plural, one {Close 1 order?} other {Close # orders?}}"
       },
       "result": {
         "SEND_BACK": "{count, plural, one {It goes} other {They go}} back to the owner for editing. The owner and the Head are told. After the next submit, approval starts again at the Head.",
@@ -1654,7 +1680,10 @@
         "CLOSE": "{count, plural, one {1 order will be Closed} other {# orders will be Closed}} and can no longer change. If any order is not ready, nothing closes and the orders are named. The owner, the Head and Finance are told.",
         "REOPEN": "{count, plural, one {It goes} other {They go}} back to Open, so a mistake can be corrected. Settlement confirmations and the overspend acknowledgment are cleared, and Finance settles {count, plural, one {it} other {them}} again. The owner, the Head and Finance are told.",
         "ACKNOWLEDGE_OVERSPEND": "Finance can then close {count, plural, one {this order} other {these orders}} with the actual total above the plan. Your comment is kept in each order's history, and Finance of the branch is told.",
-        "MOVE_OWNER": "The chosen Manager becomes the owner of {count, plural, one {this order} other {these orders}}. Only orders whose cash count is 0 can move; the move is kept in each order's history."
+        "MOVE_OWNER": "The chosen Manager becomes the owner of {count, plural, one {this order} other {these orders}}. Only orders whose cash count is 0 can move; the move is kept in each order's history.",
+        "CLOSE_SKIPPED": "{count, plural, one {1 order skipped Finance and will be Closed} other {# orders skipped Finance and will be Closed}} without settlement, whatever the difference, and can no longer change. The owner, the Head and Finance are told; the Head is also told of a big overspend.",
+        "REOPEN_SKIPPED": "{count, plural, one {It goes} other {They go}} back to Open, so a mistake can be corrected. {count, plural, one {It} other {They}} skipped Finance, so the owner closes {count, plural, one {it} other {them}} again once the buying is finished, without settlement. The owner, the Head and Finance are told.",
+        "REOPEN_MIXED": "They go back to Open, so a mistake can be corrected. Settlement confirmations and the overspend acknowledgment are cleared, and Finance settles the orders that went through Finance again; the owner closes those that skipped Finance again, without settlement. The owner, the Head and Finance are told."
       },
       "done": {
         "SEND_BACK": "{count, plural, one {Sent back 1 order.} other {Sent back # orders.}}",
@@ -1671,7 +1700,8 @@
         "CLOSE": "{count, plural, one {Closed 1 order.} other {Closed # orders.}}",
         "REOPEN": "{count, plural, one {Reopened 1 order.} other {Reopened # orders.}}",
         "ACKNOWLEDGE_OVERSPEND": "{count, plural, one {Acknowledged the overspend of 1 order.} other {Acknowledged the overspend of # orders.}}",
-        "MOVE_OWNER": "{count, plural, one {Moved 1 order.} other {Moved # orders.}}"
+        "MOVE_OWNER": "{count, plural, one {Moved 1 order.} other {Moved # orders.}}",
+        "CLOSE_SKIPPED": "{count, plural, one {Closed 1 order.} other {Closed # orders.}}"
       },
       "failedTitle": "{count, plural, one {Nothing was saved: 1 order is named below.} other {Nothing was saved: # orders are named below.}}",
       "failedLine": "{number} — {problem}",
@@ -1757,7 +1787,8 @@
         "sort": "Sort: {sort}"
       },
       "excelShort": "Excel",
-      "pdfShort": "PDF"
+      "pdfShort": "PDF",
+      "skipped": "Skipped"
     },
     "progress": {
       "OPEN": "Buying open",

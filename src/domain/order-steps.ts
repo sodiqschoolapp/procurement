@@ -130,6 +130,18 @@ export function orderSteps(
   });
 }
 
+/**
+ * The Principal's approval that opened the order with the Finance step off, read from the event's
+ * own move (06 Allowed moves: "Waiting for Principal | Approve | … | Open when the Finance step is
+ * off"): the History tab says "Finance step skipped" on it (06 rule 11; plan of 4.10c, decided
+ * item 13). No other move goes from Waiting for Principal to Open.
+ */
+export function skippedFinanceBy(event: Pick<StepEvent, "type" | "from" | "to">): boolean {
+  return (
+    event.type === "APPROVE" && event.from === "PENDING_PRINCIPAL" && event.to === "PURCHASING"
+  );
+}
+
 /** Who acts next (06 Statuses): a role of the order's branch, the owner, or nobody. */
 export type WaitingFor = "HEAD" | "PRINCIPAL" | "FINANCE" | "OWNER" | "NOBODY";
 

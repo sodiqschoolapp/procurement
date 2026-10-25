@@ -228,6 +228,7 @@ type OrderSource = {
   opened_at: string | null;
   payment_type: PaymentType;
   planned_total: string;
+  skipped_finance: boolean;
   rows: { kind: MoneyRowKind; amount: string; is_cancelled: boolean }[];
 };
 
@@ -251,7 +252,7 @@ async function writeOrders(executor: Executor) {
             where ev.order_id = o.id and ev.to_status = 'PURCHASING'
               and ev.from_status <> 'PURCHASING'
             order by ev.created_at, ev.id limit 1) as opened_at,
-           o.payment_type, o.planned_total::text as planned_total,
+           o.payment_type, o.planned_total::text as planned_total, o.skipped_finance,
            coalesce((select jsonb_agg(jsonb_build_object(
                               'kind', r.kind, 'amount', r.amount::text,
                               'is_cancelled', a.is_cancelled) order by r.id)
@@ -262,32 +263,35 @@ async function writeOrders(executor: Executor) {
     join products pr on pr.id = v.product_id
     where o.status <> 'DRAFT'`);
   if (found.rows.length === 0) return;
-  const rows = found.rows.map(({ payment_type, planned_total, rows: money, ...row }) => {
-    const plannedCash = plannedCashOf(payment_type, BigInt(planned_total));
-    const handed = cashHanded(
-      money.map((each) => ({
-        kind: each.kind,
-        amount: BigInt(each.amount),
-        isCancelled: each.is_cancelled,
-      })),
-    );
-    return {
-      ...row,
-      approval_seconds:
-        row.opened_at === null
-          ? null
-          : secondsBetween(new Date(row.submitted_at), new Date(row.opened_at)).toString(),
-      // Text, so no JavaScript number holds the so'm (CLAUDE.md rule 6).
-      planned_cash: plannedCash.toString(),
-      cash_handed: handed.toString(),
-      cash_needed: cashNeeded({
-        status: row.status,
-        progress: row.progress,
-        plannedCash,
-        handed,
-      }).toString(),
-    };
-  });
+  const rows = found.rows.map(
+    ({ payment_type, planned_total, skipped_finance, rows: money, ...row }) => {
+      const plannedCash = plannedCashOf(payment_type, BigInt(planned_total));
+      const handed = cashHanded(
+        money.map((each) => ({
+          kind: each.kind,
+          amount: BigInt(each.amount),
+          isCancelled: each.is_cancelled,
+        })),
+      );
+      return {
+        ...row,
+        approval_seconds:
+          row.opened_at === null
+            ? null
+            : secondsBetween(new Date(row.submitted_at), new Date(row.opened_at)).toString(),
+        // Text, so no JavaScript number holds the so'm (CLAUDE.md rule 6).
+        planned_cash: plannedCash.toString(),
+        cash_handed: handed.toString(),
+        cash_needed: cashNeeded({
+          status: row.status,
+          progress: row.progress,
+          plannedCash,
+          handed,
+          skippedFinance: skipped_finance,
+        }).toString(),
+      };
+    },
+  );
   await executor.execute(sql`
     insert into analytics_orders (order_id, branch_id, status, progress, submitted_on, needed_by,
                                   category_id, department_id, owner_id, opened_at, opened_on,
@@ -627,7 +631,8 @@ type CashSource = {
  * the orders Money with managers reads (not Draft, not Closed, with a money row or a record), each
  * money row with its action's cancel mark and date, each record with its trip's payment type and
  * date and each extra with its own type, as `datedMoneyRowsOf()` and `datedCashRecordsOf()` read
- * them; the count and the date from the domain.
+ * them; the count and the date from the domain. Not an order that skipped Finance: it has no cash
+ * count (06 Finance step switched off 2; plan of 4.10c, decided item 5, Look first).
  */
 async function writeCash(executor: Executor) {
   const found = await executor.execute<CashSource>(sql`
@@ -656,6 +661,7 @@ async function writeCash(executor: Executor) {
     join product_variants v on v.id = o.variant_id
     join products pr on pr.id = v.product_id
     where o.status not in ('DRAFT', 'CLOSED')
+      and not o.skipped_finance
       and (exists (select 1 from money_rows r where r.order_id = o.id)
            or exists (select 1 from purchases p where p.order_id = o.id))`);
 

@@ -115,11 +115,14 @@ export async function getManagerHome(userId: string, branch: string | null): Pro
       };
     });
 
-    // 08: "his orders that are not Closed"; no money reaches a Draft.
+    // 08: "his orders that are not Closed"; no money reaches a Draft. Not an order that skipped
+    // Finance: it has no cash count (06 Finance step switched off 2; plan of 4.10c).
     const counted = await db
       .select({ id: orders.id, status: orders.status })
       .from(orders)
-      .where(and(own, notInArray(orders.status, ["DRAFT", "CLOSED"])));
+      .where(
+        and(own, notInArray(orders.status, ["DRAFT", "CLOSED"]), eq(orders.skippedFinance, false)),
+      );
     const ids = counted.map((row) => row.id);
     const rows = await moneyRowsOf(db, ids);
     const records = await cashRecordsOf(db, ids);

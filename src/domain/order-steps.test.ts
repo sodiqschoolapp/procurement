@@ -11,6 +11,7 @@ import {
   isDueSoon,
   isOverdue,
   orderSteps,
+  skippedFinanceBy,
   stuckBefore,
   waitingFor,
 } from "./order-steps";
@@ -313,6 +314,15 @@ describe("orderSteps of an order that skipped Finance (11 Order page layout 2: '
       PRINCIPAL: "current",
       FINANCE: "todo",
     });
+  });
+});
+
+describe("skippedFinanceBy (06 rule 11; History tab 'Finance step skipped'; plan of 4.10c, decided item 13)", () => {
+  it("is the Principal's approval straight to Open, and no other move", () => {
+    expect(skippedFinanceBy(event("APPROVE", "PENDING_PRINCIPAL", "PURCHASING", "P"))).toBe(true);
+    expect(skippedFinanceBy(principalOk())).toBe(false);
+    expect(skippedFinanceBy(financeOk())).toBe(false);
+    expect(skippedFinanceBy(event("REOPEN", "CLOSED", "PURCHASING", "H"))).toBe(false);
   });
 });
 

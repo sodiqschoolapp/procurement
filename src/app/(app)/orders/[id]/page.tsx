@@ -43,6 +43,7 @@ const PAGE_MOVES: readonly StatusMoveKind[] = [
   "SUBMIT_AGAIN",
   "CANCEL",
   "CLOSE_EXACT",
+  "CLOSE_SKIPPED",
   "SEND_TO_SETTLEMENT",
   "SEND_BACK_FOR_CORRECTION",
   "CLOSE",
@@ -87,12 +88,14 @@ export default async function OrderPageScreen({
   const asked = (await searchParams).tab;
   // The Purchases tab exists from status Open on (plan of 3.5, decided item 11).
   const hasPurchases = BUYING_STATUSES.has(order.status);
+  // An order that skipped Finance has no Money tab (11 Order page layout 3; plan of 4.10c).
+  const hasMoney = hasPurchases && !order.skippedFinance;
   const tab: Tab =
     asked === "history"
       ? "history"
       : asked === "purchases" && hasPurchases
         ? "purchases"
-        : asked === "money" && hasPurchases
+        : asked === "money" && hasMoney
           ? "money"
           : "details";
   // The Money tab, from Open on as Purchases (plan of 4.3, decided item 11), read only when shown.
@@ -248,9 +251,11 @@ export default async function OrderPageScreen({
   );
 
   const branchText = `${order.branchCode} · ${order.branchName}`;
-  const tabs: Tab[] = hasPurchases
+  const tabs: Tab[] = hasMoney
     ? ["details", "purchases", "money", "history"]
-    : ["details", "history"];
+    : hasPurchases
+      ? ["details", "purchases", "history"]
+      : ["details", "history"];
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-5">
@@ -331,6 +336,7 @@ export default async function OrderPageScreen({
                   owner: { id: order.ownerId, name: order.ownerName },
                 },
                 total: format.money(order.plannedTotal),
+                financeStep: order.financeStep,
               }
             : null
         }
@@ -347,6 +353,7 @@ export default async function OrderPageScreen({
         canRecordMoney={order.canRecordMoney}
         settle={order.canSettle ? `/orders/settle?ids=${order.id}` : null}
         waitingLine={line}
+        skippedFinance={order.skippedFinance}
       />
 
       <section

@@ -183,6 +183,9 @@ export function downloadSheet(
       steps: Object.fromEntries(
         APPROVAL_STEPS.map((step) => {
           const by = order.row.approvals[step];
+          // The Finance step of an order that skipped Finance reads "Skipped" (06 Finance step
+          // switched off; 11 Order page layout 2; plan of 4.10c).
+          if (by === "skipped") return [step, { name: t("skipped"), at: "" }];
           return [step, by ? { name: by.name, at: moment(by.at) } : { name: "", at: "" }];
         }),
       ) as DownloadLine["steps"],

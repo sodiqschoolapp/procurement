@@ -242,6 +242,8 @@ export type OrderPage = {
    * Finance step "Skipped" (11 Order page layout 2 and 3; 06 Finance step switched off; 4.10c).
    */
   skippedFinance: boolean;
+  /** The setting `finance_step` now: the Principal's Approve dialog says where orders go. */
+  financeStep: boolean;
   steps: StepView[];
   /** Newest first (decided item 11). */
   events: OrderPageEvent[];
@@ -436,7 +438,8 @@ async function readPage(db: Executor, actor: Actor, id: string): Promise<OrderPa
       ),
     );
 
-  const threshold = (await readSettings(db)).price_hint_percent;
+  const settings = await readSettings(db);
+  const threshold = settings.price_hint_percent;
   const changes = row.revision >= 2 ? await readChanges(db, row.id, row.revision) : null;
   const stepEvents: StepEvent[] = events.map((event) => ({
     type: event.type,
@@ -531,6 +534,7 @@ async function readPage(db: Executor, actor: Actor, id: string): Promise<OrderPa
     approvedAt: row.approvedAt,
     closedAt: row.closedAt,
     skippedFinance: row.skippedFinance,
+    financeStep: settings.finance_step,
     steps: orderSteps(row.status, stepEvents, row.skippedFinance),
     events: events.toReversed(),
     actions: allowedActions(actor, [

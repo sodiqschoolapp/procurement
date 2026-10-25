@@ -38,6 +38,7 @@ const LIST_MOVES: readonly StatusMoveKind[] = [
   "CANCEL",
   "TAKE_BACK",
   "CLOSE_EXACT",
+  "CLOSE_SKIPPED",
   "SEND_TO_SETTLEMENT",
   "SEND_BACK_FOR_CORRECTION",
   "CLOSE",
@@ -305,6 +306,7 @@ export function OrderList({
                     orders={summary.orders}
                     versionOf={(id) => seen.current.get(id) ?? 0}
                     total={format.money(BigInt(summary.totals.grand))}
+                    financeStep={summary.financeStep}
                     onAnswer={(answer) => {
                       setFailed(answer);
                       clear();
@@ -318,6 +320,7 @@ export function OrderList({
                     key={move}
                     move={move}
                     orders={summary.orders}
+                    skipped={summary.skippedFinance}
                     versionOf={(id) => seen.current.get(id) ?? 0}
                     onAnswer={(answer) => {
                       setFailed(answer);

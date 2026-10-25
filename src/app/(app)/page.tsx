@@ -344,6 +344,7 @@ async function PrincipalHome({ userId, branch }: { userId: string; branch: strin
         <WaitingCards
           cards={home.cards.map((card) => ({ group: wireGroup(card.group), moves: card.moves }))}
           listHref={waitingHref}
+          financeStep={home.financeStep}
         />
       )}
 
