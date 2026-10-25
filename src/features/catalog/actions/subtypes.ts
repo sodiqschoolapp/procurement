@@ -299,6 +299,109 @@ export async function recordSubtypeCreate(
   }
 }
 
+/** What the add from an order's product search gives (04 rule 8; plan of 1.12b). */
+export type SubtypeFromSearch =
+  | {
+      outcome: "made";
+      /** The new subtype. */
+      entry: SavedSubtype;
+      /** The hidden default made real under the existing items' name; null when it had subtypes. */
+      named: Created | null;
+    }
+  | { outcome: "exists"; variantId: string; name: string; isActive: boolean };
+
+/**
+ * The body of the add of a subtype from an order's product search (04 rule 8: "When the product has
+ * no subtypes yet, the Manager also names what its existing items are ...: the hidden default
+ * subtype takes that name, so existing orders, stock and prices keep pointing at the same items";
+ * plan of 1.12b, decided items 2, 4, 7, Look first). The table's lock, then the product FOR UPDATE,
+ * then its default, as addSubtype(). A name the product already holds (the hidden default left
+ * out) gives that entry back and writes nothing (04 rule 3). On a product without subtypes the
+ * default keeps its id, price, price rows and photo and changes only its name and `is_default`;
+ * the new name is a new row, which alone takes the photo, the client key and `added_by`, so a
+ * repeat finds it and never the renamed default. No reference price is taken.
+ */
+export async function addSubtypeFromSearch(
+  tx: Executor,
+  userId: string,
+  input: {
+    productId: string;
+    name: string;
+    photoFileId: string | null;
+    existingName?: string | null;
+  },
+  clientKey: string,
+  addedBy: string | null,
+): Promise<SubtypeFromSearch> {
+  await catalog.lockTable(tx);
+  const [product] = await tx
+    .select({ isActive: products.isActive, hasVariants: products.hasVariants })
+    .from(products)
+    .where(eq(products.id, input.productId))
+    .for("update");
+  if (!product) throw new ActionError("invalid_input", { productId: "errors.field.notAllowed" });
+  if (!product.isActive) {
+    throw new ActionError("invalid_input", { productId: "errors.field.inactive" });
+  }
+
+  const [held] = product.hasVariants
+    ? []
+    : await tx
+        .select({
+          id: productVariants.id,
+          name: productVariants.name,
+          price: productVariants.referencePrice,
+        })
+        .from(productVariants)
+        .where(
+          and(eq(productVariants.productId, input.productId), eq(productVariants.isDefault, true)),
+        )
+        .for("update");
+
+  const taken = await catalog.findTaken(tx, input.name, input.productId, held?.id ?? null);
+  if (taken)
+    return { outcome: "exists", variantId: taken.id, name: taken.name, isActive: taken.isActive };
+
+  if (input.photoFileId) await refusePhoto(tx, userId, input.photoFileId);
+
+  let named: Created | null = null;
+  if (held) {
+    // Read on the locked product: another add may have given it subtypes meanwhile, and then the
+    // existing name is not asked (decided item 7).
+    const existingName = input.existingName ?? null;
+    if (existingName === null) {
+      throw new ActionError("invalid_input", { existingName: "errors.field.required" });
+    }
+    // Compared as the unique index compares, never by a JavaScript copy (catalog-entries.ts).
+    const [same] = (
+      await tx.execute<{ same: boolean }>(
+        sql`select lower(regexp_replace(btrim(${existingName}), '\s+', ' ', 'g')) = lower(regexp_replace(btrim(${input.name}), '\s+', ' ', 'g')) as same`,
+      )
+    ).rows;
+    if (same!.same) throw new ActionError("invalid_input", { existingName: "errors.field.taken" });
+    const [entry] = await tx
+      .update(productVariants)
+      .set({ name: existingName, isDefault: false })
+      .where(eq(productVariants.id, held.id))
+      .returning(columns);
+    await tx.update(products).set({ hasVariants: true }).where(eq(products.id, input.productId));
+    named = { entry: entry!, fromDefault: { name: held.name, referencePrice: held.price } };
+  }
+
+  const [entry] = await tx
+    .insert(productVariants)
+    .values({
+      productId: input.productId,
+      name: input.name,
+      photoFileId: input.photoFileId,
+      addedBy,
+      clientKey,
+      createdAt: now(),
+    })
+    .returning(columns);
+  return { outcome: "made", entry: entry!, named };
+}
+
 export const updateSubtype = catalog.update;
 export const setSubtypeActive = catalog.setActive;
 

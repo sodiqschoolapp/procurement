@@ -26,11 +26,19 @@ export const EXPECTED_MATRIX: Record<Permission, Expected> = {
     FINANCE: "no",
   },
   "catalog.suggest": {
-    row: "Suggest a new product for the catalog",
+    row: "See product suggestions (sent before 25 October 2026; 04 rule 8; plan of 1.12b, decided item 3, Look first)",
     HEAD: "all",
     MANAGER: "own",
     PRINCIPAL: "no",
     FINANCE: "no",
+  },
+  "catalog.add": {
+    row: "Add a product or a subtype from an order's product search (04 rule 8)",
+    HEAD: "yes",
+    MANAGER: "yes",
+    PRINCIPAL: "no",
+    FINANCE: "no",
+    right: "ADD_PRODUCTS",
   },
   "catalog.pick": {
     row: "Pick from the catalogs (not a row of 03; plan of 1.5, decision 2, Look first)",

@@ -179,13 +179,15 @@
         "create": "Product added",
         "update": "Product changed",
         "deactivate": "Product deactivated",
-        "activate": "Product activated"
+        "activate": "Product activated",
+        "check": "Marked checked"
       },
       "subtype": {
         "create": "Subtype added",
         "update": "Subtype changed",
         "deactivate": "Subtype deactivated",
-        "activate": "Subtype activated"
+        "activate": "Subtype activated",
+        "check": "Marked checked"
       },
       "price": {
         "add": "New price"
@@ -727,7 +729,8 @@
       "RETURN_REVERSE": "Take returns and reverse documents",
       "TRANSFER_STOCK": "Send transfers to other branches",
       "WRITE_OFF_COUNT": "Ask for write-offs and run stock counts",
-      "SET_MINIMUMS": "Set minimum stock levels"
+      "SET_MINIMUMS": "Set minimum stock levels",
+      "ADD_PRODUCTS": "Add products and subtypes"
     },
     "off": {
       "CREATE_REQUESTS": "The Manager can only view orders.",
@@ -738,7 +741,8 @@
       "RETURN_REVERSE": "Only the Procurement Head can do these.",
       "TRANSFER_STOCK": "Only the Procurement Head can send transfers.",
       "WRITE_OFF_COUNT": "Only the Procurement Head can start them.",
-      "SET_MINIMUMS": "Only the Procurement Head sets them."
+      "SET_MINIMUMS": "Only the Procurement Head sets them.",
+      "ADD_PRODUCTS": "The Manager picks from the catalog only; the Procurement Head adds what is missing."
     }
   },
   "catalog": {
@@ -791,7 +795,8 @@
       "photoFileId": "Photo",
       "productId": "Product",
       "hasVariants": "Has subtypes",
-      "fromDefault": "Made from the product's own entry"
+      "fromDefault": "Made from the product's own entry",
+      "checked": "Checked by the Head"
     },
     "hints": {
       "shortName": "Shown next to quantities, for example kg or pcs.",

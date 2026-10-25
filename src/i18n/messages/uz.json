@@ -179,13 +179,15 @@
         "create": "Mahsulot qoʻshildi",
         "update": "Mahsulot oʻzgartirildi",
         "deactivate": "Mahsulot faolsizlantirildi",
-        "activate": "Mahsulot faollashtirildi"
+        "activate": "Mahsulot faollashtirildi",
+        "check": "Tekshirilgan deb belgilandi"
       },
       "subtype": {
         "create": "Tur qoʻshildi",
         "update": "Tur oʻzgartirildi",
         "deactivate": "Tur faolsizlantirildi",
-        "activate": "Tur faollashtirildi"
+        "activate": "Tur faollashtirildi",
+        "check": "Tekshirilgan deb belgilandi"
       },
       "price": {
         "add": "Yangi narx"
@@ -727,7 +729,8 @@
       "RETURN_REVERSE": "Qaytarishlarni qabul qilish va hujjatlarni bekor qilish",
       "TRANSFER_STOCK": "Boshqa filiallarga koʻchirish yuborish",
       "WRITE_OFF_COUNT": "Hisobdan chiqarishni soʻrash va inventarizatsiya oʻtkazish",
-      "SET_MINIMUMS": "Minimal qoldiqlarni belgilash"
+      "SET_MINIMUMS": "Minimal qoldiqlarni belgilash",
+      "ADD_PRODUCTS": "Mahsulot va turlarni qo'shish"
     },
     "off": {
       "CREATE_REQUESTS": "Menejer buyurtmalarni faqat koʻra oladi.",
@@ -738,7 +741,8 @@
       "RETURN_REVERSE": "Buni faqat xaridlar rahbari qila oladi.",
       "TRANSFER_STOCK": "Koʻchirishni faqat xaridlar rahbari yuboradi.",
       "WRITE_OFF_COUNT": "Ularni faqat xaridlar rahbari boshlay oladi.",
-      "SET_MINIMUMS": "Ularni faqat xaridlar rahbari belgilaydi."
+      "SET_MINIMUMS": "Ularni faqat xaridlar rahbari belgilaydi.",
+      "ADD_PRODUCTS": "Menejer faqat katalogdan tanlaydi; yetishmaganini xaridlar rahbari qo'shadi."
     }
   },
   "catalog": {
@@ -791,7 +795,8 @@
       "photoFileId": "Rasm",
       "productId": "Mahsulot",
       "hasVariants": "Turlari bor",
-      "fromDefault": "Mahsulotning oʻz yozuvidan yaratilgan"
+      "fromDefault": "Mahsulotning oʻz yozuvidan yaratilgan",
+      "checked": "Rahbar tekshirgan"
     },
     "hints": {
       "shortName": "Miqdor yonida yoziladi, masalan kg yoki dona.",

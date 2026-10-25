@@ -183,6 +183,32 @@ export function defineCatalogActions<Fields extends Record<string, unknown>>(
     if (Object.keys(taken).length > 0) throw new ActionError("invalid_input", taken);
   }
 
+  /**
+   * The entry that already holds a name, active or not, by the unique index's own comparison (04
+   * rule 3), or null: for an add that offers the existing entry instead of refusing (04 rule 8;
+   * plan of 1.12b, decided item 4, Look first). Runs under the table's lock, taken by the caller.
+   * With a parent, only its entries count; `exceptId` leaves one row out (a hidden default).
+   */
+  async function findTaken(
+    tx: Executor,
+    name: string,
+    parentId: string | null,
+    exceptId: string | null = null,
+  ): Promise<{ id: string; name: string; isActive: boolean } | null> {
+    const nameColumn = (config.columns as Record<string, AnyPgColumn>).name!;
+    const [row] = await tx
+      .select({ id: table.id, name: nameColumn, isActive: table.isActive })
+      .from(table)
+      .where(
+        and(
+          sql`${compared(nameColumn)} = ${compared(name)}`,
+          exceptId === null ? undefined : ne(table.id, exceptId),
+          within ? eq(within.column, parentId) : undefined,
+        ),
+      );
+    return (row as { id: string; name: string; isActive: boolean } | undefined) ?? null;
+  }
+
   async function lockEntry(tx: Executor, id: string): Promise<Saved | null> {
     await tx.execute(tableLock);
     const [row] = await tx
@@ -215,14 +241,15 @@ export function defineCatalogActions<Fields extends Record<string, unknown>>(
    * under `within.key`. `clientKey` is the create's own; an import passes null, as only its
    * `catalog_imports` row holds its key (spec review of the plan of 1.10, Should fix 1). The add of
    * a product suggestion passes the suggestion's photo as `acceptedPhotoId` (plan of 1.12, decision
-   * 3, Look first); nothing else does.
+   * 3, Look first); nothing else does. A Manager's add from an order's product search passes
+   * `addedBy` (04 rule 8; plan of 1.12b).
    */
   async function insert(
     tx: Executor,
     userId: string,
     input: Record<string, unknown>,
     clientKey: string | null,
-    options: { acceptedPhotoId?: string | null } = {},
+    options: { acceptedPhotoId?: string | null; addedBy?: string | null } = {},
   ): Promise<Saved> {
     await tx.execute(tableLock);
     const sent = pick(input as Partial<Fields>, fields);
@@ -236,6 +263,7 @@ export function defineCatalogActions<Fields extends Record<string, unknown>>(
         ...sent,
         ...(within ? { [within.key]: parentId } : {}),
         isActive: true,
+        ...(options.addedBy ? { addedBy: options.addedBy } : {}),
         clientKey,
         createdAt: now(),
       } as never)
@@ -426,5 +454,5 @@ export function defineCatalogActions<Fields extends Record<string, unknown>>(
     await tx.execute(tableLock);
   }
 
-  return { create, update, setActive, lockTable, refuseTaken, insert, recordCreate };
+  return { create, update, setActive, lockTable, refuseTaken, findTaken, insert, recordCreate };
 }

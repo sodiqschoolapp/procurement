@@ -45,6 +45,7 @@ const FIELDS: Record<string, HistoryField> = {
   productId: { label: "catalog.fields.productId", kind: "text", hidden: true },
   product: { label: "catalog.fields.productId", kind: "text" },
   hasVariants: { label: "catalog.fields.hasVariants", kind: "boolean" },
+  checked: { label: "catalog.fields.checked", kind: "boolean" },
 };
 
 export default async function ProductPage({ params }: { params: Promise<{ id: string }> }) {

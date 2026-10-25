@@ -32,6 +32,7 @@ const FIELDS: Record<string, HistoryField> = {
   photoFileId: { label: "catalog.fields.photoFileId", kind: "text", hidden: true },
   photo: { label: "catalog.fields.photoFileId", kind: "text" },
   isActive: { label: "catalog.fields.isActive", kind: "boolean" },
+  checked: { label: "catalog.fields.checked", kind: "boolean" },
   fromDefault: { label: "catalog.fields.fromDefault", kind: "boolean" },
   note: { label: "catalog.fields.note", kind: "text" },
 };
