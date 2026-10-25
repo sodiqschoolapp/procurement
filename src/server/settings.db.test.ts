@@ -29,6 +29,8 @@ describe("readSettings (build-plan 1.1)", () => {
       receipt_required_for_cash: false,
       school_name: null,
       school_year_start: null,
+      // 06 Finance step switched off: "on by default" (plan of 4.10c).
+      finance_step: true,
     });
   });
 

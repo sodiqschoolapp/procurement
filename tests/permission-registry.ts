@@ -341,6 +341,8 @@ export const QUERIES: Record<string, Permission> = {
   "src/features/settings/queries/settings.ts#getSettingsForHead": "catalog.manage",
   // The date of the last copy of the database on the Head's Settings page (build-plan 8.2b).
   "src/features/settings/queries/settings.ts#getLastDatabaseCopy": "catalog.manage",
+  // The orders that keep the Finance step from being switched off (plan of 4.10c).
+  "src/features/settings/queries/settings.ts#getFinanceStepWaiting": "catalog.manage",
   "src/features/settings/queries/settings.ts#getSchoolName": "profile.edit",
   // The purchase form (plan of 3.3): data.view with the branch wall in the SQL, then
   // purchase.record on the order (record-purchase-matrix.db.test.ts).
