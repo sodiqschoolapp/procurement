@@ -18,7 +18,7 @@ Every term the spec defines, in the spec's own words, with the file that defines
 | Department | A unit of one branch with a responsible person (plain text, not an app user). | `04-catalogs.md` |
 | Owner | The Manager who created an order. An order has one owner. | `03-roles-and-permissions.md` rule 7 |
 | Branch wall | Every read and write checks role and branch on the server. Another branch's address shows "Not found". | `03-roles-and-permissions.md` rule 1 |
-| Manager right | One of nine switches the Head can turn off for a Manager: `CREATE_REQUESTS`, `RECORD_PURCHASES`, `CANCEL_PURCHASES`, `CLOSE_ALONE`, `ISSUE_STOCK`, `RETURN_REVERSE`, `TRANSFER_STOCK`, `WRITE_OFF_COUNT`, `SET_MINIMUMS`. All on by default. | `03-roles-and-permissions.md` |
+| Manager right | One of ten switches the Head can turn off for a Manager: `CREATE_REQUESTS`, `RECORD_PURCHASES`, `CANCEL_PURCHASES`, `CLOSE_ALONE`, `ISSUE_STOCK`, `RETURN_REVERSE`, `TRANSFER_STOCK`, `WRITE_OFF_COUNT`, `SET_MINIMUMS`, `ADD_PRODUCTS`. All on by default. | `03-roles-and-permissions.md` |
 
 ## Catalog
 
@@ -33,7 +33,8 @@ Every term the spec defines, in the spec's own words, with the file that defines
 | Reference price | The one price per subtype for the whole school, set by the Head. Older prices stay in the price history. | `04-catalogs.md` rule 4, `02-assumptions.md` A14 |
 | Last purchase price | The price of the newest real purchase of a subtype. Suggested on an order when there is no reference price. | `05-order-request-form.md` (Order, field 11), `07-purchasing.md` (What saving a record does) |
 | Price hint | The label shown when a typed price differs from the reference price by more than 20% (a setting), for example "+35% vs catalog price". | `05-order-request-form.md` |
-| Product suggestion | A Manager's ask to add a missing item to the catalog. The Head adds it or declines with a reason. | `04-catalogs.md` rule 8 |
+| Product suggestion | A Manager's ask to add a missing item to the catalog. The Head adds it or declines with a reason. None are sent from 25 October 2026: a Manager adds the item instead ("Added by a Manager"). | `04-catalogs.md` rule 8 |
+| Added by a Manager | A product or subtype a Manager added from an order's product search. It can be ordered at once; the Head's home lists it until the Head marks it checked. | `04-catalogs.md` rule 8 |
 | Minimum stock | A level per subtype per branch. At or below it the item is "Low". No minimum means never low. | `04-catalogs.md` rule 5, `09-warehouse.md` |
 
 ## Orders
