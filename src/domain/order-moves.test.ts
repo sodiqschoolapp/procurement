@@ -226,21 +226,35 @@ function* cases(): Generator<Case> {
               for (const exactMatch of flags)
                 for (const ownerClosesAlone of flags)
                   for (const readyToClose of flags)
-                    for (const skippedFinance of flags)
-                      for (const financeStep of flags)
-                        yield {
-                          role,
-                          place,
-                          isOwner,
-                          off,
-                          createdByHead,
-                          buyingFinished,
-                          exactMatch,
-                          ownerClosesAlone,
-                          readyToClose,
-                          skippedFinance,
-                          financeStep,
-                        };
+                    yield {
+                      role,
+                      place,
+                      isOwner,
+                      off,
+                      createdByHead,
+                      buyingFinished,
+                      exactMatch,
+                      ownerClosesAlone,
+                      readyToClose,
+                      skippedFinance: false,
+                      financeStep: true,
+                    };
+  }
+}
+
+/**
+ * Each status with the case, and with the two facts of 4.10c where they can differ (06 Finance
+ * step switched off): the step off at the Principal's step, the only move that reads it; the mark
+ * from Open on, the only statuses an order that skipped Finance can stand at (migration 0054
+ * refuses it Waiting for Finance or for settlement, and it is written by the move into Open).
+ */
+function* atStatuses(c: Case): Generator<[RequestStatus, Case]> {
+  for (const status of REQUEST_STATUSES) {
+    yield [status, c];
+    if (status === "PENDING_PRINCIPAL") yield [status, { ...c, financeStep: false }];
+    if (status === "PURCHASING" || status === "CLOSED") {
+      yield [status, { ...c, skippedFinance: true }];
+    }
   }
 }
 
@@ -323,9 +337,9 @@ describe("every row of the table passes (06, Allowed moves)", () => {
 describe("every other combination is refused, generated (06: any move not in the table is impossible)", () => {
   it("checkMoves() and allowedActions() answer as the oracle for every status × action × role × relation × facts", () => {
     let checked = 0;
-    for (const c of cases()) {
-      const who = actor(c.role, c.off);
-      for (const status of REQUEST_STATUSES) {
+    for (const base of cases()) {
+      const who = actor(base.role, base.off);
+      for (const [status, c] of atStatuses(base)) {
         const offered = allowedActions(who, [orderFor(status, c)]);
         for (const action of ORDER_ACTIONS) {
           const label = `${status} ${action} ${JSON.stringify(c)}`;
@@ -341,13 +355,14 @@ describe("every other combination is refused, generated (06: any move not in the
         }
       }
     }
-    expect(checked).toBe(10 * 13 * 6 * 2 ** 9);
+    // Ten statuses and three variants of 4.10c, thirteen actions, 768 cases.
+    expect(checked).toBe(13 * 13 * 6 * 2 ** 7);
   });
 
   it("reaches exactly the (from, to, role) triples of the table", () => {
     const reached = new Set<string>();
-    for (const c of cases()) {
-      for (const status of REQUEST_STATUSES) {
+    for (const base of cases()) {
+      for (const [status, c] of atStatuses(base)) {
         for (const action of ORDER_ACTIONS) {
           const check = checkMoves(actor(c.role, c.off), [orderFor(status, c)], action, {
             reason: REASON,
