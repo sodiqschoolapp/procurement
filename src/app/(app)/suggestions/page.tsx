@@ -6,7 +6,6 @@ import * as z from "zod";
 import { EmptyState } from "@/components/empty-state";
 import { Icon } from "@/components/icon";
 import { RowLinks } from "@/components/row-links";
-import { buttonVariants } from "@/components/ui/button";
 import { BRANCH_COOKIE } from "@/features/catalog/branch-cookie";
 import { currentBranchChoice, listMyBranches } from "@/features/catalog/queries/my-branches";
 import { listSuggestions } from "@/features/catalog/queries/suggestions";

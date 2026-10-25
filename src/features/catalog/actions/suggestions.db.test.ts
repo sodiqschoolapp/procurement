@@ -21,7 +21,7 @@ import { insertCategory, insertFileRow, insertUnit } from "../../../../tests/hel
 import { describePermissionMatrix } from "../../../../tests/helpers/permission-matrix";
 import { insertSuggestion } from "../../../../tests/helpers/suggestions";
 import { insertUser } from "../../../../tests/helpers/users";
-import { createProduct, setProductActive, updateProduct } from "./products";
+import { createProduct, updateProduct } from "./products";
 import { addSuggestedProduct, declineSuggestion } from "./suggestions";
 
 // Since 1.12b no suggestion is sent (04 rule 8: "Suggestions sent before 25 October 2026 are

@@ -1,35 +1,29 @@
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import * as z from "zod";
 
-import { isClientKey } from "@/components/client-key";
 import {
   type SuggestionOutcome,
   type SuggestionStatus,
   canDecide,
   isSuggestionNote,
-  isUnitText,
   statusAfter,
   suggestionNote,
-  unitText,
 } from "@/domain/suggestions";
 import { ActionError, GLOBAL_TARGET, defineAction } from "@/server/action";
 import { audit } from "@/server/audit";
 import type { Executor } from "@/server/authorize";
 import { now } from "@/server/clock";
-import { branches, catalogSuggestions, products, users } from "@/server/db/schema";
+import { catalogSuggestions, products } from "@/server/db/schema";
 import { notify } from "@/server/notify";
 
 import type { SavedEntry } from "./catalog-entries";
-import { nameField, optionalId, optionalText } from "./catalog-fields";
-import { fileNameOf, refusePhoto } from "./photos";
 import { type ProductFields, createProduct, insertProduct, recordProductCreate } from "./products";
 
-// Product suggestions (04-catalogs.md rule 8: "A Manager who needs something missing from the
-// catalog sends a suggestion: name, measure, photo, note. The Head adds it (possibly edited) or
-// declines with a reason. The Manager is notified either way"; 10, Notifications: "Product
-// suggested | Head; the decision goes back to the Manager"; build-plan 1.12).
-// - Suggesting is catalog.suggest on the suggestion's branch: the Head in any branch, a Manager in
-//   their own; Principal and Finance never (03, Permission matrix; plan of 1.12, decisions 1, 10).
+// Product suggestions (04-catalogs.md rule 8: "Suggestions sent before 25 October 2026 are decided
+// as before, and the Manager is notified either way; no new ones are sent"; 10, Notifications:
+// "Product suggestion decided"; build-plan 1.12, 1.12b). Sending one ended with 1.12b: a Manager
+// adds the item from an order's product search (manager-adds.ts; plan of 1.12b, decided item 3,
+// Look first).
 // - Adding and declining are catalog.manage, the Head only (decision 2): the suggestion row is
 //   locked FOR UPDATE and must be PENDING, so a second decision is `wrong_status` (decision 9).
 // - The add writes the product through the create's own body (insertProduct, recordProductCreate):
@@ -40,14 +34,6 @@ import { type ProductFields, createProduct, insertProduct, recordProductCreate }
 const ENTITY = "catalog_suggestions";
 
 export type SuggestionResult = { id: string; branchId: string; name: string };
-
-async function branchCode(tx: Executor, branchId: string): Promise<string> {
-  const [row] = await tx
-    .select({ code: branches.code })
-    .from(branches)
-    .where(eq(branches.id, branchId));
-  return row?.code ?? "";
-}
 
 type LockedSuggestion = {
   id: string;

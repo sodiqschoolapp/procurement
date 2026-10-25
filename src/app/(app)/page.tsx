@@ -4,7 +4,6 @@ import Link from "next/link";
 import { Suspense } from "react";
 
 import { EmptyState } from "@/components/empty-state";
-import { Icon } from "@/components/icon";
 import { Skeleton } from "@/components/skeleton";
 import { LowLabel, RequestStatusLabel } from "@/components/status-label";
 import { buttonVariants } from "@/components/ui/button";
