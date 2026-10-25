@@ -3,7 +3,7 @@
 > Part of the School Procurement & Warehouse Platform spec, baseline of 10 October 2026 (document revision 123).
 > Index and reading order: `docs/spec/00-index.md`. Read-only: this folder changes only through `/spec-change`.
 
-Only the Head creates and edits catalogs; everyone else picks from them. "Categories" is my addition, for search and reports.
+Only the Head creates and edits catalogs; everyone else picks from them. One exception: a Manager adds products and subtypes while ordering (rule 8). "Categories" is my addition, for search and reports.
 
 | Catalog | Fields | Notes |
 | --- | --- | --- |
@@ -26,5 +26,11 @@ Only the Head creates and edits catalogs; everyone else picks from them. "Catego
 5. **Minimum stock.** The Head, or a Manager for their own branches, can set a minimum level per subtype per branch. It drives the low-stock alert in section 9.
 6. **Photos.** JPG, PNG, WebP or HEIC up to 10 MB. The system stores a small version (160 px) for lists and a large one (1200 px) for viewing.
 7. **Excel import.** Products, subtypes, prices, departments and existing stock can be imported from an Excel template. The import shows a preview with errors per row and saves nothing unless every row is valid.
-8. **Suggest a product.** A Manager who needs something missing from the catalog sends a suggestion: name, measure, photo, note. The Head adds it (possibly edited) or declines with a reason. The Manager is notified either way.
+8. **Managers add products and subtypes.** A Manager whose right "Add products and subtypes" is on (section 3) adds a missing item from an order's product search, without leaving the order (owner's decision of 25 October 2026; this replaced product suggestions).
+   - **A new product:** name, product or service, category and measure picked from their catalogs, and an optional photo. No reference price, brand or description; the Head adds them later if wanted.
+   - **A new subtype of a product:** name and an optional photo. When the product has no subtypes yet, the Manager also names what its existing items are (for example "48 varaq" beside the new "96 varaq"): the hidden default subtype takes that name, so existing orders, stock and prices keep pointing at the same items.
+   - Rule 3 holds: when the typed name already exists, the existing entry is offered instead; an inactive one is named, and only the Head can switch it on again.
+   - The new entry can be ordered at once; nobody approves it. The Manager cannot edit or deactivate catalog entries, and cannot add measures, categories, companies or extra cost types.
+   - The Head's home lists the products and subtypes added by Managers until the Head marks them checked; the Head fixes or deactivates them like any catalog entry.
+   - Suggestions sent before 25 October 2026 are decided as before, and the Manager is notified either way; no new ones are sent.
 9. **Change history.** Every catalog entry shows who changed what and when.

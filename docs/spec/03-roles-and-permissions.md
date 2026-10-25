@@ -25,7 +25,7 @@ Four roles exist, and what each user sees is limited to their branches on the se
 
 ## Manager rights the Head can switch
 
-On each Manager's user page the Head sees nine switches, all on by default. Switching one off removes those buttons for that Manager at once, and the server refuses the action as well.
+On each Manager's user page the Head sees ten switches, all on by default. Switching one off removes those buttons for that Manager at once, and the server refuses the action as well.
 
 | Right | Code | When it is off |
 | --- | --- | --- |
@@ -38,6 +38,7 @@ On each Manager's user page the Head sees nine switches, all on by default. Swit
 | Send transfers to other branches | `TRANSFER_STOCK` | Only the Head can send transfers. |
 | Ask for write-offs and run stock counts | `WRITE_OFF_COUNT` | Only the Head can start them. |
 | Set minimum stock levels | `SET_MINIMUMS` | Only the Head sets them. |
+| Add products and subtypes | `ADD_PRODUCTS` | The Manager picks from the catalog only; the Head adds what is missing. |
 
 - A switch applies to the Manager in all of their branches.
 - Switches only take rights away. No switch can give a Manager an action of the Head, the Principal or Finance.
@@ -51,7 +52,7 @@ In the permission matrix below, a "Yes" for the Manager means "yes, when that ri
 | Action | Head | Manager | Principal | Finance |
 | --- | --- | --- | --- | --- |
 | Manage catalogs, users, branches, settings | Yes | No | No | No |
-| Suggest a new product for the catalog | Yes | Yes | No | No |
+| Add a product or a subtype from an order's product search (04 rule 8) | Yes | Yes | No | No |
 | Add, edit, submit, cancel orders | Yes, any branch | Yes, own branches | No | No |
 | Approve, send back or reject at step 1 | Yes | No | No | No |
 | Approve, send back or reject at step 2 | No | No | Yes, own branch | No |

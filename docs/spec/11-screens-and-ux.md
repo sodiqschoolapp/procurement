@@ -56,7 +56,7 @@ A page a role cannot use is not shown greyed out; it is simply absent from the m
 ## Rules for a smooth feel
 
 1. **Navigation.** A sidebar on desktop and a bottom tab bar on phones. Users with several branches get a branch switcher on top; the default is "All my branches".
-2. **Drafts like a spreadsheet.** Tab and Enter move between cells, and Enter on the last row adds a draft. Typing in the product cell opens the search with photo, name, category and stock. The totals of the ticked drafts stay visible. On a phone each draft becomes a card.
+2. **Drafts like a spreadsheet.** Tab and Enter move between cells, and Enter on the last row adds a draft. Typing in the product cell opens the search with photo, name, category and stock; when nothing matches, its last line adds the product or subtype (`04-catalogs.md` rule 8). The totals of the ticked drafts stay visible. On a phone each draft becomes a card.
 3. **Buying on a phone.** The purchase form is built for one hand: one order or group row at a time, large buttons, "Same as planned", and the camera for the receipt.
 4. **Instant feedback.** Every button shows a loading state at once. Success shows a short message. Errors say in plain words what happened and what to do next.
 5. **No blank waiting.** Pages show grey placeholders in the shape of the content while loading, never a full-page spinner.

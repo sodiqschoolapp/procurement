@@ -28,7 +28,7 @@ One action sends one notification to each person told, never one per order: "Dil
 | Orders waiting more than 24 hours | Approvers of their step, once a day, grouped: "9 orders have waited more than 24 hours" |
 | Orders waiting more than 48 hours | Head, grouped the same way |
 | Needed-by date is 2 days away and the order's buying is not finished | Owner |
-| Product suggested | Head; the decision goes back to the Manager |
+| Product suggestion decided (suggestions sent before 25 October 2026; `04-catalogs.md` rule 8) | The Manager who sent it |
 | Write-off or correction asked | Head; the decision goes back to the Manager |
 | Transfer sent | Managers of the receiving branch |
 | Transfer cancelled | Managers of the receiving branch |
@@ -46,7 +46,7 @@ Each list on a home page with something in it shows counts and group rows, with 
 | Role | What the home page shows, in order |
 | --- | --- |
 | Manager | Sent back to me; my drafts; my open orders with progress; cash I hold; low stock; orders due soon |
-| Head | Waiting for my approval, by branch; overspends to acknowledge; write-offs and corrections to approve; product suggestions; orders stuck over 48 hours; counts by status per branch; spending this month per branch |
+| Head | Waiting for my approval, by branch; overspends to acknowledge; write-offs and corrections to approve; products and subtypes added by Managers, until checked; orders stuck over 48 hours; counts by status per branch; spending this month per branch |
 | Principal | Waiting for my approval, with the total amount; my branch's orders by status; my branch's spending this month |
 | Finance | Waiting for my approval; waiting for settlement; money with managers |
 

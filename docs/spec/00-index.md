@@ -13,8 +13,8 @@ Where an edge-case file is more specific than a chapter file, the edge-case file
 | --- | --- |
 | `01-summary.md` | What the app does, the quality bar, the basic words. |
 | `02-assumptions.md` | A1 to A14: currency, languages, roles, login, numbering, overspend, card, hosting, rights, prices. All confirmed. |
-| `03-roles-and-permissions.md` | Four roles, eight rules, nine Manager rights, the permission matrix. |
-| `04-catalogs.md` | Nine catalogs and their nine rules: subtypes, prices, photos, Excel import, suggestions. |
+| `03-roles-and-permissions.md` | Four roles, eight rules, ten Manager rights, the permission matrix. |
+| `04-catalogs.md` | Nine catalogs and their nine rules: subtypes, prices, photos, Excel import, products and subtypes added by Managers. |
 | `05-order-request-form.md` | The order list (the file keeps its old name): the order's fields, drafts, order number, checks at submit, group rows, ticking and filters, the Excel and PDF download. |
 | `06-approval-workflow.md` | Flow diagram, ten statuses per order, allowed moves, eleven rules (rule 8: many orders, one action), the Finance step switched off. |
 | `07-purchasing.md` | Purchase record, one trip for many orders, what saving does, order progress, substitution, fixing a mistake, finishing. |
@@ -24,7 +24,7 @@ Where an edge-case file is more specific than a chapter file, the edge-case file
 | `11-screens-and-ux.md` | Sixteen screens, menu per role, order list and order page layout, fifteen UX rules. |
 | `13-technology.md` | The stack, layer by layer. |
 | `14-data-model.md` | 35 tables in five groups, settings keys, notes for the build. |
-| `15-quality-and-acceptance.md` | Three test layers, 21 acceptance scenarios S1 to S21, the done-check. |
+| `15-quality-and-acceptance.md` | Three test layers, 22 acceptance scenarios S1 to S22, the done-check. |
 | `16-build-order.md` | The nine product phases and what can be tried after each. |
 | `17-later-ideas.md` | Eleven features left out of version 1 on purpose. Do not build them. |
 | `18-hosting-and-costs.md` | Hosting, addresses, monthly cost, what was considered and set aside. |

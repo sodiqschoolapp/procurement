@@ -3,7 +3,7 @@
 > Part of the School Procurement & Warehouse Platform spec, baseline of 10 October 2026 (document revision 123).
 > Index and reading order: `docs/spec/00-index.md`. Read-only: this folder changes only through `/spec-change`.
 
-The app is finished only when the 21 scenarios below pass as automated tests, on top of three layers of smaller tests.
+The app is finished only when the 22 scenarios below pass as automated tests, on top of three layers of smaller tests.
 
 ## Test layers
 
@@ -42,6 +42,7 @@ All use branch code CHL and the plan from section 8 unless stated: one order of 
 | S19 | One row per product. The Manager submits 10 Tata pens, then 10 more, then (after the Head approved the first 20) 10 more. | The Head first sees one row "Tata pens, 20"; after approving it, the Principal sees 20; once the Head approves the last 10, the Principal sees one row "Tata pens, 30" holding three orders. Approving that row moves all three; each keeps its own number and history. Adding 10 to a draft of the same pens for the same department raises that draft to 20 instead of making a second one. |
 | S20 | Many orders, one action. Finance approves the three orders of the worked example in section 8 and gives 650 000; buying follows the example; a fourth ticked order was approved by another Finance user a moment earlier. | The first approval is refused whole and names the fourth order; approved again without it, the 650 000 is split 520 000, 100 000 and 30 000; 0144 is closed by the Manager; one settlement action receives 50 000 and pays 30 000, the screen shows the net 20 000, and both orders close. |
 | S21 | Finance step off. The Head tries to switch the Finance step off while one order waits for Finance, and again once Finance has approved it. A second order is then approved by the Principal and bought at 6 500 each. Afterwards the Head switches the step on again. | The first switch is refused and names the waiting order. The second order goes from the Principal straight to Open; its stepper reads Finance "Skipped" and it has no Money tab and no cash count. Total red "Over 150 000"; the Head is told of the overspend; the Manager closes it with no settlement and no acknowledgment. After switching on, the next order the Principal approves waits for Finance. |
+| S22 | A Manager adds what is missing. While ordering, the Manager types "Marker, black", which is not in the catalog, and adds it as a product in Stationery, measured in pcs. Then the Manager types "daftar 48 VARAQ" while "Daftar 48 varaq" exists. Last, the Manager adds the subtype "black" to "Pen", which had no subtypes and 40 in stock, naming the existing ones "blue". The Head then switches off the right "Add products and subtypes" for this Manager. | The marker is on the draft at once, with no price suggested and no price hint. The existing "Daftar 48 varaq" is offered and no second product is made. The 40 in stock and the earlier pen orders now read "Pen · blue", and the new draft uses "Pen · black". The Head's home lists the marker and "black" until the Head marks them checked. With the right off, the search offers no Add line and the server refuses the add. |
 
 ## Done-check for every phase
 

@@ -15,7 +15,7 @@ users                full_name, username UNIQUE, phone, role [HEAD|MANAGER|PRINC
 user_branches        user_id, branch_id                      KEY (user_id, branch_id)
                      -- no rows for HEAD, exactly one row for PRINCIPAL,
                      -- and at most one active PRINCIPAL per branch
-manager_rights       user_id, right [the nine codes in section 3], enabled
+manager_rights       user_id, right [the ten codes in section 3], enabled
                      KEY (user_id, right)                    -- no row means enabled
 units                name, short_name, allow_decimal, is_active
 categories           name, is_active
@@ -23,14 +23,16 @@ companies            name, kind [BRAND|SUPPLIER|BOTH], tax_id, phone, note, is_a
 extra_cost_types     name, is_active
 departments          branch_id, name, responsible_name, responsible_phone, is_active
 products             name, type [GOODS|SERVICE], category_id, unit_id, photo_file_id,
-                     default_company_id, reference_price, description, has_variants, is_active
+                     default_company_id, reference_price, description, has_variants, is_active,
+                     added_by, checked_at          -- added_by: the Manager who added it (04 rule 8)
 product_variants     product_id, name, is_default, photo_file_id, reference_price,
-                     last_purchase_price, last_purchase_at, is_active
+                     last_purchase_price, last_purchase_at, is_active, added_by, checked_at
 price_history        variant_id, price, source [HEAD|PURCHASE], note, set_by, purchase_id
                      -- one row each time the Head sets a price or a purchase is recorded
 stock_minimums       branch_id, variant_id, min_qty          KEY (branch_id, variant_id)
 catalog_suggestions  branch_id, suggested_by, name, unit_text, photo_file_id, note,
                      status [PENDING|ADDED|DECLINED], decided_by, decision_note, product_id
+                     -- no new rows from 25 October 2026 (04 rule 8)
 files                storage_key, original_name, mime, size_bytes, uploaded_by
 ```
 

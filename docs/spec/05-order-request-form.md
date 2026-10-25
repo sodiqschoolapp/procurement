@@ -10,7 +10,7 @@ Each branch keeps one order list. An order is one product or service for one dep
 | # | Field | How it is filled | Rule |
 | --- | --- | --- | --- |
 | 1 | Branch | Picked; prefilled when the Manager has one branch | Required. Locked once the order is submitted. |
-| 2 | Product or service | Picked from the catalog; search by name, shows photo, category and stock. A Type column beside it shows Product or Service, filled from the catalog | Required. |
+| 2 | Product or service | Picked from the catalog; search by name, shows photo, category and stock. When nothing matches, the Manager adds the product or subtype there (`04-catalogs.md` rule 8). A Type column beside it shows Product or Service, filled from the catalog | Required. |
 | 3 | Subtype | Picked from the product's subtypes | Required when the product has subtypes. |
 | 4 | In stock ("how many left") | Automatic: current stock of this branch | Read-only. A copy is saved at submit. Services show a dash. |
 | 5 | Photo | Automatic from the catalog: subtype photo, else product photo | The Manager may attach one extra reference photo. |
