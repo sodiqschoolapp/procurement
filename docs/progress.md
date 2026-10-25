@@ -2182,4 +2182,23 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - A browser test that changes a school-wide setting other tests read runs as the teardown project `finance-step` of `start` (playwright.config.ts); add such a spec to that project, never to the two widths.
 - Tests that need a skipped order: `tests/helpers/finance-step.ts` (`openedSkipped()`, `setFinanceStep()`).
 
+## 1.12b Managers add products and subtypes while ordering (25.10.2026, pull request #165)
+
+**Built**
+- Migration 0055: enum value `ADD_PRODUCTS`; `added_by`, `checked_at` on `products` and `product_variants` with CHECK `*_checked_at_check` and FK indexes.
+- Permission `catalog.add` (global, Head and Manager, right `ADD_PRODUCTS`); a global rule may carry a `right`, read by `decide()`/`decideList()`; `actorMay()` for screens.
+- `addProductWhileOrdering`, `addSubtypeWhileOrdering` (`addSubtypeFromSearch()` in subtypes.ts: the default renamed to the existing items' name, the new name a new row holding the client key), `markAddedChecked`; query `listUncheckedAdded`; `findTaken()` of the catalog factory.
+- The product search's Add line and `AddCatalogEntryDialog`; the Head's home block "Added by Managers"; the tenth switch; `suggestProduct`, `/suggestions/new` and the Manager's link removed.
+
+**Left out, and the task that brings it**
+- Nothing of the Build line.
+
+**Open for the owner**
+- Decided items 1 to 4 (Look first) on issue #9; item 1 includes the permission review's question whether a Manager with `CREATE_REQUESTS` off may still add.
+
+**What the next sessions must know**
+- Tests that need a pending suggestion: `insertSuggestion()` of `tests/helpers/suggestions.ts` (no action writes one any more).
+- A name the catalog already holds is answered with `findTaken()` under the table's lock, never a JavaScript comparison.
+- A browser test that turns a Manager's right off makes its own Manager (`newScene()`).
+
 The next task is 9.5.
