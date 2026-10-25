@@ -3,7 +3,7 @@
 > Part of the School Procurement & Warehouse Platform spec, baseline of 10 October 2026 (document revision 123).
 > Index and reading order: `docs/spec/00-index.md`. Read-only: this folder changes only through `/spec-change`.
 
-The app is finished only when the 20 scenarios below pass as automated tests, on top of three layers of smaller tests.
+The app is finished only when the 21 scenarios below pass as automated tests, on top of three layers of smaller tests.
 
 ## Test layers
 
