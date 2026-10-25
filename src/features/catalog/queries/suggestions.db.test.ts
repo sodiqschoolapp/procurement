@@ -8,9 +8,10 @@ import type { ActionResult } from "@/server/action-result";
 import { insertBranch } from "../../../../tests/helpers/branches";
 import { insertCategory, insertFileRow, insertUnit } from "../../../../tests/helpers/catalog";
 import { describePermissionMatrix } from "../../../../tests/helpers/permission-matrix";
+import { insertSuggestion } from "../../../../tests/helpers/suggestions";
 import { insertUser } from "../../../../tests/helpers/users";
 import { updateProduct } from "../actions/products";
-import { addSuggestedProduct, declineSuggestion, suggestProduct } from "../actions/suggestions";
+import { addSuggestedProduct, declineSuggestion } from "../actions/suggestions";
 import { countPendingSuggestions, getSuggestion, listSuggestions } from "./suggestions";
 
 // The reads of product suggestions (04-catalogs.md rule 8; build-plan 1.12): the branch wall
@@ -18,23 +19,14 @@ import { countPendingSuggestions, getSuggestion, listSuggestions } from "./sugge
 // found"), and who may download a suggestion's photo (src/server/files/owners.ts; plan of 1.12,
 // decisions 1 and 3, Look first). Each allowed read has another branch's row beside it (D40).
 
-type Suggested = { id: string; branchId: string; name: string };
-
 function expectOk<T>(result: ActionResult<T>): T {
   expect(result).toMatchObject({ ok: true });
   return (result as { ok: true; data: T }).data;
 }
 
-async function suggest(userId: string, branchId: string, input: Record<string, unknown> = {}) {
-  return expectOk(
-    (await runAction(suggestProduct, userId, {
-      clientKey: newClientKey(),
-      branchId,
-      name: `Taklif ${newClientKey().slice(0, 8)}`,
-      unitText: "dona",
-      ...input,
-    })) as ActionResult<Suggested>,
-  );
+/** A suggestion sent before 25 October 2026 (tests/helpers/suggestions.ts; plan of 1.12b). */
+function suggest(userId: string, branchId: string, input: Record<string, unknown> = {}) {
+  return insertSuggestion(userId, branchId, input);
 }
 
 async function twoBranches() {

@@ -7,19 +7,19 @@ import { AuthorizationError } from "@/server/authorize";
 
 import { insertCategory, insertUnit } from "../../../../tests/helpers/catalog";
 import { describePermissionMatrix } from "../../../../tests/helpers/permission-matrix";
+import { insertSuggestion } from "../../../../tests/helpers/suggestions";
 import { type InsertedUser, insertUser } from "../../../../tests/helpers/users";
 
-// The page actions of /suggestions (plan of 1.12, "Server actions and queries"): suggesting under
-// catalog.suggest on the branch (03, "Suggest a new product for the catalog": Head, Manager own
-// branches), adding and declining under catalog.manage (Head). Tested through the page actions
+// The page actions of /suggestions (plan of 1.12, "Server actions and queries"): adding and
+// declining under catalog.manage (Head). Suggesting is gone since 1.12b (04 rule 8; plan of
+// 1.12b, decided item 3, Look first): a pending suggestion is written as it was sent. Tested through the page actions
 // themselves, with the session user, as those of 1.5 to 1.7 (permission review of 1.12, Must fix 1).
 
 const store = vi.hoisted(() => ({ user: null as CurrentUser | null }));
 vi.mock("@/server/auth/session", () => ({ getCurrentUser: async () => store.user }));
 vi.mock("next/cache", () => ({ revalidatePath: () => undefined }));
 
-const { addSuggestedProductAction, declineSuggestionAction, suggestProductAction } =
-  await import("./actions");
+const { addSuggestedProductAction, declineSuggestionAction } = await import("./actions");
 
 function signedIn(user: InsertedUser): void {
   store.user = {
@@ -43,21 +43,10 @@ function asMatrixAnswer(result: ActionResult<unknown>): void {
   throw new Error(`Unexpected answer: ${code}`);
 }
 
-function suggestion(branchId: string) {
-  return {
-    clientKey: newClientKey(),
-    branchId,
-    name: `Sahifa ${newClientKey()}`,
-    unitText: "dona",
-  };
-}
-
-/** A pending suggestion of the branch, sent by a Manager of it. */
+/** A pending suggestion of the branch, sent by a Manager of it before 25 October 2026. */
 async function pendingIn(branchId: string): Promise<string> {
-  signedIn(await insertUser("MANAGER", { branches: [branchId] }));
-  const result = await suggestProductAction(suggestion(branchId));
-  expect(result).toMatchObject({ ok: true });
-  return (result as { ok: true; data: { id: string } }).data.id;
+  const manager = await insertUser("MANAGER", { branches: [branchId] });
+  return (await insertSuggestion(manager.id, branchId)).id;
 }
 
 async function productInput(suggestionId: string) {
@@ -71,7 +60,7 @@ async function productInput(suggestionId: string) {
 }
 
 describe("the page actions answer only what the screen needs", () => {
-  it("suggest gives the id, add the suggestion and the product, decline the id", async () => {
+  it("add gives the suggestion and the product, decline the id", async () => {
     const branchId = (await insertUser("PRINCIPAL")).branchIds[0]!;
     const first = await pendingIn(branchId);
     const second = await pendingIn(branchId);
@@ -89,19 +78,13 @@ describe("the page actions answer only what the screen needs", () => {
   });
 
   it("a signed-out visitor saves nothing", async () => {
-    expect(await suggestProductAction(suggestion(newClientKey()))).toMatchObject({
+    expect(
+      await declineSuggestionAction({ suggestionId: newClientKey(), reason: "Yo'q" }),
+    ).toMatchObject({
       ok: false,
       error: { code: "signed_out" },
     });
   });
-});
-
-describePermissionMatrix("suggestProductAction", {
-  permission: "catalog.suggest",
-  async run({ user, branchId }) {
-    signedIn(user);
-    asMatrixAnswer(await suggestProductAction(suggestion(branchId)));
-  },
 });
 
 describePermissionMatrix("addSuggestedProductAction", {

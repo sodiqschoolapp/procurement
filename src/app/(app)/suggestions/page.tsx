@@ -20,7 +20,8 @@ import { SuggestionStatusText } from "./suggestion-status";
 // /suggestions (build-plan 1.12; plan of 1.12, decision 4, Look first): the product suggestions of
 // the branch view, every branch the person sees on "All" (11-screens-and-ux.md rule 1), pending
 // first. Head and Manager; Principal and Finance get "Not found" (03 rule 1). A table on desktop,
-// one card a suggestion at phone width.
+// one card a suggestion at phone width. No new suggestion is sent from 25 October 2026: a Manager
+// adds the item from an order's product search (04 rule 8; plan of 1.12b, decided item 3).
 
 const pageParam = z.coerce.number().int().min(1).catch(1);
 
@@ -50,22 +51,10 @@ export default async function SuggestionsPage({ searchParams }: { searchParams: 
             {branch ? t("oneBranch", { code: branch.code, name: branch.name }) : t("allBranches")}
           </p>
         </div>
-        {rows.length > 0 && (
-          <Link
-            href="/suggestions/new"
-            className={buttonVariants({ className: "w-full sm:w-auto" })}
-          >
-            {t("new")}
-          </Link>
-        )}
       </div>
 
       {rows.length === 0 ? (
-        <EmptyState
-          title={t("emptyTitle")}
-          line={t("emptyText")}
-          action={{ label: t("new"), href: "/suggestions/new", icon: "add" }}
-        />
+        <EmptyState title={t("emptyTitle")} line={t("emptyText")} />
       ) : (
         <>
           <section className="table-cards-panel hidden overflow-x-auto rounded-xl border border-border bg-card text-card-foreground sm:block">

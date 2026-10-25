@@ -341,7 +341,6 @@
   },
   "home": {
     "title": "My tasks",
-    "suggest": "Suggest a product",
     "showAll": "Show all ({count})",
     "openList": "Open in the order list",
     "orders": "{count, plural, one {# order} other {# orders}}",
@@ -437,7 +436,21 @@
         "period": "{from} – {to}"
       },
       "inactive": "{code} (inactive)",
-      "pair": "{first} · {second}"
+      "pair": "{first} · {second}",
+      "added": {
+        "title": "Added by Managers",
+        "subtype": "{product} · {name}",
+        "productLine": "Product · {name}, {date}",
+        "subtypeLine": "Subtype · {name}, {date}",
+        "tick": "Tick {name}",
+        "count": "{count, plural, one {# ticked} other {# ticked}}",
+        "mark": "Mark checked",
+        "clear": "Clear",
+        "confirmTitle": "{count, plural, one {Mark # entry checked?} other {Mark # entries checked?}}",
+        "confirmResult": "{count, plural, one {# entry leaves this list} other {# entries leave this list}}. They stay in the catalog as they are.",
+        "marked": "{count, plural, one {# entry marked checked} other {# entries marked checked}}",
+        "failed": "Could not mark them. Reload the page and try again."
+      }
     },
     "finance": {
       "approvals": {
@@ -1039,29 +1052,18 @@
   },
   "suggestions": {
     "title": "Product suggestions",
-    "new": "Suggest a product",
-    "newTitle": "Suggest a product",
     "back": "Back to suggestions",
     "allBranches": "All my branches",
     "oneBranch": "Branch {code}, {name}",
     "fields": {
       "branchId": "Branch",
-      "name": "Name",
       "unitText": "Measure",
-      "photoFileId": "Photo",
       "note": "Note",
       "reason": "Reason"
     },
     "hints": {
-      "name": "As it should appear in the catalog.",
-      "unitText": "As you would count it: pieces, boxes, kilograms.",
-      "photoFileId": "Optional. JPG, PNG, WebP or HEIC up to 10 MB.",
-      "note": "Optional. What it is for, a brand, a link to a shop.",
       "reason": "The Manager reads this reason."
     },
-    "chooseBranch": "Choose a branch",
-    "send": "Send suggestion",
-    "sent": "Suggestion sent to the Procurement Head",
     "status": {
       "PENDING": "Waiting for the Head",
       "ADDED": "Added to the catalog",
@@ -1076,7 +1078,7 @@
       "status": "Status"
     },
     "emptyTitle": "No suggestions yet",
-    "emptyText": "When an item you need is not in the catalog, suggest it here.",
+    "emptyText": "Suggestions sent before 25 October 2026 are listed here. A missing item is now added from an order's product search.",
     "suggestedBy": "Suggested by",
     "sentOn": "Sent",
     "decidedBy": "Decided by",

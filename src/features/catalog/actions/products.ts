@@ -187,19 +187,3 @@ export const lockProducts = catalog.lockTable;
 
 /** The product that holds a name, for the add from an order's product search (plan of 1.12b). */
 export const findTakenProduct = catalog.findTaken;
-
-/**
- * Refuses a name a product already holds, active or not, as the create's own check (04 rule 3;
- * plan of 1.7, decision 9): for a product suggestion (plan of 1.12, decision 7).
- */
-export async function refuseProductName(tx: Executor, name: string): Promise<void> {
-  await catalog.lockTable(tx);
-  try {
-    await catalog.refuseTaken(tx, { name }, null, null);
-  } catch (error) {
-    if (error instanceof ActionError) {
-      throw new ActionError("invalid_input", { name: "errors.field.inCatalog" });
-    }
-    throw error;
-  }
-}

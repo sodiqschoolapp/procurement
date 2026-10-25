@@ -19,11 +19,15 @@ import { accessOf } from "@/server/files/owners";
 import { insertBranch } from "../../../../tests/helpers/branches";
 import { insertCategory, insertFileRow, insertUnit } from "../../../../tests/helpers/catalog";
 import { describePermissionMatrix } from "../../../../tests/helpers/permission-matrix";
+import { insertSuggestion } from "../../../../tests/helpers/suggestions";
 import { insertUser } from "../../../../tests/helpers/users";
 import { createProduct, setProductActive, updateProduct } from "./products";
-import { addSuggestedProduct, declineSuggestion, suggestProduct } from "./suggestions";
+import { addSuggestedProduct, declineSuggestion } from "./suggestions";
 
-// build-plan 1.12, Done when: "Database tests for both outcomes and their notifications; a
+// Since 1.12b no suggestion is sent (04 rule 8: "Suggestions sent before 25 October 2026 are
+// decided as before ... no new ones are sent"; plan of 1.12b, decided item 3, Look first): the
+// tests of suggestProduct went with it, and every test here starts from a suggestion written as
+// it wrote one (tests/helpers/suggestions.ts). build-plan 1.12, Done when: "Database tests for both outcomes and their notifications; a
 // Principal cannot suggest". 04-catalogs.md rule 8 ("The Head adds it (possibly edited) or
 // declines with a reason. The Manager is notified either way"); rules 2, 3; 10, Notifications
 // ("Product suggested | Head; the decision goes back to the Manager"); 03, Permission matrix
@@ -31,7 +35,6 @@ import { addSuggestedProduct, declineSuggestion, suggestProduct } from "./sugges
 // developer-rules.md rules 3, 8; src/server/files/owners.ts (one holder); plan of 1.12 and its
 // review. Every fixture is asserted (D38); every passing case has the refused data beside it (D40).
 
-type Suggested = { id: string; branchId: string; name: string };
 type Added = { id: string; productId: string };
 
 function expectOk<T>(result: ActionResult<T>): T {
@@ -51,20 +54,9 @@ async function managerOfNewBranch() {
   return { branch, manager };
 }
 
-async function suggest(
-  userId: string,
-  branchId: string,
-  input: Record<string, unknown> = {},
-): Promise<Suggested> {
-  return expectOk(
-    (await runAction(suggestProduct, userId, {
-      clientKey: newClientKey(),
-      branchId,
-      name: `Taklif ${unique()}`,
-      unitText: "dona",
-      ...input,
-    })) as ActionResult<Suggested>,
-  );
+/** A suggestion sent before 25 October 2026 (tests/helpers/suggestions.ts; plan of 1.12b). */
+function suggest(userId: string, branchId: string, input: Record<string, unknown> = {}) {
+  return insertSuggestion(userId, branchId, input);
 }
 
 async function productFields(input: Record<string, unknown> = {}) {
@@ -100,207 +92,6 @@ function auditRowsOf(id: string) {
     .where(and(eq(auditLog.entity, "catalog_suggestions"), eq(auditLog.entityId, id)))
     .orderBy(auditLog.createdAt, auditLog.id);
 }
-
-describe("suggesting a product (04 rule 8; 10, Notifications: Product suggested → Head)", () => {
-  it("a Manager suggests for an own branch: a pending row, its audit row, and every active Head told", async () => {
-    const head = await insertUser("HEAD");
-    const inactiveHead = await insertUser("HEAD", { isActive: false });
-    const { branch, manager } = await managerOfNewBranch();
-    const principal = await insertUser("PRINCIPAL", { branches: [branch.id] });
-    const photo = await insertFileRow(manager.id);
-
-    const sent = await suggest(manager.id, branch.id, {
-      name: "  Yelim   tayoqcha ",
-      unitText: " dona ",
-      photoFileId: photo.id,
-      note: " Laboratoriya uchun ",
-    });
-
-    const row = await rowOf(sent.id);
-    expect(row).toMatchObject({
-      branchId: branch.id,
-      suggestedBy: manager.id,
-      name: "Yelim tayoqcha",
-      unitText: "dona",
-      photoFileId: photo.id,
-      note: "Laboratoriya uchun",
-      status: "PENDING",
-      decidedBy: null,
-      productId: null,
-    });
-    const audits = await auditRowsOf(sent.id);
-    expect(audits).toHaveLength(1);
-    expect(audits[0]).toMatchObject({ action: "suggestion.create", actorId: manager.id });
-
-    const told = (await notificationsOf("PRODUCT_SUGGESTED", sent.id)).map((each) => each.userId);
-    expect(told).toContain(head.id);
-    expect(told).not.toContain(inactiveHead.id);
-    expect(told).not.toContain(manager.id);
-    expect(told).not.toContain(principal.id);
-    const mine = (await notificationsOf("PRODUCT_SUGGESTED", sent.id)).find(
-      (each) => each.userId === head.id,
-    );
-    expect(mine?.params).toEqual({ name: "Yelim tayoqcha", branch: branch.code });
-  });
-
-  it("a Head who suggests is not told of it; the other Heads are (plan of 1.12, decision 8)", async () => {
-    const head = await insertUser("HEAD");
-    const other = await insertUser("HEAD");
-    const branch = await insertBranch();
-    const sent = await suggest(head.id, branch.id);
-    const told = (await notificationsOf("PRODUCT_SUGGESTED", sent.id)).map((each) => each.userId);
-    expect(told).toContain(other.id);
-    expect(told).not.toContain(head.id);
-  });
-
-  it("another branch is not found; an own branch beside it passes (03 rule 1; D40)", async () => {
-    const { branch, manager } = await managerOfNewBranch();
-    const other = await insertBranch();
-    expect(
-      await runAction(suggestProduct, manager.id, {
-        clientKey: newClientKey(),
-        branchId: other.id,
-        name: `Taklif ${unique()}`,
-        unitText: "dona",
-      }),
-    ).toMatchObject({ ok: false, error: { code: "not_found" } });
-    await suggest(manager.id, branch.id);
-  });
-
-  it("a Principal cannot suggest, nor Finance (03, Permission matrix; build-plan 1.12, Done when)", async () => {
-    const branch = await insertBranch();
-    const principal = await insertUser("PRINCIPAL", { branches: [branch.id] });
-    const finance = await insertUser("FINANCE", { branches: [branch.id] });
-    for (const user of [principal, finance]) {
-      expect(
-        await runAction(suggestProduct, user.id, {
-          clientKey: newClientKey(),
-          branchId: branch.id,
-          name: `Taklif ${unique()}`,
-          unitText: "dona",
-        }),
-      ).toMatchObject({ ok: false, error: { code: "forbidden" } });
-    }
-    expect(
-      await db.select().from(catalogSuggestions).where(eq(catalogSuggestions.branchId, branch.id)),
-    ).toEqual([]);
-  });
-
-  it("the same client key twice saves one suggestion and returns the first (developer-rules.md rule 8)", async () => {
-    await insertUser("HEAD");
-    const { branch, manager } = await managerOfNewBranch();
-    const input = {
-      clientKey: newClientKey(),
-      branchId: branch.id,
-      name: `Taklif ${unique()}`,
-      unitText: "dona",
-    };
-    const first = expectOk(
-      (await runAction(suggestProduct, manager.id, input)) as ActionResult<Suggested>,
-    );
-    const toldOnce = (await notificationsOf("PRODUCT_SUGGESTED", first.id)).length;
-    expect(toldOnce).toBeGreaterThan(0);
-    const second = expectOk(
-      (await runAction(suggestProduct, manager.id, input)) as ActionResult<Suggested>,
-    );
-    expect(second.id).toBe(first.id);
-    const rows = await db
-      .select()
-      .from(catalogSuggestions)
-      .where(eq(catalogSuggestions.clientKey, input.clientKey));
-    expect(rows).toHaveLength(1);
-    expect(await notificationsOf("PRODUCT_SUGGESTED", first.id)).toHaveLength(toldOnce);
-    expect(await auditRowsOf(first.id)).toHaveLength(1);
-  });
-
-  it("takes only a photo the actor uploaded that no record holds (owners.ts contract)", async () => {
-    const { branch, manager } = await managerOfNewBranch();
-    const someone = await insertUser("MANAGER", { branches: [branch.id] });
-    const notMine = await insertFileRow(someone.id);
-    const pdf = await insertFileRow(manager.id, "application/pdf");
-    const held = await insertFileRow(manager.id);
-    await suggest(manager.id, branch.id, { photoFileId: held.id });
-    const base = { branchId: branch.id, name: `Taklif ${unique()}`, unitText: "dona" };
-    const tryWith = (photoFileId: string) =>
-      runAction(suggestProduct, manager.id, { clientKey: newClientKey(), ...base, photoFileId });
-    expect(await tryWith(notMine.id)).toMatchObject(
-      refused({ photoFileId: "errors.field.notAllowed" }),
-    );
-    expect(await tryWith(held.id)).toMatchObject(
-      refused({ photoFileId: "errors.field.notAllowed" }),
-    );
-    expect(await tryWith(pdf.id)).toMatchObject(refused({ photoFileId: "errors.field.notAPhoto" }));
-    // The actor's own unheld photo passes beside them (D40).
-    const own = await insertFileRow(manager.id);
-    expectOk(await tryWith(own.id));
-  });
-
-  it("refuses an inactive branch (plan of 1.12, decision 11); the Head's active branch beside it passes", async () => {
-    const head = await insertUser("HEAD");
-    const closed = await insertBranch({ isActive: false });
-    const open = await insertBranch();
-    expect(
-      await runAction(suggestProduct, head.id, {
-        clientKey: newClientKey(),
-        branchId: closed.id,
-        name: `Taklif ${unique()}`,
-        unitText: "dona",
-      }),
-    ).toMatchObject(refused({ branchId: "errors.field.inactive" }));
-    await suggest(head.id, open.id);
-  });
-
-  it("refuses a name a product holds, active or inactive, ignoring capitals and spaces (04 rule 3; decision 7)", async () => {
-    const head = await insertUser("HEAD");
-    const { branch, manager } = await managerOfNewBranch();
-    const active = `Bo'r ${unique()}`;
-    const inactive = `Marker ${unique()}`;
-    expectOk(
-      await runAction(createProduct, head.id, {
-        clientKey: newClientKey(),
-        name: active,
-        ...(await productFields()),
-      }),
-    );
-    const held = expectOk(
-      (await runAction(createProduct, head.id, {
-        clientKey: newClientKey(),
-        name: inactive,
-        ...(await productFields()),
-      })) as ActionResult<{ id: string }>,
-    );
-    expectOk(await runAction(setProductActive, head.id, { id: held.id, active: false }));
-    const inCatalog = refused({ name: "errors.field.inCatalog" });
-    for (const name of [active, `  ${active.toUpperCase()} `, inactive]) {
-      expect(
-        await runAction(suggestProduct, manager.id, {
-          clientKey: newClientKey(),
-          branchId: branch.id,
-          name,
-          unitText: "dona",
-        }),
-      ).toMatchObject(inCatalog);
-    }
-    // Another name passes beside them, and two suggestions of one name are allowed.
-    const other = `${active} rangli`;
-    await suggest(manager.id, branch.id, { name: other });
-    await suggest(manager.id, branch.id, { name: other });
-  });
-
-  it("refuses a blank name or measure and a measure over 30 characters (decision 5)", async () => {
-    const { branch, manager } = await managerOfNewBranch();
-    const base = { branchId: branch.id, name: `Taklif ${unique()}`, unitText: "dona" };
-    for (const wrong of [{ name: "   " }, { unitText: "" }, { unitText: "x".repeat(31) }]) {
-      expect(
-        await runAction(suggestProduct, manager.id, {
-          clientKey: newClientKey(),
-          ...base,
-          ...wrong,
-        }),
-      ).toMatchObject({ ok: false, error: { code: "invalid_input" } });
-    }
-  });
-});
 
 describe("adding a suggestion to the catalog (04 rule 8: the Head adds it, possibly edited)", () => {
   it("creates the edited product with its default subtype and price, marks the suggestion added, and tells the Manager", async () => {
@@ -582,20 +373,6 @@ function asMatrixAnswer(result: ActionResult<unknown>): void {
 }
 
 // "Suggest a new product for the catalog": Head any branch, Manager own branches (03).
-describePermissionMatrix("suggestProduct", {
-  permission: "catalog.suggest",
-  async run({ user, branchId }) {
-    asMatrixAnswer(
-      await runAction(suggestProduct, user.id, {
-        clientKey: newClientKey(),
-        branchId,
-        name: `Matritsa ${newClientKey()}`,
-        unitText: "dona",
-      }),
-    );
-  },
-});
-
 async function pendingSuggestion(branchId: string) {
   const manager = await insertUser("MANAGER", { branches: [branchId] });
   return suggest(manager.id, branchId);

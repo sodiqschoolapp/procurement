@@ -19,7 +19,9 @@ import { getHeadHome } from "@/features/home/queries/head-home";
 import { getManagerHome } from "@/features/home/queries/manager-home";
 import { getMoneyWithManagers } from "@/features/money/queries/money-with-managers";
 import { getPricePrompts } from "@/features/catalog/queries/price-prompts";
+import { listUncheckedAdded } from "@/features/catalog/queries/manager-adds";
 import { countPendingSuggestions, listSuggestions } from "@/features/catalog/queries/suggestions";
+import { AddedByManagers } from "@/features/home/components/added-by-managers";
 import { getPrincipalHome } from "@/features/home/queries/principal-home";
 import { type ListFilters, NO_FILTERS, listFiltersParams } from "@/features/orders/list-filters";
 import { wireGroup } from "@/features/orders/list-wire";
@@ -35,8 +37,9 @@ import { requireUser } from "@/server/auth/session";
 // branch's orders by status and its spending this month. Every list follows the top bar's branch
 // (decided item 7) and links to the filtered order list; every number is the server's. The Head
 // and Finance get theirs in 6.2 (plan of 6.2): the Head every decision waiting across the
-// branches, Finance its approvals and settlements by owner with the exact amount. A Manager keeps the way in to the product
-// suggestions beside the three buttons (plan of 1.12, decision 4, Look first).
+// branches, Finance its approvals and settlements by owner with the exact amount. The Head's home lists the products and
+// subtypes Managers added, until checked (04 rule 8; plan of 1.12b); the Manager's way in to new
+// product suggestions is gone (plan of 1.12b, decided item 3, Look first).
 
 /** The order list behind a home list; without `branch=` the list follows the top bar too. */
 const HOME_ROWS = 5;
@@ -171,13 +174,6 @@ async function ManagerHome({ userId, branch }: { userId: string; branch: string 
             {t("manager.buttons.issue")}
           </Link>
         )}
-        <Link
-          href="/suggestions"
-          className={buttonVariants({ variant: "ghost", className: "justify-self-start" })}
-        >
-          <Icon name="add" size={18} />
-          {t("suggest")}
-        </Link>
       </div>
 
       {nothing ? (
@@ -428,6 +424,7 @@ async function HeadHome({ userId, branch }: { userId: string; branch: string | n
   const suggestions = (await listSuggestions(userId)).rows
     .filter((row) => row.status === "PENDING")
     .slice(0, HOME_ROWS);
+  const added = await listUncheckedAdded(userId, { limit: HOME_ROWS });
   const prompts = await getPricePrompts(userId);
   const product = (name: string, subtype: string | null) =>
     subtype ? `${name}, ${subtype}` : name;
@@ -439,6 +436,7 @@ async function HeadHome({ userId, branch }: { userId: string; branch: string | n
     home.waiting.count === 0 &&
     home.overspends.length === 0 &&
     home.writeOffs.count === 0 &&
+    added.total === 0 &&
     suggestionCount === 0 &&
     prompts.length === 0 &&
     home.stuck.total === 0;
@@ -553,6 +551,17 @@ async function HeadHome({ userId, branch }: { userId: string; branch: string | n
             />
           ))}
         </ul>
+      </HomeBlock>
+
+      <HomeBlock
+        id="added"
+        title={t("head.added.title")}
+        count={added.total}
+        hidden={added.total === 0}
+      >
+        <AddedByManagers
+          rows={added.rows.map((row) => ({ ...row, createdAt: row.createdAt.toISOString() }))}
+        />
       </HomeBlock>
 
       <HomeBlock

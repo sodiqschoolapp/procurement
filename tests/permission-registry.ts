@@ -64,9 +64,10 @@ export const SERVER_ACTIONS: Record<string, Entry> = {
   // before the file is read (plan review, correction 1).
   "src/app/(app)/catalog/import/actions.ts#previewImportAction": "catalog.manage",
   "src/app/(app)/catalog/import/actions.ts#saveImportAction": "catalog.manage",
-  // Product suggestions (plan of 1.12, decisions 1 and 2, Look first): suggesting is
-  // catalog.suggest on the branch; adding and declining are the Head's catalog.manage.
-  "src/app/(app)/suggestions/actions.ts#suggestProductAction": "catalog.suggest",
+  // The Head marks entries Managers added checked (04 rule 8; plan of 1.12b).
+  "src/app/(app)/home-actions.ts#markAddedCheckedAction": "catalog.manage",
+  // Product suggestions (plan of 1.12, decisions 1 and 2, Look first): adding and declining are
+  // the Head's catalog.manage; none is sent since 1.12b (plan of 1.12b, decided item 3).
   "src/app/(app)/suggestions/actions.ts#addSuggestedProductAction": "catalog.manage",
   "src/app/(app)/suggestions/actions.ts#declineSuggestionAction": "catalog.manage",
   // The drafts grid on /orders (plan of 2.5b, review of the plan, Must fix 7): each export is in
@@ -220,6 +221,8 @@ export const QUERIES: Record<string, Permission> = {
   "src/features/catalog/queries/suggestions.ts#listSuggestions": "catalog.suggest",
   "src/features/catalog/queries/suggestions.ts#getSuggestion": "catalog.suggest",
   "src/features/catalog/queries/suggestions.ts#countPendingSuggestions": "catalog.manage",
+  // The Head's home list of entries Managers added, until checked (04 rule 8; plan of 1.12b).
+  "src/features/catalog/queries/manager-adds.ts#listUncheckedAdded": "catalog.manage",
   // The preview of an Excel import (plan of 1.10); each kind asks its own permission
   // (IMPORT_PERMISSIONS): prices price.add (1.11), stock stock.enter_direct on its branch (5.9).
   "src/features/catalog/queries/imports.ts#previewImport": "catalog.manage",

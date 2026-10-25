@@ -3,7 +3,7 @@
     "title": "Maktab xaridlari va ombor platformasi"
   },
   "format": {
-    "currency": "so'm"
+    "currency": "soʻm"
   },
   "login": {
     "title": "Tizimga kirish",
@@ -341,7 +341,6 @@
   },
   "home": {
     "title": "Mening vazifalarim",
-    "suggest": "Tovar taklif qilish",
     "showAll": "Hammasini koʻrsatish ({count})",
     "openList": "Buyurtmalar roʻyxatida ochish",
     "orders": "{count, plural, other {# ta buyurtma}}",
@@ -437,7 +436,21 @@
         "period": "{from} – {to}"
       },
       "inactive": "{code} (faol emas)",
-      "pair": "{first} · {second}"
+      "pair": "{first} · {second}",
+      "added": {
+        "title": "Menejerlar qoʻshgan mahsulotlar",
+        "subtype": "{product} · {name}",
+        "productLine": "Mahsulot · {name}, {date}",
+        "subtypeLine": "Tur · {name}, {date}",
+        "tick": "{name} ni belgilash",
+        "count": "{count} ta belgilandi",
+        "mark": "Tekshirildi deb belgilash",
+        "clear": "Tozalash",
+        "confirmTitle": "{count} ta yozuvni tekshirildi deb belgilaysizmi?",
+        "confirmResult": "{count} ta yozuv bu roʻyxatdan chiqadi. Katalogda ular oʻzgarishsiz qoladi.",
+        "marked": "{count} ta yozuv tekshirildi",
+        "failed": "Belgilab boʻlmadi. Sahifani yangilang va qayta urinib koʻring."
+      }
     },
     "finance": {
       "approvals": {
@@ -730,7 +743,7 @@
       "TRANSFER_STOCK": "Boshqa filiallarga koʻchirish yuborish",
       "WRITE_OFF_COUNT": "Hisobdan chiqarishni soʻrash va inventarizatsiya oʻtkazish",
       "SET_MINIMUMS": "Minimal qoldiqlarni belgilash",
-      "ADD_PRODUCTS": "Mahsulot va turlarni qo'shish"
+      "ADD_PRODUCTS": "Mahsulot va turlarni qoʻshish"
     },
     "off": {
       "CREATE_REQUESTS": "Menejer buyurtmalarni faqat koʻra oladi.",
@@ -742,7 +755,7 @@
       "TRANSFER_STOCK": "Koʻchirishni faqat xaridlar rahbari yuboradi.",
       "WRITE_OFF_COUNT": "Ularni faqat xaridlar rahbari boshlay oladi.",
       "SET_MINIMUMS": "Ularni faqat xaridlar rahbari belgilaydi.",
-      "ADD_PRODUCTS": "Menejer faqat katalogdan tanlaydi; yetishmaganini xaridlar rahbari qo'shadi."
+      "ADD_PRODUCTS": "Menejer faqat katalogdan tanlaydi; yetishmaganini xaridlar rahbari qoʻshadi."
     }
   },
   "catalog": {
@@ -1039,29 +1052,18 @@
   },
   "suggestions": {
     "title": "Tovar takliflari",
-    "new": "Tovar taklif qilish",
-    "newTitle": "Tovar taklif qilish",
     "back": "Takliflarga qaytish",
     "allBranches": "Barcha filiallarim",
     "oneBranch": "{code} filiali, {name}",
     "fields": {
       "branchId": "Filial",
-      "name": "Nomi",
       "unitText": "Oʻlchov birligi",
-      "photoFileId": "Rasm",
       "note": "Izoh",
       "reason": "Sabab"
     },
     "hints": {
-      "name": "Katalogda qanday nomlanishi kerak boʻlsa.",
-      "unitText": "Qanday sanaysiz: dona, quti, kilogramm.",
-      "photoFileId": "Ixtiyoriy. JPG, PNG, WebP yoki HEIC, 10 MB gacha.",
-      "note": "Ixtiyoriy. Nima uchun kerak, brend, doʻkon havolasi.",
       "reason": "Menejer bu sababni koʻradi."
     },
-    "chooseBranch": "Filialni tanlang",
-    "send": "Taklifni yuborish",
-    "sent": "Taklif xaridlar rahbariga yuborildi",
     "status": {
       "PENDING": "Rahbarni kutmoqda",
       "ADDED": "Katalogga qoʻshildi",
@@ -1076,7 +1078,7 @@
       "status": "Holati"
     },
     "emptyTitle": "Hozircha taklif yoʻq",
-    "emptyText": "Kerakli tovar katalogda boʻlmasa, shu yerda taklif qiling.",
+    "emptyText": "Bu yerda 2026-yil 25-oktabrgacha yuborilgan takliflar koʻrinadi. Katalogda yoʻq narsa endi buyurtmaning mahsulot qidiruvidan qoʻshiladi.",
     "suggestedBy": "Taklif qilgan",
     "sentOn": "Yuborilgan",
     "decidedBy": "Qaror qilgan",

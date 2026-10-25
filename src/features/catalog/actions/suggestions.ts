@@ -22,13 +22,7 @@ import { notify } from "@/server/notify";
 import type { SavedEntry } from "./catalog-entries";
 import { nameField, optionalId, optionalText } from "./catalog-fields";
 import { fileNameOf, refusePhoto } from "./photos";
-import {
-  type ProductFields,
-  createProduct,
-  insertProduct,
-  recordProductCreate,
-  refuseProductName,
-} from "./products";
+import { type ProductFields, createProduct, insertProduct, recordProductCreate } from "./products";
 
 // Product suggestions (04-catalogs.md rule 8: "A Manager who needs something missing from the
 // catalog sends a suggestion: name, measure, photo, note. The Head adds it (possibly edited) or
@@ -47,29 +41,6 @@ const ENTITY = "catalog_suggestions";
 
 export type SuggestionResult = { id: string; branchId: string; name: string };
 
-const suggestInput = z.object({
-  clientKey: z.string().refine(isClientKey),
-  branchId: z.uuid(),
-  name: nameField,
-  unitText: z.string().transform(unitText).refine(isUnitText),
-  photoFileId: optionalId,
-  note: optionalText(suggestionNote, isSuggestionNote),
-});
-
-/** The branch a suggestion names must exist and be active (decision 11), locked FOR SHARE. */
-async function refuseBranch(tx: Executor, branchId: string): Promise<string> {
-  const [branch] = await tx
-    .select({ code: branches.code, isActive: branches.isActive })
-    .from(branches)
-    .where(eq(branches.id, branchId))
-    .for("share");
-  if (!branch) throw new ActionError("invalid_input", { branchId: "errors.field.notAllowed" });
-  if (!branch.isActive) {
-    throw new ActionError("invalid_input", { branchId: "errors.field.inactive" });
-  }
-  return branch.code;
-}
-
 async function branchCode(tx: Executor, branchId: string): Promise<string> {
   const [row] = await tx
     .select({ code: branches.code })
@@ -77,101 +48,6 @@ async function branchCode(tx: Executor, branchId: string): Promise<string> {
     .where(eq(branches.id, branchId));
   return row?.code ?? "";
 }
-
-/** Every active Head; notify() leaves out the one who acts (plan of 1.12, decision 8). */
-async function activeHeads(tx: Executor): Promise<string[]> {
-  const rows = await tx
-    .select({ id: users.id })
-    .from(users)
-    .where(and(eq(users.role, "HEAD"), eq(users.isActive, true)));
-  return rows.map((row) => row.id);
-}
-
-export const suggestProduct = defineAction({
-  name: "suggestProduct",
-  permission: "catalog.suggest",
-  input: suggestInput,
-  // A create: the branch comes from the input and authorize() checks it is the actor's.
-  async target({ input }) {
-    return { branchId: input.branchId };
-  },
-  repeat: {
-    clientKey: (input) => input.clientKey,
-    async find(tx, clientKey) {
-      const [row] = await tx
-        .select({
-          id: catalogSuggestions.id,
-          branchId: catalogSuggestions.branchId,
-          name: catalogSuggestions.name,
-          userId: catalogSuggestions.suggestedBy,
-        })
-        .from(catalogSuggestions)
-        .where(eq(catalogSuggestions.clientKey, clientKey));
-      if (!row) return null;
-      const { userId, ...result } = row;
-      return { result, userId, branchId: row.branchId };
-    },
-  },
-  async write({ tx, input, userId }): Promise<SuggestionResult> {
-    await refuseBranch(tx, input.branchId);
-    await refuseProductName(tx, input.name);
-    if (input.photoFileId) await refusePhoto(tx, userId, input.photoFileId);
-    const [row] = await tx
-      .insert(catalogSuggestions)
-      .values({
-        branchId: input.branchId,
-        suggestedBy: userId,
-        name: input.name,
-        unitText: input.unitText,
-        photoFileId: input.photoFileId,
-        note: input.note,
-        status: "PENDING",
-        clientKey: input.clientKey,
-        createdAt: now(),
-      })
-      .returning({
-        id: catalogSuggestions.id,
-        branchId: catalogSuggestions.branchId,
-        name: catalogSuggestions.name,
-      });
-    return row!;
-  },
-  async history({ tx, input, userId }, result) {
-    await audit(
-      { tx, userId },
-      {
-        action: "suggestion.create",
-        entity: ENTITY,
-        entityId: result.id,
-        before: null,
-        after: {
-          branchId: input.branchId,
-          branch: await branchCode(tx, input.branchId),
-          name: input.name,
-          unitText: input.unitText,
-          note: input.note,
-          photoFileId: input.photoFileId,
-          photo: input.photoFileId ? await fileNameOf(tx, input.photoFileId) : null,
-          status: "PENDING",
-        },
-        at: now(),
-      },
-    );
-  },
-  async notify({ tx, userId }, result) {
-    await notify(
-      { tx, userId },
-      {
-        to: await activeHeads(tx),
-        type: "PRODUCT_SUGGESTED",
-        params: { name: result.name, branch: await branchCode(tx, result.branchId) },
-        branchId: result.branchId,
-        link: `/suggestions/${result.id}`,
-        at: now(),
-      },
-    );
-  },
-});
 
 type LockedSuggestion = {
   id: string;
