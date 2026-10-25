@@ -10,7 +10,7 @@
 export const ROLES = ["HEAD", "MANAGER", "PRINCIPAL", "FINANCE"] as const;
 export type Role = (typeof ROLES)[number];
 
-/** The nine switches (03-roles-and-permissions.md, "Manager rights the Head can switch"). */
+/** The ten switches (03-roles-and-permissions.md, "Manager rights the Head can switch"). */
 export const MANAGER_RIGHTS = [
   "CREATE_REQUESTS",
   "RECORD_PURCHASES",
@@ -21,6 +21,7 @@ export const MANAGER_RIGHTS = [
   "TRANSFER_STOCK",
   "WRITE_OFF_COUNT",
   "SET_MINIMUMS",
+  "ADD_PRODUCTS",
 ] as const;
 export type ManagerRight = (typeof MANAGER_RIGHTS)[number];
 
@@ -37,6 +38,11 @@ export type Grant = "no" | "yes" | "all" | "own" | "owner";
 type GlobalRule = {
   scope: "global";
   roles: Record<Role, "no" | "yes">;
+  /**
+   * The Manager right that guards it; checked for Managers only: a catalog action with no branch
+   * that a switch can take away (plan of 1.12b, decided item 1, Look first).
+   */
+  right?: ManagerRight;
 };
 
 type BranchRule = {
@@ -58,9 +64,18 @@ const EVERY_ROLE = { HEAD: "all", MANAGER: "own", PRINCIPAL: "own", FINANCE: "ow
 export const PERMISSIONS = {
   // "Manage catalogs, users, branches, settings"
   "catalog.manage": { scope: "global", roles: HEAD_ONLY_GLOBAL },
-  // "Suggest a new product for the catalog": a branch permission, as catalog_suggestions has a
-  // branch_id (plan of 0.7, decision 3).
+  // Seeing product suggestions, sent before 25 October 2026 (04 rule 8: "Suggestions sent before
+  // 25 October 2026 are decided as before"; plan of 1.12b, decided item 3, Look first): a branch
+  // permission, as catalog_suggestions has a branch_id (plan of 0.7, decision 3).
   "catalog.suggest": { scope: "branch", roles: HEAD_AND_MANAGER },
+  // "Add a product or a subtype from an order's product search (04 rule 8)", guarded by
+  // ADD_PRODUCTS. Global: products and subtypes hold no branch (plan of 1.12b, decided item 1,
+  // Look first); the search that leads to it asks request.create on the draft's branch.
+  "catalog.add": {
+    scope: "global",
+    roles: { HEAD: "yes", MANAGER: "yes", PRINCIPAL: "no", FINANCE: "no" },
+    right: "ADD_PRODUCTS",
+  },
   // Picking from the catalogs (measures, categories, extra cost types, companies; later products):
   // not a row of 03, which says only "everyone else picks from them" (04). Every role: Managers
   // pick on requests and purchases, Finance a supplier on money entries, the Principal filters
@@ -185,6 +200,18 @@ export type Target = { branchId: string; ownerId?: string };
 
 export type Decision = "allow" | "not_found" | "forbidden";
 
+/**
+ * A global permission's answer: the role, then, for a Manager, the right that guards it
+ * ("Switches only take rights away", and only a Manager's).
+ */
+function decideGlobal(rule: GlobalRule, actor: Actor): "allow" | "forbidden" {
+  if (rule.roles[actor.role] !== "yes") return "forbidden";
+  if (actor.role === "MANAGER" && rule.right && actor.disabledRights.includes(rule.right)) {
+    return "forbidden";
+  }
+  return "allow";
+}
+
 /** Whether the actor sees a branch at all: the Head every branch, the others their own. */
 export function seesBranch(actor: Actor, branchId: string): boolean {
   return actor.role === "HEAD" || actor.branchIds.includes(branchId);
@@ -198,9 +225,7 @@ export function seesBranch(actor: Actor, branchId: string): boolean {
 export function decide(permission: Permission, actor: Actor, target?: Target): Decision {
   const rule: PermissionRule = PERMISSIONS[permission];
 
-  if (rule.scope === "global") {
-    return rule.roles[actor.role] === "yes" ? "allow" : "forbidden";
-  }
+  if (rule.scope === "global") return decideGlobal(rule, actor);
 
   if (!target) {
     // A programming error, not a refusal: a branch permission is always asked about a branch.
@@ -236,9 +261,7 @@ export function decide(permission: Permission, actor: Actor, target?: Target): D
  */
 export function decideList(permission: Permission, actor: Actor): "allow" | "forbidden" {
   const rule: PermissionRule = PERMISSIONS[permission];
-  if (rule.scope === "global") {
-    return rule.roles[actor.role] === "yes" ? "allow" : "forbidden";
-  }
+  if (rule.scope === "global") return decideGlobal(rule, actor);
   const grant = rule.roles[actor.role];
   if (grant === "owner") {
     throw new Error(`decideList(): the permission ${permission} is listed by its owner.`);
@@ -280,4 +303,17 @@ export function roleMay(permission: Permission, role: Role): boolean {
     throw new Error(`roleMay(): the permission ${permission} needs a branch.`);
   }
   return rule.roles[role] === "yes";
+}
+
+/**
+ * Whether the actor may use a global permission, its Manager right read too: for a screen that
+ * shows a control only when it works, as the product search's Add line (plan of 1.12b, decided
+ * item 10). The server asks authorize() again; this protects nothing.
+ */
+export function actorMay(permission: Permission, actor: Actor): boolean {
+  const rule: PermissionRule = PERMISSIONS[permission];
+  if (rule.scope !== "global") {
+    throw new Error(`actorMay(): the permission ${permission} needs a branch.`);
+  }
+  return decideGlobal(rule, actor) === "allow";
 }

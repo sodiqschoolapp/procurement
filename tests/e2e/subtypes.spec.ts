@@ -9,7 +9,7 @@ import { E2E_ROLES } from "./global-setup";
 // Build-plan 1.8, Done when (by hand, automated too): "the spec's phase 1 check, add a product with
 // subtypes and a photo"; "a product without subtypes shows none on screen". 04-catalogs.md,
 // Catalogs table (Subtypes), rules 1, 3, 6, 9; open question 18 (plan of 1.8, decision 1: the
-// first subtype keeps what the product had); 11-screens-and-ux.md rules 6, 12, 13. Entries are
+// first subtype names the existing items, which keep what the product had; D64); 11-screens-and-ux.md rules 6, 12, 13. Entries are
 // never deleted and both projects share one database, so every name is new on every run.
 
 type Person = (typeof E2E_ROLES)[keyof typeof E2E_ROLES];
@@ -89,16 +89,16 @@ test("the Head adds a product, sees no subtypes, adds two subtypes, one with a p
   await expect(page.getByRole("heading", { name: t.subtypes.title, level: 2 })).toBeVisible();
   await expect(page.getByText(t.subtypes.none)).toBeVisible();
 
-  // The first subtype: the note, and the product's price shown, not typed (decisions 1 and 2).
+  // The first subtype: the note, and the existing items named too; they keep the product's price
+  // (04 rule 1; D64, replacing decisions 1.8 item 1).
   await page.getByRole("link", { name: t.subtypes.new }).click();
   await expect(
     page.getByRole("heading", { name: t.subtypes.newTitle.replace("{product}", name), level: 1 }),
   ).toBeVisible();
   await expect(page.getByText(t.subtypes.firstNote)).toBeVisible();
   await expect(page.getByRole("button", { name: t.save })).toBeEnabled();
-  await expect(page.getByLabel(t.fields.referencePrice)).toHaveCount(0);
-  await expect(page.locator("form").getByText(/50\s000/)).toBeVisible();
-  await page.getByLabel(t.fields.name).fill("A4");
+  await page.getByLabel(t.fields.existingName).fill("A5");
+  await page.getByLabel(t.fields.name, { exact: true }).fill("A4");
   const photo = await sharp({
     create: { width: 900, height: 600, channels: 3, background: "#e0a020" },
   })
@@ -118,6 +118,7 @@ test("the Head adds a product, sees no subtypes, adds two subtypes, one with a p
     page.getByRole("heading", { name: t.subtypes.newTitle.replace("{product}", name), level: 1 }),
   ).toBeVisible();
   await expect(page.getByText(t.subtypes.firstNote)).toHaveCount(0);
+  await expect(page.getByLabel(t.fields.existingName)).toHaveCount(0);
   await expect(page.getByRole("button", { name: t.save })).toBeEnabled();
   await page.getByLabel(t.fields.name).fill("a4");
   await page.getByRole("button", { name: t.save }).click();
@@ -129,12 +130,20 @@ test("the Head adds a product, sees no subtypes, adds two subtypes, one with a p
   await expect(page.getByText(t.created).first()).toBeVisible();
   await expect(page).toHaveURL(new RegExp(`${productUrl.split("/").pop()}$`));
 
-  // Both in the product's list; A4 with its small photo, A3 with the product's (none).
+  // All three in the product's list: A5 with the product's 50 000, A4 with its small photo, A3
+  // with the product's (none).
   const section = page.locator("section", {
     has: page.getByRole("heading", { name: t.subtypes.title }),
   });
   await expect(section.getByRole("link", { name: "A4" }).first()).toBeVisible();
   await expect(section.getByRole("link", { name: "A3" }).first()).toBeVisible();
+  await expect(section.getByRole("link", { name: "A5" }).first()).toBeVisible();
+  await expect(
+    section
+      .getByText(/50\s000/)
+      .filter({ visible: true })
+      .first(),
+  ).toBeVisible();
   const small = section.getByRole("img", { name: new RegExp(`${suffix} A4`) }).first();
   await expect
     .poll(() => small.evaluate((image: HTMLImageElement) => image.naturalWidth))
@@ -163,16 +172,24 @@ test("the Head adds a product, sees no subtypes, adds two subtypes, one with a p
   await expect(page.getByText(t.deactivated).first()).toBeVisible();
   await noSideScroll(page);
 
-  // A4 is now the last active one: no Deactivate, the reason instead (decision 3).
+  // A4 deactivated the same way; A5 is then the last active one: no Deactivate, the reason
+  // instead (decision 3).
   await page.goto(productUrl);
   await section.getByRole("link", { name: "A4" }).first().click();
   await expect(page.getByRole("heading", { name: "A4", level: 1 })).toBeVisible();
+  await page.getByRole("button", { name: t.deactivate }).click();
+  await page.getByRole("alertdialog").getByRole("button", { name: t.deactivate }).click();
+  await expect(page.getByRole("alertdialog")).toBeHidden();
+  await expect(page.getByText(t.deactivated).first()).toBeVisible();
+  await page.goto(productUrl);
+  await section.getByRole("link", { name: "A5" }).first().click();
+  await expect(page.getByRole("heading", { name: "A5", level: 1 })).toBeVisible();
   await expect(page.getByText(t.subtypes.lastActive)).toBeVisible();
   await expect(page.getByRole("button", { name: t.deactivate })).toHaveCount(0);
 
   // The products list shows the count of subtypes in place of a price.
   await page.goto(`/catalog/products?q=${suffix}`);
   await expect(page.getByRole("row").filter({ hasText: name })).toContainText(
-    t.subtypes.count.replace("{count, plural, other {# tur}}", "2 tur"),
+    t.subtypes.count.replace("{count, plural, other {# tur}}", "3 tur"),
   );
 });

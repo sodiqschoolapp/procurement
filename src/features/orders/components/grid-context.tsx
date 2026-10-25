@@ -24,6 +24,11 @@ type ChoicesState = Record<string, WireChoices | undefined>;
 export type GridContextValue = {
   branches: readonly GridBranch[];
   actorId: string;
+  /**
+   * Whether the product search offers "Add …" when nothing matches: actorMay("catalog.add") on
+   * the server page (04 rule 8; plan of 1.12b, decided item 10); the action asks again.
+   */
+  canAddToCatalog: boolean;
   choices: ChoicesState;
   loadChoices(branchId: string): Promise<WireChoices | null>;
 };
@@ -39,10 +44,12 @@ export function useGrid(): GridContextValue {
 export function GridProvider({
   branches,
   actorId,
+  canAddToCatalog = false,
   children,
 }: {
   branches: readonly GridBranch[];
   actorId: string;
+  canAddToCatalog?: boolean;
   children: React.ReactNode;
 }) {
   const [choices, setChoices] = useState<ChoicesState>({});
@@ -69,7 +76,7 @@ export function GridProvider({
   );
 
   return (
-    <GridContext.Provider value={{ branches, actorId, choices, loadChoices }}>
+    <GridContext.Provider value={{ branches, actorId, canAddToCatalog, choices, loadChoices }}>
       {children}
     </GridContext.Provider>
   );

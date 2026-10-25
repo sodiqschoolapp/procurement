@@ -14,7 +14,7 @@ import { insertUser } from "../../../../tests/helpers/users";
 import { getManagerRights } from "../queries/users";
 import { switchManagerRight } from "./manager-rights";
 
-// build-plan 1.4, Done when: "A database test for each of the nine codes: off means authorize()
+// build-plan 1.4, Done when: "A database test for each of the nine codes (ten since 1.12b): off means authorize()
 // refuses that action for that Manager in every branch and still allows the Head." 03-roles-and-
 // permissions.md, "Manager rights the Head can switch"; A13; 10 Notifications ("A Manager's right
 // is switched on or off → That Manager"); 14-data-model.md, manager_rights ("no row means
@@ -25,27 +25,28 @@ function expectOk<T>(result: ActionResult<T>): T {
   return (result as { ok: true; data: T }).data;
 }
 
-type BranchPermission = {
-  [P in Permission]: (typeof PERMISSIONS)[P] extends { scope: "branch" } ? P : never;
-}[Permission];
-
-/** Every branch permission and the right that guards it, from the matrix. */
+/**
+ * Every permission and the right that guards it, from the matrix: the branch ones, and since 1.12b
+ * the global catalog.add (ADD_PRODUCTS; plan of 1.12b, decided item 1, Look first).
+ */
 const GUARDED = (Object.keys(PERMISSIONS) as Permission[]).flatMap((permission) => {
   const rule = PERMISSIONS[permission];
-  return rule.scope === "branch" && "right" in rule
-    ? [{ permission: permission as BranchPermission, right: rule.right }]
+  return "right" in rule
+    ? [{ permission, right: rule.right, global: rule.scope === "global" }]
     : [];
 });
 
-/** authorize()'s answer, as the matrix names it. */
+/** authorize()'s answer, as the matrix names it; a global permission names no branch. */
 async function answer(
   userId: string,
-  permission: BranchPermission,
+  permission: Permission,
   branchId: string,
   ownerId: string,
 ): Promise<"allow" | "not_found" | "forbidden"> {
+  const global = PERMISSIONS[permission].scope === "global";
   try {
-    await authorize(userId, permission, { branchId, ownerId });
+    if (global) await authorize(userId, permission);
+    else await authorize(userId, permission, { branchId, ownerId });
     return "allow";
   } catch (error) {
     if (error instanceof AuthorizationError) return error.kind;
@@ -81,7 +82,7 @@ async function noticesOf(userId: string) {
     .where(and(eq(notifications.userId, userId), eq(notifications.type, "MANAGER_RIGHT_SWITCHED")));
 }
 
-describe("each of the nine rights switched off (build-plan 1.4 Done when; 03; A13)", () => {
+describe("each of the ten rights switched off (build-plan 1.4 Done when; 03; A13)", () => {
   it("every code guards at least one permission of the matrix", () => {
     for (const right of MANAGER_RIGHTS) {
       expect(GUARDED.some((entry) => entry.right === right)).toBe(true);
@@ -124,7 +125,7 @@ describe("each of the nine rights switched off (build-plan 1.4 Done when; 03; A1
 });
 
 describe("switchManagerRight (03, Manager rights the Head can switch; plan of 1.4)", () => {
-  it("all nine are on by default: no row means enabled (03; 14 manager_rights; D40)", async () => {
+  it("all ten are on by default: no row means enabled (03; 14 manager_rights; D40)", async () => {
     const branch = await insertBranch();
     const head = await insertUser("HEAD");
     const fresh = await insertUser("MANAGER", { branches: [branch.id] });

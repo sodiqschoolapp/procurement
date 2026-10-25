@@ -146,13 +146,13 @@ test("the Head switches a Manager's right off and the Manager gets a bell notice
   await page.getByRole("link", { name: uz.users.openUser }).click();
   await expect(page).toHaveURL(/\/users\/[0-9a-f-]{36}$/);
 
-  // All nine on by default (03).
+  // All ten on by default (03; ten since 1.12b).
   const rights = page.locator("section", {
     has: page.getByRole("heading", { name: uz.managerRights.title, level: 2 }),
   });
   await expect(rights).toBeVisible();
   const purchases = rights.getByRole("checkbox", { name: uz.managerRights.names.RECORD_PURCHASES });
-  await expect(rights.getByRole("checkbox", { checked: true })).toHaveCount(9);
+  await expect(rights.getByRole("checkbox", { checked: true })).toHaveCount(10);
   await expect(purchases).toBeEnabled();
   const box = await page.locator("label[for='right-RECORD_PURCHASES']").boundingBox();
   expect(box!.height).toBeGreaterThanOrEqual(44);

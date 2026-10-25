@@ -70,6 +70,7 @@ export function DraftsGrid({
   total,
   branches,
   actorId,
+  canAddToCatalog,
   defaultBranchId,
   canAdd,
   query,
@@ -79,6 +80,8 @@ export function DraftsGrid({
   total: number;
   branches: readonly GridBranch[];
   actorId: string;
+  /** The product search offers its Add line (04 rule 8; plan of 1.12b, decided item 10). */
+  canAddToCatalog: boolean;
   defaultBranchId: string | null;
   canAdd: boolean;
   /** The address query of the page without the grid's own page, such as "owners=all". */
@@ -474,7 +477,7 @@ export function DraftsGrid({
   ] as const;
 
   return (
-    <GridProvider branches={branches} actorId={actorId}>
+    <GridProvider branches={branches} actorId={actorId} canAddToCatalog={canAddToCatalog}>
       <UnsavedChangesGuard dirty={dirtyRows.size > 0 || adding} />
       <div className="flex flex-col gap-4">
         {submitFailures.length > 0 && (

@@ -221,11 +221,21 @@ export const products = pgTable(
     description: text("description"),
     hasVariants: boolean("has_variants").notNull().default(false),
     isActive: boolean("is_active").notNull().default(true),
+    // The Manager who added it from an order's product search, and when the Head marked it
+    // checked (04-catalogs.md rule 8; 14 products; task 1.12b).
+    addedBy: uuid("added_by").references((): AnyPgColumn => users.id),
+    checkedAt: moment("checked_at"),
     clientKey: uuid("client_key"),
     createdAt: moment("created_at").notNull(),
   },
   (table) => [
     unique("products_client_key_key").on(table.clientKey),
+    // Only an entry a Manager added is marked checked (plan of 1.12b, Database changes).
+    check(
+      "products_checked_at_check",
+      sql`${table.checkedAt} IS NULL OR ${table.addedBy} IS NOT NULL`,
+    ),
+    index("products_added_by_idx").on(table.addedBy),
     unique("products_photo_file_id_key").on(table.photoFileId),
     check("products_name_check", sql`btrim(${table.name}) <> ''`),
     check(
@@ -273,11 +283,19 @@ export const productVariants = pgTable(
     lastPurchasePrice: bigint("last_purchase_price", { mode: "bigint" }),
     lastPurchaseAt: moment("last_purchase_at"),
     isActive: boolean("is_active").notNull().default(true),
+    // As on products (04-catalogs.md rule 8; task 1.12b).
+    addedBy: uuid("added_by").references((): AnyPgColumn => users.id),
+    checkedAt: moment("checked_at"),
     clientKey: uuid("client_key"),
     createdAt: moment("created_at").notNull(),
   },
   (table) => [
     unique("product_variants_client_key_key").on(table.clientKey),
+    check(
+      "product_variants_checked_at_check",
+      sql`${table.checkedAt} IS NULL OR ${table.addedBy} IS NOT NULL`,
+    ),
+    index("product_variants_added_by_idx").on(table.addedBy),
     unique("product_variants_photo_file_id_key").on(table.photoFileId),
     check("product_variants_name_check", sql`btrim(${table.name}) <> ''`),
     check(

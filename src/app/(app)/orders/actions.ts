@@ -58,6 +58,14 @@ import { selectAllOnFilter, tickedSummary } from "@/features/orders/queries/orde
 import { parseListFilters } from "@/features/orders/list-filters";
 import { type WireTickedSummary, wireTickedSummary } from "@/features/orders/list-wire";
 import { listDraftChoices, searchDraftProducts } from "@/features/orders/queries/draft-picker";
+import {
+  type ProductAdd,
+  type SubtypeAdd,
+  addProductWhileOrdering,
+  addSubtypeWhileOrdering,
+  subtypeAddShown,
+} from "@/features/catalog/actions/manager-adds";
+import { type AddChoices, listAddChoices } from "@/features/catalog/queries/manager-adds";
 import { type DecidedVerb, alreadyDecidedBy } from "@/domain/already-decided";
 import { serverAction } from "@/server/action";
 import { type ActionFailure, type ActionResult, failure } from "@/server/action-result";
@@ -74,6 +82,8 @@ import { ordersServerAction } from "@/server/order-action";
 // (src/features/orders/draft-wire.ts). A write that succeeds revalidates /orders.
 
 const create = serverAction(createDraft);
+const addProduct = serverAction(addProductWhileOrdering);
+const addSubtype = serverAction(addSubtypeWhileOrdering);
 const update = serverAction(updateDraft);
 const remove = serverAction(deleteDraft);
 const applyNeededBy = draftsServerAction(setDraftsNeededBy);
@@ -489,4 +499,34 @@ export async function tickedSummaryAction(input: {
   return asked(async (userId) =>
     wireTickedSummary(await tickedSummary(userId, Array.isArray(input?.ids) ? input.ids : [])),
   );
+}
+
+/**
+ * A product added from the product search of the drafts (04-catalogs.md rule 8; plan of 1.12b):
+ * made, or the existing entry offered; safe to repeat.
+ */
+export async function addProductWhileOrderingAction(
+  input: unknown,
+): Promise<ActionResult<ProductAdd>> {
+  const result = await addProduct(input);
+  if (result.ok && result.data.outcome === "made") revalidatePath("/catalog", "layout");
+  return result;
+}
+
+/** A subtype added from the product search of the drafts (04 rule 8; plan of 1.12b). */
+export async function addSubtypeWhileOrderingAction(
+  input: unknown,
+): Promise<ActionResult<SubtypeAdd>> {
+  const result = await addSubtype(input);
+  if (!result.ok) return result;
+  if (result.data.outcome === "made") revalidatePath("/catalog", "layout");
+  return { ok: true, data: subtypeAddShown(result.data) };
+}
+
+/**
+ * The active categories and measures of the add's form (04 rule 8: "category and measure picked
+ * from their catalogs"): catalog.pick, every role, active only (plan of 1.12b, decided item 15).
+ */
+export async function listAddChoicesAction(): Promise<ActionResult<AddChoices>> {
+  return asked((userId) => listAddChoices(userId));
 }

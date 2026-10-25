@@ -179,13 +179,15 @@
         "create": "Mahsulot qoʻshildi",
         "update": "Mahsulot oʻzgartirildi",
         "deactivate": "Mahsulot faolsizlantirildi",
-        "activate": "Mahsulot faollashtirildi"
+        "activate": "Mahsulot faollashtirildi",
+        "check": "Tekshirilgan deb belgilandi"
       },
       "subtype": {
         "create": "Tur qoʻshildi",
         "update": "Tur oʻzgartirildi",
         "deactivate": "Tur faolsizlantirildi",
-        "activate": "Tur faollashtirildi"
+        "activate": "Tur faollashtirildi",
+        "check": "Tekshirilgan deb belgilandi"
       },
       "price": {
         "add": "Yangi narx"
@@ -339,7 +341,6 @@
   },
   "home": {
     "title": "Mening vazifalarim",
-    "suggest": "Tovar taklif qilish",
     "showAll": "Hammasini koʻrsatish ({count})",
     "openList": "Buyurtmalar roʻyxatida ochish",
     "orders": "{count, plural, other {# ta buyurtma}}",
@@ -435,7 +436,21 @@
         "period": "{from} – {to}"
       },
       "inactive": "{code} (faol emas)",
-      "pair": "{first} · {second}"
+      "pair": "{first} · {second}",
+      "added": {
+        "title": "Menejerlar qoʻshgan mahsulotlar",
+        "subtype": "{product} · {name}",
+        "productLine": "Mahsulot · {name}, {date}",
+        "subtypeLine": "Tur · {name}, {date}",
+        "tick": "{name} ni belgilash",
+        "count": "{count} ta belgilandi",
+        "mark": "Tekshirildi deb belgilash",
+        "clear": "Tozalash",
+        "confirmTitle": "{count} ta yozuvni tekshirildi deb belgilaysizmi?",
+        "confirmResult": "{count} ta yozuv bu roʻyxatdan chiqadi. Katalogda ular oʻzgarishsiz qoladi.",
+        "marked": "{count} ta yozuv tekshirildi",
+        "failed": "Belgilab boʻlmadi. Sahifani yangilang va qayta urinib koʻring."
+      }
     },
     "finance": {
       "approvals": {
@@ -510,7 +525,7 @@
       "STOCK_CHECK_MISMATCH": "Tungi ombor tekshiruvi qoldigʻi harakatlarga mos kelmaydigan {count, plural, other {# ta mahsulot}} topdi.",
       "DATABASE_COPY_FAILED": "Maʼlumotlar bazasining haftalik nusxasi saqlanmadi. Keyingi kechasi yana urinib koʻriladi.",
       "BRANCH_ROLE_VACANT": "{branch} filialida faol {role, select, HEAD {xaridlar rahbari} MANAGER {menejer} PRINCIPAL {direktor} FINANCE {moliya xodimi} other {foydalanuvchi}} yoʻq.",
-      "MANAGER_RIGHT_SWITCHED": "Xaridlar rahbari sizning huquqingizni {state, select, on {yoqdi} other {oʻchirdi}}: {right, select, CREATE_REQUESTS {Buyurtmalar yaratish va yuborish} RECORD_PURCHASES {Xaridlarni yozish} CANCEL_PURCHASES {Xarid yozuvlarini bekor qilish} CLOSE_ALONE {Farqsiz buyurtmalarni oʻzi yopish} ISSUE_STOCK {Boʻlimlarga tovar berish} RETURN_REVERSE {Qaytarishlarni qabul qilish va hujjatlarni bekor qilish} TRANSFER_STOCK {Boshqa filiallarga koʻchirish yuborish} WRITE_OFF_COUNT {Hisobdan chiqarishni soʻrash va inventarizatsiya oʻtkazish} SET_MINIMUMS {Minimal qoldiqlarni belgilash} other {?}}.",
+      "MANAGER_RIGHT_SWITCHED": "Xaridlar rahbari sizning huquqingizni {state, select, on {yoqdi} other {oʻchirdi}}: {right, select, CREATE_REQUESTS {Buyurtmalar yaratish va yuborish} RECORD_PURCHASES {Xaridlarni yozish} CANCEL_PURCHASES {Xarid yozuvlarini bekor qilish} CLOSE_ALONE {Farqsiz buyurtmalarni oʻzi yopish} ISSUE_STOCK {Boʻlimlarga tovar berish} RETURN_REVERSE {Qaytarishlarni qabul qilish va hujjatlarni bekor qilish} TRANSFER_STOCK {Boshqa filiallarga koʻchirish yuborish} WRITE_OFF_COUNT {Hisobdan chiqarishni soʻrash va inventarizatsiya oʻtkazish} SET_MINIMUMS {Minimal qoldiqlarni belgilash} ADD_PRODUCTS {Mahsulot va turlarni qoʻshish} other {?}}.",
       "PRODUCT_SUGGESTED": "{branch} filialidan yangi tovar taklifi: {name}.",
       "PRODUCT_SUGGESTION_DECIDED": "“{name}” taklifingiz {outcome, select, added {katalogga qoʻshildi} other {rad etildi}}.",
       "CASH_RETURNED": "{branch}: moliya ({actor}) {count, plural, other {# ta buyurtma}} boʻyicha sizdan {amount} naqd pulni qaytarib oldi.",
@@ -727,7 +742,8 @@
       "RETURN_REVERSE": "Qaytarishlarni qabul qilish va hujjatlarni bekor qilish",
       "TRANSFER_STOCK": "Boshqa filiallarga koʻchirish yuborish",
       "WRITE_OFF_COUNT": "Hisobdan chiqarishni soʻrash va inventarizatsiya oʻtkazish",
-      "SET_MINIMUMS": "Minimal qoldiqlarni belgilash"
+      "SET_MINIMUMS": "Minimal qoldiqlarni belgilash",
+      "ADD_PRODUCTS": "Mahsulot va turlarni qoʻshish"
     },
     "off": {
       "CREATE_REQUESTS": "Menejer buyurtmalarni faqat koʻra oladi.",
@@ -738,7 +754,8 @@
       "RETURN_REVERSE": "Buni faqat xaridlar rahbari qila oladi.",
       "TRANSFER_STOCK": "Koʻchirishni faqat xaridlar rahbari yuboradi.",
       "WRITE_OFF_COUNT": "Ularni faqat xaridlar rahbari boshlay oladi.",
-      "SET_MINIMUMS": "Ularni faqat xaridlar rahbari belgilaydi."
+      "SET_MINIMUMS": "Ularni faqat xaridlar rahbari belgilaydi.",
+      "ADD_PRODUCTS": "Menejer faqat katalogdan tanlaydi; yetishmaganini xaridlar rahbari qoʻshadi."
     }
   },
   "catalog": {
@@ -791,7 +808,9 @@
       "photoFileId": "Rasm",
       "productId": "Mahsulot",
       "hasVariants": "Turlari bor",
-      "fromDefault": "Mahsulotning oʻz yozuvidan yaratilgan"
+      "fromDefault": "Mahsulotning oʻz yozuvidan yaratilgan",
+      "checked": "Rahbar tekshirgan",
+      "existingName": "Mavjudlari qanday ataladi?"
     },
     "hints": {
       "shortName": "Miqdor yonida yoziladi, masalan kg yoki dona.",
@@ -810,7 +829,8 @@
       "photoFileId": "Ixtiyoriy. JPG, PNG, WebP yoki HEIC, 10 MB gacha.",
       "locked": "Qulflangan: mahsulot allaqachon ishlatilgan.",
       "subtypePrice": "Ixtiyoriy. Butun soʻmda. Narxsiz turning maʼlumotnoma narxi boʻlmaydi. Keyin u izohli yangi narx sifatida oʻzgaradi.",
-      "subtypePhoto": "Ixtiyoriy. Rasm boʻlmasa, mahsulot rasmi koʻrsatiladi. JPG, PNG, WebP yoki HEIC, 10 MB gacha."
+      "subtypePhoto": "Ixtiyoriy. Rasm boʻlmasa, mahsulot rasmi koʻrsatiladi. JPG, PNG, WebP yoki HEIC, 10 MB gacha.",
+      "existingName": "Hozirgacha yozilgan qoldiq, buyurtmalar va narx shu nom bilan qoladi, masalan «48 varaq»."
     },
     "companyKind": {
       "choose": "Tanlang…",
@@ -897,7 +917,7 @@
       "new": "Tur qoʻshish",
       "newTitle": "{product}: yangi tur",
       "none": "Turlari yoʻq. Mahsulot oʻzicha tanlanadi.",
-      "firstNote": "Bu mahsulotning birinchi turi boʻladi. Mahsulot uchun shu paytgacha yozilgan qoldiq, buyurtmalar va narx unda qoladi.",
+      "firstNote": "Bu mahsulotda hali tur yoʻq. Yangi turdan tashqari mavjudlarini ham nomlang: hozirgacha yozilgan qoldiq, buyurtmalar va narx ularda qoladi.",
       "pricePerSubtype": "Har bir turda oʻzi",
       "count": "{count, plural, other {# tur}}",
       "lastActive": "Oxirgi faol tur faol qoladi. Mahsulotdan foydalanishni toʻxtatish uchun mahsulotni faolsizlantiring.",
@@ -1034,29 +1054,18 @@
   },
   "suggestions": {
     "title": "Tovar takliflari",
-    "new": "Tovar taklif qilish",
-    "newTitle": "Tovar taklif qilish",
     "back": "Takliflarga qaytish",
     "allBranches": "Barcha filiallarim",
     "oneBranch": "{code} filiali, {name}",
     "fields": {
       "branchId": "Filial",
-      "name": "Nomi",
       "unitText": "Oʻlchov birligi",
-      "photoFileId": "Rasm",
       "note": "Izoh",
       "reason": "Sabab"
     },
     "hints": {
-      "name": "Katalogda qanday nomlanishi kerak boʻlsa.",
-      "unitText": "Qanday sanaysiz: dona, quti, kilogramm.",
-      "photoFileId": "Ixtiyoriy. JPG, PNG, WebP yoki HEIC, 10 MB gacha.",
-      "note": "Ixtiyoriy. Nima uchun kerak, brend, doʻkon havolasi.",
       "reason": "Menejer bu sababni koʻradi."
     },
-    "chooseBranch": "Filialni tanlang",
-    "send": "Taklifni yuborish",
-    "sent": "Taklif xaridlar rahbariga yuborildi",
     "status": {
       "PENDING": "Rahbarni kutmoqda",
       "ADDED": "Katalogga qoʻshildi",
@@ -1071,7 +1080,7 @@
       "status": "Holati"
     },
     "emptyTitle": "Hozircha taklif yoʻq",
-    "emptyText": "Kerakli tovar katalogda boʻlmasa, shu yerda taklif qiling.",
+    "emptyText": "Bu yerda 2026-yil 25-oktabrgacha yuborilgan takliflar koʻrinadi. Katalogda yoʻq narsa endi buyurtmaning mahsulot qidiruvidan qoʻshiladi.",
     "suggestedBy": "Taklif qilgan",
     "sentOn": "Yuborilgan",
     "decidedBy": "Qaror qilgan",
@@ -1169,7 +1178,9 @@
       "empty": "Hech narsa topilmadi",
       "loading": "Qidirilmoqda…",
       "stock": "Omborda: {stock}",
-      "noStock": "Omborda: —"
+      "noStock": "Omborda: —",
+      "add": "«{name}» ni katalogga qoʻshish",
+      "addLine": "Yangi mahsulot yoki mahsulotning yangi turi"
     },
     "photo": {
       "none": "Rasm yoʻq",
@@ -1811,6 +1822,28 @@
       "show": "Ochish",
       "done": "Tayyor",
       "doneLabel": "{product} maydonlarini yigʻish"
+    },
+    "addEntry": {
+      "title": "Katalogga qoʻshish",
+      "intro": "Qoʻshilgan narsani darhol buyurtma qilish mumkin. Narx va brendni xaridlar rahbari keyinroq qoʻshadi.",
+      "kind": "Nima qoʻshiladi",
+      "newProduct": "Yangi mahsulot",
+      "newSubtype": "Yangi tur",
+      "ofProduct": "Mahsulot",
+      "otherProduct": "Boshqasini tanlash",
+      "productName": "Mahsulot nomi",
+      "subtypeName": "Yangi tur nomi",
+      "existingName": "Mavjudlari qanday ataladi?",
+      "existingHint": "Bu mahsulotda hali tur yoʻq. Ombordagi va buyurtmalardagilar shu nomni oladi, masalan «48 varaq».",
+      "choose": "Tanlang",
+      "save": "Qoʻshish",
+      "added": "Katalogga qoʻshildi",
+      "exists": "Katalogda allaqachon bor: {name}.",
+      "existsInactive": "Katalogda allaqachon bor, lekin faol emas: {name}. Uni faqat xaridlar rahbari qayta yoqadi.",
+      "useIt": "Shuni olish",
+      "discardQuestion": "Yozganlaringiz saqlanmaydi. Yopilsinmi?",
+      "keepEditing": "Davom etish",
+      "discard": "Yopish"
     }
   },
   "purchase": {

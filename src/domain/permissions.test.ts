@@ -10,6 +10,7 @@ import {
   type Role,
   decide,
   decideList,
+  actorMay,
   mayInSomeBranch,
   roleMay,
 } from "./permissions";
@@ -46,7 +47,7 @@ describe("PERMISSIONS (03-roles-and-permissions.md, Permission matrix)", () => {
     expect("right" in rule ? rule.right : undefined).toBe(expected.right);
   });
 
-  it("guards a permission with every one of the nine Manager rights", () => {
+  it("guards a permission with every one of the ten Manager rights", () => {
     const used = new Set(PERMISSION_NAMES.map((name) => EXPECTED_MATRIX[name].right));
     for (const right of MANAGER_RIGHTS) expect(used.has(right), right).toBe(true);
   });
@@ -105,6 +106,22 @@ describe("decide() (03 rule 1; Permission matrix)", () => {
     const head = actor("HEAD", { disabledRights: [...MANAGER_RIGHTS] });
     expect(decide("request.create", head, { branchId: OWN })).toBe("allow");
     expect(decide("stock.issue", head, { branchId: OTHER })).toBe("allow");
+    // A global permission with a right too (plan of 1.12b, decided item 1, Look first).
+    expect(decide("catalog.add", head)).toBe("allow");
+  });
+
+  it("a global permission's right refuses a Manager whose switch is off, and only that Manager (03 Manager rights: ADD_PRODUCTS)", () => {
+    expect(decide("catalog.add", actor("MANAGER"))).toBe("allow");
+    expect(decide("catalog.add", actor("MANAGER", { disabledRights: ["ADD_PRODUCTS"] }))).toBe(
+      "forbidden",
+    );
+    // Another switch leaves it alone.
+    expect(decide("catalog.add", actor("MANAGER", { disabledRights: ["SET_MINIMUMS"] }))).toBe(
+      "allow",
+    );
+    expect(decideList("catalog.add", actor("MANAGER", { disabledRights: ["ADD_PRODUCTS"] }))).toBe(
+      "forbidden",
+    );
   });
 
   it("throws, as a programming error, for a branch permission asked without a branch", () => {
@@ -152,6 +169,22 @@ describe("roleMay(): a button shown only when it works (11-screens-and-ux.md)", 
 
   it("is never asked about a branch permission", () => {
     expect(() => roleMay("catalog.suggest", "HEAD")).toThrow();
+  });
+});
+
+describe("actorMay(): the product search's Add line (plan of 1.12b, decided item 10)", () => {
+  it("answers with the role and the Manager's switch", () => {
+    expect(actorMay("catalog.add", actor("HEAD", { disabledRights: ["ADD_PRODUCTS"] }))).toBe(true);
+    expect(actorMay("catalog.add", actor("MANAGER"))).toBe(true);
+    expect(actorMay("catalog.add", actor("MANAGER", { disabledRights: ["ADD_PRODUCTS"] }))).toBe(
+      false,
+    );
+    expect(actorMay("catalog.add", actor("PRINCIPAL"))).toBe(false);
+    expect(actorMay("catalog.add", actor("FINANCE"))).toBe(false);
+  });
+
+  it("is never asked about a branch permission", () => {
+    expect(() => actorMay("request.create", actor("HEAD"))).toThrow();
   });
 });
 

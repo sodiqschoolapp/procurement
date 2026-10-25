@@ -179,13 +179,15 @@
         "create": "Product added",
         "update": "Product changed",
         "deactivate": "Product deactivated",
-        "activate": "Product activated"
+        "activate": "Product activated",
+        "check": "Marked checked"
       },
       "subtype": {
         "create": "Subtype added",
         "update": "Subtype changed",
         "deactivate": "Subtype deactivated",
-        "activate": "Subtype activated"
+        "activate": "Subtype activated",
+        "check": "Marked checked"
       },
       "price": {
         "add": "New price"
@@ -339,7 +341,6 @@
   },
   "home": {
     "title": "My tasks",
-    "suggest": "Suggest a product",
     "showAll": "Show all ({count})",
     "openList": "Open in the order list",
     "orders": "{count, plural, one {# order} other {# orders}}",
@@ -435,7 +436,21 @@
         "period": "{from} – {to}"
       },
       "inactive": "{code} (inactive)",
-      "pair": "{first} · {second}"
+      "pair": "{first} · {second}",
+      "added": {
+        "title": "Added by Managers",
+        "subtype": "{product} · {name}",
+        "productLine": "Product · {name}, {date}",
+        "subtypeLine": "Subtype · {name}, {date}",
+        "tick": "Tick {name}",
+        "count": "{count, plural, one {# ticked} other {# ticked}}",
+        "mark": "Mark checked",
+        "clear": "Clear",
+        "confirmTitle": "{count, plural, one {Mark # entry checked?} other {Mark # entries checked?}}",
+        "confirmResult": "{count, plural, one {# entry leaves this list} other {# entries leave this list}}. They stay in the catalog as they are.",
+        "marked": "{count, plural, one {# entry marked checked} other {# entries marked checked}}",
+        "failed": "Could not mark them. Reload the page and try again."
+      }
     },
     "finance": {
       "approvals": {
@@ -510,7 +525,7 @@
       "STOCK_CHECK_MISMATCH": "The nightly stock check found {count, plural, one {# item} other {# items}} whose stock does not match its movements.",
       "DATABASE_COPY_FAILED": "The weekly copy of the database failed. It is tried again the next night.",
       "BRANCH_ROLE_VACANT": "Branch {branch} has no active {role, select, HEAD {Procurement Head} MANAGER {Manager} PRINCIPAL {Principal} FINANCE {Finance user} other {user}}.",
-      "MANAGER_RIGHT_SWITCHED": "The Procurement Head switched {state, select, on {on} other {off}} your right: {right, select, CREATE_REQUESTS {Add and submit orders} RECORD_PURCHASES {Record purchases} CANCEL_PURCHASES {Cancel purchase records} CLOSE_ALONE {Close exact-match orders alone} ISSUE_STOCK {Issue stock to departments} RETURN_REVERSE {Take returns and reverse documents} TRANSFER_STOCK {Send transfers to other branches} WRITE_OFF_COUNT {Ask for write-offs and run stock counts} SET_MINIMUMS {Set minimum stock levels} other {?}}.",
+      "MANAGER_RIGHT_SWITCHED": "The Procurement Head switched {state, select, on {on} other {off}} your right: {right, select, CREATE_REQUESTS {Add and submit orders} RECORD_PURCHASES {Record purchases} CANCEL_PURCHASES {Cancel purchase records} CLOSE_ALONE {Close exact-match orders alone} ISSUE_STOCK {Issue stock to departments} RETURN_REVERSE {Take returns and reverse documents} TRANSFER_STOCK {Send transfers to other branches} WRITE_OFF_COUNT {Ask for write-offs and run stock counts} SET_MINIMUMS {Set minimum stock levels} ADD_PRODUCTS {Add products and subtypes} other {?}}.",
       "PRODUCT_SUGGESTED": "New product suggestion from branch {branch}: {name}.",
       "PRODUCT_SUGGESTION_DECIDED": "Your suggestion “{name}” was {outcome, select, added {added to the catalog} other {declined}}.",
       "CASH_RETURNED": "Finance ({actor}) recorded {amount} in cash returned by you for {count, plural, one {# order} other {# orders}} in {branch}.",
@@ -727,7 +742,8 @@
       "RETURN_REVERSE": "Take returns and reverse documents",
       "TRANSFER_STOCK": "Send transfers to other branches",
       "WRITE_OFF_COUNT": "Ask for write-offs and run stock counts",
-      "SET_MINIMUMS": "Set minimum stock levels"
+      "SET_MINIMUMS": "Set minimum stock levels",
+      "ADD_PRODUCTS": "Add products and subtypes"
     },
     "off": {
       "CREATE_REQUESTS": "The Manager can only view orders.",
@@ -738,7 +754,8 @@
       "RETURN_REVERSE": "Only the Procurement Head can do these.",
       "TRANSFER_STOCK": "Only the Procurement Head can send transfers.",
       "WRITE_OFF_COUNT": "Only the Procurement Head can start them.",
-      "SET_MINIMUMS": "Only the Procurement Head sets them."
+      "SET_MINIMUMS": "Only the Procurement Head sets them.",
+      "ADD_PRODUCTS": "The Manager picks from the catalog only; the Procurement Head adds what is missing."
     }
   },
   "catalog": {
@@ -791,7 +808,9 @@
       "photoFileId": "Photo",
       "productId": "Product",
       "hasVariants": "Has subtypes",
-      "fromDefault": "Made from the product's own entry"
+      "fromDefault": "Made from the product's own entry",
+      "checked": "Checked by the Head",
+      "existingName": "What are the existing ones called?"
     },
     "hints": {
       "shortName": "Shown next to quantities, for example kg or pcs.",
@@ -810,7 +829,8 @@
       "photoFileId": "Optional. JPG, PNG, WebP or HEIC up to 10 MB.",
       "locked": "Locked: the item is already used.",
       "subtypePrice": "Optional. Whole so'm. Without one the subtype has no reference price. Later it changes as a new price with a note.",
-      "subtypePhoto": "Optional. Without one the product's photo is shown. JPG, PNG, WebP or HEIC up to 10 MB."
+      "subtypePhoto": "Optional. Without one the product's photo is shown. JPG, PNG, WebP or HEIC up to 10 MB.",
+      "existingName": "The stock, orders and price recorded so far stay under this name, for example “48 sheets”."
     },
     "companyKind": {
       "choose": "Choose…",
@@ -897,7 +917,7 @@
       "new": "Add subtype",
       "newTitle": "New subtype of {product}",
       "none": "No subtypes. The product is picked as it is.",
-      "firstNote": "This becomes the product's first subtype. The stock, orders and price recorded for the product so far stay with it.",
+      "firstNote": "This product has no subtypes yet. Besides the new subtype, name the existing items too: the stock, orders and price recorded so far stay with them.",
       "pricePerSubtype": "Set per subtype",
       "count": "{count, plural, one {# subtype} other {# subtypes}}",
       "lastActive": "The last active subtype stays active. To stop using the item, deactivate the product.",
@@ -1034,29 +1054,18 @@
   },
   "suggestions": {
     "title": "Product suggestions",
-    "new": "Suggest a product",
-    "newTitle": "Suggest a product",
     "back": "Back to suggestions",
     "allBranches": "All my branches",
     "oneBranch": "Branch {code}, {name}",
     "fields": {
       "branchId": "Branch",
-      "name": "Name",
       "unitText": "Measure",
-      "photoFileId": "Photo",
       "note": "Note",
       "reason": "Reason"
     },
     "hints": {
-      "name": "As it should appear in the catalog.",
-      "unitText": "As you would count it: pieces, boxes, kilograms.",
-      "photoFileId": "Optional. JPG, PNG, WebP or HEIC up to 10 MB.",
-      "note": "Optional. What it is for, a brand, a link to a shop.",
       "reason": "The Manager reads this reason."
     },
-    "chooseBranch": "Choose a branch",
-    "send": "Send suggestion",
-    "sent": "Suggestion sent to the Procurement Head",
     "status": {
       "PENDING": "Waiting for the Head",
       "ADDED": "Added to the catalog",
@@ -1071,7 +1080,7 @@
       "status": "Status"
     },
     "emptyTitle": "No suggestions yet",
-    "emptyText": "When an item you need is not in the catalog, suggest it here.",
+    "emptyText": "Suggestions sent before 25 October 2026 are listed here. A missing item is now added from an order's product search.",
     "suggestedBy": "Suggested by",
     "sentOn": "Sent",
     "decidedBy": "Decided by",
@@ -1169,7 +1178,9 @@
       "empty": "Nothing found",
       "loading": "Searching…",
       "stock": "In stock: {stock}",
-      "noStock": "In stock: —"
+      "noStock": "In stock: —",
+      "add": "Add “{name}” to the catalog",
+      "addLine": "A new product, or a new subtype of a product"
     },
     "photo": {
       "none": "No photo",
@@ -1811,6 +1822,28 @@
       "show": "Open",
       "done": "Done",
       "doneLabel": "Fold the fields of {product}"
+    },
+    "addEntry": {
+      "title": "Add to the catalog",
+      "intro": "What you add can be ordered at once. The Procurement Head adds a price and a brand later.",
+      "kind": "What to add",
+      "newProduct": "New product",
+      "newSubtype": "New subtype",
+      "ofProduct": "Product",
+      "otherProduct": "Pick another",
+      "productName": "Product name",
+      "subtypeName": "Name of the new subtype",
+      "existingName": "What are the existing ones called?",
+      "existingHint": "This product has no subtypes yet. The stock and the earlier orders take this name, for example “48 sheets”.",
+      "choose": "Choose",
+      "save": "Add",
+      "added": "Added to the catalog",
+      "exists": "Already in the catalog: {name}.",
+      "existsInactive": "Already in the catalog, but inactive: {name}. Only the Procurement Head can switch it on again.",
+      "useIt": "Use it",
+      "discardQuestion": "What you typed is not saved. Close it?",
+      "keepEditing": "Keep editing",
+      "discard": "Close"
     }
   },
   "purchase": {

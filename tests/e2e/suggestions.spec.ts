@@ -1,16 +1,16 @@
 import { randomUUID } from "node:crypto";
 
 import { type Page, expect, test } from "@playwright/test";
-import sharp from "sharp";
 
 import uz from "../../src/i18n/messages/uz.json" with { type: "json" };
+import { inTransaction, withDatabase } from "./acceptance-fixtures";
 import { E2E_ROLES } from "./global-setup";
 
-// Build-plan 1.12: a Manager sends a suggestion with name, measure as text, photo and note; the
-// Head adds it to the catalog, edited, or declines it with a reason; each side is told (04-catalogs.md
-// rule 8; 10, Notifications: "Product suggested | Head; the decision goes back to the Manager";
-// plan of 1.12, decision 4, Look first: the /suggestions screens). Both projects share one
-// database, so every name is new on every run.
+// Build-plan 1.12 and 1.12b: suggestions sent before 25 October 2026 are decided as before: the
+// Head adds one to the catalog, edited, or declines it with a reason, and the Manager is told
+// (04-catalogs.md rule 8; 10, Notifications: "Product suggestion decided"; plan of 1.12b, decided
+// item 3, Look first: no new suggestion is sent). Both projects share one database, so every name
+// is new on every run.
 
 type Person = (typeof E2E_ROLES)[keyof typeof E2E_ROLES];
 
@@ -34,40 +34,51 @@ async function noSideScroll(page: Page): Promise<void> {
   expect(sizes.content).toBeLessThanOrEqual(sizes.screen);
 }
 
-/** The Manager sends a suggestion from the home page's link and lands on its page. */
-async function suggest(page: Page, name: string, withPhoto: boolean): Promise<string> {
-  await page.goto("/");
-  await page.getByRole("link", { name: uz.home.suggest }).click();
-  await expect(page.getByRole("heading", { name: t.title, level: 1 })).toBeVisible();
-  await page.goto("/suggestions/new");
-  await expect(page.getByRole("heading", { name: t.newTitle, level: 1 })).toBeVisible();
-  await expect(page.getByRole("button", { name: t.send })).toBeEnabled();
-  await page.getByLabel(t.fields.name).fill(name);
-  await page.getByLabel(t.fields.unitText).fill("quti");
-  await page.getByLabel(t.fields.note).fill("Kimyo xonasi uchun");
-  if (withPhoto) {
-    const photo = await sharp({
-      create: { width: 800, height: 600, channels: 3, background: "#1f8a4c" },
-    })
-      .jpeg()
-      .toBuffer();
-    await page.locator("#suggestion-photo").setInputFiles({
-      name: "taklif.jpg",
-      mimeType: "image/jpeg",
-      buffer: photo,
-    });
-    await expect(page.getByRole("button", { name: c.photoReplace })).toBeVisible();
-  }
-  await noSideScroll(page);
-  await page.getByRole("button", { name: t.send }).click();
-  await expect(page.getByText(t.sent).first()).toBeVisible();
-  await expect(page).toHaveURL(/\/suggestions\/[0-9a-f-]{36}$/);
-  await expect(page.getByRole("heading", { name, level: 1 })).toBeVisible();
-  await expect(page.getByRole("main").getByText(t.status.PENDING)).toBeVisible();
-  return new URL(page.url()).pathname;
+/**
+ * A suggestion the Manager sent before 25 October 2026, pending, in the Manager's branch, as
+ * suggestProduct wrote it (04 rule 8: "Suggestions sent before 25 October 2026 are decided as
+ * before"; plan of 1.12b, decided item 3): its row and its audit row. Returns its page.
+ */
+async function sentBefore(name: string): Promise<string> {
+  return withDatabase((client) =>
+    inTransaction(client, async () => {
+      const made = await client.query<{ id: string; branch_id: string; code: string }>(
+        `insert into catalog_suggestions (branch_id, suggested_by, name, unit_text, note, status,
+                                          client_key, created_at)
+         select ub.branch_id, u.id, $1, 'quti', 'Kimyo xonasi uchun', 'PENDING', gen_random_uuid(),
+                '2026-10-20T08:00:00Z'
+           from users u join user_branches ub on ub.user_id = u.id
+          where u.username = $2
+          order by ub.branch_id limit 1
+         returning id, branch_id, (select code from branches where id = branch_id) as code`,
+        [name, E2E_ROLES.MANAGER.username],
+      );
+      const row = made.rows[0]!;
+      await client.query(
+        `insert into audit_log (actor_id, action, entity, entity_id, before, after, created_at)
+         select id, 'suggestion.create', 'catalog_suggestions', $1, null, $2, '2026-10-20T08:00:00Z'
+           from users where username = $3`,
+        [
+          row.id,
+          JSON.stringify({
+            branchId: row.branch_id,
+            branch: row.code,
+            name,
+            unitText: "quti",
+            note: "Kimyo xonasi uchun",
+            photoFileId: null,
+            photo: null,
+            status: "PENDING",
+          }),
+          E2E_ROLES.MANAGER.username,
+        ],
+      );
+      return `/suggestions/${row.id}`;
+    }),
+  );
 }
 
-test("a Manager suggests, the Head adds it edited; a second one is declined with a reason; each side is told (build-plan 1.12)", async ({
+test("suggestions sent before 25 October 2026: the Head adds one edited and declines another with a reason; the Manager is told (04 rule 8; build-plan 1.12, 1.12b)", async ({
   page,
 }) => {
   test.slow();
@@ -91,17 +102,17 @@ test("a Manager suggests, the Head adds it edited; a second one is declined with
   await page.getByRole("button", { name: c.save }).click();
   await expect(page).toHaveURL(/\/catalog\/measures\/[0-9a-f-]{36}$/);
 
-  // The Manager suggests two items.
+  // Two suggestions the Manager sent before 25 October 2026; no new one can be sent.
+  const first = await sentBefore(added);
+  const second = await sentBefore(declined);
   await signIn(page, E2E_ROLES.MANAGER);
-  const first = await suggest(page, added, true);
-  await expect(page.locator("main").getByRole("img", { name: new RegExp(suffix) })).toBeVisible();
-  const second = await suggest(page, declined, false);
+  await page.goto(first);
+  await expect(page.getByRole("heading", { name: added, level: 1 })).toBeVisible();
   await expect(page.getByRole("button", { name: t.add })).toHaveCount(0);
+  expect((await page.goto("/suggestions/new"))?.status()).toBe(404);
 
-  // The Head is told, and adds the first with a changed name.
+  // The Head adds the first with a changed name.
   await signIn(page, E2E_ROLES.HEAD);
-  await page.goto("/notifications");
-  await expect(page.getByText(added).first()).toBeVisible();
   await page.goto("/catalog");
   await expect(page.getByRole("link", { name: new RegExp(c.suggestionsRow.title) })).toBeVisible();
   await page.goto(first);
@@ -109,7 +120,6 @@ test("a Manager suggests, the Head adds it edited; a second one is declined with
   await expect(page.getByRole("heading", { name: t.addTitle, level: 1 })).toBeVisible();
   await expect(page.getByText(t.askedMeasure.replace("{unit}", "quti"))).toBeVisible();
   await expect(page.getByLabel(c.fields.name)).toHaveValue(added);
-  await expect(page.getByRole("button", { name: c.photoReplace })).toBeVisible();
   await expect(page.getByRole("button", { name: c.save })).toBeEnabled();
   await page.getByLabel(c.fields.name).fill(`${added} 10 ml`);
   await page.getByLabel(c.fields.categoryId).selectOption({ label: category });
@@ -144,11 +154,11 @@ test("a Manager suggests, the Head adds it edited; a second one is declined with
 });
 
 for (const role of ["PRINCIPAL", "FINANCE"] as const) {
-  test(`${role} gets not found on the suggestion pages (03, Permission matrix: "Suggest a new product")`, async ({
+  test(`${role} gets not found on the suggestion pages (03, Permission matrix: "See product suggestions")`, async ({
     page,
   }) => {
     await signIn(page, E2E_ROLES[role]);
-    for (const address of ["/suggestions", "/suggestions/new"]) {
+    for (const address of ["/suggestions"]) {
       const response = await page.goto(address);
       expect(response?.status(), address).toBe(404);
     }

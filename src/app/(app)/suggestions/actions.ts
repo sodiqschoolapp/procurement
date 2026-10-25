@@ -2,33 +2,21 @@
 
 import { revalidatePath } from "next/cache";
 
-import {
-  addSuggestedProduct,
-  declineSuggestion,
-  suggestProduct,
-} from "@/features/catalog/actions/suggestions";
+import { addSuggestedProduct, declineSuggestion } from "@/features/catalog/actions/suggestions";
 import { serverAction } from "@/server/action";
 import type { ActionResult } from "@/server/action-result";
 
 // The actions of /suggestions (plan of 1.12, "Server actions and queries"): each runs its action
-// in the wrapper. Suggesting is catalog.suggest on the branch (Head, Manager); adding and declining
-// are catalog.manage (Head). A success revalidates the suggestions and the catalog pages.
+// in the wrapper. Adding and declining are catalog.manage (Head). No new suggestion is sent from
+// 25 October 2026 (04 rule 8; plan of 1.12b, decided item 3, Look first). A success revalidates the
+// suggestions and the catalog pages.
 
-const suggest = serverAction(suggestProduct);
 const add = serverAction(addSuggestedProduct);
 const decline = serverAction(declineSuggestion);
 
 function revalidate() {
   revalidatePath("/suggestions", "layout");
   revalidatePath("/catalog", "layout");
-}
-
-/** Sends a suggestion; the same client key twice gives the first (developer-rules rule 8). */
-export async function suggestProductAction(input: unknown): Promise<ActionResult<{ id: string }>> {
-  const result = await suggest(input);
-  if (!result.ok) return result;
-  revalidate();
-  return { ok: true, data: { id: result.data.id } };
 }
 
 /** Adds the suggested product to the catalog, as the Head edited it (04 rule 8). */
