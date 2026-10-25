@@ -5,8 +5,15 @@ import { db } from "@/server/db/client";
 import { settings } from "@/server/db/schema";
 
 import { describePermissionMatrix } from "../../../../tests/helpers/permission-matrix";
+import { insertBranch } from "../../../../tests/helpers/branches";
+import { insertOrder } from "../../../../tests/helpers/orders";
 import { insertUser } from "../../../../tests/helpers/users";
-import { getLastDatabaseCopy, getSchoolName, getSettingsForHead } from "./settings";
+import {
+  getFinanceStepWaiting,
+  getLastDatabaseCopy,
+  getSchoolName,
+  getSettingsForHead,
+} from "./settings";
 
 // build-plan 1.1; developer-rules.md rule 4 (authorize() in every query); plan of 1.1, decision
 // 4 (Look first): the form's values are the Head's, the school name every signed-in role's.
@@ -45,6 +52,42 @@ describePermissionMatrix("getSettingsForHead", {
 describePermissionMatrix("getLastDatabaseCopy", {
   permission: "catalog.manage",
   run: ({ user }) => getLastDatabaseCopy(user.id),
+});
+
+// The orders that keep the Finance step from being switched off: the Head's, as the Settings
+// page (06 Finance step switched off 5; plan of 4.10c, decided item 10).
+describePermissionMatrix("getFinanceStepWaiting", {
+  permission: "catalog.manage",
+  run: ({ user }) => getFinanceStepWaiting(user.id),
+});
+
+describe("getFinanceStepWaiting (06 Finance step switched off 5; plan of 4.10c, decided item 10)", () => {
+  it("lists the orders Waiting for Finance or for settlement of every branch, and no order one status away (D40)", async () => {
+    const head = await insertUser("HEAD");
+    const [first, second] = [await insertBranch(), await insertBranch()];
+    const owner = await insertUser("MANAGER", { branches: [first.id, second.id] });
+    const finance = await insertOrder({
+      branchId: first.id,
+      ownerId: owner.id,
+      status: "PENDING_FINANCE",
+    });
+    const settlement = await insertOrder({
+      branchId: second.id,
+      ownerId: owner.id,
+      status: "SETTLEMENT",
+    });
+    for (const status of ["PENDING_PRINCIPAL", "PURCHASING", "CLOSED"] as const) {
+      await insertOrder({ branchId: first.id, ownerId: owner.id, status });
+    }
+    const listed = await getFinanceStepWaiting(head.id);
+    expect(new Set(listed.map((order) => order.id))).toEqual(new Set([finance.id, settlement.id]));
+    expect(listed.find((order) => order.id === settlement.id)).toEqual({
+      id: settlement.id,
+      number: settlement.number,
+      branchCode: second.code,
+      status: "SETTLEMENT",
+    });
+  });
 });
 
 describePermissionMatrix("getSchoolName", {
