@@ -33,10 +33,16 @@ import { useFormatters } from "@/i18n/use-formatters";
 
 export function TickedTotals({
   drafts,
+  onPage = false,
   actions,
   tools,
 }: {
   drafts: readonly TickedDraft[];
+  /**
+   * Nothing is ticked: the totals are of the rows on the page shown, and say so (11 rule 2: "The
+   * total of the sheet stays visible"; plan of 2.5c, decided item 7, Look first).
+   */
+  onPage?: boolean;
   /** Submit and Clear, beside the count: always in sight. */
   actions?: ReactNode;
   /** Apply a needed-by date: with the details, behind "Show details" on a phone. */
@@ -66,8 +72,8 @@ export function TickedTotals({
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
           <h2 id="ticked-totals-title" className="text-subheading font-semibold">
-            <span className="sr-only">{t("title")} </span>
-            {t("count", { count })}
+            <span className="sr-only">{t(onPage ? "pageTitle" : "title")} </span>
+            {t(onPage ? "pageCount" : "count", { count })}
           </h2>
           <dl>
             <div data-total="grand" className="flex items-baseline gap-1.5 text-sm">

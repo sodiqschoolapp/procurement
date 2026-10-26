@@ -1135,10 +1135,10 @@
       "comment": "Comment",
       "total": "Order total",
       "state": "Saving",
-      "actions": "Actions"
+      "actions": "Actions",
+      "more": "More"
     },
     "tickRow": "Tick {product}",
-    "draftWord": "Draft",
     "revision": "rev {revision}",
     "labels": {
       "SENT_BACK": "Sent back",
@@ -1226,7 +1226,9 @@
       "grand": "Grand total",
       "withoutPrice": "{count, plural, one {# draft without a price is left out} other {# drafts without a price are left out}}",
       "showDetails": "Show details",
-      "hideDetails": "Hide details"
+      "hideDetails": "Hide details",
+      "pageTitle": "Totals of the orders on this page",
+      "pageCount": "{count, plural, one {On this page: # order} other {On this page: # orders}}"
     },
     "date": {
       "placeholder": "dd.mm.yyyy",
@@ -1249,7 +1251,11 @@
       "confirmTitle": "{count, plural, one {Submit # order?} other {Submit # orders?}}",
       "confirmResult": "{count, plural, one {It gets its number and goes for approval. After that it is edited only if it is taken back or sent back.} other {Each gets its own number and goes for approval. After that they are edited only if they are taken back or sent back.}}",
       "confirm": "Submit",
-      "mixed": "Drafts and sent-back orders are submitted separately. Tick only drafts, or only sent-back orders."
+      "mixed": "Drafts and sent-back orders are submitted separately. Tick only drafts, or only sent-back orders.",
+      "readyButton": "Submit ready drafts ({count})",
+      "readyResult": "{count, plural, one {# draft gets its number and goes for approval.} other {# drafts get their numbers and go for approval.}} {stay, plural, =0 {Nothing stays in the sheet.} one {# draft stays in the sheet.} other {# drafts stay in the sheet.}}",
+      "stayedTitle": "{count, plural, one {# draft stays in the sheet: it needs a fix.} other {# drafts stay in the sheet: they need a fix.}}",
+      "heldBack": "{count, plural, one {# more ready draft waits: press Submit again.} other {# more ready drafts wait: press Submit again.}}"
     },
     "list": {
       "title": "Order list",
@@ -1844,6 +1850,14 @@
       "discardQuestion": "What you typed is not saved. Close it?",
       "keepEditing": "Keep editing",
       "discard": "Close"
+    },
+    "sheet": {
+      "inStock": "In stock: {quantity} {unit}"
+    },
+    "more": {
+      "button": "More",
+      "label": "More fields of {product}",
+      "marked": "A field here needs a fix"
     }
   },
   "purchase": {

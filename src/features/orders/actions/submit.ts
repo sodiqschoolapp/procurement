@@ -83,10 +83,7 @@ async function beforeSubmit(context: OrdersContext<Input>): Promise<void> {
 async function notifySubmitted(context: OrdersContext<Input>, result: OrdersResult): Promise<void> {
   const { tx, userId } = context;
   const at = now();
-  const [actor] = await tx
-    .select({ name: users.fullName })
-    .from(users)
-    .where(eq(users.id, userId));
+  const [actor] = await tx.select({ name: users.fullName }).from(users).where(eq(users.id, userId));
   const branchIds = ids(context.orders.map((order) => order.branchId));
   const codes = await tx
     .select({ id: branches.id, code: branches.code })

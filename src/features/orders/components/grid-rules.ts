@@ -96,6 +96,48 @@ export function cellOfField(field: string): SubmitCell {
   return CELL_OF_FIELD[field] ?? "product";
 }
 
+/** The fields the order sheet shows under "More" (11 Order list layout 3; plan of 2.5c). */
+const MORE_FIELDS = new Set([
+  "companyId",
+  "requesterName",
+  "extras",
+  "paymentType",
+  "priority",
+  "urgentReason",
+  "comment",
+  "referencePhotoFileId",
+]);
+
+/** Whether a field stands under "More" on the sheet, so its mark opens "More" (decided item 9). */
+export function inMore(field: string): boolean {
+  return MORE_FIELDS.has(field) || field.startsWith("extras.");
+}
+
+/** Where the scroll to a refused field goes: its cell, or its field under "More". */
+export function sheetCellOf(field: string): string {
+  if (field === "referencePhotoFileId") return "photo";
+  if (field === "urgentReason") return "priority";
+  if (field === "requesterName") return "requesterName";
+  return cellOfField(field);
+}
+
+/**
+ * What a new draft takes from the draft above it (05 Drafts 6: "A new draft takes the branch,
+ * department and needed-by date of the draft above it; each can be changed"): the last row of the
+ * page shown, its three fields as they are (plan of 2.5c, decided item 5). Nothing without a row.
+ */
+export function copiedFromAbove(
+  rows: readonly Pick<WireDraftRow, "branchId" | "departmentId" | "neededBy">[],
+): { branchId: string; departmentId: string | null; neededBy: string | null } | null {
+  const above = rows.at(-1);
+  if (!above) return null;
+  return {
+    branchId: above.branchId,
+    departmentId: above.departmentId,
+    neededBy: above.neededBy,
+  };
+}
+
 /**
  * Whether the row the server holds now carries every field a retried save sent (review of the
  * plan of 2.6, correction 1; developer-rules.md rule 9). A retry answered `stale` counts as saved

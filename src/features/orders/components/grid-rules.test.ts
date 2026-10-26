@@ -3,6 +3,9 @@ import { describe, expect, it } from "vitest";
 import type { WireDraftRow } from "@/features/orders/draft-wire";
 
 import {
+  copiedFromAbove,
+  inMore,
+  sheetCellOf,
   canApplyToTicked,
   canSubmitAgainTicked,
   canSubmitTicked,
@@ -106,5 +109,62 @@ describe("Submit and Submit again on ticked rows (05 Drafts 5; plan of 2.11, dec
     expect(ticksMixDraftsAndSentBack(["draft", "managers"], rights)).toBe(false);
     expect(ticksMixDraftsAndSentBack(["draft", "mine", "managers"], rights)).toBe(false);
     expect(ticksMixDraftsAndSentBack([], rights)).toBe(false);
+  });
+});
+
+describe("copiedFromAbove (05 Drafts 6; plan of 2.5c, decided item 5)", () => {
+  it("takes the branch, department and needed-by date of the last row shown, as they are", () => {
+    const rows = [
+      { branchId: "b1", departmentId: "d1", neededBy: "2026-11-01" },
+      { branchId: "b2", departmentId: "d2", neededBy: "2026-11-05" },
+    ];
+    expect(copiedFromAbove(rows)).toEqual({
+      branchId: "b2",
+      departmentId: "d2",
+      neededBy: "2026-11-05",
+    });
+  });
+
+  it("an empty department or date above stays empty; no row above gives nothing", () => {
+    expect(copiedFromAbove([{ branchId: "b1", departmentId: null, neededBy: null }])).toEqual({
+      branchId: "b1",
+      departmentId: null,
+      neededBy: null,
+    });
+    expect(copiedFromAbove([])).toBeNull();
+  });
+});
+
+describe("inMore and sheetCellOf (11 Order list layout 3; plan of 2.5c, decided item 9)", () => {
+  it("the six cells' fields are not under More; brand, extras, payment, priority, comment, requester and photo are", () => {
+    for (const field of [
+      "branchId",
+      "variantId",
+      "departmentId",
+      "quantity",
+      "price",
+      "neededBy",
+    ]) {
+      expect(inMore(field)).toBe(false);
+    }
+    for (const field of [
+      "companyId",
+      "extras.0.extraCostTypeId",
+      "paymentType",
+      "urgentReason",
+      "comment",
+      "requesterName",
+      "referencePhotoFileId",
+    ]) {
+      expect(inMore(field)).toBe(true);
+    }
+  });
+
+  it("a refused field scrolls to its cell or its field under More", () => {
+    expect(sheetCellOf("price")).toBe("price");
+    expect(sheetCellOf("departmentId")).toBe("requestedBy");
+    expect(sheetCellOf("urgentReason")).toBe("priority");
+    expect(sheetCellOf("requesterName")).toBe("requesterName");
+    expect(sheetCellOf("extras.1.amount")).toBe("extras");
   });
 });

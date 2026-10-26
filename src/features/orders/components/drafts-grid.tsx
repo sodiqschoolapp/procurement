@@ -9,6 +9,7 @@ import {
   setDraftsNeededByAction,
   submitAgainOrdersAction,
   submitDraftsAction,
+  submitReadyDraftsAction,
 } from "@/app/(app)/orders/actions";
 import { newClientKey } from "@/components/client-key";
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -16,11 +17,14 @@ import { Icon } from "@/components/icon";
 import { toast } from "@/components/toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { cn } from "@/components/utils";
 import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard";
+import type { BusinessDate } from "@/domain/business-date";
 import { DRAFTS_PAGE_SIZE } from "@/domain/drafts";
+import { shownFacts, submitRefusals, submitSelection } from "@/domain/submit-checks";
 import type { WireCreated, WireDraftRow } from "@/features/orders/draft-wire";
+import type { SubmitSetDraft } from "@/features/orders/queries/drafts";
 import { parseTypedDate } from "@/i18n/format";
+import type { OrderFailure } from "@/server/action-result";
 
 import { AddDraftRow } from "./add-draft-row";
 import { DraftRow } from "./draft-row";
@@ -31,15 +35,17 @@ import {
   canSubmitAgainTicked,
   canSubmitTicked,
   cellOfField,
+  copiedFromAbove,
+  sheetCellOf,
   submitKeyFor,
   ticksMixDraftsAndSentBack,
 } from "./grid-rules";
 import type { RowSaveQueue } from "./row-save-queue";
 import { TickedTotals } from "./ticked-totals";
 
-// The drafts grid of /orders (11-screens-and-ux.md, Order list layout 3: "the Manager's draft
-// orders and the orders sent back or taken back to them, edited like a spreadsheet"; plan of
-// 2.5b). Rows come from the server page; a row with typing or a save in flight keeps its own
+// The order sheet of /orders (11-screens-and-ux.md, Order list layout 3: "their drafts and the
+// orders sent back or taken back to them, edited like a spreadsheet […] with one Submit"; plans
+// of 2.5b and 2.5c). Rows come from the server page; a row with typing or a save in flight keeps its own
 // state when the page is sent again (review of the plan, Must fix 3). Ticks belong to the page
 // shown (decided item 5). The totals stand under the grid, as 05 says (Must fix 2), in a panel
 // that floats at the bottom of the window and holds "Apply to ticked", Submit and "Clear" (11
@@ -66,6 +72,8 @@ type SubmitFailure = { id: string; name: string; problem: string };
 
 export function DraftsGrid({
   rows: sent,
+  submitSet,
+  today,
   page,
   total,
   branches,
@@ -76,6 +84,13 @@ export function DraftsGrid({
   query,
 }: {
   rows: readonly GridRow[];
+  /**
+   * The sheet's submit set as the page loaded it: every own Draft without a number in the view,
+   * on any page (05 Drafts 4; plan of 2.5c, decided item 1, Look first).
+   */
+  submitSet: readonly SubmitSetDraft[];
+  /** The business date of the server's clock, for submitRefusals() (rule 10). */
+  today: BusinessDate;
   page: number;
   total: number;
   branches: readonly GridBranch[];
@@ -113,11 +128,20 @@ export function DraftsGrid({
   const [submitting, setSubmitting] = useState(false);
   // The Submit or Submit again the dialog asks about, with the ids it shows the count of and
   // sends: the count shown is the count sent (11 rule 6; plan of 2.7b, decided item 4).
-  const [asking, setAsking] = useState<{ ids: readonly string[]; again: boolean } | null>(null);
+  // A ticked Submit or Submit again, or the Submit with nothing ticked (`ready`; plan of 2.5c).
+  const [asking, setAsking] = useState<
+    { ids: readonly string[]; again: boolean; ready?: false } | { ready: true } | null
+  >(null);
   const [submitMarks, setSubmitMarks] = useState<ReadonlyMap<string, Record<string, string>>>(
     new Map(),
   );
   const [submitFailures, setSubmitFailures] = useState<readonly SubmitFailure[]>([]);
+  // Whether the list on top holds the refusal of a whole submit, or the drafts a Submit with
+  // nothing ticked left in the sheet while it sent the others (05 Drafts 4).
+  const [failuresStayed, setFailuresStayed] = useState(false);
+  // The client key of a Submit with nothing ticked that got no answer, kept while the set it was
+  // made for is the same (plan of 2.5c, decided item 12; developer-rules.md rule 8).
+  const readyKey = useRef<{ key: string; set: string } | null>(null);
   // The client key of a Submit that got no answer, kept only while the same drafts are ticked
   // (review of the plan of 2.7, correction 4; developer-rules.md rule 8). Any answer drops it.
   const submitKey = useRef<{ key: string; ticked: string } | null>(null);
@@ -315,7 +339,139 @@ export function DraftsGrid({
   function nameOf(row: WireDraftRow | undefined): string {
     if (!row) return "";
     if (row.number) return row.number;
-    return [row.productName ?? t("draftWord"), row.departmentName].filter(Boolean).join(", ");
+    // No word "Draft" for a row without a number (plan of 2.5c, Build 4).
+    return [productOf(row), row.departmentName].filter(Boolean).join(", ") || t("none");
+  }
+
+  /**
+   * Marks the exact cells of the exact orders, lists them on top and moves to the first one (05
+   * Checks at submit). `stayed`: the others were sent, these stay in the sheet (05 Drafts 4).
+   */
+  function showFailures(failed: readonly OrderFailure[], stayed: boolean) {
+    const byId = new Map(rows.map((row) => [row.id, row]));
+    const inSet = new Map(submitSet.map((one) => [one.id, one]));
+    const marks = new Map<string, Record<string, string>>();
+    const listed: SubmitFailure[] = [];
+    for (const order of failed) {
+      const texts: Record<string, string> = {};
+      for (const [field, key] of Object.entries(order.fields ?? {})) {
+        // An extra-cost row is marked on the extras cell, which shows its rows.
+        texts[field.startsWith("extras.") ? "extras" : field] = tAll(key);
+      }
+      marks.set(order.orderId, texts);
+      const first = Object.entries(order.fields ?? {})[0];
+      const shown = byId.get(order.orderId);
+      const other = inSet.get(order.orderId);
+      listed.push({
+        id: order.orderId,
+        name: shown ? nameOf(shown) : other ? nameOfSet(other) : "",
+        problem: first
+          ? `${t(`columns.${cellOfField(first[0])}`)}: ${tAll(first[1])}`
+          : t(`submit.refused.${order.code}`),
+      });
+    }
+    setSubmitMarks(marks);
+    setSubmitFailures(listed);
+    setFailuresStayed(stayed);
+    // The screen moves to the first failing cell (05 Checks at submit), after the marks render.
+    const firstOrder = failed.find((order) => byId.has(order.orderId)) ?? failed[0]!;
+    const firstField = Object.keys(firstOrder.fields ?? {})[0];
+    requestAnimationFrame(() => {
+      const rowElement = document.querySelector<HTMLElement>(
+        `tr[data-draft="${firstOrder.orderId}"]`,
+      );
+      const cell = firstField
+        ? document.querySelector<HTMLElement>(
+            `[data-draft="${firstOrder.orderId}"] [data-col="${sheetCellOf(firstField)}"], [data-more-of="${firstOrder.orderId}"] [data-col="${sheetCellOf(firstField)}"]`,
+          )
+        : null;
+      const target = cell ?? rowElement ?? failuresTop.current;
+      target?.scrollIntoView({ block: "center" });
+      (
+        cell?.querySelector<HTMLElement>("input:not([type=hidden]), select, button") ??
+        failuresTop.current
+      )?.focus();
+    });
+  }
+
+  /** A draft of the submit set on another page, named by its product and department. */
+  function nameOfSet(one: SubmitSetDraft): string {
+    const product = one.subtypeName ? `${one.productName} — ${one.subtypeName}` : one.productName;
+    return [product, one.departmentName].filter(Boolean).join(", ") || t("none");
+  }
+
+  /**
+   * 05 Drafts 4: Submit with nothing ticked sends the ready drafts of the submit set, the first
+   * 200 in the order they were added; the others stay, marked (Checks at submit; 06 rule 8, its
+   * one exception; plan of 2.5c). A draft on the page goes after its pending saves land, with the
+   * version its queue gives; one of another page with the version the page loaded (decided item
+   * 1, Look first; review of the plan, Must fix 2). Only from the confirmation (11 rule 6).
+   */
+  async function submitReady() {
+    if (submitting) return;
+    const set = readiness.map((one) => one.id);
+    if (set.length === 0) return;
+    setSubmitting(true);
+    const onPage = set.filter((id) => queues.current.has(id));
+    const held = onPage.map((id) => queues.current.get(id)!);
+    const released = new Set<number>();
+    const release = (at: number) => {
+      if (released.has(at)) return;
+      released.add(at);
+      held[at]!.release();
+    };
+    const setText = submitKeyFor(set);
+    if (readyKey.current?.set !== setText) {
+      readyKey.current = { key: newClientKey(), set: setText };
+    }
+    const clientKey = readyKey.current.key;
+    let answered = false;
+    try {
+      const versions = await Promise.all(held.map((queue) => queue.hold()));
+      const versionOf = new Map(onPage.map((id, at) => [id, versions[at]!]));
+      const result = await submitReadyDraftsAction({
+        clientKey,
+        orders: readiness.map((one) => ({
+          id: one.id,
+          version: versionOf.get(one.id) ?? one.version,
+        })),
+      });
+      answered = true;
+      setAsking(null);
+      if (!result.ok) {
+        const failed = result.error.orders ?? [];
+        if (failed.length === 0) toast.error(tAll(result.error.messageKey));
+        else showFailures(failed, false);
+        return;
+      }
+      const numbers = result.data.orders.flatMap((order) => (order.number ? [order.number] : []));
+      toast.success(
+        t("submit.done", {
+          count: numbers.length,
+          numbers: numbers.slice(0, 10).join(", "),
+          more: Math.max(0, numbers.length - 10),
+        }),
+      );
+      for (const order of result.data.orders) onGone(order.id);
+      if (result.data.left.length > 0) {
+        showFailures(result.data.left, true);
+      } else {
+        setSubmitMarks(new Map());
+        setSubmitFailures([]);
+      }
+      if (result.data.heldBack > 0) {
+        toast.success(t("submit.heldBack", { count: result.data.heldBack }));
+      }
+    } catch {
+      toast.error(tAll("errors.network"));
+    } finally {
+      // Any answer drops the key; a call that got none keeps it for the same set (decided item 12).
+      if (answered) readyKey.current = null;
+      held.forEach((_, at) => release(at));
+      setSubmitting(false);
+      setAsking(null);
+      refresh();
+    }
   }
 
   /**
@@ -375,44 +531,7 @@ export function DraftsGrid({
         toast.error(tAll(result.error.messageKey));
         return;
       }
-      const byId = new Map(rows.map((row) => [row.id, row]));
-      const marks = new Map<string, Record<string, string>>();
-      const listed: SubmitFailure[] = [];
-      for (const order of failed) {
-        const texts: Record<string, string> = {};
-        for (const [field, key] of Object.entries(order.fields ?? {})) {
-          // An extra-cost row is marked on the extras cell, which shows its rows.
-          texts[field.startsWith("extras.") ? "extras" : field] = tAll(key);
-        }
-        marks.set(order.orderId, texts);
-        const first = Object.entries(order.fields ?? {})[0];
-        listed.push({
-          id: order.orderId,
-          name: nameOf(byId.get(order.orderId)),
-          problem: first
-            ? `${t(`columns.${cellOfField(first[0])}`)}: ${tAll(first[1])}`
-            : t(`submit.refused.${order.code}`),
-        });
-      }
-      setSubmitMarks(marks);
-      setSubmitFailures(listed);
-      // The screen moves to the first failing cell (05 Checks at submit), after the marks render.
-      const firstOrder = failed[0]!;
-      const firstField = Object.keys(firstOrder.fields ?? {})[0];
-      requestAnimationFrame(() => {
-        const rowElement = document.querySelector<HTMLElement>(
-          `tr[data-draft="${firstOrder.orderId}"]`,
-        );
-        const cell = firstField
-          ? rowElement?.querySelector<HTMLElement>(`td[data-col="${cellOfField(firstField)}"]`)
-          : null;
-        const target = cell ?? rowElement ?? failuresTop.current;
-        target?.scrollIntoView({ block: "center" });
-        (
-          cell?.querySelector<HTMLElement>("input:not([type=hidden]), select, button") ??
-          failuresTop.current
-        )?.focus();
-      });
+      showFailures(failed, false);
     } catch {
       toast.error(tAll("errors.network"));
     } finally {
@@ -424,6 +543,27 @@ export function DraftsGrid({
       refresh();
     }
   }
+
+  // The submit set with each draft's readiness now: a row on the page by submitRefusals() of what
+  // it shows, one of another page by the refusals the page loaded (decided item 10). A row the
+  // page sent and that is gone (deleted) is left out.
+  const sentIds = new Set(sent.map((one) => one.row.id));
+  const shownById = new Map(rows.map((row) => [row.id, row]));
+  const readiness = submitSet
+    .filter((one) => shownById.has(one.id) || !sentIds.has(one.id))
+    .map((one) => {
+      const shown = shownById.get(one.id);
+      const refusals = shown ? liveRefusals(shown, today) : one.refusals;
+      return {
+        id: one.id,
+        version: one.version,
+        createdAt: new Date(one.createdAt),
+        ready: Object.keys(refusals).length === 0,
+        refusals,
+      };
+    });
+  const selection = submitSelection(readiness);
+  const liveOf = new Map(readiness.map((one) => [one.id, one.refusals]));
 
   const tickedRows = rows.filter((row) => ticked.has(row.id));
   const canSubmit = canSubmitTicked(
@@ -445,33 +585,34 @@ export function DraftsGrid({
   /** The cells marked on a row: a deactivated entry, then the last Submit's refusals. */
   function marksOf(row: WireDraftRow): Record<string, string> | undefined {
     const fromSubmit = submitMarks.get(row.id);
-    if (row.inactive.length === 0 && !fromSubmit) return undefined;
+    // A draft of the submit set is marked live on the cells that stop its submit (plan of 2.5c,
+    // decided items 8 and 10), so the person sees why it would stay.
+    const live = liveOf.get(row.id) ?? {};
+    if (row.inactive.length === 0 && !fromSubmit && Object.keys(live).length === 0) {
+      return undefined;
+    }
     const marks: Record<string, string> = {};
     for (const field of row.inactive) {
       marks[field.startsWith("extras.") ? "extras" : field] = tAll("errors.field.inactive");
     }
+    for (const [field, kind] of Object.entries(live)) {
+      marks[field.startsWith("extras.") ? "extras" : field] = tAll(`errors.field.${kind}`);
+    }
     return { ...marks, ...fromSubmit };
   }
 
+  const showBranch = branches.filter((branch) => branch.canCreate && branch.isActive).length > 1;
+
+  // The six cells, the branch first only for several branches (11 Order list layout 3).
   const columns = [
-    "number",
-    "branch",
+    ...(showBranch ? (["branch"] as const) : []),
     "product",
-    "type",
-    "subtype",
-    "inStock",
-    "photo",
-    "company",
     "requestedBy",
-    "neededBy",
-    "measure",
     "quantity",
     "price",
-    "extras",
-    "paymentType",
-    "priority",
-    "comment",
+    "neededBy",
     "total",
+    "more",
     "state",
     "actions",
   ] as const;
@@ -488,7 +629,9 @@ export function DraftsGrid({
             className="flex flex-col gap-2 rounded-xl border border-destructive/40 bg-destructive-bg px-4 py-3 text-sm outline-none"
           >
             <span className="font-semibold text-destructive">
-              {t("submit.failedTitle", { count: submitFailures.length })}
+              {t(failuresStayed ? "submit.stayedTitle" : "submit.failedTitle", {
+                count: submitFailures.length,
+              })}
             </span>
             <ul className="flex flex-col gap-1">
               {submitFailures.map((failure) => (
@@ -513,11 +656,7 @@ export function DraftsGrid({
                     <th
                       key={column}
                       scope="col"
-                      className={cn(
-                        "px-2 py-2.5 font-medium whitespace-nowrap",
-                        column === "number" &&
-                          "sticky left-8 z-[1] border-r border-border bg-muted",
-                      )}
+                      className="px-2 py-2.5 font-medium whitespace-nowrap"
                     >
                       {t(`columns.${column}`)}
                     </th>
@@ -543,6 +682,7 @@ export function DraftsGrid({
                       onDirty={onDirty}
                       registerQueue={registerQueue}
                       deleteHeld={adding}
+                      showBranch={showBranch}
                       marks={marksOf(row)}
                     />
                   );
@@ -555,6 +695,7 @@ export function DraftsGrid({
         {canAdd && (
           <AddDraftRow
             defaultBranchId={defaultBranchId}
+            above={copiedFromAbove(rows)}
             onAdded={onAdded}
             onBusy={onAddBusy}
             onStartOver={refresh}
@@ -566,23 +707,38 @@ export function DraftsGrid({
           onOpenChange={(open) => !open && setAsking(null)}
           pending={submitting}
           text={
-            asking?.again
+            asking?.ready
               ? {
-                  title: t("moves.title.SUBMIT_AGAIN", { count: asking.ids.length }),
-                  result: t("moves.result.SUBMIT_AGAIN", { count: asking.ids.length }),
-                  confirm: t("moves.button.SUBMIT_AGAIN"),
-                }
-              : {
-                  title: t("submit.confirmTitle", { count: asking?.ids.length ?? 0 }),
-                  result: t("submit.confirmResult", { count: asking?.ids.length ?? 0 }),
+                  // How many go and how many stay (11 rule 6; plan of 2.5c, decided item 8).
+                  title: t("submit.confirmTitle", { count: selection.send.length }),
+                  result: t("submit.readyResult", {
+                    count: selection.send.length,
+                    stay: readiness.length - selection.send.length,
+                  }),
                   confirm: t("submit.confirm"),
                 }
+              : asking?.again
+                ? {
+                    title: t("moves.title.SUBMIT_AGAIN", { count: asking.ids.length }),
+                    result: t("moves.result.SUBMIT_AGAIN", { count: asking.ids.length }),
+                    confirm: t("moves.button.SUBMIT_AGAIN"),
+                  }
+                : {
+                    title: t("submit.confirmTitle", { count: asking?.ids.length ?? 0 }),
+                    result: t("submit.confirmResult", { count: asking?.ids.length ?? 0 }),
+                    confirm: t("submit.confirm"),
+                  }
           }
-          onConfirm={() => asking && void submit(asking.ids, asking.again)}
+          onConfirm={() => {
+            if (!asking) return;
+            if (asking.ready) void submitReady();
+            else void submit(asking.ids, asking.again);
+          }}
         />
 
         <TickedTotals
-          drafts={tickedRows.map((row) => ({
+          onPage={ticked.size === 0}
+          drafts={(ticked.size === 0 ? rows : tickedRows).map((row) => ({
             quantity: row.quantity,
             price: row.price,
             extras: row.extras.map((extra) => extra.amount),
@@ -590,6 +746,19 @@ export function DraftsGrid({
           }))}
           actions={
             <>
+              {/* Nothing ticked: one Submit for the ready drafts of the sheet (05 Drafts 4); not
+                  shown while none is ready, the live marks say why (decided item 8). */}
+              {ticked.size === 0 && selection.send.length > 0 && (
+                <Button
+                  type="button"
+                  size="sm"
+                  pending={submitting}
+                  onClick={() => setAsking({ ready: true })}
+                  data-submit-ready
+                >
+                  {t("submit.readyButton", { count: selection.send.length })}
+                </Button>
+              )}
               {(canSubmit || canSubmitAgain) && (
                 <Button
                   type="button"
@@ -604,9 +773,16 @@ export function DraftsGrid({
                   })}
                 </Button>
               )}
-              <Button type="button" variant="ghost" size="sm" onClick={() => setTicked(new Set())}>
-                {t("ticked.clear")}
-              </Button>
+              {ticked.size > 0 && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setTicked(new Set())}
+                >
+                  {t("ticked.clear")}
+                </Button>
+              )}
               {mixed && (
                 <p
                   data-ticked-mixed
@@ -656,4 +832,17 @@ export function DraftsGrid({
       </div>
     </GridProvider>
   );
+}
+
+/** The cells that stop a shown row's submit, by submitRefusals() of src/domain/ (2.5c). */
+function liveRefusals(row: WireDraftRow, today: BusinessDate) {
+  return submitRefusals(
+    shownFacts({ ...row, price: row.price === null ? null : BigInt(row.price) }),
+    today,
+  );
+}
+
+/** A row's product and subtype as the sheet names it. */
+function productOf(row: WireDraftRow): string | null {
+  return row.subtypeName ? `${row.productName} — ${row.subtypeName}` : row.productName;
 }

@@ -21,15 +21,18 @@ import type { ActionResult } from "@/server/action-result";
 
 import { ExtrasCell } from "./extras-editor";
 import { useGrid } from "./grid-context";
-import { rowHoldsSent } from "./grid-rules";
+import { inMore, rowHoldsSent } from "./grid-rules";
 import { ProductPicker, Thumb } from "./product-picker";
 import { ReferencePhoto } from "./reference-photo";
 import { type SaveState, SaveStateText } from "./save-state";
 import { type RowSaveQueue, createRowSaveQueue } from "./row-save-queue";
 import { TextCell } from "./text-cell";
 
-// One row of the drafts grid (05-order-request-form.md, Order fields 1 to 18; Drafts 3 and 5;
-// 11-screens-and-ux.md, Order list layout 3 and rules 4, 6; plan of 2.5b). Every write is
+// One row of the order sheet (05-order-request-form.md, Order fields 1 to 18; Drafts 3 and 5;
+// 11-screens-and-ux.md, Order list layout 3 and rules 4, 6; plans of 2.5b and 2.5c). Six cells
+// (product with Product or Service, stock and measure under it; department; quantity with its
+// measure; price; needed-by date; total), the branch first only for several branches; the other
+// fields open under "More" (owner's decision of 25.10.2026, D65). Every write is
 // updateDraft with the row's version through the row's save queue; after a save the row is
 // read again from the server (getDraft), so price, company, measure, photo, stock, total and
 // hint are always the server's (review of the plan, Must fix 3). A row the person may not edit
@@ -59,6 +62,8 @@ export type DraftRowProps = {
    */
   open: boolean;
   onOpen(open: boolean): void;
+  /** The branch cell shows only for a user with several branches (plan of 2.5c, decided item 6). */
+  showBranch: boolean;
   /** True while the add row retries an add: deletes wait (plan of 2.6, decided item 1). */
   deleteHeld?: boolean;
   /**
@@ -70,12 +75,6 @@ export type DraftRowProps = {
 };
 
 const CELL = "px-2 py-2 align-top max-sm:block max-sm:min-w-0 max-sm:px-0 max-sm:py-1";
-
-/**
- * The read-only facts of a draft (type, subtype, stock, measure): a quarter of a phone card each,
- * so a card shows them on one line instead of four (redesign of 21.10.2026).
- */
-const FACT = "max-sm:w-1/4 max-sm:pr-2";
 
 /** One cell: its column for Enter, its name above it on a phone card, half or full card width. */
 function Cell({
@@ -342,481 +341,587 @@ export function DraftRow(props: DraftRowProps) {
     state.kind === "notSaved";
   const folded = !props.open && !staysOpen;
 
+  // "More" holds the fields beside the six cells (11 Order list layout 3); a row with a refusal or a
+  // mark in one of them opens it, so the mark is on the exact cell (05 Checks at submit; plan of
+  // 2.5c, decided item 9).
+  const moreMarked = [...Object.keys(errors), ...Object.keys(props.marks ?? {})].some(inMore);
+  const [moreAsked, setMoreAsked] = useState(false);
+  const moreOpen = moreAsked || moreMarked || pendingUrgent;
+  const moreId = `more-${row.id}`;
+  const facts = [
+    row.productType ? tCatalog(`productType.${row.productType}`) : null,
+    row.productType === null
+      ? null
+      : t("sheet.inStock", {
+          quantity: row.inStock === null ? t("none") : format.quantity(row.inStock),
+          unit: row.unitShortName ?? "",
+        }),
+  ].filter(Boolean);
+
   return (
-    <tr
-      data-open={!folded}
-      className={cn(
-        "border-t border-border bg-card",
-        // A phone card (decided items 4 and 5; docs/design-system.md: a white panel with a
-        // hairline edge, corner 8; a ticked card has the navy tint of a selected row).
-        "max-sm:flex max-sm:flex-wrap max-sm:items-start max-sm:gap-y-1 max-sm:rounded-xl max-sm:border max-sm:p-4",
-        props.ticked && "bg-sidebar-primary",
-      )}
-      onFocusCapture={loadChoices}
-      data-draft={row.id}
-    >
-      <Cell col="tick" className="max-sm:w-auto max-sm:pr-2 sm:sticky sm:left-0 sm:z-[1]">
-        {/* The tick's touch target is 44 px on a phone (11 rule 13). */}
-        <label
-          data-tick
-          className="flex cursor-pointer items-start max-sm:size-11 max-sm:items-center max-sm:justify-center"
-        >
-          <input
-            type="checkbox"
-            checked={props.ticked}
-            onChange={(event) => props.onTick(event.target.checked)}
-            aria-label={t("tickRow", { product: productText })}
-            className="mt-2.5 size-4 accent-primary max-sm:mt-0 max-sm:size-5"
-          />
-        </label>
-      </Cell>
-      <Cell
-        col="number"
-        className="min-w-36 max-sm:w-auto max-sm:flex-1 sm:sticky sm:left-8 sm:z-[1] sm:border-r sm:border-border"
+    <>
+      <tr
+        data-open={!folded}
+        className={cn(
+          "border-t border-border bg-card",
+          // A phone card (decided items 4 and 5; docs/design-system.md: a white panel with a
+          // hairline edge, corner 8; a ticked card has the navy tint of a selected row).
+          "max-sm:flex max-sm:flex-wrap max-sm:items-start max-sm:gap-y-1 max-sm:rounded-xl max-sm:border max-sm:p-4",
+          moreOpen && !folded && "max-sm:rounded-b-none max-sm:border-b-0",
+          props.ticked && "bg-sidebar-primary",
+        )}
+        onFocusCapture={loadChoices}
+        data-draft={row.id}
       >
-        <span className="flex flex-col gap-1 py-1.5 max-sm:py-0">
-          <span className="flex flex-wrap items-center gap-2 text-sm font-medium">
-            {/* A numbered row opens its order page, where its Cancel is (plan of 2.3b, decided
-                item 11). */}
-            {row.number ? (
-              <Link
-                href={`/orders/${row.id}`}
-                className="inline-flex min-h-11 items-center underline-offset-2 hover:underline sm:min-h-0"
-                data-order-link
-              >
-                {row.number}
-              </Link>
-            ) : (
-              t("draftWord")
-            )}
-            {row.revision >= 2 && (
-              <span className="font-normal text-muted-foreground">
-                {t("revision", { revision: row.revision })}
-              </span>
-            )}
-          </span>
-          {row.label && <DraftGridLabel label={row.label} />}
-          <span className="text-xs text-muted-foreground">
-            {t("ownerAndDate", {
-              owner: row.ownerName,
-              date: format.date(new Date(row.createdAt)),
-            })}
-          </span>
-        </span>
-      </Cell>
-      {/* A phone card's summary: tapped, the card opens to its fields (redesign of 22.10.2026). */}
-      {folded ? (
-        <td data-col="summary" className="w-full pt-2 max-sm:order-2 sm:hidden">
-          <button
-            type="button"
-            aria-expanded={false}
-            onClick={() => props.onOpen(true)}
-            data-card-open
-            className="flex min-h-11 w-full items-start gap-3 rounded-md text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+        <Cell col="tick" className="max-sm:w-auto max-sm:pr-2 sm:sticky sm:left-0 sm:z-[1]">
+          {/* The tick's touch target is 44 px on a phone (11 rule 13). */}
+          <label
+            data-tick
+            className="flex cursor-pointer items-start max-sm:size-11 max-sm:items-center max-sm:justify-center"
           >
+            <input
+              type="checkbox"
+              checked={props.ticked}
+              onChange={(event) => props.onTick(event.target.checked)}
+              aria-label={t("tickRow", { product: productText })}
+              className="mt-2.5 size-4 accent-primary max-sm:mt-0 max-sm:size-5"
+            />
+          </label>
+        </Cell>
+        {/* A numbered row (sent back or taken back) shows its number and label; a row without a
+            number shows neither, and no word "Draft" (plan of 2.5c, Build 4). */}
+        {(row.number || row.label || row.ownerId !== grid.actorId) && (
+          <td
+            data-col="number"
+            className="hidden max-sm:order-0 max-sm:block max-sm:flex-1 max-sm:py-1"
+          >
+            <RowTitle row={row} />
+          </td>
+        )}
+        {/* A phone card's summary: tapped, the card opens to its fields (redesign of 22.10.2026). */}
+        {folded ? (
+          <td data-col="summary" className="w-full pt-2 max-sm:order-2 sm:hidden">
+            <button
+              type="button"
+              aria-expanded={false}
+              onClick={() => props.onOpen(true)}
+              data-card-open
+              className="flex min-h-11 w-full items-start gap-3 rounded-md text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            >
+              <Thumb fileId={row.photoFileId} alt={t("photo.alt", { name: productText })} />
+              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <span className="text-sm font-medium">{productText || t("none")}</span>
+                <span className="text-small text-muted-foreground tabular-nums">
+                  {t("card.amounts", {
+                    quantity: row.quantity === null ? t("none") : format.quantity(row.quantity),
+                    unit: row.unitShortName ?? "",
+                    price: row.price === null ? t("none") : format.money(BigInt(row.price)),
+                  })}
+                </span>
+                <span className="text-small text-muted-foreground">
+                  {[
+                    row.departmentName,
+                    row.neededBy ? t("card.neededBy", { date: format.date(row.neededBy) }) : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </span>
+              </span>
+              <span className="flex flex-col items-end gap-1">
+                <span className="text-sm font-semibold whitespace-nowrap tabular-nums">
+                  {row.total === null ? t("none") : format.money(BigInt(row.total))}
+                </span>
+                <span className="inline-flex items-center gap-0.5 text-xs font-medium text-muted-foreground">
+                  {editable ? t("card.edit") : t("card.show")}
+                  <Icon name="chevron_right" size={16} />
+                </span>
+              </span>
+            </button>
+          </td>
+        ) : staysOpen ? null : (
+          <td className="w-auto sm:hidden">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              aria-expanded
+              aria-label={t("card.doneLabel", { product: productText })}
+              onClick={() => props.onOpen(false)}
+              data-card-close
+            >
+              {t("card.done")}
+            </Button>
+          </td>
+        )}
+        {props.showBranch && (
+          <Cell folded={folded} col="branch" label={t("columns.branch")}>
+            {editable && neverSubmitted && creatable.length > 1 ? (
+              <Select
+                aria-label={t("columns.branch")}
+                value={branchId}
+                aria-invalid={fieldError("branchId") ? true : undefined}
+                onChange={(event) => {
+                  const next = event.target.value;
+                  setPendingBranch(next === row.branchId ? null : next);
+                  if (next !== row.branchId) void grid.loadChoices(next);
+                }}
+              >
+                {creatable.map((branch) => (
+                  <option key={branch.id} value={branch.id}>
+                    {branch.code}
+                  </option>
+                ))}
+                {!creatable.some((branch) => branch.id === row.branchId) && (
+                  <option value={row.branchId}>{branchName(row.branchId)}</option>
+                )}
+              </Select>
+            ) : (
+              ro(branchName(row.branchId))
+            )}
+            {errorText("branchId")}
+            {pendingBranch && (
+              <span className="mt-1 block text-xs text-warning">{t("save.branchPending")}</span>
+            )}
+          </Cell>
+        )}
+        <Cell folded={folded} col="product" label={t("columns.product")} className="min-w-64">
+          <span className="flex items-start gap-2">
             <Thumb fileId={row.photoFileId} alt={t("photo.alt", { name: productText })} />
-            <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-              <span className="text-sm font-medium">{productText}</span>
-              <span className="text-small text-muted-foreground tabular-nums">
-                {t("card.amounts", {
-                  quantity: row.quantity === null ? t("none") : format.quantity(row.quantity),
-                  unit: row.unitShortName ?? "",
-                  price: row.price === null ? t("none") : format.money(BigInt(row.price)),
-                })}
+            <span className="flex min-w-0 flex-col gap-1">
+              <span className="max-sm:hidden">
+                {(row.number || row.label || row.ownerId !== grid.actorId) && (
+                  <RowTitle row={row} />
+                )}
               </span>
-              <span className="text-small text-muted-foreground">
-                {[
-                  row.departmentName,
-                  row.neededBy ? t("card.neededBy", { date: format.date(row.neededBy) }) : null,
-                ]
-                  .filter(Boolean)
-                  .join(" · ")}
-              </span>
+              {editable ? (
+                <ProductPicker
+                  branchId={branchId}
+                  shown={productText}
+                  label={t("columns.product")}
+                  invalid={Boolean(fieldError("variantId"))}
+                  onPick={(picked) => void save({ variantId: picked.subtype.id })}
+                />
+              ) : (
+                ro(productText || null)
+              )}
+              {fieldError("variantId") && (
+                <span className="text-xs text-destructive">{fieldError("variantId")}</span>
+              )}
+              {/* Product or Service, stock and measure under the product (11 Order list layout 3). */}
+              {facts.length > 0 && (
+                <span className="text-xs text-muted-foreground" data-cell="facts">
+                  {facts.join(" · ")}
+                </span>
+              )}
             </span>
-            <span className="flex flex-col items-end gap-1">
-              <span className="text-sm font-semibold whitespace-nowrap tabular-nums">
-                {row.total === null ? t("none") : format.money(BigInt(row.total))}
-              </span>
-              <span className="inline-flex items-center gap-0.5 text-xs font-medium text-muted-foreground">
-                {editable ? t("card.edit") : t("card.show")}
-                <Icon name="chevron_right" size={16} />
-              </span>
+          </span>
+        </Cell>
+        <Cell
+          folded={folded}
+          col="requestedBy"
+          label={t("columns.requestedBy")}
+          className="min-w-44"
+        >
+          {editable ? (
+            <span className="flex flex-col gap-1">
+              <Select
+                aria-label={t("columns.requestedBy")}
+                value={pendingBranch ? "" : (row.departmentId ?? "")}
+                aria-invalid={fieldError("departmentId") ? true : undefined}
+                onChange={(event) => {
+                  const departmentId = event.target.value;
+                  if (!departmentId) return;
+                  const fields = pendingBranch
+                    ? { branchId: pendingBranch, departmentId }
+                    : { departmentId };
+                  void save(fields).then((refused) => {
+                    if (refused === null) setPendingBranch(null);
+                  });
+                }}
+              >
+                {(pendingBranch || !row.departmentId) && (
+                  <option value="">{t("pickDepartment")}</option>
+                )}
+                {(choices?.departments ?? []).map((department) => (
+                  <option key={department.id} value={department.id}>
+                    {department.name}
+                  </option>
+                ))}
+                {!pendingBranch &&
+                  row.departmentId &&
+                  !choices?.departments.some(
+                    (department) => department.id === row.departmentId,
+                  ) && <option value={row.departmentId}>{row.departmentName}</option>}
+              </Select>
+              {fieldError("departmentId") && (
+                <span className="text-xs text-destructive">{fieldError("departmentId")}</span>
+              )}
+              {!pendingBranch && row.responsibleName && (
+                <span className="text-xs text-muted-foreground">
+                  {t("responsible", { name: row.responsibleName })}
+                </span>
+              )}
             </span>
-          </button>
-        </td>
-      ) : staysOpen ? null : (
-        <td className="w-auto sm:hidden">
+          ) : (
+            ro(row.departmentName)
+          )}
+        </Cell>
+        <Cell
+          folded={folded}
+          col="quantity"
+          label={t("columns.quantity")}
+          half
+          className="min-w-28"
+        >
+          <span className="flex items-start gap-1.5">
+            {editable ? (
+              <TextCell
+                value={row.quantity ?? ""}
+                label={t("columns.quantity")}
+                inputMode="decimal"
+                className="text-right tabular-nums"
+                error={fieldError("quantity")}
+                onDirty={typedOf("quantity")}
+                onCommit={(text) => saved({ quantity: text })}
+              />
+            ) : (
+              ro(row.quantity === null ? null : format.quantity(row.quantity))
+            )}
+            {/* The quantity with its measure (11 Order list layout 3). */}
+            {row.unitShortName && (
+              <span
+                className="min-h-9 py-2 text-sm text-muted-foreground max-sm:min-h-0 max-sm:py-0.5"
+                data-cell="measure"
+              >
+                {row.unitShortName}
+              </span>
+            )}
+          </span>
+        </Cell>
+        <Cell folded={folded} col="price" label={t("columns.price")} half className="min-w-28">
+          {editable ? (
+            <TextCell
+              value={row.price ?? ""}
+              label={t("columns.price")}
+              money
+              className="text-right tabular-nums"
+              error={fieldError("price")}
+              onDirty={typedOf("price")}
+              onCommit={(text) => saved({ price: text })}
+            />
+          ) : (
+            ro(row.price === null ? null : format.money(BigInt(row.price)))
+          )}
+          {row.priceHint !== null && (
+            <span
+              className="mt-1 block text-xs whitespace-nowrap text-warning"
+              data-cell="price-hint"
+            >
+              {t("priceHint", { percent: BigInt(row.priceHint) as unknown as number })}
+            </span>
+          )}
+        </Cell>
+        <Cell
+          folded={folded}
+          col="neededBy"
+          label={t("columns.neededBy")}
+          half
+          className="min-w-32"
+        >
+          {editable ? (
+            <NeededByCell
+              value={row.neededBy ? format.date(row.neededBy) : ""}
+              serverError={fieldError("neededBy")}
+              onDirty={typedOf("neededBy")}
+              onSave={(neededBy) => saved({ neededBy })}
+            />
+          ) : (
+            ro(row.neededBy ? format.date(row.neededBy) : null)
+          )}
+        </Cell>
+        <Cell
+          folded={folded}
+          col="total"
+          label={t("columns.total")}
+          half
+          className="text-right max-sm:text-left"
+        >
+          <span className="flex min-h-10 flex-col items-end justify-center gap-1 py-1 max-sm:min-h-0 max-sm:items-start">
+            <span
+              className="text-sm font-semibold whitespace-nowrap tabular-nums"
+              data-cell="total"
+            >
+              {row.total === null ? t("none") : format.money(BigInt(row.total))}
+            </span>
+          </span>
+        </Cell>
+        <Cell folded={folded} col="more" half className="max-sm:w-auto">
           <Button
             type="button"
             variant="ghost"
             size="sm"
-            aria-expanded
-            aria-label={t("card.doneLabel", { product: productText })}
-            onClick={() => props.onOpen(false)}
-            data-card-close
+            aria-expanded={moreOpen}
+            aria-controls={moreId}
+            aria-label={t("more.label", { product: productText })}
+            onClick={() => setMoreAsked(!moreOpen)}
+            data-more
+            className="max-sm:min-h-11"
           >
-            {t("card.done")}
+            {t("more.button")}
+            {moreMarked && (
+              <span
+                className="inline-block size-2 rounded-full bg-destructive"
+                data-more-marked
+                aria-label={t("more.marked")}
+              />
+            )}
+            <Icon name="expand_more" size={16} className={cn(moreOpen && "rotate-180")} />
           </Button>
-        </td>
-      )}
-      <Cell folded={folded} col="branch" label={t("columns.branch")}>
-        {editable && neverSubmitted && creatable.length > 1 ? (
-          <Select
-            aria-label={t("columns.branch")}
-            value={branchId}
-            aria-invalid={fieldError("branchId") ? true : undefined}
-            onChange={(event) => {
-              const next = event.target.value;
-              setPendingBranch(next === row.branchId ? null : next);
-              if (next !== row.branchId) void grid.loadChoices(next);
-            }}
-          >
-            {creatable.map((branch) => (
-              <option key={branch.id} value={branch.id}>
-                {branch.code}
-              </option>
-            ))}
-            {!creatable.some((branch) => branch.id === row.branchId) && (
-              <option value={row.branchId}>{branchName(row.branchId)}</option>
-            )}
-          </Select>
-        ) : (
-          ro(branchName(row.branchId))
-        )}
-        {errorText("branchId")}
-        {pendingBranch && (
-          <span className="mt-1 block text-xs text-warning">{t("save.branchPending")}</span>
-        )}
-      </Cell>
-      <Cell folded={folded} col="product" label={t("columns.product")}>
-        <span className="flex items-start gap-2">
-          <Thumb fileId={row.photoFileId} alt={t("photo.alt", { name: productText })} />
-          {editable ? (
-            <span className="flex flex-col gap-1">
-              <ProductPicker
-                branchId={branchId}
-                shown={productText}
-                label={t("columns.product")}
-                invalid={Boolean(fieldError("variantId"))}
-                onPick={(picked) => void save({ variantId: picked.subtype.id })}
+        </Cell>
+        {/* On a folded phone card the save state and Delete stand on the title's line. */}
+        <Cell
+          col="state"
+          half
+          className={cn("min-w-24", folded && "max-sm:order-1 max-sm:w-auto max-sm:min-w-0")}
+          aria-live="polite"
+        >
+          <SaveStateText state={state} onTryAgain={tryAgain} />
+        </Cell>
+        <Cell
+          col="actions"
+          half
+          className={cn("max-sm:text-right", folded && "max-sm:order-1 max-sm:w-auto")}
+        >
+          {deletable && (
+            <>
+              <Button
+                type="button"
+                variant="destructive"
+                size="icon-sm"
+                icon="delete"
+                aria-label={t("delete.label", { product: productText })}
+                disabled={props.deleteHeld}
+                onClick={() => setAsking(true)}
               />
-              {fieldError("variantId") && (
-                <span className="text-xs text-destructive">{fieldError("variantId")}</span>
-              )}
-            </span>
-          ) : (
-            ro(productText)
+              <ConfirmDialog
+                open={asking}
+                onOpenChange={setAsking}
+                pending={deleting}
+                onConfirm={() => void remove()}
+                text={{
+                  title: t("delete.title"),
+                  result: t("delete.result", { product: productText }),
+                  confirm: t("delete.confirm"),
+                  danger: true,
+                }}
+              />
+            </>
           )}
-        </span>
-      </Cell>
-      <Cell folded={folded} col="type" label={t("columns.type")} half className={FACT}>
-        {ro(row.productType ? tCatalog(`productType.${row.productType}`) : null)}
-      </Cell>
-      <Cell folded={folded} col="subtype" label={t("columns.subtype")} half className={FACT}>
-        {ro(row.subtypeName)}
-      </Cell>
-      <Cell
-        folded={folded}
-        col="inStock"
-        label={t("columns.inStock")}
-        half
-        className={cn("text-right tabular-nums max-sm:text-left", FACT)}
-      >
-        {ro(row.inStock === null ? null : format.quantity(row.inStock))}
-      </Cell>
-      <Cell folded={folded} col="photo" label={t("columns.photo")} half className={FACT}>
-        <ReferencePhoto
-          fileId={row.referencePhotoFileId}
-          product={productText}
-          editable={editable}
-          onSave={(fileId) => save({ referencePhotoFileId: fileId })}
-        />
-      </Cell>
-      <Cell folded={folded} col="company" label={t("columns.company")} half>
-        {editable ? (
-          <Select
-            aria-label={t("columns.company")}
-            value={row.companyId ?? ""}
-            aria-invalid={fieldError("companyId") ? true : undefined}
-            onChange={(event) => void save({ companyId: event.target.value || null })}
-            className="sm:min-w-40"
-          >
-            <option value="">{t("noCompany")}</option>
-            {(choices?.companies ?? []).map((company) => (
-              <option key={company.id} value={company.id}>
-                {company.name}
-              </option>
-            ))}
-            {row.companyId &&
-              !choices?.companies.some((company) => company.id === row.companyId) && (
-                <option value={row.companyId}>{row.companyName}</option>
-              )}
-          </Select>
-        ) : (
-          ro(row.companyName)
-        )}
-        {errorText("companyId")}
-      </Cell>
-      <Cell folded={folded} col="requestedBy" label={t("columns.requestedBy")} className="min-w-48">
-        {editable ? (
-          <span className="flex flex-col gap-1">
-            <Select
-              aria-label={t("columns.requestedBy")}
-              value={pendingBranch ? "" : (row.departmentId ?? "")}
-              aria-invalid={fieldError("departmentId") ? true : undefined}
-              onChange={(event) => {
-                const departmentId = event.target.value;
-                if (!departmentId) return;
-                const fields = pendingBranch
-                  ? { branchId: pendingBranch, departmentId }
-                  : { departmentId };
-                void save(fields).then((refused) => {
-                  if (refused === null) setPendingBranch(null);
-                });
-              }}
-            >
-              {(pendingBranch || !row.departmentId) && (
-                <option value="">{t("pickDepartment")}</option>
-              )}
-              {(choices?.departments ?? []).map((department) => (
-                <option key={department.id} value={department.id}>
-                  {department.name}
-                </option>
-              ))}
-              {!pendingBranch &&
-                row.departmentId &&
-                !choices?.departments.some((department) => department.id === row.departmentId) && (
-                  <option value={row.departmentId}>{row.departmentName}</option>
+        </Cell>
+      </tr>
+      {moreOpen && !folded && (
+        <tr
+          id={moreId}
+          data-more-of={row.id}
+          className={cn(
+            "bg-muted/40",
+            "max-sm:-mt-3 max-sm:block max-sm:rounded-b-xl max-sm:border max-sm:border-t-0 max-sm:bg-card max-sm:px-4 max-sm:pb-4",
+            props.ticked && "bg-sidebar-primary",
+          )}
+        >
+          <td colSpan={99} className="px-2 pt-1 pb-3 max-sm:block max-sm:p-0">
+            <div className="grid gap-x-4 gap-y-2 sm:grid-cols-2 lg:grid-cols-4">
+              <MoreField col="company" label={t("columns.company")}>
+                {editable ? (
+                  <Select
+                    aria-label={t("columns.company")}
+                    value={row.companyId ?? ""}
+                    aria-invalid={fieldError("companyId") ? true : undefined}
+                    onChange={(event) => void save({ companyId: event.target.value || null })}
+                  >
+                    <option value="">{t("noCompany")}</option>
+                    {(choices?.companies ?? []).map((company) => (
+                      <option key={company.id} value={company.id}>
+                        {company.name}
+                      </option>
+                    ))}
+                    {row.companyId &&
+                      !choices?.companies.some((company) => company.id === row.companyId) && (
+                        <option value={row.companyId}>{row.companyName}</option>
+                      )}
+                  </Select>
+                ) : (
+                  ro(row.companyName)
                 )}
-            </Select>
-            {fieldError("departmentId") && (
-              <span className="text-xs text-destructive">{fieldError("departmentId")}</span>
-            )}
-            {!pendingBranch && row.responsibleName && (
-              <span className="text-xs text-muted-foreground">
-                {t("responsible", { name: row.responsibleName })}
-              </span>
-            )}
-            <TextCell
-              value={row.requesterName ?? ""}
-              label={t("columns.requesterName")}
-              placeholder={t("columns.requesterName")}
-              error={fieldError("requesterName")}
-              onDirty={typedOf("requesterName")}
-              onCommit={(text) => saved({ requesterName: text })}
-            />
-          </span>
-        ) : (
-          <span className="flex flex-col">
-            {ro(row.departmentName)}
-            {row.requesterName && (
-              <span className="text-small text-muted-foreground">{row.requesterName}</span>
-            )}
-          </span>
-        )}
-      </Cell>
-      <Cell folded={folded} col="neededBy" label={t("columns.neededBy")} className="min-w-32">
-        {editable ? (
-          <NeededByCell
-            value={row.neededBy ? format.date(row.neededBy) : ""}
-            serverError={fieldError("neededBy")}
-            onDirty={typedOf("neededBy")}
-            onSave={(neededBy) => saved({ neededBy })}
-          />
-        ) : (
-          ro(row.neededBy ? format.date(row.neededBy) : null)
-        )}
-      </Cell>
-      <Cell folded={folded} col="measure" label={t("columns.measure")} half className={FACT}>
-        {ro(row.unitShortName)}
-      </Cell>
-      <Cell folded={folded} col="quantity" label={t("columns.quantity")} half className="min-w-24">
-        {editable ? (
-          <TextCell
-            value={row.quantity ?? ""}
-            label={t("columns.quantity")}
-            inputMode="decimal"
-            className="text-right tabular-nums"
-            error={fieldError("quantity")}
-            onDirty={typedOf("quantity")}
-            onCommit={(text) => saved({ quantity: text })}
-          />
-        ) : (
-          ro(row.quantity === null ? null : format.quantity(row.quantity))
-        )}
-      </Cell>
-      <Cell folded={folded} col="price" label={t("columns.price")} half className="min-w-28">
-        {editable ? (
-          <TextCell
-            value={row.price ?? ""}
-            label={t("columns.price")}
-            money
-            className="text-right tabular-nums"
-            error={fieldError("price")}
-            onDirty={typedOf("price")}
-            onCommit={(text) => saved({ price: text })}
-          />
-        ) : (
-          ro(row.price === null ? null : format.money(BigInt(row.price)))
-        )}
-      </Cell>
-      <Cell
-        folded={folded}
-        col="extras"
-        label={t("columns.extras")}
-        half
-        className="text-right max-sm:text-left"
-      >
-        <span className="flex min-h-10 items-center justify-end max-sm:min-h-0 max-sm:justify-start">
-          <ExtrasCell
-            product={productText}
-            extras={row.extras}
-            choices={choices}
-            editable={editable}
-            onOpen={loadChoices}
-            onSave={(extras) => save({ extras })}
-          />
+                {errorText("companyId")}
+              </MoreField>
+              <MoreField col="extras" label={t("columns.extras")}>
+                <ExtrasCell
+                  product={productText}
+                  extras={row.extras}
+                  choices={choices}
+                  editable={editable}
+                  onOpen={loadChoices}
+                  onSave={(extras) => save({ extras })}
+                />
+                {fieldError("extras") && (
+                  <span className="block text-xs text-destructive">{fieldError("extras")}</span>
+                )}
+              </MoreField>
+              <MoreField col="paymentType" label={t("columns.paymentType")}>
+                {editable ? (
+                  <Select
+                    aria-label={t("columns.paymentType")}
+                    value={row.paymentType}
+                    onChange={(event) => void save({ paymentType: event.target.value })}
+                  >
+                    {PAYMENT_TYPES.map((type) => (
+                      <option key={type} value={type}>
+                        {tPayment(type)}
+                      </option>
+                    ))}
+                  </Select>
+                ) : (
+                  ro(tPayment(row.paymentType))
+                )}
+              </MoreField>
+              <MoreField col="priority" label={t("columns.priority")}>
+                {editable ? (
+                  <span className="flex flex-col gap-1">
+                    <Select
+                      aria-label={t("columns.priority")}
+                      value={showUrgentReason ? "URGENT" : "NORMAL"}
+                      onChange={(event) => {
+                        if (event.target.value === "URGENT") {
+                          setPendingUrgent(true);
+                        } else {
+                          setPendingUrgent(false);
+                          if (row.priority === "URGENT") void save({ priority: "NORMAL" });
+                        }
+                      }}
+                    >
+                      <option value="NORMAL">{t("priority.NORMAL")}</option>
+                      <option value="URGENT">{t("priority.URGENT")}</option>
+                    </Select>
+                    {showUrgentReason && (
+                      <TextCell
+                        value={row.urgentReason ?? ""}
+                        label={t("columns.urgentReason")}
+                        placeholder={t("columns.urgentReason")}
+                        error={fieldError("urgentReason")}
+                        onDirty={typedOf("urgentReason")}
+                        onCommit={(text) =>
+                          saved({ priority: "URGENT", urgentReason: text }).then((ok) => {
+                            if (ok) setPendingUrgent(false);
+                            return ok;
+                          })
+                        }
+                      />
+                    )}
+                    {pendingUrgent && row.priority !== "URGENT" && (
+                      <span className="text-xs text-warning">{t("save.urgentPending")}</span>
+                    )}
+                  </span>
+                ) : (
+                  <span className="flex flex-col">
+                    {ro(t(`priority.${row.priority}`))}
+                    {row.urgentReason && (
+                      <span className="text-small text-muted-foreground">{row.urgentReason}</span>
+                    )}
+                  </span>
+                )}
+              </MoreField>
+              <MoreField col="requesterName" label={t("columns.requesterName")}>
+                {editable ? (
+                  <TextCell
+                    value={row.requesterName ?? ""}
+                    label={t("columns.requesterName")}
+                    error={fieldError("requesterName")}
+                    onDirty={typedOf("requesterName")}
+                    onCommit={(text) => saved({ requesterName: text })}
+                  />
+                ) : (
+                  ro(row.requesterName)
+                )}
+              </MoreField>
+              <MoreField col="comment" label={t("columns.comment")} wide>
+                {editable ? (
+                  <TextCell
+                    value={row.comment ?? ""}
+                    label={t("columns.comment")}
+                    error={fieldError("comment")}
+                    onDirty={typedOf("comment")}
+                    onCommit={(text) => saved({ comment: text })}
+                  />
+                ) : (
+                  ro(row.comment)
+                )}
+              </MoreField>
+              <MoreField col="photo" label={t("columns.photo")}>
+                <ReferencePhoto
+                  fileId={row.referencePhotoFileId}
+                  product={productText}
+                  editable={editable}
+                  onSave={(fileId) => save({ referencePhotoFileId: fileId })}
+                />
+              </MoreField>
+            </div>
+          </td>
+        </tr>
+      )}
+    </>
+  );
+}
+
+/** One field of "More": its name above it, its column for the marks and the scroll (2.5c). */
+function MoreField({
+  col,
+  label,
+  wide = false,
+  children,
+}: {
+  col: string;
+  label: string;
+  wide?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div data-col={col} className={cn("flex min-w-0 flex-col gap-1", wide && "lg:col-span-2")}>
+      <span aria-hidden="true" className="text-xs text-muted-foreground">
+        {label}
+      </span>
+      {children}
+    </div>
+  );
+}
+
+/** A numbered row's number, revision and label, and another owner's name (05 Drafts 5). */
+function RowTitle({ row }: { row: WireDraftRow }) {
+  const t = useTranslations("orders");
+  const format = useFormatters();
+  const grid = useGrid();
+  return (
+    <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+      {/* A numbered row opens its order page, where its Cancel is (plan of 2.3b, decided item 11). */}
+      {row.number && (
+        <Link
+          href={`/orders/${row.id}`}
+          className="inline-flex min-h-11 items-center text-sm font-medium underline-offset-2 hover:underline sm:min-h-0"
+          data-order-link
+        >
+          {row.number}
+        </Link>
+      )}
+      {row.revision >= 2 && (
+        <span className="text-muted-foreground">{t("revision", { revision: row.revision })}</span>
+      )}
+      {row.label && <DraftGridLabel label={row.label} />}
+      {row.ownerId !== grid.actorId && (
+        <span className="text-muted-foreground">
+          {t("ownerAndDate", { owner: row.ownerName, date: format.date(new Date(row.createdAt)) })}
         </span>
-        {fieldError("extras") && (
-          <span className="text-xs text-destructive">{fieldError("extras")}</span>
-        )}
-      </Cell>
-      <Cell folded={folded} col="paymentType" label={t("columns.paymentType")} half>
-        {editable ? (
-          <Select
-            aria-label={t("columns.paymentType")}
-            value={row.paymentType}
-            onChange={(event) => void save({ paymentType: event.target.value })}
-            className="sm:min-w-40"
-          >
-            {PAYMENT_TYPES.map((type) => (
-              <option key={type} value={type}>
-                {tPayment(type)}
-              </option>
-            ))}
-          </Select>
-        ) : (
-          ro(tPayment(row.paymentType))
-        )}
-      </Cell>
-      <Cell folded={folded} col="priority" label={t("columns.priority")} half className="min-w-36">
-        {editable ? (
-          <span className="flex flex-col gap-1">
-            <Select
-              aria-label={t("columns.priority")}
-              value={showUrgentReason ? "URGENT" : "NORMAL"}
-              onChange={(event) => {
-                if (event.target.value === "URGENT") {
-                  setPendingUrgent(true);
-                } else {
-                  setPendingUrgent(false);
-                  if (row.priority === "URGENT") void save({ priority: "NORMAL" });
-                }
-              }}
-            >
-              <option value="NORMAL">{t("priority.NORMAL")}</option>
-              <option value="URGENT">{t("priority.URGENT")}</option>
-            </Select>
-            {showUrgentReason && (
-              <TextCell
-                value={row.urgentReason ?? ""}
-                label={t("columns.urgentReason")}
-                placeholder={t("columns.urgentReason")}
-                error={fieldError("urgentReason")}
-                onDirty={typedOf("urgentReason")}
-                onCommit={(text) =>
-                  saved({ priority: "URGENT", urgentReason: text }).then((ok) => {
-                    if (ok) setPendingUrgent(false);
-                    return ok;
-                  })
-                }
-              />
-            )}
-            {pendingUrgent && row.priority !== "URGENT" && (
-              <span className="text-xs text-warning">{t("save.urgentPending")}</span>
-            )}
-          </span>
-        ) : (
-          <span className="flex flex-col">
-            {ro(t(`priority.${row.priority}`))}
-            {row.urgentReason && (
-              <span className="text-small text-muted-foreground">{row.urgentReason}</span>
-            )}
-          </span>
-        )}
-      </Cell>
-      <Cell folded={folded} col="comment" label={t("columns.comment")} className="min-w-48">
-        {editable ? (
-          <TextCell
-            value={row.comment ?? ""}
-            label={t("columns.comment")}
-            error={fieldError("comment")}
-            onDirty={typedOf("comment")}
-            onCommit={(text) => saved({ comment: text })}
-          />
-        ) : (
-          ro(row.comment)
-        )}
-      </Cell>
-      <Cell
-        folded={folded}
-        col="total"
-        label={t("columns.total")}
-        half
-        className="text-right max-sm:text-left"
-      >
-        <span className="flex min-h-10 flex-col items-end justify-center gap-1 py-1 max-sm:min-h-0 max-sm:items-start">
-          <span className="text-sm font-semibold whitespace-nowrap tabular-nums" data-cell="total">
-            {row.total === null ? t("none") : format.money(BigInt(row.total))}
-          </span>
-          {row.priceHint !== null && (
-            <span className="text-xs whitespace-nowrap text-warning" data-cell="price-hint">
-              {t("priceHint", { percent: BigInt(row.priceHint) as unknown as number })}
-            </span>
-          )}
-        </span>
-      </Cell>
-      {/* On a folded phone card the save state and Delete stand on the title's line. */}
-      <Cell
-        col="state"
-        half
-        className={cn("min-w-28", folded && "max-sm:order-1 max-sm:w-auto max-sm:min-w-0")}
-        aria-live="polite"
-      >
-        <SaveStateText state={state} onTryAgain={tryAgain} />
-      </Cell>
-      <Cell
-        col="actions"
-        half
-        className={cn("max-sm:text-right", folded && "max-sm:order-1 max-sm:w-auto")}
-      >
-        {deletable && (
-          <>
-            <Button
-              type="button"
-              variant="destructive"
-              size="icon-sm"
-              icon="delete"
-              aria-label={t("delete.label", { product: productText })}
-              disabled={props.deleteHeld}
-              onClick={() => setAsking(true)}
-            />
-            <ConfirmDialog
-              open={asking}
-              onOpenChange={setAsking}
-              pending={deleting}
-              onConfirm={() => void remove()}
-              text={{
-                title: t("delete.title"),
-                result: t("delete.result", { product: productText }),
-                confirm: t("delete.confirm"),
-                danger: true,
-              }}
-            />
-          </>
-        )}
-      </Cell>
-    </tr>
+      )}
+    </span>
   );
 }
 
