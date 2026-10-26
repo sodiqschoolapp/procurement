@@ -1,4 +1,10 @@
 import { MONEY_MAX, isSomOrZero } from "./money";
+import {
+  ORDER_FIELDS_DEFAULT,
+  type OrderFields,
+  isOrderFields,
+  sameOrderFields,
+} from "./order-fields";
 import { PAYMENT_TYPES, type PaymentType } from "./payment-types";
 
 // The settings of the school (14-data-model.md, System: `settings key KEY, value JSONB`, and
@@ -55,11 +61,20 @@ export type SettingValues = {
    * item 9), never by the settings form.
    */
   finance_step: boolean;
+  /**
+   * The fields the Head sets (05-order-request-form.md, Fields the Head sets; D67): how each is
+   * asked and where it stands. Saved by the settings form as a whole object (plan of 2.5d, decided
+   * item 3).
+   */
+  order_fields: OrderFields;
 };
 
 export type SettingKey = keyof SettingValues;
 
-/** The ten keys, in the order the screen shows them; the Finance step has its own block, last. */
+/**
+ * The eleven keys, in the order the screen shows them; the Finance step and the order fields have
+ * their own blocks, last.
+ */
 export const SETTING_KEYS = [
   "school_name",
   "school_year_start",
@@ -71,6 +86,7 @@ export const SETTING_KEYS = [
   "reminder_hours",
   "escalation_hours",
   "finance_step",
+  "order_fields",
 ] as const satisfies readonly SettingKey[];
 
 /**
@@ -88,6 +104,7 @@ export const SETTING_DEFAULTS: SettingValues = {
   school_name: null,
   school_year_start: null,
   finance_step: true,
+  order_fields: ORDER_FIELDS_DEFAULT,
 };
 
 const DAYS_IN_MONTH = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31] as const;
@@ -148,6 +165,7 @@ export const SETTING_CHECKS: { [Key in SettingKey]: (value: unknown) => boolean 
   school_name: isSchoolName,
   school_year_start: isMonthDay,
   finance_step: (value) => typeof value === "boolean",
+  order_fields: isOrderFields,
 };
 
 export function isSettingKey(key: string): key is SettingKey {
@@ -198,8 +216,12 @@ export function settingsFrom(rows: readonly { key: string; value: unknown }[]): 
   return values as SettingValues;
 }
 
-/** Whether two values of a setting are the same; a month and day compare by their numbers. */
+/**
+ * Whether two values of a setting are the same; a month and day compare by their numbers, the order
+ * fields field by field.
+ */
 export function sameSettingValue(a: unknown, b: unknown): boolean {
+  if (isOrderFields(a) && isOrderFields(b)) return sameOrderFields(a, b);
   if (typeof a === "object" && a !== null && typeof b === "object" && b !== null) {
     const x = a as Partial<MonthDay>;
     const y = b as Partial<MonthDay>;
