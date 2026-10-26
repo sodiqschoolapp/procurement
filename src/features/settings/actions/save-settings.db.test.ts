@@ -332,7 +332,9 @@ describe("saveSettings: the fields the Head sets (05 Fields the Head sets; D67; 
         ask,
       ).toMatchObject({ ok: false, error: { code: "invalid_input" } });
     }
-    const { comment: _comment, ...partial } = ORDER_FIELDS_DEFAULT;
+    const partial = Object.fromEntries(
+      Object.entries(ORDER_FIELDS_DEFAULT).filter(([field]) => field !== "comment"),
+    );
     expect(await runAction(saveSettings, head.id, { order_fields: partial })).toMatchObject({
       ok: false,
       error: { code: "invalid_input" },

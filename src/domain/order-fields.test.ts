@@ -91,7 +91,9 @@ describe("the shape of `order_fields` (14 Notes; decided item 3)", () => {
   });
 
   it("refuses a partial value, an unknown field, an extra key and a wrong type", () => {
-    const { comment: _comment, ...partial } = ORDER_FIELDS_DEFAULT;
+    const partial = Object.fromEntries(
+      Object.entries(ORDER_FIELDS_DEFAULT).filter(([field]) => field !== "comment"),
+    );
     expect(isOrderFields(partial)).toBe(false);
     expect(
       isOrderFields({ ...ORDER_FIELDS_DEFAULT, branch: { ask: "required", place: "row" } }),

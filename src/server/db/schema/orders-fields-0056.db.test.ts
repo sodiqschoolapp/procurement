@@ -181,7 +181,9 @@ describe("settings_order_fields_check (14 Notes for the build: `order_fields`)",
   });
 
   it("refuses each wrong shape", async () => {
-    const { comment: _comment, ...partial } = ORDER_FIELDS_DEFAULT;
+    const partial = Object.fromEntries(
+      Object.entries(ORDER_FIELDS_DEFAULT).filter(([field]) => field !== "comment"),
+    );
     const wrong: unknown[] = [
       partial,
       { ...ORDER_FIELDS_DEFAULT, branch: { ask: "required", place: "row" } },
