@@ -520,3 +520,144 @@ test("S19: three orders of 10 Tata pens: the Head sees one row of 20, the Princi
   await expect.poll(draftsNow).toEqual(["20.000"]);
   await expect(tickOf(page, pens)).toHaveCount(1);
 });
+
+test("S23: the order sheet: three rows typed, the department and date copied from the row above, the pens Urgent under More; Submit with nothing ticked sends two, the markers without a price and a sent-back order stay; priced, the markers go with the next number (15 S23; 05 Drafts 4, 6; 11 Order list layout 3)", async ({
+  page,
+}) => {
+  const branch = await newBranch();
+  const manager = await newManager(branch.id);
+  const run = tag();
+  const notebooks = `Daftar ${run}`;
+  const pens = `Ruchka ${run}`;
+  const markers = `Marker ${run}`;
+  const paper = `Qogʻoz ${run}`;
+  const maths = `Matematika ${run}`;
+  await newProduct(notebooks, 5000);
+  await newProduct(pens, 2000);
+  // The markers have no price to suggest (05 field 11: "else empty").
+  await newProduct(markers, null);
+  const paperId = await newProduct(paper, 1000);
+  const mathsId = await newDepartment(branch.id, maths);
+  // An order the Principal sent back to this Manager stands in the sheet (05 Drafts 5).
+  const sentBack = await insertDraft(manager, branch.id, paperId, mathsId, 3, 1000);
+  await withDatabase((client) =>
+    client.query(
+      `update orders set status = 'RETURNED', number = $2, submitted_at = now(), planned_total = 3000
+        where id = $1`,
+      [sentBack, `${branch.code}-25-0091`],
+    ),
+  );
+
+  await signIn(page, manager);
+  await page.goto("/orders");
+  const form = page.getByRole("form", { name: t.add.title });
+  const add = async (product: string, quantity: string) => {
+    const picker = form.getByRole("combobox", { name: t.columns.product });
+    const option = page.getByRole("option", { name: new RegExp(product) });
+    // Typed again until the hit shows: text typed before hydration is not seen by the picker.
+    await expect(async () => {
+      await picker.fill(product);
+      await expect(option).toBeVisible({ timeout: 2000 });
+    }).toPass();
+    await option.click();
+    await form.getByLabel(t.columns.quantity).fill(quantity);
+    await form.getByRole("button", { name: t.add.button }).click();
+    await expect(tickOf(page, product)).toBeVisible();
+  };
+
+  // The first row: 100 notebooks for Maths, needed by 05.11.
+  await form.getByLabel(t.columns.requestedBy).selectOption({ label: maths });
+  await form.getByLabel(t.columns.neededBy).fill("05.11.2031");
+  await add(notebooks, "100");
+  // The pens row comes with Maths and 05.11 already filled (05 Drafts 6).
+  await expect(form.getByLabel(t.columns.requestedBy)).toHaveValue(mathsId);
+  await expect(form.getByLabel(t.columns.neededBy)).toHaveValue("05.11.2031");
+  await add(pens, "20");
+  await add(markers, "5");
+
+  // No row shows a branch cell: the Manager has one branch (11 Order list layout 3).
+  await expect(page.locator('td[data-col="branch"]')).toHaveCount(0);
+
+  // The pens get "Urgent" under "More".
+  const pensRow = page.locator("tr[data-draft]").filter({ has: tickOf(page, pens) });
+  await pensRow.getByRole("button", { name: t.more.label.replace("{product}", pens) }).click();
+  const pensMore = page.locator(`tr[data-more-of="${await pensRow.getAttribute("data-draft")}"]`);
+  await pensMore.getByLabel(t.columns.priority).selectOption("URGENT");
+  const reason = pensMore.getByLabel(t.columns.urgentReason);
+  await reason.fill("Imtihon dushanba kuni");
+  await reason.press("Enter");
+  await expect
+    .poll(() => ordersNamed(manager.id, pens).then((found) => found[0]?.priority))
+    .toBe("URGENT");
+
+  // The markers' price cell is marked before anything is sent.
+  const markersRow = page.locator("tr[data-draft]").filter({ has: tickOf(page, markers) });
+  await expect(markersRow.locator('[data-col="price"]')).toContainText(uz.errors.field.required);
+
+  // Submit with nothing ticked: two go, two stay (the markers and the sent-back order).
+  await page.getByRole("button", { name: t.submit.readyButton.replace("{count}", "2") }).click();
+  const dialog = page.getByRole("alertdialog");
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole("button", { name: t.submit.confirm, exact: true }).click();
+  // The dialog stays, pending, until the answer (11 rule 4); the rows sent leave the sheet.
+  await expect(dialog).toBeHidden({ timeout: 20_000 });
+  await expect(tickOf(page, notebooks)).toHaveCount(0);
+  await expect(tickOf(page, pens)).toHaveCount(0);
+
+  const numberOf = async (product: string) => (await ordersNamed(manager.id, product))[0]!;
+  const first = await numberOf(notebooks);
+  const second = await numberOf(pens);
+  expect(first.number).toMatch(new RegExp(`^${branch.code}-\\d\\d-0001$`));
+  expect(second.number).toMatch(new RegExp(`^${branch.code}-\\d\\d-0002$`));
+  expect(second.status).toBe("PENDING_HEAD");
+  expect((await numberOf(markers)).number).toBeNull();
+  expect(await statusOfOrder(sentBack)).toBe("RETURNED");
+  // The markers stay in the sheet, their price cell marked and named in the list on top.
+  const top = page.getByRole("alert").filter({ hasText: markers });
+  await expect(top).toContainText(t.columns.price);
+  await expect(markersRow.locator('[data-col="price"]')).toContainText(uz.errors.field.required);
+  await expect(tickOf(page, paper)).toBeVisible();
+
+  // Once the price is typed, Submit (no reload in between) sends it with the next number.
+  const price = markersRow.getByLabel(t.columns.price);
+  await price.fill("3 000");
+  await price.press("Tab");
+  await expect.poll(() => numberOf(markers).then((found) => found.price)).toBe("3000");
+  await page.getByRole("button", { name: t.submit.readyButton.replace("{count}", "1") }).click();
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole("button", { name: t.submit.confirm, exact: true }).click();
+  await expect(dialog).toBeHidden({ timeout: 20_000 });
+  await expect
+    .poll(() => numberOf(markers).then((found) => found.number))
+    .toMatch(new RegExp(`^${branch.code}-\\d\\d-0003$`));
+  expect(await statusOfOrder(sentBack)).toBe("RETURNED");
+  expect(await scrollsSideways(page)).toBe(false);
+});
+
+/** The orders of an owner of a product, oldest first. */
+async function ordersNamed(ownerId: string, product: string) {
+  return withDatabase(async (client) => {
+    const found = await client.query<{
+      number: string | null;
+      status: string;
+      priority: string;
+      price: string | null;
+    }>(
+      `select o.number, o.status, o.priority, o.planned_price::text as price from orders o
+         join product_variants v on v.id = o.variant_id join products p on p.id = v.product_id
+        where o.owner_id = $1 and p.name = $2 order by o.created_at`,
+      [ownerId, product],
+    );
+    return found.rows;
+  });
+}
+
+async function statusOfOrder(id: string) {
+  return withDatabase(async (client) => {
+    const found = await client.query<{ status: string }>(
+      "select status from orders where id = $1",
+      [id],
+    );
+    return found.rows[0]!.status;
+  });
+}
