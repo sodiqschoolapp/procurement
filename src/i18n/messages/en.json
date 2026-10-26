@@ -608,6 +608,38 @@
       "refused": "Not switched off: orders {orders} still wait for Finance or for settlement.",
       "switchedOff": "The Finance step is switched off",
       "switchedOn": "The Finance step is switched on"
+    },
+    "orderFields": {
+      "title": "Order fields",
+      "hint": "How each field of an order is asked and where it stands in the order sheet, for the whole school. Branch, product, subtype and quantity are always asked, in the row. A change applies from the next submit.",
+      "askLabel": "How {field} is asked",
+      "placeLabel": "Where {field} stands",
+      "save": "Save order fields",
+      "saved": "Order fields saved",
+      "allDefault": "Default",
+      "historyLine": "{field}: {ask}, {place}",
+      "field": {
+        "department": "Requested by (department)",
+        "neededBy": "Needed by",
+        "price": "Price per unit",
+        "paymentType": "Payment type",
+        "priority": "Priority",
+        "brand": "Brand or company",
+        "requesterName": "Requester name",
+        "comment": "Comment",
+        "referencePhoto": "Reference photo",
+        "extras": "Extra costs"
+      },
+      "ask": {
+        "required": "Required",
+        "optional": "Optional",
+        "hidden": "Hidden",
+        "shown": "Shown"
+      },
+      "place": {
+        "row": "In the row",
+        "more": "Under \"More\""
+      }
     }
   },
   "admin": {

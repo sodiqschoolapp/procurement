@@ -1,6 +1,7 @@
 import * as z from "zod";
 
 import { parseSomOrZero } from "@/domain/money";
+import { type OrderFields, PRICE_ASK_CHOICES_NOW, isOrderFields } from "@/domain/order-fields";
 import { PAYMENT_TYPES } from "@/domain/payment-types";
 import {
   GUARD_OFF,
@@ -30,7 +31,9 @@ import { SETTINGS_LOCK, parsedSettingRows, selectSettingRows } from "@/server/se
 // (plan of 1.1, decision 7). No client key and no `repeat`: it changes values, it creates no
 // record, and a repeat finds nothing to change (decision 15). One audit row per save, entity
 // `settings`, entity id `settings`, `before` and `after` with the same changed keys; `before` is
-// the value in force, so a default shows as "20 → 30" (decision 8; review correction 3).
+// the value in force, so a default shows as "20 → 30" (decision 8; review correction 3). The
+// order fields are saved as one key, the whole object (05 Fields the Head sets 4: "A change writes
+// an audit row"; plan of 2.5d, decided item 3).
 
 const percent = z.number().int().min(PERCENT_MIN).max(PERCENT_MAX);
 const hours = z.number().int().min(HOURS_MIN).max(HOURS_MAX);
@@ -39,6 +42,15 @@ const amount = z
   .string()
   .refine((text) => parseSomOrZero(text) !== null)
   .transform((text) => parseSomOrZero(text)!);
+
+/**
+ * The fields the Head sets, the whole object (05 Fields the Head sets; plan of 2.5d, decided item
+ * 3), checked by isOrderFields() of src/domain/order-fields.ts. The price takes Required
+ * only until task 2.5d-b (decided item 1, Look first).
+ */
+const orderFields = z
+  .custom<OrderFields>(isOrderFields)
+  .refine((fields) => PRICE_ASK_CHOICES_NOW.includes(fields.price.ask), { path: ["price"] });
 
 /** The limits are those of src/domain/settings.ts; nothing is written here a second time. */
 export const settingsInput = z
@@ -55,6 +67,7 @@ export const settingsInput = z
     receipt_required_for_cash: z.boolean(),
     reminder_hours: hours,
     escalation_hours: hours,
+    order_fields: orderFields,
   })
   .partial()
   .strict();

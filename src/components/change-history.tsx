@@ -7,6 +7,7 @@ import {
 } from "next-intl";
 
 import { type AuditJson, type AuditObject, changedFields } from "@/domain/audit";
+import { ORDER_FIELDS, ORDER_FIELDS_DEFAULT, isOrderFields } from "@/domain/order-fields";
 import type { Formatters } from "@/i18n/format";
 import { useFormatters } from "@/i18n/use-formatters";
 
@@ -35,6 +36,7 @@ export type HistoryValueKind =
   | "percentOrOff"
   | "hours"
   | "monthDay"
+  | "orderFields"
   | { enum: Namespace };
 
 /**
@@ -99,6 +101,25 @@ function shown(value: AuditJson | null, kind: HistoryValueKind, t: Translate, f:
       const monthDay = monthDayOf(value);
       if (monthDay)
         return t(`audit.monthDay.${monthDay.month}` as MessageKey, { day: monthDay.day });
+    }
+    // The fields the Head sets (05 Fields the Head sets 4): each field set apart from its default,
+    // or "Default" (plan of 2.5d).
+    if (kind === "orderFields" && isOrderFields(value)) {
+      const set = ORDER_FIELDS.filter(
+        (field) =>
+          value[field].ask !== ORDER_FIELDS_DEFAULT[field].ask ||
+          value[field].place !== ORDER_FIELDS_DEFAULT[field].place,
+      );
+      if (set.length === 0) return t("settings.orderFields.allDefault");
+      return set
+        .map((field) =>
+          t("settings.orderFields.historyLine", {
+            field: t(`settings.orderFields.field.${field}`),
+            ask: t(`settings.orderFields.ask.${value[field].ask}`),
+            place: t(`settings.orderFields.place.${value[field].place}`),
+          }),
+        )
+        .join("; ");
     }
     if (typeof kind === "object" && typeof value === "string") {
       return textOr(t, `${kind.enum}.${value}`, "audit.unknownValue");

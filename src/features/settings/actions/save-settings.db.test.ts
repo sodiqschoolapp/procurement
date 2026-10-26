@@ -2,6 +2,7 @@ import { and, eq, sql } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ROLES } from "@/domain/permissions";
+import { ORDER_FIELDS_DEFAULT } from "@/domain/order-fields";
 import { SETTING_DEFAULTS } from "@/domain/settings";
 import { defineAction, runAction } from "@/server/action";
 import { AuthorizationError } from "@/server/authorize";
@@ -285,4 +286,69 @@ describePermissionMatrix("saveSettings", {
     if (code === "not_found" || code === "forbidden") throw new AuthorizationError(code);
     throw new Error(`Unexpected answer: ${code}`);
   },
+});
+
+describe("saveSettings: the fields the Head sets (05 Fields the Head sets; D67; plan of 2.5d)", () => {
+  beforeEach(async () => {
+    await db.delete(settings);
+  });
+
+  const changed = {
+    ...ORDER_FIELDS_DEFAULT,
+    department: { ask: "optional", place: "row" },
+    neededBy: { ask: "hidden", place: "row" },
+    brand: { ask: "required", place: "row" },
+  };
+
+  it("the Head saves the whole object with one audit row, the defaults as before (05 rule 4)", async () => {
+    setClock("2026-10-26T09:00:00Z");
+    const head = await insertUser("HEAD");
+    expect(await runAction(saveSettings, head.id, { order_fields: changed })).toMatchObject({
+      ok: true,
+    });
+    expect(await storedRows()).toEqual([{ key: "order_fields", value: changed }]);
+    expect((await readSettings(db)).order_fields).toEqual(changed);
+    const rows = await auditRowsBy(head.id);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      before: { order_fields: ORDER_FIELDS_DEFAULT },
+      after: { order_fields: changed },
+    });
+
+    // The same object again changes nothing and writes no second audit row (plan of 1.1, decision 7).
+    expect(await runAction(saveSettings, head.id, { order_fields: { ...changed } })).toMatchObject({
+      ok: true,
+    });
+    expect(await auditRowsBy(head.id)).toHaveLength(1);
+  });
+
+  it("refuses a price that is not required until 2.5d-b (decided item 1, Look first), and a wrong shape", async () => {
+    const head = await insertUser("HEAD");
+    for (const ask of ["optional", "hidden"]) {
+      expect(
+        await runAction(saveSettings, head.id, {
+          order_fields: { ...ORDER_FIELDS_DEFAULT, price: { ask, place: "row" } },
+        }),
+        ask,
+      ).toMatchObject({ ok: false, error: { code: "invalid_input" } });
+    }
+    const { comment: _comment, ...partial } = ORDER_FIELDS_DEFAULT;
+    expect(await runAction(saveSettings, head.id, { order_fields: partial })).toMatchObject({
+      ok: false,
+      error: { code: "invalid_input" },
+    });
+    expect(await storedRows()).toEqual([]);
+  });
+
+  it.each(ROLES.filter((role) => role !== "HEAD"))(
+    "%s cannot set the order fields; nothing is written (03 Permission matrix: settings, Head only)",
+    async (role) => {
+      const user = await insertUser(role);
+      expect(await runAction(saveSettings, user.id, { order_fields: changed })).toMatchObject({
+        ok: false,
+        error: { code: "forbidden" },
+      });
+      expect(await storedRows()).toEqual([]);
+    },
+  );
 });

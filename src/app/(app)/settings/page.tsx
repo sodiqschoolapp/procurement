@@ -15,6 +15,7 @@ import { requireUser } from "@/server/auth/session";
 import { AuthorizationError } from "@/server/authorize";
 
 import { FinanceStepSwitch } from "./finance-step-switch";
+import { OrderFieldsForm } from "./order-fields-form";
 import { SettingsForm } from "./settings-form";
 
 // /settings (11-screens-and-ux.md, Screens: "Settings, /settings, Head"; build-plan 1.1). The
@@ -33,6 +34,7 @@ const FIELDS: Record<string, HistoryField> = {
   reminder_hours: { label: "settings.reminderHours", kind: "hours" },
   escalation_hours: { label: "settings.escalationHours", kind: "hours" },
   finance_step: { label: "settings.financeStep.title", kind: "boolean" },
+  order_fields: { label: "settings.orderFields.title", kind: "orderFields" },
 };
 
 async function readOrNotFound<T>(read: () => Promise<T>): Promise<T> {
@@ -74,6 +76,7 @@ export default async function SettingsPage() {
         }}
       />
       <FinanceStepSwitch on={values.finance_step} waiting={waiting} />
+      <OrderFieldsForm values={values.order_fields} />
       <section className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 text-card-foreground sm:p-5">
         <h2 className="text-subheading font-semibold">{t("settings.history")}</h2>
         <ChangeHistory entries={history.rows} fields={FIELDS} />

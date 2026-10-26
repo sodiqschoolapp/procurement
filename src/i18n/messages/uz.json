@@ -608,6 +608,38 @@
       "refused": "Oʻchirilmadi: {orders} buyurtmalari hali moliyani yoki hisob-kitobni kutmoqda.",
       "switchedOff": "Moliya bosqichi oʻchirildi",
       "switchedOn": "Moliya bosqichi yoqildi"
+    },
+    "orderFields": {
+      "title": "Buyurtma maydonlari",
+      "hint": "Buyurtmaning har bir maydoni qanday so'ralishi va buyurtma varag'ida qayerda turishi, butun maktab uchun. Filial, mahsulot, turi va miqdor doim so'raladi, qatorda. O'zgarish keyingi yuborishdan kuchga kiradi.",
+      "askLabel": "{field} qanday so'raladi",
+      "placeLabel": "{field} qayerda turadi",
+      "save": "Buyurtma maydonlarini saqlash",
+      "saved": "Buyurtma maydonlari saqlandi",
+      "allDefault": "Standart",
+      "historyLine": "{field}: {ask}, {place}",
+      "field": {
+        "department": "Kim so'radi (bo'lim)",
+        "neededBy": "Qachongacha kerak",
+        "price": "Birlik narxi",
+        "paymentType": "To'lov turi",
+        "priority": "Muhimlik",
+        "brand": "Brend yoki kompaniya",
+        "requesterName": "So'ragan shaxs ismi",
+        "comment": "Izoh",
+        "referencePhoto": "Namuna rasmi",
+        "extras": "Qo'shimcha xarajatlar"
+      },
+      "ask": {
+        "required": "Majburiy",
+        "optional": "Ixtiyoriy",
+        "hidden": "Yashirin",
+        "shown": "Ko'rsatiladi"
+      },
+      "place": {
+        "row": "Qatorda",
+        "more": "\"Yana\" ostida"
+      }
     }
   },
   "admin": {
