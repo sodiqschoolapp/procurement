@@ -305,11 +305,14 @@ describe("Done when 5: CREATE_REQUESTS off (03 Manager rights)", () => {
   });
 });
 
-describe("required fields of updateDraft (05 Order fields 1, 3, 7, 10; review of the plan, correction 1)", () => {
-  it("an empty branch, subtype, department or quantity is refused as required; a comment alone saves", async () => {
+// Since D67 the department is not required to save a draft: whether it is required is decided at
+// submit, by the fields the Head sets (05 Fields the Head sets 3 and 4; plan of 2.5d, a changed
+// requirement, Look first). These tests asked it of every save before.
+describe("required fields of updateDraft (05 Order fields 1, 3, 10; review of the plan, correction 1)", () => {
+  it("an empty branch, subtype or quantity is refused as required; a comment alone saves", async () => {
     const { manager, base } = await scene();
     const draft = await draftOf(manager.id, base);
-    for (const field of ["branchId", "variantId", "departmentId", "quantity"]) {
+    for (const field of ["branchId", "variantId", "quantity"]) {
       for (const empty of ["", null]) {
         expect(
           await editDraft(manager.id, { id: draft.id, version: 1, [field]: empty }),
@@ -325,9 +328,18 @@ describe("required fields of updateDraft (05 Order fields 1, 3, 7, 10; review of
     );
   });
 
-  it("createDraft refuses each of the four when missing", async () => {
+  it("the department can be emptied; the draft has none (05 Fields the Head sets 3)", async () => {
     const { manager, base } = await scene();
-    for (const field of ["branchId", "variantId", "departmentId", "quantity"]) {
+    const draft = await draftOf(manager.id, base);
+    expect(
+      await editDraft(manager.id, { id: draft.id, version: 1, departmentId: null }),
+    ).toMatchObject({ ok: true });
+    expect(await orderRow(draft.id)).toMatchObject({ version: 2, departmentId: null });
+  });
+
+  it("createDraft refuses each of the three when missing; without a department it adds the draft", async () => {
+    const { manager, base } = await scene();
+    for (const field of ["branchId", "variantId", "quantity"]) {
       const input: Record<string, unknown> = { ...base, quantity: "" };
       if (field !== "quantity") {
         input.quantity = "1";
@@ -335,6 +347,26 @@ describe("required fields of updateDraft (05 Order fields 1, 3, 7, 10; review of
       }
       expect(await addDraft(manager.id, input), field).toMatchObject(refusedOn(field, "required"));
     }
+    const noDepartment = { branchId: base.branchId, variantId: base.variantId };
+    const added = await addDraft(manager.id, { ...noDepartment, quantity: "1" });
+    expect(added).toMatchObject({ ok: true, data: { merged: false } });
+  });
+
+  it("two adds of one subtype without a department make one draft (05 Fields the Head sets 3; Drafts 2)", async () => {
+    const { manager, base } = await scene();
+    const noDepartment = { branchId: base.branchId, variantId: base.variantId };
+    const first = await addDraft(manager.id, { ...noDepartment, quantity: "2" });
+    expect(first).toMatchObject({ ok: true, data: { merged: false } });
+    const second = await addDraft(manager.id, { ...noDepartment, quantity: "3" });
+    expect(second).toMatchObject({ ok: true, data: { merged: true } });
+    const id = (first as { data: { id: string } }).data.id;
+    expect((second as { data: { id: string } }).data.id).toBe(id);
+    expect(await orderRow(id)).toMatchObject({ departmentId: null, plannedQty: "5.000" });
+    // A draft of the same subtype with a department is another draft.
+    expect(await addDraft(manager.id, { ...base, quantity: "1" })).toMatchObject({
+      ok: true,
+      data: { merged: false },
+    });
   });
 });
 
