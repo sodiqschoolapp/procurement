@@ -8,6 +8,7 @@ import ru from "../../src/i18n/messages/ru.json" with { type: "json" };
 import uz from "../../src/i18n/messages/uz.json" with { type: "json" };
 import { connectionOptions } from "../../src/server/db/connection-options.mjs";
 import { E2E_PAGE_USERS, E2E_ROLES, e2eDatabaseUrl, serverDatabaseUrl } from "./global-setup";
+import { barAction } from "./order-bar";
 
 // Build plan 4.4 (Close on an exact match), the plan's Playwright line: the Manager ticks an
 // exact-match order; the bar shows "1 of 1 match exactly" and Close; the dialog carries 08 Closing
@@ -218,8 +219,8 @@ test("the Head reopens a Closed order with a reason on its page (06 Allowed move
 
   await signIn(page, E2E_ROLES.HEAD);
   await page.goto(`/orders/${seeded.exact.id}`);
-  const button = page.locator('[data-order-bar] [data-move="REOPEN"]');
-  await expect(button).toBeVisible();
+  // Reopen sits under "More": Copy as new is the Head's main action on a Closed order (2.9b).
+  const button = await barAction(page, '[data-move="REOPEN"]');
   expect(await scrollsSideways(page)).toBe(false);
 
   await button.click();

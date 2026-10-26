@@ -28,6 +28,7 @@ export function CopyButton({
   versionOf,
   onAnswer,
   size,
+  variant = "secondary",
   className,
 }: {
   /** The ticked orders. */
@@ -37,6 +38,8 @@ export function CopyButton({
   /** Called after every answer: null on success, else one line per refused order. */
   onAnswer: (failed: { title: string; lines: { orderId: string; line: string }[] } | null) => void;
   size?: "sm";
+  /** The order page's main action is the primary button (plan of 2.9b). */
+  variant?: "default" | "secondary";
   className?: string;
 }) {
   const t = useTranslations("orders.copy");
@@ -107,7 +110,7 @@ export function CopyButton({
   return (
     <>
       <Button
-        variant="secondary"
+        variant={variant}
         pending={pending}
         onClick={() => setAsking(true)}
         size={size}

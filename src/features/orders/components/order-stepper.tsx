@@ -5,8 +5,9 @@ import { cn } from "@/components/utils";
 import type { StepState, StepView } from "@/domain/order-steps";
 import { getFormatters } from "@/i18n/get-formatters";
 
-// The stepper of the order page (11-screens-and-ux.md, Order page layout 2: "Draft, Head,
-// Principal, Finance, Open, Closed, with the name and time of each finished step"). The steps come
+// The stepper at the top of the order page's History tab (11-screens-and-ux.md, Order page layout
+// 3: "History starts with the steps Draft, Head, Principal, Finance, Open, Closed, with the name
+// and time of each finished step"; plan of 2.9b). The steps come
 // from orderSteps() of src/domain/order-steps.ts; this only draws them. One row on a desktop, one
 // step per line on a phone. The current step is blue, as its status dot; done steps navy.
 
@@ -15,7 +16,7 @@ const LOOK: Record<StepState, { icon: IconName | null; className: string }> = {
   current: { icon: "schedule", className: "text-info font-semibold" },
   stopped: { icon: "block", className: "text-muted-foreground font-semibold" },
   todo: { icon: null, className: "text-muted-foreground" },
-  // 11 Order page layout 2: "On an order that skipped Finance the Finance step reads Skipped".
+  // 11 Order page layout 3: "On an order that skipped Finance the Finance step reads Skipped".
   skipped: { icon: "arrow_forward", className: "text-muted-foreground" },
 };
 
@@ -25,7 +26,8 @@ export async function OrderStepper({ steps }: { steps: readonly StepView[] }) {
   return (
     <section
       aria-labelledby="order-steps-title"
-      className="rounded-xl border border-border bg-card p-4 sm:p-5"
+      data-stepper
+      className="border-b border-border pb-4"
     >
       <h2 id="order-steps-title" className="sr-only">
         {t("title")}

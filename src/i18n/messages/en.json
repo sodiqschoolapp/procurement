@@ -1378,8 +1378,6 @@
       "product": "Product or service",
       "subtype": "Subtype",
       "plannedTotal": "Planned total",
-      "actualTotal": "Actual total",
-      "notBought": "Nothing bought yet",
       "urgent": "Urgent: {reason}",
       "stepper": {
         "title": "Steps",
@@ -1486,13 +1484,13 @@
         "issue": "Given straight to the department: <note>{number}</note>",
         "financeSkipped": "Finance step skipped"
       },
-      "waiting": {
-        "HEAD": "Waiting for the Head.",
-        "PRINCIPAL": "Waiting for the Principal of {branch}: {name}.",
-        "PRINCIPAL_NONE": "Waiting for the Principal of {branch}; none is assigned.",
-        "FINANCE": "Waiting for Finance of {branch}.",
-        "OWNER": "Waiting for {name}.",
-        "NOBODY": "Finished. Nobody acts on it."
+      "top": {
+        "HEAD": "{since, select, none {Waiting for Head.} other {Waiting for Head since {since}.}}",
+        "PRINCIPAL": "{since, select, none {Waiting for Principal ({name}).} other {Waiting for Principal ({name}) since {since}.}}",
+        "PRINCIPAL_NONE": "{since, select, none {Waiting for the Principal of {branch}; none is assigned.} other {Waiting for the Principal of {branch} since {since}; none is assigned.}}",
+        "FINANCE": "{since, select, none {Waiting for Finance of {branch}.} other {Waiting for Finance of {branch} since {since}.}}",
+        "OWNER": "{since, select, none {Waiting for {name}.} other {Waiting for {name} since {since}.}}",
+        "NOBODY": "{since, select, none {Finished. Nobody acts on it.} other {Finished on {since}. Nobody acts on it.}}"
       },
       "bar": {
         "title": "Actions",
@@ -1503,7 +1501,8 @@
         "failed": "Not submitted. Fix in the order list: {fields}.",
         "editInList": "Edit in the order list",
         "recordPurchase": "Record purchase",
-        "settle": "Settle"
+        "settle": "Settle",
+        "more": "More"
       },
       "changes": {
         "title": "What changed since rev {revision}",
@@ -1585,8 +1584,6 @@
         "title": "Money"
       },
       "back": "Orders",
-      "totals": "Totals",
-      "outcome": "Against the plan",
       "planActual": {
         "title": "Plan and actual",
         "sums": "The last column adds up to the difference of the total.",

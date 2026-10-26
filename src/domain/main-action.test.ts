@@ -102,10 +102,20 @@ const cases: {
   { status: "CLOSED", who: "owner", offered: ["COPY"], main: "COPY" },
   { status: "REJECTED", who: "owner", offered: ["COPY"], main: "COPY" },
   { status: "CANCELLED", who: "owner", offered: ["COPY"], main: "COPY" },
-  { status: "PENDING_PRINCIPAL", who: "another Manager of the branch", offered: ["COPY"], main: null },
+  {
+    status: "PENDING_PRINCIPAL",
+    who: "another Manager of the branch",
+    offered: ["COPY"],
+    main: null,
+  },
   { status: "CLOSED", who: "another Manager of the branch", offered: ["COPY"], main: "COPY" },
   { status: "CLOSED", who: "Principal or Finance", offered: [], main: null },
-  { status: "PENDING_HEAD", who: "Principal or Finance, not at their step", offered: [], main: null },
+  {
+    status: "PENDING_HEAD",
+    who: "Principal or Finance, not at their step",
+    offered: [],
+    main: null,
+  },
 ];
 
 describe("mainAction (11 Order page layout 4; plan of 2.9b, decided item 1, Look first)", () => {

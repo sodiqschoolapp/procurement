@@ -6,6 +6,7 @@ import pg from "pg";
 import uz from "../../src/i18n/messages/uz.json" with { type: "json" };
 import { connectionOptions } from "../../src/server/db/connection-options.mjs";
 import { E2E_MOVE_USERS, E2E_ROLES, e2eDatabaseUrl, serverDatabaseUrl } from "./global-setup";
+import { barAction } from "./order-bar";
 
 // Build plan 2.11, the Playwright lines of Done when: the owner of a submitted order sees Take
 // back and no Approve; the Head sees Approve, Send back and Reject. And S5 (15-quality-and-
@@ -146,7 +147,8 @@ test("Done when: the owner sees Take back and no Approve; the Head sees Approve,
   await signIn(page, owner);
   await page.goto(`/orders/${order.id}`);
   const ownerBar = page.locator("[data-order-bar]");
-  await expect(ownerBar.getByRole("button", { name: t.moves.button.TAKE_BACK })).toBeVisible();
+  // Take back sits under "More" (11 Order page layout 4; plan of 2.9b, decided item 1).
+  await barAction(page, ownerBar.getByRole("button", { name: t.moves.button.TAKE_BACK }));
   await expect(ownerBar.getByRole("button", { name: t.approve.button })).toHaveCount(0);
   await expect(ownerBar.getByRole("button", { name: t.moves.button.SEND_BACK })).toHaveCount(0);
   await page.context().clearCookies();
@@ -154,8 +156,10 @@ test("Done when: the owner sees Take back and no Approve; the Head sees Approve,
   await signIn(page, E2E_ROLES.HEAD);
   await page.goto(`/orders/${order.id}`);
   const headBar = page.locator("[data-order-bar]");
+  // Approve is the Head's main action; Send back and Reject open under "More" (plan of 2.9b).
+  await expect(headBar.locator('[data-main-action="APPROVE"]')).toBeVisible();
   for (const name of [t.approve.button, t.moves.button.SEND_BACK, t.moves.button.REJECT]) {
-    await expect(headBar.getByRole("button", { name, exact: true })).toBeVisible();
+    await barAction(page, headBar.getByRole("button", { name, exact: true }));
   }
   // Take back is the owner's alone (decisions 2.3 item 5).
   await expect(headBar.getByRole("button", { name: t.moves.button.TAKE_BACK })).toHaveCount(0);
@@ -171,10 +175,14 @@ test("S5: send back with a note, 100 → 80, submit again; the Head sees the sam
   // The Head sends it back with a reason and a note.
   await signIn(page, E2E_ROLES.HEAD);
   await page.goto(`/orders/${order.id}`);
-  await page
-    .locator("[data-order-bar]")
-    .getByRole("button", { name: t.moves.button.SEND_BACK, exact: true })
-    .click();
+  await (
+    await barAction(
+      page,
+      page
+        .locator("[data-order-bar]")
+        .getByRole("button", { name: t.moves.button.SEND_BACK, exact: true }),
+    )
+  ).click();
   const dialog = page.getByRole("alertdialog");
   const confirm = dialog.getByRole("button", { name: t.moves.button.SEND_BACK, exact: true });
   await dialog.locator("textarea[data-reason]").fill("abcd");

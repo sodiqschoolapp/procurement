@@ -49,6 +49,7 @@ export function RecordMoneyButton({
   orderIds,
   onAnswer,
   size,
+  variant = "secondary",
   className,
   kind: preset = "CASH_GIVEN",
   label,
@@ -60,6 +61,8 @@ export function RecordMoneyButton({
   label?: string;
   onAnswer?: (failed: Failed) => void;
   size?: "sm";
+  /** The order page's main action is the primary button (plan of 2.9b). */
+  variant?: "default" | "secondary";
   className?: string;
 }) {
   const t = useTranslations("money.record");
@@ -247,7 +250,7 @@ export function RecordMoneyButton({
   return (
     <>
       <Button
-        variant="secondary"
+        variant={variant}
         pending={pending}
         onClick={() => void open()}
         size={size}
