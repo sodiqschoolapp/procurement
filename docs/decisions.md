@@ -3181,3 +3181,7 @@ The plan's decisions as the plan review of 26.10.2026 confirmed them (correction
 4. "The photo stays on the default id": the default's own photo field is unchanged (empty: it shows the product's, plan of 1.8 decided item 8), the product keeps its photo, and the Head's photo goes to the new row only.
 5. Only the `ADD_PRODUCTS` "off" text changes, adding 03's sentence in en, ru and uz; the owner corrects ru and uz later (D12).
 
+
+Choices made during the build:
+
+- **Look first** (a test changed because a decision changed). The ten-rights test of 1.4 (`manager-rights.db.test.ts`, "each of the ten rights switched off") expected `catalog.add` allowed with `CREATE_REQUESTS` off, the rule before D66; it now reads both rights of each rule and expects `catalog.add` refused with either off. Not weakened: every case it had stays, one more answer is "forbidden". Found by CI and the permission review; a line in `.claude/rules/tests.md` asks every test that reads rights to read both.
