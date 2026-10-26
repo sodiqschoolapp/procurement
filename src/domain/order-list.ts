@@ -31,7 +31,8 @@ export function isListStatus(value: unknown): value is ListStatus {
 
 /** One order of a group as the sums read it. */
 export type GroupMember = OrderPlan & {
-  neededBy: BusinessDate;
+  /** `null`: an order without a needed-by date (05 Fields the Head sets 3). */
+  neededBy: BusinessDate | null;
   priority: "NORMAL" | "URGENT";
   /** The order's price hint, by priceHintPercent(), or null. */
   priceHint: bigint | null;
@@ -45,7 +46,11 @@ export type GroupSummary = {
   /** ordersTotals() of the orders: each order's value, then summed (08). */
   totals: OrdersTotals;
   count: number;
-  earliestNeededBy: BusinessDate;
+  /**
+   * The earliest needed-by date given, or `null` when no order has one (05 Group rows 1; 05
+   * Fields the Head sets 3; plan of 2.5d).
+   */
+  earliestNeededBy: BusinessDate | null;
   /** Any of its orders is urgent (05 Group rows 1). */
   urgent: boolean;
   /** The hint farthest from the catalog price, or null (decided item 5, Look first). */
@@ -90,10 +95,13 @@ export function groupPriceHint(hints: readonly (bigint | null)[]): bigint | null
 
 /** What a group row shows (05 Group rows 1). A group has at least one order. */
 export function groupSummary(members: readonly GroupMember[]): GroupSummary {
-  const [first] = members;
-  if (!first) throw new RangeError("A group row has at least one order");
-  let earliest = first.neededBy;
-  for (const member of members) if (member.neededBy < earliest) earliest = member.neededBy;
+  if (members.length === 0) throw new RangeError("A group row has at least one order");
+  let earliest: BusinessDate | null = null;
+  for (const member of members) {
+    if (member.neededBy !== null && (earliest === null || member.neededBy < earliest)) {
+      earliest = member.neededBy;
+    }
+  }
   return {
     quantity: sumQuantities(members.map((member) => member.quantity)),
     totals: ordersTotals(members),

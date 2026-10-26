@@ -57,7 +57,7 @@ async function order(
   });
 }
 
-type Made = Awaited<ReturnType<typeof order>>;
+type Made = Pick<Awaited<ReturnType<typeof order>>, "id" | "version" | "variantId">;
 
 function trip(scene: Scene, lines: { made: Made; give: boolean }[], userId = scene.owner.id) {
   return runOrdersAction(recordPurchase, userId, {

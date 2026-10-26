@@ -36,11 +36,13 @@ export type StatusOrderRow = {
   orderNumber: string;
   productName: string;
   subtypeName: string | null;
-  departmentName: string;
+  /** `null`: an order without a department (05 Fields the Head sets 3). */
+  departmentName: string | null;
   branchName: string;
   status: ListStatus;
   submittedOn: BusinessDate;
-  neededBy: BusinessDate;
+  /** `null`: an order without a needed-by date (05 Fields the Head sets 3). */
+  neededBy: BusinessDate | null;
   /** The order shows "Overdue" (isOverdue() on the clock's today). */
   overdue: boolean;
   /** Of the `approved` key: the day it first entered Open and its hours from the first submit. */
@@ -78,12 +80,12 @@ type Row = {
   number: string;
   product_name: string;
   subtype_name: string | null;
-  department_name: string;
+  department_name: string | null;
   branch_name: string;
   status: ListStatus;
   progress: OrderProgress;
   submitted_on: string;
-  needed_by: string;
+  needed_by: string | null;
   opened_on: string | null;
   approval_seconds: string | null;
 };
@@ -132,7 +134,9 @@ async function statusOrdersIn(
     join orders o on o.id = analytics_orders.order_id
     join product_variants v on v.id = o.variant_id
     join products pr on pr.id = v.product_id
-    join departments d on d.id = analytics_orders.department_id
+    -- Left: the rows the count above counts, an order without a department among them (05
+    -- Fields the Head sets 3; plan of 2.5d).
+    left join departments d on d.id = analytics_orders.department_id
     join branches b on b.id = analytics_orders.branch_id
     where ${where}
     order by ${key.kind === "approved" ? sql`analytics_orders.opened_on desc,` : sql``}

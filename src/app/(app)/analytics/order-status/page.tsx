@@ -167,7 +167,7 @@ export default async function AnalyticsOrderStatusPage({
                     {row.subtypeName ? `${row.productName}, ${row.subtypeName}` : row.productName}
                   </td>
                   <td className="px-4 py-3 max-sm:p-0 max-sm:text-muted-foreground">
-                    {row.departmentName}
+                    {row.departmentName ?? tOrders("noDepartment")}
                   </td>
                   <td className="px-4 py-3 max-sm:p-0">
                     <span className="flex flex-wrap items-center gap-2">
@@ -220,10 +220,12 @@ export default async function AnalyticsOrderStatusPage({
                       <span className="sm:hidden">
                         {t("principal.list.dated", {
                           label: t("principal.columns.neededBy"),
-                          date: format.date(row.neededBy),
+                          date: row.neededBy === null ? "—" : format.date(row.neededBy),
                         })}
                       </span>
-                      <span className="max-sm:hidden">{format.date(row.neededBy)}</span>
+                      <span className="max-sm:hidden">
+                        {row.neededBy === null ? "—" : format.date(row.neededBy)}
+                      </span>
                     </td>
                   )}
                 </tr>

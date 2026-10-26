@@ -548,7 +548,11 @@ function GroupRows({
               {t("rowFacts", {
                 branch: group.branchCode,
                 orders: t("orderCount", { count: group.summary.count }),
-                date: format.date(group.summary.earliestNeededBy),
+                // No order of the group has a needed-by date: a dash (05 Fields the Head sets 3).
+                date:
+                  group.summary.earliestNeededBy === null
+                    ? tOrders("none")
+                    : format.date(group.summary.earliestNeededBy),
               })}
             </span>
             <span className="mt-1 flex flex-wrap items-center gap-2 sm:hidden">
@@ -805,7 +809,7 @@ function OrderRow({
       </td>
       <td className={td}>
         {named("department")}
-        {order.departmentName}
+        {order.departmentName ?? tOrders("noDepartment")}
       </td>
       <td className={cn(td, "tabular-nums sm:text-right")}>
         {named("quantity")}
@@ -881,7 +885,7 @@ function OrderRow({
       </td>
       <td className={cn(td, "tabular-nums")}>
         {named("neededBy")}
-        {format.date(order.neededBy)}
+        {order.neededBy === null ? tOrders("none") : format.date(order.neededBy)}
       </td>
       <td className={td}>
         {named("owner")}
