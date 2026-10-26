@@ -38,6 +38,9 @@ import {
 //   check     the status check (a move: the state machine)
 //   inspect   optional: what the check needs from other tables, read under the same lock (plan
 //             of 3.5, decided item 15, Look first); its failures join the check's
+//   leave     optional: the orders the action leaves untouched although every check passed (the
+//             drafts that are not ready of Submit with nothing ticked; plan of 2.5c, decided item
+//             3, Look first); the steps below cover the kept orders only
 //   action    the order_actions row, before the write, so a row the write adds can name it
 //             (money_actions.order_action_id; plan of 4.2, decided item 8)
 //   write     the change; the wrapper raises every version and sets updated_at
@@ -51,20 +54,26 @@ import {
 export type Transaction = Parameters<Parameters<typeof Database.transaction>[0]>[0];
 
 /** The input every action on ticked orders carries: its browser-made id and the orders it saw. */
-const ORDERS_SHAPE = {
-  clientKey: z.uuid(),
-  orders: z
-    .array(z.object({ id: z.uuid(), version: z.int().min(1) }))
-    .min(1)
-    .max(ORDER_ACTION_MAX),
-};
+function ordersShape(max: number) {
+  return {
+    clientKey: z.uuid(),
+    orders: z
+      .array(z.object({ id: z.uuid(), version: z.int().min(1) }))
+      .min(1)
+      .max(max),
+  };
+}
 
 /**
  * The input schema of an action on ticked orders: the client key, 1 to 200 orders with the
- * version each was seen at, no order twice (06 rule 8), and the action's own fields.
+ * version each was seen at, no order twice (06 rule 8), and the action's own fields. `max` is
+ * larger only for an action with a `leave` step that sends at most 200 of them (plan of 2.5c).
  */
-export function ordersInput<Shape extends z.ZodRawShape>(shape: Shape) {
-  return z.object({ ...ORDERS_SHAPE, ...shape }).refine(
+export function ordersInput<Shape extends z.ZodRawShape>(
+  shape: Shape,
+  { max = ORDER_ACTION_MAX }: { max?: number } = {},
+) {
+  return z.object({ ...ordersShape(max), ...shape }).refine(
     (input) => {
       const ticked = (input as OrdersInput).orders;
       return new Set(ticked.map((order) => order.id)).size === ticked.length;
@@ -115,7 +124,14 @@ export type OrderEventExtra = { note?: string | null; payload?: Record<string, u
 export type OrdersResult = {
   actionId: string;
   orders: { id: string; status: RequestStatus }[];
+  /** The orders a `leave` step left untouched, each with why (plan of 2.5c). */
+  left?: OrderFailure[];
+  /** How many more a `leave` step held back for a later call (05 Checks at submit: 200). */
+  heldBack?: number;
 };
+
+/** What a `leave` step left untouched: each order with its cells, and the count held back. */
+export type OrdersLeft = { left: OrderFailure[]; heldBack: number };
 
 export type OrdersContext<Input> = {
   tx: Transaction;
@@ -161,6 +177,16 @@ export type OrdersActionDefinition<Input extends OrdersInput> = {
    * are named with the check's in one answer (06 rule 8).
    */
   inspect?(context: OrdersContext<Input>): Promise<readonly OrderFailure[]>;
+  /**
+   * The orders to leave untouched after every check passed (plan of 2.5c, decided item 3, Look
+   * first): the kept orders, and what was left. Throws a refusal when none is kept.
+   */
+  leave?(context: OrdersContext<Input>): Promise<{ keep: readonly LockedOrder[] } & OrdersLeft>;
+  /**
+   * The same answer of `leave` for a repeat (developer-rules.md rule 8; review of the plan of
+   * 2.5c, correction 1): rebuilt from the sent orders that the stored action did not move.
+   */
+  leftOnRepeat?(tx: Transaction, notMoved: readonly string[]): Promise<OrdersLeft>;
   /** The change. Returns what each order's event adds (a note, a payload). */
   write(context: OrdersWriteContext<Input>): Promise<ReadonlyMap<string, OrderEventExtra> | void>;
   notify?(context: OrdersContext<Input>, result: OrdersResult): Promise<void>;
@@ -405,7 +431,10 @@ export async function runOrdersAction<Input extends OrdersInput>(
       const first = await repeated(definition, tx, userId, input.clientKey);
       if (first) {
         await wallSent(tx, userId, sent, locked);
-        return first;
+        if (!definition.leftOnRepeat) return first;
+        const moved = new Set(first.orders.map((order) => order.id));
+        const notMoved = sent.map((order) => order.id).filter((id) => !moved.has(id));
+        return { ...first, ...(await definition.leftOnRepeat(tx, notMoved)) };
       }
 
       const guarded = await guardOrders(tx, userId, sent, locked, definition.permission);
@@ -425,6 +454,15 @@ export async function runOrdersAction<Input extends OrdersInput>(
       }
       failures.throwIfAny(sent);
 
+      let left: OrdersLeft | undefined;
+      let kept: readonly LockedOrder[] = visible;
+      if (definition.leave) {
+        const { keep, ...rest } = await definition.leave(checking);
+        kept = keep;
+        left = rest;
+      }
+      const keeping: OrdersContext<Input> = { ...checking, orders: kept };
+
       const at = now();
       const [action] = await tx
         .insert(orderActions)
@@ -433,17 +471,17 @@ export async function runOrdersAction<Input extends OrdersInput>(
           type: definition.type,
           actorId: userId,
           reason: definition.reason(input),
-          orderCount: locked.length,
+          orderCount: kept.length,
           createdAt: at,
         })
         .returning({ id: orderActions.id });
-      const context: OrdersWriteContext<Input> = { ...checking, actionId: action!.id };
+      const context: OrdersWriteContext<Input> = { ...keeping, actionId: action!.id };
       const extras = (await definition.write(context)) ?? new Map<string, OrderEventExtra>();
-      const raised = await raiseVersions(tx, locked, at);
+      const raised = await raiseVersions(tx, kept, at);
       const statusOf = new Map(raised.map((row) => [row.id, row.status]));
 
       await tx.insert(orderEvents).values(
-        locked.map((order) => ({
+        kept.map((order) => ({
           orderId: order.id,
           actionId: action!.id,
           type: definition.type,
@@ -459,7 +497,8 @@ export async function runOrdersAction<Input extends OrdersInput>(
 
       const result: OrdersResult = {
         actionId: action!.id,
-        orders: locked.map((order) => ({ id: order.id, status: statusOf.get(order.id)! })),
+        orders: kept.map((order) => ({ id: order.id, status: statusOf.get(order.id)! })),
+        ...left,
       };
       await definition.notify?.(context, result);
       return result;

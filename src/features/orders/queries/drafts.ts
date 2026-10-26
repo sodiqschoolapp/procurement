@@ -1,4 +1,4 @@
-import { type SQL, and, asc, count, eq, inArray } from "drizzle-orm";
+import { type SQL, and, asc, count, eq, inArray, isNull } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import * as z from "zod";
 
@@ -11,7 +11,14 @@ import {
 } from "@/domain/drafts";
 import { behindDraftWall } from "@/domain/order-moves";
 import { priceHintPercent } from "@/domain/order-totals";
-import { inactiveEntries } from "@/domain/submit-checks";
+import { type BusinessDate, businessDate } from "@/domain/business-date";
+import {
+  SUBMIT_SET_MAX,
+  type SubmitRefusal,
+  inactiveEntries,
+  shownFacts,
+  submitRefusals,
+} from "@/domain/submit-checks";
 import type { Actor } from "@/domain/permissions";
 import type { RequestStatus } from "@/domain/request-status";
 import {
@@ -35,6 +42,8 @@ import {
   units,
   users,
 } from "@/server/db/schema";
+import { now } from "@/server/clock";
+import { readSnapshot } from "@/server/read-snapshot";
 import { readSettings } from "@/server/settings";
 
 // The rows of the drafts grid (05-order-request-form.md, Order: all fields; Drafts 1 and 5;
@@ -102,7 +111,30 @@ export type DraftRow = {
   createdAt: Date;
 };
 
-export type DraftPage = { rows: DraftRow[]; page: number; pages: number; total: number };
+/**
+ * One draft of the sheet's submit set (05 Drafts 4; plan of 2.5c, decided item 1, Look first): an
+ * own Draft without a number, as the page loaded it, with the cells that stop its submit now.
+ */
+export type SubmitSetDraft = {
+  id: string;
+  version: number;
+  createdAt: Date;
+  productName: string | null;
+  subtypeName: string | null;
+  departmentName: string | null;
+  refusals: Record<string, SubmitRefusal>;
+};
+
+export type DraftPage = {
+  rows: DraftRow[];
+  page: number;
+  pages: number;
+  total: number;
+  /** Every own Draft without a number in the sheet's branch view, oldest first, at most 1 000. */
+  submitSet: SubmitSetDraft[];
+  /** The business date of the injected clock, for submitRefusals() on the sheet (rule 10). */
+  today: BusinessDate;
+};
 
 const branchInput = z.uuid().nullable().catch(null);
 const ownersInput = z.enum(["all"]).nullable().catch(null);
@@ -296,24 +328,47 @@ export async function listDrafts(
   const actor = await authorizeList(userId, "data.view");
   refuseWithoutGrid(actor);
   if (branchId) await authorize(userId, "data.view", { branchId });
-  // Loaded here, not at the top: `next build` has no DATABASE_URL (progress 0.6).
-  const { db } = await import("@/server/db/client");
-  const where = and(
-    IN_GRID,
+  const inView = and(
     branchFilter(actor, orders.branchId),
     branchId ? eq(orders.branchId, branchId) : undefined,
+  );
+  const where = and(
+    IN_GRID,
+    inView,
     actor.role === "HEAD" && everyOwner ? undefined : eq(orders.ownerId, actor.userId),
   );
-  const [totals] = await db.select({ total: count() }).from(orders).where(where);
-  const total = totals?.total ?? 0;
-  const pages = Math.max(1, Math.ceil(total / DRAFTS_PAGE_SIZE));
-  const asked = Number.isInteger(options.page) && options.page! >= 1 ? options.page! : 1;
-  const page = Math.min(asked, pages);
-  const rows = await readRows(db, where, {
-    limit: DRAFTS_PAGE_SIZE,
-    offset: (page - 1) * DRAFTS_PAGE_SIZE,
+  // The submit set (05 Drafts 4): the user's own Drafts without a number, also in the Head's
+  // "all owners" view; never a sent-back or taken-back order or another owner's draft.
+  const ownSet = and(
+    eq(orders.status, "DRAFT"),
+    isNull(orders.number),
+    inView,
+    eq(orders.ownerId, actor.userId),
+  );
+  const today = businessDate(now());
+  // One snapshot: the page, its count and the submit set from one moment (server-actions rule).
+  return readSnapshot(async (executor) => {
+    const [totals] = await executor.select({ total: count() }).from(orders).where(where);
+    const total = totals?.total ?? 0;
+    const pages = Math.max(1, Math.ceil(total / DRAFTS_PAGE_SIZE));
+    const asked = Number.isInteger(options.page) && options.page! >= 1 ? options.page! : 1;
+    const page = Math.min(asked, pages);
+    const rows = await readRows(executor, where, {
+      limit: DRAFTS_PAGE_SIZE,
+      offset: (page - 1) * DRAFTS_PAGE_SIZE,
+    });
+    const set = await readRows(executor, ownSet, { limit: SUBMIT_SET_MAX, offset: 0 });
+    const submitSet = set.map((row) => ({
+      id: row.id,
+      version: row.version,
+      createdAt: row.createdAt,
+      productName: row.productName,
+      subtypeName: row.subtypeName,
+      departmentName: row.departmentName,
+      refusals: submitRefusals(shownFacts(row), today),
+    }));
+    return { rows, page, pages, total, submitSet, today };
   });
-  return { rows, page, pages, total };
 }
 
 /**
