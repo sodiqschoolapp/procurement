@@ -46,7 +46,7 @@ The Head sets, for the whole school, how each field below is asked and where it 
 
 1. **Where.** Each field that is not hidden stands in the row or under "More"; the Head chooses.
 2. **Hidden** fields are not shown in the sheet or on new orders. A hidden payment type is the default payment type (a setting), a hidden priority is Normal, and a hidden price is the suggested price of field 11 when there is one, else none.
-3. **Left empty.** An order without a department is for no department: "Give straight to requester" cannot be used on it, and reports by department leave it out. An order without a needed-by date gets no "due soon" reminder and is not on "orders due soon". An order without a price has no planned total (`08-money-and-settlement.md`). Two drafts without a department count as the same department for the merge of Drafts 2.
+3. **Left empty.** An order without a department is for no department: "Give straight to requester" cannot be used on it, and analytics and reports by department show it under "No department", so their totals still add up. An order without a needed-by date gets no "due soon" reminder and is not on "orders due soon". An order without a price has no planned total (`08-money-and-settlement.md`). Two drafts without a department count as the same department for the merge of Drafts 2.
 4. **A change** applies from the next submit: drafts are checked against the setting as it is then, and orders already submitted keep what they hold. A change writes an audit row.
 
 ## Drafts
