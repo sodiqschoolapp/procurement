@@ -66,7 +66,7 @@ export type FinanceStepWaiting = {
  */
 export async function getFinanceStepWaiting(
   userId: string,
-  switchingOn = false,
+  switchingOn: boolean,
 ): Promise<FinanceStepWaiting[]> {
   await authorize(userId, "catalog.manage");
   const { db } = await import("@/server/db/client");

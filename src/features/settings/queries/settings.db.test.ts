@@ -58,7 +58,14 @@ describePermissionMatrix("getLastDatabaseCopy", {
 // page (06 Finance step switched off 5; plan of 4.10c, decided item 10).
 describePermissionMatrix("getFinanceStepWaiting", {
   permission: "catalog.manage",
-  run: ({ user }) => getFinanceStepWaiting(user.id),
+  run: ({ user }) => getFinanceStepWaiting(user.id, false),
+});
+
+// The list for switching on: unpriced orders waiting for Head or Principal (06 Finance step
+// switched off 8; plan of 2.5d-b; permission review of 2.5d-b, Should fix 1).
+describePermissionMatrix("getFinanceStepWaiting (switching on)", {
+  permission: "catalog.manage",
+  run: ({ user }) => getFinanceStepWaiting(user.id, true),
 });
 
 describe("getFinanceStepWaiting (06 Finance step switched off 5; plan of 4.10c, decided item 10)", () => {
@@ -79,7 +86,7 @@ describe("getFinanceStepWaiting (06 Finance step switched off 5; plan of 4.10c, 
     for (const status of ["PENDING_PRINCIPAL", "PURCHASING", "CLOSED"] as const) {
       await insertOrder({ branchId: first.id, ownerId: owner.id, status });
     }
-    const listed = await getFinanceStepWaiting(head.id);
+    const listed = await getFinanceStepWaiting(head.id, false);
     expect(new Set(listed.map((order) => order.id))).toEqual(new Set([finance.id, settlement.id]));
     expect(listed.find((order) => order.id === settlement.id)).toEqual({
       id: settlement.id,
