@@ -436,3 +436,19 @@ describe("reminders (06 rule 9; 10 Notifications)", () => {
     expect(await db.$count(notifications)).toBe(before);
   });
 });
+
+// Last in the file: the job runs once per slot, so a later clock goes after every earlier test.
+describe("due-soon reminders and the needed-by date the Head may hide (10 Notifications)", () => {
+  it("an order without a needed-by date sends no due-soon reminder; the same order needed tomorrow does (05 Fields the Head sets 3; plan of 2.5d)", async () => {
+    setClock("2031-10-10T07:00:00Z");
+    const { branch, manager } = await scene();
+    const where = { branchId: branch.id, ownerId: manager.id, status: "PENDING_HEAD" as const };
+    await insertOrder({ ...where, neededBy: null, departmentId: null });
+    await insertOrder({ ...where, neededBy: "2031-10-11" });
+    await run();
+    // One order counted: the dated one.
+    expect(await noticesOf(manager.id, "NEEDED_BY_NEAR")).toEqual([
+      expect.objectContaining({ params: { count: 1, branch: branch.code } }),
+    ]);
+  });
+});

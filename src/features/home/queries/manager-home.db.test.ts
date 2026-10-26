@@ -238,3 +238,16 @@ describe("the three large buttons (11 Interface per role: Manager; 03 Manager ri
     await expect(getManagerHome(me.id, lost.id)).rejects.toThrow(AuthorizationError);
   });
 });
+
+describe("Home: orders due soon (10 Home page per role; 05 Fields the Head sets 3; plan of 2.5d)", () => {
+  it("an order without a needed-by date is not among my orders due soon; the same order dated tomorrow is", async () => {
+    setClock(AT);
+    const { me, mine } = await scene();
+    await insertOrder({ ...mine, status: "PENDING_HEAD", neededBy: null, departmentId: null });
+    const dated = await insertOrder({ ...mine, status: "PENDING_HEAD", neededBy: "2026-10-17" });
+    const home = await getManagerHome(me.id, null);
+    expect(home.dueSoon.groups.flatMap((group) => group.orders.map((one) => one.id))).toEqual([
+      dated.id,
+    ]);
+  });
+});
