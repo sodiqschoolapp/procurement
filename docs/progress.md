@@ -2278,4 +2278,23 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - Tests set the setting with `setOrderFields()` of `tests/helpers/order-fields.ts`; `insertOrder` takes `departmentId: null` and `neededBy: null`.
 - The Playwright project `order-fields` runs after `finance-step` (its teardown): a browser test that changes a school-wide setting goes there.
 
-The next task is 2.5d-b.
+## 2.5d-b Fields the Head sets: the price (26.10.2026, pull request #174)
+
+**Built**
+- Price optional or hidden on /settings only while the Finance step is off (`priceAskAllowed()`, `saveSettings` check); the switch on refused while the price is not required or an unpriced order waits for Head or Principal (`financeStepBlockers()`), the orders listed on /settings.
+- A hidden price stores `suggestedPrice()` at submit (`withHiddenValues(..., suggested)`); Cancel without a price.
+- An order without a planned price everywhere it is worked on: `orderTotal()`/`plannedCash()` null, `ordersTotals().unpriced`, colours "unpriced", `planVsActual()` nulls, no overspend; lists, order page, home, approve dialog, purchase form, download (Excel and PDF) show "No planned price" or "N without a price".
+- Migration 0057: `analytics_orders.planned_cash` nullable; the refresh writes no outcome and no planned cash for an unpriced order. S24 as a database and a browser test.
+
+**Left out, and the task that brings it**
+- "No department" in analytics and reports, and "N without a price" beside their sums: task 2.5d-c.
+
+**Open for the owner**
+- Decided items 1 to 7 and 9 (Look first) on issue #9. A submitted order without a department cannot be copied as new (`trioOf()` of `copy-as-new.ts`, from 2.5d-a): named in the report.
+
+**What the next sessions must know**
+- For 2.5d-c: `ordersTotals().unpriced` and `analytics_orders.planned_cash IS NULL` count the unpriced orders; `usePlannedSum()` / `getPlannedSum()` word a sum with its count.
+- A planned price is `bigint | null` from the database on: never `price!`; a known-priced plan is a `PricedPlan`.
+- Tests: `insertOrder({ plannedPrice: null })`, `atPrincipal(s, { price: null })`, `bought(scene, { plannedPrice: null })`.
+
+The next task is 2.5d-c.
