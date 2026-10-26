@@ -255,9 +255,9 @@ describe("Submit with the price optional or hidden (05 Fields the Head sets 2 an
       variantId: product.defaultVariantId,
       plannedPrice: 9_000n,
     });
-    expect(
-      await runOrdersAction(submitDrafts, manager.id, await ticked([draft.id])),
-    ).toMatchObject({ ok: true });
+    expect(await runOrdersAction(submitDrafts, manager.id, await ticked([draft.id]))).toMatchObject(
+      { ok: true },
+    );
     expect(await rowOf(draft.id)).toMatchObject({
       status: "PENDING_HEAD",
       plannedPrice: 7_000n,
@@ -273,9 +273,9 @@ describe("Submit with the price optional or hidden (05 Fields the Head sets 2 an
       ownerId: manager.id,
       plannedPrice: 9_000n,
     });
-    expect(
-      await runOrdersAction(submitDrafts, manager.id, await ticked([draft.id])),
-    ).toMatchObject({ ok: true });
+    expect(await runOrdersAction(submitDrafts, manager.id, await ticked([draft.id]))).toMatchObject(
+      { ok: true },
+    );
     const row = await rowOf(draft.id);
     expect(row).toMatchObject({ status: "PENDING_HEAD", plannedPrice: null, plannedTotal: null });
     expect(row.number).not.toBeNull();

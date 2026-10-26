@@ -1203,7 +1203,11 @@ describe("an order without a planned price (08 Numbers; plan of 2.5d-b)", () => 
     expect(await outcomeOf(done.orderId)).toBeNull();
     expect(await outcomeOf(closed.orderId)).toBeNull();
     expect(await outcomeOf(priced.orderId)).toMatchObject({ planned: "50000", colour: "red" });
-    const cash = await db.execute<{ order_id: string; planned_cash: string | null; cash_needed: string }>(sql`
+    const cash = await db.execute<{
+      order_id: string;
+      planned_cash: string | null;
+      cash_needed: string;
+    }>(sql`
       select order_id, planned_cash::text as planned_cash, cash_needed::text as cash_needed
       from analytics_orders
       where order_id in (${done.orderId}, ${waiting.id}, ${priced.orderId})`);
