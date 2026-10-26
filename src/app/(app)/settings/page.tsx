@@ -51,9 +51,7 @@ export default async function SettingsPage() {
   const t = await getTranslations();
   const values = await readOrNotFound(() => getSettingsForHead(user.id));
   const lastCopy = await readOrNotFound(() => getLastDatabaseCopy(user.id));
-  const waiting = await readOrNotFound(() =>
-    getFinanceStepWaiting(user.id, !values.finance_step),
-  );
+  const waiting = await readOrNotFound(() => getFinanceStepWaiting(user.id, !values.finance_step));
   const format = await getFormatters();
   const history = await listChangeHistory(user.id, { entity: "settings", entityId: "settings" });
 

@@ -212,9 +212,7 @@ export function downloadSheet(
     ],
     noPlannedPrice: tRoot("orders.unpriced.none"),
     unpricedLine:
-      download.totals.unpriced === 0
-        ? null
-        : t("unpriced", { count: download.totals.unpriced }),
+      download.totals.unpriced === 0 ? null : t("unpriced", { count: download.totals.unpriced }),
     formatMoney: format.money,
     formatQuantity: format.quantity,
   };

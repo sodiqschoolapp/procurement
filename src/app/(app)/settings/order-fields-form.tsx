@@ -38,7 +38,9 @@ export function OrderFieldsForm({
 }) {
   const choicesOf = (field: OrderField): readonly Ask[] =>
     ASK_CHOICES[field].filter((ask) =>
-      field === "price" ? priceAskAllowed({ ...values, price: { ...values.price, ask } }, financeStep) : true,
+      field === "price"
+        ? priceAskAllowed({ ...values, price: { ...values.price, ask } }, financeStep)
+        : true,
     );
   const t = useTranslations("settings.orderFields");
   const tAll = useTranslations();

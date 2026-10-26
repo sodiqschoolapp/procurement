@@ -122,6 +122,8 @@ export function priceAskAllowed(fields: OrderFields, financeStep: boolean): bool
 /** The plan of a never-submitted draft, as a submit writes it (only the fields 05's table names). */
 export type HiddenFieldsPlan<PaymentType extends string> = {
   departmentId: string | null;
+  /** The planned price per unit, whole so'm; null for none. */
+  price: bigint | null;
   neededBy: string | null;
   paymentType: PaymentType;
   priority: "NORMAL" | "URGENT";
@@ -140,18 +142,22 @@ export type HiddenFieldsPlan<PaymentType extends string> = {
  * type (a setting), a hidden priority is Normal"): each hidden field takes its hidden value, every
  * other field keeps what the draft holds. An order with a number keeps what it holds (05 rule 4:
  * "orders already submitted keep what they hold"; plan of 2.5d, decided item 2, Look first): the
- * caller does not ask this function for it. The price is not here: it is always required until
- * task 2.5d-b.
+ * caller does not ask this function for it. A hidden price is the suggested price of 05 field 11
+ * at the moment of the submit (the reference price, else the last purchase price: `suggestedPrice()`
+ * of ./drafts.ts, which the caller passes), else none, never the price the draft held (05 rule 2;
+ * plan of 2.5d-b, decided item 8).
  */
 export function withHiddenValues<PaymentType extends string>(
   fields: OrderFields,
   plan: Omit<HiddenFieldsPlan<PaymentType>, "keepExtras">,
   defaultPaymentType: PaymentType,
+  suggested: bigint | null,
 ): HiddenFieldsPlan<PaymentType> {
   const hidden = (field: OrderField) => isHidden(fields, field);
   const priorityHidden = hidden("priority");
   return {
     departmentId: hidden("department") ? null : plan.departmentId,
+    price: hidden("price") ? suggested : plan.price,
     neededBy: hidden("neededBy") ? null : plan.neededBy,
     paymentType: hidden("paymentType") ? defaultPaymentType : plan.paymentType,
     priority: priorityHidden ? "NORMAL" : plan.priority,

@@ -182,9 +182,7 @@ async function PlanActualTable({
       planned: quantity(table.quantity.planned),
       actual: quantity(table.quantity.actual),
       difference: quantityDifference,
-      effect: effects
-        ? effect(effects.quantity, colours.number.colour !== "grey")
-        : t("none"),
+      effect: effects ? effect(effects.quantity, colours.number.colour !== "grey") : t("none"),
     },
     {
       key: "unitPrice",

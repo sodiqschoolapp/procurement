@@ -290,7 +290,10 @@ export function plannedCash(plan: OrderPlan): bigint | null {
  */
 export function plannedCashOf(paymentType: PaymentType, plannedTotal: bigint): bigint;
 export function plannedCashOf(paymentType: PaymentType, plannedTotal: bigint | null): bigint | null;
-export function plannedCashOf(paymentType: PaymentType, plannedTotal: bigint | null): bigint | null {
+export function plannedCashOf(
+  paymentType: PaymentType,
+  plannedTotal: bigint | null,
+): bigint | null {
   if (plannedTotal === null) return null;
   return paymentType === "CASH" ? plannedTotal : 0n;
 }

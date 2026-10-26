@@ -105,10 +105,10 @@ function WaitingCard({
             className="text-heading font-semibold whitespace-nowrap tabular-nums"
           >
             {plannedSum(
-                group.summary.totals.grand,
-                group.summary.totals.unpriced,
-                group.orders.length,
-              )}
+              group.summary.totals.grand,
+              group.summary.totals.unpriced,
+              group.orders.length,
+            )}
           </span>
         </div>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
