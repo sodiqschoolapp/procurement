@@ -37,7 +37,7 @@ const invented = () => randomUUID().slice(0, 8);
 /** Opens /settings and waits for the form to run in the browser: Save is enabled then. */
 async function openSettings(page: Page): Promise<void> {
   await page.goto("/settings");
-  await expect(page.getByRole("button", { name: uz.settings.save })).toBeEnabled();
+  await expect(page.getByRole("button", { name: uz.settings.save, exact: true })).toBeEnabled();
 }
 
 test("the Head sets the school name and sees it in the menu and the history (Done when)", async ({
@@ -56,11 +56,11 @@ test("the Head sets the school name and sees it in the menu and the history (Don
     .click();
   await expect(page).toHaveURL(/\/settings$/);
   await expect(page.getByRole("heading", { name: uz.settings.title, level: 1 })).toBeVisible();
-  await expect(page.getByRole("button", { name: uz.settings.save })).toBeEnabled();
+  await expect(page.getByRole("button", { name: uz.settings.save, exact: true })).toBeEnabled();
 
   const name = `Sinov maktabi ${invented()}`;
   await page.getByLabel(uz.settings.schoolName).fill(name);
-  await page.getByRole("button", { name: uz.settings.save }).click();
+  await page.getByRole("button", { name: uz.settings.save, exact: true }).click();
 
   await expect(page.getByText(uz.settings.saved)).toBeVisible();
   await expect(page.locator("aside").getByText(name, { exact: true })).toBeVisible();
@@ -82,7 +82,7 @@ test("the Head changes the reminder hours at phone width (rules 4, 13)", async (
   const before = await field.inputValue();
   const hours = before === "36" ? "30" : "36";
   await field.fill(hours);
-  const save = page.getByRole("button", { name: uz.settings.save });
+  const save = page.getByRole("button", { name: uz.settings.save, exact: true });
   // A 44 px touch target at phone width (rule 13).
   expect((await save.boundingBox())!.height).toBeGreaterThanOrEqual(44);
   await save.click();
@@ -103,7 +103,7 @@ test("a value out of range is refused with a line under its field, and nothing i
   const field = page.getByLabel(uz.settings.escalationHours);
   const before = await field.inputValue();
   await field.fill("721");
-  await page.getByRole("button", { name: uz.settings.save }).click();
+  await page.getByRole("button", { name: uz.settings.save, exact: true }).click();
 
   await expect(page.getByText(uz.errors.field.tooLarge)).toBeVisible();
   await openSettings(page);
@@ -129,7 +129,7 @@ test("the Head sets the overspend guard amount beside the percent; a negative on
     const before = await field.inputValue();
     const amount = before === shownAmount("250000") ? "150000" : "250000";
     await field.fill(amount);
-    await page.getByRole("button", { name: uz.settings.save }).click();
+    await page.getByRole("button", { name: uz.settings.save, exact: true }).click();
     await expect(page.getByText(uz.settings.saved)).toBeVisible();
 
     await openSettings(page);
@@ -139,7 +139,7 @@ test("the Head sets the overspend guard amount beside the percent; a negative on
 
     // 08, Overspend guard: whole so'm, 0 or more; "-5" is refused under its field, nothing saved.
     await page.getByLabel(uz.settings.overspendGuardMinAmount).fill("-5");
-    await page.getByRole("button", { name: uz.settings.save }).click();
+    await page.getByRole("button", { name: uz.settings.save, exact: true }).click();
     await expect(page.getByText(uz.errors.field.wrongFormat)).toBeVisible();
     await openSettings(page);
     await expect(page.getByLabel(uz.settings.overspendGuardMinAmount)).toHaveValue(
