@@ -3170,3 +3170,14 @@ Choices made during the build:
 - The subtype action's result carries the written rows inside the transaction for the history step (`written`); `subtypeAddShown()` strips them before the browser sees the result.
 - The S22 database test checks the picker's answer through `searchDraftProducts`: the marker and "black" have no suggested price; "blue" keeps its 3 000 and its 40 in stock.
 - The switch notice `MANAGER_RIGHT_SWITCHED` names the tenth right in its `select`.
+
+### 1.12c The Head's first subtype names the existing items; adding needs both rights (26.10.2026)
+
+The plan's decisions as the plan review of 26.10.2026 confirmed them (corrections 1 and 2 applied). The Look first items come first.
+
+1. **Look first** (permission matrix). A global rule may carry a second Manager right, `alsoRight`, read in `decideGlobal()` beside `right` for Managers only, so `decide()`, `decideList()` and `actorMay()` read it in one place (developer-rules rule 4). `catalog.add` has `right: ADD_PRODUCTS, alsoRight: CREATE_REQUESTS` (03 Manager rights, the ADD_PRODUCTS row; 04 rule 8; D66). This replaces the part of 1.12b decided item 1 under which the action did not ask `CREATE_REQUESTS`. The oracle carries `alsoRight` too, and `describePermissionMatrix` writes its switched-off case from it (plan review, correction 2).
+2. **Look first** (no new build of part 1). The Head's first subtype naming the existing items was built in 1.12b (its Build 6, a Look first build decision) and is not rebuilt; the 1.8 and 1.9 tests of the old conversion were changed there with the reason. This task extends the 04 rule 1 database test (the photo, the default's price row, "black" with its own price row and no stock; plan review, correction 1) and rewrites the comments that still stated the old rule (`subtypes.ts`, `manager-adds.ts`, `permissions.ts`). It replaces, without editing their sections: 1.8 item 1, 1.8 item 2's refusal of a sent price on the first subtype, and 1.12b build item 2's "the Head's own subtype page keeps 1.8's behaviour".
+3. "Sees no Add line" is proved by the unit test of `actorMay("catalog.add")`, the line's only gate on the grid and the phone card; no new Playwright test: with `CREATE_REQUESTS` off the drafts are not editable (`draftRowRights()`, `request.edit`), so no product search is drawn and a browser test could not fail without the change.
+4. "The photo stays on the default id": the default's own photo field is unchanged (empty: it shows the product's, plan of 1.8 decided item 8), the product keeps its photo, and the Head's photo goes to the new row only.
+5. Only the `ADD_PRODUCTS` "off" text changes, adding 03's sentence in en, ru and uz; the owner corrects ru and uz later (D12).
+
