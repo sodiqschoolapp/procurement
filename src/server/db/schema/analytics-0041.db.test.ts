@@ -92,12 +92,27 @@ describe("analytics_orders", () => {
     });
   });
 
-  it.each([
-    ["submittedOn", "submitted_on"],
-    ["neededBy", "needed_by"],
-  ] as const)("refuses no %s, on insert and on update", async (field, column) => {
-    expect(await refusalOf(insert({ [field]: null }))).toMatchObject({ code: NOT_NULL, column });
-    expect(await updated(`${column} = null`)).toMatchObject({ code: NOT_NULL, column });
+  it("refuses no submitted_on, on insert and on update", async () => {
+    expect(await refusalOf(insert({ submittedOn: null }))).toMatchObject({
+      code: NOT_NULL,
+      column: "submitted_on",
+    });
+    expect(await updated("submitted_on = null")).toMatchObject({
+      code: NOT_NULL,
+      column: "submitted_on",
+    });
+  });
+
+  // Since 0056 an order may have no needed-by date and no department (05 Fields the Head sets 3;
+  // D67, a changed requirement: this test refused an empty needed_by before; plan of 2.5d).
+  it("takes a row without a needed-by date or a department", async () => {
+    await insert({ neededBy: null });
+    await clear();
+    await insert();
+    await db.execute(
+      sql`update analytics_orders set department_id = null where order_id = ${ids.order}`,
+    );
+    await clear();
   });
 
   it("refuses a second row of the same order", async () => {
