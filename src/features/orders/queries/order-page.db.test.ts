@@ -36,6 +36,7 @@ import {
   inventedNumber,
 } from "../../../../tests/helpers/orders";
 import { insertUser } from "../../../../tests/helpers/users";
+import { enteredCurrentStatusAt } from "../order-sql";
 import { getOrderPage } from "./order-page";
 
 // The order page (build plan 2.9): 11-screens-and-ux.md (Order page layout 1 to 4),
@@ -401,6 +402,128 @@ describe("the waiting line's Principal (03 rules 2 and 3; decided items 5, 14)",
       status: "PENDING_PRINCIPAL",
     });
     expect((await getOrderPage(manager.id, order.id))!.principalName).toBeNull();
+  });
+});
+
+describe("who acts next and since when (11 Order page layout 1; plan of 2.9b, decided items 2 and 4, Look first)", () => {
+  /** The moment the stuck filter and the reminders read for the order: its SQL twin. */
+  async function enteredAt(orderId: string): Promise<Date | null> {
+    const [row] = await db
+      .select({
+        at: sql<Date | null>`${enteredCurrentStatusAt}`.mapWith(orderEvents.createdAt),
+      })
+      .from(orders)
+      .where(eq(orders.id, orderId));
+    return row!.at;
+  }
+
+  it("Waiting for Principal: since the Head's approval, the Principal named, the stuck filter's own moment", async () => {
+    const { branch, manager } = await scene();
+    const head = await insertUser("HEAD");
+    await insertUser("PRINCIPAL", { branches: [branch.id], fullName: "Otabek Nazarov" });
+    const order = await insertOrder({
+      branchId: branch.id,
+      ownerId: manager.id,
+      status: "PENDING_PRINCIPAL",
+    });
+    await act(manager.id, "SUBMIT", [{ id: order.id, from: "DRAFT", to: "PENDING_HEAD" }]);
+    const approved = await act(head.id, "APPROVE", [
+      { id: order.id, from: "PENDING_HEAD", to: "PENDING_PRINCIPAL" },
+    ]);
+    const page = await getOrderPage(manager.id, order.id);
+    expect(page!.waitingFor).toBe("PRINCIPAL");
+    expect(page!.principalName).toBe("Otabek Nazarov");
+    expect(page!.waitingSince).toEqual(approved.at);
+    expect(await enteredAt(order.id)).toEqual(approved.at);
+    // Another branch's reader still gets nothing (03 rule 1).
+    const stranger = await insertUser("MANAGER", { branches: [(await insertBranch()).id] });
+    expect(await getOrderPage(stranger.id, order.id)).toBeNull();
+  });
+
+  it("a purchase, a buying action, a money action and a move to another Manager do not reset it", async () => {
+    const { branch, manager } = await scene();
+    const finance = await insertUser("FINANCE", { branches: [branch.id] });
+    const other = await insertUser("MANAGER", { branches: [branch.id] });
+    const order = await insertOrder({
+      branchId: branch.id,
+      ownerId: manager.id,
+      status: "PURCHASING",
+    });
+    await act(manager.id, "SUBMIT", [{ id: order.id, from: "DRAFT", to: "PENDING_HEAD" }]);
+    const opened = await act(finance.id, "APPROVE", [
+      { id: order.id, from: "PENDING_FINANCE", to: "PURCHASING" },
+    ]);
+    for (const type of ["RECORD_PURCHASE", "FINISH_ORDER", "RECORD_MONEY", "MOVE_OWNER"] as const) {
+      await act(type === "RECORD_MONEY" ? finance.id : manager.id, type as OrderAction, [
+        { id: order.id, from: "PURCHASING", to: "PURCHASING" },
+      ]);
+    }
+    const page = await getOrderPage(other.id, order.id);
+    expect(page!.waitingFor).toBe("OWNER");
+    expect(page!.waitingSince).toEqual(opened.at);
+    expect(await enteredAt(order.id)).toEqual(opened.at);
+  });
+
+  it("a reopened order counts from the Reopen, a sent-back one from the Send back", async () => {
+    const { branch, manager } = await scene();
+    const head = await insertUser("HEAD");
+    const reopened = await insertOrder({
+      branchId: branch.id,
+      ownerId: manager.id,
+      status: "PURCHASING",
+    });
+    await act(head.id, "APPROVE", [{ id: reopened.id, from: "PENDING_FINANCE", to: "PURCHASING" }]);
+    await act(manager.id, "CLOSE_EXACT", [{ id: reopened.id, from: "PURCHASING", to: "CLOSED" }]);
+    const reopen = await act(
+      head.id,
+      "REOPEN",
+      [{ id: reopened.id, from: "CLOSED", to: "PURCHASING" }],
+      {
+        reason: "A wrong price",
+      },
+    );
+    expect((await getOrderPage(manager.id, reopened.id))!.waitingSince).toEqual(reopen.at);
+
+    const returned = await insertOrder({
+      branchId: branch.id,
+      ownerId: manager.id,
+      status: "RETURNED",
+    });
+    await act(manager.id, "SUBMIT", [{ id: returned.id, from: "DRAFT", to: "PENDING_HEAD" }]);
+    const sentBack = await act(
+      head.id,
+      "SEND_BACK",
+      [{ id: returned.id, from: "PENDING_HEAD", to: "RETURNED" }],
+      {
+        reason: "Fix the price",
+      },
+    );
+    const page = await getOrderPage(manager.id, returned.id);
+    expect(page!.waitingFor).toBe("OWNER");
+    expect(page!.waitingSince).toEqual(sentBack.at);
+  });
+
+  it("a draft never submitted has no date", async () => {
+    const { branch, manager } = await scene();
+    const draft = await insertOrder({ branchId: branch.id, ownerId: manager.id });
+    const page = await getOrderPage(manager.id, draft.id);
+    expect(page!.waitingFor).toBe("OWNER");
+    expect(page!.waitingSince).toBeNull();
+  });
+
+  it("a finished order that skipped Finance waits for the Head when its owner may not close alone (06 Finance step switched off 3)", async () => {
+    const { branch, manager } = await scene();
+    const order = await insertOrder({
+      branchId: branch.id,
+      ownerId: manager.id,
+      status: "PURCHASING",
+      progress: "NOT_BOUGHT",
+      finishReason: "Nothing in the shops",
+    });
+    await db.update(orders).set({ skippedFinance: true }).where(eq(orders.id, order.id));
+    expect((await getOrderPage(manager.id, order.id))!.waitingFor).toBe("OWNER");
+    await setManagerRight(manager.id, "CLOSE_ALONE", false);
+    expect((await getOrderPage(manager.id, order.id))!.waitingFor).toBe("HEAD");
   });
 });
 
