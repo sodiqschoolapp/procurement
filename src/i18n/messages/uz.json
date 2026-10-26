@@ -1378,8 +1378,6 @@
       "product": "Mahsulot yoki xizmat",
       "subtype": "Turi",
       "plannedTotal": "Rejadagi summa",
-      "actualTotal": "Haqiqiy summa",
-      "notBought": "Hali hech narsa olinmagan",
       "urgent": "Shoshilinch: {reason}",
       "stepper": {
         "title": "Bosqichlar",
@@ -1486,13 +1484,13 @@
         "issue": "Toʻgʻridan-toʻgʻri boʻlimga berildi: <note>{number}</note>",
         "financeSkipped": "Moliya bosqichi oʻtkazib yuborildi"
       },
-      "waiting": {
-        "HEAD": "Rahbarni kutmoqda.",
-        "PRINCIPAL": "{branch} filiali direktorini kutmoqda: {name}.",
-        "PRINCIPAL_NONE": "{branch} filiali direktorini kutmoqda; direktor tayinlanmagan.",
-        "FINANCE": "{branch} filiali moliya xodimini kutmoqda.",
-        "OWNER": "Kutmoqda: {name}.",
-        "NOBODY": "Tugallangan. Endi hech kim harakat qilmaydi."
+      "top": {
+        "HEAD": "{since, select, none {Rahbarni kutmoqda.} other {{since} dan beri rahbarni kutmoqda.}}",
+        "PRINCIPAL": "{since, select, none {Direktorni kutmoqda ({name}).} other {{since} dan beri direktorni kutmoqda ({name}).}}",
+        "PRINCIPAL_NONE": "{since, select, none {{branch} filiali direktorini kutmoqda; direktor tayinlanmagan.} other {{since} dan beri {branch} filiali direktorini kutmoqda; direktor tayinlanmagan.}}",
+        "FINANCE": "{since, select, none {{branch} filiali moliya xodimini kutmoqda.} other {{since} dan beri {branch} filiali moliya xodimini kutmoqda.}}",
+        "OWNER": "{since, select, none {Kutmoqda: {name}.} other {{since} dan beri kutmoqda: {name}.}}",
+        "NOBODY": "{since, select, none {Tugallangan. Endi hech kim harakat qilmaydi.} other {{since} da tugallangan. Endi hech kim harakat qilmaydi.}}"
       },
       "bar": {
         "title": "Amallar",
@@ -1503,7 +1501,8 @@
         "failed": "Yuborilmadi. Buyurtmalar roʻyxatida tuzating: {fields}.",
         "editInList": "Buyurtmalar roʻyxatida tahrirlash",
         "recordPurchase": "Xaridni yozish",
-        "settle": "Hisob-kitob"
+        "settle": "Hisob-kitob",
+        "more": "Yana"
       },
       "changes": {
         "title": "{revision}-tahrirdan beri nima oʻzgardi",
@@ -1585,8 +1584,6 @@
         "title": "Pul"
       },
       "back": "Buyurtmalar",
-      "totals": "Summalar",
-      "outcome": "Rejaga nisbatan",
       "planActual": {
         "title": "Reja va haqiqat",
         "sums": "Oxirgi ustun jamidagi farqni beradi.",

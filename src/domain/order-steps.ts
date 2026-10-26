@@ -145,8 +145,29 @@ export function skippedFinanceBy(event: Pick<StepEvent, "type" | "from" | "to">)
 /** Who acts next (06 Statuses): a role of the order's branch, the owner, or nobody. */
 export type WaitingFor = "HEAD" | "PRINCIPAL" | "FINANCE" | "OWNER" | "NOBODY";
 
-/** The "Who acts next" column of 06 Statuses (decided item 5, Look first). */
-export function waitingFor(status: RequestStatus): WaitingFor {
+/** The facts of an Open order that can change who acts on it (plan of 2.9b, decided item 4). */
+export type OpenOrderFacts = {
+  skippedFinance: boolean;
+  progress: OrderProgress;
+  /** The owner holds the right `CLOSE_ALONE` (or is the Head). */
+  ownerClosesAlone: boolean;
+};
+
+/**
+ * The "Who acts next" column of 06 Statuses (decided item 5, Look first). With `open`, one case
+ * differs (plan of 2.9b, decided item 4, Look first): an Open order that skipped Finance, with its
+ * buying finished and an owner who may not close alone, waits for the Head, who alone closes it
+ * (06 Finance step switched off 3). Without `open` the answer is the column as written.
+ */
+export function waitingFor(status: RequestStatus, open?: OpenOrderFacts): WaitingFor {
+  if (
+    status === "PURCHASING" &&
+    open?.skippedFinance &&
+    open.progress !== "OPEN" &&
+    !open.ownerClosesAlone
+  ) {
+    return "HEAD";
+  }
   switch (status) {
     case "PENDING_HEAD":
       return "HEAD";

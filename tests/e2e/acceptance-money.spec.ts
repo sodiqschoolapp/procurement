@@ -35,6 +35,7 @@ import {
   withGuardLock,
 } from "./acceptance-fixtures";
 import { shownAmount } from "./shown-amount";
+import { barAction } from "./order-bar";
 
 // Build plan 9.1b: the acceptance scenarios of phase 4 (16-build-order.md), money and settlement,
 // clicked through as each role (15-quality-and-acceptance.md, Test layers: Full flow). Both
@@ -275,7 +276,7 @@ test("S13: 520 000 given, nothing bought: settlement asks for 520 000 back; clos
   // Not bought, with its reason (07 Order progress), then Send to settlement.
   await as(page, scene.manager);
   await page.goto(`/orders/${order.id}`);
-  await page.locator('[data-order-bar] [data-move="MARK_NOT_BOUGHT"]').click();
+  await (await barAction(page, '[data-move="MARK_NOT_BOUGHT"]')).click();
   const dialog = page.getByRole("alertdialog");
   await expect(dialog).toBeVisible();
   await dialog.locator("textarea[data-reason]").fill("Yetkazib beruvchida qolmadi");

@@ -1378,8 +1378,6 @@
       "product": "Товар или услуга",
       "subtype": "Подвид",
       "plannedTotal": "Плановая сумма",
-      "actualTotal": "Фактическая сумма",
-      "notBought": "Ещё ничего не куплено",
       "urgent": "Срочно: {reason}",
       "stepper": {
         "title": "Шаги",
@@ -1486,13 +1484,13 @@
         "issue": "Сразу выдано заказчику: <note>{number}</note>",
         "financeSkipped": "Шаг финансов пропущен"
       },
-      "waiting": {
-        "HEAD": "Ждёт руководителя.",
-        "PRINCIPAL": "Ждёт директора филиала {branch}: {name}.",
-        "PRINCIPAL_NONE": "Ждёт директора филиала {branch}; директор не назначен.",
-        "FINANCE": "Ждёт финансы филиала {branch}.",
-        "OWNER": "Ждёт: {name}.",
-        "NOBODY": "Завершён. Действий больше нет."
+      "top": {
+        "HEAD": "{since, select, none {Ждёт руководителя.} other {Ждёт руководителя с {since}.}}",
+        "PRINCIPAL": "{since, select, none {Ждёт директора ({name}).} other {Ждёт директора ({name}) с {since}.}}",
+        "PRINCIPAL_NONE": "{since, select, none {Ждёт директора филиала {branch}; директор не назначен.} other {Ждёт директора филиала {branch} с {since}; директор не назначен.}}",
+        "FINANCE": "{since, select, none {Ждёт финансы филиала {branch}.} other {Ждёт финансы филиала {branch} с {since}.}}",
+        "OWNER": "{since, select, none {Ждёт: {name}.} other {Ждёт с {since}: {name}.}}",
+        "NOBODY": "{since, select, none {Завершён. Действий больше нет.} other {Завершён {since}. Действий больше нет.}}"
       },
       "bar": {
         "title": "Действия",
@@ -1503,7 +1501,8 @@
         "failed": "Не отправлен. Исправьте в списке заказов: {fields}.",
         "editInList": "Править в списке заказов",
         "recordPurchase": "Записать покупку",
-        "settle": "Расчёт"
+        "settle": "Расчёт",
+        "more": "Ещё"
       },
       "changes": {
         "title": "Что изменилось с ред. {revision}",
@@ -1585,8 +1584,6 @@
         "title": "Деньги"
       },
       "back": "Заказы",
-      "totals": "Суммы",
-      "outcome": "По сравнению с планом",
       "planActual": {
         "title": "План и факт",
         "sums": "Последний столбец складывается в разницу итога.",

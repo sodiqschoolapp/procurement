@@ -6,13 +6,17 @@ import pg from "pg";
 import en from "../../src/i18n/messages/en.json" with { type: "json" };
 import { connectionOptions } from "../../src/server/db/connection-options.mjs";
 import { E2E_PAGE_USERS, e2eDatabaseUrl, serverDatabaseUrl } from "./global-setup";
+import { openMore } from "./order-bar";
 
 // Build-plan 2.9, Done when: "on a submitted order the stepper stands at Head, History shows the
 // submit with name and time, and a Finance user sees the waiting line". 11-screens-and-ux.md
 // (Order page layout 1 to 4; rules 6 and 13); 06-approval-workflow.md rule 11; plan of 2.9,
 // decided items 4 and 5 (Look first). The draft is written straight into the table and submitted
 // with the page's own Submit, so its event, actor and time are the real action's. Each project has
-// its own Manager and Finance user (E2E_PAGE_USERS).
+// its own Manager and Finance user (E2E_PAGE_USERS). Changed in 2.9b (D65, a changed requirement;
+// plan of 2.9b, decided item 6, Look first): the waiting line is the top line every reader sees,
+// with its date; the stepper heads the History tab; the owner's moves sit under "More"; a reader
+// with nothing to do has no bar.
 
 const p = en.orders.page;
 
@@ -103,6 +107,8 @@ function scrollsSideways(page: Page) {
 }
 
 const TIME = /\d{2}\.\d{2}\.\d{4} \d{2}:\d{2}/;
+/** The top line of an order Waiting for Head (11 Order page layout 1; plan of 2.9b). */
+const SINCE_HEAD = /^Waiting for Head since \d{2}\.\d{2}\.\d{4}\.$/;
 
 test("Done when: the submitted order's stepper stands at Head, History shows the submit, Finance sees the waiting line (11 Order page layout; 06 rule 11)", async ({
   page,
@@ -116,7 +122,10 @@ test("Done when: the submitted order's stepper stands at Head, History shows the
   await signIn(owner, people.manager);
   await owner.goto(`/orders/${draftId}`);
   await expect(owner.locator("[data-order-number]")).toHaveText(p.noNumber);
-  await expect(owner.locator("[data-waiting]")).toHaveCount(0);
+  // A draft never submitted: the top line names its owner, with no date (plan of 2.9b, item 2).
+  await expect(owner.locator("[data-top-line]")).toHaveText(
+    `Waiting for ${people.manager.fullName}.`,
+  );
   await owner.locator("[data-order-bar]").getByRole("button", { name: p.bar.submit }).click();
   const dialog = owner.getByRole("alertdialog");
   await expect(dialog).toContainText(p.bar.submitTitle);
@@ -126,32 +135,39 @@ test("Done when: the submitted order's stepper stands at Head, History shows the
   await expect(owner.locator("[data-order-number]")).toHaveText(/^EA-\d{2}-\d{4,}$/);
   const number = (await owner.locator("[data-order-number]").textContent())!;
 
-  // The stepper stands at Head; Draft is finished with the owner's name and the time.
+  await expect(owner.locator("[data-top-line]")).toHaveText(SINCE_HEAD);
+  // The stepper is not on Details any more (11 Order page layout 3; plan of 2.9b).
+  await expect(owner.locator("[data-stepper]")).toHaveCount(0);
+
+  // History starts with the stepper: it stands at Head; Draft is finished with the owner's name
+  // and the time. Below it, the submit with the name and the time.
+  await owner.getByRole("link", { name: p.tabs.history }).click();
+  await expect(owner).toHaveURL(new RegExp(`/orders/${draftId}\\?tab=history$`));
   await expect(owner.locator('li[data-step="HEAD"]')).toHaveAttribute("data-state", "current");
   const draftStep = owner.locator('li[data-step="DRAFT"]');
   await expect(draftStep).toHaveAttribute("data-state", "done");
   await expect(draftStep.locator("[data-step-by]")).toContainText(people.manager.fullName);
   await expect(draftStep.locator("[data-step-by]")).toContainText(TIME);
-
-  // History shows the submit with the name and the time.
-  await owner.getByRole("link", { name: p.tabs.history }).click();
-  await expect(owner).toHaveURL(new RegExp(`/orders/${draftId}\\?tab=history$`));
   const submitted = owner.locator('li[data-event="SUBMIT"]');
   await expect(submitted).toContainText(`${p.history.moves.SUBMIT} by ${people.manager.fullName}`);
   await expect(submitted.locator("time")).toHaveText(TIME);
   expect(await scrollsSideways(owner)).toBe(false);
 
   // Changed in 2.11, which gives the owner's moves their buttons: at Waiting for Head the owner
-  // has Take back and Cancel, and so no waiting line (2.9 decided item 4). Changed in 2.13: Copy
-  // as new too, since the owner may add drafts in the branch (2.13 decided item 1).
+  // has Take back and Cancel. Changed in 2.13: Copy as new too, since the owner may add drafts in
+  // the branch (2.13 decided item 1). Changed in 2.9b: none of them is a main action, so the bar
+  // shows "More" alone, and the three open under it (plan of 2.9b, decided item 1).
   const ownerBar = owner.locator("[data-order-bar]");
-  await expect(ownerBar.getByRole("button")).toHaveCount(3);
+  await expect(ownerBar.locator("[data-main-action]")).toHaveCount(0);
+  await expect(ownerBar.getByRole("button")).toHaveCount(1);
+  await openMore(owner);
+  await expect(ownerBar.getByRole("button")).toHaveCount(4);
   await expect(ownerBar.locator("[data-copy-as-new]")).toBeVisible();
   await expect(
     ownerBar.getByRole("button", { name: en.orders.moves.button.TAKE_BACK }),
   ).toBeVisible();
   await expect(ownerBar.getByRole("button", { name: en.orders.moves.button.CANCEL })).toBeVisible();
-  await expect(ownerBar.locator("[data-waiting]")).toHaveCount(0);
+  await expect(owner.locator("[data-top-line]")).toHaveText(SINCE_HEAD);
 
   // The order number in the list's opened group links to the page (progress 2.8, "For 2.9").
   await owner.goto(`/orders?status=PENDING_HEAD&owner=${seeded.ownerId}`);
@@ -162,13 +178,13 @@ test("Done when: the submitted order's stepper stands at Head, History shows the
   await expect(owner).toHaveURL(new RegExp(`/orders/${draftId}$`));
   await expect(owner.locator("[data-order-number]")).toHaveText(number);
 
-  // A Finance user of the branch has no move on it, so the bar says who it waits for.
+  // A Finance user of the branch has no move on it: no bar; the top line says who it waits for.
   await page.context().clearCookies();
   const finance = page;
   await signIn(finance, people.finance);
   await finance.goto(`/orders/${draftId}`);
   await expect(finance.locator("[data-order-number]")).toHaveText(number);
-  await expect(finance.locator("[data-waiting]")).toHaveText(p.waiting.HEAD);
-  await expect(finance.locator("[data-order-bar]").getByRole("button")).toHaveCount(0);
+  await expect(finance.locator("[data-top-line]")).toHaveText(SINCE_HEAD);
+  await expect(finance.locator("[data-order-bar]")).toHaveCount(0);
   expect(await scrollsSideways(finance)).toBe(false);
 });

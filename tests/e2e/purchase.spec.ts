@@ -7,6 +7,7 @@ import en from "../../src/i18n/messages/en.json" with { type: "json" };
 import { connectionOptions } from "../../src/server/db/connection-options.mjs";
 import { E2E_PURCHASE_USERS, e2eDatabaseUrl, serverDatabaseUrl } from "./global-setup";
 import { shownAmount } from "./shown-amount";
+import { barAction } from "./order-bar";
 
 // Build plans 3.3 and 3.4, the purchase form (07-purchasing.md, Purchase record: "Date bought: Default
 // today", "Payment type used: Default from the order", the comment rule, "Same as planned";
@@ -319,7 +320,7 @@ test("the Purchases tab lists the record; Finish order with a reason gives Done 
   expect(await scrollsSideways(page)).toBe(false);
 
   // Finish order asks for one reason, then sets Done short with it.
-  await page.locator('[data-order-bar] [data-move="FINISH_ORDER"]').click();
+  await (await barAction(page, '[data-move="FINISH_ORDER"]')).click();
   const dialog = page.getByRole("alertdialog");
   const confirm = dialog.getByRole("button", { name: m.button.FINISH_ORDER, exact: true });
   await expect(confirm).toBeDisabled();
@@ -332,7 +333,7 @@ test("the Purchases tab lists the record; Finish order with a reason gives Done 
   await expect(page.locator("[data-record-purchase]")).toHaveCount(0);
 
   // Reopen buying: Open again, and Record purchase is back.
-  await page.locator('[data-order-bar] [data-move="REOPEN_BUYING"]').click();
+  await (await barAction(page, '[data-move="REOPEN_BUYING"]')).click();
   await page
     .getByRole("alertdialog")
     .getByRole("button", { name: m.button.REOPEN_BUYING, exact: true })

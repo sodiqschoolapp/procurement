@@ -6,6 +6,7 @@ import pg from "pg";
 import uz from "../../src/i18n/messages/uz.json" with { type: "json" };
 import { connectionOptions } from "../../src/server/db/connection-options.mjs";
 import { E2E_COPY_USERS, E2E_ROLES, e2eDatabaseUrl, serverDatabaseUrl } from "./global-setup";
+import { barAction } from "./order-bar";
 
 // Build plan 2.13: S6 (15-quality-and-acceptance.md: "Principal rejects with a reason. Status
 // Rejected, read-only. 'Copy as new' creates a draft"; 05 Ticking and filters: Copy as new) and
@@ -135,10 +136,14 @@ test("S6: the Principal rejects with a reason; the rejected order is read-only a
   await signIn(page, E2E_ROLES.PRINCIPAL);
   await page.goto(`/orders/${order.id}`);
   await expect(page.locator("[data-order-number]")).toHaveText(order.number);
-  await page
-    .locator("[data-order-bar]")
-    .getByRole("button", { name: t.moves.button.REJECT, exact: true })
-    .click();
+  await (
+    await barAction(
+      page,
+      page
+        .locator("[data-order-bar]")
+        .getByRole("button", { name: t.moves.button.REJECT, exact: true }),
+    )
+  ).click();
   const reject = page.getByRole("alertdialog");
   const confirmReject = reject.getByRole("button", { name: t.moves.button.REJECT, exact: true });
   await expect(confirmReject).toBeDisabled();
@@ -183,9 +188,10 @@ test("Overdue: a waiting order past its needed-by date shows Overdue on its page
   await page.goto(`/orders/${order.id}`);
   await expect(page.locator("[data-overdue]")).toHaveText(t.overdue);
   // Nothing is blocked: the owner still has Take back.
-  await expect(
+  await barAction(
+    page,
     page.locator("[data-order-bar]").getByRole("button", { name: t.moves.button.TAKE_BACK }),
-  ).toBeVisible();
+  );
 
   await page.goto(`/orders?status=PENDING_HEAD&owner=${order.ownerId}`);
   const group = page.locator("tbody[data-group]").filter({ hasText: order.product });

@@ -3,26 +3,19 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { Icon } from "@/components/icon";
-import {
-  ColourLabels,
-  ProgressLabel,
-  RequestStatusLabel,
-  SubstitutedLabel,
-} from "@/components/status-label";
+import { ProgressLabel, RequestStatusLabel, SubstitutedLabel } from "@/components/status-label";
 import { TabLinks } from "@/components/tab-links";
-import { waitingFor } from "@/domain/order-steps";
 import { BUYING_STATUSES } from "@/domain/purchases";
 import { OrderActionBar } from "@/features/orders/components/order-action-bar";
 import type { StatusMoveKind } from "@/features/orders/components/move-button";
 import { OrderHistory } from "@/features/orders/components/order-history";
 import { OrderStepper } from "@/features/orders/components/order-stepper";
-import { PlanActualTable } from "@/features/orders/components/plan-actual-table";
+import { PlanActualBlock } from "@/features/orders/components/plan-actual-block";
 import { WhatChanged } from "@/features/orders/components/what-changed";
 import { type OrderPage, getOrderPage } from "@/features/orders/queries/order-page";
 import { PurchasesTab } from "@/features/purchasing/components/purchases-tab";
 import { MoneyTab } from "@/features/money/components/money-tab";
 import { getOrderMoney } from "@/features/money/queries/order-money";
-import { wireColours } from "@/features/orders/list-wire";
 import { getFormatters } from "@/i18n/get-formatters";
 import { requireUser } from "@/server/auth/session";
 
@@ -30,8 +23,10 @@ import { requireUser } from "@/server/auth/session";
 // of 2.9). Another branch's order, another user's Draft, an unknown or a malformed id are all "Not
 // found" (03 rule 1; decided item 6, Look first): getOrderPage() answers null for each. The tabs
 // are Details, Purchases from status Open on (plan of 3.5) and History, kept in the address
-// (`?tab=purchases`, `?tab=money`, `?tab=history`; decided item 10); Money from 4.3, as Purchases. The action bar shows the moves the server allowed that have a
-// button, and otherwise who the order is waiting for (decided items 4 and 5, Look first).
+// (`?tab=purchases`, `?tab=money`, `?tab=history`; decided item 10); Money from 4.3, as Purchases.
+// Since 2.9b (11 Order page layout 1 to 4): the top line says who acts next and since when, for
+// everyone; one Plan and actual block; the stepper heads History; the bar shows the main action
+// and the rest under "More", and is left out when the user has nothing to do.
 
 type Tab = "details" | "purchases" | "money" | "history";
 
@@ -50,28 +45,24 @@ const PAGE_MOVES: readonly StatusMoveKind[] = [
   "REOPEN",
 ];
 
-/** The waiting line, or null when the user has an allowed move (decided item 4, Look first). */
-async function waitingLine(order: OrderPage): Promise<string | null> {
-  if (
-    order.actions.length > 0 ||
-    order.canRecordPurchase ||
-    order.canRecordMoney ||
-    order.canSettle ||
-    order.canAcknowledgeOverspend ||
-    order.buying.length > 0
-  ) {
-    return null;
-  }
-  const t = await getTranslations("orders.page.waiting");
-  const who = waitingFor(order.status);
+/**
+ * The top line: who acts next and since when (11 Order page layout 1; plan of 2.9b, decided items
+ * 2 to 4, Look first). The date is that of the move into the current status; a draft never
+ * submitted has none.
+ */
+async function topLine(order: OrderPage): Promise<string> {
+  const t = await getTranslations("orders.page.top");
+  const format = await getFormatters();
+  const since = order.waitingSince ? format.date(order.waitingSince) : "none";
+  const who = order.waitingFor;
   if (who === "PRINCIPAL") {
     return order.principalName
-      ? t("PRINCIPAL", { branch: order.branchCode, name: order.principalName })
-      : t("PRINCIPAL_NONE", { branch: order.branchCode });
+      ? t("PRINCIPAL", { name: order.principalName, since })
+      : t("PRINCIPAL_NONE", { branch: order.branchCode, since });
   }
-  if (who === "FINANCE") return t("FINANCE", { branch: order.branchCode });
-  if (who === "OWNER") return t("OWNER", { name: order.ownerName });
-  return t(who);
+  if (who === "FINANCE") return t("FINANCE", { branch: order.branchCode, since });
+  if (who === "OWNER") return t("OWNER", { name: order.ownerName, since });
+  return t(who, { since });
 }
 
 export default async function OrderPageScreen({
@@ -106,7 +97,7 @@ export default async function OrderPageScreen({
   const tOrders = await getTranslations("orders");
   const tPayment = await getTranslations("paymentTypes");
   const format = await getFormatters();
-  const line = await waitingLine(order);
+  const line = await topLine(order);
 
   const product = order.productName
     ? order.subtypeName
@@ -135,23 +126,19 @@ export default async function OrderPageScreen({
   const details = (
     <dl className="grid grid-cols-2 gap-x-4 gap-y-5 lg:grid-cols-4">
       {fact("requester", t("details.requester"), order.requesterName ?? NONE)}
-      {fact(
-        "neededBy",
-        t("details.neededBy"),
-        order.neededBy ? format.date(order.neededBy) : t("details.notSet"),
-      )}
+      {fact("neededBy", t("details.neededBy"), order.neededBy ? format.date(order.neededBy) : NONE)}
       {fact(
         "quantity",
         t("details.quantity"),
         order.quantity
           ? `${format.quantity(order.quantity)} ${order.unitShortName ?? ""}`.trim()
-          : t("details.notSet"),
+          : NONE,
       )}
       {fact(
         "price",
         t("details.price"),
         order.price === null ? (
-          t("details.notSet")
+          NONE
         ) : (
           <span className="flex flex-wrap items-baseline gap-x-2">
             <span className="tabular-nums">{format.money(order.price)}</span>
@@ -195,18 +182,19 @@ export default async function OrderPageScreen({
         : null}
       {order.number
         ? [
+            // A service has no stock: no stock lines (plan of 2.9b, decided item 10).
             fact(
               "stockAtSubmit",
               t("details.stockAtSubmit"),
               order.stockAtSubmit === null
-                ? t("details.noStock")
+                ? NONE
                 : `${format.quantity(order.stockAtSubmit)} ${order.unitShortName ?? ""}`.trim(),
             ),
             fact(
               "stockNow",
               t("details.stockNow"),
               order.stockNow === null
-                ? t("details.noStock")
+                ? NONE
                 : `${format.quantity(order.stockNow)} ${order.unitShortName ?? ""}`.trim(),
             ),
           ]
@@ -318,10 +306,15 @@ export default async function OrderPageScreen({
             </div>
           ) : null}
         </dl>
+        <p data-top-line className="flex items-center gap-2 text-sm">
+          <Icon name="schedule" size={18} className="shrink-0 text-muted-foreground" />
+          <span>{line}</span>
+        </p>
       </header>
 
       <OrderActionBar
         orderId={order.id}
+        status={order.status}
         version={order.version}
         canSubmit={order.actions.includes("SUBMIT")}
         approve={
@@ -352,59 +345,16 @@ export default async function OrderPageScreen({
         recordPurchase={order.canRecordPurchase ? `/orders/${order.id}/purchase` : null}
         canRecordMoney={order.canRecordMoney}
         settle={order.canSettle ? `/orders/settle?ids=${order.id}` : null}
-        waitingLine={line}
         skippedFinance={order.skippedFinance}
       />
 
-      <section
-        aria-label={t("totals")}
-        className="grid grid-cols-2 overflow-hidden rounded-xl border border-border bg-card sm:grid-cols-[repeat(2,minmax(0,1fr))_minmax(0,2fr)]"
-      >
-        <div
-          data-fact="plannedTotal"
-          className="flex flex-col gap-1 border-r border-border px-4 py-3 sm:px-5 sm:py-4"
-        >
-          <span className="text-xs text-muted-foreground">{t("plannedTotal")}</span>
-          {order.plannedTotal === null ? (
-            <span className="py-1 text-sm text-muted-foreground">{t("details.notSet")}</span>
-          ) : (
-            <span className="text-figure font-semibold tabular-nums">
-              {format.money(order.plannedTotal)}
-            </span>
-          )}
-          {hint ? <span className="text-xs text-warning">{hint}</span> : null}
-        </div>
-        <div
-          data-fact="actualTotal"
-          className="flex flex-col gap-1 px-4 py-3 sm:border-r sm:border-border sm:px-5 sm:py-4"
-        >
-          <span className="text-xs text-muted-foreground">{t("actualTotal")}</span>
-          {order.actualTotal === null || order.received === "0" ? (
-            <span className="py-1 text-sm text-muted-foreground">{t("notBought")}</span>
-          ) : (
-            <span className="text-figure font-semibold tabular-nums">
-              {format.money(order.actualTotal)}
-            </span>
-          )}
-        </div>
-        {/* 08 The three colours, from Open on (11 Order page layout 1; plan of 3.8). */}
-        {order.colours ? (
-          <div className="col-span-2 flex flex-col justify-center gap-2 border-t border-border px-4 py-3 sm:col-span-1 sm:border-t-0 sm:px-5 sm:py-4">
-            <span className="text-xs text-muted-foreground">{t("outcome")}</span>
-            <ColourLabels colours={wireColours(order.colours)!} />
-          </div>
-        ) : null}
-      </section>
-
-      {order.planVsActual && order.colours ? (
-        <PlanActualTable
-          table={order.planVsActual}
-          colours={order.colours}
-          unit={order.unitShortName ?? ""}
-        />
-      ) : null}
-
-      <OrderStepper steps={order.steps} />
+      <PlanActualBlock
+        plannedTotal={order.plannedTotal}
+        hint={hint}
+        colours={order.colours}
+        table={order.planVsActual}
+        unit={order.unitShortName ?? ""}
+      />
 
       {order.changes && order.changes.list.length > 0 ? (
         <WhatChanged
@@ -433,7 +383,10 @@ export default async function OrderPageScreen({
           ) : tab === "money" && money ? (
             <MoneyTab money={money} />
           ) : (
-            <OrderHistory events={order.events} />
+            <div className="flex flex-col gap-2">
+              <OrderStepper steps={order.steps} />
+              <OrderHistory events={order.events} />
+            </div>
           )}
         </div>
       </section>

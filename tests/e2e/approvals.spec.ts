@@ -163,12 +163,14 @@ test("the Head approves two ticked orders; the stepper moves to the Principal; s
   await expect(head.getByText("2 ta buyurtma tasdiqlandi.")).toBeVisible();
   await expect(head.locator("[data-list-bar]")).toHaveCount(0);
 
-  // The order page: the stepper stands at the Principal; stock at submit and now in Details.
+  // The order page: stock at submit and now in Details; the stepper, which heads History since
+  // 2.9b (11 Order page layout 3; D65), stands at the Principal.
   await head.goto(`/orders/${seeded.ids[0]}`);
-  await expect(head.locator('li[data-step="PRINCIPAL"]')).toHaveAttribute("data-state", "current");
-  await expect(head.locator('li[data-step="HEAD"]')).toHaveAttribute("data-state", "done");
   await expect(head.locator('[data-fact="stockAtSubmit"]')).toContainText("3");
   await expect(head.locator('[data-fact="stockNow"]')).toContainText("7,5");
+  await head.goto(`/orders/${seeded.ids[0]}?tab=history`);
+  await expect(head.locator('li[data-step="PRINCIPAL"]')).toHaveAttribute("data-state", "current");
+  await expect(head.locator('li[data-step="HEAD"]')).toHaveAttribute("data-state", "done");
   // The Head has no move at Waiting for Principal: no Approve on the page.
   await expect(
     head.locator("[data-order-bar]").getByRole("button", { name: t.approve.button }),

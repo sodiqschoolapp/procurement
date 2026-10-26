@@ -2237,4 +2237,24 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - Fields under "More" are reached in browser tests through `[data-more]` and `tr[data-more-of="<id>"]` (`openMore()` in `tests/e2e/drafts.spec.ts`).
 - A modal dialog hides the page from role queries: wait for it to close before counting rows.
 
-The next task is 2.9b.
+## 2.9b A simpler order page (26.10.2026, pull request #170)
+
+**Built**
+- The top line `[data-top-line]` for every reader: who acts next and since when (`orders.page.top.*`), from `OrderPage.waitingFor` and `waitingSince` (the SQL `enteredCurrentStatusAt`, the stuck filter's own).
+- `waitingFor(status, open?)`: a finished Open order that skipped Finance, whose owner may not close alone, waits for the Head; without `open` the 06 Statuses column as before (reminders unchanged).
+- `mainAction()` in `src/domain/main-action.ts`: the one primary button of the bar; the rest under "More" (`[data-bar-more]`, a disclosure); no action, no bar.
+- `PlanActualBlock` (`plan-actual-block.tsx`): the labels beside its title from Open on, the planned total until something counted is bought, then the table; the totals strip is gone.
+- The stepper `[data-stepper]` heads the History tab; Details leaves out empty fields and a service's stock lines.
+
+**Left out, and the task that brings it**
+- Nothing of the Build line.
+
+**Open for the owner**
+- Decided items 1 to 6 (Look first) on issue #9; item 5 carries a proposed `/spec-change` of 11 Order page layout 2.
+
+**What the next sessions must know**
+- A browser test reaches a page-bar action through `barAction()` / `openMore()` of `tests/e2e/order-bar.ts`: only the main action is visible until "More" opens.
+- The stepper is read on `?tab=history`.
+- A new page action is added to `PageAction` and, if it may come first, to `MAIN_FIRST` of `main-action.ts`, with its row in `main-action.test.ts`.
+
+The next task is 9.5.

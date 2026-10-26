@@ -7,7 +7,14 @@ import { businessDate } from "@/domain/business-date";
 import { isImageMime } from "@/domain/files";
 import { addsDraftsIn, inStock, plainQuantity } from "@/domain/drafts";
 import { type OrderAction, type OrderEventType, allowedActions } from "@/domain/order-moves";
-import { type StepEvent, type StepView, isOverdue, orderSteps } from "@/domain/order-steps";
+import {
+  type StepEvent,
+  type StepView,
+  type WaitingFor,
+  isOverdue,
+  orderSteps,
+  waitingFor,
+} from "@/domain/order-steps";
 import { moneyRecordAllows, overspendNeedsAck, settlementAllows } from "@/domain/money-ledger";
 import { extrasSum, priceHintPercent } from "@/domain/order-totals";
 import {
@@ -65,6 +72,7 @@ import { orderRecords } from "@/features/purchasing/order-records";
 
 import { exactMatchOf } from "../exact-match";
 import { createdByHeadSql, headStepAutoSql, ownerClosesAloneSql } from "../order-facts";
+import { enteredCurrentStatusAt } from "../order-sql";
 
 // The order page /orders/[id] (11-screens-and-ux.md, Order page layout 1 to 4; 06 rule 11; plan
 // of 2.9). Under `data.view` with the branch wall and the draft wall inside the SQL: another
@@ -284,6 +292,17 @@ export type OrderPage = {
   /** The branch's active Principal now (03 rules 2 and 3; decided items 5 and 14). */
   principalName: string | null;
   /**
+   * Who acts next (06 Statuses), with the Open order's facts (plan of 2.9b, decided item 4, Look
+   * first): waitingFor() of src/domain/order-steps.ts.
+   */
+  waitingFor: WaitingFor;
+  /**
+   * Since when: the newest move into the current status (11 Order page layout 1; plan of 2.9b,
+   * decided item 2, Look first), the stuck filter's own `enteredCurrentStatusAt`; null on a draft
+   * never submitted.
+   */
+  waitingSince: Date | null;
+  /**
    * What changed since the revision before (06 rule 5; plan of 2.11, decided item 3, Look first),
    * from revision 2 on; null on revision 1.
    */
@@ -356,6 +375,7 @@ async function readPage(db: Executor, actor: Actor, id: string): Promise<OrderPa
       submittedAt: orders.submittedAt,
       approvedAt: orders.approvedAt,
       closedAt: orders.closedAt,
+      waitingSince: sql<Date | null>`${enteredCurrentStatusAt}`.mapWith(orderEvents.createdAt),
     })
     .from(orders)
     .innerJoin(branches, eq(branches.id, orders.branchId))
@@ -586,6 +606,12 @@ async function readPage(db: Executor, actor: Actor, id: string): Promise<OrderPa
             },
           ]),
     principalName: principal?.name ?? null,
+    waitingFor: waitingFor(row.status, {
+      skippedFinance: row.skippedFinance,
+      progress: row.progress,
+      ownerClosesAlone: row.ownerClosesAlone === true,
+    }),
+    waitingSince: row.waitingSince,
     changes,
   };
 }
