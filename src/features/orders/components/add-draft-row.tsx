@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 
 import { createDraftAction } from "@/app/(app)/orders/actions";
+import { isHidden, isRequired } from "@/domain/order-fields";
 import { createRetryWaits, retryWhileLost } from "@/components/retry-wait";
 import { toast } from "@/components/toast";
 import { Icon } from "@/components/icon";
@@ -96,13 +97,20 @@ export function AddDraftRow({
   }, [branchId, grid]);
 
   const departments = branchId ? (grid.choices[branchId]?.departments ?? []) : [];
-  const ready = Boolean(branchId && picked && departmentId && quantity.trim());
+  // The department and the needed-by date as the Head set them (05 Fields the Head sets): a
+  // hidden one is not shown, an optional one may stay empty.
+  const departmentShown = !isHidden(grid.fields, "department");
+  const departmentRequired = isRequired(grid.fields, "department");
+  const neededByShown = !isHidden(grid.fields, "neededBy");
+  const ready = Boolean(
+    branchId && picked && (departmentId || !departmentRequired) && quantity.trim(),
+  );
 
   /** The first empty field of the add row, in the order Tab reaches them. */
   function firstEmpty(): string | null {
     if (!branchId) return "add-branch";
     if (!picked) return "add-product";
-    if (!departmentId) return "add-department";
+    if (!departmentId && departmentRequired) return "add-department";
     if (!quantity.trim()) return "add-quantity";
     return null;
   }
@@ -121,16 +129,17 @@ export function AddDraftRow({
       return;
     }
     // 05 field 8: optional at Add (checked at submit); a typed date that is not one is refused here.
-    const date = neededBy.trim() === "" ? null : parseTypedDate(neededBy);
-    setNeededByWrong(neededBy.trim() !== "" && date === null);
-    if (neededBy.trim() !== "" && date === null) {
+    const typedDate = neededByShown ? neededBy.trim() : "";
+    const date = typedDate === "" ? null : parseTypedDate(typedDate);
+    setNeededByWrong(typedDate !== "" && date === null);
+    if (typedDate !== "" && date === null) {
       focus("add-needed-by");
       return;
     }
     const input = {
       branchId: branchId!,
       variantId: picked!.subtype.id,
-      departmentId,
+      ...(departmentId && departmentShown ? { departmentId } : {}),
       quantity,
       ...(date ? { neededBy: date } : {}),
     };
@@ -258,25 +267,29 @@ export function AddDraftRow({
             />
           </span>
         </Field>
-        <Field
-          id="add-department"
-          label={t("columns.requestedBy")}
-          className="col-span-2 sm:w-56"
-          error={add.fieldTexts.departmentId}
-        >
-          <Select
-            value={departmentId}
-            disabled={!branchId || unanswered}
-            onChange={(event) => setDepartmentId(event.target.value)}
+        {departmentShown && (
+          <Field
+            id="add-department"
+            label={t("columns.requestedBy")}
+            className="col-span-2 sm:w-56"
+            error={add.fieldTexts.departmentId}
           >
-            <option value="">{t("pickDepartment")}</option>
-            {departments.map((department) => (
-              <option key={department.id} value={department.id}>
-                {department.name}
+            <Select
+              value={departmentId}
+              disabled={!branchId || unanswered}
+              onChange={(event) => setDepartmentId(event.target.value)}
+            >
+              <option value="">
+                {departmentRequired ? t("pickDepartment") : t("noDepartment")}
               </option>
-            ))}
-          </Select>
-        </Field>
+              {departments.map((department) => (
+                <option key={department.id} value={department.id}>
+                  {department.name}
+                </option>
+              ))}
+            </Select>
+          </Field>
+        )}
         <Field
           id="add-quantity"
           label={t("columns.quantity")}
@@ -291,22 +304,24 @@ export function AddDraftRow({
             onChange={(event) => setQuantity(event.target.value)}
           />
         </Field>
-        <Field
-          id="add-needed-by"
-          label={t("columns.neededBy")}
-          className="sm:w-36"
-          error={neededByWrong ? t("date.invalid") : add.fieldTexts.neededBy}
-        >
-          <Input
-            disabled={unanswered}
-            value={neededBy}
-            placeholder={t("date.placeholder")}
-            onChange={(event) => {
-              setNeededBy(event.target.value);
-              setNeededByWrong(false);
-            }}
-          />
-        </Field>
+        {neededByShown && (
+          <Field
+            id="add-needed-by"
+            label={t("columns.neededBy")}
+            className="sm:w-36"
+            error={neededByWrong ? t("date.invalid") : add.fieldTexts.neededBy}
+          >
+            <Input
+              disabled={unanswered}
+              value={neededBy}
+              placeholder={t("date.placeholder")}
+              onChange={(event) => {
+                setNeededBy(event.target.value);
+                setNeededByWrong(false);
+              }}
+            />
+          </Field>
+        )}
         <span className="flex flex-col gap-1.5 sm:w-auto">
           <span aria-hidden="true" className="h-5" />
           <Button
@@ -324,7 +339,7 @@ export function AddDraftRow({
       {!ready && !busy && !unanswered && (
         <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <Icon name="info" size={16} />
-          {t("add.needs")}
+          {t(departmentRequired ? "add.needs" : "add.needsNoDepartment")}
         </p>
       )}
       {unanswered && !busy && (

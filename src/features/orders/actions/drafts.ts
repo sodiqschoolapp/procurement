@@ -75,7 +75,9 @@ const createInput = z.object({
   clientKey: z.string().refine(isClientKey),
   branchId: z.uuid(),
   variantId: z.uuid(),
-  departmentId: z.uuid(),
+  // Optional: whether a department is required is decided at submit, by the fields the Head sets
+  // (05 Fields the Head sets 3 and 4; plan of 2.5d).
+  departmentId: z.uuid().nullish(),
   quantity: quantityField,
   companyId: optionalId.optional(),
   requesterName: requesterNameField.optional(),
@@ -189,14 +191,15 @@ export const createDraft = defineAction({
   async write({ tx, input, userId }): Promise<CreatedDraft> {
     await pickedBranch(tx, input.branchId);
     const subtype = await pickedSubtype(tx, input.variantId);
-    await pickedDepartment(tx, input.departmentId, input.branchId);
+    const departmentId = input.departmentId ?? null;
+    if (departmentId) await pickedDepartment(tx, departmentId, input.branchId);
     refuseQuantity(input.quantity, subtype.allowsDecimals);
 
     const trio = {
       ownerId: userId,
       branchId: input.branchId,
       variantId: input.variantId,
-      departmentId: input.departmentId,
+      departmentId,
     };
     await lockDraftTrio(tx, trio);
     const existing = await lockTrioDraft(tx, trio);
@@ -216,7 +219,7 @@ export const createDraft = defineAction({
         clientKey: input.clientKey,
         branchId: input.branchId,
         variantId: input.variantId,
-        departmentId: input.departmentId,
+        departmentId,
         quantity: input.quantity,
         companyId: input.companyId ?? subtype.defaultCompanyId,
         requesterName: input.requesterName ?? null,
@@ -279,7 +282,7 @@ export type NewDraft = {
   clientKey: string;
   branchId: string;
   variantId: string;
-  departmentId: string;
+  departmentId: string | null;
   quantity: string;
   companyId: string | null;
   requesterName: string | null;
@@ -343,11 +346,12 @@ export async function insertDraft(
 const updateInput = z.object({
   id: z.uuid(),
   version: z.int().min(1),
-  // 05 fields 1, 3, 7, 10 are required: sent, they are never empty (review of the plan,
-  // correction 1).
+  // 05 fields 1, 3, 10 are required: sent, they are never empty (review of the plan,
+  // correction 1). The department may be emptied: whether it is required is decided at submit
+  // (05 Fields the Head sets 3 and 4; plan of 2.5d).
   branchId: z.uuid().optional(),
   variantId: z.uuid().optional(),
-  departmentId: z.uuid().optional(),
+  departmentId: z.uuid().nullable().optional(),
   quantity: quantityField.optional(),
   companyId: optionalId.optional(),
   requesterName: requesterNameField.optional(),
@@ -411,7 +415,7 @@ export const updateDraft = defineAction({
       if (!sent("departmentId")) refuse("departmentId", "errors.field.required");
     }
 
-    const departmentId = input.departmentId ?? row.departmentId;
+    const departmentId = input.departmentId === undefined ? row.departmentId : input.departmentId;
     const departmentChanged = departmentId !== row.departmentId;
     if (departmentId && (departmentChanged || branchChanged)) {
       await pickedDepartment(tx, departmentId, branchId);
@@ -430,7 +434,7 @@ export const updateDraft = defineAction({
     // 05 Drafts 2: an edit never makes a second never-submitted draft of one trio (item 2).
     const trioField = variantChanged ? "variantId" : "departmentId";
     const trioChanged = branchChanged || variantChanged || departmentChanged;
-    if (row.number === null && trioChanged && variantId && departmentId) {
+    if (row.number === null && trioChanged && variantId) {
       const trio = { ownerId: row.ownerId, branchId, variantId, departmentId };
       await lockDraftTrio(tx, trio);
       if (await neverSubmittedOf(tx, trio, row.id)) refuse(trioField, "errors.field.draftExists");

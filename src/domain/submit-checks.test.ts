@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 
+import { ORDER_FIELDS_DEFAULT, type OrderFields } from "./order-fields";
 import {
   type SubmitFacts,
+  cancelPlanGaps,
   inactiveEntries,
   isReady,
   shownFacts,
@@ -16,6 +18,7 @@ import {
 const TODAY = "2026-10-16";
 
 const complete: SubmitFacts = {
+  numbered: false,
   branchActive: true,
   variantId: "variant",
   subtypeActive: true,
@@ -29,6 +32,9 @@ const complete: SubmitFacts = {
   price: 12_500n,
   priority: "NORMAL",
   urgentReason: null,
+  requesterName: null,
+  comment: null,
+  referencePhotoFileId: null,
   extras: [{ active: true }],
 };
 
@@ -137,6 +143,7 @@ describe("isReady (05 Checks at submit; plan of 2.5c, Build 3)", () => {
 
 describe("shownFacts: the sheet's row as submitRefusals() reads it (plan of 2.5c, decided item 10)", () => {
   const shown = {
+    number: null,
     variantId: "variant",
     allowsDecimals: false,
     departmentId: "department",
@@ -146,6 +153,9 @@ describe("shownFacts: the sheet's row as submitRefusals() reads it (plan of 2.5c
     price: 12_500n,
     priority: "NORMAL" as const,
     urgentReason: null,
+    requesterName: null,
+    comment: null,
+    referencePhotoFileId: null,
     extras: [{}, {}],
     inactive: [],
   };
@@ -214,5 +224,130 @@ describe("submitSelection (05 Checks at submit: at most 200, the first 200 in th
       { id: "a", createdAt: at(0), ready: true },
     ]);
     expect(send.map((draft) => draft.id)).toEqual(["a", "b"]);
+  });
+});
+
+describe("submitRefusals with the fields the Head sets (05 Fields the Head sets; Checks at submit; plan of 2.5d)", () => {
+  const fields = (rules: Partial<OrderFields>): OrderFields => ({
+    ...ORDER_FIELDS_DEFAULT,
+    ...rules,
+  });
+
+  it("a hidden needed-by date and an empty optional department pass (05 rule 3)", () => {
+    const set = fields({
+      neededBy: { ask: "hidden", place: "row" },
+      department: { ask: "optional", place: "row" },
+    });
+    expect(
+      submitRefusals(
+        { ...complete, neededBy: null, departmentId: null, departmentActive: null },
+        TODAY,
+        set,
+      ),
+    ).toEqual({});
+  });
+
+  it("a required field left empty is still refused, in the row and under More", () => {
+    const set = fields({
+      brand: { ask: "required", place: "more" },
+      referencePhoto: { ask: "required", place: "row" },
+      requesterName: { ask: "required", place: "more" },
+      comment: { ask: "required", place: "more" },
+    });
+    expect(
+      submitRefusals({ ...complete, departmentId: null, departmentActive: null }, TODAY, set),
+    ).toEqual({
+      departmentId: "required",
+      companyId: "required",
+      referencePhotoFileId: "required",
+      requesterName: "required",
+      comment: "required",
+    });
+    expect(
+      submitRefusals(
+        {
+          ...complete,
+          companyId: "company",
+          companyActive: true,
+          referencePhotoFileId: "file",
+          requesterName: "Invented Person",
+          comment: "Blue",
+        },
+        TODAY,
+        set,
+      ),
+    ).toEqual({});
+  });
+
+  it("an optional needed-by date that is given is still not in the past (Checks at submit)", () => {
+    const set = fields({ neededBy: { ask: "optional", place: "row" } });
+    expect(submitRefusals({ ...complete, neededBy: "2026-10-15" }, TODAY, set)).toEqual({
+      neededBy: "inPast",
+    });
+  });
+
+  it("a never-submitted draft's hidden field is not checked: the submit stores its hidden value (05 rule 2; decided item 2)", () => {
+    const set = fields({
+      department: { ask: "hidden", place: "row" },
+      neededBy: { ask: "hidden", place: "row" },
+      priority: { ask: "hidden", place: "more" },
+      brand: { ask: "hidden", place: "more" },
+      extras: { ask: "hidden", place: "more" },
+    });
+    const facts: SubmitFacts = {
+      ...complete,
+      departmentActive: false,
+      neededBy: "2026-10-01",
+      priority: "URGENT",
+      urgentReason: null,
+      companyId: "company",
+      companyActive: false,
+      extras: [{ active: false }],
+    };
+    expect(submitRefusals(facts, TODAY, set)).toEqual({});
+    // The same order with a number keeps what it holds, so what it holds is checked (05 rule 4).
+    expect(submitRefusals({ ...facts, numbered: true }, TODAY, set)).toEqual({
+      departmentId: "inactive",
+      neededBy: "inPast",
+      urgentReason: "required",
+      companyId: "inactive",
+      "extras.0.extraCostTypeId": "inactive",
+    });
+  });
+
+  it("isReady and the defaults agree with submitRefusals", () => {
+    expect(isReady(complete, TODAY)).toBe(true);
+    expect(isReady({ ...complete, departmentId: null, departmentActive: null }, TODAY)).toBe(false);
+    expect(
+      isReady(
+        { ...complete, departmentId: null, departmentActive: null },
+        TODAY,
+        fields({ department: { ask: "optional", place: "row" } }),
+      ),
+    ).toBe(true);
+  });
+});
+
+describe("cancelPlanGaps (06 Allowed moves, Cancel; plan of 2.5d, decided item 6)", () => {
+  const plan = {
+    variantId: "variant",
+    departmentId: null,
+    neededBy: null,
+    quantity: "3",
+    price: null,
+    total: null,
+    priority: "NORMAL" as const,
+    urgentReason: null,
+  };
+
+  it("asks only what the loosened CHECKs ask: no department, date or price needed", () => {
+    expect(cancelPlanGaps(plan)).toEqual({});
+    expect(cancelPlanGaps({ ...plan, price: 5000n, total: 15_000n })).toEqual({});
+  });
+
+  it("still asks the subtype, the quantity and an urgent reason", () => {
+    expect(
+      cancelPlanGaps({ ...plan, variantId: null, quantity: null, priority: "URGENT" }),
+    ).toEqual({ variantId: "required", quantity: "required", urgentReason: "required" });
   });
 });

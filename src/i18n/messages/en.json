@@ -1203,7 +1203,8 @@
       "retrying": "No connection. The draft will be added when it is back; nothing is added twice.",
       "notAdded": "Not added: the server did not answer. Press Add to send the same draft again (it is never added twice), or Start over to see the list again.",
       "startOver": "Start over",
-      "needs": "Fill in every field to add the order."
+      "needs": "Fill in every field to add the order.",
+      "needsNoDepartment": "Pick a product and type the quantity to add the order."
     },
     "picker": {
       "placeholder": "Search by name",
@@ -1887,7 +1888,8 @@
       "button": "More",
       "label": "More fields of {product}",
       "marked": "A field here needs a fix"
-    }
+    },
+    "noDepartment": "No department"
   },
   "purchase": {
     "form": {

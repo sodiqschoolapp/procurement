@@ -8,7 +8,13 @@ import { type MoveActionInput, orderMoveAction } from "@/server/order-moves";
 import { OrdersRefusal, ordersInput } from "@/server/order-action";
 
 import { noticePerBranch } from "./notices";
-import { failuresOf, readSubmitRows, writePlan, writeSnapshots } from "./submit-steps";
+import {
+  failuresOf,
+  readSubmitRows,
+  readSubmitSettings,
+  writePlan,
+  writeSnapshots,
+} from "./submit-steps";
 
 // Submit again of ticked sent-back orders by their owner (06-approval-workflow.md, Allowed
 // moves: "Sent back for editing | Submit again | Owner | Waiting for Head | Revision number goes
@@ -36,10 +42,12 @@ export const submitAgainOrders = orderMoveAction<MoveActionInput>({
       context.tx,
       context.orders.map((order) => order.id),
     );
-    const failed = failuresOf(context.input.orders, rows, businessDate(at));
+    const settings = await readSubmitSettings(context.tx);
+    const failed = failuresOf(context.input.orders, rows, businessDate(at), settings.fields);
     if (failed.length > 0) throw new OrdersRefusal("not_ready", failed);
-    // Every order already has its number (05 Order number 4).
-    await writePlan(context.tx, rows, new Map(), at);
+    // Every order already has its number (05 Order number 4), so it keeps what it holds (05
+    // Fields the Head sets 4).
+    await writePlan(context.tx, rows, new Map(), at, settings);
   },
   async afterMove(context) {
     await writeSnapshots(

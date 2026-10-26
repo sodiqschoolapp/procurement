@@ -9,6 +9,13 @@
 import { type BusinessDate } from "./business-date";
 import { type QuantityRefusal, isUrgentReason, quantityRefusal } from "./drafts";
 import { ORDER_ACTION_MAX } from "./order-moves";
+import {
+  ORDER_FIELDS_DEFAULT,
+  type OrderField,
+  type OrderFields,
+  isHidden,
+  isRequired,
+} from "./order-fields";
 
 /**
  * The facts of one draft at submit, each read from the database. An entry's `…Active` is whether
@@ -18,6 +25,11 @@ import { ORDER_ACTION_MAX } from "./order-moves";
  * correction 1: field 9 is "Automatic from the product", the category is no order field).
  */
 export type SubmitFacts = {
+  /**
+   * The order has a number: it was submitted before (sent back or taken back), and keeps what it
+   * holds in a hidden field (05 Fields the Head sets 4; plan of 2.5d, decided item 2).
+   */
+  numbered: boolean;
   branchActive: boolean;
   variantId: string | null;
   /** The subtype and its product are both active (04 rule 2; decisions 2.5a item 20). */
@@ -33,6 +45,9 @@ export type SubmitFacts = {
   price: bigint | null;
   priority: "NORMAL" | "URGENT";
   urgentReason: string | null;
+  requesterName: string | null;
+  comment: string | null;
+  referencePhotoFileId: string | null;
   extras: readonly { active: boolean }[];
 };
 
@@ -67,46 +82,88 @@ export function inactiveEntries(
   return cells;
 }
 
+/** The cell of each field of 05's table, by the field names of the draft actions. */
+const CELL_OF: { [Field in OrderField]: string } = {
+  department: "departmentId",
+  neededBy: "neededBy",
+  price: "price",
+  paymentType: "paymentType",
+  priority: "urgentReason",
+  brand: "companyId",
+  requesterName: "requesterName",
+  comment: "comment",
+  referencePhoto: "referencePhotoFileId",
+  extras: "extras",
+};
+
 /**
  * Every field that stops this draft's submit, by the field names of the draft actions; empty when
  * it may be submitted. `today` is the business date of the submit in Tashkent
  * (`businessDate(now())`): a needed-by date of today passes, of yesterday fails (05 field 8; plan
- * of 2.7, decided item 2).
+ * of 2.7, decided item 2). `fields` is the setting `order_fields` at the moment of the submit (05
+ * Fields the Head sets 4; Checks at submit: "Every field the Head's field settings require is
+ * filled"). A hidden field of a draft that never had a number is not checked: the submit stores its
+ * hidden value (05 rule 2; plan of 2.5d, decided item 2). A numbered order keeps what it holds, so
+ * a hidden field of it is checked as an optional one.
  */
 export function submitRefusals(
   facts: SubmitFacts,
   today: BusinessDate,
+  fields: OrderFields = ORDER_FIELDS_DEFAULT,
 ): Record<string, SubmitRefusal> {
   const refused: Record<string, SubmitRefusal> = {};
   for (const cell of inactiveEntries(facts)) refused[cell] = "inactive";
+  const required = (field: OrderField) => isRequired(fields, field);
 
   // 05 fields 2 and 3: the product and, where it has subtypes, the subtype; a draft names both
-  // through its subtype.
+  // through its subtype. Always asked (05 Fields the Head sets).
   if (facts.variantId === null) refused.variantId = "required";
-  // 05 field 7.
-  if (facts.departmentId === null) refused.departmentId = "required";
-  // 05 field 8: required, and not in the past at submit. Both are YYYY-MM-DD, so the text order
-  // is the date order.
-  if (facts.neededBy === null) refused.neededBy = "required";
-  else if (facts.neededBy < today) refused.neededBy = "inPast";
-  // 05 field 10: more than 0, decimals only where the measure allows them.
+  // 05 field 7, as the Head set it.
+  if (facts.departmentId === null && required("department")) refused.departmentId = "required";
+  // 05 field 8, as the Head set it; a date that is given is not in the past at submit (Checks at
+  // submit: "No needed-by date that is given is in the past"). Both are YYYY-MM-DD, so the text
+  // order is the date order.
+  if (facts.neededBy === null) {
+    if (required("neededBy")) refused.neededBy = "required";
+  } else if (facts.neededBy < today) refused.neededBy = "inPast";
+  // 05 field 10: more than 0, decimals only where the measure allows them. Always asked.
   const quantity =
     facts.quantity === null
       ? "required"
       : quantityRefusal(facts.quantity, facts.allowsDecimals ?? true);
   if (quantity) refused.quantity = quantity;
-  // 05 field 11: whole so'm, more than 0.
-  if (facts.price === null) refused.price = "required";
-  else if (facts.price <= 0n) refused.price = "tooSmall";
+  // 05 field 11: whole so'm, more than 0, as the Head set it.
+  if (facts.price === null) {
+    if (required("price")) refused.price = "required";
+  } else if (facts.price <= 0n) refused.price = "tooSmall";
+  // 05 field 6 and the requester name, comment and reference photo, as the Head set them.
+  if (facts.companyId === null && required("brand")) refused.companyId = "required";
+  if (facts.requesterName === null && required("requesterName")) refused.requesterName = "required";
+  if (facts.comment === null && required("comment")) refused.comment = "required";
+  if (facts.referencePhotoFileId === null && required("referencePhoto")) {
+    refused.referencePhotoFileId = "required";
+  }
   // 05 field 14: Urgent needs a short reason.
   if (facts.priority === "URGENT" && !isUrgentReason(facts.urgentReason)) {
     refused.urgentReason = "required";
+  }
+
+  if (!facts.numbered) {
+    for (const field of Object.keys(CELL_OF) as OrderField[]) {
+      if (!isHidden(fields, field)) continue;
+      const cell = CELL_OF[field];
+      for (const key of Object.keys(refused)) {
+        if (key === cell || key.startsWith(`${cell}.`)) delete refused[key];
+      }
+    }
   }
   return refused;
 }
 
 /** A draft as the order sheet shows it: its cells, and the cells of its deactivated entries. */
 export type ShownDraft = {
+  /** The draft's number, if it has one (sent back or taken back). */
+  number: string | null;
   variantId: string | null;
   allowsDecimals: boolean | null;
   departmentId: string | null;
@@ -116,6 +173,9 @@ export type ShownDraft = {
   price: bigint | null;
   priority: "NORMAL" | "URGENT";
   urgentReason: string | null;
+  requesterName: string | null;
+  comment: string | null;
+  referencePhotoFileId: string | null;
   extras: readonly unknown[];
   /** inactiveEntries() of the draft as read: the cells of its deactivated entries. */
   inactive: readonly string[];
@@ -128,6 +188,7 @@ export type ShownDraft = {
 export function shownFacts(draft: ShownDraft): SubmitFacts {
   const inactive = new Set(draft.inactive);
   return {
+    numbered: draft.number !== null,
     branchActive: !inactive.has("branchId"),
     variantId: draft.variantId,
     subtypeActive: draft.variantId === null ? null : !inactive.has("variantId"),
@@ -141,6 +202,9 @@ export function shownFacts(draft: ShownDraft): SubmitFacts {
     price: draft.price,
     priority: draft.priority,
     urgentReason: draft.urgentReason,
+    requesterName: draft.requesterName,
+    comment: draft.comment,
+    referencePhotoFileId: draft.referencePhotoFileId,
     extras: draft.extras.map((_, at) => ({
       active: !inactive.has(`extras.${at}.extraCostTypeId`),
     })),
@@ -151,8 +215,12 @@ export function shownFacts(draft: ShownDraft): SubmitFacts {
  * Whether a draft may be submitted: no field stops it (05 Checks at submit). The one readiness the
  * order sheet marks and counts and the server decides again (plan of 2.5c, Build 3).
  */
-export function isReady(facts: SubmitFacts, today: BusinessDate): boolean {
-  return Object.keys(submitRefusals(facts, today)).length === 0;
+export function isReady(
+  facts: SubmitFacts,
+  today: BusinessDate,
+  fields: OrderFields = ORDER_FIELDS_DEFAULT,
+): boolean {
+  return Object.keys(submitRefusals(facts, today, fields)).length === 0;
 }
 
 /**
@@ -197,18 +265,20 @@ export type CancelPlan = {
 
 /**
  * The cells a taken-back Draft must have filled before it is cancelled (06 Allowed moves, Cancel
- * row; plan of 2.3b, decided item 14, Look first): a cancelled order keeps a whole plan, as
- * `orders_submitted_plan_check` and `orders_urgent_reason_check` ask of every status but Draft.
- * Unlike Submit, a date in the past and an inactive entry are no refusal: nothing is bought.
+ * row; plan of 2.3b, decided item 14, Look first): a cancelled order keeps the plan that
+ * `orders_submitted_plan_check`, `orders_planned_price_total_check` and
+ * `orders_urgent_reason_check` ask of every status but Draft. Since D67 that is the subtype, the
+ * quantity, and a price only together with its total; the field settings decide a submit, never a
+ * Cancel (plan of 2.5d, decided item 6, Look first). Unlike Submit, a date in the past and an
+ * inactive entry are no refusal: nothing is bought.
  */
 export function cancelPlanGaps(plan: CancelPlan): Record<string, SubmitRefusal> {
   const refused: Record<string, SubmitRefusal> = {};
   if (plan.variantId === null) refused.variantId = "required";
-  if (plan.departmentId === null) refused.departmentId = "required";
-  if (plan.neededBy === null) refused.neededBy = "required";
   if (plan.quantity === null) refused.quantity = "required";
-  // The total is the grid's draftTotal(): empty only without a quantity or a price.
-  if (plan.price === null || (plan.total === null && plan.quantity !== null)) {
+  // The total is the grid's draftTotal(): empty only without a quantity or a price, so a price
+  // without a total means a missing quantity, named above.
+  if (plan.price !== null && plan.total === null && plan.quantity !== null) {
     refused.price = "required";
   }
   if (plan.priority === "URGENT" && !isUrgentReason(plan.urgentReason)) {

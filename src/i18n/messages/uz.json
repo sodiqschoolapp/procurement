@@ -1203,7 +1203,8 @@
       "retrying": "Aloqa yoʻq. Aloqa tiklanganda qoralama qoʻshiladi; hech narsa ikki marta qoʻshilmaydi.",
       "notAdded": "Qoʻshilmadi: server javob bermadi. Shu qoralamani yana yuborish uchun «Qoʻshish»ni bosing (u ikki marta qoʻshilmaydi) yoki roʻyxatni qayta koʻrish uchun «Boshidan boshlash»ni bosing.",
       "startOver": "Boshidan boshlash",
-      "needs": "Qoʻshish uchun har bir maydonni toʻldiring."
+      "needs": "Qoʻshish uchun har bir maydonni toʻldiring.",
+      "needsNoDepartment": "Buyurtma qo'shish uchun mahsulotni tanlang va miqdorni kiriting."
     },
     "picker": {
       "placeholder": "Nomi boʻyicha qidirish",
@@ -1887,7 +1888,8 @@
       "button": "Yana",
       "label": "{product}: boshqa maydonlar",
       "marked": "Bu yerdagi maydonni tuzatish kerak"
-    }
+    },
+    "noDepartment": "Bo'limsiz"
   },
   "purchase": {
     "form": {

@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useRef, useState } from "react";
 
 import { listDraftChoicesAction } from "@/app/(app)/orders/actions";
+import { ORDER_FIELDS_DEFAULT, type OrderFields } from "@/domain/order-fields";
 import type { WireChoices } from "@/features/orders/draft-wire";
 
 // What every row of the drafts grid shares (plan of 2.5b): the person's branches with whether a
@@ -29,6 +30,8 @@ export type GridContextValue = {
    * the server page (04 rule 8; plan of 1.12b, decided item 10); the action asks again.
    */
   canAddToCatalog: boolean;
+  /** The fields the Head sets (05 Fields the Head sets): which cells stand where, which are hidden. */
+  fields: OrderFields;
   choices: ChoicesState;
   loadChoices(branchId: string): Promise<WireChoices | null>;
 };
@@ -45,11 +48,13 @@ export function GridProvider({
   branches,
   actorId,
   canAddToCatalog = false,
+  fields = ORDER_FIELDS_DEFAULT,
   children,
 }: {
   branches: readonly GridBranch[];
   actorId: string;
   canAddToCatalog?: boolean;
+  fields?: OrderFields;
   children: React.ReactNode;
 }) {
   const [choices, setChoices] = useState<ChoicesState>({});
@@ -76,7 +81,9 @@ export function GridProvider({
   );
 
   return (
-    <GridContext.Provider value={{ branches, actorId, canAddToCatalog, choices, loadChoices }}>
+    <GridContext.Provider
+      value={{ branches, actorId, canAddToCatalog, fields, choices, loadChoices }}
+    >
       {children}
     </GridContext.Provider>
   );
