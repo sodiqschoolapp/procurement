@@ -992,3 +992,68 @@ describe("the branch wall holds for an order without a department in the list (0
     expect(download.orders.map((one) => one.id)).not.toContain(bare.id);
   });
 });
+
+// 05 Group rows 1 ("the total planned amount"); 08 Numbers: an order without a planned price is
+// "left out of planned sums, and a sum that leaves orders out says how many"; plan of 2.5d-b,
+// decided items 2 and 3 (Look first); build plan 2.5d-b Done when.
+describe("an order without a planned price in the list (08 Numbers; 05 Group rows 1)", () => {
+  it("a group row of a priced and an unpriced order shows the priced total and 1 without a price; the ticked orders, the filter totals and the download the same", async () => {
+    setClock("2026-10-26T05:00:00Z");
+    const { branch, base } = await scene();
+    const head = await insertUser("HEAD");
+    const priced = await order({ ...base, status: "PENDING_HEAD", plannedPrice: 4_500n });
+    const unpriced = await order({ ...base, status: "PENDING_HEAD", plannedPrice: null });
+    const filters = filtered({ branch: branch.id });
+
+    const { groups } = await listOrderGroups(head.id, filters);
+    expect(groups).toHaveLength(1);
+    expect(groups[0]!.summary.totals).toMatchObject({ grand: 45_000n, unpriced: 1 });
+    const rows = new Map(groups[0]!.orders.map((each) => [each.id, each]));
+    expect(rows.get(unpriced.id)).toMatchObject({ price: null, plannedTotal: null });
+    expect(rows.get(priced.id)).toMatchObject({ price: 4_500n, plannedTotal: 45_000n });
+
+    expect((await tickedSummary(head.id, [priced.id, unpriced.id])).totals).toMatchObject({
+      grand: 45_000n,
+      unpriced: 1,
+    });
+    expect((await orderTotalsOnFilter(head.id, filters)).totals).toMatchObject({
+      grand: 45_000n,
+      unpriced: 1,
+    });
+    const file = await orderDownload(head.id, filters);
+    expect(file.totals).toMatchObject({ grand: 45_000n, unpriced: 1 });
+    expect(file.orders.find((each) => each.id === unpriced.id)).toMatchObject({
+      price: null,
+      row: { plannedTotal: null, actual: null },
+    });
+  });
+
+  it("an unpriced Open order bought for 45 000: Price and Total read No planned price, Number green (S24)", async () => {
+    setClock("2026-10-26T05:00:00Z");
+    const { branch, manager, base } = await scene();
+    const unpriced = await order({
+      ...base,
+      status: "PURCHASING",
+      plannedPrice: null,
+      progress: "DONE",
+    });
+    const tripId = (await insertTrip(branch.id, manager.id)).rows[0]!.id;
+    await insertPurchaseRow({
+      tripId,
+      orderId: unpriced.id,
+      branchId: branch.id,
+      variantId: base.variantId,
+      qty: "10",
+      unitPrice: "4500",
+      createdBy: manager.id,
+    });
+    const { groups } = await listOrderGroups(manager.id, filtered({ branch: branch.id }));
+    const row = groups.flatMap((group) => group.orders).find((each) => each.id === unpriced.id);
+    expect(row?.colours).toEqual({
+      number: { colour: "green", difference: "0" },
+      price: { colour: "unpriced" },
+      total: { colour: "unpriced" },
+    });
+    expect(row?.actual).toMatchObject({ total: 45_000n });
+  });
+});
