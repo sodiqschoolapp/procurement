@@ -490,7 +490,8 @@ test("S19: three orders of 10 Tata pens: the Head sees one row of 20, the Princi
       return found.rows.map((row) => row.to_status);
     });
     expect(moves).toEqual(["PENDING_HEAD", "PENDING_PRINCIPAL", "PENDING_FINANCE"]);
-    await page.goto(`/orders/${order.id}`);
+    // The stepper heads the History tab since 2.9b (11 Order page layout 3; D65).
+    await page.goto(`/orders/${order.id}?tab=history`);
     await expect(page.locator("[data-order-number]")).toHaveText(order.number!);
     await expect(page.locator('li[data-step="FINANCE"]')).toHaveAttribute("data-state", "current");
   }

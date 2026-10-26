@@ -353,10 +353,6 @@ export default async function OrderPageScreen({
         hint={hint}
         colours={order.colours}
         table={order.planVsActual}
-        // Buying open with an actual quantity of 0 (decided items 5 and 7, Look first).
-        nothingBought={
-          order.status === "PURCHASING" && order.progress === "OPEN" && order.received === "0"
-        }
         unit={order.unitShortName ?? ""}
       />
 

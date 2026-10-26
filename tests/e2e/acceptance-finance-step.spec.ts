@@ -129,9 +129,18 @@ for (const width of WIDTHS) {
         await confirmApprove(page, dialog, 1);
         expect(await statusOf(second.id)).toBe("PURCHASING");
 
-        // Its page: Finance "Skipped", no Money tab.
+        // Its page: Finance "Skipped" in the stepper, which heads History (11 Order page layout 3;
+        // changed in 2.9b, D65: the stepper left Details), no Money tab.
         await as(page, scene.manager);
         await page.goto(`/orders/${second.id}`);
+        await expect(page.locator("[data-stepper]")).toHaveCount(0);
+        await expect(
+          page.getByRole("link", { name: en.orders.page.tabs.purchases, exact: true }),
+        ).toBeVisible();
+        await expect(
+          page.getByRole("link", { name: en.orders.page.tabs.money, exact: true }),
+        ).toHaveCount(0);
+        await page.goto(`/orders/${second.id}?tab=history`);
         await expect(page.locator('[data-step="FINANCE"]')).toHaveAttribute(
           "data-state",
           "skipped",
@@ -142,12 +151,6 @@ for (const width of WIDTHS) {
             en.orders.page.stepper.steps.FINANCE,
           ),
         );
-        await expect(
-          page.getByRole("link", { name: en.orders.page.tabs.purchases, exact: true }),
-        ).toBeVisible();
-        await expect(
-          page.getByRole("link", { name: en.orders.page.tabs.money, exact: true }),
-        ).toHaveCount(0);
         expect(await scrollsSideways(page)).toBe(false);
 
         // Bought at 6 500 each: 670 000 against 520 000, Total red "Over 150 000".
@@ -165,8 +168,14 @@ for (const width of WIDTHS) {
         expect(await statusOf(second.id)).toBe("CLOSED");
         expect(await overspendNoticesOf(scene.head.id)).toBe(1);
 
-        // History: the Principal's approval says the Finance step was skipped.
+        // History: the Principal's approval says the Finance step was skipped; the Closed order's
+        // stepper still reads Finance "Skipped" (plan of 2.9b).
         await page.goto(`/orders/${second.id}?tab=history`);
+        await expect(page.locator('[data-step="FINANCE"]')).toHaveAttribute(
+          "data-state",
+          "skipped",
+        );
+        await expect(page.locator("[data-top-line]")).toContainText("Finished on");
         await expect(page.locator("[data-skipped-finance]")).toHaveText(
           en.orders.page.history.financeSkipped,
         );

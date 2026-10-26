@@ -8,11 +8,11 @@ import { wireColours } from "@/features/orders/list-wire";
 import { getFormatters } from "@/i18n/get-formatters";
 
 // The order page's Plan and actual block (11-screens-and-ux.md, Order page layout 2; plan of 2.9b,
-// decided item 5, Look first): before Open the planned total; from Open on, while buying is open
-// and nothing counted is bought, the planned total with the three grey labels (08 The three
-// colours: "Each order shows three labels on its page"); once something counted is bought or the
-// buying is finished, the table below with the labels in its Difference column. Nothing in it is
-// shown twice: the totals strip it replaces is gone.
+// decided item 5, Look first): before Open the planned total alone; from Open on the three labels
+// beside the title (08 The three colours: "Each order shows three labels on its page"), over the
+// planned total while nothing counted is bought (grey while buying is open; a finished Not bought
+// order shows "Bought fewer" and "Left …"), and over the table once something counted is bought.
+// Nothing in it is shown twice: the totals strip it replaces is gone.
 //
 // The table (redesign of 22.10.2026): quantity, price per unit, extra
 // costs and total, each with its plan, what was bought, the difference and what that difference
@@ -52,7 +52,6 @@ export async function PlanActualBlock({
   hint,
   colours,
   table,
-  nothingBought,
   unit,
 }: {
   /** null on a draft whose plan is not complete. */
@@ -61,9 +60,8 @@ export async function PlanActualBlock({
   hint: string | null;
   /** From Open on (orderColours()); null before. */
   colours: OrderColours | null;
+  /** planVsActual(): null while nothing counted is bought (cancelled records do not count). */
   table: PlanVsActual | null;
-  /** Buying is open and the actual quantity is 0 (cancelled records do not count, decided item 7). */
-  nothingBought: boolean;
   unit: string;
 }) {
   const t = await getTranslations("orders.page");
@@ -81,7 +79,7 @@ export async function PlanActualBlock({
         {/* 08 The three colours, from Open on: "Each order shows three labels on its page". */}
         {colours ? <ColourLabels colours={wireColours(colours)!} /> : null}
       </div>
-      {table && colours && !nothingBought ? (
+      {table && colours ? (
         <PlanActualTable table={table} colours={colours} unit={unit} />
       ) : (
         <div data-fact="plannedTotal" className="flex flex-col gap-1">

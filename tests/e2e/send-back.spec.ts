@@ -230,7 +230,9 @@ test("S5: send back with a note, 100 → 80, submit again; the Head sees the sam
   await expect(changed).toContainText("→");
   // "Highlighted" (15 S5): the new value is marked with the warning background of what-changed.tsx.
   await expect(changed.locator("ins[data-new]")).toHaveClass(/\bbg-warning-bg\b/);
-  // Approval restarts at Head (06 rule 5): the stepper stands at Head and the Head has Approve.
+  // Approval restarts at Head (06 rule 5): the stepper, which heads History since 2.9b (D65),
+  // stands at Head, and the Head has Approve.
+  await page.goto(`/orders/${order.id}?tab=history`);
   await expect(page.locator('li[data-step="HEAD"]')).toHaveAttribute("data-state", "current");
   await expect(
     page.locator("[data-order-bar]").getByRole("button", { name: t.approve.button, exact: true }),
