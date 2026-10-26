@@ -186,7 +186,11 @@ export type OrdersActionDefinition<Input extends OrdersInput> = {
    * The same answer of `leave` for a repeat (developer-rules.md rule 8; review of the plan of
    * 2.5c, correction 1): rebuilt from the sent orders that the stored action did not move.
    */
-  leftOnRepeat?(tx: Transaction, notMoved: readonly string[]): Promise<OrdersLeft>;
+  leftOnRepeat?(
+    tx: Transaction,
+    userId: string,
+    notMoved: readonly LockedOrder[],
+  ): Promise<OrdersLeft>;
   /** The change. Returns what each order's event adds (a note, a payload). */
   write(context: OrdersWriteContext<Input>): Promise<ReadonlyMap<string, OrderEventExtra> | void>;
   notify?(context: OrdersContext<Input>, result: OrdersResult): Promise<void>;
@@ -432,9 +436,13 @@ export async function runOrdersAction<Input extends OrdersInput>(
       if (first) {
         await wallSent(tx, userId, sent, locked);
         if (!definition.leftOnRepeat) return first;
+        // Read only now, after both walls passed for every id sent (permission review of 2.5c).
         const moved = new Set(first.orders.map((order) => order.id));
-        const notMoved = sent.map((order) => order.id).filter((id) => !moved.has(id));
-        return { ...first, ...(await definition.leftOnRepeat(tx, notMoved)) };
+        const byId = new Map(locked.map((order) => [order.id, order]));
+        const notMoved = sent.flatMap(({ id }) =>
+          moved.has(id) || !byId.has(id) ? [] : [byId.get(id)!],
+        );
+        return { ...first, ...(await definition.leftOnRepeat(tx, userId, notMoved)) };
       }
 
       const guarded = await guardOrders(tx, userId, sent, locked, definition.permission);

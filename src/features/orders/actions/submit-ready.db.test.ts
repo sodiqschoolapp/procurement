@@ -392,6 +392,39 @@ describe("Submit with nothing ticked (05 Drafts 4; Checks at submit; 06 rule 8)"
     expect((await stateOf([mine.id]))[0]).toMatchObject({ status: "DRAFT", number: null });
   });
 
+  it("a repeat sent with another branch's or a colleague's draft id is Not found, with no stayed drafts named (developer-rules rule 8; 03 rule 1; permission review of 2.5c, Must fix 1)", async () => {
+    const { branch, manager } = await scene();
+    const other = await insertBranch();
+    const mine = await draft(branch.id, manager.id);
+    const noPrice = await draft(branch.id, manager.id);
+    await withoutPrice(noPrice.id);
+    const input = sent([mine, noPrice]);
+    okOf(await submitReady(manager.id, input));
+
+    // Not moved, not ready: each would come back in `left` if it were read before the walls.
+    const theirs = await draft(
+      other.id,
+      (await insertUser("MANAGER", { branches: [other.id] })).id,
+    );
+    const colleagues = await draft(
+      branch.id,
+      (await insertUser("MANAGER", { branches: [branch.id] })).id,
+    );
+    await withoutPrice(theirs.id);
+    await withoutPrice(colleagues.id);
+    for (const stranger of [theirs, colleagues]) {
+      const answer = await submitReady(manager.id, {
+        clientKey: input.clientKey,
+        orders: [...input.orders, { id: stranger.id, version: stranger.version }],
+      });
+      expect(answer).toMatchObject({
+        ok: false,
+        error: { code: "not_found", orders: [{ orderId: stranger.id, code: "not_found" }] },
+      });
+      expect(JSON.stringify(answer)).not.toContain("errors.field.required");
+    }
+  });
+
   it("1 001 drafts sent are refused by the input check (decided item 1: at most 1 000)", async () => {
     const { manager } = await scene();
     const input = {

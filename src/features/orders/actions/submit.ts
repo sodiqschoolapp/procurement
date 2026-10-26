@@ -224,11 +224,16 @@ export const submitReadyDrafts = orderMoveAction<Input>({
     if (send.size === 0) throw new OrdersRefusal("not_ready", left);
     return { keep: context.orders.filter((order) => send.has(order.id)), left, heldBack };
   },
-  async leftOnRepeat(tx, notMoved) {
-    // The first call sent every ready draft up to 200: a sent draft it did not move and that
-    // passes the checks now was held back by the cap (review of the plan, correction 1).
-    const { left } = await leftOf(tx, notMoved);
-    return { left, heldBack: notMoved.length - left.length };
+  async leftOnRepeat(tx, userId, notMoved) {
+    // Only what the first call could leave: the user's own Drafts without a number (decided item
+    // 2; permission review, Should fix 1). The first call sent every ready one up to 200, so one
+    // it did not move that passes the checks now was held back by the cap (review of the plan,
+    // correction 1).
+    const own = notMoved
+      .filter((order) => order.ownerId === userId && order.status === "DRAFT" && !order.numbered)
+      .map((order) => order.id);
+    const { left } = await leftOf(tx, own);
+    return { left, heldBack: own.length - left.length };
   },
   beforeMove: beforeSubmit,
   afterMove: snapshotsOf,

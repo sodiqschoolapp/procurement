@@ -302,10 +302,15 @@ describe("listDrafts: the submit set (05 Drafts 4; plan of 2.5c, decided item 1,
       number: inventedNumber(),
     });
     await insertOrder({ branchId: branch.id, ownerId: manager.id, status: "PENDING_HEAD" });
+    // The Manager's own Draft without a number in a branch he is not assigned to: the branch wall
+    // alone keeps it out (03 rule 1; permission review of 2.5c, Must fix 2).
+    const notMine = await insertBranch();
+    const walled = await insertOrder({ branchId: notMine.id, ownerId: manager.id });
     const strangers = await listDrafts(stranger.id);
     expect(strangers.submitSet).toEqual([]);
 
     const page = await listDrafts(manager.id);
+    expect(page.submitSet.map((one) => one.id)).not.toContain(walled.id);
     expect(page.today).toBe("2026-10-26");
     expect(page.submitSet.map((one) => one.id)).toEqual([first.id, second.id]);
     expect(page.submitSet[0]).toMatchObject({ version: first.version, refusals: {} });
@@ -313,6 +318,7 @@ describe("listDrafts: the submit set (05 Drafts 4; plan of 2.5c, decided item 1,
     expect(page.submitSet[1]!.refusals).toEqual({ neededBy: "inPast" });
 
     // The branch view narrows it (03 rule 1).
+    await expect(listDrafts(manager.id, { branchId: notMine.id })).rejects.toThrow();
     const inOther = await listDrafts(manager.id, { branchId: other.id });
     expect(inOther.submitSet.map((one) => one.id)).toEqual([second.id]);
 
