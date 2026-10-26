@@ -162,7 +162,46 @@ describe("Cancel of a Draft with a number (06 Allowed moves, Cancel row; D55 ite
     expect(await orderRow(draft.id)).toMatchObject({ status: "DRAFT", number: null });
   });
 
-  it("a numbered draft whose price was cleared is refused not_ready naming the price; filled again, it cancels (decided item 14)", async () => {
+  // Until 2.5d-b a Cancel asks the price, the department and the needed-by date no longer (D67;
+  // plan of 2.5d, decided items 4 and 6, Look first). The quantity is still asked by every status
+  // but Draft.
+  it("a numbered draft whose quantity was cleared is refused not_ready naming the quantity; filled again, it cancels (decided item 14)", async () => {
+    const { branch, manager } = await moveScene();
+    const draft = await insertOrder({
+      branchId: branch.id,
+      ownerId: manager.id,
+      status: "DRAFT",
+      number: inventedNumber(),
+    });
+    // As the grid's updateDraft saves a cleared quantity cell on a Draft: no quantity, no total.
+    await db
+      .update(orders)
+      .set({ plannedQty: null, plannedTotal: null })
+      .where(eq(orders.id, draft.id));
+    const notices = await noticeCount();
+    const input = tickedInput([draft]);
+    expect(await cancel(manager.id, input)).toMatchObject({
+      ok: false,
+      error: {
+        code: "not_ready",
+        orders: [
+          { orderId: draft.id, code: "not_ready", fields: { quantity: "errors.field.required" } },
+        ],
+      },
+    });
+    await nothingSaved(input.clientKey, [draft.id], notices);
+    expect(await orderRow(draft.id)).toMatchObject({ status: "DRAFT", version: draft.version });
+
+    // The same draft with its quantity filled again: only the plan decided the refusal.
+    await db
+      .update(orders)
+      .set({ plannedQty: "10.000", plannedTotal: 50_000n })
+      .where(eq(orders.id, draft.id));
+    expect(await cancel(manager.id, tickedInput([draft]))).toMatchObject({ ok: true });
+    expect(await orderRow(draft.id)).toMatchObject({ status: "CANCELLED" });
+  });
+
+  it("a numbered draft whose price was cleared is refused not_ready naming the price until 2.5d-b; filled again, it cancels (decided items 4 and 14)", async () => {
     const { branch, manager } = await moveScene();
     const draft = await insertOrder({
       branchId: branch.id,
@@ -194,6 +233,20 @@ describe("Cancel of a Draft with a number (06 Allowed moves, Cancel row; D55 ite
       .update(orders)
       .set({ plannedPrice: 5000n, plannedTotal: 50_000n })
       .where(eq(orders.id, draft.id));
+    expect(await cancel(manager.id, tickedInput([draft]))).toMatchObject({ ok: true });
+    expect(await orderRow(draft.id)).toMatchObject({ status: "CANCELLED" });
+  });
+
+  it("a numbered draft without a department or a date cancels, its price kept (decided items 4 and 6)", async () => {
+    const { branch, manager } = await moveScene();
+    const draft = await insertOrder({
+      branchId: branch.id,
+      ownerId: manager.id,
+      status: "DRAFT",
+      number: inventedNumber(),
+      departmentId: null,
+      neededBy: null,
+    });
     expect(await cancel(manager.id, tickedInput([draft]))).toMatchObject({ ok: true });
     expect(await orderRow(draft.id)).toMatchObject({ status: "CANCELLED" });
   });

@@ -194,9 +194,23 @@ export const orders = pgTable(
       "orders_progress_status_check",
       sql`${table.progress} = 'OPEN' OR ${table.status} IN ('PURCHASING', 'SETTLEMENT', 'CLOSED')`,
     ),
+    // Loosened by 0056 (D67, a requirement changed): a submitted order may lack a department, a
+    // needed-by date, or a planned price with its planned total (05 Fields the Head sets 3).
     check(
       "orders_submitted_plan_check",
-      sql`${table.status} = 'DRAFT' OR (${table.variantId} IS NOT NULL AND ${table.departmentId} IS NOT NULL AND ${table.neededBy} IS NOT NULL AND ${table.plannedQty} IS NOT NULL AND ${table.plannedPrice} IS NOT NULL AND ${table.plannedTotal} IS NOT NULL AND ${table.submittedAt} IS NOT NULL)`,
+      sql`${table.status} = 'DRAFT' OR (${table.variantId} IS NOT NULL AND ${table.plannedQty} IS NOT NULL AND ${table.submittedAt} IS NOT NULL)`,
+    ),
+    // D67: a planned price and a planned total are both present or both empty; a Draft is free,
+    // as it may hold a price before its quantity (plan of 2.5d, decided item 5).
+    check(
+      "orders_planned_price_total_check",
+      sql`${table.status} = 'DRAFT' OR ((${table.plannedPrice} IS NULL) = (${table.plannedTotal} IS NULL))`,
+    ),
+    // 06 Finance step switched off 8: "An order without a planned price never waits for Finance or
+    // settlement."
+    check(
+      "orders_priced_finance_check",
+      sql`${table.status} NOT IN ('PENDING_FINANCE', 'SETTLEMENT') OR ${table.plannedPrice} IS NOT NULL`,
     ),
     check(
       "orders_urgent_reason_check",
@@ -206,6 +220,14 @@ export const orders = pgTable(
     uniqueIndex("orders_one_draft_key")
       .on(table.ownerId, table.branchId, table.variantId, table.departmentId)
       .where(sql`${table.number} IS NULL`),
+    // 05 Fields the Head sets 3: "Two drafts without a department count as the same department for
+    // the merge of Drafts 2". A second index, so an empty row with no subtype yet never collides
+    // (plan of 2.5d, decided item 4).
+    uniqueIndex("orders_one_draft_no_department_key")
+      .on(table.ownerId, table.branchId, table.variantId)
+      .where(
+        sql`${table.number} IS NULL AND ${table.departmentId} IS NULL AND ${table.variantId} IS NOT NULL`,
+      ),
     index("orders_branch_id_status_idx").on(table.branchId, table.status),
     index("orders_owner_id_idx").on(table.ownerId),
     index("orders_variant_id_idx").on(table.variantId),

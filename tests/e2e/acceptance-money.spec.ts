@@ -450,7 +450,7 @@ test("S12: 600 000 actual: at 100 000 Finance closes without the Head; at 50 000
     // The Head sets the amount to 50 000 on the settings screen.
     await as(page, scene.head);
     await page.goto("/settings");
-    const save = page.getByRole("button", { name: en.settings.save });
+    const save = page.getByRole("button", { name: en.settings.save, exact: true });
     await expect(save).toBeEnabled();
     await page.getByLabel(en.settings.overspendGuardMinAmount).fill("50000");
     await save.click();

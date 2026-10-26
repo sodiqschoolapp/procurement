@@ -13,6 +13,7 @@ import { toast } from "@/components/toast";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { cn } from "@/components/utils";
+import { type OrderField, isRequired } from "@/domain/order-fields";
 import { PAYMENT_TYPES } from "@/domain/payment-types";
 import type { WireDraftRow } from "@/features/orders/draft-wire";
 import { parseTypedDate } from "@/i18n/format";
@@ -21,7 +22,7 @@ import type { ActionResult } from "@/server/action-result";
 
 import { ExtrasCell } from "./extras-editor";
 import { useGrid } from "./grid-context";
-import { inMore, rowHoldsSent } from "./grid-rules";
+import { SHEET_COLUMN_OF, inMore, moreFields, rowFields, rowHoldsSent } from "./grid-rules";
 import { ProductPicker, Thumb } from "./product-picker";
 import { ReferencePhoto } from "./reference-photo";
 import { type SaveState, SaveStateText } from "./save-state";
@@ -344,9 +345,11 @@ export function DraftRow(props: DraftRowProps) {
   // "More" holds the fields beside the six cells (11 Order list layout 3); a row with a refusal or a
   // mark in one of them opens it, so the mark is on the exact cell (05 Checks at submit; plan of
   // 2.5c, decided item 9).
-  const moreMarked = [...Object.keys(errors), ...Object.keys(props.marks ?? {})].some(inMore);
+  const moreMarked = [...Object.keys(errors), ...Object.keys(props.marks ?? {})].some((field) =>
+    inMore(field, grid.fields),
+  );
   const [moreAsked, setMoreAsked] = useState(false);
-  const moreOpen = moreAsked || moreMarked || pendingUrgent;
+  const moreOpen = (moreAsked || moreMarked || pendingUrgent) && moreFields(grid.fields).length > 0;
   const moreId = `more-${row.id}`;
   const facts = [
     row.productType ? tCatalog(`productType.${row.productType}`) : null,
@@ -357,6 +360,252 @@ export function DraftRow(props: DraftRowProps) {
           unit: row.unitShortName ?? "",
         }),
   ].filter(Boolean);
+
+  // The content of each field the Head sets (05 Fields the Head sets; plan of 2.5d): the same
+  // control whether the field stands in the row or under "More"; a hidden field is nowhere.
+  const departmentRequired = isRequired(grid.fields, "department");
+  const fieldContent: Record<OrderField, React.ReactNode> = {
+    department: (
+      <>
+        {editable ? (
+          <span className="flex flex-col gap-1">
+            <Select
+              aria-label={t("columns.requestedBy")}
+              value={pendingBranch ? "" : (row.departmentId ?? "")}
+              aria-invalid={fieldError("departmentId") ? true : undefined}
+              onChange={(event) => {
+                const departmentId = event.target.value || null;
+                // An empty department only where the Head made it optional (05 Fields the Head
+                // sets 3).
+                if (!departmentId && departmentRequired) return;
+                const fields = pendingBranch
+                  ? { branchId: pendingBranch, departmentId }
+                  : { departmentId };
+                void save(fields).then((refused) => {
+                  if (refused === null) setPendingBranch(null);
+                });
+              }}
+            >
+              {(pendingBranch || !row.departmentId || !departmentRequired) && (
+                <option value="">
+                  {departmentRequired ? t("pickDepartment") : t("noDepartment")}
+                </option>
+              )}
+              {(choices?.departments ?? []).map((department) => (
+                <option key={department.id} value={department.id}>
+                  {department.name}
+                </option>
+              ))}
+              {!pendingBranch &&
+                row.departmentId &&
+                !choices?.departments.some((department) => department.id === row.departmentId) && (
+                  <option value={row.departmentId}>{row.departmentName}</option>
+                )}
+            </Select>
+            {fieldError("departmentId") && (
+              <span className="text-xs text-destructive">{fieldError("departmentId")}</span>
+            )}
+            {!pendingBranch && row.responsibleName && (
+              <span className="text-xs text-muted-foreground">
+                {t("responsible", { name: row.responsibleName })}
+              </span>
+            )}
+          </span>
+        ) : (
+          ro(row.departmentName)
+        )}
+      </>
+    ),
+    price: (
+      <>
+        {editable ? (
+          <TextCell
+            value={row.price ?? ""}
+            label={t("columns.price")}
+            money
+            className="text-right tabular-nums"
+            error={fieldError("price")}
+            onDirty={typedOf("price")}
+            onCommit={(text) => saved({ price: text })}
+          />
+        ) : (
+          ro(row.price === null ? null : format.money(BigInt(row.price)))
+        )}
+        {row.priceHint !== null && (
+          <span
+            className="mt-1 block text-xs whitespace-nowrap text-warning"
+            data-cell="price-hint"
+          >
+            {t("priceHint", { percent: BigInt(row.priceHint) as unknown as number })}
+          </span>
+        )}
+      </>
+    ),
+    neededBy: (
+      <>
+        {editable ? (
+          <NeededByCell
+            value={row.neededBy ? format.date(row.neededBy) : ""}
+            serverError={fieldError("neededBy")}
+            onDirty={typedOf("neededBy")}
+            onSave={(neededBy) => saved({ neededBy })}
+          />
+        ) : (
+          ro(row.neededBy ? format.date(row.neededBy) : null)
+        )}
+      </>
+    ),
+    brand: (
+      <>
+        {editable ? (
+          <Select
+            aria-label={t("columns.company")}
+            value={row.companyId ?? ""}
+            aria-invalid={fieldError("companyId") ? true : undefined}
+            onChange={(event) => void save({ companyId: event.target.value || null })}
+          >
+            <option value="">{t("noCompany")}</option>
+            {(choices?.companies ?? []).map((company) => (
+              <option key={company.id} value={company.id}>
+                {company.name}
+              </option>
+            ))}
+            {row.companyId &&
+              !choices?.companies.some((company) => company.id === row.companyId) && (
+                <option value={row.companyId}>{row.companyName}</option>
+              )}
+          </Select>
+        ) : (
+          ro(row.companyName)
+        )}
+        {errorText("companyId")}
+      </>
+    ),
+    extras: (
+      <>
+        <ExtrasCell
+          product={productText}
+          extras={row.extras}
+          choices={choices}
+          editable={editable}
+          onOpen={loadChoices}
+          onSave={(extras) => save({ extras })}
+        />
+        {fieldError("extras") && (
+          <span className="block text-xs text-destructive">{fieldError("extras")}</span>
+        )}
+      </>
+    ),
+    paymentType: (
+      <>
+        {editable ? (
+          <Select
+            aria-label={t("columns.paymentType")}
+            value={row.paymentType}
+            onChange={(event) => void save({ paymentType: event.target.value })}
+          >
+            {PAYMENT_TYPES.map((type) => (
+              <option key={type} value={type}>
+                {tPayment(type)}
+              </option>
+            ))}
+          </Select>
+        ) : (
+          ro(tPayment(row.paymentType))
+        )}
+      </>
+    ),
+    priority: (
+      <>
+        {editable ? (
+          <span className="flex flex-col gap-1">
+            <Select
+              aria-label={t("columns.priority")}
+              value={showUrgentReason ? "URGENT" : "NORMAL"}
+              onChange={(event) => {
+                if (event.target.value === "URGENT") {
+                  setPendingUrgent(true);
+                } else {
+                  setPendingUrgent(false);
+                  if (row.priority === "URGENT") void save({ priority: "NORMAL" });
+                }
+              }}
+            >
+              <option value="NORMAL">{t("priority.NORMAL")}</option>
+              <option value="URGENT">{t("priority.URGENT")}</option>
+            </Select>
+            {showUrgentReason && (
+              <TextCell
+                value={row.urgentReason ?? ""}
+                label={t("columns.urgentReason")}
+                placeholder={t("columns.urgentReason")}
+                error={fieldError("urgentReason")}
+                onDirty={typedOf("urgentReason")}
+                onCommit={(text) =>
+                  saved({ priority: "URGENT", urgentReason: text }).then((ok) => {
+                    if (ok) setPendingUrgent(false);
+                    return ok;
+                  })
+                }
+              />
+            )}
+            {pendingUrgent && row.priority !== "URGENT" && (
+              <span className="text-xs text-warning">{t("save.urgentPending")}</span>
+            )}
+          </span>
+        ) : (
+          <span className="flex flex-col">
+            {ro(t(`priority.${row.priority}`))}
+            {row.urgentReason && (
+              <span className="text-small text-muted-foreground">{row.urgentReason}</span>
+            )}
+          </span>
+        )}
+      </>
+    ),
+    requesterName: (
+      <>
+        {editable ? (
+          <TextCell
+            value={row.requesterName ?? ""}
+            label={t("columns.requesterName")}
+            error={fieldError("requesterName")}
+            onDirty={typedOf("requesterName")}
+            onCommit={(text) => saved({ requesterName: text })}
+          />
+        ) : (
+          ro(row.requesterName)
+        )}
+      </>
+    ),
+    comment: (
+      <>
+        {editable ? (
+          <TextCell
+            value={row.comment ?? ""}
+            label={t("columns.comment")}
+            error={fieldError("comment")}
+            onDirty={typedOf("comment")}
+            onCommit={(text) => saved({ comment: text })}
+          />
+        ) : (
+          ro(row.comment)
+        )}
+      </>
+    ),
+    referencePhoto: (
+      <>
+        <ReferencePhoto
+          fileId={row.referencePhotoFileId}
+          product={productText}
+          editable={editable}
+          onSave={(fileId) => save({ referencePhotoFileId: fileId })}
+        />
+      </>
+    ),
+  };
+  const inRow = rowFields(grid.fields);
+  const underMore = moreFields(grid.fields);
 
   return (
     <>
@@ -516,56 +765,16 @@ export function DraftRow(props: DraftRowProps) {
             </span>
           </span>
         </Cell>
-        <Cell
-          folded={folded}
-          col="requestedBy"
-          label={t("columns.requestedBy")}
-          className="min-w-44"
-        >
-          {editable ? (
-            <span className="flex flex-col gap-1">
-              <Select
-                aria-label={t("columns.requestedBy")}
-                value={pendingBranch ? "" : (row.departmentId ?? "")}
-                aria-invalid={fieldError("departmentId") ? true : undefined}
-                onChange={(event) => {
-                  const departmentId = event.target.value;
-                  if (!departmentId) return;
-                  const fields = pendingBranch
-                    ? { branchId: pendingBranch, departmentId }
-                    : { departmentId };
-                  void save(fields).then((refused) => {
-                    if (refused === null) setPendingBranch(null);
-                  });
-                }}
-              >
-                {(pendingBranch || !row.departmentId) && (
-                  <option value="">{t("pickDepartment")}</option>
-                )}
-                {(choices?.departments ?? []).map((department) => (
-                  <option key={department.id} value={department.id}>
-                    {department.name}
-                  </option>
-                ))}
-                {!pendingBranch &&
-                  row.departmentId &&
-                  !choices?.departments.some(
-                    (department) => department.id === row.departmentId,
-                  ) && <option value={row.departmentId}>{row.departmentName}</option>}
-              </Select>
-              {fieldError("departmentId") && (
-                <span className="text-xs text-destructive">{fieldError("departmentId")}</span>
-              )}
-              {!pendingBranch && row.responsibleName && (
-                <span className="text-xs text-muted-foreground">
-                  {t("responsible", { name: row.responsibleName })}
-                </span>
-              )}
-            </span>
-          ) : (
-            ro(row.departmentName)
-          )}
-        </Cell>
+        {inRow.includes("department") && (
+          <Cell
+            folded={folded}
+            col="requestedBy"
+            label={t("columns.requestedBy")}
+            className="min-w-44"
+          >
+            {fieldContent.department}
+          </Cell>
+        )}
         <Cell
           folded={folded}
           col="quantity"
@@ -598,47 +807,22 @@ export function DraftRow(props: DraftRowProps) {
             )}
           </span>
         </Cell>
-        <Cell folded={folded} col="price" label={t("columns.price")} half className="min-w-28">
-          {editable ? (
-            <TextCell
-              value={row.price ?? ""}
-              label={t("columns.price")}
-              money
-              className="text-right tabular-nums"
-              error={fieldError("price")}
-              onDirty={typedOf("price")}
-              onCommit={(text) => saved({ price: text })}
-            />
-          ) : (
-            ro(row.price === null ? null : format.money(BigInt(row.price)))
-          )}
-          {row.priceHint !== null && (
-            <span
-              className="mt-1 block text-xs whitespace-nowrap text-warning"
-              data-cell="price-hint"
+        {inRow
+          .filter((field) => field !== "department")
+          .map((field) => (
+            <Cell
+              key={field}
+              folded={folded}
+              col={SHEET_COLUMN_OF[field]}
+              label={t(`columns.${SHEET_COLUMN_OF[field]}`)}
+              half={field === "price" || field === "neededBy"}
+              className={
+                field === "neededBy" ? "min-w-32" : field === "price" ? "min-w-28" : "min-w-40"
+              }
             >
-              {t("priceHint", { percent: BigInt(row.priceHint) as unknown as number })}
-            </span>
-          )}
-        </Cell>
-        <Cell
-          folded={folded}
-          col="neededBy"
-          label={t("columns.neededBy")}
-          half
-          className="min-w-32"
-        >
-          {editable ? (
-            <NeededByCell
-              value={row.neededBy ? format.date(row.neededBy) : ""}
-              serverError={fieldError("neededBy")}
-              onDirty={typedOf("neededBy")}
-              onSave={(neededBy) => saved({ neededBy })}
-            />
-          ) : (
-            ro(row.neededBy ? format.date(row.neededBy) : null)
-          )}
-        </Cell>
+              {fieldContent[field]}
+            </Cell>
+          ))}
         <Cell
           folded={folded}
           col="total"
@@ -655,29 +839,31 @@ export function DraftRow(props: DraftRowProps) {
             </span>
           </span>
         </Cell>
-        <Cell folded={folded} col="more" half className="max-sm:w-auto">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            aria-expanded={moreOpen}
-            aria-controls={moreId}
-            aria-label={t("more.label", { product: productText })}
-            onClick={() => setMoreAsked(!moreOpen)}
-            data-more
-            className="max-sm:min-h-11"
-          >
-            {t("more.button")}
-            {moreMarked && (
-              <span
-                className="inline-block size-2 rounded-full bg-destructive"
-                data-more-marked
-                aria-label={t("more.marked")}
-              />
-            )}
-            <Icon name="expand_more" size={16} className={cn(moreOpen && "rotate-180")} />
-          </Button>
-        </Cell>
+        {underMore.length > 0 && (
+          <Cell folded={folded} col="more" half className="max-sm:w-auto">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              aria-expanded={moreOpen}
+              aria-controls={moreId}
+              aria-label={t("more.label", { product: productText })}
+              onClick={() => setMoreAsked(!moreOpen)}
+              data-more
+              className="max-sm:min-h-11"
+            >
+              {t("more.button")}
+              {moreMarked && (
+                <span
+                  className="inline-block size-2 rounded-full bg-destructive"
+                  data-more-marked
+                  aria-label={t("more.marked")}
+                />
+              )}
+              <Icon name="expand_more" size={16} className={cn(moreOpen && "rotate-180")} />
+            </Button>
+          </Cell>
+        )}
         {/* On a folded phone card the save state and Delete stand on the title's line. */}
         <Cell
           col="state"
@@ -731,140 +917,16 @@ export function DraftRow(props: DraftRowProps) {
         >
           <td colSpan={99} className="px-2 pt-1 pb-3 max-sm:block max-sm:p-0">
             <div className="grid gap-x-4 gap-y-2 sm:grid-cols-2 lg:grid-cols-4">
-              <MoreField col="company" label={t("columns.company")}>
-                {editable ? (
-                  <Select
-                    aria-label={t("columns.company")}
-                    value={row.companyId ?? ""}
-                    aria-invalid={fieldError("companyId") ? true : undefined}
-                    onChange={(event) => void save({ companyId: event.target.value || null })}
-                  >
-                    <option value="">{t("noCompany")}</option>
-                    {(choices?.companies ?? []).map((company) => (
-                      <option key={company.id} value={company.id}>
-                        {company.name}
-                      </option>
-                    ))}
-                    {row.companyId &&
-                      !choices?.companies.some((company) => company.id === row.companyId) && (
-                        <option value={row.companyId}>{row.companyName}</option>
-                      )}
-                  </Select>
-                ) : (
-                  ro(row.companyName)
-                )}
-                {errorText("companyId")}
-              </MoreField>
-              <MoreField col="extras" label={t("columns.extras")}>
-                <ExtrasCell
-                  product={productText}
-                  extras={row.extras}
-                  choices={choices}
-                  editable={editable}
-                  onOpen={loadChoices}
-                  onSave={(extras) => save({ extras })}
-                />
-                {fieldError("extras") && (
-                  <span className="block text-xs text-destructive">{fieldError("extras")}</span>
-                )}
-              </MoreField>
-              <MoreField col="paymentType" label={t("columns.paymentType")}>
-                {editable ? (
-                  <Select
-                    aria-label={t("columns.paymentType")}
-                    value={row.paymentType}
-                    onChange={(event) => void save({ paymentType: event.target.value })}
-                  >
-                    {PAYMENT_TYPES.map((type) => (
-                      <option key={type} value={type}>
-                        {tPayment(type)}
-                      </option>
-                    ))}
-                  </Select>
-                ) : (
-                  ro(tPayment(row.paymentType))
-                )}
-              </MoreField>
-              <MoreField col="priority" label={t("columns.priority")}>
-                {editable ? (
-                  <span className="flex flex-col gap-1">
-                    <Select
-                      aria-label={t("columns.priority")}
-                      value={showUrgentReason ? "URGENT" : "NORMAL"}
-                      onChange={(event) => {
-                        if (event.target.value === "URGENT") {
-                          setPendingUrgent(true);
-                        } else {
-                          setPendingUrgent(false);
-                          if (row.priority === "URGENT") void save({ priority: "NORMAL" });
-                        }
-                      }}
-                    >
-                      <option value="NORMAL">{t("priority.NORMAL")}</option>
-                      <option value="URGENT">{t("priority.URGENT")}</option>
-                    </Select>
-                    {showUrgentReason && (
-                      <TextCell
-                        value={row.urgentReason ?? ""}
-                        label={t("columns.urgentReason")}
-                        placeholder={t("columns.urgentReason")}
-                        error={fieldError("urgentReason")}
-                        onDirty={typedOf("urgentReason")}
-                        onCommit={(text) =>
-                          saved({ priority: "URGENT", urgentReason: text }).then((ok) => {
-                            if (ok) setPendingUrgent(false);
-                            return ok;
-                          })
-                        }
-                      />
-                    )}
-                    {pendingUrgent && row.priority !== "URGENT" && (
-                      <span className="text-xs text-warning">{t("save.urgentPending")}</span>
-                    )}
-                  </span>
-                ) : (
-                  <span className="flex flex-col">
-                    {ro(t(`priority.${row.priority}`))}
-                    {row.urgentReason && (
-                      <span className="text-small text-muted-foreground">{row.urgentReason}</span>
-                    )}
-                  </span>
-                )}
-              </MoreField>
-              <MoreField col="requesterName" label={t("columns.requesterName")}>
-                {editable ? (
-                  <TextCell
-                    value={row.requesterName ?? ""}
-                    label={t("columns.requesterName")}
-                    error={fieldError("requesterName")}
-                    onDirty={typedOf("requesterName")}
-                    onCommit={(text) => saved({ requesterName: text })}
-                  />
-                ) : (
-                  ro(row.requesterName)
-                )}
-              </MoreField>
-              <MoreField col="comment" label={t("columns.comment")} wide>
-                {editable ? (
-                  <TextCell
-                    value={row.comment ?? ""}
-                    label={t("columns.comment")}
-                    error={fieldError("comment")}
-                    onDirty={typedOf("comment")}
-                    onCommit={(text) => saved({ comment: text })}
-                  />
-                ) : (
-                  ro(row.comment)
-                )}
-              </MoreField>
-              <MoreField col="photo" label={t("columns.photo")}>
-                <ReferencePhoto
-                  fileId={row.referencePhotoFileId}
-                  product={productText}
-                  editable={editable}
-                  onSave={(fileId) => save({ referencePhotoFileId: fileId })}
-                />
-              </MoreField>
+              {underMore.map((field) => (
+                <MoreField
+                  key={field}
+                  col={SHEET_COLUMN_OF[field]}
+                  label={t(`columns.${SHEET_COLUMN_OF[field]}`)}
+                  wide={field === "comment"}
+                >
+                  {fieldContent[field]}
+                </MoreField>
+              ))}
             </div>
           </td>
         </tr>

@@ -34,7 +34,8 @@ export type RegisterRecord = {
   orderNumber: string;
   purchasedOn: BusinessDate;
   branchName: string;
-  departmentName: string;
+  /** `null`: an order without a department (05 Fields the Head sets 3). */
+  departmentName: string | null;
   ownerName: string;
   productName: string;
   /** The subtype bought, `null` for a product without subtypes. */
@@ -70,7 +71,7 @@ type Row = {
   number: string;
   purchased_on: string;
   branch_name: string;
-  department_name: string;
+  department_name: string | null;
   owner_name: string;
   product_name: string;
   subtype_name: string | null;
@@ -111,7 +112,8 @@ export async function getPurchaseRegister(
       join purchase_trips t on t.id = purchases.trip_id
       join orders o on o.id = purchases.order_id
       join branches b on b.id = purchases.branch_id
-      join departments d on d.id = o.department_id
+      -- Left: every record, also of an order without a department (05 Fields the Head sets 3).
+      left join departments d on d.id = o.department_id
       join users u on u.id = o.owner_id
       join product_variants v on v.id = purchases.variant_id
       join products pr on pr.id = v.product_id

@@ -108,7 +108,8 @@ export function purchaseRegisterSheets(
     { kind: "date", value: row.purchasedOn },
     text(row.orderNumber),
     text(row.branchName),
-    text(row.departmentName),
+    // An order without a department leaves the cell empty (05 Fields the Head sets 3).
+    text(row.departmentName ?? ""),
     text(row.ownerName),
     text(row.productName),
     text(row.subtypeName ?? ""),
@@ -382,7 +383,8 @@ export function departmentUseSheets(
         t("use.columns.value"),
       ],
       rows: report.lines.map((row) => [
-        text(row.departmentName),
+        // An order without a department leaves the cell empty (05 Fields the Head sets 3).
+        text(row.departmentName ?? ""),
         text(row.branchCode),
         text(row.productName),
         text(row.subtypeName ?? ""),

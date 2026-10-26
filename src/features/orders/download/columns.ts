@@ -166,7 +166,8 @@ export function downloadSheet(
       statusWord: tRoot(`requestStatus.${order.status}`),
       branch: order.branchCode,
       owner: order.ownerName,
-      department: order.departmentName,
+      // An order without a department leaves the cell empty (05 Fields the Head sets 3).
+      department: order.departmentName ?? "",
       product: order.productName,
       subtype: order.subtypeName ?? "",
       quantity: order.quantity,

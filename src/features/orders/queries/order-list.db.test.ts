@@ -23,6 +23,7 @@ import { type ListFilters, NO_FILTERS } from "../list-filters";
 import {
   listOrderFilterChoices,
   listOrderGroups,
+  orderDownload,
   orderTotalsOnFilter,
   selectAllOnFilter,
   tickedSummary,
@@ -924,5 +925,65 @@ describe("orderTotalsOnFilter: the list's draft wall (06 Statuses; .claude/rules
     expect(found.count).toBe(2);
     // 2 and 3 at 5 000 so'm (the helper's price): 25 000.
     expect(found.totals.grand).toBe(25_000n);
+  });
+});
+
+describe("an order without a department or a needed-by date in the list (05 Fields the Head sets 3; plan of 2.5d)", () => {
+  it("is in its group row, which takes the earliest date given; its department is empty; the download holds it", async () => {
+    setClock("2031-05-01T05:00:00Z");
+    const { branch, manager, base } = await scene();
+    const dated = await order({ ...base, status: "PENDING_HEAD", neededBy: "2031-05-20" });
+    const bare = await order({
+      ...base,
+      status: "PENDING_HEAD",
+      departmentId: null,
+      neededBy: null,
+    });
+
+    const [group] = (await listOrderGroups(manager.id, filtered({ branch: branch.id }))).groups;
+    expect(group!.summary.count).toBe(2);
+    expect(group!.summary.earliestNeededBy).toBe("2031-05-20");
+    expect(group!.summary.totals.grand).toBe(100_000n);
+    const shown = group!.orders.find((one) => one.id === bare.id)!;
+    expect(shown).toMatchObject({ departmentName: null, neededBy: null, overdue: false });
+    expect(group!.orders.map((one) => one.id).sort()).toEqual([dated.id, bare.id].sort());
+
+    const download = await orderDownload(manager.id, filtered({ branch: branch.id }));
+    expect(download.orders.map((one) => one.id).sort()).toEqual([dated.id, bare.id].sort());
+    expect(download.orders.find((one) => one.id === bare.id)).toMatchObject({
+      departmentName: null,
+    });
+  });
+
+  it("an order without a needed-by date is not due soon; the same order with a date tomorrow is (05 rule 3; 10 Home page per role)", async () => {
+    setClock("2031-05-01T05:00:00Z");
+    const { branch, manager, base } = await scene();
+    const bare = await order({ ...base, status: "PENDING_HEAD", neededBy: null });
+    // The same order with a date tomorrow: given every other value, only the date differs.
+    const dated = await order({ ...base, status: "PENDING_HEAD", neededBy: "2031-05-02" });
+    const due = (await listOrderGroups(manager.id, filtered({ branch: branch.id, dueSoon: true })))
+      .groups;
+    expect(due.map((group) => group.orders.map((one) => one.id))).toEqual([[dated.id]]);
+    expect(bare.id).not.toBe(dated.id);
+  });
+});
+
+describe("the branch wall holds for an order without a department in the list (03 rule 1; permission review of 2.5d)", () => {
+  it("a Manager of another branch, no branch filter, sees neither its group nor its download row", async () => {
+    setClock("2031-05-01T05:00:00Z");
+    const { base } = await scene();
+    const bare = await order({
+      ...base,
+      status: "PENDING_HEAD",
+      departmentId: null,
+      neededBy: null,
+    });
+    const other = await scene();
+    const page = await listOrderGroups(other.manager.id);
+    expect(page.groups.flatMap((group) => group.orders.map((one) => one.id))).not.toContain(
+      bare.id,
+    );
+    const download = await orderDownload(other.manager.id);
+    expect(download.orders.map((one) => one.id)).not.toContain(bare.id);
   });
 });

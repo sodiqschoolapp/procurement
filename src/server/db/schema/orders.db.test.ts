@@ -128,16 +128,11 @@ describe("orders: enums and amounts (developer-rules rules 5 and 6)", () => {
   });
 });
 
+// Since 0056 (D67, a requirement changed: 05 Fields the Head sets 3) a submitted order may lack a
+// department, a needed-by date, or a planned price with its total; those cases are in
+// orders-fields-0056.db.test.ts (plan of 2.5d, Look first).
 describe("orders: a submitted order is complete (05 Checks at submit; plan decision 14)", () => {
-  const REQUIRED = [
-    "variant_id",
-    "department_id",
-    "needed_by",
-    "planned_qty",
-    "planned_price",
-    "planned_total",
-    "submitted_at",
-  ];
+  const REQUIRED = ["variant_id", "planned_qty", "submitted_at"];
 
   it("each required column empty outside DRAFT is refused; empty on a draft passes", async () => {
     for (const column of REQUIRED) {

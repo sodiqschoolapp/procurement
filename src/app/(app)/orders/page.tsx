@@ -354,6 +354,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
           rows={rows}
           submitSet={drafts.submitSet}
           today={drafts.today}
+          fields={drafts.fields}
           page={drafts.page}
           total={drafts.total}
           branches={branches}

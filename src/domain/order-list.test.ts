@@ -75,6 +75,17 @@ describe("groupSummary (05 Group rows 1; 08 the sums of the order values)", () =
     expect(groupSummary([member()]).urgent).toBe(false);
   });
 
+  it("takes the earliest date given; an order without one is left out, none given is none (05 Fields the Head sets 3; Group rows 1)", () => {
+    expect(
+      groupSummary([
+        member({ neededBy: null }),
+        member({ neededBy: "2026-11-15" }),
+        member({ neededBy: "2026-11-02" }),
+      ]).earliestNeededBy,
+    ).toBe("2026-11-02");
+    expect(groupSummary([member({ neededBy: null })]).earliestNeededBy).toBeNull();
+  });
+
   it("Overdue when any order is overdue (edge case 'The needed-by date passes'; plan of 2.13)", () => {
     expect(groupSummary([member(), member({ overdue: true })]).overdue).toBe(true);
     expect(groupSummary([member(), member()]).overdue).toBe(false);

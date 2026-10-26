@@ -73,7 +73,8 @@ export type PurchaseFormOrder = {
   /**
    * Whether the form offers "Give straight to requester" (07 Purchase record): goods only
    * (Decided ahead, question 9), and only to a user who may issue in the branch (plan of 5.4,
-   * decided item 1, Look first). The server asks both again.
+   * decided item 1, Look first), never on an order without a department (05 Fields the Head sets
+   * 3; plan of 2.5d). The server asks all three again.
    */
   canGiveToRequester: boolean;
 };
@@ -125,6 +126,7 @@ export async function getPurchaseForm(
         unitShortName: units.shortName,
         allowDecimal: units.allowDecimal,
         productType: products.type,
+        departmentId: orders.departmentId,
         plannedQty: orders.plannedQty,
         plannedPrice: orders.plannedPrice,
         paymentType: orders.paymentType,
@@ -234,7 +236,7 @@ export async function getPurchaseForm(
         received: actualQuantity(await orderRecords(db, row.id)),
         approvedOn: row.approvedAt ? businessDate(row.approvedAt) : null,
         companyId: row.companyId && row.companyActive ? row.companyId : null,
-        canGiveToRequester: mayIssue && row.productType !== "SERVICE",
+        canGiveToRequester: mayIssue && row.productType !== "SERVICE" && row.departmentId !== null,
       });
     }
 

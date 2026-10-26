@@ -1042,10 +1042,12 @@ export function statusOrdersSheet(
         kind: "text",
         value: row.subtypeName ? `${row.productName}, ${row.subtypeName}` : row.productName,
       },
-      { kind: "text", value: row.departmentName },
+      // An order without a department or a needed-by date leaves its cell empty (05 Fields the
+      // Head sets 3).
+      { kind: "text", value: row.departmentName ?? "" },
       { kind: "text", value: tRoot(`requestStatus.${row.status}`) },
       { kind: "date", value: row.submittedOn },
-      { kind: "date", value: row.neededBy },
+      row.neededBy === null ? { kind: "text", value: "" } : { kind: "date", value: row.neededBy },
       { kind: "text", value: row.overdue ? t("principal.overdue") : "" },
       ...(list.key.kind === "approved"
         ? [

@@ -2,6 +2,7 @@ import { type SQL, sql } from "drizzle-orm";
 import { check, index, jsonb, pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
 import { NOTIFICATION_TYPES } from "@/domain/notifications";
+import { ASK_CHOICES, ORDER_FIELDS, PLACES } from "@/domain/order-fields";
 import { PAYMENT_TYPES } from "@/domain/payment-types";
 import {
   GUARD_OFF,
@@ -41,6 +42,31 @@ function forKey(key: string, rule: SQL): SQL {
 }
 
 const VALUE = sql.raw("value");
+
+function textArray(values: readonly string[]): SQL {
+  return sql.raw(`ARRAY[${values.map((value) => `'${value}'`).join(", ")}]::text[]`);
+}
+
+/**
+ * A JSON object holding exactly `keys`: all of them (`?&`), and nothing once they are taken away. A
+ * CHECK takes no subquery, so the keys are not counted (plan of 2.5d, decided item 3).
+ */
+function exactObject(json: SQL, keys: readonly string[], rule: SQL): SQL {
+  return sql`CASE WHEN jsonb_typeof(${json}) IS DISTINCT FROM 'object' THEN false ELSE (${json}) ?& ${textArray(keys)} AND (${json}) - ${textArray(keys)} = '{}'::jsonb AND (${rule}) END`;
+}
+
+/** The shape of `order_fields` (src/domain/order-fields.ts, isOrderFields). */
+function orderFieldsShape(json: SQL): SQL {
+  const fields = ORDER_FIELDS.map((field) => {
+    const rule = sql`(${json} -> ${sql.raw(`'${field}'`)})`;
+    return exactObject(
+      rule,
+      ["ask", "place"],
+      sql`jsonb_typeof(${rule} -> 'ask') = 'string' AND jsonb_typeof(${rule} -> 'place') = 'string' AND (${rule} ->> 'ask') = ANY (${textArray(ASK_CHOICES[field])}) AND (${rule} ->> 'place') = ANY (${textArray(PLACES)})`,
+    );
+  });
+  return exactObject(json, ORDER_FIELDS, sql.join(fields, sql` AND `));
+}
 
 export const settings = pgTable(
   "settings",
@@ -86,6 +112,10 @@ export const settings = pgTable(
       "settings_finance_step_check",
       forKey("finance_step", sql`jsonb_typeof(${VALUE}) = 'boolean'`),
     ),
+    // 05-order-request-form.md, Fields the Head sets; 14 Notes for the build: `order_fields` holds
+    // exactly the ten fields, each exactly `ask` and `place`, with its field's choices
+    // (src/domain/order-fields.ts, isOrderFields; plan of 2.5d, decided item 3).
+    check("settings_order_fields_check", forKey("order_fields", orderFieldsShape(VALUE))),
     // Whole so'm as a JSON text of digits, 0 to 15 digits with no leading zero, never a JSON
     // number (plan of 2.1, decision 1, Look first; CLAUDE.md rule 6).
     check(

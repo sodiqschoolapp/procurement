@@ -69,14 +69,16 @@ export type OrderRow = {
   /** Given for a submitted order unless `null`; empty for a draft unless given. */
   number?: string | null;
   variantId?: string;
-  departmentId?: string;
+  /** `null`: an order without a department (05 Fields the Head sets 3). */
+  departmentId?: string | null;
   /** 05 field 7, "Requested by"; empty unless given. */
   requesterName?: string | null;
   version?: number;
   revision?: number;
   priority?: "NORMAL" | "URGENT";
   urgentReason?: string | null;
-  neededBy?: string;
+  /** `null`: an order without a needed-by date (05 Fields the Head sets 3). */
+  neededBy?: string | null;
   plannedQty?: string;
   plannedPrice?: bigint;
   paymentType?: PaymentType;
@@ -93,10 +95,11 @@ export type OrderRow = {
  * An order with a complete plan: its own product and a department of its branch unless given,
  * 10 × 5 000 so'm. A submitted status gets a number and a submit time unless told otherwise.
  */
-export async function insertOrder(row: OrderRow) {
+export async function insertOrder<Row extends OrderRow>(row: Row) {
   const status = row.status ?? "DRAFT";
   const variantId = row.variantId ?? (await insertProduct()).defaultVariantId;
-  const departmentId = row.departmentId ?? (await insertDepartment(row.branchId)).id;
+  const departmentId =
+    row.departmentId === undefined ? (await insertDepartment(row.branchId)).id : row.departmentId;
   const submitted = status !== "DRAFT";
   const [inserted] = await db
     .insert(orders)
@@ -109,7 +112,7 @@ export async function insertOrder(row: OrderRow) {
       variantId,
       departmentId,
       requesterName: row.requesterName ?? null,
-      neededBy: row.neededBy ?? "2031-05-01",
+      neededBy: row.neededBy === undefined ? "2031-05-01" : row.neededBy,
       plannedQty: row.plannedQty ?? "10.000",
       plannedPrice: row.plannedPrice ?? 5000n,
       plannedTotal: orderTotal({
@@ -133,7 +136,14 @@ export async function insertOrder(row: OrderRow) {
       updatedAt: now(),
     })
     .returning({ id: orders.id, number: orders.number, version: orders.version });
-  return { ...inserted!, variantId, departmentId, branchId: row.branchId, ownerId: row.ownerId };
+  return {
+    ...inserted!,
+    variantId,
+    // A department unless the test gave `null` (05 Fields the Head sets 3).
+    departmentId: departmentId as Row["departmentId"] extends null ? null : string,
+    branchId: row.branchId,
+    ownerId: row.ownerId,
+  };
 }
 
 export async function insertOrderExtra(orderId: string, amount = 20000n) {

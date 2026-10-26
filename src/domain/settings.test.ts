@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { MONEY_MAX } from "./money";
+import { ORDER_FIELDS_DEFAULT } from "./order-fields";
 
 import {
   GUARD_OFF,
@@ -24,7 +25,7 @@ import {
 // decisions 1, 2, 6, 7, 9 and 10.
 
 describe("the settings keys and defaults (14-data-model.md, Notes for the build)", () => {
-  it("has exactly the ten keys of the spec and D10, `finance_step` among them (06 Finance step switched off; D62)", () => {
+  it("has exactly the eleven keys of the spec and D10, `finance_step` (06 Finance step switched off; D62) and `order_fields` (05 Fields the Head sets; D67) among them", () => {
     expect([...SETTING_KEYS].sort()).toEqual(
       [
         "default_payment_type",
@@ -37,6 +38,7 @@ describe("the settings keys and defaults (14-data-model.md, Notes for the build)
         "school_name",
         "school_year_start",
         "finance_step",
+        "order_fields",
       ].sort(),
     );
     expect(Object.keys(SETTING_DEFAULTS).sort()).toEqual([...SETTING_KEYS].sort());
@@ -58,6 +60,8 @@ describe("the settings keys and defaults (14-data-model.md, Notes for the build)
       school_year_start: null,
       // 06 Finance step switched off: "It is the setting `finance_step`, on by default."
       finance_step: true,
+      // 05 Fields the Head sets, "Default" column.
+      order_fields: ORDER_FIELDS_DEFAULT,
     });
   });
 

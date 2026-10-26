@@ -2257,4 +2257,25 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - The stepper is read on `?tab=history`.
 - A new page action is added to `PageAction` and, if it may come first, to `MAIN_FIRST` of `main-action.ts`, with its row in `main-action.test.ts`.
 
-The next task is 9.5.
+## 2.5d-a Fields the Head sets: every field but the price (26.10.2026, pull request #173)
+
+**Built**
+- `order_fields` (`src/domain/order-fields.ts`): ten fields, how each is asked and where it stands; defaults of 05's table; CHECK of migration 0056; the "Order fields" block on /settings (`order-fields-form.tsx`), saved by `saveSettings` with its audit row.
+- `submitRefusals(facts, today, fields)`: required-ness from the setting; a never-numbered draft's hidden field is not checked. Submit reads the setting under `SETTINGS_LOCK_SHARED` (`readSubmitSettings`) and writes hidden values (`withHiddenValues`); a numbered order keeps what it holds.
+- The sheet's cells follow the setting: `sheetColumns`, `rowFields`, `moreFields`, `SHEET_COLUMN_OF` (`grid-rules.ts`); `fields` in the grid context; the add row hides or relaxes department and needed-by.
+- Drafts without a department (create and update), merged as one trio (`orders_one_draft_no_department_key`); Give straight to requester refused without a department (`errors.field.noDepartment`).
+- Lists, downloads, home, reminders, analytics and reports read an empty department or date; the analytics tables take them.
+
+**Left out, and the task that brings it**
+- The price optional or hidden, unpriced orders everywhere, the counts of unpriced orders, the Finance switch refusals, S24: task 2.5d-b.
+- "No department" in analytics and reports by department (D68, merged during this task's finish) with its drill-down filter: task 2.5d-b.
+
+**Open for the owner**
+- Decided items 1 to 5 (Look first) on issue #9.
+
+**What the next sessions must know**
+- For 2.5d-b: `PRICE_ASK_CHOICES_NOW` (`order-fields.ts`) holds the price at Required; widen it and the server check of `saveSettings` together. `writePlan` already leaves `planned_total` empty when the price is; `withHiddenValues` has no price yet.
+- Tests set the setting with `setOrderFields()` of `tests/helpers/order-fields.ts`; `insertOrder` takes `departmentId: null` and `neededBy: null`.
+- The Playwright project `order-fields` runs after `finance-step` (its teardown): a browser test that changes a school-wide setting goes there.
+
+The next task is 2.5d-b.

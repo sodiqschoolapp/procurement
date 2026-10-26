@@ -51,7 +51,10 @@ export type Bought = {
   createdAt?: string;
   /** Defaults: the scene's own. */
   categoryId?: string;
-  departmentId?: string;
+  /** `null`: an order without a department (05 Fields the Head sets 3). */
+  departmentId?: string | null;
+  /** The order's needed-by date; `null`: none (05 Fields the Head sets 3). */
+  neededBy?: string | null;
   supplierId?: string | null;
   ownerId?: string;
   /** The order's buying progress, Open by default. */
@@ -68,7 +71,8 @@ export async function bought(scene: SpendingScene, row: Bought) {
   const order = await insertOrder({
     branchId: scene.branch.id,
     ownerId,
-    departmentId: row.departmentId ?? scene.department.id,
+    departmentId: row.departmentId === undefined ? scene.department.id : row.departmentId,
+    neededBy: row.neededBy,
     variantId: product.defaultVariantId,
     status: "PURCHASING",
     progress: row.progress ?? "OPEN",

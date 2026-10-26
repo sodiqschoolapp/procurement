@@ -100,7 +100,8 @@
       "aboveSent": "Yuborilganidan koʻp.",
       "nothingToCount": "Bu yerda sanash uchun ombordagi mahsulot yoʻq.",
       "financeStepWaiting": "Buyurtmalar hali moliyani yoki hisob-kitobni kutmoqda.",
-      "beforePrincipalApproval": "Sana buyurtma direktor tomonidan tasdiqlanishidan oldin. Shu kunni yoki keyingisini tanlang."
+      "beforePrincipalApproval": "Sana buyurtma direktor tomonidan tasdiqlanishidan oldin. Shu kunni yoki keyingisini tanlang.",
+      "noDepartment": "Bu buyurtmaning boʻlimi yoʻq, shuning uchun uni toʻgʻridan-toʻgʻri boʻlimga berib boʻlmaydi."
     },
     "file": {
       "tooLarge": "Fayl 10 MB dan katta. Kichikroq fayl tanlang yoki suratni qaytadan oling.",
@@ -608,6 +609,38 @@
       "refused": "Oʻchirilmadi: {orders} buyurtmalari hali moliyani yoki hisob-kitobni kutmoqda.",
       "switchedOff": "Moliya bosqichi oʻchirildi",
       "switchedOn": "Moliya bosqichi yoqildi"
+    },
+    "orderFields": {
+      "title": "Buyurtma maydonlari",
+      "hint": "Buyurtmaning har bir maydoni qanday soʻralishi va buyurtma varagʻida qayerda turishi, butun maktab uchun. Filial, mahsulot, turi va miqdor doim soʻraladi, qatorda. Oʻzgarish keyingi yuborishdan kuchga kiradi.",
+      "askLabel": "{field} qanday soʻraladi",
+      "placeLabel": "{field} qayerda turadi",
+      "save": "Buyurtma maydonlarini saqlash",
+      "saved": "Buyurtma maydonlari saqlandi",
+      "allDefault": "Standart",
+      "historyLine": "{field}: {ask}, {place}",
+      "field": {
+        "department": "Boʻlim",
+        "neededBy": "Qachongacha kerak",
+        "price": "Birlik narxi",
+        "paymentType": "Toʻlov turi",
+        "priority": "Muhimlik",
+        "brand": "Brend yoki kompaniya",
+        "requesterName": "Shaxs",
+        "comment": "Izoh",
+        "referencePhoto": "Namuna rasmi",
+        "extras": "Qoʻshimcha xarajatlar"
+      },
+      "ask": {
+        "required": "Majburiy",
+        "optional": "Ixtiyoriy",
+        "hidden": "Yashirin",
+        "shown": "Koʻrsatiladi"
+      },
+      "place": {
+        "row": "Qatorda",
+        "more": "«Yana» ostida"
+      }
     }
   },
   "admin": {
@@ -1171,7 +1204,8 @@
       "retrying": "Aloqa yoʻq. Aloqa tiklanganda qoralama qoʻshiladi; hech narsa ikki marta qoʻshilmaydi.",
       "notAdded": "Qoʻshilmadi: server javob bermadi. Shu qoralamani yana yuborish uchun «Qoʻshish»ni bosing (u ikki marta qoʻshilmaydi) yoki roʻyxatni qayta koʻrish uchun «Boshidan boshlash»ni bosing.",
       "startOver": "Boshidan boshlash",
-      "needs": "Qoʻshish uchun har bir maydonni toʻldiring."
+      "needs": "Qoʻshish uchun har bir maydonni toʻldiring.",
+      "needsNoDepartment": "Buyurtma qoʻshish uchun mahsulotni tanlang va miqdorni kiriting."
     },
     "picker": {
       "placeholder": "Nomi boʻyicha qidirish",
@@ -1855,7 +1889,8 @@
       "button": "Yana",
       "label": "{product}: boshqa maydonlar",
       "marked": "Bu yerdagi maydonni tuzatish kerak"
-    }
+    },
+    "noDepartment": "Boʻlimsiz"
   },
   "purchase": {
     "form": {

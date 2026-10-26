@@ -20,6 +20,7 @@ import { Input } from "@/components/ui/input";
 import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard";
 import type { BusinessDate } from "@/domain/business-date";
 import { DRAFTS_PAGE_SIZE } from "@/domain/drafts";
+import type { OrderFields } from "@/domain/order-fields";
 import { shownFacts, submitRefusals, submitSelection } from "@/domain/submit-checks";
 import type { WireCreated, WireDraftRow } from "@/features/orders/draft-wire";
 import type { SubmitSetDraft } from "@/features/orders/queries/drafts";
@@ -35,6 +36,7 @@ import {
   canSubmitAgainTicked,
   canSubmitTicked,
   cellOfField,
+  sheetColumns,
   copiedFromAbove,
   sheetCellOf,
   submitKeyFor,
@@ -74,6 +76,7 @@ export function DraftsGrid({
   rows: sent,
   submitSet,
   today,
+  fields,
   page,
   total,
   branches,
@@ -91,6 +94,8 @@ export function DraftsGrid({
   submitSet: readonly SubmitSetDraft[];
   /** The business date of the server's clock, for submitRefusals() (rule 10). */
   today: BusinessDate;
+  /** The fields the Head sets, as the page read them (05 Fields the Head sets). */
+  fields: OrderFields;
   page: number;
   total: number;
   branches: readonly GridBranch[];
@@ -553,7 +558,7 @@ export function DraftsGrid({
     .filter((one) => shownById.has(one.id) || !sentIds.has(one.id))
     .map((one) => {
       const shown = shownById.get(one.id);
-      const refusals = shown ? liveRefusals(shown, today) : one.refusals;
+      const refusals = shown ? liveRefusals(shown, today, fields) : one.refusals;
       return {
         id: one.id,
         version: one.version,
@@ -604,21 +609,17 @@ export function DraftsGrid({
   const showBranch = branches.filter((branch) => branch.canCreate && branch.isActive).length > 1;
 
   // The six cells, the branch first only for several branches (11 Order list layout 3).
-  const columns = [
-    ...(showBranch ? (["branch"] as const) : []),
-    "product",
-    "requestedBy",
-    "quantity",
-    "price",
-    "neededBy",
-    "total",
-    "more",
-    "state",
-    "actions",
-  ] as const;
+  // The cells as the Head set them (05 Fields the Head sets 1; plan of 2.5d): with the defaults
+  // the six cells of 2.5c.
+  const columns = sheetColumns(fields, showBranch);
 
   return (
-    <GridProvider branches={branches} actorId={actorId} canAddToCatalog={canAddToCatalog}>
+    <GridProvider
+      branches={branches}
+      actorId={actorId}
+      canAddToCatalog={canAddToCatalog}
+      fields={fields}
+    >
       <UnsavedChangesGuard dirty={dirtyRows.size > 0 || adding} />
       <div className="flex flex-col gap-4">
         {submitFailures.length > 0 && (
@@ -835,10 +836,11 @@ export function DraftsGrid({
 }
 
 /** The cells that stop a shown row's submit, by submitRefusals() of src/domain/ (2.5c). */
-function liveRefusals(row: WireDraftRow, today: BusinessDate) {
+function liveRefusals(row: WireDraftRow, today: BusinessDate, fields: OrderFields) {
   return submitRefusals(
     shownFacts({ ...row, price: row.price === null ? null : BigInt(row.price) }),
     today,
+    fields,
   );
 }
 

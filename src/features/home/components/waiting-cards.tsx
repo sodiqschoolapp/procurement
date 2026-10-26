@@ -109,9 +109,12 @@ function WaitingCard({
             {format.quantity(group.summary.quantity)} {group.unitShortName}
           </span>
           <span>{tHome("orders", { count: group.summary.count })}</span>
-          <span className="tabular-nums">
-            {t("neededBy", { date: format.date(group.summary.earliestNeededBy) })}
-          </span>
+          {/* No order of the group has a needed-by date: nothing to show (05 Fields the Head sets 3). */}
+          {group.summary.earliestNeededBy !== null && (
+            <span className="tabular-nums">
+              {t("neededBy", { date: format.date(group.summary.earliestNeededBy) })}
+            </span>
+          )}
           {group.summary.urgent && (
             <span className="inline-flex items-center gap-1 font-semibold text-destructive">
               <Icon name="warning" size={16} />
@@ -165,7 +168,9 @@ function WaitingCard({
               </span>
               <span className="tabular-nums">{format.money(BigInt(order.price))}</span>
               <span>{tPayment(order.paymentType)}</span>
-              <span className="tabular-nums">{format.date(order.neededBy)}</span>
+              {order.neededBy !== null && (
+                <span className="tabular-nums">{format.date(order.neededBy)}</span>
+              )}
               <span>{order.ownerName}</span>
               <span className="tabular-nums">
                 {format.date(order.submittedAt)} {format.time(order.submittedAt)}

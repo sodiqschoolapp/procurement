@@ -234,7 +234,8 @@ export type DraftTrio = {
   ownerId: string;
   branchId: string;
   variantId: string;
-  departmentId: string;
+  /** `null`: no department; two such drafts are the same trio (05 Fields the Head sets 3). */
+  departmentId: string | null;
 };
 
 /**
@@ -255,13 +256,19 @@ export async function neverSubmittedOf(tx: Executor, trio: DraftTrio, exceptId?:
   return row ?? null;
 }
 
-/** The owner's never-submitted draft of the trio: the full match of `orders_one_draft_key`. */
+/**
+ * The owner's never-submitted draft of the trio: the full match of `orders_one_draft_key`, or of
+ * `orders_one_draft_no_department_key` for a trio without a department.
+ */
 function ofTrio(trio: DraftTrio) {
   return and(
     eq(orders.ownerId, trio.ownerId),
     eq(orders.branchId, trio.branchId),
     eq(orders.variantId, trio.variantId),
-    eq(orders.departmentId, trio.departmentId),
+    // Two empty departments are equal (05 Fields the Head sets 3; orders_one_draft_no_department_key).
+    trio.departmentId === null
+      ? isNull(orders.departmentId)
+      : eq(orders.departmentId, trio.departmentId),
     isNull(orders.number),
   );
 }
@@ -292,7 +299,11 @@ export function isOneDraftViolation(error: unknown): boolean {
   for (let current = error, depth = 0; current && depth < 5; depth += 1) {
     if (typeof current !== "object") return false;
     if ("code" in current && current.code === "23505") {
-      return "constraint" in current && current.constraint === "orders_one_draft_key";
+      return (
+        "constraint" in current &&
+        (current.constraint === "orders_one_draft_key" ||
+          current.constraint === "orders_one_draft_no_department_key")
+      );
     }
     current = "cause" in current ? current.cause : undefined;
   }

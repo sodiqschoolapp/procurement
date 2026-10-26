@@ -73,9 +73,11 @@ export function GroupLines({
                 </span>
                 <span>{t("orders", { count: group.summary.count })}</span>
                 <span className="tabular-nums">
-                  {t("principal.card.neededBy", {
-                    date: format.date(group.summary.earliestNeededBy),
-                  })}
+                  {/* No order of the group has a needed-by date (05 Fields the Head sets 3). */}
+                  {group.summary.earliestNeededBy !== null &&
+                    t("principal.card.neededBy", {
+                      date: format.date(group.summary.earliestNeededBy),
+                    })}
                 </span>
                 {group.summary.urgent && (
                   <span className="inline-flex items-center gap-1 font-semibold text-destructive">

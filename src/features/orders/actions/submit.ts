@@ -24,6 +24,7 @@ import {
   ids,
   numbersOf,
   readSubmitRows,
+  readSubmitSettings,
   writePlan,
   writeSnapshots,
 } from "./submit-steps";
@@ -64,8 +65,9 @@ async function beforeSubmit(context: OrdersContext<Input>): Promise<void> {
     tx,
     context.orders.map((order) => order.id),
   );
+  const settings = await readSubmitSettings(tx);
 
-  const failed = failuresOf(context.input.orders, rows, businessDate(at));
+  const failed = failuresOf(context.input.orders, rows, businessDate(at), settings.fields);
   if (failed.length > 0) throw new OrdersRefusal("not_ready", failed);
 
   const numbers = await numbersOf(
@@ -73,7 +75,7 @@ async function beforeSubmit(context: OrdersContext<Input>): Promise<void> {
     rows.filter((row) => row.number === null),
     at,
   );
-  await writePlan(tx, rows, numbers, at);
+  await writePlan(tx, rows, numbers, at, settings);
 }
 
 /**
@@ -176,10 +178,12 @@ async function leftOf(
 ): Promise<{ send: Set<string> } & OrdersLeft> {
   if (orderIds.length === 0) return { send: new Set(), left: [], heldBack: 0 };
   const rows = await readSubmitRows(tx, orderIds);
+  const { fields } = await readSubmitSettings(tx);
   const failed = failuresOf(
     orderIds.map((id) => ({ id })),
     rows,
     businessDate(now()),
+    fields,
   );
   const failedIds = new Set(failed.map((order) => order.orderId));
   const { send, heldBack } = submitSelection(

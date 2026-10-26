@@ -108,7 +108,8 @@ export type ListOrder = {
   number: string;
   revision: number;
   version: number;
-  departmentName: string;
+  /** `null`: an order without a department (05 Fields the Head sets 3). */
+  departmentName: string | null;
   /** Plain decimal text, without trailing zeros. */
   quantity: string;
   /**
@@ -119,7 +120,8 @@ export type ListOrder = {
   stockNow: string | null;
   price: bigint;
   paymentType: PaymentType;
-  neededBy: string;
+  /** `null`: an order without a needed-by date (05 Fields the Head sets 3). */
+  neededBy: string | null;
   ownerId: string;
   ownerName: string;
   submittedAt: Date;
@@ -561,7 +563,8 @@ async function readGroups(
     })
     .from(orders)
     .innerJoin(owner, eq(owner.id, orders.ownerId))
-    .innerJoin(departments, eq(departments.id, orders.departmentId))
+    // Left: an order without a department is listed too (05 Fields the Head sets 3; plan of 2.5d).
+    .leftJoin(departments, eq(departments.id, orders.departmentId))
     .innerJoin(productVariants, eq(productVariants.id, orders.variantId))
     .innerJoin(products, eq(products.id, productVariants.productId))
     .where(
@@ -616,7 +619,7 @@ async function readGroups(
       stockNow: inStock(member.productType, member.stockNow),
       price: member.price!,
       paymentType: member.paymentType,
-      neededBy: member.neededBy!,
+      neededBy: member.neededBy,
       ownerId: member.ownerId,
       ownerName: member.ownerName,
       submittedAt: member.submittedAt!,
@@ -1022,7 +1025,8 @@ export type DownloadOrder = {
   status: ListStatus;
   branchCode: string;
   ownerName: string;
-  departmentName: string;
+  /** `null`: an order without a department (05 Fields the Head sets 3). */
+  departmentName: string | null;
   productName: string;
   /** The subtype's name; null for the hidden default subtype of a product without subtypes. */
   subtypeName: string | null;
@@ -1093,7 +1097,8 @@ export async function orderDownload(
       .from(orders)
       .innerJoin(branches, eq(branches.id, orders.branchId))
       .innerJoin(owner, eq(owner.id, orders.ownerId))
-      .innerJoin(departments, eq(departments.id, orders.departmentId))
+      // Left: an order without a department is listed too (05 Fields the Head sets 3; plan of 2.5d).
+      .leftJoin(departments, eq(departments.id, orders.departmentId))
       .innerJoin(productVariants, eq(productVariants.id, orders.variantId))
       .innerJoin(products, eq(products.id, productVariants.productId))
       .innerJoin(units, eq(units.id, products.unitId))

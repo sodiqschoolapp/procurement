@@ -100,7 +100,8 @@
       "aboveSent": "More than was sent.",
       "nothingToCount": "No items in stock here to count.",
       "financeStepWaiting": "Orders still wait for Finance or for settlement.",
-      "beforePrincipalApproval": "The date is before the Principal approved the order. Pick that day or a later one."
+      "beforePrincipalApproval": "The date is before the Principal approved the order. Pick that day or a later one.",
+      "noDepartment": "This order has no department, so it cannot be given straight to a department."
     },
     "file": {
       "tooLarge": "The file is larger than 10 MB. Choose a smaller file or take the photo again.",
@@ -608,6 +609,38 @@
       "refused": "Not switched off: orders {orders} still wait for Finance or for settlement.",
       "switchedOff": "The Finance step is switched off",
       "switchedOn": "The Finance step is switched on"
+    },
+    "orderFields": {
+      "title": "Order fields",
+      "hint": "How each field of an order is asked and where it stands in the order sheet, for the whole school. Branch, product, subtype and quantity are always asked, in the row. A change applies from the next submit.",
+      "askLabel": "How {field} is asked",
+      "placeLabel": "Where {field} stands",
+      "save": "Save order fields",
+      "saved": "Order fields saved",
+      "allDefault": "Default",
+      "historyLine": "{field}: {ask}, {place}",
+      "field": {
+        "department": "Department",
+        "neededBy": "Needed by",
+        "price": "Price per unit",
+        "paymentType": "Payment type",
+        "priority": "Priority",
+        "brand": "Brand or company",
+        "requesterName": "Person",
+        "comment": "Comment",
+        "referencePhoto": "Reference photo",
+        "extras": "Extra costs"
+      },
+      "ask": {
+        "required": "Required",
+        "optional": "Optional",
+        "hidden": "Hidden",
+        "shown": "Shown"
+      },
+      "place": {
+        "row": "In the row",
+        "more": "Under \"More\""
+      }
     }
   },
   "admin": {
@@ -1171,7 +1204,8 @@
       "retrying": "No connection. The draft will be added when it is back; nothing is added twice.",
       "notAdded": "Not added: the server did not answer. Press Add to send the same draft again (it is never added twice), or Start over to see the list again.",
       "startOver": "Start over",
-      "needs": "Fill in every field to add the order."
+      "needs": "Fill in every field to add the order.",
+      "needsNoDepartment": "Pick a product and type the quantity to add the order."
     },
     "picker": {
       "placeholder": "Search by name",
@@ -1855,7 +1889,8 @@
       "button": "More",
       "label": "More fields of {product}",
       "marked": "A field here needs a fix"
-    }
+    },
+    "noDepartment": "No department"
   },
   "purchase": {
     "form": {

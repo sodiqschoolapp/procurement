@@ -59,9 +59,8 @@ export const analyticsSpending = pgTable(
     categoryId: uuid("category_id")
       .notNull()
       .references(() => categories.id),
-    departmentId: uuid("department_id")
-      .notNull()
-      .references(() => departments.id),
+    // Empty for an order without a department (05 Fields the Head sets 3; plan of 2.5d).
+    departmentId: uuid("department_id").references(() => departments.id),
     ownerId: uuid("owner_id")
       .notNull()
       .references(() => users.id),
@@ -135,9 +134,8 @@ export const analyticsOutcomes = pgTable(
     categoryId: uuid("category_id")
       .notNull()
       .references(() => categories.id),
-    departmentId: uuid("department_id")
-      .notNull()
-      .references(() => departments.id),
+    // Empty for an order without a department (05 Fields the Head sets 3; plan of 2.5d).
+    departmentId: uuid("department_id").references(() => departments.id),
     ownerId: uuid("owner_id")
       .notNull()
       .references(() => users.id),
@@ -196,9 +194,8 @@ export const analyticsSteps = pgTable(
     categoryId: uuid("category_id")
       .notNull()
       .references(() => categories.id),
-    departmentId: uuid("department_id")
-      .notNull()
-      .references(() => departments.id),
+    // Empty for an order without a department (05 Fields the Head sets 3; plan of 2.5d).
+    departmentId: uuid("department_id").references(() => departments.id),
     ownerId: uuid("owner_id")
       .notNull()
       .references(() => users.id),
@@ -260,9 +257,8 @@ export const analyticsCancelled = pgTable(
     categoryId: uuid("category_id")
       .notNull()
       .references(() => categories.id),
-    departmentId: uuid("department_id")
-      .notNull()
-      .references(() => departments.id),
+    // Empty for an order without a department (05 Fields the Head sets 3; plan of 2.5d).
+    departmentId: uuid("department_id").references(() => departments.id),
     ownerId: uuid("owner_id")
       .notNull()
       .references(() => users.id),
@@ -307,9 +303,8 @@ export const analyticsCash = pgTable(
     categoryId: uuid("category_id")
       .notNull()
       .references(() => categories.id),
-    departmentId: uuid("department_id")
-      .notNull()
-      .references(() => departments.id),
+    // Empty for an order without a department (05 Fields the Head sets 3; plan of 2.5d).
+    departmentId: uuid("department_id").references(() => departments.id),
     cashCount: som("cash_count").notNull(),
     since: date("since").notNull(),
   },
@@ -451,13 +446,13 @@ export const analyticsOrders = pgTable(
     status: requestStatus("status").notNull(),
     progress: orderProgress("progress").notNull(),
     submittedOn: date("submitted_on").notNull(),
-    neededBy: date("needed_by").notNull(),
+    // Empty for an order without a needed-by date (05 Fields the Head sets 3; plan of 2.5d).
+    neededBy: date("needed_by"),
     categoryId: uuid("category_id")
       .notNull()
       .references(() => categories.id),
-    departmentId: uuid("department_id")
-      .notNull()
-      .references(() => departments.id),
+    // Empty for an order without a department (05 Fields the Head sets 3; plan of 2.5d).
+    departmentId: uuid("department_id").references(() => departments.id),
     ownerId: uuid("owner_id")
       .notNull()
       .references(() => users.id),
@@ -529,9 +524,8 @@ export const analyticsMoney = pgTable(
     categoryId: uuid("category_id")
       .notNull()
       .references(() => categories.id),
-    departmentId: uuid("department_id")
-      .notNull()
-      .references(() => departments.id),
+    // Empty for an order without a department (05 Fields the Head sets 3; plan of 2.5d).
+    departmentId: uuid("department_id").references(() => departments.id),
     kind: moneyRowKind("kind").notNull(),
     amount: som("amount").notNull(),
     occurredOn: date("occurred_on").notNull(),
@@ -582,9 +576,8 @@ export const analyticsSettlements = pgTable(
     categoryId: uuid("category_id")
       .notNull()
       .references(() => categories.id),
-    departmentId: uuid("department_id")
-      .notNull()
-      .references(() => departments.id),
+    // Empty for an order without a department (05 Fields the Head sets 3; plan of 2.5d).
+    departmentId: uuid("department_id").references(() => departments.id),
     ownerId: uuid("owner_id")
       .notNull()
       .references(() => users.id),

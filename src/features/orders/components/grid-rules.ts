@@ -1,5 +1,12 @@
 import { draftComment, requesterName, urgentReason } from "@/domain/drafts";
 import { parseSom } from "@/domain/money";
+import {
+  ORDER_FIELDS,
+  ORDER_FIELDS_DEFAULT,
+  type OrderField,
+  type OrderFields,
+  placeOf,
+} from "@/domain/order-fields";
 import { QUANTITY, quantityOf } from "@/domain/order-totals";
 import type { WireDraftRow } from "@/features/orders/draft-wire";
 
@@ -96,21 +103,98 @@ export function cellOfField(field: string): SubmitCell {
   return CELL_OF_FIELD[field] ?? "product";
 }
 
-/** The fields the order sheet shows under "More" (11 Order list layout 3; plan of 2.5c). */
-const MORE_FIELDS = new Set([
-  "companyId",
+/**
+ * The sheet's column of each field the Head sets (05 Fields the Head sets; plan of 2.5d): its
+ * `data-col` and the key of its label under `orders.columns`.
+ */
+export const SHEET_COLUMN_OF = {
+  department: "requestedBy",
+  neededBy: "neededBy",
+  price: "price",
+  paymentType: "paymentType",
+  priority: "priority",
+  brand: "company",
+  requesterName: "requesterName",
+  comment: "comment",
+  referencePhoto: "photo",
+  extras: "extras",
+} as const satisfies Record<OrderField, string>;
+
+export type SheetFieldColumn = (typeof SHEET_COLUMN_OF)[OrderField];
+
+/**
+ * The order of the fields in the row: the six cells of 2.5c first (department, then quantity,
+ * price and needed-by date), then any other field the Head put in the row, in the order of 05's
+ * table; quantity is not a field the Head sets and stands after the department.
+ */
+const ROW_ORDER: readonly OrderField[] = [
+  "department",
+  "price",
+  "neededBy",
+  "brand",
   "requesterName",
-  "extras",
+  "comment",
+  "referencePhoto",
   "paymentType",
   "priority",
-  "urgentReason",
-  "comment",
-  "referencePhotoFileId",
-]);
+  "extras",
+];
 
-/** Whether a field stands under "More" on the sheet, so its mark opens "More" (decided item 9). */
-export function inMore(field: string): boolean {
-  return MORE_FIELDS.has(field) || field.startsWith("extras.");
+/** The fields in the row, in their order; a hidden one is in neither list (05 rule 2). */
+export function rowFields(fields: OrderFields): OrderField[] {
+  return ROW_ORDER.filter((field) => placeOf(fields, field) === "row");
+}
+
+/** The fields under "More", in the order of 05's table (11 Order list layout 3; 05 rule 1). */
+export function moreFields(fields: OrderFields): OrderField[] {
+  return ORDER_FIELDS.filter((field) => placeOf(fields, field) === "more");
+}
+
+/**
+ * The columns of the sheet, in their order: the branch for a user with several branches, the
+ * product, the department where it stands in the row, the quantity, the other fields in the row,
+ * the total; "More" only when a field stands there.
+ */
+export function sheetColumns(fields: OrderFields, showBranch: boolean) {
+  const inRow = rowFields(fields);
+  return [
+    ...(showBranch ? (["branch"] as const) : []),
+    "product" as const,
+    ...(inRow.includes("department") ? (["requestedBy"] as const) : []),
+    "quantity" as const,
+    ...inRow.filter((field) => field !== "department").map((field) => SHEET_COLUMN_OF[field]),
+    "total" as const,
+    ...(moreFields(fields).length > 0 ? (["more"] as const) : []),
+    "state" as const,
+    "actions" as const,
+  ];
+}
+
+/** The field of the Head's table a refused cell belongs to; `null` for one always in the row. */
+function settingFieldOf(field: string): OrderField | null {
+  if (field.startsWith("extras")) return "extras";
+  const byCell: Record<string, OrderField> = {
+    departmentId: "department",
+    neededBy: "neededBy",
+    price: "price",
+    companyId: "brand",
+    requesterName: "requesterName",
+    paymentType: "paymentType",
+    priority: "priority",
+    urgentReason: "priority",
+    comment: "comment",
+    referencePhotoFileId: "referencePhoto",
+  };
+  return byCell[field] ?? null;
+}
+
+/**
+ * Whether a field stands under "More" on the sheet as the Head set it, so its mark opens "More"
+ * (plan of 2.5c, decided item 9; 05 Fields the Head sets 1).
+ */
+export function inMore(field: string, fields: OrderFields = ORDER_FIELDS_DEFAULT): boolean {
+  const settingField = settingFieldOf(field);
+  return settingField !== null && placeOf(fields, settingField) === "more";
 }
 
 /** Where the scroll to a refused field goes: its cell, or its field under "More". */

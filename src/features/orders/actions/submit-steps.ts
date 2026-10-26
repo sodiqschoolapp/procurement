@@ -1,7 +1,9 @@
 import { asc, eq, inArray, sql } from "drizzle-orm";
 
+import { type OrderFields, isHidden, withHiddenValues } from "@/domain/order-fields";
 import { orderNumber } from "@/domain/order-numbers";
 import { orderTotal } from "@/domain/order-totals";
+import type { PaymentType } from "@/domain/payment-types";
 import { type SubmitFacts, submitRefusals } from "@/domain/submit-checks";
 import { businessYear } from "@/domain/business-date";
 import type { FieldMessageKey, OrderFailure } from "@/server/action-result";
@@ -18,17 +20,20 @@ import {
 } from "@/server/db/schema";
 import { takeNumbers } from "@/server/number-counters";
 import type { Transaction } from "@/server/order-action";
+import { SETTINGS_LOCK_SHARED, readSettings } from "@/server/settings";
 
 // The steps every submit shares (05-order-request-form.md, Order number; Checks at submit;
 // 06-approval-workflow.md, Allowed moves: Submit and Submit again; plan of 2.7; plan of 2.11):
 // Submit of a draft, new or taken back, and Submit again of a sent-back order. One copy, so the
 // checks, the total and the snapshot of the two moves never drift (developer-rules.md rule 1).
 //
+//   readSubmitSettings  the fields the Head sets and the default payment type, under the settings
+//                   lock taken shared (plan of 2.5d)
 //   readSubmitRows  every fact the checks need, each catalog row FOR SHARE
-//   failuresOf      submitRefusals() per order
+//   failuresOf      submitRefusals() per order, with the fields as set now
 //   numbersOf       the numbers of the orders that have none yet
-//   writePlan       the number where it is new, the first submitted_at, planned_total =
-//                   orderTotal(), stock_at_submit; while the order is DRAFT or RETURNED, the only
+//   writePlan       the hidden values of a never-numbered draft, the number where it is new, the
+//                   first submitted_at, planned_total = orderTotal(), stock_at_submit; while the order is DRAFT or RETURNED, the only
 //                   statuses at which `orders_guard` lets the plan change
 //   writeSnapshots  one order_revisions row per order, the next submission of its revision
 
@@ -44,6 +49,21 @@ export type SubmitRow = {
   facts: SubmitFacts;
   extras: bigint[];
 };
+
+/** What a submit reads of the settings (05 Fields the Head sets; 05 field 13). */
+export type SubmitSettings = { fields: OrderFields; defaultPaymentType: PaymentType };
+
+/**
+ * The fields the Head sets as they are at the moment of the submit (05 Fields the Head sets 4),
+ * read after the settings lock is taken shared, as the Principal's approval reads `finance_step`
+ * (plan of 2.5d, spec review Must fix 5): a save of the settings cannot pass a submit between its
+ * read and its commit. Taken after the orders' locks, as approve takes it.
+ */
+export async function readSubmitSettings(tx: Transaction): Promise<SubmitSettings> {
+  await tx.execute(SETTINGS_LOCK_SHARED);
+  const values = await readSettings(tx);
+  return { fields: values.order_fields, defaultPaymentType: values.default_payment_type };
+}
 
 /** The distinct ids, sorted: the order every lock is taken in. */
 export const ids = (values: readonly string[]) => [...new Set(values)].sort();
@@ -68,6 +88,9 @@ export async function readSubmitRows(
       paymentType: orders.paymentType,
       priority: orders.priority,
       urgentReason: orders.urgentReason,
+      requesterName: orders.requesterName,
+      comment: orders.comment,
+      referencePhotoFileId: orders.referencePhotoFileId,
     })
     .from(orders)
     .where(inArray(orders.id, [...orderIds]));
@@ -147,6 +170,7 @@ export async function readSubmitRows(
       paymentType: row.paymentType,
       extras: extras.map((extra) => extra.amount),
       facts: {
+        numbered: row.number !== null,
         branchActive: branchActive.get(row.branchId) === true,
         variantId: row.variantId,
         subtypeActive: subtype ? subtype.variantActive && subtype.productActive : null,
@@ -160,6 +184,9 @@ export async function readSubmitRows(
         price: row.price,
         priority: row.priority,
         urgentReason: row.urgentReason,
+        requesterName: row.requesterName,
+        comment: row.comment,
+        referencePhotoFileId: row.referencePhotoFileId,
         extras: extras.map((extra) => ({ active: extra.isActive })),
       },
     };
@@ -175,13 +202,14 @@ export function failuresOf(
   sent: readonly { id: string }[],
   rows: readonly SubmitRow[],
   today: string,
+  orderFields: OrderFields,
 ): OrderFailure[] {
   const byId = new Map(rows.map((row) => [row.id, row]));
   const failed: OrderFailure[] = [];
   for (const { id } of sent) {
     const row = byId.get(id);
     if (!row) continue;
-    const refused = Object.entries(submitRefusals(row.facts, today));
+    const refused = Object.entries(submitRefusals(row.facts, today, orderFields));
     if (refused.length === 0) continue;
     const fields: Record<string, FieldMessageKey> = {};
     for (const [cell, kind] of refused) fields[cell] = `errors.field.${kind}`;
@@ -227,28 +255,37 @@ export async function numbersOf(
 }
 
 /**
- * The plan facts of a submit, in one statement, while every order is still DRAFT or RETURNED: the
- * number where the order has none (05 Order number: "given at the first submit; never changes"),
- * `submitted_at` only at the first submit (plan of 2.11, decided item 4, Look first: 2.8 sorts by
- * the earliest submit), `planned_total` = orderTotal() and `stock_at_submit` at every submit
- * (decided item 4: the approvers of the current round decide on this plan and this stock).
+ * The plan facts of a submit, while every order is still DRAFT or RETURNED: the number where the
+ * order has none (05 Order number: "given at the first submit; never changes"), `submitted_at`
+ * only at the first submit (plan of 2.11, decided item 4, Look first: 2.8 sorts by the earliest
+ * submit), `planned_total` = orderTotal() and `stock_at_submit` at every submit (decided item 4:
+ * the approvers of the current round decide on this plan and this stock). A draft that never had a
+ * number first takes the hidden value of each hidden field; a numbered order keeps what it holds
+ * (05 Fields the Head sets 2 and 4; plan of 2.5d, decided item 2, Look first).
  */
 export async function writePlan(
   tx: Transaction,
   rows: readonly SubmitRow[],
   numbers: ReadonlyMap<string, string>,
   at: Date,
+  settings: SubmitSettings,
 ): Promise<void> {
-  // Every row passed the checks, so quantity and price are there (05 field 16).
-  const values = rows.map(
-    (row) =>
-      sql`(${row.id}::uuid, ${numbers.get(row.id) ?? null}::text, ${orderTotal({
-        quantity: row.quantity!,
-        price: row.price!,
-        extras: row.extras,
-        paymentType: row.paymentType,
-      }).toString()}::bigint)`,
-  );
+  await writeHiddenValues(tx, rows, settings);
+  // Every row passed the checks, so the quantity is there; the price unless the Head made it not
+  // required, and then no planned total (05 field 16; 08 Numbers the system calculates).
+  const values = rows.map((row) => {
+    const extras = row.number === null && isHidden(settings.fields, "extras") ? [] : row.extras;
+    const total =
+      row.price === null
+        ? null
+        : orderTotal({
+            quantity: row.quantity!,
+            price: row.price,
+            extras,
+            paymentType: row.paymentType,
+          }).toString();
+    return sql`(${row.id}::uuid, ${numbers.get(row.id) ?? null}::text, ${total}::bigint)`;
+  });
   // stock_at_submit is copied as the numeric(14,3) the branch holds now, no row is 0, a service
   // has none (05 field 4; review of the plan of 2.7, correction 3: never a JavaScript number).
   await tx.execute(sql`
@@ -262,6 +299,47 @@ export async function writePlan(
     from (values ${sql.join(values, sql`, `)}) as v(id, number, total),
          product_variants pv join products p on p.id = pv.product_id
     where o.id = v.id and pv.id = o.variant_id`);
+}
+
+/**
+ * The hidden values of the drafts that never had a number (05 Fields the Head sets 2), by
+ * withHiddenValues() of src/domain/order-fields.ts: one update per such draft, and its extra
+ * costs removed when they are hidden (a draft's rows may be removed: 05 Drafts 3).
+ */
+async function writeHiddenValues(
+  tx: Transaction,
+  rows: readonly SubmitRow[],
+  settings: SubmitSettings,
+): Promise<void> {
+  const fresh = rows.filter((row) => row.number === null);
+  if (fresh.length === 0) return;
+  const held = await tx
+    .select({
+      id: orders.id,
+      departmentId: orders.departmentId,
+      neededBy: orders.neededBy,
+      paymentType: orders.paymentType,
+      priority: orders.priority,
+      urgentReason: orders.urgentReason,
+      companyId: orders.companyId,
+      requesterName: orders.requesterName,
+      comment: orders.comment,
+      referencePhotoFileId: orders.referencePhotoFileId,
+    })
+    .from(orders)
+    .where(inArray(orders.id, ids(fresh.map((row) => row.id))));
+  for (const plan of held) {
+    const { keepExtras, ...values } = withHiddenValues(
+      settings.fields,
+      plan,
+      settings.defaultPaymentType,
+    );
+    const changed = (Object.keys(values) as (keyof typeof values)[]).some(
+      (key) => values[key] !== plan[key],
+    );
+    if (changed) await tx.update(orders).set(values).where(eq(orders.id, plan.id));
+    if (!keepExtras) await tx.delete(orderExtras).where(eq(orderExtras.orderId, plan.id));
+  }
 }
 
 /**

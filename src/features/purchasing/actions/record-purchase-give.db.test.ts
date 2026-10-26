@@ -12,6 +12,7 @@ import { insertBranch, setManagerRight } from "../../../../tests/helpers/branche
 import { setClock } from "../../../../tests/helpers/clock";
 import { insertDepartment, insertItem, insertOrder } from "../../../../tests/helpers/orders";
 import { insertUser } from "../../../../tests/helpers/users";
+import { getPurchaseForm } from "../queries/purchase-form";
 import { recordPurchase } from "./record-purchase";
 
 // "Give straight to requester" on a purchase record (build plan 5.4; plan of 5.4, decided items
@@ -56,7 +57,7 @@ async function order(
   });
 }
 
-type Made = Awaited<ReturnType<typeof order>>;
+type Made = Pick<Awaited<ReturnType<typeof order>>, "id" | "version" | "variantId">;
 
 function trip(scene: Scene, lines: { made: Made; give: boolean }[], userId = scene.owner.id) {
   return runOrdersAction(recordPurchase, userId, {
@@ -263,5 +264,40 @@ describe('recordPurchase with "Give straight to requester" (07 What saving a rec
     expect(result).toMatchObject({ ok: false, error: { code: "unexpected" } });
     expect(await db.select().from(purchases).where(eq(purchases.orderId, made.id))).toEqual([]);
     expect(await balanceOf(scene.branch.id, made.variantId)).toBeNull();
+  });
+});
+
+describe('"Give straight to requester" on an order without a department (05 Fields the Head sets 3; plan of 2.5d)', () => {
+  it("is refused on the server and not offered by the form; the same purchase without the tick saves", async () => {
+    const scene = await opened();
+    const item = await insertItem();
+    // Every other value that would let it through: goods, a Manager who may issue, Open.
+    const made = await insertOrder({
+      branchId: scene.branch.id,
+      ownerId: scene.owner.id,
+      status: "PURCHASING",
+      variantId: item.variantId,
+      departmentId: null,
+      plannedQty: "10",
+      plannedPrice: 5_000n,
+      paymentType: "CARD",
+      submittedAt: new Date(`${TODAY}T05:00:00Z`),
+      approvedAt: new Date("2031-05-05T07:00:00Z"),
+    });
+    expect(await trip(scene, [{ made, give: true }])).toMatchObject({
+      ok: false,
+      error: {
+        code: "invalid_input",
+        fields: { "lines.0.giveToRequester": "errors.field.noDepartment" },
+      },
+    });
+    expect(await db.select().from(purchases).where(eq(purchases.orderId, made.id))).toEqual([]);
+    expect(await issuesOf(scene.branch.id)).toEqual([]);
+
+    const form = await getPurchaseForm(scene.owner.id, [made.id]);
+    expect(form?.orders.map((one) => one.canGiveToRequester)).toEqual([false]);
+
+    expect(await trip(scene, [{ made, give: false }])).toMatchObject({ ok: true });
+    expect(await balanceOf(scene.branch.id, made.variantId)).toBe("10.000");
   });
 });

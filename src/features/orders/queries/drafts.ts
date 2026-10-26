@@ -10,6 +10,7 @@ import {
   seesDraftsGrid,
 } from "@/domain/drafts";
 import { behindDraftWall } from "@/domain/order-moves";
+import type { OrderFields } from "@/domain/order-fields";
 import { priceHintPercent } from "@/domain/order-totals";
 import { type BusinessDate, businessDate } from "@/domain/business-date";
 import {
@@ -134,6 +135,11 @@ export type DraftPage = {
   submitSet: SubmitSetDraft[];
   /** The business date of the injected clock, for submitRefusals() on the sheet (rule 10). */
   today: BusinessDate;
+  /**
+   * The fields the Head sets (05 Fields the Head sets): which cells the sheet shows, where, and
+   * which a submit requires.
+   */
+  fields: OrderFields;
 };
 
 const branchInput = z.uuid().nullable().catch(null);
@@ -358,6 +364,8 @@ export async function listDrafts(
       offset: (page - 1) * DRAFTS_PAGE_SIZE,
     });
     const set = await readRows(executor, ownSet, { limit: SUBMIT_SET_MAX, offset: 0 });
+    // The fields the Head sets, as the submit will read them (05 Fields the Head sets 4).
+    const fields = (await readSettings(executor)).order_fields;
     const submitSet = set.map((row) => ({
       id: row.id,
       version: row.version,
@@ -365,9 +373,9 @@ export async function listDrafts(
       productName: row.productName,
       subtypeName: row.subtypeName,
       departmentName: row.departmentName,
-      refusals: submitRefusals(shownFacts(row), today),
+      refusals: submitRefusals(shownFacts(row), today, fields),
     }));
-    return { rows, page, pages, total, submitSet, today };
+    return { rows, page, pages, total, submitSet, today, fields };
   });
 }
 

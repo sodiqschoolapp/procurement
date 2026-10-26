@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 
+import { ORDER_FIELDS_DEFAULT } from "@/domain/order-fields";
 import { SETTING_DEFAULTS } from "@/domain/settings";
 import { db } from "@/server/db/client";
 import { settings } from "@/server/db/schema";
@@ -31,6 +32,8 @@ describe("readSettings (build-plan 1.1)", () => {
       school_year_start: null,
       // 06 Finance step switched off: "on by default" (plan of 4.10c).
       finance_step: true,
+      // 05 Fields the Head sets, the "Default" column (plan of 2.5d).
+      order_fields: ORDER_FIELDS_DEFAULT,
     });
   });
 
