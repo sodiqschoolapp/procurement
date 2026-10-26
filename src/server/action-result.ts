@@ -145,6 +145,9 @@ export const FIELD_ERROR_KINDS = [
   // The Finance step switched off while orders wait for Finance or for settlement (06 Finance
   // step switched off 5; plan of 4.10c): the numbers of those orders.
   "financeStepWaiting",
+  // "Give straight to requester" on an order without a department (05 Fields the Head sets 3;
+  // plan of 2.5d).
+  "noDepartment",
 ] as const;
 export type FieldErrorKind = (typeof FIELD_ERROR_KINDS)[number];
 export type FieldMessageKey = `errors.field.${FieldErrorKind}`;

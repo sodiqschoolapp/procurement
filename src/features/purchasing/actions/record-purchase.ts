@@ -190,7 +190,8 @@ type Plan = {
   progress: "OPEN" | "DONE" | "DONE_SHORT" | "NOT_BOUGHT";
   isService: boolean;
   allowDecimal: boolean;
-  departmentId: string;
+  /** `null`: an order for no department (05 Fields the Head sets 3). */
+  departmentId: string | null;
   requesterName: string | null;
 };
 
@@ -237,7 +238,7 @@ async function plansOf(tx: Executor, orderIds: readonly string[]): Promise<Plan[
       progress: row.progress,
       isService: row.productType === "SERVICE",
       allowDecimal: row.allowDecimal,
-      departmentId: row.departmentId!,
+      departmentId: row.departmentId,
       requesterName: row.requesterName,
     })),
   );
@@ -375,10 +376,14 @@ export const recordPurchase = defineOrdersAction<RecordPurchaseInput>({
     const path = (orderId: string, field: string) => `lines.${at.indexOf(orderId)}.${field}`;
 
     // 5  "Give straight to requester": goods only (Decided ahead, question 9), and an issue, so
-    //    the right to issue in the branch as well (decided item 1, Look first).
+    //    the right to issue in the branch as well (decided item 1, Look first); never on an order
+    //    without a department, which is for no department (05 Fields the Head sets 3; plan of 2.5d).
     for (const plan of plans) {
       if (plan.isService && lineOf(plan.orderId).giveToRequester) {
         refuse(path(plan.orderId, "giveToRequester"), "errors.field.notAllowed");
+      }
+      if (plan.departmentId === null && lineOf(plan.orderId).giveToRequester) {
+        refuse(path(plan.orderId, "giveToRequester"), "errors.field.noDepartment");
       }
     }
     if (typed.lines.some((each) => each.giveToRequester)) {
@@ -543,7 +548,12 @@ export const recordPurchase = defineOrdersAction<RecordPurchaseInput>({
 
     // 5  The issues of the ticked records, after every receipt, in the split's order.
     const issues = new Map<string, { documentId: string; number: string }>();
-    const given = saved.filter(({ plan }) => lineOf(plan.orderId).giveToRequester);
+    // Each has a department: step 5 refused a ticked one without (05 Fields the Head sets 3).
+    const given = saved.flatMap(({ plan, ...rest }) =>
+      lineOf(plan.orderId).giveToRequester && plan.departmentId !== null
+        ? [{ ...rest, plan: { ...plan, departmentId: plan.departmentId } }]
+        : [],
+    );
     if (given.length > 0) {
       const responsible = await tx
         .select({ id: departments.id, name: departments.responsibleName })

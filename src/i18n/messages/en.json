@@ -100,7 +100,8 @@
       "aboveSent": "More than was sent.",
       "nothingToCount": "No items in stock here to count.",
       "financeStepWaiting": "Orders still wait for Finance or for settlement.",
-      "beforePrincipalApproval": "The date is before the Principal approved the order. Pick that day or a later one."
+      "beforePrincipalApproval": "The date is before the Principal approved the order. Pick that day or a later one.",
+      "noDepartment": "This order is for no department, so it cannot be given straight to a requester."
     },
     "file": {
       "tooLarge": "The file is larger than 10 MB. Choose a smaller file or take the photo again.",

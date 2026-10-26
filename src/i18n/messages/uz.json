@@ -100,7 +100,8 @@
       "aboveSent": "Yuborilganidan koʻp.",
       "nothingToCount": "Bu yerda sanash uchun ombordagi mahsulot yoʻq.",
       "financeStepWaiting": "Buyurtmalar hali moliyani yoki hisob-kitobni kutmoqda.",
-      "beforePrincipalApproval": "Sana buyurtma direktor tomonidan tasdiqlanishidan oldin. Shu kunni yoki keyingisini tanlang."
+      "beforePrincipalApproval": "Sana buyurtma direktor tomonidan tasdiqlanishidan oldin. Shu kunni yoki keyingisini tanlang.",
+      "noDepartment": "Bu buyurtmaning bo'limi yo'q, shuning uchun uni so'raganga to'g'ridan-to'g'ri berib bo'lmaydi."
     },
     "file": {
       "tooLarge": "Fayl 10 MB dan katta. Kichikroq fayl tanlang yoki suratni qaytadan oling.",
