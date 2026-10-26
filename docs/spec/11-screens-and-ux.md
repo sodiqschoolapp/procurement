@@ -43,7 +43,7 @@ A page a role cannot use is not shown greyed out; it is simply absent from the m
 
 1. **Top:** the filters (section 5) and the buttons Download Excel and Download PDF.
 2. **Rows:** one group row per product subtype and status (section 5, Group rows), opening to its orders; a tick box on every group row and every order.
-3. **Order sheet,** for the Manager and the Head: their drafts and the orders sent back or taken back to them, edited like a spreadsheet (rule 2), with one Submit (section 5, Drafts 4). A row shows six cells: product (the subtype picked in the same search; Product or Service, stock and measure shown under it), department, quantity with its measure, price, needed-by date and total; a user with several branches also sees the branch first. The other fields (brand, extra costs, payment type, priority, comment, requester, reference photo) open under "More" on the row. (Owner's decision of 25 October 2026.)
+3. **Order sheet,** for the Manager and the Head: their drafts and the orders sent back or taken back to them, edited like a spreadsheet (rule 2), with one Submit (section 5, Drafts 4). A row shows product (the subtype picked in the same search; Product or Service, stock and measure shown under it), quantity with its measure and total, and the fields the Head put in the row (by default department, price and needed-by date: six cells); a user with several branches also sees the branch first. The other fields that are not hidden open under "More" on the row (section 5, "Fields the Head sets"). (Owner's decision of 25 October 2026.)
 4. **Action bar,** fixed at the bottom when something is ticked: the count and totals of the ticked orders, and only the actions this user can take on all of them now.
 
 ## Order page layout
@@ -57,7 +57,7 @@ A page a role cannot use is not shown greyed out; it is simply absent from the m
 ## Rules for a smooth feel
 
 1. **Navigation.** A sidebar on desktop and a bottom tab bar on phones. Users with several branches get a branch switcher on top; the default is "All my branches".
-2. **The order sheet like a spreadsheet.** Tab and Enter move between cells, and Enter on the last row adds a draft. Typing in the product cell opens the search with photo, name, category and stock; when nothing matches, its last line adds the product or subtype (`04-catalogs.md` rule 8). The total of the sheet stays visible (of the ticked drafts when some are ticked). On a phone each draft becomes a card with the same six fields and "More".
+2. **The order sheet like a spreadsheet.** Tab and Enter move between cells, and Enter on the last row adds a draft. Typing in the product cell opens the search with photo, name, category and stock; when nothing matches, its last line adds the product or subtype (`04-catalogs.md` rule 8). The total of the sheet stays visible (of the ticked drafts when some are ticked). On a phone each draft becomes a card with the same fields and "More".
 3. **Buying on a phone.** The purchase form is built for one hand: one order or group row at a time, large buttons, "Same as planned", and the camera for the receipt.
 4. **Instant feedback.** Every button shows a loading state at once. Success shows a short message. Errors say in plain words what happened and what to do next.
 5. **No blank waiting.** Pages show grey placeholders in the shape of the content while loading, never a full-page spinner.

@@ -16,7 +16,7 @@ Every order keeps its own money count, so every order can be settled, checked an
 | Actual total | Actual goods + actual extra |
 | Difference | Planned total − actual total |
 
-A positive difference means money is left. A negative difference means more was spent. The totals of a group row or of ticked orders are the sums of the order values. Rounding is always half up, to whole so'm.
+A positive difference means money is left. A negative difference means more was spent. An order without a planned price (section 5, "Fields the Head sets") has no planned total and no difference: its Price and Total labels read "No planned price", it is left out of the overspend guard and of planned sums, and a sum that leaves orders out says how many. The totals of a group row or of ticked orders are the sums of the order values. Rounding is always half up, to whole so'm.
 
 ## The three colours
 

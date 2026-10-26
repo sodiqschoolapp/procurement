@@ -92,3 +92,4 @@ The Head can switch the Finance step off for the whole school, for example while
 5. **Switching off** is refused while any order is Waiting for Finance or Waiting for settlement; the Head sees those orders listed and switches off once none is left.
 6. **Switching on** changes only orders the Principal approves from then on. An order that skipped Finance keeps these rules until it is Closed, and after a reopen.
 7. Every switch is written to the audit log.
+8. **Price.** The Head can make the price per unit optional or hidden only while the step is off (section 5, "Fields the Head sets"). Switching the step on is refused while the price is not required, or while an order without a planned price is Waiting for Head or Waiting for Principal; the Head sees those orders listed. An order without a planned price never waits for Finance or settlement.
