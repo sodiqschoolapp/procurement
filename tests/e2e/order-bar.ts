@@ -21,12 +21,13 @@ export async function openMore(page: Page): Promise<void> {
 
 /**
  * One action of the bar, reachable: `target` is a selector inside the bar or a locator of it. The
- * action must be offered; under "More" it is opened first.
+ * action must be offered. "More" is opened first when there is one: a hidden button is not in the
+ * page's roles, so a role locator could not tell it from an action that is not offered.
  */
 export async function barAction(page: Page, target: string | Locator): Promise<Locator> {
   const action = typeof target === "string" ? orderBar(page).locator(target) : target;
-  await action.first().waitFor({ state: "attached" });
-  if (!(await action.first().isVisible())) await openMore(page);
+  await orderBar(page).waitFor();
+  await openMore(page);
   await expect(action.first()).toBeVisible();
   return action;
 }
