@@ -340,3 +340,20 @@ describe("counts by status and spending this month, per branch (10 Home page per
     expect(chosen.branches.map((each) => each.branchId)).toEqual([branch.id]);
   });
 });
+
+// 10 Home page per role ("Waiting for my approval, by branch"); 08 Numbers: an order without a
+// planned price is left out of planned sums, which say how many; plan of 2.5d-b.
+describe("an order without a planned price on the Head's home (08 Numbers; plan of 2.5d-b)", () => {
+  it("the branch's waiting line shows the priced total and 1 without a price", async () => {
+    setClock(AT);
+    const { branch, head, base } = await scene();
+    await insertOrder({ ...base, status: "PENDING_HEAD", plannedPrice: 4_500n });
+    await insertOrder({ ...base, status: "PENDING_HEAD", plannedPrice: null });
+    const home = await getHeadHome(head.id, branch.id);
+    expect(home.waiting.lines).toHaveLength(1);
+    expect(home.waiting.lines[0]).toMatchObject({
+      count: 2,
+      totals: { grand: 45_000n, unpriced: 1 },
+    });
+  });
+});

@@ -63,7 +63,8 @@ export async function ticked(ids: readonly string[], extra: Record<string, unkno
 
 export type PlanOptions = {
   qty?: string;
-  price?: bigint;
+  /** `null`: an order without a planned price (05 Fields the Head sets 3). */
+  price?: bigint | null;
   extra?: bigint;
   paymentType?: "CASH" | "TRANSFER" | "CARD";
   variantId?: string;
@@ -76,7 +77,7 @@ export async function atPrincipal(s: StepScene, plan: PlanOptions = {}) {
     ownerId: s.manager.id,
     variantId: plan.variantId,
     plannedQty: plan.qty ?? "100",
-    plannedPrice: plan.price ?? 5_000n,
+    plannedPrice: plan.price === undefined ? 5_000n : plan.price,
     paymentType: plan.paymentType ?? "CASH",
     neededBy: "2031-05-01",
   });

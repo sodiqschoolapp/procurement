@@ -20,7 +20,7 @@ import {
 } from "../../../tests/helpers/analytics";
 import { refusalOf } from "../../../tests/helpers/database-error";
 import { setClock } from "../../../tests/helpers/clock";
-import { setOrderStatus } from "../../../tests/helpers/orders";
+import { insertOrder, setOrderStatus } from "../../../tests/helpers/orders";
 import { insertUser } from "../../../tests/helpers/users";
 import type { Job } from "./job";
 import { analyticsRefresh } from "./analytics-refresh";
@@ -1156,5 +1156,60 @@ describe("analytics_refresh, the rows of Finance's 6.6b blocks (build-plan 6.6b)
       },
     ]);
     expect(rows.rows.some((row) => row.order_id === exact.id)).toBe(false);
+  });
+});
+
+// 08 Numbers: an order without a planned price "has no planned total and no difference"; 10
+// Analytics 5 (the refresh); plan of 2.5d-b, decided items 4 and 9 (Look first; review of the plan,
+// correction 1: `planned_cash` empty, `cash_needed` 0).
+describe("an order without a planned price (08 Numbers; plan of 2.5d-b)", () => {
+  it("a finished and a closed unpriced order and an unpriced one waiting refresh without error: no outcome, planned cash empty, nothing needed; a priced one beside them has both", async () => {
+    setClock("2031-05-10T05:00:00Z");
+    const scene = await spendingScene();
+    const done = await bought(scene, {
+      purchasedOn: "2031-05-02",
+      qty: "10.000",
+      unitPrice: "4500",
+      progress: "DONE",
+      plannedPrice: null,
+    });
+    const closed = await bought(scene, {
+      purchasedOn: "2031-05-02",
+      qty: "10.000",
+      unitPrice: "4500",
+      progress: "DONE",
+      plannedPrice: null,
+    });
+    const priced = await bought(scene, {
+      purchasedOn: "2031-05-02",
+      qty: "10.000",
+      unitPrice: "5200",
+      progress: "DONE",
+    });
+    for (const order of [done, closed, priced]) {
+      await buyingEvent(order.orderId, order.ownerId, "RECORD_PURCHASE", "2031-05-02T05:00:00Z");
+    }
+    await setOrderStatus(closed.orderId, "CLOSED");
+    const waiting = await insertOrder({
+      branchId: scene.branch.id,
+      ownerId: scene.manager.id,
+      departmentId: scene.department.id,
+      status: "PENDING_PRINCIPAL",
+      plannedPrice: null,
+    });
+
+    await expect(refreshNow()).resolves.toBeUndefined();
+
+    expect(await outcomeOf(done.orderId)).toBeNull();
+    expect(await outcomeOf(closed.orderId)).toBeNull();
+    expect(await outcomeOf(priced.orderId)).toMatchObject({ planned: "50000", colour: "red" });
+    const cash = await db.execute<{ order_id: string; planned_cash: string | null; cash_needed: string }>(sql`
+      select order_id, planned_cash::text as planned_cash, cash_needed::text as cash_needed
+      from analytics_orders
+      where order_id in (${done.orderId}, ${waiting.id}, ${priced.orderId})`);
+    const byId = new Map(cash.rows.map((row) => [row.order_id, row]));
+    expect(byId.get(done.orderId)).toMatchObject({ planned_cash: null, cash_needed: "0" });
+    expect(byId.get(waiting.id)).toMatchObject({ planned_cash: null, cash_needed: "0" });
+    expect(byId.get(priced.orderId)).toMatchObject({ planned_cash: "50000" });
   });
 });
