@@ -45,7 +45,8 @@ Every term the spec defines, in the spec's own words, with the file that defines
 | Order list | All orders of one branch. | `05-order-request-form.md` |
 | Group row | One row of a list showing every order of one product subtype and one status in a branch, for example "Tata pens, 30". Acting on it acts on every order in it; each order keeps its own number, approvals, history and money. | `05-order-request-form.md` (Group rows) |
 | Ticking | Choosing several orders or group rows to act on them in one action. | `05-order-request-form.md` |
-| Action | One user action on one or more ticked orders: all or nothing, at most 200 orders. | `06-approval-workflow.md` rule 8 |
+| Order sheet | The Manager's or the Head's drafts and sent-back or taken-back orders on the order list, edited like a spreadsheet in six cells with the rest under "More". One Submit with nothing ticked sends the user's own ready drafts that have no number; sent-back, taken-back and other owners' rows go only when ticked. | `05-order-request-form.md`, `11-screens-and-ux.md` |
+| Action | One user action on one or more ticked orders: all or nothing, at most 200 orders (one exception: Submit with nothing ticked in the order sheet, rule 8). | `06-approval-workflow.md` rule 8 |
 | Order number | Branch code, two-digit year, four-digit counter: `CHL-26-0142`. Each order has its own; given at the first submit; never changes, never reused. | `05-order-request-form.md` |
 | Revision | "rev 2", "rev 3": goes up by 1 each time a sent-back order is submitted again. | `05-order-request-form.md`, `06-approval-workflow.md` |
 | Status | One of ten: `DRAFT` Draft, `PENDING_HEAD` Waiting for Head, `PENDING_PRINCIPAL` Waiting for Principal, `PENDING_FINANCE` Waiting for Finance, `RETURNED` Sent back for editing, `PURCHASING` Open, `SETTLEMENT` Waiting for settlement, `CLOSED` Closed, `REJECTED` Rejected, `CANCELLED` Cancelled. | `06-approval-workflow.md` |

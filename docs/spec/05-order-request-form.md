@@ -3,14 +3,14 @@
 > Part of the School Procurement & Warehouse Platform spec, baseline of 10 October 2026 (document revision 123).
 > Index and reading order: `docs/spec/00-index.md`. Read-only: this folder changes only through `/spec-change`.
 
-Each branch keeps one order list. An order is one product or service for one department: the Manager adds orders on any day, ticks several and submits them together, and every order is then approved, bought, settled and closed on its own. Every role works on many ticked orders at once. (Owner's decision of 14 and 15 October 2026; this chapter replaced the order request form.)
+Each branch keeps one order list. An order is one product or service for one department: the Manager adds orders on any day in the order sheet and submits every ready one with one click, and every order is then approved, bought, settled and closed on its own. Every role works on many ticked orders at once. (Owner's decision of 14 and 15 October 2026; this chapter replaced the order request form.)
 
 ## Order
 
 | # | Field | How it is filled | Rule |
 | --- | --- | --- | --- |
 | 1 | Branch | Picked; prefilled when the Manager has one branch | Required. Locked once the order is submitted. |
-| 2 | Product or service | Picked from the catalog; search by name, shows photo, category and stock. When nothing matches, the Manager adds the product or subtype there (`04-catalogs.md` rule 8). A Type column beside it shows Product or Service, filled from the catalog | Required. |
+| 2 | Product or service | Picked from the catalog; search by name, shows photo, category and stock. When nothing matches, the Manager adds the product or subtype there (`04-catalogs.md` rule 8). Product or Service is shown with it, filled from the catalog | Required. |
 | 3 | Subtype | Picked from the product's subtypes | Required when the product has subtypes. |
 | 4 | In stock ("how many left") | Automatic: current stock of this branch | Read-only. A copy is saved at submit. Services show a dash. |
 | 5 | Photo | Automatic from the catalog: subtype photo, else product photo | The Manager may attach one extra reference photo. |
@@ -35,14 +35,15 @@ Under the list, the totals of the ticked orders: goods, extra costs, grand total
 1. The Manager adds draft orders to the branch's list at any time. A draft is visible to its owner and the Head only.
 2. **Same thing twice in drafts.** When the Manager adds a draft whose branch, subtype and department equal one of the Manager's own drafts that was never submitted (it has no number), no second draft is made: the existing draft's quantity rises by the new quantity, and its other fields stay. The Manager sees "Added to your draft: now 20".
 3. **Autosave.** A draft saves itself after each change and shows "Saved". The owner can delete a draft that was never submitted.
-4. **Submit.** The Manager ticks drafts and presses "Submit"; each ticked order goes to the Head (to the Principal when the Head is the creator) with its own number.
-5. **Sent back and taken back orders** stand in the drafts grid with their number and the label "Sent back" or "Taken back", and are edited and submitted again there. They never merge with a draft (point 2).
+4. **Submit.** One "Submit" with nothing ticked sends every ready draft of the user's own that has no number; when some rows are ticked, only those are sent. A sent-back or taken-back order, and another owner's draft in the Head's view, are sent only when ticked. Each goes to the Head (to the Principal when the Head is the creator) with its own number. A draft that is not ready (see "Checks at submit") stays in the sheet, marked on its cell. (Owner's decision of 25 October 2026.)
+5. **Sent back and taken back orders** stand in the order sheet with their number and the label "Sent back" or "Taken back", and are edited and submitted again there. They never merge with a draft (point 2).
+6. **Fewer repeats.** A new draft takes the branch, department and needed-by date of the draft above it; each can be changed.
 
 ## Order number
 
 The format is branch code, two-digit year, four-digit counter: `CHL-26-0142`. Each order has its own number.
 
-1. The number is given at the first submit. Drafts show the word "Draft", so deleted drafts leave no gaps.
+1. The number is given at the first submit. A draft shows no number, so deleted drafts leave no gaps.
 2. The counter runs per branch per calendar year in Tashkent time and starts at 0001. After 9999 it simply grows to five digits.
 3. A number never changes and is never reused. Rejected and cancelled orders keep theirs.
 4. An order sent back and submitted again keeps its number and shows "rev 2", "rev 3" beside it.
@@ -50,10 +51,10 @@ The format is branch code, two-digit year, four-digit counter: `CHL-26-0142`. Ea
 
 ## Checks at submit
 
-- At most 200 orders in one submit.
-- Every required field of every ticked order is filled, and no order uses a deactivated catalog entry.
+- At most 200 orders in one submit. With more ready drafts, the first 200 in the order they were added are sent, and Submit again sends the rest.
+- Every required field of every order being sent is filled, and no order uses a deactivated catalog entry.
 - No needed-by date is in the past.
-- One failing order stops the whole submit: nothing is submitted. Errors appear on the exact cell of the exact order and in a short list on top; the screen scrolls to the first one.
+- A draft that fails a check is not sent and stays in the sheet; the ready ones are sent. A draft that changed since the screen showed it refuses the whole submit, and the screen refreshes. When drafts are ticked, one failing draft stops the whole submit: nothing is submitted (06 rule 8). Either way, errors appear on the exact cell of the exact order and in a short list on top; the screen scrolls to the first one.
 
 ## Group rows
 
