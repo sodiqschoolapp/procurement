@@ -346,6 +346,29 @@ describe("waitingFor (06 Statuses, Who acts next; decided item 5)", () => {
   });
 });
 
+describe("waitingFor with the Open order's facts (06 Finance step switched off 3; plan of 2.9b, decided item 4, Look first)", () => {
+  const finished = { skippedFinance: true, progress: "DONE", ownerClosesAlone: false } as const;
+
+  it("a finished order that skipped Finance, whose owner may not close alone, waits for the Head", () => {
+    expect(waitingFor("PURCHASING", finished)).toBe("HEAD");
+    expect(waitingFor("PURCHASING", { ...finished, progress: "NOT_BOUGHT" })).toBe("HEAD");
+    expect(waitingFor("PURCHASING", { ...finished, progress: "DONE_SHORT" })).toBe("HEAD");
+  });
+
+  it("otherwise an Open order waits for its owner, as 06 Statuses says", () => {
+    expect(waitingFor("PURCHASING", { ...finished, ownerClosesAlone: true })).toBe("OWNER");
+    expect(waitingFor("PURCHASING", { ...finished, progress: "OPEN" })).toBe("OWNER");
+    // An exact match with CLOSE_ALONE off: the owner can still Send to settlement.
+    expect(waitingFor("PURCHASING", { ...finished, skippedFinance: false })).toBe("OWNER");
+  });
+
+  it("the facts change no other status", () => {
+    for (const status of REQUEST_STATUSES.filter((status) => status !== "PURCHASING")) {
+      expect(waitingFor(status, finished)).toBe(waitingFor(status));
+    }
+  });
+});
+
 describe("isOverdue (edge case 'The needed-by date passes while the order waits'; plan of 2.13, decided item 8)", () => {
   const today = "2026-10-16";
   const yesterday = "2026-10-15";
