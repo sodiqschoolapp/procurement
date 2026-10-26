@@ -269,6 +269,7 @@ describe("tickedSummary: the action bar (11 Order list layout 4; 06 rule 8; deci
       extras: 3_000n,
       grand: 63_000n,
       byPaymentType: { CASH: 50_000n, TRANSFER: 13_000n, CARD: 0n },
+      unpriced: 0,
     });
     expect(summary.actions).toEqual(["APPROVE", "SEND_BACK", "REJECT", "CANCEL"]);
     const c = await order({ ...base, status: "PENDING_PRINCIPAL" });
@@ -839,6 +840,7 @@ describe("the three colours of orders, group rows and ticked orders (08 The thre
       number: { colour: "red", orders: 1 },
       price: { colour: "green", orders: 3 },
       total: { colour: "green", difference: 0n },
+      unpriced: 0,
     });
     const byId = new Map(open.orders.map((each) => [each.id, each.colours]));
     expect(byId.get(exact.id)?.number).toEqual({ colour: "green", difference: "0" });
@@ -872,6 +874,7 @@ describe("the three colours of orders, group rows and ticked orders (08 The thre
       number: { colour: "amber", orders: 1 },
       price: { colour: "green", orders: 2 },
       total: { colour: "amber", difference: 50_000n },
+      unpriced: 0,
     });
     // Another branch's order is missing, never counted (03 rule 1).
     const withTheirs = await tickedSummary(manager.id, [exact.id, theirs.id]);
@@ -880,6 +883,7 @@ describe("the three colours of orders, group rows and ticked orders (08 The thre
       number: { colour: "green", orders: 1 },
       price: { colour: "green", orders: 1 },
       total: { colour: "green", difference: 0n },
+      unpriced: 0,
     });
     // Only a Sent back order: no colours.
     expect((await tickedSummary(manager.id, [sentBack.id])).colours).toBeNull();
@@ -897,6 +901,7 @@ describe("the three colours of orders, group rows and ticked orders (08 The thre
       number: { colour: "green", orders: 1 },
       price: { colour: "red", orders: 1 },
       total: { colour: "grey" },
+      unpriced: 0,
     });
     const still = groups[0]!.orders.find((each) => each.id === buying.id)!;
     expect(still.colours).toEqual({

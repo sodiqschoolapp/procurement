@@ -1,7 +1,9 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 
+import { ORDER_FIELDS_DEFAULT } from "@/domain/order-fields";
 import { approveOrders } from "@/features/orders/actions/approve";
+import { submitDrafts } from "@/features/orders/actions/submit";
 import { setUserActive } from "@/features/users/actions/users";
 import { listBranchVacancies } from "@/features/users/queries/users";
 import { runAction } from "@/server/action";
@@ -21,8 +23,11 @@ import {
   ticked,
 } from "../../../../tests/helpers/finance-step";
 import { heldWhile } from "../../../../tests/helpers/held-while";
+import { setOrderFields } from "../../../../tests/helpers/order-fields";
 import { insertOrder, setOrderStatus } from "../../../../tests/helpers/orders";
 import { insertUser } from "../../../../tests/helpers/users";
+import { getFinanceStepWaiting } from "../queries/settings";
+import { saveSettings } from "./save-settings";
 import { switchFinanceStep } from "./switch-finance-step";
 
 // The Head's switch of the Finance step (06-approval-workflow.md, Finance step switched off 5, 6
@@ -239,5 +244,162 @@ describe("no Finance vacancy while the step is off (03 rule 5; 10 Notifications;
     expect(await vacated(true)).toEqual([{ params: expect.objectContaining({ role: "FINANCE" }) }]);
     expect(await vacated(false)).toEqual([]);
     await setFinanceStep(true);
+  });
+});
+
+// 06 Finance step switched off 8: "Switching the step on is refused while the price is not
+// required, or while an order without a planned price is Waiting for Head or Waiting for
+// Principal; the Head sees those orders listed"; plan of 2.5d-b, decided item 7, Look first.
+describe("switching on with the price (06 Finance step switched off 8; plan of 2.5d-b)", () => {
+  async function numberOf(id: string) {
+    const [row] = await db.select({ number: orders.number }).from(orders).where(eq(orders.id, id));
+    return row!.number!;
+  }
+
+  it("is refused while the price is optional, and nothing is written", async () => {
+    setClock(`${DAY}T07:00:00Z`);
+    await setFinanceStep(false);
+    await setOrderFields({ price: { ask: "optional", place: "row" } });
+    const head = await insertUser("HEAD");
+    expect(await runAction(switchFinanceStep, head.id, { on: true })).toMatchObject({
+      ok: false,
+      error: {
+        code: "invalid_input",
+        fields: { orders: "errors.field.financeStepPriceNotRequired" },
+      },
+    });
+    expect(await storedStep()).toBe(false);
+    await setOrderFields({});
+  });
+
+  it("is refused while an unpriced order waits for Principal and one for Head, naming both; the orders a wrong filter would count do not block (D40)", async () => {
+    setClock(`${DAY}T07:00:00Z`);
+    await setFinanceStep(false);
+    await setOrderFields({});
+    const head = await insertUser("HEAD");
+    const [first, second] = [await insertBranch(), await insertBranch()];
+    const owner = await insertUser("MANAGER", { branches: [first.id, second.id] });
+    const unpriced = { ownerId: owner.id, plannedPrice: null };
+    const atPrincipal = await insertOrder({
+      ...unpriced,
+      branchId: first.id,
+      status: "PENDING_PRINCIPAL",
+    });
+    const atHead = await insertOrder({ ...unpriced, branchId: second.id, status: "PENDING_HEAD" });
+    // Beside them, each of which a wrong filter would count: a priced order Waiting for
+    // Principal, an unpriced Open order that skipped Finance, an unpriced taken-back Draft and an
+    // unpriced Sent-back order.
+    await insertOrder({ ownerId: owner.id, branchId: first.id, status: "PENDING_PRINCIPAL" });
+    const open = await insertOrder({ ...unpriced, branchId: first.id, status: "PURCHASING" });
+    await db.update(orders).set({ skippedFinance: true }).where(eq(orders.id, open.id));
+    await insertOrder({ ...unpriced, branchId: first.id, status: "DRAFT", number: "TST-26-9001" });
+    await insertOrder({ ...unpriced, branchId: second.id, status: "RETURNED" });
+
+    const names = [await numberOf(atPrincipal.id), await numberOf(atHead.id)].sort().join(", ");
+    expect(await runAction(switchFinanceStep, head.id, { on: true })).toMatchObject({
+      ok: false,
+      error: {
+        code: "invalid_input",
+        fields: { orders: "errors.field.financeStepUnpriced" },
+        available: { orders: names },
+      },
+    });
+    expect(await storedStep()).toBe(false);
+    // The list on /settings names the same two (06 rule 8: "the Head sees those orders listed").
+    expect((await getFinanceStepWaiting(head.id, true)).map((each) => each.id).sort()).toEqual(
+      [atPrincipal.id, atHead.id].sort(),
+    );
+
+    await setOrderStatus(atPrincipal.id, "REJECTED");
+    await setOrderStatus(atHead.id, "REJECTED");
+    expect(await runAction(switchFinanceStep, head.id, { on: true })).toMatchObject({
+      ok: true,
+      data: { changed: true, on: true },
+    });
+    expect(await storedStep()).toBe(true);
+  });
+});
+
+// The Done when's same-moment case (review of the plan of 2.5d-b, correction 3): a submit reads
+// the price setting under the settings lock taken shared, so the Head cannot make the price
+// required and switch the step on between the submit's read and its commit. A third transaction
+// holds the branch's number counter, which the submit takes after the settings lock; the submit
+// and the save meet on nothing besides the advisory lock (.claude/rules/tests.md).
+const HOLD_COUNTER = "select 1 from number_counters where branch_id = $1 for update";
+
+describe("a submit and the Head's price setting at the same moment (06 rule 8; 05 Fields the Head sets 4)", () => {
+  async function unpricedDraft() {
+    const s = await stepScene();
+    const draft = await insertOrder({
+      branchId: s.branch.id,
+      ownerId: s.manager.id,
+      plannedPrice: null,
+    });
+    // The branch's counter row exists, so the submit's upsert waits on the held row.
+    await db.execute(sql`insert into number_counters (scope, branch_id, year, last_value, created_at)
+      values ('ORD', ${s.branch.id}, 2031, 0, now()) on conflict do nothing`);
+    return { s, draft };
+  }
+
+  it("the save making the price required waits for the submit; the submitted order then refuses the switch on, named", async () => {
+    setClock(`${DAY}T07:00:00Z`);
+    await setFinanceStep(false);
+    await setOrderFields({ price: { ask: "optional", place: "row" } });
+    const { s, draft } = await unpricedDraft();
+
+    const [submitted, saved] = await heldWhile(
+      HOLD_COUNTER,
+      [s.branch.id],
+      [
+        async () => runOrdersAction(submitDrafts, s.manager.id, await ticked([draft.id])),
+        () =>
+          runAction(saveSettings, s.head.id, {
+            order_fields: { ...ORDER_FIELDS_DEFAULT, price: { ask: "required", place: "row" } },
+          }),
+      ],
+    );
+
+    expect(submitted).toMatchObject({ ok: true });
+    expect(saved).toMatchObject({ ok: true });
+    expect((await ordersNow([draft.id])).get(draft.id)).toMatchObject({ status: "PENDING_HEAD" });
+    const [row] = await db
+      .select({ number: orders.number, price: orders.plannedPrice })
+      .from(orders)
+      .where(eq(orders.id, draft.id));
+    expect(row!.price).toBeNull();
+    expect(await runAction(switchFinanceStep, s.head.id, { on: true })).toMatchObject({
+      ok: false,
+      error: {
+        fields: { orders: "errors.field.financeStepUnpriced" },
+        available: { orders: row!.number },
+      },
+    });
+    expect(await storedStep()).toBe(false);
+    await setOrderStatus(draft.id, "REJECTED");
+  });
+
+  it("the switch on during the held submit waits, then is refused on the price", async () => {
+    setClock(`${DAY}T07:00:00Z`);
+    await setFinanceStep(false);
+    await setOrderFields({ price: { ask: "optional", place: "row" } });
+    const { s, draft } = await unpricedDraft();
+
+    const [submitted, switched] = await heldWhile(
+      HOLD_COUNTER,
+      [s.branch.id],
+      [
+        async () => runOrdersAction(submitDrafts, s.manager.id, await ticked([draft.id])),
+        () => runAction(switchFinanceStep, s.head.id, { on: true }),
+      ],
+    );
+
+    expect(submitted).toMatchObject({ ok: true });
+    expect(switched).toMatchObject({
+      ok: false,
+      error: { fields: { orders: "errors.field.financeStepPriceNotRequired" } },
+    });
+    expect(await storedStep()).toBe(false);
+    await setOrderStatus(draft.id, "REJECTED");
+    await setOrderFields({});
   });
 });
