@@ -101,7 +101,7 @@
       "nothingToCount": "No items in stock here to count.",
       "financeStepWaiting": "Orders still wait for Finance or for settlement.",
       "beforePrincipalApproval": "The date is before the Principal approved the order. Pick that day or a later one.",
-      "noDepartment": "This order is for no department, so it cannot be given straight to a requester."
+      "noDepartment": "This order has no department, so it cannot be given straight to a department."
     },
     "file": {
       "tooLarge": "The file is larger than 10 MB. Choose a smaller file or take the photo again.",
@@ -620,13 +620,13 @@
       "allDefault": "Default",
       "historyLine": "{field}: {ask}, {place}",
       "field": {
-        "department": "Requested by (department)",
+        "department": "Department",
         "neededBy": "Needed by",
         "price": "Price per unit",
         "paymentType": "Payment type",
         "priority": "Priority",
         "brand": "Brand or company",
-        "requesterName": "Requester name",
+        "requesterName": "Person",
         "comment": "Comment",
         "referencePhoto": "Reference photo",
         "extras": "Extra costs"
