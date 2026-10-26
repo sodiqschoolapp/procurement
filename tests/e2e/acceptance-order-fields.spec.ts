@@ -46,7 +46,7 @@ async function writeFields(value: unknown): Promise<void> {
 }
 
 /** The Head sets three fields on /settings and saves; the page says so. */
-async function headSetsFields(page: Page, scene: Scene): Promise<void> {
+async function headSetsFields(page: Page, scene: Scene, financeStep = true): Promise<void> {
   await as(page, scene.head);
   await page.goto("/settings");
   const block = page.locator("[data-order-fields]");
@@ -59,12 +59,13 @@ async function headSetsFields(page: Page, scene: Scene): Promise<void> {
   await block
     .getByRole("combobox", { name: of.placeLabel.replace("{field}", of.field.brand) })
     .selectOption("row");
-  // With the Finance step on the price offers Required only (06 Finance step switched off 8).
+  // With the Finance step on the price offers Required only; off, all three (06 Finance step
+  // switched off 8).
   await expect(
     block
       .getByRole("combobox", { name: of.askLabel.replace("{field}", of.field.price) })
       .locator("option"),
-  ).toHaveCount(1);
+  ).toHaveCount(financeStep ? 1 : 3);
   expect(await scrollsSideways(page)).toBe(false);
   await block.getByRole("button", { name: of.save }).click();
   await expect(page.getByText(of.saved).first()).toBeVisible();
@@ -202,7 +203,7 @@ for (const width of WIDTHS) {
       const scene = await newScene();
       try {
         // The Head hides Needed by and makes department and price optional.
-        await headSetsFields(page, scene);
+        await headSetsFields(page, scene, false);
         await headSetsPrice(page, "optional");
 
         // 10 folders with no department and no price; the sheet has no needed-by cell.
