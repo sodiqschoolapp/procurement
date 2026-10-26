@@ -967,3 +967,23 @@ describe("an order without a department or a needed-by date in the list (05 Fiel
     expect(bare.id).not.toBe(dated.id);
   });
 });
+
+describe("the branch wall holds for an order without a department in the list (03 rule 1; permission review of 2.5d)", () => {
+  it("a Manager of another branch, no branch filter, sees neither its group nor its download row", async () => {
+    setClock("2031-05-01T05:00:00Z");
+    const { base } = await scene();
+    const bare = await order({
+      ...base,
+      status: "PENDING_HEAD",
+      departmentId: null,
+      neededBy: null,
+    });
+    const other = await scene();
+    const page = await listOrderGroups(other.manager.id);
+    expect(page.groups.flatMap((group) => group.orders.map((one) => one.id))).not.toContain(
+      bare.id,
+    );
+    const download = await orderDownload(other.manager.id);
+    expect(download.orders.map((one) => one.id)).not.toContain(bare.id);
+  });
+});

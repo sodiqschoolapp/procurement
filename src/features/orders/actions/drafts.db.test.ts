@@ -887,3 +887,40 @@ describe("a total past MONEY_MAX is refused as too large (05 field 16; developer
     expect(await orderRow(draft.id)).toMatchObject({ plannedQty: "10.000", version: 1 });
   });
 });
+
+describe("a draft without a department and the branch wall (03 rule 1; Manager rights; permission review of 2.5d)", () => {
+  it("a Manager of another branch adding there without a department is Not found; one with CREATE_REQUESTS off is forbidden; nothing is written", async () => {
+    const { manager, base, branch } = await scene();
+    const noDepartment = { branchId: base.branchId, variantId: base.variantId, quantity: "1" };
+    const outsider = await insertUser("MANAGER", { branches: [(await insertBranch()).id] });
+    expect(await addDraft(outsider.id, noDepartment)).toMatchObject({
+      ok: false,
+      error: { code: "not_found" },
+    });
+    await setManagerRight(manager.id, "CREATE_REQUESTS", false);
+    expect(await addDraft(manager.id, noDepartment)).toMatchObject({
+      ok: false,
+      error: { code: "forbidden" },
+    });
+    const written = await db.select().from(orders).where(eq(orders.branchId, branch.id));
+    expect(written).toEqual([]);
+    // The fixture's right back on, the same add saves (D38).
+    await setManagerRight(manager.id, "CREATE_REQUESTS", true);
+    expect(await addDraft(manager.id, noDepartment)).toMatchObject({ ok: true });
+  });
+
+  it("emptying the department with a branch of another school branch the owner may not use is refused; nothing changes", async () => {
+    const { manager, base } = await scene();
+    const draft = await draftOf(manager.id, base);
+    const foreign = await insertBranch();
+    expect(
+      await editDraft(manager.id, {
+        id: draft.id,
+        version: 1,
+        branchId: foreign.id,
+        departmentId: null,
+      }),
+    ).toMatchObject({ ok: false });
+    expect(await orderRow(draft.id)).toMatchObject({ version: 1, ...rowOf(base) });
+  });
+});

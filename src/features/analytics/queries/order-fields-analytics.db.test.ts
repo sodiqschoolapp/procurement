@@ -85,3 +85,27 @@ describe("analytics and reports with an order without a department or a needed-b
     expect(report.departments.map((row) => row.amount)).toEqual([10_000n]);
   });
 });
+
+describe("the branch wall holds for an order without a department (03 rule 1; permission review of 2.5d)", () => {
+  it("a Principal of another branch, no branch filter: it is in no row and no count", async () => {
+    const { bare } = await scene();
+    const elsewhere = await spendingScene();
+    const principal = await insertUser("PRINCIPAL", { branches: [elsewhere.branch.id] });
+    const list = await getStatusOrders(
+      principal.id,
+      THIS_MONTH,
+      NO_ANALYTICS_FILTERS,
+      { kind: "status", status: null },
+      "all",
+    );
+    expect(list.count).toBe(0);
+    expect(list.rows.map((row) => row.orderId)).not.toContain(bare.orderId);
+    const register = await getPurchaseRegister(
+      principal.id,
+      { range: MAY, filters: NO_ANALYTICS_FILTERS },
+      "all",
+    );
+    expect(register.rows.map((row) => row.purchaseId)).not.toContain(bare.purchaseId);
+    expect(register.rows).toEqual([]);
+  });
+});
