@@ -112,10 +112,12 @@ export async function writeOrdersExcel(sheet: DownloadSheet): Promise<Uint8Array
       subtype: line.subtype,
       quantity: quantityCellValue(line.quantity),
       measure: line.measure,
-      price: moneyCellValue(line.price),
+      // An order without a planned price says so in its cell (08 Numbers).
+      price: line.price === null ? sheet.noPlannedPrice : moneyCellValue(line.price),
       extras: moneyCellValue(line.extras),
       paymentType: line.paymentType,
-      plannedTotal: moneyCellValue(line.plannedTotal),
+      plannedTotal:
+        line.plannedTotal === null ? sheet.noPlannedPrice : moneyCellValue(line.plannedTotal),
       // Before Open, and a price while nothing is received: empty cells.
       actualQty: line.actualQty === null ? null : quantityCellValue(line.actualQty),
       actualPrice: line.actualPrice === null ? null : moneyCellValue(line.actualPrice),
@@ -147,6 +149,9 @@ export async function writeOrdersExcel(sheet: DownloadSheet): Promise<Uint8Array
     row.getCell(amountColumn).value = moneyCellValue(total.amount);
     row.getCell(amountColumn).numFmt = MONEY_FORMAT;
     if (total.key === "grand") row.font = { bold: true };
+  }
+  if (sheet.unpricedLine !== null) {
+    worksheet.addRow([]).getCell(labelColumn).value = sheet.unpricedLine;
   }
 
   return new Uint8Array(await workbook.xlsx.writeBuffer());

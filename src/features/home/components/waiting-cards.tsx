@@ -10,6 +10,7 @@ import { ORDER_ACTION_MAX } from "@/domain/order-moves";
 import type { WireOrderGroup } from "@/features/orders/list-wire";
 import { ApproveButton } from "@/features/orders/components/approve-button";
 import { MoveButton } from "@/features/orders/components/move-button";
+import { usePlannedMoney, usePlannedSum } from "@/features/orders/components/planned-sum";
 import { useFormatters } from "@/i18n/use-formatters";
 
 import type { CardMove } from "../queries/principal-home";
@@ -68,6 +69,8 @@ function WaitingCard({
   const tPayment = useTranslations("paymentTypes");
   const tCommon = useTranslations("common");
   const format = useFormatters();
+  const plannedSum = usePlannedSum();
+  const plannedMoney = usePlannedMoney();
   const [open, setOpen] = useState(false);
   const [failed, setFailed] = useState<Failed>(null);
   const { group, moves } = card;
@@ -101,7 +104,11 @@ function WaitingCard({
             data-card-total
             className="text-heading font-semibold whitespace-nowrap tabular-nums"
           >
-            {format.money(BigInt(group.summary.totals.grand))}
+            {plannedSum(
+                group.summary.totals.grand,
+                group.summary.totals.unpriced,
+                group.orders.length,
+              )}
           </span>
         </div>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
@@ -166,7 +173,7 @@ function WaitingCard({
               <span className="tabular-nums">
                 {format.quantity(order.quantity)} {group.unitShortName}
               </span>
-              <span className="tabular-nums">{format.money(BigInt(order.price))}</span>
+              <span className="tabular-nums">{plannedMoney(order.price)}</span>
               <span>{tPayment(order.paymentType)}</span>
               {order.neededBy !== null && (
                 <span className="tabular-nums">{format.date(order.neededBy)}</span>
@@ -209,7 +216,11 @@ function WaitingCard({
             <ApproveButton
               orders={approveOrders}
               versionOf={versionOf}
-              total={format.money(BigInt(group.summary.totals.grand))}
+              total={plannedSum(
+                group.summary.totals.grand,
+                group.summary.totals.unpriced,
+                group.orders.length,
+              )}
               financeStep={financeStep}
               onAnswer={setFailed}
             />

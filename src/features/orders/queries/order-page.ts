@@ -173,8 +173,11 @@ export type OrderPageActual = {
   goods: bigint;
   extras: bigint;
   total: bigint;
-  /** Planned total − actual total: above 0 money is left, below 0 more was spent. */
-  difference: bigint;
+  /**
+   * Planned total − actual total: above 0 money is left, below 0 more was spent; null for an order
+   * without a planned price, which has no difference (08 Numbers).
+   */
+  difference: bigint | null;
 };
 
 export type OrderPage = {
@@ -477,9 +480,10 @@ async function readPage(db: Executor, actor: Actor, id: string): Promise<OrderPa
   const records = buying ? await orderRecords(db, row.id) : null;
   const received = records ? actualQuantity(records) : null;
   const total = records ? actualTotal(records) : null;
-  // From Open on the plan is complete (`orders_submitted_plan_check`).
+  // From Open on the plan is complete (`orders_submitted_plan_check`), its price aside: an order
+  // without a planned price has its colours too (08 Numbers; plan of 2.5d-b, decided item 3).
   const colourOrder =
-    records && row.quantity !== null && row.price !== null
+    records && row.quantity !== null
       ? {
           status: row.status,
           progress: row.progress,
@@ -533,13 +537,13 @@ async function readPage(db: Executor, actor: Actor, id: string): Promise<OrderPa
     progress: row.progress,
     finishReason: row.finishReason,
     actual:
-      records && received !== null && total !== null && row.plannedTotal !== null
+      records && received !== null && total !== null
         ? {
             qty: received,
             goods: actualGoods(records),
             extras: actualExtra(records),
             total,
-            difference: difference(row.plannedTotal, total),
+            difference: row.plannedTotal === null ? null : difference(row.plannedTotal, total),
           }
         : null,
     purchases: recordLines,

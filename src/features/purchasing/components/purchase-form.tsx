@@ -650,6 +650,7 @@ function OrderLine({
   const t = useTranslations("purchase.form");
   const tPayment = useTranslations("paymentTypes");
   const format = useFormatters();
+  const tUnpriced = useTranslations("orders.unpriced");
   const extras = useFieldArray({ control, name: `lines.${index}.extras` });
   const unit = order.unitShortName;
   const reasons = reasonsOf(order, line, paymentType);
@@ -665,7 +666,10 @@ function OrderLine({
       order.received,
     );
     setValue(`lines.${index}.qty`, filled.qty, { shouldDirty: true });
-    setValue(`lines.${index}.unitPrice`, filled.unitPrice.toString(), { shouldDirty: true });
+    // Without a planned price the price is left as typed (08 Numbers: none to fill).
+    if (filled.unitPrice !== null) {
+      setValue(`lines.${index}.unitPrice`, filled.unitPrice.toString(), { shouldDirty: true });
+    }
     extras.replace(
       filled.extras.length === 0
         ? []
@@ -704,7 +708,9 @@ function OrderLine({
           {format.quantity(order.plannedQty)} {unit}
         </dd>
         <dt className="text-muted-foreground">{t("plannedPrice")}</dt>
-        <dd className="tabular-nums">{format.money(order.plannedPrice)}</dd>
+        <dd data-planned-price className="tabular-nums">
+          {order.plannedPrice === null ? tUnpriced("none") : format.money(order.plannedPrice)}
+        </dd>
         <dt className="text-muted-foreground">{t("plannedExtras")}</dt>
         <dd className="tabular-nums">
           {order.plannedExtras.length === 0

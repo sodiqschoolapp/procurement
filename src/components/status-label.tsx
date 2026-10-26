@@ -27,6 +27,8 @@ import { useFormatters } from "@/i18n/use-formatters";
 //   plan (08, Price row; plan of 3.8, decided item 3).
 // - A set's Number and Price carry how many of its orders have that colour, not an amount
 //   (plan of 3.8, decided item 2).
+// - Price and Total of an order without a planned price read "No planned price", muted, with an
+//   icon and the words, no amount (08 Numbers; plan of 2.5d-b, decided item 3, Look first).
 
 type Tone = "info" | "muted" | "green" | "amber" | "red" | "grey";
 
@@ -91,6 +93,7 @@ const COLOUR_ICONS = {
   amber: "warning",
   red: "error",
   grey: "schedule",
+  unpriced: "info",
 } as const satisfies Record<string, IconName>;
 
 export type LabelColour = Colour;
@@ -106,7 +109,8 @@ export type ColourLabelProps =
   | { label: "number"; colour: LabelColour; difference: string }
   | { label: "price" | "total"; colour: LabelColour; difference: bigint }
   | { label: "number" | "price"; colour: LabelColour; orders: number }
-  | { label: "number" | "price" | "total"; colour: "grey" };
+  | { label: "number" | "price" | "total"; colour: "grey" }
+  | { label: "price" | "total"; colour: "unpriced" };
 
 const SIGN_OF_COLOUR: Record<LabelColour, -1 | 0 | 1> = { green: 0, amber: 1, red: -1 };
 
@@ -330,6 +334,7 @@ export function DocumentStatusLabel({
  * more", "Saved 15 000 so'm on price", "Over plan by 10 000 so'm" (redesign of 22.10.2026).
  */
 function labelKey(props: ColourLabelProps): string {
+  if (props.colour === "unpriced") return `${props.label}.unpriced`;
   const word = COLOUR_WORDS[props.label][props.colour];
   if ("orders" in props) return `${props.label}.${word}Orders`;
   if (props.colour === "green" || props.colour === "grey") return `${props.label}.${word}`;
@@ -351,7 +356,7 @@ export function ColourLabel(props: ColourLabelProps & { className?: string; plai
       throw new Error(`Refused: a set's label counts at least one order, not ${props.orders}.`);
     }
     amount = t("orders", { count: props.orders });
-  } else if (props.colour !== "grey") {
+  } else if (props.colour !== "grey" && props.colour !== "unpriced") {
     // A green label of one order is its plain word: "Quantity as planned", not "Matches 0".
     if (props.colour === "green") {
       if (props.label === "number")
@@ -372,7 +377,7 @@ export function ColourLabel(props: ColourLabelProps & { className?: string; plai
   const key = labelKey(props) as Parameters<typeof t>[0];
   return (
     <LabelBox
-      tone={props.colour}
+      tone={props.colour === "unpriced" ? "muted" : props.colour}
       icon={COLOUR_ICONS[props.colour]}
       plain={props.plain}
       className={props.className}
@@ -424,6 +429,7 @@ export function OutcomeLabel({
  */
 export type WireColourLabel =
   | { colour: "grey" }
+  | { colour: "unpriced" }
   | { colour: LabelColour; difference: string }
   | { colour: LabelColour; orders: number };
 
@@ -435,6 +441,10 @@ export type WireColours = {
 
 function labelProps(label: "number" | "price" | "total", wire: WireColourLabel): ColourLabelProps {
   if (wire.colour === "grey") return { label, colour: "grey" };
+  if (wire.colour === "unpriced") {
+    if (label === "number") throw new Error("Refused: Number needs no planned price.");
+    return { label, colour: "unpriced" };
+  }
   if ("orders" in wire) {
     if (label === "total") throw new Error("Refused: Total carries the summed difference.");
     return { label, colour: wire.colour, orders: wire.orders };

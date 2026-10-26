@@ -118,7 +118,8 @@ export async function getFinanceHome(userId: string, branch: string | null): Pro
           orders.map((order) => ({
             id: order.id,
             ownerId: order.ownerId,
-            amount: plannedCash(order.plan),
+            // Waiting for Finance always has a planned price (`orders_priced_finance_check`).
+            amount: plannedCash(order.plan) ?? 0n,
           })),
         ).flatMap((block) => block.rows),
       ),

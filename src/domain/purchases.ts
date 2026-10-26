@@ -362,7 +362,8 @@ export type RecordAgainstPlan = {
   unitPrice: bigint;
   paymentType: string;
   plannedQty: string;
-  plannedPrice: bigint;
+  /** Null for an order without a planned price: no price to differ from (07 Comment). */
+  plannedPrice: bigint | null;
   plannedPaymentType: string;
   /** The subtype bought, and the order's subtype (07 Purchase record, Subtype bought). */
   variantId: string;
@@ -377,11 +378,15 @@ export type RecordAgainstPlan = {
  * received quantity after it goes above the plan ("More was bought than approved"), never a part
  * record such as 60 of 100; another subtype than the ordered one was bought (a substitution, plan
  * of 3.6, decided item 2, Look first); its payment type is not the order's. Differing extra costs
- * need none. The form and the server both ask this function.
+ * need none. The form and the server both ask this function. An order without a planned price
+ * asks no "price differs" comment: there is no planned price to differ from (plan of 2.5d-b,
+ * decided item 10).
  */
 export function purchaseCommentNeeds(record: RecordAgainstPlan): CommentReason[] {
   const reasons: CommentReason[] = [];
-  if (record.unitPrice !== record.plannedPrice) reasons.push("PRICE_CHANGED");
+  if (record.plannedPrice !== null && record.unitPrice !== record.plannedPrice) {
+    reasons.push("PRICE_CHANGED");
+  }
   if (record.unitPrice === 0n) reasons.push("GIFT");
   const after = receivedOf(record.received).plus(quantityOf(record.qty));
   if (after.gt(quantityOf(record.plannedQty))) reasons.push("OVER_PLAN");
@@ -468,7 +473,12 @@ export function receiptNeeded(
 }
 
 /** What "Same as planned" fills (07 Purchase record). */
-export type SameAsPlanned = { qty: string; unitPrice: bigint; extras: readonly bigint[] };
+export type SameAsPlanned = {
+  qty: string;
+  /** Null without a planned price: the price stays to be typed. */
+  unitPrice: bigint | null;
+  extras: readonly bigint[];
+};
 
 /**
  * "Same as planned" (07: "fills quantity, price and extra costs from the order in one tap"; plan
@@ -478,7 +488,7 @@ export type SameAsPlanned = { qty: string; unitPrice: bigint; extras: readonly b
  */
 export function sameAsPlanned(
   plannedQty: string,
-  plannedPrice: bigint,
+  plannedPrice: bigint | null,
   plannedExtras: readonly bigint[],
   received: string,
 ): SameAsPlanned {

@@ -61,10 +61,11 @@ export type DownloadLine = {
   /** Plain decimal text. */
   quantity: string;
   measure: string;
-  price: bigint;
+  /** Null for an order without a planned price: the cell reads `noPlannedPrice` (08 Numbers). */
+  price: bigint | null;
   extras: bigint;
   paymentType: string;
-  plannedTotal: bigint;
+  plannedTotal: bigint | null;
   /**
    * From status Open on, the actual numbers of orderDownloadRow(); null before, an empty cell
    * (plan of 3.5, decided item 6, Look first). `actualPrice` is null while nothing is received;
@@ -94,6 +95,13 @@ export type DownloadSheet = {
   totalsTitle: string;
   /** The fields of the list's totals bar: goods, extra costs, grand total, then each payment type. */
   totals: { key: string; label: string; amount: bigint }[];
+  /** "No planned price", the cell of a missing planned price or planned total (08 Numbers). */
+  noPlannedPrice: string;
+  /**
+   * How many orders the totals leave out for having no planned price, as a line under them; null
+   * when none (08 Numbers: "a sum that leaves orders out says how many").
+   */
+  unpricedLine: string | null;
   formatMoney: (amount: bigint) => string;
   formatQuantity: (value: string) => string;
 };
@@ -202,6 +210,11 @@ export function downloadSheet(
         amount: download.totals.byPaymentType[type],
       })),
     ],
+    noPlannedPrice: tRoot("orders.unpriced.none"),
+    unpricedLine:
+      download.totals.unpriced === 0
+        ? null
+        : t("unpriced", { count: download.totals.unpriced }),
     formatMoney: format.money,
     formatQuantity: format.quantity,
   };

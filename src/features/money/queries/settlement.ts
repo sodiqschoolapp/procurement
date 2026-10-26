@@ -154,6 +154,9 @@ export async function getSettlement(
       const [prefill] = blocks.cash
         ? settlementRows([{ id: row.id, cashCount: blocks.cash.count }])
         : [];
+      const plannedTotal = orderTotal(fact.plan);
+      // An order in settlement has a planned price (`orders_priced_finance_check` of 0056).
+      if (plannedTotal === null) throw new Error("An order in settlement has no planned price.");
       const order: SettlementOrder = {
         id: row.id,
         version: row.version,
@@ -161,7 +164,7 @@ export async function getSettlement(
         productName: row.product_name,
         subtypeName: row.variant_is_default ? null : row.variant_name,
         paymentType: row.payment_type,
-        plannedTotal: orderTotal(fact.plan),
+        plannedTotal,
         blocks,
         prefill: prefill ?? null,
         transfer: blocks.transfer

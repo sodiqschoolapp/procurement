@@ -259,7 +259,8 @@
       "dearerBy": "Narxda <n>{amount}</n> ortiq toʻlandi",
       "cheaperOrders": "Narxda tejaldi: <n>{amount}</n>",
       "dearerOrders": "Narxda ortiq toʻlandi: <n>{amount}</n>",
-      "matchesOrders": "Narx rejadagidek: <n>{amount}</n>"
+      "matchesOrders": "Narx rejadagidek: <n>{amount}</n>",
+      "unpriced": "Rejalashtirilgan narx yoʻq"
     },
     "total": {
       "name": "Jami",
@@ -268,7 +269,8 @@
       "over": "Ortiqcha",
       "inProgress": "Jarayonda",
       "leftBy": "Qoldiq <n>{amount}</n>",
-      "overBy": "Ortiqcha <n>{amount}</n>"
+      "overBy": "Ortiqcha <n>{amount}</n>",
+      "unpriced": "Rejalashtirilgan narx yoʻq"
     }
   },
   "common": {
@@ -1836,7 +1838,8 @@
       },
       "excelShort": "Excel",
       "pdfShort": "PDF",
-      "skipped": "Oʻtkazib yuborildi"
+      "skipped": "Oʻtkazib yuborildi",
+      "unpriced": "{count, plural, one {Rejalashtirilgan narxsiz # ta buyurtma bu jamlarga kirmadi.} other {Rejalashtirilgan narxsiz # ta buyurtma bu jamlarga kirmadi.}}"
     },
     "progress": {
       "OPEN": "Xarid ochiq",
@@ -1890,7 +1893,12 @@
       "label": "{product}: boshqa maydonlar",
       "marked": "Bu yerdagi maydonni tuzatish kerak"
     },
-    "noDepartment": "Boʻlimsiz"
+    "noDepartment": "Boʻlimsiz",
+    "unpriced": {
+      "count": "{count, plural, one {# tasi narxsiz} other {# tasi narxsiz}}",
+      "sum": "{total} · {unpriced}",
+      "none": "Rejalashtirilgan narx yoʻq"
+    }
   },
   "purchase": {
     "form": {

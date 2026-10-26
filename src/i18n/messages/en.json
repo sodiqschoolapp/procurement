@@ -259,7 +259,8 @@
       "dearerBy": "Paid <n>{amount}</n> more on price",
       "cheaperOrders": "Saved on price: <n>{amount}</n>",
       "dearerOrders": "Paid more on price: <n>{amount}</n>",
-      "matchesOrders": "Price as planned: <n>{amount}</n>"
+      "matchesOrders": "Price as planned: <n>{amount}</n>",
+      "unpriced": "No planned price"
     },
     "total": {
       "name": "Total",
@@ -268,7 +269,8 @@
       "over": "Over",
       "inProgress": "In progress",
       "leftBy": "Left <n>{amount}</n>",
-      "overBy": "Over plan by <n>{amount}</n>"
+      "overBy": "Over plan by <n>{amount}</n>",
+      "unpriced": "No planned price"
     }
   },
   "common": {
@@ -1836,7 +1838,8 @@
       },
       "excelShort": "Excel",
       "pdfShort": "PDF",
-      "skipped": "Skipped"
+      "skipped": "Skipped",
+      "unpriced": "{count, plural, one {# order without a planned price is left out of these totals.} other {# orders without a planned price are left out of these totals.}}"
     },
     "progress": {
       "OPEN": "Buying open",
@@ -1890,7 +1893,12 @@
       "label": "More fields of {product}",
       "marked": "A field here needs a fix"
     },
-    "noDepartment": "No department"
+    "noDepartment": "No department",
+    "unpriced": {
+      "count": "{count, plural, one {# without a price} other {# without a price}}",
+      "sum": "{total} · {unpriced}",
+      "none": "No planned price"
+    }
   },
   "purchase": {
     "form": {

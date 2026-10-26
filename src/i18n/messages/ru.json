@@ -259,7 +259,8 @@
       "dearerBy": "Переплата по цене <n>{amount}</n>",
       "cheaperOrders": "Экономия на цене: <n>{amount}</n>",
       "dearerOrders": "Переплата по цене: <n>{amount}</n>",
-      "matchesOrders": "Цена по плану: <n>{amount}</n>"
+      "matchesOrders": "Цена по плану: <n>{amount}</n>",
+      "unpriced": "Нет плановой цены"
     },
     "total": {
       "name": "Итог",
@@ -268,7 +269,8 @@
       "over": "Перерасход",
       "inProgress": "В работе",
       "leftBy": "Остаток <n>{amount}</n>",
-      "overBy": "Перерасход <n>{amount}</n>"
+      "overBy": "Перерасход <n>{amount}</n>",
+      "unpriced": "Нет плановой цены"
     }
   },
   "common": {
@@ -1836,7 +1838,8 @@
       },
       "excelShort": "Excel",
       "pdfShort": "PDF",
-      "skipped": "Пропущен"
+      "skipped": "Пропущен",
+      "unpriced": "{count, plural, one {# заказ без плановой цены не вошёл в эти итоги.} few {# заказа без плановой цены не вошли в эти итоги.} many {# заказов без плановой цены не вошли в эти итоги.} other {# заказа без плановой цены не вошли в эти итоги.}}"
     },
     "progress": {
       "OPEN": "Закупка идёт",
@@ -1890,7 +1893,12 @@
       "label": "Другие поля: {product}",
       "marked": "Здесь поле нужно исправить"
     },
-    "noDepartment": "Без отдела"
+    "noDepartment": "Без отдела",
+    "unpriced": {
+      "count": "{count, plural, one {# без цены} few {# без цены} many {# без цены} other {# без цены}}",
+      "sum": "{total} · {unpriced}",
+      "none": "Нет плановой цены"
+    }
   },
   "purchase": {
     "form": {

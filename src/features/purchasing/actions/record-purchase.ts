@@ -183,7 +183,8 @@ type Plan = {
   variantId: string;
   productId: string;
   plannedQty: string;
-  plannedPrice: bigint;
+  /** Null for an order without a planned price (05 Fields the Head sets 3). */
+  plannedPrice: bigint | null;
   paymentType: PaymentType;
   approvedAt: Date | null;
   skippedFinance: boolean;
@@ -231,7 +232,7 @@ async function plansOf(tx: Executor, orderIds: readonly string[]): Promise<Plan[
       variantId: row.variantId!,
       productId: row.productId,
       plannedQty: row.plannedQty!,
-      plannedPrice: row.plannedPrice!,
+      plannedPrice: row.plannedPrice,
       paymentType: row.paymentType,
       approvedAt: row.approvedAt,
       skippedFinance: row.skippedFinance,

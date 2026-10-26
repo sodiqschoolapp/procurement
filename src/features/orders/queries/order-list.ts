@@ -118,7 +118,8 @@ export type ListOrder = {
    */
   stockAtSubmit: string | null;
   stockNow: string | null;
-  price: bigint;
+  /** `null`: an order without a planned price (05 Fields the Head sets 3). */
+  price: bigint | null;
   paymentType: PaymentType;
   /** `null`: an order without a needed-by date (05 Fields the Head sets 3). */
   neededBy: string | null;
@@ -126,8 +127,8 @@ export type ListOrder = {
   ownerName: string;
   submittedAt: Date;
   priority: "NORMAL" | "URGENT";
-  /** orderTotal() of the plan, as the ticked orders carry it (08 Planned total). */
-  plannedTotal: bigint;
+  /** orderTotal() of the plan, as the ticked orders carry it (08 Planned total); null without a price. */
+  plannedTotal: bigint | null;
   /** 07 Order progress; and the received quantity, actualQuantity() of its live records. */
   progress: OrderProgress;
   received: string;
@@ -428,7 +429,7 @@ async function readFilterOrders(
     subtypeName: row.variantIsDefault ? null : row.variantName,
     plan: {
       quantity: row.quantity!,
-      price: row.price!,
+      price: row.price,
       extras: extras.get(row.id) ?? [],
       paymentType: row.paymentType,
     },
@@ -602,7 +603,7 @@ async function readGroups(
       progress: member.progress,
       plan: {
         quantity: member.quantity!,
-        price: member.price!,
+        price: member.price,
         extras: extras.get(member.id) ?? [],
         paymentType: member.paymentType,
       },
@@ -617,7 +618,7 @@ async function readGroups(
       quantity: plainQuantity(member.quantity!),
       stockAtSubmit: inStock(member.productType, member.stockAtSubmit),
       stockNow: inStock(member.productType, member.stockNow),
-      price: member.price!,
+      price: member.price,
       paymentType: member.paymentType,
       neededBy: member.neededBy,
       ownerId: member.ownerId,
@@ -768,7 +769,8 @@ export type TickedSummary = {
     number: string;
     status: ListStatus;
     paymentType: PaymentType;
-    plannedTotal: bigint;
+    /** Null for an order without a planned price (08 Numbers). */
+    plannedTotal: bigint | null;
     owner: { id: string; name: string };
   }[];
 };
@@ -858,7 +860,7 @@ export async function tickedSummary(
       totals: ordersTotals(
         found.map((row) => ({
           quantity: row.quantity!,
-          price: row.price!,
+          price: row.price,
           extras: extras.get(row.id) ?? [],
           paymentType: row.paymentType,
         })),
@@ -869,7 +871,7 @@ export async function tickedSummary(
           progress: row.progress,
           plan: {
             quantity: row.quantity!,
-            price: row.price!,
+            price: row.price,
             extras: extras.get(row.id) ?? [],
             paymentType: row.paymentType,
           },
@@ -967,7 +969,7 @@ export async function tickedSummary(
           paymentType: row.paymentType,
           plannedTotal: orderTotal({
             quantity: row.quantity!,
-            price: row.price!,
+            price: row.price,
             extras: extras.get(row.id) ?? [],
             paymentType: row.paymentType,
           }),
@@ -1033,7 +1035,8 @@ export type DownloadOrder = {
   unitShortName: string;
   /** Plain decimal text, without trailing zeros. */
   quantity: string;
-  price: bigint;
+  /** Null for an order without a planned price (05 Fields the Head sets 3). */
+  price: bigint | null;
   paymentType: PaymentType;
   /**
    * The extra costs, the planned total, who approved each step and, from Open on, the actual
@@ -1148,7 +1151,7 @@ export async function orderDownload(
       // Outside DRAFT the plan is complete (`orders_submitted_plan_check`).
       const plan = {
         quantity: row.quantity!,
-        price: row.price!,
+        price: row.price,
         extras: extras.get(row.id) ?? [],
         paymentType: row.paymentType,
       };
@@ -1164,7 +1167,7 @@ export async function orderDownload(
         subtypeName: row.variantIsDefault ? null : row.variantName,
         unitShortName: row.unitShortName,
         quantity: plainQuantity(row.quantity!),
-        price: row.price!,
+        price: row.price,
         paymentType: row.paymentType,
         row: orderDownloadRow(
           row.status,

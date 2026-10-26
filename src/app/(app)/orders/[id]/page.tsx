@@ -350,6 +350,7 @@ export default async function OrderPageScreen({
 
       <PlanActualBlock
         plannedTotal={order.plannedTotal}
+        unpriced={order.status !== "DRAFT" && order.price === null}
         hint={hint}
         colours={order.colours}
         table={order.planVsActual}
