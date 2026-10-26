@@ -9,6 +9,8 @@ const PORT = 3100;
 const baseURL = `http://localhost:${PORT}`;
 /** S21, the one test that switches the Finance step (15 S21; plan of 4.10c). */
 const FINANCE_STEP = /acceptance-finance-step\.spec\.ts/;
+/** The fields the Head sets, which every other test's order sheet reads (plan of 2.5d). */
+const ORDER_FIELDS = /acceptance-order-fields\.spec\.ts/;
 
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -32,16 +34,18 @@ export default defineConfig({
     {
       name: "phone-375",
       dependencies: ["start"],
-      testIgnore: FINANCE_STEP,
+      testIgnore: [FINANCE_STEP, ORDER_FIELDS],
       use: { viewport: { width: 375, height: 812 } },
     },
     {
       name: "desktop-1440",
       dependencies: ["start"],
-      testIgnore: FINANCE_STEP,
+      testIgnore: [FINANCE_STEP, ORDER_FIELDS],
       use: { viewport: { width: 1440, height: 900 } },
     },
-    { name: "finance-step", testMatch: FINANCE_STEP },
+    // The order fields are the school's too: they run after S21, as its teardown (plan of 2.5d).
+    { name: "finance-step", testMatch: FINANCE_STEP, teardown: "order-fields" },
+    { name: "order-fields", testMatch: ORDER_FIELDS },
   ],
   webServer: {
     command: `npx next dev --hostname 127.0.0.1 --port ${PORT}`,
