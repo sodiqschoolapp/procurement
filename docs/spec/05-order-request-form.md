@@ -30,6 +30,25 @@ Each branch keeps one order list. An order is one product or service for one dep
 
 Under the list, the totals of the ticked orders: goods, extra costs, grand total, and the grand total split by payment type.
 
+## Fields the Head sets
+
+The Head sets, for the whole school, how each field below is asked and where it stands in the order sheet (owner's decision of 26 October 2026). Where it differs from the Rule column of the table above, this setting applies. Branch, product, subtype and quantity are always asked and always in the row.
+
+| Field | Can be | Default |
+| --- | --- | --- |
+| Requested by (department) | Required, optional or hidden | Required, in the row |
+| Needed by | Required, optional or hidden | Required, in the row |
+| Price per unit | Required, optional or hidden; optional or hidden only while the Finance step is off (`06-approval-workflow.md`) | Required, in the row |
+| Payment type | Shown or hidden | Shown, under "More" |
+| Priority | Shown or hidden | Shown, under "More" |
+| Brand or company, requester name, comment, reference photo | Required, optional or hidden | Optional, under "More" |
+| Extra costs | Optional or hidden | Optional, under "More" |
+
+1. **Where.** Each field that is not hidden stands in the row or under "More"; the Head chooses.
+2. **Hidden** fields are not shown in the sheet or on new orders. A hidden payment type is the default payment type (a setting), a hidden priority is Normal, and a hidden price is the suggested price of field 11 when there is one, else none.
+3. **Left empty.** An order without a department is for no department: "Give straight to requester" cannot be used on it, and reports by department leave it out. An order without a needed-by date gets no "due soon" reminder and is not on "orders due soon". An order without a price has no planned total (`08-money-and-settlement.md`). Two drafts without a department count as the same department for the merge of Drafts 2.
+4. **A change** applies from the next submit: drafts are checked against the setting as it is then, and orders already submitted keep what they hold. A change writes an audit row.
+
 ## Drafts
 
 1. The Manager adds draft orders to the branch's list at any time. A draft is visible to its owner and the Head only.
@@ -52,8 +71,8 @@ The format is branch code, two-digit year, four-digit counter: `CHL-26-0142`. Ea
 ## Checks at submit
 
 - At most 200 orders in one submit. With more ready drafts, the first 200 in the order they were added are sent, and Submit again sends the rest.
-- Every required field of every order being sent is filled, and no order uses a deactivated catalog entry.
-- No needed-by date is in the past.
+- Every field the Head's field settings require is filled on every order being sent, and no order uses a deactivated catalog entry.
+- No needed-by date that is given is in the past.
 - A draft that fails a check is not sent and stays in the sheet; the ready ones are sent. A draft that changed since the screen showed it refuses the whole submit, and the screen refreshes. When drafts are ticked, one failing draft stops the whole submit: nothing is submitted (06 rule 8). Either way, errors appear on the exact cell of the exact order and in a short list on top; the screen scrolls to the first one.
 
 ## Group rows
