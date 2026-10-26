@@ -148,6 +148,12 @@ export const FIELD_ERROR_KINDS = [
   // "Give straight to requester" on an order without a department (05 Fields the Head sets 3;
   // plan of 2.5d).
   "noDepartment",
+  // The price optional or hidden while the Finance step is on, and the step switched on while the
+  // price is not required or an unpriced order waits for Head or Principal (06 Finance step
+  // switched off 8; plan of 2.5d-b).
+  "priceNeedsFinanceOff",
+  "financeStepPriceNotRequired",
+  "financeStepUnpriced",
 ] as const;
 export type FieldErrorKind = (typeof FIELD_ERROR_KINDS)[number];
 export type FieldMessageKey = `errors.field.${FieldErrorKind}`;

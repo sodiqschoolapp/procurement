@@ -16,7 +16,7 @@ import {
   type OrderFields,
   PLACES,
   type Place,
-  PRICE_ASK_CHOICES_NOW,
+  priceAskAllowed,
 } from "@/domain/order-fields";
 
 import { saveSettingsAction } from "./actions";
@@ -24,14 +24,22 @@ import { saveSettingsAction } from "./actions";
 // The "Order fields" block of /settings (05-order-request-form.md, Fields the Head sets; D67; plan
 // of 2.5d): for each field of 05's table, how it is asked and where it stands. The whole object is
 // sent (decided item 3); the server checks it and writes the audit row (05 rule 4). The choices
-// come from src/domain/order-fields.ts; the price offers Required only until task 2.5d-b (decided
-// item 1, Look first). Branch, product, subtype and quantity are always asked and are not listed.
+// come from src/domain/order-fields.ts; the price offers Optional and Hidden only while the
+// Finance step is off (06 Finance step switched off 8; plan of 2.5d-b), and the server checks it
+// again under the settings lock. Branch, product, subtype and quantity are always asked and are not listed.
 
-function choicesOf(field: OrderField): readonly Ask[] {
-  return field === "price" ? PRICE_ASK_CHOICES_NOW : ASK_CHOICES[field];
-}
-
-export function OrderFieldsForm({ values }: { values: OrderFields }) {
+export function OrderFieldsForm({
+  values,
+  financeStep,
+}: {
+  values: OrderFields;
+  /** The setting `finance_step` now: while it is on, the price is Required only. */
+  financeStep: boolean;
+}) {
+  const choicesOf = (field: OrderField): readonly Ask[] =>
+    ASK_CHOICES[field].filter((ask) =>
+      field === "price" ? priceAskAllowed({ ...values, price: { ...values.price, ask } }, financeStep) : true,
+    );
   const t = useTranslations("settings.orderFields");
   const tAll = useTranslations();
   const router = useRouter();
@@ -50,7 +58,8 @@ export function OrderFieldsForm({ values }: { values: OrderFields }) {
     const result = await action.run({ order_fields: fields });
     if (!result) return;
     if (!result.ok) {
-      toast.error(tAll(result.error.messageKey));
+      const price = result.error.fields?.["order_fields.price"];
+      toast.error(tAll(price ?? result.error.messageKey));
       return;
     }
     toast.success(t("saved"));
@@ -67,6 +76,11 @@ export function OrderFieldsForm({ values }: { values: OrderFields }) {
         {t("title")}
       </h2>
       <p className="text-sm leading-5 text-muted-foreground">{t("hint")}</p>
+      {financeStep ? (
+        <p data-price-hint className="text-sm leading-5 text-muted-foreground">
+          {t("priceFinanceOn")}
+        </p>
+      ) : null}
       <ul className="flex flex-col divide-y divide-border">
         {ORDER_FIELDS.map((field) => (
           <li

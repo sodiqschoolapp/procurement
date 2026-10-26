@@ -51,9 +51,9 @@ export default async function SettingsPage() {
   const t = await getTranslations();
   const values = await readOrNotFound(() => getSettingsForHead(user.id));
   const lastCopy = await readOrNotFound(() => getLastDatabaseCopy(user.id));
-  const waiting = values.finance_step
-    ? await readOrNotFound(() => getFinanceStepWaiting(user.id))
-    : [];
+  const waiting = await readOrNotFound(() =>
+    getFinanceStepWaiting(user.id, !values.finance_step),
+  );
   const format = await getFormatters();
   const history = await listChangeHistory(user.id, { entity: "settings", entityId: "settings" });
 
@@ -75,8 +75,12 @@ export default async function SettingsPage() {
           ) as string,
         }}
       />
-      <FinanceStepSwitch on={values.finance_step} waiting={waiting} />
-      <OrderFieldsForm values={values.order_fields} />
+      <FinanceStepSwitch
+        on={values.finance_step}
+        waiting={waiting}
+        priceRequired={values.order_fields.price.ask === "required"}
+      />
+      <OrderFieldsForm values={values.order_fields} financeStep={values.finance_step} />
       <section className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 text-card-foreground sm:p-5">
         <h2 className="text-subheading font-semibold">{t("settings.history")}</h2>
         <ChangeHistory entries={history.rows} fields={FIELDS} />

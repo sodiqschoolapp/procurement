@@ -22,9 +22,16 @@ import { switchFinanceStepAction } from "./actions";
 export function FinanceStepSwitch({
   on,
   waiting,
+  priceRequired,
 }: {
   on: boolean;
+  /**
+   * The orders that refuse the next switch: while on, those waiting for Finance or settlement;
+   * while off, those without a planned price waiting for Head or Principal (06 rules 5 and 8).
+   */
   waiting: readonly FinanceStepWaiting[];
+  /** The price is required in the order fields: switching on is refused otherwise (06 rule 8). */
+  priceRequired: boolean;
 }) {
   const t = useTranslations("settings.financeStep");
   const tAll = useTranslations();
@@ -38,7 +45,12 @@ export function FinanceStepSwitch({
       if (!result) return;
       if (!result.ok) {
         const numbers = result.error.available?.orders;
-        toast.error(numbers ? t("refused", { orders: numbers }) : tAll(result.error.messageKey));
+        const field = result.error.fields?.orders;
+        toast.error(
+          numbers
+            ? t(on ? "refused" : "refusedUnpriced", { orders: numbers })
+            : tAll(field ?? result.error.messageKey),
+        );
         router.refresh();
         return;
       }
@@ -60,10 +72,15 @@ export function FinanceStepSwitch({
       </h2>
       <p className="text-sm leading-5">{t(on ? "isOn" : "isOff")}</p>
       <p className="text-sm leading-5 text-muted-foreground">{t("hint")}</p>
-      {on && waiting.length > 0 ? (
+      {!on && !priceRequired ? (
+        <p data-finance-step-price className="text-sm leading-5 font-semibold">
+          {tAll("errors.field.financeStepPriceNotRequired")}
+        </p>
+      ) : null}
+      {waiting.length > 0 ? (
         <div className="flex flex-col gap-2" data-finance-step-waiting>
           <p className="text-sm leading-5 font-semibold">
-            {t("waiting", { count: waiting.length })}
+            {t(on ? "waiting" : "unpriced", { count: waiting.length })}
           </p>
           <ul className="flex flex-col gap-1">
             {waiting.map((order) => (

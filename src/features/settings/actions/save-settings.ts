@@ -1,7 +1,7 @@
 import * as z from "zod";
 
 import { parseSomOrZero } from "@/domain/money";
-import { type OrderFields, PRICE_ASK_CHOICES_NOW, isOrderFields } from "@/domain/order-fields";
+import { type OrderFields, isOrderFields, priceAskAllowed } from "@/domain/order-fields";
 import { PAYMENT_TYPES } from "@/domain/payment-types";
 import {
   GUARD_OFF,
@@ -17,7 +17,7 @@ import {
   settingsFrom,
   storedSettingValue,
 } from "@/domain/settings";
-import { GLOBAL_TARGET, defineAction } from "@/server/action";
+import { ActionError, GLOBAL_TARGET, defineAction } from "@/server/action";
 import { audit } from "@/server/audit";
 import { now } from "@/server/clock";
 import { settings } from "@/server/db/schema";
@@ -45,12 +45,10 @@ const amount = z
 
 /**
  * The fields the Head sets, the whole object (05 Fields the Head sets; plan of 2.5d, decided item
- * 3), checked by isOrderFields() of src/domain/order-fields.ts. The price takes Required
- * only until task 2.5d-b (decided item 1, Look first).
+ * 3), checked by isOrderFields() of src/domain/order-fields.ts. Whether the price may be optional
+ * or hidden depends on the Finance step, read under the lock (the `check` step below).
  */
-const orderFields = z
-  .custom<OrderFields>(isOrderFields)
-  .refine((fields) => PRICE_ASK_CHOICES_NOW.includes(fields.price.ask), { path: ["price"] });
+const orderFields = z.custom<OrderFields>(isOrderFields);
 
 /** The limits are those of src/domain/settings.ts; nothing is written here a second time. */
 export const settingsInput = z
@@ -99,6 +97,16 @@ export const saveSettings = defineAction({
     await tx.execute(SETTINGS_LOCK);
     const rows = await selectSettingRows(tx).for("update");
     return { target: GLOBAL_TARGET, rows: settingsFrom(parsedSettingRows(rows)) };
+  },
+  // 06 Finance step switched off 8: the price optional or hidden only while the step is off, read
+  // under the settings lock the switch takes too, so the two cannot cross (plan of 2.5d-b).
+  async check({ input, locked }) {
+    const fields = (input as Partial<SettingValues>).order_fields;
+    if (fields && !priceAskAllowed(fields, locked!.rows.finance_step)) {
+      throw new ActionError("invalid_input", {
+        "order_fields.price": "errors.field.priceNeedsFinanceOff",
+      });
+    }
   },
   async write({ tx, input, locked }): Promise<SavedSettings> {
     const current = locked!.rows;

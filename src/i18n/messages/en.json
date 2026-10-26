@@ -101,7 +101,10 @@
       "nothingToCount": "No items in stock here to count.",
       "financeStepWaiting": "Orders still wait for Finance or for settlement.",
       "beforePrincipalApproval": "The date is before the Principal approved the order. Pick that day or a later one.",
-      "noDepartment": "This order has no department, so it cannot be given straight to a department."
+      "noDepartment": "This order has no department, so it cannot be given straight to a department.",
+      "priceNeedsFinanceOff": "The price can be optional or hidden only while the Finance step is off.",
+      "financeStepPriceNotRequired": "Make the price required in Order fields first: with the Finance step on, every order needs a price.",
+      "financeStepUnpriced": "Orders without a planned price still wait for Head or Principal."
     },
     "file": {
       "tooLarge": "The file is larger than 10 MB. Choose a smaller file or take the photo again.",
@@ -610,7 +613,9 @@
       "switchOnResult": "Orders the Principal approves from now on wait for Finance. Orders that skipped Finance keep closing without settlement.",
       "refused": "Not switched off: orders {orders} still wait for Finance or for settlement.",
       "switchedOff": "The Finance step is switched off",
-      "switchedOn": "The Finance step is switched on"
+      "switchedOn": "The Finance step is switched on",
+      "refusedUnpriced": "Not switched on: these orders have no planned price and wait for Head or Principal: {orders}. Send them back or approve them first.",
+      "unpriced": "{count, plural, one {1 order without a planned price waits for Head or Principal. Switch on once none is left.} other {# orders without a planned price wait for Head or Principal. Switch on once none is left.}}"
     },
     "orderFields": {
       "title": "Order fields",
@@ -642,7 +647,8 @@
       "place": {
         "row": "In the row",
         "more": "Under \"More\""
-      }
+      },
+      "priceFinanceOn": "The price can be optional or hidden only while the Finance step is off."
     }
   },
   "admin": {
