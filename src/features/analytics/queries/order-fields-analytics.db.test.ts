@@ -12,9 +12,9 @@ import { getHeadSpending } from "./head-spending";
 import { getStatusOrders } from "./status-orders";
 
 // An order without a department or a needed-by date in analytics and reports (05 Fields the Head
-// sets 3: "reports by department leave it out"; build plan 2.5d, Build 5; plan of 2.5d, review
-// correction 3: counted in every total, left out of the split by department, as 05 reads on
-// main). A value the task reads in a new way is tested at every reader of it (D46): the refresh,
+// sets 3; build plan 2.5d-a, Build 5; plan of 2.5d, review correction 3: counted in every total,
+// left out of the split by department, as 05 read when the build reached analytics; "No
+// department", D68, is task 2.5d-b's). A value the task reads in a new way is tested at every reader of it (D46): the refresh,
 // the Head's spending, the order list behind a count, the purchase register, the spending report.
 
 const THIS_MONTH: PeriodInput = { choice: "this_month", from: null, to: null };

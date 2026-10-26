@@ -2268,6 +2268,7 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 
 **Left out, and the task that brings it**
 - The price optional or hidden, unpriced orders everywhere, the counts of unpriced orders, the Finance switch refusals, S24: task 2.5d-b.
+- "No department" in analytics and reports by department (D68, merged during this task's finish) with its drill-down filter: task 2.5d-b.
 
 **Open for the owner**
 - Decided items 1 to 5 (Look first) on issue #9.
