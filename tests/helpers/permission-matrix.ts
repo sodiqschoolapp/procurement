@@ -84,8 +84,9 @@ export function describePermissionMatrix(
       }
     }
 
-    const right = entry.right;
-    if (right) {
+    // Each right that guards the permission, the second of 03's ADD_PRODUCTS row too (D66).
+    for (const right of [entry.right, entry.alsoRight]) {
+      if (!right) continue;
       // A13: "The switches … apply to a Manager in all of their branches" (build-plan 1.4).
       it(`MANAGER with ${right} switched off: forbidden in each own branch; HEAD still allowed`, async () => {
         const first = await insertBranch();

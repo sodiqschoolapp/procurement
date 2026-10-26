@@ -628,6 +628,47 @@ describe("addSubtypeWhileOrdering (04 rule 8: a new subtype)", () => {
   });
 });
 
+describe("adding needs both rights (03 Manager rights: ADD_PRODUCTS 'works only while Add and submit orders is on too'; 04 rule 8; D66)", () => {
+  it("a Manager with ADD_PRODUCTS on and CREATE_REQUESTS off is refused both adds and nothing is written; with both on the same adds pass", async () => {
+    const { manager, category, unit } = await scene();
+    await setManagerRight(manager.id, "CREATE_REQUESTS", false);
+    const product = await insertProduct();
+    const productName = `Ikki huquq ${tag()}`;
+    const subtypeName = `yangi ${tag()}`;
+    const productInput = { name: productName, categoryId: category.id, unitId: unit.id };
+    const subtypeInput = { productId: product.id, name: subtypeName, existingName: "eski" };
+
+    expect(await addProduct(manager.id, productInput)).toMatchObject({
+      ok: false,
+      error: { code: "forbidden" },
+    });
+    expect(await addSubtype(manager.id, subtypeInput)).toMatchObject({
+      ok: false,
+      error: { code: "forbidden" },
+    });
+    expect(await productCount(productName)).toBe(0);
+    const rows = await db
+      .select({ id: productVariants.id, name: productVariants.name })
+      .from(productVariants)
+      .where(eq(productVariants.productId, product.id));
+    expect(rows).toEqual([{ id: product.defaultVariantId, name: "default" }]);
+    expect((await productRow(product.id)).hasVariants).toBe(false);
+    const audit = await db
+      .select({ id: auditLog.id })
+      .from(auditLog)
+      .where(eq(auditLog.actorId, manager.id));
+    expect(audit).toHaveLength(0);
+
+    // The same Manager, the same inputs, with the right on again: both pass (D40).
+    await setManagerRight(manager.id, "CREATE_REQUESTS", true);
+    expect(expectOk(await addProduct(manager.id, productInput)).outcome).toBe("made");
+    expect(subtypeAddShown(expectOk(await addSubtype(manager.id, subtypeInput))).outcome).toBe(
+      "made",
+    );
+    expect(await productCount(productName)).toBe(1);
+  });
+});
+
 describe("markAddedChecked (04 rule 8: until the Head marks them checked)", () => {
   async function added() {
     const { manager, head, category, unit } = await scene();

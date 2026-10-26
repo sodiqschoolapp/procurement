@@ -45,10 +45,16 @@ describe("PERMISSIONS (03-roles-and-permissions.md, Permission matrix)", () => {
     const expected = EXPECTED_MATRIX[name];
     for (const role of ROLES) expect(rule.roles[role], role).toBe(expected[role]);
     expect("right" in rule ? rule.right : undefined).toBe(expected.right);
+    expect("alsoRight" in rule ? rule.alsoRight : undefined).toBe(expected.alsoRight);
   });
 
   it("guards a permission with every one of the ten Manager rights", () => {
-    const used = new Set(PERMISSION_NAMES.map((name) => EXPECTED_MATRIX[name].right));
+    const used = new Set(
+      PERMISSION_NAMES.flatMap((name) => [
+        EXPECTED_MATRIX[name].right,
+        EXPECTED_MATRIX[name].alsoRight,
+      ]),
+    );
     for (const right of MANAGER_RIGHTS) expect(used.has(right), right).toBe(true);
   });
 });
@@ -91,7 +97,9 @@ describe("decide() (03 rule 1; Permission matrix)", () => {
   });
 
   it.each(MANAGER_RIGHTS)("%s switched off refuses the Manager in every own branch", (right) => {
-    const guarded = PERMISSION_NAMES.filter((name) => EXPECTED_MATRIX[name].right === right);
+    const guarded = PERMISSION_NAMES.filter(
+      (name) => EXPECTED_MATRIX[name].right === right || EXPECTED_MATRIX[name].alsoRight === right,
+    );
     const manager = actor("MANAGER", { branchIds: [OWN, OTHER], disabledRights: [right] });
     for (const name of guarded) {
       for (const branchId of [OWN, OTHER]) {
@@ -121,6 +129,18 @@ describe("decide() (03 rule 1; Permission matrix)", () => {
     );
     expect(decideList("catalog.add", actor("MANAGER", { disabledRights: ["ADD_PRODUCTS"] }))).toBe(
       "forbidden",
+    );
+  });
+
+  it("adding needs both rights: CREATE_REQUESTS off refuses the Manager with ADD_PRODUCTS on, never the Head (03 Manager rights: ADD_PRODUCTS 'works only while Add and submit orders is on too'; D66)", () => {
+    const off = actor("MANAGER", { disabledRights: ["CREATE_REQUESTS"] });
+    expect(decide("catalog.add", off)).toBe("forbidden");
+    expect(decideList("catalog.add", off)).toBe("forbidden");
+    expect(
+      decide("catalog.add", actor("MANAGER", { disabledRights: ["CREATE_REQUESTS", "ADD_PRODUCTS"] })),
+    ).toBe("forbidden");
+    expect(decide("catalog.add", actor("HEAD", { disabledRights: ["CREATE_REQUESTS"] }))).toBe(
+      "allow",
     );
   });
 
@@ -177,6 +197,10 @@ describe("actorMay(): the product search's Add line (plan of 1.12b, decided item
     expect(actorMay("catalog.add", actor("HEAD", { disabledRights: ["ADD_PRODUCTS"] }))).toBe(true);
     expect(actorMay("catalog.add", actor("MANAGER"))).toBe(true);
     expect(actorMay("catalog.add", actor("MANAGER", { disabledRights: ["ADD_PRODUCTS"] }))).toBe(
+      false,
+    );
+    // Either right off hides the line (D66).
+    expect(actorMay("catalog.add", actor("MANAGER", { disabledRights: ["CREATE_REQUESTS"] }))).toBe(
       false,
     );
     expect(actorMay("catalog.add", actor("PRINCIPAL"))).toBe(false);
