@@ -3234,3 +3234,19 @@ Choices made during the build:
 - `CopyButton` and `RecordMoneyButton` take a `variant`, so either can be the primary button.
 - `PlanActualTable` became `PlanActualBlock` in `plan-actual-block.tsx`; the table inside it is unchanged.
 - The order that skipped Finance is opened at both widths by `acceptance-finance-step.spec.ts` (the project allowed to switch the step); the other three orders by `order-page-layout.spec.ts`.
+
+### 2.5d-a Fields the Head sets: every field but the price (26.10.2026)
+
+The plan's decisions as the plan review of 26.10.2026 confirmed them (corrections 1 to 3 applied), and those of the build. The Look first items come first.
+
+1. **Look first** (task split). 2.5d is split into 2.5d-a (every field but the price) and 2.5d-b (the price, the Finance switch refusals, S24). A missing price reaches every caller of `orderTotal()` and the approvers' screens, so all of it lands in one pull request; until then the price row offers Required only (`PRICE_ASK_CHOICES_NOW`), so no submitted order lacks a price, though the loosened CHECK already allows it.
+2. **Look first** (hidden values at submit; 05 rules 2 and 4). A draft that never had a number takes each hidden field's hidden value: payment type the default, priority Normal with no reason, department, needed-by, brand, requester name, comment and reference photo empty, extra costs removed. An order with a number (sent back or taken back) keeps what it holds; a hidden field of it is checked as an optional one.
+3. **Look first** (constraint scope). `orders_planned_price_total_check` leaves a Draft free: a draft may hold a price before its quantity (autosave). From submit on it holds.
+4. **Look first** (Cancel). A Cancel of a taken-back draft asks only what the loosened CHECKs ask (subtype, quantity, a price with its total, an urgent reason), not the field settings. Test changed because the requirement changed (D67): `cancel.db.test.ts` names a cleared quantity instead of a cleared price.
+5. **Look first** (constraint loosened, tests changed because the requirement changed, D67). `orders_submitted_plan_check` asks only subtype, quantity and submit time; `orders.db.test.ts` (the required columns) and `drafts.db.test.ts` (the department no longer required to save a draft) are changed with that reason.
+6. `order_fields` always holds all ten fields; payment type and priority take `shown`/`hidden`, extras `optional`/`hidden`; no row is the defaults.
+7. Two empty departments are one trio through a second partial unique index (owner, branch, subtype, where no number, no department and a subtype), so an empty row without a subtype never collides.
+8. Orders without a department are counted in every total of analytics and reports and left out of the split by department (05 rule 3 as on `main`; spec change #172, D68, was not merged when the build reached analytics). Lists of orders (the order list, its download, the analytics order list, the purchase register) take them by a left join and show "No department" or an empty cell.
+9. A field the setting hides is still saved by the draft actions when sent: a sheet opened before the Head's change keeps its autosave, and submit writes the hidden value.
+10. The sheet's row order: the department, the quantity, then price and needed-by, then any other field set in the row in the order of 05's table; "More" is left out when nothing stands there.
+11. The Playwright test of the setting runs in its own project, `order-fields`, the teardown of `finance-step`, so the school-wide setting never changes under another browser test.
