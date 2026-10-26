@@ -755,7 +755,7 @@
       "TRANSFER_STOCK": "Koʻchirishni faqat xaridlar rahbari yuboradi.",
       "WRITE_OFF_COUNT": "Ularni faqat xaridlar rahbari boshlay oladi.",
       "SET_MINIMUMS": "Ularni faqat xaridlar rahbari belgilaydi.",
-      "ADD_PRODUCTS": "Menejer faqat katalogdan tanlaydi; yetishmaganini xaridlar rahbari qoʻshadi."
+      "ADD_PRODUCTS": "Menejer faqat katalogdan tanlaydi; yetishmaganini xaridlar rahbari qoʻshadi. Faqat “Buyurtmalar yaratish va yuborish” ham yoqilgan boʻlsa ishlaydi."
     }
   },
   "catalog": {

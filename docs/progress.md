@@ -2202,4 +2202,20 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - A name the catalog already holds is answered with `findTaken()` under the table's lock, never a JavaScript comparison.
 - A browser test that turns a Manager's right off makes its own Manager (`newScene()`).
 
-The next task is 9.5.
+## 1.12c The Head's first subtype names the existing items; adding needs both rights (26.10.2026, pull request #168)
+
+**Built**
+- Part (1) was on `main` already (1.12b Build 6): nothing rebuilt. The 04 rule 1 database test now also holds the photo, the price rows and "black" with no stock.
+- `alsoRight` on global permission rules, read in `decideGlobal()`; `catalog.add` needs `ADD_PRODUCTS` and `CREATE_REQUESTS` (D66). The oracle `tests/permission-matrix-expected.ts` carries it; `describePermissionMatrix` writes a switched-off case per right.
+- The `ADD_PRODUCTS` "off" text says it works only while "Add and submit orders" is on, in uz, ru and en.
+
+**Left out, and the task that brings it**
+- Nothing of the Build line.
+
+**Open for the owner**
+- Decided items 1 and 2 (Look first) on issue #9.
+
+**What the next sessions must know**
+- A permission guarded by two Manager rights: `right` and `alsoRight`, in `permissions.ts` and in the oracle both; every test reading rights reads both.
+
+The next task is 2.5c.

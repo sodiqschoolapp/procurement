@@ -43,6 +43,11 @@ type GlobalRule = {
    * that a switch can take away (plan of 1.12b, decided item 1, Look first).
    */
   right?: ManagerRight;
+  /**
+   * A second Manager right that must be on too: "Add products and subtypes" works only while "Add
+   * and submit orders" is on (03 Manager rights; D66; plan of 1.12c, decided item 1, Look first).
+   */
+  alsoRight?: ManagerRight;
 };
 
 type BranchRule = {
@@ -69,12 +74,14 @@ export const PERMISSIONS = {
   // permission, as catalog_suggestions has a branch_id (plan of 0.7, decision 3).
   "catalog.suggest": { scope: "branch", roles: HEAD_AND_MANAGER },
   // "Add a product or a subtype from an order's product search (04 rule 8)", guarded by
-  // ADD_PRODUCTS. Global: products and subtypes hold no branch (plan of 1.12b, decided item 1,
-  // Look first); the search that leads to it asks request.create on the draft's branch.
+  // ADD_PRODUCTS and CREATE_REQUESTS, both on (D66). Global: products and subtypes hold no branch
+  // (plan of 1.12b, decided item 1, Look first); the search that leads to it asks request.create
+  // on the draft's branch.
   "catalog.add": {
     scope: "global",
     roles: { HEAD: "yes", MANAGER: "yes", PRINCIPAL: "no", FINANCE: "no" },
     right: "ADD_PRODUCTS",
+    alsoRight: "CREATE_REQUESTS",
   },
   // Picking from the catalogs (measures, categories, extra cost types, companies; later products):
   // not a row of 03, which says only "everyone else picks from them" (04). Every role: Managers
@@ -201,13 +208,15 @@ export type Target = { branchId: string; ownerId?: string };
 export type Decision = "allow" | "not_found" | "forbidden";
 
 /**
- * A global permission's answer: the role, then, for a Manager, the right that guards it
+ * A global permission's answer: the role, then, for a Manager, the rights that guard it
  * ("Switches only take rights away", and only a Manager's).
  */
 function decideGlobal(rule: GlobalRule, actor: Actor): "allow" | "forbidden" {
   if (rule.roles[actor.role] !== "yes") return "forbidden";
-  if (actor.role === "MANAGER" && rule.right && actor.disabledRights.includes(rule.right)) {
-    return "forbidden";
+  if (actor.role === "MANAGER") {
+    for (const right of [rule.right, rule.alsoRight]) {
+      if (right && actor.disabledRights.includes(right)) return "forbidden";
+    }
   }
   return "allow";
 }

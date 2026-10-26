@@ -26,14 +26,15 @@ function expectOk<T>(result: ActionResult<T>): T {
 }
 
 /**
- * Every permission and the right that guards it, from the matrix: the branch ones, and since 1.12b
- * the global catalog.add (ADD_PRODUCTS; plan of 1.12b, decided item 1, Look first).
+ * Every permission and the rights that guard it, from the matrix: the branch ones, and since 1.12b
+ * the global catalog.add (ADD_PRODUCTS; plan of 1.12b, decided item 1, Look first), which since
+ * 1.12c also needs CREATE_REQUESTS (`alsoRight`; D66).
  */
 const GUARDED = (Object.keys(PERMISSIONS) as Permission[]).flatMap((permission) => {
   const rule = PERMISSIONS[permission];
-  return "right" in rule
-    ? [{ permission, right: rule.right, global: rule.scope === "global" }]
-    : [];
+  if (!("right" in rule) || !rule.right) return [];
+  const rights = [rule.right, ...("alsoRight" in rule && rule.alsoRight ? [rule.alsoRight] : [])];
+  return [{ permission, rights, global: rule.scope === "global" }];
 });
 
 /** authorize()'s answer, as the matrix names it; a global permission names no branch. */
@@ -85,7 +86,7 @@ async function noticesOf(userId: string) {
 describe("each of the ten rights switched off (build-plan 1.4 Done when; 03; A13)", () => {
   it("every code guards at least one permission of the matrix", () => {
     for (const right of MANAGER_RIGHTS) {
-      expect(GUARDED.some((entry) => entry.right === right)).toBe(true);
+      expect(GUARDED.some((entry) => entry.rights.includes(right))).toBe(true);
     }
   });
 
@@ -104,7 +105,7 @@ describe("each of the ten rights switched off (build-plan 1.4 Done when; 03; A13
       for (const branch of [first, second]) {
         for (const entry of GUARDED) {
           // A13: "in all of their branches"; D40: the other rights beside it stay allowed.
-          const expected = entry.right === right ? "forbidden" : "allow";
+          const expected = entry.rights.includes(right) ? "forbidden" : "allow";
           expect(await answer(manager.id, entry.permission, branch.id, manager.id)).toBe(expected);
           // "The Head can do everything a Manager can, in any branch" (03 Roles table).
           expect(await answer(head.id, entry.permission, branch.id, manager.id)).toBe("allow");
@@ -116,7 +117,7 @@ describe("each of the ten rights switched off (build-plan 1.4 Done when; 03; A13
         await runAction(switchManagerRight, head.id, { id: manager.id, right, enabled: true }),
       );
       for (const branch of [first, second]) {
-        for (const entry of GUARDED.filter((each) => each.right === right)) {
+        for (const entry of GUARDED.filter((each) => each.rights.includes(right))) {
           expect(await answer(manager.id, entry.permission, branch.id, manager.id)).toBe("allow");
         }
       }

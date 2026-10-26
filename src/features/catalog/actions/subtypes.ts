@@ -19,11 +19,13 @@ import { recordHeadPrice } from "./price-rows";
 // price (optional), active"; rules 1 and 3; open question 18; build-plan 1.8). Table
 // `product_variants`, audit `subtype.*`, under catalog.manage (Head only, global; 03 Permission
 // matrix: "Manage catalogs, users, branches, settings").
-// - Every product has one hidden default row until it gets real subtypes (04 rule 1). The first
-//   subtype the Head adds is that row made real, same id, so its lines, stock and price stay with
-//   it; `has_variants` turns true (plan of 1.8, decision 1, Look first). The rest are new rows.
-// - The reference price is set on create only; on the first subtype a price the default already
-//   holds stays, and a sent one is refused (decision 2, Look first). Without one a subtype has no
+// - Every product has one hidden default row until it gets real subtypes (04 rule 1). With the
+//   first subtype the Head also names the existing items: the default takes that name and keeps
+//   its id, lines, stock, price and photo, and the new subtype is a new row; `has_variants` turns
+//   true (D64, replacing plan of 1.8, decision 1; build-plan 1.12b Build 6 and 1.12c). The rest
+//   are new rows too.
+// - The reference price is set on create only, the new row's own; the default keeps the price it
+//   holds (D64, replacing decision 2's refusal on the first subtype). Without one a subtype has no
 //   price (decision 4, Look first). A price set here gets its HEAD row of the price history; later
 //   prices come through addPrice (plan of 1.9, decision 1, Look first).
 // - Names are unique inside the product (04 rule 3); a product with subtypes keeps one active

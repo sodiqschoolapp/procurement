@@ -15,9 +15,10 @@ import { findTakenProduct, insertProduct, lockProducts, recordProductCreate } fr
 import { addSubtypeFromSearch, recordSubtypeCreate } from "./subtypes";
 
 // Managers add products and subtypes while ordering (04-catalogs.md rule 8; D63; build-plan
-// 1.12b). Both adds are catalog.add: the Head, and a Manager whose right ADD_PRODUCTS is on
-// (03, Permission matrix: "Add a product or a subtype from an order's product search"; plan of
-// 1.12b, decided item 1, Look first). Global: catalogs hold no branch.
+// 1.12b). Both adds are catalog.add: the Head, and a Manager whose rights ADD_PRODUCTS and
+// CREATE_REQUESTS are both on (03, Permission matrix: "Add a product or a subtype from an order's
+// product search"; Manager rights; D66; plan of 1.12b, decided item 1, Look first). Global:
+// catalogs hold no branch.
 // - A new product takes name, type, category, measure and an optional photo only: "No reference
 //   price, brand or description" (rule 8). Another key sent is stripped by the input check and
 //   writes nothing. It is written through the create's own body (insertProduct), so every rule of

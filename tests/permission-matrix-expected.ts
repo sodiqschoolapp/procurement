@@ -6,7 +6,8 @@ import { type ManagerRight, type Permission, ROLES, type Role } from "@/domain/p
 // exist"). Each line quotes its row of the spec; the splits are decision 3 of the plan of 0.7.
 //
 // "no": refused; "yes": allowed (no branch); "all": every branch; "own": own branches;
-// "owner": own branches, own requests. `right`: the Manager right that guards the Manager's "Yes".
+// "owner": own branches, own requests. `right`: the Manager right that guards the Manager's "Yes";
+// `alsoRight`: a second one that must be on too (03 Manager rights, the ADD_PRODUCTS row).
 
 type Expected = {
   row: string;
@@ -15,6 +16,7 @@ type Expected = {
   PRINCIPAL: string;
   FINANCE: string;
   right?: ManagerRight;
+  alsoRight?: ManagerRight;
 };
 
 export const EXPECTED_MATRIX: Record<Permission, Expected> = {
@@ -39,6 +41,8 @@ export const EXPECTED_MATRIX: Record<Permission, Expected> = {
     PRINCIPAL: "no",
     FINANCE: "no",
     right: "ADD_PRODUCTS",
+    // "It works only while 'Add and submit orders' is on too" (03 Manager rights; D66).
+    alsoRight: "CREATE_REQUESTS",
   },
   "catalog.pick": {
     row: "Pick from the catalogs (not a row of 03; plan of 1.5, decision 2, Look first)",
