@@ -268,17 +268,20 @@ export type CancelPlan = {
  * row; plan of 2.3b, decided item 14, Look first): a cancelled order keeps the plan that
  * `orders_submitted_plan_check`, `orders_planned_price_total_check` and
  * `orders_urgent_reason_check` ask of every status but Draft. Since D67 that is the subtype, the
- * quantity, and a price only together with its total; the field settings decide a submit, never a
- * Cancel (plan of 2.5d, decided item 6, Look first). Unlike Submit, a date in the past and an
+ * quantity and the price with its total (the price until 2.5d-b, decided item 4); the department and
+ * the needed-by date are free, and the field settings decide a submit, never a Cancel (plan of
+ * 2.5d, decided item 6, Look first). Unlike Submit, a date in the past and an
  * inactive entry are no refusal: nothing is bought.
  */
 export function cancelPlanGaps(plan: CancelPlan): Record<string, SubmitRefusal> {
   const refused: Record<string, SubmitRefusal> = {};
   if (plan.variantId === null) refused.variantId = "required";
   if (plan.quantity === null) refused.quantity = "required";
-  // The total is the grid's draftTotal(): empty only without a quantity or a price, so a price
-  // without a total means a missing quantity, named above.
-  if (plan.price !== null && plan.total === null && plan.quantity !== null) {
+  // Until 2.5d-b a cancelled order keeps its price: the price row is fixed at Required, and every
+  // reader of `planned_price` and `planned_total` outside Draft still expects one (plan of 2.5d,
+  // decided items 1 and 4, Look first). The total is the grid's draftTotal(): empty only without a
+  // quantity or a price.
+  if (plan.price === null || (plan.total === null && plan.quantity !== null)) {
     refused.price = "required";
   }
   if (plan.priority === "URGENT" && !isUrgentReason(plan.urgentReason)) {

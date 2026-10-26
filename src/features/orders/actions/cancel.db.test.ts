@@ -162,9 +162,9 @@ describe("Cancel of a Draft with a number (06 Allowed moves, Cancel row; D55 ite
     expect(await orderRow(draft.id)).toMatchObject({ status: "DRAFT", number: null });
   });
 
-  // Since D67 a cancelled order may lack a price with its total (orders_submitted_plan_check
-  // loosened; plan of 2.5d, decided item 6, a changed requirement, Look first): the refusal is
-  // shown with a cleared quantity, which every status but Draft still needs.
+  // Until 2.5d-b a Cancel asks the price, the department and the needed-by date no longer (D67;
+  // plan of 2.5d, decided items 4 and 6, Look first). The quantity is still asked by every status
+  // but Draft.
   it("a numbered draft whose quantity was cleared is refused not_ready naming the quantity; filled again, it cancels (decided item 14)", async () => {
     const { branch, manager } = await moveScene();
     const draft = await insertOrder({
@@ -201,7 +201,43 @@ describe("Cancel of a Draft with a number (06 Allowed moves, Cancel row; D55 ite
     expect(await orderRow(draft.id)).toMatchObject({ status: "CANCELLED" });
   });
 
-  it("a numbered draft without a price, a department or a date cancels (decided item 6)", async () => {
+  it("a numbered draft whose price was cleared is refused not_ready naming the price until 2.5d-b; filled again, it cancels (decided items 4 and 14)", async () => {
+    const { branch, manager } = await moveScene();
+    const draft = await insertOrder({
+      branchId: branch.id,
+      ownerId: manager.id,
+      status: "DRAFT",
+      number: inventedNumber(),
+    });
+    // As the grid's updateDraft saves a cleared price cell on a Draft: no price, no total.
+    await db
+      .update(orders)
+      .set({ plannedPrice: null, plannedTotal: null })
+      .where(eq(orders.id, draft.id));
+    const notices = await noticeCount();
+    const input = tickedInput([draft]);
+    expect(await cancel(manager.id, input)).toMatchObject({
+      ok: false,
+      error: {
+        code: "not_ready",
+        orders: [
+          { orderId: draft.id, code: "not_ready", fields: { price: "errors.field.required" } },
+        ],
+      },
+    });
+    await nothingSaved(input.clientKey, [draft.id], notices);
+    expect(await orderRow(draft.id)).toMatchObject({ status: "DRAFT", version: draft.version });
+
+    // The same draft with its price filled again: only the plan decided the refusal.
+    await db
+      .update(orders)
+      .set({ plannedPrice: 5000n, plannedTotal: 50_000n })
+      .where(eq(orders.id, draft.id));
+    expect(await cancel(manager.id, tickedInput([draft]))).toMatchObject({ ok: true });
+    expect(await orderRow(draft.id)).toMatchObject({ status: "CANCELLED" });
+  });
+
+  it("a numbered draft without a department or a date cancels, its price kept (decided items 4 and 6)", async () => {
     const { branch, manager } = await moveScene();
     const draft = await insertOrder({
       branchId: branch.id,
@@ -211,10 +247,6 @@ describe("Cancel of a Draft with a number (06 Allowed moves, Cancel row; D55 ite
       departmentId: null,
       neededBy: null,
     });
-    await db
-      .update(orders)
-      .set({ plannedPrice: null, plannedTotal: null })
-      .where(eq(orders.id, draft.id));
     expect(await cancel(manager.id, tickedInput([draft]))).toMatchObject({ ok: true });
     expect(await orderRow(draft.id)).toMatchObject({ status: "CANCELLED" });
   });

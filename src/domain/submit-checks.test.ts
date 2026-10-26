@@ -328,21 +328,24 @@ describe("submitRefusals with the fields the Head sets (05 Fields the Head sets;
   });
 });
 
-describe("cancelPlanGaps (06 Allowed moves, Cancel; plan of 2.5d, decided item 6)", () => {
+describe("cancelPlanGaps (06 Allowed moves, Cancel; plan of 2.5d, decided items 4 and 6)", () => {
   const plan = {
     variantId: "variant",
     departmentId: null,
     neededBy: null,
     quantity: "3",
-    price: null,
-    total: null,
+    price: 5000n,
+    total: 15_000n,
     priority: "NORMAL" as const,
     urgentReason: null,
   };
 
-  it("asks only what the loosened CHECKs ask: no department, date or price needed", () => {
+  it("needs no department and no needed-by date (D67)", () => {
     expect(cancelPlanGaps(plan)).toEqual({});
-    expect(cancelPlanGaps({ ...plan, price: 5000n, total: 15_000n })).toEqual({});
+  });
+
+  it("still asks the price with its total until 2.5d-b (decided item 4)", () => {
+    expect(cancelPlanGaps({ ...plan, price: null, total: null })).toEqual({ price: "required" });
   });
 
   it("still asks the subtype, the quantity and an urgent reason", () => {
