@@ -87,7 +87,6 @@ export function OrderList({
   const t = useTranslations("orders.list");
   const tPager = useTranslations("pager");
   const tCommon = useTranslations("common");
-  const format = useFormatters();
   const plannedSum = usePlannedSum();
   const router = useRouter();
   const [ticked, setTicked] = useState<string[]>([]);
@@ -307,11 +306,7 @@ export function OrderList({
                   <ApproveButton
                     orders={summary.orders}
                     versionOf={(id) => seen.current.get(id) ?? 0}
-                    total={plannedSum(
-                      summary.totals.grand,
-                      summary.totals.unpriced,
-                      summary.count,
-                    )}
+                    total={plannedSum(summary.totals.grand, summary.totals.unpriced, summary.count)}
                     financeStep={summary.financeStep}
                     onAnswer={(answer) => {
                       setFailed(answer);
@@ -884,7 +879,9 @@ function OrderRow({
               {plan(plannedMoney(order.plannedTotal))}
             </>
           ) : (
-            <span className="font-medium whitespace-nowrap">{plannedMoney(order.plannedTotal)}</span>
+            <span className="font-medium whitespace-nowrap">
+              {plannedMoney(order.plannedTotal)}
+            </span>
           )}
           {order.colours && <ListColourLabel colours={order.colours} of="total" />}
         </span>

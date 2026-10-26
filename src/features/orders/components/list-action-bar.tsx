@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/components/utils";
 import { PAYMENT_TYPES } from "@/domain/payment-types";
 import type { WireTickedSummary } from "@/features/orders/list-wire";
+import { usePlannedSum } from "@/features/orders/components/planned-sum";
 import { useFormatters } from "@/i18n/use-formatters";
 
 // The action bar of the order list (11-screens-and-ux.md, Order list layout 4: "fixed at the
@@ -41,6 +42,7 @@ export function ListActionBar({
   const tTotals = useTranslations("orders.totals");
   const tPayment = useTranslations("paymentTypes");
   const format = useFormatters();
+  const plannedSum = usePlannedSum();
   const [details, setDetails] = useState(false);
 
   const line = (key: string, label: string, amount: string) => (
@@ -70,7 +72,7 @@ export function ListActionBar({
             <span data-total="grand" className="flex items-baseline gap-1.5 text-sm">
               <span className="text-muted-foreground">{tTotals("grand")}</span>
               <span className="text-subheading tabular-nums">
-                {format.money(BigInt(summary.totals.grand))}
+                {plannedSum(summary.totals.grand, summary.totals.unpriced, summary.count)}
               </span>
             </span>
           )}

@@ -112,7 +112,8 @@ type OutcomeSource = {
   department_id: string;
   owner_id: string;
   planned_qty: string;
-  planned_price: string;
+  /** Null for an order without a planned price: it has no outcome (plan of 2.5d-b, item 4). */
+  planned_price: string | null;
   payment_type: PaymentType;
   plan_extras: string[];
   records: { qty: string; unit_price: string; extras: string[] }[];
@@ -227,7 +228,8 @@ type OrderSource = {
   owner_id: string;
   opened_at: string | null;
   payment_type: PaymentType;
-  planned_total: string;
+  /** Null for an order without a planned price: no planned cash (plan of 2.5d-b, item 9). */
+  planned_total: string | null;
   skipped_finance: boolean;
   rows: { kind: MoneyRowKind; amount: string; is_cancelled: boolean }[];
 };
@@ -265,7 +267,10 @@ async function writeOrders(executor: Executor) {
   if (found.rows.length === 0) return;
   const rows = found.rows.map(
     ({ payment_type, planned_total, skipped_finance, rows: money, ...row }) => {
-      const plannedCash = plannedCashOf(payment_type, BigInt(planned_total));
+      const plannedCash = plannedCashOf(
+        payment_type,
+        planned_total === null ? null : BigInt(planned_total),
+      );
       const handed = cashHanded(
         money.map((each) => ({
           kind: each.kind,
@@ -280,7 +285,7 @@ async function writeOrders(executor: Executor) {
             ? null
             : secondsBetween(new Date(row.submitted_at), new Date(row.opened_at)).toString(),
         // Text, so no JavaScript number holds the so'm (CLAUDE.md rule 6).
-        planned_cash: plannedCash.toString(),
+        planned_cash: plannedCash?.toString() ?? null,
         cash_handed: handed.toString(),
         cash_needed: cashNeeded({
           status: row.status,
@@ -433,7 +438,7 @@ async function writeOutcomes(executor: Executor) {
       progress: row.progress,
       plan: {
         quantity: row.planned_qty,
-        price: BigInt(row.planned_price),
+        price: row.planned_price === null ? null : BigInt(row.planned_price),
         extras: row.plan_extras.map((amount) => BigInt(amount)),
         paymentType: row.payment_type,
       },

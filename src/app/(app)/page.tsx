@@ -10,6 +10,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { BRANCH_COOKIE } from "@/features/catalog/branch-cookie";
 import { currentBranchChoice } from "@/features/catalog/queries/my-branches";
 import { GroupLines } from "@/features/home/components/group-lines";
+import { getPlannedSum } from "@/features/orders/components/planned-sum-server";
 import { HomeBlock } from "@/features/home/components/home-block";
 import { OwnerEntries } from "@/features/home/components/owner-entries";
 import { WaitingCards } from "@/features/home/components/waiting-cards";
@@ -314,6 +315,7 @@ async function ManagerHome({ userId, branch }: { userId: string; branch: string 
 async function PrincipalHome({ userId, branch }: { userId: string; branch: string | null }) {
   const t = await getTranslations("home");
   const format = await getFormatters();
+  const plannedSum = await getPlannedSum();
   const home = await getPrincipalHome(userId, branch);
   const waitingHref = listHref(home.waitingFilters);
 
@@ -331,7 +333,11 @@ async function PrincipalHome({ userId, branch }: { userId: string; branch: strin
         <p data-waiting-total className="text-figure font-semibold tabular-nums">
           {t("principal.waiting.total", {
             count: home.waiting.count,
-            total: format.money(home.waiting.totals.grand),
+            total: plannedSum(
+              home.waiting.totals.grand,
+              home.waiting.totals.unpriced,
+              home.waiting.count,
+            ),
           })}
         </p>
       </HomeBlock>
@@ -417,6 +423,7 @@ async function HeadHome({ userId, branch }: { userId: string; branch: string | n
   const t = await getTranslations("home");
   const tReasons = await getTranslations("warehouse.writeOff.reasons");
   const format = await getFormatters();
+  const plannedSum = await getPlannedSum();
   const home = await getHeadHome(userId, branch);
   // The Head's catalog lists: global, not of the top bar's branch (decided item 10).
   const suggestionCount = await countPendingSuggestions(userId);
@@ -474,7 +481,7 @@ async function HeadHome({ userId, branch }: { userId: string; branch: string | n
                 <span className="text-sm tabular-nums">
                   {t("head.waiting.line", {
                     count: line.count,
-                    total: format.money(line.totals.grand),
+                    total: plannedSum(line.totals.grand, line.totals.unpriced, line.count),
                   })}
                 </span>
               </Link>

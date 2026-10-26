@@ -464,7 +464,9 @@ export const analyticsOrders = pgTable(
     // Finance's Cash needed soon (plan of 6.6a, decided items 4, 5 and 11, Look first): the
     // order's planned cash `plannedCashOf()`, the cash handed to its Manager `cashHanded()` and
     // its need `cashNeeded()`, all from src/domain/money-ledger.ts.
-    plannedCash: som("planned_cash").notNull(),
+    // Empty for an order without a planned price, which has no planned cash (08 Numbers; plan of
+    // 2.5d-b, decided item 9, Look first; migration 0057).
+    plannedCash: som("planned_cash"),
     cashHanded: som("cash_handed").notNull(),
     cashNeeded: som("cash_needed").notNull(),
   },
