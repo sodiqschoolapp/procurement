@@ -24,7 +24,7 @@ import { getDraft, listDrafts } from "../queries/drafts";
 import { listDraftChoices, searchDraftProducts } from "../queries/draft-picker";
 import { submittedNumbers } from "../queries/submitted";
 import { deleteDraft, setDraftsNeededBy } from "./drafts";
-import { submitDrafts } from "./submit";
+import { submitDrafts, submitReadyDrafts } from "./submit";
 
 // Every new action and query of build plan 2.5a in the permission matrix (15-quality-and-
 // acceptance.md, Test layers: "each action × each role × own branch and other branch";
@@ -224,6 +224,14 @@ describe('deleteDraft: permission matrix by hand, "Create, edit … a request", 
 // Submit (build plan 2.7), the feature definition called directly.
 describeSubmitMatrix("submitDrafts", (user, orders) =>
   runOrdersAction(submitDrafts, user.id, { clientKey: randomUUID(), orders }),
+);
+
+// Submit with nothing ticked (build plan 2.5c): the same rows, the Head's own drafts only.
+describeSubmitMatrix(
+  "submitReadyDrafts",
+  (user, orders) =>
+    runOrdersAction(submitReadyDrafts, user.id, { clientKey: randomUUID(), orders }),
+  { ownOnly: true },
 );
 
 // The numbers read after a Submit (build plan 2.7): "See orders", the branch inside the SQL. An

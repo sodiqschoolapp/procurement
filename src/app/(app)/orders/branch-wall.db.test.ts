@@ -57,6 +57,7 @@ const {
   setDraftsNeededByAction,
   submitAgainOrdersAction,
   submitDraftsAction,
+  submitReadyDraftsAction,
   takeBackOrdersAction,
   tickedSummaryAction,
 } = await import("./actions");
@@ -90,6 +91,19 @@ describeTickedWall("submitDraftsAction", {
   async run(user, ticked) {
     signedIn(user);
     return wall(await submitDraftsAction({ clientKey: newClientKey(), orders: versions(ticked) }));
+  },
+});
+
+// Submit with nothing ticked (plan of 2.5c; permission review, Should fix 2).
+describeTickedWall("submitReadyDraftsAction", {
+  permission: "request.edit",
+  status: "DRAFT",
+  owned: true,
+  async run(user, ticked) {
+    signedIn(user);
+    return wall(
+      await submitReadyDraftsAction({ clientKey: newClientKey(), orders: versions(ticked) }),
+    );
   },
 });
 

@@ -49,6 +49,7 @@ const {
   setDraftsNeededByAction,
   submitAgainOrdersAction,
   submitDraftsAction,
+  submitReadyDraftsAction,
   takeBackOrdersAction,
   tickedSummaryAction,
   updateDraftAction,
@@ -291,6 +292,16 @@ describeSubmitMatrix("submitDraftsAction", (user, orders) => {
   signedIn(user);
   return submitDraftsAction({ clientKey: newClientKey(), orders });
 });
+
+// Submit with nothing ticked (build plan 2.5c) through the page's own export.
+describeSubmitMatrix(
+  "submitReadyDraftsAction",
+  (user, orders) => {
+    signedIn(user);
+    return submitReadyDraftsAction({ clientKey: newClientKey(), orders });
+  },
+  { ownOnly: true },
+);
 
 // The order list (plan of 2.8): the two page actions through their own exports. An order left out
 // of the answer is the branch wall's "not found" (03 rule 1).

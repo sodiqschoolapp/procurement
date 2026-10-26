@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { type SubmitFacts, inactiveEntries, submitRefusals } from "./submit-checks";
+import {
+  type SubmitFacts,
+  inactiveEntries,
+  isReady,
+  shownFacts,
+  submitRefusals,
+  submitSelection,
+} from "./submit-checks";
 
 // 05-order-request-form.md, Checks at submit; Order fields 2, 3, 7, 8, 10, 11, 14;
 // edge-cases/requests-and-approval.md, "A product is deactivated while it sits in a draft";
@@ -117,5 +124,95 @@ describe("inactiveEntries (edge case: the draft is marked)", () => {
     expect(
       inactiveEntries({ ...complete, subtypeActive: false, extras: [{ active: false }] }),
     ).toEqual(["variantId", "extras.0.extraCostTypeId"]);
+  });
+});
+
+describe("isReady (05 Checks at submit; plan of 2.5c, Build 3)", () => {
+  it("a complete draft is ready; one without a price or with yesterday's date is not", () => {
+    expect(isReady(complete, TODAY)).toBe(true);
+    expect(isReady({ ...complete, price: null }, TODAY)).toBe(false);
+    expect(isReady({ ...complete, neededBy: "2026-10-15" }, TODAY)).toBe(false);
+  });
+});
+
+describe("shownFacts: the sheet's row as submitRefusals() reads it (plan of 2.5c, decided item 10)", () => {
+  const shown = {
+    variantId: "variant",
+    allowsDecimals: false,
+    departmentId: "department",
+    companyId: "company",
+    neededBy: TODAY,
+    quantity: "3",
+    price: 12_500n,
+    priority: "NORMAL" as const,
+    urgentReason: null,
+    extras: [{}, {}],
+    inactive: [],
+  };
+
+  it("with no inactive cell the row is ready, as the server's facts would be", () => {
+    expect(submitRefusals(shownFacts(shown), TODAY)).toEqual({});
+  });
+
+  it("each inactive cell is refused as inactive on its own field (edge case: the draft is marked)", () => {
+    const facts = shownFacts({
+      ...shown,
+      inactive: ["branchId", "variantId", "departmentId", "companyId", "extras.1.extraCostTypeId"],
+    });
+    expect(submitRefusals(facts, TODAY)).toEqual({
+      branchId: "inactive",
+      variantId: "inactive",
+      departmentId: "inactive",
+      companyId: "inactive",
+      "extras.1.extraCostTypeId": "inactive",
+    });
+  });
+
+  it("empty cells are required, never inactive", () => {
+    const facts = shownFacts({ ...shown, variantId: null, departmentId: null, companyId: null });
+    expect(facts.subtypeActive).toBeNull();
+    expect(facts.departmentActive).toBeNull();
+    expect(facts.companyActive).toBeNull();
+    expect(submitRefusals(facts, TODAY)).toEqual({
+      variantId: "required",
+      departmentId: "required",
+    });
+  });
+});
+
+describe("submitSelection (05 Checks at submit: at most 200, the first 200 in the order added)", () => {
+  const at = (second: number) => new Date(Date.UTC(2026, 9, 16, 5, 0, second));
+
+  it("201 ready drafts: the first 200 by creation go, the 201st is held back", () => {
+    const drafts = Array.from({ length: 201 }, (_, n) => ({
+      id: `d${String(n).padStart(3, "0")}`,
+      createdAt: new Date(at(0).getTime() + n * 1000),
+      ready: true,
+    }));
+    const { send, heldBack, stay } = submitSelection([...drafts].reverse());
+    expect(send.map((draft) => draft.id)).toEqual(drafts.slice(0, 200).map((draft) => draft.id));
+    expect(heldBack.map((draft) => draft.id)).toEqual(["d200"]);
+    expect(stay).toEqual([]);
+  });
+
+  it("a draft that is not ready stays and takes no place among the 200 (decided item 4)", () => {
+    const notReady = { id: "a", createdAt: at(0), ready: false };
+    const ready = Array.from({ length: 200 }, (_, n) => ({
+      id: `r${String(n).padStart(3, "0")}`,
+      createdAt: at(1 + (n % 50)),
+      ready: true,
+    }));
+    const { send, heldBack, stay } = submitSelection([notReady, ...ready]);
+    expect(send).toHaveLength(200);
+    expect(heldBack).toEqual([]);
+    expect(stay).toEqual([notReady]);
+  });
+
+  it("two drafts made at the same moment go by id", () => {
+    const { send } = submitSelection([
+      { id: "b", createdAt: at(0), ready: true },
+      { id: "a", createdAt: at(0), ready: true },
+    ]);
+    expect(send.map((draft) => draft.id)).toEqual(["a", "b"]);
   });
 });

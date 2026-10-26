@@ -2218,4 +2218,23 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 **What the next sessions must know**
 - A permission guarded by two Manager rights: `right` and `alsoRight`, in `permissions.ts` and in the oracle both; every test reading rights reads both.
 
-The next task is 2.5c.
+## 2.5c The order sheet (26.10.2026, pull request #169)
+
+**Built**
+- The drafts grid is the order sheet: six cells (product with type and stock under it, department, quantity with measure, price, needed-by, total), the branch only for several branches, the rest under "More" (`tr[data-more-of]`); no word "Draft".
+- The add row copies branch, department and needed-by date of the last row (`copiedFromAbove()`), and has a needed-by field.
+- `submitReadyDrafts` / `submitReadyDraftsAction`: Submit with nothing ticked sends the ready own drafts of the submit set (`listDrafts().submitSet`), the first 200; the rest stay, marked live and listed on top. `submitSelection()`, `shownFacts()`, `isReady()` in `src/domain/submit-checks.ts`.
+- The order-action wrapper's `leave` and `leftOnRepeat` steps; `ordersInput(shape, { max })`; the machine's check in chunks of 200.
+
+**Left out, and the task that brings it**
+- The simpler order page: task 2.9b.
+
+**Open for the owner**
+- Decided items 1, 2, 3, 7 and 11 (Look first) on issue #9.
+
+**What the next sessions must know**
+- An action that sends part of what it was given uses the wrapper's `leave` step; its repeat answer needs `leftOnRepeat`.
+- Fields under "More" are reached in browser tests through `[data-more]` and `tr[data-more-of="<id>"]` (`openMore()` in `tests/e2e/drafts.spec.ts`).
+- A modal dialog hides the page from role queries: wait for it to close before counting rows.
+
+The next task is 2.9b.

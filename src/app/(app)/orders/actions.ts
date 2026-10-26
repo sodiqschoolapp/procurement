@@ -33,7 +33,7 @@ import { reopenOrders } from "@/features/orders/actions/reopen";
 import { sendBackForCorrectionOrders } from "@/features/orders/actions/send-back-for-correction";
 import { sendToSettlementOrders } from "@/features/orders/actions/send-to-settlement";
 import { submitAgainOrders } from "@/features/orders/actions/submit-again";
-import { submitDrafts } from "@/features/orders/actions/submit";
+import { submitDrafts, submitReadyDrafts } from "@/features/orders/actions/submit";
 import { takeBackOrders } from "@/features/orders/actions/take-back";
 import { getDraft } from "@/features/orders/queries/drafts";
 import {
@@ -68,7 +68,12 @@ import {
 import { type AddChoices, listAddChoices } from "@/features/catalog/queries/manager-adds";
 import { type DecidedVerb, alreadyDecidedBy } from "@/domain/already-decided";
 import { serverAction } from "@/server/action";
-import { type ActionFailure, type ActionResult, failure } from "@/server/action-result";
+import {
+  type ActionFailure,
+  type ActionResult,
+  type OrderFailure,
+  failure,
+} from "@/server/action-result";
 import { getCurrentUser } from "@/server/auth/session";
 import { today } from "@/server/clock";
 import { AuthorizationError } from "@/server/authorize";
@@ -88,6 +93,7 @@ const update = serverAction(updateDraft);
 const remove = serverAction(deleteDraft);
 const applyNeededBy = draftsServerAction(setDraftsNeededBy);
 const submit = ordersServerAction(submitDrafts);
+const submitReady = ordersServerAction(submitReadyDrafts);
 const approve = ordersServerAction(approveOrders);
 const sendBack = ordersServerAction(sendBackOrders);
 const reject = ordersServerAction(rejectOrders);
@@ -161,7 +167,12 @@ export async function setDraftsNeededByAction(
 }
 
 /** What a Submit answers: each order's status and its new number (05 Order number). */
-export type WireSubmitted = { orders: { id: string; status: string; number: string | null }[] };
+export type WireSubmitted = {
+  orders: { id: string; status: string; number: string | null }[];
+  /** The drafts a Submit with nothing ticked left in the sheet, with their cells (plan of 2.5c). */
+  left: OrderFailure[];
+  heldBack: number;
+};
 
 /**
  * Submits the ticked drafts, all or nothing (05 Drafts 4; Checks at submit; 06 rule 8). The
@@ -170,7 +181,23 @@ export type WireSubmitted = { orders: { id: string; status: string; number: stri
  * fix 3). Never retried by the screen (progress 2.6, "For 2.7").
  */
 export async function submitDraftsAction(input: unknown): Promise<ActionResult<WireSubmitted>> {
-  const result = await submit(input);
+  return wireSubmitted(await submit(input));
+}
+
+/**
+ * Submit with nothing ticked: the ready drafts of the submit set the sheet loaded, the first 200;
+ * the answer also names the drafts that stayed, with their cells, and how many were held back (05
+ * Drafts 4; Checks at submit; plan of 2.5c).
+ */
+export async function submitReadyDraftsAction(
+  input: unknown,
+): Promise<ActionResult<WireSubmitted>> {
+  return wireSubmitted(await submitReady(input));
+}
+
+async function wireSubmitted(
+  result: Awaited<ReturnType<typeof submit>>,
+): Promise<ActionResult<WireSubmitted>> {
   if (!result.ok) return result;
   const user = await getCurrentUser();
   const numbers = user
@@ -188,6 +215,8 @@ export async function submitDraftsAction(input: unknown): Promise<ActionResult<W
         status: order.status,
         number: numbers.get(order.id) ?? null,
       })),
+      left: result.data.left ?? [],
+      heldBack: result.data.heldBack ?? 0,
     },
   };
 }

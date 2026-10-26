@@ -237,7 +237,8 @@ test("Done when: add through the picker, merge, ticked totals, delete (05 Drafts
   await addDraft(page, paper, science, "2");
   await expect(rows(page)).toHaveCount(2);
   const transfer = rows(page).nth(1);
-  await transfer.getByLabel(t.columns.paymentType).selectOption("TRANSFER");
+  // Payment type stands under "More" on the row (11 Order list layout 3; plan of 2.5c).
+  await (await openMore(transfer)).getByLabel(t.columns.paymentType).selectOption("TRANSFER");
   await expect(transfer).toContainText(t.save.saved);
   await addDraft(page, paper, music, "1");
   await expect(rows(page)).toHaveCount(3);
@@ -258,7 +259,7 @@ test("Done when: add through the picker, merge, ticked totals, delete (05 Drafts
   await expect(line("CARD")).toHaveText(som("0"));
 
   // 11 rule 6: leaving with a typed, unsaved cell asks first.
-  const comment = penRow.getByLabel(t.columns.comment);
+  const comment = (await openMore(penRow)).getByLabel(t.columns.comment);
   await comment.fill("Ko'k rangli");
   await page.getByRole("link", { name: en.shell.menu.home }).first().click();
   await expect(page.getByRole("alertdialog")).toBeVisible();
@@ -578,6 +579,15 @@ async function numbersOf(person: Person, product: string) {
     );
     return found;
   });
+}
+
+/** Opens "More" of a sheet row and gives its panel (11 Order list layout 3; plan of 2.5c). */
+async function openMore(row: Locator): Promise<Locator> {
+  const id = await row.getAttribute("data-draft");
+  const panel = row.page().locator(`tr[data-more-of="${id}"]`);
+  if (!(await panel.isVisible())) await row.locator("[data-more]").click();
+  await expect(panel).toBeVisible();
+  return panel;
 }
 
 /** The draft row of a product: the product sits in an input, so the row is found by its tick. */

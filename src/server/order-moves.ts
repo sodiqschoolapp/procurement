@@ -2,6 +2,7 @@ import { inArray, sql } from "drizzle-orm";
 import type * as z from "zod";
 
 import {
+  ORDER_ACTION_MAX,
   ORDER_MOVES,
   type MoveInput,
   type OrderAction,
@@ -99,20 +100,26 @@ function checkOf<Input extends MoveActionInput>(
   action: OrderAction,
   context: OrdersContext<Input>,
 ): readonly OrderFailure[] {
-  const check = checkMoves(
-    context.actor,
-    context.orders.map(orderState),
-    action,
-    moveInput(context),
-  );
-  if (check.ok) return [];
-  const refusal = check.refusal;
-  if (refusal.kind === "reason") {
-    throw new ActionError("invalid_input", reasonFields(context.input.reason));
+  // The machine judges at most 200 orders at once; a Submit with nothing ticked takes in its whole
+  // submit set and sends at most 200 of it (plan of 2.5c), so its set is judged 200 at a time.
+  const failed: OrderFailure[] = [];
+  for (let at = 0; at < context.orders.length; at += ORDER_ACTION_MAX) {
+    const check = checkMoves(
+      context.actor,
+      context.orders.slice(at, at + ORDER_ACTION_MAX).map(orderState),
+      action,
+      moveInput(context),
+    );
+    if (check.ok) continue;
+    const refusal = check.refusal;
+    if (refusal.kind === "reason") {
+      throw new ActionError("invalid_input", reasonFields(context.input.reason));
+    }
+    // `none`, `too_many` and `duplicate` are refused by the input schema first.
+    if (refusal.kind !== "orders") throw new ActionError("invalid_input");
+    for (const { orderId, reason } of refusal.orders) failed.push({ orderId, code: reason });
   }
-  // `none`, `too_many` and `duplicate` are refused by the input schema first.
-  if (refusal.kind !== "orders") throw new ActionError("invalid_input");
-  return refusal.orders.map(({ orderId, reason }) => ({ orderId, code: reason }));
+  return failed;
 }
 
 /** Writes each order's new status, and its revision where the move raises it. */
@@ -166,6 +173,11 @@ export function orderMoveAction<Input extends MoveActionInput>(options: {
   notify?(context: OrdersContext<Input>, result: OrdersResult): Promise<void>;
   /** The state machine's facts other tables hold, under the lock (plan of 4.4). */
   facts?(context: OrdersContext<Input>): Promise<readonly LockedOrder[]>;
+  /** A check of the action's own beside the machine's, under the lock (plan of 2.5c). */
+  inspect?: OrdersActionDefinition<Input>["inspect"];
+  /** The orders left untouched, and the same answer for a repeat (plan of 2.5c). */
+  leave?: OrdersActionDefinition<Input>["leave"];
+  leftOnRepeat?: OrdersActionDefinition<Input>["leftOnRepeat"];
 }): OrdersActionDefinition<Input> {
   const { action } = options;
   return defineOrdersAction<Input>({
@@ -177,6 +189,9 @@ export function orderMoveAction<Input extends MoveActionInput>(options: {
     reason: (input) => (isMoveReason(input.reason) ? moveReason(input.reason) : null),
     facts: options.facts,
     check: (context) => checkOf(action, context),
+    inspect: options.inspect,
+    leave: options.leave,
+    leftOnRepeat: options.leftOnRepeat,
     async write(context) {
       const moves = assertMove(
         context.actor,

@@ -88,6 +88,7 @@ export const SERVER_ACTIONS: Record<string, Entry> = {
   // Submit of ticked drafts (plan of 2.7): the state machine's SUBMIT move under request.edit
   // (src/domain/order-moves.ts), in the matrix through describeSubmitMatrix.
   "src/app/(app)/orders/actions.ts#submitDraftsAction": "request.edit",
+  "src/app/(app)/orders/actions.ts#submitReadyDraftsAction": "request.edit",
   // Approve of ticked orders (plan of 2.10, decided item 1, Look first): one action for the three
   // steps, so the permission depends on each order's status: request.approve_step1 at Waiting for
   // Head, request.approve_step2 at Waiting for Principal, request.approve_step3 at Waiting for

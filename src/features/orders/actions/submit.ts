@@ -1,14 +1,19 @@
 import { and, eq, inArray } from "drizzle-orm";
 
 import { businessDate } from "@/domain/business-date";
+import { SUBMIT_SET_MAX, submitSelection } from "@/domain/submit-checks";
 import { orderActionNotices } from "@/domain/notifications";
 import { now } from "@/server/clock";
 import { branches, userBranches, users } from "@/server/db/schema";
 import { notify } from "@/server/notify";
+import type { OrderFailure } from "@/server/action-result";
 import {
   type OrdersContext,
   type OrdersInput,
+  type OrdersLeft,
+  type OrdersResult,
   OrdersRefusal,
+  type Transaction,
   ordersInput,
 } from "@/server/order-action";
 import { orderMoveAction } from "@/server/order-moves";
@@ -71,85 +76,166 @@ async function beforeSubmit(context: OrdersContext<Input>): Promise<void> {
   await writePlan(tx, rows, numbers, at);
 }
 
+/**
+ * The notices of a submit (10 Notifications), of the orders it moved: the Heads, and the Principal
+ * of the orders that skipped the Head step.
+ */
+async function notifySubmitted(context: OrdersContext<Input>, result: OrdersResult): Promise<void> {
+  const { tx, userId } = context;
+  const at = now();
+  const [actor] = await tx.select({ name: users.fullName }).from(users).where(eq(users.id, userId));
+  const branchIds = ids(context.orders.map((order) => order.branchId));
+  const codes = await tx
+    .select({ id: branches.id, code: branches.code })
+    .from(branches)
+    .where(inArray(branches.id, branchIds));
+  const codeOf = new Map(codes.map((row) => [row.id, row.code]));
+  const branchOf = new Map(context.orders.map((order) => [order.id, order.branchId]));
+  const inBranches = (statuses: readonly { id: string }[]) =>
+    statuses.map(({ id }) => {
+      const branchId = branchOf.get(id)!;
+      return { branchId, branchCode: codeOf.get(branchId)! };
+    });
+
+  // "Orders submitted or submitted again → Head" (10 Notifications): every active Head but the
+  // actor, one notification per branch (decided item 6, Look first).
+  const heads = await tx
+    .select({ id: users.id })
+    .from(users)
+    .where(and(eq(users.role, "HEAD"), eq(users.isActive, true)));
+  for (const { branchId, params } of orderActionNotices(actor!.name, inBranches(result.orders))) {
+    await notify(
+      { tx, userId },
+      {
+        to: heads.map((head) => head.id),
+        type: "REQUEST_SUBMITTED",
+        params,
+        branchId,
+        link: actionLink(branchId, result.actionId),
+        at,
+      },
+    );
+  }
+
+  // An order the Head created skipped the Head step (03 rule 6) and waits for the Principal of
+  // its branch: "Head approved → Principal of the branch" (10 Notifications). The actor of such
+  // a submit is always a Head: the draft is its Head's own, and only its owner or a Head may
+  // submit it (decisions 2.3 item 2; review of the plan, Should fix 1).
+  const skipped = result.orders.filter((order) => order.status === "PENDING_PRINCIPAL");
+  for (const { branchId, params } of orderActionNotices(actor!.name, inBranches(skipped))) {
+    const principals = await tx
+      .select({ id: userBranches.userId })
+      .from(userBranches)
+      .where(
+        and(
+          eq(userBranches.branchId, branchId),
+          eq(userBranches.userRole, "PRINCIPAL"),
+          eq(userBranches.userIsActive, true),
+        ),
+      );
+    await notify(
+      { tx, userId },
+      {
+        to: principals.map((principal) => principal.id),
+        type: "REQUEST_HEAD_APPROVED",
+        params,
+        branchId,
+        link: actionLink(branchId, result.actionId),
+        at,
+      },
+    );
+  }
+}
+
+/** The plan facts after the move: one order_revisions row per order (rule 7). */
+async function snapshotsOf(context: OrdersContext<Input>): Promise<void> {
+  await writeSnapshots(
+    context.tx,
+    context.orders.map((order) => order.id),
+    now(),
+  );
+}
+
 export const submitDrafts = orderMoveAction<Input>({
   name: "submitDrafts",
   action: "SUBMIT",
   input: ordersInput({}),
   beforeMove: beforeSubmit,
-  async afterMove(context) {
-    await writeSnapshots(
+  afterMove: snapshotsOf,
+  notify: notifySubmitted,
+});
+
+/**
+ * What a Submit with nothing ticked leaves (05 Drafts 4; Checks at submit): the drafts that are
+ * not ready, each with its cells, and the ready ones past the first 200, counted. Read under the
+ * lock, each catalog row FOR SHARE, by submitRefusals() and submitSelection() of src/domain/.
+ */
+async function leftOf(
+  tx: Transaction,
+  orderIds: readonly string[],
+): Promise<{ send: Set<string> } & OrdersLeft> {
+  if (orderIds.length === 0) return { send: new Set(), left: [], heldBack: 0 };
+  const rows = await readSubmitRows(tx, orderIds);
+  const failed = failuresOf(
+    orderIds.map((id) => ({ id })),
+    rows,
+    businessDate(now()),
+  );
+  const failedIds = new Set(failed.map((order) => order.orderId));
+  const { send, heldBack } = submitSelection(
+    rows.map((row) => ({ id: row.id, createdAt: row.createdAt, ready: !failedIds.has(row.id) })),
+  );
+  return {
+    send: new Set(send.map((row) => row.id)),
+    // In the order the screen sent them, so the list on top follows the sheet.
+    left: failed,
+    heldBack: heldBack.length,
+  };
+}
+
+/**
+ * Submit with nothing ticked (05 Drafts 4; 06 rule 8, its one exception; plan of 2.5c, decided
+ * items 1 to 4 and 11, Look first): the screen sends the submit set it loaded, the user's own
+ * Drafts without a number, with their versions. Every check of the wrapper refuses the whole as
+ * for ticked drafts: a stale version, another branch, a status off. A numbered Draft (taken back)
+ * or another owner's draft is never in the set, so one sent refuses the whole too (decided item
+ * 2). Then `leave` keeps the ready ones, the first 200 in the order they were added, and leaves
+ * the rest untouched: no version raised, no event. With none ready the whole is refused
+ * `not_ready` with each draft's cells. The rest is Submit as for ticked drafts.
+ */
+export const submitReadyDrafts = orderMoveAction<Input>({
+  name: "submitReadyDrafts",
+  action: "SUBMIT",
+  input: ordersInput({}, { max: SUBMIT_SET_MAX }),
+  async inspect(context) {
+    const refused: OrderFailure[] = [];
+    for (const order of context.orders) {
+      if (order.ownerId !== context.userId) refused.push({ orderId: order.id, code: "forbidden" });
+      else if (order.numbered) refused.push({ orderId: order.id, code: "wrong_status" });
+    }
+    return refused;
+  },
+  async leave(context) {
+    // Every sent order passed the walls, so the sent list is the locked one in the screen's order.
+    const { send, left, heldBack } = await leftOf(
       context.tx,
-      context.orders.map((order) => order.id),
-      now(),
+      context.input.orders.map((order) => order.id),
     );
+    if (send.size === 0) throw new OrdersRefusal("not_ready", left);
+    return { keep: context.orders.filter((order) => send.has(order.id)), left, heldBack };
   },
-  async notify(context, result) {
-    const { tx, userId } = context;
-    const at = now();
-    const [actor] = await tx
-      .select({ name: users.fullName })
-      .from(users)
-      .where(eq(users.id, userId));
-    const branchIds = ids(context.orders.map((order) => order.branchId));
-    const codes = await tx
-      .select({ id: branches.id, code: branches.code })
-      .from(branches)
-      .where(inArray(branches.id, branchIds));
-    const codeOf = new Map(codes.map((row) => [row.id, row.code]));
-    const branchOf = new Map(context.orders.map((order) => [order.id, order.branchId]));
-    const inBranches = (statuses: readonly { id: string }[]) =>
-      statuses.map(({ id }) => {
-        const branchId = branchOf.get(id)!;
-        return { branchId, branchCode: codeOf.get(branchId)! };
-      });
-
-    // "Orders submitted or submitted again → Head" (10 Notifications): every active Head but the
-    // actor, one notification per branch (decided item 6, Look first).
-    const heads = await tx
-      .select({ id: users.id })
-      .from(users)
-      .where(and(eq(users.role, "HEAD"), eq(users.isActive, true)));
-    for (const { branchId, params } of orderActionNotices(actor!.name, inBranches(result.orders))) {
-      await notify(
-        { tx, userId },
-        {
-          to: heads.map((head) => head.id),
-          type: "REQUEST_SUBMITTED",
-          params,
-          branchId,
-          link: actionLink(branchId, result.actionId),
-          at,
-        },
-      );
-    }
-
-    // An order the Head created skipped the Head step (03 rule 6) and waits for the Principal of
-    // its branch: "Head approved → Principal of the branch" (10 Notifications). The actor of such
-    // a submit is always a Head: the draft is its Head's own, and only its owner or a Head may
-    // submit it (decisions 2.3 item 2; review of the plan, Should fix 1).
-    const skipped = result.orders.filter((order) => order.status === "PENDING_PRINCIPAL");
-    for (const { branchId, params } of orderActionNotices(actor!.name, inBranches(skipped))) {
-      const principals = await tx
-        .select({ id: userBranches.userId })
-        .from(userBranches)
-        .where(
-          and(
-            eq(userBranches.branchId, branchId),
-            eq(userBranches.userRole, "PRINCIPAL"),
-            eq(userBranches.userIsActive, true),
-          ),
-        );
-      await notify(
-        { tx, userId },
-        {
-          to: principals.map((principal) => principal.id),
-          type: "REQUEST_HEAD_APPROVED",
-          params,
-          branchId,
-          link: actionLink(branchId, result.actionId),
-          at,
-        },
-      );
-    }
+  async leftOnRepeat(tx, userId, notMoved) {
+    // Only what the first call could leave: the user's own Drafts without a number (decided item
+    // 2; permission review, Should fix 1). The first call sent every ready one up to 200, so one
+    // it did not move that passes the checks now was held back by the cap (review of the plan,
+    // correction 1).
+    const own = notMoved
+      .filter((order) => order.ownerId === userId && order.status === "DRAFT" && !order.numbered)
+      .map((order) => order.id);
+    const { left } = await leftOf(tx, own);
+    return { left, heldBack: own.length - left.length };
   },
+  beforeMove: beforeSubmit,
+  afterMove: snapshotsOf,
+  notify: notifySubmitted,
 });

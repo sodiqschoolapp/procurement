@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { useAction } from "@/components/use-action";
 import type { WireCreated } from "@/features/orders/draft-wire";
+import { parseTypedDate } from "@/i18n/format";
 import { useFormatters } from "@/i18n/use-formatters";
 
 import { useGrid } from "./grid-context";
@@ -34,12 +35,18 @@ import { type PickedSubtype, ProductPicker, Thumb } from "./product-picker";
 
 export function AddDraftRow({
   defaultBranchId,
+  above,
   onAdded,
   onBusy,
   onStartOver,
 }: {
   /** The top bar's branch when it is active and a draft may be added there, else null. */
   defaultBranchId: string | null;
+  /**
+   * The branch, department and needed-by date of the draft above the new one, the last row of
+   * the sheet shown (05 Drafts 6; plan of 2.5c, decided item 5); each can be changed before Add.
+   */
+  above: { branchId: string; departmentId: string | null; neededBy: string | null } | null;
   onAdded(created: WireCreated): void;
   /** True from the first try of an add until its answer, retries included. */
   onBusy?(busy: boolean): void;
@@ -51,10 +58,30 @@ export function AddDraftRow({
   const grid = useGrid();
   const creatable = grid.branches.filter((branch) => branch.canCreate && branch.isActive);
   const fixed = defaultBranchId ?? (creatable.length === 1 ? creatable[0]!.id : null);
-  const [branchId, setBranchId] = useState<string | null>(fixed);
+  const aboveBranch =
+    above && creatable.some((branch) => branch.id === above.branchId) ? above.branchId : null;
+  const startBranch = fixed ?? aboveBranch;
+  const fromAbove = (branch: string | null) => (above && branch === above.branchId ? above : null);
+  const [branchId, setBranchId] = useState<string | null>(startBranch);
   const [picked, setPicked] = useState<PickedSubtype | null>(null);
-  const [departmentId, setDepartmentId] = useState("");
+  const [departmentId, setDepartmentId] = useState(fromAbove(startBranch)?.departmentId ?? "");
   const [quantity, setQuantity] = useState("");
+  const [neededBy, setNeededBy] = useState(above?.neededBy ? format.date(above.neededBy) : "");
+  const [neededByWrong, setNeededByWrong] = useState(false);
+  // The draft above changed (a draft was added or the page changed) while nothing is typed: the
+  // add row takes its fields again (05 Drafts 6).
+  const aboveKey = above ? `${above.branchId}|${above.departmentId}|${above.neededBy}` : "";
+  const [seenAbove, setSeenAbove] = useState(aboveKey);
+  if (aboveKey !== seenAbove) {
+    setSeenAbove(aboveKey);
+    if (!picked && !quantity.trim()) {
+      const branch = fixed ?? aboveBranch;
+      setBranchId(branch);
+      setDepartmentId(fromAbove(branch)?.departmentId ?? "");
+      setNeededBy(above?.neededBy ? format.date(above.neededBy) : "");
+      setNeededByWrong(false);
+    }
+  }
   const add = useAction(createDraftAction, { create: true });
   const [busy, setBusy] = useState(false);
   const [retrying, setRetrying] = useState(false);
@@ -93,7 +120,20 @@ export function AddDraftRow({
       if (empty) focus(empty);
       return;
     }
-    const input = { branchId: branchId!, variantId: picked!.subtype.id, departmentId, quantity };
+    // 05 field 8: optional at Add (checked at submit); a typed date that is not one is refused here.
+    const date = neededBy.trim() === "" ? null : parseTypedDate(neededBy);
+    setNeededByWrong(neededBy.trim() !== "" && date === null);
+    if (neededBy.trim() !== "" && date === null) {
+      focus("add-needed-by");
+      return;
+    }
+    const input = {
+      branchId: branchId!,
+      variantId: picked!.subtype.id,
+      departmentId,
+      quantity,
+      ...(date ? { neededBy: date } : {}),
+    };
     busyNow.current = true;
     setBusy(true);
     onBusy?.(true);
@@ -114,6 +154,7 @@ export function AddDraftRow({
         variantId: "add-product",
         departmentId: "add-department",
         quantity: "add-quantity",
+        neededBy: "add-needed-by",
       };
       focus((wrong && ids[wrong]) || "add-quantity");
       return;
@@ -248,6 +289,22 @@ export function AddDraftRow({
             value={quantity}
             className="text-right tabular-nums"
             onChange={(event) => setQuantity(event.target.value)}
+          />
+        </Field>
+        <Field
+          id="add-needed-by"
+          label={t("columns.neededBy")}
+          className="sm:w-36"
+          error={neededByWrong ? t("date.invalid") : add.fieldTexts.neededBy}
+        >
+          <Input
+            disabled={unanswered}
+            value={neededBy}
+            placeholder={t("date.placeholder")}
+            onChange={(event) => {
+              setNeededBy(event.target.value);
+              setNeededByWrong(false);
+            }}
           />
         </Field>
         <span className="flex flex-col gap-1.5 sm:w-auto">

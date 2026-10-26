@@ -352,6 +352,8 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
         )}
         <DraftsGrid
           rows={rows}
+          submitSet={drafts.submitSet}
+          today={drafts.today}
           page={drafts.page}
           total={drafts.total}
           branches={branches}

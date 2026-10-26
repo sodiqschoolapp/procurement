@@ -8,6 +8,7 @@
 
 import { type BusinessDate } from "./business-date";
 import { type QuantityRefusal, isUrgentReason, quantityRefusal } from "./drafts";
+import { ORDER_ACTION_MAX } from "./order-moves";
 
 /**
  * The facts of one draft at submit, each read from the database. An entry's `…Active` is whether
@@ -102,6 +103,84 @@ export function submitRefusals(
     refused.urgentReason = "required";
   }
   return refused;
+}
+
+/** A draft as the order sheet shows it: its cells, and the cells of its deactivated entries. */
+export type ShownDraft = {
+  variantId: string | null;
+  allowsDecimals: boolean | null;
+  departmentId: string | null;
+  companyId: string | null;
+  neededBy: BusinessDate | null;
+  quantity: string | null;
+  price: bigint | null;
+  priority: "NORMAL" | "URGENT";
+  urgentReason: string | null;
+  extras: readonly unknown[];
+  /** inactiveEntries() of the draft as read: the cells of its deactivated entries. */
+  inactive: readonly string[];
+};
+
+/**
+ * The facts of a draft as the sheet shows it, for submitRefusals(): the page query and the sheet
+ * read readiness from the one function the server asks again (plan of 2.5c, Build 3).
+ */
+export function shownFacts(draft: ShownDraft): SubmitFacts {
+  const inactive = new Set(draft.inactive);
+  return {
+    branchActive: !inactive.has("branchId"),
+    variantId: draft.variantId,
+    subtypeActive: draft.variantId === null ? null : !inactive.has("variantId"),
+    allowsDecimals: draft.allowsDecimals,
+    departmentId: draft.departmentId,
+    departmentActive: draft.departmentId === null ? null : !inactive.has("departmentId"),
+    companyId: draft.companyId,
+    companyActive: draft.companyId === null ? null : !inactive.has("companyId"),
+    neededBy: draft.neededBy,
+    quantity: draft.quantity,
+    price: draft.price,
+    priority: draft.priority,
+    urgentReason: draft.urgentReason,
+    extras: draft.extras.map((_, at) => ({
+      active: !inactive.has(`extras.${at}.extraCostTypeId`),
+    })),
+  };
+}
+
+/**
+ * Whether a draft may be submitted: no field stops it (05 Checks at submit). The one readiness the
+ * order sheet marks and counts and the server decides again (plan of 2.5c, Build 3).
+ */
+export function isReady(facts: SubmitFacts, today: BusinessDate): boolean {
+  return Object.keys(submitRefusals(facts, today)).length === 0;
+}
+
+/**
+ * The most own drafts the order sheet loads and a Submit with nothing ticked takes in (plan of
+ * 2.5c, decided item 1, Look first); at most ORDER_ACTION_MAX of them are sent.
+ */
+export const SUBMIT_SET_MAX = 1000;
+
+/**
+ * Which drafts of a Submit with nothing ticked go (05 Drafts 4; Checks at submit: "At most 200
+ * orders in one submit. With more ready drafts, the first 200 in the order they were added are
+ * sent"): the ready ones, oldest first (then by id), up to 200; the ready ones after them are held
+ * back for the next Submit; a draft that is not ready stays and takes no place (decided item 4).
+ */
+export function submitSelection<Draft extends { id: string; createdAt: Date; ready: boolean }>(
+  drafts: readonly Draft[],
+): { send: Draft[]; heldBack: Draft[]; stay: Draft[] } {
+  const ready = drafts
+    .filter((draft) => draft.ready)
+    .sort(
+      (a, b) =>
+        a.createdAt.getTime() - b.createdAt.getTime() || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
+    );
+  return {
+    send: ready.slice(0, ORDER_ACTION_MAX),
+    heldBack: ready.slice(ORDER_ACTION_MAX),
+    stay: drafts.filter((draft) => !draft.ready),
+  };
 }
 
 /** What a Cancel of a Draft reads of its plan, each column as the order row holds it. */

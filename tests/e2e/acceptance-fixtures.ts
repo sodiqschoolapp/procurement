@@ -153,7 +153,8 @@ export async function newExtraCostType(name: string): Promise<string> {
 }
 
 /** An invented product without subtypes at a reference price set by the Head (04 rules 1, 4). */
-export async function newProduct(name: string, referencePrice: number): Promise<string> {
+/** An invented product without subtypes; `null`: no reference price, so none is suggested. */
+export async function newProduct(name: string, referencePrice: number | null): Promise<string> {
   return withDatabase((client) =>
     inTransaction(client, async () => {
       const mark = tag();
@@ -178,11 +179,13 @@ export async function newProduct(name: string, referencePrice: number): Promise<
          values ($1, 'default', true, $2, true, $3) returning id`,
         [product.rows[0]!.id, referencePrice, MADE_AT],
       );
-      await client.query(
-        `insert into price_history (variant_id, price, source, set_by, created_at)
-         select $1, $2, 'HEAD', id, $3 from users where username = $4`,
-        [variant.rows[0]!.id, referencePrice, MADE_AT, E2E_ROLES.HEAD.username],
-      );
+      if (referencePrice !== null) {
+        await client.query(
+          `insert into price_history (variant_id, price, source, set_by, created_at)
+           select $1, $2, 'HEAD', id, $3 from users where username = $4`,
+          [variant.rows[0]!.id, referencePrice, MADE_AT, E2E_ROLES.HEAD.username],
+        );
+      }
       return variant.rows[0]!.id;
     }),
   );

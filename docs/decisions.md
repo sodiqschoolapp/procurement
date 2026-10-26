@@ -3185,3 +3185,28 @@ The plan's decisions as the plan review of 26.10.2026 confirmed them (correction
 Choices made during the build:
 
 - **Look first** (a test changed because a decision changed). The ten-rights test of 1.4 (`manager-rights.db.test.ts`, "each of the ten rights switched off") expected `catalog.add` allowed with `CREATE_REQUESTS` off, the rule before D66; it now reads both rights of each rule and expects `catalog.add` refused with either off. Not weakened: every case it had stays, one more answer is "forbidden". Found by CI and the permission review; a line in `.claude/rules/tests.md` asks every test that reads rights to read both.
+
+### 2.5c The order sheet (26.10.2026)
+
+The plan's decisions as the plan review of 26.10.2026 confirmed or changed them (corrections 1 and 2 applied), and those of the build. The Look first items come first.
+
+1. **Look first** (06 rule 8: which orders a Submit sends). "The drafts the screen shows" is the sheet's submit set, read with the page, not only its 25 rows: every own Draft without a number in the sheet's branch view, at most 1 000 (this plan's limit, not the spec's), oldest first, with its version and its refusals by `submitRefusals()`. Submit with nothing ticked sends the set: a row on the page with the version its save queue gives after its saves land, a row of another page with the version the page loaded. The 201 test of Done-when cannot be met by one page of 25. Proposed `/spec-change` of 05 Drafts 4, if the owner wants it written: "… sends every ready draft of the user's own that has no number, on every page of the sheet as the screen loaded them".
+2. **Look first** (06 rule 8). A sent order the nothing-ticked Submit may not take refuses the whole submit: a numbered Draft (taken back) or a sent-back order `wrong_status`, another owner's draft `forbidden`. Only "fails a check" is left in the sheet.
+3. **Look first** (CLAUDE.md rule 3, the wrapper). The order-action wrapper has an optional `leave` step after every check and before the action row: the kept orders alone get the action row's count, the version raise, the events, the plan, the numbers, the snapshots and the notices; the left orders are untouched. With none kept the whole is refused `not_ready`. `ordersInput()` takes a larger maximum for such an action; the state machine's check judges its set 200 at a time (`checkOf` in `src/server/order-moves.ts`).
+4. The 200 cap counts ready drafts only: the first 200 ready by `created_at`, then id (`submitSelection()` of `src/domain/submit-checks.ts`); a not-ready draft takes no place.
+5. The draft above a new one is the last row of the page shown; its branch, department and needed-by date are copied as they are (`copiedFromAbove()`); the add row gained a needed-by date field. A branch the user cannot add in is not taken; the department follows only its own branch.
+6. The branch cell shows for a user who may add drafts in more than one active branch.
+7. **Look first** (a money total shown). With nothing ticked the sheet's total is of the rows on the page shown, labelled "On this page" (`tickedDraftsTotals()`, as before). Proposed `/spec-change` of 11 rule 2, if the owner wants the whole sheet: "The total of the sheet (of the rows on the page shown, or of the ticked drafts when some are ticked) stays visible."
+8. The confirmation says how many go and how many stay (the not-ready and the held-back ones of the set). With none ready, the Submit with nothing ticked is not offered; the live marks say why.
+9. A refusal in a field under "More" marks "More" and opens it; the list on top names the field as before.
+10. Rows of the set on the page are judged live by `submitRefusals(shownFacts(row), today)` and marked on the cells that stop them; rows of other pages by the refusals the page loaded. `today` is the business date of the server's injected clock. The server decides again under its locks.
+11. **Look first** (CLAUDE.md rule 8, the repeat; changed by the plan review). The repeat answers the first result with `left` and `heldBack`, rebuilt without a database change: the sent ids the stored action's events do not name, each with its cells from `submitRefusals()` on the row now; a ready one is counted as held back by the cap (`leftOnRepeat`). The repeat's ids pass the branch and draft walls first, as every repeat's.
+12. The client key of the nothing-ticked Submit is kept while the set (its ids) is unchanged and no answer came; any answer drops it.
+
+Choices made during the build:
+
+- The order number, revision, label and another owner's name stand above the product in the product cell (a phone card shows them on its top line); a row without a number shows none of them and no word "Draft", and the key `orders.draftWord` is removed (Build 4).
+- "More" is a second table row under its draft (`tr[data-more-of]`), spanning the width; on a phone it continues the card. Its fields keep their labels and `data-col`, so a refusal scrolls to them.
+- A Submit with nothing ticked that leaves drafts says so on top ("N drafts stay in the sheet: they need a fix") instead of "Nothing was submitted"; a count held back by the cap is told in a second message.
+- The e2e helper `newProduct()` takes `null` for a product without a reference price (S23's markers): no price row is written then, as the database asks.
+- The S23 database test sets Urgent through `updateDraft`, the save "More" makes.

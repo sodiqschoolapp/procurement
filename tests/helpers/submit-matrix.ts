@@ -31,18 +31,27 @@ async function draftOf(branchId: string, ownerId: string) {
   return insertOrder({ branchId, ownerId });
 }
 
-export function describeSubmitMatrix(name: string, submit: Submit): void {
+/**
+ * `ownOnly`: Submit with nothing ticked sends the user's own drafts only (05 Drafts 4; plan of
+ * 2.5c, decided item 2, Look first): the Head on a Manager's draft is `forbidden`, not "allow".
+ */
+export function describeSubmitMatrix(
+  name: string,
+  submit: Submit,
+  { ownOnly = false }: { ownOnly?: boolean } = {},
+): void {
+  const headOnOthers = ownOnly ? "forbidden" : "allow";
   const once = (user: InsertedUser, orders: { id: string; version: number }[]) =>
     submit(user, orders).then(answer);
 
   describe(`${name}: permission matrix by hand, "Add, edit, submit, cancel orders" (03; 06 Statuses: Draft)`, () => {
-    it("HEAD: allow on his own draft and on a Manager's, in any branch", async () => {
+    it(`HEAD: allow on his own draft, ${headOnOthers} on a Manager's, in any branch`, async () => {
       const own = await insertBranch();
       const other = await insertBranch();
       const head = await insertUser("HEAD");
       const manager = await insertUser("MANAGER", { branches: [other.id] });
       expect(await once(head, [await draftOf(own.id, head.id)])).toBe("allow");
-      expect(await once(head, [await draftOf(other.id, manager.id)])).toBe("allow");
+      expect(await once(head, [await draftOf(other.id, manager.id)])).toBe(headOnOthers);
     });
 
     it("MANAGER: allow on his own draft of an own branch; not_found in another branch", async () => {
@@ -67,7 +76,7 @@ export function describeSubmitMatrix(name: string, submit: Submit): void {
       });
     }
 
-    it("MANAGER with CREATE_REQUESTS off: forbidden in each own branch; HEAD still allowed", async () => {
+    it(`MANAGER with CREATE_REQUESTS off: forbidden in each own branch; HEAD ${headOnOthers}`, async () => {
       const first = await insertBranch();
       const second = await insertBranch();
       const manager = await insertUser("MANAGER", { branches: [first.id, second.id] });
@@ -75,16 +84,16 @@ export function describeSubmitMatrix(name: string, submit: Submit): void {
       await setManagerRight(manager.id, "CREATE_REQUESTS", false);
       for (const draft of drafts) expect(await once(manager, [draft])).toBe("forbidden");
       const head = await insertUser("HEAD");
-      for (const draft of drafts) expect(await once(head, [draft])).toBe("allow");
+      for (const draft of drafts) expect(await once(head, [draft])).toBe(headOnOthers);
     });
 
-    it("a colleague's draft of the own branch: not_found (the draft wall); the Head on it: allow", async () => {
+    it(`a colleague's draft of the own branch: not_found (the draft wall); the Head on it: ${headOnOthers}`, async () => {
       const own = await insertBranch();
       const manager = await insertUser("MANAGER", { branches: [own.id] });
       const colleague = await insertUser("MANAGER", { branches: [own.id] });
       const draft = await draftOf(own.id, colleague.id);
       expect(await once(manager, [draft])).toBe("not_found");
-      expect(await once(await insertUser("HEAD"), [draft])).toBe("allow");
+      expect(await once(await insertUser("HEAD"), [draft])).toBe(headOnOthers);
     });
 
     // The branch wall alone, the draft wall passed: the user's own draft in a branch he is not

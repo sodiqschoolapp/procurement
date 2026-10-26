@@ -273,3 +273,59 @@ describe("paged on the server, 25 rows a page (11 Rules for a smooth feel 8; dev
     expect((await listDrafts(manager.id)).rows.map((row) => row.id)).toEqual([older.id, newer.id]);
   });
 });
+
+describe("listDrafts: the submit set (05 Drafts 4; plan of 2.5c, decided item 1, Look first)", () => {
+  it("holds the user's own Drafts without a number in the view, oldest first; never another owner's, a numbered or sent-back order, or another branch's", async () => {
+    setClock("2026-10-26T05:00:00Z");
+    const branch = await insertBranch();
+    const other = await insertBranch();
+    const manager = await insertUser("MANAGER", { branches: [branch.id, other.id] });
+    const colleague = await insertUser("MANAGER", { branches: [branch.id] });
+    const stranger = await insertUser("MANAGER", {
+      branches: [await insertBranch().then((b) => b.id)],
+    });
+    const first = await insertOrder({ branchId: branch.id, ownerId: manager.id });
+    advanceClock({ seconds: 1 });
+    const second = await insertOrder({
+      branchId: other.id,
+      ownerId: manager.id,
+      neededBy: "2026-10-25",
+    });
+    advanceClock({ seconds: 1 });
+    // Each kept out by one condition, every other value letting it in (D40; tests rule).
+    await insertOrder({ branchId: branch.id, ownerId: colleague.id });
+    await insertOrder({ branchId: branch.id, ownerId: manager.id, number: inventedNumber() });
+    await insertOrder({
+      branchId: branch.id,
+      ownerId: manager.id,
+      status: "RETURNED",
+      number: inventedNumber(),
+    });
+    await insertOrder({ branchId: branch.id, ownerId: manager.id, status: "PENDING_HEAD" });
+    // The Manager's own Draft without a number in a branch he is not assigned to: the branch wall
+    // alone keeps it out (03 rule 1; permission review of 2.5c, Must fix 2).
+    const notMine = await insertBranch();
+    const walled = await insertOrder({ branchId: notMine.id, ownerId: manager.id });
+    const strangers = await listDrafts(stranger.id);
+    expect(strangers.submitSet).toEqual([]);
+
+    const page = await listDrafts(manager.id);
+    expect(page.submitSet.map((one) => one.id)).not.toContain(walled.id);
+    expect(page.today).toBe("2026-10-26");
+    expect(page.submitSet.map((one) => one.id)).toEqual([first.id, second.id]);
+    expect(page.submitSet[0]).toMatchObject({ version: first.version, refusals: {} });
+    // Its readiness is submitRefusals() of the draft as read (Build 3).
+    expect(page.submitSet[1]!.refusals).toEqual({ neededBy: "inPast" });
+
+    // The branch view narrows it (03 rule 1).
+    await expect(listDrafts(manager.id, { branchId: notMine.id })).rejects.toThrow();
+    const inOther = await listDrafts(manager.id, { branchId: other.id });
+    expect(inOther.submitSet.map((one) => one.id)).toEqual([second.id]);
+
+    // The Head's "all owners" view: the set is still the Head's own only.
+    const head = await insertUser("HEAD");
+    const all = await listDrafts(head.id, { owners: "all", branchId: branch.id });
+    expect(all.rows.map((row) => row.id)).toContain(first.id);
+    expect(all.submitSet).toEqual([]);
+  });
+});
