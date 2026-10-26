@@ -9,6 +9,7 @@ import {
   isOrderFields,
   isRequired,
   placeOf,
+  priceAskAllowed,
   sameOrderFields,
   withHiddenValues,
 } from "./order-fields";
@@ -138,6 +139,7 @@ describe("hidden, required and where (05 Fields the Head sets 1 and 2)", () => {
 describe("what a submit stores for a hidden field (05 Fields the Head sets 2; decided item 2)", () => {
   const plan = {
     departmentId: "dep",
+    price: 9_000n,
     neededBy: "2026-11-01",
     paymentType: "TRANSFER",
     priority: "URGENT" as const,
@@ -149,7 +151,7 @@ describe("what a submit stores for a hidden field (05 Fields the Head sets 2; de
   };
 
   it("keeps every field with the defaults", () => {
-    expect(withHiddenValues(ORDER_FIELDS_DEFAULT, plan, "CASH")).toEqual({
+    expect(withHiddenValues(ORDER_FIELDS_DEFAULT, plan, "CASH", 7_000n)).toEqual({
       ...plan,
       keepExtras: true,
     });
@@ -159,8 +161,9 @@ describe("what a submit stores for a hidden field (05 Fields the Head sets 2; de
     const allHidden = Object.fromEntries(
       ORDER_FIELDS.map((field) => [field, { ask: "hidden", place: "more" }]),
     ) as unknown as OrderFields;
-    expect(withHiddenValues(allHidden, plan, "CASH")).toEqual({
+    expect(withHiddenValues(allHidden, plan, "CASH", 7_000n)).toEqual({
       departmentId: null,
+      price: 7_000n,
       neededBy: null,
       paymentType: "CASH",
       priority: "NORMAL",
@@ -171,5 +174,37 @@ describe("what a submit stores for a hidden field (05 Fields the Head sets 2; de
       referencePhotoFileId: null,
       keepExtras: false,
     });
+  });
+
+  it("a hidden price is the suggested price, not the typed one; none without a suggestion (05 Fields the Head sets 2; plan of 2.5d-b, decided item 8)", () => {
+    const priceHidden: OrderFields = {
+      ...ORDER_FIELDS_DEFAULT,
+      price: { ask: "hidden", place: "row" },
+    };
+    expect(withHiddenValues(priceHidden, plan, "CASH", 7_000n).price).toBe(7_000n);
+    expect(withHiddenValues(priceHidden, plan, "CASH", null).price).toBeNull();
+    // Optional keeps what was typed, or none.
+    const optional: OrderFields = {
+      ...ORDER_FIELDS_DEFAULT,
+      price: { ask: "optional", place: "row" },
+    };
+    expect(withHiddenValues(optional, plan, "CASH", 7_000n).price).toBe(9_000n);
+    expect(withHiddenValues(optional, { ...plan, price: null }, "CASH", 7_000n).price).toBeNull();
+  });
+});
+
+describe("the price only optional or hidden while the Finance step is off (06 Finance step switched off 8)", () => {
+  it.each(["optional", "hidden"] as const)(
+    "%s is allowed with the step off, refused with it on",
+    (ask) => {
+      const fields: OrderFields = { ...ORDER_FIELDS_DEFAULT, price: { ask, place: "row" } };
+      expect(priceAskAllowed(fields, false)).toBe(true);
+      expect(priceAskAllowed(fields, true)).toBe(false);
+    },
+  );
+
+  it("required is allowed either way", () => {
+    expect(priceAskAllowed(ORDER_FIELDS_DEFAULT, true)).toBe(true);
+    expect(priceAskAllowed(ORDER_FIELDS_DEFAULT, false)).toBe(true);
   });
 });

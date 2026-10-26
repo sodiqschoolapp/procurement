@@ -707,3 +707,29 @@ describe('receiptNeeded() (07 Purchase record, Receipt; edge case "No receipt ph
     expect(receiptNeeded(true, "CARD", [])).toBe(false);
   });
 });
+
+// 07 Purchase record, Comment ("its price differs from the planned price"): an order without a
+// planned price has none to differ from (plan of 2.5d-b, decided item 10).
+describe("a record against an order without a planned price (07 Comment; 08 Numbers)", () => {
+  const base = {
+    qty: "10",
+    unitPrice: 4_500n,
+    paymentType: "CASH",
+    plannedQty: "10",
+    plannedPrice: null,
+    plannedPaymentType: "CASH",
+    variantId: "blue",
+    plannedVariantId: "blue",
+    received: "0",
+  };
+
+  it("asks no 'price differs' comment; the other reasons still apply", () => {
+    expect(purchaseCommentNeeds(base)).toEqual([]);
+    expect(purchaseCommentNeeds({ ...base, qty: "11" })).toEqual(["OVER_PLAN"]);
+    expect(purchaseCommentNeeds({ ...base, unitPrice: 0n })).toEqual(["GIFT"]);
+  });
+
+  it("Same as planned fills the quantity and leaves the price to be typed", () => {
+    expect(sameAsPlanned("10", null, [], "0")).toEqual({ qty: "10", unitPrice: null, extras: [] });
+  });
+});

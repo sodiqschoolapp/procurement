@@ -24,6 +24,7 @@ import {
   paidBy,
   plannedCash,
   plannedCashOf,
+  orderOverspend,
   overspendNeedsAck,
   readyToClose,
   settlementAllows,
@@ -33,7 +34,7 @@ import {
   settlementRows,
   transferNeedsNote,
 } from "./money-ledger";
-import type { OrderPlan } from "./order-totals";
+import type { OrderPlan, PricedPlan } from "./order-totals";
 import type { PaymentType } from "./payment-types";
 
 // 08-money-and-settlement.md, Money ledger; Exact match; When Finance approves; Closing 2; Worked
@@ -64,7 +65,7 @@ function row(kind: MoneyRowKind, amount: bigint, isCancelled = false): MoneyRow 
 }
 
 /** 08 Worked example: 100 notebooks × 5 000 in cash, plus 20 000 delivery; 520 000 given. */
-const NOTEBOOKS: OrderPlan = {
+const NOTEBOOKS: PricedPlan = {
   quantity: "100",
   price: 5_000n,
   extras: [20_000n],
@@ -267,8 +268,8 @@ describe("money with managers (08 Money with managers; Manager's cash balance)",
 });
 
 /** 08 Worked example, three orders of one Manager in branch CHL. */
-const PENS: OrderPlan = { quantity: "50", price: 2_000n, extras: [], paymentType: "CASH" };
-const FOLDERS: OrderPlan = { quantity: "10", price: 3_000n, extras: [], paymentType: "CASH" };
+const PENS: PricedPlan = { quantity: "50", price: 2_000n, extras: [], paymentType: "CASH" };
+const FOLDERS: PricedPlan = { quantity: "10", price: 3_000n, extras: [], paymentType: "CASH" };
 const THREE = [
   { id: "CHL-26-0142", ownerId: "manager-a", plan: NOTEBOOKS },
   { id: "CHL-26-0143", ownerId: "manager-a", plan: PENS },
@@ -276,7 +277,7 @@ const THREE = [
 ];
 
 /** Each order with its prefilled amount, as the dialog and the approval give them (plan of 4.2). */
-function prefilled(orders: readonly { id: string; ownerId: string; plan: OrderPlan }[]) {
+function prefilled(orders: readonly { id: string; ownerId: string; plan: PricedPlan }[]) {
   return orders.map(({ id, ownerId, plan }) => ({ id, ownerId, amount: plannedCash(plan) }));
 }
 
@@ -1075,5 +1076,42 @@ describe("Cash needed soon (10 Finance; 08 When Finance approves, Money ledger t
         0n,
       );
     }
+  });
+});
+
+// 08 Numbers: "An order without a planned price has no planned total [...] it is left out of the
+// overspend guard"; plan of 2.5d-b, decided items 5 and 9, Look first.
+describe("an order without a planned price (08 Numbers; Overspend guard)", () => {
+  const unpriced: OrderPlan = { quantity: "10", price: null, extras: [], paymentType: "CASH" };
+
+  it("has no planned cash; Cash needed soon counts nothing for it", () => {
+    expect(plannedCash(unpriced)).toBeNull();
+    expect(plannedCashOf("CASH", null)).toBeNull();
+    for (const status of ["PENDING_HEAD", "PENDING_PRINCIPAL"] as const) {
+      expect(cashNeeded({ status, progress: "OPEN", plannedCash: null, handed: 0n })).toBe(0n);
+    }
+  });
+
+  it("is never over the guard, whatever it cost, even with the guard at 0 and 0", () => {
+    const guard = { overspend_guard_percent: 0, overspend_guard_min_amount: 0n };
+    const records: CashRecord[] = [
+      {
+        qty: "10",
+        unitPrice: 900_000n,
+        extras: [],
+        isCancelled: false,
+        paymentType: "CASH",
+        variantId: "v",
+      },
+    ];
+    expect(orderOverspend({ plan: unpriced, records }, guard)).toEqual({
+      over: 0n,
+      percent: null,
+      needsHead: false,
+    });
+  });
+
+  it("never reaches settlement: its blocks are refused (06 Finance step switched off 8)", () => {
+    expect(() => settlementBlocks({ plan: unpriced, records: [], rows: [] })).toThrow(RangeError);
   });
 });

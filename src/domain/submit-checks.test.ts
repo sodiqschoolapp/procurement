@@ -344,8 +344,11 @@ describe("cancelPlanGaps (06 Allowed moves, Cancel; plan of 2.5d, decided items 
     expect(cancelPlanGaps(plan)).toEqual({});
   });
 
-  it("still asks the price with its total until 2.5d-b (decided item 4)", () => {
-    expect(cancelPlanGaps({ ...plan, price: null, total: null })).toEqual({ price: "required" });
+  // Changed by 2.5d-b (D67; plan of 2.5d-b, decided item 6, Look first): the requirement that held
+  // the price back until then is built, so a cancel may be without a price.
+  it("needs no price since 2.5d-b; a price with a quantity and no total is still refused (decided item 6)", () => {
+    expect(cancelPlanGaps({ ...plan, price: null, total: null })).toEqual({});
+    expect(cancelPlanGaps({ ...plan, total: null })).toEqual({ price: "required" });
   });
 
   it("still asks the subtype, the quantity and an urgent reason", () => {

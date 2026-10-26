@@ -198,6 +198,7 @@ describe("a set of orders (08 The three colours, bullet 2; decided items 2 and 4
       number: { colour: "green", orders: 2 },
       price: { colour: "green", orders: 2 },
       total: { colour: "green", difference: 0n },
+      unpriced: 0,
     });
   });
 
@@ -210,6 +211,7 @@ describe("a set of orders (08 The three colours, bullet 2; decided items 2 and 4
       number: { colour: "red", orders: 1 },
       price: { colour: "green", orders: 2 },
       total: { colour: "grey" },
+      unpriced: 0,
     });
   });
 
@@ -218,6 +220,7 @@ describe("a set of orders (08 The three colours, bullet 2; decided items 2 and 4
       number: { colour: "grey" },
       price: { colour: "grey" },
       total: { colour: "grey" },
+      unpriced: 0,
     });
   });
 
@@ -227,6 +230,7 @@ describe("a set of orders (08 The three colours, bullet 2; decided items 2 and 4
       number: { colour: "green", orders: 1 },
       price: { colour: "amber", orders: 1 },
       total: { colour: "amber", difference: 50_000n },
+      unpriced: 0,
     });
   });
 
@@ -288,8 +292,10 @@ describe("plan beside actual, and the three effects (08 Numbers the system calcu
   function addsUp(table: PlanVsActual | null): PlanVsActual {
     expect(table).not.toBeNull();
     const { effects, total } = table!;
-    expect(total.difference).toBe(total.planned - total.actual);
-    expect(effects.quantity + effects.price + effects.extras).toBe(total.difference);
+    expect(total.planned).not.toBeNull();
+    expect(effects).not.toBeNull();
+    expect(total.difference).toBe(total.planned! - total.actual);
+    expect(effects!.quantity + effects!.price + effects!.extras).toBe(total.difference);
     return table!;
   }
 
@@ -305,7 +311,7 @@ describe("plan beside actual, and the three effects (08 Numbers the system calcu
     });
     // The price effect is the Price label's amount, and the sum the Total label's.
     const colours = orderColours(order([record("30", 2_000n)], "DONE", plan))!;
-    expect(colours.price).toEqual({ colour: "amber", difference: table.effects.price });
+    expect(colours.price).toEqual({ colour: "amber", difference: table.effects!.price });
     expect(colours.total).toEqual({ colour: "red", difference: -10_000n });
   });
 
@@ -334,7 +340,7 @@ describe("plan beside actual, and the three effects (08 Numbers the system calcu
       difference: 33n,
       oneUnitPrice: false,
     });
-    expect(table.effects.price).toBe(98n);
+    expect(table.effects!.price).toBe(98n);
   });
 
   it("a quantity with decimals rounds at the planned price half up, and still adds up", () => {
@@ -370,5 +376,71 @@ describe("plan beside actual, and the three effects (08 Numbers the system calcu
     expect(
       planVsActual(order([record("100", 5_000n)], "DONE", NOTEBOOKS, "PENDING_FINANCE")),
     ).toBeNull();
+  });
+});
+
+// 05 Fields the Head sets 3; 08 Numbers the system calculates, the paragraph under the table: "An
+// order without a planned price has no planned total and no difference: its Price and Total labels
+// read 'No planned price' [...] and a sum that leaves orders out says how many"; 15 S24; plan of
+// 2.5d-b, decided items 3 and 4, Look first.
+describe("an order without a planned price (08 Numbers; S24)", () => {
+  /** S24: 10 folders, no price, bought for 45 000. */
+  const FOLDERS: OrderPlan = { quantity: "10", price: null, extras: [], paymentType: "CASH" };
+
+  it("Number by quantity; Price and Total read No planned price (S24)", () => {
+    expect(orderColours(order([record("10", 4_500n)], "DONE", FOLDERS))).toEqual({
+      number: { colour: "green", difference: "0" },
+      price: { colour: "unpriced" },
+      total: { colour: "unpriced" },
+    });
+  });
+
+  it("Price and Total read No planned price while buying too, and before anything is bought", () => {
+    expect(orderColours(order([], "OPEN", FOLDERS))).toEqual({
+      number: { colour: "grey" },
+      price: { colour: "unpriced" },
+      total: { colour: "unpriced" },
+    });
+  });
+
+  it("plan beside actual: no planned price, total, difference or effects; the actual total 45 000 (S24)", () => {
+    expect(planVsActual(order([record("10", 4_500n)], "DONE", FOLDERS))).toEqual({
+      quantity: { planned: "10", actual: "10" },
+      unitPrice: { planned: null, actual: 4_500n, difference: null, oneUnitPrice: true },
+      extras: { planned: 0n, actual: 0n },
+      total: { planned: null, actual: 45_000n, difference: null },
+      effects: null,
+    });
+  });
+
+  it("has no outcome for Plan vs actual: no Total colour", () => {
+    expect(orderOutcome(order([record("10", 4_500n)], "DONE", FOLDERS))).toBeNull();
+  });
+
+  it("a set: Total is the priced orders' summed difference and counts 1 without a price", () => {
+    const cheaper = order([record("100", 4_500n, [20_000n])]);
+    const unpriced = order([record("12", 4_500n)], "DONE", FOLDERS);
+    expect(setColours([cheaper, unpriced])).toEqual({
+      number: { colour: "red", orders: 1 },
+      price: { colour: "amber", orders: 1 },
+      total: { colour: "amber", difference: 50_000n },
+      unpriced: 1,
+    });
+  });
+
+  it("a set of unpriced orders only: Price and Total read No planned price", () => {
+    const unpriced = order([record("10", 4_500n)], "DONE", FOLDERS);
+    expect(setColours([unpriced, unpriced])).toEqual({
+      number: { colour: "green", orders: 2 },
+      price: { colour: "unpriced" },
+      total: { colour: "unpriced" },
+      unpriced: 2,
+    });
+  });
+
+  it("a set with an unpriced order still buying: Total grey, as with any order still buying", () => {
+    const exact = order([record("100", 5_000n, [20_000n])]);
+    const buying = order([], "OPEN", FOLDERS);
+    expect(setColours([exact, buying])?.total).toEqual({ colour: "grey" });
   });
 });

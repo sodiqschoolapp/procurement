@@ -7,7 +7,13 @@
 // (developer-rules.md rule 6). Nothing here reads a database or a clock.
 
 import { orderColours } from "./colours";
-import { type OrderPlan, extrasSum, orderExtras, orderTotal } from "./order-totals";
+import {
+  type OrderPlan,
+  type PricedPlan,
+  extrasSum,
+  orderExtras,
+  orderTotal,
+} from "./order-totals";
 import type { PaymentType } from "./payment-types";
 import {
   type OrderProgress,
@@ -280,6 +286,8 @@ export function isExactMatch(order: MatchOrder): boolean {
  * null for an order without a planned price, which has no planned total (08 Numbers; plan of
  * 2.5d-b, decided item 9, Look first).
  */
+export function plannedCash(plan: PricedPlan): bigint;
+export function plannedCash(plan: OrderPlan): bigint | null;
 export function plannedCash(plan: OrderPlan): bigint | null {
   return plannedCashOf(plan.paymentType, orderTotal(plan));
 }
