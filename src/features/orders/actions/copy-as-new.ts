@@ -1,7 +1,8 @@
 import { asc, eq, inArray } from "drizzle-orm";
 
+import { suggestedPrice } from "@/domain/drafts";
 import type { PaymentType } from "@/domain/payment-types";
-import { branches, orderExtras, orders } from "@/server/db/schema";
+import { branches, orderExtras, orders, productVariants } from "@/server/db/schema";
 import { type CopyContext, defineCopyAction } from "@/server/copy-action";
 import type { OrderFailure } from "@/server/action-result";
 
@@ -21,7 +22,9 @@ import { type CreatedDraft, firstAnswer, insertDraft, mergeInto } from "./drafts
 // the order's plan as it stands now (decided item 3, Look first): subtype, department, requested
 // by, company (an empty one stays empty: review correction 2), quantity, price per unit, extra
 // costs, payment type, priority and urgent reason, comment, needed-by. Number, revision, history,
-// approvals, stock at submit and the reference photo stay with the order (decided item 7).
+// approvals, stock at submit and the reference photo stay with the order (decided item 7). An
+// order without a planned price is copied with the suggested price, as any new draft takes it
+// (05 field 11; plan of 2.5d-b, decided item 11).
 // The draft merge of 05 Drafts 2 applies (decided item 2, Look first): where the user has a
 // never-submitted draft of the same branch, subtype and department, only the quantity is added to
 // it and its other fields stay; two ticked orders of one trio make one draft, the first sent
@@ -62,6 +65,8 @@ async function readSources(context: CopyContext): Promise<Map<string, Source>> {
       requesterName: orders.requesterName,
       neededBy: orders.neededBy,
       price: orders.plannedPrice,
+      referencePrice: productVariants.referencePrice,
+      lastPurchasePrice: productVariants.lastPurchasePrice,
       paymentType: orders.paymentType,
       priority: orders.priority,
       urgentReason: orders.urgentReason,
@@ -69,6 +74,7 @@ async function readSources(context: CopyContext): Promise<Map<string, Source>> {
     })
     .from(orders)
     .innerJoin(branches, eq(branches.id, orders.branchId))
+    .leftJoin(productVariants, eq(productVariants.id, orders.variantId))
     .where(inArray(orders.id, ids));
   const extras = await context.tx
     .select({
@@ -80,7 +86,10 @@ async function readSources(context: CopyContext): Promise<Map<string, Source>> {
     .where(inArray(orderExtras.orderId, ids))
     .orderBy(asc(orderExtras.createdAt), asc(orderExtras.id));
   const sources = new Map<string, Source>();
-  for (const { id, ...row } of rows) sources.set(id, { ...row, extras: [] });
+  for (const { id, referencePrice, lastPurchasePrice, ...row } of rows) {
+    const price = row.price ?? suggestedPrice(referencePrice, lastPurchasePrice);
+    sources.set(id, { ...row, price, extras: [] });
+  }
   for (const { orderId, ...extra } of extras) sources.get(orderId)?.extras.push(extra);
   return sources;
 }

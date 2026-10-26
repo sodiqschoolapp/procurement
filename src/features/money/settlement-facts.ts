@@ -77,7 +77,10 @@ export async function settlementFactsOf(
   const records = await cashRecordsOf(executor, ids);
   const rows = await moneyRowsOf(executor, ids);
   for (const order of found) {
-    // An order from Open on has its plan (orders_guard of 0019); a Draft never reaches here.
+    // An order from Open on has its plan (orders_guard of 0019); a Draft never reaches here. An
+    // order without a planned price has no facts: it never reaches settlement and is left out of
+    // the overspend guard (06 Finance step switched off 8; 08 Numbers; plan of 2.5d-b, decided
+    // item 5), so a close of it sends no overspend notice.
     if (order.quantity === null || order.price === null) continue;
     const plan: OrderPlan = {
       quantity: order.quantity,
