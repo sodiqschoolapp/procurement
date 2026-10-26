@@ -137,7 +137,10 @@ describe("decide() (03 rule 1; Permission matrix)", () => {
     expect(decide("catalog.add", off)).toBe("forbidden");
     expect(decideList("catalog.add", off)).toBe("forbidden");
     expect(
-      decide("catalog.add", actor("MANAGER", { disabledRights: ["CREATE_REQUESTS", "ADD_PRODUCTS"] })),
+      decide(
+        "catalog.add",
+        actor("MANAGER", { disabledRights: ["CREATE_REQUESTS", "ADD_PRODUCTS"] }),
+      ),
     ).toBe("forbidden");
     expect(decide("catalog.add", actor("HEAD", { disabledRights: ["CREATE_REQUESTS"] }))).toBe(
       "allow",

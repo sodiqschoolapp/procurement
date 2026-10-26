@@ -137,11 +137,16 @@ describe("adding subtypes to a product that had none (04 rule 1; D64, replacing 
     expect((await rowsOf(product.id)).map((row) => row.name)).toEqual(["A5", "A4", "A3"]);
   });
 
-  it("S22 from the catalog page: 'black' added to 'Pen' with 40 in stock and two orders leaves both and the stock on the default, now 'blue' (build-plan 1.12b, Done when)", async () => {
+  it("04 rule 1 from the catalog page: 'black' added to 'Pen' (40 in stock, two orders, a reference price, a photo) naming 'blue' leaves the stock, both orders, the price and the photo on the default id; 'black' is a new row with no stock (build-plan 1.12b and 1.12c, Done when; D64)", async () => {
     const head = await insertUser("HEAD");
     const branch = await insertBranch();
     const manager = await insertUser("MANAGER", { branches: [branch.id] });
-    const pen = await insertProduct({ referencePrice: 3_000n });
+    const penPhoto = await insertFileRow(head.id);
+    const pen = await insertProduct({ referencePrice: 3_000n, photoFileId: penPhoto.id });
+    const [defaultBefore] = await db
+      .select({ photoFileId: productVariants.photoFileId })
+      .from(productVariants)
+      .where(eq(productVariants.id, pen.defaultVariantId));
     await receive(branch.id, pen.defaultVariantId, "40", 2_500n, head.id);
     const first = await insertOrder({
       branchId: branch.id,
@@ -154,14 +159,38 @@ describe("adding subtypes to a product that had none (04 rule 1; D64, replacing 
       ownerId: manager.id,
       variantId: pen.defaultVariantId,
     });
-    const black = await add(head.id, pen.id, { name: "black", existingName: "blue" });
+    const blackPhoto = await insertFileRow(head.id);
+    const black = await add(head.id, pen.id, {
+      name: "black",
+      existingName: "blue",
+      referencePrice: "3 500",
+      photoFileId: blackPhoto.id,
+    });
     expect(black.id).not.toBe(pen.defaultVariantId);
     expect((await rowsOf(pen.id))[0]).toMatchObject({
       id: pen.defaultVariantId,
       name: "blue",
       isDefault: false,
       referencePrice: 3_000n,
+      // The default's own photo field is untouched (empty: it shows the product's, plan of 1.8,
+      // decided item 8), and the product keeps its photo; the Head's photo is the new row's only.
+      photoFileId: defaultBefore!.photoFileId,
     });
+    expect(defaultBefore!.photoFileId).toBeNull();
+    expect((await productRow(pen.id)).photoFileId).toBe(penPhoto.id);
+    // The price history stays on the default; "black" has only its own HEAD row (04 rule 4).
+    expect(
+      await db
+        .select({ price: priceHistory.price, source: priceHistory.source })
+        .from(priceHistory)
+        .where(eq(priceHistory.variantId, pen.defaultVariantId)),
+    ).toEqual([{ price: 3_000n, source: "HEAD" }]);
+    expect(
+      await db
+        .select({ price: priceHistory.price, source: priceHistory.source })
+        .from(priceHistory)
+        .where(eq(priceHistory.variantId, black.id)),
+    ).toEqual([{ price: 3_500n, source: "HEAD" }]);
     for (const order of [first, second]) {
       const [row] = await db
         .select({ variantId: orders.variantId })
@@ -179,8 +208,21 @@ describe("adding subtypes to a product that had none (04 rule 1; D64, replacing 
         ),
       );
     expect(stock!.qty).toBe("40.000");
+    // "black" is a new row: no stock of its own, its own photo and price.
+    expect(
+      await db
+        .select({ qty: stockBalances.qty })
+        .from(stockBalances)
+        .where(eq(stockBalances.variantId, black.id)),
+    ).toEqual([]);
     // The Head's own add writes no added_by: it is not on the Head's list (04 rule 8).
-    expect((await rowsOf(pen.id))[1]).toMatchObject({ id: black.id, addedBy: null });
+    expect((await rowsOf(pen.id))[1]).toMatchObject({
+      id: black.id,
+      name: "black",
+      addedBy: null,
+      photoFileId: blackPhoto.id,
+      referencePrice: 3_500n,
+    });
   });
 
   it("the existing items' name is required on the first subtype and must differ from the new one", async () => {

@@ -755,7 +755,7 @@
       "TRANSFER_STOCK": "Only the Procurement Head can send transfers.",
       "WRITE_OFF_COUNT": "Only the Procurement Head can start them.",
       "SET_MINIMUMS": "Only the Procurement Head sets them.",
-      "ADD_PRODUCTS": "The Manager picks from the catalog only; the Procurement Head adds what is missing."
+      "ADD_PRODUCTS": "The Manager picks from the catalog only; the Procurement Head adds what is missing. It works only while “Add and submit orders” is on too."
     }
   },
   "catalog": {
