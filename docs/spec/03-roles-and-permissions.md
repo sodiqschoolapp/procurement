@@ -38,7 +38,7 @@ On each Manager's user page the Head sees ten switches, all on by default. Switc
 | Send transfers to other branches | `TRANSFER_STOCK` | Only the Head can send transfers. |
 | Ask for write-offs and run stock counts | `WRITE_OFF_COUNT` | Only the Head can start them. |
 | Set minimum stock levels | `SET_MINIMUMS` | Only the Head sets them. |
-| Add products and subtypes | `ADD_PRODUCTS` | The Manager picks from the catalog only; the Head adds what is missing. |
+| Add products and subtypes | `ADD_PRODUCTS` | The Manager picks from the catalog only; the Head adds what is missing. It works only while "Add and submit orders" is on too. |
 
 - A switch applies to the Manager in all of their branches.
 - Switches only take rights away. No switch can give a Manager an action of the Head, the Principal or Finance.
