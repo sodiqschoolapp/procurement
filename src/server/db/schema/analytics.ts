@@ -186,8 +186,11 @@ export const analyticsUnpriced = pgTable(
     ownerId: uuid("owner_id")
       .notNull()
       .references(() => users.id),
+    // actualTotal() of the live records: what was spent, with no plan to compare it with.
+    actual: som("actual").notNull(),
   },
   (table) => [
+    check("analytics_unpriced_actual_check", sql`${table.actual} >= 0`),
     foreignKey({
       name: "analytics_unpriced_order_branch_fk",
       columns: [table.orderId, table.branchId],

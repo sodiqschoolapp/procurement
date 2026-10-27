@@ -7,6 +7,7 @@ import type { RequestStatus } from "@/domain/request-status";
 import { decideList } from "@/domain/permissions";
 import { AuthorizationError, type Executor } from "@/server/authorize";
 import { today } from "@/server/clock";
+import { analyticsUnpriced } from "@/server/db/schema";
 import { readSnapshot } from "@/server/read-snapshot";
 
 import type { AnalyticsFilters, PeriodInput } from "../period-params";
@@ -22,6 +23,8 @@ import type { Count } from "./plan-vs-actual";
 // cancelled purchase records, cash held and for how long"; build-plan 6.4c). One row per Manager,
 // then one row of the owners who are not Managers (6.4a review correction 1):
 // - orders and the average difference are of the owner's orders whose buying ended in the period,
+//   the orders without a planned price counted among the orders and beside the average, from
+//   `analytics_unpriced` under the same outcomesWhere() (plan of 2.5d-c, decided item 5),
 //   the `analytics_outcomes` rows of Plan vs actual under the same outcomesWhere() (plan of 6.4c,
 //   decided item 2, Look first); SQL adds the stored differences, `averageSom()` divides (decided
 //   item 3), and the average's change is in so'm only (review of the plan, Should fix 1);
@@ -36,8 +39,14 @@ export type ManagerRow = {
   id: string | null;
   name: string | null;
   isActive: boolean;
+  /** Every ended order, priced or not (plan of 2.5d-c, decided item 5, Look first). */
   orders: Count;
-  /** Whole so'm, signed (08 Difference); `null` when no order ended in the period. */
+  /**
+   * The ended orders without a planned price the average leaves out (08 Numbers; plan of 2.5d-c,
+   * decided items 3 and 5, Look first).
+   */
+  unpriced: Count;
+  /** Whole so'm, signed (08 Difference), of the priced ended orders; `null` when none ended. */
   average: bigint | null;
   /** Now − before in so'm; `null` when either period has no ended order. */
   averageChange: bigint | null;
@@ -99,6 +108,17 @@ async function managersIn(
     ${GROUP}
     where (${endedNow}) or (${endedBefore})
     group by m.id`);
+  const unpricedNow = outcomesWhere(actor, period, filters, false, analyticsUnpriced);
+  const unpricedBefore = outcomesWhere(actor, before, filters, false, analyticsUnpriced);
+  const unpriced = await db.execute<Owner & { now_count: string; before_count: string }>(sql`
+    select m.id, m.full_name as name, m.is_active,
+           count(*) filter (where ${unpricedNow})::text as now_count,
+           count(*) filter (where ${unpricedBefore})::text as before_count
+    from analytics_unpriced
+    join users u on u.id = analytics_unpriced.owner_id
+    ${GROUP}
+    where (${unpricedNow}) or (${unpricedBefore})
+    group by m.id`);
   const cancelled = await db.execute<Owner & { now_count: string; before_count: string }>(sql`
     select m.id, m.full_name as name, m.is_active,
            count(*) filter (where ${cancelledNow})::text as now_count,
@@ -129,6 +149,7 @@ async function managersIn(
         name: owner.name,
         isActive: owner.is_active ?? true,
         orders: count("0", "0"),
+        unpriced: count("0", "0"),
         average: null,
         averageChange: null,
         cancelled: count("0", "0"),
@@ -146,6 +167,18 @@ async function managersIn(
     row.average = averageSom(BigInt(each.now_sum), Number(each.now_orders));
     const was = averageSom(BigInt(each.before_sum), Number(each.before_orders));
     row.averageChange = row.average === null || was === null ? null : row.average - was;
+  }
+  // The ended orders without a planned price count among the orders, not in the average.
+  const priced = new Map(ended.rows.map((each) => [each.id, each]));
+  for (const each of unpriced.rows) {
+    const row = rowOf(each);
+    row.unpriced = count(each.now_count, each.before_count);
+    const outcomes = priced.get(each.id);
+    const add = (a: string | undefined, b: string) => String(Number(a ?? "0") + Number(b));
+    row.orders = count(
+      add(outcomes?.now_orders, each.now_count),
+      add(outcomes?.before_orders, each.before_count),
+    );
   }
   for (const each of cancelled.rows) {
     rowOf(each).cancelled = count(each.now_count, each.before_count);

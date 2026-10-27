@@ -3,7 +3,7 @@ import { getTranslations } from "next-intl/server";
 import Link from "next/link";
 
 import { EmptyState } from "@/components/empty-state";
-import { OutcomeLabel } from "@/components/status-label";
+import { ColourLabel, OutcomeLabel } from "@/components/status-label";
 import {
   RECORDS_PAGE_SIZE,
   analyticsSearch,
@@ -59,6 +59,7 @@ export default async function AnalyticsOrdersPage({
   if (read === "not_found") notFound();
   const { params, list } = read;
   const t = await getTranslations("analytics");
+  const tUnpriced = await getTranslations("orders.unpriced");
   const format = await getFormatters();
   const dates = { first: format.date(list.range.first), last: format.date(list.range.last) };
   const what =
@@ -68,7 +69,9 @@ export default async function AnalyticsOrdersPage({
         ? t("orders.overspent", dates)
         : list.key.kind === "saved"
           ? t("orders.saved", dates)
-          : t("orders.all", dates);
+          : list.key.kind === "unpriced"
+            ? t("orders.unpriced", dates)
+            : t("orders.all", dates);
   const signed = (amount: bigint) =>
     `${amount < 0n ? "−" : ""}${format.money(amount < 0n ? -amount : amount)}`;
   const summary =
@@ -76,7 +79,9 @@ export default async function AnalyticsOrdersPage({
       ? t("orders.summaryOverspent", { count: list.count, sum: format.money(list.sum) })
       : list.key.kind === "saved"
         ? t("orders.summarySaved", { count: list.count, sum: format.money(list.sum) })
-        : t("orders.summary", { count: list.count, sum: signed(list.sum) });
+        : list.key.kind === "unpriced"
+          ? t("orders.summaryUnpriced", { count: list.count, sum: format.money(list.sum) })
+          : t("orders.summary", { count: list.count, sum: signed(list.sum) });
   const pages = Math.max(1, Math.ceil(list.count / RECORDS_PAGE_SIZE));
   const extra = { key: params.key, otherOwners: params.otherOwners };
   const href = (page: number) =>
@@ -178,7 +183,7 @@ export default async function AnalyticsOrdersPage({
                     <span className="mr-1 text-muted-foreground sm:hidden">
                       {t("orders.columns.planned")}
                     </span>
-                    {format.money(row.planned)}
+                    {row.planned === null ? tUnpriced("none") : format.money(row.planned)}
                   </td>
                   <td className="px-4 py-3 text-right whitespace-nowrap tabular-nums max-sm:p-0 max-sm:text-left">
                     <span className="mr-1 text-muted-foreground sm:hidden">
@@ -186,12 +191,19 @@ export default async function AnalyticsOrdersPage({
                     </span>
                     {format.money(row.actual)}
                   </td>
-                  <td className="px-4 py-3 max-sm:p-0" data-difference={signed(row.difference)}>
-                    <OutcomeLabel
-                      colour={row.colour}
-                      amount={row.difference < 0n ? -row.difference : row.difference}
-                    />
-                  </td>
+                  {row.colour === null || row.difference === null ? (
+                    // No planned price: no difference and no colour (08 Numbers; plan of 2.5d-c).
+                    <td className="px-4 py-3 max-sm:p-0" data-difference="">
+                      <ColourLabel label="total" colour="unpriced" />
+                    </td>
+                  ) : (
+                    <td className="px-4 py-3 max-sm:p-0" data-difference={signed(row.difference)}>
+                      <OutcomeLabel
+                        colour={row.colour}
+                        amount={row.difference < 0n ? -row.difference : row.difference}
+                      />
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>

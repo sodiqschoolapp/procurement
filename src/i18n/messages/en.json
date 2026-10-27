@@ -2856,8 +2856,10 @@
         "saved": "Saved",
         "outcome": "Outcome",
         "count": "Orders",
-        "change": "Change"
-      }
+        "change": "Change",
+        "unpriced": "Without a price"
+      },
+      "unpriced": "Ended without a planned price"
     },
     "orders": {
       "title": "Orders behind the number",
@@ -2880,7 +2882,9 @@
         "actual": "Actual total",
         "difference": "Difference",
         "outcome": "Outcome"
-      }
+      },
+      "unpriced": "Ended orders without a planned price, {first} – {last}",
+      "summaryUnpriced": "{count, plural, one {# order} other {# orders}}, actual total {sum}"
     },
     "prices": {
       "title": "Prices",
@@ -3388,7 +3392,10 @@
         "daysNone": "Nothing before"
       }
     },
-    "noDepartment": "No department"
+    "noDepartment": "No department",
+    "unpriced": {
+      "line": "{count, plural, one {# order without a planned price is left out of these sums} other {# orders without a planned price are left out of these sums}}"
+    }
   },
   "reports": {
     "title": "Reports",

@@ -1,5 +1,5 @@
 {
-  "id": "4a2eb9fd-47c4-4844-85e1-f1ad95c26907",
+  "id": "85641e0e-cd6a-499a-926b-4d44a36ea13b",
   "prevId": "eb3e09d4-0966-4d0b-a647-c808a9d5d0b7",
   "version": "7",
   "dialect": "postgresql",
@@ -2865,6 +2865,12 @@
           "type": "uuid",
           "primaryKey": false,
           "notNull": true
+        },
+        "actual": {
+          "name": "actual",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
         }
       },
       "indexes": {
@@ -3020,7 +3026,12 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "checkConstraints": {},
+      "checkConstraints": {
+        "analytics_unpriced_actual_check": {
+          "name": "analytics_unpriced_actual_check",
+          "value": "\"analytics_unpriced\".\"actual\" >= 0"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.categories": {

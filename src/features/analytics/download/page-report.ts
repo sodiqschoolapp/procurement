@@ -1,5 +1,6 @@
 import { CASH_KIND_KEYS, OUTCOME_COLOURS } from "../period-params";
 import type { AnalyticsPage } from "../page-data";
+import type { Count } from "../queries/plan-vs-actual";
 import type { Formatters } from "@/i18n/format";
 import type { Locale } from "@/i18n/locale";
 import {
@@ -91,6 +92,18 @@ export function analyticsReport(
     sheet,
   });
   const count = (value: number) => format.quantity(String(value));
+  // The ended orders without a planned price that Plan vs actual's sums leave out, with their
+  // change (08 Numbers; 10 point 1; plan of 2.5d-c, decided item 4, Look first).
+  const unpricedFigure = (unpriced: Count) =>
+    unpriced.count === 0 && unpriced.change.difference === 0n
+      ? []
+      : [
+          {
+            label: t("plan.unpriced"),
+            value: count(unpriced.count),
+            lines: [countChangeText(unpriced.change, t, format)],
+          },
+        ];
   const sections: ReportSection[] = [];
 
   if (block) {
@@ -127,7 +140,11 @@ export function analyticsReport(
   if (head) {
     const [, plan, prices, , speed, managers, warehouse] = head;
     const { total } = plan;
-    const planEmpty = total.orders.count === 0 && total.orders.change.difference === 0n;
+    const planEmpty =
+      total.orders.count === 0 &&
+      total.orders.change.difference === 0n &&
+      total.unpriced.count === 0 &&
+      total.unpriced.change.difference === 0n;
     const amounts = { green: 0n, amber: total.saved.amount, red: total.overspent.amount };
     sections.push({
       title: t("plan.title"),
@@ -140,6 +157,7 @@ export function analyticsReport(
               value: count(total.orders.count),
               lines: [countChangeText(total.orders.change, t, format)],
             },
+            ...unpricedFigure(total.unpriced),
             ...OUTCOME_COLOURS.map((colour) => {
               const each = total.colours[colour];
               return {
@@ -372,6 +390,7 @@ export function analyticsReport(
             changeText(plan.total[which].change, t, format),
           ],
         })),
+        ...unpricedFigure(plan.total.unpriced),
         {
           label: t("finance.plan.noReceipt"),
           value: format.money(noReceipt.amount),

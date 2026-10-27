@@ -396,7 +396,24 @@ export async function FinancePlanView({
       </>
     );
   };
-  const headings = (first: string) => [first, t("finance.plan.overspent"), t("finance.plan.saved")];
+  // The ended orders without a planned price these sums leave out, opening their list (08 Numbers;
+  // plan of 2.5d-c, decided items 3 and 4, Look first).
+  const unpriced = (tally: Tally, scope: AnalyticsFilters, otherOwners = false) => (
+    <>
+      <Link href={orders({ kind: "unpriced" }, scope, otherOwners)} className={linkClass}>
+        {format.quantity(String(tally.unpriced.count))}
+      </Link>
+      <span className="block text-small text-muted-foreground">
+        {countChangeText(tally.unpriced.change, tShort, format)}
+      </span>
+    </>
+  );
+  const headings = (first: string) => [
+    first,
+    t("finance.plan.overspent"),
+    t("finance.plan.saved"),
+    t("plan.columns.unpriced"),
+  ];
   const tiles = [
     { which: "overspent", label: t("finance.plan.overspent") },
     { which: "saved", label: t("finance.plan.saved") },
@@ -435,6 +452,22 @@ export async function FinancePlanView({
             </p>
           </div>
         ))}
+        {(block.total.unpriced.count > 0 || block.total.unpriced.change.difference !== 0n) && (
+          <div
+            className="flex flex-col gap-1 rounded-lg bg-muted p-4"
+            data-finance-plan-tile="unpriced"
+          >
+            <p className="text-sm leading-5 font-semibold text-muted-foreground">
+              {t("plan.unpriced")}
+            </p>
+            <Link href={orders({ kind: "unpriced" })} className={tileNumber}>
+              {format.quantity(String(block.total.unpriced.count))}
+            </Link>
+            <p className="text-sm leading-5 text-muted-foreground">
+              {countChangeText(block.total.unpriced.change, tShort, format)}
+            </p>
+          </div>
+        )}
         <div
           className="flex flex-col gap-1 rounded-lg bg-muted p-4"
           data-finance-plan-tile="receipt"
@@ -476,6 +509,7 @@ export async function FinancePlanView({
                   row.isActive ? row.name : t("inactive", { name: row.name }),
                   side(row, "overspent", scope),
                   side(row, "saved", scope),
+                  unpriced(row, scope),
                 ],
               };
             })}
@@ -505,6 +539,7 @@ export async function FinancePlanView({
                   name,
                   side(row, "overspent", scope, other),
                   side(row, "saved", scope, other),
+                  unpriced(row, scope, other),
                 ],
               };
             })}

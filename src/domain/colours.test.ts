@@ -292,9 +292,13 @@ describe("how an order ended, with or without a planned price (08 Numbers: a sum
   const FOLDERS: OrderPlan = { quantity: "10", price: null, extras: [], paymentType: "CASH" };
 
   it("an ended order without a planned price is unpriced, not an outcome", () => {
-    expect(orderEnd(order([record("10", 4_500n)], "DONE", FOLDERS))).toEqual({ kind: "unpriced" });
-    expect(orderEnd(order([record("9", 4_500n)], "DONE_SHORT", FOLDERS))).toEqual({
+    expect(orderEnd(order([record("10", 4_500n)], "DONE", FOLDERS))).toEqual({
       kind: "unpriced",
+      actual: 45_000n,
+    });
+    expect(orderEnd(order([record("9", 4_500n, [2_000n])], "DONE_SHORT", FOLDERS))).toEqual({
+      kind: "unpriced",
+      actual: 42_500n,
     });
   });
 

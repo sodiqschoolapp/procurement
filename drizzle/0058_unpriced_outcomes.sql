@@ -8,7 +8,9 @@ CREATE TABLE "analytics_unpriced" (
 	"ended_on" date NOT NULL,
 	"category_id" uuid NOT NULL,
 	"department_id" uuid,
-	"owner_id" uuid NOT NULL
+	"owner_id" uuid NOT NULL,
+	"actual" bigint NOT NULL,
+	CONSTRAINT "analytics_unpriced_actual_check" CHECK ("analytics_unpriced"."actual" >= 0)
 );
 --> statement-breakpoint
 ALTER TABLE "analytics_unpriced" ADD CONSTRAINT "analytics_unpriced_order_id_orders_id_fk" FOREIGN KEY ("order_id") REFERENCES "public"."orders"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint

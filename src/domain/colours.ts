@@ -288,13 +288,18 @@ export type OrderOutcome = {
  * "a sum that leaves orders out says how many"). Every other ended order is an `outcome`, its
  * colour the Total colour of orderColours().
  */
-export type OrderEnd = { kind: "outcome"; outcome: OrderOutcome } | { kind: "unpriced" };
+export type OrderEnd =
+  | { kind: "outcome"; outcome: OrderOutcome }
+  /** `actual` is actualTotal() of the live records, as for any order. */
+  | { kind: "unpriced"; actual: bigint };
 
 export function orderEnd(order: ColourOrder): OrderEnd | null {
   if (order.progress !== "DONE" && order.progress !== "DONE_SHORT") return null;
   const colours = orderColours(order);
   if (!colours) return null;
-  if (colours.total.colour === "unpriced") return { kind: "unpriced" };
+  if (colours.total.colour === "unpriced") {
+    return { kind: "unpriced", actual: actualTotal(order.records) };
+  }
   if (colours.total.colour === "grey" || !isPriced(order.plan)) return null;
   const planned = orderTotal(order.plan);
   return {

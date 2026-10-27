@@ -34,6 +34,7 @@ export async function ManagersView({
 }) {
   const t = await getTranslations("analytics");
   const tShort = await getTranslations("analytics.short");
+  const tUnpriced = await getTranslations("orders.unpriced");
   const format = await getFormatters();
   const scope = (row: ManagerRow) => ({
     filters: { ...filters, manager: row.id },
@@ -42,6 +43,13 @@ export async function ManagersView({
   const orders = (row: ManagerRow) => {
     const { filters: chosen, otherOwners } = scope(row);
     return `/analytics/orders?${analyticsSearch(period, chosen, { otherOwners })}`;
+  };
+  const unpricedOrders = (row: ManagerRow) => {
+    const { filters: chosen, otherOwners } = scope(row);
+    return `/analytics/orders?${analyticsSearch(period, chosen, {
+      key: { kind: "unpriced" },
+      otherOwners,
+    })}`;
   };
   const cancelled = (row: ManagerRow) => {
     const { filters: chosen, otherOwners } = scope(row);
@@ -109,14 +117,31 @@ export async function ManagersView({
                   {link(orders(row), format.quantity(String(row.orders.count)))}
                   {under(countChangeText(row.orders.change, tShort, format))}
                 </>,
-                row.average === null ? (
-                  <span className="text-muted-foreground">{t("managers.noOrder")}</span>
-                ) : (
-                  <>
-                    {link(orders(row), average(row.average))}
-                    {under(amountChangeText(row.averageChange, tShort, format))}
-                  </>
-                ),
+                <>
+                  {row.average === null ? (
+                    <span className="text-muted-foreground">
+                      {row.unpriced.count > 0 ? tUnpriced("none") : t("managers.noOrder")}
+                    </span>
+                  ) : (
+                    <>
+                      {link(orders(row), average(row.average))}
+                      {under(amountChangeText(row.averageChange, tShort, format))}
+                    </>
+                  )}
+                  {/* The ended orders without a planned price the average leaves out (plan of
+                      2.5d-c, decided items 3 to 5, Look first). */}
+                  {(row.unpriced.count > 0 || row.unpriced.change.difference !== 0n) && (
+                    <span className="block text-small text-muted-foreground" data-unpriced>
+                      <Link
+                        href={unpricedOrders(row)}
+                        className="text-link underline-offset-2 hover:underline"
+                      >
+                        {tUnpriced("count", { count: row.unpriced.count })}
+                      </Link>{" "}
+                      {countChangeText(row.unpriced.change, tShort, format)}
+                    </span>
+                  )}
+                </>,
                 <>
                   {link(cancelled(row), format.quantity(String(row.cancelled.count)))}
                   {under(countChangeText(row.cancelled.change, tShort, format))}

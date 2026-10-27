@@ -469,15 +469,18 @@ async function writeOutcomes(executor: Executor) {
   });
   // An ended order without a planned price has no outcome: it is counted beside the planned sums
   // that leave it out (orderEnd(); plan of 2.5d-c, decided item 1, Look first).
-  const unpriced = ended.flatMap(({ keys, end }) => (end.kind === "unpriced" ? [keys] : []));
+  const unpriced = ended.flatMap(({ keys, end }) =>
+    end.kind === "unpriced" ? [{ ...keys, actual: end.actual.toString() }] : [],
+  );
   if (unpriced.length > 0) {
     await executor.execute(sql`
       insert into analytics_unpriced (order_id, branch_id, ended_on, category_id, department_id,
-                                      owner_id)
-      select r.order_id, r.branch_id, r.ended_on, r.category_id, r.department_id, r.owner_id
+                                      owner_id, actual)
+      select r.order_id, r.branch_id, r.ended_on, r.category_id, r.department_id, r.owner_id,
+             r.actual::bigint
       from jsonb_to_recordset(${JSON.stringify(unpriced)}::jsonb) as r(
         order_id uuid, branch_id uuid, ended_on date, category_id uuid, department_id uuid,
-        owner_id uuid)`);
+        owner_id uuid, actual text)`);
   }
   const rows = ended.flatMap(({ keys, end }) =>
     end.kind === "outcome"

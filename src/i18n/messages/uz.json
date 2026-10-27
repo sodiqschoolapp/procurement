@@ -2856,8 +2856,10 @@
         "saved": "Tejalgan",
         "outcome": "Natija",
         "count": "Buyurtmalar",
-        "change": "Oʻzgarish"
-      }
+        "change": "Oʻzgarish",
+        "unpriced": "Narxsiz"
+      },
+      "unpriced": "Rejalashtirilgan narxsiz yakunlangan"
     },
     "orders": {
       "title": "Raqam ortidagi buyurtmalar",
@@ -2880,7 +2882,9 @@
         "actual": "Haqiqiy summa",
         "difference": "Farq",
         "outcome": "Natija"
-      }
+      },
+      "unpriced": "Rejalashtirilgan narxsiz yakunlangan buyurtmalar, {first} – {last}",
+      "summaryUnpriced": "{count} ta buyurtma, haqiqiy jami {sum}"
     },
     "prices": {
       "title": "Narxlar",
@@ -3388,7 +3392,10 @@
         "daysNone": "Avval yoʻq edi"
       }
     },
-    "noDepartment": "Boʻlimsiz"
+    "noDepartment": "Boʻlimsiz",
+    "unpriced": {
+      "line": "{count} ta rejalashtirilgan narxsiz buyurtma bu summalarga kirmagan"
+    }
   },
   "reports": {
     "title": "Hisobotlar",
