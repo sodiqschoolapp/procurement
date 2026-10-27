@@ -165,6 +165,21 @@ describe("analytics_orders_cash_needed_check (plan of 6.6a, decided item 11)", (
     }
   });
 
+  // Migration 0059: the need of the order Cash needed soon leaves out for lack of a price is empty
+  // (review of 2.5d-c at bad1f3f, finding 1, Look first).
+  it("takes an empty need (migration 0059)", async () => {
+    try {
+      await db.execute(sql`
+        insert into analytics_orders (order_id, branch_id, status, progress, submitted_on,
+          needed_by, category_id, department_id, owner_id, planned_cash, cash_handed, cash_needed)
+        values (${pending.id}, ${pending.branch}, 'PENDING_HEAD', 'OPEN', '2031-10-01',
+          '2031-10-20', ${pending.category}, ${pending.department}, ${pending.owner}, null, 0,
+          null)`);
+    } finally {
+      await clear();
+    }
+  });
+
   it("refuses a need below 0, on insert and on update", async () => {
     expect(await refusalOf(insert("-1"))).toMatchObject({
       code: CHECK,

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   NO_ANALYTICS_FILTERS,
+  NO_DEPARTMENT,
   RECORDS_PAGE_SIZE,
   analyticsSearch,
   parseAnalyticsParams,
@@ -295,6 +296,53 @@ describe("parseAnalyticsParams", () => {
     ["a reason longer than 500 characters", { key: "step:all:REJECT", reason: "x".repeat(501) }],
   ])("refuses %s", (_, raw) => {
     expect(parseAnalyticsParams(raw)).toBeNull();
+  });
+});
+
+describe("the orders without a department and without a planned price in the address (plan of 2.5d-c, decided items 4 and 10)", () => {
+  const read = (text: string) =>
+    parseAnalyticsParams(Object.fromEntries(new URLSearchParams(text)));
+  const period = { choice: "this_month", from: null, to: null } as const;
+
+  it("reads department=none back from analyticsSearch() as the No department filter (D68)", () => {
+    const filters = { ...NO_ANALYTICS_FILTERS, department: NO_DEPARTMENT };
+    const text = analyticsSearch(period, filters);
+    expect(new URLSearchParams(text).get("department")).toBe("none");
+    expect(read(text)?.filters).toEqual(filters);
+  });
+
+  it("refuses a department that is neither a uuid nor none", () => {
+    expect(parseAnalyticsParams({ department: "nothing" })).toBeNull();
+    expect(parseAnalyticsParams({ department: "NONE" })).toBeNull();
+  });
+
+  it("reads the three unpriced keys back from analyticsSearch()", () => {
+    const keys = [
+      { kind: "unpriced" },
+      { kind: "needed", stage: "approval", step: "PENDING_PRINCIPAL", unpriced: true },
+      { kind: "needed", stage: "all", step: null, unpriced: true },
+      { kind: "priced", product: ID, unpriced: true },
+      { kind: "priced", product: null, unpriced: true },
+    ] as const;
+    for (const key of keys) {
+      expect(read(analyticsSearch(period, NO_ANALYTICS_FILTERS, { key }))?.key).toEqual(key);
+    }
+    expect(
+      parseAnalyticsParams({ key: "needed:approval:PENDING_PRINCIPAL:unpriced" })?.key,
+    ).toEqual({ kind: "needed", stage: "approval", step: "PENDING_PRINCIPAL", unpriced: true });
+  });
+
+  // The Managers block's orders number (review of 2.5d-c, finding 1).
+  it("reads the ended key back from analyticsSearch()", () => {
+    const key = { kind: "ended" } as const;
+    expect(analyticsSearch(period, NO_ANALYTICS_FILTERS, { key })).toContain("key=ended");
+    expect(read(analyticsSearch(period, NO_ANALYTICS_FILTERS, { key }))?.key).toEqual(key);
+  });
+
+  it("refuses an unpriced mark in the wrong place", () => {
+    expect(parseAnalyticsParams({ key: "needed:unpriced:approval" })).toBeNull();
+    expect(parseAnalyticsParams({ key: "priced:all:other" })).toBeNull();
+    expect(parseAnalyticsParams({ key: "unpriced:all" })).toBeNull();
   });
 });
 

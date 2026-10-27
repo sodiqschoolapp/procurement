@@ -24,8 +24,10 @@ import { changeText, countChangeText, shareChangeText } from "./change-text";
 // amount (08 The three colours, bullet 3), its count, share and their changes (10 point 1; plan of
 // 6.4, decided item 7); every number opens the orders behind it (point 3), a branch or Manager cell
 // with that filter set, "Other owners" with `owner=other` (review of the plan, correction 1); the
-// chart and both tables export to Excel (point 4). The page computes nothing: the numbers are the
-// query's.
+// chart and both tables export to Excel (point 4). The ended orders without a planned price, which
+// the sums leave out, are counted beside them with their change, and open their list (08 Numbers;
+// plan of 2.5d-c, decided items 3 and 4, Look first). The page computes nothing: the numbers are
+// the query's.
 
 const AMOUNT: Record<Colour, (tally: Tally) => bigint> = {
   green: () => 0n,
@@ -50,7 +52,11 @@ export async function PlanVsActualView({
   const download = (exportBlock: ExportBlock) =>
     `/analytics/download?${analyticsSearch(period, filters, { block: exportBlock })}`;
   const { total } = block;
-  const empty = total.orders.count === 0 && total.orders.change.difference === 0n;
+  const empty =
+    total.orders.count === 0 &&
+    total.orders.change.difference === 0n &&
+    total.unpriced.count === 0 &&
+    total.unpriced.change.difference === 0n;
   const count = (value: number) => format.quantity(String(value));
 
   const points: ChartPoint[] = OUTCOME_COLOURS.map((colour) => ({
@@ -88,6 +94,15 @@ export async function PlanVsActualView({
               lines={[countChangeText(total.orders.change, tShort, format)]}
               data="ended"
             />
+            {(total.unpriced.count > 0 || total.unpriced.change.difference !== 0n) && (
+              <Tile
+                label={t("plan.unpriced")}
+                href={orders({ kind: "unpriced" })}
+                value={count(total.unpriced.count)}
+                lines={[countChangeText(total.unpriced.change, tShort, format)]}
+                data="unpriced"
+              />
+            )}
             {OUTCOME_COLOURS.map((colour) => {
               const each = total.colours[colour];
               return (
@@ -264,6 +279,12 @@ async function TallyTable({ firstColumn, rows }: { firstColumn: string; rows: Ta
       shown: format.money(tally.saved.amount),
       change: changeText(tally.saved.change, tShort, format),
     },
+    {
+      id: "unpriced",
+      key: { kind: "unpriced" },
+      shown: count(tally.unpriced.count),
+      change: countChangeText(tally.unpriced.change, tShort, format),
+    },
   ];
   const headings = [
     t("plan.columns.orders"),
@@ -272,6 +293,7 @@ async function TallyTable({ firstColumn, rows }: { firstColumn: string; rows: Ta
     t("plan.columns.red"),
     t("plan.columns.overspent"),
     t("plan.columns.saved"),
+    t("plan.columns.unpriced"),
   ];
   return (
     // A table wider than its card scrolls; the keyboard reaches it too (WCAG 2.1.1; plan of 9.1d).
@@ -280,7 +302,7 @@ async function TallyTable({ firstColumn, rows }: { firstColumn: string; rows: Ta
       tabIndex={0}
       className="overflow-x-auto rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
     >
-      <table className="table-cards table-cards-flat w-full min-w-[48rem] border-collapse text-left text-sm leading-5">
+      <table className="table-cards table-cards-flat w-full min-w-[54rem] border-collapse text-left text-sm leading-5">
         <thead className="border-b border-border bg-muted text-xs font-medium text-muted-foreground">
           <tr>
             <th scope="col" className="px-3 py-2">

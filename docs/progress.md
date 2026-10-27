@@ -2297,4 +2297,25 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - A planned price is `bigint | null` from the database on: never `price!`; a known-priced plan is a `PricedPlan`.
 - Tests: `insertOrder({ plannedPrice: null })`, `atPrincipal(s, { price: null })`, `bought(scene, { plannedPrice: null })`.
 
-The next task is 2.5d-c.
+
+## 2.5d-c Fields the Head sets: analytics and reports (27.10.2026, pull request #175)
+
+**Built**
+- `department=none` (`NO_DEPARTMENT`, `departmentWhere()` in every `*-where.ts`); "No department" in Spending by department (Head, Principal), the Spending report, the filter bar, the Excel and PDF filter line.
+- `orderEnd()` (`colours.ts`); `analytics_unpriced` (migration 0058) written by the refresh; `outcomesWhere(…, table)`.
+- `cashNeeded()` null for an order the cash sum leaves out for lack of a price; `analytics_orders.cash_needed` nullable (migration 0059).
+- "N without a price" with its change and its list: Plan vs actual (Head, Finance; whole, branch, Manager), the Managers block (orders count both), the Planned vs actual report, the Order register, Cash needed soon, My estimates; in Excel and the PDF.
+- Drill keys `unpriced`, `needed:…:unpriced`, `priced:…:unpriced`.
+
+**Left out, and the task that brings it**
+- A "No department" choice in the order list's own filter (`/orders`): no task names it.
+
+**Open for the owner**
+- Decided items 1 to 7, 16 and 17 (Look first) on issue #9.
+
+**What the next sessions must know**
+- A new analytics condition reads the department through `departmentWhere()`, never `eq(…, filters.department)`: `none` is not a uuid.
+- A planned sum of analytics says its count with `unpricedLine()` (Excel) and `orders.unpriced.count` (screen).
+- Tests: `decided(scene, status, moves, { departmentId: null, plannedPrice: null })`.
+
+The next task is 9.5.

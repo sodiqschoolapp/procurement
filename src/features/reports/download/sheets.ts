@@ -151,17 +151,22 @@ export function planVsActualSheets(report: PlanVsActualReport, context: Context)
     t("plan.columns.planned"),
     t("plan.columns.actual"),
     t("plan.columns.difference"),
+    t("plan.columns.unpriced"),
   ];
+  // Each sum with the ended orders without a planned price it leaves out (plan of 2.5d-c).
   const sumCells = (sums: Sums): CellValue[] => [
     { kind: "count", value: sums.orders },
     money(sums.planned),
     money(sums.actual),
     { kind: "signedMoney", value: sums.difference },
+    { kind: "count", value: sums.unpriced },
   ];
+  const unpricedLines =
+    report.total.unpriced > 0 ? [t("plan.unpricedLine", { count: report.total.unpriced })] : [];
   const total = { label: t("total"), amount: report.total.difference, signed: true, column: 5 };
   const table = (name: string, rows: { name: string; sums: Sums }[]): AnalyticsSheet => ({
     name,
-    heading: heading(context, "plan", name, report.range, true),
+    heading: [...heading(context, "plan", name, report.range, true), ...unpricedLines],
     columns: [t("plan.columns.name"), ...sumColumns],
     rows: rows.map((row) => [text(row.name), ...sumCells(row.sums)]),
     total,
@@ -169,7 +174,10 @@ export function planVsActualSheets(report: PlanVsActualReport, context: Context)
   return [
     {
       name: t("plan.byOrder"),
-      heading: heading(context, "plan", t("plan.byOrder"), report.range, true),
+      heading: [
+        ...heading(context, "plan", t("plan.byOrder"), report.range, true),
+        ...unpricedLines,
+      ],
       columns: [
         t("plan.columns.order"),
         t("plan.columns.branch"),
@@ -242,6 +250,7 @@ export function spendingSheets(report: SpendingReport, context: Context): Analyt
       (l) => l.name!,
     ),
     table(t("spending.byDepartment"), t("spending.columns.department"), report.departments, (l) => {
+      if (l.id === null) return t("spending.noDepartment");
       const department = report.departments.find((each) => each.id === l.id);
       return department ? `${department.name}, ${department.branchName}` : l.name!;
     }),

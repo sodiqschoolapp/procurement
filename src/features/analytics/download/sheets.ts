@@ -8,11 +8,12 @@ import en from "@/i18n/messages/en.json";
 import ru from "@/i18n/messages/ru.json";
 import uz from "@/i18n/messages/uz.json";
 
+import { countChangeText } from "../components/change-text";
 import type { AnalyticsFilters } from "../period-params";
 import type { ApprovalOrders } from "../queries/approval-orders";
 import type { ApprovalSpeed } from "../queries/approval-speed";
 import type { CancelledRecords } from "../queries/cancelled-records";
-import type { CashNeeded } from "../queries/cash-needed";
+import type { CashNeeded, NeededAmount } from "../queries/cash-needed";
 import type { CashAge, CashOrders } from "../queries/cash-orders";
 import type { FinanceCash } from "../queries/finance-cash";
 import type { FinanceSpending } from "../queries/finance-spending";
@@ -28,9 +29,9 @@ import type { Prices, SubtypeName } from "../queries/prices";
 import type { AnalyticsFilterOptions } from "../queries/filters";
 import type { HeadSpending } from "../queries/head-spending";
 import type { OutcomeOrders } from "../queries/outcome-orders";
-import type { PlanVsActual, Tally } from "../queries/plan-vs-actual";
+import type { Count, PlanVsActual, Tally } from "../queries/plan-vs-actual";
 import type { SpendingBlock } from "../queries/spending";
-import { CASH_KIND_KEYS, OUTCOME_COLOURS } from "../period-params";
+import { CASH_KIND_KEYS, NO_DEPARTMENT, OUTCOME_COLOURS } from "../period-params";
 import type { SettlementSpeed } from "../queries/settlement-speed";
 import type { SettlementList } from "../queries/settlements";
 import type { SpendingRecords } from "../queries/spending-records";
@@ -80,7 +81,12 @@ export function heading(
   const chosen = [
     [t("branch"), named(options.branches, filters.branch)],
     [t("category"), named(options.categories, filters.category)],
-    [t("department"), named(options.departments, filters.department)],
+    [
+      t("department"),
+      filters.department === NO_DEPARTMENT
+        ? t("noDepartment")
+        : named(options.departments, filters.department),
+    ],
     [t("manager"), named(options.managers, filters.manager)],
     [t("supplier"), named(options.suppliers, filters.supplier)],
   ] as const;
@@ -154,6 +160,7 @@ export function recordsSheet(
         goods: format.money(list.priced.goods),
       }),
     );
+    if (list.key.kind === "priced" && list.key.unpriced) lines.push(t("my.list.unpricedLine"));
   }
   const priced = list.price !== null || list.priced !== null;
   return {
@@ -216,7 +223,10 @@ export function headSpendingSheet(
         }))
       : which === "departments"
         ? block.departments.map((row) => ({
-            label: t("departmentOption", { name: row.name, branch: row.branchName }),
+            label:
+              row.name === null
+                ? t("noDepartment")
+                : t("departmentOption", { name: row.name, branch: row.branchName ?? "" }),
             ...row,
           }))
         : block[which].map((row) => ({ label: row.name, ...row }));
@@ -237,6 +247,25 @@ export function headSpendingSheet(
   };
 }
 
+/**
+ * The line under a sheet's heading that says how many orders without a planned price its sums
+ * leave out, in a sentence with its change against the period before (08 Numbers; 10 point 1;
+ * plan of 2.5d-c, decided items 3 and 4, Look first). A count of now (Cash needed soon) has no
+ * change; none when nothing is left out in either period.
+ */
+export function unpricedLine(
+  locale: Locale,
+  count: Count | number,
+  what: "orders" | "records" = "orders",
+): string[] {
+  const { t, format } = translators(locale);
+  const now = typeof count === "number" ? count : count.count;
+  const change = typeof count === "number" ? null : count.change;
+  if (now === 0 && (change === null || change.difference === 0n)) return [];
+  const line = t(what === "orders" ? "unpriced.line" : "unpriced.recordsLine", { count: now });
+  return [change === null ? `${line}.` : `${line}; ${countChangeText(change, t, format)}.`];
+}
+
 /** Plan vs actual: one row per colour (build-plan 6.4a). */
 export function outcomesSheet(
   block: PlanVsActual,
@@ -249,7 +278,10 @@ export function outcomesSheet(
   const { total } = block;
   return {
     name,
-    heading: heading(locale, name, block.period, filters, options),
+    heading: [
+      ...heading(locale, name, block.period, filters, options),
+      ...unpricedLine(locale, total.unpriced),
+    ],
     columns: [
       t("plan.columns.outcome"),
       t("plan.columns.count"),
@@ -309,6 +341,7 @@ export function tallySheet(
       t("plan.columns.red"),
       t("plan.columns.overspent"),
       t("plan.columns.saved"),
+      t("plan.columns.unpriced"),
     ],
     rows: rows.map(({ label, tally }) => [
       { kind: "text", value: label },
@@ -319,6 +352,7 @@ export function tallySheet(
       })),
       { kind: "money", value: tally.overspent.amount },
       { kind: "money", value: tally.saved.amount },
+      { kind: "count", value: tally.unpriced.count },
     ]),
   };
 }
@@ -330,10 +364,13 @@ export function outcomeOrdersSheet(
   options: AnalyticsFilterOptions,
   locale: Locale,
 ): AnalyticsSheet {
-  const { t } = translators(locale);
+  const { t, tRoot } = translators(locale);
   const name = t("sheets.orders");
   const lines = heading(locale, name, list.range, filters, options);
   if (list.otherOwners) lines.push(t("orders.otherOwners"));
+  // `key=ended`: the difference leaves the unpriced rows out and says how many (08 Numbers).
+  if (list.key.kind !== "unpriced" && list.unpriced > 0)
+    lines.push(tRoot("orders.unpriced.count", { count: list.unpriced }));
   return {
     name,
     heading: lines,
@@ -357,24 +394,37 @@ export function outcomeOrdersSheet(
       { kind: "text", value: row.branchName },
       { kind: "text", value: row.ownerName },
       { kind: "date", value: row.endedOn },
-      { kind: "money", value: row.planned },
+      // Without a planned price: no planned total, difference or colour (plan of 2.5d-c).
+      row.planned === null
+        ? { kind: "text", value: tRoot("orders.unpriced.none") }
+        : { kind: "money", value: row.planned },
       { kind: "money", value: row.actual },
-      { kind: "signedMoney", value: row.difference },
-      { kind: "text", value: t(`plan.outcome.${row.colour}`) },
+      row.difference === null
+        ? { kind: "text", value: "" }
+        : { kind: "signedMoney", value: row.difference },
+      {
+        kind: "text",
+        value:
+          row.colour === null ? tRoot("orders.unpriced.none") : t(`plan.outcome.${row.colour}`),
+      },
     ]),
-    // Overspent sums −difference, so its total is shown as the overspent; others the net.
-    total: {
-      label: t(
-        list.key.kind === "overspent"
-          ? "plan.overspent"
-          : list.key.kind === "saved"
-            ? "plan.saved"
-            : "orders.columns.difference",
-      ),
-      amount: list.sum,
-      signed: true,
-      column: 8,
-    },
+    // Overspent sums −difference, so its total is shown as the overspent; unpriced the actual
+    // totals; others the net.
+    total:
+      list.key.kind === "unpriced"
+        ? { label: t("orders.columns.actual"), amount: list.sum, column: 7 }
+        : {
+            label: t(
+              list.key.kind === "overspent"
+                ? "plan.overspent"
+                : list.key.kind === "saved"
+                  ? "plan.saved"
+                  : "orders.columns.difference",
+            ),
+            amount: list.sum,
+            signed: true,
+            column: 8,
+          },
   };
 }
 
@@ -656,6 +706,8 @@ export function managersSheet(
       t("managers.columns.manager"),
       t("managers.columns.orders"),
       t("managers.columns.average"),
+      t("plan.columns.unpriced"),
+      t("plan.columns.change"),
       t("managers.columns.cancelled"),
       t("managers.columns.held"),
       t("managers.columns.heldFor"),
@@ -667,6 +719,10 @@ export function managersSheet(
       row.average === null
         ? { kind: "text", value: "" }
         : { kind: "signedMoney", value: row.average },
+      // The ended orders without a planned price the average leaves out, with their change in a
+      // sentence (plan of 2.5d-c, decided items 3 to 5, Look first).
+      { kind: "count", value: row.unpriced.count },
+      { kind: "text", value: countChangeText(row.unpriced.change, t, format) },
       { kind: "count", value: row.cancelled.count },
       { kind: "money", value: row.held },
       row.heldDays === null ? { kind: "text", value: "" } : { kind: "count", value: row.heldDays },
@@ -1195,7 +1251,7 @@ export function myEstimatesSheet(
   options: AnalyticsFilterOptions,
   locale: Locale,
 ): AnalyticsSheet {
-  const { t } = translators(locale);
+  const { t, format } = translators(locale);
   const name = t("sheets.myEstimates");
   const price = (value: bigint | null): CellValue =>
     value === null ? { kind: "text", value: "" } : { kind: "money", value };
@@ -1210,10 +1266,16 @@ export function myEstimatesSheet(
       : { kind: "signedMoney", value: each.difference },
     { kind: "text", value: signedText(each.percent) },
     { kind: "text", value: signedText(each.change) },
+    // The records of orders without a planned price the estimate leaves out (plan of 2.5d-c).
+    { kind: "count", value: each.unpriced.count },
+    { kind: "text", value: countChangeText(each.unpriced.change, t, format) },
   ];
   return {
     name,
-    heading: heading(locale, name, block.period, filters, options),
+    heading: [
+      ...heading(locale, name, block.period, filters, options),
+      ...unpricedLine(locale, block.all.unpriced, "records"),
+    ],
     columns: [
       t("principal.columns.product"),
       t("my.columns.records"),
@@ -1223,6 +1285,8 @@ export function myEstimatesSheet(
       t("my.columns.difference"),
       "%",
       t("prices.columns.change"),
+      t("plan.columns.unpriced"),
+      t("plan.columns.change"),
     ],
     rows: [
       ...block.products.map((each) =>
@@ -1438,15 +1502,25 @@ export function cashNeededSheet(
 ): AnalyticsSheet {
   const { t, tRoot } = translators(locale);
   const name = t("sheets.cashNeeded");
-  const line = (label: string, amount: { amount: bigint; count: number }): CellValue[] => [
+  // Each number with the orders without a planned price it leaves out (plan of 2.5d-c).
+  const line = (label: string, amount: NeededAmount): CellValue[] => [
     { kind: "text", value: label },
     { kind: "money", value: amount.amount },
     { kind: "count", value: amount.count },
+    { kind: "count", value: amount.unpriced },
   ];
   return {
     name,
-    heading: heading(locale, name, null, filters, options, t("finance.needed.note")),
-    columns: [t("finance.columns.stage"), t("finance.columns.needed"), t("finance.columns.orders")],
+    heading: [
+      ...heading(locale, name, null, filters, options, t("finance.needed.note")),
+      ...unpricedLine(locale, block.all.unpriced),
+    ],
+    columns: [
+      t("finance.columns.stage"),
+      t("finance.columns.needed"),
+      t("finance.columns.orders"),
+      t("plan.columns.unpriced"),
+    ],
     rows: [
       line(t("finance.needed.open"), block.open),
       ...block.steps.map((step) => line(`  ${tRoot(`requestStatus.${step.step}`)}`, step)),
@@ -1507,6 +1581,7 @@ export function neededOrdersSheet(
   const name = t("sheets.neededOrders");
   const lines = heading(locale, name, null, filters, options, t("finance.needed.note"));
   lines.push(list.step ? tRoot(`requestStatus.${list.step}`) : t(`finance.needed.${list.stage}`));
+  if (list.unpriced) lines.push(t("finance.needed.unpricedList"));
   return {
     name,
     heading: lines,
@@ -1528,7 +1603,9 @@ export function neededOrdersSheet(
       { kind: "text", value: row.ownerName },
       { kind: "text", value: tRoot(`requestStatus.${row.status}`) },
       { kind: "date", value: row.neededBy },
-      { kind: "money", value: row.plannedCash },
+      row.plannedCash === null
+        ? { kind: "text", value: tRoot("orders.unpriced.none") }
+        : { kind: "money", value: row.plannedCash },
       { kind: "signedMoney", value: row.handed },
       { kind: "money", value: row.needed },
     ]),
@@ -1595,7 +1672,10 @@ export function overspendSheet(
   ];
   return {
     name,
-    heading: heading(locale, name, block.period, filters, options),
+    heading: [
+      ...heading(locale, name, block.period, filters, options),
+      ...unpricedLine(locale, block.total.unpriced),
+    ],
     columns: [
       t(which === "overspendBranches" ? "plan.columns.branch" : "plan.columns.manager"),
       t("finance.columns.overspentOrders"),
@@ -1606,11 +1686,13 @@ export function overspendSheet(
       t("plan.columns.saved"),
       t("spending.columns.change"),
       "%",
+      t("plan.columns.unpriced"),
     ],
     rows: rows.map(({ label, tally }) => [
       { kind: "text", value: label },
       ...side(tally.colours.red.count, tally.overspent.amount, tally.overspent.change),
       ...side(tally.colours.amber.count, tally.saved.amount, tally.saved.change),
+      { kind: "count", value: tally.unpriced.count },
     ]),
   };
 }

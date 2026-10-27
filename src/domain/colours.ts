@@ -280,25 +280,41 @@ export type OrderOutcome = {
 };
 
 /**
- * How an order ended against its plan, or null while it has not (plan of 6.4, decided items 3
- * and 4, Look first): from Open on, buying Done or Done short, its colour the Total colour of
- * orderColours(). An order marked Not bought is left out: nothing was bought, so its planned total
- * would read as saved. An order without a planned price is left out: it has no Total colour (08
- * Numbers; plan of 2.5d-b, decided item 4).
+ * How an order ended (plan of 6.4, decided items 3 and 4, Look first; plan of 2.5d-c, review
+ * correction 1): null while it has not, from Open on, buying Done or Done short. An order marked
+ * Not bought is left out: nothing was bought, so its planned total would read as saved. An ended
+ * order without a planned price is `unpriced`: it has no Total colour and no difference (08
+ * Numbers; plan of 2.5d-b, decided item 4), and the planned sums that leave it out count it (08:
+ * "a sum that leaves orders out says how many"). Every other ended order is an `outcome`, its
+ * colour the Total colour of orderColours().
  */
-export function orderOutcome(order: ColourOrder): OrderOutcome | null {
+export type OrderEnd =
+  | { kind: "outcome"; outcome: OrderOutcome }
+  /** `actual` is actualTotal() of the live records, as for any order. */
+  | { kind: "unpriced"; actual: bigint };
+
+export function orderEnd(order: ColourOrder): OrderEnd | null {
   if (order.progress !== "DONE" && order.progress !== "DONE_SHORT") return null;
   const colours = orderColours(order);
-  // Without a planned price there is no Total colour and no difference (08 Numbers).
-  if (!colours || colours.total.colour === "grey" || colours.total.colour === "unpriced") {
-    return null;
+  if (!colours) return null;
+  if (colours.total.colour === "unpriced") {
+    return { kind: "unpriced", actual: actualTotal(order.records) };
   }
-  if (!isPriced(order.plan)) return null;
+  if (colours.total.colour === "grey" || !isPriced(order.plan)) return null;
   const planned = orderTotal(order.plan);
   return {
-    colour: colours.total.colour,
-    planned,
-    actual: planned - colours.total.difference,
-    difference: colours.total.difference,
+    kind: "outcome",
+    outcome: {
+      colour: colours.total.colour,
+      planned,
+      actual: planned - colours.total.difference,
+      difference: colours.total.difference,
+    },
   };
+}
+
+/** An ended order's outcome, or null while it has not ended or has no planned price (orderEnd()). */
+export function orderOutcome(order: ColourOrder): OrderOutcome | null {
+  const end = orderEnd(order);
+  return end?.kind === "outcome" ? end.outcome : null;
 }

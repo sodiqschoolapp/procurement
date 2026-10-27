@@ -349,7 +349,14 @@ export async function GET(request: NextRequest): Promise<Response> {
       case "neededOrders":
         if (key.kind !== "needed") return notFound();
         sheet = neededOrdersSheet(
-          await getNeededOrders(user.id, filters, key.stage, key.step, "all"),
+          await getNeededOrders(
+            user.id,
+            filters,
+            key.stage,
+            key.step,
+            "all",
+            key.unpriced === true,
+          ),
           filters,
           options,
           locale,

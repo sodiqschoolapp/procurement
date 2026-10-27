@@ -11,9 +11,11 @@ import type { PlanVsActual, Tally } from "../queries/plan-vs-actual";
 import type { SettlementSpeed } from "../queries/settlement-speed";
 import {
   type AnalyticsFilters,
+  type ApprovalStatus,
   CASH_KIND_KEYS,
   type DrillKey,
   type ExportBlock,
+  type NeededStage,
   type PeriodInput,
   analyticsSearch,
 } from "../period-params";
@@ -167,9 +169,22 @@ export async function CashNeededView({
 }: Omit<Common, "period"> & { block: CashNeeded }) {
   const t = await getTranslations("analytics");
   const tStatus = await getTranslations("requestStatus");
+  const tUnpriced = await getTranslations("orders.unpriced");
   const format = await getFormatters();
   const orders = (key: DrillKey) =>
     `/analytics/cash-needed?${analyticsSearch(NOW, filters, { key })}`;
+  // The orders of a number without a planned price, which it leaves out, opening their list (08
+  // Numbers; plan of 2.5d-c, decided items 3 and 4, Look first). A number of now: no change.
+  const unpriced = (count: number, stage: NeededStage, step: ApprovalStatus | null) =>
+    count > 0 && (
+      <Link
+        href={orders({ kind: "needed", stage, step, unpriced: true })}
+        className="block text-sm leading-5 text-link underline-offset-2 hover:underline"
+        data-unpriced
+      >
+        {tUnpriced("count", { count })}
+      </Link>
+    );
   const download = `/analytics/download?${analyticsSearch(NOW, filters, { block: "cashNeeded" })}`;
   const tiles = [
     { stage: "open", label: t("finance.needed.open") },
@@ -203,6 +218,7 @@ export async function CashNeededView({
             <p className="text-sm leading-5 text-muted-foreground">
               {t("finance.orders", { count: block[stage].count })}
             </p>
+            {unpriced(block[stage].unpriced, stage, null)}
           </div>
         ))}
       </div>
@@ -223,6 +239,7 @@ export async function CashNeededView({
                 <span className="block text-small text-muted-foreground">
                   {t("finance.orders", { count: row.count })}
                 </span>
+                {unpriced(row.unpriced, "approval", row.step)}
               </>,
             ],
           }))}
@@ -396,7 +413,24 @@ export async function FinancePlanView({
       </>
     );
   };
-  const headings = (first: string) => [first, t("finance.plan.overspent"), t("finance.plan.saved")];
+  // The ended orders without a planned price these sums leave out, opening their list (08 Numbers;
+  // plan of 2.5d-c, decided items 3 and 4, Look first).
+  const unpriced = (tally: Tally, scope: AnalyticsFilters, otherOwners = false) => (
+    <>
+      <Link href={orders({ kind: "unpriced" }, scope, otherOwners)} className={linkClass}>
+        {format.quantity(String(tally.unpriced.count))}
+      </Link>
+      <span className="block text-small text-muted-foreground">
+        {countChangeText(tally.unpriced.change, tShort, format)}
+      </span>
+    </>
+  );
+  const headings = (first: string) => [
+    first,
+    t("finance.plan.overspent"),
+    t("finance.plan.saved"),
+    t("plan.columns.unpriced"),
+  ];
   const tiles = [
     { which: "overspent", label: t("finance.plan.overspent") },
     { which: "saved", label: t("finance.plan.saved") },
@@ -435,6 +469,22 @@ export async function FinancePlanView({
             </p>
           </div>
         ))}
+        {(block.total.unpriced.count > 0 || block.total.unpriced.change.difference !== 0n) && (
+          <div
+            className="flex flex-col gap-1 rounded-lg bg-muted p-4"
+            data-finance-plan-tile="unpriced"
+          >
+            <p className="text-sm leading-5 font-semibold text-muted-foreground">
+              {t("plan.unpriced")}
+            </p>
+            <Link href={orders({ kind: "unpriced" })} className={tileNumber}>
+              {format.quantity(String(block.total.unpriced.count))}
+            </Link>
+            <p className="text-sm leading-5 text-muted-foreground">
+              {countChangeText(block.total.unpriced.change, tShort, format)}
+            </p>
+          </div>
+        )}
         <div
           className="flex flex-col gap-1 rounded-lg bg-muted p-4"
           data-finance-plan-tile="receipt"
@@ -476,6 +526,7 @@ export async function FinancePlanView({
                   row.isActive ? row.name : t("inactive", { name: row.name }),
                   side(row, "overspent", scope),
                   side(row, "saved", scope),
+                  unpriced(row, scope),
                 ],
               };
             })}
@@ -505,6 +556,7 @@ export async function FinancePlanView({
                   name,
                   side(row, "overspent", scope, other),
                   side(row, "saved", scope, other),
+                  unpriced(row, scope, other),
                 ],
               };
             })}

@@ -6,6 +6,7 @@ import type { Actor } from "@/domain/permissions";
 import { branchFilter } from "@/server/authorize";
 import { analyticsMoney } from "@/server/db/schema";
 
+import { departmentWhere } from "./department-where";
 import type { AnalyticsFilters } from "./period-params";
 
 // The one condition over `analytics_money` of Finance's Cash amounts, their list and their export
@@ -34,7 +35,7 @@ export function moneyWhere(
       kind ? eq(analyticsMoney.kind, kind) : undefined,
       filters.branch ? eq(analyticsMoney.branchId, filters.branch) : undefined,
       filters.category ? eq(analyticsMoney.categoryId, filters.category) : undefined,
-      filters.department ? eq(analyticsMoney.departmentId, filters.department) : undefined,
+      departmentWhere(analyticsMoney.departmentId, filters),
       filters.manager ? eq(analyticsMoney.managerId, filters.manager) : undefined,
       filters.supplier
         ? sql`exists (select 1 from analytics_spending s

@@ -2856,8 +2856,10 @@
         "saved": "Tejalgan",
         "outcome": "Natija",
         "count": "Buyurtmalar",
-        "change": "Oʻzgarish"
-      }
+        "change": "Oʻzgarish",
+        "unpriced": "Narxsiz"
+      },
+      "unpriced": "Rejalashtirilgan narxsiz yakunlangan"
     },
     "orders": {
       "title": "Raqam ortidagi buyurtmalar",
@@ -2880,7 +2882,9 @@
         "actual": "Haqiqiy summa",
         "difference": "Farq",
         "outcome": "Natija"
-      }
+      },
+      "unpriced": "Rejalashtirilgan narxsiz yakunlangan buyurtmalar, {first} – {last}",
+      "summaryUnpriced": "{count} ta buyurtma, haqiqiy jami {sum}"
     },
     "prices": {
       "title": "Narxlar",
@@ -3215,7 +3219,10 @@
         "approvedSummary": "{count, plural, other {# buyurtma}}, oʻrtacha {hours} soat",
         "priced": "{name}: narxli yozuvlar {first} – {last}",
         "pricedAll": "Barcha mahsulotlar: narxli yozuvlar {first} – {last}",
-        "pricedSummary": "{count, plural, other {# yozuv}}, miqdor {qty}, tovar {goods}"
+        "pricedSummary": "{count, plural, other {# yozuv}}, miqdor {qty}, tovar {goods}",
+        "unpriced": "{name}: rejalashtirilgan narxsiz buyurtmalarning narxli yozuvlari {first} – {last}",
+        "unpricedAll": "Barcha mahsulotlar: rejalashtirilgan narxsiz buyurtmalarning narxli yozuvlari {first} – {last}",
+        "unpricedLine": "Bu yozuvlar buyurtmalarida rejalashtirilgan narx yoʻq, shuning uchun «Mening hisob-kitobim» ularni hisobga olmaydi."
       },
       "planning": {
         "title": "Zaxirani rejalashtirish",
@@ -3274,7 +3281,8 @@
         "open": "Tasdiqlangan, hali berilmagan",
         "approval": "Hali tasdiqlanmoqda",
         "all": "Jami tez orada kerak",
-        "bySteps": "Tasdiqlashda, bosqichlar boʻyicha"
+        "bySteps": "Tasdiqlashda, bosqichlar boʻyicha",
+        "unpricedList": "Bu summaga kirmagan rejalashtirilgan narxsiz buyurtmalar"
       },
       "columns": {
         "month": "Oy",
@@ -3387,6 +3395,12 @@
         "daysSame": "Oʻzgarishsiz",
         "daysNone": "Avval yoʻq edi"
       }
+    },
+    "noDepartment": "Boʻlimsiz",
+    "unpriced": {
+      "line": "{count} ta rejalashtirilgan narxsiz buyurtma bu summalarga kirmagan",
+      "count": "{count, plural, one {# tasi narxsiz} other {# tasi narxsiz}}",
+      "recordsLine": "{count} ta rejalashtirilgan narxsiz buyurtma yozuvi bu summalarga kirmagan"
     }
   },
   "reports": {
@@ -3480,8 +3494,10 @@
         "orders": "Buyurtmalar",
         "planned": "Reja",
         "actual": "Amal",
-        "difference": "Farq"
-      }
+        "difference": "Farq",
+        "unpriced": "Narxsiz"
+      },
+      "unpricedLine": "{count} ta rejalashtirilgan narxsiz yakunlangan buyurtma bu summalarga kirmagan."
     },
     "spending": {
       "summary": "{count, plural, other {# ta yozuv}}, jami {total}",
@@ -3500,7 +3516,8 @@
         "month": "Oy",
         "records": "Yozuvlar",
         "amount": "Summa"
-      }
+      },
+      "noDepartment": "Boʻlimsiz"
     },
     "allBranchesTotal": "Barcha filiallar",
     "inactive": "Faol emas",

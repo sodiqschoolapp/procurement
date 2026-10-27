@@ -70,9 +70,14 @@ export default async function AnalyticsRecordsPage({
     : "";
   const what =
     list.key.kind === "priced"
-      ? list.key.product
-        ? t("my.list.priced", { name: list.productName ?? "", ...dates })
-        : t("my.list.pricedAll", dates)
+      ? list.key.unpriced
+        ? // The records My estimates leaves out: orders without a planned price (plan of 2.5d-c).
+          list.key.product
+          ? t("my.list.unpriced", { name: list.productName ?? "", ...dates })
+          : t("my.list.unpricedAll", dates)
+        : list.key.product
+          ? t("my.list.priced", { name: list.productName ?? "", ...dates })
+          : t("my.list.pricedAll", dates)
       : list.key.kind === "price"
         ? list.key.month
           ? t("records.priceMonth", {

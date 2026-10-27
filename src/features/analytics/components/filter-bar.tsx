@@ -7,7 +7,7 @@ import { DateInput } from "@/components/ui/date-input";
 import { Select } from "@/components/ui/select";
 
 import type { AnalyticsFilterOptions, FilterOption } from "../queries/filters";
-import type { AnalyticsFilters, PeriodInput } from "../period-params";
+import { type AnalyticsFilters, NO_DEPARTMENT, type PeriodInput } from "../period-params";
 import { FilterFold } from "./filter-fold";
 
 // The period picker and the filters of an Analytics page (10-notifications-analytics-reports.md,
@@ -111,6 +111,8 @@ export async function AnalyticsFilterBar({
             data-filter-department
           >
             <option value="">{t("allDepartments")}</option>
+            {/* The orders without a department (D68; plan of 2.5d-c, decided item 10). */}
+            <option value={NO_DEPARTMENT}>{t("noDepartment")}</option>
             {options.departments.map((option) => (
               <option key={option.id} value={option.id}>
                 {named(

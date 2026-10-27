@@ -25,10 +25,17 @@ import { PAYMENT_TYPES, type PaymentType } from "@/domain/payment-types";
 // falls back to this month, the route answers 404. Nothing here is a permission: the queries
 // authorize the branch, and refuse the school year while it is not set.
 
+/**
+ * The department filter's value for the orders without a department, the "No department" line
+ * (05 Fields the Head sets 3; D68; plan of 2.5d-c, decided item 10): a word no uuid can be.
+ */
+export const NO_DEPARTMENT = "none";
+
 /** The filters of point 2. `branch` null is all of the user's branches. */
 export type AnalyticsFilters = {
   branch: string | null;
   category: string | null;
+  /** A department's id, `NO_DEPARTMENT`, or null for every department; read by departmentWhere(). */
   department: string | null;
   manager: string | null;
   supplier: string | null;
@@ -66,7 +73,10 @@ export type PeriodInput = { choice: PeriodChoice; from: string | null; to: strin
  * (/analytics/cash). Of Finance's 6.6b blocks (plan of 6.6b, decided item 8): the parts of one
  * payment type of the records with no supplier (`noSupplier`, /analytics/records), the records
  * without a receipt (`noreceipt`, /analytics/records) and the settlements closed in the period
- * (`settled`, /analytics/settlements). A breakdown by branch, department, supplier or Manager drills
+ * (`settled`, /analytics/settlements). The orders a planned sum leaves out for having no planned
+ * price (plan of 2.5d-c, decided item 4, Look first): the ended ones (`unpriced`,
+ * /analytics/orders), those of a Cash needed soon number (`needed:…:unpriced`) and the records of
+ * My estimates' orders (`priced:…:unpriced`). A breakdown by branch, department, supplier or Manager drills
  * down with that filter set.
  */
 export type DrillKey =
@@ -77,6 +87,9 @@ export type DrillKey =
   | { kind: "colour"; colour: Colour }
   | { kind: "overspent" }
   | { kind: "saved" }
+  | { kind: "unpriced" }
+  /** Every ended order, priced and unpriced: the Managers block's orders (plan of 2.5d-c). */
+  | { kind: "ended" }
   | { kind: "price"; variant: string; month: string | null; noSupplier: boolean }
   | { kind: "step"; step: ApprovalStep | null; decision: StayDecision | null }
   | { kind: "waiting"; step: ApprovalStep | null; group: WaitingGroup | null }
@@ -87,9 +100,9 @@ export type DrillKey =
   | { kind: "due"; due: DueKind }
   | { kind: "mine" }
   | { kind: "approved" }
-  | { kind: "priced"; product: string | null }
+  | { kind: "priced"; product: string | null; unpriced?: true }
   | { kind: "money"; money: CashKind; month: string | null }
-  | { kind: "needed"; stage: NeededStage; step: ApprovalStatus | null }
+  | { kind: "needed"; stage: NeededStage; step: ApprovalStatus | null; unpriced?: true }
   | { kind: "age"; band: CashAgeBand; side: CashSide }
   | { kind: "noreceipt" }
   | { kind: "settled" };
@@ -221,7 +234,7 @@ const id = z.uuid().transform((value) => value.toLowerCase());
 const date = z.string().refine(isBusinessDate);
 
 const KEY =
-  /^(period|overspent|saved|month:\d{4}-\d{2}|category:[0-9a-fA-F-]{36}|payment:[A-Z]+(:nosupplier)?|colour:[a-z]+|price:[0-9a-fA-F-]{36}(:\d{4}-\d{2}|:nosupplier)?|step:[A-Z_a-z]+(:[A-Z_]+)?|waiting:[A-Z_a-z]+:[A-Za-z]+|stock:[a-z]+|moves:[a-z]+|product:[0-9a-fA-F-]{36}|status:([A-Z_]+|all)|due:[a-z]+|mine|approved|priced:(all|[0-9a-fA-F-]{36})|money:[A-Za-z]+(:\d{4}-\d{2})?|needed:[a-z]+(:[A-Z_]+)?|age:[a-z]+:[a-z]+|noreceipt|settled)$/;
+  /^(period|overspent|saved|month:\d{4}-\d{2}|category:[0-9a-fA-F-]{36}|payment:[A-Z]+(:nosupplier)?|colour:[a-z]+|price:[0-9a-fA-F-]{36}(:\d{4}-\d{2}|:nosupplier)?|step:[A-Z_a-z]+(:[A-Z_]+)?|waiting:[A-Z_a-z]+:[A-Za-z]+|stock:[a-z]+|moves:[a-z]+|product:[0-9a-fA-F-]{36}|status:([A-Z_]+|all)|due:[a-z]+|mine|approved|priced:(all|[0-9a-fA-F-]{36})(:unpriced)?|money:[A-Za-z]+(:\d{4}-\d{2})?|needed:[a-z]+(:[A-Z_]+)?(:unpriced)?|unpriced|ended|age:[a-z]+:[a-z]+|noreceipt|settled)$/;
 
 /** A reason key as reasonKey() writes it: at most the 500 characters of a reason (06 rule 3). */
 const reason = z.string().min(1).max(500);
@@ -233,7 +246,7 @@ const schema = z
     to: date.optional(),
     branch: z.union([z.literal("all"), id]).optional(),
     category: id.optional(),
-    department: id.optional(),
+    department: z.union([z.literal(NO_DEPARTMENT), id]).optional(),
     manager: id.optional(),
     supplier: id.optional(),
     key: z.string().regex(KEY).default("period"),
@@ -258,6 +271,8 @@ function keyOf(text: string): DrillKey | null {
     text === "period" ||
     text === "overspent" ||
     text === "saved" ||
+    text === "unpriced" ||
+    text === "ended" ||
     text === "mine" ||
     text === "approved" ||
     text === "noreceipt" ||
@@ -306,9 +321,12 @@ function keyOf(text: string): DrillKey | null {
     return product.success ? { kind, product: product.data } : null;
   }
   if (kind === "priced") {
-    if (value === "all") return { kind, product: null };
-    const product = id.safeParse(value);
-    return product.success ? { kind, product: product.data } : null;
+    const [productText, rest] = value.split(":") as [string, string | undefined];
+    if (rest !== undefined && rest !== "unpriced") return null;
+    const unpriced = rest === "unpriced" ? ({ unpriced: true } as const) : {};
+    if (productText === "all") return { kind, product: null, ...unpriced };
+    const product = id.safeParse(productText);
+    return product.success ? { kind, product: product.data, ...unpriced } : null;
   }
   if (kind === "money") {
     const [moneyText, month] = value.split(":") as [string, string | undefined];
@@ -317,13 +335,17 @@ function keyOf(text: string): DrillKey | null {
     return { kind, money, month: month ?? null };
   }
   if (kind === "needed") {
-    const [stageText, stepText] = value.split(":") as [string, string | undefined];
+    const parts = value.split(":");
+    const unpriced = parts.at(-1) === "unpriced" ? ({ unpriced: true } as const) : {};
+    if ("unpriced" in unpriced) parts.pop();
+    if (parts.length > 2) return null;
+    const [stageText, stepText] = parts as [string, string | undefined];
     const stage = NEEDED_STAGES.find((each) => each === stageText);
     if (!stage) return null;
-    if (stepText === undefined) return { kind, stage, step: null };
+    if (stepText === undefined) return { kind, stage, step: null, ...unpriced };
     // A step belongs to the in-approval list only (review of the plan, Must fix 2).
     const step = APPROVAL_STATUSES.find((each) => each === stepText);
-    return step && stage === "approval" ? { kind, stage, step } : null;
+    return step && stage === "approval" ? { kind, stage, step, ...unpriced } : null;
   }
   if (kind === "age") {
     const [bandText, sideText] = value.split(":") as [string, string];
@@ -433,6 +455,8 @@ function keyText(key: DrillKey): string {
     case "period":
     case "overspent":
     case "saved":
+    case "unpriced":
+    case "ended":
     case "mine":
     case "approved":
     case "noreceipt":
@@ -463,11 +487,11 @@ function keyText(key: DrillKey): string {
     case "due":
       return `due:${key.due}`;
     case "priced":
-      return `priced:${key.product ?? "all"}`;
+      return `priced:${key.product ?? "all"}${key.unpriced ? ":unpriced" : ""}`;
     case "money":
       return `money:${key.money}${key.month ? `:${key.month}` : ""}`;
     case "needed":
-      return `needed:${key.stage}${key.step ? `:${key.step}` : ""}`;
+      return `needed:${key.stage}${key.step ? `:${key.step}` : ""}${key.unpriced ? ":unpriced" : ""}`;
     case "age":
       return `age:${key.band}:${key.side}`;
   }

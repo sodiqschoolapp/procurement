@@ -30,7 +30,8 @@ export type SpendingReport = {
   total: bigint;
   branches: SpendingLine[];
   categories: SpendingLine[];
-  departments: (SpendingLine & { branchName: string })[];
+  /** The line `id` null (branch null) holds the orders without a department, last (D68). */
+  departments: (SpendingLine & { branchName: string | null })[];
   suppliers: SpendingLine[];
   /** Each month of the dates with spending, `id` and `name` its key `YYYY-MM`, in order. */
   months: SpendingLine[];
@@ -82,11 +83,14 @@ export async function getSpendingReport(
       sql`join categories c on c.id = analytics_spending.category_id`,
       sql`c.id`,
     );
+    // The records of orders without a department group under a null id: "No department", last,
+    // as "No supplier" (D68; plan of 2.5d-c, decided item 11).
     const departments = await grouped(
       sql`d.id, d.name, b.name as branch_name`,
-      sql`join departments d on d.id = analytics_spending.department_id
-          join branches b on b.id = d.branch_id`,
+      sql`left join departments d on d.id = analytics_spending.department_id
+          left join branches b on b.id = d.branch_id`,
       sql`d.id, b.id`,
+      sql`d.id is null, sum(analytics_spending.amount) desc, 2, 1`,
     );
     // The records with no supplier group under a null id: their own line, last.
     const suppliers = await grouped(
@@ -109,7 +113,10 @@ export async function getSpendingReport(
       total: BigInt(total.amount),
       branches: branches.map(lineOf),
       categories: categories.map(lineOf),
-      departments: departments.map((row) => ({ ...lineOf(row), branchName: row.branch_name! })),
+      departments: departments.map((row) => ({
+        ...lineOf(row),
+        branchName: row.branch_name ?? null,
+      })),
       suppliers: suppliers.map(lineOf),
       months: months.map(lineOf),
     };

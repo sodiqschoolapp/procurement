@@ -4,6 +4,7 @@ import type { Actor } from "@/domain/permissions";
 import { branchFilter } from "@/server/authorize";
 import { analyticsCash } from "@/server/db/schema";
 
+import { departmentWhere } from "./department-where";
 import type { AnalyticsFilters } from "./period-params";
 
 // The one condition over `analytics_cash` of the Managers block's "cash held", its list and its
@@ -34,7 +35,7 @@ export function cashWhere(
                     and live.status not in ('DRAFT', 'CLOSED'))`,
       filters.branch ? eq(analyticsCash.branchId, filters.branch) : undefined,
       filters.category ? eq(analyticsCash.categoryId, filters.category) : undefined,
-      filters.department ? eq(analyticsCash.departmentId, filters.department) : undefined,
+      departmentWhere(analyticsCash.departmentId, filters),
       filters.manager ? eq(analyticsCash.ownerId, filters.manager) : undefined,
       filters.supplier
         ? sql`exists (select 1 from analytics_spending s

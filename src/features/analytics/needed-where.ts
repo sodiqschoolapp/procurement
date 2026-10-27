@@ -5,6 +5,7 @@ import type { Actor } from "@/domain/permissions";
 import { branchFilter } from "@/server/authorize";
 import { analyticsOrders } from "@/server/db/schema";
 
+import { departmentWhere } from "./department-where";
 import type { AnalyticsFilters, ApprovalStatus, NeededStage } from "./period-params";
 
 // The one condition over `analytics_orders` of Finance's Cash needed soon, its lists and its
@@ -15,7 +16,11 @@ import type { AnalyticsFilters, ApprovalStatus, NeededStage } from "./period-par
 // back Draft leaves at once (the draft wall, .claude/rules/server-actions.md), and an order the
 // Head approves on stays in approval until the next refresh moves its step (review of the plan,
 // Should fix 6 and correction 1): the steps always add up to the in-approval total. The filters of
-// point 2 as cashWhere() reads them.
+// point 2 as cashWhere() reads them. `unpriced` keeps instead the orders of the stage whose
+// `cash_needed` is empty, which the sums leave out and count (08 Numbers; plan of 2.5d-c, decided
+// items 3 and 4, Look first): the same stage, step and live-status wall. Only `cashNeeded()`
+// decides which orders those are, so an unpriced order that skipped Finance, which needs nothing,
+// is not among them (review of 2.5d-c at bad1f3f, finding 1, Look first).
 
 const APPROVAL_LIST = sql.raw(APPROVAL_STATUSES.map((status) => `'${status}'`).join(", "));
 
@@ -24,6 +29,7 @@ export function neededWhere(
   filters: AnalyticsFilters,
   stage: NeededStage,
   step: ApprovalStatus | null = null,
+  unpriced = false,
 ): SQL {
   const approval = sql`${analyticsOrders.status} in (${APPROVAL_LIST})
     and exists (select 1 from orders live
@@ -35,12 +41,14 @@ export function neededWhere(
   return (
     and(
       branchFilter(actor, analyticsOrders.branchId),
-      sql`${analyticsOrders.cashNeeded} > 0`,
+      unpriced
+        ? sql`${analyticsOrders.cashNeeded} is null`
+        : sql`${analyticsOrders.cashNeeded} > 0`,
       stage === "approval" ? approval : stage === "open" ? open : sql`((${approval}) or (${open}))`,
       step ? eq(analyticsOrders.status, step) : undefined,
       filters.branch ? eq(analyticsOrders.branchId, filters.branch) : undefined,
       filters.category ? eq(analyticsOrders.categoryId, filters.category) : undefined,
-      filters.department ? eq(analyticsOrders.departmentId, filters.department) : undefined,
+      departmentWhere(analyticsOrders.departmentId, filters),
       filters.manager ? eq(analyticsOrders.ownerId, filters.manager) : undefined,
       filters.supplier
         ? sql`exists (select 1 from analytics_spending s

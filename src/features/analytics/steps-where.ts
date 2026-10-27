@@ -5,6 +5,7 @@ import type { Actor } from "@/domain/permissions";
 import { branchFilter } from "@/server/authorize";
 import { analyticsSteps } from "@/server/db/schema";
 
+import { departmentWhere } from "./department-where";
 import type { AnalyticsFilters } from "./period-params";
 
 // The one condition over `analytics_steps` of every Approval speed number, its drill-down list and
@@ -41,7 +42,7 @@ export function stepsWhere(
           ),
       filters.branch ? eq(analyticsSteps.branchId, filters.branch) : undefined,
       filters.category ? eq(analyticsSteps.categoryId, filters.category) : undefined,
-      filters.department ? eq(analyticsSteps.departmentId, filters.department) : undefined,
+      departmentWhere(analyticsSteps.departmentId, filters),
       filters.manager ? eq(analyticsSteps.ownerId, filters.manager) : undefined,
       filters.supplier
         ? sql`exists (select 1 from analytics_spending s

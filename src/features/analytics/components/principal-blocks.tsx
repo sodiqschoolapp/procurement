@@ -15,6 +15,7 @@ import {
   type ExportBlock,
   type PeriodInput,
   analyticsSearch,
+  NO_DEPARTMENT,
 } from "../period-params";
 import { countChangeText, hoursChangeText } from "./change-text";
 import { Card, Table } from "./prices-block";
@@ -54,8 +55,9 @@ export async function PrincipalSpendingView({
       title: t("spending.byDepartment"),
       column: t("spending.columns.department"),
       rows: spending.departments.map((row) => ({
-        href: records({ ...filters, department: row.id }),
-        label: named(row.name, row.isActive),
+        // The line without an id is the orders without a department (D68; plan of 2.5d-c).
+        href: records({ ...filters, department: row.id ?? NO_DEPARTMENT }),
+        label: row.name === null ? t("noDepartment") : named(row.name, row.isActive),
         counted: row,
       })),
     },

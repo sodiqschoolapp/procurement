@@ -5,6 +5,7 @@ import type { Actor } from "@/domain/permissions";
 import { branchFilter } from "@/server/authorize";
 import { analyticsStockMoves } from "@/server/db/schema";
 
+import { departmentWhere } from "./department-where";
 import type { AnalyticsFilters, MoveKind } from "./period-params";
 
 // The one condition over `analytics_stock_moves` of the Warehouse block's numbers of the period
@@ -33,9 +34,8 @@ export function movesWhere(
         : sql`${analyticsStockMoves.type} = 'WRITE_OFF'`,
       filters.branch ? eq(analyticsStockMoves.branchId, filters.branch) : undefined,
       filters.category ? eq(analyticsStockMoves.categoryId, filters.category) : undefined,
-      move === "use" && filters.department
-        ? eq(analyticsStockMoves.departmentId, filters.department)
-        : undefined,
+      // An issue or a return always has a department: `none` keeps no use (plan of 2.5d-c, item 9).
+      move === "use" ? departmentWhere(analyticsStockMoves.departmentId, filters) : undefined,
       move === "use" && variant ? eq(analyticsStockMoves.variantId, variant) : undefined,
     ) ?? sql`true`
   );

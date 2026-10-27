@@ -5,6 +5,7 @@ import type { Actor } from "@/domain/permissions";
 import { branchFilter } from "@/server/authorize";
 import { analyticsSettlements } from "@/server/db/schema";
 
+import { departmentWhere } from "./department-where";
 import type { AnalyticsFilters } from "./period-params";
 
 // The one condition over `analytics_settlements` of every Settlement speed number, its drill-down
@@ -22,7 +23,7 @@ export function settlementsWhere(actor: Actor, range: DateRange, filters: Analyt
       between(analyticsSettlements.closedOn, range.first, range.last),
       filters.branch ? eq(analyticsSettlements.branchId, filters.branch) : undefined,
       filters.category ? eq(analyticsSettlements.categoryId, filters.category) : undefined,
-      filters.department ? eq(analyticsSettlements.departmentId, filters.department) : undefined,
+      departmentWhere(analyticsSettlements.departmentId, filters),
       filters.manager ? eq(analyticsSettlements.ownerId, filters.manager) : undefined,
       filters.supplier
         ? sql`exists (select 1 from analytics_spending s

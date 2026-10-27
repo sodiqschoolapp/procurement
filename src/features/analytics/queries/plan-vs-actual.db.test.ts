@@ -151,7 +151,7 @@ describe("each number equals its drill-down list (10 point 3; decided item 9)", 
       [red.orderId, amber.orderId, green.orderId, headRed.orderId].sort(),
     );
     expect(all.sum).toBe(-2_000n + 5_000n + 0n - 1_000n);
-    expect(all.rows.reduce((sum, row) => sum + row.difference, 0n)).toBe(all.sum);
+    expect(all.rows.reduce((sum, row) => sum + row.difference!, 0n)).toBe(all.sum);
 
     for (const colour of ["green", "amber", "red"] as const) {
       const rows = await list({ kind: "colour", colour });
@@ -160,7 +160,7 @@ describe("each number equals its drill-down list (10 point 3; decided item 9)", 
     }
     const overspent = await list({ kind: "overspent" });
     expect(overspent.sum).toBe(block.total.overspent.amount);
-    expect(overspent.rows.reduce((sum, row) => sum - row.difference, 0n)).toBe(overspent.sum);
+    expect(overspent.rows.reduce((sum, row) => sum - row.difference!, 0n)).toBe(overspent.sum);
     expect((await list({ kind: "saved" })).sum).toBe(block.total.saved.amount);
 
     const [managerRow, othersRow] = block.managers;

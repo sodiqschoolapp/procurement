@@ -1084,12 +1084,48 @@ describe("Cash needed soon (10 Finance; 08 When Finance approves, Money ledger t
 describe("an order without a planned price (08 Numbers; Overspend guard)", () => {
   const unpriced: OrderPlan = { quantity: "10", price: null, extras: [], paymentType: "CASH" };
 
-  it("has no planned cash; Cash needed soon counts nothing for it", () => {
+  // 08 Numbers: "a sum that leaves orders out says how many": Cash needed soon has no amount for
+  // it (null), so the sum leaves it out and counts it (review of 2.5d-c at bad1f3f, finding 1).
+  it("has no planned cash; Cash needed soon has no amount for it in approval or Open buying", () => {
     expect(plannedCash(unpriced)).toBeNull();
     expect(plannedCashOf("CASH", null)).toBeNull();
-    for (const status of ["PENDING_HEAD", "PENDING_PRINCIPAL"] as const) {
-      expect(cashNeeded({ status, progress: "OPEN", plannedCash: null, handed: 0n })).toBe(0n);
+    for (const status of ["PENDING_HEAD", "PENDING_PRINCIPAL", "PENDING_FINANCE"] as const) {
+      expect(cashNeeded({ status, progress: "OPEN", plannedCash: null, handed: 0n })).toBeNull();
     }
+    expect(
+      cashNeeded({ status: "PURCHASING", progress: "OPEN", plannedCash: null, handed: 0n }),
+    ).toBeNull();
+  });
+
+  // 06 Finance step switched off 2: an order that skipped Finance has no cash count and needs
+  // nothing, so the sum does not leave it out for lack of a price (review of 2.5d-c at bad1f3f,
+  // finding 1, Look first).
+  it("that skipped Finance needs nothing (0), not an unknown amount; the same order through Finance has none", () => {
+    const open = { status: "PURCHASING", progress: "OPEN", plannedCash: null, handed: 0n } as const;
+    expect(cashNeeded({ ...open, skippedFinance: true })).toBe(0n);
+    expect(cashNeeded({ ...open, skippedFinance: false })).toBeNull();
+  });
+
+  it("whose buying ended, or that was returned, needs nothing (0)", () => {
+    for (const progress of ["DONE", "DONE_SHORT", "NOT_BOUGHT"] as const) {
+      expect(cashNeeded({ status: "PURCHASING", progress, plannedCash: null, handed: 0n })).toBe(
+        0n,
+      );
+    }
+    expect(
+      cashNeeded({ status: "RETURNED", progress: "OPEN", plannedCash: null, handed: 0n }),
+    ).toBe(0n);
+  });
+
+  // 08 When Finance approves: planned cash is "its planned total when its payment type is Cash,
+  // else 0", so only a Cash order without a price is left out of the cash sums and counted
+  // (review of 2.5d-c, finding 2, Look first).
+  it("of Bank transfer or Card has planned cash 0, not null; only a Cash one has none", () => {
+    expect(plannedCashOf("TRANSFER", null)).toBe(0n);
+    expect(plannedCashOf("CARD", null)).toBe(0n);
+    expect(plannedCash({ ...unpriced, paymentType: "TRANSFER" })).toBe(0n);
+    expect(plannedCash({ ...unpriced, paymentType: "CARD" })).toBe(0n);
+    expect(plannedCashOf("CASH", null)).toBeNull();
   });
 
   it("is never over the guard, whatever it cost, even with the guard at 0 and 0", () => {

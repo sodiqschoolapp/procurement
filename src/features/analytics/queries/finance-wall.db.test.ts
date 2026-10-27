@@ -97,7 +97,7 @@ describe("Finance's page holds only Finance's branches (build-plan 6.6b, Done wh
     const cash = await getFinanceCash(finance.id, THIS_MONTH, all);
     expect(cash.totals.given.amount).toBe(1_000n);
     const needed = await getCashNeeded(finance.id, all);
-    expect(needed.approval).toEqual({ amount: 50_000n, count: 1 });
+    expect(needed.approval).toEqual({ amount: 50_000n, count: 1, unpriced: 0 });
 
     // Payments and purchases without a receipt.
     const spending = await getFinanceSpending(finance.id, THIS_MONTH, all);

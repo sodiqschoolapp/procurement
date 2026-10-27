@@ -206,10 +206,14 @@ export async function MyEstimatesView({
   userId,
 }: Common & { block: MyEstimates }) {
   const t = await getTranslations("analytics");
+  const tShort = await getTranslations("analytics.short");
+  const tUnpriced = await getTranslations("orders.unpriced");
   const format = await getFormatters();
   const mine = mineOf(filters, userId);
-  const records = (product: string | null) =>
-    `/analytics/records?${analyticsSearch(period, mine, { key: { kind: "priced", product } })}`;
+  const records = (product: string | null, unpriced = false) =>
+    `/analytics/records?${analyticsSearch(period, mine, {
+      key: unpriced ? { kind: "priced", product, unpriced } : { kind: "priced", product },
+    })}`;
   const download = `/analytics/download?${analyticsSearch(period, filters, { block: "myEstimates" })}`;
   const price = (value: bigint | null) => (value === null ? "—" : format.money(value));
   const gap = (row: MyEstimates["all"]) => {
@@ -229,13 +233,33 @@ export async function MyEstimatesView({
         : t(points.startsWith("-") ? "my.estimates.pointsDown" : "my.estimates.pointsUp", {
             points: format.quantity(points.replace(/^-/, "")),
           });
-  const row = (key: string, label: React.ReactNode, each: MyEstimates["all"], href: string) => ({
+  const row = (
+    key: string,
+    label: React.ReactNode,
+    each: MyEstimates["all"],
+    product: string | null,
+  ) => ({
     key,
     cells: [
       label,
-      <Link key="records" href={href} className={linkClass}>
-        {t("my.estimates.records", { count: each.records })}
-      </Link>,
+      <>
+        <Link href={records(product)} className={linkClass}>
+          {t("my.estimates.records", { count: each.records })}
+        </Link>
+        {/* The records of my orders without a planned price, left out of the estimate, with
+            their change (plan of 2.5d-c, decided items 3 and 4, Look first). */}
+        {(each.unpriced.count > 0 || each.unpriced.change.difference !== 0n) && (
+          <span className="block text-small text-muted-foreground" data-unpriced>
+            <Link
+              href={records(product, true)}
+              className="text-link underline-offset-2 hover:underline"
+            >
+              {tUnpriced("count", { count: each.unpriced.count })}
+            </Link>{" "}
+            {countChangeText(each.unpriced.change, tShort, format)}
+          </span>
+        )}
+      </>,
       price(each.plannedPrice),
       price(each.actualPrice),
       <>
@@ -277,15 +301,10 @@ export async function MyEstimatesView({
                     each.productId,
                     each.isActive ? each.name : t("inactive", { name: each.name }),
                     each,
-                    records(each.productId),
+                    each.productId,
                   ),
                 ),
-              row(
-                "all",
-                <strong key="all">{t("my.estimates.all")}</strong>,
-                block.all,
-                records(null),
-              ),
+              row("all", <strong key="all">{t("my.estimates.all")}</strong>, block.all, null),
             ]}
             data="my-estimates"
           />

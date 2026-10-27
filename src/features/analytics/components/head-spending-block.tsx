@@ -8,6 +8,7 @@ import {
   type AnalyticsFilters,
   type DrillKey,
   type ExportBlock,
+  NO_DEPARTMENT,
   type PeriodInput,
   analyticsSearch,
 } from "../period-params";
@@ -55,11 +56,15 @@ export async function HeadSpendingView({
       title: t("spending.byDepartment"),
       column: t("spending.columns.department"),
       rows: block.departments.map((row) => ({
-        href: records({ ...filters, department: row.id }),
-        label: t("departmentOption", {
-          name: named(row.name, row.isActive),
-          branch: row.branchName,
-        }),
+        // The line without an id is the orders without a department (D68; plan of 2.5d-c).
+        href: records({ ...filters, department: row.id ?? NO_DEPARTMENT }),
+        label:
+          row.name === null
+            ? t("noDepartment")
+            : t("departmentOption", {
+                name: named(row.name, row.isActive),
+                branch: row.branchName ?? "",
+              }),
         counted: row,
       })),
     },

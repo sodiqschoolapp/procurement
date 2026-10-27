@@ -164,6 +164,45 @@ export const analyticsOutcomes = pgTable(
   ],
 );
 
+// One row per order whose buying ended Done or Done short without a planned price, from Open on
+// (08 Numbers: "a sum that leaves orders out says how many"; plan of 2.5d-c, decided item 1, Look
+// first): `orderEnd()` of src/domain/colours.ts gives it `unpriced`, so it has no outcome row. The
+// same keys as `analytics_outcomes`, read under the same outcomesWhere(). Task 2.5d-c.
+export const analyticsUnpriced = pgTable(
+  "analytics_unpriced",
+  {
+    orderId: uuid("order_id")
+      .primaryKey()
+      .references(() => orders.id),
+    branchId: uuid("branch_id")
+      .notNull()
+      .references(() => branches.id),
+    endedOn: date("ended_on").notNull(),
+    categoryId: uuid("category_id")
+      .notNull()
+      .references(() => categories.id),
+    // Empty for an order without a department (05 Fields the Head sets 3).
+    departmentId: uuid("department_id").references(() => departments.id),
+    ownerId: uuid("owner_id")
+      .notNull()
+      .references(() => users.id),
+    // actualTotal() of the live records: what was spent, with no plan to compare it with.
+    actual: som("actual").notNull(),
+  },
+  (table) => [
+    check("analytics_unpriced_actual_check", sql`${table.actual} >= 0`),
+    foreignKey({
+      name: "analytics_unpriced_order_branch_fk",
+      columns: [table.orderId, table.branchId],
+      foreignColumns: [orders.id, orders.branchId],
+    }),
+    index("analytics_unpriced_branch_id_ended_on_idx").on(table.branchId, table.endedOn),
+    index("analytics_unpriced_category_id_idx").on(table.categoryId),
+    index("analytics_unpriced_department_id_idx").on(table.departmentId),
+    index("analytics_unpriced_owner_id_idx").on(table.ownerId),
+  ],
+);
+
 // One row per stay of an order at an approval step (10 Analytics, Head, Approval speed; plan of
 // 6.4b, decided items 6 to 10, Look first): `approvalStays()` of src/domain/approval-stays.ts. A
 // decided stay has its end, its whole seconds and the decision of the step's approver; a send
@@ -468,7 +507,9 @@ export const analyticsOrders = pgTable(
     // 2.5d-b, decided item 9, Look first; migration 0057).
     plannedCash: som("planned_cash"),
     cashHanded: som("cash_handed").notNull(),
-    cashNeeded: som("cash_needed").notNull(),
+    // Empty for the order Cash needed soon leaves out for lack of a price, as `cashNeeded()`
+    // decides it (08 Numbers; review of 2.5d-c at bad1f3f, finding 1, Look first; migration 0059).
+    cashNeeded: som("cash_needed"),
   },
   (table) => [
     foreignKey({
