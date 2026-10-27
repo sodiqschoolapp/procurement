@@ -603,25 +603,25 @@
     "principalStep": {
       "title": "Direktor bosqichi",
       "isOn": "Yoqilgan: xaridlar rahbari tasdiqlagan buyurtmalar filial direktorini kutadi.",
-      "isOff": "O'chirilgan: xaridlar rahbari tasdiqlagan buyurtmalar to'g'ridan-to'g'ri moliyaga o'tadi yoki moliya bosqichi ham o'chirilgan bo'lsa, xarid uchun ochiladi.",
-      "hint": "Butun maktab uchun. Direktor filialning buyurtmalari, ombori va hisobotlarini ko'rishda davom etadi. O'zgartirish faqat shundan keyin xaridlar rahbari tasdiqlagan buyurtmalarga ta'sir qiladi.",
-      "waiting": "{count, plural, one {1 ta buyurtma} other {# ta buyurtma}} direktorni kutmoqda. Bunday buyurtma qolmaganda bosqichni o'chirish mumkin.",
+      "isOff": "Oʻchirilgan: xaridlar rahbari tasdiqlagan buyurtmalar toʻgʻridan-toʻgʻri moliyaga oʻtadi yoki moliya bosqichi ham oʻchirilgan boʻlsa, xarid uchun ochiladi.",
+      "hint": "Butun maktab uchun. Direktor filialning buyurtmalari, ombori va hisobotlarini koʻrishda davom etadi. Oʻzgartirish faqat shundan keyin xaridlar rahbari tasdiqlagan buyurtmalarga taʼsir qiladi.",
+      "waiting": "{count, plural, one {1 ta buyurtma} other {# ta buyurtma}} direktorni kutmoqda. Bunday buyurtma qolmaganda bosqichni oʻchirish mumkin.",
       "waitingLine": "{branch} · {status}",
-      "switchOff": "O'chirish",
+      "switchOff": "Oʻchirish",
       "switchOn": "Yoqish",
-      "switchOffTitle": "Direktor bosqichini o'chirasizmi?",
+      "switchOffTitle": "Direktor bosqichini oʻchirasizmi?",
       "switchOnTitle": "Direktor bosqichini yoqasizmi?",
-      "switchOffResult": "Bundan buyon xaridlar rahbari tasdiqlagan buyurtmalar direktorni chetlab o'tadi: moliyaga o'tadi yoki moliya bosqichi o'chirilgan bo'lsa, darhol xarid uchun ochiladi. Direktor filial buyurtmalarini ko'rishda davom etadi.",
-      "switchOnResult": "Bundan buyon xaridlar rahbari tasdiqlagan buyurtmalar direktorni kutadi. Moliyani kutayotgan yoki ochiq buyurtmalar o'z joyida qoladi.",
-      "refused": "O'chirilmadi: {orders} buyurtmalari hali direktorni kutmoqda.",
-      "switchedOff": "Direktor bosqichi o'chirildi",
+      "switchOffResult": "Bundan buyon xaridlar rahbari tasdiqlagan buyurtmalar direktorni chetlab oʻtadi: moliyaga oʻtadi yoki moliya bosqichi oʻchirilgan boʻlsa, darhol xarid uchun ochiladi. Direktor filial buyurtmalarini koʻrishda davom etadi.",
+      "switchOnResult": "Bundan buyon xaridlar rahbari tasdiqlagan buyurtmalar direktorni kutadi. Moliyani kutayotgan yoki ochiq buyurtmalar oʻz joyida qoladi.",
+      "refused": "Oʻchirilmadi: {orders} buyurtmalari hali direktorni kutmoqda.",
+      "switchedOff": "Direktor bosqichi oʻchirildi",
       "switchedOn": "Direktor bosqichi yoqildi"
     },
     "financeStep": {
       "title": "Moliya bosqichi",
       "isOn": "Yoqilgan: oxirgi tasdiqdan keyin buyurtmalar moliyani kutadi.",
-      "isOff": "O'chirilgan: buyurtmalar oxirgi tasdiqda xarid uchun ochiladi, naqd pul hisobisiz.",
-      "hint": "Butun maktab uchun. Moliya jamoasi ilovadan foydalanmayotgan paytda o'chiring. O'zgartirish faqat shundan keyin tasdiqlangan buyurtmalarga ta'sir qiladi.",
+      "isOff": "Oʻchirilgan: buyurtmalar oxirgi tasdiqda xarid uchun ochiladi, naqd pul hisobisiz.",
+      "hint": "Butun maktab uchun. Moliya jamoasi ilovadan foydalanmayotgan paytda oʻchiring. Oʻzgartirish faqat shundan keyin tasdiqlangan buyurtmalarga taʼsir qiladi.",
       "waiting": "{count, plural, other {# ta buyurtma}} moliyani yoki hisob-kitobni kutmoqda. Bunday buyurtma qolmaganda bosqichni oʻchirish mumkin.",
       "waitingLine": "{branch} · {status}",
       "switchOff": "Oʻchirish",
@@ -629,7 +629,7 @@
       "switchOffTitle": "Moliya bosqichini oʻchirasizmi?",
       "switchOnTitle": "Moliya bosqichini yoqasizmi?",
       "switchOffResult": "Yangi buyurtmalar oxirgi tasdiqda xarid uchun ochiladi, naqd pul hisobisiz, va ularni egasi yoki xaridlar rahbari hisob-kitobsiz yopadi. Allaqachon ochiq buyurtmalar moliya bosqichini saqlab qoladi.",
-      "switchOnResult": "Bundan buyon tasdiqlangan buyurtmalar moliyani kutadi. Moliyani chetlab o'tgan buyurtmalar hisob-kitobsiz yopilishda davom etadi.",
+      "switchOnResult": "Bundan buyon tasdiqlangan buyurtmalar moliyani kutadi. Moliyani chetlab oʻtgan buyurtmalar hisob-kitobsiz yopilishda davom etadi.",
       "refused": "Oʻchirilmadi: {orders} buyurtmalari hali moliyani yoki hisob-kitobni kutmoqda.",
       "switchedOff": "Moliya bosqichi oʻchirildi",
       "switchedOn": "Moliya bosqichi yoqildi",
@@ -1317,7 +1317,7 @@
       "readyResult": "{count, plural, other {# ta qoralama raqam oladi va tasdiqlashga ketadi.}} {stay, plural, =0 {Jadvalda hech narsa qolmaydi.} other {# ta qoralama jadvalda qoladi.}}",
       "stayedTitle": "{count, plural, other {# ta qoralama jadvalda qoldi: uni tuzatish kerak.}}",
       "heldBack": "{count, plural, other {Yana # ta tayyor qoralama kutmoqda: «Yuborish»ni yana bosing.}}",
-      "headOpens": "Direktor va moliya bosqichlari o'chirilgan: o'zingiz yaratgan buyurtmalar darhol xarid uchun ochiladi."
+      "headOpens": "Direktor va moliya bosqichlari oʻchirilgan: oʻzingiz yaratgan buyurtmalar darhol xarid uchun ochiladi."
     },
     "list": {
       "title": "Buyurtmalar roʻyxati",
@@ -1545,7 +1545,7 @@
         "owner": "{from} dan {to} ga",
         "issue": "Toʻgʻridan-toʻgʻri boʻlimga berildi: <note>{number}</note>",
         "financeSkipped": "Moliya bosqichi oʻtkazib yuborildi",
-        "principalSkipped": "Direktor bosqichi o'tkazib yuborildi"
+        "principalSkipped": "Direktor bosqichi oʻtkazib yuborildi"
       },
       "top": {
         "HEAD": "{since, select, none {Rahbarni kutmoqda.} other {{since} dan beri rahbarni kutmoqda.}}",
@@ -1566,7 +1566,7 @@
         "recordPurchase": "Xaridni yozish",
         "settle": "Hisob-kitob",
         "more": "Yana",
-        "submitHeadOpens": "Direktor va moliya bosqichlari o'chirilgan: o'zingiz yaratgan buyurtma darhol xarid uchun ochiladi."
+        "submitHeadOpens": "Direktor va moliya bosqichlari oʻchirilgan: oʻzingiz yaratgan buyurtma darhol xarid uchun ochiladi."
       },
       "changes": {
         "title": "{revision}-tahrirdan beri nima oʻzgardi",
@@ -1697,8 +1697,8 @@
         "not_ready": "Bu buyurtmani hozircha tasdiqlab boʻlmaydi."
       },
       "resultSkipFinance": "Jami {total}. Moliya bosqichi oʻchirilgan, shuning uchun {count, plural, other {buyurtmalar}} darhol xarid uchun ochiladi, naqd pul hisobisiz. Egasi va rahbarga xabar boradi.",
-      "resultSkipPrincipal": "Jami {total}. Direktor bosqichi o'chirilgan, shuning uchun {count, plural, one {buyurtma} other {buyurtmalar}} moliyaga o'tadi va moliyaga xabar beriladi.",
-      "resultSkipBoth": "Jami {total}. Direktor va moliya bosqichlari o'chirilgan, shuning uchun {count, plural, one {buyurtma} other {buyurtmalar}} darhol xarid uchun ochiladi, naqd pul hisobisiz. Egasi va xaridlar rahbariga xabar beriladi."
+      "resultSkipPrincipal": "Jami {total}. Direktor bosqichi oʻchirilgan, shuning uchun {count, plural, one {buyurtma} other {buyurtmalar}} moliyaga oʻtadi va moliyaga xabar beriladi.",
+      "resultSkipBoth": "Jami {total}. Direktor va moliya bosqichlari oʻchirilgan, shuning uchun {count, plural, one {buyurtma} other {buyurtmalar}} darhol xarid uchun ochiladi, naqd pul hisobisiz. Egasi va xaridlar rahbariga xabar beriladi."
     },
     "moves": {
       "already": {

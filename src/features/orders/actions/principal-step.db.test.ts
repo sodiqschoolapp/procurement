@@ -1,4 +1,4 @@
-import { inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 
 import { getManagerHome } from "@/features/home/queries/manager-home";
@@ -7,7 +7,7 @@ import { getOrderPage } from "@/features/orders/queries/order-page";
 import { NO_FILTERS } from "@/features/orders/list-filters";
 import { listOrderGroups } from "@/features/orders/queries/order-list";
 import { db } from "@/server/db/client";
-import { analyticsSteps } from "@/server/db/schema";
+import { analyticsSteps, notifications } from "@/server/db/schema";
 import { runOrdersAction } from "@/server/order-action";
 
 import { refreshNow } from "../../../../tests/helpers/analytics";
@@ -33,7 +33,7 @@ import { insertUser } from "../../../../tests/helpers/users";
 import { approveOrders } from "./approve";
 import { closeSkippedOrders } from "./close-skipped";
 import { sendBackOrders } from "./send-back";
-import { submitDrafts } from "./submit";
+import { submitDrafts, submitReadyDrafts } from "./submit";
 import { submitAgainOrders } from "./submit-again";
 
 // The orders of the Principal step switch (06-approval-workflow.md, Allowed moves: Submit and the
@@ -199,6 +199,87 @@ async function managersDraft(s: Awaited<ReturnType<typeof stepScene>>) {
   const draft = await insertOrder({ branchId: s.branch.id, ownerId: s.manager.id });
   return { id: draft.id };
 }
+
+describe("the notices of a Head-created Submit, two branches in one action (10 Notifications, 'Head approved'; .claude/rules/tests.md; permission review of 4.10d, Must fix 1)", () => {
+  async function headApprovedOf(userId: string) {
+    return db
+      .select({ branchId: notifications.branchId, params: notifications.params })
+      .from(notifications)
+      .where(
+        and(eq(notifications.userId, userId), eq(notifications.type, "REQUEST_HEAD_APPROVED")),
+      );
+  }
+
+  it("with the Principal step off, each branch's Finance is told of its own order only; no Principal is told", async () => {
+    setClock(`${DAY}T07:00:00Z`);
+    const a = await stepScene();
+    const b = await stepScene(a.head);
+    const first = await headDraft(a);
+    const second = await headDraft(b);
+
+    await setPrincipalStep(false);
+    expectOk(await runOrdersAction(submitDrafts, a.head.id, await ticked([first.id, second.id])));
+    await setPrincipalStep(true);
+
+    for (const [scene, other] of [
+      [a, b],
+      [b, a],
+    ] as const) {
+      expect(await headApprovedOf(scene.finance.id)).toEqual([
+        {
+          branchId: scene.branch.id,
+          params: expect.objectContaining({ branch: scene.branch.code, count: 1 }),
+        },
+      ]);
+      expect(
+        (await headApprovedOf(scene.finance.id)).some((row) => row.branchId === other.branch.id),
+      ).toBe(false);
+      expect(await headApprovedOf(scene.principal.id)).toEqual([]);
+    }
+    for (const id of [first.id, second.id]) await setOrderStatus(id, "REJECTED");
+  });
+
+  it("with both steps off, the other Head is told once per branch; no Finance or Principal is told", async () => {
+    setClock(`${DAY}T07:00:00Z`);
+    const a = await stepScene();
+    const b = await stepScene(a.head);
+    const otherHead = await insertUser("HEAD");
+    const first = await headDraft(a);
+    const second = await headDraft(b);
+
+    await setPrincipalStep(false);
+    await setFinanceStep(false);
+    expectOk(await runOrdersAction(submitDrafts, a.head.id, await ticked([first.id, second.id])));
+    await setFinanceStep(true);
+    await setPrincipalStep(true);
+
+    const told = await headApprovedOf(otherHead.id);
+    expect(told.map((row) => row.branchId).toSorted()).toEqual(
+      [a.branch.id, b.branch.id].toSorted(),
+    );
+    for (const row of told) expect(row.params).toMatchObject({ count: 1 });
+    for (const scene of [a, b]) {
+      expect(await headApprovedOf(scene.finance.id)).toEqual([]);
+      expect(await headApprovedOf(scene.principal.id)).toEqual([]);
+    }
+    // The acting Head, who owns both, is never told of its own action.
+    expect(await headApprovedOf(a.head.id)).toEqual([]);
+  });
+
+  it("Submit with nothing ticked (05 Drafts 4) sends the Head's own ready draft past the Principal too, marked (permission review of 4.10d, Should fix 1)", async () => {
+    setClock(`${DAY}T07:00:00Z`);
+    const s = await stepScene();
+    const draft = await headDraft(s);
+    await setPrincipalStep(false);
+    expectOk(await runOrdersAction(submitReadyDrafts, s.head.id, await ticked([draft.id])));
+    await setPrincipalStep(true);
+    expect((await marksNow([draft.id])).get(draft.id)).toMatchObject({
+      status: "PENDING_FINANCE",
+      skippedPrincipal: true,
+    });
+    await setOrderStatus(draft.id, "REJECTED");
+  });
+});
 
 describe("each round decides again (06 Principal step switched off 2; rule 4; Done when)", () => {
   it("sent back from Finance and approved again by the Head with the step on, the order waits for the Principal and loses the mark", async () => {

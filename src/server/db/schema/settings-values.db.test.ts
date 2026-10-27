@@ -81,6 +81,12 @@ const CASES: Case[] = [
     bad: ["true", "off", 1, 0, { on: true }],
   },
   {
+    // Migration 0060: the Principal step switch (06 Principal step switched off; plan of 4.10d).
+    key: "principal_step",
+    good: [true, false],
+    bad: ["true", "off", 1, 0, { on: true }],
+  },
+  {
     key: "school_name",
     good: ["A", "Invented School", "x".repeat(SCHOOL_NAME_MAX)],
     bad: [1, " A", "A ", "\tA", "", "x".repeat(SCHOOL_NAME_MAX + 1), { name: "A" }],
