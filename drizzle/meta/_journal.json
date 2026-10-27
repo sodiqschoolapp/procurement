@@ -407,6 +407,13 @@
       "when": 1793050473170,
       "tag": "0057_unpriced_analytics",
       "breakpoints": true
+    },
+    {
+      "idx": 58,
+      "version": "7",
+      "when": 1793063878160,
+      "tag": "0058_unpriced_outcomes",
+      "breakpoints": true
     }
   ]
 }

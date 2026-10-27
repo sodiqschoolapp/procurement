@@ -5,6 +5,7 @@ import type { Actor } from "@/domain/permissions";
 import { branchFilter } from "@/server/authorize";
 import { analyticsOrders } from "@/server/db/schema";
 
+import { departmentWhere } from "./department-where";
 import type { AnalyticsFilters, ApprovalStatus, NeededStage } from "./period-params";
 
 // The one condition over `analytics_orders` of Finance's Cash needed soon, its lists and its
@@ -40,7 +41,7 @@ export function neededWhere(
       step ? eq(analyticsOrders.status, step) : undefined,
       filters.branch ? eq(analyticsOrders.branchId, filters.branch) : undefined,
       filters.category ? eq(analyticsOrders.categoryId, filters.category) : undefined,
-      filters.department ? eq(analyticsOrders.departmentId, filters.department) : undefined,
+      departmentWhere(analyticsOrders.departmentId, filters),
       filters.manager ? eq(analyticsOrders.ownerId, filters.manager) : undefined,
       filters.supplier
         ? sql`exists (select 1 from analytics_spending s

@@ -5,6 +5,7 @@ import type { Actor } from "@/domain/permissions";
 import { branchFilter } from "@/server/authorize";
 import { analyticsOutcomes } from "@/server/db/schema";
 
+import { departmentWhere } from "./department-where";
 import type { AnalyticsFilters } from "./period-params";
 
 // The one condition over `analytics_outcomes` of every Plan vs actual number, its drill-down list
@@ -25,7 +26,7 @@ export function outcomesWhere(
     between(analyticsOutcomes.endedOn, range.first, range.last),
     filters.branch ? eq(analyticsOutcomes.branchId, filters.branch) : undefined,
     filters.category ? eq(analyticsOutcomes.categoryId, filters.category) : undefined,
-    filters.department ? eq(analyticsOutcomes.departmentId, filters.department) : undefined,
+    departmentWhere(analyticsOutcomes.departmentId, filters),
     filters.manager ? eq(analyticsOutcomes.ownerId, filters.manager) : undefined,
     filters.supplier
       ? sql`exists (select 1 from analytics_spending s

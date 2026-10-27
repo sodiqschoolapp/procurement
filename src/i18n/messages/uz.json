@@ -3387,7 +3387,8 @@
         "daysSame": "Oʻzgarishsiz",
         "daysNone": "Avval yoʻq edi"
       }
-    }
+    },
+    "noDepartment": "Boʻlimsiz"
   },
   "reports": {
     "title": "Hisobotlar",
@@ -3500,7 +3501,8 @@
         "month": "Oy",
         "records": "Yozuvlar",
         "amount": "Summa"
-      }
+      },
+      "noDepartment": "Boʻlimsiz"
     },
     "allBranchesTotal": "Barcha filiallar",
     "inactive": "Faol emas",

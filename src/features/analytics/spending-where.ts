@@ -5,6 +5,7 @@ import type { Actor } from "@/domain/permissions";
 import { branchFilter } from "@/server/authorize";
 import { analyticsSpending } from "@/server/db/schema";
 
+import { departmentWhere } from "./department-where";
 import type { AnalyticsFilters } from "./period-params";
 
 // The one condition over `analytics_spending` of every Analytics number, its drill-down list and
@@ -24,7 +25,7 @@ export function spendingWhere(
       range ? between(analyticsSpending.purchasedOn, range.first, range.last) : undefined,
       filters.branch ? eq(analyticsSpending.branchId, filters.branch) : undefined,
       filters.category ? eq(analyticsSpending.categoryId, filters.category) : undefined,
-      filters.department ? eq(analyticsSpending.departmentId, filters.department) : undefined,
+      departmentWhere(analyticsSpending.departmentId, filters),
       filters.manager ? eq(analyticsSpending.ownerId, filters.manager) : undefined,
       filters.supplier ? eq(analyticsSpending.supplierId, filters.supplier) : undefined,
     ) ?? sql`true`

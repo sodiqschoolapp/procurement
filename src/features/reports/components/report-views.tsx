@@ -392,6 +392,7 @@ export async function SpendingView({ report }: { report: SpendingReport }) {
           t("spending.columns.department"),
           report.departments,
           (line) => {
+            if (line.id === null) return t("spending.noDepartment");
             const department = report.departments.find((each) => each.id === line.id);
             return department ? `${department.name}, ${department.branchName}` : line.name!;
           },

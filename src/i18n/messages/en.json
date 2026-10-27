@@ -3387,7 +3387,8 @@
         "daysSame": "No change",
         "daysNone": "Nothing before"
       }
-    }
+    },
+    "noDepartment": "No department"
   },
   "reports": {
     "title": "Reports",
@@ -3500,7 +3501,8 @@
         "month": "Month",
         "records": "Records",
         "amount": "Amount"
-      }
+      },
+      "noDepartment": "No department"
     },
     "allBranchesTotal": "All branches",
     "inactive": "Inactive",

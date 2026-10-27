@@ -7,6 +7,7 @@ import type { Actor } from "@/domain/permissions";
 import { branchFilter } from "@/server/authorize";
 import { analyticsOrders } from "@/server/db/schema";
 
+import { departmentWhere } from "./department-where";
 import type { AnalyticsFilters, DueKind } from "./period-params";
 
 // The one condition over `analytics_orders` of the Principal's Orders block, its drill-down list
@@ -50,7 +51,7 @@ export function ordersWhere(
           : between(analyticsOrders.submittedOn, scope.first, scope.last),
       filters.branch ? eq(analyticsOrders.branchId, filters.branch) : undefined,
       filters.category ? eq(analyticsOrders.categoryId, filters.category) : undefined,
-      filters.department ? eq(analyticsOrders.departmentId, filters.department) : undefined,
+      departmentWhere(analyticsOrders.departmentId, filters),
       filters.manager ? eq(analyticsOrders.ownerId, filters.manager) : undefined,
       filters.supplier
         ? sql`exists (select 1 from analytics_spending s

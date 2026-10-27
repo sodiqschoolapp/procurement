@@ -30,7 +30,7 @@ import type { HeadSpending } from "../queries/head-spending";
 import type { OutcomeOrders } from "../queries/outcome-orders";
 import type { PlanVsActual, Tally } from "../queries/plan-vs-actual";
 import type { SpendingBlock } from "../queries/spending";
-import { CASH_KIND_KEYS, OUTCOME_COLOURS } from "../period-params";
+import { CASH_KIND_KEYS, NO_DEPARTMENT, OUTCOME_COLOURS } from "../period-params";
 import type { SettlementSpeed } from "../queries/settlement-speed";
 import type { SettlementList } from "../queries/settlements";
 import type { SpendingRecords } from "../queries/spending-records";
@@ -80,7 +80,12 @@ export function heading(
   const chosen = [
     [t("branch"), named(options.branches, filters.branch)],
     [t("category"), named(options.categories, filters.category)],
-    [t("department"), named(options.departments, filters.department)],
+    [
+      t("department"),
+      filters.department === NO_DEPARTMENT
+        ? t("noDepartment")
+        : named(options.departments, filters.department),
+    ],
     [t("manager"), named(options.managers, filters.manager)],
     [t("supplier"), named(options.suppliers, filters.supplier)],
   ] as const;
@@ -216,7 +221,10 @@ export function headSpendingSheet(
         }))
       : which === "departments"
         ? block.departments.map((row) => ({
-            label: t("departmentOption", { name: row.name, branch: row.branchName }),
+            label:
+              row.name === null
+                ? t("noDepartment")
+                : t("departmentOption", { name: row.name, branch: row.branchName ?? "" }),
             ...row,
           }))
         : block[which].map((row) => ({ label: row.name, ...row }));

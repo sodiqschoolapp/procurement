@@ -21,6 +21,13 @@ import { type Counted, counted } from "../counted";
 
 export type Named = Counted & { id: string; name: string; isActive: boolean };
 
+export type DepartmentLine = Counted & {
+  id: string | null;
+  name: string | null;
+  isActive: boolean;
+  branchName: string | null;
+};
+
 export type HeadSpending = {
   period: Period;
   before: Period;
@@ -28,7 +35,12 @@ export type HeadSpending = {
   total: Counted;
   /** Every branch of the user with spending in either period (decided item 11). */
   branches: Named[];
-  departments: (Named & { branchName: string })[];
+  /**
+   * Every department with spending in either period; the line `id` null (name and branch null)
+   * holds the orders without a department, so the lines add up to `total` (D68; plan of 2.5d-c,
+   * decided item 2).
+   */
+  departments: DepartmentLine[];
   /** The 10 suppliers with the most spending in the period; records without one are left out. */
   suppliers: Named[];
   /** In the order of PAYMENT_TYPES, each type with spending in either period. */
@@ -75,13 +87,21 @@ async function headSpendingIn(
     from analytics_spending
     where (${now}) or (${then})`);
   const branches = await grouped(sql`branches`, sql`analytics_spending.branch_id`);
-  const departments = await db.execute<GroupRow & { branch_name: string }>(sql`
+  // The records of orders without a department group under a null id: "No department" (D68).
+  const departments = await db.execute<{
+    id: string | null;
+    name: string | null;
+    is_active: boolean | null;
+    branch_name: string | null;
+    now: string;
+    before: string;
+  }>(sql`
     select k.id, k.name, k.is_active, b.name as branch_name,
            coalesce(sum(analytics_spending.amount) filter (where ${now}), 0)::text as now,
            coalesce(sum(analytics_spending.amount) filter (where ${then}), 0)::text as before
     from analytics_spending
-    join departments k on k.id = analytics_spending.department_id
-    join branches b on b.id = k.branch_id
+    left join departments k on k.id = analytics_spending.department_id
+    left join branches b on b.id = k.branch_id
     where (${now}) or (${then})
     group by k.id, b.id
     order by sum(analytics_spending.amount) filter (where ${now}) desc nulls last, k.name, k.id`);
@@ -103,7 +123,13 @@ async function headSpendingIn(
     before,
     total: counted(totals.rows[0]!.now, totals.rows[0]!.before),
     branches: branches.rows.map(named),
-    departments: departments.rows.map((row) => ({ ...named(row), branchName: row.branch_name })),
+    departments: departments.rows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      isActive: row.is_active ?? true,
+      branchName: row.branch_name,
+      ...counted(row.now, row.before),
+    })),
     // A supplier with spending only in the period before is no top supplier of this one.
     suppliers: suppliers.rows.map(named).filter((row) => row.amount > 0n),
     payments,

@@ -242,6 +242,7 @@ export function spendingSheets(report: SpendingReport, context: Context): Analyt
       (l) => l.name!,
     ),
     table(t("spending.byDepartment"), t("spending.columns.department"), report.departments, (l) => {
+      if (l.id === null) return t("spending.noDepartment");
       const department = report.departments.find((each) => each.id === l.id);
       return department ? `${department.name}, ${department.branchName}` : l.name!;
     }),

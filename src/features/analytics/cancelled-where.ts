@@ -5,6 +5,7 @@ import type { Actor } from "@/domain/permissions";
 import { branchFilter } from "@/server/authorize";
 import { analyticsCancelled } from "@/server/db/schema";
 
+import { departmentWhere } from "./department-where";
 import type { AnalyticsFilters } from "./period-params";
 
 // The one condition over `analytics_cancelled` of the Managers block's "cancelled purchase
@@ -28,7 +29,7 @@ export function cancelledWhere(
       between(analyticsCancelled.cancelledOn, range.first, range.last),
       filters.branch ? eq(analyticsCancelled.branchId, filters.branch) : undefined,
       filters.category ? eq(analyticsCancelled.categoryId, filters.category) : undefined,
-      filters.department ? eq(analyticsCancelled.departmentId, filters.department) : undefined,
+      departmentWhere(analyticsCancelled.departmentId, filters),
       filters.manager ? eq(analyticsCancelled.ownerId, filters.manager) : undefined,
       filters.supplier ? eq(analyticsCancelled.supplierId, filters.supplier) : undefined,
       otherOwners

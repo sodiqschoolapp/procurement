@@ -10,7 +10,7 @@ import {
 } from "@/server/authorize";
 import { userBranches } from "@/server/db/schema";
 
-import type { AnalyticsFilters } from "./period-params";
+import { type AnalyticsFilters, NO_DEPARTMENT } from "./period-params";
 
 // The permission of an Analytics query and the ids of its filters (03-roles-and-permissions.md
 // rule 1; developer-rules.md rule 4; .claude/rules/server-actions.md: "Every id from the browser is
@@ -26,7 +26,9 @@ export async function authorizeAnalytics(
 ): Promise<Actor> {
   const actor = await authorizeList(userId, "data.view", db);
   if (filters.branch) await authorize(userId, "data.view", { branchId: filters.branch }, db);
-  if (filters.department) {
+  // `none` names no department and so no branch: its rows stay behind the wall in the SQL (plan
+  // of 2.5d-c, Server actions and queries).
+  if (filters.department && filters.department !== NO_DEPARTMENT) {
     const found = await db.execute<{ branch_id: string }>(
       sql`select branch_id from departments where id = ${filters.department}`,
     );

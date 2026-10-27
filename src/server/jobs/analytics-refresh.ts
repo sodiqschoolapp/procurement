@@ -8,7 +8,7 @@ import {
   secondsBetween,
   settlementStays,
 } from "@/domain/approval-stays";
-import { orderOutcome } from "@/domain/colours";
+import { orderEnd } from "@/domain/colours";
 import {
   type DatedCashRecord,
   type DatedMoneyRow,
@@ -43,7 +43,8 @@ import type { Job } from "./job";
 // Task 6.4a adds two tables, rewritten in the same run (plan of 6.4, decided item 12):
 // `analytics_spending_payments`, each record's parts by payment type from `paymentParts()`
 // (decided item 2, Look first), and `analytics_outcomes`, each order's Plan vs actual outcome from
-// `orderOutcome()` of src/domain/colours.ts (decided items 3 to 6, Look first).
+// `orderOutcome()` of src/domain/colours.ts (decided items 3 to 6, Look first). Task 2.5d-c reads
+// it as `orderEnd()` and writes the ended orders without a planned price to `analytics_unpriced`.
 //
 // Task 6.4b adds, in the same run (plan of 6.4b): each spending row's subtype bought, quantity,
 // unit price, entry time and goods `actualGoods()` of the one record (decided items 1 and 13, Look
@@ -128,7 +129,7 @@ export async function refreshAnalytics(executor: Executor): Promise<void> {
   // pages go on reading.
   await executor.execute(
     sql`lock table analytics_spending, analytics_spending_payments, analytics_outcomes,
-               analytics_steps, analytics_cancelled, analytics_cash, analytics_stock,
+               analytics_unpriced, analytics_steps, analytics_cancelled, analytics_cash, analytics_stock,
                analytics_stock_moves, analytics_orders, analytics_money,
                analytics_settlements in exclusive mode`,
   );
@@ -196,6 +197,7 @@ export async function refreshAnalytics(executor: Executor): Promise<void> {
   await executor.execute(sql`delete from analytics_spending_payments`);
   await executor.execute(sql`delete from analytics_spending`);
   await executor.execute(sql`delete from analytics_outcomes`);
+  await executor.execute(sql`delete from analytics_unpriced`);
   await executor.execute(sql`delete from analytics_steps`);
   await executor.execute(sql`delete from analytics_cancelled`);
   await executor.execute(sql`delete from analytics_cash`);
@@ -404,7 +406,10 @@ async function insertSpending(executor: Executor, rows: object[], parts: object[
       purchase_id uuid, payment_type text, amount text)`);
 }
 
-/** Every order whose buying ended, its outcome by orderOutcome() (decided items 3 to 6). */
+/**
+ * Every order whose buying ended, by orderEnd(): its outcome (decided items 3 to 6), or, without a
+ * planned price, a row of `analytics_unpriced` (plan of 2.5d-c).
+ */
 async function writeOutcomes(executor: Executor) {
   const found = await executor.execute<OutcomeSource>(sql`
     select o.id as order_id, o.branch_id, o.status, o.progress, o.department_id, o.owner_id,
@@ -432,8 +437,8 @@ async function writeOutcomes(executor: Executor) {
     join products pr on pr.id = v.product_id
     where o.progress in ('DONE', 'DONE_SHORT')`);
 
-  const rows = found.rows.flatMap((row) => {
-    const outcome = orderOutcome({
+  const ended = found.rows.flatMap((row) => {
+    const end = orderEnd({
       status: row.status,
       progress: row.progress,
       plan: {
@@ -451,22 +456,42 @@ async function writeOutcomes(executor: Executor) {
     });
     // An ended order always has its buying events; one without (written past the actions) has no
     // day to fall on and is left out.
-    if (!outcome || row.ended_on === null) return [];
-    return [
-      {
-        order_id: row.order_id,
-        branch_id: row.branch_id,
-        ended_on: row.ended_on,
-        category_id: row.category_id,
-        department_id: row.department_id,
-        owner_id: row.owner_id,
-        colour: outcome.colour,
-        planned: outcome.planned.toString(),
-        actual: outcome.actual.toString(),
-        difference: outcome.difference.toString(),
-      },
-    ];
+    if (!end || row.ended_on === null) return [];
+    const keys = {
+      order_id: row.order_id,
+      branch_id: row.branch_id,
+      ended_on: row.ended_on,
+      category_id: row.category_id,
+      department_id: row.department_id,
+      owner_id: row.owner_id,
+    };
+    return [{ keys, end }];
   });
+  // An ended order without a planned price has no outcome: it is counted beside the planned sums
+  // that leave it out (orderEnd(); plan of 2.5d-c, decided item 1, Look first).
+  const unpriced = ended.flatMap(({ keys, end }) => (end.kind === "unpriced" ? [keys] : []));
+  if (unpriced.length > 0) {
+    await executor.execute(sql`
+      insert into analytics_unpriced (order_id, branch_id, ended_on, category_id, department_id,
+                                      owner_id)
+      select r.order_id, r.branch_id, r.ended_on, r.category_id, r.department_id, r.owner_id
+      from jsonb_to_recordset(${JSON.stringify(unpriced)}::jsonb) as r(
+        order_id uuid, branch_id uuid, ended_on date, category_id uuid, department_id uuid,
+        owner_id uuid)`);
+  }
+  const rows = ended.flatMap(({ keys, end }) =>
+    end.kind === "outcome"
+      ? [
+          {
+            ...keys,
+            colour: end.outcome.colour,
+            planned: end.outcome.planned.toString(),
+            actual: end.outcome.actual.toString(),
+            difference: end.outcome.difference.toString(),
+          },
+        ]
+      : [],
+  );
   if (rows.length === 0) return;
   await executor.execute(sql`
     insert into analytics_outcomes (order_id, branch_id, ended_on, category_id, department_id,

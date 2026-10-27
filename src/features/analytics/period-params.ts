@@ -25,10 +25,17 @@ import { PAYMENT_TYPES, type PaymentType } from "@/domain/payment-types";
 // falls back to this month, the route answers 404. Nothing here is a permission: the queries
 // authorize the branch, and refuse the school year while it is not set.
 
+/**
+ * The department filter's value for the orders without a department, the "No department" line
+ * (05 Fields the Head sets 3; D68; plan of 2.5d-c, decided item 10): a word no uuid can be.
+ */
+export const NO_DEPARTMENT = "none";
+
 /** The filters of point 2. `branch` null is all of the user's branches. */
 export type AnalyticsFilters = {
   branch: string | null;
   category: string | null;
+  /** A department's id, `NO_DEPARTMENT`, or null for every department; read by departmentWhere(). */
   department: string | null;
   manager: string | null;
   supplier: string | null;
@@ -233,7 +240,7 @@ const schema = z
     to: date.optional(),
     branch: z.union([z.literal("all"), id]).optional(),
     category: id.optional(),
-    department: id.optional(),
+    department: z.union([z.literal(NO_DEPARTMENT), id]).optional(),
     manager: id.optional(),
     supplier: id.optional(),
     key: z.string().regex(KEY).default("period"),

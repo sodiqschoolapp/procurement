@@ -4,6 +4,7 @@ import {
   type ColourOrder,
   type PlanVsActual,
   orderColours,
+  orderEnd,
   orderOutcome,
   planVsActual,
   setColours,
@@ -284,6 +285,35 @@ describe("how an order ended against its plan (10 Analytics, Head, Plan vs actua
     expect(
       orderOutcome(order([record("100", 5_200n)], "DONE", NOTEBOOKS, "PENDING_FINANCE")),
     ).toBeNull();
+  });
+});
+
+describe("how an order ended, with or without a planned price (08 Numbers: a sum that leaves orders out says how many; plan of 2.5d-c, review correction 1)", () => {
+  const FOLDERS: OrderPlan = { quantity: "10", price: null, extras: [], paymentType: "CASH" };
+
+  it("an ended order without a planned price is unpriced, not an outcome", () => {
+    expect(orderEnd(order([record("10", 4_500n)], "DONE", FOLDERS))).toEqual({ kind: "unpriced" });
+    expect(orderEnd(order([record("9", 4_500n)], "DONE_SHORT", FOLDERS))).toEqual({
+      kind: "unpriced",
+    });
+  });
+
+  it("an ended priced order is its outcome", () => {
+    expect(orderEnd(order([record("100", 5_200n, [30_000n])]))).toEqual({
+      kind: "outcome",
+      outcome: { colour: "red", planned: 520_000n, actual: 550_000n, difference: -30_000n },
+    });
+  });
+
+  it("an unpriced Done order of a status outside buying is neither an outcome nor unpriced", () => {
+    expect(
+      orderEnd(order([record("10", 4_500n)], "DONE", FOLDERS, "PENDING_PRINCIPAL")),
+    ).toBeNull();
+  });
+
+  it("an unpriced order still buying, or marked Not bought, has not ended", () => {
+    expect(orderEnd(order([record("10", 4_500n)], "OPEN", FOLDERS))).toBeNull();
+    expect(orderEnd(order([], "NOT_BOUGHT", FOLDERS))).toBeNull();
   });
 });
 

@@ -3387,7 +3387,8 @@
         "daysSame": "Без изменений",
         "daysNone": "Раньше не было"
       }
-    }
+    },
+    "noDepartment": "Без отдела"
   },
   "reports": {
     "title": "Отчёты",
@@ -3500,7 +3501,8 @@
         "month": "Месяц",
         "records": "Записи",
         "amount": "Сумма"
-      }
+      },
+      "noDepartment": "Без отдела"
     },
     "allBranchesTotal": "Все филиалы",
     "inactive": "Неактивен",
