@@ -441,21 +441,32 @@ export function finishReasonAfter(progress: OrderProgress, reason: string | null
  * Why a date bought is refused, or null (07 Purchase record, Date bought: "Not in the future, not
  * before the Finance approval of the order"; plan of 3.3, decided item 7). All three are business
  * dates in Tashkent (YYYY-MM-DD, which compare as text); an order without an approval date is
- * refused, never let through. For orders that skipped Finance the approval is the Principal's, and
- * the refusal says so (07 Date bought; plan of 4.10c); `approvedOn` is that approval's date all the
- * same (`orders.approved_at`).
+ * refused, never let through. `openedBy` names the approval that opened the order, and the refusal
+ * says so: Finance's, the Principal's for an order that skipped Finance (07 Date bought; plan of
+ * 4.10c), the Head's for one that skipped both steps (plan of 4.10d, decided item 14);
+ * `approvedOn` is that approval's date all the same (`orders.approved_at`).
  */
 export function purchaseDateRefusal(
   date: string,
   today: string,
   approvedOn: string | null,
-  skippedFinance = false,
-): "inFuture" | "beforeApproval" | "beforePrincipalApproval" | null {
+  openedBy: OpenedBy = "FINANCE",
+): "inFuture" | "beforeApproval" | "beforePrincipalApproval" | "beforeHeadApproval" | null {
   if (date > today) return "inFuture";
   if (approvedOn === null || date < approvedOn) {
-    return skippedFinance ? "beforePrincipalApproval" : "beforeApproval";
+    if (openedBy === "HEAD") return "beforeHeadApproval";
+    return openedBy === "PRINCIPAL" ? "beforePrincipalApproval" : "beforeApproval";
   }
   return null;
+}
+
+/** The approver whose approval opened an order (06 Allowed moves; plans of 4.10c and 4.10d). */
+export type OpenedBy = "HEAD" | "PRINCIPAL" | "FINANCE";
+
+/** Read from the order's two marks: an order that skipped Finance was opened by the step before. */
+export function openedBy(skippedFinance: boolean, skippedPrincipal: boolean): OpenedBy {
+  if (!skippedFinance) return "FINANCE";
+  return skippedPrincipal ? "HEAD" : "PRINCIPAL";
 }
 
 /**

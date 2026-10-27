@@ -2318,4 +2318,24 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - A planned sum of analytics says its count with `unpricedLine()` (Excel) and `orders.unpriced.count` (screen).
 - Tests: `decided(scene, status, moves, { departmentId: null, plannedPrice: null })`.
 
+## 4.10d The Principal step switch (27.10.2026, pull request #177)
+
+**Built**
+- Migration 0060: `orders.skipped_principal`, CHECK `orders_skipped_principal_status_check`, `settings_principal_step_check`.
+- `switchPrincipalStep` (Head, own confirmation, audit row) on /settings, refused while any order waits for the Principal; `getPrincipalStepWaiting`; the Settings blocks are `PrincipalStepSwitch` and `FinanceStepSwitch` of `step-switch.tsx`.
+- State machine: `afterHead(principalStep, financeStep)` for the Head's Approve and a Head-created Submit; `PlannedMove.decidesPrincipal`, `skipsPrincipal`; `writeMoves` writes both marks with the status.
+- The Head's approval and a Head-created Submit read both steps under the settings lock shared (`approvalSteps()` of src/server/settings.ts); both steps off: Open with `skipped_finance` and `approved_at`.
+- "Head approved" goes by the status reached (`nextStepRecipients()`); no Principal vacancy while the step is off; stepper, History, Excel and PDF read "Skipped"; Approve and Submit dialogs and the purchase date name the step that opened the order.
+
+**Left out, and the task that brings it**
+- Nothing of the Build line.
+
+**Open for the owner**
+- Decided items 1 to 7 (Look first) on issue #9.
+
+**What the next sessions must know**
+- A move that reads a step reads it through `approvalSteps()` in the action's `facts` step; `MoveInput` carries `principalStep` and `financeStep`.
+- S25 in the browser is the project `principal-step`, between `finance-step` and `order-fields` in the teardown chain (playwright.config.ts).
+- Tests that need the step: `tests/helpers/principal-step.ts` (`setPrincipalStep()`, `atHead()`, `headDraft()`, `marksNow()`).
+
 The next task is 9.5.

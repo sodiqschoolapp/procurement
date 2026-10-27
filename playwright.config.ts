@@ -9,6 +9,8 @@ const PORT = 3100;
 const baseURL = `http://localhost:${PORT}`;
 /** S21, the one test that switches the Finance step (15 S21; plan of 4.10c). */
 const FINANCE_STEP = /acceptance-finance-step\.spec\.ts/;
+/** S25, the one test that switches the Principal step (15 S25; plan of 4.10d). */
+const PRINCIPAL_STEP = /acceptance-principal-step\.spec\.ts/;
 /** The fields the Head sets, which every other test's order sheet reads (plan of 2.5d). */
 const ORDER_FIELDS = /acceptance-order-fields\.spec\.ts/;
 
@@ -34,17 +36,19 @@ export default defineConfig({
     {
       name: "phone-375",
       dependencies: ["start"],
-      testIgnore: [FINANCE_STEP, ORDER_FIELDS],
+      testIgnore: [FINANCE_STEP, PRINCIPAL_STEP, ORDER_FIELDS],
       use: { viewport: { width: 375, height: 812 } },
     },
     {
       name: "desktop-1440",
       dependencies: ["start"],
-      testIgnore: [FINANCE_STEP, ORDER_FIELDS],
+      testIgnore: [FINANCE_STEP, PRINCIPAL_STEP, ORDER_FIELDS],
       use: { viewport: { width: 1440, height: 900 } },
     },
-    // The order fields are the school's too: they run after S21, as its teardown (plan of 2.5d).
-    { name: "finance-step", testMatch: FINANCE_STEP, teardown: "order-fields" },
+    // The Principal step and the order fields are the school's too: S25 runs after S21, and the
+    // order fields after S25, each the teardown of the one before (plans of 2.5d and 4.10d).
+    { name: "finance-step", testMatch: FINANCE_STEP, teardown: "principal-step" },
+    { name: "principal-step", testMatch: PRINCIPAL_STEP, teardown: "order-fields" },
     { name: "order-fields", testMatch: ORDER_FIELDS },
   ],
   webServer: {

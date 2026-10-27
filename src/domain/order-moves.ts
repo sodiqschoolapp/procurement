@@ -82,8 +82,14 @@ export type OrderMove = {
   from: RequestStatus;
   action: OrderAction;
   to: RequestStatus;
-  /** Submit of an order the Head created: the Head step is approved automatically (03 rule 6). */
-  toWhenHeadCreated?: RequestStatus;
+  /**
+   * The move leaves the Head step: `always` for the Head's Approve, `head_created` for the Submit
+   * of an order the Head created, whose Head step is approved automatically (03 rule 6). Such a
+   * move goes to `afterHead()`, the next step that is on, and decides the order's
+   * `skipped_principal` (06 Allowed moves; Principal step switched off 1 to 3; plan of 4.10d,
+   * decided item 4, Look first).
+   */
+  leavesHead?: "always" | "head_created";
   /** The Principal's Approve while the Finance step is off: straight to Open (06 Allowed moves). */
   toWhenFinanceOff?: RequestStatus;
   who: MoveWho;
@@ -97,22 +103,25 @@ const REASON = ["reason"] as const;
 
 /** The allowed-moves table of 06, one entry per row and per "from" status: 23 entries. */
 export const ORDER_MOVES: readonly OrderMove[] = [
-  // Draft | Submit | Owner or Head | Waiting for Head (Waiting for Principal when the Head is the
-  // creator) | The order passes all checks
+  // Draft | Submit | Owner or Head | Waiting for Head (when the Head is the creator: Waiting for
+  // Principal, or the next step that is on) | The order passes all checks
   {
     from: "DRAFT",
     action: "SUBMIT",
     to: "PENDING_HEAD",
-    toWhenHeadCreated: "PENDING_PRINCIPAL",
+    leavesHead: "head_created",
     who: "owner_or_head",
     permission: "request.edit",
     needs: ["submit_checks"],
   },
-  // Waiting for Head / Principal / Finance | Approve | the approver of that step
+  // Waiting for Head / Principal / Finance | Approve | the approver of that step. The Head's goes
+  // to Waiting for Principal (Waiting for Finance when the Principal step is off; Open when both
+  // steps are off): afterHead() (plan of 4.10d).
   {
     from: "PENDING_HEAD",
     action: "APPROVE",
     to: "PENDING_PRINCIPAL",
+    leavesHead: "always",
     who: "step_approver",
     permission: "request.approve_step1",
     needs: [],
@@ -386,18 +395,41 @@ export type PlannedMove = {
   revisionUp: boolean;
   /** Logged as "Created by Head" (03 rule 6). */
   headStepAuto: boolean;
-  /** The Principal's Approve with the Finance step off: the order is marked (06 Finance step switched off 1). */
+  /**
+   * The order is marked `skipped_finance`: the Principal's Approve with the Finance step off, or a
+   * move that leaves the Head step with both steps off (06 Finance step switched off 1; Principal
+   * step switched off 3).
+   */
   skipsFinance: boolean;
+  /**
+   * The move leaves the Head step, so it sets or clears `skipped_principal` (06 Principal step
+   * switched off 2; plan of 4.10d, decided item 3, Look first); `skipsPrincipal` is the value.
+   */
+  decidesPrincipal: boolean;
+  /** The Principal step was off: the order goes past it and is marked (06 Principal step switched off 1). */
+  skipsPrincipal: boolean;
 };
 
 export type MoveCheck =
   { ok: true; moves: readonly PlannedMove[] } | { ok: false; refusal: MoveRefusal };
 
 /**
- * `financeStep` is the setting `finance_step` the caller read in the move's own transaction, under
- * the lock its switch takes (plan of 4.10c, decided item 1, Look first); on when not given.
+ * `financeStep` and `principalStep` are the settings `finance_step` and `principal_step` the caller
+ * read in the move's own transaction, under the lock their switches take (plan of 4.10c, decided
+ * item 1; plan of 4.10d, decided items 1 and 2, Look first); on when not given.
  */
-export type MoveInput = { reason?: string; financeStep?: boolean };
+export type MoveInput = { reason?: string; financeStep?: boolean; principalStep?: boolean };
+
+/**
+ * The step an order goes to when it leaves the Head step: Waiting for Principal, Waiting for
+ * Finance while the Principal step is off, Open while both steps are off (06 Allowed moves, the
+ * Submit and the Head's Approve rows; Principal step switched off 1 and 3; plan of 4.10d, decided
+ * item 4, Look first). The Head step itself is never switched off.
+ */
+export function afterHead(principalStep: boolean, financeStep: boolean): RequestStatus {
+  if (principalStep) return "PENDING_PRINCIPAL";
+  return financeStep ? "PENDING_FINANCE" : "PURCHASING";
+}
 
 function moveOf(status: RequestStatus, action: OrderAction): OrderMove | undefined {
   return ORDER_MOVES.find((move) => move.from === status && move.action === action);
@@ -494,20 +526,28 @@ export function checkMoves(
       continue;
     }
     const { move } = answer;
-    const headStepAuto = move.toWhenHeadCreated !== undefined && order.createdByHead;
-    const skipsFinance = move.toWhenFinanceOff !== undefined && input.financeStep === false;
+    const headStepAuto = move.leavesHead === "head_created" && order.createdByHead;
+    const decidesPrincipal = move.leavesHead === "always" || headStepAuto;
+    const financeStep = input.financeStep !== false;
+    const principalStep = input.principalStep !== false;
+    let to = move.to;
+    let skipsFinance = false;
+    if (decidesPrincipal) {
+      to = afterHead(principalStep, financeStep);
+      skipsFinance = to === "PURCHASING";
+    } else if (move.toWhenFinanceOff !== undefined && !financeStep) {
+      to = move.toWhenFinanceOff;
+      skipsFinance = true;
+    }
     moves.push({
       orderId: order.id,
       from: move.from,
-      to:
-        headStepAuto && move.toWhenHeadCreated
-          ? move.toWhenHeadCreated
-          : skipsFinance && move.toWhenFinanceOff
-            ? move.toWhenFinanceOff
-            : move.to,
+      to,
       revisionUp: move.revisionUp === true,
       headStepAuto,
       skipsFinance,
+      decidesPrincipal,
+      skipsPrincipal: decidesPrincipal && !principalStep,
     });
   }
   if (failed.length > 0) return { ok: false, refusal: { kind: "orders", orders: failed } };

@@ -39,11 +39,27 @@ export async function readSettings(executor: Executor): Promise<SettingValues> {
 
 /**
  * The settings advisory lock: seed 1, apart from the wrapper's client-key locks (seed 0). A write
- * of the settings takes it exclusive (`saveSettings`, `switchFinanceStep`). The Principal's approval
- * takes it shared before it reads `finance_step`, so the switch and the approval cannot cross:
- * the switch counts the orders Waiting for Finance only once no approval holds it, and an
- * approval reads the step only once no switch holds it (06 Finance step switched off 5; plan of
- * 4.10c, decided item 1, Look first). Shared, so approvals never wait for each other.
+ * of the settings takes it exclusive (`saveSettings`, `switchFinanceStep`, `switchPrincipalStep`).
+ * The approvals of the Head and the Principal, and the Submit of a Head-created order, take it
+ * shared before they read the steps (`approvalSteps()`), so a switch and such a move cannot cross:
+ * the switch counts the waiting orders only once no move holds it, and a move reads the steps only
+ * once no switch holds it (06 Finance step switched off 5; Principal step switched off 4; plan of
+ * 4.10c, decided item 1; plan of 4.10d, decided items 1 and 2, Look first). Shared, so approvals
+ * never wait for each other.
  */
 export const SETTINGS_LOCK = sql`select pg_advisory_xact_lock(hashtextextended('settings', 1))`;
 export const SETTINGS_LOCK_SHARED = sql`select pg_advisory_xact_lock_shared(hashtextextended('settings', 1))`;
+
+/**
+ * The two approval steps as they are now, read after the settings lock is taken shared, in the
+ * caller's transaction (READ COMMITTED: a switch that committed before the lock was granted is
+ * seen). For the moves that read them: the Head's and the Principal's approvals, a Head-created
+ * Submit (plan of 4.10d, decided items 1 and 2, Look first).
+ */
+export async function approvalSteps(
+  executor: Executor,
+): Promise<{ principalStep: boolean; financeStep: boolean }> {
+  await executor.execute(SETTINGS_LOCK_SHARED);
+  const values = await readSettings(executor);
+  return { principalStep: values.principal_step, financeStep: values.finance_step };
+}

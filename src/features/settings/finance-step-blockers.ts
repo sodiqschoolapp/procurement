@@ -1,4 +1,4 @@
-import { type SQL, and, inArray, isNull } from "drizzle-orm";
+import { type SQL, and, eq, inArray, isNull } from "drizzle-orm";
 
 import { orders } from "@/server/db/schema";
 
@@ -15,4 +15,14 @@ export function financeStepBlockers(switchingOn: boolean): SQL {
         isNull(orders.plannedPrice),
       )!
     : inArray(orders.status, ["PENDING_FINANCE", "SETTLEMENT"]);
+}
+
+/**
+ * The orders that refuse switching the Principal step off: those Waiting for Principal, of every
+ * branch (06-approval-workflow.md, Principal step switched off 4; plan of 4.10d, decided item 13).
+ * Switching it on is never refused (rule 5). One condition for the switch and the list on
+ * /settings.
+ */
+export function principalStepBlockers(): SQL {
+  return eq(orders.status, "PENDING_PRINCIPAL");
 }

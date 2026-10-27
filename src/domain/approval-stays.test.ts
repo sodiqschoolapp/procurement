@@ -64,6 +64,25 @@ describe("approvalStays (06 Allowed moves; plan of 6.4b, decided item 6)", () =>
     expect(stays.map((stay) => stay.step)).toEqual(["PENDING_PRINCIPAL"]);
   });
 
+  it("a step the Head's approval skipped has no stay: the Principal step switched off, alone and with Finance (10 Analytics, Approval speed; 06 Principal step switched off 1 and 3; plan of 4.10d)", () => {
+    const toFinance = approvalStays([
+      SUBMIT("09:00"),
+      event("APPROVE", "PENDING_HEAD", "PENDING_FINANCE", "10:00"),
+      event("APPROVE", "PENDING_FINANCE", "PURCHASING", "12:00"),
+    ]);
+    expect(toFinance.map((stay) => [stay.step, stay.seconds])).toEqual([
+      ["PENDING_HEAD", 3_600n],
+      ["PENDING_FINANCE", 7_200n],
+    ]);
+    const opened = approvalStays([
+      SUBMIT("09:00"),
+      event("APPROVE", "PENDING_HEAD", "PURCHASING", "10:00"),
+    ]);
+    expect(opened.map((stay) => stay.step)).toEqual(["PENDING_HEAD"]);
+    // A Head-created order with both steps off opens on Submit: no stay at all.
+    expect(approvalStays([event("SUBMIT", "DRAFT", "PURCHASING", "09:00")])).toEqual([]);
+  });
+
   it("a stay ended by Take back or Cancel is not a decision and is left out", () => {
     expect(
       approvalStays([SUBMIT("09:00"), event("TAKE_BACK", "PENDING_HEAD", "DRAFT", "10:00")]),

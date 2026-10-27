@@ -15,6 +15,7 @@ import {
   progressAfterBuying,
   purchaseCommentNeeds,
   purchaseDateRefusal,
+  openedBy,
   receiptNeeded,
 } from "@/domain/purchases";
 import { ActionError } from "@/server/action";
@@ -188,6 +189,7 @@ type Plan = {
   paymentType: PaymentType;
   approvedAt: Date | null;
   skippedFinance: boolean;
+  skippedPrincipal: boolean;
   progress: "OPEN" | "DONE" | "DONE_SHORT" | "NOT_BOUGHT";
   isService: boolean;
   allowDecimal: boolean;
@@ -213,6 +215,7 @@ async function plansOf(tx: Executor, orderIds: readonly string[]): Promise<Plan[
       paymentType: orders.paymentType,
       approvedAt: orders.approvedAt,
       skippedFinance: orders.skippedFinance,
+      skippedPrincipal: orders.skippedPrincipal,
       progress: orders.progress,
       productType: products.type,
       allowDecimal: units.allowDecimal,
@@ -236,6 +239,7 @@ async function plansOf(tx: Executor, orderIds: readonly string[]): Promise<Plan[
       paymentType: row.paymentType,
       approvedAt: row.approvedAt,
       skippedFinance: row.skippedFinance,
+      skippedPrincipal: row.skippedPrincipal,
       progress: row.progress,
       isService: row.productType === "SERVICE",
       allowDecimal: row.allowDecimal,
@@ -437,13 +441,16 @@ export const recordPurchase = defineOrdersAction<RecordPurchaseInput>({
     const newestApproval = approvals.includes(null)
       ? null
       : approvals.reduce((newest, day) => (day! > newest! ? day : newest));
-    // The message names the Principal's approval when every order of the trip skipped Finance
-    // (07 Date bought; plan of 4.10c); the date rule is the same.
+    // The message names the approval that opened every order of the trip, Finance's when they
+    // differ (07 Date bought; plans of 4.10c and 4.10d); the date rule is the same.
+    const openers = new Set(
+      plans.map((plan) => openedBy(plan.skippedFinance, plan.skippedPrincipal)),
+    );
     const dateRefusal = purchaseDateRefusal(
       typed.purchasedOn,
       today,
       newestApproval,
-      plans.every((plan) => plan.skippedFinance),
+      openers.size === 1 ? [...openers][0] : "FINANCE",
     );
     if (dateRefusal) refuse("purchasedOn", `errors.field.${dateRefusal}`);
     if (typed.supplierId) {

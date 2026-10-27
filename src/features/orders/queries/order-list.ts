@@ -718,6 +718,8 @@ export type TickedSummary = {
   skippedFinance: SkippedShare;
   /** The setting `finance_step` now: the Principal's Approve dialog says where orders go. */
   financeStep: boolean;
+  /** The setting `principal_step` now: the Head's Approve dialog says where orders go (4.10d). */
+  principalStep: boolean;
   /**
    * Copy as new is offered: the user may add drafts in the branch of every ticked order, which is
    * active (05 Ticking and filters; plan of 2.13, decided item 1, Look first). The server asks again.
@@ -796,6 +798,7 @@ export async function tickedSummary(
     exactCount: null,
     skippedFinance: "none",
     financeStep: true,
+    principalStep: true,
     canCopy: false,
     recordTrip: false,
     canRecordMoney: false,
@@ -890,6 +893,7 @@ export async function tickedSummary(
       ),
       skippedFinance: skippedShare(found.map((row) => row.skippedFinance)),
       financeStep: settings.finance_step,
+      principalStep: settings.principal_step,
       exactCount: found.some((row) => row.status === "PURCHASING" && row.progress !== "OPEN")
         ? found.filter((row) => exact.get(row.id) === true).length
         : null,
@@ -1096,6 +1100,7 @@ export async function orderDownload(
         price: orders.plannedPrice,
         paymentType: orders.paymentType,
         skippedFinance: orders.skippedFinance,
+        skippedPrincipal: orders.skippedPrincipal,
       })
       .from(orders)
       .innerJoin(branches, eq(branches.id, orders.branchId))
@@ -1175,6 +1180,7 @@ export async function orderDownload(
           events.get(row.id) ?? [],
           records.get(row.id) ?? [],
           row.skippedFinance,
+          row.skippedPrincipal,
         ),
       };
     });

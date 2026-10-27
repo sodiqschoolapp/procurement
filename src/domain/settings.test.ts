@@ -25,7 +25,7 @@ import {
 // decisions 1, 2, 6, 7, 9 and 10.
 
 describe("the settings keys and defaults (14-data-model.md, Notes for the build)", () => {
-  it("has exactly the eleven keys of the spec and D10, `finance_step` (06 Finance step switched off; D62) and `order_fields` (05 Fields the Head sets; D67) among them", () => {
+  it("has exactly the twelve keys of the spec and D10, `principal_step` (06 Principal step switched off; D69), `finance_step` (06 Finance step switched off; D62) and `order_fields` (05 Fields the Head sets; D67) among them", () => {
     expect([...SETTING_KEYS].sort()).toEqual(
       [
         "default_payment_type",
@@ -37,6 +37,7 @@ describe("the settings keys and defaults (14-data-model.md, Notes for the build)
         "reminder_hours",
         "school_name",
         "school_year_start",
+        "principal_step",
         "finance_step",
         "order_fields",
       ].sort(),
@@ -58,6 +59,8 @@ describe("the settings keys and defaults (14-data-model.md, Notes for the build)
       receipt_required_for_cash: false,
       school_name: null,
       school_year_start: null,
+      // 06 Principal step switched off: "It is the setting `principal_step`, on by default."
+      principal_step: true,
       // 06 Finance step switched off: "It is the setting `finance_step`, on by default."
       finance_step: true,
       // 05 Fields the Head sets, "Default" column.
@@ -72,6 +75,15 @@ describe("the settings keys and defaults (14-data-model.md, Notes for the build)
     }
     expect(settingsFrom([{ key: "finance_step", value: false }]).finance_step).toBe(false);
     expect(() => settingsFrom([{ key: "finance_step", value: "off" }])).toThrow();
+  });
+
+  it("takes only a boolean for `principal_step` (14 Notes for the build; migration 0060)", () => {
+    for (const ok of [true, false]) expect(SETTING_CHECKS.principal_step(ok)).toBe(true);
+    for (const bad of ["true", 1, 0, null, "off"]) {
+      expect(SETTING_CHECKS.principal_step(bad)).toBe(false);
+    }
+    expect(settingsFrom([{ key: "principal_step", value: false }]).principal_step).toBe(false);
+    expect(() => settingsFrom([{ key: "principal_step", value: "off" }])).toThrow();
   });
 
   it("every default with a value passes its own check", () => {

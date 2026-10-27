@@ -15,23 +15,37 @@ export function skippedShare(flags: readonly boolean[]): SkippedShare {
 /**
  * The Approve dialog's sentence: Finance's step names the cash; the Principal's with the Finance
  * step off says the orders open for buying at once (06 Allowed moves: "Open when the Finance
- * step is off"); every other step says the next approver is told.
+ * step is off"); the Head's with the Principal step off says they go to Finance, or open for
+ * buying at once with both steps off (06 Allowed moves; Principal step switched off 1 and 3; plan
+ * of 4.10d); every other step says the next approver is told.
  */
 export function approveResultKey(
   statuses: readonly string[],
   financeStep: boolean,
-): "resultFinance" | "resultSkipFinance" | "result" {
-  if (statuses.length > 0 && statuses.every((status) => status === "PENDING_FINANCE")) {
-    return "resultFinance";
-  }
-  if (
-    !financeStep &&
-    statuses.length > 0 &&
-    statuses.every((status) => status === ("PENDING_PRINCIPAL" satisfies RequestStatus))
-  ) {
-    return "resultSkipFinance";
+  principalStep = true,
+): "resultFinance" | "resultSkipFinance" | "resultSkipPrincipal" | "resultSkipBoth" | "result" {
+  const all = (step: RequestStatus) =>
+    statuses.length > 0 && statuses.every((status) => status === step);
+  if (all("PENDING_FINANCE")) return "resultFinance";
+  if (!financeStep && all("PENDING_PRINCIPAL")) return "resultSkipFinance";
+  if (!principalStep && all("PENDING_HEAD")) {
+    return financeStep ? "resultSkipPrincipal" : "resultSkipBoth";
   }
   return "result";
+}
+
+/**
+ * Whether a Submit's dialog adds that the Head's own new orders open for buying at once: a Head
+ * submits while both steps are off, so a first Submit of an order the Head created opens it with
+ * no second approver (03 rule 6; 06 Principal step switched off 3; D69; plan of 4.10d, review of
+ * the plan, Must fix 1).
+ */
+export function headSubmitOpens(
+  isHead: boolean,
+  principalStep: boolean,
+  financeStep: boolean,
+): boolean {
+  return isHead && !principalStep && !financeStep;
 }
 
 /**

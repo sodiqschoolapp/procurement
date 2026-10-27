@@ -8,13 +8,14 @@ import { storedSettingValue } from "@/domain/settings";
 import {
   getFinanceStepWaiting,
   getLastDatabaseCopy,
+  getPrincipalStepWaiting,
   getSettingsForHead,
 } from "@/features/settings/queries/settings";
 import { getFormatters } from "@/i18n/get-formatters";
 import { requireUser } from "@/server/auth/session";
 import { AuthorizationError } from "@/server/authorize";
 
-import { FinanceStepSwitch } from "./finance-step-switch";
+import { FinanceStepSwitch, PrincipalStepSwitch } from "./step-switch";
 import { OrderFieldsForm } from "./order-fields-form";
 import { SettingsForm } from "./settings-form";
 
@@ -33,6 +34,7 @@ const FIELDS: Record<string, HistoryField> = {
   receipt_required_for_cash: { label: "settings.receiptRequiredForCash", kind: "boolean" },
   reminder_hours: { label: "settings.reminderHours", kind: "hours" },
   escalation_hours: { label: "settings.escalationHours", kind: "hours" },
+  principal_step: { label: "settings.principalStep.title", kind: "boolean" },
   finance_step: { label: "settings.financeStep.title", kind: "boolean" },
   order_fields: { label: "settings.orderFields.title", kind: "orderFields" },
 };
@@ -52,6 +54,10 @@ export default async function SettingsPage() {
   const values = await readOrNotFound(() => getSettingsForHead(user.id));
   const lastCopy = await readOrNotFound(() => getLastDatabaseCopy(user.id));
   const waiting = await readOrNotFound(() => getFinanceStepWaiting(user.id, !values.finance_step));
+  // Switching the Principal step on is never refused (06 Principal step switched off 5).
+  const principalWaiting = values.principal_step
+    ? await readOrNotFound(() => getPrincipalStepWaiting(user.id))
+    : [];
   const format = await getFormatters();
   const history = await listChangeHistory(user.id, { entity: "settings", entityId: "settings" });
 
@@ -73,6 +79,7 @@ export default async function SettingsPage() {
           ) as string,
         }}
       />
+      <PrincipalStepSwitch on={values.principal_step} waiting={principalWaiting} />
       <FinanceStepSwitch
         on={values.finance_step}
         waiting={waiting}

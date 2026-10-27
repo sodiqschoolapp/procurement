@@ -22,7 +22,10 @@ export type StepEvent = {
   headStepAuto: boolean;
 };
 
-/** `skipped`: the Finance step of an order that skipped Finance (06 Finance step switched off). */
+/**
+ * `skipped`: the Finance step of an order that skipped Finance, the Principal step of one that
+ * skipped the Principal (06 Finance step switched off; Principal step switched off).
+ */
 export type StepState = "done" | "current" | "stopped" | "todo" | "skipped";
 
 export type StepView = {
@@ -92,13 +95,16 @@ function finishes(step: OrderStep, event: StepEvent): boolean {
  * finished, by the newest event that finishes it; no later step is ever finished, so a reopened
  * order stands at Open with Closed empty. A Rejected or Cancelled order is "stopped" at the step
  * its last move came from. On an order that skipped Finance (`orders.skipped_finance`, never
- * changed after the Principal's approval) the Finance step reads "skipped" once the order is past
- * it (11 Order page layout 2; 06 Finance step switched off 1 and 6; plan of 4.10c).
+ * changed after the approval that opened it) the Finance step reads "skipped" once the order is
+ * past it (11 Order page layout 2; 06 Finance step switched off 1 and 6; plan of 4.10c); so does
+ * the Principal step of an order that skipped the Principal (`orders.skipped_principal`, decided
+ * again by every Head approval: 06 Principal step switched off 2; plan of 4.10d).
  */
 export function orderSteps(
   status: RequestStatus,
   events: readonly StepEvent[],
   skippedFinance = false,
+  skippedPrincipal = false,
 ): StepView[] {
   let start = -1;
   events.forEach((event, index) => {
@@ -121,6 +127,7 @@ export function orderSteps(
     if (index > at) return { step, state: "todo", by: null };
     if (index === at) return { step, state: atState, by: null };
     if (step === "FINANCE" && skippedFinance) return { step, state: "skipped", by: null };
+    if (step === "PRINCIPAL" && skippedPrincipal) return { step, state: "skipped", by: null };
     const finisher = counted.findLast((event) => finishes(step, event));
     return {
       step,
@@ -131,15 +138,36 @@ export function orderSteps(
 }
 
 /**
- * The Principal's approval that opened the order with the Finance step off, read from the event's
- * own move (06 Allowed moves: "Waiting for Principal | Approve | … | Open when the Finance step is
- * off"): the History tab says "Finance step skipped" on it (06 rule 11; plan of 4.10c, decided
- * item 13). No other move goes from Waiting for Principal to Open.
+ * A move that leaves the Head step: the Head's Approve, or the Submit of an order the Head created
+ * (06 Allowed moves; 03 rule 6). The move that opens an order reads the same way.
+ */
+function leavesHeadStep(event: Pick<StepEvent, "type" | "from">): boolean {
+  return (
+    (event.type === "APPROVE" && event.from === "PENDING_HEAD") ||
+    (event.type === "SUBMIT" && event.from === "DRAFT")
+  );
+}
+
+/**
+ * The approval that opened the order with the Finance step off, read from the event's own move
+ * (06 Allowed moves: "Waiting for Principal | Approve | … | Open when the Finance step is off"; the
+ * Head's Approve or a Head-created Submit with both steps off, Principal step switched off 3): the
+ * History tab says "Finance step skipped" on it (06 rule 11; plan of 4.10c, decided item 13; plan
+ * of 4.10d, decided item 10). No other move goes from those statuses to Open.
  */
 export function skippedFinanceBy(event: Pick<StepEvent, "type" | "from" | "to">): boolean {
-  return (
-    event.type === "APPROVE" && event.from === "PENDING_PRINCIPAL" && event.to === "PURCHASING"
-  );
+  if (event.to !== "PURCHASING") return false;
+  return (event.type === "APPROVE" && event.from === "PENDING_PRINCIPAL") || leavesHeadStep(event);
+}
+
+/**
+ * The Head's approval, or a Head-created Submit, that went past the Principal while the step was
+ * off, read from the event's own move (06 Principal step switched off 1): to Waiting for Finance or
+ * to Open. The History tab says "Principal step skipped" on it (06 rule 11; plan of 4.10d, decided
+ * item 10).
+ */
+export function skippedPrincipalBy(event: Pick<StepEvent, "type" | "from" | "to">): boolean {
+  return leavesHeadStep(event) && (event.to === "PENDING_FINANCE" || event.to === "PURCHASING");
 }
 
 /** Who acts next (06 Statuses): a role of the order's branch, the owner, or nobody. */

@@ -1,6 +1,6 @@
 import { getTranslations } from "next-intl/server";
 
-import { skippedFinanceBy } from "@/domain/order-steps";
+import { skippedFinanceBy, skippedPrincipalBy } from "@/domain/order-steps";
 import type { OrderPageEvent } from "@/features/orders/queries/order-page";
 import { getFormatters } from "@/i18n/get-formatters";
 
@@ -42,6 +42,10 @@ export async function OrderHistory({ events }: { events: readonly OrderPageEvent
                 {t("at", { date: format.date(event.at), time: format.time(event.at) })}
               </time>
               {event.headStepAuto ? <span data-created-by-head>{t("createdByHead")}</span> : null}
+              {skippedPrincipalBy(event) ? (
+                // 06 Principal step switched off 1 and rule 11 (plan of 4.10d, decided item 10).
+                <span data-skipped-principal>{t("principalSkipped")}</span>
+              ) : null}
               {skippedFinanceBy(event) ? (
                 // 06 Finance step switched off 1 and rule 11 (plan of 4.10c).
                 <span data-skipped-finance>{t("financeSkipped")}</span>

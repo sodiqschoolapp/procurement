@@ -74,6 +74,36 @@ export async function financeOf(tx: Transaction, branchId: string): Promise<stri
 }
 
 /**
+ * Who is told when orders of one branch pass an approval step, by the status they reach (10
+ * Notifications: "Head approved → Principal of the branch; while the Principal step is off, as for
+ * 'Principal approved'"; "Principal approved → Finance users of the branch; for orders that skipped
+ * Finance, owner and Head"; "Finance approved → owner and Head"; plan of 4.10d, decided item 8):
+ * Waiting for Principal, the branch's active Principal; Waiting for Finance, its active Finance
+ * users; Open, the owners and every active Head. One function for the approvals and the Submit of
+ * a Head-created order.
+ */
+export async function nextStepRecipients(
+  tx: Transaction,
+  to: "PENDING_PRINCIPAL" | "PENDING_FINANCE" | "PURCHASING",
+  branchId: string,
+  ownerIds: readonly string[],
+): Promise<string[]> {
+  if (to === "PURCHASING") return ownersAndHeads(tx, ownerIds);
+  if (to === "PENDING_FINANCE") return financeOf(tx, branchId);
+  const rows = await tx
+    .select({ id: userBranches.userId })
+    .from(userBranches)
+    .where(
+      and(
+        eq(userBranches.branchId, branchId),
+        eq(userBranches.userRole, "PRINCIPAL"),
+        eq(userBranches.userIsActive, true),
+      ),
+    );
+  return rows.map((row) => row.id);
+}
+
+/**
  * One notification per branch of the moved orders (10 Notifications: "One action sends one
  * notification to each person told"), to the users `to` names for that branch's orders; never
  * the actor (notify()). Used by Send back, Reject and Submit again (plan of 2.11, decided item 5,

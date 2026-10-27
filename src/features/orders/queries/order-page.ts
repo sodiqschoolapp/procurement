@@ -255,6 +255,13 @@ export type OrderPage = {
   skippedFinance: boolean;
   /** The setting `finance_step` now: the Principal's Approve dialog says where orders go. */
   financeStep: boolean;
+  /**
+   * The Head's approval sent it past the Principal while the step was off: the Principal step
+   * "Skipped" (11 Order page layout 3; 06 Principal step switched off; plan of 4.10d).
+   */
+  skippedPrincipal: boolean;
+  /** The setting `principal_step` now: the Head's Approve and Submit dialogs say where orders go. */
+  principalStep: boolean;
   steps: StepView[];
   /** Newest first (decided item 11). */
   events: OrderPageEvent[];
@@ -347,6 +354,7 @@ async function readPage(db: Executor, actor: Actor, id: string): Promise<OrderPa
       createdByHead: createdByHeadSql,
       ownerClosesAlone: ownerClosesAloneSql,
       skippedFinance: orders.skippedFinance,
+      skippedPrincipal: orders.skippedPrincipal,
       branchCode: branches.code,
       branchName: branches.name,
       branchActive: branches.isActive,
@@ -559,7 +567,9 @@ async function readPage(db: Executor, actor: Actor, id: string): Promise<OrderPa
     closedAt: row.closedAt,
     skippedFinance: row.skippedFinance,
     financeStep: settings.finance_step,
-    steps: orderSteps(row.status, stepEvents, row.skippedFinance),
+    skippedPrincipal: row.skippedPrincipal,
+    principalStep: settings.principal_step,
+    steps: orderSteps(row.status, stepEvents, row.skippedFinance, row.skippedPrincipal),
     events: events.toReversed(),
     actions: allowedActions(actor, [
       orderState({

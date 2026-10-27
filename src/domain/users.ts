@@ -22,8 +22,10 @@ export type StaffedRole = (typeof STAFFED_ROLES)[number];
  * The roles a branch is warned about now: all three, but not Finance while the Finance step is off
  * (03 rule 5; 10 Notifications, "Branch has no active user for a role"; plan of 4.10c).
  */
-export function staffedRoles(financeStep: boolean): StaffedRole[] {
-  return STAFFED_ROLES.filter((role) => financeStep || role !== "FINANCE");
+export function staffedRoles(principalStep: boolean, financeStep: boolean): StaffedRole[] {
+  return STAFFED_ROLES.filter(
+    (role) => (financeStep || role !== "FINANCE") && (principalStep || role !== "PRINCIPAL"),
+  );
 }
 
 /** Digits, spaces and `+ ( ) -`, such as "+998 90 123-45-67" (decision 11). */
@@ -103,15 +105,16 @@ function placeKey(place: Place): string {
 /**
  * The places held before a change and empty after it, each once, in the order of `before`
  * (10, Notifications: "Branch has no active user for a role"; plan of 1.3, decision 7). A place
- * empty before is no news. A role `staffedRoles()` leaves out (Finance while the Finance step is
- * off) is no news either.
+ * empty before is no news. A role `staffedRoles()` leaves out (the Principal or Finance while its
+ * step is off) is no news either.
  */
 export function vacatedPlaces(
   before: readonly Place[],
   after: readonly Place[],
+  principalStep: boolean,
   financeStep: boolean,
 ): Place[] {
-  const warned = new Set<string>(staffedRoles(financeStep));
+  const warned = new Set<string>(staffedRoles(principalStep, financeStep));
   const held = new Set(after.map(placeKey));
   const seen = new Set<string>();
   const vacated: Place[] = [];

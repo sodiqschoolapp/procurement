@@ -30,6 +30,8 @@ describe("readSettings (build-plan 1.1)", () => {
       receipt_required_for_cash: false,
       school_name: null,
       school_year_start: null,
+      // 06 Principal step switched off: "on by default" (plan of 4.10d).
+      principal_step: true,
       // 06 Finance step switched off: "on by default" (plan of 4.10c).
       finance_step: true,
       // 05 Fields the Head sets, the "Default" column (plan of 2.5d).

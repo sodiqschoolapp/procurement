@@ -112,6 +112,12 @@ export const settings = pgTable(
       "settings_finance_step_check",
       forKey("finance_step", sql`jsonb_typeof(${VALUE}) = 'boolean'`),
     ),
+    // 06-approval-workflow.md, Principal step switched off; 14 Notes for the build:
+    // `principal_step` (true: on) is a boolean (plan of 4.10d).
+    check(
+      "settings_principal_step_check",
+      forKey("principal_step", sql`jsonb_typeof(${VALUE}) = 'boolean'`),
+    ),
     // 05-order-request-form.md, Fields the Head sets; 14 Notes for the build: `order_fields` holds
     // exactly the ten fields, each exactly `ask` and `place`, with its field's choices
     // (src/domain/order-fields.ts, isOrderFields; plan of 2.5d, decided item 3).

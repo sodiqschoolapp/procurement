@@ -24,6 +24,7 @@ import {
   purchaseCancelAllows,
   purchaseCommentNeeds,
   purchaseDateRefusal,
+  openedBy,
   isSubstituted,
   sameAsPlanned,
   splitGroupQuantity,
@@ -530,11 +531,28 @@ describe("purchaseDateRefusal (07 Purchase record, Date bought; plan of 3.3, dec
   });
 
   it("an order that skipped Finance is refused before the Principal's approval, which the message names (07 Date bought: 'the Principal's, for an order that skipped Finance'; plan of 4.10c)", () => {
-    expect(purchaseDateRefusal("2026-09-30", "2026-10-17", "2026-10-01", true)).toBe(
+    expect(purchaseDateRefusal("2026-09-30", "2026-10-17", "2026-10-01", "PRINCIPAL")).toBe(
       "beforePrincipalApproval",
     );
-    expect(purchaseDateRefusal("2026-10-01", "2026-10-17", "2026-10-01", true)).toBeNull();
-    expect(purchaseDateRefusal("2026-10-18", "2026-10-17", "2026-10-01", true)).toBe("inFuture");
+    expect(purchaseDateRefusal("2026-10-01", "2026-10-17", "2026-10-01", "PRINCIPAL")).toBeNull();
+    expect(purchaseDateRefusal("2026-10-18", "2026-10-17", "2026-10-01", "PRINCIPAL")).toBe(
+      "inFuture",
+    );
+  });
+
+  it("an order the Head opened with both steps off is refused before the Head's approval, which the message names (07 Date bought: 'the approval that opened it'; plan of 4.10d, decided item 14)", () => {
+    expect(purchaseDateRefusal("2026-09-30", "2026-10-17", "2026-10-01", "HEAD")).toBe(
+      "beforeHeadApproval",
+    );
+    expect(purchaseDateRefusal("2026-10-01", "2026-10-17", "2026-10-01", "HEAD")).toBeNull();
+  });
+
+  it("openedBy(): Finance, the Principal when Finance was skipped, the Head when both were", () => {
+    expect(openedBy(false, false)).toBe("FINANCE");
+    // Skipped the Principal only: Finance still opened it.
+    expect(openedBy(false, true)).toBe("FINANCE");
+    expect(openedBy(true, false)).toBe("PRINCIPAL");
+    expect(openedBy(true, true)).toBe("HEAD");
   });
 });
 
