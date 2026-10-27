@@ -3278,7 +3278,8 @@
         "open": "Tasdiqlangan, hali berilmagan",
         "approval": "Hali tasdiqlanmoqda",
         "all": "Jami tez orada kerak",
-        "bySteps": "Tasdiqlashda, bosqichlar boʻyicha"
+        "bySteps": "Tasdiqlashda, bosqichlar boʻyicha",
+        "unpricedList": "Bu summaga kirmagan rejalashtirilgan narxsiz buyurtmalar"
       },
       "columns": {
         "month": "Oy",
@@ -3394,7 +3395,8 @@
     },
     "noDepartment": "Boʻlimsiz",
     "unpriced": {
-      "line": "{count} ta rejalashtirilgan narxsiz buyurtma bu summalarga kirmagan"
+      "line": "{count} ta rejalashtirilgan narxsiz buyurtma bu summalarga kirmagan",
+      "count": "{count, plural, one {# tasi narxsiz} other {# tasi narxsiz}}"
     }
   },
   "reports": {
@@ -3488,8 +3490,10 @@
         "orders": "Buyurtmalar",
         "planned": "Reja",
         "actual": "Amal",
-        "difference": "Farq"
-      }
+        "difference": "Farq",
+        "unpriced": "Narxsiz"
+      },
+      "unpricedLine": "{count} ta rejalashtirilgan narxsiz yakunlangan buyurtma bu summalarga kirmagan."
     },
     "spending": {
       "summary": "{count, plural, other {# ta yozuv}}, jami {total}",

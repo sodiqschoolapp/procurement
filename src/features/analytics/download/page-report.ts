@@ -359,7 +359,13 @@ export function analyticsReport(
       figures: (["open", "approval", "all"] as const).map((stage) => ({
         label: t(`finance.needed.${stage}`),
         value: format.money(needed[stage].amount),
-        lines: [t("finance.orders", { count: needed[stage].count })],
+        lines: [
+          t("finance.orders", { count: needed[stage].count }),
+          // The orders of the number without a planned price, left out of it (plan of 2.5d-c).
+          ...(needed[stage].unpriced > 0
+            ? [t("unpriced.count", { count: needed[stage].unpriced })]
+            : []),
+        ],
       })),
       tables: [table(cashNeededSheet(needed, filters, options, locale))],
     });

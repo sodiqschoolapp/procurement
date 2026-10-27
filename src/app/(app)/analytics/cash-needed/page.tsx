@@ -19,7 +19,8 @@ import { PageLinks } from "../../catalog/page-links";
 // /analytics/cash-needed, the orders behind a Cash needed soon number (10-notifications-analytics-
 // reports.md, Analytics page per role, point 3; build-plan 6.6a; plan of 6.6a, decided items 4, 5
 // and 10): `key=needed:<all|open|approval>[:<step>]`. A number of now: the period of the address
-// is only kept for the way back. Its count and total are the number clicked; nearest needed-by
+// is only kept for the way back. `:unpriced` lists the orders of that number without a planned
+// price, which it leaves out (plan of 2.5d-c, decided item 4, Look first). Its count and total are the number clicked; nearest needed-by
 // first, 50 a page; each row opens its order; the list exports to Excel (point 4). An address the
 // parser refuses goes back to /analytics; another branch is Not found. A table at 1440 px, cards
 // at 375 px, as /analytics/cash.
@@ -32,9 +33,16 @@ const AMOUNTS = ["planned", "handed"] as const;
 async function readList(userId: string, raw: Raw) {
   const params = parseAnalyticsParams(raw);
   if (!params || params.key.kind !== "needed") return "refused" as const;
-  const { stage, step } = params.key;
+  const { stage, step, unpriced } = params.key;
   try {
-    const list = await getNeededOrders(userId, params.filters, stage, step, params.page);
+    const list = await getNeededOrders(
+      userId,
+      params.filters,
+      stage,
+      step,
+      params.page,
+      unpriced === true,
+    );
     return { params, list };
   } catch (error) {
     if (error instanceof AuthorizationError && error.kind === "not_found")
@@ -55,6 +63,7 @@ export default async function AnalyticsCashNeededPage({
   const { params, list } = read;
   const t = await getTranslations("analytics");
   const tStatus = await getTranslations("requestStatus");
+  const tUnpriced = await getTranslations("orders.unpriced");
   const format = await getFormatters();
   const pages = Math.max(1, Math.ceil(list.count / RECORDS_PAGE_SIZE));
   const href = (page: number) =>
@@ -80,6 +89,7 @@ export default async function AnalyticsCashNeededPage({
           <h1 className="text-title">{t("finance.neededList.title")}</h1>
           <p className="text-sm text-muted-foreground" data-needed-what>
             {list.step ? tStatus(list.step) : t(`finance.needed.${list.stage}`)}
+            {list.unpriced && <span className="block">{t("finance.needed.unpricedList")}</span>}
           </p>
           <p className="text-sm font-semibold tabular-nums" data-needed-summary>
             {t("finance.neededList.summary", {
@@ -153,7 +163,7 @@ export default async function AnalyticsCashNeededPage({
                     {format.date(row.neededBy)}
                   </td>
                   <td className="px-4 py-3 text-right whitespace-nowrap tabular-nums max-sm:p-0 max-sm:text-left max-sm:text-muted-foreground">
-                    {format.money(row.plannedCash)}
+                    {row.plannedCash === null ? tUnpriced("none") : format.money(row.plannedCash)}
                   </td>
                   <td className="px-4 py-3 text-right whitespace-nowrap tabular-nums max-sm:p-0 max-sm:text-left max-sm:text-muted-foreground">
                     {format.money(row.handed)}

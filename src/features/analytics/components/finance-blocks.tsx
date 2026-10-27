@@ -11,9 +11,11 @@ import type { PlanVsActual, Tally } from "../queries/plan-vs-actual";
 import type { SettlementSpeed } from "../queries/settlement-speed";
 import {
   type AnalyticsFilters,
+  type ApprovalStatus,
   CASH_KIND_KEYS,
   type DrillKey,
   type ExportBlock,
+  type NeededStage,
   type PeriodInput,
   analyticsSearch,
 } from "../period-params";
@@ -167,9 +169,22 @@ export async function CashNeededView({
 }: Omit<Common, "period"> & { block: CashNeeded }) {
   const t = await getTranslations("analytics");
   const tStatus = await getTranslations("requestStatus");
+  const tUnpriced = await getTranslations("orders.unpriced");
   const format = await getFormatters();
   const orders = (key: DrillKey) =>
     `/analytics/cash-needed?${analyticsSearch(NOW, filters, { key })}`;
+  // The orders of a number without a planned price, which it leaves out, opening their list (08
+  // Numbers; plan of 2.5d-c, decided items 3 and 4, Look first). A number of now: no change.
+  const unpriced = (count: number, stage: NeededStage, step: ApprovalStatus | null) =>
+    count > 0 && (
+      <Link
+        href={orders({ kind: "needed", stage, step, unpriced: true })}
+        className="block text-sm leading-5 text-link underline-offset-2 hover:underline"
+        data-unpriced
+      >
+        {tUnpriced("count", { count })}
+      </Link>
+    );
   const download = `/analytics/download?${analyticsSearch(NOW, filters, { block: "cashNeeded" })}`;
   const tiles = [
     { stage: "open", label: t("finance.needed.open") },
@@ -203,6 +218,7 @@ export async function CashNeededView({
             <p className="text-sm leading-5 text-muted-foreground">
               {t("finance.orders", { count: block[stage].count })}
             </p>
+            {unpriced(block[stage].unpriced, stage, null)}
           </div>
         ))}
       </div>
@@ -223,6 +239,7 @@ export async function CashNeededView({
                 <span className="block text-small text-muted-foreground">
                   {t("finance.orders", { count: row.count })}
                 </span>
+                {unpriced(row.unpriced, "approval", row.step)}
               </>,
             ],
           }))}

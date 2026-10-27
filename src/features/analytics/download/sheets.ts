@@ -13,7 +13,7 @@ import type { AnalyticsFilters } from "../period-params";
 import type { ApprovalOrders } from "../queries/approval-orders";
 import type { ApprovalSpeed } from "../queries/approval-speed";
 import type { CancelledRecords } from "../queries/cancelled-records";
-import type { CashNeeded } from "../queries/cash-needed";
+import type { CashNeeded, NeededAmount } from "../queries/cash-needed";
 import type { CashAge, CashOrders } from "../queries/cash-orders";
 import type { FinanceCash } from "../queries/finance-cash";
 import type { FinanceSpending } from "../queries/finance-spending";
@@ -1486,15 +1486,25 @@ export function cashNeededSheet(
 ): AnalyticsSheet {
   const { t, tRoot } = translators(locale);
   const name = t("sheets.cashNeeded");
-  const line = (label: string, amount: { amount: bigint; count: number }): CellValue[] => [
+  // Each number with the orders without a planned price it leaves out (plan of 2.5d-c).
+  const line = (label: string, amount: NeededAmount): CellValue[] => [
     { kind: "text", value: label },
     { kind: "money", value: amount.amount },
     { kind: "count", value: amount.count },
+    { kind: "count", value: amount.unpriced },
   ];
   return {
     name,
-    heading: heading(locale, name, null, filters, options, t("finance.needed.note")),
-    columns: [t("finance.columns.stage"), t("finance.columns.needed"), t("finance.columns.orders")],
+    heading: [
+      ...heading(locale, name, null, filters, options, t("finance.needed.note")),
+      ...unpricedLine(locale, block.all.unpriced),
+    ],
+    columns: [
+      t("finance.columns.stage"),
+      t("finance.columns.needed"),
+      t("finance.columns.orders"),
+      t("plan.columns.unpriced"),
+    ],
     rows: [
       line(t("finance.needed.open"), block.open),
       ...block.steps.map((step) => line(`  ${tRoot(`requestStatus.${step.step}`)}`, step)),
@@ -1555,6 +1565,7 @@ export function neededOrdersSheet(
   const name = t("sheets.neededOrders");
   const lines = heading(locale, name, null, filters, options, t("finance.needed.note"));
   lines.push(list.step ? tRoot(`requestStatus.${list.step}`) : t(`finance.needed.${list.stage}`));
+  if (list.unpriced) lines.push(t("finance.needed.unpricedList"));
   return {
     name,
     heading: lines,
@@ -1576,7 +1587,9 @@ export function neededOrdersSheet(
       { kind: "text", value: row.ownerName },
       { kind: "text", value: tRoot(`requestStatus.${row.status}`) },
       { kind: "date", value: row.neededBy },
-      { kind: "money", value: row.plannedCash },
+      row.plannedCash === null
+        ? { kind: "text", value: tRoot("orders.unpriced.none") }
+        : { kind: "money", value: row.plannedCash },
       { kind: "signedMoney", value: row.handed },
       { kind: "money", value: row.needed },
     ]),

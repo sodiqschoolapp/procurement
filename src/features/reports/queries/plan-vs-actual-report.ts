@@ -3,6 +3,7 @@ import { sql } from "drizzle-orm";
 import type { DateRange } from "@/domain/analytics";
 import type { BusinessDate } from "@/domain/business-date";
 import type { Colour } from "@/domain/colours";
+import { analyticsUnpriced } from "@/server/db/schema";
 import { readSnapshot } from "@/server/read-snapshot";
 
 import { authorizeAnalytics } from "../../analytics/authorize-filters";
@@ -18,9 +19,21 @@ import { REPORT_PAGE_SIZE, type ReportParams } from "../report-params";
 // of the plan, correction 3); per Manager ends with one line of the owners who are not Managers,
 // as Analytics (plan of 6.4a, correction 1). The sums are of the stored amounts, no formula. Under
 // `data.view`, the branch wall inside the SQL, in one snapshot; the orders 25 a page (11 rule 8),
-// or all for the export.
+// or all for the export. Each sum says how many ended orders without a planned price it leaves
+// out, from `analytics_unpriced` under the same outcomesWhere() (plan of 2.5d-c).
 
-export type Sums = { orders: number; planned: bigint; actual: bigint; difference: bigint };
+/**
+ * The sums of the orders with an outcome; `unpriced` the ended orders without a planned price they
+ * leave out (08 Numbers: "a sum that leaves orders out says how many"; plan of 2.5d-c, decided
+ * item 3, Look first).
+ */
+export type Sums = {
+  orders: number;
+  planned: bigint;
+  actual: bigint;
+  difference: bigint;
+  unpriced: number;
+};
 
 export type OutcomeOrder = {
   orderId: string;
@@ -55,12 +68,40 @@ const SUMS = sql`count(*)::text as orders,
   coalesce(sum(analytics_outcomes.actual), 0)::text as actual,
   coalesce(sum(analytics_outcomes.difference), 0)::text as difference`;
 
-const sumsOf = (row: SumsRow): Sums => ({
+const NO_SUMS: SumsRow = { orders: "0", planned: "0", actual: "0", difference: "0" };
+
+const sumsOf = (row: SumsRow, unpriced = 0): Sums => ({
   orders: Number(row.orders),
   planned: BigInt(row.planned),
   actual: BigInt(row.actual),
   difference: BigInt(row.difference),
+  unpriced,
 });
+
+/**
+ * The lines of the outcomes and of the unpriced counts by the same key: a line with only unpriced
+ * orders is shown with its count and no sum (plan of 2.5d-c, decided item 3, Look first).
+ */
+function linesOf<Key extends { id: string | null; name: string | null }>(
+  outcomes: (Key & SumsRow)[],
+  unpriced: (Key & { unpriced: string })[],
+): (Key & Sums)[] {
+  const lines = new Map<string | null, { key: Key; sums: SumsRow; unpriced: number }>();
+  for (const row of outcomes) lines.set(row.id, { key: row, sums: row, unpriced: 0 });
+  for (const row of unpriced) {
+    const found = lines.get(row.id);
+    if (found) found.unpriced = Number(row.unpriced);
+    else lines.set(row.id, { key: row, sums: NO_SUMS, unpriced: Number(row.unpriced) });
+  }
+  return [...lines.values()]
+    .map(({ key, sums, unpriced: count }) => ({ ...key, ...sumsOf(sums, count) }))
+    .sort(
+      (a, b) =>
+        Number(a.id === null) - Number(b.id === null) ||
+        (a.name ?? "").localeCompare(b.name ?? "") ||
+        (a.id ?? "").localeCompare(b.id ?? ""),
+    );
+}
 
 /** Throws AuthorizationError for another branch's `branch` filter. */
 export async function getPlanVsActualReport(
@@ -71,10 +112,15 @@ export async function getPlanVsActualReport(
   return readSnapshot(async (db) => {
     const actor = await authorizeAnalytics(db, userId, params.filters);
     const where = outcomesWhere(actor, params.range, params.filters) ?? sql`true`;
+    const unpricedWhere =
+      outcomesWhere(actor, params.range, params.filters, false, analyticsUnpriced) ?? sql`true`;
 
+    const unpricedTotal = await db.execute<{ unpriced: string }>(sql`
+      select count(*)::text as unpriced from analytics_unpriced where ${unpricedWhere}`);
     const total = sumsOf(
       (await db.execute<SumsRow>(sql`select ${SUMS} from analytics_outcomes where ${where}`))
         .rows[0]!,
+      Number(unpricedTotal.rows[0]!.unpriced),
     );
     const pages = Math.max(1, Math.ceil(total.orders / REPORT_PAGE_SIZE));
     const shown = page === "all" ? 1 : Math.min(page, pages);
@@ -128,6 +174,25 @@ export async function getPlanVsActualReport(
       where ${where}
       group by m.id
       order by m.id is null, m.full_name, m.id`);
+    const unpricedProducts = await db.execute<{ id: string; name: string; unpriced: string }>(sql`
+      select pr.id, pr.name, count(*)::text as unpriced
+      from analytics_unpriced
+      join orders o on o.id = analytics_unpriced.order_id
+      join product_variants v on v.id = o.variant_id
+      join products pr on pr.id = v.product_id
+      where ${unpricedWhere}
+      group by pr.id`);
+    const unpricedManagers = await db.execute<{
+      id: string | null;
+      name: string | null;
+      unpriced: string;
+    }>(sql`
+      select m.id, m.full_name as name, count(*)::text as unpriced
+      from analytics_unpriced
+      join users u on u.id = analytics_unpriced.owner_id
+      left join users m on m.id = u.id and u.role = 'MANAGER'
+      where ${unpricedWhere}
+      group by m.id`);
 
     return {
       range: params.range,
@@ -147,8 +212,12 @@ export async function getPlanVsActualReport(
         actual: BigInt(row.actual),
         difference: BigInt(row.difference),
       })),
-      products: products.rows.map((row) => ({ id: row.id, name: row.name, ...sumsOf(row) })),
-      managers: managers.rows.map((row) => ({ id: row.id, name: row.name, ...sumsOf(row) })),
+      products: linesOf(products.rows, unpricedProducts.rows).map((row) => ({
+        ...row,
+        id: row.id!,
+        name: row.name!,
+      })),
+      managers: linesOf(managers.rows, unpricedManagers.rows),
     };
   });
 }

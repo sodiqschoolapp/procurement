@@ -6,6 +6,7 @@ import { EmptyState } from "@/components/empty-state";
 import { OutcomeLabel } from "@/components/status-label";
 import { cn } from "@/components/utils";
 import type { OrdersTotals } from "@/domain/order-totals";
+import { getPlannedSum } from "@/features/orders/components/planned-sum-server";
 import { getFormatters } from "@/i18n/get-formatters";
 
 import type { DepartmentUseReport } from "../queries/department-use-report";
@@ -80,11 +81,13 @@ export async function OrderRegisterView({
   listHref: string;
 }) {
   const t = await getTranslations("reports");
-  const format = await getFormatters();
+  // The planned total says how many orders without a planned price it leaves out (08 Numbers;
+  // plan of 2.5d-c): "4 500 000 so'm · 1 without a price", or "No planned price".
+  const plannedSum = await getPlannedSum();
   return (
     <section className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 text-card-foreground">
       <p className="text-sm font-semibold tabular-nums" data-report-summary>
-        {t("orders.summary", { count, total: format.money(totals.grand) })}
+        {t("orders.summary", { count, total: plannedSum(totals.grand, totals.unpriced, count) })}
       </p>
       <Link
         href={listHref}
@@ -204,6 +207,10 @@ async function SumsTable({
       <td className={NUMBER} data-difference={sums.difference.toString()}>
         {format.money(sums.difference)}
       </td>
+      {/* The ended orders without a planned price these sums leave out (plan of 2.5d-c). */}
+      <td className={NUMBER} data-unpriced={sums.unpriced}>
+        {sums.unpriced}
+      </td>
     </>
   );
   return (
@@ -216,8 +223,9 @@ async function SumsTable({
         t("plan.columns.planned"),
         t("plan.columns.actual"),
         t("plan.columns.difference"),
+        t("plan.columns.unpriced"),
       ]}
-      numeric={[1, 2, 3, 4]}
+      numeric={[1, 2, 3, 4, 5]}
       foot={
         <tr>
           <td className={CELL}>{t("total")}</td>
@@ -245,7 +253,7 @@ export async function PlanVsActualView({
 }) {
   const t = await getTranslations("reports");
   const format = await getFormatters();
-  if (report.total.orders === 0) {
+  if (report.total.orders === 0 && report.total.unpriced === 0) {
     return <EmptyState title={t("tabs.plan")} line={t("plan.empty")} />;
   }
   return (
@@ -258,6 +266,11 @@ export async function PlanVsActualView({
           difference: format.money(report.total.difference),
         })}
       </p>
+      {report.total.unpriced > 0 && (
+        <p className="text-sm leading-5 text-muted-foreground" data-unpriced-line>
+          {t("plan.unpricedLine", { count: report.total.unpriced })}
+        </p>
+      )}
       <Table
         name="plan-orders"
         title={t("plan.byOrder")}

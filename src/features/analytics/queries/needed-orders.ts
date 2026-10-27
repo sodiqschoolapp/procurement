@@ -30,7 +30,8 @@ export type NeededOrder = {
   ownerName: string;
   status: RequestStatus;
   neededBy: BusinessDate;
-  plannedCash: bigint;
+  /** `null` for an order without a planned price (the `unpriced` list only). */
+  plannedCash: bigint | null;
   handed: bigint;
   needed: bigint;
 };
@@ -38,6 +39,8 @@ export type NeededOrder = {
 export type NeededOrders = {
   stage: NeededStage;
   step: ApprovalStatus | null;
+  /** The orders of the stage without a planned price (plan of 2.5d-c). */
+  unpriced: boolean;
   count: number;
   total: bigint;
   page: number;
@@ -53,7 +56,7 @@ type Row = {
   owner_name: string;
   status: RequestStatus;
   needed_by: string;
-  planned_cash: string;
+  planned_cash: string | null;
   cash_handed: string;
   cash_needed: string;
 };
@@ -65,8 +68,9 @@ export async function getNeededOrders(
   stage: NeededStage,
   step: ApprovalStatus | null,
   page: number | "all",
+  unpriced = false,
 ): Promise<NeededOrders> {
-  return readSnapshot((db) => ordersIn(db, userId, filters, stage, step, page));
+  return readSnapshot((db) => ordersIn(db, userId, filters, stage, step, page, unpriced));
 }
 
 async function ordersIn(
@@ -76,9 +80,10 @@ async function ordersIn(
   stage: NeededStage,
   step: ApprovalStatus | null,
   page: number | "all",
+  unpriced: boolean,
 ): Promise<NeededOrders> {
   const actor = await authorizeAnalytics(db, userId, filters);
-  const where = neededWhere(actor, filters, stage, step);
+  const where = neededWhere(actor, filters, stage, step, unpriced);
   const summary = await db.execute<{ count: number; total: string }>(sql`
     select count(*)::int as count, coalesce(sum(cash_needed), 0)::text as total
     from analytics_orders where ${where}`);
@@ -102,6 +107,7 @@ async function ordersIn(
   return {
     stage,
     step,
+    unpriced,
     count: summary.rows[0]!.count,
     total: BigInt(summary.rows[0]!.total),
     page: page === "all" ? 1 : page,
@@ -114,9 +120,9 @@ async function ordersIn(
       ownerName: row.owner_name,
       status: row.status,
       neededBy: row.needed_by,
-      // Only rows with cash needed are read (neededWhere(): cash_needed > 0), and cashNeeded()
-      // is 0 without planned cash, so planned_cash is never empty here (plan of 2.5d-b, item 9).
-      plannedCash: BigInt(row.planned_cash),
+      // Empty only in the list of the orders without a planned price (plan of 2.5d-c): elsewhere
+      // cash_needed > 0, which cashNeeded() never gives without planned cash (2.5d-b, item 9).
+      plannedCash: row.planned_cash === null ? null : BigInt(row.planned_cash),
       handed: BigInt(row.cash_handed),
       needed: BigInt(row.cash_needed),
     })),

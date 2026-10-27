@@ -3278,7 +3278,8 @@
         "open": "Approved, not yet given",
         "approval": "Still in approval",
         "all": "Needed soon in all",
-        "bySteps": "In approval, by step"
+        "bySteps": "In approval, by step",
+        "unpricedList": "Orders without a planned price, left out of this sum"
       },
       "columns": {
         "month": "Month",
@@ -3394,7 +3395,8 @@
     },
     "noDepartment": "No department",
     "unpriced": {
-      "line": "{count, plural, one {# order without a planned price is left out of these sums} other {# orders without a planned price are left out of these sums}}"
+      "line": "{count, plural, one {# order without a planned price is left out of these sums} other {# orders without a planned price are left out of these sums}}",
+      "count": "{count, plural, one {# without a price} other {# without a price}}"
     }
   },
   "reports": {
@@ -3488,8 +3490,10 @@
         "orders": "Orders",
         "planned": "Planned",
         "actual": "Actual",
-        "difference": "Difference"
-      }
+        "difference": "Difference",
+        "unpriced": "Without a price"
+      },
+      "unpricedLine": "{count, plural, one {# ended order without a planned price is left out of these sums.} other {# ended orders without a planned price are left out of these sums.}}"
     },
     "spending": {
       "summary": "{count, plural, one {# record} other {# records}}, total {total}",
