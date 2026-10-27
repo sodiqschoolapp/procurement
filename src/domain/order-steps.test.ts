@@ -12,6 +12,7 @@ import {
   isOverdue,
   orderSteps,
   skippedFinanceBy,
+  skippedPrincipalBy,
   stuckBefore,
   waitingFor,
 } from "./order-steps";
@@ -323,6 +324,87 @@ describe("skippedFinanceBy (06 rule 11; History tab 'Finance step skipped'; plan
     expect(skippedFinanceBy(principalOk())).toBe(false);
     expect(skippedFinanceBy(financeOk())).toBe(false);
     expect(skippedFinanceBy(event("REOPEN", "CLOSED", "PURCHASING", "H"))).toBe(false);
+  });
+});
+
+describe("orderSteps of an order that skipped the Principal (11 Order page layout 3; 06 Principal step switched off; plan of 4.10d)", () => {
+  const headToFinance = () => event("APPROVE", "PENDING_HEAD", "PENDING_FINANCE", "Head");
+
+  it("rule 1: Waiting for Finance, the Principal step reads Skipped and Finance is current", () => {
+    expect(shape(orderSteps("PENDING_FINANCE", [submit(), headToFinance()], false, true))).toEqual({
+      DRAFT: "done:Manager",
+      HEAD: "done:Head",
+      PRINCIPAL: "skipped",
+      FINANCE: "current",
+      OPEN: "todo",
+      CLOSED: "todo",
+    });
+  });
+
+  it("rule 3: opened by the Head with both steps off, Principal and Finance both read Skipped", () => {
+    const opens = event("APPROVE", "PENDING_HEAD", "PURCHASING", "Head");
+    expect(shape(orderSteps("PURCHASING", [submit(), opens], true, true))).toEqual({
+      DRAFT: "done:Manager",
+      HEAD: "done:Head",
+      PRINCIPAL: "skipped",
+      FINANCE: "skipped",
+      OPEN: "current",
+      CLOSED: "todo",
+    });
+  });
+
+  it("03 rule 6: a Head-created order reads Created by Head on the Head step and Skipped on the Principal", () => {
+    const created = event("SUBMIT", "DRAFT", "PENDING_FINANCE", "Head", true);
+    expect(shape(orderSteps("PENDING_FINANCE", [created], false, true))).toMatchObject({
+      DRAFT: "done:Head",
+      HEAD: "done:Head",
+      PRINCIPAL: "skipped",
+      FINANCE: "current",
+    });
+  });
+
+  it("rule 2: approved again with the step on (mark cleared), the Principal step stands as it is", () => {
+    const history = [
+      submit(),
+      headToFinance(),
+      event("SEND_BACK", "PENDING_FINANCE", "RETURNED", "Finance"),
+      event("SUBMIT_AGAIN", "RETURNED", "PENDING_HEAD", "Manager"),
+      headOk(),
+    ];
+    expect(shape(orderSteps("PENDING_PRINCIPAL", history, false, false))).toMatchObject({
+      HEAD: "done:Head",
+      PRINCIPAL: "current",
+      FINANCE: "todo",
+    });
+  });
+
+  it("an order still Waiting for Head shows nothing skipped, whatever its old mark (decided item 3)", () => {
+    expect(shape(orderSteps("PENDING_HEAD", [submit()], false, true))).toMatchObject({
+      HEAD: "current",
+      PRINCIPAL: "todo",
+    });
+  });
+});
+
+describe("skippedPrincipalBy and skippedFinanceBy of the Head's moves (06 rule 11; History tab; plan of 4.10d, decided item 10)", () => {
+  it("skippedPrincipalBy is the Head's approval or a Head-created Submit to Waiting for Finance or Open", () => {
+    expect(skippedPrincipalBy(event("APPROVE", "PENDING_HEAD", "PENDING_FINANCE", "H"))).toBe(true);
+    expect(skippedPrincipalBy(event("APPROVE", "PENDING_HEAD", "PURCHASING", "H"))).toBe(true);
+    expect(skippedPrincipalBy(event("SUBMIT", "DRAFT", "PENDING_FINANCE", "H", true))).toBe(true);
+    expect(skippedPrincipalBy(event("SUBMIT", "DRAFT", "PURCHASING", "H", true))).toBe(true);
+    expect(skippedPrincipalBy(headOk())).toBe(false);
+    expect(skippedPrincipalBy(event("SUBMIT", "DRAFT", "PENDING_PRINCIPAL", "H", true))).toBe(
+      false,
+    );
+    expect(skippedPrincipalBy(submit())).toBe(false);
+    expect(skippedPrincipalBy(principalOk())).toBe(false);
+    expect(skippedPrincipalBy(event("SEND_BACK", "PENDING_HEAD", "RETURNED", "H"))).toBe(false);
+  });
+
+  it("skippedFinanceBy is also the Head's move that opens the order with both steps off", () => {
+    expect(skippedFinanceBy(event("APPROVE", "PENDING_HEAD", "PURCHASING", "H"))).toBe(true);
+    expect(skippedFinanceBy(event("SUBMIT", "DRAFT", "PURCHASING", "H", true))).toBe(true);
+    expect(skippedFinanceBy(event("APPROVE", "PENDING_HEAD", "PENDING_FINANCE", "H"))).toBe(false);
   });
 });
 

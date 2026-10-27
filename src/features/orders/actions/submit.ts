@@ -4,10 +4,12 @@ import { businessDate } from "@/domain/business-date";
 import { SUBMIT_SET_MAX, submitSelection } from "@/domain/submit-checks";
 import { orderActionNotices } from "@/domain/notifications";
 import { now } from "@/server/clock";
-import { branches, userBranches, users } from "@/server/db/schema";
+import { branches, orders, users } from "@/server/db/schema";
 import { notify } from "@/server/notify";
 import type { OrderFailure } from "@/server/action-result";
+import type { PlannedMove } from "@/domain/order-moves";
 import {
+  type LockedOrder,
   type OrdersContext,
   type OrdersInput,
   type OrdersLeft,
@@ -17,8 +19,9 @@ import {
   ordersInput,
 } from "@/server/order-action";
 import { orderMoveAction } from "@/server/order-moves";
+import { approvalSteps } from "@/server/settings";
 
-import { actionLink } from "./notices";
+import { actionLink, nextStepRecipients } from "./notices";
 import {
   failuresOf,
   ids,
@@ -47,9 +50,16 @@ import {
 // In `afterMove`, one order_revisions row per order (append-only, rule 7). The steps are those of
 // ./submit-steps.ts, shared with Submit again.
 //
-// The wrapper then writes the status (Waiting for Principal when the Head created the order,
-// logged "Created by Head"), the events and the action row; `notify` tells the Heads, and the
-// Principal of the orders that skipped the Head step.
+// Before the move is planned, `facts` reads the settings `principal_step` and `finance_step` under
+// the settings lock taken shared when a Head-created draft is sent, whose first Submit leaves the
+// Head step (03 rule 6; 06 Principal step switched off 1 and 3; plan of 4.10d, decided items 1 and
+// 2, Look first).
+//
+// The wrapper then writes the status (when the Head created the order: Waiting for Principal, or
+// the next step that is on, logged "Created by Head", with its marks), the events and the action
+// row; `afterMove` also writes `approved_at` of an order the Submit opens (both steps off; 07 Date
+// bought; plan of 4.10d); `notify` tells the Heads, and whoever acts next on the orders that
+// skipped the Head step.
 
 type Input = OrdersInput;
 
@@ -120,50 +130,72 @@ async function notifySubmitted(context: OrdersContext<Input>, result: OrdersResu
   }
 
   // An order the Head created skipped the Head step (03 rule 6) and waits for the Principal of
-  // its branch: "Head approved → Principal of the branch" (10 Notifications). The actor of such
-  // a submit is always a Head: the draft is its Head's own, and only its owner or a Head may
-  // submit it (decisions 2.3 item 2; review of the plan, Should fix 1).
-  const skipped = result.orders.filter((order) => order.status === "PENDING_PRINCIPAL");
-  for (const { branchId, params } of orderActionNotices(actor!.name, inBranches(skipped))) {
-    const principals = await tx
-      .select({ id: userBranches.userId })
-      .from(userBranches)
-      .where(
-        and(
-          eq(userBranches.branchId, branchId),
-          eq(userBranches.userRole, "PRINCIPAL"),
-          eq(userBranches.userIsActive, true),
-        ),
+  // its branch, or for whoever acts at the next step that is on: "Head approved → Principal of the
+  // branch; while the Principal step is off, as for 'Principal approved'" (10 Notifications; plan
+  // of 4.10d, decided item 8). The actor of such a submit is always a Head: the draft is its Head's
+  // own, and only its owner or a Head may submit it (decisions 2.3 item 2; review of the plan,
+  // Should fix 1). Grouped by the status reached, one notice per branch each.
+  const ownerOf = new Map(context.orders.map((order) => [order.id, order.ownerId]));
+  for (const to of ["PENDING_PRINCIPAL", "PENDING_FINANCE", "PURCHASING"] as const) {
+    const skipped = result.orders.filter((order) => order.status === to);
+    for (const { branchId, params } of orderActionNotices(actor!.name, inBranches(skipped))) {
+      const owners = skipped
+        .filter((order) => branchOf.get(order.id) === branchId)
+        .map((order) => ownerOf.get(order.id)!);
+      await notify(
+        { tx, userId },
+        {
+          to: await nextStepRecipients(tx, to, branchId, owners),
+          type: "REQUEST_HEAD_APPROVED",
+          params,
+          branchId,
+          link: actionLink(branchId, result.actionId),
+          at,
+        },
       );
-    await notify(
-      { tx, userId },
-      {
-        to: principals.map((principal) => principal.id),
-        type: "REQUEST_HEAD_APPROVED",
-        params,
-        branchId,
-        link: actionLink(branchId, result.actionId),
-        at,
-      },
-    );
+    }
   }
 }
 
-/** The plan facts after the move: one order_revisions row per order (rule 7). */
-async function snapshotsOf(context: OrdersContext<Input>): Promise<void> {
+/**
+ * The plan facts after the move: one order_revisions row per order (rule 7); and `approved_at` of
+ * the orders a Head-created Submit opened with both steps off, the approval that opened them (07
+ * Purchase record, Date bought; 06 Principal step switched off 3; plan of 4.10d).
+ */
+async function afterSubmit(
+  context: OrdersContext<Input>,
+  moves: readonly PlannedMove[],
+): Promise<void> {
+  const at = now();
   await writeSnapshots(
     context.tx,
     context.orders.map((order) => order.id),
-    now(),
+    at,
   );
+  const opened = moves.filter((move) => move.to === "PURCHASING").map((move) => move.orderId);
+  if (opened.length > 0) {
+    await context.tx.update(orders).set({ approvedAt: at }).where(inArray(orders.id, opened));
+  }
+}
+
+/**
+ * The approval steps, read under the settings lock taken shared, when a Head-created draft is sent:
+ * its first Submit leaves the Head step and goes to the next step that is on (03 rule 6; plan of
+ * 4.10d, decided item 1, Look first). A submit of other drafts reads nothing: it goes to the Head.
+ */
+async function stepsOf(context: OrdersContext<Input>): Promise<readonly LockedOrder[]> {
+  if (!context.orders.some((order) => order.createdByHead)) return context.orders;
+  const steps = await approvalSteps(context.tx);
+  return context.orders.map((order) => ({ ...order, ...steps }));
 }
 
 export const submitDrafts = orderMoveAction<Input>({
   name: "submitDrafts",
   action: "SUBMIT",
   input: ordersInput({}),
+  facts: stepsOf,
   beforeMove: beforeSubmit,
-  afterMove: snapshotsOf,
+  afterMove: afterSubmit,
   notify: notifySubmitted,
 });
 
@@ -239,7 +271,8 @@ export const submitReadyDrafts = orderMoveAction<Input>({
     const { left } = await leftOf(tx, own);
     return { left, heldBack: own.length - left.length };
   },
+  facts: stepsOf,
   beforeMove: beforeSubmit,
-  afterMove: snapshotsOf,
+  afterMove: afterSubmit,
   notify: notifySubmitted,
 });

@@ -143,6 +143,12 @@ export const orders = pgTable(
      * step switched off 1 and 2; plan of 4.10c). Written once, by that approval.
      */
     skippedFinance: boolean("skipped_finance").notNull().default(false),
+    /**
+     * The Head approved the order, or submitted one the Head created, while the Principal step was
+     * switched off: it went to the next step that is on (06-approval-workflow.md, Principal step
+     * switched off 1). Set or cleared by every Head approval (rule 2; plan of 4.10d).
+     */
+    skippedPrincipal: boolean("skipped_principal").notNull().default(false),
     clientKey: uuid("client_key"),
     createdBy: uuid("created_by")
       .notNull()
@@ -172,6 +178,12 @@ export const orders = pgTable(
     check(
       "orders_skipped_finance_status_check",
       sql`NOT ${table.skippedFinance} OR ${table.status} NOT IN ('PENDING_FINANCE', 'SETTLEMENT')`,
+    ),
+    // 06 Principal step switched off 1 and 4: an order that skipped the Principal never waits for
+    // the Principal (plan of 4.10d, decided item 6, Look first).
+    check(
+      "orders_skipped_principal_status_check",
+      sql`NOT ${table.skippedPrincipal} OR ${table.status} <> 'PENDING_PRINCIPAL'`,
     ),
     check("orders_revision_check", sql`${table.revision} >= 1`),
     check("orders_version_check", sql`${table.version} >= 1`),

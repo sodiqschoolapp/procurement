@@ -74,14 +74,16 @@ export function orderState(order: LockedOrder): OrderState {
 }
 
 /**
- * What the move reads besides the orders: the reason, and the setting `finance_step` as the
- * approval's facts step read it, once for the whole action under the settings lock (plan of
- * 4.10c, decided item 1, Look first). Unread is on: no other move reads it.
+ * What the move reads besides the orders: the reason, and the settings `finance_step` and
+ * `principal_step` as the action's facts step read them, once for the whole action under the
+ * settings lock (plan of 4.10c, decided item 1; plan of 4.10d, decided items 1 and 2, Look first).
+ * Unread is on: no other move reads them.
  */
 function moveInput<Input extends MoveActionInput>(context: OrdersContext<Input>): MoveInput {
   return {
     reason: context.input.reason,
     financeStep: !context.orders.some((order) => order.financeStep === false),
+    principalStep: !context.orders.some((order) => order.principalStep === false),
   };
 }
 
@@ -122,16 +124,35 @@ function checkOf<Input extends MoveActionInput>(
   return failed;
 }
 
-/** Writes each order's new status, and its revision where the move raises it. */
+/**
+ * Writes each order's new status, its revision where the move raises it, and the marks of the
+ * skipped steps in the same statement, so the CHECKs `orders_skipped_principal_status_check` and
+ * `orders_skipped_finance_status_check` hold at its end: `skipped_principal` set or cleared by
+ * every move that leaves the Head step (06 Principal step switched off 2; plan of 4.10d, decided
+ * item 3, Look first), `skipped_finance` set by every move that skips Finance and never cleared
+ * (06 Finance step switched off 1; plan of 4.10d, decided item 5, Look first).
+ */
 async function writeMoves(
   context: OrdersWriteContext<MoveActionInput>,
   moves: readonly PlannedMove[],
 ): Promise<void> {
-  // One statement per target status and revision step, never one per order (rule 12).
-  const groups = new Map<string, { to: RequestStatus; revisionUp: boolean; ids: string[] }>();
+  // One statement per target status, revision step and marks, never one per order (rule 12).
+  type Group = Pick<
+    PlannedMove,
+    "to" | "revisionUp" | "decidesPrincipal" | "skipsPrincipal" | "skipsFinance"
+  > & { ids: string[] };
+  const groups = new Map<string, Group>();
   for (const move of moves) {
-    const key = `${move.to}:${move.revisionUp}`;
-    const group = groups.get(key) ?? { to: move.to, revisionUp: move.revisionUp, ids: [] };
+    const { to, revisionUp, decidesPrincipal, skipsPrincipal, skipsFinance } = move;
+    const key = JSON.stringify([to, revisionUp, decidesPrincipal, skipsPrincipal, skipsFinance]);
+    const group = groups.get(key) ?? {
+      to,
+      revisionUp,
+      decidesPrincipal,
+      skipsPrincipal,
+      skipsFinance,
+      ids: [],
+    };
     group.ids.push(move.orderId);
     groups.set(key, group);
   }
@@ -141,6 +162,8 @@ async function writeMoves(
       .set({
         status: group.to,
         ...(group.revisionUp ? { revision: sql`${orders.revision} + 1` } : {}),
+        ...(group.decidesPrincipal ? { skippedPrincipal: group.skipsPrincipal } : {}),
+        ...(group.skipsFinance ? { skippedFinance: true } : {}),
       })
       .where(inArray(orders.id, group.ids));
   }

@@ -32,7 +32,8 @@ export type DownloadRow = {
   plannedTotal: bigint | null;
   /**
    * Who finished each step and when; null for a step not finished (15 S17); "skipped" for the
-   * Finance step of an order that skipped Finance (06 Finance step switched off; plan of 4.10c).
+   * Finance step of an order that skipped Finance and the Principal step of one that skipped the
+   * Principal (06 Finance step switched off; Principal step switched off; plans of 4.10c, 4.10d).
    */
   approvals: Record<ApprovalStep, { name: string; at: Date } | "skipped" | null>;
   /**
@@ -54,7 +55,8 @@ export type DownloadRow = {
  * cancelled ones included (the domain leaves them out). `events` are the order's events,
  * oldest first: only the moves after the newest Submit count (06 rule 4), a Head-created order's
  * Head step is its Submit (03 rule 6), and a Rejected or Cancelled order keeps the steps it
- * finished. `skippedFinance` is the order's mark, read as the stepper reads it.
+ * finished. `skippedFinance` and `skippedPrincipal` are the order's marks, read as the stepper
+ * reads them.
  */
 export function orderDownloadRow(
   status: RequestStatus,
@@ -62,8 +64,9 @@ export function orderDownloadRow(
   events: readonly StepEvent[],
   records: readonly PurchaseRecord[],
   skippedFinance = false,
+  skippedPrincipal = false,
 ): DownloadRow {
-  const steps = orderSteps(status, events, skippedFinance);
+  const steps = orderSteps(status, events, skippedFinance, skippedPrincipal);
   const byOf = (step: ApprovalStep) => {
     const view = steps.find((each) => each.step === step);
     return view?.state === "skipped" ? "skipped" : (view?.by ?? null);

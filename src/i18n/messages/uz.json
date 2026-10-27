@@ -101,6 +101,7 @@
       "nothingToCount": "Bu yerda sanash uchun ombordagi mahsulot yoʻq.",
       "financeStepWaiting": "Buyurtmalar hali moliyani yoki hisob-kitobni kutmoqda.",
       "beforePrincipalApproval": "Sana buyurtma direktor tomonidan tasdiqlanishidan oldin. Shu kunni yoki keyingisini tanlang.",
+      "beforeHeadApproval": "Sana buyurtma xaridlar rahbari tomonidan tasdiqlanishidan oldin. Shu kunni yoki keyingisini tanlang.",
       "noDepartment": "Bu buyurtmaning boʻlimi yoʻq, shuning uchun uni toʻgʻridan-toʻgʻri boʻlimga berib boʻlmaydi.",
       "priceNeedsFinanceOff": "Narxni ixtiyoriy yoki yashirin qilish faqat Moliya bosqichi oʻchirilganda mumkin.",
       "financeStepPriceNotRequired": "Avval «Buyurtma maydonlari»da narxni majburiy qiling: Moliya bosqichi yoqilganda har bir buyurtmada narx boʻlishi kerak.",

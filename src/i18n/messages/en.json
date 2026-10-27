@@ -101,6 +101,7 @@
       "nothingToCount": "No items in stock here to count.",
       "financeStepWaiting": "Orders still wait for Finance or for settlement.",
       "beforePrincipalApproval": "The date is before the Principal approved the order. Pick that day or a later one.",
+      "beforeHeadApproval": "The date is before the Head approved the order. Pick that day or a later one.",
       "noDepartment": "This order has no department, so it cannot be given straight to a department.",
       "priceNeedsFinanceOff": "The price can be optional or hidden only while the Finance step is off.",
       "financeStepPriceNotRequired": "Make the price required in Order fields first: with the Finance step on, every order needs a price.",

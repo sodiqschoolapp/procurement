@@ -62,6 +62,12 @@ export type SettingValues = {
    */
   finance_step: boolean;
   /**
+   * The Principal step of the approval, on by default (06-approval-workflow.md, Principal step
+   * switched off; D69). Switched by its own action with its confirmation (plan of 4.10d, decided
+   * item 12), never by the settings form.
+   */
+  principal_step: boolean;
+  /**
    * The fields the Head sets (05-order-request-form.md, Fields the Head sets; D67): how each is
    * asked and where it stands. Saved by the settings form as a whole object (plan of 2.5d, decided
    * item 3).
@@ -72,8 +78,8 @@ export type SettingValues = {
 export type SettingKey = keyof SettingValues;
 
 /**
- * The eleven keys, in the order the screen shows them; the Finance step and the order fields have
- * their own blocks, last.
+ * The twelve keys, in the order the screen shows them; the Principal step, the Finance step and the
+ * order fields have their own blocks, last.
  */
 export const SETTING_KEYS = [
   "school_name",
@@ -85,6 +91,7 @@ export const SETTING_KEYS = [
   "receipt_required_for_cash",
   "reminder_hours",
   "escalation_hours",
+  "principal_step",
   "finance_step",
   "order_fields",
 ] as const satisfies readonly SettingKey[];
@@ -103,6 +110,7 @@ export const SETTING_DEFAULTS: SettingValues = {
   receipt_required_for_cash: false,
   school_name: null,
   school_year_start: null,
+  principal_step: true,
   finance_step: true,
   order_fields: ORDER_FIELDS_DEFAULT,
 };
@@ -164,6 +172,7 @@ export const SETTING_CHECKS: { [Key in SettingKey]: (value: unknown) => boolean 
   receipt_required_for_cash: (value) => typeof value === "boolean",
   school_name: isSchoolName,
   school_year_start: isMonthDay,
+  principal_step: (value) => typeof value === "boolean",
   finance_step: (value) => typeof value === "boolean",
   order_fields: isOrderFields,
 };

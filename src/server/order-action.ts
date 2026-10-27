@@ -115,6 +115,11 @@ export type LockedOrder = {
    * (plan of 4.10c, decided item 1, Look first); otherwise on. One read for the whole action.
    */
   financeStep?: boolean;
+  /**
+   * The setting `principal_step`, when the Head's approval or a Head-created Submit read it in its
+   * `facts` step under the settings lock (plan of 4.10d, decided item 1, Look first); otherwise on.
+   */
+  principalStep?: boolean;
 };
 
 /** What the history step writes for one order besides its statuses. */

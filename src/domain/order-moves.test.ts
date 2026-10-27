@@ -10,6 +10,7 @@ import {
   OrderMoveRefused,
   type PlannedMove,
   type OrderState,
+  afterHead,
   allowedActions,
   assertMove,
   checkMoves,
@@ -100,6 +101,8 @@ type Case = {
   skippedFinance: boolean;
   /** The setting `finance_step` the move reads (06 Finance step switched off). */
   financeStep: boolean;
+  /** The setting `principal_step` the move reads (06 Principal step switched off). */
+  principalStep: boolean;
 };
 
 type Expected =
@@ -109,6 +112,8 @@ type Expected =
       revisionUp: boolean;
       headStepAuto: boolean;
       skipsFinance: boolean;
+      decidesPrincipal: boolean;
+      skipsPrincipal: boolean;
     }
   | { ok: false; reason: "not_found" | "wrong_status" | "forbidden" | "not_ready" };
 
@@ -158,14 +163,35 @@ function expected(status: RequestStatus, action: OrderAction, c: Case, screen = 
   if (action === "CLOSE_SKIPPED" && !c.buyingFinished) return { ok: false, reason: "not_ready" };
   if (action === "CLOSE" && !screen && !c.readyToClose) return { ok: false, reason: "not_ready" };
   const headStepAuto = action === "SUBMIT" && c.createdByHead;
+  // The Head's Approve, and the Submit of an order the Head created, go to the next step that is
+  // on (06 Allowed moves; Principal step switched off 1 and 3).
+  const leavesHead = headStepAuto || (status === "PENDING_HEAD" && action === "APPROVE");
+  if (leavesHead) {
+    const to: RequestStatus = c.principalStep
+      ? "PENDING_PRINCIPAL"
+      : c.financeStep
+        ? "PENDING_FINANCE"
+        : "PURCHASING";
+    return {
+      ok: true,
+      to,
+      revisionUp: false,
+      headStepAuto,
+      skipsFinance: to === "PURCHASING",
+      decidesPrincipal: true,
+      skipsPrincipal: !c.principalStep,
+    };
+  }
   // The Principal's Approve goes to Open when the Finance step is off (06 Allowed moves).
   const skipsFinance = status === "PENDING_PRINCIPAL" && action === "APPROVE" && !c.financeStep;
   return {
     ok: true,
-    to: headStepAuto ? "PENDING_PRINCIPAL" : skipsFinance ? "PURCHASING" : row.to,
+    to: skipsFinance ? "PURCHASING" : row.to,
     revisionUp: action === "SUBMIT_AGAIN",
     headStepAuto,
     skipsFinance,
+    decidesPrincipal: false,
+    skipsPrincipal: false,
   };
 }
 
@@ -238,20 +264,27 @@ function* cases(): Generator<Case> {
                       readyToClose,
                       skippedFinance: false,
                       financeStep: true,
+                      principalStep: true,
                     };
   }
 }
 
 /**
- * Each status with the case, and with the two facts of 4.10c where they can differ (06 Finance
- * step switched off): the step off at the Principal's step, the only move that reads it; the mark
- * from Open on, the only statuses an order that skipped Finance can stand at (migration 0054
- * refuses it Waiting for Finance or for settlement, and it is written by the move into Open).
+ * Each status with the case, and with the facts of 4.10c and 4.10d where they can differ (06
+ * Finance step switched off; Principal step switched off): the Finance step off at the Principal's
+ * step; the Principal step off, alone and with the Finance step, at Draft and Waiting for Head, the
+ * only statuses whose moves leave the Head step; the mark of 4.10c from Open on, the only statuses
+ * an order that skipped Finance can stand at (migration 0054 refuses it Waiting for Finance or for
+ * settlement, and it is written by the move into Open).
  */
 function* atStatuses(c: Case): Generator<[RequestStatus, Case]> {
   for (const status of REQUEST_STATUSES) {
     yield [status, c];
     if (status === "PENDING_PRINCIPAL") yield [status, { ...c, financeStep: false }];
+    if (status === "DRAFT" || status === "PENDING_HEAD") {
+      yield [status, { ...c, principalStep: false }];
+      yield [status, { ...c, principalStep: false, financeStep: false }];
+    }
     if (status === "PURCHASING" || status === "CLOSED") {
       yield [status, { ...c, skippedFinance: true }];
     }
@@ -273,6 +306,8 @@ function asExpected(check: ReturnType<typeof checkMoves>): Expected {
       revisionUp: move.revisionUp,
       headStepAuto: move.headStepAuto,
       skipsFinance: move.skipsFinance,
+      decidesPrincipal: move.decidesPrincipal,
+      skipsPrincipal: move.skipsPrincipal,
     };
   }
   if (check.refusal.kind !== "orders") throw new Error(`unexpected ${check.refusal.kind}`);
@@ -347,6 +382,7 @@ describe("every other combination is refused, generated (06: any move not in the
             checkMoves(who, [orderFor(status, c)], action, {
               reason: REASON,
               financeStep: c.financeStep,
+              principalStep: c.principalStep,
             }),
           );
           expect(answer, label).toEqual(expected(status, action, c));
@@ -355,8 +391,8 @@ describe("every other combination is refused, generated (06: any move not in the
         }
       }
     }
-    // Ten statuses and three variants of 4.10c, thirteen actions, 768 cases.
-    expect(checked).toBe(13 * 13 * 6 * 2 ** 7);
+    // Ten statuses, three variants of 4.10c and four of 4.10d, thirteen actions, 768 cases.
+    expect(checked).toBe(17 * 13 * 6 * 2 ** 7);
   });
 
   it("reaches exactly the (from, to, role) triples of the table", () => {
@@ -367,6 +403,7 @@ describe("every other combination is refused, generated (06: any move not in the
           const check = checkMoves(actor(c.role, c.off), [orderFor(status, c)], action, {
             reason: REASON,
             financeStep: c.financeStep,
+            principalStep: c.principalStep,
           });
           for (const move of check.ok ? check.moves : [])
             reached.add(`${status} ${move.to} ${c.role}`);
@@ -374,13 +411,21 @@ describe("every other combination is refused, generated (06: any move not in the
       }
     }
     // Written out by hand from the table: the roles of each row; the Head's own Submit goes to
-    // the Principal (03 rule 6).
+    // the Principal, or the next step that is on (03 rule 6).
     expect([...reached].toSorted()).toEqual(
       [
         "DRAFT PENDING_HEAD HEAD",
         "DRAFT PENDING_HEAD MANAGER",
         "DRAFT PENDING_PRINCIPAL HEAD",
         "DRAFT PENDING_PRINCIPAL MANAGER",
+        // The Principal step switched off, alone and with the Finance step (06 Allowed moves,
+        // Submit and the Head's Approve; Principal step switched off 1 and 3).
+        "DRAFT PENDING_FINANCE HEAD",
+        "DRAFT PENDING_FINANCE MANAGER",
+        "DRAFT PURCHASING HEAD",
+        "DRAFT PURCHASING MANAGER",
+        "PENDING_HEAD PENDING_FINANCE HEAD",
+        "PENDING_HEAD PURCHASING HEAD",
         "PENDING_HEAD PENDING_PRINCIPAL HEAD",
         "PENDING_PRINCIPAL PENDING_FINANCE PRINCIPAL",
         // The Finance step switched off (06 Allowed moves, Principal's Approve).
@@ -479,6 +524,8 @@ describe("Owner only: Take back (06 Allowed moves; decision 5)", () => {
           revisionUp: true,
           headStepAuto: false,
           skipsFinance: false,
+          decidesPrincipal: false,
+          skipsPrincipal: false,
         },
       ]);
     }
@@ -641,6 +688,8 @@ describe("Cancel of a Draft with a number (06 Allowed moves, Cancel row; D55 ite
           revisionUp: false,
           headStepAuto: false,
           skipsFinance: false,
+          decidesPrincipal: false,
+          skipsPrincipal: false,
         },
       ]);
     }
@@ -742,6 +791,8 @@ describe("assertMove() for the server (developer-rules.md rule 2)", () => {
         revisionUp: false,
         headStepAuto: false,
         skipsFinance: false,
+        decidesPrincipal: false,
+        skipsPrincipal: false,
       },
     ]);
   });
@@ -898,5 +949,102 @@ describe("The Finance step switched off (06-approval-workflow.md, Finance step s
     );
     const reopened = order("PURCHASING", { skippedFinance: true });
     expect(allowedActions(actor("MANAGER"), [reopened])).toEqual(["CLOSE_SKIPPED"]);
+  });
+});
+
+describe("The Principal step switched off (06-approval-workflow.md, Principal step switched off; Allowed moves; plan of 4.10d)", () => {
+  const steps = (principalStep: boolean, financeStep: boolean) => ({ principalStep, financeStep });
+
+  it("afterHead(): Waiting for Principal, Waiting for Finance with the step off, Open with both off (06 Allowed moves)", () => {
+    expect(afterHead(true, true)).toBe("PENDING_PRINCIPAL");
+    expect(afterHead(true, false)).toBe("PENDING_PRINCIPAL");
+    expect(afterHead(false, true)).toBe("PENDING_FINANCE");
+    expect(afterHead(false, false)).toBe("PURCHASING");
+  });
+
+  it("rule 1: the Head's Approve goes to Waiting for Finance with the step off and marks the order", () => {
+    const [move] = movesOf(
+      checkMoves(actor("HEAD"), [order("PENDING_HEAD")], "APPROVE", steps(false, true)),
+    );
+    expect(move).toMatchObject({
+      to: "PENDING_FINANCE",
+      decidesPrincipal: true,
+      skipsPrincipal: true,
+      skipsFinance: false,
+    });
+  });
+
+  it("rule 2: with the step on the Head's Approve waits for the Principal and clears the mark", () => {
+    const [move] = movesOf(
+      checkMoves(actor("HEAD"), [order("PENDING_HEAD")], "APPROVE", steps(true, false)),
+    );
+    expect(move).toMatchObject({
+      to: "PENDING_PRINCIPAL",
+      decidesPrincipal: true,
+      skipsPrincipal: false,
+      skipsFinance: false,
+    });
+  });
+
+  it("rule 3: with both steps off the Head's Approve opens the order, marked for both", () => {
+    const [move] = movesOf(
+      checkMoves(actor("HEAD"), [order("PENDING_HEAD")], "APPROVE", steps(false, false)),
+    );
+    expect(move).toMatchObject({ to: "PURCHASING", skipsPrincipal: true, skipsFinance: true });
+  });
+
+  it("rule 1 and 03 rule 6: the Submit of a Head-created order goes to the next step that is on, Created by Head", () => {
+    const draft = () => order("DRAFT", { createdByHead: true, numbered: false });
+    const finance = movesOf(checkMoves(actor("HEAD"), [draft()], "SUBMIT", steps(false, true)));
+    expect(finance[0]).toMatchObject({
+      to: "PENDING_FINANCE",
+      headStepAuto: true,
+      decidesPrincipal: true,
+      skipsPrincipal: true,
+    });
+    const open = movesOf(checkMoves(actor("HEAD"), [draft()], "SUBMIT", steps(false, false)));
+    expect(open[0]).toMatchObject({
+      to: "PURCHASING",
+      headStepAuto: true,
+      skipsPrincipal: true,
+      skipsFinance: true,
+    });
+  });
+
+  it("06 rule 4: a Manager's Submit and any Submit again go to the Head whatever the steps, deciding nothing", () => {
+    const submitted = movesOf(
+      checkMoves(
+        actor("MANAGER"),
+        [order("DRAFT", { numbered: false })],
+        "SUBMIT",
+        steps(false, false),
+      ),
+    );
+    expect(submitted[0]).toMatchObject({
+      to: "PENDING_HEAD",
+      decidesPrincipal: false,
+      skipsPrincipal: false,
+      skipsFinance: false,
+    });
+    const again = movesOf(
+      checkMoves(
+        actor("HEAD"),
+        [order("RETURNED", { createdByHead: true })],
+        "SUBMIT_AGAIN",
+        steps(false, false),
+      ),
+    );
+    expect(again[0]).toMatchObject({ to: "PENDING_HEAD", decidesPrincipal: false });
+  });
+
+  it("the Principal's and Finance's Approve do not read the Principal step", () => {
+    const principal = movesOf(
+      checkMoves(actor("PRINCIPAL"), [order("PENDING_PRINCIPAL")], "APPROVE", steps(false, true)),
+    );
+    expect(principal[0]).toMatchObject({ to: "PENDING_FINANCE", decidesPrincipal: false });
+    const finance = movesOf(
+      checkMoves(actor("FINANCE"), [order("PENDING_FINANCE")], "APPROVE", steps(false, true)),
+    );
+    expect(finance[0]).toMatchObject({ to: "PURCHASING", decidesPrincipal: false });
   });
 });

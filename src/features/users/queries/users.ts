@@ -167,7 +167,8 @@ export type BranchVacancy = { id: string; code: string; name: string; roles: Sta
 /**
  * Each active branch with the roles among Manager, Principal and Finance that have no active user
  * there, for the warning of /users (03 rule 5; plan of 1.3, decision 8); Finance not while the
- * Finance step is off (`staffedRoles()`; plan of 4.10c). Ordered by code.
+ * Finance step is off, the Principal while the Principal step is off (`staffedRoles()`; plans of
+ * 4.10c and 4.10d). Ordered by code.
  */
 export async function listBranchVacancies(userId: string): Promise<BranchVacancy[]> {
   await authorize(userId, "catalog.manage");
@@ -182,7 +183,8 @@ export async function listBranchVacancies(userId: string): Promise<BranchVacancy
     open.map((branch) => branch.id),
   );
   const held = new Set(staffed.map((place) => `${place.branchId} ${place.role}`));
-  const roles = staffedRoles((await readSettings(db)).finance_step);
+  const values = await readSettings(db);
+  const roles = staffedRoles(values.principal_step, values.finance_step);
   return open
     .map((branch) => ({
       ...branch,

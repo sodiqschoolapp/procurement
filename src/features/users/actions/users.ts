@@ -201,6 +201,15 @@ async function activeHeads(tx: Executor): Promise<string[]> {
  * act; this notice reminds of a gap that stays until it is filled, and the school usually has one
  * Head (plan of 1.3, decision 7). `branchId` keeps notify()'s branch filter.
  */
+/**
+ * The two approval steps a vacancy reads: a role whose step is off is no news (03 rule 5; plans of
+ * 4.10c and 4.10d).
+ */
+async function stepsOf(tx: Executor): Promise<[principalStep: boolean, financeStep: boolean]> {
+  const values = await readSettings(tx);
+  return [values.principal_step, values.finance_step];
+}
+
 async function tellVacancies(tx: Executor, vacated: readonly VacatedPlace[]): Promise<void> {
   if (vacated.length === 0) return;
   const heads = await activeHeads(tx);
@@ -500,10 +509,7 @@ export const updateUser = defineAction({
       changed,
       before: auditFields(current, changed, branchRows),
       after: auditFields(user, changed, branchRows),
-      vacated: named(
-        vacatedPlaces(before, after, (await readSettings(tx)).finance_step),
-        branchRows,
-      ),
+      vacated: named(vacatedPlaces(before, after, ...(await stepsOf(tx))), branchRows),
     };
   },
   async history({ tx, userId }, result) {
@@ -582,10 +588,7 @@ export const setUserActive = defineAction({
     const after = await staffedPlaces(tx, current.branchIds);
     return {
       user: { ...current, isActive: input.active },
-      vacated: named(
-        vacatedPlaces(before, after, (await readSettings(tx)).finance_step),
-        branchRows,
-      ),
+      vacated: named(vacatedPlaces(before, after, ...(await stepsOf(tx))), branchRows),
     };
   },
   async history({ tx, userId }, result) {
