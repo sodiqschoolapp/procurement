@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   QUANTITY,
   type OrderPlan,
+  type PricedPlan,
   orderExtras,
   orderGoods,
   orderTotal,
@@ -23,7 +24,7 @@ function plan(
   price: bigint,
   extras: bigint[] = [],
   paymentType: OrderPlan["paymentType"] = "CASH",
-): OrderPlan {
+): PricedPlan {
   return { quantity, price, extras, paymentType };
 }
 
@@ -114,6 +115,7 @@ describe("ordersTotals (05 the totals under the list; 08 sums of the order value
       extras: 0n,
       grand: 0n,
       byPaymentType: { CASH: 0n, TRANSFER: 0n, CARD: 0n },
+      unpriced: 0,
     });
     const two = ordersTotals([plan("1", 100n, [], "CARD"), plan("2", 100n, [5n], "CARD")]);
     expect(two.byPaymentType).toEqual({ CASH: 0n, TRANSFER: 0n, CARD: 305n });
@@ -224,5 +226,27 @@ describe("extrasSum (05 field 12: each amount more than 0; the cell shows the su
   it("refuses an amount of 0 or less", () => {
     expect(() => extrasSum([0n])).toThrow(RangeError);
     expect(() => extrasSum([5n, -1n])).toThrow(RangeError);
+  });
+});
+
+// 08 Numbers the system calculates: "An order without a planned price has no planned total [...]
+// it is left out [...] of planned sums, and a sum that leaves orders out says how many"; plan of
+// 2.5d-b, decided item 2, Look first.
+describe("an order without a planned price (08 Numbers; 05 Fields the Head sets 3)", () => {
+  const unpriced: OrderPlan = { quantity: "10", price: null, extras: [], paymentType: "CASH" };
+
+  it("has no planned total", () => {
+    expect(orderTotal(unpriced)).toBeNull();
+    expect(orderTotal({ ...unpriced, extras: [5_000n] })).toBeNull();
+  });
+
+  it("is left out of the sums and counted: 10 × 4 500 priced and one unpriced give 45 000 and 1", () => {
+    expect(ordersTotals([plan("10", 4_500n), unpriced])).toEqual({
+      goods: 45_000n,
+      extras: 0n,
+      grand: 45_000n,
+      byPaymentType: { CASH: 45_000n, TRANSFER: 0n, CARD: 0n },
+      unpriced: 1,
+    });
   });
 });

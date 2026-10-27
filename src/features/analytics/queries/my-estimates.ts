@@ -94,7 +94,10 @@ async function estimatesIn(
     join orders o on o.id = analytics_spending.order_id
     join product_variants v on v.id = analytics_spending.variant_id
     join products pr on pr.id = v.product_id
-    where analytics_spending.unit_price > 0 and ((${nowWhere}) or (${beforeWhere}))`);
+    where analytics_spending.unit_price > 0 and ((${nowWhere}) or (${beforeWhere}))
+      -- An order without a planned price has nothing to estimate against (08 Numbers: left out
+      -- of planned sums; plan of 2.5d-b, Server actions and queries).
+      and o.planned_price is not null`);
 
   const groups = new Map<
     string,

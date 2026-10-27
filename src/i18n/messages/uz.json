@@ -101,7 +101,10 @@
       "nothingToCount": "Bu yerda sanash uchun ombordagi mahsulot yoʻq.",
       "financeStepWaiting": "Buyurtmalar hali moliyani yoki hisob-kitobni kutmoqda.",
       "beforePrincipalApproval": "Sana buyurtma direktor tomonidan tasdiqlanishidan oldin. Shu kunni yoki keyingisini tanlang.",
-      "noDepartment": "Bu buyurtmaning boʻlimi yoʻq, shuning uchun uni toʻgʻridan-toʻgʻri boʻlimga berib boʻlmaydi."
+      "noDepartment": "Bu buyurtmaning boʻlimi yoʻq, shuning uchun uni toʻgʻridan-toʻgʻri boʻlimga berib boʻlmaydi.",
+      "priceNeedsFinanceOff": "Narxni ixtiyoriy yoki yashirin qilish faqat Moliya bosqichi oʻchirilganda mumkin.",
+      "financeStepPriceNotRequired": "Avval «Buyurtma maydonlari»da narxni majburiy qiling: Moliya bosqichi yoqilganda har bir buyurtmada narx boʻlishi kerak.",
+      "financeStepUnpriced": "Rejalashtirilgan narxsiz buyurtmalar hali Rahbar yoki Direktorni kutmoqda."
     },
     "file": {
       "tooLarge": "Fayl 10 MB dan katta. Kichikroq fayl tanlang yoki suratni qaytadan oling.",
@@ -259,7 +262,8 @@
       "dearerBy": "Narxda <n>{amount}</n> ortiq toʻlandi",
       "cheaperOrders": "Narxda tejaldi: <n>{amount}</n>",
       "dearerOrders": "Narxda ortiq toʻlandi: <n>{amount}</n>",
-      "matchesOrders": "Narx rejadagidek: <n>{amount}</n>"
+      "matchesOrders": "Narx rejadagidek: <n>{amount}</n>",
+      "unpriced": "Rejalashtirilgan narx yoʻq"
     },
     "total": {
       "name": "Jami",
@@ -268,7 +272,8 @@
       "over": "Ortiqcha",
       "inProgress": "Jarayonda",
       "leftBy": "Qoldiq <n>{amount}</n>",
-      "overBy": "Ortiqcha <n>{amount}</n>"
+      "overBy": "Ortiqcha <n>{amount}</n>",
+      "unpriced": "Rejalashtirilgan narx yoʻq"
     }
   },
   "common": {
@@ -608,7 +613,9 @@
       "switchOnResult": "Direktor bundan keyin tasdiqlaydigan buyurtmalar moliyani kutadi. Moliyani oʻtkazib yuborgan buyurtmalar avvalgidek hisob-kitobsiz yopiladi.",
       "refused": "Oʻchirilmadi: {orders} buyurtmalari hali moliyani yoki hisob-kitobni kutmoqda.",
       "switchedOff": "Moliya bosqichi oʻchirildi",
-      "switchedOn": "Moliya bosqichi yoqildi"
+      "switchedOn": "Moliya bosqichi yoqildi",
+      "refusedUnpriced": "Yoqilmadi: bu buyurtmalarda rejalashtirilgan narx yoʻq va ular Rahbar yoki Direktorni kutmoqda: {orders}. Avval ularni qaytaring yoki tasdiqlang.",
+      "unpriced": "{count, plural, one {Rejalashtirilgan narxsiz # ta buyurtma Rahbar yoki Direktorni kutmoqda. Bunday buyurtma qolmaganda yoqing.} other {Rejalashtirilgan narxsiz # ta buyurtma Rahbar yoki Direktorni kutmoqda. Bunday buyurtma qolmaganda yoqing.}}"
     },
     "orderFields": {
       "title": "Buyurtma maydonlari",
@@ -640,7 +647,8 @@
       "place": {
         "row": "Qatorda",
         "more": "«Yana» ostida"
-      }
+      },
+      "priceFinanceOn": "Narxni ixtiyoriy yoki yashirin qilish faqat Moliya bosqichi oʻchirilganda mumkin."
     }
   },
   "admin": {
@@ -1836,7 +1844,8 @@
       },
       "excelShort": "Excel",
       "pdfShort": "PDF",
-      "skipped": "Oʻtkazib yuborildi"
+      "skipped": "Oʻtkazib yuborildi",
+      "unpriced": "{count, plural, one {Rejalashtirilgan narxsiz # ta buyurtma bu jamlarga kirmadi.} other {Rejalashtirilgan narxsiz # ta buyurtma bu jamlarga kirmadi.}}"
     },
     "progress": {
       "OPEN": "Xarid ochiq",
@@ -1890,7 +1899,12 @@
       "label": "{product}: boshqa maydonlar",
       "marked": "Bu yerdagi maydonni tuzatish kerak"
     },
-    "noDepartment": "Boʻlimsiz"
+    "noDepartment": "Boʻlimsiz",
+    "unpriced": {
+      "count": "{count, plural, one {# tasi narxsiz} other {# tasi narxsiz}}",
+      "sum": "{total} · {unpriced}",
+      "none": "Rejalashtirilgan narx yoʻq"
+    }
   },
   "purchase": {
     "form": {

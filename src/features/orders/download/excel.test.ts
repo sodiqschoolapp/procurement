@@ -94,6 +94,8 @@ function sheetWith(
     ],
     totalsTitle: "Totals",
     totals: [{ key: "grand", label: "Grand total", amount: total }],
+    noPlannedPrice: "No planned price",
+    unpricedLine: null,
     formatMoney: (amount) => String(amount),
     formatQuantity: (value) => value,
   };

@@ -40,9 +40,9 @@ import {
 } from "@/features/orders/queries/order-list";
 import type { ListStatus } from "@/domain/order-list";
 import { type Role, actorMay } from "@/domain/permissions";
-import { getFormatters } from "@/i18n/get-formatters";
 import { requireUser } from "@/server/auth/session";
 import { AuthorizationError, authorizeList } from "@/server/authorize";
+import { getPlannedSum } from "@/features/orders/components/planned-sum-server";
 
 import { PageLinks } from "../catalog/page-links";
 
@@ -133,7 +133,7 @@ async function summaryFigures(
 ): Promise<SummaryFigure[]> {
   const t = await getTranslations("orders.list.summary");
   const tStatus = await getTranslations("requestStatus");
-  const format = await getFormatters();
+  const plannedSum = await getPlannedSum();
   const base: ListFilters = { ...NO_FILTERS, branch, owner: role === "MANAGER" ? userId : null };
   const [mainStatus, ...otherStatuses] = ACTS_ON[role];
   const byStatus = await orNothing(() => countOrdersByStatus(userId, base), []);
@@ -151,7 +151,10 @@ async function summaryFigures(
       id: mainStatus,
       label: role === "MANAGER" ? tStatus(mainStatus) : t("waitingForMe"),
       value: mainCount,
-      note: main && mainCount > 0 ? format.money(main.totals.grand) : undefined,
+      note:
+        main && mainCount > 0
+          ? plannedSum(main.totals.grand, main.totals.unpriced, mainCount)
+          : undefined,
       href: mainCount > 0 ? listAddress({ ...base, status: mainStatus }, raw) : undefined,
       now: mainCount > 0,
     },

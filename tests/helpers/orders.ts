@@ -80,7 +80,8 @@ export type OrderRow = {
   /** `null`: an order without a needed-by date (05 Fields the Head sets 3). */
   neededBy?: string | null;
   plannedQty?: string;
-  plannedPrice?: bigint;
+  /** `null`: an order without a planned price, and so without a planned total (08 Numbers). */
+  plannedPrice?: bigint | null;
   paymentType?: PaymentType;
   submittedAt?: Date;
   approvedAt?: Date | null;
@@ -114,10 +115,10 @@ export async function insertOrder<Row extends OrderRow>(row: Row) {
       requesterName: row.requesterName ?? null,
       neededBy: row.neededBy === undefined ? "2031-05-01" : row.neededBy,
       plannedQty: row.plannedQty ?? "10.000",
-      plannedPrice: row.plannedPrice ?? 5000n,
+      plannedPrice: row.plannedPrice === undefined ? 5000n : row.plannedPrice,
       plannedTotal: orderTotal({
         quantity: row.plannedQty ?? "10.000",
-        price: row.plannedPrice ?? 5000n,
+        price: row.plannedPrice === undefined ? 5000n : row.plannedPrice,
         extras: [],
         paymentType: row.paymentType ?? "CASH",
       }),

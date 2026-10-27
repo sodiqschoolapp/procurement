@@ -37,6 +37,7 @@ import {
 } from "../../../../tests/helpers/finance-step";
 import { insertMoneyAction, insertMoneyRow } from "../../../../tests/helpers/money";
 import { noticesOf } from "../../../../tests/helpers/moves";
+import { setOrderFields } from "../../../../tests/helpers/order-fields";
 import { insertOrder } from "../../../../tests/helpers/orders";
 import { insertUser } from "../../../../tests/helpers/users";
 import { closeExactOrders } from "./close-exact";
@@ -424,6 +425,38 @@ describe("the order page of a skipped order (11 Order page layout 2 and 3; 06 ru
     expect(new Set(told.map((row) => row.userId).filter((id) => people.has(id)))).toEqual(
       new Set([s.manager.id, s.finance.id]),
     );
+    await setFinanceStep(true);
+  });
+});
+
+// 08 Numbers: an order without a planned price "is left out of the overspend guard"; 06 Finance
+// step switched off 3 and 4; plan of 2.5d-b, decided item 5 (Look first); S24 "no overspend
+// notice is sent". The priced order beside it in the same close still sends its notice (D40).
+describe("Close of an unpriced order that skipped Finance (08 Numbers; Overspend guard; plan of 2.5d-b)", () => {
+  it("one close of a priced order over the guard and an unpriced one bought for more: one notice, for the priced order only", async () => {
+    setClock(`${DAY}T07:00:00Z`);
+    await setFinanceStep(false);
+    await setOrderFields({ price: { ask: "optional", place: "row" } });
+    const s = await stepScene();
+    const priced = await atPrincipal(s);
+    const unpriced = await atPrincipal(s, { price: null });
+    await principalApproves(s, [priced, unpriced]);
+    // 100 × 6 500 + 20 000 = 670 000 against 520 000: over the guard. The unpriced order costs
+    // the same and has nothing to be over.
+    expectOk(
+      await buy(s, [
+        { order: priced, unitPrice: "6500", comment: "Narx oshgan" },
+        { order: unpriced, unitPrice: "6500" },
+      ]),
+    );
+
+    const closed = expectOk(await close(s.manager.id, [priced, unpriced]));
+
+    expect(closed.orders.map((each) => each.status)).toEqual(["CLOSED", "CLOSED"]);
+    const told = await noticesOf(s.head.id, "OVERSPEND_ABOVE_GUARD");
+    expect(told).toHaveLength(1);
+    expect(told[0]!.params).toMatchObject({ count: 1 });
+    await setOrderFields({});
     await setFinanceStep(true);
   });
 });

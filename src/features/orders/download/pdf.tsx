@@ -115,8 +115,12 @@ function cellText(sheet: DownloadSheet, line: DownloadLine, column: PdfColumn): 
     case "quantity":
       return quantityText(sheet, line, line.quantity);
     case "price":
+    case "plannedTotal": {
+      // An order without a planned price says so in its cell (08 Numbers).
+      const amount = line[column];
+      return amount === null ? sheet.noPlannedPrice : moneyText(sheet, amount);
+    }
     case "extras":
-    case "plannedTotal":
       return moneyText(sheet, line[column]);
     // Before Open, and a price while nothing is received: an empty cell (plan of 3.5).
     case "actualQty":
@@ -198,6 +202,7 @@ function OrdersPdf({ sheet, logoSrc }: { sheet: DownloadSheet; logoSrc: Buffer }
               <Text>{sheet.formatMoney(total.amount)}</Text>
             </View>
           ))}
+          {sheet.unpricedLine !== null && <Text>{sheet.unpricedLine}</Text>}
         </View>
 
         <Text

@@ -114,6 +114,8 @@ async function ordersIn(
       ownerName: row.owner_name,
       status: row.status,
       neededBy: row.needed_by,
+      // Only rows with cash needed are read (neededWhere(): cash_needed > 0), and cashNeeded()
+      // is 0 without planned cash, so planned_cash is never empty here (plan of 2.5d-b, item 9).
       plannedCash: BigInt(row.planned_cash),
       handed: BigInt(row.cash_handed),
       needed: BigInt(row.cash_needed),

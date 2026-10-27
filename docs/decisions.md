@@ -3251,3 +3251,24 @@ The plan's decisions as the plan review of 26.10.2026 confirmed them (correction
 9. A field the setting hides is still saved by the draft actions when sent: a sheet opened before the Head's change keeps its autosave, and submit writes the hidden value.
 10. The sheet's row order: the department, the quantity, then price and needed-by, then any other field set in the row in the order of 05's table; "More" is left out when nothing stands there.
 11. The Playwright test of the setting runs in its own project, `order-fields`, the teardown of `finance-step`, so the school-wide setting never changes under another browser test.
+
+### 2.5d-b Fields the Head sets: the price (26.10.2026)
+
+The plan's decisions as the plan review of 26.10.2026 confirmed them (corrections 1 to 3 applied), and those of the build. The Look first items come first.
+
+1. **Look first** (task split). 2.5d-b is split into 2.5d-b (the price everywhere an order is worked on, the switch refusals, S24) and 2.5d-c (analytics and reports: "No department" with its filter, and "N without a price" beside their sums), written into the build plan. In 2.5d-b every analytics and report reader already takes a missing price and leaves the order out of planned sums; until 2.5d-c those sums do not say how many they leave out.
+2. **Look first** (money, one formula). `OrderPlan.price` is `bigint | null`; `orderTotal()` and `plannedCash()` return null without a price (overloads keep `bigint` for a `PricedPlan`); `ordersTotals()` sums the priced orders and returns `unpriced`; `orderGoods()` takes a priced plan only. Worked: 10 × 4 500 priced and one unpriced give 45 000 and 1.
+3. **Look first** (the three colours). An unpriced order: Number as any order; Price and Total "No planned price" (muted, info icon, no amount), from Open on. A set: Total the summed difference of the priced orders, Price the worst among them, `unpriced` the count; all unpriced: "No planned price".
+4. **Look first** (`planVsActual()`). Without a planned price: planned price, planned total, difference and effects null; the actual numbers as for any order. The order page reads "No planned price" in their cells.
+5. **Look first** (overspend and closing). No overspend, no notice, no acknowledgment (`orderOverspend()` none; `settlementFactsOf()` gives no facts for an unpriced order). Never an exact match; once Open it always skipped Finance, so the owner or the Head closes it (06 rule 3).
+6. **Look first** (Cancel; completes #173 decided item 4). A Cancel of a taken-back draft no longer asks the price; a price with a quantity and no total still refuses on the price cell. `cancel.db.test.ts` and `submit-checks.test.ts` changed with that reason (D67, the requirement built).
+7. **Look first** (switch on, 06 rule 8). Under the exclusive settings lock: refused while the price is not required (`errors.field.financeStepPriceNotRequired`), then while an unpriced order of any branch waits for Head or Principal (`errors.field.financeStepUnpriced`, numbers listed). Approved unpriced orders do not block. One condition (`financeStepBlockers()`) for the switch and the list on /settings.
+8. A hidden price is `suggestedPrice()` of the subtype at the submit, never the draft's typed price; a numbered order keeps its own (05 rules 2 and 4).
+9. **Look first** (constraint loosened; review correction 1). Migration 0057 drops NOT NULL from `analytics_orders.planned_cash` (D67: an order without a price has no planned cash). `cash_needed` keeps its NOT NULL and CHECK: 0 without planned cash.
+10. No "price differs" comment on a record of an unpriced order; "Same as planned" leaves the price to be typed.
+11. Copy as new of an unpriced order takes the suggested price, as any new draft.
+12. Price optional and empty: the draft is ready, its total cell "—".
+13. The words of a planned sum are one helper, `usePlannedSum()` / `getPlannedSum()` (`planned-sum.ts`, `planned-sum-server.ts`): "45 000 so'm · 1 without a price", or "No planned price" when the whole set is unpriced. Every screen sum of 2.5d-b uses it.
+14. The Order fields block offers Optional and Hidden for the price only while the Finance step is off, with a line saying so; the server checks again under the lock (`saveSettings` `check` step, `errors.field.priceNeedsFinanceOff`).
+15. While the step is off, the Finance step block lists the unpriced orders waiting for Head or Principal and says when the price is not required, so the Head sees why switching on would be refused before trying.
+16. The S24 browser test is in `acceptance-order-fields.spec.ts` (project `order-fields`): it changes the school-wide Finance step and price setting, and puts both back.

@@ -269,6 +269,7 @@ describe("tickedSummary: the action bar (11 Order list layout 4; 06 rule 8; deci
       extras: 3_000n,
       grand: 63_000n,
       byPaymentType: { CASH: 50_000n, TRANSFER: 13_000n, CARD: 0n },
+      unpriced: 0,
     });
     expect(summary.actions).toEqual(["APPROVE", "SEND_BACK", "REJECT", "CANCEL"]);
     const c = await order({ ...base, status: "PENDING_PRINCIPAL" });
@@ -839,6 +840,7 @@ describe("the three colours of orders, group rows and ticked orders (08 The thre
       number: { colour: "red", orders: 1 },
       price: { colour: "green", orders: 3 },
       total: { colour: "green", difference: 0n },
+      unpriced: 0,
     });
     const byId = new Map(open.orders.map((each) => [each.id, each.colours]));
     expect(byId.get(exact.id)?.number).toEqual({ colour: "green", difference: "0" });
@@ -872,6 +874,7 @@ describe("the three colours of orders, group rows and ticked orders (08 The thre
       number: { colour: "amber", orders: 1 },
       price: { colour: "green", orders: 2 },
       total: { colour: "amber", difference: 50_000n },
+      unpriced: 0,
     });
     // Another branch's order is missing, never counted (03 rule 1).
     const withTheirs = await tickedSummary(manager.id, [exact.id, theirs.id]);
@@ -880,6 +883,7 @@ describe("the three colours of orders, group rows and ticked orders (08 The thre
       number: { colour: "green", orders: 1 },
       price: { colour: "green", orders: 1 },
       total: { colour: "green", difference: 0n },
+      unpriced: 0,
     });
     // Only a Sent back order: no colours.
     expect((await tickedSummary(manager.id, [sentBack.id])).colours).toBeNull();
@@ -897,6 +901,7 @@ describe("the three colours of orders, group rows and ticked orders (08 The thre
       number: { colour: "green", orders: 1 },
       price: { colour: "red", orders: 1 },
       total: { colour: "grey" },
+      unpriced: 0,
     });
     const still = groups[0]!.orders.find((each) => each.id === buying.id)!;
     expect(still.colours).toEqual({
@@ -985,5 +990,70 @@ describe("the branch wall holds for an order without a department in the list (0
     );
     const download = await orderDownload(other.manager.id);
     expect(download.orders.map((one) => one.id)).not.toContain(bare.id);
+  });
+});
+
+// 05 Group rows 1 ("the total planned amount"); 08 Numbers: an order without a planned price is
+// "left out of planned sums, and a sum that leaves orders out says how many"; plan of 2.5d-b,
+// decided items 2 and 3 (Look first); build plan 2.5d-b Done when.
+describe("an order without a planned price in the list (08 Numbers; 05 Group rows 1)", () => {
+  it("a group row of a priced and an unpriced order shows the priced total and 1 without a price; the ticked orders, the filter totals and the download the same", async () => {
+    setClock("2026-10-26T05:00:00Z");
+    const { branch, base } = await scene();
+    const head = await insertUser("HEAD");
+    const priced = await order({ ...base, status: "PENDING_HEAD", plannedPrice: 4_500n });
+    const unpriced = await order({ ...base, status: "PENDING_HEAD", plannedPrice: null });
+    const filters = filtered({ branch: branch.id });
+
+    const { groups } = await listOrderGroups(head.id, filters);
+    expect(groups).toHaveLength(1);
+    expect(groups[0]!.summary.totals).toMatchObject({ grand: 45_000n, unpriced: 1 });
+    const rows = new Map(groups[0]!.orders.map((each) => [each.id, each]));
+    expect(rows.get(unpriced.id)).toMatchObject({ price: null, plannedTotal: null });
+    expect(rows.get(priced.id)).toMatchObject({ price: 4_500n, plannedTotal: 45_000n });
+
+    expect((await tickedSummary(head.id, [priced.id, unpriced.id])).totals).toMatchObject({
+      grand: 45_000n,
+      unpriced: 1,
+    });
+    expect((await orderTotalsOnFilter(head.id, filters)).totals).toMatchObject({
+      grand: 45_000n,
+      unpriced: 1,
+    });
+    const file = await orderDownload(head.id, filters);
+    expect(file.totals).toMatchObject({ grand: 45_000n, unpriced: 1 });
+    expect(file.orders.find((each) => each.id === unpriced.id)).toMatchObject({
+      price: null,
+      row: { plannedTotal: null, actual: null },
+    });
+  });
+
+  it("an unpriced Open order bought for 45 000: Price and Total read No planned price, Number green (S24)", async () => {
+    setClock("2026-10-26T05:00:00Z");
+    const { branch, manager, base } = await scene();
+    const unpriced = await order({
+      ...base,
+      status: "PURCHASING",
+      plannedPrice: null,
+      progress: "DONE",
+    });
+    const tripId = (await insertTrip(branch.id, manager.id)).rows[0]!.id;
+    await insertPurchaseRow({
+      tripId,
+      orderId: unpriced.id,
+      branchId: branch.id,
+      variantId: base.variantId,
+      qty: "10",
+      unitPrice: "4500",
+      createdBy: manager.id,
+    });
+    const { groups } = await listOrderGroups(manager.id, filtered({ branch: branch.id }));
+    const row = groups.flatMap((group) => group.orders).find((each) => each.id === unpriced.id);
+    expect(row?.colours).toEqual({
+      number: { colour: "green", difference: "0" },
+      price: { colour: "unpriced" },
+      total: { colour: "unpriced" },
+    });
+    expect(row?.actual).toMatchObject({ total: 45_000n });
   });
 });

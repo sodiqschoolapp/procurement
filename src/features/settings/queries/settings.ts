@@ -1,4 +1,4 @@
-import { asc, desc, eq, inArray } from "drizzle-orm";
+import { asc, desc, eq } from "drizzle-orm";
 
 import { type BusinessDate, businessDate } from "@/domain/business-date";
 import type { RequestStatus } from "@/domain/request-status";
@@ -6,6 +6,8 @@ import type { SettingValues } from "@/domain/settings";
 import { authorize } from "@/server/authorize";
 import { branches, databaseCopies, orders } from "@/server/db/schema";
 import { readSettings } from "@/server/settings";
+
+import { financeStepBlockers } from "../finance-step-blockers";
 
 // The settings for screens (build-plan 1.1). Every query calls authorize() (developer-rules.md
 // rule 4). No branch filter: the settings belong to the whole school, not to a branch.
@@ -56,11 +58,16 @@ export type FinanceStepWaiting = {
 };
 
 /**
- * The orders Waiting for Finance or Waiting for settlement, of every branch, by number: "the Head
- * sees those orders listed and switches off once none is left" (06 Finance step switched off 5;
- * plan of 4.10c, decided item 10). The Head only, as the page; the Head sees every branch.
+ * The orders that refuse the next switch of the Finance step, of every branch, by number: to
+ * switch off, those Waiting for Finance or Waiting for settlement, "the Head sees those orders
+ * listed and switches off once none is left" (06 Finance step switched off 5; plan of 4.10c,
+ * decided item 10); to switch on, those without a planned price Waiting for Head or Principal
+ * (rule 8; plan of 2.5d-b). The Head only, as the page; the Head sees every branch.
  */
-export async function getFinanceStepWaiting(userId: string): Promise<FinanceStepWaiting[]> {
+export async function getFinanceStepWaiting(
+  userId: string,
+  switchingOn: boolean,
+): Promise<FinanceStepWaiting[]> {
   await authorize(userId, "catalog.manage");
   const { db } = await import("@/server/db/client");
   const rows = await db
@@ -72,7 +79,7 @@ export async function getFinanceStepWaiting(userId: string): Promise<FinanceStep
     })
     .from(orders)
     .innerJoin(branches, eq(branches.id, orders.branchId))
-    .where(inArray(orders.status, ["PENDING_FINANCE", "SETTLEMENT"]))
+    .where(financeStepBlockers(switchingOn))
     .orderBy(asc(orders.number));
   // A waiting order always has its number (05 Order number).
   return rows.map((row) => ({ ...row, number: row.number! }));

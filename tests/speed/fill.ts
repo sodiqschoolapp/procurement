@@ -13,7 +13,7 @@ import {
   settlementRows,
 } from "@/domain/money-ledger";
 import { orderNumber } from "@/domain/order-numbers";
-import { type OrderPlan, orderTotal } from "@/domain/order-totals";
+import { type PricedPlan, orderTotal } from "@/domain/order-totals";
 import type { PaymentType } from "@/domain/payment-types";
 import { type OrderProgress, actualTotal, progressAfterBuying } from "@/domain/purchases";
 import type { RequestStatus } from "@/domain/request-status";
@@ -146,7 +146,7 @@ type Plan = {
   owner: Person;
   variant: Variant;
   department: string;
-  plan: OrderPlan;
+  plan: PricedPlan;
   total: bigint;
   created: number;
   extraType: string | null;
@@ -401,7 +401,7 @@ export async function fill(query: Query, moment: Date, sizes: FillSizes): Promis
         : random.chance(0.7)
           ? "TRANSFER"
           : "CARD";
-      const plan: OrderPlan = { quantity, price, extras, paymentType };
+      const plan: PricedPlan = { quantity, price, extras, paymentType };
       plans.push({
         id: randomUUID(),
         branch,

@@ -288,6 +288,42 @@ describePermissionMatrix("saveSettings", {
   },
 });
 
+describe("saveSettings: the price optional or hidden with the Finance step off (06 Finance step switched off 8; plan of 2.5d-b)", () => {
+  beforeEach(async () => {
+    await db.delete(settings);
+  });
+
+  it.each(["optional", "hidden"] as const)(
+    "price %s is saved with one audit row while the step is off",
+    async (ask) => {
+      setClock("2026-10-26T09:00:00Z");
+      const head = await insertUser("HEAD");
+      await db
+        .insert(settings)
+        .values({ key: "finance_step", value: false, createdAt: new Date("2026-10-26T08:00:00Z") });
+      const fields = { ...ORDER_FIELDS_DEFAULT, price: { ask, place: "row" } };
+      expect(await runAction(saveSettings, head.id, { order_fields: fields })).toMatchObject({
+        ok: true,
+      });
+      expect((await readSettings(db)).order_fields.price).toEqual({ ask, place: "row" });
+      const rows = await auditRowsBy(head.id);
+      expect(rows).toHaveLength(1);
+      expect(rows[0]).toMatchObject({ after: { order_fields: fields } });
+    },
+  );
+
+  it("the same object with the step on is refused and nothing is written", async () => {
+    const head = await insertUser("HEAD");
+    const fields = { ...ORDER_FIELDS_DEFAULT, price: { ask: "optional", place: "row" } };
+    expect(await runAction(saveSettings, head.id, { order_fields: fields })).toMatchObject({
+      ok: false,
+      error: { code: "invalid_input" },
+    });
+    expect(await storedRows()).toEqual([]);
+    expect(await auditRowsBy(head.id)).toEqual([]);
+  });
+});
+
 describe("saveSettings: the fields the Head sets (05 Fields the Head sets; D67; plan of 2.5d)", () => {
   beforeEach(async () => {
     await db.delete(settings);
@@ -322,7 +358,10 @@ describe("saveSettings: the fields the Head sets (05 Fields the Head sets; D67; 
     expect(await auditRowsBy(head.id)).toHaveLength(1);
   });
 
-  it("refuses a price that is not required until 2.5d-b (decided item 1, Look first), and a wrong shape", async () => {
+  // Changed by 2.5d-b with the reason (D67; plan of 2.5d-b): until then the price took Required
+  // only (plan of 2.5d-a, decided item 1); now it takes Optional or Hidden while the Finance step
+  // is off, and only then (06 Finance step switched off 8).
+  it("refuses a price that is not required while the Finance step is on, and a wrong shape (06 Finance step switched off 8)", async () => {
     const head = await insertUser("HEAD");
     for (const ask of ["optional", "hidden"]) {
       expect(
@@ -330,7 +369,13 @@ describe("saveSettings: the fields the Head sets (05 Fields the Head sets; D67; 
           order_fields: { ...ORDER_FIELDS_DEFAULT, price: { ask, place: "row" } },
         }),
         ask,
-      ).toMatchObject({ ok: false, error: { code: "invalid_input" } });
+      ).toMatchObject({
+        ok: false,
+        error: {
+          code: "invalid_input",
+          fields: { "order_fields.price": "errors.field.priceNeedsFinanceOff" },
+        },
+      });
     }
     const partial = Object.fromEntries(
       Object.entries(ORDER_FIELDS_DEFAULT).filter(([field]) => field !== "comment"),

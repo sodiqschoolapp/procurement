@@ -268,8 +268,8 @@ export type CancelPlan = {
  * row; plan of 2.3b, decided item 14, Look first): a cancelled order keeps the plan that
  * `orders_submitted_plan_check`, `orders_planned_price_total_check` and
  * `orders_urgent_reason_check` ask of every status but Draft. Since D67 that is the subtype, the
- * quantity and the price with its total (the price until 2.5d-b, decided item 4); the department and
- * the needed-by date are free, and the field settings decide a submit, never a Cancel (plan of
+ * quantity, and a price only with its total (since 2.5d-b a cancel may be without a price: plan
+ * of 2.5d-b, decided item 6, Look first); the department and the needed-by date are free, and the field settings decide a submit, never a Cancel (plan of
  * 2.5d, decided item 6, Look first). Unlike Submit, a date in the past and an
  * inactive entry are no refusal: nothing is bought.
  */
@@ -277,11 +277,11 @@ export function cancelPlanGaps(plan: CancelPlan): Record<string, SubmitRefusal> 
   const refused: Record<string, SubmitRefusal> = {};
   if (plan.variantId === null) refused.variantId = "required";
   if (plan.quantity === null) refused.quantity = "required";
-  // Until 2.5d-b a cancelled order keeps its price: the price row is fixed at Required, and every
-  // reader of `planned_price` and `planned_total` outside Draft still expects one (plan of 2.5d,
-  // decided items 1 and 4, Look first). The total is the grid's draftTotal(): empty only without a
-  // quantity or a price.
-  if (plan.price === null || (plan.total === null && plan.quantity !== null)) {
+  // A cancelled order may be without a price, which every reader of `planned_price` takes since
+  // 2.5d-b (plan of 2.5d-b, decided item 6, Look first). A price with a quantity and no total,
+  // which the draft writes never leave (the grid's draftTotal()), still refuses on the price cell,
+  // so `orders_planned_price_total_check` is never met with a raw error.
+  if (plan.price !== null && plan.quantity !== null && plan.total === null) {
     refused.price = "required";
   }
   if (plan.priority === "URGENT" && !isUrgentReason(plan.urgentReason)) {

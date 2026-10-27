@@ -14,6 +14,7 @@ import {
   ordersAt,
   tickedInput,
 } from "../../../../tests/helpers/moves";
+import { refreshNow } from "../../../../tests/helpers/analytics";
 import { insertBranch } from "../../../../tests/helpers/branches";
 import { insertOrder, inventedNumber, orderRow } from "../../../../tests/helpers/orders";
 import { insertUser } from "../../../../tests/helpers/users";
@@ -201,7 +202,10 @@ describe("Cancel of a Draft with a number (06 Allowed moves, Cancel row; D55 ite
     expect(await orderRow(draft.id)).toMatchObject({ status: "CANCELLED" });
   });
 
-  it("a numbered draft whose price was cleared is refused not_ready naming the price until 2.5d-b; filled again, it cancels (decided items 4 and 14)", async () => {
+  // Changed by 2.5d-b with the reason (D67; plan of 2.5d-b, decided item 6, Look first): until then
+  // a cleared price refused the cancel (plan of 2.5d-a, decided item 4); every reader of a missing
+  // planned price takes it now, so the requirement that held it back is built.
+  it("a numbered draft whose price was cleared cancels, and the analytics refresh still runs (decided item 6)", async () => {
     const { branch, manager } = await moveScene();
     const draft = await insertOrder({
       branchId: branch.id,
@@ -214,6 +218,24 @@ describe("Cancel of a Draft with a number (06 Allowed moves, Cancel row; D55 ite
       .update(orders)
       .set({ plannedPrice: null, plannedTotal: null })
       .where(eq(orders.id, draft.id));
+    expect(await cancel(manager.id, tickedInput([draft]))).toMatchObject({ ok: true });
+    expect(await orderRow(draft.id)).toMatchObject({
+      status: "CANCELLED",
+      plannedPrice: null,
+      plannedTotal: null,
+    });
+    await expect(refreshNow()).resolves.toBeUndefined();
+  });
+
+  it("a price with a quantity and no total is still refused on the price cell, never by the CHECK (decided item 6)", async () => {
+    const { branch, manager } = await moveScene();
+    const draft = await insertOrder({
+      branchId: branch.id,
+      ownerId: manager.id,
+      status: "DRAFT",
+      number: inventedNumber(),
+    });
+    await db.update(orders).set({ plannedTotal: null }).where(eq(orders.id, draft.id));
     const notices = await noticeCount();
     const input = tickedInput([draft]);
     expect(await cancel(manager.id, input)).toMatchObject({
@@ -226,15 +248,6 @@ describe("Cancel of a Draft with a number (06 Allowed moves, Cancel row; D55 ite
       },
     });
     await nothingSaved(input.clientKey, [draft.id], notices);
-    expect(await orderRow(draft.id)).toMatchObject({ status: "DRAFT", version: draft.version });
-
-    // The same draft with its price filled again: only the plan decided the refusal.
-    await db
-      .update(orders)
-      .set({ plannedPrice: 5000n, plannedTotal: 50_000n })
-      .where(eq(orders.id, draft.id));
-    expect(await cancel(manager.id, tickedInput([draft]))).toMatchObject({ ok: true });
-    expect(await orderRow(draft.id)).toMatchObject({ status: "CANCELLED" });
   });
 
   it("a numbered draft without a department or a date cancels, its price kept (decided items 4 and 6)", async () => {

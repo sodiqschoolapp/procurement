@@ -49,13 +49,16 @@ function Coloured({ colour, children }: { colour: Look; children: React.ReactNod
 
 export async function PlanActualBlock({
   plannedTotal,
+  unpriced = false,
   hint,
   colours,
   table,
   unit,
 }: {
-  /** null on a draft whose plan is not complete. */
+  /** null on a draft whose plan is not complete, and on an order without a planned price. */
   plannedTotal: bigint | null;
+  /** A submitted order without a planned price: "No planned price" (08 Numbers). */
+  unpriced?: boolean;
   /** The price hint beside the planned total, already worded; null without one. */
   hint: string | null;
   /** From Open on (orderColours()); null before. */
@@ -65,6 +68,7 @@ export async function PlanActualBlock({
   unit: string;
 }) {
   const t = await getTranslations("orders.page");
+  const tUnpriced = await getTranslations("orders.unpriced");
   const format = await getFormatters();
   return (
     <section
@@ -85,7 +89,9 @@ export async function PlanActualBlock({
         <div data-fact="plannedTotal" className="flex flex-col gap-1">
           <span className="text-xs text-muted-foreground">{t("plannedTotal")}</span>
           {plannedTotal === null ? (
-            <span className="text-sm text-muted-foreground">{t("details.notSet")}</span>
+            <span className="text-sm text-muted-foreground">
+              {unpriced ? tUnpriced("none") : t("details.notSet")}
+            </span>
           ) : (
             <span className="text-figure font-semibold tabular-nums">
               {format.money(plannedTotal)}
@@ -108,7 +114,13 @@ async function PlanActualTable({
   unit: string;
 }) {
   const t = await getTranslations("orders.page.planActual");
+  const tUnpriced = await getTranslations("orders.unpriced");
   const format = await getFormatters();
+  // Without a planned price there is no planned money and no effect (08 Numbers; plan of 2.5d-b,
+  // decided item 4, Look first).
+  const planned = (amount: bigint | null) =>
+    amount === null ? tUnpriced("none") : format.money(amount);
+  const unpricedLook = <Coloured colour="grey">{tUnpriced("none")}</Coloured>;
   const quantity = (value: string) => `${format.quantity(value)} ${unit}`.trim();
   // An amount without its sign, for its words; every difference itself is planVsActual()'s.
   const magnitude = (amount: bigint) => (amount < 0n ? -amount : amount);
@@ -118,7 +130,8 @@ async function PlanActualTable({
       ? t("none")
       : t(amount < 0n ? "spentMore" : "spentLess", { amount: format.money(magnitude(amount)) });
 
-  const counting = colours.total.colour !== "grey";
+  const counting = colours.total.colour !== "grey" && colours.total.colour !== "unpriced";
+  const effects = table.effects;
 
   const quantityDifference =
     colours.number.colour === "grey" ? (
@@ -134,9 +147,12 @@ async function PlanActualTable({
     );
 
   const { planned: plannedPrice, actual: actualPrice, oneUnitPrice } = table.unitPrice;
-  const perUnit = magnitude(table.unitPrice.difference);
+  const perUnit =
+    table.unitPrice.difference === null ? null : magnitude(table.unitPrice.difference);
   const priceDifference =
-    colours.price.colour === "grey" ? (
+    colours.price.colour === "unpriced" || perUnit === null ? (
+      unpricedLook
+    ) : colours.price.colour === "grey" ? (
       <Coloured colour="grey">{t("inProgress")}</Coloured>
     ) : colours.price.colour === "green" ? (
       <Coloured colour="green">{t("asPlanned")}</Coloured>
@@ -166,17 +182,17 @@ async function PlanActualTable({
       planned: quantity(table.quantity.planned),
       actual: quantity(table.quantity.actual),
       difference: quantityDifference,
-      effect: effect(table.effects.quantity, colours.number.colour !== "grey"),
+      effect: effects ? effect(effects.quantity, colours.number.colour !== "grey") : t("none"),
     },
     {
       key: "unitPrice",
       name: t("unitPrice"),
-      planned: format.money(plannedPrice),
+      planned: planned(plannedPrice),
       actual: oneUnitPrice
         ? format.money(actualPrice)
         : t("average", { amount: format.money(actualPrice) }),
       difference: priceDifference,
-      effect: effect(table.effects.price, colours.price.colour !== "grey"),
+      effect: effects ? effect(effects.price, colours.price.colour !== "grey") : t("none"),
     },
     ...(hasExtras
       ? [
@@ -186,9 +202,11 @@ async function PlanActualTable({
             planned: format.money(table.extras.planned),
             actual: format.money(table.extras.actual),
             difference: (
-              <span className="text-muted-foreground">{effect(table.effects.extras, true)}</span>
+              <span className="text-muted-foreground">
+                {effects ? effect(effects.extras, true) : t("none")}
+              </span>
             ),
-            effect: effect(table.effects.extras, counting),
+            effect: effects ? effect(effects.extras, counting) : t("none"),
           },
         ]
       : []),
@@ -256,7 +274,7 @@ async function PlanActualTable({
               data-label={t("planned")}
               className={cn(cell, "text-right font-semibold whitespace-nowrap tabular-nums")}
             >
-              {format.money(table.total.planned)}
+              {planned(table.total.planned)}
             </td>
             <td
               data-label={t("actual")}
@@ -267,8 +285,8 @@ async function PlanActualTable({
             <td data-label={t("difference")} className={cell}>
               <ColourLabel
                 plain
-                {...(colours.total.colour === "grey"
-                  ? ({ label: "total", colour: "grey" } as const)
+                {...(colours.total.colour === "grey" || colours.total.colour === "unpriced"
+                  ? ({ label: "total", colour: colours.total.colour } as const)
                   : ({
                       label: "total",
                       colour: colours.total.colour,
@@ -281,9 +299,11 @@ async function PlanActualTable({
               data-plan-effect
               className={cn(cell, "pr-0 text-right font-semibold whitespace-nowrap tabular-nums")}
             >
-              {counting && table.total.difference === 0n
-                ? format.money(0n)
-                : effect(table.total.difference, counting)}
+              {table.total.difference === null
+                ? t("none")
+                : counting && table.total.difference === 0n
+                  ? format.money(0n)
+                  : effect(table.total.difference, counting)}
             </td>
           </tr>
         </tbody>

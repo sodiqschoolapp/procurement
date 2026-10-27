@@ -25,8 +25,11 @@ export type ApprovalStep = (typeof APPROVAL_STEPS)[number];
 export type DownloadRow = {
   /** The sum of the order's extra costs (05 field 12: "The cell shows the sum"). */
   extras: bigint;
-  /** round(quantity × price) + extra costs (05 field 16; 08 Planned total). */
-  plannedTotal: bigint;
+  /**
+   * round(quantity × price) + extra costs (05 field 16; 08 Planned total); null without a planned
+   * price (08 Numbers).
+   */
+  plannedTotal: bigint | null;
   /**
    * Who finished each step and when; null for a step not finished (15 S17); "skipped" for the
    * Finance step of an order that skipped Finance (06 Finance step switched off; plan of 4.10c).
@@ -41,7 +44,8 @@ export type DownloadRow = {
     unitPrice: bigint | null;
     extras: bigint;
     total: bigint;
-    difference: bigint;
+    /** Null for an order without a planned price: it has no difference (08 Numbers). */
+    difference: bigint | null;
   } | null;
 };
 
@@ -77,7 +81,7 @@ export function orderDownloadRow(
           unitPrice: actualUnitPrice(records),
           extras: actualExtra(records),
           total,
-          difference: difference(plannedTotal, total),
+          difference: plannedTotal === null ? null : difference(plannedTotal, total),
         }
       : null,
   };

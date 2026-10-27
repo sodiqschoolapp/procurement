@@ -7,7 +7,13 @@
 // (developer-rules.md rule 6). Nothing here reads a database or a clock.
 
 import { orderColours } from "./colours";
-import { type OrderPlan, extrasSum, orderExtras, orderTotal } from "./order-totals";
+import {
+  type OrderPlan,
+  type PricedPlan,
+  extrasSum,
+  orderExtras,
+  orderTotal,
+} from "./order-totals";
 import type { PaymentType } from "./payment-types";
 import {
   type OrderProgress,
@@ -275,16 +281,28 @@ export function isExactMatch(order: MatchOrder): boolean {
   return samePayment && order.cashCount === 0n;
 }
 
-/** 08 When Finance approves: an order's planned cash, its planned total when it is Cash, else 0. */
-export function plannedCash(plan: OrderPlan): bigint {
+/**
+ * 08 When Finance approves: an order's planned cash, its planned total when it is Cash, else 0;
+ * null for an order without a planned price, which has no planned total (08 Numbers; plan of
+ * 2.5d-b, decided item 9, Look first).
+ */
+export function plannedCash(plan: PricedPlan): bigint;
+export function plannedCash(plan: OrderPlan): bigint | null;
+export function plannedCash(plan: OrderPlan): bigint | null {
   return plannedCashOf(plan.paymentType, orderTotal(plan));
 }
 
 /**
  * The same from an order's payment type and planned total, for the Finance dialog, whose selects
- * may change the type (plan of 4.2, decided item 6, Look first).
+ * may change the type (plan of 4.2, decided item 6, Look first). Null without a planned total.
  */
-export function plannedCashOf(paymentType: PaymentType, plannedTotal: bigint): bigint {
+export function plannedCashOf(paymentType: PaymentType, plannedTotal: bigint): bigint;
+export function plannedCashOf(paymentType: PaymentType, plannedTotal: bigint | null): bigint | null;
+export function plannedCashOf(
+  paymentType: PaymentType,
+  plannedTotal: bigint | null,
+): bigint | null {
+  if (plannedTotal === null) return null;
   return paymentType === "CASH" ? plannedTotal : 0n;
 }
 
@@ -318,11 +336,12 @@ export const APPROVAL_STATUSES = [
 export function cashNeeded(order: {
   status: RequestStatus;
   progress: OrderProgress;
-  plannedCash: bigint;
+  /** Null for an order without a planned price: no planned cash, so none is needed. */
+  plannedCash: bigint | null;
   handed: bigint;
   skippedFinance?: boolean;
 }): bigint {
-  if (order.skippedFinance) return 0n;
+  if (order.skippedFinance || order.plannedCash === null) return 0n;
   if ((APPROVAL_STATUSES as readonly RequestStatus[]).includes(order.status)) {
     return order.plannedCash;
   }
@@ -564,7 +583,11 @@ export function settlementBlocks(order: {
   rows: readonly MoneyRow[];
 }): SettlementBlocks {
   const { plan, records, rows } = order;
-  const plannedOf = (type: PaymentType) => (plan.paymentType === type ? orderTotal(plan) : 0n);
+  const plannedTotal = orderTotal(plan);
+  // An order without a planned price never reaches settlement (06 Finance step switched off 8;
+  // `orders_priced_finance_check` of 0056).
+  if (plannedTotal === null) throw new RangeError("An order in settlement has no planned price.");
+  const plannedOf = (type: PaymentType) => (plan.paymentType === type ? plannedTotal : 0n);
   const cash =
     recordsUse(records, "CASH") || rowsUse(rows, CASH_KINDS)
       ? {
@@ -658,13 +681,16 @@ export function settlementCashRows(
  * 08 Overspend guard of one order: `overspend()` of ./overspend.ts over its planned total
  * (`orderTotal()`) and its actual total (`actualTotal()` of ./purchases.ts over the live records),
  * never a second sum (review of the plan of 4.6, correction 1). The settlement screen's line reads
- * its `over` and `percent` (plan of 4.7).
+ * its `over` and `percent` (plan of 4.7). An order without a planned price has none: it is left
+ * out of the overspend guard (08 Numbers; plan of 2.5d-b, decided item 5, Look first).
  */
 export function orderOverspend(
   order: { plan: OrderPlan; records: readonly CashRecord[] },
   guard: GuardSettings,
 ): Overspend {
-  return overspend(orderTotal(order.plan), actualTotal(order.records.map(asPurchaseRecord)), guard);
+  const planned = orderTotal(order.plan);
+  if (planned === null) return { over: 0n, percent: null, needsHead: false };
+  return overspend(planned, actualTotal(order.records.map(asPurchaseRecord)), guard);
 }
 
 /**

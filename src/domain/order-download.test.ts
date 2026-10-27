@@ -186,3 +186,27 @@ describe("orderDownloadRow: the actual columns (05 Download 1; 08 Numbers the sy
     expect(orderDownloadRow("PURCHASING", notebooks, [], dearer).actual?.difference).toBe(-30_000n);
   });
 });
+
+// 05 Download 1 and 3; 08 Numbers: "An order without a planned price has no planned total and no
+// difference"; plan of 2.5d-b, decided item 2.
+describe("orderDownloadRow of an order without a planned price (08 Numbers; S24)", () => {
+  const unpriced: OrderPlan = { ...plan, price: null, extras: [] };
+  const bought: readonly PurchaseRecord[] = [
+    { qty: "10", unitPrice: 4_500n, extras: [], isCancelled: false },
+  ];
+
+  it.each(["PURCHASING", "CLOSED"] as const)(
+    "%s: no planned total and no difference; the actual numbers stay",
+    (status) => {
+      const row = orderDownloadRow(status, unpriced, [], bought, true);
+      expect(row.plannedTotal).toBeNull();
+      expect(row.actual).toEqual({
+        qty: "10",
+        unitPrice: 4_500n,
+        extras: 0n,
+        total: 45_000n,
+        difference: null,
+      });
+    },
+  );
+});

@@ -32,12 +32,23 @@ export const QUANTITY = /^[0-9]{1,11}(\.[0-9]{1,3})?$/;
 export type OrderPlan = {
   /** The planned quantity as decimal text: "100", "2.125", "100.000". More than 0. */
   quantity: string;
-  /** The planned price per unit in whole so'm, more than 0. */
-  price: bigint;
+  /**
+   * The planned price per unit in whole so'm, more than 0; null for an order without a planned
+   * price (05 Fields the Head sets 3; 08 Numbers, the paragraph under the table).
+   */
+  price: bigint | null;
   /** The planned extra costs in whole so'm, each more than 0; none is an empty list. */
   extras: readonly bigint[];
   paymentType: PaymentType;
 };
+
+/** The plan of an order that has a planned price: only such a plan has planned goods. */
+export type PricedPlan = OrderPlan & { price: bigint };
+
+/** Whether the plan has a planned price (08 Numbers: an order without one has no planned total). */
+export function isPriced(plan: OrderPlan): plan is PricedPlan {
+  return plan.price !== null;
+}
 
 /** The totals of a set of orders (05, the totals under the list; 08, When Finance approves). */
 export type OrdersTotals = {
@@ -46,6 +57,11 @@ export type OrdersTotals = {
   grand: bigint;
   /** The grand total split by payment type: every code present, the values add up to `grand`. */
   byPaymentType: Record<PaymentType, bigint>;
+  /**
+   * How many orders were left out of these sums for having no planned price (08 Numbers: "left
+   * out of planned sums, and a sum that leaves orders out says how many").
+   */
+  unpriced: number;
 };
 
 /**
@@ -69,7 +85,7 @@ function positive(amount: bigint, what: string): bigint {
 }
 
 /** round(quantity × price), half up, to whole so'm (08, Planned total; 05 field 16). */
-export function orderGoods(plan: OrderPlan): bigint {
+export function orderGoods(plan: PricedPlan): bigint {
   const quantity = quantityOf(plan.quantity);
   const price = new Exact(positive(plan.price, "A price").toString());
   return BigInt(quantity.times(price).toDecimalPlaces(0, Exact.ROUND_HALF_UP).toFixed(0));
@@ -89,28 +105,47 @@ export function orderExtras(plan: OrderPlan): bigint {
   return extrasSum(plan.extras);
 }
 
-/** round(quantity × price) + extra costs (08, Planned total; 05 field 16). */
-export function orderTotal(plan: OrderPlan): bigint {
+/**
+ * round(quantity × price) + extra costs (08, Planned total; 05 field 16); null for an order
+ * without a planned price, which has no planned total (08 Numbers; plan of 2.5d-b, decided item
+ * 2, Look first).
+ */
+export function orderTotal(plan: PricedPlan): bigint;
+export function orderTotal(plan: OrderPlan): bigint | null;
+export function orderTotal(plan: OrderPlan): bigint | null {
+  if (!isPriced(plan)) return null;
   return orderGoods(plan) + orderExtras(plan);
 }
 
 /**
  * The totals of a set of orders, each the sum of the order values, never a rounding of a summed
  * quantity × price (08: "The totals of a group row or of ticked orders are the sums of the order
- * values"; plan of 2.2, decision 1).
+ * values"; plan of 2.2, decision 1). An order without a planned price is left out of every sum
+ * and counted in `unpriced` (08 Numbers; plan of 2.5d-b, decided item 2, Look first).
  */
 export function ordersTotals(plans: readonly OrderPlan[]): OrdersTotals {
   let goods = 0n;
   let extras = 0n;
+  let unpriced = 0;
   const totals: { paymentType: PaymentType; total: bigint }[] = [];
   for (const plan of plans) {
+    if (!isPriced(plan)) {
+      unpriced += 1;
+      continue;
+    }
     const orderGoodsValue = orderGoods(plan);
     const orderExtrasValue = orderExtras(plan);
     goods += orderGoodsValue;
     extras += orderExtrasValue;
     totals.push({ paymentType: plan.paymentType, total: orderGoodsValue + orderExtrasValue });
   }
-  return { goods, extras, grand: goods + extras, byPaymentType: totalsByPaymentType(totals) };
+  return {
+    goods,
+    extras,
+    grand: goods + extras,
+    byPaymentType: totalsByPaymentType(totals),
+    unpriced,
+  };
 }
 
 /**

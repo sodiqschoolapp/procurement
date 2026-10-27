@@ -61,7 +61,8 @@ export type Bought = {
   progress?: OrderProgress;
   /** The order's plan: quantity and price (no planned extra), 10 × 5 000 by default. */
   plannedQty?: string;
-  plannedPrice?: bigint;
+  /** `null`: an order without a planned price (05 Fields the Head sets 3). */
+  plannedPrice?: bigint | null;
 };
 
 /** One Open order of the scene's branch with one record on its own trip. Returns the record. */

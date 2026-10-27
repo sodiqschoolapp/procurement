@@ -6,6 +6,7 @@ import { RowLinks } from "@/components/row-links";
 import { RequestStatusLabel } from "@/components/status-label";
 import type { WireOrderGroup } from "@/features/orders/list-wire";
 import { useFormatters } from "@/i18n/use-formatters";
+import { usePlannedSum } from "@/features/orders/components/planned-sum";
 
 // The group rows of a home list (05-order-request-form.md, Group rows 1: product and subtype, the
 // total quantity, the total planned amount, how many orders, the earliest needed-by, "Urgent",
@@ -33,6 +34,7 @@ export function GroupLines({
   const tList = useTranslations("orders.list");
   const tOrders = useTranslations("orders");
   const format = useFormatters();
+  const plannedSum = usePlannedSum();
 
   return (
     <RowLinks>
@@ -63,7 +65,11 @@ export function GroupLines({
                   </span>
                 </span>
                 <span className="text-sm font-semibold tabular-nums">
-                  {format.money(BigInt(group.summary.totals.grand))}
+                  {plannedSum(
+                    group.summary.totals.grand,
+                    group.summary.totals.unpriced,
+                    group.orders.length,
+                  )}
                 </span>
               </div>
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">

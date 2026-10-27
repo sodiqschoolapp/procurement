@@ -20,6 +20,7 @@ import { CancelPurchaseButton } from "./cancel-purchase-button";
 export async function PurchasesTab({ order }: { order: OrderPage }) {
   const t = await getTranslations("orders.page.purchases");
   const tPayment = await getTranslations("paymentTypes");
+  const tUnpriced = await getTranslations("orders.unpriced");
   const format = await getFormatters();
   const unit = order.unitShortName ?? "";
   const actual = order.actual;
@@ -94,9 +95,15 @@ export async function PurchasesTab({ order }: { order: OrderPage }) {
               fact(
                 "difference",
                 t("difference"),
-                <span data-difference={actual.difference.toString()} className="tabular-nums">
-                  {format.money(actual.difference)}
-                </span>,
+                actual.difference === null ? (
+                  <span data-difference="none" className="text-muted-foreground">
+                    {tUnpriced("none")}
+                  </span>
+                ) : (
+                  <span data-difference={actual.difference.toString()} className="tabular-nums">
+                    {format.money(actual.difference)}
+                  </span>
+                ),
               ),
             ]
           : null}

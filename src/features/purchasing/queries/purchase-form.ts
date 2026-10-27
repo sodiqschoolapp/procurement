@@ -60,7 +60,8 @@ export type PurchaseFormOrder = {
   /** A service never enters stock and shows Used (A7). */
   isService: boolean;
   plannedQty: string;
-  plannedPrice: bigint;
+  /** Null for an order without a planned price (05 Fields the Head sets 3). */
+  plannedPrice: bigint | null;
   plannedExtras: { extraCostTypeId: string; typeName: string; amount: bigint }[];
   /** The order's payment type: the comment rule compares with it (07 Comment). */
   paymentType: PaymentType;
@@ -228,7 +229,7 @@ export async function getPurchaseForm(
         allowDecimal: row.allowDecimal,
         isService: row.productType === "SERVICE",
         plannedQty: row.plannedQty!,
-        plannedPrice: row.plannedPrice!,
+        plannedPrice: row.plannedPrice,
         plannedExtras: plannedExtras
           .filter((extra) => extra.orderId === row.id)
           .map(({ extraCostTypeId, typeName, amount }) => ({ extraCostTypeId, typeName, amount })),

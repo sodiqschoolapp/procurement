@@ -40,8 +40,11 @@ export type ApproveOrder = {
   number: string;
   status: string;
   paymentType: PaymentType;
-  /** The planned total, whole so'm as decimal text (CLAUDE.md rule 6). */
-  plannedTotal: string;
+  /**
+   * The planned total, whole so'm as decimal text (CLAUDE.md rule 6); null for an order without a
+   * planned price, which never waits for Finance (06 Finance step switched off 8).
+   */
+  plannedTotal: string | null;
   owner: { id: string; name: string };
 };
 
@@ -60,7 +63,10 @@ export function ApproveButton({
   orders: readonly ApproveOrder[];
   /** The version the screen last showed an order at, read when the call goes out (06 rule 7). */
   versionOf: (orderId: string) => number;
-  /** The grand total of the ticked orders, as the server computed it, formatted. */
+  /**
+   * The grand total of the ticked orders, as the server computed it, formatted with how many are
+   * left out for having no planned price (`usePlannedSum()`).
+   */
   total: string;
   /** The setting `finance_step` the server read: the Principal's result says where orders go. */
   financeStep?: boolean;
@@ -84,7 +90,7 @@ export function ApproveButton({
 
   const typeOf = (order: ApproveOrder) => types[order.id] ?? order.paymentType;
   const prefilled = (order: ApproveOrder) =>
-    plannedCashOf(typeOf(order), BigInt(order.plannedTotal));
+    order.plannedTotal === null ? 0n : plannedCashOf(typeOf(order), BigInt(order.plannedTotal));
   // The table's rows: the orders with planned cash under their select (08 When Finance approves).
   const cashOrders = finance ? orders.filter((order) => prefilled(order) > 0n) : [];
   const textOf = (order: ApproveOrder) => typed[order.id] ?? prefilled(order).toString();
@@ -98,8 +104,14 @@ export function ApproveButton({
     ? approvalCashRows(amounts.map((row) => ({ ...row, amount: row.amount! })))
     : [];
   const givenTotal = actionTotal(given.flatMap((block) => block.rows));
+  // Orders without a planned price are left out of the planned sums (08 Numbers); none of them
+  // reaches Finance's step, where these totals are shown.
   const byType = totalsByPaymentType(
-    orders.map((order) => ({ paymentType: typeOf(order), total: BigInt(order.plannedTotal) })),
+    orders.flatMap((order) =>
+      order.plannedTotal === null
+        ? []
+        : [{ paymentType: typeOf(order), total: BigInt(order.plannedTotal) }],
+    ),
   );
   // One block per Manager, in the order of the orders.
   const blocks = new Map<string, { name: string; orders: ApproveOrder[] }>();

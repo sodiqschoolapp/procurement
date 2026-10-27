@@ -25,6 +25,7 @@ import { RecordMoneyButton } from "@/features/money/components/record-money-butt
 import { ListActionBar } from "./list-action-bar";
 import { MoveOwnerButton } from "./move-owner-button";
 import { MoveButton, type StatusMoveKind } from "./move-button";
+import { usePlannedMoney, usePlannedSum } from "./planned-sum";
 import { waitsOn } from "./waits-on";
 
 /**
@@ -86,7 +87,7 @@ export function OrderList({
   const t = useTranslations("orders.list");
   const tPager = useTranslations("pager");
   const tCommon = useTranslations("common");
-  const format = useFormatters();
+  const plannedSum = usePlannedSum();
   const router = useRouter();
   const [ticked, setTicked] = useState<string[]>([]);
   const [open, setOpen] = useState<Set<string>>(new Set());
@@ -305,7 +306,7 @@ export function OrderList({
                   <ApproveButton
                     orders={summary.orders}
                     versionOf={(id) => seen.current.get(id) ?? 0}
-                    total={format.money(BigInt(summary.totals.grand))}
+                    total={plannedSum(summary.totals.grand, summary.totals.unpriced, summary.count)}
                     financeStep={summary.financeStep}
                     onAnswer={(answer) => {
                       setFailed(answer);
@@ -453,6 +454,7 @@ function GroupRows({
   const t = useTranslations("orders.list");
   const tOrders = useTranslations("orders");
   const format = useFormatters();
+  const plannedSum = usePlannedSum();
   const ids = group.orders.map((order) => order.id);
   const tickedHere = ids.filter((id) => ticked.has(id)).length;
   const all = tickedHere === ids.length;
@@ -619,7 +621,11 @@ function GroupRows({
           {caption("total")}
           <span className="flex flex-col items-end gap-0.5 max-sm:items-start">
             <span className="font-semibold whitespace-nowrap tabular-nums" data-cell="group-total">
-              {format.money(BigInt(group.summary.totals.grand))}
+              {plannedSum(
+                group.summary.totals.grand,
+                group.summary.totals.unpriced,
+                group.orders.length,
+              )}
             </span>
             {group.colours && <ListColourLabel colours={group.colours} of="total" />}
           </span>
@@ -736,6 +742,7 @@ function OrderRow({
   const tOrders = useTranslations("orders");
   const tPayment = useTranslations("paymentTypes");
   const format = useFormatters();
+  const plannedMoney = usePlannedMoney();
   const td = "py-2 pr-3 align-top max-sm:p-0";
   // The column's name above a value on a phone, where the header row is hidden.
   const named = (column: (typeof ORDER_COLUMNS)[number]) => (
@@ -848,10 +855,10 @@ function OrderRow({
                   ? format.money(BigInt(order.actual.unitPrice))
                   : t("average", { amount: format.money(BigInt(order.actual.unitPrice)) })}
               </span>
-              {plan(format.money(BigInt(order.price)))}
+              {plan(plannedMoney(order.price))}
             </>
           ) : (
-            <span className="whitespace-nowrap">{format.money(BigInt(order.price))}</span>
+            <span className="whitespace-nowrap">{plannedMoney(order.price)}</span>
           )}
           {order.priceHint !== null && (
             <span className="text-xs text-warning">
@@ -869,11 +876,11 @@ function OrderRow({
               <span className="font-medium whitespace-nowrap">
                 {format.money(BigInt(order.actual.total))}
               </span>
-              {plan(format.money(BigInt(order.plannedTotal)))}
+              {plan(plannedMoney(order.plannedTotal))}
             </>
           ) : (
             <span className="font-medium whitespace-nowrap">
-              {format.money(BigInt(order.plannedTotal))}
+              {plannedMoney(order.plannedTotal)}
             </span>
           )}
           {order.colours && <ListColourLabel colours={order.colours} of="total" />}

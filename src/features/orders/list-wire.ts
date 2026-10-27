@@ -1,5 +1,5 @@
 import type { WireColourLabel, WireColours } from "@/components/status-label";
-import type { OrderColours, OrderLabel, SetColours, SetLabel } from "@/domain/colours";
+import type { MoneyLabel, OrderColours, OrderLabel, SetColours, SetLabel } from "@/domain/colours";
 import type { OrdersTotals } from "@/domain/order-totals";
 import type { PaymentType } from "@/domain/payment-types";
 
@@ -14,14 +14,17 @@ export type WireTotals = {
   extras: string;
   grand: string;
   byPaymentType: Record<PaymentType, string>;
+  /** How many orders the sums leave out for having no planned price (08 Numbers). */
+  unpriced: number;
 };
 
 export type WireListOrder = Omit<
   ListOrder,
   "price" | "plannedTotal" | "priceHint" | "colours" | "actual"
 > & {
-  price: string;
-  plannedTotal: string;
+  /** Null: no planned price (05 Fields the Head sets 3). */
+  price: string | null;
+  plannedTotal: string | null;
   priceHint: string | null;
   colours: WireColours | null;
   actual: { unitPrice: string; oneUnitPrice: boolean; total: string } | null;
@@ -39,11 +42,14 @@ export type WireOrderGroup = Omit<OrderGroup, "summary" | "orders" | "colours"> 
 export type WireTickedSummary = Omit<TickedSummary, "totals" | "colours" | "orders"> & {
   totals: WireTotals;
   colours: WireColours | null;
-  orders: (Omit<TickedSummary["orders"][number], "plannedTotal"> & { plannedTotal: string })[];
+  orders: (Omit<TickedSummary["orders"][number], "plannedTotal"> & {
+    plannedTotal: string | null;
+  })[];
 };
 
-function wireLabel(label: OrderLabel<string | bigint> | SetLabel): WireColourLabel {
+function wireLabel(label: OrderLabel<string | bigint> | MoneyLabel | SetLabel): WireColourLabel {
   if (label.colour === "grey") return { colour: "grey" };
+  if (label.colour === "unpriced") return { colour: "unpriced" };
   if ("orders" in label) return { colour: label.colour, orders: label.orders };
   return { colour: label.colour, difference: label.difference.toString() };
 }
@@ -68,6 +74,7 @@ export function wireTotals(totals: OrdersTotals): WireTotals {
       TRANSFER: totals.byPaymentType.TRANSFER.toString(),
       CARD: totals.byPaymentType.CARD.toString(),
     },
+    unpriced: totals.unpriced,
   };
 }
 
@@ -82,8 +89,8 @@ export function wireGroup(group: OrderGroup): WireOrderGroup {
     colours: wireColours(group.colours),
     orders: group.orders.map((order) => ({
       ...order,
-      price: order.price.toString(),
-      plannedTotal: order.plannedTotal.toString(),
+      price: order.price?.toString() ?? null,
+      plannedTotal: order.plannedTotal?.toString() ?? null,
       priceHint: order.priceHint?.toString() ?? null,
       colours: wireColours(order.colours),
       actual: order.actual && {
@@ -102,7 +109,7 @@ export function wireTickedSummary(summary: TickedSummary): WireTickedSummary {
     colours: wireColours(summary.colours),
     orders: summary.orders.map((order) => ({
       ...order,
-      plannedTotal: order.plannedTotal.toString(),
+      plannedTotal: order.plannedTotal?.toString() ?? null,
     })),
   };
 }

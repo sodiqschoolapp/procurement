@@ -9,6 +9,8 @@
 import {
   Exact,
   type OrderPlan,
+  type PricedPlan,
+  isPriced,
   orderExtras,
   orderGoods,
   orderTotal,
@@ -35,16 +37,26 @@ export type Colour = "green" | "amber" | "red";
 const GREY = { colour: "grey" } as const;
 type Grey = typeof GREY;
 
+/**
+ * An order without a planned price: its Price and Total labels read "No planned price" (08
+ * Numbers, the paragraph under the table; plan of 2.5d-b, decided item 3, Look first).
+ */
+const UNPRICED = { colour: "unpriced" } as const;
+type Unpriced = typeof UNPRICED;
+
 /** One order's colour and its amount, or grey. */
 export type OrderLabel<Amount> = Grey | { colour: Colour; difference: Amount };
+
+/** A Price or Total label, which an order without a planned price cannot colour. */
+export type MoneyLabel = OrderLabel<bigint> | Unpriced;
 
 export type OrderColours = {
   /** Planned − actual quantity as numeric text, below 0 when more was bought. */
   number: OrderLabel<string>;
   /** round(planned price × actual quantity) − actual goods; green is always 0 (decided item 3). */
-  price: OrderLabel<bigint>;
+  price: MoneyLabel;
   /** 08 Difference: planned total − actual total. */
-  total: OrderLabel<bigint>;
+  total: MoneyLabel;
 };
 
 /** A set's Number or Price: the worst colour and how many orders carry it (decided item 2). */
@@ -52,9 +64,15 @@ export type SetLabel = Grey | { colour: Colour; orders: number };
 
 export type SetColours = {
   number: SetLabel;
-  price: SetLabel;
-  /** The summed difference of the orders (08 The three colours, bullet 2). */
-  total: OrderLabel<bigint>;
+  /** The worst among the orders with a planned price; "unpriced" when none has one. */
+  price: SetLabel | Unpriced;
+  /**
+   * The summed difference of the orders with a planned price (08 The three colours, bullet 2);
+   * "unpriced" when none has one.
+   */
+  total: MoneyLabel;
+  /** How many of the orders from Open on have no planned price, left out of Price and Total. */
+  unpriced: number;
 };
 
 export type ColourOrder = {
@@ -65,7 +83,7 @@ export type ColourOrder = {
 };
 
 /** round(planned price × actual quantity), half up: the actual quantity at the planned price. */
-function goodsAtPlannedPrice(plan: OrderPlan, received: string): bigint {
+function goodsAtPlannedPrice(plan: PricedPlan, received: string): bigint {
   const atPlan = new Exact(received).times(plan.price.toString());
   return BigInt(atPlan.toDecimalPlaces(0, Exact.ROUND_HALF_UP).toFixed(0));
 }
@@ -81,6 +99,9 @@ function bySign(value: bigint): Colour {
  * - Price is grey until a record that is not cancelled exists; green when every such record's
  *   unit price is the planned one; otherwise amber at or below round(planned price × actual
  *   quantity), red above it (08, Price row; decided item 3).
+ * - Without a planned price, Price and Total are "unpriced" from Open on: there is nothing to
+ *   compare with (08 Numbers; plan of 2.5d-b, decided item 3, Look first). Number is as for any
+ *   order.
  */
 export function orderColours(order: ColourOrder): OrderColours | null {
   if (!BUYING_STATUSES.has(order.status)) return null;
@@ -96,6 +117,8 @@ export function orderColours(order: ColourOrder): OrderColours | null {
       difference: left.toFixed(),
     };
   }
+
+  if (!isPriced(plan)) return { number, price: UNPRICED, total: UNPRICED };
 
   let price: OrderLabel<bigint> = GREY;
   if (received !== "0") {
@@ -132,11 +155,20 @@ export type PlanVsActual = {
    * The actual price is actualUnitPrice(): goods ÷ quantity, half up; `difference` is planned −
    * actual per unit (above 0 cheaper, below 0 dearer), each already whole so'm.
    */
-  unitPrice: { planned: bigint; actual: bigint; difference: bigint; oneUnitPrice: boolean };
+  unitPrice: {
+    planned: bigint | null;
+    actual: bigint;
+    difference: bigint | null;
+    oneUnitPrice: boolean;
+  };
   extras: { planned: bigint; actual: bigint };
   /** `difference` is 08's Difference: planned − actual, the sum of the three effects. */
-  total: { planned: bigint; actual: bigint; difference: bigint };
-  effects: { quantity: bigint; price: bigint; extras: bigint };
+  total: { planned: bigint | null; actual: bigint; difference: bigint | null };
+  /**
+   * Null without a planned price: each effect is a money value against the planned price, and 08
+   * gives such an order no difference (plan of 2.5d-b, decided item 4, Look first).
+   */
+  effects: { quantity: bigint; price: bigint; extras: bigint } | null;
 };
 
 /**
@@ -150,12 +182,26 @@ export function planVsActual(order: ColourOrder): PlanVsActual | null {
   const received = actualQuantity(records);
   const actualPrice = actualUnitPrice(records);
   if (actualPrice === null) return null;
-  const atPlan = goodsAtPlannedPrice(plan, received);
   const goods = actualGoods(records);
   const extras = actualExtra(records);
   const prices = new Set(liveRecords(records).map((record) => record.unitPrice));
-  const planned = orderTotal(plan);
   const actual = actualTotal(records);
+  if (!isPriced(plan)) {
+    return {
+      quantity: { planned: quantityOf(plan.quantity).toFixed(), actual: received },
+      unitPrice: {
+        planned: null,
+        actual: actualPrice,
+        difference: null,
+        oneUnitPrice: prices.size === 1,
+      },
+      extras: { planned: orderExtras(plan), actual: extras },
+      total: { planned: null, actual, difference: null },
+      effects: null,
+    };
+  }
+  const atPlan = goodsAtPlannedPrice(plan, received);
+  const planned = orderTotal(plan);
   return {
     quantity: { planned: quantityOf(plan.quantity).toFixed(), actual: received },
     unitPrice: {
@@ -177,11 +223,11 @@ export function planVsActual(order: ColourOrder): PlanVsActual | null {
 const RANK: Record<Colour, number> = { green: 0, amber: 1, red: 2 };
 
 /** The worst colour among the labels that have one, and how many carry it; grey if none has. */
-function worst(labels: readonly OrderLabel<unknown>[]): SetLabel {
+function worst(labels: readonly (OrderLabel<unknown> | Unpriced)[]): SetLabel {
   let chosen: Colour | null = null;
   let orders = 0;
   for (const label of labels) {
-    if (label.colour === "grey") continue;
+    if (label.colour === "grey" || label.colour === "unpriced") continue;
     if (chosen === null || RANK[label.colour] > RANK[chosen]) {
       chosen = label.colour;
       orders = 1;
@@ -198,22 +244,28 @@ function worst(labels: readonly OrderLabel<unknown>[]): SetLabel {
  * - Number and Price: the worst colour among the orders that have one (red beats orange, orange
  *   beats green); grey only when none has one.
  * - Total: the summed difference, grey while any order's buying is Open.
+ * - Orders without a planned price are left out of Price and Total and counted in `unpriced`;
+ *   when every order is without one, both are "unpriced" (08 Numbers; plan of 2.5d-b, decided
+ *   item 3, Look first).
  */
 export function setColours(orders: readonly ColourOrder[]): SetColours | null {
   const each = orders.map(orderColours).filter((colours) => colours !== null);
   if (each.length === 0) return null;
-  let total: OrderLabel<bigint> = GREY;
-  if (each.every((colours) => colours.total.colour !== "grey")) {
+  const priced = each.filter((colours) => colours.total.colour !== "unpriced");
+  const unpriced = each.length - priced.length;
+  const number = worst(each.map((colours) => colours.number));
+  if (priced.length === 0) return { number, price: UNPRICED, total: UNPRICED, unpriced };
+  let total: MoneyLabel = GREY;
+  // Grey while any order's buying is Open, its own Number grey too (08 bullet 1).
+  if (each.every((colours) => colours.number.colour !== "grey")) {
     let sum = 0n;
-    for (const colours of each)
-      if (colours.total.colour !== "grey") sum += colours.total.difference;
+    for (const colours of priced)
+      if (colours.total.colour !== "grey" && colours.total.colour !== "unpriced") {
+        sum += colours.total.difference;
+      }
     total = { colour: bySign(sum), difference: sum };
   }
-  return {
-    number: worst(each.map((colours) => colours.number)),
-    price: worst(each.map((colours) => colours.price)),
-    total,
-  };
+  return { number, price: worst(priced.map((colours) => colours.price)), total, unpriced };
 }
 
 /** An order's Plan vs actual outcome (10 Analytics, Head, Plan vs actual; plan of 6.4). */
@@ -231,12 +283,17 @@ export type OrderOutcome = {
  * How an order ended against its plan, or null while it has not (plan of 6.4, decided items 3
  * and 4, Look first): from Open on, buying Done or Done short, its colour the Total colour of
  * orderColours(). An order marked Not bought is left out: nothing was bought, so its planned total
- * would read as saved.
+ * would read as saved. An order without a planned price is left out: it has no Total colour (08
+ * Numbers; plan of 2.5d-b, decided item 4).
  */
 export function orderOutcome(order: ColourOrder): OrderOutcome | null {
   if (order.progress !== "DONE" && order.progress !== "DONE_SHORT") return null;
   const colours = orderColours(order);
-  if (!colours || colours.total.colour === "grey") return null;
+  // Without a planned price there is no Total colour and no difference (08 Numbers).
+  if (!colours || colours.total.colour === "grey" || colours.total.colour === "unpriced") {
+    return null;
+  }
+  if (!isPriced(order.plan)) return null;
   const planned = orderTotal(order.plan);
   return {
     colour: colours.total.colour,

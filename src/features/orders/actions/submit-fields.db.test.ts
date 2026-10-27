@@ -8,7 +8,7 @@ import { orderExtras, orders } from "@/server/db/schema";
 import { runOrdersAction } from "@/server/order-action";
 
 import { insertBranch } from "../../../../tests/helpers/branches";
-import { insertCompany } from "../../../../tests/helpers/catalog";
+import { insertCompany, insertProduct } from "../../../../tests/helpers/catalog";
 import { setClock } from "../../../../tests/helpers/clock";
 import { setOrderFields } from "../../../../tests/helpers/order-fields";
 import {
@@ -239,5 +239,86 @@ describe("Submit with the fields the Head sets (05 Fields the Head sets; Checks 
     expect(answer).toMatchObject({ ok: true });
     expect(await rowOf(ready.id)).toMatchObject({ status: "PENDING_HEAD" });
     expect(await rowOf(notReady.id)).toMatchObject({ status: "DRAFT", number: null });
+  });
+});
+
+// 05 Fields the Head sets 2: "a hidden price is the suggested price of field 11 when there is one,
+// else none"; rule 4; Checks at submit; plan of 2.5d-b, decided item 8.
+describe("Submit with the price optional or hidden (05 Fields the Head sets 2 and 4; plan of 2.5d-b)", () => {
+  it("a hidden price replaces the typed one with the suggested price, and the total follows", async () => {
+    const { branch, manager } = await scene();
+    const product = await insertProduct({ referencePrice: 7_000n });
+    await setOrderFields({ price: { ask: "hidden", place: "row" } });
+    const draft = await insertOrder({
+      branchId: branch.id,
+      ownerId: manager.id,
+      variantId: product.defaultVariantId,
+      plannedPrice: 9_000n,
+    });
+    expect(await runOrdersAction(submitDrafts, manager.id, await ticked([draft.id]))).toMatchObject(
+      { ok: true },
+    );
+    expect(await rowOf(draft.id)).toMatchObject({
+      status: "PENDING_HEAD",
+      plannedPrice: 7_000n,
+      plannedTotal: 70_000n,
+    });
+  });
+
+  it("a hidden price without a suggestion is none: no planned total, and the order is submitted", async () => {
+    const { branch, manager } = await scene();
+    await setOrderFields({ price: { ask: "hidden", place: "row" } });
+    const draft = await insertOrder({
+      branchId: branch.id,
+      ownerId: manager.id,
+      plannedPrice: 9_000n,
+    });
+    expect(await runOrdersAction(submitDrafts, manager.id, await ticked([draft.id]))).toMatchObject(
+      { ok: true },
+    );
+    const row = await rowOf(draft.id);
+    expect(row).toMatchObject({ status: "PENDING_HEAD", plannedPrice: null, plannedTotal: null });
+    expect(row.number).not.toBeNull();
+  });
+
+  it("a sent-back order keeps its price when the price is hidden (05 rule 4)", async () => {
+    const { branch, manager } = await scene();
+    const product = await insertProduct({ referencePrice: 7_000n });
+    await setOrderFields({ price: { ask: "hidden", place: "row" } });
+    const sentBack = await insertOrder({
+      branchId: branch.id,
+      ownerId: manager.id,
+      variantId: product.defaultVariantId,
+      status: "RETURNED",
+      plannedPrice: 9_000n,
+    });
+    expect(
+      await runOrdersAction(submitAgainOrders, manager.id, await ticked([sentBack.id])),
+    ).toMatchObject({ ok: true });
+    expect(await rowOf(sentBack.id)).toMatchObject({ plannedPrice: 9_000n, plannedTotal: 90_000n });
+  });
+
+  it("an optional price left empty goes through; a required one is refused on its cell (Checks at submit)", async () => {
+    const { branch, manager } = await scene();
+    const unpriced = () =>
+      insertOrder({ branchId: branch.id, ownerId: manager.id, plannedPrice: null });
+    await setOrderFields({ price: { ask: "optional", place: "row" } });
+    const optional = await unpriced();
+    expect(
+      await runOrdersAction(submitDrafts, manager.id, await ticked([optional.id])),
+    ).toMatchObject({ ok: true });
+    expect(await rowOf(optional.id)).toMatchObject({ plannedPrice: null, plannedTotal: null });
+
+    await setOrderFields({});
+    const required = await unpriced();
+    expect(
+      await runOrdersAction(submitDrafts, manager.id, await ticked([required.id])),
+    ).toMatchObject({
+      ok: false,
+      error: {
+        code: "not_ready",
+        orders: [{ orderId: required.id, fields: { price: "errors.field.required" } }],
+      },
+    });
   });
 });

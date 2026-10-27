@@ -251,6 +251,7 @@ describe("tickedDraftsTotals (05 the totals of the ticked orders; 08 sums of the
       extras: 1_000n,
       grand: 76_833n,
       byPaymentType: { CASH: 68_500n, TRANSFER: 8_333n, CARD: 0n },
+      unpriced: 0,
     });
   });
 
@@ -288,6 +289,7 @@ describe("tickedDraftsTotals (05 the totals of the ticked orders; 08 sums of the
         extras: 0n,
         grand: 0n,
         byPaymentType: { CASH: 0n, TRANSFER: 0n, CARD: 0n },
+        unpriced: 0,
       },
     });
   });

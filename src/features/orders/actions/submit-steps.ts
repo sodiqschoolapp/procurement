@@ -1,7 +1,8 @@
 import { asc, eq, inArray, sql } from "drizzle-orm";
 
-import { type OrderFields, isHidden, withHiddenValues } from "@/domain/order-fields";
+import { type OrderFields, withHiddenValues } from "@/domain/order-fields";
 import { orderNumber } from "@/domain/order-numbers";
+import { suggestedPrice } from "@/domain/drafts";
 import { orderTotal } from "@/domain/order-totals";
 import type { PaymentType } from "@/domain/payment-types";
 import { type SubmitFacts, submitRefusals } from "@/domain/submit-checks";
@@ -45,6 +46,11 @@ export type SubmitRow = {
   createdAt: Date;
   quantity: string | null;
   price: bigint | null;
+  /**
+   * `suggestedPrice()` of its subtype now: the reference price, else the last purchase price, else
+   * null; a hidden price takes it (05 Fields the Head sets 2; plan of 2.5d-b, decided item 8).
+   */
+  suggestedPrice: bigint | null;
   paymentType: (typeof orders.$inferSelect)["paymentType"];
   facts: SubmitFacts;
   extras: bigint[];
@@ -113,6 +119,8 @@ export async function readSubmitRows(
             variantActive: productVariants.isActive,
             productActive: products.isActive,
             allowsDecimals: units.allowDecimal,
+            referencePrice: productVariants.referencePrice,
+            lastPurchasePrice: productVariants.lastPurchasePrice,
           })
           .from(productVariants)
           .innerJoin(products, eq(products.id, productVariants.productId))
@@ -167,6 +175,9 @@ export async function readSubmitRows(
       createdAt: row.createdAt,
       quantity: row.quantity,
       price: row.price,
+      suggestedPrice: subtype
+        ? suggestedPrice(subtype.referencePrice, subtype.lastPurchasePrice)
+        : null,
       paymentType: row.paymentType,
       extras: extras.map((extra) => extra.amount),
       facts: {
@@ -270,21 +281,20 @@ export async function writePlan(
   at: Date,
   settings: SubmitSettings,
 ): Promise<void> {
-  await writeHiddenValues(tx, rows, settings);
+  const hidden = await writeHiddenValues(tx, rows, settings);
   // Every row passed the checks, so the quantity is there; the price unless the Head made it not
-  // required, and then no planned total (05 field 16; 08 Numbers the system calculates).
+  // required, and then no planned total (05 field 16; 08 Numbers the system calculates). A draft
+  // that never had a number has the price and the extras its hidden values left.
   const values = rows.map((row) => {
-    const extras = row.number === null && isHidden(settings.fields, "extras") ? [] : row.extras;
-    const total =
-      row.price === null
-        ? null
-        : orderTotal({
-            quantity: row.quantity!,
-            price: row.price,
-            extras,
-            paymentType: row.paymentType,
-          }).toString();
-    return sql`(${row.id}::uuid, ${numbers.get(row.id) ?? null}::text, ${total}::bigint)`;
+    const own = hidden.get(row.id);
+    const extras = own && !own.keepExtras ? [] : row.extras;
+    const total = orderTotal({
+      quantity: row.quantity!,
+      price: own ? own.price : row.price,
+      extras,
+      paymentType: row.paymentType,
+    });
+    return sql`(${row.id}::uuid, ${numbers.get(row.id) ?? null}::text, ${total?.toString() ?? null}::bigint)`;
   });
   // stock_at_submit is copied as the numeric(14,3) the branch holds now, no row is 0, a service
   // has none (05 field 4; review of the plan of 2.7, correction 3: never a JavaScript number).
@@ -304,19 +314,23 @@ export async function writePlan(
 /**
  * The hidden values of the drafts that never had a number (05 Fields the Head sets 2), by
  * withHiddenValues() of src/domain/order-fields.ts: one update per such draft, and its extra
- * costs removed when they are hidden (a draft's rows may be removed: 05 Drafts 3).
+ * costs removed when they are hidden (a draft's rows may be removed: 05 Drafts 3). Gives each
+ * such draft's price and whether its extras stay, for its planned total.
  */
 async function writeHiddenValues(
   tx: Transaction,
   rows: readonly SubmitRow[],
   settings: SubmitSettings,
-): Promise<void> {
+): Promise<Map<string, { price: bigint | null; keepExtras: boolean }>> {
+  const written = new Map<string, { price: bigint | null; keepExtras: boolean }>();
   const fresh = rows.filter((row) => row.number === null);
-  if (fresh.length === 0) return;
+  if (fresh.length === 0) return written;
+  const suggested = new Map(fresh.map((row) => [row.id, row.suggestedPrice]));
   const held = await tx
     .select({
       id: orders.id,
       departmentId: orders.departmentId,
+      price: orders.plannedPrice,
       neededBy: orders.neededBy,
       paymentType: orders.paymentType,
       priority: orders.priority,
@@ -329,17 +343,25 @@ async function writeHiddenValues(
     .from(orders)
     .where(inArray(orders.id, ids(fresh.map((row) => row.id))));
   for (const plan of held) {
-    const { keepExtras, ...values } = withHiddenValues(
+    const { keepExtras, price, ...values } = withHiddenValues(
       settings.fields,
       plan,
       settings.defaultPaymentType,
+      suggested.get(plan.id) ?? null,
     );
-    const changed = (Object.keys(values) as (keyof typeof values)[]).some(
-      (key) => values[key] !== plan[key],
-    );
-    if (changed) await tx.update(orders).set(values).where(eq(orders.id, plan.id));
+    const changed =
+      price !== plan.price ||
+      (Object.keys(values) as (keyof typeof values)[]).some((key) => values[key] !== plan[key]);
+    if (changed) {
+      await tx
+        .update(orders)
+        .set({ ...values, plannedPrice: price })
+        .where(eq(orders.id, plan.id));
+    }
     if (!keepExtras) await tx.delete(orderExtras).where(eq(orderExtras.orderId, plan.id));
+    written.set(plan.id, { price, keepExtras });
   }
+  return written;
 }
 
 /**
