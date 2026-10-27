@@ -230,7 +230,8 @@ export async function decided(
   moves: readonly Move[],
   row: {
     ownerId?: string;
-    departmentId?: string;
+    /** `null`: an order without a department (05 Fields the Head sets 3; plan of 2.5d-c). */
+    departmentId?: string | null;
     categoryId?: string;
     /** The order's needed-by date, first submit and buying progress (plan of 6.5a, Orders). */
     neededBy?: string;
@@ -238,6 +239,8 @@ export async function decided(
     progress?: OrderProgress;
     /** The planned payment type, Cash by default (plan of 6.6a, Cash needed soon). */
     paymentType?: PaymentType;
+    /** `null`: an order without a planned price (05 Fields the Head sets 3; plan of 2.5d-c). */
+    plannedPrice?: bigint | null;
   } = {},
 ) {
   const product = await insertProduct({ categoryId: row.categoryId ?? scene.category.id });
@@ -245,13 +248,14 @@ export async function decided(
   const order = await insertOrder({
     branchId: scene.branch.id,
     ownerId,
-    departmentId: row.departmentId ?? scene.department.id,
+    departmentId: row.departmentId === undefined ? scene.department.id : row.departmentId,
     variantId: product.defaultVariantId,
     status,
     neededBy: row.neededBy,
     submittedAt: row.submittedAt === undefined ? undefined : new Date(row.submittedAt),
     progress: row.progress,
     paymentType: row.paymentType,
+    plannedPrice: row.plannedPrice,
     finishReason:
       row.progress === "DONE_SHORT" || row.progress === "NOT_BOUGHT"
         ? "Do'konda qolmagan"
