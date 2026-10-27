@@ -289,13 +289,14 @@ async function writeOrders(executor: Executor) {
         // Text, so no JavaScript number holds the so'm (CLAUDE.md rule 6).
         planned_cash: plannedCash?.toString() ?? null,
         cash_handed: handed.toString(),
-        cash_needed: cashNeeded({
-          status: row.status,
-          progress: row.progress,
-          plannedCash,
-          handed,
-          skippedFinance: skipped_finance,
-        }).toString(),
+        cash_needed:
+          cashNeeded({
+            status: row.status,
+            progress: row.progress,
+            plannedCash,
+            handed,
+            skippedFinance: skipped_finance,
+          })?.toString() ?? null,
       };
     },
   );

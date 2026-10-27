@@ -507,7 +507,9 @@ export const analyticsOrders = pgTable(
     // 2.5d-b, decided item 9, Look first; migration 0057).
     plannedCash: som("planned_cash"),
     cashHanded: som("cash_handed").notNull(),
-    cashNeeded: som("cash_needed").notNull(),
+    // Empty for the order Cash needed soon leaves out for lack of a price, as `cashNeeded()`
+    // decides it (08 Numbers; review of 2.5d-c at bad1f3f, finding 1, Look first; migration 0059).
+    cashNeeded: som("cash_needed"),
   },
   (table) => [
     foreignKey({

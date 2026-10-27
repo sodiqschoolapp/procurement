@@ -335,20 +335,26 @@ export const APPROVAL_STATUSES = [
  * (Returned, buying finished, Settlement and on) needs nothing. An order that skipped Finance has
  * no cash count and needs nothing (06 Finance step switched off 2; plan of 4.10c, decided item 5,
  * Look first); an order still in approval keeps its planned cash, whatever the step.
+ *
+ * Null for the one order the cash sum leaves out for lack of a price: a Cash order without a
+ * planned total (`plannedCashOf()` gives null only then) that did not skip Finance, in approval or
+ * Open with its buying Open. The sum says how many such orders it leaves out (08 Numbers: "a sum
+ * that leaves orders out says how many"; review of 2.5d-c at bad1f3f, finding 1, Look first), and
+ * this is the only place that decides which.
  */
 export function cashNeeded(order: {
   status: RequestStatus;
   progress: OrderProgress;
-  /** Null for an order without a planned price: no planned cash, so none is needed. */
+  /** Null for an order without a planned price: no planned cash, so its need is not known. */
   plannedCash: bigint | null;
   handed: bigint;
   skippedFinance?: boolean;
-}): bigint {
-  if (order.skippedFinance || order.plannedCash === null) return 0n;
-  if ((APPROVAL_STATUSES as readonly RequestStatus[]).includes(order.status)) {
-    return order.plannedCash;
-  }
-  if (order.status !== "PURCHASING" || order.progress !== "OPEN") return 0n;
+}): bigint | null {
+  if (order.skippedFinance) return 0n;
+  const inApproval = (APPROVAL_STATUSES as readonly RequestStatus[]).includes(order.status);
+  if (!inApproval && (order.status !== "PURCHASING" || order.progress !== "OPEN")) return 0n;
+  if (order.plannedCash === null) return null;
+  if (inApproval) return order.plannedCash;
   return cashNotYetGiven(order.plannedCash, order.handed);
 }
 

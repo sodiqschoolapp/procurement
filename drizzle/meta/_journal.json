@@ -414,6 +414,13 @@
       "when": 1793064300407,
       "tag": "0058_unpriced_outcomes",
       "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1793071625377,
+      "tag": "0059_unpriced_cash_needed",
+      "breakpoints": true
     }
   ]
 }

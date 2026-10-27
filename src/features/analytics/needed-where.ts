@@ -16,9 +16,11 @@ import type { AnalyticsFilters, ApprovalStatus, NeededStage } from "./period-par
 // back Draft leaves at once (the draft wall, .claude/rules/server-actions.md), and an order the
 // Head approves on stays in approval until the next refresh moves its step (review of the plan,
 // Should fix 6 and correction 1): the steps always add up to the in-approval total. The filters of
-// point 2 as cashWhere() reads them. `unpriced` keeps instead the orders of the stage without
-// planned cash, which the sums leave out and count (08 Numbers; plan of 2.5d-c, decided items 3
-// and 4, Look first): the same stage, step and live-status wall.
+// point 2 as cashWhere() reads them. `unpriced` keeps instead the orders of the stage whose
+// `cash_needed` is empty, which the sums leave out and count (08 Numbers; plan of 2.5d-c, decided
+// items 3 and 4, Look first): the same stage, step and live-status wall. Only `cashNeeded()`
+// decides which orders those are, so an unpriced order that skipped Finance, which needs nothing,
+// is not among them (review of 2.5d-c at bad1f3f, finding 1, Look first).
 
 const APPROVAL_LIST = sql.raw(APPROVAL_STATUSES.map((status) => `'${status}'`).join(", "));
 
@@ -40,7 +42,7 @@ export function neededWhere(
     and(
       branchFilter(actor, analyticsOrders.branchId),
       unpriced
-        ? sql`${analyticsOrders.plannedCash} is null`
+        ? sql`${analyticsOrders.cashNeeded} is null`
         : sql`${analyticsOrders.cashNeeded} > 0`,
       stage === "approval" ? approval : stage === "open" ? open : sql`((${approval}) or (${open}))`,
       step ? eq(analyticsOrders.status, step) : undefined,

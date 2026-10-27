@@ -58,7 +58,7 @@ type Row = {
   needed_by: string;
   planned_cash: string | null;
   cash_handed: string;
-  cash_needed: string;
+  cash_needed: string | null;
 };
 
 /** Throws AuthorizationError for another branch's filter. */
@@ -124,7 +124,8 @@ async function ordersIn(
       // cash_needed > 0, which cashNeeded() never gives without planned cash (2.5d-b, item 9).
       plannedCash: row.planned_cash === null ? null : BigInt(row.planned_cash),
       handed: BigInt(row.cash_handed),
-      needed: BigInt(row.cash_needed),
+      // An order of that list needs an amount nobody knows; it adds 0 to the list's sum.
+      needed: row.cash_needed === null ? 0n : BigInt(row.cash_needed),
     })),
   };
 }

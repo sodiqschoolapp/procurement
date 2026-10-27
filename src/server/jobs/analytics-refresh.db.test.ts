@@ -1161,7 +1161,8 @@ describe("analytics_refresh, the rows of Finance's 6.6b blocks (build-plan 6.6b)
 
 // 08 Numbers: an order without a planned price "has no planned total and no difference"; 10
 // Analytics 5 (the refresh); plan of 2.5d-b, decided items 4 and 9 (Look first; review of the plan,
-// correction 1: `planned_cash` empty, `cash_needed` 0).
+// correction 1: `planned_cash` empty, `cash_needed` 0; review of 2.5d-c at bad1f3f, finding 1:
+// `cash_needed` empty while the order waits or its buying is Open).
 describe("an order without a planned price (08 Numbers; plan of 2.5d-b)", () => {
   it("a finished and a closed unpriced order and an unpriced one waiting refresh without error: no outcome, planned cash empty, nothing needed; a priced one beside them has both", async () => {
     setClock("2031-05-10T05:00:00Z");
@@ -1206,14 +1207,16 @@ describe("an order without a planned price (08 Numbers; plan of 2.5d-b)", () => 
     const cash = await db.execute<{
       order_id: string;
       planned_cash: string | null;
-      cash_needed: string;
+      cash_needed: string | null;
     }>(sql`
       select order_id, planned_cash::text as planned_cash, cash_needed::text as cash_needed
       from analytics_orders
       where order_id in (${done.orderId}, ${waiting.id}, ${priced.orderId})`);
     const byId = new Map(cash.rows.map((row) => [row.order_id, row]));
     expect(byId.get(done.orderId)).toMatchObject({ planned_cash: null, cash_needed: "0" });
-    expect(byId.get(waiting.id)).toMatchObject({ planned_cash: null, cash_needed: "0" });
+    // Its need is not known: empty, so Cash needed soon leaves it out and counts it (review of
+    // 2.5d-c at bad1f3f, finding 1, Look first).
+    expect(byId.get(waiting.id)).toMatchObject({ planned_cash: null, cash_needed: null });
     expect(byId.get(priced.orderId)).toMatchObject({ planned_cash: "50000" });
   });
 });

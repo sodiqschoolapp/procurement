@@ -1,6 +1,8 @@
+import { sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 
 import { getPlanVsActualReport } from "@/features/reports/queries/plan-vs-actual-report";
+import { db } from "@/server/db/client";
 
 import {
   type Bought,
@@ -335,6 +337,41 @@ describe('Cash needed soon counts only the Cash orders without a price (08 When 
       true,
     );
     expect(step.rows.map((row) => row.orderId)).toEqual([cash.id]);
+  });
+});
+
+// 06 Finance step switched off 2: an order that skipped Finance has no cash count and needs
+// nothing, so Cash needed soon does not leave it out for lack of a price; cashNeeded() alone
+// decides which orders are left out (08 Numbers; review of 2.5d-c at bad1f3f, finding 1, Look
+// first).
+describe("Cash needed soon does not count an unpriced Cash order that skipped Finance (06 Finance step switched off 2; review of 2.5d-c at bad1f3f, finding 1, Look first)", () => {
+  it("an unpriced Cash Open order that skipped Finance is counted at no stage and in no unpriced list; one that went through Finance is", async () => {
+    setClock("2031-10-15T05:00:00Z");
+    const scene = await spendingScene();
+    const finance = await insertUser("FINANCE", { branches: [scene.branch.id] });
+    const through = await decided(scene, "PURCHASING", [], { plannedPrice: null });
+    const skipped = await decided(scene, "PURCHASING", [], { plannedPrice: null });
+    await db.execute(sql`update orders set skipped_finance = true where id = ${skipped.id}`);
+    await refreshNow();
+
+    const block = await getCashNeeded(finance.id, NO_ANALYTICS_FILTERS);
+    expect(block.open).toEqual({ amount: 0n, count: 0, unpriced: 1 });
+    expect(block.all.unpriced).toBe(1);
+    expect(block.approval.unpriced).toBe(0);
+
+    for (const stage of ["approval", "open", "all"] as const) {
+      const list = await getNeededOrders(
+        finance.id,
+        NO_ANALYTICS_FILTERS,
+        stage,
+        null,
+        "all",
+        true,
+      );
+      const ids = list.rows.map((row) => row.orderId);
+      expect(ids).toEqual(stage === "approval" ? [] : [through.id]);
+      expect(ids).not.toContain(skipped.id);
+    }
   });
 });
 
