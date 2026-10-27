@@ -8,7 +8,7 @@ The spec in `docs/spec/` is the source of truth. Start at `docs/spec/00-index.md
 
 1. **Money and stock are always correct.** A wrong total, cash balance or stock number is the worst possible bug.
 2. **Nobody sees or changes another branch's data, and nobody does another role's action.**
-3. **The approval order cannot be skipped or repeated wrongly:** Head, Principal, Finance (the Head may switch the Finance step off, D62), with every move in the history.
+3. **The approval order cannot be skipped or repeated wrongly:** Head, Principal, Finance (the Head may switch the Principal step or the Finance step off, D62, D69), with every move in the history.
 
 When two goals pull apart, the higher one wins. Speed and looks come after all three.
 

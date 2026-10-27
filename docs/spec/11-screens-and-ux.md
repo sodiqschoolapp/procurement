@@ -50,7 +50,7 @@ A page a role cannot use is not shown greyed out; it is simply absent from the m
 
 1. **Top:** order number and revision, status label, branch, owner, department, product and subtype, and one line saying who acts next and since when, for example "Waiting for Principal (Otabek N.) since 10.10.2026".
 2. **Plan and actual,** one block: the planned total while nothing is bought; once something counted is bought, the plan beside the actual quantity, price and extra costs with what each did to the total, and the three colour labels. Nothing in it is shown twice.
-3. **Tabs:** Details, Purchases, Money, History. Details leaves out fields that are empty. History starts with the steps Draft, Head, Principal, Finance, Open, Closed, with the name and time of each finished step; on an order that skipped Finance (section 6) the Finance step reads "Skipped". An order that skipped Finance has no Money tab.
+3. **Tabs:** Details, Purchases, Money, History. Details leaves out fields that are empty. History starts with the steps Draft, Head, Principal, Finance, Open, Closed, with the name and time of each finished step; on an order that skipped the Principal or Finance (section 6) that step reads "Skipped". An order that skipped Finance has no Money tab.
 4. **Action bar,** under the header and kept in view: the main next action this user can take as one button, and the user's other actions now under "More". If there are none, the top line already says who the order is waiting for.
 (Owner's decision of 25 October 2026: a simpler order page.)
 

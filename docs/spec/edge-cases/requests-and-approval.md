@@ -19,6 +19,7 @@ From spec chapter 12, which says: "These 41 situations are the ones most likely 
 | The same item for the same department is added again while a draft for it exists | The draft's quantity rises; no second draft. Once submitted, a new order is made and lists show both in one group row. |
 | A delivery fee covers a whole shop visit | It is its own order, a service such as "Delivery", planned and approved like any other. A fee that only turns up at the shop is an extra cost on one order of the trip (section 7). |
 | An approver is on holiday | Reminders, then a notice to the Head. The Head adds a second Finance user, or hands the branch to an acting Principal. |
+| The Head switches the Principal step off while orders wait for the Principal | Refused; the Head sees those orders and switches off once none is left (`06-approval-workflow.md`, "Principal step switched off"). |
 | The Head switches the Finance step off while orders wait for Finance or for settlement | Refused; the Head sees those orders and switches off once none is left (`06-approval-workflow.md`, "Finance step switched off"). |
 | A user is deactivated with work waiting | Approval tasks stay with the role. The Head moves that user's own orders to another Manager. |
 | A Manager with cash in hand leaves the branch | An order cannot change owner until its cash count is 0. |
