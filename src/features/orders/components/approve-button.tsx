@@ -53,6 +53,7 @@ export function ApproveButton({
   versionOf,
   total,
   financeStep = true,
+  principalStep = true,
   onAnswer,
   size,
   className,
@@ -70,6 +71,8 @@ export function ApproveButton({
   total: string;
   /** The setting `finance_step` the server read: the Principal's result says where orders go. */
   financeStep?: boolean;
+  /** The setting `principal_step` the server read: the Head's result says where orders go. */
+  principalStep?: boolean;
   /** Called after every answer: null on success, else one line per refused order. */
   onAnswer: (failed: { title: string; lines: { orderId: string; line: string }[] } | null) => void;
   className?: string;
@@ -202,6 +205,7 @@ export function ApproveButton({
               approveResultKey(
                 orders.map((order) => order.status),
                 financeStep,
+                principalStep,
               ),
               { count: orders.length, total },
             ) +

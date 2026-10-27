@@ -308,6 +308,7 @@ export function OrderList({
                     versionOf={(id) => seen.current.get(id) ?? 0}
                     total={plannedSum(summary.totals.grand, summary.totals.unpriced, summary.count)}
                     financeStep={summary.financeStep}
+                    principalStep={summary.principalStep}
                     onAnswer={(answer) => {
                       setFailed(answer);
                       clear();

@@ -30,6 +30,7 @@ import {
   parseListFilters,
 } from "@/features/orders/list-filters";
 import { wireGroup } from "@/features/orders/list-wire";
+import { headSubmitOpens } from "@/features/orders/move-texts";
 import { listDrafts } from "@/features/orders/queries/drafts";
 import {
   type OrderGroupPage,
@@ -366,6 +367,11 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
           defaultBranchId={defaultBranchId}
           canAdd={canAdd}
           query={query}
+          headOpens={headSubmitOpens(
+            user.role === "HEAD",
+            drafts.principalStep,
+            drafts.financeStep,
+          )}
         />
         {drafts.pages > 1 && (
           <PageLinks

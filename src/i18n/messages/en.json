@@ -105,7 +105,8 @@
       "noDepartment": "This order has no department, so it cannot be given straight to a department.",
       "priceNeedsFinanceOff": "The price can be optional or hidden only while the Finance step is off.",
       "financeStepPriceNotRequired": "Make the price required in Order fields first: with the Finance step on, every order needs a price.",
-      "financeStepUnpriced": "Orders without a planned price still wait for Head or Principal."
+      "financeStepUnpriced": "Orders without a planned price still wait for Head or Principal.",
+      "principalStepWaiting": "Orders still wait for the Principal."
     },
     "file": {
       "tooLarge": "The file is larger than 10 MB. Choose a smaller file or take the photo again.",
@@ -599,19 +600,36 @@
     "saved": "Settings saved",
     "nothingChanged": "Nothing changed",
     "history": "Change history",
+    "principalStep": {
+      "title": "Principal step",
+      "isOn": "On: orders the Head approves wait for the Principal of their branch.",
+      "isOff": "Off: orders the Head approves go straight to Finance, or open for buying while the Finance step is off too.",
+      "hint": "For the whole school. The Principal still sees the branch's orders, stock and reports. Switching changes only the orders the Head approves from then on.",
+      "waiting": "{count, plural, one {1 order waits} other {# orders wait}} for the Principal. The step can be switched off once none is left.",
+      "waitingLine": "{branch} · {status}",
+      "switchOff": "Switch off",
+      "switchOn": "Switch on",
+      "switchOffTitle": "Switch the Principal step off?",
+      "switchOnTitle": "Switch the Principal step on?",
+      "switchOffResult": "Orders the Head approves from now on skip the Principal: they go to Finance, or open for buying at once while the Finance step is off. The Principal keeps seeing the branch's orders.",
+      "switchOnResult": "Orders the Head approves from now on wait for the Principal. Orders already waiting for Finance or Open stay where they are.",
+      "refused": "Not switched off: orders {orders} still wait for the Principal.",
+      "switchedOff": "The Principal step is switched off",
+      "switchedOn": "The Principal step is switched on"
+    },
     "financeStep": {
       "title": "Finance step",
-      "isOn": "On: orders the Principal approves wait for Finance.",
-      "isOff": "Off: orders the Principal approves open for buying at once, with no cash tracking.",
-      "hint": "For the whole school. Switch it off while the Finance team does not use the app. Switching changes only the orders the Principal approves from then on.",
+      "isOn": "On: orders wait for Finance after their last approval.",
+      "isOff": "Off: orders open for buying at their last approval, with no cash tracking.",
+      "hint": "For the whole school. Switch it off while the Finance team does not use the app. Switching changes only the orders approved from then on.",
       "waiting": "{count, plural, one {1 order waits} other {# orders wait}} for Finance or for settlement. The step can be switched off once none is left.",
       "waitingLine": "{branch} · {status}",
       "switchOff": "Switch off",
       "switchOn": "Switch on",
       "switchOffTitle": "Switch the Finance step off?",
       "switchOnTitle": "Switch the Finance step on?",
-      "switchOffResult": "New orders the Principal approves will open for buying at once, with no cash tracking, and their owner or the Head closes them without settlement. Orders already Open keep their Finance step.",
-      "switchOnResult": "Orders the Principal approves from now on wait for Finance. Orders that skipped Finance keep closing without settlement.",
+      "switchOffResult": "New orders open for buying at their last approval, with no cash tracking, and their owner or the Head closes them without settlement. Orders already Open keep their Finance step.",
+      "switchOnResult": "Orders approved from now on wait for Finance. Orders that skipped Finance keep closing without settlement.",
       "refused": "Not switched off: orders {orders} still wait for Finance or for settlement.",
       "switchedOff": "The Finance step is switched off",
       "switchedOn": "The Finance step is switched on",
@@ -1298,7 +1316,8 @@
       "readyButton": "Submit ready drafts ({count})",
       "readyResult": "{count, plural, one {# draft gets its number and goes for approval.} other {# drafts get their numbers and go for approval.}} {stay, plural, =0 {Nothing stays in the sheet.} one {# draft stays in the sheet.} other {# drafts stay in the sheet.}}",
       "stayedTitle": "{count, plural, one {# draft stays in the sheet: it needs a fix.} other {# drafts stay in the sheet: they need a fix.}}",
-      "heldBack": "{count, plural, one {# more ready draft waits: press Submit again.} other {# more ready drafts wait: press Submit again.}}"
+      "heldBack": "{count, plural, one {# more ready draft waits: press Submit again.} other {# more ready drafts wait: press Submit again.}}",
+      "headOpens": "The Principal and Finance steps are switched off: orders you created yourself open for buying at once."
     },
     "list": {
       "title": "Order list",
@@ -1525,7 +1544,8 @@
         "progress": "Buying: {from} → {to}",
         "owner": "From {from} to {to}",
         "issue": "Given straight to the department: <note>{number}</note>",
-        "financeSkipped": "Finance step skipped"
+        "financeSkipped": "Finance step skipped",
+        "principalSkipped": "Principal step skipped"
       },
       "top": {
         "HEAD": "{since, select, none {Waiting for Head.} other {Waiting for Head since {since}.}}",
@@ -1545,7 +1565,8 @@
         "editInList": "Edit in the order list",
         "recordPurchase": "Record purchase",
         "settle": "Settle",
-        "more": "More"
+        "more": "More",
+        "submitHeadOpens": "The Principal and Finance steps are switched off: an order you created yourself opens for buying at once."
       },
       "changes": {
         "title": "What changed since rev {revision}",
@@ -1675,7 +1696,9 @@
         "forbidden": "You cannot approve this order at its step.",
         "not_ready": "This order cannot be approved yet."
       },
-      "resultSkipFinance": "Total {total}. The Finance step is switched off, so {count, plural, one {it opens} other {they open}} for buying at once, with no cash tracking. The owner and the Head are told."
+      "resultSkipFinance": "Total {total}. The Finance step is switched off, so {count, plural, one {it opens} other {they open}} for buying at once, with no cash tracking. The owner and the Head are told.",
+      "resultSkipPrincipal": "Total {total}. The Principal step is switched off, so {count, plural, one {it goes} other {they go}} to Finance, and Finance is told.",
+      "resultSkipBoth": "Total {total}. The Principal and Finance steps are switched off, so {count, plural, one {it opens} other {they open}} for buying at once, with no cash tracking. The owner and the Head are told."
     },
     "moves": {
       "already": {

@@ -140,6 +140,9 @@ export type DraftPage = {
    * which a submit requires.
    */
   fields: OrderFields;
+  /** The settings `principal_step` and `finance_step`: the Head's Submit dialog (plan of 4.10d). */
+  principalStep: boolean;
+  financeStep: boolean;
 };
 
 const branchInput = z.uuid().nullable().catch(null);
@@ -364,8 +367,10 @@ export async function listDrafts(
       offset: (page - 1) * DRAFTS_PAGE_SIZE,
     });
     const set = await readRows(executor, ownSet, { limit: SUBMIT_SET_MAX, offset: 0 });
-    // The fields the Head sets, as the submit will read them (05 Fields the Head sets 4).
-    const fields = (await readSettings(executor)).order_fields;
+    // The fields the Head sets, as the submit will read them (05 Fields the Head sets 4), and the
+    // two steps, for the Head's Submit dialog (plan of 4.10d).
+    const values = await readSettings(executor);
+    const fields = values.order_fields;
     const submitSet = set.map((row) => ({
       id: row.id,
       version: row.version,
@@ -375,7 +380,17 @@ export async function listDrafts(
       departmentName: row.departmentName,
       refusals: submitRefusals(shownFacts(row), today, fields),
     }));
-    return { rows, page, pages, total, submitSet, today, fields };
+    return {
+      rows,
+      page,
+      pages,
+      total,
+      submitSet,
+      today,
+      fields,
+      principalStep: values.principal_step,
+      financeStep: values.finance_step,
+    };
   });
 }
 

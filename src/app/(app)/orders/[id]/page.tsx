@@ -17,6 +17,7 @@ import { PurchasesTab } from "@/features/purchasing/components/purchases-tab";
 import { MoneyTab } from "@/features/money/components/money-tab";
 import { getOrderMoney } from "@/features/money/queries/order-money";
 import { getFormatters } from "@/i18n/get-formatters";
+import { headSubmitOpens } from "@/features/orders/move-texts";
 import { requireUser } from "@/server/auth/session";
 
 // /orders/[id] (11-screens-and-ux.md, Screens: "Order page | All"; Order page layout 1 to 4; plan
@@ -314,6 +315,7 @@ export default async function OrderPageScreen({
 
       <OrderActionBar
         orderId={order.id}
+        submitOpens={headSubmitOpens(user.role === "HEAD", order.principalStep, order.financeStep)}
         status={order.status}
         version={order.version}
         canSubmit={order.actions.includes("SUBMIT")}
@@ -330,6 +332,7 @@ export default async function OrderPageScreen({
                 },
                 total: format.money(order.plannedTotal),
                 financeStep: order.financeStep,
+                principalStep: order.principalStep,
               }
             : null
         }

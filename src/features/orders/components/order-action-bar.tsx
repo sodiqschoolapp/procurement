@@ -46,7 +46,13 @@ export function OrderActionBar({
   canRecordMoney = false,
   settle = null,
   skippedFinance = false,
+  submitOpens = false,
 }: {
+  /**
+   * The Submit dialog adds that the Head's own order opens for buying at once: both steps are off
+   * (`headSubmitOpens()`; 06 Principal step switched off 3; plan of 4.10d).
+   */
+  submitOpens?: boolean;
   orderId: string;
   status: RequestStatus;
   version: number;
@@ -56,10 +62,15 @@ export function OrderActionBar({
   /** The order's number; null for a draft never submitted, which none of `moves` applies to. */
   number: string | null;
   /**
-   * The order as Approve sends it, with its planned total formatted and the Finance step the
-   * server read (plan of 4.10c); null without the move.
+   * The order as Approve sends it, with its planned total formatted and the steps the server read
+   * (plans of 4.10c and 4.10d); null without the move.
    */
-  approve: { order: ApproveOrder; total: string; financeStep: boolean } | null;
+  approve: {
+    order: ApproveOrder;
+    total: string;
+    financeStep: boolean;
+    principalStep: boolean;
+  } | null;
   /** Copy as new is offered (05 Ticking and filters; plan of 2.13): the server's `canCopy`. */
   canCopy: boolean;
   /** The purchase form's address when the server's `canRecordPurchase` is set (plan of 3.3). */
@@ -183,6 +194,7 @@ export function OrderActionBar({
             versionOf={() => version}
             total={approve!.total}
             financeStep={approve!.financeStep}
+            principalStep={approve!.principalStep}
             onAnswer={answered}
             className={className}
           />
@@ -288,7 +300,11 @@ export function OrderActionBar({
         open={asking}
         onOpenChange={setAsking}
         pending={pending}
-        text={{ title: t("submitTitle"), result: t("submitResult"), confirm: t("submit") }}
+        text={{
+          title: t("submitTitle"),
+          result: submitOpens ? `${t("submitResult")} ${t("submitHeadOpens")}` : t("submitResult"),
+          confirm: t("submit"),
+        }}
         onConfirm={() => void submit()}
       />
     </section>

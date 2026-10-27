@@ -85,7 +85,13 @@ export function DraftsGrid({
   defaultBranchId,
   canAdd,
   query,
+  headOpens = false,
 }: {
+  /**
+   * The Submit dialogs add that the Head's own orders open for buying at once: both steps are off
+   * (`headSubmitOpens()`; 06 Principal step switched off 3; plan of 4.10d).
+   */
+  headOpens?: boolean;
   rows: readonly GridRow[];
   /**
    * The sheet's submit set as the page loaded it: every own Draft without a number in the view,
@@ -712,10 +718,11 @@ export function DraftsGrid({
               ? {
                   // How many go and how many stay (11 rule 6; plan of 2.5c, decided item 8).
                   title: t("submit.confirmTitle", { count: selection.send.length }),
-                  result: t("submit.readyResult", {
-                    count: selection.send.length,
-                    stay: readiness.length - selection.send.length,
-                  }),
+                  result:
+                    t("submit.readyResult", {
+                      count: selection.send.length,
+                      stay: readiness.length - selection.send.length,
+                    }) + (headOpens ? ` ${t("submit.headOpens")}` : ""),
                   confirm: t("submit.confirm"),
                 }
               : asking?.again
@@ -726,7 +733,9 @@ export function DraftsGrid({
                   }
                 : {
                     title: t("submit.confirmTitle", { count: asking?.ids.length ?? 0 }),
-                    result: t("submit.confirmResult", { count: asking?.ids.length ?? 0 }),
+                    result:
+                      t("submit.confirmResult", { count: asking?.ids.length ?? 0 }) +
+                      (headOpens ? ` ${t("submit.headOpens")}` : ""),
                     confirm: t("submit.confirm"),
                   }
           }

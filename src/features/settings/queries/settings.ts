@@ -7,7 +7,7 @@ import { authorize } from "@/server/authorize";
 import { branches, databaseCopies, orders } from "@/server/db/schema";
 import { readSettings } from "@/server/settings";
 
-import { financeStepBlockers } from "../finance-step-blockers";
+import { financeStepBlockers, principalStepBlockers } from "../finance-step-blockers";
 
 // The settings for screens (build-plan 1.1). Every query calls authorize() (developer-rules.md
 // rule 4). No branch filter: the settings belong to the whole school, not to a branch.
@@ -80,6 +80,30 @@ export async function getFinanceStepWaiting(
     .from(orders)
     .innerJoin(branches, eq(branches.id, orders.branchId))
     .where(financeStepBlockers(switchingOn))
+    .orderBy(asc(orders.number));
+  // A waiting order always has its number (05 Order number).
+  return rows.map((row) => ({ ...row, number: row.number! }));
+}
+
+/**
+ * The orders that refuse switching the Principal step off, of every branch, by number: those
+ * Waiting for Principal, "the Head sees those orders listed and switches off once none is left"
+ * (06 Principal step switched off 4; plan of 4.10d, decided item 13). The Head only, as the page;
+ * the Head sees every branch.
+ */
+export async function getPrincipalStepWaiting(userId: string): Promise<FinanceStepWaiting[]> {
+  await authorize(userId, "catalog.manage");
+  const { db } = await import("@/server/db/client");
+  const rows = await db
+    .select({
+      id: orders.id,
+      number: orders.number,
+      branchCode: branches.code,
+      status: orders.status,
+    })
+    .from(orders)
+    .innerJoin(branches, eq(branches.id, orders.branchId))
+    .where(principalStepBlockers())
     .orderBy(asc(orders.number));
   // A waiting order always has its number (05 Order number).
   return rows.map((row) => ({ ...row, number: row.number! }));

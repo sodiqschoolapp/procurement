@@ -155,6 +155,9 @@ export const FIELD_ERROR_KINDS = [
   "priceNeedsFinanceOff",
   "financeStepPriceNotRequired",
   "financeStepUnpriced",
+  // The Principal step switched off while orders wait for the Principal (06 Principal step
+  // switched off 4; plan of 4.10d): the numbers of those orders.
+  "principalStepWaiting",
 ] as const;
 export type FieldErrorKind = (typeof FIELD_ERROR_KINDS)[number];
 export type FieldMessageKey = `errors.field.${FieldErrorKind}`;
@@ -207,7 +210,8 @@ export type ActionFailure = {
    * of a branch's deactivation: counts, not quantities, the branch's unfinished orders and its
    * subtypes with stock above 0, as whole-number text (plan of 5.12, decided items 1 and 2). For a
    * `financeStepWaiting` field: the numbers of the orders that wait for Finance or for settlement,
-   * comma-separated (plan of 4.10c). Set only after the action's authorize() passed.
+   * comma-separated (plan of 4.10c); for a `principalStepWaiting` field, those that wait for the
+   * Principal (plan of 4.10d). Set only after the action's authorize() passed.
    */
   available?: Record<string, string>;
 };
