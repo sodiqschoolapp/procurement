@@ -11,7 +11,7 @@ One record belongs to one order. An order can have many records, for example 60 
 
 | Field | Rule |
 | --- | --- |
-| Date bought | Default today. Not in the future, not before the Finance approval of the order (the Principal's, for an order that skipped Finance, section 6). |
+| Date bought | Default today. Not in the future, not before the Finance approval of the order (the approval that opened it, for an order that skipped Finance, section 6). |
 | Actual quantity | More than 0. Decimals only when the measure allows. |
 | Actual price per unit | 0 or more, whole so'm. A price of 0 (a gift) needs a comment. |
 | Extra costs | Zero or more rows: type, amount, payment type. Covers delivery the Manager paid from his own pocket. |

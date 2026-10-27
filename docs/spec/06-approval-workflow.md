@@ -3,7 +3,7 @@
 > Part of the School Procurement & Warehouse Platform spec, baseline of 10 October 2026 (document revision 123).
 > Index and reading order: `docs/spec/00-index.md`. Read-only: this folder changes only through `/spec-change`.
 
-Every order moves through ten statuses on its own; approval always runs Head, then Principal, then Finance (unless the Head has switched the Finance step off, see the end of this file), and each of them can decide on many ticked orders in one action.
+Every order moves through ten statuses on its own; approval always runs Head, then Principal, then Finance (unless the Head has switched the Principal step or the Finance step off, see the end of this file), and each of them can decide on many ticked orders in one action.
 
 ```mermaid
 flowchart TD
@@ -12,6 +12,8 @@ flowchart TD
   PP -->|approve| PF["Waiting for Finance<br/>Branch Finance decides"]
   PF -->|approve, cash given| OPEN["Open<br/>Manager buys, records purchases"]
   PP -->|approve, Finance step off| OPEN
+  PH -->|approve, Principal step off| PF
+  PH -->|approve, both steps off| OPEN
   OPEN -->|buying finished| Q{"Exact match?"}
   Q -->|yes: Manager closes| CLOSED["Closed<br/>read-only"]
   Q -->|no| SET["Settlement<br/>Finance evens out"]
@@ -35,7 +37,7 @@ Read it top to bottom. Any of the three approvers can send an order back to the 
 | `DRAFT` | Draft | Being written. Visible to the owner and the Head only. | Owner |
 | `PENDING_HEAD` | Waiting for Head | Submitted. | Head |
 | `PENDING_PRINCIPAL` | Waiting for Principal | Head approved. | Principal of the branch |
-| `PENDING_FINANCE` | Waiting for Finance | Principal approved. | Finance of the branch |
+| `PENDING_FINANCE` | Waiting for Finance | Principal approved (the Head, while the Principal step is off). | Finance of the branch |
 | `RETURNED` | Sent back for editing | An approver asked for changes. | Owner |
 | `PURCHASING` | Open | Fully approved. The Manager buys and records purchases. | Owner |
 | `SETTLEMENT` | Waiting for settlement | Buying is finished and something differs from the plan. | Finance |
@@ -49,8 +51,8 @@ Each move applies to one order. An action on ticked orders makes the same move o
 
 | From | Action | Who | To | Needs |
 | --- | --- | --- | --- | --- |
-| Draft | Submit | Owner or Head | Waiting for Head (Waiting for Principal when the Head is the creator) | The order passes all checks |
-| Waiting for Head | Approve | Head | Waiting for Principal |  |
+| Draft | Submit | Owner or Head | Waiting for Head (when the Head is the creator: Waiting for Principal, or the next step that is on) | The order passes all checks |
+| Waiting for Head | Approve | Head | Waiting for Principal (Waiting for Finance when the Principal step is off; Open when both steps are off) |  |
 | Waiting for Principal | Approve | Principal | Waiting for Finance (Open when the Finance step is off) |  |
 | Waiting for Finance | Approve | Finance | Open | Optional cash in the same dialog (section 8) |
 | Any "Waiting for" step | Send back | The approver of that step | Sent back for editing | Reason; optional note per order |
@@ -81,15 +83,27 @@ Any move not in this table is impossible, in the screen and on the server.
 10. **Stock for approvers.** Each order shows stock at submit time and stock now, so an approver can see when an item has already arrived.
 11. **History.** Every move is logged per order with the user, the time and the comment, and shown on the order's History tab. A move made in one action with other orders says so, for example "Approved by Head with 14 other orders".
 
+## Principal step switched off
+
+The Head can switch the Principal step off for the whole school, and on again later (owner's decision of 27 October 2026). It is the setting `principal_step`, on by default. The Head step is never switched off.
+
+1. **Skipped.** While the step is off, the Head's Approve moves an order to the next step that is on: Waiting for Finance, or Open when the Finance step is off too. An order the Head creates goes there on Submit, with the Head step approved automatically (`03-roles-and-permissions.md` rule 6). The order is marked as having skipped the Principal.
+2. **Each round decides again.** The mark is saved with the Head's approval. An order sent back and submitted again goes through the Principal if the step is on when the Head approves it again, and the mark is cleared (rule 4).
+3. **Both steps off.** The Head's Approve, or the Submit of an order the Head created, opens the order, and the order has skipped Finance too: "Finance step switched off" below applies to it.
+4. **Switching off** is refused while any order is Waiting for Principal; the Head sees those orders listed and switches off once none is left.
+5. **Switching on** changes only orders the Head approves from then on. An order Waiting for Finance or Open stays where it is.
+6. **The Principal stays.** The branch's Principal still sees its orders, stock and reports, read-only. While the step is on, the Head still cannot approve in place of the Principal (`02-assumptions.md` A5).
+7. Every switch is written to the audit log.
+
 ## Finance step switched off
 
 The Head can switch the Finance step off for the whole school, for example while the Finance team does not yet use the app, and on again later (owner's decision of 25 October 2026). It is the setting `finance_step`, on by default.
 
-1. **Skipped.** While the step is off, the Principal's Approve moves an order straight to Open, and the order is marked as having skipped Finance. The mark is saved with the approval and never changes; a reopened order keeps it.
+1. **Skipped.** While the step is off, the Principal's Approve (the Head's, while the Principal step is off too) moves an order straight to Open, and the order is marked as having skipped Finance. The mark is saved with the approval and never changes; a reopened order keeps it.
 2. **No money.** An order that skipped Finance has no cash count: no money action has a row on it, it is left out of every Manager's cash balance and of Money with managers, and it never goes to settlement. Payment types are still planned and recorded on purchases.
 3. **Closing.** The owner or the Head closes a finished order that skipped Finance whether or not it matches exactly, with the confirmation of an exact match (section 8). Nobody approves a difference; the three colours still show it. When the Head has switched off a Manager's right to close alone, the Head closes that Manager's orders.
 4. **Big overspend.** The Head is notified as usual (section 8, Overspend guard), but no acknowledgment is needed to close.
 5. **Switching off** is refused while any order is Waiting for Finance or Waiting for settlement; the Head sees those orders listed and switches off once none is left.
-6. **Switching on** changes only orders the Principal approves from then on. An order that skipped Finance keeps these rules until it is Closed, and after a reopen.
+6. **Switching on** changes only orders approved from then on. An order that skipped Finance keeps these rules until it is Closed, and after a reopen.
 7. Every switch is written to the audit log.
 8. **Price.** The Head can make the price per unit optional or hidden only while the step is off (section 5, "Fields the Head sets"). Switching the step on is refused while the price is not required, or while an order without a planned price is Waiting for Head or Waiting for Principal; the Head sees those orders listed. An order without a planned price never waits for Finance or settlement.

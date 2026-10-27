@@ -14,7 +14,7 @@ One action sends one notification to each person told, never one per order: "Dil
 | Event | Who is told |
 | --- | --- |
 | Orders submitted or submitted again | Head |
-| Head approved | Principal of the branch |
+| Head approved | Principal of the branch; while the Principal step is off, as for "Principal approved" |
 | Principal approved | Finance users of the branch; for orders that skipped Finance (section 6), owner and Head |
 | Finance approved | Owner, Head |
 | Sent back, rejected | Owner, Head |
@@ -33,7 +33,7 @@ One action sends one notification to each person told, never one per order: "Dil
 | Transfer sent | Managers of the receiving branch |
 | Transfer cancelled | Managers of the receiving branch |
 | Item reached its minimum stock | Managers of the branch, once per item until restocked |
-| Branch has no active user for a role | Head; not for Finance while the Finance step is off |
+| Branch has no active user for a role | Head; not for the Principal or Finance while that step is off |
 | Purchase record cancelled | Head |
 | Recent purchases differ from the reference price by more than 20% | Head |
 | A Manager's right is switched on or off | That Manager |

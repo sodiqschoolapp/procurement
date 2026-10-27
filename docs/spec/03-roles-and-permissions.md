@@ -9,7 +9,7 @@ Four roles exist, and what each user sees is limited to their branches on the se
 | --- | --- | --- |
 | Head | All | Super admin. Manages catalogs, users, branches and settings. Gives the first approval. Acknowledges big overspends. Approves write-offs and stock corrections. Can do everything a Manager can, in any branch. |
 | Manager | One or more, assigned by the Head | Adds and submits orders, records purchases, runs the warehouse of their branches. |
-| Principal | One branch per Principal, and exactly one Principal per branch | Gives the second approval. Sees orders, stock and reports of their branch, read-only. |
+| Principal | One branch per Principal, and exactly one Principal per branch | Gives the second approval, while the Principal step is on (section 6). Sees orders, stock and reports of their branch, read-only. |
 | Finance | One or more, assigned by the Head | Gives the third approval. Records money given and returned. Settles differences and closes orders. |
 
 ## Rules
@@ -18,7 +18,7 @@ Four roles exist, and what each user sees is limited to their branches on the se
 2. A branch has exactly one Principal. It can have several Managers and several Finance users; when users share a role, any of them can act and the first action wins.
 3. Tasks belong to a role in a branch, not to a person. If one Finance user is away, another Finance user of that branch sees the same task. The Head can replace a branch's Principal at any time, for example with an acting Principal during leave. Waiting orders pass to the new Principal, and past approvals keep the old name.
 4. At least one active Head must always exist. The last one cannot be deactivated. A Head who forgot the password gets a new one from a command run in the hosting console, which signs that Head out everywhere and writes an audit row.
-5. The Head sees a warning when a branch has no active Manager, Principal or Finance user; while the Finance step is off (section 6), not for Finance.
+5. The Head sees a warning when a branch has no active Manager, Principal or Finance user; while the Principal step or the Finance step is off (section 6), not for that role.
 6. When the Head creates an order, the Head step is approved automatically and logged as "Created by Head".
 7. An order has one owner: the Manager who created it. The Head can move ticked orders to another Manager of the same branch, but only orders whose cash count is zero.
 8. Every action can cover many ticked orders, but only orders the user may act on: one order outside the user's branches or role refuses the whole action.

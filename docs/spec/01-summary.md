@@ -5,7 +5,7 @@
 
 One web app replaces the paper order request form and the warehouse records for every branch of the school. It does two jobs:
 
-1. **Orders.** Each branch keeps one order list. A manager adds orders for things to buy, one product or service each. Three people approve every order in a fixed order: Procurement Head, Principal, Finance, each ticking many orders at once. The Head can switch the Finance step off for a time; such orders skip Finance and keep no cash count (section 6). The manager buys, records the real prices and numbers, Finance settles any money difference, and each order closes on its own.
+1. **Orders.** Each branch keeps one order list. A manager adds orders for things to buy, one product or service each. Three people approve every order in a fixed order: Procurement Head, Principal, Finance, each ticking many orders at once. The Head can switch the Principal step or the Finance step off for a time; orders then skip that step, and an order that skips Finance keeps no cash count (section 6). The manager buys, records the real prices and numbers, Finance settles any money difference, and each order closes on its own.
 2. **Warehouse.** Every recorded purchase enters the branch stock automatically. Managers give items to departments, and the system always knows how many are left.
 
 This spec is written for Claude Code. It decides the rules, screens, data and build order so nothing is left to guessing.
