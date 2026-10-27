@@ -111,6 +111,7 @@ describe("per order, product and Manager (10 Reports; 08 Difference)", () => {
       planned: 150_000n,
       actual: 147_000n,
       difference: 3_000n,
+      unpriced: 0,
     });
     expect(report.products.find((row) => row.id === over.productId)).toMatchObject({
       orders: 2,
@@ -127,8 +128,17 @@ describe("per order, product and Manager (10 Reports; 08 Difference)", () => {
         planned: 100_000n,
         actual: 97_000n,
         difference: 3_000n,
+        unpriced: 0,
       },
-      { id: null, name: null, orders: 1, planned: 50_000n, actual: 50_000n, difference: 0n },
+      {
+        id: null,
+        name: null,
+        orders: 1,
+        planned: 50_000n,
+        actual: 50_000n,
+        difference: 0n,
+        unpriced: 0,
+      },
     ]);
   });
 

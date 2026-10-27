@@ -65,13 +65,13 @@ describe("Cash needed soon (10 Finance; plan of 6.6a, decided items 4 and 5)", (
 
     const block = await getCashNeeded(finance.id, NO_ANALYTICS_FILTERS);
     expect(block).toEqual({
-      open: { amount: 20_000n, count: 1 },
-      approval: { amount: 150_000n, count: 3 },
-      all: { amount: 170_000n, count: 4 },
+      open: { amount: 20_000n, count: 1, unpriced: 0 },
+      approval: { amount: 150_000n, count: 3, unpriced: 0 },
+      all: { amount: 170_000n, count: 4, unpriced: 0 },
       steps: [
-        { step: "PENDING_HEAD", amount: 50_000n, count: 1 },
-        { step: "PENDING_PRINCIPAL", amount: 50_000n, count: 1 },
-        { step: "PENDING_FINANCE", amount: 50_000n, count: 1 },
+        { step: "PENDING_HEAD", amount: 50_000n, count: 1, unpriced: 0 },
+        { step: "PENDING_PRINCIPAL", amount: 50_000n, count: 1, unpriced: 0 },
+        { step: "PENDING_FINANCE", amount: 50_000n, count: 1, unpriced: 0 },
       ],
     });
 
@@ -105,7 +105,7 @@ describe("Cash needed soon (10 Finance; plan of 6.6a, decided items 4 and 5)", (
     await setOrderStatus(head.id, "PENDING_PRINCIPAL");
 
     const block = await getCashNeeded(finance.id, NO_ANALYTICS_FILTERS);
-    expect(block.approval).toEqual({ amount: 150_000n, count: 3 });
+    expect(block.approval).toEqual({ amount: 150_000n, count: 3, unpriced: 0 });
     const sum = block.steps.reduce((total, step) => total + step.amount, 0n);
     expect(sum).toBe(block.approval.amount);
     // Until the next refresh the order stays at the Head's step, where the summary saw it.
@@ -122,6 +122,7 @@ describe("Cash needed soon (10 Finance; plan of 6.6a, decided items 4 and 5)", (
     expect((await getCashNeeded(finance.id, NO_ANALYTICS_FILTERS)).open).toEqual({
       amount: 0n,
       count: 0,
+      unpriced: 0,
     });
   });
 
@@ -137,7 +138,7 @@ describe("Cash needed soon (10 Finance; plan of 6.6a, decided items 4 and 5)", (
       ...NO_ANALYTICS_FILTERS,
       supplier: scene.supplier.id,
     });
-    expect(block.open).toEqual({ amount: 50_000n, count: 1 });
-    expect(block.approval).toEqual({ amount: 0n, count: 0 });
+    expect(block.open).toEqual({ amount: 50_000n, count: 1, unpriced: 0 });
+    expect(block.approval).toEqual({ amount: 0n, count: 0, unpriced: 0 });
   });
 });

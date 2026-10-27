@@ -136,7 +136,8 @@ describe("GET /analytics/download (10 point 4)", () => {
 
     const managers = await get({ block: "outcomeManagers" });
     expect(managers.find((row) => row[0] === scene.manager.fullName)?.slice(1)).toEqual([
-      1, 0, 0, 1, 2_000, 0,
+      // The last column: the ended orders without a planned price (plan of 2.5d-c).
+      1, 0, 0, 1, 2_000, 0, 0,
     ]);
 
     const orders = await get({ key: { kind: "overspent" }, block: "orders" });
@@ -538,8 +539,9 @@ describe("GET /analytics/download, the 6.4c sheets (10 point 4; plan of 6.4c)", 
       );
     const managers = await get("managers");
     const row = managers.find((each) => each[0] === scene.manager.fullName)!;
-    // Held 30 000 since 5 October: 10 days on 15 October.
-    expect([row[4], row[5]]).toEqual([30_000, 10]);
+    // Held 30 000 since 5 October: 10 days on 15 October (after the average, the count without
+    // a price and its change: plan of 2.5d-c).
+    expect([row[6], row[7]]).toEqual([30_000, 10]);
     const cash = await get("cash");
     expect(cash.some((each) => each.includes(held.number!) && each.includes(30_000))).toBe(true);
     expect(cash.at(-1)!.includes(30_000)).toBe(true);
@@ -1201,8 +1203,8 @@ describe("GET /analytics/download, the 6.6b sheets (10 point 4; plan of 6.6b; re
     expect(plan.total.overspent.amount).toBe(10_000n);
     const branches = await sheetOf(await get(finance, own, "overspendBranches"));
     // Branch, overspent orders, overspent, its change and %, saved orders, saved, its change and %:
-    // no colour shares (correction 2).
-    expect(branches.at(-2)!.length).toBe(9);
+    // no colour shares (correction 2); then the ended orders without a planned price (2.5d-c).
+    expect(branches.at(-2)!.length).toBe(10);
     expect(branches.at(-1)!.slice(1)).toEqual([
       1,
       Number(plan.total.overspent.amount),
@@ -1212,6 +1214,7 @@ describe("GET /analytics/download, the 6.6b sheets (10 point 4; plan of 6.6b; re
       0,
       0,
       "",
+      0,
     ]);
     const managers = await sheetOf(await get(finance, own, "overspendManagers"));
     expect(managers.at(-1)!.slice(1, 3)).toEqual([1, 10_000]);
