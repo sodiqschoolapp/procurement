@@ -332,6 +332,13 @@ describe("the orders without a department and without a planned price in the add
     ).toEqual({ kind: "needed", stage: "approval", step: "PENDING_PRINCIPAL", unpriced: true });
   });
 
+  // The Managers block's orders number (review of 2.5d-c, finding 1).
+  it("reads the ended key back from analyticsSearch()", () => {
+    const key = { kind: "ended" } as const;
+    expect(analyticsSearch(period, NO_ANALYTICS_FILTERS, { key })).toContain("key=ended");
+    expect(read(analyticsSearch(period, NO_ANALYTICS_FILTERS, { key }))?.key).toEqual(key);
+  });
+
   it("refuses an unpriced mark in the wrong place", () => {
     expect(parseAnalyticsParams({ key: "needed:unpriced:approval" })).toBeNull();
     expect(parseAnalyticsParams({ key: "priced:all:other" })).toBeNull();

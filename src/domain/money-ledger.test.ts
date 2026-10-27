@@ -1092,6 +1092,17 @@ describe("an order without a planned price (08 Numbers; Overspend guard)", () =>
     }
   });
 
+  // 08 When Finance approves: planned cash is "its planned total when its payment type is Cash,
+  // else 0", so only a Cash order without a price is left out of the cash sums and counted
+  // (review of 2.5d-c, finding 2, Look first).
+  it("of Bank transfer or Card has planned cash 0, not null; only a Cash one has none", () => {
+    expect(plannedCashOf("TRANSFER", null)).toBe(0n);
+    expect(plannedCashOf("CARD", null)).toBe(0n);
+    expect(plannedCash({ ...unpriced, paymentType: "TRANSFER" })).toBe(0n);
+    expect(plannedCash({ ...unpriced, paymentType: "CARD" })).toBe(0n);
+    expect(plannedCashOf("CASH", null)).toBeNull();
+  });
+
   it("is never over the guard, whatever it cost, even with the guard at 0 and 0", () => {
     const guard = { overspend_guard_percent: 0, overspend_guard_min_amount: 0n };
     const records: CashRecord[] = [

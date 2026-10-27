@@ -88,6 +88,8 @@ export type DrillKey =
   | { kind: "overspent" }
   | { kind: "saved" }
   | { kind: "unpriced" }
+  /** Every ended order, priced and unpriced: the Managers block's orders (plan of 2.5d-c). */
+  | { kind: "ended" }
   | { kind: "price"; variant: string; month: string | null; noSupplier: boolean }
   | { kind: "step"; step: ApprovalStep | null; decision: StayDecision | null }
   | { kind: "waiting"; step: ApprovalStep | null; group: WaitingGroup | null }
@@ -232,7 +234,7 @@ const id = z.uuid().transform((value) => value.toLowerCase());
 const date = z.string().refine(isBusinessDate);
 
 const KEY =
-  /^(period|overspent|saved|month:\d{4}-\d{2}|category:[0-9a-fA-F-]{36}|payment:[A-Z]+(:nosupplier)?|colour:[a-z]+|price:[0-9a-fA-F-]{36}(:\d{4}-\d{2}|:nosupplier)?|step:[A-Z_a-z]+(:[A-Z_]+)?|waiting:[A-Z_a-z]+:[A-Za-z]+|stock:[a-z]+|moves:[a-z]+|product:[0-9a-fA-F-]{36}|status:([A-Z_]+|all)|due:[a-z]+|mine|approved|priced:(all|[0-9a-fA-F-]{36})(:unpriced)?|money:[A-Za-z]+(:\d{4}-\d{2})?|needed:[a-z]+(:[A-Z_]+)?(:unpriced)?|unpriced|age:[a-z]+:[a-z]+|noreceipt|settled)$/;
+  /^(period|overspent|saved|month:\d{4}-\d{2}|category:[0-9a-fA-F-]{36}|payment:[A-Z]+(:nosupplier)?|colour:[a-z]+|price:[0-9a-fA-F-]{36}(:\d{4}-\d{2}|:nosupplier)?|step:[A-Z_a-z]+(:[A-Z_]+)?|waiting:[A-Z_a-z]+:[A-Za-z]+|stock:[a-z]+|moves:[a-z]+|product:[0-9a-fA-F-]{36}|status:([A-Z_]+|all)|due:[a-z]+|mine|approved|priced:(all|[0-9a-fA-F-]{36})(:unpriced)?|money:[A-Za-z]+(:\d{4}-\d{2})?|needed:[a-z]+(:[A-Z_]+)?(:unpriced)?|unpriced|ended|age:[a-z]+:[a-z]+|noreceipt|settled)$/;
 
 /** A reason key as reasonKey() writes it: at most the 500 characters of a reason (06 rule 3). */
 const reason = z.string().min(1).max(500);
@@ -270,6 +272,7 @@ function keyOf(text: string): DrillKey | null {
     text === "overspent" ||
     text === "saved" ||
     text === "unpriced" ||
+    text === "ended" ||
     text === "mine" ||
     text === "approved" ||
     text === "noreceipt" ||
@@ -453,6 +456,7 @@ function keyText(key: DrillKey): string {
     case "overspent":
     case "saved":
     case "unpriced":
+    case "ended":
     case "mine":
     case "approved":
     case "noreceipt":

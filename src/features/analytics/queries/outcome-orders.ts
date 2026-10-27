@@ -26,7 +26,10 @@ import { PeriodRefusedError, resolvePeriod } from "../resolve-period";
 // −difference, saved the difference, otherwise the net difference). `unpriced` lists the ended
 // orders without a planned price, the rows of `analytics_unpriced` under the same outcomesWhere():
 // no planned total, difference or colour, and its sum is their actual total (plan of 2.5d-c,
-// decided item 4, Look first). Names read live. Under
+// decided item 4, Look first). `ended` lists every ended order, the rows of both tables under the
+// one outcomesWhere(): the Managers block's "number of orders" counts priced and unpriced alike
+// (plan of 2.5d-c, decided item 5, Look first; review of 2.5d-c, finding 1), its sum is the net
+// difference of the priced ones and `unpriced` says how many it leaves out. Names read live. Under
 // `data.view`, the branch wall in the SQL, in one snapshot; 25 a page, or every row for the export.
 
 export type OutcomeOrder = {
@@ -49,6 +52,8 @@ export type OutcomeOrders = {
   key: DrillKey;
   otherOwners: boolean;
   count: number;
+  /** The rows without a planned price, which the sum leaves out (08 Numbers). */
+  unpriced: number;
   /**
    * Overspent: the sum of −difference; unpriced: the sum of the actual totals; saved and the rest:
    * the sum of the difference.
@@ -72,6 +77,7 @@ export async function getOutcomeOrders(
 function keyWhere(key: DrillKey): SQL {
   switch (key.kind) {
     case "period":
+    case "ended":
     case "unpriced":
       return sql`true`;
     case "colour":
@@ -97,25 +103,34 @@ async function ordersIn(
 ): Promise<OutcomeOrders> {
   const actor = await authorizeAnalytics(db, userId, filters);
   const { period } = await resolvePeriod(db, input);
-  const unpriced = key.kind === "unpriced";
-  const table = unpriced ? analyticsUnpriced : analyticsOutcomes;
-  const from = unpriced ? sql`analytics_unpriced` : sql`analytics_outcomes`;
-  const where = sql`(${outcomesWhere(actor, period, filters, otherOwners, table)}) and ${keyWhere(key)}`;
-  const amount = unpriced
-    ? sql`analytics_unpriced.actual`
-    : key.kind === "overspent"
-      ? sql`-analytics_outcomes.difference`
-      : sql`analytics_outcomes.difference`;
-  const plan = unpriced
-    ? sql`null as colour, null as planned, analytics_unpriced.actual::text as actual,
-          null as difference`
-    : sql`analytics_outcomes.colour, analytics_outcomes.planned::text as planned,
-          analytics_outcomes.actual::text as actual,
-          analytics_outcomes.difference::text as difference`;
+  const outcomes = sql`
+    select order_id, branch_id, owner_id, ended_on, colour::text as colour, planned, actual,
+           difference
+    from analytics_outcomes
+    where (${outcomesWhere(actor, period, filters, otherOwners, analyticsOutcomes)})
+      and ${keyWhere(key)}`;
+  const unpriced = sql`
+    select order_id, branch_id, owner_id, ended_on, null::text as colour, null::bigint as planned,
+           actual, null::bigint as difference
+    from analytics_unpriced
+    where ${outcomesWhere(actor, period, filters, otherOwners, analyticsUnpriced)}`;
+  const source =
+    key.kind === "unpriced"
+      ? unpriced
+      : key.kind === "ended"
+        ? sql`${outcomes} union all ${unpriced}`
+        : outcomes;
+  const amount =
+    key.kind === "unpriced"
+      ? sql`e.actual`
+      : key.kind === "overspent"
+        ? sql`-e.difference`
+        : sql`e.difference`;
 
-  const summary = await db.execute<{ count: string; sum: string }>(sql`
-    select count(*)::text as count, coalesce(sum(${amount}), 0)::text as sum
-    from ${from} where ${where}`);
+  const summary = await db.execute<{ count: string; unpriced: string; sum: string }>(sql`
+    select count(*)::text as count, count(*) filter (where e.planned is null)::text as unpriced,
+           coalesce(sum(${amount}), 0)::text as sum
+    from (${source}) e`);
   const limit =
     page === "all"
       ? sql``
@@ -133,20 +148,20 @@ async function ordersIn(
     actual: string;
     difference: string | null;
   }>(sql`
-    select ${from}.order_id, o.number, pr.name as product_name,
+    select e.order_id, o.number, pr.name as product_name,
            case when v.is_default then null else v.name end as subtype_name,
-           b.name as branch_name, u.full_name as owner_name,
-           ${from}.ended_on::text as ended_on, ${plan}
-    from ${from}
+           b.name as branch_name, u.full_name as owner_name, e.ended_on::text as ended_on,
+           e.colour, e.planned::text as planned, e.actual::text as actual,
+           e.difference::text as difference
+    from (${source}) e
     -- The draft wall in the SQL (permission review of 2.7 and of 6.4a): an ended order is never a
     -- Draft today, and a later refresh must not let one through.
-    join orders o on o.id = ${from}.order_id and o.status <> 'DRAFT'
+    join orders o on o.id = e.order_id and o.status <> 'DRAFT'
     join product_variants v on v.id = o.variant_id
     join products pr on pr.id = v.product_id
-    join branches b on b.id = ${from}.branch_id
-    join users u on u.id = ${from}.owner_id
-    where ${where}
-    order by ${from}.ended_on desc, o.number, ${from}.order_id
+    join branches b on b.id = e.branch_id
+    join users u on u.id = e.owner_id
+    order by e.ended_on desc, o.number, e.order_id
     ${limit}`);
 
   return {
@@ -154,6 +169,7 @@ async function ordersIn(
     key,
     otherOwners,
     count: Number(summary.rows[0]!.count),
+    unpriced: Number(summary.rows[0]!.unpriced),
     sum: BigInt(summary.rows[0]!.sum),
     page: page === "all" ? 1 : page,
     rows: rows.rows.map((row) => ({

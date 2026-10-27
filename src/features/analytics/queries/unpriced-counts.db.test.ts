@@ -179,6 +179,55 @@ describe("the Head's Managers block (10 Head, Managers; plan of 2.5d-c, decided 
     expect(row.average).toBe(100_000n);
     expect(row.unpriced.count).toBe(1);
   });
+
+  // 10 Analytics point 3: the number opens the list that makes it up (review of 2.5d-c, finding 1).
+  it("its orders number opens every ended order of the Manager: 2 counted, 2 listed, the difference of the priced one and 1 without a price", async () => {
+    const { scene, head, priced, unpriced } = await endedScene();
+    const filters = { ...NO_ANALYTICS_FILTERS, branch: scene.branch.id, manager: scene.manager.id };
+    const block = await getManagers(head.id, THIS_MONTH, filters);
+    const row = block.rows.find((each) => each.id === scene.manager.id)!;
+    const list = await getOutcomeOrders(
+      head.id,
+      THIS_MONTH,
+      filters,
+      { kind: "ended" },
+      false,
+      "all",
+    );
+    expect(list.count).toBe(row.orders.count);
+    expect(list.rows).toHaveLength(2);
+    expect(list.rows.map((each) => each.orderId).sort()).toEqual(
+      [priced.orderId, unpriced.orderId].sort(),
+    );
+    expect(list.sum).toBe(100_000n);
+    expect(list.unpriced).toBe(1);
+    expect(list.rows.find((each) => each.orderId === unpriced.orderId)).toMatchObject({
+      colour: null,
+      planned: null,
+      difference: null,
+    });
+    // The other branch's unpriced ended order of October is not in the branch's list.
+    const all = await getOutcomeOrders(
+      head.id,
+      THIS_MONTH,
+      { ...NO_ANALYTICS_FILTERS, branch: scene.branch.id },
+      { kind: "ended" },
+      false,
+      "all",
+    );
+    expect(all.count).toBe(2);
+    // The average keeps its link to the priced ones.
+    const period = await getOutcomeOrders(
+      head.id,
+      THIS_MONTH,
+      filters,
+      { kind: "period" },
+      false,
+      "all",
+    );
+    expect(period.rows.map((each) => each.orderId)).toEqual([priced.orderId]);
+    expect(period.unpriced).toBe(0);
+  });
 });
 
 describe("the Planned vs actual report (10 Reports; plan of 2.5d-c, decided item 3, Look first)", () => {
@@ -236,6 +285,56 @@ describe("Cash needed soon (10 Finance; plan of 2.5d-c, decided item 7)", () => 
     expect(list.rows.map((row) => row.orderId)).toEqual([waiting.id]);
     expect(list.rows[0]!.plannedCash).toBeNull();
     expect(list.rows.map((row) => row.orderId)).not.toContain(priced.id);
+  });
+});
+
+describe('Cash needed soon counts only the Cash orders without a price (08 When Finance approves, "else 0"; review of 2.5d-c, finding 2, Look first)', () => {
+  it("an unpriced Bank transfer or Card order waiting for the Principal is counted at no step and is in no unpriced list; the Cash one is", async () => {
+    setClock("2031-10-15T05:00:00Z");
+    const scene = await spendingScene();
+    const finance = await insertUser("FINANCE", { branches: [scene.branch.id] });
+    const cash = await decided(scene, "PENDING_PRINCIPAL", [], { plannedPrice: null });
+    const transfer = await decided(scene, "PENDING_PRINCIPAL", [], {
+      plannedPrice: null,
+      paymentType: "TRANSFER",
+    });
+    const card = await decided(scene, "PENDING_PRINCIPAL", [], {
+      plannedPrice: null,
+      paymentType: "CARD",
+    });
+    await refreshNow();
+
+    const block = await getCashNeeded(finance.id, NO_ANALYTICS_FILTERS);
+    expect(block.approval.unpriced).toBe(1);
+    expect(block.all.unpriced).toBe(1);
+    expect(block.open.unpriced).toBe(0);
+    for (const step of block.steps) {
+      expect(step.unpriced).toBe(step.step === "PENDING_PRINCIPAL" ? 1 : 0);
+    }
+
+    for (const stage of ["approval", "open", "all"] as const) {
+      const list = await getNeededOrders(
+        finance.id,
+        NO_ANALYTICS_FILTERS,
+        stage,
+        null,
+        "all",
+        true,
+      );
+      const ids = list.rows.map((row) => row.orderId);
+      expect(ids).toEqual(stage === "open" ? [] : [cash.id]);
+      expect(ids).not.toContain(transfer.id);
+      expect(ids).not.toContain(card.id);
+    }
+    const step = await getNeededOrders(
+      finance.id,
+      NO_ANALYTICS_FILTERS,
+      "approval",
+      "PENDING_PRINCIPAL",
+      "all",
+      true,
+    );
+    expect(step.rows.map((row) => row.orderId)).toEqual([cash.id]);
   });
 });
 

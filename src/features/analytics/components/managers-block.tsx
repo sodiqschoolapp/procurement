@@ -16,8 +16,9 @@ import { Card, Table } from "./prices-block";
 // The Managers block of the Head's Analytics page (10-notifications-analytics-reports.md,
 // Analytics page per role, Head: "Per Manager: number of orders, average difference from plan,
 // cancelled purchase records, cash held and for how long"; build-plan 6.4c; plan of 6.4c, decided
-// items 2 to 7). One row per Manager, "Other owners" last (6.4a review correction 1). Orders and
-// the average open the ended orders on /analytics/orders, cancelled records /analytics/cancelled,
+// items 2 to 7). One row per Manager, "Other owners" last (6.4a review correction 1). Orders open
+// every ended order on /analytics/orders, priced and unpriced (`key=ended`; review of 2.5d-c,
+// finding 1), the average the priced ones, cancelled records /analytics/cancelled,
 // cash held /analytics/cash, each with the Manager filter set or `owner=other` (point 3); the
 // table exports to Excel (point 4). Every number of the period shows its change (point 1), the
 // average in so'm only (decided item 3); cash held is of now and has none (decided item 4). The
@@ -43,6 +44,13 @@ export async function ManagersView({
   const orders = (row: ManagerRow) => {
     const { filters: chosen, otherOwners } = scope(row);
     return `/analytics/orders?${analyticsSearch(period, chosen, { otherOwners })}`;
+  };
+  const endedOrders = (row: ManagerRow) => {
+    const { filters: chosen, otherOwners } = scope(row);
+    return `/analytics/orders?${analyticsSearch(period, chosen, {
+      key: { kind: "ended" },
+      otherOwners,
+    })}`;
   };
   const unpricedOrders = (row: ManagerRow) => {
     const { filters: chosen, otherOwners } = scope(row);
@@ -114,7 +122,7 @@ export async function ManagersView({
                     ? row.name
                     : t("inactive", { name: row.name! }),
                 <>
-                  {link(orders(row), format.quantity(String(row.orders.count)))}
+                  {link(endedOrders(row), format.quantity(String(row.orders.count)))}
                   {under(countChangeText(row.orders.change, tShort, format))}
                 </>,
                 <>

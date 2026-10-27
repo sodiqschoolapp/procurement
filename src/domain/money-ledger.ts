@@ -283,8 +283,10 @@ export function isExactMatch(order: MatchOrder): boolean {
 
 /**
  * 08 When Finance approves: an order's planned cash, its planned total when it is Cash, else 0;
- * null for an order without a planned price, which has no planned total (08 Numbers; plan of
- * 2.5d-b, decided item 9, Look first).
+ * null only for a Cash order without a planned price, which has no planned total (08 Numbers; plan
+ * of 2.5d-b, decided item 9, Look first). A Bank transfer or Card order is 0 with or without a
+ * price ("else 0"; review of 2.5d-c, finding 2, Look first): the cash sums leave out, and count,
+ * only the orders they would have held.
  */
 export function plannedCash(plan: PricedPlan): bigint;
 export function plannedCash(plan: OrderPlan): bigint | null;
@@ -294,7 +296,8 @@ export function plannedCash(plan: OrderPlan): bigint | null {
 
 /**
  * The same from an order's payment type and planned total, for the Finance dialog, whose selects
- * may change the type (plan of 4.2, decided item 6, Look first). Null without a planned total.
+ * may change the type (plan of 4.2, decided item 6, Look first). Null for a Cash order without a
+ * planned total; 0 for any other type.
  */
 export function plannedCashOf(paymentType: PaymentType, plannedTotal: bigint): bigint;
 export function plannedCashOf(paymentType: PaymentType, plannedTotal: bigint | null): bigint | null;
@@ -302,8 +305,8 @@ export function plannedCashOf(
   paymentType: PaymentType,
   plannedTotal: bigint | null,
 ): bigint | null {
-  if (plannedTotal === null) return null;
-  return paymentType === "CASH" ? plannedTotal : 0n;
+  if (paymentType !== "CASH") return 0n;
+  return plannedTotal;
 }
 
 /**

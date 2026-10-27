@@ -85,6 +85,12 @@ export default async function AnalyticsOrdersPage({
         : list.key.kind === "unpriced"
           ? t("orders.summaryUnpriced", { count: list.count, sum: format.money(list.sum) })
           : t("orders.summary", { count: list.count, sum: signed(list.sum) });
+  // The difference of `key=ended` leaves the orders without a planned price out and says how many
+  // (08 Numbers; review of 2.5d-c, finding 1).
+  const leftOut =
+    list.key.kind !== "unpriced" && list.unpriced > 0
+      ? tUnpriced("count", { count: list.unpriced })
+      : null;
   const pages = Math.max(1, Math.ceil(list.count / RECORDS_PAGE_SIZE));
   const extra = { key: params.key, otherOwners: params.otherOwners };
   const href = (page: number) =>
@@ -111,6 +117,7 @@ export default async function AnalyticsOrdersPage({
           </p>
           <p className="text-sm font-semibold tabular-nums" data-orders-summary>
             {summary}
+            {leftOut && <span className="block font-normal text-muted-foreground">{leftOut}</span>}
           </p>
         </div>
         <a

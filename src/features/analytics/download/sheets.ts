@@ -368,6 +368,9 @@ export function outcomeOrdersSheet(
   const name = t("sheets.orders");
   const lines = heading(locale, name, list.range, filters, options);
   if (list.otherOwners) lines.push(t("orders.otherOwners"));
+  // `key=ended`: the difference leaves the unpriced rows out and says how many (08 Numbers).
+  if (list.key.kind !== "unpriced" && list.unpriced > 0)
+    lines.push(tRoot("orders.unpriced.count", { count: list.unpriced }));
   return {
     name,
     heading: lines,

@@ -213,6 +213,28 @@ for (const way of ["branch", "manager"] as const) {
   });
 }
 
+// The list the Managers block's orders number opens, `key=ended`: both tables under the one wall
+// (review of 2.5d-c, finding 1).
+for (const way of WAYS) {
+  describePermissionMatrix(`getOutcomeOrders' ended orders, ${WAY_NAMES[way]}`, {
+    permission: "data.view",
+    async run({ user, branchId }) {
+      const { scene, ended } = await sceneIn(branchId);
+      const list = await getOutcomeOrders(
+        user.id,
+        THIS_MONTH,
+        filtersOf(way, branchId, scene.manager.id),
+        { kind: "ended" },
+        false,
+        "all",
+      );
+      expect(list.count).toBe(list.rows.length);
+      expect(list.unpriced).toBe(list.rows.filter((row) => row.planned === null).length);
+      counted(list.rows.some((row) => row.orderId === ended.orderId));
+    },
+  });
+}
+
 // The reports have no department or Manager filter (plan of 6.8, decided item 6): two ways.
 for (const way of ["branch", "wall"] as const) {
   describePermissionMatrix(`the Spending and Planned vs actual reports, ${WAY_NAMES[way]}`, {
