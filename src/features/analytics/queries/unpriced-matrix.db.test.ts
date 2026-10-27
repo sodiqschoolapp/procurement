@@ -1,4 +1,4 @@
-import { expect } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import { getPlanVsActualReport } from "@/features/reports/queries/plan-vs-actual-report";
 import { getSpendingReport } from "@/features/reports/queries/spending-report";
@@ -11,8 +11,10 @@ import {
   refreshNow,
   spendingScene,
 } from "../../../../tests/helpers/analytics";
+import { insertBranch } from "../../../../tests/helpers/branches";
 import { setClock } from "../../../../tests/helpers/clock";
 import { describePermissionMatrix } from "../../../../tests/helpers/permission-matrix";
+import { insertUser } from "../../../../tests/helpers/users";
 import {
   type AnalyticsFilters,
   NO_ANALYTICS_FILTERS,
@@ -141,7 +143,14 @@ for (const way of WAYS) {
         "all",
       );
       expect(block.total.unpriced.count).toBe(list.count);
-      counted(list.rows.some((row) => row.orderId === ended.orderId));
+      // The branch and Manager lines keep to the same wall (permission review, Should fix 2).
+      const branchLine = block.branches.find((row) => row.id === branchId);
+      const managerLine = block.managers.find((row) => row.id === scene.manager.id);
+      const seen = list.rows.some((row) => row.orderId === ended.orderId);
+      expect(branchLine?.unpriced.count ?? 0, "branch line").toBe(seen ? 1 : 0);
+      expect(managerLine?.unpriced.count ?? 0, "Manager line").toBe(seen ? 1 : 0);
+      if (way === "branch") expect(block.branches.map((row) => row.id)).toEqual([branchId]);
+      counted(seen);
     },
   });
 
@@ -161,7 +170,7 @@ for (const way of WAYS) {
 // My estimates' Manager filter is always the user's own (mineOf(); plan of 6.5b): its third way
 // is the department filter, here `none`. The Managers block is `money.managers` for the whole list
 // (decideList(), a refusal before any branch is read): it is asked with a branch or a Manager of
-// one, as its matrix of 6.4c.
+// one, as its matrix of 6.4c, and its wall in the SQL by the test at the end of this file.
 for (const way of ["branch", "wall", "none"] as const) {
   describePermissionMatrix(`getMyEstimates' unpriced count and its records, ${WAY_NAMES[way]}`, {
     permission: "data.view",
@@ -179,7 +188,11 @@ for (const way of ["branch", "wall", "none"] as const) {
       );
       // With the branch filter the list holds this case's records alone, all the user's own.
       if (way === "branch") expect(block.all.unpriced.count).toBe(list.count);
-      counted(list.rows.some((row) => row.purchaseId === ended.purchaseId));
+      // The user's own records of orders without a planned price are this case's one record:
+      // the count holds it exactly where the list does (permission review, Must fix 2).
+      const seen = list.rows.some((row) => row.purchaseId === ended.purchaseId);
+      expect(block.all.unpriced.count).toBe(seen ? 1 : 0);
+      counted(seen);
     },
   });
 }
@@ -205,13 +218,47 @@ for (const way of ["branch", "wall"] as const) {
   describePermissionMatrix(`the Spending and Planned vs actual reports, ${WAY_NAMES[way]}`, {
     permission: "data.view",
     async run({ user, branchId }) {
-      const { scene } = await sceneIn(branchId);
+      const { scene, ended } = await sceneIn(branchId);
       const filters = filtersOf(way, branchId, scene.manager.id);
       const spending = await getSpendingReport(user.id, { range: MAY, filters });
       expect(spending.departments.reduce((sum, row) => sum + row.amount, 0n)).toBe(spending.total);
       const plan = await getPlanVsActualReport(user.id, { range: MAY, filters }, "all");
       const line = plan.managers.find((row) => row.id === scene.manager.id);
-      counted(line?.unpriced === 1 && spending.branches.some((row) => row.id === branchId));
+      const product = plan.products.find((row) => row.id === ended.productId);
+      const seen = spending.branches.some((row) => row.id === branchId);
+      // Every unpriced line keeps to the same wall (permission review, Should fix 1).
+      expect(line?.unpriced ?? 0, "Manager line").toBe(seen ? 1 : 0);
+      expect(product?.unpriced ?? 0, "product line").toBe(seen ? 1 : 0);
+      if (way === "branch") expect(plan.total.unpriced).toBe(1);
+      counted(seen);
     },
   });
 }
+
+// The Managers block asked with no filter at all, and with department=none (permission review,
+// Must fix 1): the matrix cannot ask it so, as a Principal or a Manager is refused the whole list
+// ("forbidden") before any branch is read. Finance of one branch is allowed and reaches the SQL:
+// another branch's Manager is in no row; the Head sees both (03 rule 1; matrix row "See every
+// Manager's cash"). Each branch gets the same orders (D40).
+describe("getManagers' unpriced count, the branch wall in the SQL (03 rule 1)", () => {
+  it.each(["wall", "none"] as const)(
+    "%s: Finance of branch A sees A's Manager only; the Head both",
+    async (way) => {
+      const a = await sceneIn((await insertBranch()).id);
+      const b = await sceneIn((await insertBranch()).id);
+      const finance = await insertUser("FINANCE", { branches: [a.scene.branch.id] });
+      const head = await insertUser("HEAD");
+      const filters = filtersOf(way, a.scene.branch.id, a.scene.manager.id);
+      const ofFinance = await getManagers(finance.id, THIS_MONTH, filters);
+      expect(ofFinance.rows.find((row) => row.id === a.scene.manager.id)).toMatchObject({
+        orders: { count: 1 },
+        unpriced: { count: 1 },
+      });
+      expect(ofFinance.rows.some((row) => row.id === b.scene.manager.id)).toBe(false);
+      const ofHead = await getManagers(head.id, THIS_MONTH, filters);
+      for (const manager of [a.scene.manager.id, b.scene.manager.id]) {
+        expect(ofHead.rows.find((row) => row.id === manager)?.unpriced.count).toBe(1);
+      }
+    },
+  );
+});
