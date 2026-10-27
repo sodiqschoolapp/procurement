@@ -11,6 +11,7 @@ import { insertUser } from "../../../../tests/helpers/users";
 import {
   getFinanceStepWaiting,
   getLastDatabaseCopy,
+  getPrincipalStepWaiting,
   getSchoolName,
   getSettingsForHead,
 } from "./settings";
@@ -93,6 +94,46 @@ describe("getFinanceStepWaiting (06 Finance step switched off 5; plan of 4.10c, 
       number: settlement.number,
       branchCode: second.code,
       status: "SETTLEMENT",
+    });
+  });
+});
+
+// The orders that keep the Principal step from being switched off: the Head's, as the Settings
+// page (06 Principal step switched off 4; plan of 4.10d, decided items 7 and 13).
+describePermissionMatrix("getPrincipalStepWaiting", {
+  permission: "catalog.manage",
+  run: ({ user }) => getPrincipalStepWaiting(user.id),
+});
+
+describe("getPrincipalStepWaiting (06 Principal step switched off 4; plan of 4.10d, decided item 13)", () => {
+  it("lists the orders Waiting for Principal of every branch, and no order one status away (D40)", async () => {
+    const head = await insertUser("HEAD");
+    const [first, second] = [await insertBranch(), await insertBranch()];
+    const owner = await insertUser("MANAGER", { branches: [first.id, second.id] });
+    const one = await insertOrder({
+      branchId: first.id,
+      ownerId: owner.id,
+      status: "PENDING_PRINCIPAL",
+    });
+    const two = await insertOrder({
+      branchId: second.id,
+      ownerId: owner.id,
+      status: "PENDING_PRINCIPAL",
+    });
+    for (const status of ["PENDING_HEAD", "PENDING_FINANCE", "RETURNED", "PURCHASING"] as const) {
+      await insertOrder({ branchId: first.id, ownerId: owner.id, status });
+      await insertOrder({ branchId: second.id, ownerId: owner.id, status });
+    }
+    // Another test of this file left an order of its own branch waiting: only these branches count.
+    const listed = (await getPrincipalStepWaiting(head.id)).filter((order) =>
+      [first.code, second.code].includes(order.branchCode),
+    );
+    expect(new Set(listed.map((order) => order.id))).toEqual(new Set([one.id, two.id]));
+    expect(listed.find((order) => order.id === two.id)).toEqual({
+      id: two.id,
+      number: two.number,
+      branchCode: second.code,
+      status: "PENDING_PRINCIPAL",
     });
   });
 });

@@ -30,6 +30,8 @@ export const SERVER_ACTIONS: Record<string, Entry> = {
   "src/app/(app)/settings/actions.ts#saveSettingsAction": "catalog.manage",
   // The Finance step switch (06 Finance step switched off; plan of 4.10c).
   "src/app/(app)/settings/actions.ts#switchFinanceStepAction": "catalog.manage",
+  // The Principal step switch (06 Principal step switched off; plan of 4.10d).
+  "src/app/(app)/settings/actions.ts#switchPrincipalStepAction": "catalog.manage",
   // The Head's branches (plan of 1.2).
   "src/app/(app)/branches/actions.ts#createBranchAction": "catalog.manage",
   "src/app/(app)/branches/actions.ts#updateBranchAction": "catalog.manage",
@@ -353,6 +355,8 @@ export const QUERIES: Record<string, Permission> = {
   "src/features/settings/queries/settings.ts#getLastDatabaseCopy": "catalog.manage",
   // The orders that keep the Finance step from being switched off (plan of 4.10c).
   "src/features/settings/queries/settings.ts#getFinanceStepWaiting": "catalog.manage",
+  // The orders that keep the Principal step from being switched off (plan of 4.10d).
+  "src/features/settings/queries/settings.ts#getPrincipalStepWaiting": "catalog.manage",
   "src/features/settings/queries/settings.ts#getSchoolName": "profile.edit",
   // The purchase form (plan of 3.3): data.view with the branch wall in the SQL, then
   // purchase.record on the order (record-purchase-matrix.db.test.ts).

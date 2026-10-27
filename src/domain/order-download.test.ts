@@ -119,6 +119,25 @@ describe("orderDownloadRow (05 Download 1 and 3)", () => {
     expect(row.approvals.FINANCE).toBe("skipped");
   });
 
+  it("the Principal step of an order that skipped the Principal is 'skipped', and with both steps off Finance too (06 Principal step switched off; 11 Order page layout 3; plan of 4.10d)", () => {
+    const head = event("APPROVE", "PENDING_HEAD", "PENDING_FINANCE", "Head Invented");
+    const finance = event("APPROVE", "PENDING_FINANCE", "PURCHASING", "Finance One");
+    const events = [event("SUBMIT", "DRAFT", "PENDING_HEAD", "Manager"), head, finance];
+    const row = orderDownloadRow("PURCHASING", plan, events, NONE, false, true);
+    expect(row.approvals).toEqual({
+      HEAD: { name: "Head Invented", at: head.at },
+      PRINCIPAL: "skipped",
+      FINANCE: { name: "Finance One", at: finance.at },
+    });
+    const opened = [
+      event("SUBMIT", "DRAFT", "PENDING_HEAD", "Manager"),
+      event("APPROVE", "PENDING_HEAD", "PURCHASING", "Head Invented"),
+    ];
+    const both = orderDownloadRow("PURCHASING", plan, opened, NONE, true, true);
+    expect(both.approvals.PRINCIPAL).toBe("skipped");
+    expect(both.approvals.FINANCE).toBe("skipped");
+  });
+
   it("an Open order names all three steps", () => {
     const finance = event("APPROVE", "PENDING_FINANCE", "PURCHASING", "Finance One");
     const row = orderDownloadRow(
