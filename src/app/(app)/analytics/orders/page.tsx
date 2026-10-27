@@ -27,6 +27,9 @@ import { PageLinks } from "../../catalog/page-links";
 
 type Raw = Record<string, string | string[] | undefined>;
 
+/** The Total label of an order without a planned price (08 Numbers; plan of 2.5d-b, item 3). */
+const UNPRICED_TOTAL = { label: "total", colour: "unpriced" } as const;
+
 async function readList(userId: string, raw: Raw) {
   const params = parseAnalyticsParams(raw);
   if (!params) return "refused" as const;
@@ -194,7 +197,7 @@ export default async function AnalyticsOrdersPage({
                   {row.colour === null || row.difference === null ? (
                     // No planned price: no difference and no colour (08 Numbers; plan of 2.5d-c).
                     <td className="px-4 py-3 max-sm:p-0" data-difference="">
-                      <ColourLabel label="total" colour="unpriced" />
+                      <ColourLabel {...UNPRICED_TOTAL} />
                     </td>
                   ) : (
                     <td className="px-4 py-3 max-sm:p-0" data-difference={signed(row.difference)}>

@@ -160,6 +160,7 @@ export function recordsSheet(
         goods: format.money(list.priced.goods),
       }),
     );
+    if (list.key.kind === "priced" && list.key.unpriced) lines.push(t("my.list.unpricedLine"));
   }
   const priced = list.price !== null || list.priced !== null;
   return {
@@ -252,12 +253,16 @@ export function headSpendingSheet(
  * plan of 2.5d-c, decided items 3 and 4, Look first). A count of now (Cash needed soon) has no
  * change; none when nothing is left out in either period.
  */
-export function unpricedLine(locale: Locale, count: Count | number): string[] {
+export function unpricedLine(
+  locale: Locale,
+  count: Count | number,
+  what: "orders" | "records" = "orders",
+): string[] {
   const { t, format } = translators(locale);
   const now = typeof count === "number" ? count : count.count;
   const change = typeof count === "number" ? null : count.change;
   if (now === 0 && (change === null || change.difference === 0n)) return [];
-  const line = t("unpriced.line", { count: now });
+  const line = t(what === "orders" ? "unpriced.line" : "unpriced.recordsLine", { count: now });
   return [change === null ? `${line}.` : `${line}; ${countChangeText(change, t, format)}.`];
 }
 
@@ -1243,7 +1248,7 @@ export function myEstimatesSheet(
   options: AnalyticsFilterOptions,
   locale: Locale,
 ): AnalyticsSheet {
-  const { t } = translators(locale);
+  const { t, format } = translators(locale);
   const name = t("sheets.myEstimates");
   const price = (value: bigint | null): CellValue =>
     value === null ? { kind: "text", value: "" } : { kind: "money", value };
@@ -1258,10 +1263,16 @@ export function myEstimatesSheet(
       : { kind: "signedMoney", value: each.difference },
     { kind: "text", value: signedText(each.percent) },
     { kind: "text", value: signedText(each.change) },
+    // The records of orders without a planned price the estimate leaves out (plan of 2.5d-c).
+    { kind: "count", value: each.unpriced.count },
+    { kind: "text", value: countChangeText(each.unpriced.change, t, format) },
   ];
   return {
     name,
-    heading: heading(locale, name, block.period, filters, options),
+    heading: [
+      ...heading(locale, name, block.period, filters, options),
+      ...unpricedLine(locale, block.all.unpriced, "records"),
+    ],
     columns: [
       t("principal.columns.product"),
       t("my.columns.records"),
@@ -1271,6 +1282,8 @@ export function myEstimatesSheet(
       t("my.columns.difference"),
       "%",
       t("prices.columns.change"),
+      t("plan.columns.unpriced"),
+      t("plan.columns.change"),
     ],
     rows: [
       ...block.products.map((each) =>

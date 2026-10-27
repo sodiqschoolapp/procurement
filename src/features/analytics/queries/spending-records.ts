@@ -138,6 +138,13 @@ async function recordsIn(
   if (key.kind === "payment" && key.noSupplier && filters.supplier) {
     throw new PeriodRefusedError();
   }
+  // My estimates reads the records of orders with a planned price; `unpriced` lists the others,
+  // which it leaves out and counts (08 Numbers; plan of 2.5d-c, review correction 2).
+  const plan =
+    key.kind === "priced"
+      ? sql`and exists (select 1 from orders po where po.id = analytics_spending.order_id
+                          and po.planned_price is ${key.unpriced ? sql`null` : sql`not null`})`
+      : sql``;
   const where =
     key.kind === "price"
       ? sql`${spendingWhere(actor, range, scope)}
@@ -149,9 +156,9 @@ async function recordsIn(
           sql`${spendingWhere(actor, range, scope)}
             and analytics_spending.variant_id in
               (select id from product_variants where product_id = ${key.product})
-            ${key.kind === "priced" ? sql`and analytics_spending.unit_price > 0` : sql``}`
+            ${key.kind === "priced" ? sql`and analytics_spending.unit_price > 0 ${plan}` : sql``}`
         : key.kind === "priced"
-          ? sql`${spendingWhere(actor, range, scope)} and analytics_spending.unit_price > 0`
+          ? sql`${spendingWhere(actor, range, scope)} and analytics_spending.unit_price > 0 ${plan}`
           : key.kind === "noreceipt"
             ? // Finance's purchases without a receipt (plan of 6.6b, decided item 4).
               sql`${spendingWhere(actor, range, scope)} and not analytics_spending.has_receipt`

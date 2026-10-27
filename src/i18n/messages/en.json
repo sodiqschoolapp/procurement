@@ -3219,7 +3219,10 @@
         "approvedSummary": "{count, plural, one {# order} other {# orders}}, on average {hours} h",
         "priced": "{name}: priced records {first} – {last}",
         "pricedAll": "All products: priced records {first} – {last}",
-        "pricedSummary": "{count, plural, one {# record} other {# records}}, quantity {qty}, goods {goods}"
+        "pricedSummary": "{count, plural, one {# record} other {# records}}, quantity {qty}, goods {goods}",
+        "unpriced": "{name}: priced records of orders without a planned price {first} – {last}",
+        "unpricedAll": "All products: priced records of orders without a planned price {first} – {last}",
+        "unpricedLine": "The orders of these records have no planned price, so My estimates leaves them out."
       },
       "planning": {
         "title": "Stock planning",
@@ -3396,7 +3399,8 @@
     "noDepartment": "No department",
     "unpriced": {
       "line": "{count, plural, one {# order without a planned price is left out of these sums} other {# orders without a planned price are left out of these sums}}",
-      "count": "{count, plural, one {# without a price} other {# without a price}}"
+      "count": "{count, plural, one {# without a price} other {# without a price}}",
+      "recordsLine": "{count, plural, one {# record of an order without a planned price is left out of these sums} other {# records of orders without a planned price are left out of these sums}}"
     }
   },
   "reports": {

@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 
 import {
+  changeAgainst,
   type EstimateGap,
   type EstimateLine,
   type Period,
@@ -11,6 +12,7 @@ import type { Executor } from "@/server/authorize";
 import { readSnapshot } from "@/server/read-snapshot";
 
 import type { AnalyticsFilters, PeriodInput } from "../period-params";
+import type { Count } from "./plan-vs-actual";
 import { authorizeAnalytics } from "../authorize-filters";
 import { mineOf, withoutManager } from "../mine";
 import { resolvePeriod } from "../resolve-period";
@@ -30,7 +32,17 @@ import { spendingWhere } from "../spending-where";
 
 export type Estimate = EstimateGap & { change: string | null };
 
-export type ProductEstimate = Estimate & { productId: string; name: string; isActive: boolean };
+/**
+ * `unpriced`: the priced records of my orders without a planned price, which the estimate leaves
+ * out, with their change (08 Numbers; plan of 2.5d-c, review correction 2: the count is of the
+ * records its list `priced:…:unpriced` shows).
+ */
+export type ProductEstimate = Estimate & {
+  productId: string;
+  name: string;
+  isActive: boolean;
+  unpriced: Count;
+};
 
 export type MyEstimates = {
   period: Period;
@@ -38,7 +50,7 @@ export type MyEstimates = {
   /** Every product of my priced records in the period, by the largest miss in percent first. */
   products: ProductEstimate[];
   /** Every priced record of my orders in the period together, from the set's own sums. */
-  all: Estimate;
+  all: Estimate & { unpriced: Count };
 };
 
 export async function getMyEstimates(
@@ -57,14 +69,27 @@ type Row = {
   qty: string;
   unit_price: string;
   goods: string;
-  planned_price: string;
+  planned_price: string | null;
 };
 
-const lineOf = (row: Row): EstimateLine => ({
+const lineOf = (row: Row & { planned_price: string }): EstimateLine => ({
   qty: row.qty,
   unitPrice: BigInt(row.unit_price),
   goods: BigInt(row.goods),
   plannedPrice: BigInt(row.planned_price),
+});
+
+/** The records of each side without a planned price. */
+type Sides = {
+  now: EstimateLine[];
+  before: EstimateLine[];
+  unpricedNow: number;
+  unpricedBefore: number;
+};
+
+const countOf = (now: number, before: number): Count => ({
+  count: now,
+  change: changeAgainst(BigInt(now), BigInt(before)),
 });
 
 /** The larger miss, either way, first; no percent last; then by name. */
@@ -94,26 +119,31 @@ async function estimatesIn(
     join orders o on o.id = analytics_spending.order_id
     join product_variants v on v.id = analytics_spending.variant_id
     join products pr on pr.id = v.product_id
-    where analytics_spending.unit_price > 0 and ((${nowWhere}) or (${beforeWhere}))
-      -- An order without a planned price has nothing to estimate against (08 Numbers: left out
-      -- of planned sums; plan of 2.5d-b, Server actions and queries).
-      and o.planned_price is not null`);
+    where analytics_spending.unit_price > 0 and ((${nowWhere}) or (${beforeWhere}))`);
 
-  const groups = new Map<
-    string,
-    { name: string; isActive: boolean; now: EstimateLine[]; before: EstimateLine[] }
-  >();
-  const all = { now: [] as EstimateLine[], before: [] as EstimateLine[] };
+  // An order without a planned price has nothing to estimate against: its records are left out
+  // of the estimate and counted beside it (08 Numbers; plans of 2.5d-b and 2.5d-c).
+  const groups = new Map<string, Sides & { name: string; isActive: boolean }>();
+  const all: Sides = { now: [], before: [], unpricedNow: 0, unpricedBefore: 0 };
   for (const row of found.rows) {
     const group = groups.get(row.product_id) ?? {
       name: row.name,
       isActive: row.is_active,
       now: [],
       before: [],
+      unpricedNow: 0,
+      unpricedBefore: 0,
     };
-    const side = row.within ? "now" : "before";
-    group[side].push(lineOf(row));
-    all[side].push(lineOf(row));
+    for (const sides of [group, all]) {
+      if (row.planned_price === null) {
+        if (row.within) sides.unpricedNow += 1;
+        else sides.unpricedBefore += 1;
+      } else {
+        sides[row.within ? "now" : "before"].push(
+          lineOf({ ...row, planned_price: row.planned_price }),
+        );
+      }
+    }
     groups.set(row.product_id, group);
   }
   const estimateOf = (now: EstimateLine[], then: EstimateLine[]): Estimate => {
@@ -125,14 +155,19 @@ async function estimatesIn(
     period,
     before,
     products: [...groups.entries()]
-      .filter(([, group]) => group.now.length > 0)
+      // A product with only records of unpriced orders has its line: no estimate, the count.
+      .filter(([, group]) => group.now.length > 0 || group.unpricedNow > 0)
       .map(([productId, group]) => ({
         productId,
         name: group.name,
         isActive: group.isActive,
         ...estimateOf(group.now, group.before),
+        unpriced: countOf(group.unpricedNow, group.unpricedBefore),
       }))
       .sort(byMiss),
-    all: estimateOf(all.now, all.before),
+    all: {
+      ...estimateOf(all.now, all.before),
+      unpriced: countOf(all.unpricedNow, all.unpricedBefore),
+    },
   };
 }
