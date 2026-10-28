@@ -2338,4 +2338,24 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - S25 in the browser is the project `principal-step`, between `finance-step` and `order-fields` in the teardown chain (playwright.config.ts).
 - Tests that need the step: `tests/helpers/principal-step.ts` (`setPrincipalStep()`, `atHead()`, `headDraft()`, `marksNow()`).
 
-The next task is 9.5.
+## 9.5 Real data (28.10.2026, pull request #179)
+
+**Built**
+- `.do/app.yaml` without `SEED_DEMO_DATA`; `tests/app-spec.test.ts` asserts no `SEED_` line in the spec (the 0.15 rule back).
+- `docs/deploy.md`: "The end of the trial" without the drill as a precondition (D70) and with no merge during the reset; a new section "The real data (task 9.5)": stop list (0), second Head, Settings again, branches, small catalogs, departments, products, prices, users, existing stock, the three counts.
+- `docs/restore.md`: the drill not run before go-live (D70); its table stays empty.
+- `previewImportAction` answers an unexpected error with `failure("unexpected")`, logged through `describeForLog()`, never thrown to Next.js (whose log prints Drizzle's message with the file's values).
+
+**Left out, and the task that brings it**
+- Every production step of the Build line and the Done when's counts: the owner (stop list item 1).
+
+**Open for the owner**
+- The Done when is open: the steps of `docs/deploy.md` "The end of the trial" and "The real data", then the three counts on issue #9.
+- The stop list of `CLAUDE.md` tightened for the live system (D58) before the reset.
+
+**What the next sessions must know**
+- From 9.5 on, every merge reaches the live app with the school's real data.
+- The reset puts every setting back to its first value; the Head sets them again (deploy.md, "The real data" step 2).
+- A page action that runs a query outside `runAction()` catches what it does not expect and answers `unexpected` through `describeForLog()`: Next.js logs a thrown error's whole message.
+
+The next task is none: every task of the build plan is ticked.

@@ -3324,3 +3324,23 @@ Choices made during the build:
 - S25's "Then, with the Finance step off too, the Head approves a fourth order" is read with the Principal step off again: both switches refuse while orders wait at their step, so in the test the Principal decides the second order, Finance approves the orders waiting for it (the Head-created third is rejected in the browser test, approved in the database test), and then both steps are switched off.
 - The order sheet's and the order page's Submit dialogs add "orders you created yourself open for buying at once" for the Head with both steps off (`headSubmitOpens()`), whatever is ticked: the dialog does not know who created each ticked draft.
 
+
+### 9.5 Real data (28.10.2026)
+
+The plan's decisions as the plan review of 28.10.2026 confirmed them, with its two corrections, and those of the build. The Look first items come first.
+
+1. **Look first** (a test changed because a decision changed). `tests/app-spec.test.ts` no longer asserts `SEED_DEMO_DATA: "yes"` (decisions 9.4, item 3): it asserts that no line of the spec names `SEED_` (review correction 2), the 0.15 rule "the production app spec must not carry `SEED_DEMO_DATA`" back, because the trial ends at 9.5 (D52).
+2. **Look first** (production). The task's repository part is the merge: the spec file, its test, the written steps and the log fix. Applying the file, the reset, the two Heads, the real data and the Done when's counts are the owner's (stop list item 1); the task is ticked for its repository part as 9.4 and 9.6 were, and the Done when stays open under "For the owner".
+3. Merging does not end the trial by itself: App Platform reads `.do/app.yaml` only when the owner applies it (`docs/deploy.md` step 7); the seed refuses after the reset in any case (decisions 9.4, item 4).
+4. No merge into `main` during the reset (a deploy migrates at the same moment): written as a step for the owner in `docs/deploy.md`, pausing the loop's routines or checking that no pull request is at `[review] ready to merge`. No rule of the loop changes.
+5. The order of the real data follows the templates' references (`IMPORT_COLUMNS`): branches; measures, categories, extra cost types and companies typed; departments; products with subtypes and prices; the prices file for what is left; users; existing stock per branch after the prices, so that an empty cost takes the reference price. Files of at most 500 rows (`IMPORT_ROWS_MAX`).
+6. The counts of the Done when need no code: products from the products page's active and inactive summary (not the "rows imported" line, which counts subtypes' rows), users from the Users page, stock lines from `npm run db:counts`. Only the three numbers go on issue #9.
+7. `docs/restore.md` and "The end of the trial" follow D70: the drill is no precondition and did not run; its record table stays empty; no step of the procedure is deleted.
+8. The trial's leftovers (photos in `ombor-files`, the trial's copies in `ombor-copies`, the `SEED_*` values in the dashboard) are the owner's to delete; `docs/deploy.md` names them, and its variables section marks the five `SEED_*` "removed at 9.5" (review correction 1).
+9. "The files never enter … a log": the four imports' error paths were traced. `readSheet()` turns a zip check or ExcelJS load failure into `ImportFileError` (a kind, no text), and its cell reading (`cellOf()`) can throw only a TypeError naming a property, never a cell's text; a refused row is `ActionError` with field keys only; the saves run in `runAction()` (`describeForLog()`); the domain readers throw nothing. One leak was found: `previewImportAction` threw an unexpected error on to Next.js, whose own log prints the whole message, and a Drizzle error's message carries the bound values, here the file's names. It now answers `unexpected`, logged and reported through `describeForLog()`, as `runAction()` does; the test failed first. Direct entry by form carries no file: its write runs in `runAction()`.
+
+Choices made during the build:
+
+- "The real data" step 2: the reset puts every setting back to the value its migration gave it (the Finance and Principal steps on, the order fields as first made), so the Head sets Settings again before the first order (D62, D67, D69).
+- Step 0 of "The real data", the tightening of the stop list (D58), is also named in "The end of the trial" before the reset (plan review of 9.5, should fix 1).
+- The permission review of 9.5 found the departments preview missing from the permission matrix (a gap older than this task, on an entry point it changed): a block was added, and a line in `.claude/rules/tests.md` asks for one block per value of an input that picks the permission.
