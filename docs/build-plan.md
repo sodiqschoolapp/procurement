@@ -744,7 +744,7 @@ Proof that it works, then the real environment and the real data.
   - **Done when:** S25 passes as a database test and as a Playwright test at 375 px and 1440 px, and S21 still passes; a test per rule names it, among them: a Head's approval at the moment of the switch never leaves an order Waiting for Principal with the step off; an order sent back from Finance and approved again by the Head with the step on waits for the Principal and loses the mark; with both steps off, a Head-created order opens on Submit with no cash count. The permission-matrix test holds the switch. Migrations run on an empty database and the seed still runs.
   - Added by the owner on 27.10.2026 (D69): the Procurement Head says orders do not need the Principal's approval.
 
-- [ ] **9.5 Real data**
+- [x] **9.5 Real data**
   - **Read:** `04-catalogs.md` (Rules: 7); `09-warehouse.md` (Direct entry by the Head); `edge-cases/warehouse.md` ("The school already has stock on launch day").
   - **Build:** First the end of the trial (D52): `SEED_DEMO_DATA` removed from the app (its next start writes no demo users), then `npm run trial:reset`, then the first Head created by `npm run user:first-head`, and a second Head account created by that Head, so a Head's password can be renewed in the app (D55). Then, with the owner: catalogs, departments and prices imported from the school's Excel files; users created by the Head; existing stock entered by direct entry. The files never enter the repository, a test, a log or a chat.
   - **Done when:** The Head confirms the counts of products, users and stock lines on production.
