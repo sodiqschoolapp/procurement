@@ -36,6 +36,20 @@ vi.mock("@/server/excel", async (importOriginal) => {
   };
 });
 
+// A database failure of the preview query, for the test of build-plan 9.5 ("the files never enter
+// … a log"): Drizzle's message carries every bound value, here a name from the file.
+const preview = vi.hoisted(() => ({ fails: null as Error | null }));
+vi.mock("@/features/catalog/queries/imports", async (importOriginal) => {
+  const original = await importOriginal<typeof import("@/features/catalog/queries/imports")>();
+  return {
+    ...original,
+    async previewImport(...args: Parameters<typeof original.previewImport>) {
+      if (preview.fails) throw preview.fails;
+      return original.previewImport(...args);
+    },
+  };
+});
+
 const { previewImportAction, saveImportAction } = await import("./actions");
 
 function signedIn(user: InsertedUser): void {
@@ -52,6 +66,7 @@ function signedIn(user: InsertedUser): void {
 beforeEach(() => {
   store.user = null;
   reader.calls = 0;
+  preview.fails = null;
 });
 
 /** The .xlsx bytes of a sheet: its header and rows, as a Head fills the template. */
@@ -228,5 +243,29 @@ describe("the prices import page actions (plan of 1.11, decision 4)", () => {
       .from(productVariants)
       .where(eq(productVariants.id, variantId));
     expect(row!.price).toBe(15000n);
+  });
+});
+
+// build-plan 9.5: "The files never enter the repository, a test, a log or a chat." A preview that
+// fails in the database is answered here, logged through describeForLog() (name and code only),
+// and never thrown to Next.js, whose own log prints the whole message (plan of 9.5, decided item 9).
+describe("the import preview's unexpected failure (build-plan 9.5; plan of 9.5, decided item 9)", () => {
+  it("answers unexpected and logs no value of the file", async () => {
+    signedIn(await insertUser("HEAD"));
+    const { file, name } = await validFile();
+    preview.fails = new Error(
+      `Failed query: select "id" from "products" where lower("name") = $1\nparams: ${name}`,
+    );
+    const logged = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    try {
+      expect(await previewImportAction(formOf(file))).toMatchObject({
+        ok: false,
+        error: { code: "unexpected" },
+      });
+      expect(logged).toHaveBeenCalledTimes(1);
+      expect(logged.mock.calls.flat().join(" ")).not.toContain(name);
+    } finally {
+      logged.mockRestore();
+    }
   });
 });

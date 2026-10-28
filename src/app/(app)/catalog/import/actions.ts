@@ -18,10 +18,11 @@ import {
 } from "@/features/catalog/actions/imports";
 import { type ImportPreview, previewImport } from "@/features/catalog/queries/imports";
 import { importStock } from "@/features/warehouse/actions/import-stock";
-import { runAction } from "@/server/action";
+import { describeForLog, runAction } from "@/server/action";
 import { type ActionResult, failure } from "@/server/action-result";
 import { getCurrentUser } from "@/server/auth/session";
 import { AuthorizationError, authorize } from "@/server/authorize";
+import { reportError } from "@/server/error-report";
 import { ImportFileError, readSheet } from "@/server/excel";
 
 // The actions of /catalog/import/<kind> (plan of 1.10, "Server actions and queries"): a form with
@@ -83,6 +84,18 @@ async function upload(form: FormData): Promise<Upload | { refusal: ActionResult<
   }
 }
 
+/**
+ * The answer of an error nobody expected, as runAction() gives it: logged by name and code only
+ * (describeForLog), never thrown on to Next.js, whose own log prints the whole message, and a
+ * database error's message carries the file's values (build-plan 9.5: the files never enter a
+ * log; plan of 9.5, decided item 9).
+ */
+function unexpected(name: string, error: unknown): ActionResult<never> {
+  console.error(`Action ${name} failed: ${describeForLog(error)}`);
+  void reportError(error, `action ${name}`);
+  return failure("unexpected");
+}
+
 /** The preview of a chosen file: its rows and every error. Writes nothing. */
 export async function previewImportAction(form: FormData): Promise<ActionResult<ImportPreview>> {
   const read = await upload(form);
@@ -94,7 +107,7 @@ export async function previewImportAction(form: FormData): Promise<ActionResult<
     };
   } catch (error) {
     if (error instanceof AuthorizationError) return failure(error.kind);
-    throw error;
+    return unexpected("import.preview", error);
   }
 }
 
