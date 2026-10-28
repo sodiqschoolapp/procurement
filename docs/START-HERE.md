@@ -57,15 +57,16 @@ From 12 October 2026 the tasks are built without you in the middle (`docs/cloud-
 
 1. The start routine starts the first unticked task of `docs/build-plan.md` in a cloud session. The session plans it and opens a draft pull request.
 2. The review routine reviews the plan and posts a comment that starts with `[review]`. Where the spec is silent, the builder has decided and written down why; the reviewer confirms or changes each decision.
-3. The builder builds, runs `/finish-task`, and marks the pull request ready. The review routine waits for the checks, reviews the code, and merges at `[review] ready to merge`.
-4. The merge starts the next task.
+3. The builder builds, runs `/finish-task`, and marks the pull request ready. The review routine waits for the checks, reviews the code, and posts `[review] ready to merge` with `@abbosc`.
+4. You merge it by hand on GitHub (D71, since go-live). The merge deploys to the live app and starts the next task.
 
 ## What you do, once a day
 
-1. Read issue #9, the items marked **Look first** first, and answer under each task's comment: `1 confirmed`, `2 change: <what instead>`.
-2. Read the "Texts to read" comment of each merged pull request: the new Uzbek and Russian texts.
-3. Look at what was merged, by the report's "What to look at": at `ombor-test.sodiqschool.uz` once it exists, before that on your computer after `git pull`.
-4. Do what any `@abbosc` notification or `needs-owner` label asks.
+1. Merge each task pull request at `[review] ready to merge … @abbosc`, after reading the Look first items of its report: the merge goes live within minutes (D71).
+2. Read issue #9, the items marked **Look first** first, and answer under each task's comment: `1 confirmed`, `2 change: <what instead>`.
+3. Read the "Texts to read" comment of each merged pull request: the new Uzbek and Russian texts.
+4. Look at what was merged, by the report's "What to look at", on the live app `ombor.sodiqschool.uz`.
+5. Do what any `@abbosc` notification or `needs-owner` label asks.
 
 Bring a changed decision, a wrong text or something that looks wrong to the reviewer chat: it writes the fix task.
 
@@ -73,9 +74,9 @@ Bring a changed decision, a wrong text or something that looks wrong to the revi
 
 - Never type a password, key or token into a chat or a session. Secrets go into the provider dashboards, GitHub's repository secrets and your local `.env` file only.
 - Real names, phones, prices and stock lists of the school never go into the repository, a test or a chat. Examples use invented data.
-- You merge spec changes and process changes. The review routine merges task pull requests, only with green checks. You may merge a task by hand at any time.
+- You merge every pull request, task pull requests included (D71, since go-live): the review routine reviews and says `ready to merge`, and merges nothing.
 - The spec changes only with `/spec-change`, in its own session.
-- The loop waits for you in these cases only: a secret, an account or money; production; a task that would change the loop's own rules; the builder and the reviewer not agreeing in three rounds, or the checks staying red three times; and the merge of task 0.3, once. Everything else it decides and shows you on issue #9.
+- The loop waits for you in these cases only: a secret, an account or money; production; a task that would change the loop's own rules; a migration that changes data already in the database; the builder and the reviewer not agreeing in three rounds, or the checks staying red three times; and every merge. Everything else it decides and shows you on issue #9.
 - If the loop seems stuck, `docs/cloud-loop.md`, "When something goes wrong", says where to look.
 - Do not change the order of the tasks by hand. A fix task goes first among the open tasks; the reviewer chat places it.
 

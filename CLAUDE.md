@@ -76,7 +76,7 @@ One task per session, branch and pull request. The loop runs without the owner i
 2. Where the spec is silent or unclear, nothing waits: take the most reasonable reading (the spec's own lines, the standing decisions, the way the school works), write it in the plan under "Decided without the owner" with the reason, and go on. The reviewer confirms or changes it; the owner confirms or changes it afterwards on issue #9. A rule the spec gives is never replaced by a reading, and nobody works from memory of the spec.
 3. Build only after `[review] approved`, with its corrections. Build the plan and nothing more.
 4. Run `npm run format`, lint, typecheck and the tests the change touches. CI runs everything on the pull request and is the gate; a red CI is fixed before a review is asked for. Never skip, delete or weaken a test to get to green. A test that is wrong because a requirement or a decision changed is fixed, with the reason in the report and the mark **Look first**.
-5. `/finish-task` runs the checks and the `permission-reviewer`, ticks the task, writes progress and decisions, merges `main` in, posts the report and the decisions, and marks the pull request ready. At `[review] ready to merge` with green checks the reviewer merges a pull request from a `task/` branch. The owner merges spec changes and process changes.
+5. `/finish-task` runs the checks and the `permission-reviewer`, ticks the task, writes progress and decisions, merges `main` in, posts the report and the decisions, and marks the pull request ready. At `[review] ready to merge` with green checks the owner merges the pull request by hand, task pull requests included; the reviewer merges nothing (D71).
 
 `docs/spec/` is never changed by a task. A rule that should change, or two rules that contradict each other, do not stop the task: follow the most reasonable reading, mark it **Look first** on issue #9 with the wording a `/spec-change` should give, and go on; the owner runs `/spec-change` when they agree.
 
@@ -103,18 +103,20 @@ One task per session, branch and pull request. The loop runs without the owner i
 
 ## Stop and wait for the owner, even when nobody is watching
 
-Until go-live (task 9.4) nothing the loop builds is used by real people, holds real data or spends money, so a mistake can be corrected afterwards. Only two things stop a task. For these the session posts `[review] owner decision needed` (or says what it needs in the pull request, with `@abbosc`) and stops:
+Since go-live (task 9.5, 28.10.2026) the live app holds the school's real data, and every merge into `main` reaches it within minutes. A mistake there is no longer corrected by emptying the database. So the owner merges every pull request by hand: the reviewer reviews and posts `[review] ready to merge`, and merges nothing (D71). Three things stop a task. For these the session posts `[review] owner decision needed` (or says what it needs in the pull request, with `@abbosc`) and stops:
 
-1. Secrets, accounts with a provider, anything that costs money, and production (the live system, its data, its address).
+1. Secrets, accounts with a provider, anything that costs money, and production (the live system, its data, its address). No session runs a command against the live app, its database or its files. A correction of live data is written in the task as a script or a step, and the owner runs it.
 2. A task pull request that changes the loop's own rules beyond what `review-pr` allows.
+3. A migration that changes data already in the database: an `UPDATE`, a `DELETE` or a backfill of existing rows, or a column or table renamed, dropped or given another type. The plan names the migration and what it does to the existing rows, and nothing is built before the owner answers. A migration that only adds a table, an index, or a column that may be empty or has a default is decided in the plan as before.
 
 Two brakes are failures, not decisions, and stay: three review rounds without agreement, and three red CI runs in a row. Everything else is decided, written under "Decided without the owner", confirmed or changed by the reviewer, and posted on issue #9. The weightiest decisions carry the mark **Look first** and come first:
 
 - a reading of a money, stock or approval-order rule: a formula or a rounding in `src/domain/`, a status move, the permission matrix, the branch wall (the rules that are never broken stay unbroken);
 - an open question of `docs/spec/open-questions.md` that "Decided ahead" in `docs/decisions.md` does not answer;
-- a test or constraint deleted or weakened, or a column or table dropped: only when a requirement or a decision changed, never to make failing code pass, with the reason named; a merged migration is still never edited;
+- a test or constraint deleted or weakened: only when a requirement or a decision changed, never to make failing code pass, with the reason named; a merged migration is still never edited;
+- a migration that adds a NOT NULL, CHECK, UNIQUE or foreign key to a table that already exists: one live row that breaks it fails the deploy, so the plan says why the live rows keep it;
 - a new dependency: free licence, maintained, no audit finding, all three checked by the reviewer;
 - a spec contradiction, or a spec text that should change, with the proposed `/spec-change` wording;
 - a task split into a, b, c.
 
-Before go-live the owner and the owner's reviewer go through every Look first decision again, and the owner tightens this list for the live system.
+The owner reads a task's Look first items before merging it: the merge confirms them, and a change asked for later is a fix task. The owner tightened this list for the live system at go-live (D71).
