@@ -13,9 +13,9 @@ Every step is the owner's: it is production, and part A costs a little money (th
 
 The session that wrote this could not read DigitalOcean's documentation: the dashboard's screens are described from memory. If a screen differs, choose the nearest and say on issue #9 what you saw.
 
-## The drill (during the trial, before 9.5)
+## The drill
 
-Run parts A and B once while the trial runs, on the demo data. Task 9.5 (the end of the trial, `npm run trial:reset`) waits behind an owner gate line in `docs/build-plan.md` until the drill is done: after posting the four lines on issue #9, delete that line (the task's pull request or a commit of your own).
+Run parts A and B once, to know the copies can be restored. It was planned for the trial, before 9.5; the owner went live without it (D70, 28.10.2026), so no drill has run yet. It can run at any time on the live data: neither part touches the running app's database. The texts below speak of the demo data of the trial; on the live data, read "the orders, users and stock lines" of the day the copy was made.
 
 ### A. Yesterday's copy (DigitalOcean's daily backup)
 
@@ -102,7 +102,7 @@ Post both pairs of lines on issue #9 with the difference named. Any other differ
 | A | | `ombor-db-drill`, moment … | | | |
 | B | | `backups/database-….dump` into `drill_…` | | | |
 
-The owner posts the four lines on issue #9; task 9.5 copies them into this table.
+The owner posts the four lines on issue #9 and copies them into this table, or a task does. The table is empty: the drill did not run before go-live (D70).
 
 ## When it is real
 

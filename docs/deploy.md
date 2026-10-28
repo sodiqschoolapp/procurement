@@ -101,7 +101,7 @@ The running app does not read the file again by itself. When a task changes `.do
    | `SEED_FINANCE_PASSWORD` | a password you choose for `seed_finance` |
    | `ERROR_REPORT_DSN` | the DSN of the Sentry project, step 9.1 (can be added then) |
 
-   Four different seed passwords, so one that leaks opens one role only (0.14, decision 3). Keep them where you keep passwords; never in a chat, an issue or a file of the repository. They are needed only during the trial.
+   Four different seed passwords, so one that leaks opens one role only (0.14, decision 3). Keep them where you keep passwords; never in a chat, an issue or a file of the repository. They are needed only during the trial: after it (9.5) the four `SEED_*` lines are not typed.
 2. Save. DigitalOcean deploys again. In Activity → the new deploy → Runtime logs, after the `applied …` lines, the seed prints:
 
    ```
@@ -151,10 +151,10 @@ The copies hold everything in the database, password hashes and sign-in sessions
 
 ## The end of the trial (task 9.5)
 
-When the owner is satisfied with the trial and the restore drill (9.6, `docs/restore.md`) is done, the trial ends, in this order (D52):
+When the owner is satisfied with the trial, the trial ends, in this order (D52). The restore drill (9.6, `docs/restore.md`) is not needed first: the owner went live without it (D70). Before step 3, do step 0 of "The real data" below.
 
-1. **`SEED_DEMO_DATA` removed.** Task 9.5 removes it from `.do/app.yaml`; apply the file (step 7), then check that the variable is gone from the component's Environment Variables and that the typed values of step 8 are all still there. The four `SEED_*_PASSWORD` values can be deleted. Wait until Activity shows the new deploy as "Deployed": its log has no `seed` line.
-2. **No deploy in progress.** Activity shows nothing building or deploying. A deploy that starts during the reset migrates the database at the same moment, and one of the two fails (decision 5 of 9.4's plan); nothing worse, but run it at a quiet time, when nobody is signed in.
+1. **`SEED_DEMO_DATA` removed.** `.do/app.yaml` has not had it since task 9.5; apply the file (step 7), then check that the variable is gone from the component's Environment Variables and that the typed values of step 8 are all still there. The four `SEED_*_PASSWORD` values can be deleted. Wait until Activity shows the new deploy as "Deployed": its log has no `seed` line.
+2. **No deploy in progress, and no merge until step 4 is done.** Activity shows nothing building or deploying. A deploy that starts during the reset migrates the database at the same moment, and one of the two fails (decision 5 of 9.4's plan); nothing worse, but run it at a quiet time, when nobody is signed in. Every merge into `main` starts a deploy, and the loop's review routine merges task pull requests by itself: pause the loop's routines for the hour, or check that no pull request has `[review] ready to merge`.
 3. **`npm run trial:reset`** in the app → component `web` → Console. It names the database (`database "defaultdb" at …`), then asks for its name. Type `defaultdb` and press Enter. It deletes every row of the database: users, sessions, catalogs, orders, money, stock, the audit log, everything (the `public` and `drizzle` schemas are dropped), applies the migrations from zero, and records in the database that the trial has ended. It prints:
 
    ```
@@ -162,7 +162,7 @@ When the owner is satisfied with the trial and the restore drill (9.6, `docs/res
    ```
 
    Everyone is signed out (the sessions are gone). The running app works on the new, empty tables at once.
-4. **`npm run user:first-head`** in the same console: the real first Head, then a second Head created by that Head in the app (9.5; D55 item 8).
+4. **`npm run user:first-head`** in the same console: the real first Head, then a second Head created by that Head in the app (9.5; D55 item 8). Then "The real data" below.
 
 What the reset refuses, writing nothing:
 - A confirmation that is not exactly the database's name: `Refused: the confirmation is not the database's name "defaultdb". Nothing was written.` Run it again.
@@ -176,6 +176,30 @@ What the reset does **not** empty (the top paragraph of `18-hosting-and-costs.md
 
 If it fails with a message from PostgreSQL (`trial:reset failed: …`, for example `must be owner of …`, which can appear if DigitalOcean keeps an object of its own in the schema `public` of `defaultdb`): the drops run in one transaction, so nothing was deleted. Copy the line (it holds no secret) into a comment on issue #9 and stop; a fix task decides. If it fails after the drops (a line naming a migration), the database is empty without the record: run `npm run trial:reset` again; that is allowed, because the end of the trial is recorded only at the very end.
 
+## The real data (task 9.5)
+
+After "The end of the trial", the database is empty: no branch, no catalog, one Head. The school's data goes in through the app, in this order, because each Excel template names things that must already exist (`04-catalogs.md` rule 7; `09-warehouse.md`, Direct entry by the Head). A row that names something missing is refused by the preview, and nothing of that file is saved.
+
+The school's Excel files stay on the owner's and the Head's computers. Never put one, or a row, a name or a phone from it, into a chat, an issue, an email to the developers or the repository. On issue #9 only the counts of step 9 are posted.
+
+0. **Before the reset and before any real data: the stop list.** From now on every merge reaches an app with real data. The owner tightens the stop list of `CLAUDE.md` for the live system (D58; `CLAUDE.md`, last paragraph), as a change of the loop's rules by the owner. No task session changes it.
+1. **The second Head.** The first Head creates the second Head on Users → New user, so either can renew the other's password in the app (D55 item 8).
+2. **Settings.** The reset brought every setting back to its first value: the Finance step and the Principal step are on again, and the order fields are as the migrations made them. The Head sets Settings again as the trial had them, before the first order: the Principal step (off by D69), the Finance step (off by D62, until the Finance team moves to the platform), the order fields (D67), and the rest.
+3. **Branches.** Branches → New branch, one per branch, with its code. The department and stock files name a branch by its code.
+4. **The small catalogs, typed.** Catalogs: measures, categories, extra cost types and companies. They have no import; the products file names a category, a measure and a company by name.
+5. **Departments**, from the departments template: Catalogs → Departments → Import. Each row names its branch's code.
+6. **Products and subtypes, with their prices**, from the products template: Catalogs → Products → Import. A product with subtypes takes one row per subtype; a row's price is the subtype's reference price.
+7. **Prices left over**, from the prices template, only for subtypes the products file left without a price (Prices → Import). Each row names the product and the subtype.
+8. **Users.** Users → New user: the Managers with their branches and rights, the Principal, Finance. A Manager's branches must exist (step 3).
+9. **Existing stock**, branch by branch, from the stock template: Warehouse → Stock → **Import from Excel**, then the branch, then the file. It is saved as direct entries with the reason **Stock we already had** (`edge-cases/warehouse.md`, "The school already has stock on launch day"). Each row names a product and a subtype; a cost per unit left empty takes the reference price of step 6 or 7. A few items can be typed instead, as a Direct entry from the new-document buttons of the same page. Every entry gets a number `ENT-<branch>-26-…`; a wrong one is fixed with Reverse, never deleted.
+
+A file holds at most 500 rows (`IMPORT_ROWS_MAX`): split a longer one. The import saves every row or none; the preview names each wrong row and why.
+
+**Done when of 9.5.** The Head confirms three counts against the school's own lists, and posts the three numbers (nothing else) on issue #9:
+- **Products**: the summary line of Catalogs → Products ("… active, … inactive"). The line "N rows imported" of an import counts the rows of that file, not products: a product with three subtypes is three rows.
+- **Users**: the Users page.
+- **Stock lines**: `npm run db:counts` in the console (component `web` → Console). It prints the users and the stock lines (an item in a branch with stock above 0), and holds no name.
+
 ## A Head forgot the password (task 8.2b)
 
 A Head's password is renewed by another Head on the user's page. When no other Head can (one Head, or every Head locked out), it is renewed from the console (`03-roles-and-permissions.md` rule 4):
@@ -188,7 +212,7 @@ It refuses, changing nothing, a username that is not an active Head, an empty pa
 
 ## The variables
 
-Eight variables are in `.do/app.yaml`; the owner types eleven more in the dashboard, encrypted (step 8.1). Where to see them: the app → component `web` → Settings → Environment Variables. The values of `DATABASE_URL` and `DATABASE_CA_CERT` are filled in by DigitalOcean from the database; they are not shown in a chat or written anywhere. Applying `.do/app.yaml` again (step 7) can drop the typed ones: check them after every apply.
+Seven variables are in `.do/app.yaml`; the owner types seven more in the dashboard, encrypted (step 8.1). During the trial there were eight and eleven: `SEED_DEMO_DATA` and the four `SEED_*_PASSWORD` were removed at 9.5. Where to see them: the app → component `web` → Settings → Environment Variables. The values of `DATABASE_URL` and `DATABASE_CA_CERT` are filled in by DigitalOcean from the database; they are not shown in a chat or written anywhere. Applying `.do/app.yaml` again (step 7) can drop the typed ones: check them after every apply.
 
 | Name | Value in `.do/app.yaml` | What it is |
 | --- | --- | --- |
@@ -198,8 +222,8 @@ Eight variables are in `.do/app.yaml`; the owner types eleven more in the dashbo
 | `NODE_ENV` | `production` | Runs Next.js as a production server. |
 | `PORT` | none: `8080` is set in `Dockerfile` | The port the app listens on, the same as `http_port` in `.do/app.yaml`. |
 | `BETTER_AUTH_SECRET` | none: typed in the dashboard only | Signs the session cookie. A secret: never in the repository, a chat or an issue. |
-| `SEED_DEMO_DATA` | `yes` during the trial; removed by 9.5 | Writes the demo users and invented data at every start (D52). Without the exact word `yes` the seed refuses a hosted database; after the trial it refuses whatever this says. Sentry's environment tag reads it. |
-| `SEED_HEAD_PASSWORD`, `SEED_MANAGER_PASSWORD`, `SEED_PRINCIPAL_PASSWORD`, `SEED_FINANCE_PASSWORD` | none: typed in the dashboard only (step 8) | The passwords the seed gives the four demo users when it creates them. Secrets. Trial only. |
+| `SEED_DEMO_DATA` | none: removed at 9.5; delete it from the dashboard when the trial ends | Wrote the demo users and invented data at every start of the trial (D52). Without the exact word `yes` the seed refuses a hosted database; after the trial it refuses whatever this says. Sentry's environment tag reads it: `trial` while it is set, `production` without it. |
+| `SEED_HEAD_PASSWORD`, `SEED_MANAGER_PASSWORD`, `SEED_PRINCIPAL_PASSWORD`, `SEED_FINANCE_PASSWORD` | none: removed at 9.5; delete them from the dashboard when the trial ends | The passwords the seed gave the four demo users of the trial. Secrets. |
 | `S3_REGION` | `auto` | R2's region for the S3 API. |
 | `S3_BUCKET` | `ombor-files` | The private bucket of step 6. |
 | `S3_ENDPOINT` | none: typed in the dashboard only (step 8) | `https://<account id>.r2.cloudflarestorage.com`. Not a secret, but your own. |
@@ -225,7 +249,7 @@ It is not declared in `.do/app.yaml`, so no value and no empty placeholder sits 
   - The reason names a certificate (for example `self-signed certificate in certificate chain` or `unable to verify`): the binding `${ombor-db.CA_CERT}` did not arrive. Open the database cluster → Connection details → download the CA certificate, then in the component `web` → Settings → Environment Variables change `DATABASE_CA_CERT` to its whole text (from `-----BEGIN CERTIFICATE-----` to `-----END CERTIFICATE-----`), and save. Say on issue #9 that this was needed, so the spec file is corrected.
   - The reason says `permission denied for database` or `for schema`: the app does not connect as `doadmin`. Check the database component of the app spec (step 4.4) and post the line on issue #9.
 - **The log shows `db:seed failed: …`.** The line before it says why: `Refused: SEED_… is not set` (step 8.1 is missing that password), `Refused: the user … exists with the role …`, `Refused: branch CHL already has an active Principal` (see "How the demo users behave"), or `Refused: the trial of this database has ended` (remove `SEED_DEMO_DATA`, "The end of the trial" step 1). The app runs; only the missing demo data is not there.
-- **No `seed` line at all in the log during the trial.** `SEED_DEMO_DATA` is not `yes`: apply `.do/app.yaml` again (step 7), then check step 8.1.
+- **No `seed` line at all in the log during the trial.** `SEED_DEMO_DATA` is not `yes`. Since 9.5 `.do/app.yaml` no longer sets it, so applying the file removes it: that is the end of the trial ("The end of the trial", step 1). After the trial no `seed` line is expected.
 - **A demo user cannot sign in.** The log shows `Sign-in refused: BETTER_AUTH_SECRET is not set`: type it again. Otherwise the password typed at sign-in is not the one the seed used when it created the user; a later change in the dashboard does not change it.
 - **`storage failed: S3_… is not set.`** That variable is missing in step 8.1.
 - **`storage failed: … (HTTP 403).`** The token's keys are wrong, or the token is not for the bucket `ombor-files`: make a new token (step 6.4) and type both keys again.
