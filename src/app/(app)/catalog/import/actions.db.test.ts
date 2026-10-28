@@ -119,24 +119,39 @@ describePermissionMatrix("saveImportAction", {
   },
 });
 
+/** A departments file of one row in the matrix's branch, as a Head fills the template. */
+async function departmentsFile(branchId: string): Promise<File> {
+  const [branch] = await db
+    .select({ code: branches.code })
+    .from(branches)
+    .where(eq(branches.id, branchId));
+  const book = new ExcelJS.Workbook();
+  const page = book.addWorksheet("Boʻlimlar");
+  page.addRow(
+    importSheet("departments", [], "uz").header.map((cell) =>
+      cell.kind === "text" ? cell.text : null,
+    ),
+  );
+  page.addRow([branch!.code, `Matritsa ${randomUUID().slice(0, 8)}`]);
+  return new File([new Uint8Array(await book.xlsx.writeBuffer())], "bolimlar.xlsx");
+}
+
 describePermissionMatrix("saveImportAction, departments", {
   permission: "catalog.manage",
   async run({ user, branchId }) {
-    const [branch] = await db
-      .select({ code: branches.code })
-      .from(branches)
-      .where(eq(branches.id, branchId));
-    const book = new ExcelJS.Workbook();
-    const page = book.addWorksheet("Boʻlimlar");
-    page.addRow(
-      importSheet("departments", [], "uz").header.map((cell) =>
-        cell.kind === "text" ? cell.text : null,
-      ),
-    );
-    page.addRow([branch!.code, `Matritsa ${randomUUID().slice(0, 8)}`]);
-    const file = new File([new Uint8Array(await book.xlsx.writeBuffer())], "bolimlar.xlsx");
+    const file = await departmentsFile(branchId);
     signedIn(user);
     asMatrixAnswer(await saveImportAction(formOf(file, "departments")));
+  },
+});
+
+// The departments preview, which the matrix lacked (permission review of 9.5, Must fix 1).
+describePermissionMatrix("previewImportAction, departments", {
+  permission: "catalog.manage",
+  async run({ user, branchId }) {
+    const file = await departmentsFile(branchId);
+    signedIn(user);
+    asMatrixAnswer(await previewImportAction(formOf(file, "departments")));
   },
 });
 
