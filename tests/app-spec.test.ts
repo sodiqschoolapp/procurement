@@ -4,8 +4,9 @@ import { describe, expect, it } from "vitest";
 
 // build-plan 9.4: "`.do/app.yaml` … turned from the test copy into the live app: app `ombor`,
 // 1 GiB container, Managed PostgreSQL with 1 GiB (daily backups), Frankfurt, the R2 buckets
-// `ombor-files` and `ombor-copies` …, the address `ombor.sodiqschool.uz`; it starts in trial mode
-// with `SEED_DEMO_DATA` on"; 18-hosting-and-costs.md rows 1 to 3; D52; docs/decisions.md,
+// `ombor-files` and `ombor-copies` …, the address `ombor.sodiqschool.uz`"; build-plan 9.5: "the
+// end of the trial (D52): `SEED_DEMO_DATA` removed from the app"; 18-hosting-and-costs.md rows 1
+// to 3; D52; docs/decisions.md,
 // "Decided ahead: task 0.16", item 2: no secret in the repository. The file is read as text: no
 // YAML library is a dependency of this project. A price is not checked here; the owner checks
 // the dashboard's total before creating the app (docs/deploy.md).
@@ -22,7 +23,7 @@ function valuesOf(key: string): string[] {
   });
 }
 
-describe("the App Platform spec of the live app (build-plan 9.4; 18-hosting rows 1 to 3; D52)", () => {
+describe("the App Platform spec of the live app (build-plan 9.4 and 9.5; 18-hosting rows 1 to 3; D52)", () => {
   it("is the app ombor, in Frankfurt, at ombor.sodiqschool.uz", () => {
     expect(valuesOf("region")).toEqual(["fra"]);
     expect(valuesOf("domain")).toEqual(["ombor.sodiqschool.uz"]);
@@ -67,7 +68,6 @@ describe("the App Platform spec of the live app (build-plan 9.4; 18-hosting rows
       "${ombor-db.DATABASE_URL}",
       "${ombor-db.CA_CERT}",
       "${_self.COMMIT_HASH}",
-      '"yes"',
       "auto",
       "ombor-files",
       "ombor-copies",
@@ -76,15 +76,19 @@ describe("the App Platform spec of the live app (build-plan 9.4; 18-hosting rows
     expect(text).not.toMatch(/BEGIN CERTIFICATE/);
   });
 
-  // D52 replaces the 0.15 note "the production app spec must not carry SEED_DEMO_DATA": the live
-  // app starts in trial mode with it on, and 9.5 removes it (plan of 9.4, decided item 4, Look first).
-  it("starts in trial mode and names both R2 buckets, leaving every typed value to the dashboard (D52; build-plan 8.2b)", () => {
+  // The 0.15 note "the production app spec must not carry SEED_DEMO_DATA" holds again: D52 set
+  // it aside while the trial ran (decisions 9.4, item 3, Look first), and 9.5 ends the trial.
+  it("carries no SEED_ variable, so a start writes no demo data (build-plan 9.5; D52; permission review of 0.15)", () => {
+    expect(valuesOf("key")).not.toContain("SEED_DEMO_DATA");
+    expect(text).not.toMatch(/SEED_/);
+  });
+
+  it("names both R2 buckets, leaving every typed value to the dashboard (build-plan 8.2b; Decided ahead 0.16, item 2)", () => {
     expect(valuesOf("key")).toEqual([
       "NODE_ENV",
       "DATABASE_URL",
       "DATABASE_CA_CERT",
       "GIT_COMMIT",
-      "SEED_DEMO_DATA",
       "S3_REGION",
       "S3_BUCKET",
       "BACKUP_S3_BUCKET",
