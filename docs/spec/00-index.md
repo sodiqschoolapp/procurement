@@ -21,10 +21,10 @@ Where an edge-case file is more specific than a chapter file, the edge-case file
 | `08-money-and-settlement.md` | Formulas, three colours, exact match, money actions with rows per order, cash count, closing, overspend guard, worked examples. |
 | `09-warehouse.md` | Movement types, direct entry, issue, return, transfer, write-off, count, low stock, stock value. |
 | `10-notifications-analytics-reports.md` | Who is told what, home page per role, analytics per role, ten reports. |
-| `11-screens-and-ux.md` | Sixteen screens, menu per role, order list and order page layout, fifteen UX rules. |
+| `11-screens-and-ux.md` | Seventeen screens, menu per role, order list and order page layout, the Help page, fifteen UX rules. |
 | `13-technology.md` | The stack, layer by layer. |
 | `14-data-model.md` | 35 tables in five groups, settings keys, notes for the build. |
-| `15-quality-and-acceptance.md` | Three test layers, 25 acceptance scenarios S1 to S25, the done-check. |
+| `15-quality-and-acceptance.md` | Three test layers, 26 acceptance scenarios S1 to S26, the done-check. |
 | `16-build-order.md` | The nine product phases and what can be tried after each. |
 | `17-later-ideas.md` | Eleven features left out of version 1 on purpose. Do not build them. |
 | `18-hosting-and-costs.md` | Hosting, addresses, monthly cost, what was considered and set aside. |

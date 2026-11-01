@@ -3,7 +3,7 @@
 > Part of the School Procurement & Warehouse Platform spec, baseline of 10 October 2026 (document revision 123).
 > Index and reading order: `docs/spec/00-index.md`. Read-only: this folder changes only through `/spec-change`.
 
-The app has 16 screens. Each one shows only what the logged-in role may see and only the buttons that work right now.
+The app has 17 screens. Each one shows only what the logged-in role may see and only the buttons that work right now.
 
 ## Screens
 
@@ -25,6 +25,7 @@ The app has 16 screens. Each one shows only what the logged-in role may see and 
 | Settings | `/settings` | Head |
 | Notifications, profile | `/notifications`, `/profile` | All |
 | Analytics | `/analytics` | All, each role sees its own page |
+| Help | `/help` | Anyone, signed in or not |
 
 ## Interface per role
 
@@ -37,7 +38,7 @@ Each role gets a short menu and a home page shaped around its main job, so nobod
 | Principal | Home, Orders, Stock, Analytics, Reports | Approving. Home shows waiting group rows as large cards with total, urgent label and price hints. Ticking all and approving, sending back or rejecting takes two taps on a phone. No editing screens at all. |
 | Finance | Home, Orders, Money, Stock, Analytics, Reports | Money. Home lists approvals and settlements with the exact amount to give or receive. Each one opens the order list filtered to those orders, ready to tick. |
 
-A page a role cannot use is not shown greyed out; it is simply absent from the menu.
+A page a role cannot use is not shown greyed out; it is simply absent from the menu. Every menu ends with Help, and the sign-in page links to it.
 
 ## Order list layout
 
@@ -53,6 +54,15 @@ A page a role cannot use is not shown greyed out; it is simply absent from the m
 3. **Tabs:** Details, Purchases, Money, History. Details leaves out fields that are empty. History starts with the steps Draft, Head, Principal, Finance, Open, Closed, with the name and time of each finished step; on an order that skipped the Principal or Finance (section 6) that step reads "Skipped". An order that skipped Finance has no Money tab.
 4. **Action bar,** under the header and kept in view: the main next action this user can take as one button, and the user's other actions now under "More". If there are none, the top line already says who the order is waiting for.
 (Owner's decision of 25 October 2026: a simpler order page.)
+
+## Help page
+
+`/help` explains every feature of the app for every role, so that anyone with a question about the app finds the answer there (owner's decision of 1 November 2026).
+
+1. **Open to anyone.** It opens without signing in and shows no school data: no names, orders, prices or stock, only how the app works.
+2. **Everything.** It covers every screen, every status and move, every permission and Manager right, every setting, every notification, every warehouse document and every kind of money row, and the situations of the `edge-cases/` files as common questions. A task that adds or changes a feature writes its help text in the same task; a test fails when one of these has no help entry.
+3. **Search.** One search box narrows the page to the topics that hold every word typed.
+4. **Languages.** Uzbek, Russian and English from the translation files, like every other text (rule 14). A signed-in user reads it in their own language; a visitor chooses the language on the page, as on the sign-in page.
 
 ## Rules for a smooth feel
 
