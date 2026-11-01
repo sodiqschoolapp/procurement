@@ -1,0 +1,576 @@
+{
+  "chapters": {
+    "overview": {
+      "title": "Ombor bir qarashda",
+      "lead": "Ikki ish, buyurtmalar va ombor, toʻrt rol oʻrtasida taqsimlangan.",
+      "topics": {
+        "what-it-does": {
+          "title": "Ombor nima qiladi",
+          "body": "Ombor maktabning har bir filialidagi qogʻoz buyurtma blankasi va ombor daftarlari oʻrnini bosadi.\n\n**Buyurtmalar.** Har bir filialda bitta buyurtmalar roʻyxati yuritiladi. Menejer maktabga kerakli narsalar uchun buyurtmalar qoʻshadi: har biri bitta boʻlim uchun bitta mahsulot yoki xizmat. Buyurtma tasdiqlanadi, menejer uni sotib oladi va haqiqiy narx va miqdorni yozadi, pul farqi boʻlsa, hisob-kitob qilinadi va buyurtma yopiladi. Har bir buyurtma alohida harakatlanadi, lekin har bir rol bir vaqtning oʻzida koʻp belgilangan buyurtmalar ustida amal bajara oladi.\n\n**Ombor.** Yozilgan har bir xarid filial omboriga oʻzi kirim boʻladi. Menejerlar mollarni boʻlimlarga beradi, boshqa filiallarga joʻnatadi, yoʻqolgan yoki singanini hisobdan chiqaradi va javonlardagi mollarni sanaydi. Ilova har bir filialda har bir moldan qancha borligini doim biladi va qoldiq hech qachon noldan pastga tushmaydi."
+        },
+        "who-does-what": {
+          "title": "Kim nima qiladi",
+          "body": "| Rol | Filiallar | Asosiy ishlar |\n| --- | --- | --- |\n| Xaridlar rahbari | Hammasi | Ilovani boshqaradi: kataloglar, foydalanuvchilar, filiallar, sozlamalar. Birinchi tasdiqni beradi. Hisobdan chiqarish va qoldiq tuzatishlarini tasdiqlaydi. Menejer qila oladigan hamma narsani istalgan filialda qila oladi. |\n| Menejer | Bir yoki bir nechta, xaridlar rahbari belgilaydi | Buyurtmalarni qoʻshadi va yuboradi, xaridlarni yozadi, oʻz filiallari omborini yuritadi. |\n| Direktor | Bitta filial; har bir filialda aynan bitta | Bu bosqich yoqilgan paytda ikkinchi tasdiqni beradi. Filialning buyurtmalari, qoldiqlari va hisobotlarini faqat koʻradi. |\n| Moliya | Bir yoki bir nechta, xaridlar rahbari belgilaydi | Bu bosqich yoqilgan paytda uchinchi tasdiqni beradi. Berilgan va qaytarilgan naqd pulni yozadi. Farqlar boʻyicha hisob-kitob qiladi va buyurtmalarni yopadi. |\n\nBitta hisobda aynan bitta rol boʻladi. Ishi oʻzgargan kishiga yangi hisob ochiladi. Har bir rolning har bir amali uchun [Rollar, huquqlar va filiallar](roles) boʻlimiga qarang."
+        },
+        "order-life": {
+          "title": "Buyurtmaning yoʻli",
+          "body": "1. **Qoralama:** menejer uni yozadi.\n2. **Rahbarni kutmoqda**, keyin **Direktorni kutmoqda**, keyin **Moliyani kutmoqda:** har bir tasdiqlovchi tasdiqlaydi, tuzatishga qaytaradi yoki rad etadi.\n3. **Ochiq:** menejer sotib oladi va xaridlarni yozadi. Mollar omborga kirim boʻladi.\n4. **Yopilgan:** aynan rejadagidek sotib olingan buyurtmani menejer yopadi; har qanday farq boʻlsa, buyurtma moliyaga oʻtadi, moliya pul boʻyicha hisob-kitob qiladi va uni yopadi.\n\nXaridlar rahbari direktor bosqichini yoki moliya bosqichini oʻchirib qoʻyishi mumkin; shunda buyurtmalar oʻsha bosqichni oʻtkazib yuboradi. [Tasdiqlash](approval) boʻlimiga qarang."
+        },
+        "using-help": {
+          "title": "Ushbu yordamdan foydalanish",
+          "body": "Bu sahifa tizimga kirgan yoki kirmaganidan qatʼi nazar, hammaga ochiq. U ilova qanday ishlashini tushuntiradi va maktabning hech qanday maʼlumotini koʻrsatmaydi.\n\n- Yuqoridagi qidiruv maydoniga yozing: sahifada faqat siz yozgan har bir soʻz bor mavzular qoladi. Hammasini yana koʻrish uchun maydonni tozalang.\n- Boblar roʻyxati kerakli bobga oʻtkazadi. Telefonda u matn ustidagi ochiladigan roʻyxat boʻladi.\n- Tizimga kirishdan oldin tilni shu sahifada tanlashingiz mumkin. Kirgandan keyin til profilingizdagi tilga moslashadi.\n- Bu sahifa javob bermagan savol bilan xaridlar rahbariga murojaat qiling."
+        }
+      }
+    },
+    "account": {
+      "title": "Tizimga kirish va hisobingiz",
+      "lead": "Hisoblarni xaridlar rahbari yaratadi. Roʻyxatdan oʻtish, email va SMS yoʻq.",
+      "topics": {
+        "sign-in": {
+          "title": "Tizimga qanday kiraman?",
+          "body": "[Kirish sahifasini](/login) oching va xaridlar rahbari bergan foydalanuvchi nomi va parolni kiriting. Kerak boʻlsa, tilni shu sahifada tanlang.\n\n- Kirish 24 soat amal qiladi, keyin qayta kirasiz. Bir vaqtning oʻzida bir nechta qurilmada kirgan boʻlishingiz mumkin.\n- Bitta foydalanuvchi nomi uchun 15 daqiqa ichida 5 marta notoʻgʻri parol kiritilsa, bu foydalanuvchi nomi bir muddat, hatto toʻgʻri parol bilan ham qabul qilinmaydi. 15 daqiqa kuting va qayta urinib koʻring.\n- Kirgandan keyin ochmoqchi boʻlgan sahifangizga qaytasiz."
+        },
+        "password": {
+          "title": "Parolimni unutdim. Uni qanday oʻzgartiraman?",
+          "body": "Hech kim oʻz parolini ekranda oʻzgartirmaydi. Xaridlar rahbaridan soʻrang: u foydalanuvchi sahifangizda **Parolni yangilash** tugmasini bosadi, yangi parolni yozadi yoki yaratadi va uni sizga beradi. Eski parol darhol ishlamay qoladi va siz barcha qurilmalarda tizimdan chiqarilasiz.\n\nXaridlar rahbarining parolini boshqa xaridlar rahbari yangilaydi. Agar buni qila oladigan boshqa xaridlar rahbari boʻlmasa, ilova egasi uni server konsolidan yangilaydi. Parol qoidalari yoʻq va hech kim birinchi kirishda parolni oʻzgartirishga majbur qilinmaydi."
+        },
+        "profile": {
+          "title": "Til, mavzu va profil",
+          "body": "Tilni (Oʻzbekcha, ruscha yoki English) va mavzuni (yorugʻ, qorongʻi yoki qurilmadagidek) tanlash uchun **Profil** sahifasini (menyudagi ismingiz) oching. Yangi foydalanuvchilar uchun standart til oʻzbek tili.\n\nProfil sahifasi foydalanuvchi nomingiz va rolingizni ham koʻrsatadi. Katalogdagi nomlar, masalan mahsulot nomlari, bir marta bitta tilda yoziladi va tarjima qilinmaydi."
+        },
+        "menu-search-bell": {
+          "title": "Menyu, filial tanlagich, qidiruv va qoʻngʻiroqcha",
+          "body": "- **Menyu:** kompyuterda yon panel, telefonda pastdagi yorliqlar paneli (bandlar beshtadan koʻp boʻlsa, birinchi toʻrttasi va **Yana** koʻrsatiladi). Har bir rol faqat oʻzi foydalanadigan sahifalarni koʻradi; siz foydalana olmaydigan sahifa umuman koʻrsatilmaydi. Yordam oxirgi band.\n- **Filial tanlagich:** bir nechta filialda ishlasangiz, yuqoridagi tanlagich bitta filialni yoki «Barcha filiallarim»ni tanlaydi.\n- **Qidiruv:** buyurtma raqami, mahsulot yoki yetkazib beruvchini topish uchun Ctrl+K ni bosing (Mac kompyuterida Cmd+K).\n- **Qoʻngʻiroqcha:** oʻqilmaganlar soni bilan bildirishnomalaringiz. Bildirishnomalar sahifasida ularning hammasi roʻyxat qilinadi. [Bildirishnomalar](notifications) boʻlimiga qarang.\n\n| Rol | Menyu, tartib bilan |\n| --- | --- |\n| Menejer | Bosh sahifa, Buyurtmalar, Ombor, Tahlil, Hisobotlar, Yordam |\n| Xaridlar rahbari | Bosh sahifa, Buyurtmalar, Ombor, Pul, Tahlil, Hisobotlar, Boshqaruv, Yordam |\n| Direktor | Bosh sahifa, Buyurtmalar, Qoldiqlar, Tahlil, Hisobotlar, Yordam |\n| Moliya | Bosh sahifa, Buyurtmalar, Pul, Qoldiqlar, Tahlil, Hisobotlar, Yordam |"
+        },
+        "lost-session": {
+          "title": "Forma toʻldirayotganimda seansim tugadi. Ishim yoʻqoldimi?",
+          "body": "Yoʻq. Qoralama buyurtma har bir oʻzgarishdan keyin oʻzi saqlanadi. Qayta kirgandan keyin oʻsha sahifaga qaytasiz. Saqlash paytida internet uzilsa, forma yozganlaringizni saqlab qoladi va qayta urinadi, ikki marta saqlash esa hech qachon nusxa yaratmaydi."
+        }
+      }
+    },
+    "roles": {
+      "title": "Rollar, huquqlar va filiallar",
+      "lead": "Har bir rol nima qila oladi va xaridlar rahbarining har bir menejer uchun oʻnta kaliti.",
+      "topics": {
+        "branch-wall": {
+          "title": "Boshqa filialning maʼlumotlarini koʻra olamanmi?",
+          "body": "Faqat u sizning filiallaringizdan biri boʻlsa. Har bir sahifa va har bir amal serverda rolingiz va filiallaringizni tekshiradi; tugmani yashirish hech qachon yagona himoya emas. Boshqa filial buyurtmasining manzilini ochsangiz, «Topilmadi» chiqadi. Xaridlar rahbari barcha filiallarni koʻradi.\n\nVazifalar shaxsga emas, filialdagi rolga tegishli: bitta moliya xodimi yoʻq boʻlsa, oʻsha filialning boshqa moliya xodimi xuddi shu vazifani koʻradi va birinchi amal qilgan yutadi."
+        },
+        "who-may": {
+          "title": "Kim nima qila oladi",
+          "body": "| Amal | Xaridlar rahbari | Menejer | Direktor | Moliya |\n| --- | --- | --- | --- | --- |\n| Kataloglar, foydalanuvchilar, filiallar, sozlamalarni boshqarish | Ha | Yoʻq | Yoʻq | Yoʻq |\n| Buyurtmaning mahsulot qidiruvidan mahsulot yoki tur qoʻshish | Ha | Ha* | Yoʻq | Yoʻq |\n| Buyurtmalarni qoʻshish, tahrirlash, yuborish, bekor qilish | Istalgan filial | Oʻz filiallari* | Yoʻq | Yoʻq |\n| 1-bosqichda tasdiqlash, tuzatishga qaytarish, rad etish | Ha | Yoʻq | Yoʻq | Yoʻq |\n| 2-bosqichda tasdiqlash, tuzatishga qaytarish, rad etish | Yoʻq | Yoʻq | Oʻz filiali | Yoʻq |\n| 3-bosqichda tasdiqlash, tuzatishga qaytarish, rad etish | Yoʻq | Yoʻq | Yoʻq | Oʻz filiallari |\n| Berilgan, qaytarilgan, qoplab berilgan naqd pulni yozish | Yoʻq | Yoʻq | Yoʻq | Oʻz filiallari |\n| Xaridlarni yozish | Ha | Oʻz buyurtmalari* | Yoʻq | Yoʻq |\n| Aynan mos buyurtmani yopish | Ha | Oʻz buyurtmalari* | Yoʻq | Yoʻq |\n| Moliyani chetlab oʻtgan, tugagan buyurtmani yopish | Ha | Oʻz buyurtmalari* | Yoʻq | Yoʻq |\n| Farqlari bor buyurtma boʻyicha hisob-kitob qilish va uni yopish | Yoʻq | Yoʻq | Yoʻq | Oʻz filiallari |\n| Katta ortiqcha xarajatni tasdiqlash | Ha | Yoʻq | Yoʻq | Yoʻq |\n| Yopilgan buyurtmani qayta ochish | Ha | Yoʻq | Yoʻq | Yoʻq |\n| Buyurtmalarni boshqa menejerga oʻtkazish | Ha | Yoʻq | Yoʻq | Yoʻq |\n| Qoldiqni berish, qaytarish, koʻchirish | Ha | Oʻz filiallari* | Yoʻq | Yoʻq |\n| Hisobdan chiqarish yoki qoldiq tuzatishini soʻrash | Ha | Oʻz filiallari* | Yoʻq | Yoʻq |\n| Hisobdan chiqarish yoki qoldiq tuzatishini tasdiqlash | Ha | Yoʻq | Yoʻq | Yoʻq |\n| Qoldiqni buyurtmasiz toʻgʻridan-toʻgʻri kiritish | Ha | Yoʻq | Yoʻq | Yoʻq |\n| Yangi maʼlumotnoma narxini qoʻshish | Ha | Yoʻq | Yoʻq | Yoʻq |\n| Buyurtmalar, qoldiq va hisobotlarni koʻrish | Barcha filiallar | Oʻz filiallari | Oʻz filiali | Oʻz filiallari |\n| Har bir menejerning naqd puli va xaridlar rahbarining narx izohlarini koʻrish | Barcha filiallar | Faqat oʻz naqd puli | Yoʻq | Oʻz filiallari |\n| Excel va PDF yuklab olish | Ha | Ha | Ha | Ha |\n\n* Faqat menejerning tegishli huquqi yoqilgan paytda. [Menejerning oʻnta huquqi](manager-rights) boʻlimiga qarang."
+        },
+        "manager-rights": {
+          "title": "Menejerning oʻnta huquqi",
+          "body": "Har bir menejerning foydalanuvchi sahifasida xaridlar rahbari oʻnta kalitni koʻradi, standart holatda ularning hammasi yoqilgan. Kalitni oʻchirish oʻsha menejer uchun tegishli tugmalarni darhol olib tashlaydi, server ham bu amalni rad etadi. Kalit menejerning barcha filiallarida amal qiladi. Kalitlar faqat huquqni olib qoʻyadi; hech biri menejerga xaridlar rahbari, direktor yoki moliya amalini bermaydi. Har bir oʻzgarish audit jurnaliga yoziladi va menejerga xabar beriladi.\n\n| Huquq | Oʻchirilganda |\n| --- | --- |\n| Buyurtmalar yaratish va yuborish | Menejer buyurtmalarni faqat koʻra oladi. |\n| Xaridlarni yozish | Ularni xaridlar rahbari yozadi yoki buyurtmalarni boshqa menejerga oʻtkazadi. |\n| Xarid yozuvlarini bekor qilish | Yozuvni faqat xaridlar rahbari bekor qila oladi. |\n| Farqsiz buyurtmalarni oʻzi yopish | Bu menejerning har bir buyurtmasi, hatto barcha belgilar yashil boʻlsa ham, yopish uchun moliyaga oʻtadi. Moliyani chetlab oʻtgan buyurtmani xaridlar rahbari yopadi. |\n| Boʻlimlarga tovar berish | Menejer qoldiqni koʻra oladi, lekin mollarni bera olmaydi. |\n| Qaytarishlarni qabul qilish va hujjatlarni bekor qilish | Buni faqat xaridlar rahbari qila oladi. |\n| Boshqa filiallarga koʻchirish yuborish | Koʻchirishni faqat xaridlar rahbari yubora oladi. |\n| Hisobdan chiqarishni soʻrash va inventarizatsiya oʻtkazish | Ularni faqat xaridlar rahbari boshlay oladi. |\n| Minimal qoldiqlarni belgilash | Ularni faqat xaridlar rahbari belgilaydi. |\n| Mahsulot va turlarni qoʻshish | Menejer faqat katalogdan tanlaydi; yetishmaganini xaridlar rahbari qoʻshadi. Faqat «Buyurtmalar yaratish va yuborish» ham yoqilgan paytda ishlaydi. |\n\nHuquq oʻchirilganda allaqachon saqlangan ish oʻz holicha qoladi. Vazifani xaridlar rahbari tugatadi yoki buyurtmalarni boshqa menejerga oʻtkazadi."
+        },
+        "order-owner": {
+          "title": "Buyurtma kimga tegishli va u boshqa qoʻlga oʻtishi mumkinmi?",
+          "body": "Buyurtmani yaratgan menejer uning egasi: u sotib oladi, yozadi va yopadi. Xaridlar rahbari yaratgan buyurtma xaridlar rahbariga tegishli.\n\nXaridlar rahbari buyurtmalarni belgilab, **Boshqa menejerga oʻtkazish** tugmasini bosishi va ularni oʻsha filialning boshqa menejeriga berishi mumkin, lekin faqat naqd pul qoldigʻi 0 boʻlgan buyurtmalarni, shunda hech kim oʻzi hech qachon ushlamagan pulni oʻz zimmasiga olmaydi. Ikkala menejerga xabar beriladi, buyurtmaning Tarixida esa uni kim oʻtkazgani koʻrsatiladi."
+        },
+        "missing-roles": {
+          "title": "Filialda direktor, moliya xodimi yoki menejer boʻlmasa-chi?",
+          "body": "Filialda biror rol uchun faol foydalanuvchi boʻlmasa, xaridlar rahbari ogohlantiriladi (direktor yoki moliya uchun oʻsha bosqich oʻchirilgan paytda ogohlantirilmaydi). Filialda aynan bitta direktor boʻladi; xaridlar rahbari uni istalgan vaqtda almashtirishi mumkin, masalan taʼtil paytida vazifasini bajaruvchi direktor bilan. Kutayotgan buyurtmalar yangi direktorga oʻtadi, oʻtgan tasdiqlarda esa eski ism qoladi.\n\nXaridlar rahbari direktor yoki moliya oʻrniga tasdiqlay olmaydi. Tasdiqlovchi yoʻq boʻlsa, xaridlar rahbari ikkinchi moliya xodimini qoʻshadi, filialni vazifasini bajaruvchi direktorga topshiradi yoki oʻsha bosqichni oʻchiradi. Kamida bitta faol xaridlar rahbari doim boʻlishi kerak; oxirgisini faolsizlantirib boʻlmaydi."
+        }
+      }
+    },
+    "catalogs": {
+      "title": "Kataloglar va narxlar",
+      "lead": "Hamma tanlaydigan roʻyxatlar. Ularni faqat xaridlar rahbari Boshqaruv boʻlimida yaratadi va tahrirlaydi.",
+      "topics": {
+        "catalog-lists": {
+          "title": "Kataloglar",
+          "body": "Boshqaruv boʻlimi Kataloglar, Narxlar, Foydalanuvchilar, Filiallar va Sozlamalarni ochadi. Kataloglarda quyidagilar bor:\n\n| Katalog | Maydonlar | Izohlar |\n| --- | --- | --- |\n| Oʻlchov birliklari | Nomi, qisqa nomi, kasr son boʻlishi mumkinligi | «kg» kasr sonni qabul qiladi, «dona» qabul qilmaydi. |\n| Toifalar | Nomi | Kanselyariya, tozalash vositalari, oziq-ovqat, mebel, IT. Qidiruv va hisobotlar uchun ishlatiladi. |\n| Mahsulotlar va xizmatlar | Nomi, mahsulot yoki xizmat, toifa, oʻlchov birligi, rasm, asosiy brend yoki kompaniya, maʼlumotnoma narxi, tavsif | Mahsulot yoki xizmat belgisi va oʻlchov birligi birinchi ishlatilgandan keyin qulflanadi. |\n| Turlari | Mahsulot, nomi, oʻz rasmi, oʻz maʼlumotnoma narxi | Bitta mahsulotning variantlari, masalan qogʻoz uchun «A4, 80 g». |\n| Qoʻshimcha xarajat turlari | Nomi | Yetkazib berish, yuklash, oʻrnatish. |\n| Kompaniyalar va brendlar | Nomi, turi (brend, yetkazib beruvchi yoki ikkalasi), STIR, telefon, izoh | Bitta roʻyxat buyurtmadagi brend uchun ham, xariddagi yetkazib beruvchi uchun ham xizmat qiladi. |\n| Boʻlimlar | Filial, nomi, masʼul shaxs (ismi va telefoni) | Masʼul shaxs oddiy matn, ilova foydalanuvchisi emas. |\n\nHar bir katalogda qidiruvli roʻyxat, har bir yozuv uchun oʻzgarishlar tarixi bilan sahifa va yangi yozuv qoʻshish formasi bor. Qolganlar yozuvlarni shu roʻyxatlardan tanlaydi; ularni faqat xaridlar rahbari qoʻshadi yoki tahrirlaydi (menejer buyurtma berayotganda mahsulot yoki tur qoʻshishi mumkin, [Menejer yetishmayotgan mahsulotni qoʻsha oladimi?](manager-adds) boʻlimiga qarang)."
+        },
+        "product-or-service": {
+          "title": "Mahsulot yoki xizmat: farqi nimada?",
+          "body": "Har bir katalog bandi mahsulot yoki xizmat boʻladi; standart holatda mahsulot. Mahsulotlar sotib olinganda omborga kirim boʻladi. Xizmatlar (taʼmirlash, yetkazib berish, chop etish) hech qachon kirim boʻlmaydi: menejer xizmatni yozganda u «Olindi» oʻrniga «Foydalanildi» deb hisoblanadi, qoldiq ustunlarida esa chiziqcha koʻrsatiladi."
+        },
+        "subtypes": {
+          "title": "Turlar va birinchisini qoʻshish",
+          "body": "Tur mahsulotning variantidir: rang, oʻlcham, varaqlar soni. Har birining oʻz nomi bor, oʻz rasmi va maʼlumotnoma narxi ham boʻlishi mumkin.\n\nIlova ichida har bir mahsulotda kamida bitta tur bor. Koʻrinadigan turlari yoʻq mahsulotda bitta yashirin tur boʻladi, shuning uchun buyurtmalar va qoldiq doim turga bogʻlanadi. Kimdir bunday mahsulotga birinchi haqiqiy turni qoʻshganda, u mavjud mollarga ham nom beradi, masalan yangi «96 varaq» yonida «48 varaq». Mavjud mollar oʻz buyurtmalari, qoldigʻi va narxini shu nom ostida saqlaydi, yangi tur esa boʻsh boshlanadi."
+        },
+        "brand-supplier": {
+          "title": "Brend va yetkazib beruvchi: farqi nimada?",
+          "body": "Ikkalasi ham bitta roʻyxatdan, Kompaniyalar va brendlardan olinadi.\n\n- **Brend** buyurtmada boʻladi: siz istagan molni kim ishlab chiqaradi, masalan Svetocopy.\n- **Yetkazib beruvchi** xarid yozuvida boʻladi: mol aslida sotib olingan doʻkon yoki kompaniya. Standart holatda u buyurtmadagi brend boʻladi.\n\nHar bir kompaniya brend, yetkazib beruvchi yoki ikkalasi deb belgilanadi. Kompaniyalarni faqat xaridlar rahbari qoʻshadi; menejer roʻyxatdan tanlaydi yoki maydonni boʻsh qoldirib, nomini izohga yozadi."
+        },
+        "reference-price": {
+          "title": "Maʼlumotnoma narxi nima?",
+          "body": "Xaridlar rahbari bitta tur uchun butun maktab boʻyicha (filial boʻyicha emas) belgilaydigan odatiy narx. U quyidagilar uchun ishlatiladi:\n\n- yangi buyurtma narxini toʻldirish (u boʻlmasa, oxirgi xarid narxi olinadi; ikkalasi ham boʻlmasa, narx boʻsh qoladi);\n- buyurtma narxi undan **Narx ogohlantirishi, %** sozlamasidan (standart 20%) koʻproq farq qilganda «katalog narxidan +35%» kabi narx ogohlantirishini koʻrsatish;\n- toʻgʻridan-toʻgʻri kiritish yoki qoldiq importida tannarx boʻsh qoldirilsa, uni toʻldirish.\n\nNarx oʻzgarganda xaridlar rahbari Boshqaruv, Narxlar boʻlimida yangi narxni qisqa izoh bilan qoʻshadi; eski narxlar narxlar tarixida qoladi, har bir haqiqiy xarid narxi ham saqlanadi. Soʻnggi xaridlar maʼlumotnoma narxidan 20% dan koʻproq farq qilsa, xaridlar rahbari uni bir bosishda yangilash uchun narx eslatmasini oladi. Koʻp narxlarni Exceldan birdaniga yuklash mumkin."
+        },
+        "manager-adds": {
+          "title": "Menejer yetishmayotgan mahsulotni qoʻsha oladimi?",
+          "body": "Ha, «Buyurtmalar yaratish va yuborish» va «Mahsulot va turlarni qoʻshish» huquqlarining ikkalasi yoqilgan paytda. Buyurtmaning mahsulot qidiruvida hech narsa mos kelmasa, oxirgi qatorda uni buyurtmadan chiqmasdan qoʻshish taklif qilinadi:\n\n- **Yangi mahsulot:** nomi, mahsulot yoki xizmat, toifa, oʻlchov birligi va ixtiyoriy rasm. Maʼlumotnoma narxi, brend va tavsif yoʻq; ularni keyinroq xaridlar rahbari qoʻshadi.\n- **Yangi tur:** nomi va ixtiyoriy rasm, agar bu mahsulotning birinchi turi boʻlsa, mavjud mollarning nomi ham.\n\nAgar bunday nom allaqachon boʻlsa (bosh harflar va ortiqcha boʻshliqlar hisobga olinmaydi), uning oʻrniga mavjud yozuv taklif qilinadi; faol boʻlmagan yozuv nomi bilan koʻrsatiladi va uni faqat xaridlar rahbari qayta yoqa oladi. Yangi yozuvga darhol buyurtma berish mumkin; uni hech kim tasdiqlamaydi. Xaridlar rahbari uni tekshirildi deb belgilamaguncha, u xaridlar rahbarining bosh sahifasida «Menejerlar qoʻshgan mahsulotlar» ostida turadi. Menejer katalog yozuvlarini tahrirlay yoki faolsizlantira olmaydi, oʻlchov birliklari, toifalar, kompaniyalar yoki qoʻshimcha xarajat turlarini qoʻsha olmaydi."
+        },
+        "old-suggestions": {
+          "title": "Tovar takliflari",
+          "body": "2026-yil 25-oktabrgacha menejer mahsulotni qoʻshish oʻrniga uni taklif qilishi mumkin edi. Oʻshanda yuborilgan takliflar xaridlar rahbari har birini hal qilmaguncha uning «Tovar takliflari» sahifasida qoladi: uni katalogga qoʻshadi yoki sababini koʻrsatib rad etadi. Har ikki holatda menejerga xabar beriladi. Yangi takliflar yuborilmaydi; menejerlar mahsulotlarni oʻzlari qoʻshadi ([Menejer yetishmayotgan mahsulotni qoʻsha oladimi?](manager-adds) boʻlimiga qarang)."
+        },
+        "deactivate": {
+          "title": "Mahsulot, boʻlim yoki foydalanuvchini oʻchirib tashlay olamanmi?",
+          "body": "Yoʻq. Ishlatilgan har qanday narsa oʻchirilmaydi, balki **faolsizlantiriladi**. U tanlash roʻyxatlaridan chiqadi, eski yozuvlarda esa koʻrinib turadi. Faol boʻlmagan mahsulotga endi buyurtma berib ham, uni sotib olib ham boʻlmaydi, lekin filialda undan qolgan qoldiqni berish, hisobdan chiqarish, koʻchirish va qaytarish mumkin; qoldiq roʻyxatlarida u «faol emas» deb belgilanadi.\n\nNomlar oʻz roʻyxati ichida takrorlanmaydi, bunda bosh harflar va ortiqcha boʻshliqlar hisobga olinmaydi. Har bir katalog yozuvi kim nimani qachon oʻzgartirganini koʻrsatadi."
+        },
+        "photos": {
+          "title": "Rasmlar va fayllar",
+          "body": "Mahsulotlar va turlarning rasmi boʻlishi mumkin: JPG, PNG, WebP yoki HEIC, 10 MB gacha. Telefonda olingan katta rasmlar yuklashdan oldin kichraytiriladi. Ilova roʻyxatlar uchun kichik va koʻrish uchun katta nusxani saqlaydi. Xarid yozuvlaridagi cheklarning har biriga 5 tagacha rasm yoki PDF fayl qoʻshiladi, chek rasmi esa undagi mayda yozuvlarni oʻqish uchun yetarli aniqlikda saqlanadi. Fayllar faqat ular tegishli boʻlgan yozuvni koʻrishi mumkin boʻlgan odamlarga koʻrsatiladi."
+        },
+        "excel-import": {
+          "title": "Exceldan import qilish",
+          "body": "Boʻlimlar, turlari bilan mahsulotlar, narxlar va mavjud qoldiqni import qilish mumkin.\n\n1. Import sahifasida **Shablonni yuklab olish** tugmasini bosing va shablonni Excelda toʻldiring. Sarlavha qatorini oʻzgartirmang.\n2. Faylni tanlang (.xlsx, 500 qatorgacha; uzunroq roʻyxatni boʻling).\n3. Oldindan koʻrishda har bir xato qator va uning sababi koʻrsatiladi, masalan «14-qator, Toifa: topilmadi».\n4. Xato qator qolmaganda **Barcha qatorlarni saqlash** tugmasini bosing. Yo barcha qatorlar saqlanadi, yo birortasi ham saqlanmaydi.\n\nImport faqat qoʻshadi; u mavjud yozuvlarni hech qachon oʻzgartirmaydi yoki oʻchirmaydi.\n\n| Import | Qayerda | Har bir qatorda |\n| --- | --- | --- |\n| Boʻlimlar | Boshqaruv, Kataloglar, Boʻlimlar | Filial kodi, nomi, masʼul shaxs |\n| Mahsulotlar va turlar | Boshqaruv, Kataloglar, Mahsulotlar va xizmatlar | Nomi, mahsulot yoki xizmat, toifa, oʻlchov birligi, kompaniya, tavsif, tur, narx |\n| Narxlar | Boshqaruv, Narxlar | Mahsulot, tur, narx, izoh |\n| Mavjud qoldiq | Ombor, Ombordagi qoldiq, Excelʼdan import | Mahsulot, tur, miqdor, tannarx (har bir faylda bitta filial) |"
+        },
+        "minimum-stock": {
+          "title": "Minimal qoldiq",
+          "body": "Xaridlar rahbari yoki oʻz filiallari uchun menejer har bir filialda har bir turga minimumni mahsulot kartochkasida yoki Ombordagi qoldiq sahifasida belgilashi mumkin. Qoldiq minimumgacha yoki undan pastga tushganda mol «Kam» deb belgilanadi va filial menejerlariga u qayta toʻldirilguncha bir marta xabar beriladi. [Kam qolgan](low-stock) boʻlimiga qarang."
+        }
+      }
+    },
+    "orders": {
+      "title": "Buyurtmalar",
+      "lead": "Bitta buyurtma bitta boʻlim uchun bitta mahsulot yoki xizmat. Menejerlar ularni buyurtma varagʻida yozadi va har bir tayyorini bir bosishda yuboradi.",
+      "topics": {
+        "order-fields": {
+          "title": "Buyurtmada nimalar bor",
+          "body": "| Maydon | Qanday toʻldiriladi |\n| --- | --- |\n| Filial | Tanlanadi; bitta filialli menejer uchun oʻzi toʻldiriladi. Yuborilgandan keyin qulflanadi. |\n| Mahsulot yoki xizmat, kichik tur | Nomi boʻyicha qidiriladi; rasm, toifa va qoldiq koʻrsatiladi. |\n| Omborda | Avtomatik: bu filialning hozirgi qoldigʻi. Yuborishda uning nusxasi saqlanadi. |\n| Rasm | Katalogdan. Menejer bitta namuna rasmini qoʻshishi mumkin. |\n| Brend yoki kompaniya | Tanlanadi; mahsulotning asosiy brendi bilan toʻldiriladi. |\n| Soʻragan | Filial boʻlimi (uning masʼul shaxsi koʻrsatiladi) va ixtiyoriy ravishda shaxsning ismi. |\n| Qachongacha kerak | Sana, yuborishda oʻtgan sana boʻlmasligi kerak. |\n| Miqdor va oʻlchov | 0 dan koʻp; faqat oʻlchov birligi ruxsat bersa, 3 xonagacha kasr. |\n| Birlik narxi | Maʼlumotnoma narxi, u boʻlmasa oxirgi xarid narxi bilan toʻldiriladi. Butun soʻm, 0 dan koʻp. |\n| Qoʻshimcha xarajatlar | Turi va summasidan iborat qatorlar, masalan yetkazib berish yoki yuklash. |\n| Toʻlov turi | Naqd pul, Bank oʻtkazmasi yoki Korporativ karta. Standarti Sozlamalardan olinadi. |\n| Muhimlik | Oddiy yoki Shoshilinch. Shoshilinch uchun qisqa sabab kerak va u tasdiqlovchilar uchun yuqorida qadab qoʻyiladi. |\n| Izoh | 1000 belgigacha. |\n| Buyurtma jami | Miqdor koʻpaytirilgan narx, butun soʻmgacha yarmidan yuqoriga yaxlitlangan, ustiga qoʻshimcha xarajatlar. |\n| Raqam, egasi, sanalar | Avtomatik. |"
+        },
+        "field-settings": {
+          "title": "Qaysi maydonlar soʻraladi? (Buyurtma maydonlari)",
+          "body": "Buni butun maktab uchun xaridlar rahbari Boshqaruv, Sozlamalar, **Buyurtma maydonlari** boʻlimida hal qiladi. Filial, mahsulot, tur va miqdor doim soʻraladi, qatorda.\n\n| Maydon | Qanday boʻlishi mumkin | Standart |\n| --- | --- | --- |\n| Boʻlim | Majburiy, ixtiyoriy yoki yashirin | Majburiy, qatorda |\n| Qachongacha kerak | Majburiy, ixtiyoriy yoki yashirin | Majburiy, qatorda |\n| Birlik narxi | Majburiy, ixtiyoriy yoki yashirin (ixtiyoriy yoki yashirin faqat Moliya bosqichi oʻchirilgan paytda) | Majburiy, qatorda |\n| Toʻlov turi | Koʻrsatiladi yoki yashirin | Koʻrsatiladi, «Yana» ostida |\n| Muhimlik | Koʻrsatiladi yoki yashirin | Koʻrsatiladi, «Yana» ostida |\n| Brend yoki kompaniya | Majburiy, ixtiyoriy yoki yashirin | Ixtiyoriy, «Yana» ostida |\n| Shaxs (kim soʻragan) | Majburiy, ixtiyoriy yoki yashirin | Ixtiyoriy, «Yana» ostida |\n| Izoh | Majburiy, ixtiyoriy yoki yashirin | Ixtiyoriy, «Yana» ostida |\n| Namuna rasmi | Majburiy, ixtiyoriy yoki yashirin | Ixtiyoriy, «Yana» ostida |\n| Qoʻshimcha xarajatlar | Ixtiyoriy yoki yashirin | Ixtiyoriy, «Yana» ostida |\n\n- Koʻrsatiladigan har bir maydon qatorda yoki «Yana» ostida turadi; buni xaridlar rahbari tanlaydi.\n- Yashirin toʻlov turi Sozlamalardagi **Standart toʻlov turi** boʻladi; yashirin muhimlik Oddiy boʻladi; yashirin narx, agar bor boʻlsa, taklif qilingan narx boʻladi.\n- Boʻlimsiz buyurtma tahlil va hisobotlarda «Boʻlimsiz» deb koʻrsatiladi va unda «Toʻgʻridan-toʻgʻri boʻlimga berish»dan foydalanib boʻlmaydi.\n- Kerakli sanasi yoʻq buyurtma «muddati yaqin» eslatmasini olmaydi.\n- Narxsiz buyurtmada rejadagi jami boʻlmaydi va unda «Rejalashtirilgan narx yoʻq» deb yoziladi.\n- Oʻzgarish keyingi yuborishdan kuchga kiradi; allaqachon yuborilgan buyurtmalar oʻzidagi maʼlumotni saqlaydi."
+        },
+        "order-sheet": {
+          "title": "Buyurtma varagʻi va qoralamalar",
+          "body": "Menejer va xaridlar rahbarining Buyurtmalar sahifasi yuqorisida **buyurtma varagʻi** bor: ularning qoralamalari (Qoralama holati) va ularga qaytarilgan yoki ular qaytarib olgan buyurtmalar, elektron jadval kabi tahrirlanadi. Tab va Enter kataklar orasida oʻtkazadi, oxirgi qatorda Enter yangi qoralama qoʻshadi. Telefonda har bir qoralama xuddi shu maydonlar va «Yana» bilan kartochka boʻladi.\n\n- Qoralama har bir oʻzgarishdan keyin oʻzi saqlanadi va «Saqlandi» deb koʻrsatadi. Uni faqat egasi va xaridlar rahbari koʻradi.\n- Yangi qoralama yuqoridagi qoralamaning filiali, boʻlimi va kerakli sanasini oladi.\n- Xuddi shu boʻlim uchun xuddi shu molni yana qoʻshsangiz va unga yuborilmagan qoralamangiz boʻlsa, ikkinchisi yaratilmaydi, oʻsha qoralamaning miqdori oshadi: «Qoralamangizga qoʻshildi: endi 20». Yuborilgandan keyin yangi buyurtma yaratiladi va roʻyxatlar ikkalasini bitta guruh qatorida koʻrsatadi.\n- Egasi hech qachon yuborilmagan qoralamani oʻchirishi mumkin. Boshqa hech narsa hech qachon oʻchirilmaydi."
+        },
+        "submit": {
+          "title": "Buyurtmalarni qanday yuboraman?",
+          "body": "**Yuborish** tugmasini bosing.\n\n- Hech narsa belgilanmagan boʻlsa, oʻzingizning raqami yoʻq har bir tayyor qoralamangiz yuboriladi: bir martada 200 tagacha, eng eskisidan boshlab; qolganlari uchun yana bosing. Tayyor boʻlmagan qoralama varaqda qoladi, xato aynan qaysi katakda ekani belgilanadi, yuqorida esa qisqa roʻyxat chiqadi.\n- Qatorlar belgilangan boʻlsa, faqat ular yuboriladi va ulardan biri tekshiruvdan oʻtmasa, hech narsa yuborilmaydi.\n- Qaytarilgan va qaytarib olingan buyurtmalar, shuningdek (xaridlar rahbari uchun) boshqalarning qoralamalari faqat belgilanganda yuboriladi.\n\nYuborishdagi tekshiruvlar: har bir majburiy maydon toʻldirilgan, faolsizlantirilgan katalog yozuvi ishlatilmagan va kerakli sana oʻtib ketmagan. Ekraningiz yuklangandan keyin kimdir oʻzgartirgan qoralama yuborishni toʻxtatadi va ekran yangilanadi.\n\nYuborilgan buyurtmalar xaridlar rahbariga boradi va unga xabar beriladi; xaridlar rahbari yaratgan buyurtma yoqilgan keyingi bosqichga oʻtadi."
+        },
+        "order-numbers": {
+          "title": "Buyurtma raqamlari",
+          "body": "Buyurtma raqamini birinchi yuborishda oladi: filial kodi, yilning ikki raqami, toʻrt xonali hisoblagich, masalan `CHL-26-0142`.\n\n- Hisoblagich har bir filial uchun har kalendar yilida (Toshkent vaqti bilan) alohida yuradi va yanvarda 0001 dan qayta boshlanadi. 9999 dan keyin u besh xonali boʻladi.\n- Raqam hech qachon oʻzgarmaydi va qayta ishlatilmaydi; rad etilgan va bekor qilingan buyurtmalar oʻz raqamini saqlaydi.\n- Tuzatishga qaytarilib, qayta yuborilgan buyurtma oʻz raqamini saqlaydi va «2-tahrir», «3-tahrir» deb koʻrsatiladi.\n- Qoralamalarda raqam yoʻq, shuning uchun oʻchirilgan qoralamalar raqamlarda boʻshliq qoldirmaydi."
+        },
+        "group-rows": {
+          "title": "Guruh qatorlari: nega koʻp buyurtma uchun bitta qatorni koʻraman?",
+          "body": "Har bir roʻyxat filialdagi har bir mahsulot turi va holati uchun bitta qator koʻrsatadi, masalan «Tata ruchkalari, 30». Unda jami miqdor, rejadagi summa, unda nechta buyurtma borligi, eng erta kerakli sana, biror buyurtma shoshilinch boʻlsa «Shoshilinch» va biror buyurtmada narx ogohlantirishi boʻlsa, narx ogohlantirishi koʻrsatiladi. Uning buyurtmalarini koʻrish uchun qatorni oching: raqam, boʻlim, miqdor, narx, toʻlov turi, kerakli sana, egasi va yuborilgan sana.\n\nGuruh qatoridagi amal undagi har bir buyurtmaga taʼsir qiladi: yo hammasiga, yo hech biriga. Istalgan bitta buyurtmani baribir alohida belgilash mumkin. Har bir buyurtma oʻz raqami, tasdiqlari, tarixi, xaridlari va pulini saqlaydi. Menejerning oʻz koʻrinishida har bir bosqich hisoblanadi: «Tata ruchkalari: 30 ta soʻralgan»."
+        },
+        "ticking-filters": {
+          "title": "Buyurtmalar roʻyxati: belgilash, filtrlar va amallar paneli",
+          "body": "Buyurtmalarni yoki guruh qatorlarini belgilang; pastdagi panel nechtasi belgilanganini, ularning jamilarini (mollar, qoʻshimcha xarajatlar, umumiy jami va har bir toʻlov turi boʻyicha jami) va hozir ularning hammasi ustida bajara oladigan amallaringizni koʻrsatadi. «Filtrdagi hammasini belgilash» mos keladigan 200 tagacha buyurtmani belgilaydi. Bitta amal koʻpi bilan 200 ta buyurtmani qamraydi.\n\nFiltrlar: sanalar (yaratilgan, yuborilgan, tasdiqlangan, yopilgan), filial, holat, egasi, boʻlim («Boʻlimsiz» ham), toifa, toʻlov turi, Shoshilinch va buyurtma raqamlari oraligʻi. Filtrlar va saralash sahifa manzilida saqlanadi, shuning uchun nusxalangan havola xuddi shu koʻrinishni ochadi. Roʻyxatlarda har sahifada 25 qator koʻrsatiladi.\n\n«katalog narxidan +35%» kabi narx ogohlantirishi buyurtma narxi maʼlumotnoma narxidan belgilangan foizdan koʻproq farq qilganda koʻrsatiladi."
+        },
+        "order-page": {
+          "title": "Buyurtma sahifasi",
+          "body": "- **Yuqori qism:** raqam va tahrir, holat, filial, egasi, boʻlim, mahsulot va keyin kim amal qilishi va qachondan beri ekanini aytuvchi bitta qator, masalan «10.10.2026 dan beri direktorni kutmoqda (Otabek N.)».\n- **Reja va haqiqat:** biror narsa sotib olinmaguncha rejadagi jami; keyin reja yonida haqiqiy miqdor, narx va qoʻshimcha xarajatlar, uchta rangli belgi bilan ([Pul va hisob-kitob](money) boʻlimiga qarang).\n- **Yorliqlar:** Tafsilotlar, Xaridlar, Pul (moliyani chetlab oʻtgan buyurtmada yoʻq), Tarix. Tarix Qoralama, Rahbar, Direktor, Moliya, Ochiq, Yopilgan bosqichlari, ismlar va vaqtlar bilan boshlanadi; oʻtkazib yuborilgan bosqichda «Oʻtkazib yuborildi» deb yoziladi. Uning ostida buyurtmaning har bir oʻtishi va har bir xarid yoki pul yozuvi, kim va qachon qilgani bilan.\n- **Amallar paneli:** asosiy keyingi amalingiz bitta tugma sifatida, boshqa amallaringiz «Yana» ostida.\n\nTasdiqlovchilar yuborishdagi qoldiqni va hozirgi qoldiqni koʻradi, shuning uchun mol allaqachon kelganini bila oladi. Qayta yuborilgan buyurtmada oʻzgargan maydonlar ajratib koʻrsatiladi, eski va yangi qiymatlar yonma-yon turadi."
+        },
+        "copy-as-new": {
+          "title": "Yangi sifatida nusxalash",
+          "body": "Istalgan buyurtmani, hatto rad etilganini ham, yangi qoralamaga nusxalash mumkin. Bir nechta belgilangan buyurtmani birdaniga nusxalash mumkin. Nusxa yuborilganda yangi raqam oladi."
+        },
+        "downloads": {
+          "title": "Buyurtmalarni yuklab olish (Excel va PDF)",
+          "body": "Istalgan roʻyxat **Excel** yoki oddiy **PDF** sifatida yuklab olinadi.\n\n- Excel: har bir buyurtma uchun bitta qator, unda raqam, holat, filial, egasi, boʻlim, mahsulot, tur, miqdor, narx, qoʻshimcha xarajatlar, toʻlov turi, rejadagi jami, Ochiq holatidan boshlab esa haqiqiy miqdor, narx, qoʻshimcha xarajatlar, jami va farq; keyin har bir bosqichni kim va qachon tasdiqlagani.\n- PDF: xuddi shu jadval, A4 albom koʻrinishida, har bir sahifada qoʻllangan filtrlar hamda kim va qachon yuklab olgani bilan.\n\nIkkalasi ham ekrandagi raqamlarni va sizning tilingizni ishlatadi; mahsulot rasmlari kiritilmaydi. Hech qayerda buyurtma blankasi va imzo qatori yoʻq: har bir kishining hisobidagi tasdiqlar hujjat hisoblanadi. Tahlil va Hisobotlar ham xuddi shunday yuklab olinadi."
+        }
+      }
+    },
+    "approval": {
+      "title": "Tasdiqlash",
+      "lead": "Xaridlar rahbari, keyin direktor, keyin moliya. Har bir tasdiqlovchi koʻp belgilangan buyurtmalar boʻyicha bitta amalda qaror qiladi. Buyurtma yoqilgan bosqichni oʻtkazib yubora olmaydi.",
+      "topics": {
+        "statuses": {
+          "title": "Buyurtma holatlari",
+          "body": "| Holat | Maʼnosi | Keyin kim amal qiladi |\n| --- | --- | --- |\n| Qoralama | Yozilmoqda. Uni faqat egasi va xaridlar rahbari koʻradi. | Egasi |\n| Rahbarni kutmoqda | Yuborilgan. | Xaridlar rahbari |\n| Direktorni kutmoqda | Xaridlar rahbari tasdiqlagan. | Filial direktori |\n| Moliyani kutmoqda | Direktor tasdiqlagan (direktor bosqichi oʻchirilgan paytda xaridlar rahbari). | Filial moliyasi |\n| Tuzatishga qaytarildi | Tasdiqlovchi oʻzgartirish soʻragan. | Egasi |\n| Ochiq | Toʻliq tasdiqlangan. Menejer sotib oladi va xaridlarni yozadi. | Egasi |\n| Hisob-kitobni kutmoqda | Xarid tugagan va biror narsa rejadan farq qiladi. | Moliya |\n| Yopilgan | Tugagan. Faqat koʻrish uchun. | Hech kim |\n| Rad etilgan | Butunlay rad etilgan. Faqat koʻrish uchun. | Hech kim |\n| Bekor qilingan | Tasdiqlash tugashidan oldin egasi yoki xaridlar rahbari toʻxtatgan. | Hech kim |\n\nHolat belgilari hamma joyda bir xil koʻrinadi: tasdiqlash va xarid jarayoni uchun koʻk, tuzatishga qaytarilgan va rad etilgan uchun qizil, yopilgan uchun yashil, qoralama va bekor qilingan uchun kulrang."
+        },
+        "moves": {
+          "title": "Har bir mumkin boʻlgan oʻtish",
+          "body": "| Qayerdan | Tugma | Kim | Qayerga |\n| --- | --- | --- | --- |\n| Qoralama | Yuborish | Egasi yoki xaridlar rahbari | Rahbarni kutmoqda (xaridlar rahbari yaratgan buyurtma: yoqilgan keyingi bosqich) |\n| Rahbarni kutmoqda | Tasdiqlash | Xaridlar rahbari | Direktorni kutmoqda yoki yoqilgan keyingi bosqich |\n| Direktorni kutmoqda | Tasdiqlash | Direktor | Moliyani kutmoqda yoki moliya bosqichi oʻchirilgan paytda Ochiq |\n| Moliyani kutmoqda | Tasdiqlash | Moliya | Ochiq (naqd pulni shu oynaning oʻzida berish mumkin) |\n| Rahbarni kutmoqda | Tuzatishga qaytarish | Xaridlar rahbari | Tuzatishga qaytarildi |\n| Direktorni kutmoqda | Tuzatishga qaytarish | Direktor | Tuzatishga qaytarildi |\n| Moliyani kutmoqda | Tuzatishga qaytarish | Moliya | Tuzatishga qaytarildi |\n| Rahbarni kutmoqda | Rad etish | Xaridlar rahbari | Rad etilgan |\n| Direktorni kutmoqda | Rad etish | Direktor | Rad etilgan |\n| Moliyani kutmoqda | Rad etish | Moliya | Rad etilgan |\n| Rahbarni kutmoqda | Qaytarib olish | Egasi, xaridlar rahbari qaror qilishidan oldin | Qoralama, raqami saqlanadi |\n| Tuzatishga qaytarildi | Qayta yuborish | Egasi yoki xaridlar rahbari | Rahbarni kutmoqda, tahrir raqami 1 ga oshadi |\n| Rahbarni kutmoqda | Buyurtmani bekor qilish | Egasi yoki xaridlar rahbari | Bekor qilingan |\n| Direktorni kutmoqda | Buyurtmani bekor qilish | Egasi yoki xaridlar rahbari | Bekor qilingan |\n| Moliyani kutmoqda | Buyurtmani bekor qilish | Egasi yoki xaridlar rahbari | Bekor qilingan |\n| Tuzatishga qaytarildi | Buyurtmani bekor qilish | Egasi yoki xaridlar rahbari | Bekor qilingan |\n| Qoralama (qaytarib olingan, raqamli) | Buyurtmani bekor qilish | Egasi yoki xaridlar rahbari | Bekor qilingan |\n| Ochiq | Yopish (farqsiz) | Egasi yoki xaridlar rahbari | Yopilgan |\n| Ochiq (moliyani chetlab oʻtgan, xarid tugagan) | Yopish | Egasi yoki xaridlar rahbari | Yopilgan |\n| Ochiq (xarid tugagan) | Hisob-kitobga | Egasi yoki xaridlar rahbari | Hisob-kitobni kutmoqda |\n| Hisob-kitobni kutmoqda | Toʻgʻrilash uchun qaytarish | Moliya | Ochiq |\n| Hisob-kitobni kutmoqda | Yopish | Moliya | Yopilgan |\n| Yopilgan | Qayta ochish | Xaridlar rahbari | Ochiq |\n\nBoshqa hech qanday oʻtish ekranda ham, serverda ham mumkin emas. Har bir oʻtish buyurtmaning Tarixiga kim, qachon va qanday sabab bilan qilgani bilan yoziladi."
+        },
+        "approver-rules": {
+          "title": "Har bir tasdiqlovchi bilishi kerak boʻlgan qoidalar",
+          "body": "- **Buyurtma qanday boʻlsa, shunday.** Tasdiqlovchilar buyurtmalarni tahrirlamaydi; ular tasdiqlaydi, tuzatishga qaytaradi yoki rad etadi. Yagona istisno: moliya tasdiqlash paytida toʻlov turini oʻzgartirishi mumkin.\n- **Tuzatishga qaytarish yoki rad etish.** Tuzatishga qaytarish egasiga buyurtmani tahrirlab, qayta yuborish imkonini beradi; tuzatilgan buyurtma yana xaridlar rahbaridan boshlanadi va avvalgi tasdiqlar endi hisobga olinmaydi. Rad etish yakuniy; egasi uni faqat yangi sifatida nusxalashi mumkin.\n- **Sabablar.** Tuzatishga qaytarish, rad etish, bekor qilish va qayta ochish uchun kamida 5 belgidan iborat sabab kerak. Bitta sabab barcha belgilangan buyurtmalarga tegishli boʻladi; tuzatishga qaytarishda har bir buyurtmaga izoh qoʻshishingiz mumkin.\n- **Yo hammasi, yo hech biri.** Belgilangan buyurtmalar ustidagi amal avval har bir buyurtmani tekshiradi. Agar orada biror buyurtma oʻzgargan boʻlsa, hech narsa saqlanmaydi; ekran oʻzgargan buyurtmalarni koʻrsatadi va yangilanadi.\n- **Bir vaqtda ikki kishi.** Birinchi bosish yutadi. Ikkinchisi, masalan, «Dilnoza allaqachon tasdiqlagan: 14:32» deb koʻradi.\n- **Muzlatilgan reja.** Buyurtma Ochiq boʻlgach, uning rejasi hech qachon oʻzgarmaydi. Shundan keyingi hamma narsa xarid sifatida yoziladi.\n- **Kimga xabar beriladi.** Har bir tasdiq keyingi bosqich tasdiqlovchisiga xabar beradi; oxirgisi egasi va xaridlar rahbariga xabar beradi. Tuzatishga qaytarilgan, rad etilgan va bekor qilingan buyurtmalar haqida egasiga xabar beriladi. [Bildirishnomalar](notifications) boʻlimiga qarang."
+        },
+        "reminders": {
+          "title": "Buyurtma kutib qolganda eslatmalar",
+          "body": "**Eslatma, soatdan keyin** (standart 24) qiymatidan uzoq kutgan buyurtma oʻz bosqichi tasdiqlovchilariga kuniga bir marta, guruhlab eslatiladi: «9 ta buyurtma tasdiqingizni 24 soatdan ortiq kutmoqda». **Xaridlar rahbariga xabar, soatdan keyin** (standart 48) oʻtgach, xaridlar rahbariga ham xabar beriladi. Ikkalasi ham Sozlamalarda.\n\nKerakli sanasi oʻtib ketgan buyurtmada «Muddati oʻtgan» koʻrsatiladi; hech narsa bloklanmaydi."
+        },
+        "principal-step": {
+          "title": "Direktor bosqichi oʻchirilganda",
+          "body": "Xaridlar rahbari **Direktor bosqichi** sozlamasini butun maktab uchun Boshqaruv, Sozlamalar boʻlimida oʻchirishi va keyinroq qayta yoqishi mumkin. U oʻchirilgan paytda xaridlar rahbarining tasdigʻi buyurtmani yoqilgan keyingi bosqichga oʻtkazadi: Moliyani kutmoqda yoki moliya ham oʻchirilgan boʻlsa, Ochiq. Buyurtma direktorni chetlab oʻtgan deb belgilanadi va uning Tarixida «Oʻtkazib yuborildi» koʻrsatiladi.\n\n- Biror buyurtma Direktorni kutmoqda holatida boʻlsa, oʻchirish rad etiladi; xaridlar rahbari oʻsha buyurtmalar roʻyxatini koʻradi.\n- Yoqish faqat shundan keyin xaridlar rahbari tasdiqlaydigan buyurtmalarga taʼsir qiladi.\n- Har bir aylanmada qayta hal qilinadi: tuzatishga qaytarilib, xaridlar rahbari tomonidan qayta tasdiqlangan buyurtma, agar oʻsha paytgacha bosqich yoqilgan boʻlsa, direktordan oʻtadi.\n- Direktor filialning buyurtmalari, qoldiqlari va hisobotlarini koʻrishda davom etadi. Xaridlar rahbari bosqichini hech qachon oʻchirib boʻlmaydi."
+        },
+        "finance-step": {
+          "title": "Moliya bosqichi oʻchirilganda",
+          "body": "Xaridlar rahbari **Moliya bosqichi** sozlamasini butun maktab uchun Boshqaruv, Sozlamalar boʻlimida oʻchirishi mumkin, masalan moliya jamoasi ilovadan foydalanmayotgan paytda. U oʻchirilgan paytda oxirgi tasdiq (direktorniki yoki direktor bosqichi ham oʻchirilgan boʻlsa, xaridlar rahbariniki) buyurtmani ochadi va u moliyani chetlab oʻtgan deb belgilanadi.\n\n- **Naqd pul hisobi yoʻq.** Bunday buyurtmada naqd pul qoldigʻi, pul amallari va Pul yorligʻi boʻlmaydi, u Menejerlardagi pulga kirmaydi va hech qachon hisob-kitobga bormaydi. Toʻlov turlari baribir rejalashtiriladi va yoziladi.\n- **Yopish.** Xaridi tugagach, farqsiz boʻlsin-boʻlmasin, uni egasi yoki xaridlar rahbari yopadi va barcha mollar omborga kirganini tasdiqlaydi. Uchta rangli belgi baribir har qanday farqni koʻrsatadi. Agar menejerning «Farqsiz buyurtmalarni oʻzi yopish» huquqi oʻchirilgan boʻlsa, uni xaridlar rahbari yopadi.\n- **Ortiqcha xarajat.** Xaridlar rahbariga baribir xabar beriladi, lekin tasdiqlash kerak emas.\n- Biror buyurtma Moliyani kutmoqda yoki Hisob-kitobni kutmoqda holatida boʻlsa, oʻchirish rad etiladi. Yoqish faqat shundan keyin tasdiqlangan buyurtmalarga taʼsir qiladi; moliyani chetlab oʻtgan buyurtma bu qoidalarni butunlay, hatto qayta ochilgandan keyin ham saqlaydi.\n- Birlik narxi faqat shu bosqich oʻchirilgan paytda ixtiyoriy yoki yashirin boʻlishi mumkin.\n\n**Ikkala bosqich ham oʻchirilganda** yagona tasdiqlovchi xaridlar rahbari boʻladi: uning tasdigʻi buyurtmani ochadi, xaridlar rahbari yaratgan buyurtma esa yuborilishi bilanoq ochiladi."
+        }
+      }
+    },
+    "buying": {
+      "title": "Xarid va xarid yozuvlari",
+      "lead": "Buyurtma Ochiq boʻlgach, menejer har bir xarid yoki yetkazib berishni yozadi. Mollar darhol omborga kirim boʻladi.",
+      "topics": {
+        "purchase-record": {
+          "title": "Xarid yozuvida nimalar bor",
+          "body": "| Maydon | Qoida |\n| --- | --- |\n| Xarid sanasi | Standart holatda bugun. Kelajakdagi sana ham, buyurtmani ochgan tasdiqdan oldingi sana ham boʻlmaydi. |\n| Haqiqiy miqdor | 0 dan koʻp; kasr faqat oʻlchov birligi ruxsat bersa. |\n| Haqiqiy birlik narxi | 0 yoki undan koʻp, butun soʻm. 0 narx (sovgʻa) uchun izoh kerak. |\n| Qoʻshimcha xarajatlar | Turi, summasi va toʻlov turidan iborat qatorlar; menejer oʻz choʻntagidan toʻlagan yetkazib berishni ham qamraydi. |\n| Toʻlov turi | Buyurtmadan olinadi; farq qilishi mumkin, masalan karta bilan rejalashtirilgan, lekin naqd toʻlangan. |\n| Yetkazib beruvchi | Kompaniyalar va brendlardan; standart holatda buyurtmadagi brend. |\n| Sotib olingan tur | Standart holatda buyurtma qilingan tur. [Almashtirish](substitution) boʻlimiga qarang. |\n| Chek | 0 dan 5 tagacha rasm yoki PDF fayl. Telefonda kamera darhol ochiladi. |\n| Toʻgʻridan-toʻgʻri boʻlimga berish | Mollar toʻgʻridan-toʻgʻri boʻlimga borganda belgilang: berish hujjati ham yoziladi. Boʻlimsiz buyurtmada taklif qilinmaydi. |\n| Izoh | Narx yoki miqdor rejadan farq qilganda, almashtirishda, 0 narxda yoki toʻlov turi oʻzgarganda majburiy. |\n| Haqiqiy summa | Avtomatik: miqdor koʻpaytirilgan narx, yaxlitlangan, ustiga qoʻshimcha xarajatlar. |\n\n**Rejadagidek** miqdor, narx va qoʻshimcha xarajatlarni buyurtmadan bir bosishda toʻldiradi. Buyurtmada koʻp yozuv boʻlishi mumkin, masalan dushanba kuni 60 ta daftar va juma kuni 40 ta. **Naqd xaridlar uchun chek majburiy** sozlamasi naqd toʻlangan yoki qoʻshimcha xarajati naqd toʻlangan xarid safari uchun chekni majburiy qiladi."
+        },
+        "trip": {
+          "title": "Koʻp buyurtma uchun doʻkonga bir borish (xarid safari)",
+          "body": "Ochiq buyurtmalarni yoki guruh qatorini belgilang va borishni bir marta yozish uchun **Xaridni yozish** tugmasini bosing.\n\n- Sana, yetkazib beruvchi, toʻlov turi va cheklar umumiy; miqdor, narx, tur, qoʻshimcha xarajatlar va izoh har bir buyurtma uchun alohida.\n- Bitta xarid safari bitta filial va bitta egani qamraydi, chunki u sarflagan naqd pul egasining buyurtmalarida hisoblanadi.\n- Guruh qatorida siz bitta miqdor va bitta narx yozasiz, ilova esa miqdorni buyurtmalarga eng eskisidan boshlab, har biriga yetishmaganicha boʻladi; saqlashdan oldin taqsimotni oʻzgartirishingiz mumkin.\n- Xarid safari yo toʻliq saqlanadi, yo umuman saqlanmaydi.\n\nButun borish uchun yetkazib berish alohida buyurtma boʻladi, «Yetkazib berish» kabi xizmat, va boshqa har qanday buyurtma kabi tasdiqlanadi. Faqat doʻkonda maʼlum boʻlgan haq xarid safaridagi bitta buyurtmaning qoʻshimcha xarajati boʻladi va shunda bu buyurtma rejadan oshganini koʻrsatadi."
+        },
+        "saving-purchase": {
+          "title": "Xaridni saqlaganimda nima boʻladi",
+          "body": "1. Yozuv saqlanadi.\n2. Mollar uchun filial qoldigʻi oshadi, «Qabul» harakati sifatida yoziladi.\n3. Molning oxirgi xarid narxi yangilanadi.\n4. Buyurtmaning olingan miqdori va jarayoni yangilanadi.\n5. «Toʻgʻridan-toʻgʻri boʻlimga berish» belgilangan boʻlsa, berish hujjati yoziladi va qoldiq yana kamayadi.\n6. Hodisa buyurtmaning Tarixiga qoʻshiladi.\n\nBularning hammasi birga sodir boʻladi yoki umuman sodir boʻlmaydi. Mahsulot buyurtmasida «Olindi» koʻrsatiladigan joyda xizmat buyurtmasida «Foydalanildi» koʻrsatiladi."
+        },
+        "progress": {
+          "title": "Buyurtma jarayoni: Buyurtmani yakunlash, Sotib olinmadi, Xaridni qayta ochish",
+          "body": "| Jarayon | Qachon |\n| --- | --- |\n| Xarid ochiq | Rejadagidan kam olingan va qoʻlda yakunlanmagan. |\n| Bajarildi | Rejadagi miqdor yoki undan koʻp olingan. Avtomatik. |\n| Bajarildi, toʻliq emas | Menejer rejadagidan kam olinganda sababini koʻrsatib **Buyurtmani yakunlash** tugmasini bosgan. |\n| Sotib olinmadi | Menejer hech narsa olinmaganda sababini koʻrsatib **Sotib olinmadi** tugmasini bosgan. |\n\nIkkala tugma ham bitta sabab bilan koʻp belgilangan buyurtmalarda ishlaydi. Buyurtma Ochiq paytida yana mol kelsa, **Xaridni qayta ochish** ularni bekor qiladi. Rejadagidan koʻp sotib olishga ruxsat bor, buning uchun izoh kerak va u qizil bilan koʻrsatiladi.\n\nBuyurtmaning kerakli sanasiga 2 kun qolganda va xaridi tugamagan boʻlsa, egasiga eslatiladi."
+        },
+        "substitution": {
+          "title": "Doʻkonda boshqa rang yoki oʻlcham bor edi",
+          "body": "Aslida sotib olingan turni tanlang; u xuddi shu mahsulotga tegishli boʻlishi kerak. Qoldiq oʻsha tur boʻyicha oshadi, buyurtmada «Almashtirilgan» koʻrsatiladi va menejer uni oʻzi yopish oʻrniga moliya koʻrib chiqadi (moliyani chetlab oʻtgan buyurtmani odatdagidek egasi yoki xaridlar rahbari yopadi).\n\nButunlay boshqa mahsulot uchun buyurtmani «Sotib olinmadi» deb belgilang va yangi buyurtma qoʻshing."
+        },
+        "purchase-mistakes": {
+          "title": "Xarid yozuvida xato qildim",
+          "body": "Buyurtma Ochiq paytida yozuvni sababini koʻrsatib bekor qiling va qayta kiriting; qoldiq xuddi shu miqdorga kamayadi. **Safarni bekor qilish** bitta borishning barcha yozuvlarini birdaniga bekor qiladi: yo hammasini, yo hech birini. Bekor qilingan yozuvlar ustidan chizilgan holda koʻrinib turadi; buyurtmada nechtasi bekor qilingani koʻrsatiladi va har bir bekor qilish haqida xaridlar rahbariga xabar beriladi.\n\n- Bekor qilish qoldiqni noldan pastga tushirsa, bloklanadi; bu mollar allaqachon berilgan boʻlsa sodir boʻladi: avval ularni boʻlimdan qaytarib oling yoki hisobdan chiqarishdan foydalaning.\n- Agar buyurtma oʻshandan beri boshqa menejerga oʻtkazilgan boʻlsa, xaridlar rahbari avval uni oʻsha paytda ushlab turgan menejerga qaytaradi.\n- Buyurtma Yopilgan boʻlgach, tuzatishlar faqat xaridlar rahbari qayta ochgandan keyin mumkin."
+        },
+        "finishing": {
+          "title": "Buyurtmani yakunlash",
+          "body": "Buyurtmaning jarayoni «Bajarildi», «Bajarildi, toʻliq emas» yoki «Sotib olinmadi» boʻlganda uning xaridi tugagan hisoblanadi. Tugagan buyurtmalarni belgilab, ularning farqlari xulosasini koʻring, keyin ularni yoping yoki hisob-kitobga yuboring, [Buyurtmani yopish](closing) boʻlimida tushuntirilganidek."
+        }
+      }
+    },
+    "money": {
+      "title": "Pul va hisob-kitob",
+      "lead": "Har bir buyurtma oʻz pul hisobini yuritadi, shuning uchun har birini alohida tekshirish va yopish mumkin. Moliyani chetlab oʻtgan buyurtmada faqat uchta rangli belgi qoladi.",
+      "topics": {
+        "money-numbers": {
+          "title": "Ilova hisoblaydigan raqamlar",
+          "body": "| Raqam | Qanday hisoblanadi |\n| --- | --- |\n| Rejadagi summa | Rejadagi miqdor koʻpaytirilgan rejadagi narx, yaxlitlangan, ustiga rejadagi qoʻshimcha xarajatlar |\n| Haqiqiy miqdor | Bekor qilinmagan yozuvlar miqdorlarining yigʻindisi |\n| Haqiqiy summa | Shu yozuvlar boʻyicha miqdor koʻpaytirilgan narxlar yigʻindisi, har biri yaxlitlangan, ustiga ularning qoʻshimcha xarajatlari |\n| Farq | Rejadagi summa minus haqiqiy summa. Musbat: pul qolgan. Manfiy: ortiqcha sarflangan. |\n\nYaxlitlash doim yarmidan yuqoriga, butun soʻmgacha. Rejalashtirilgan narxsiz buyurtmada rejadagi summa ham, farq ham boʻlmaydi; uning belgilarida «Rejalashtirilgan narx yoʻq» deb yoziladi, bunday buyurtmalarni hisobga olmaydigan yigʻindi esa nechtasi chetda qolganini aytadi, masalan «1 tasi narxsiz»."
+        },
+        "colours": {
+          "title": "Uchta rangli belgi",
+          "body": "| Belgi | Yashil | Toʻq sariq | Qizil |\n| --- | --- | --- | --- |\n| Soni | Rejadagidek olingan | Kam olingan | Koʻp olingan |\n| Narx | Har bir birlik narxi rejadagidek | Birlik uchun kam toʻlangan | Birlik uchun koʻp toʻlangan |\n| Jami | Farq 0 | Pul qolgan, masalan «Qoldiq 50 000» | Ortiqcha sarflangan, masalan «Ortiqcha 30 000» |\n\nXarid hali ochiq paytda Soni va Jami kulrang «Jarayonda» koʻrsatadi. Belgi hech qachon faqat rangdan iborat emas: unda ikonka, soʻz va summa boʻladi. Guruh qatori yoki belgilangan buyurtmalar uchun Jami yigʻma farqni oladi, Soni va Narx esa buyurtmalar orasidagi eng yomon rangni oladi."
+        },
+        "exact-match": {
+          "title": "Farqsiz buyurtma nima?",
+          "body": "Soni va Narx yashil, haqiqiy qoʻshimcha xarajatlar rejadagiga teng, hech narsa almashtirilmagan, toʻlov turi rejadagidek va naqd pul qoldigʻi 0. Bir-birini qoplaydigan farqlar (narx 10 000 ga past, qoʻshimcha xarajatlar 10 000 ga yuqori) farqsiz hisoblanmaydi."
+        },
+        "cash-count": {
+          "title": "Buyurtmaning naqd pul qoldigʻi",
+          "body": "**Naqd pul qoldigʻi** = berilgan naqd + qoplab berilgan - qaytarilgan naqd - sarflangan naqd. Sarflangan naqd buyurtmaning naqd toʻlangan har bir xaridi va qoʻshimcha xarajati.\n\n- 0 dan yuqori: menejer bu buyurtma uchun maktab pulini ushlab turibdi va uni qaytarishi kerak.\n- 0 dan past: menejer oʻz pulini sarflagan va moliya uni qoplab beradi.\n- Buyurtma yopilishidan oldin u 0 boʻlishi kerak.\n\nMenejerning naqd pul balansi ikki raqamdan iborat, ular hech qachon oʻzaro qoplanmaydi: qoʻlidagi pul (yopilmagan buyurtmalarining barcha musbat qoldiqlari) va maktabning undan qarzi (barcha manfiy qoldiqlari)."
+        },
+        "money-actions": {
+          "title": "Pul amallari (moliya)",
+          "body": "Moliya pulning har bir harakatini amal sifatida yozadi: sana (bugundan kech emas), ixtiyoriy hujjat raqami va fayl, izoh va har bir buyurtma uchun bitta qator. Amal summasi uning qatorlari yigʻindisi; hech kim jamini qoʻlda yozmaydi.\n\n| Qator turi | Yoʻnalish | Naqd pul qoldigʻini oʻzgartiradi |\n| --- | --- | --- |\n| Naqd berildi | Moliyadan menejerga | Oshiradi |\n| Naqd qaytarildi | Menejerdan moliyaga | Kamaytiradi |\n| Qoplab berildi | Moliyadan menejerga, uning sarflangan oʻz puli uchun | Oshiradi |\n| Bank oʻtkazmasi | Moliyadan yetkazib beruvchiga | Yoʻq, maʼlumot uchun |\n| Kartani toʻldirish | Moliyadan korporativ kartaga | Yoʻq, maʼlumot uchun |\n| Kartadan qaytarilgan pul | Korporativ kartadan moliyaga | Yoʻq, maʼlumot uchun |\n\n- Bitta amal bitta menejerning buyurtmalariga tegishli. Bir nechta menejerning belgilangan buyurtmalari har bir menejer uchun bitta blok va bitta amal beradi, ular birga saqlanadi.\n- Har bir amalda bitta tur boʻladi, hisob-kitob bundan mustasno: unda qaytarilgan va qoplab berilgan qatorlar birga boʻlishi mumkin, shunda faqat sof farq qoʻldan qoʻlga oʻtadi.\n- «Naqd qaytarildi» qatori buyurtmaning qoldigʻidan katta boʻla olmaydi, «Qoplab berildi» qatori esa maktab qarzidan katta boʻla olmaydi, shuning uchun buyurtma hech qachon pul ushlab turishdan qarzdorlikka sakrab oʻtmaydi.\n- Amallar hech qachon oʻchirilmaydi. Notoʻgʻri amal sababi koʻrsatilib butunlay bekor qilinadi, keyin qayta kiritiladi. Agar uning buyurtmalaridan biri allaqachon Yopilgan boʻlsa, avval xaridlar rahbari uni qayta ochadi.\n- Har bir berilgan, qaytarilgan yoki qoplab berilgan naqd pul haqida egasiga xabar beriladi va har bir amal buyurtmaning Tarixida boʻladi."
+        },
+        "finance-approval-cash": {
+          "title": "Moliya tasdigʻidagi naqd pul",
+          "body": "Tasdiqlash oynasi har bir toʻlov turi boʻyicha rejadagi jamilarni va «Menejerga hozir beriladigan naqd pul» jadvalini koʻrsatadi: har bir buyurtma uchun bitta qator, oʻsha buyurtmaning rejadagi naqd puli bilan toʻldirilgan (naqd buyurtma boʻlsa, uning rejadagi summasi). Moliya istalgan qatorni oʻzgartirishi yoki 0 qilib, naqd pulni keyinroq berishi mumkin; har bir soʻm bitta buyurtmaga tegishli. Keyingi «Naqd berildi» hali berilmagan rejadagi naqd pul bilan toʻldiriladi.\n\nMenejer naqd pul berilishidan oldin sotib olishi mumkin; shunda moliya toʻlamaguncha qoldiq 0 dan pastga tushadi."
+        },
+        "closing": {
+          "title": "Buyurtmani yopish",
+          "body": "1. **Farqsiz:** menejer tugagan buyurtmalarni belgilaydi va «Barcha mahsulotlar ushbu filial omboriga kelib tushganini tasdiqlayman» deb tasdiqlab, **Yopish** tugmasini bosadi. Moliya va xaridlar rahbariga xabar beriladi. Agar menejerning «Farqsiz buyurtmalarni oʻzi yopish» huquqi oʻchirilgan boʻlsa, bu buyurtmalar uning oʻrniga hisob-kitobga boradi.\n2. **Har qanday farq:** menejer **Hisob-kitobga** tugmasini bosadi va moliyaga xabar beriladi. Moliyaning hisob-kitob sahifasi har bir menejer boʻyicha ishlatilgan har bir toʻlov turi uchun blok koʻrsatadi:\n\n- **Naqd pul:** berilgan, sarflangan, qaytarilgan, qoplangan va qoldiq. Bitta hisob-kitob amali 0 dan yuqori buyurtmalardan pul oladi va 0 dan past buyurtmalarga toʻlaydi, faqat sof farqni koʻrsatib, masalan «menejer moliyaga 20 000 topshiradi».\n- **Bank oʻtkazmasi:** reja, oʻtkazilgan va olingan tovar qiymati. Moliya «Tasdiqlangan» belgisini qoʻyadi; ular farq qilsa, izoh majburiy.\n- **Korporativ karta:** reja va haqiqatda yechilgan. Moliya «Tasdiqlangan» belgisini qoʻyadi.\n\n3. **Moliya belgilangan buyurtmalarni yopadi**, agar har bir naqd pul qoldigʻi 0, har bir blok tasdiqlangan va xaridlar rahbarining kerakli tasdigʻi berilgan boʻlsa; aks holda hech narsa yopilmaydi va ekran tayyor boʻlmagan buyurtmalarni koʻrsatadi.\n4. Agar moliya notoʻgʻri yozuv topsa, **Toʻgʻrilash uchun qaytarish** tugmasini bosadi: buyurtma sabab bilan Ochiq holatiga qaytadi.\n\nYopilgan buyurtmani faqat xaridlar rahbari sababini koʻrsatib **Qayta ochish** tugmasi bilan ocha oladi. Uning qoldiqlari qayta hisoblanadi, hisob-kitob tasdiqlari va ortiqcha xarajat tasdigʻi tozalanadi, shunda u yana tekshiriladi. Har bir yopish va qayta ochish haqida egasi, xaridlar rahbari va moliyaga xabar beriladi."
+        },
+        "overspend": {
+          "title": "Ortiqcha xarajat nazorati",
+          "body": "Buyurtmaning haqiqiy summasi rejadagi summadan **Ortiqcha xarajat nazorati, %** (standart 10%) qiymatidan koʻproq **va** **Ortiqcha xarajat nazorati, soʻm** (standart 100 000) qiymatidan koʻproq oshsa, xaridlar rahbariga xabar beriladi va moliya uni yopishidan oldin u izoh bilan **Ortiqcha xarajatni tasdiqlash** tugmasini bosishi kerak. Tasdiqlanganda moliyaga xabar beriladi.\n\nFoiz 0 boʻlsa, faqat summa hisobga olinadi; summa 0 boʻlsa, faqat foiz hisobga olinadi; nazoratni oʻchirib qoʻyish mumkin. Xaridlar rahbari bir nechta belgilangan buyurtmani bitta izoh bilan tasdiqlashi mumkin. Moliyani chetlab oʻtgan buyurtma uchun xaridlar rahbariga xabar beriladi, lekin tasdiqlash kerak emas."
+        },
+        "money-with-managers": {
+          "title": "Menejerlardagi pul",
+          "body": "Moliya va xaridlar rahbarida har bir menejerning balansini koʻrsatuvchi Pul sahifasi bor: qoʻlidagi pul va maktabning undan qarzi, alohida, eng eskisidan boshlab, qachondan beri ekani va uning ortidagi buyurtmalar bilan. U shu savolga javob beradi: hozir kim maktab pulini ushlab turibdi va qachondan beri? Menejer faqat oʻz naqd pulini, oʻz bosh sahifasida koʻradi."
+        },
+        "worked-example": {
+          "title": "Hisob-kitob misoli",
+          "body": "Reja: 5 000 dan 100 ta daftar naqd pulga, ustiga 20 000 yetkazib berish: 520 000. Moliya 520 000 beradi.\n\n| Holat | Sotib olingan | Belgilar | Naqd pul qoldigʻi | Yakuni |\n| --- | --- | --- | --- | --- |\n| Farqsiz | 5 000 dan 100 ta + 20 000 | Hammasi yashil | 0 | Menejer yopadi |\n| Arzonroq | 4 500 dan 100 ta + 20 000 | Narx toʻq sariq, Jami «Qoldiq 50 000» | +50 000 | Menejer 50 000 qaytaradi, moliya yopadi |\n| Qimmatroq | 5 200 dan 100 ta + 30 000 | Narx qizil, Jami «Ortiqcha 30 000» | -30 000 | Moliya 30 000 qoplab beradi va yopadi (nazorat chegarasidan past) |\n| Kamroq | 5 000 dan 90 ta + 20 000 | Soni toʻq sariq, Jami «Qoldiq 50 000» | +50 000 | Menejer 50 000 qaytaradi, moliya yopadi |"
+        }
+      }
+    },
+    "warehouse": {
+      "title": "Ombor",
+      "lead": "Har bir filialda bitta ombor bor. Uning qoldigʻi hozirgacha yozilgan barcha harakatlar yigʻindisi va u hech qachon noldan pastga tushmaydi. Xizmatlar omborda hisobga olinmaydi.",
+      "topics": {
+        "movements": {
+          "title": "Qoldiq qanday oshadi va kamayadi",
+          "body": "| Harakat | Qoldiq | Kim qiladi | Xaridlar rahbari kerakmi |\n| --- | --- | --- | --- |\n| Qabul | Oshadi | Avtomatik, xarid yozuvidan | Yoʻq |\n| Boʻlimga berish | Kamayadi | Menejer yoki xaridlar rahbari | Yoʻq |\n| Boʻlimdan qaytarish | Oshadi | Menejer yoki xaridlar rahbari | Yoʻq |\n| Koʻchirish (chiqim), keyin Koʻchirish (kirim) | Joʻnatuvchida kamayadi, qabul qiluvchida oshadi | Joʻnatuvchi; qabul qiluvchi tasdiqlaydi | Yoʻq |\n| Hisobdan chiqarish | Kamayadi | Menejer soʻraydi | Ha |\n| Sanoqdan keyingi tuzatish | Oshadi yoki kamayadi | Menejer soʻraydi | Ha |\n| Toʻgʻridan-toʻgʻri kiritish | Oshadi | Faqat xaridlar rahbari | Yoʻq |\n| Storno | U bekor qiladigan hujjatning teskarisi | Uni yaratgan kishi yoki xaridlar rahbari | Yoʻq |\n\nHarakatlar hech qachon tahrirlanmaydi yoki oʻchirilmaydi. Notoʻgʻri hujjat **Storno qilish** bilan tuzatiladi: u teskari harakatni yozadi va sabab talab qiladi. Kasrlar oʻlchov birligiga qarab ruxsat etiladi.\n\nOmbor hujjati oʻz holatini koʻrsatadi: Rahbarni kutmoqda (hali hal qilinmagan hisobdan chiqarish yoki sanoq), Oʻtkazilgan, Yoʻlda (hali qabul qilinmagan koʻchirish), Qabul qilingan, Rad etilgan, Bekor qilingan yoki Bekor qilindi (qaytarib olingan koʻchirish)."
+        },
+        "issue": {
+          "title": "Boʻlimga berish",
+          "body": "Ombor sahifasida **Yangi berish** tugmasini bosing (yoki menejerning bosh sahifasida Ombordan berish). Filial boʻlimini, sanani, kim olganini (boʻlimning masʼul shaxsi bilan toʻldiriladi) va miqdorlari bilan mollarni tanlang; har bir qator yonida joriy qoldiq koʻrsatiladi.\n\n- Qoldiqdan koʻp bera olmaysiz. Ilova saqlash paytida yana tekshiradi va agar kimdir avvalroq olib qoʻygan boʻlsa, molni va qolgan miqdorni aytadi.\n- Har bir berish `ISS-CHL-26-0031` kabi raqam va mollarni kim bergani va kim olganini koʻrsatuvchi, imzo qatorlarisiz PDF berish varaqasini oladi.\n- Berishni uni yaratgan kishi yoki xaridlar rahbari storno qilishi mumkin; shunda u «Bekor qilingan» deb belgilanadi. Agar boʻlim bu mollarning bir qismini allaqachon qaytargan boʻlsa, avval qaytarishni storno qiling."
+        },
+        "return": {
+          "title": "Boʻlimdan qaytarish",
+          "body": "Boʻlimni, mollarni va miqdorlarni tanlang; qoldiq oshadi. Boʻlim hech qachon olganidan koʻp qaytarish ogohlantirish koʻrsatadi va izoh talab qiladi. Qaytarishni berish kabi storno qilish mumkin. Qaytarishlar va stornolar uchun menejerning «Qaytarishlarni qabul qilish va hujjatlarni bekor qilish» huquqi kerak."
+        },
+        "transfer": {
+          "title": "Boshqa filialga koʻchirish",
+          "body": "Boshqa filialni va mollarni tanlang. Qoldiq joʻnatuvchidan darhol chiqadi va koʻchirish `TRF-CHL-26-0007` kabi raqam va PDF koʻchirish yuk xati bilan «Yoʻlda» deb koʻrsatiladi. Qabul qiluvchi filial menejerlariga xabar beriladi va ular aslida nima kelganini kiritadi.\n\n- Shu paytgacha joʻnatuvchi yoki xaridlar rahbari uni sababini koʻrsatib bekor qilishi mumkin; qoldiq qaytadi va qabul qiluvchi menejerlarga xabar beriladi.\n- Kamomad joʻnatuvchi filialda xaridlar rahbari hal qiladigan «Koʻchirishda yoʻqolgan» hisobdan chiqarish soʻroviga aylanadi."
+        },
+        "write-off": {
+          "title": "Hisobdan chiqarish",
+          "body": "Shikastlangan, muddati oʻtgan, yoʻqolgan yoki yetkazib beruvchiga qaytarilgan mollar uchun. Menejer mollarni, miqdorlarni, sababni (Shikastlangan, Muddati oʻtgan, Yoʻqolgan, Yetkazib beruvchiga qaytarilgan, Koʻchirishda yoʻqolgan, Boshqa) tanlaydi va izoh yozadi. Xaridlar rahbariga xabar beriladi va u qaror qiladi: qoldiq faqat xaridlar rahbari tasdiqlagandan keyin oʻzgaradi. Rad etish sabab bilan beriladi va har ikki holatda menejerga qaror haqida xabar beriladi."
+        },
+        "stock-count": {
+          "title": "Inventarizatsiya",
+          "body": "Menejer filial yoki toifa boʻyicha sanoqni Ombor, Sanoqlar boʻlimida boshlaydi va javonlarda nima borligini kiritadi. Ilova farqlarni koʻrsatadi, xaridlar rahbari esa ularni tuzatish sifatida tasdiqlaydi. Agar sanoq boshlanishi va tasdiq orasida biror mol harakatlangan boʻlsa, menejerdan oʻsha molni qayta sanash soʻraladi."
+        },
+        "direct-entry": {
+          "title": "Toʻgʻridan-toʻgʻri kiritish (faqat xaridlar rahbari)",
+          "body": "Xaridlar rahbari mollarni istalgan filial omboriga buyurtmasiz kiritadi: boshida maktabda allaqachon bor qoldiq shunday kiritiladi, keyinroq esa sovgʻalar.\n\n- Maydonlar: filial, sana, sabab (Bizda avvaldan bor mol, Sovgʻa yoki xayriya, Boshqa; Boshqa uchun izoh kerak) va mahsulot, tur, miqdor va maʼlumotnoma narxi bilan toʻldiriladigan birlik narxidan iborat qatorlar.\n- Koʻp mollarni Exceldan import qilish mumkin (Ombor, Ombordagi qoldiq, Excelʼdan import), ular «Bizda avvaldan bor mol» sababi bilan toʻgʻridan-toʻgʻri kiritish sifatida saqlanadi.\n- Har bir kiritish `ENT-CHL-26-0004` kabi raqam oladi, mahsulot kartochkasida «Toʻgʻridan-toʻgʻri kiritish» deb koʻrsatiladi va zaxira qiymati hisobotida oʻz qatoriga ega."
+        },
+        "stock-screens": {
+          "title": "Ombor ekranlari",
+          "body": "- **Ombordagi qoldiq:** mahsulot, tur, rasm, miqdor, oʻlchov birligi, minimum va qiymat; qidiruv, toifa filtri va «Faqat kam qolganlar». Yangi hujjatlar tugmalari shu yerda.\n- **Mahsulot kartochkasi:** bitta filialdagi bitta molning har bir harakati, eng yangisidan boshlab, joriy qoldiq va manba hujjat yoki buyurtmaga havola bilan. Minimum shu yerda belgilanadi.\n- **Hujjatlar:** barcha berishlar, qaytarishlar, koʻchirishlar, hisobdan chiqarishlar, toʻgʻridan-toʻgʻri kiritishlar va sanoqlar, turi, sanasi va boʻlimi boʻyicha filtrlanadi. Har bir hujjatning oʻz qatorlari, holati va PDF varaqasi bilan oʻz sahifasi bor."
+        },
+        "low-stock": {
+          "title": "Kam qolgan",
+          "body": "Molning miqdori minimumgacha yoki undan pastga tushganda u «Kam» belgisini oladi, menejerning bosh sahifasida paydo boʻladi va filial menejerlariga u qayta toʻldirilguncha bir marta xabar beriladi. Bitta tugma uni qoralama buyurtma sifatida qoʻshadi yoki mavjud qoralamaning miqdorini oshiradi. Minimumi yoʻq mol hech qachon kam deb koʻrsatilmaydi."
+        },
+        "stock-value": {
+          "title": "Zaxira qiymati",
+          "body": "Qiymat faqat hisobotlarda koʻrsatiladi va hech qachon pul yoki hisob-kitobga taʼsir qilmaydi. Har bir filial har bir mol uchun harakatlanuvchi oʻrtacha tannarxni yuritadi:\n\n- Qabul oʻz narxini oʻrtachaga qoʻshadi; qoʻshimcha xarajatlar kiritilmaydi.\n- Berish, hisobdan chiqarish va chiqim koʻchirishlari oʻsha paytdagi oʻrtachani ishlatadi; koʻchirish joʻnatuvchining oʻrtachasi bilan keladi.\n- Qoldigʻi 0 boʻlgan molga qoldiq qoʻshadigan sanoq tuzatishi uning oxirgi tannarxi bilan kiradi.\n- Qoldiq 0 ga yetganda oʻrtacha qaytadan boshlanadi."
+        }
+      }
+    },
+    "notifications": {
+      "title": "Bildirishnomalar",
+      "lead": "Hammasi ilova ichidagi qoʻngʻiroqchaga keladi. SMS, email yoki messenjer yoʻq.",
+      "topics": {
+        "who-is-told": {
+          "title": "Kimga nima haqida xabar beriladi",
+          "body": "Bitta amal har bir kishiga bitta bildirishnoma yuboradi, hech qachon har bir buyurtma uchun bittadan emas, masalan «CHL: Dilnoza 15 ta buyurtmani tasdiqlashga yubordi». Uning havolasi buyurtmalar roʻyxatini aynan shu buyurtmalar boʻyicha filtrlangan holda ochadi. Qoʻngʻiroqcha faqat hozir sizda bor filiallarning bildirishnomalarini koʻrsatadi.\n\n| Hodisa | Kimga xabar beriladi |\n| --- | --- |\n| Buyurtmalar yuborildi yoki qayta yuborildi | Xaridlar rahbari |\n| Xaridlar rahbari tasdiqladi | Filial direktori (bu bosqich oʻchirilgan paytda: «Direktor tasdiqladi»dagi kabi) |\n| Direktor tasdiqladi | Filial moliyasi; moliyani chetlab oʻtgan buyurtmalar uchun egasi va xaridlar rahbari |\n| Moliya tasdiqladi | Egasi, xaridlar rahbari |\n| Tuzatishga qaytarildi, rad etildi | Egasi, xaridlar rahbari |\n| Egasidan boshqa kishi tomonidan bekor qilindi | Egasi |\n| Buyurtmalar boshqa menejerga oʻtkazildi | Yangi egasi va eskisi |\n| Naqd berildi, naqd qaytarildi, qoplab berildi, hisob-kitob qilindi | Egasi |\n| Hisob-kitobga yuborildi | Filial moliyasi |\n| Tuzatish uchun qaytarildi | Egasi |\n| Nazorat chegarasidan oshgan ortiqcha xarajat | Xaridlar rahbari |\n| Ortiqcha xarajat tasdiqlandi | Filial moliyasi |\n| Yopildi, qayta ochildi | Egasi, xaridlar rahbari, filial moliyasi |\n| 24 soatdan ortiq kutayotgan buyurtmalar | Oʻsha bosqich tasdiqlovchilari, kuniga bir marta, guruhlab |\n| 48 soatdan ortiq kutayotgan buyurtmalar | Xaridlar rahbari, guruhlab |\n| Kerakli sanaga 2 kun qolgan, xarid tugamagan | Egasi |\n| Mahsulot taklifi yuborildi, hal qilindi (faqat 2026-yil 25-oktabrgacha yuborilganlar) | Xaridlar rahbari; uni yuborgan menejer |\n| Hisobdan chiqarish yoki tuzatish soʻraldi | Xaridlar rahbari; qaror menejerga qaytadi |\n| Koʻchirish yuborildi yoki bekor qilindi | Qabul qiluvchi filial menejerlari |\n| Mol minimal qoldiqqa yetdi | Filial menejerlari, qayta toʻldirilguncha bir marta |\n| Filialda biror rol uchun faol foydalanuvchi yoʻq | Xaridlar rahbari |\n| Xarid yozuvi bekor qilindi | Xaridlar rahbari |\n| Soʻnggi xaridlar maʼlumotnoma narxidan 20% dan koʻproq farq qiladi | Xaridlar rahbari |\n| Menejerning huquqi yoqildi yoki oʻchirildi | Oʻsha menejer |\n| Harakatlariga mos kelmaydigan qoldiq (tungi tekshiruv) | Har bir faol xaridlar rahbari |\n| Maʼlumotlar bazasining haftalik nusxasi olinmadi | Har bir faol xaridlar rahbari, nusxa olinguncha har kecha |"
+        }
+      }
+    },
+    "home": {
+      "title": "Bosh sahifalar",
+      "lead": "Har bir rol ilovani Mening vazifalarim sahifasida ochadi: hozir sizni nima kutmoqda.",
+      "topics": {
+        "home-pages": {
+          "title": "Har bir rol bosh sahifada nimani koʻradi",
+          "body": "| Rol | Bosh sahifada, tartib bilan |\n| --- | --- |\n| Menejer | Uchta katta tugma: Yangi buyurtma, Xaridni yozish, Ombordan berish. Keyin: menga qaytarilganlar; qoralamalarim; jarayoni bilan ochiq buyurtmalarim; qoʻlimdagi pul; kam qolgan; muddati yaqin buyurtmalar. |\n| Xaridlar rahbari | Mening tasdigʻimni kutmoqda, filiallar boʻyicha; tasdiqlanadigan ortiqcha xarajatlar; tasdiqlanadigan hisobdan chiqarish va tuzatishlar; menejerlar qoʻshgan mahsulot va turlar; narx eslatmalari; juda uzoq qotib qolgan buyurtmalar; holatlar boʻyicha buyurtmalar, filiallar kesimida; shu oydagi xarajat, filiallar kesimida. |\n| Direktor | Tasdiqimni kutayotganlar, jami summa, shoshilinch belgisi va narx ogohlantirishlari bilan katta kartochkalar koʻrinishida (telefonda hammasini belgilab, ikki bosishda tasdiqlash mumkin); filialim buyurtmalari holat boʻyicha; shu oydagi xarajat. |\n| Moliya | Mening tasdigʻimni kutmoqda; hisob-kitobni kutmoqda, beriladigan yoki olinadigan aniq summa bilan; menejerlardagi pul. |\n\nHar bir roʻyxat buyurtmalar roʻyxatini aynan shu buyurtmalar boʻyicha filtrlangan, belgilashga tayyor holda ochadi. Boʻsh roʻyxat koʻrsatilmaydi; sizni hech narsa kutmayotganda buni bitta qator aytadi."
+        }
+      }
+    },
+    "analytics": {
+      "title": "Tahlil",
+      "lead": "Bosh sahifa hozir nima qilishingiz kerakligini koʻrsatadi; Tahlil nima boʻlayotgani va nega ekanini koʻrsatadi. Har bir rolning oʻz sahifasi bor.",
+      "topics": {
+        "analytics-how": {
+          "title": "Har bir Tahlil sahifasi qanday ishlaydi",
+          "body": "- **Davr:** shu oy, oʻtgan oy, shu chorak (kalendar choraklari), shu oʻquv yili (xaridlar rahbari Sozlamalarda **Oʻquv yilining birinchi kuni** sozlamasini belgilagandan keyin) yoki oʻz sanalarim. Har bir raqam oldingi davrga nisbatan oʻzgarishini koʻrsatadi; davom etayotgan davr oldingi davrning xuddi shuncha kuni bilan solishtiriladi.\n- **Filtrlar:** filial (oʻz filiallaringiz doirasida), toifa, boʻlim («Boʻlimsiz» ham), menejer, yetkazib beruvchi.\n- **Ortida nima borligini koʻrish uchun bosing:** istalgan ustun, boʻlak yoki raqam uni tashkil etuvchi buyurtmalar, xarid yozuvlari, oʻtishlar, naqd pul harakatlari yoki qoldiq qatorlari roʻyxatini ochadi.\n- **Eksport:** har bir diagramma va jadval Excelga; butun sahifa PDF hisobot sifatida.\n- Koʻrsatkichlar har 5 daqiqada yangilanadi."
+        },
+        "analytics-head": {
+          "title": "Xaridlar rahbari uchun tahlil (barcha filiallar)",
+          "body": "- **Xarajatlar:** oylar boʻyicha, filiallar yonma-yon, toifalar boʻyicha, boʻlimlar boʻyicha, eng yirik 10 ta yetkazib beruvchi, toʻlov turi boʻyicha.\n- **Reja va haqiqat:** yashil, toʻq sariq va qizil bilan yakunlangan buyurtmalar ulushi; jami ortiqcha sarflangan va tejalgan summa; filial va menejer boʻyicha.\n- **Narxlar:** istalgan mahsulot narxining oʻzgarishi; 90 kundagi eng katta oʻsishlar; turli filiallar yoki yetkazib beruvchilardan turli narxlarda sotib olingan bir xil mahsulot.\n- **Tasdiqlash tezligi:** har bir filial boʻyicha har bir bosqichdagi oʻrtacha soatlar; hozir kutayotgan buyurtmalar, kutish muddati boʻyicha; tuzatishga qaytarilgan yoki rad etilganlar ulushi, eng koʻp uchraydigan sabablar bilan.\n- **Menejerlar:** har bir menejer boʻyicha buyurtmalar soni, rejadan oʻrtacha farq, bekor qilingan xarid yozuvlari, qoʻldagi naqd pul va qancha vaqtdan beri.\n- **Ombor:** har bir filial boʻyicha zaxira qiymati; kam qolgan mahsulotlar; boʻlimlar sarfi; 90 kun harakatsiz mahsulotlar; hisobdan chiqarilgan qiymat."
+        },
+        "analytics-principal": {
+          "title": "Direktor uchun tahlil (oʻz filiali)",
+          "body": "- **Xarajatlar:** filial oylar boʻyicha, oldingi davrga nisbatan; toifa va boʻlim boʻyicha; eng koʻp xarajat qilingan 10 ta mahsulot.\n- **Buyurtmalar:** holat boʻyicha; yaqinlashayotgan kerakli sanalar; muddati oʻtgan buyurtmalar.\n- **Mening tasdiqlarim:** hozir kutayotganlar; qaror qilishga ketadigan oʻrtacha vaqtim.\n- **Ombor:** zaxira qiymati; kam qolganlar; har bir boʻlim nimani sarflagani."
+        },
+        "analytics-finance": {
+          "title": "Moliya uchun tahlil (oʻz filiallari)",
+          "body": "- **Naqd pul:** oylar boʻyicha berilgan, qaytarilgan va qoplab berilgan; menejerlardagi pul muddati boʻyicha: 7 kungacha, 8 dan 30 kungacha, 30 kundan ortiq.\n- **Tez orada kerak naqd:** hali toʻlanmagan tasdiqlangan buyurtmalarning rejadagi naqd puli, ustiga hali tasdiqlanayotgan buyurtmalar.\n- **Toʻlovlar:** toʻlov turi boʻyicha xarajatlar; yetkazib beruvchi boʻyicha bank oʻtkazmalari.\n- **Reja va haqiqat:** filial va menejer boʻyicha ortiqcha xarajatlar va tejamlar; cheksiz xaridlar.\n- **Hisob-kitob tezligi:** «Hisob-kitobga» bosilganidan «Yopilgan» holatigacha oʻrtacha kunlar."
+        },
+        "analytics-manager": {
+          "title": "Menejer uchun tahlil (oʻz filiallari)",
+          "body": "- **Mening buyurtmalarim:** holat boʻyicha; toʻliq tasdiqlanishgacha oʻrtacha vaqt; tuzatishga qaytarilganlar ulushi, sabablari bilan.\n- **Mening hisob-kitobim:** har bir mahsulot boʻyicha rejadagi va haqiqiy narx orasidagi farq, keyingi safar yaxshiroq baholash uchun.\n- **Mening pulim:** har bir ochiq buyurtma boʻyicha qoldiq.\n- **Zaxirani rejalashtirish:** har bir molning oylik sarfi; «taxminan 12 kunda tugaydi» (joriy qoldiq oxirgi 90 kundagi oʻrtacha kunlik berishlarga boʻlingan); kam qolganlar; tavsiya etilgan buyurtma miqdori (shu surʼatda 30 kunlik sarf)."
+        }
+      }
+    },
+    "reports": {
+      "title": "Hisobotlar",
+      "lead": "Har bir hisobot filial, sana va toifa boʻyicha filtrlanadi, faqat sizning filiallaringizni koʻrsatadi va Excelga eksport qilinadi.",
+      "topics": {
+        "report-list": {
+          "title": "Hisobotlar roʻyxati",
+          "body": "| Hisobot | Nimaga javob beradi |\n| --- | --- |\n| Buyurtmalar reyestri | Barcha buyurtmalar holati, jamilari va sanalari bilan |\n| Xaridlar reyestri | Har bir xarid yozuvi yetkazib beruvchi, narx va toʻlov turi bilan |\n| Reja va amal | Buyurtma, mahsulot va menejer boʻyicha farqlar |\n| Xarajatlar | Filial, toifa, boʻlim, yetkazib beruvchi va oy boʻyicha jamilar |\n| Narxlar tarixi | Bitta mahsulot narxi vaqt oʻtishi bilan qanday oʻzgargani; xaridlar rahbarining narx izohlari faqat xaridlar rahbari va moliyaga koʻrsatiladi |\n| Ombordagi qoldiq | Har bir filial boʻyicha miqdorlar va qiymat |\n| Tovar harakati | Davr ichida kirgan va chiqqan hamma narsa |\n| Boʻlimlar sarfi | Har bir boʻlim miqdor va qiymat boʻyicha nima olgani |\n| Menejerlardagi pul | Ochiq naqd pul balanslari va ularning muddati (faqat xaridlar rahbari va moliya) |\n| Tasdiqlash tezligi | Buyurtma har bir bosqichda oʻrtacha necha soat kutadi |\n\nFilial filtri yuqoridagi tanlagichda tanlangan filialdan boshlanadi."
+        }
+      }
+    },
+    "admin": {
+      "title": "Sozlamalar, foydalanuvchilar va filiallar",
+      "lead": "Boshqaruv, xaridlar rahbari uchun. Har bir oʻzgarish audit jurnaliga yoziladi.",
+      "topics": {
+        "settings-page": {
+          "title": "Sozlamalar sahifasidagi hamma narsa",
+          "body": "| Sozlama | Nima qiladi | Standart |\n| --- | --- | --- |\n| Maktab nomi | Menyuda koʻrsatiladi. | |\n| Oʻquv yilining birinchi kuni | Tahlilda «Shu oʻquv yili» davrini yoqadi. | Belgilanmagan |\n| Standart toʻlov turi | Yangi buyurtmalarda va toʻlov turi yashirin boʻlganda ishlatiladi. | Naqd pul |\n| Narx ogohlantirishi, % | Maʼlumotnoma narxidan shuncha farq qiladigan buyurtma narxi ogohlantirish koʻrsatadi. | 20 |\n| Ortiqcha xarajat nazorati, % | Quyidagi summa bilan birga xaridlar rahbari qachon ortiqcha xarajatni tasdiqlashi kerakligini belgilaydi; nazoratni oʻchirib qoʻyish mumkin. | 10 |\n| Ortiqcha xarajat nazorati, soʻm | Yuqoridagi qatorga qarang. | 100 000 |\n| Naqd xaridlar uchun chek majburiy | Naqd toʻlangan yoki qoʻshimcha xarajati naqd toʻlangan xarid safari uchun chek kerak. | Yoʻq |\n| Eslatma, soatdan keyin | Kutayotgan buyurtmalar qachon tasdiqlovchilarga eslatiladi. | 24 |\n| Xaridlar rahbariga xabar, soatdan keyin | Kutayotgan buyurtmalar haqida qachon xaridlar rahbariga xabar beriladi. | 48 |\n| Direktor bosqichi | Yoqilgan yoki oʻchirilgan. [Direktor bosqichi](principal-step) boʻlimiga qarang. | Yoqilgan |\n| Moliya bosqichi | Yoqilgan yoki oʻchirilgan. [Moliya bosqichi](finance-step) boʻlimiga qarang. | Yoqilgan |\n| Buyurtma maydonlari | Har bir buyurtma maydoni qanday soʻralishi va qayerda turishi. [Buyurtma maydonlari](field-settings) boʻlimiga qarang. | |\n\nSahifa har bir sozlamaning oʻzgarishlar tarixini va maʼlumotlar bazasining oxirgi nusxasi sanasini koʻrsatadi."
+        },
+        "users-branches": {
+          "title": "Foydalanuvchilar va filiallar",
+          "body": "**Boshqaruv, Foydalanuvchilar, Yangi foydalanuvchi:** toʻliq ism, login (3 dan 30 tagacha kichik lotin harflari, raqamlar, _ yoki .), telefon, rol (hisob yaratilgach oʻzgarmaydi), filiallar (xaridlar rahbari barcha filiallarda ishlaydi), til va parol (yoziladi yoki yaratiladi va topshirish uchun faqat bir marta koʻrsatiladi). Menejer sahifasida oʻnta huquq kaliti bor. Foydalanuvchi sahifasida **Parolni yangilash** bor. Ishdan ketgan foydalanuvchi faolsizlantiriladi, hech qachon oʻchirilmaydi; uning tasdiqlash vazifalari rolda qoladi, uning oʻz buyurtmalarini esa xaridlar rahbari boshqa menejerga oʻtkazadi.\n\n**Boshqaruv, Filiallar, Yangi filial:** nomi, manzili va 2 dan 4 tagacha lotin bosh harfidan iborat kod, masalan CHL. Kod har bir buyurtma raqamiga kiradi va birinchi buyurtmadan keyin qulflanadi. Filialda tugallanmagan buyurtmalar yoki 0 dan ortiq qoldiq boʻlsa, uni faolsizlantirib boʻlmaydi."
+        },
+        "behind-scenes": {
+          "title": "Koʻrinmaydigan zaxira nusxalar va tekshiruvlar",
+          "body": "- Maʼlumotlar bazasi xostingi har kuni zaxira nusxa saqlaydi va oxirgi 7 kunning istalgan lahzasini tiklay oladi.\n- Har yakshanba ilova maʼlumotlar bazasining oʻz nusxasini alohida xotirada yaratadi; bu muvaffaqiyatsiz boʻlsa, nusxa olinguncha har kecha har bir xaridlar rahbariga xabar beriladi.\n- Har kecha ilova har bir qoldiq raqamini uning harakatlari bilan solishtiradi va har qanday nomuvofiqlik haqida xaridlar rahbarlariga xabar beradi.\n- Kataloglar, foydalanuvchilar va sozlamalardagi har bir oʻzgarish kim va qachon qilgani bilan audit jurnaliga yoziladi."
+        }
+      }
+    },
+    "faq": {
+      "title": "Koʻp beriladigan savollar",
+      "lead": "Odamlar duch keladigan vaziyatlar va ilova nima qiladi.",
+      "topics": {
+        "q-submit-twice": {
+          "title": "Yuborish tugmasini ikki marta bosdim. Buyurtmalarni ikki marta yubordimmi?",
+          "body": "Yoʻq. Tugma birinchi bosishdan keyin oʻchadi, server esa takroriy soʻrovni eʼtiborsiz qoldiradi."
+        },
+        "q-same-moment": {
+          "title": "Ikki tasdiqlovchi bir vaqtda bosdi. Nima boʻladi?",
+          "body": "Birinchisi yutadi. Ikkinchisi kim va qachon amal qilganini koʻradi; agar ikkinchi amal koʻproq buyurtmani qamragan boʻlsa, uning hech biri saqlanmaydi va roʻyxat yangilanadi."
+        },
+        "q-missing-item": {
+          "title": "Menga kerakli mol katalogda yoʻq.",
+          "body": "Huquqlaringiz ruxsat bersa, uni buyurtmaning mahsulot qidiruvidan qoʻshing; aks holda xaridlar rahbaridan uni qoʻshishni soʻrang. [Menejer yetishmayotgan mahsulotni qoʻsha oladimi?](manager-adds) boʻlimiga qarang."
+        },
+        "q-missing-company": {
+          "title": "Menga kerakli brend yoki yetkazib beruvchi roʻyxatda yoʻq.",
+          "body": "Kompaniyalarni faqat xaridlar rahbari qoʻshadi. Maydonni boʻsh qoldiring (u ixtiyoriy) va nomini izohga yozing yoki xaridlar rahbaridan uni qoʻshishni soʻrang."
+        },
+        "q-deactivated-draft": {
+          "title": "Mahsulot qoralamamda turganida faolsizlantirildi.",
+          "body": "Bu qoralama belgilanadi va yuborilmaydi; boshqa tayyor qoralamalaringiz yuboriladi. Qoralamalar belgilangan boʻlsa, hech narsa yuborilmaydi."
+        },
+        "q-price-changed": {
+          "title": "Qoralamamni yozganimdan keyin katalog narxi oʻzgardi.",
+          "body": "Qoralama siz yozgan narxni saqlaydi; ogohlantirish yangi taklif qilingan narxni koʻrsatadi."
+        },
+        "q-two-departments": {
+          "title": "Ikki boʻlimga bir xil mol kerak.",
+          "body": "Har bir boʻlim uchun bittadan, ikkita buyurtma yarating. Roʻyxatlar ularni bitta guruh qatorida birga koʻrsatadi."
+        },
+        "q-overdue": {
+          "title": "Buyurtma kutib turganda kerakli sana oʻtib ketdi.",
+          "body": "Buyurtmada «Muddati oʻtgan» koʻrsatiladi. Hech narsa bloklanmaydi."
+        },
+        "q-change-submitted": {
+          "title": "Allaqachon yuborgan buyurtmamni oʻzgartirmoqchiman.",
+          "body": "U Rahbarni kutmoqda holatida ekan, **Qaytarib olish** tugmasini bosing: u raqami bilan varagʻingizga qaytadi va siz uni qayta yuborasiz. Keyinroq uni sizga faqat tasdiqlovchi qaytara oladi. Ochiq boʻlgach, reja hech qachon oʻzgarmaydi."
+        },
+        "q-not-needed": {
+          "title": "Buyurtma endi menga kerak emas.",
+          "body": "Tasdiqlash tugamaguncha egasi yoki xaridlar rahbari uni sababini koʻrsatib bekor qilishi mumkin. Ochiq boʻlgach, uni **Sotib olinmadi** deb belgilang."
+        },
+        "q-part-quantity": {
+          "title": "Doʻkonda miqdorning faqat bir qismi bor edi.",
+          "body": "Sotib olganingizni yozing. Buyurtma qolgani kelguncha yoki siz Buyurtmani yakunlash tugmasini bosguningizcha Ochiq qoladi."
+        },
+        "q-not-found": {
+          "title": "Molni hech qayerdan topib boʻlmadi.",
+          "body": "Buyurtmani sababini koʻrsatib **Sotib olinmadi** deb belgilang. Agar naqd pul berilgan boʻlsa, menejer hisob-kitobda uning hammasini qaytaradi."
+        },
+        "q-bought-more": {
+          "title": "Tasdiqlanganidan koʻp sotib oldim.",
+          "body": "Izoh bilan ruxsat etiladi. Soni qizil bilan koʻrsatiladi va ortiqcha xarajat nazorati qoʻllanishi mumkin."
+        },
+        "q-free-item": {
+          "title": "Mol bepul edi.",
+          "body": "Izoh bilan 0 narxni yozing."
+        },
+        "q-bought-before-cash": {
+          "title": "Moliya naqd pul bermasidan oldin sotib oldim.",
+          "body": "Buyurtmaning naqd pul qoldigʻi 0 dan pastga tushadi va moliya sizga pulni qoplab beradi."
+        },
+        "q-card-paid-cash": {
+          "title": "Karta bilan rejalashtirilgan edi, lekin naqd toʻladim.",
+          "body": "Xarid yozuvida haqiqiy toʻlov turini izoh bilan belgilang. Naqd pul qoldigʻi shunga moslashadi."
+        },
+        "q-cash-delivery": {
+          "title": "Bank oʻtkazmasi bilan olinadigan mol uchun yetkazib berishni naqd toʻladim.",
+          "body": "Toʻlov turi Naqd pul boʻlgan qoʻshimcha xarajat qatorini qoʻshing."
+        },
+        "q-no-receipt": {
+          "title": "Chekim yoʻq.",
+          "body": "Ruxsat etiladi, agar xaridlar rahbari Sozlamalarda naqd xaridlar uchun chekni majburiy qilmagan boʻlsa. Moliya «Chek yoʻq» belgisini koʻradi."
+        },
+        "q-straight-to-class": {
+          "title": "Mollar doʻkondan toʻgʻridan-toʻgʻri sinfxonaga ketdi.",
+          "body": "Xarid yozuvida «Toʻgʻridan-toʻgʻri boʻlimga berish»ni belgilang: qabul va boʻlimga berish birga yoziladi."
+        },
+        "q-cancel-issued": {
+          "title": "Xaridni bekor qilishim kerak, lekin mollar allaqachon berilgan.",
+          "body": "Bekor qilish bloklanadi, chunki qoldiq noldan pastga tushadi. Avval mollarni boʻlimdan qaytarib oling (qaytarish) yoki hisobdan chiqarishdan foydalaning."
+        },
+        "q-error-after-close": {
+          "title": "Buyurtma yopilgandan keyin xato topildi.",
+          "body": "Xaridlar rahbari uni sababini koʻrsatib qayta ochadi. Uning qoldiqlari qayta hisoblanadi, avvalgi hisob-kitob tasdiqlari va ortiqcha xarajat tasdigʻi tozalanadi va moliya u boʻyicha qaytadan hisob-kitob qiladi."
+        },
+        "q-cancel-money-closed": {
+          "title": "Pul amalini bekor qilish kerak, lekin uning buyurtmalaridan biri allaqachon Yopilgan.",
+          "body": "Avval xaridlar rahbari oʻsha buyurtmani qayta ochadi; keyin moliya amalni bekor qiladi va uni qayta kiritadi."
+        },
+        "q-two-managers-settle": {
+          "title": "Hisob-kitobdagi belgilangan buyurtmalar ikki menejerga tegishli.",
+          "body": "Ekran har bir menejer uchun bitta blok koʻrsatadi va har bir menejer uchun bitta amal saqlanadi, hammasi birga."
+        },
+        "q-hold-and-owed": {
+          "title": "Bitta buyurtma boʻyicha pul menejer qoʻlida, xuddi shu menejerning boshqa buyurtmasi boʻyicha esa maktab qarzdor.",
+          "body": "Bitta hisob-kitob amali birinchisi boʻyicha pul oladi va ikkinchisi boʻyicha toʻlaydi; faqat sof farq qoʻldan qoʻlga oʻtadi va hech bir buyurtma pul ushlab turishdan qarzdorlikka oʻtib ketmaydi."
+        },
+        "q-manager-leaves": {
+          "title": "Qoʻlida naqd puli bor menejer ishdan ketmoqda.",
+          "body": "Naqd pul qoldigʻi 0 boʻlmaguncha buyurtmaning egasi almashmaydi. Avval naqd pul boʻyicha hisob-kitob qiling, keyin xaridlar rahbari buyurtmalarni oʻtkazadi."
+        },
+        "q-user-deactivated": {
+          "title": "Foydalanuvchi kutayotgan ishlari bilan faolsizlantirildi.",
+          "body": "Tasdiqlash vazifalari filialdagi rolda qoladi. Xaridlar rahbari oʻsha foydalanuvchining oʻz buyurtmalarini boshqa menejerga oʻtkazadi."
+        },
+        "q-holiday": {
+          "title": "Tasdiqlovchi taʼtilda.",
+          "body": "Eslatmalar yuboriladi, keyin xaridlar rahbariga xabar beriladi. Xaridlar rahbari ikkinchi moliya xodimini qoʻshadi, filialni vazifasini bajaruvchi direktorga topshiradi yoki oʻsha bosqichni oʻchiradi."
+        },
+        "q-principal-changes": {
+          "title": "Buyurtmalar kutib turganda filial direktori almashdi.",
+          "body": "Kutayotgan buyurtmalar yangi direktorga oʻtadi. Oʻtgan tasdiqlarda eski ism qoladi."
+        },
+        "q-close-branch": {
+          "title": "Filialni yopmoqchimiz.",
+          "body": "Xaridlar rahbari uni Boshqaruv, Filiallar boʻlimida faolsizlantiradi. Filialda tugallanmagan buyurtmalar yoki 0 dan ortiq qoldiq boʻlsa, bu bloklanadi."
+        },
+        "q-right-switched-mid-task": {
+          "title": "Menejerning huquqi vazifa oʻrtasida oʻchirildi.",
+          "body": "Tugmalar darhol yoʻqoladi, saqlangan ish qoladi. Vazifani xaridlar rahbari tugatadi yoki buyurtmalarni boshqa menejerga oʻtkazadi."
+        },
+        "q-last-items": {
+          "title": "Ikki menejer oxirgi mollarni bir vaqtda berdi.",
+          "body": "Biri muvaffaqiyatli boʻladi. Ikkinchisi qancha qolganini koʻradi."
+        },
+        "q-transfer-short": {
+          "title": "Koʻchirish kam keldi.",
+          "body": "Kelganini kiriting. Kamomad xaridlar rahbari uchun «Koʻchirishda yoʻqolgan» hisobdan chiqarish soʻroviga aylanadi."
+        },
+        "q-gift": {
+          "title": "Sovgʻa yoki xayriya oldik.",
+          "body": "Xaridlar rahbari «Sovgʻa yoki xayriya» sababi bilan toʻgʻridan-toʻgʻri kiritishni yozadi."
+        },
+        "q-half-piece": {
+          "title": "Yarim dona yozdim.",
+          "body": "Rad etiladi. Kasr sonlarga faqat ruxsat beradigan oʻlchov birliklarida, masalan kg da, ruxsat bor."
+        },
+        "q-faulty-goods": {
+          "title": "Nosoz mollar yetkazib beruvchiga qaytariladi.",
+          "body": "Buyurtma Ochiq paytida xarid yozuvini bekor qiling. Yopilgandan keyin «Yetkazib beruvchiga qaytarilgan» sababi bilan hisobdan chiqarishni soʻrang."
+        },
+        "q-new-year": {
+          "title": "Yil almashdi. Buyurtma raqamlari bilan nima boʻladi?",
+          "body": "Hisoblagich raqamdagi yangi yil bilan 0001 dan qayta boshlanadi, masalan `CHL-27-0001`."
+        },
+        "q-big-photo": {
+          "title": "Telefonimdagi rasm juda katta.",
+          "body": "U yuklashdan oldin brauzerda kichraytiriladi."
+        },
+        "q-print-form": {
+          "title": "Buyurtma blankasini chop etib, imzolay olamanmi?",
+          "body": "Blanka ham, imzo qatori ham yoʻq. Roʻyxatni PDF yoki Excel sifatida yuklab oling; har bir kishining hisobidagi tasdiqlar hujjat hisoblanadi."
+        },
+        "q-cant-see-page": {
+          "title": "Nega boshqa kishi aytgan sahifani koʻra olmayman?",
+          "body": "Har bir rol faqat oʻz sahifalarini va faqat oʻz filiallarini koʻradi. Boshqa rol yoki filial kerak boʻlsa, xaridlar rahbaridan soʻrang."
+        }
+      }
+    },
+    "glossary": {
+      "title": "Ombor ilovasidagi soʻzlar",
+      "lead": "Ilovaning oʻz soʻzlari.",
+      "topics": {
+        "words": {
+          "title": "Lugʻat",
+          "body": "| Soʻz | Maʼnosi |\n| --- | --- |\n| Buyurtma | Bitta boʻlim uchun bitta mahsulot yoki xizmat, miqdor, narx va toʻlov turi bilan. Alohida tasdiqlanadi, sotib olinadi, hisob-kitob qilinadi va yopiladi. |\n| Buyurtma varagʻi | Qoralamalaringiz va sizga qaytarilgan yoki siz qaytarib olgan buyurtmalarning elektron jadvalga oʻxshash roʻyxati. |\n| Guruh qatori | Roʻyxatdagi bitta qator: filialdagi bitta tur va holatdagi barcha buyurtmalar uchun. |\n| Tur | Mahsulotning varianti, masalan qogʻoz uchun «A4, 80 g». |\n| Maʼlumotnoma narxi | Xaridlar rahbarining bitta tur uchun odatiy narxi, taklif qilinadigan narx sifatida ishlatiladi. |\n| Xarid yozuvi | Menejer sotib olgandan keyin kiritadigan maʼlumot: haqiqiy miqdor, narx, qoʻshimcha xarajatlar, chek. |\n| Xarid safari | Bir nechta buyurtma uchun bir marta yozilgan, doʻkonga bitta borish. |\n| Qoʻshimcha xarajatlar | Buyurtmaga qoʻshiladigan yetkazib berish, yuklash, oʻrnatish va shunga oʻxshash xarajatlar. |\n| Naqd pul qoldigʻi | Bitta buyurtma boʻyicha menejer qoʻlidagi maktab puli yoki maktabning undan qarzi qancha ekani. |\n| Hisob-kitob | Buyurtma yopilishidan oldin moliya va menejer pul farqini tenglashtiradi. |\n| Farqsiz | Aynan rejadagidek sotib olingan, naqd pul qoldigʻi 0; menejer uni oʻzi yopishi mumkin. |\n| Ortiqcha xarajat nazorati | Belgilangan foiz va summadan oshgan ortiqcha xarajat xaridlar rahbarining tasdigʻini talab qiladi. |\n| Almashtirish | Xuddi shu mahsulotning buyurtma qilinganidan boshqa turini sotib olish. |\n| Berish | Ombordan boʻlimga mol berish. |\n| Toʻgʻridan-toʻgʻri kiritish | Xaridlar rahbari mollarni buyurtmasiz omborga kiritishi. |\n| Hisobdan chiqarish | Shikastlangan, muddati oʻtgan, yoʻqolgan yoki qaytarilgan mollarni qoldiqdan chiqarish, xaridlar rahbari tasdiqlaydi. |\n| Storno qilish | Ombor hujjatini teskari harakat yozib bekor qilish. |\n| Faolsizlantirish | Yozuvni tanlash roʻyxatlaridan olib tashlash, eski yozuvlarda esa u saqlanib qoladi. Ishlatilgan hech narsa oʻchirilmaydi. |\n| Oʻtkazib yuborildi | Buyurtma oʻtgan paytda oʻchirilgan tasdiqlash bosqichi. |"
+        }
+      }
+    }
+  }
+}

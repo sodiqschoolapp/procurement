@@ -1,0 +1,576 @@
+{
+  "chapters": {
+    "overview": {
+      "title": "Ombor at a glance",
+      "lead": "Two jobs, orders and the warehouse, shared by four roles.",
+      "topics": {
+        "what-it-does": {
+          "title": "What Ombor does",
+          "body": "Ombor replaces the paper order form and the warehouse books of every branch of the school.\n\n**Orders.** Each branch keeps one order list. A Manager adds orders for what the school needs, one product or service for one department each. The order is approved, the Manager buys it and records the real price and quantity, any money difference is settled, and the order closes. Every order moves on its own, but every role can act on many ticked orders at once.\n\n**Warehouse.** Every recorded purchase enters the branch's stock by itself. Managers give items to departments, send them to other branches, write off what is lost or broken, and count the shelves. The app always knows how many of each item every branch has, and stock can never go below zero."
+        },
+        "who-does-what": {
+          "title": "Who does what",
+          "body": "| Role | Branches | Main jobs |\n| --- | --- | --- |\n| Procurement Head | All | Runs the app: catalogs, users, branches, settings. Gives the first approval. Approves write-offs and stock corrections. Can do everything a Manager can, in any branch. |\n| Manager | One or more, given by the Head | Adds and submits orders, records purchases, runs the warehouse of their branches. |\n| Principal | One branch; each branch has exactly one | Gives the second approval while that step is on. Sees the branch's orders, stock and reports, read-only. |\n| Finance | One or more, given by the Head | Gives the third approval while that step is on. Records cash given and returned. Settles differences and closes orders. |\n\nOne account has exactly one role. Someone who changes job gets a new account. See [Roles, rights and branches](roles) for every action of every role."
+        },
+        "order-life": {
+          "title": "The life of an order",
+          "body": "1. **Draft:** a Manager writes it.\n2. **Waiting for Head**, then **Waiting for Principal**, then **Waiting for Finance:** each approver approves, sends it back for editing, or rejects it.\n3. **Open:** the Manager buys and records the purchases. Goods enter the warehouse.\n4. **Closed:** the Manager closes an order bought exactly as planned; any difference goes to Finance, who settles the money and closes it.\n\nThe Head can switch the Principal step or the Finance step off; orders then skip that step. See [Approval](approval)."
+        },
+        "using-help": {
+          "title": "Using this help",
+          "body": "This page is open to anyone, signed in or not. It explains how the app works and shows no school data.\n\n- Type in the search box on top: only the topics that hold every word you typed stay on the page. Clear the box to see everything again.\n- The list of chapters jumps to a chapter. On a phone it is a drop-down above the text.\n- Before you sign in, you can choose the language on this page. After you sign in, it follows the language of your profile.\n- A question this page does not answer goes to the Procurement Head."
+        }
+      }
+    },
+    "account": {
+      "title": "Signing in and your account",
+      "lead": "Accounts are made by the Head. There is no sign-up, no email and no SMS.",
+      "topics": {
+        "sign-in": {
+          "title": "How do I sign in?",
+          "body": "Open [the sign-in page](/login) and type the username and password the Head gave you. Choose the language on that page if you need to.\n\n- A sign-in lasts 24 hours, then you sign in again. You can be signed in on several devices at once.\n- After 5 wrong passwords for one username within 15 minutes, that username is refused for a while, even with the right password. Wait 15 minutes and try again.\n- After signing in you return to the page you wanted to open."
+        },
+        "password": {
+          "title": "I forgot my password. How do I change it?",
+          "body": "Nobody changes their own password on a screen. Ask the Head: on your user page the Head presses **Renew password**, types a new one or generates one, and gives it to you. The old password stops working at once and you are signed out on every device.\n\nA Head's password is renewed by another Head. If no other Head can, the app owner renews it from the server console. There are no password rules, and nobody is forced to change a password at first sign-in."
+        },
+        "profile": {
+          "title": "Language, theme and profile",
+          "body": "Open **Profile** (your name in the menu) to choose your language (Uzbek, Russian or English) and the theme (light, dark, or following your device). Uzbek is the default for new users.\n\nThe Profile page also shows your username and role. Catalog names, such as product names, are typed once in one language and are not translated."
+        },
+        "menu-search-bell": {
+          "title": "Menu, branch switcher, search and the bell",
+          "body": "- **Menu:** a sidebar on a computer, a tab bar at the bottom on a phone (with more than five items it shows the first four and **More**). Each role sees only the pages it uses; a page you cannot use is not shown at all. Help is the last item.\n- **Branch switcher:** if you work in several branches, a switcher on top chooses one branch or \"All my branches\".\n- **Search:** press Ctrl+K (Cmd+K on a Mac) to find an order number, a product or a supplier.\n- **Bell:** your notifications, with an unread count. The Notifications page lists them all. See [Notifications](notifications).\n\n| Role | Menu, in order |\n| --- | --- |\n| Manager | Home, Orders, Warehouse, Analytics, Reports, Help |\n| Procurement Head | Home, Orders, Warehouse, Money, Analytics, Reports, Admin, Help |\n| Principal | Home, Orders, Stock, Analytics, Reports, Help |\n| Finance | Home, Orders, Money, Stock, Analytics, Reports, Help |"
+        },
+        "lost-session": {
+          "title": "My session ended in the middle of a form. Is my work lost?",
+          "body": "No. A draft order saves itself after every change. After you sign in again you return to the same page. If the internet drops while you save, the form keeps what you typed and tries again, and saving twice never makes a duplicate."
+        }
+      }
+    },
+    "roles": {
+      "title": "Roles, rights and branches",
+      "lead": "What each role may do, and the ten switches the Head has for every Manager.",
+      "topics": {
+        "branch-wall": {
+          "title": "Can I see another branch's data?",
+          "body": "Only if it is one of your branches. Every page and every action checks your role and your branches on the server; hiding a button is never the only protection. Opening the address of another branch's order shows \"Not found\". The Head sees all branches.\n\nTasks belong to a role in a branch, not to a person: if one Finance user is away, another Finance user of that branch sees the same task, and the first to act wins."
+        },
+        "who-may": {
+          "title": "Who may do what",
+          "body": "| Action | Procurement Head | Manager | Principal | Finance |\n| --- | --- | --- | --- | --- |\n| Manage catalogs, users, branches, settings | Yes | No | No | No |\n| Add a product or subtype from an order's product search | Yes | Yes* | No | No |\n| Add, edit, submit, cancel orders | Any branch | Own branches* | No | No |\n| Approve, send back, reject at step 1 | Yes | No | No | No |\n| Approve, send back, reject at step 2 | No | No | Own branch | No |\n| Approve, send back, reject at step 3 | No | No | No | Own branches |\n| Record cash given, returned, paid back | No | No | No | Own branches |\n| Record purchases | Yes | Own orders* | No | No |\n| Close an order that matches exactly | Yes | Own orders* | No | No |\n| Close a finished order that skipped Finance | Yes | Own orders* | No | No |\n| Settle and close an order with differences | No | No | No | Own branches |\n| Acknowledge a big overspend | Yes | No | No | No |\n| Reopen a closed order | Yes | No | No | No |\n| Move orders to another Manager | Yes | No | No | No |\n| Issue, return, transfer stock | Yes | Own branches* | No | No |\n| Ask for a write-off or stock correction | Yes | Own branches* | No | No |\n| Approve a write-off or stock correction | Yes | No | No | No |\n| Enter stock directly, without an order | Yes | No | No | No |\n| Add a new reference price | Yes | No | No | No |\n| See orders, stock and reports | All branches | Own branches | Own branch | Own branches |\n| See every Manager's cash and the Head's price notes | All branches | Own cash only | No | Own branches |\n| Download Excel and PDF | Yes | Yes | Yes | Yes |\n\n* Only while the matching Manager right is on. See [the ten Manager rights](manager-rights)."
+        },
+        "manager-rights": {
+          "title": "The ten Manager rights",
+          "body": "On each Manager's user page the Head sees ten switches, all on by default. Switching one off removes those buttons for that Manager at once, and the server refuses the action too. A switch applies in all of the Manager's branches. Switches only take rights away; none gives a Manager an action of the Head, the Principal or Finance. Every change is written to the audit log, and the Manager is notified.\n\n| Right | When it is off |\n| --- | --- |\n| Add and submit orders | The Manager can only view orders. |\n| Record purchases | The Head records them, or moves the orders to another Manager. |\n| Cancel purchase records | Only the Head can cancel a record. |\n| Close exact-match orders alone | Every order of this Manager goes to Finance for closing, even when all labels are green. An order that skipped Finance is closed by the Head. |\n| Issue stock to departments | The Manager can view stock but not give items out. |\n| Take returns and reverse documents | Only the Head can do these. |\n| Send transfers to other branches | Only the Head can send transfers. |\n| Ask for write-offs and run stock counts | Only the Head can start them. |\n| Set minimum stock levels | Only the Head sets them. |\n| Add products and subtypes | The Manager picks from the catalog only; the Head adds what is missing. Works only while \"Add and submit orders\" is on too. |\n\nWork already saved stays as it is when a right is switched off. The Head finishes the task or moves the orders to another Manager."
+        },
+        "order-owner": {
+          "title": "Who owns an order, and can it change hands?",
+          "body": "The Manager who created an order owns it: they buy it, record it and close it. An order the Head creates belongs to the Head.\n\nThe Head can tick orders and press **Move to another Manager** to give them to another Manager of the same branch, but only orders whose cash count is 0, so nobody takes over money they never held. Both Managers are notified, and the order's History says who moved it."
+        },
+        "missing-roles": {
+          "title": "What if a branch has no Principal, Finance user or Manager?",
+          "body": "The Head is warned while a branch has no active user for a role (not for the Principal or Finance while that step is switched off). A branch has exactly one Principal; the Head can replace them at any time, for example with an acting Principal during leave. Waiting orders pass to the new Principal, and past approvals keep the old name.\n\nThe Head cannot approve in place of the Principal or Finance. If an approver is away, the Head adds a second Finance user, hands the branch to an acting Principal, or switches that step off. At least one active Head must always exist; the last one cannot be deactivated."
+        }
+      }
+    },
+    "catalogs": {
+      "title": "Catalogs and prices",
+      "lead": "The lists everyone picks from. Only the Head creates and edits them, under Admin.",
+      "topics": {
+        "catalog-lists": {
+          "title": "The catalogs",
+          "body": "Admin opens Catalogs, Prices, Users, Branches and Settings. Catalogs holds:\n\n| Catalog | Fields | Notes |\n| --- | --- | --- |\n| Measures | Name, short name, allows decimals | \"kg\" allows decimals, \"pcs\" does not. |\n| Categories | Name | Stationery, cleaning, food, furniture, IT. Used for search and reports. |\n| Products and services | Name, product or service, category, measure, photo, default brand or company, reference price, description | Product or service, and the measure, lock after first use. |\n| Subtypes | Product, name, own photo, own reference price | Variants of one product, for example \"A4, 80 g\" for paper. |\n| Extra cost types | Name | Delivery, loading, installation. |\n| Companies and brands | Name, kind (brand, supplier or both), tax ID, phone, note | One list serves the brand on an order and the supplier on a purchase. |\n| Departments | Branch, name, responsible person (name and phone) | The responsible person is plain text, not an app user. |\n\nEach catalog has a list with search, a page per entry with its change history, and a form to add one. Everyone else picks entries from these lists; only the Head adds or edits them (a Manager may add a product or subtype while ordering, see [Can a Manager add a missing product?](manager-adds))."
+        },
+        "product-or-service": {
+          "title": "Product or service: what is the difference?",
+          "body": "Every catalog item is a product or a service; product is the default. Products enter the warehouse when bought. Services (repair, delivery, printing) never do: when the Manager records one, it counts as \"Used\" instead of \"Received\", and stock columns show a dash."
+        },
+        "subtypes": {
+          "title": "Subtypes, and adding the first one",
+          "body": "A subtype is a variant of a product: a colour, a size, a page count. Each has its own name, and may have its own photo and reference price.\n\nInside the app every product has at least one subtype. A product with no visible subtypes has one hidden subtype, so orders and stock always point at a subtype. When someone adds the first real subtype to such a product, they also name the items that already exist, for example \"48 varaq\" beside the new \"96 varaq\". The existing items keep their orders, stock and price under that name, and the new subtype starts empty."
+        },
+        "brand-supplier": {
+          "title": "Brand and supplier: what is the difference?",
+          "body": "Both come from the same list, Companies and brands.\n\n- The **brand** is on the order: who makes the item you want, for example Svetocopy.\n- The **supplier** is on the purchase record: the shop or company it was actually bought from. It defaults to the order's brand.\n\nEach company is marked as a brand, a supplier or both. Only the Head adds companies; a Manager picks from the list or leaves the field empty and writes the name in the comment."
+        },
+        "reference-price": {
+          "title": "What is the reference price?",
+          "body": "The normal price the Head sets for one subtype, for the whole school (not per branch). It is used to:\n\n- fill the price of a new order (if there is none, the last purchase price is used; if neither, the price stays empty);\n- show a price hint such as \"+35% vs catalog price\" when an order's price differs from it by more than the setting **Price hint, %** (20% by default);\n- fill the cost of a direct entry or a stock import when the cost is left empty.\n\nWhen the price changes, the Head adds the new price with a short note under Admin, Prices; older prices stay in the price history, and every real purchase price is saved too. When recent purchases differ from the reference price by more than 20%, the Head gets a price prompt to update it in one click. Many prices can be loaded at once from Excel."
+        },
+        "manager-adds": {
+          "title": "Can a Manager add a missing product?",
+          "body": "Yes, while both rights \"Add and submit orders\" and \"Add products and subtypes\" are on. In the order's product search, when nothing matches, the last line offers to add it without leaving the order:\n\n- **A new product:** name, product or service, category, measure, and an optional photo. No reference price, brand or description; the Head adds them later.\n- **A new subtype:** name and an optional photo, and the name of the existing items if it is the product's first subtype.\n\nIf the name already exists (ignoring capitals and extra spaces), the existing entry is offered instead; an inactive one is named, and only the Head can switch it on. The new entry can be ordered at once; nobody approves it. It appears on the Head's home under \"Added by Managers\" until the Head marks it checked. A Manager cannot edit or deactivate catalog entries, and cannot add measures, categories, companies or extra cost types."
+        },
+        "old-suggestions": {
+          "title": "Product suggestions",
+          "body": "Before 25 October 2026 a Manager could suggest a product instead of adding it. Suggestions sent then stay on the Head's Product suggestions page until the Head decides each one: add it to the catalog, or turn it down with a reason. The Manager is notified either way. No new suggestions are sent; Managers add products themselves (see [Can a Manager add a missing product?](manager-adds))."
+        },
+        "deactivate": {
+          "title": "Can I delete a product, a department or a user?",
+          "body": "No. Anything that was used is **deactivated** instead. It leaves the pick lists, and old records keep showing it. An inactive product can no longer be ordered or bought, but stock the branch still holds of it can be issued, written off, transferred and returned; stock lists show it marked \"inactive\".\n\nNames are unique inside their list, ignoring capitals and extra spaces. Every catalog entry shows who changed what and when."
+        },
+        "photos": {
+          "title": "Photos and files",
+          "body": "Products and subtypes can have a photo: JPG, PNG, WebP or HEIC, up to 10 MB. Large phone photos are shrunk before upload. The app keeps a small version for lists and a large one for viewing. Receipts on purchase records take up to 5 photos or PDF files each, and a receipt photo keeps enough detail to read its small print. Files are shown only to people who may see the record they belong to."
+        },
+        "excel-import": {
+          "title": "Importing from Excel",
+          "body": "Departments, products with subtypes, prices and existing stock can be imported.\n\n1. Press **Download template** on the import page and fill it in Excel. Keep the header row as it is.\n2. Choose the file (.xlsx, up to 500 rows; split a longer list).\n3. The preview lists every wrong row and why, for example \"Row 14, Category: not found\".\n4. When no row is wrong, press **Save all rows**. All rows are saved, or none.\n\nAn import only adds; it never changes or removes existing entries.\n\n| Import | Where | Each row names |\n| --- | --- | --- |\n| Departments | Admin, Catalogs, Departments | Branch code, name, responsible person |\n| Products and subtypes | Admin, Catalogs, Products and services | Name, type, category, measure, company, description, subtype, price |\n| Prices | Admin, Prices | Product, subtype, price, note |\n| Existing stock | Warehouse, Stock on hand, Import from Excel | Product, subtype, quantity, cost (one branch per file) |"
+        },
+        "minimum-stock": {
+          "title": "Minimum stock",
+          "body": "The Head, or a Manager for their own branches, can set a minimum per subtype per branch, on the item card or in Stock on hand. When stock falls to the minimum or below, the item is marked \"Low\" and the branch's Managers are told once until it is restocked. See [Low stock](low-stock)."
+        }
+      }
+    },
+    "orders": {
+      "title": "Orders",
+      "lead": "One order is one product or service for one department. Managers write them in the order sheet and submit every ready one with one click.",
+      "topics": {
+        "order-fields": {
+          "title": "What an order holds",
+          "body": "| Field | How it is filled |\n| --- | --- |\n| Branch | Picked; filled for a Manager with one branch. Locked once submitted. |\n| Product or service, subtype | Search by name; shows photo, category and stock. |\n| In stock | Automatic: this branch's stock now. A copy is kept at submit. |\n| Photo | From the catalog. The Manager may add one reference photo. |\n| Brand or company | Picked; filled from the product's default. |\n| Requested by | A department of the branch (its responsible person is shown), and optionally a person's name. |\n| Needed by | A date, not in the past at submit. |\n| Quantity and measure | More than 0; up to 3 decimals only when the measure allows them. |\n| Price per unit | Filled with the reference price, else the last purchase price. Whole so'm, more than 0. |\n| Extra costs | Rows of type and amount, such as delivery or loading. |\n| Payment type | Cash, Bank transfer or Corporate card. Default from Settings. |\n| Priority | Normal or Urgent. Urgent needs a short reason and is pinned on top for approvers. |\n| Comment | Up to 1000 characters. |\n| Order total | Quantity times price, rounded half up to whole so'm, plus extra costs. |\n| Number, owner, dates | Automatic. |"
+        },
+        "field-settings": {
+          "title": "Which fields are asked? (Order fields)",
+          "body": "The Head decides, for the whole school, under Admin, Settings, **Order fields**. Branch, product, subtype and quantity are always asked, in the row.\n\n| Field | Can be | Default |\n| --- | --- | --- |\n| Department | Required, optional or hidden | Required, in the row |\n| Needed by | Required, optional or hidden | Required, in the row |\n| Price per unit | Required, optional or hidden (optional or hidden only while the Finance step is off) | Required, in the row |\n| Payment type | Shown or hidden | Shown, under \"More\" |\n| Priority | Shown or hidden | Shown, under \"More\" |\n| Brand or company | Required, optional or hidden | Optional, under \"More\" |\n| Person (who asked) | Required, optional or hidden | Optional, under \"More\" |\n| Comment | Required, optional or hidden | Optional, under \"More\" |\n| Reference photo | Required, optional or hidden | Optional, under \"More\" |\n| Extra costs | Optional or hidden | Optional, under \"More\" |\n\n- Each shown field stands in the row or under \"More\"; the Head chooses.\n- A hidden payment type is the **Default payment type** of Settings; a hidden priority is Normal; a hidden price is the suggested price, if there is one.\n- An order without a department is \"No department\" in analytics and reports, and cannot use \"Give straight to the department\".\n- An order without a needed-by date gets no \"due soon\" reminder.\n- An order without a price has no planned total and reads \"No planned price\".\n- A change applies from the next submit; orders already submitted keep what they hold."
+        },
+        "order-sheet": {
+          "title": "The order sheet and drafts",
+          "body": "The Manager and the Head have an **order sheet** at the top of Orders: their drafts (status Draft) and the orders sent back or taken back to them, edited like a spreadsheet. Tab and Enter move between cells, and Enter on the last row adds a new draft. On a phone each draft is a card with the same fields and \"More\".\n\n- A draft saves itself after every change and shows \"Saved\". Only its owner and the Head see it.\n- A new draft takes the branch, department and needed-by date of the draft above it.\n- Adding the same item for the same department again, while you have an unsent draft for it, raises that draft's quantity instead of making a second one: \"Added to your draft: now 20\". Once submitted, a new order is made, and lists show both in one group row.\n- The owner can delete a draft that was never submitted. Nothing else is ever deleted."
+        },
+        "submit": {
+          "title": "How do I submit orders?",
+          "body": "Press **Submit**.\n\n- With nothing ticked, every ready draft of your own that has no number is sent: up to 200 at a time, oldest first; press again for the rest. A draft that is not ready stays in the sheet, marked on the exact cell, with a short list on top.\n- With rows ticked, only those are sent, and if one of them fails a check, nothing is sent.\n- Sent-back and taken-back orders, and (for the Head) other people's drafts, are sent only when ticked.\n\nChecks at submit: every required field is filled, no deactivated catalog entry is used, and no needed-by date is in the past. A draft someone changed after your screen loaded stops the submit, and the screen refreshes.\n\nSubmitted orders go to the Head, who is notified; an order the Head created goes to the next step that is on."
+        },
+        "order-numbers": {
+          "title": "Order numbers",
+          "body": "An order gets its number at the first submit: branch code, two-digit year, four-digit counter, for example `CHL-26-0142`.\n\n- The counter runs per branch per calendar year (Tashkent time) and restarts at 0001 in January. After 9999 it grows to five digits.\n- A number never changes and is never reused; rejected and cancelled orders keep theirs.\n- An order sent back and submitted again keeps its number and shows \"rev 2\", \"rev 3\".\n- Drafts have no number, so deleted drafts leave no gaps."
+        },
+        "group-rows": {
+          "title": "Group rows: why do I see one row for many orders?",
+          "body": "Every list shows one row per product subtype and status in a branch, for example \"Tata pens, 30\". It shows the total quantity, the planned amount, how many orders it holds, the earliest needed-by date, \"Urgent\" when any order is urgent, and the price hint when any order has one. Open it to see its orders: number, department, quantity, price, payment type, needed-by date, owner and date submitted.\n\nAn action on a group row acts on every order in it, all or nothing. Any single order can still be ticked alone. Each order keeps its own number, approvals, history, purchases and money. The Manager's own view counts every stage: \"Tata pens: 30 requested\"."
+        },
+        "ticking-filters": {
+          "title": "The order list: ticking, filters and the action bar",
+          "body": "Tick orders or group rows; a bar at the bottom shows how many are ticked, their totals (goods, extra costs, grand total, and the total per payment type) and only the actions you can take on all of them now. \"Select all on this filter\" ticks up to 200 matching orders. One action covers at most 200 orders.\n\nFilters: dates (created, submitted, approved, closed), branch, status, owner, department (\"No department\" too), category, payment type, Urgent, and a range of order numbers. Filters and sorting stay in the page address, so a copied link opens the same view. Lists show 25 rows per page.\n\nA price hint such as \"+35% vs catalog price\" shows when an order's price differs from the reference price by more than the set percent."
+        },
+        "order-page": {
+          "title": "The order page",
+          "body": "- **Top:** number and revision, status, branch, owner, department, product, and one line saying who acts next and since when, for example \"Waiting for Principal (Otabek N.) since 10.10.2026\".\n- **Plan and actual:** the planned total until something is bought; then the plan beside the actual quantity, price and extra costs, with the three colour labels (see [Money and settlement](money)).\n- **Tabs:** Details, Purchases, Money (not on an order that skipped Finance), History. History starts with the steps Draft, Head, Principal, Finance, Open, Closed, with names and times; a skipped step reads \"Skipped\". Below it, every move and every purchase or money record of the order, with who did it and when.\n- **Action bar:** your main next action as one button, your other actions under \"More\".\n\nApprovers see the stock at submit and the stock now, so they can tell when an item has already arrived. On a re-submitted order, changed fields are highlighted, with old and new values side by side."
+        },
+        "copy-as-new": {
+          "title": "Copy as new",
+          "body": "Any order, even a rejected one, can be copied into a new draft. Several ticked orders can be copied at once. The copy gets a new number when it is submitted."
+        },
+        "downloads": {
+          "title": "Downloading orders (Excel and PDF)",
+          "body": "Any list downloads as **Excel** or as a plain **PDF**.\n\n- Excel: one row per order with its number, status, branch, owner, department, product, subtype, quantity, price, extra costs, payment type, planned total, and from Open on the actual quantity, price, extra costs, total and difference; then who approved each step and when.\n- PDF: the same table, A4 landscape, with the filters used and who downloaded it and when on every page.\n\nBoth use the same numbers as the screen and your language; product photos are left out. There is no order form and no signature line anywhere: the approvals in each person's account are the record. Analytics and Reports download the same way."
+        }
+      }
+    },
+    "approval": {
+      "title": "Approval",
+      "lead": "Head, then Principal, then Finance. Each approver decides on many ticked orders in one action. An order cannot skip a step that is on.",
+      "topics": {
+        "statuses": {
+          "title": "Order statuses",
+          "body": "| Status | Meaning | Who acts next |\n| --- | --- | --- |\n| Draft | Being written. Seen by its owner and the Head only. | Owner |\n| Waiting for Head | Submitted. | Procurement Head |\n| Waiting for Principal | The Head approved. | Principal of the branch |\n| Waiting for Finance | The Principal approved (the Head, while the Principal step is off). | Finance of the branch |\n| Sent back for editing | An approver asked for changes. | Owner |\n| Open | Fully approved. The Manager buys and records purchases. | Owner |\n| Waiting for settlement | Buying is finished and something differs from the plan. | Finance |\n| Closed | Finished. Read-only. | Nobody |\n| Rejected | Refused for good. Read-only. | Nobody |\n| Cancelled | Stopped by the owner or the Head before approval finished. | Nobody |\n\nStatus labels look the same everywhere: blue for the approval and buying flow, red for sent back and rejected, green for closed, grey for draft and cancelled."
+        },
+        "moves": {
+          "title": "Every possible move",
+          "body": "| From | Button | Who | To |\n| --- | --- | --- | --- |\n| Draft | Submit | Owner or Head | Waiting for Head (an order the Head created: the next step that is on) |\n| Waiting for Head | Approve | Procurement Head | Waiting for Principal, or the next step that is on |\n| Waiting for Principal | Approve | Principal | Waiting for Finance, or Open while the Finance step is off |\n| Waiting for Finance | Approve | Finance | Open (cash can be given in the same dialog) |\n| Waiting for Head | Send back | Procurement Head | Sent back for editing |\n| Waiting for Principal | Send back | Principal | Sent back for editing |\n| Waiting for Finance | Send back | Finance | Sent back for editing |\n| Waiting for Head | Reject | Procurement Head | Rejected |\n| Waiting for Principal | Reject | Principal | Rejected |\n| Waiting for Finance | Reject | Finance | Rejected |\n| Waiting for Head | Take back | Owner, before the Head decides | Draft, keeping its number |\n| Sent back for editing | Submit again | Owner or Head | Waiting for Head, \"rev\" goes up by 1 |\n| Waiting for Head | Cancel order | Owner or Head | Cancelled |\n| Waiting for Principal | Cancel order | Owner or Head | Cancelled |\n| Waiting for Finance | Cancel order | Owner or Head | Cancelled |\n| Sent back for editing | Cancel order | Owner or Head | Cancelled |\n| Draft (taken back, with a number) | Cancel order | Owner or Head | Cancelled |\n| Open | Close (exact match) | Owner or Head | Closed |\n| Open (skipped Finance, buying finished) | Close | Owner or Head | Closed |\n| Open (buying finished) | Send to settlement | Owner or Head | Waiting for settlement |\n| Waiting for settlement | Send back for correction | Finance | Open |\n| Waiting for settlement | Close | Finance | Closed |\n| Closed | Reopen | Procurement Head | Open |\n\nNo other move is possible, on the screen or on the server. Every move is written to the order's History with who, when and the reason."
+        },
+        "approver-rules": {
+          "title": "Rules every approver should know",
+          "body": "- **The order as it is.** Approvers do not edit orders; they approve, send back or reject. The one exception: Finance may change the payment type while approving.\n- **Send back or reject.** Send back lets the owner edit and submit again; the corrected order starts again from the Head, and earlier approvals no longer count. Reject is final; the owner can only copy it as new.\n- **Reasons.** Send back, reject, cancel and reopen need a reason of at least 5 characters. One reason covers all ticked orders; when sending back you can add a note to each order.\n- **All or nothing.** An action on ticked orders checks every order first. If any changed in the meantime, nothing is saved; the screen names the changed orders and refreshes.\n- **Two people at once.** The first click wins. The second sees, for example, \"Already approved by Dilnoza at 14:32\".\n- **Frozen plan.** Once Open, an order's plan never changes. Everything after that is recorded as purchases.\n- **Who is told.** Each approval tells the next step's approver; the last one tells the owner and the Head. Sent back, rejected and cancelled orders tell their owner. See [Notifications](notifications)."
+        },
+        "reminders": {
+          "title": "Reminders when an order waits",
+          "body": "An order that waits longer than **Reminder after, hours** (24 by default) reminds the approvers of its step, once a day, grouped: \"9 orders have waited more than 24 hours\". After **Tell the Procurement Head after, hours** (48 by default) the Head is told too. Both are in Settings.\n\nAn order whose needed-by date has passed shows \"Overdue\"; nothing is blocked."
+        },
+        "principal-step": {
+          "title": "The Principal step switched off",
+          "body": "The Head can switch the **Principal step** off for the whole school under Admin, Settings, and on again later. While it is off, the Head's Approve moves an order to the next step that is on: Waiting for Finance, or Open when Finance is off too. The order is marked as having skipped the Principal, and its History shows \"Skipped\".\n\n- Switching off is refused while any order is Waiting for Principal; the Head sees those orders listed.\n- Switching on changes only orders the Head approves from then on.\n- Each round decides again: an order sent back and approved again by the Head goes through the Principal if the step is on by then.\n- The Principal still sees the branch's orders, stock and reports. The Head step can never be switched off."
+        },
+        "finance-step": {
+          "title": "The Finance step switched off",
+          "body": "The Head can switch the **Finance step** off for the whole school under Admin, Settings, for example while the Finance team does not use the app. While it is off, the last approval (the Principal's, or the Head's when the Principal step is off too) opens the order, and it is marked as having skipped Finance.\n\n- **No cash tracking.** Such an order has no cash count, no money actions and no Money tab, is left out of Money with managers, and never goes to settlement. Payment types are still planned and recorded.\n- **Closing.** The owner or the Head closes it once its buying is finished, whether or not it matches exactly, confirming that all items entered the warehouse. The three colour labels still show any difference. If the Manager's right \"Close exact-match orders alone\" is off, the Head closes it.\n- **Overspend.** The Head is still notified, but no acknowledgment is needed.\n- Switching off is refused while any order is Waiting for Finance or Waiting for settlement. Switching on changes only orders approved from then on; an order that skipped Finance keeps these rules for good, even after a reopen.\n- The price per unit can be optional or hidden only while this step is off.\n\n**With both steps off** the Head is the only approver: the Head's Approve opens the order, and an order the Head creates opens as soon as it is submitted."
+        }
+      }
+    },
+    "buying": {
+      "title": "Buying and purchase records",
+      "lead": "Once an order is Open, the Manager records every purchase or delivery. Goods enter the warehouse at once.",
+      "topics": {
+        "purchase-record": {
+          "title": "What a purchase record holds",
+          "body": "| Field | Rule |\n| --- | --- |\n| Date bought | Default today. Not in the future, not before the approval that opened the order. |\n| Actual quantity | More than 0; decimals only when the measure allows. |\n| Actual price per unit | 0 or more, whole so'm. A price of 0 (a gift) needs a comment. |\n| Extra costs | Rows of type, amount and payment type; covers delivery paid from the Manager's own pocket. |\n| Payment type used | From the order; can differ, for example planned by card but paid in cash. |\n| Supplier | From Companies and brands; defaults to the order's brand. |\n| Subtype bought | Defaults to the ordered one. See [substitution](substitution). |\n| Receipt | 0 to 5 photos or PDF files. On a phone the camera opens directly. |\n| Give straight to the department | Tick it when items go straight to the department: an issue is written too. Not offered for an order without a department. |\n| Comment | Required when price or quantity differs from the plan, on a substitution, on price 0, or when the payment type changed. |\n| Actual total | Automatic: quantity times price, rounded, plus extra costs. |\n\n**Same as planned** fills quantity, price and extra costs from the order in one tap. An order can have many records, for example 60 notebooks on Monday and 40 on Friday. The setting **Receipt required for cash purchases** makes a receipt required on a trip paid in cash, or with an extra cost paid in cash."
+        },
+        "trip": {
+          "title": "One shop visit for many orders (a trip)",
+          "body": "Tick Open orders, or a group row, and press **Record purchase** to record the visit once.\n\n- Date, supplier, payment type and receipts are shared; quantity, price, subtype, extra costs and comment are per order.\n- A trip covers one branch and one owner, because the cash it spends counts on the owner's orders.\n- On a group row you type one quantity and one price, and the app splits the quantity across the orders, oldest first, each up to what it still lacks; you can change the split before saving.\n- A trip saves all or nothing.\n\nDelivery for a whole visit is its own order, a service such as \"Delivery\", approved like any other. A fee that only turns up at the shop is an extra cost on one order of the trip, which then shows over its plan."
+        },
+        "saving-purchase": {
+          "title": "What happens when I save a purchase",
+          "body": "1. The record is saved.\n2. For goods, the branch's stock goes up, written as a \"Receipt\" movement.\n3. The item's last purchase price is updated.\n4. The order's received quantity and progress are updated.\n5. With \"Give straight to the department\", an issue is written and stock goes down again.\n6. The event is added to the order's History.\n\nAll of it happens together or not at all. A service order shows \"Used\" where a product order shows \"Received\"."
+        },
+        "progress": {
+          "title": "Order progress: Finish order, Not bought, Reopen buying",
+          "body": "| Progress | When |\n| --- | --- |\n| Buying open | Received less than planned, and not finished by hand. |\n| Done | Received the planned quantity or more. Automatic. |\n| Done, short | The Manager pressed **Finish order** with less than planned, with a reason. |\n| Not bought | The Manager pressed **Not bought** with nothing received, with a reason. |\n\nBoth buttons work on many ticked orders with one reason. While the order is Open, **Reopen buying** undoes them when more items arrive. Buying more than planned is allowed, needs a comment, and shows red.\n\nWhen an order's needed-by date is 2 days away and its buying is not finished, its owner is reminded."
+        },
+        "substitution": {
+          "title": "The shop had a different colour or size",
+          "body": "Pick the subtype really bought; it must belong to the same product. Stock rises for that subtype, the order shows \"Substituted\", and Finance reviews it instead of the Manager closing it alone (an order that skipped Finance is closed by its owner or the Head as usual).\n\nFor a completely different product, mark the order \"Not bought\" and add a new order."
+        },
+        "purchase-mistakes": {
+          "title": "I made a mistake in a purchase record",
+          "body": "While the order is Open, cancel the record with a reason and enter it again; stock goes down by the same quantity. **Cancel trip** cancels every record of one visit at once, all or nothing. Cancelled records stay visible, crossed out; the order shows how many were cancelled, and the Head is notified of every cancel.\n\n- Cancelling is blocked when it would push stock below zero, which happens when the items were already issued: take them back from the department first, or use a write-off.\n- If the order was moved to another Manager since, the Head first moves it back to the Manager who held it.\n- After the order is Closed, only the Head's reopen allows corrections."
+        },
+        "finishing": {
+          "title": "Finishing an order",
+          "body": "An order's buying is finished when its progress is Done, Done short or Not bought. Tick finished orders to see a summary of their differences, then close them or send them to settlement, as [Closing an order](closing) explains."
+        }
+      }
+    },
+    "money": {
+      "title": "Money and settlement",
+      "lead": "Every order keeps its own money count, so each can be checked and closed on its own. An order that skipped Finance keeps only the three colour labels.",
+      "topics": {
+        "money-numbers": {
+          "title": "The numbers the app calculates",
+          "body": "| Number | How |\n| --- | --- |\n| Planned total | Planned quantity times planned price, rounded, plus planned extra costs |\n| Actual quantity | Sum of the quantities of the records that are not cancelled |\n| Actual total | Sum of quantity times price, each rounded, over those records, plus their extra costs |\n| Difference | Planned total minus actual total. Positive: money left. Negative: overspent. |\n\nRounding is always half up, to whole so'm. An order without a planned price has no planned total and no difference; its labels read \"No planned price\", and a sum that leaves such orders out says how many, for example \"1 without a price\"."
+        },
+        "colours": {
+          "title": "The three colour labels",
+          "body": "| Label | Green | Orange | Red |\n| --- | --- | --- | --- |\n| Number | Bought as planned | Bought less | Bought more |\n| Price | Every unit price as planned | Paid less per unit | Paid more per unit |\n| Total | Difference 0 | Money left, for example \"Left 50 000\" | Overspent, for example \"Over 30 000\" |\n\nWhile buying is still open, Number and Total show grey \"In progress\". A label is never colour alone: it carries an icon, a word and the amount. For a group row or ticked orders, Total uses the summed difference, and Number and Price take the worst colour among the orders."
+        },
+        "exact-match": {
+          "title": "What is an exact match?",
+          "body": "Number and Price are green, actual extra costs equal the planned ones, nothing was substituted, the payment type is the planned one, and the cash count is 0. Differences that cancel each other out (the price 10 000 lower, the extra costs 10 000 higher) are not an exact match."
+        },
+        "cash-count": {
+          "title": "The cash count of an order",
+          "body": "**Cash count** = cash given + paid back - cash returned - cash spent. Cash spent is every purchase and extra cost of the order paid in cash.\n\n- Above 0: the Manager holds school money for this order and must return it.\n- Below 0: the Manager spent their own money and Finance pays it back.\n- It must be 0 before the order closes.\n\nA Manager's cash balance is two numbers, never netted: what they hold (all positive counts of their orders not yet closed) and what they are owed (all negative ones)."
+        },
+        "money-actions": {
+          "title": "Money actions (Finance)",
+          "body": "Finance records every movement of money as an action: a date (not later than today), an optional document number and file, a comment, and one row per order. The action's total is the sum of its rows; nobody types a total.\n\n| Kind of row | Direction | Changes the cash count |\n| --- | --- | --- |\n| Cash given | Finance to Manager | Up |\n| Cash returned | Manager to Finance | Down |\n| Paid back | Finance to Manager, for their own money spent | Up |\n| Bank transfer | Finance to supplier | No, for information |\n| Card top-up | Finance to the corporate card | No, for information |\n| Card money returned | Corporate card to Finance | No, for information |\n\n- One action concerns one Manager's orders. Ticked orders of several Managers give one block, and one action, per Manager, saved together.\n- One kind per action, except settlement, which may hold returned and paid-back rows together so only the net changes hands.\n- A \"Cash returned\" row cannot be larger than the order's count, and a \"Paid back\" row cannot be larger than what the school owes, so an order never jumps from holding money to being owed.\n- Actions are never deleted. A wrong one is cancelled whole with a reason, then entered again. If one of its orders is already Closed, the Head reopens it first.\n- The owner is told of every cash given, returned or paid back, and every action is in the order's History."
+        },
+        "finance-approval-cash": {
+          "title": "Cash at Finance approval",
+          "body": "The approval dialog shows the planned totals per payment type and a table \"Cash given to the Manager now\", one row per order, filled with that order's planned cash (its planned total when it is a cash order). Finance can change any row or set it to 0 and give cash later; every so'm belongs to one order. A later Cash given is filled with the planned cash not yet given.\n\nThe Manager may buy before cash is given; the count then goes below 0 until Finance pays."
+        },
+        "closing": {
+          "title": "Closing an order",
+          "body": "1. **Exact match:** the Manager ticks finished orders and presses **Close**, confirming \"I confirm that all items entered the warehouse of this branch\". Finance and the Head are notified. If the Manager's right \"Close exact-match orders alone\" is off, these orders go to settlement instead.\n2. **Any difference:** the Manager presses **Send to settlement**, and Finance is notified. Finance's settlement page shows, per Manager, a block per payment type used:\n\n- **Cash:** given, spent, returned, paid back and the count. One settlement action receives from orders above 0 and pays orders below 0, showing only the net, for example \"the Manager hands Finance 20 000\".\n- **Bank transfer:** planned, transferred and the value of goods received. Finance ticks \"Confirmed\"; a note is required when they differ.\n- **Corporate card:** planned and charged. Finance ticks \"Confirmed\".\n\n3. **Finance closes** ticked orders once every cash count is 0, every block is confirmed and any Head acknowledgment is given; otherwise nothing closes and the screen names the orders that are not ready.\n4. If Finance finds a wrong record, it presses **Send back for correction**: the order returns to Open with a reason.\n\nOnly the Head can **Reopen** a closed order, with a reason. Its counts are recalculated, and settlement confirmations and the overspend acknowledgment are cleared, so it is checked again. Owner, Head and Finance are told of every close and reopen."
+        },
+        "overspend": {
+          "title": "The overspend guard",
+          "body": "When an order's actual total is above its planned total by more than **Overspend guard, %** (10% by default) **and** by more than **Overspend guard, so'm** (100 000 by default), the Head is notified and must press **Acknowledge overspend** with a comment before Finance can close it. Finance is told when it is acknowledged.\n\nWith the percent at 0 only the amount counts; with the amount at 0 only the percent counts; the guard can be switched off. The Head can acknowledge several ticked orders with one comment. For an order that skipped Finance the Head is notified but no acknowledgment is needed."
+        },
+        "money-with-managers": {
+          "title": "Money with managers",
+          "body": "Finance and the Head have a page, Money, listing every Manager's balance: what they hold and what they are owed, apart, oldest first, with the date since when and the orders behind it. It answers: who is holding school money right now, and since when? A Manager sees only their own cash, on their home page."
+        },
+        "worked-example": {
+          "title": "A worked example",
+          "body": "Plan: 100 notebooks at 5 000 in cash, plus 20 000 delivery: 520 000. Finance gives 520 000.\n\n| Case | Bought | Labels | Cash count | Ending |\n| --- | --- | --- | --- | --- |\n| Exact | 100 at 5 000 + 20 000 | All green | 0 | The Manager closes |\n| Cheaper | 100 at 4 500 + 20 000 | Price orange, Total \"Left 50 000\" | +50 000 | The Manager returns 50 000, Finance closes |\n| Dearer | 100 at 5 200 + 30 000 | Price red, Total \"Over 30 000\" | -30 000 | Finance pays back 30 000 and closes (under the guard) |\n| Fewer | 90 at 5 000 + 20 000 | Number orange, Total \"Left 50 000\" | +50 000 | The Manager returns 50 000, Finance closes |"
+        }
+      }
+    },
+    "warehouse": {
+      "title": "Warehouse",
+      "lead": "Each branch has one warehouse. Its stock is the sum of every movement ever recorded, and it can never go below zero. Services are not stocked.",
+      "topics": {
+        "movements": {
+          "title": "How stock goes up and down",
+          "body": "| Movement | Stock | Made by | Needs the Head |\n| --- | --- | --- | --- |\n| Receipt | Up | Automatic, from a purchase record | No |\n| Issue to a department | Down | Manager or Head | No |\n| Return from a department | Up | Manager or Head | No |\n| Transfer out, then Transfer in | Down at the sender, up at the receiver | The sender; the receiver confirms | No |\n| Write-off | Down | Manager asks | Yes |\n| Correction after a count | Up or down | Manager asks | Yes |\n| Direct entry | Up | Head only | No |\n| Reversal | The opposite of the document it undoes | Its creator or the Head | No |\n\nMovements are never edited or deleted. A wrong document is fixed with **Reverse**, which writes the opposite movement and needs a reason. Decimals follow the measure.\n\nA warehouse document shows its state: Waiting for the Head (a write-off or count not yet decided), Posted, In transit (a transfer not yet received), Received, Refused, Reversed, or Cancelled (a transfer called back)."
+        },
+        "issue": {
+          "title": "Issue to a department",
+          "body": "Open Warehouse, **New issue** (or Issue from stock on the Manager's home). Pick the department of the branch, the date, who received it (filled with the department's responsible person) and the items with quantities; current stock shows beside each line.\n\n- You cannot issue more than is in stock. The app checks again at the moment of saving and names the item and the amount left if someone else took it first.\n- Each issue gets a number like `ISS-CHL-26-0031` and a PDF issue note naming who gave and who received the items, with no signature lines.\n- An issue can be reversed by its creator or the Head; it is then marked \"Reversed\". If the department already returned some of those items, reverse the return first."
+        },
+        "return": {
+          "title": "Return from a department",
+          "body": "Pick the department, the items and quantities; stock goes up. Returning more than the department ever received shows a warning and needs a comment. A return can be reversed like an issue. Returns and reversals need the Manager right \"Take returns and reverse documents\"."
+        },
+        "transfer": {
+          "title": "Transfer to another branch",
+          "body": "Pick the other branch and the items. Stock leaves the sender at once and the transfer shows \"In transit\", with a number like `TRF-CHL-26-0007` and a PDF transfer note. The receiving branch's Managers are notified and enter what really arrived.\n\n- Until then the sender or the Head can cancel it with a reason; the stock goes back, and the receiving Managers are told.\n- A shortage becomes a write-off request \"Lost in transfer\" on the sending branch, for the Head to decide."
+        },
+        "write-off": {
+          "title": "Write-off",
+          "body": "For items that are damaged, expired, lost or returned to the supplier. The Manager picks the items, quantities, a reason (Damaged, Expired, Lost, Returned to supplier, Lost in transfer, Other) and a comment. The Head is notified and decides: stock changes only after the Head approves. A refusal carries a reason, and the Manager is told the decision either way."
+        },
+        "stock-count": {
+          "title": "Stock count",
+          "body": "The Manager starts a count for a branch or a category under Warehouse, Counts, and types what is on the shelves. The app shows the differences, and the Head approves them as corrections. If an item moved between the start of the count and the approval, the Manager is asked to count that item again."
+        },
+        "direct-entry": {
+          "title": "Direct entry (Head only)",
+          "body": "The Head puts items into any branch's stock without an order: how the stock the school already had came in at the start, and later for gifts.\n\n- Fields: branch, date, reason (Stock we already had, Gift or donation, Other; Other needs a comment) and lines of product, subtype, quantity and cost per unit, filled with the reference price.\n- Many items can be imported from Excel (Warehouse, Stock on hand, Import from Excel), saved as direct entries with the reason \"Stock we already had\".\n- Each entry gets a number like `ENT-CHL-26-0004`, shows as \"Direct entry\" on the item card, and has its own line in the stock value report."
+        },
+        "stock-screens": {
+          "title": "Stock screens",
+          "body": "- **Stock on hand:** product, subtype, photo, quantity, measure, minimum and value; search, category filter and \"Low stock only\". The buttons for new documents are here.\n- **Item card:** every movement of one item in one branch, newest first, with the running balance and a link to the source document or order. The minimum is set here.\n- **Documents:** all issues, returns, transfers, write-offs, direct entries and counts, filtered by type, date and department. Each document has its own page with its lines, its state and its PDF note."
+        },
+        "low-stock": {
+          "title": "Low stock",
+          "body": "When an item's quantity falls to its minimum or below, it gets a \"Low\" label, appears on the Manager's home, and the branch's Managers are notified once until it is restocked. One button adds it as a draft order, or raises the existing draft. An item with no minimum never shows as low."
+        },
+        "stock-value": {
+          "title": "Stock value",
+          "body": "Value is shown in reports only and never affects money or settlement. Each branch keeps a moving average cost per item:\n\n- A receipt mixes its price into the average; extra costs are not included.\n- Issues, write-offs and transfers out use the average at that moment; a transfer arrives with the sender's average.\n- A count correction that adds stock to an item at 0 comes in at its last cost.\n- When stock reaches 0, the average resets."
+        }
+      }
+    },
+    "notifications": {
+      "title": "Notifications",
+      "lead": "Everything arrives in the bell inside the app. There is no SMS, email or messenger.",
+      "topics": {
+        "who-is-told": {
+          "title": "Who is told what",
+          "body": "One action sends one notification per person, never one per order, for example \"Dilnoza submitted 15 orders in CHL\". Its link opens the order list filtered to those orders. The bell shows only notifications of branches you have now.\n\n| Event | Who is told |\n| --- | --- |\n| Orders submitted or submitted again | Procurement Head |\n| Head approved | Principal of the branch (while that step is off: as for \"Principal approved\") |\n| Principal approved | Finance of the branch; for orders that skipped Finance, the owner and the Head |\n| Finance approved | Owner, Head |\n| Sent back, rejected | Owner, Head |\n| Cancelled by someone other than its owner | Owner |\n| Orders moved to another Manager | The new owner and the old one |\n| Cash given, cash returned, paid back, settled | Owner |\n| Sent to settlement | Finance of the branch |\n| Sent back for correction | Owner |\n| Overspend above the guard | Head |\n| Overspend acknowledged | Finance of the branch |\n| Closed, reopened | Owner, Head, Finance of the branch |\n| Orders waiting more than 24 hours | Approvers of that step, once a day, grouped |\n| Orders waiting more than 48 hours | Head, grouped |\n| Needed-by date 2 days away, buying not finished | Owner |\n| Product suggestion sent, decided (only those sent before 25 October 2026) | Head; the Manager who sent it |\n| Write-off or correction asked | Head; the decision goes back to the Manager |\n| Transfer sent or cancelled | Managers of the receiving branch |\n| Item reached its minimum stock | Managers of the branch, once until restocked |\n| Branch has no active user for a role | Head |\n| Purchase record cancelled | Head |\n| Recent purchases differ from the reference price by more than 20% | Head |\n| A Manager's right switched on or off | That Manager |\n| Stock that does not match its movements (nightly check) | Every active Head |\n| The weekly copy of the database failed | Every active Head, each night until a copy succeeds |"
+        }
+      }
+    },
+    "home": {
+      "title": "Home pages",
+      "lead": "Every role opens the app on My tasks: what needs you now.",
+      "topics": {
+        "home-pages": {
+          "title": "What each role sees on Home",
+          "body": "| Role | Home shows, in order |\n| --- | --- |\n| Manager | Three large buttons: New order, Record purchase, Issue from stock. Then: sent back to me; my drafts; my open orders with progress; cash I hold; low stock; orders due soon. |\n| Procurement Head | Waiting for my approval, by branch; overspends to acknowledge; write-offs and corrections to approve; products and subtypes added by Managers; price prompts; orders stuck too long; orders by status per branch; spending this month per branch. |\n| Principal | Waiting for my approval as large cards with the total, urgent label and price hints (tick all and approve in two taps on a phone); my branch's orders by status; spending this month. |\n| Finance | Waiting for my approval; waiting for settlement, with the exact amount to give or receive; money with managers. |\n\nEach list links to the order list filtered to those orders, ready to tick. An empty list is left out; when nothing needs you, one line says so."
+        }
+      }
+    },
+    "analytics": {
+      "title": "Analytics",
+      "lead": "Home is what you must do now; Analytics is what is happening and why. Each role has its own page.",
+      "topics": {
+        "analytics-how": {
+          "title": "How every Analytics page works",
+          "body": "- **Period:** this month, last month, this quarter (calendar quarters), this school year (once the Head sets **First day of the school year** in Settings), or custom dates. Every number shows its change against the period before; a running period is compared with the same number of days of the period before.\n- **Filters:** branch (within your branches), category, department (including \"No department\"), Manager, supplier.\n- **Click to see behind:** any bar, slice or number opens the list of orders, purchase records, moves, cash movements or stock lines that make it up.\n- **Export:** each chart and table to Excel; the whole page as a PDF report.\n- Figures refresh every 5 minutes."
+        },
+        "analytics-head": {
+          "title": "Analytics for the Procurement Head (all branches)",
+          "body": "- **Spending:** by month, branches side by side, by category, by department, top 10 suppliers, by payment type.\n- **Plan vs actual:** share of orders ending green, orange and red; total overspent and saved; by branch and Manager.\n- **Prices:** price trend of any product; biggest rises in 90 days; the same product bought at different prices by different branches or suppliers.\n- **Approval speed:** average hours at each step per branch; orders waiting now, by age; share sent back or rejected, with the most common reasons.\n- **Managers:** per Manager, number of orders, average difference from plan, cancelled purchase records, cash held and for how long.\n- **Warehouse:** stock value per branch; low-stock items; use by department; items with no movement for 90 days; value written off."
+        },
+        "analytics-principal": {
+          "title": "Analytics for the Principal (own branch)",
+          "body": "- **Spending:** the branch by month against the period before; by category and department; top 10 products.\n- **Orders:** by status; needed-by dates coming up; overdue orders.\n- **My approvals:** waiting now; my average time to decide.\n- **Warehouse:** stock value; low stock; what each department used."
+        },
+        "analytics-finance": {
+          "title": "Analytics for Finance (own branches)",
+          "body": "- **Cash:** given, returned and paid back by month; money with managers by age: up to 7 days, 8 to 30 days, over 30 days.\n- **Cash needed soon:** planned cash of approved orders not yet paid, plus orders still in approval.\n- **Payments:** spending by payment type; bank transfers by supplier.\n- **Plan vs actual:** overspends and savings by branch and Manager; purchases without a receipt.\n- **Settlement speed:** average days from \"Send to settlement\" to Closed."
+        },
+        "analytics-manager": {
+          "title": "Analytics for the Manager (own branches)",
+          "body": "- **My orders:** by status; average time to full approval; share sent back, with reasons.\n- **My estimates:** the difference between planned and actual price per product, to estimate better next time.\n- **My cash:** the count per open order.\n- **Stock planning:** use of each item per month; \"runs out in about 12 days\" (current stock divided by the average daily issues of the last 90 days); low stock; a suggested order quantity (30 days of use at that rate)."
+        }
+      }
+    },
+    "reports": {
+      "title": "Reports",
+      "lead": "Every report filters by branch, dates and category, shows only your branches, and exports to Excel.",
+      "topics": {
+        "report-list": {
+          "title": "The reports",
+          "body": "| Report | Answers |\n| --- | --- |\n| Order register | All orders with status, totals and dates |\n| Purchase register | Every purchase record with supplier, price and payment type |\n| Planned vs actual | Differences per order, product and Manager |\n| Spending | Totals by branch, category, department, supplier and month |\n| Price history | How one product's price changed over time; the Head's price notes are shown to the Head and Finance only |\n| Stock on hand | Quantities and value per branch |\n| Stock movements | Everything that went in and out in a period |\n| Use by department | What each department received, in quantity and value |\n| Money with managers | Open cash balances and their age (Head and Finance only) |\n| Approval speed | Average hours an order waits at each step |\n\nThe branch filter starts at the branch chosen in the switcher on top."
+        }
+      }
+    },
+    "admin": {
+      "title": "Settings, users and branches",
+      "lead": "Admin, for the Procurement Head. Every change is written to the audit log.",
+      "topics": {
+        "settings-page": {
+          "title": "Everything on the Settings page",
+          "body": "| Setting | What it does | Default |\n| --- | --- | --- |\n| School name | Shown in the menu. | |\n| First day of the school year | Turns on the \"This school year\" period in Analytics. | Not set |\n| Default payment type | Used on new orders, and when the payment type is hidden. | Cash |\n| Price hint, % | An order price this far from the reference price shows a hint. | 20 |\n| Overspend guard, % | With the amount below, when the Head must acknowledge an overspend; the guard can be switched off. | 10 |\n| Overspend guard, so'm | See the line above. | 100 000 |\n| Receipt required for cash purchases | A trip paid in cash, or with a cash extra cost, needs a receipt. | No |\n| Reminder after, hours | When waiting orders remind their approvers. | 24 |\n| Tell the Procurement Head after, hours | When waiting orders are reported to the Head. | 48 |\n| Principal step | On or off. See [the Principal step](principal-step). | On |\n| Finance step | On or off. See [the Finance step](finance-step). | On |\n| Order fields | How each order field is asked and where it stands. See [Order fields](field-settings). | |\n\nThe page shows the change history of every setting, and the date of the last copy of the database."
+        },
+        "users-branches": {
+          "title": "Users and branches",
+          "body": "**Admin, Users, New user:** full name, username (3 to 30 lower-case Latin letters, digits, _ or .), phone, role (fixed once the account is made), branches (a Procurement Head works in every branch), language, and a password, typed or generated, shown only once so it can be handed over. A Manager's page has the ten rights switches. A user's page has **Renew password**. A user who leaves is deactivated, never deleted; their approval tasks stay with the role, and the Head moves their own orders to another Manager.\n\n**Admin, Branches, New branch:** name, address and a code of 2 to 4 Latin capital letters, for example CHL. The code goes into every order number and locks after the first order. A branch cannot be deactivated while it has unfinished orders or stock above 0."
+        },
+        "behind-scenes": {
+          "title": "Backups and checks behind the scenes",
+          "body": "- The database host keeps a daily backup and can restore any moment of the last 7 days.\n- Every Sunday the app makes its own copy of the database in separate storage; if it fails, every Head is told each night until one succeeds.\n- Every night the app checks every stock number against its movements and tells the Heads about any mismatch.\n- Every change to catalogs, users and settings is written to an audit log with who and when."
+        }
+      }
+    },
+    "faq": {
+      "title": "Common questions",
+      "lead": "Situations people run into, and what the app does.",
+      "topics": {
+        "q-submit-twice": {
+          "title": "I clicked Submit twice. Did I send the orders twice?",
+          "body": "No. The button disables after the first click, and the server ignores the repeat."
+        },
+        "q-same-moment": {
+          "title": "Two approvers clicked at the same moment. What happens?",
+          "body": "The first wins. The second sees who acted and when; if the second action covered more orders, none of it is saved and the list refreshes."
+        },
+        "q-missing-item": {
+          "title": "The item I need is not in the catalog.",
+          "body": "Add it from the order's product search if your rights allow it; otherwise ask the Head to add it. See [Can a Manager add a missing product?](manager-adds)"
+        },
+        "q-missing-company": {
+          "title": "The brand or supplier I need is not in the list.",
+          "body": "Only the Head adds companies. Leave the field empty (it is optional) and write the name in the comment, or ask the Head to add it."
+        },
+        "q-deactivated-draft": {
+          "title": "A product was deactivated while it sat in my draft.",
+          "body": "That draft is marked and not submitted; your other ready drafts are. With drafts ticked, nothing is submitted."
+        },
+        "q-price-changed": {
+          "title": "The catalog price changed after I wrote my draft.",
+          "body": "The draft keeps the price you typed; a hint shows the new suggestion."
+        },
+        "q-two-departments": {
+          "title": "Two departments need the same item.",
+          "body": "Make two orders, one per department. Lists show them together in one group row."
+        },
+        "q-overdue": {
+          "title": "The needed-by date passed while the order waited.",
+          "body": "The order shows \"Overdue\". Nothing is blocked."
+        },
+        "q-change-submitted": {
+          "title": "I want to change an order I already submitted.",
+          "body": "While it is Waiting for Head, press **Take back**: it returns to your sheet with its number, and you submit it again. Later, only an approver can send it back to you. Once Open, the plan never changes."
+        },
+        "q-not-needed": {
+          "title": "I do not need the order any more.",
+          "body": "Before approval is finished, the owner or the Head can cancel it with a reason. Once Open, mark it **Not bought**."
+        },
+        "q-part-quantity": {
+          "title": "The shop had only part of the quantity.",
+          "body": "Record what you bought. The order stays Open until the rest comes, or until you press Finish order."
+        },
+        "q-not-found": {
+          "title": "The item could not be found anywhere.",
+          "body": "Mark the order **Not bought** with a reason. If cash was given, the Manager returns all of it in settlement."
+        },
+        "q-bought-more": {
+          "title": "I bought more than approved.",
+          "body": "Allowed, with a comment. Number shows red, and the overspend guard may apply."
+        },
+        "q-free-item": {
+          "title": "The item was free.",
+          "body": "Record a price of 0 with a comment."
+        },
+        "q-bought-before-cash": {
+          "title": "I bought before Finance gave me cash.",
+          "body": "The order's cash count goes below 0, and Finance pays you back."
+        },
+        "q-card-paid-cash": {
+          "title": "It was planned by card but I paid in cash.",
+          "body": "Set the real payment type on the purchase record, with a comment. The cash count follows."
+        },
+        "q-cash-delivery": {
+          "title": "I paid delivery in cash for a bank-transfer item.",
+          "body": "Add an extra cost row with payment type Cash."
+        },
+        "q-no-receipt": {
+          "title": "I have no receipt.",
+          "body": "Allowed, unless the Head made receipts required for cash in Settings. Finance sees a \"No receipt\" label."
+        },
+        "q-straight-to-class": {
+          "title": "The items went straight from the shop to the classroom.",
+          "body": "Tick \"Give straight to the department\" on the purchase record: the receipt and the issue to the department are written together."
+        },
+        "q-cancel-issued": {
+          "title": "I need to cancel a purchase, but the items were already issued.",
+          "body": "Cancelling is blocked, because stock would go below zero. Take the items back from the department first (a return), or use a write-off."
+        },
+        "q-error-after-close": {
+          "title": "An error was found after the order closed.",
+          "body": "The Head reopens it with a reason. Its counts are recalculated, earlier settlement confirmations and the overspend acknowledgment are cleared, and Finance settles it again."
+        },
+        "q-cancel-money-closed": {
+          "title": "A money action must be cancelled, but one of its orders is already Closed.",
+          "body": "The Head reopens that order first; then Finance cancels the action and enters it again."
+        },
+        "q-two-managers-settle": {
+          "title": "The ticked orders in settlement belong to two Managers.",
+          "body": "The screen shows one block per Manager, and one action per Manager is saved, all together."
+        },
+        "q-hold-and-owed": {
+          "title": "One order holds money and another of the same Manager is owed.",
+          "body": "One settlement action receives on the first and pays on the second; only the net changes hands, and neither order crosses from holding to owed."
+        },
+        "q-manager-leaves": {
+          "title": "A Manager with cash in hand leaves.",
+          "body": "An order cannot change owner until its cash count is 0. Settle the cash first, then the Head moves the orders."
+        },
+        "q-user-deactivated": {
+          "title": "A user was deactivated with work waiting.",
+          "body": "Approval tasks stay with the role in the branch. The Head moves that user's own orders to another Manager."
+        },
+        "q-holiday": {
+          "title": "An approver is on holiday.",
+          "body": "Reminders go out, then the Head is told. The Head adds a second Finance user, hands the branch to an acting Principal, or switches that step off."
+        },
+        "q-principal-changes": {
+          "title": "The branch's Principal changed while orders were waiting.",
+          "body": "Waiting orders pass to the new Principal. Past approvals keep the old name."
+        },
+        "q-close-branch": {
+          "title": "We want to close a branch.",
+          "body": "The Head deactivates it under Admin, Branches. It is blocked while the branch has unfinished orders or stock above 0."
+        },
+        "q-right-switched-mid-task": {
+          "title": "A Manager's right was switched off in the middle of a task.",
+          "body": "The buttons disappear at once and saved work stays. The Head finishes the task or moves the orders to another Manager."
+        },
+        "q-last-items": {
+          "title": "Two Managers issued the last items at the same moment.",
+          "body": "One succeeds. The other sees how many are left."
+        },
+        "q-transfer-short": {
+          "title": "A transfer arrived short.",
+          "body": "Enter what arrived. The shortage becomes a write-off request \"Lost in transfer\" for the Head."
+        },
+        "q-gift": {
+          "title": "We received a gift or donation.",
+          "body": "The Head records a Direct entry with the reason \"Gift or donation\"."
+        },
+        "q-half-piece": {
+          "title": "I typed half a piece.",
+          "body": "Refused. Decimals are allowed only for measures that allow them, such as kg."
+        },
+        "q-faulty-goods": {
+          "title": "Faulty goods go back to the supplier.",
+          "body": "While the order is Open, cancel the purchase record. After closing, ask for a write-off with the reason \"Returned to supplier\"."
+        },
+        "q-new-year": {
+          "title": "The year changed. What happens to order numbers?",
+          "body": "The counter restarts at 0001 with the new year in the number, for example `CHL-27-0001`."
+        },
+        "q-big-photo": {
+          "title": "My phone photo is very large.",
+          "body": "It is shrunk in the browser before upload."
+        },
+        "q-print-form": {
+          "title": "Can I print or sign an order form?",
+          "body": "There is no form and no signature line. Download the list as PDF or Excel; the approvals in each person's account are the record."
+        },
+        "q-cant-see-page": {
+          "title": "Why can't I see a page someone else mentions?",
+          "body": "Each role sees only its own pages, and only its branches. Ask the Head if you need another role or branch."
+        }
+      }
+    },
+    "glossary": {
+      "title": "Words used in Ombor",
+      "lead": "The app's own words.",
+      "topics": {
+        "words": {
+          "title": "Glossary",
+          "body": "| Word | Meaning |\n| --- | --- |\n| Order | One product or service for one department, with quantity, price and payment type. Approved, bought, settled and closed on its own. |\n| Order sheet | The spreadsheet-like list of your drafts and of the orders sent back or taken back to you. |\n| Group row | One row in a list for all orders of one subtype and status in a branch. |\n| Subtype | A variant of a product, such as \"A4, 80 g\" for paper. |\n| Reference price | The Head's normal price for one subtype, used as the suggested price. |\n| Purchase record | What the Manager enters after buying: real quantity, price, extra costs, receipt. |\n| Trip | One shop visit recorded once for several orders. |\n| Extra costs | Delivery, loading, installation and similar costs added to an order. |\n| Cash count | How much school money a Manager holds, or is owed, for one order. |\n| Settlement | Finance and the Manager even out the money difference before an order closes. |\n| Exact match | Bought exactly as planned, with a cash count of 0; the Manager may close it alone. |\n| Overspend guard | An overspend over the set percent and amount needs the Head's acknowledgment. |\n| Substitution | Buying another subtype of the same product than the one ordered. |\n| Issue | Giving items from the warehouse to a department. |\n| Direct entry | The Head putting items into stock without an order. |\n| Write-off | Removing damaged, expired, lost or returned items from stock, approved by the Head. |\n| Reverse | Undoing a warehouse document by writing the opposite movement. |\n| Deactivate | Taking an entry out of the pick lists while old records keep it. Nothing used is deleted. |\n| Skipped | An approval step that was switched off when the order passed it. |"
+        }
+      }
+    }
+  }
+}

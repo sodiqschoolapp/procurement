@@ -11,12 +11,15 @@ import { E2E_BRANCHES, E2E_LANGUAGE_USERS, E2E_ROLES } from "./global-setup";
 // docs/design-system.md: Layout shell (rail, kept in the browser), This app (Phone tab bar).
 // Both widths are the two projects of playwright.config.ts.
 
-/** 11-screens-and-ux.md, Interface per role, "Menu, in order", as the Uzbek words. */
+/**
+ * 11-screens-and-ux.md, Interface per role, "Menu, in order", as the Uzbek words. Every menu ends
+ * with Help since the spec change of 01.11.2026 (build-plan 9.7; plan, decided item 1, Look first).
+ */
 const MENUS = {
-  MANAGER: ["home", "orders", "warehouse", "analytics", "reports"],
-  HEAD: ["home", "orders", "warehouse", "money", "analytics", "reports", "admin"],
-  PRINCIPAL: ["home", "orders", "stock", "analytics", "reports"],
-  FINANCE: ["home", "orders", "money", "stock", "analytics", "reports"],
+  MANAGER: ["home", "orders", "warehouse", "analytics", "reports", "help"],
+  HEAD: ["home", "orders", "warehouse", "money", "analytics", "reports", "admin", "help"],
+  PRINCIPAL: ["home", "orders", "stock", "analytics", "reports", "help"],
+  FINANCE: ["home", "orders", "money", "stock", "analytics", "reports", "help"],
 } as const;
 
 type Words = typeof uz.shell.menu;

@@ -21,7 +21,8 @@
     },
     "logo": "Sodiq School",
     "slogan": "Taʼlim tarbiyadan boshlanadi",
-    "version": "Versiya"
+    "version": "Versiya",
+    "help": "Yordam: Ombor qanday ishlaydi"
   },
   "session": {
     "signOut": "Chiqish"
@@ -308,7 +309,8 @@
       "analytics": "Tahlil",
       "reports": "Hisobotlar",
       "admin": "Boshqaruv",
-      "more": "Yana"
+      "more": "Yana",
+      "help": "Yordam"
     },
     "collapse": "Menyuni yigʻish",
     "expand": "Menyuni yoyish",
@@ -3689,5 +3691,19 @@
   "dateInput": {
     "placeholder": "kk.oo.yyyy",
     "pick": "Taqvimdan tanlash"
+  },
+  "help": {
+    "pageTitle": "Yordam · Ombor",
+    "title": "Ombor yordami",
+    "intro": "Ombor har bir rol uchun nimalar qila olishi. Javob topish uchun qidiruvga soʻz yozing yoki boʻlimni oching.",
+    "logo": "Sodiq School",
+    "searchLabel": "Yordamdan qidirish",
+    "searchPlaceholder": "Qidirish: tasdiqlash, naqd qoldiq, hisobdan chiqarish…",
+    "matches": "{count, plural, one {# mavzu topildi} other {# ta mavzu topildi}}",
+    "none": "Hech narsa topilmadi. Qisqaroq soʻz yozing yoki maydonni tozalang.",
+    "chapters": "Boʻlimlar",
+    "goTo": "Boʻlimga oʻtish",
+    "signIn": "Kirish",
+    "backToApp": "Omborga qaytish"
   }
 }

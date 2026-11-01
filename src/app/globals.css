@@ -119,6 +119,12 @@
   }
 }
 
+/* The words a Help page search found (build-plan 9.7; plan, decided item 6): the warning tint. */
+::highlight(help-search) {
+  background-color: var(--warning-bg);
+  color: var(--foreground);
+}
+
 /* The one content column of every page (design system, Spacing: content width). */
 @utility page-width {
   width: 100%;

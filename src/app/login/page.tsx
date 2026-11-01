@@ -1,5 +1,6 @@
 import { getLocale, getTranslations } from "next-intl/server";
 import Image from "next/image";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 
@@ -74,6 +75,13 @@ export default async function LoginPage({
           <div className="flex w-full max-w-sm flex-col gap-6">
             <h1 className="text-title">{t("title")}</h1>
             <LoginForm returnPath={returnPathOf(next)} />
+            {/* "The sign-in page links to it" (11, Interface per role; build-plan 9.7). */}
+            <Link
+              href="/help"
+              className="inline-flex min-h-11 items-center self-start text-sm font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+            >
+              {t("help")}
+            </Link>
           </div>
         </div>
         {commit && (

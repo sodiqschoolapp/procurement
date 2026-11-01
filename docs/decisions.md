@@ -3346,3 +3346,26 @@ Choices made during the build:
 - "The real data" step 2: the reset puts every setting back to the value its migration gave it (the Finance and Principal steps on, the order fields as first made), so the Head sets Settings again before the first order (D62, D67, D69).
 - Step 0 of "The real data", the tightening of the stop list (D58), is also named in "The end of the trial" before the reset (plan review of 9.5, should fix 1).
 - The permission review of 9.5 found the departments preview missing from the permission matrix (a gap older than this task, on an entry point it changed): a block was added, and a line in `.claude/rules/tests.md` asks for one block per value of an input that picks the permission.
+
+### 9.7 The Help page (01.11.2026)
+
+Built in the session of 9.5 at the owner's request, without the routines (owner, 01.11.2026: "can't you build it yourself i don't wanna wake the routines"); the plan and the code were checked by the `spec-reviewer` and the `permission-reviewer`, and the owner merges (D71). The plan's decisions as built; the Look first items come first.
+
+1. **Look first** (a test changed because a requirement changed). `menu.test.ts` and `tests/e2e/shell.spec.ts` hold the spec's menus as an oracle; both now end every menu with Help (spec change of 01.11.2026, 11 "Interface per role").
+2. **Look first** (a spec reading). "Everything" is checked by declared coverage plus label matching: each topic lists the code items it covers, and for every item with an on-screen label the covering topic's English words must hold that label. Items with no label of their own (permission keys, notifications, pages, situations, History lines without a button) are checked by declaration only.
+3. **Look first** (a reading of 03 rule 9). "It reads no data" is read as "no school data": nothing for a visitor without a session; with a session cookie, the person's own session and user row, as every page's language choice already reads, to show their language and "Back to Ombor".
+4. The help words live in `src/i18n/help/<language>.json`, loaded by `/help` only and rendered on the server, not in the message files, which go to the browser with every page; the translation check covers them.
+5. On a phone Help follows the tab bar's rule (more than five items: the first four and "More"): the Manager's and the Principal's Reports and Help go under "More".
+6. A small text format of its own (paragraphs, lists, tables, headings, bold, code, links to a topic id without `#`), rendered by one pure function; no Markdown library, no HTML in the files.
+7. Search in the browser over the rendered topics: every word typed must be in a topic, case and Uzbek apostrophes ignored; found words tinted with the CSS Custom Highlight API where the browser has it.
+8. The page describes every feature as built, including those switched off at the school, and names no setting value of the school.
+9. The page stands outside the `(app)` group: no app shell, its own top bar.
+10. The English text is written from the spec and the screens' labels; Uzbek and Russian are translations, to be read by the owner.
+11. `.claude/rules/ui.md`: a task that adds or changes a feature a user meets writes its help text and names its code items in `covers` in the same task.
+12. The common questions are the situation rows of `edge-cases/requests-and-approval.md`, `purchasing-and-money.md`, `warehouse.md` and `system.md`, read from the files by the test; `00-definitions.md` feeds the glossary; `developer-rules.md` is for builders.
+13. `docs/design-system.md` names the `help` icon and has a "Help" part.
+
+Choices made during the build:
+
+- The completeness test found five items missing from the first outline (the three step-approval permissions and the 24- and 48-hour waiting notifications); they were added to the topics that explain them.
+- The search reads each topic's text from the page (`textContent`), so the words are not sent twice.

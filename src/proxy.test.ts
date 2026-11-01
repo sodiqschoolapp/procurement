@@ -42,8 +42,20 @@ describe("the proxy (edge-cases/system.md: back to the same page after sign-in)"
     );
   });
 
-  it.each(["/login", "/health"])("leaves %s open without a cookie", (path) => {
+  // /help: 03 rule 9, "The Help page is the one page that opens without signing in" (build-plan 9.7).
+  it.each(["/login", "/health", "/help"])("leaves %s open without a cookie", (path) => {
     expect(proxy(request(path)).headers.get("location")).toBeNull();
+  });
+
+  // Only the exact /help is open (03 rule 9; permission review of 9.7, should fix 1): a longer
+  // path that starts with it still asks for a session.
+  it.each(["/help/x", "/helpx", "/help-old"])("sends %s without a cookie to /login", (path) => {
+    const location = proxy(request(path)).headers.get("location");
+    expect(new URL(location!).pathname).toBe("/login");
+  });
+
+  it("leaves /help with a query open without a cookie", () => {
+    expect(proxy(request("/help?x=1")).headers.get("location")).toBeNull();
   });
 
   it("sends / to /login: it is the home page of a signed-in person (plan of 0.10b)", () => {

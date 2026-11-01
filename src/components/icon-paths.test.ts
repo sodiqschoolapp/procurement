@@ -41,6 +41,8 @@ const DESIGN_SYSTEM_ICONS = [
   "bar_chart",
   "description",
   "person",
+  // Help, the last item of every menu (build-plan 9.7).
+  "help",
 ];
 
 describe("the generated icon file (design system, Icons)", () => {
