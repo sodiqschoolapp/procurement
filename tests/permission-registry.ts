@@ -417,6 +417,9 @@ export const OPEN_ROUTES: readonly string[] = [
   "src/app/health/route.ts",
   // The root layout reads the session for the language only and shows no data (0.5, 0.6).
   "src/app/layout.tsx",
+  // The Help page: "the one page that opens without signing in. It reads no data" (03 rule 9;
+  // build-plan 9.7). It reads the caller's own session only, for the language and the way back.
+  "src/app/help/page.tsx",
 ];
 
 export type SourceFile = { path: string; text: string };
