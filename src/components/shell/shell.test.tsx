@@ -42,11 +42,13 @@ const personOf = (role: Role) => ({
 });
 
 describe("the sidebar (Interface per role; design system, Layout shell)", () => {
+  // Every menu ends with Help since the spec change of 01.11.2026 (build-plan 9.7; plan, decided
+  // item 1, Look first).
   const cases: Record<Role, string[]> = {
-    MANAGER: ["Home", "Orders", "Warehouse", "Analytics", "Reports"],
-    HEAD: ["Home", "Orders", "Warehouse", "Money", "Analytics", "Reports", "Admin"],
-    PRINCIPAL: ["Home", "Orders", "Stock", "Analytics", "Reports"],
-    FINANCE: ["Home", "Orders", "Money", "Stock", "Analytics", "Reports"],
+    MANAGER: ["Home", "Orders", "Warehouse", "Analytics", "Reports", "Help"],
+    HEAD: ["Home", "Orders", "Warehouse", "Money", "Analytics", "Reports", "Admin", "Help"],
+    PRINCIPAL: ["Home", "Orders", "Stock", "Analytics", "Reports", "Help"],
+    FINANCE: ["Home", "Orders", "Money", "Stock", "Analytics", "Reports", "Help"],
   };
   for (const [role, labels] of Object.entries(cases)) {
     it(`${role}: exactly its items, each named for the rail`, () => {
@@ -91,10 +93,14 @@ describe("the phone tab bar (design system, This app: Phone tab bar)", () => {
     expect(html).not.toContain(">Admin<");
   });
 
-  it("Manager: all five and no More", () => {
+  // With Help the Manager has six items: the first four and More (plan of 9.7, decided item 4).
+  it("Manager: Home, Orders, Warehouse, Analytics and More", () => {
     const html = wrap(<TabBar role="MANAGER" />);
-    expect(html.match(/<a /g)).toHaveLength(5);
-    expect(html).not.toContain(">More<");
+    expect(html.match(/<a /g)).toHaveLength(4);
+    for (const word of ["Home", "Orders", "Warehouse", "Analytics", "More"]) {
+      expect(html).toContain(`>${word}</span>`);
+    }
+    expect(html).not.toContain(">Reports<");
   });
 
   it("every tab is at least 44 px (11 rule 13)", () => {
