@@ -5,13 +5,14 @@ import { ROLES } from "@/domain/permissions";
 import { isActive, menuFor, seesStockCounts, tabBarSplit } from "./menu";
 
 // 11-screens-and-ux.md, Interface per role ("Menu, in order"), written out a second time by hand
-// as the oracle; docs/design-system.md, This app (Menu icons; Phone tab bar).
+// as the oracle; docs/design-system.md, This app (Menu icons; Phone tab bar). Since the spec change
+// of 01.11.2026 every menu ends with Help (build-plan 9.7; plan of 9.7, decided item 1, Look first).
 
 const SPEC_MENUS = {
-  MANAGER: ["home", "orders", "warehouse", "analytics", "reports"],
-  HEAD: ["home", "orders", "warehouse", "money", "analytics", "reports", "admin"],
-  PRINCIPAL: ["home", "orders", "stock", "analytics", "reports"],
-  FINANCE: ["home", "orders", "money", "stock", "analytics", "reports"],
+  MANAGER: ["home", "orders", "warehouse", "analytics", "reports", "help"],
+  HEAD: ["home", "orders", "warehouse", "money", "analytics", "reports", "admin", "help"],
+  PRINCIPAL: ["home", "orders", "stock", "analytics", "reports", "help"],
+  FINANCE: ["home", "orders", "money", "stock", "analytics", "reports", "help"],
 } as const;
 
 const SPEC_ICONS = {
@@ -23,6 +24,7 @@ const SPEC_ICONS = {
   analytics: "bar_chart",
   reports: "description",
   admin: "tune",
+  help: "help",
 } as const;
 
 describe("the menu per role (11, Interface per role)", () => {
@@ -96,21 +98,29 @@ describe("the active item (plan of 0.10b, decision 7)", () => {
 });
 
 describe("the phone tab bar (design system, This app: Phone tab bar)", () => {
-  it("Head: the first four and More with Analytics, Reports, Admin", () => {
+  // With Help at the end of every menu (decided item 4 of 9.7's plan), every role has more than
+  // five items: the first four, then More.
+  it("Head: the first four and More with Analytics, Reports, Admin, Help", () => {
     const { shown, more } = tabBarSplit(menuFor("HEAD"));
     expect(shown.map((item) => item.id)).toEqual(["home", "orders", "warehouse", "money"]);
-    expect(more.map((item) => item.id)).toEqual(["analytics", "reports", "admin"]);
+    expect(more.map((item) => item.id)).toEqual(["analytics", "reports", "admin", "help"]);
   });
 
-  it("Finance: the first four and More with Analytics and Reports", () => {
+  it("Finance: the first four and More with Analytics, Reports, Help", () => {
     const { shown, more } = tabBarSplit(menuFor("FINANCE"));
     expect(shown.map((item) => item.id)).toEqual(["home", "orders", "money", "stock"]);
-    expect(more.map((item) => item.id)).toEqual(["analytics", "reports"]);
+    expect(more.map((item) => item.id)).toEqual(["analytics", "reports", "help"]);
   });
 
-  it("Manager and Principal: all five, no More", () => {
+  it("Manager and Principal: the first four and More with Reports and Help", () => {
+    expect(tabBarSplit(menuFor("MANAGER")).shown.map((item) => item.id)).toEqual([
+      "home",
+      "orders",
+      "warehouse",
+      "analytics",
+    ]);
     for (const role of ["MANAGER", "PRINCIPAL"] as const) {
-      expect(tabBarSplit(menuFor(role))).toEqual({ shown: menuFor(role), more: [] });
+      expect(tabBarSplit(menuFor(role)).more.map((item) => item.id)).toEqual(["reports", "help"]);
     }
   });
 });

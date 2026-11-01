@@ -51,6 +51,8 @@ const s = (
 /** Every screen of src/app, as the role that opens it (plan of 9.1d, decided item 5). */
 export const SCREENS: Screen[] = [
   s("/login", null),
+  // Open to anyone (03 rule 9; build-plan 9.7).
+  s("/help", null),
   // A mistyped address: the app's own not-found page in the shell (redesign of 21.10.2026).
   { ...s("/[...missing]", "manager", () => "/no-such-page"), missing: true },
   ...(["head", "manager", "principal", "finance"] as const).flatMap((who) => [

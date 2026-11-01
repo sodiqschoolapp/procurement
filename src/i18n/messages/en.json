@@ -21,7 +21,8 @@
     },
     "logo": "Sodiq School",
     "slogan": "Education begins with upbringing",
-    "version": "Version"
+    "version": "Version",
+    "help": "Help: how Ombor works"
   },
   "session": {
     "signOut": "Sign out"
@@ -308,7 +309,8 @@
       "analytics": "Analytics",
       "reports": "Reports",
       "admin": "Admin",
-      "more": "More"
+      "more": "More",
+      "help": "Help"
     },
     "collapse": "Collapse the menu",
     "expand": "Expand the menu",
@@ -3689,5 +3691,19 @@
   "dateInput": {
     "placeholder": "dd.mm.yyyy",
     "pick": "Choose on the calendar"
+  },
+  "help": {
+    "pageTitle": "Help · Ombor",
+    "title": "Ombor help",
+    "intro": "Everything Ombor does, for every role. Type in the search box to find an answer, or open a chapter.",
+    "logo": "Sodiq School",
+    "searchLabel": "Search the help",
+    "searchPlaceholder": "Search: approve, cash count, write-off…",
+    "matches": "{count, plural, one {# topic matches} other {# topics match}}",
+    "none": "Nothing matches. Try a shorter word, or clear the box.",
+    "chapters": "Chapters",
+    "goTo": "Go to a chapter",
+    "signIn": "Sign in",
+    "backToApp": "Back to Ombor"
   }
 }

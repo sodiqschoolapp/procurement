@@ -8,6 +8,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { createTranslator } from "next-intl";
 
 import {
+  HELP_FOLDER,
   readMessage,
   readMessageFiles,
   translationProblems,
@@ -59,6 +60,20 @@ afterEach(() => {
 describe("the translation check (15-quality Done-check; 11-screens-and-ux.md rule 14)", () => {
   it("passes on the repository's three message files", () => {
     expect(translationProblems(readMessageFiles())).toEqual([]);
+    expect(() => execFileSync(process.execPath, [SCRIPT], { stdio: "pipe" })).not.toThrow();
+  });
+
+  // build-plan 9.7: the help files are translation files too (11 Help page rule 4).
+  it("passes on the three help files, and names a help topic gone from uz", () => {
+    expect(translationProblems(readMessageFiles(HELP_FOLDER))).toEqual([]);
+    const help = readMessageFiles(HELP_FOLDER);
+    const uz = structuredClone(help.uz) as {
+      chapters: { faq: { topics: Record<string, unknown> } };
+    };
+    delete uz.chapters.faq.topics["q-gift"];
+    expect(translationProblems({ ...help, uz })).toContain(
+      'uz: "chapters.faq.topics.q-gift.title" is missing',
+    );
     expect(() => execFileSync(process.execPath, [SCRIPT], { stdio: "pipe" })).not.toThrow();
   });
 

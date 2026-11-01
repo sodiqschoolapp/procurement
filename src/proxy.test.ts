@@ -42,7 +42,8 @@ describe("the proxy (edge-cases/system.md: back to the same page after sign-in)"
     );
   });
 
-  it.each(["/login", "/health"])("leaves %s open without a cookie", (path) => {
+  // /help: 03 rule 9, "The Help page is the one page that opens without signing in" (build-plan 9.7).
+  it.each(["/login", "/health", "/help"])("leaves %s open without a cookie", (path) => {
     expect(proxy(request(path)).headers.get("location")).toBeNull();
   });
 

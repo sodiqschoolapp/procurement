@@ -40,6 +40,8 @@ export const ICONS = [
   "bar_chart",
   "description",
   "person",
+  // The Help item that ends every menu (build-plan 9.7).
+  "help",
   // The phone tab bar's "More" (plan of 0.10b).
   "more_horiz",
   // "Mark all as read" on /notifications (plan of 0.11).
@@ -81,6 +83,7 @@ export const FILLED_ICONS = [
   "person",
   "notifications",
   "more_horiz",
+  "help",
 ];
 
 /**

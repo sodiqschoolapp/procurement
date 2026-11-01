@@ -7,7 +7,7 @@ import type { Role } from "@/domain/permissions";
 // read this file; the server checks every page again (rule 4: hiding protects nothing).
 
 export type MenuItemId =
-  "home" | "orders" | "warehouse" | "stock" | "money" | "analytics" | "reports" | "admin";
+  "home" | "orders" | "warehouse" | "stock" | "money" | "analytics" | "reports" | "admin" | "help";
 
 export type MenuItem = {
   id: MenuItemId;
@@ -42,13 +42,16 @@ const ITEMS: Record<MenuItemId, MenuItem> = {
     // Admin item, so nothing is marked there for a Manager.
     activeOn: ["/catalog", "/prices", "/users", "/branches", "/settings", "/suggestions"],
   },
+  // "Every menu ends with Help" (11, Interface per role; build-plan 9.7). The page is outside the
+  // app shell, so the item is never shown active.
+  help: { id: "help", href: "/help", icon: "help", activeOn: ["/help"] },
 };
 
 const MENUS: Record<Role, readonly MenuItemId[]> = {
-  MANAGER: ["home", "orders", "warehouse", "analytics", "reports"],
-  HEAD: ["home", "orders", "warehouse", "money", "analytics", "reports", "admin"],
-  PRINCIPAL: ["home", "orders", "stock", "analytics", "reports"],
-  FINANCE: ["home", "orders", "money", "stock", "analytics", "reports"],
+  MANAGER: ["home", "orders", "warehouse", "analytics", "reports", "help"],
+  HEAD: ["home", "orders", "warehouse", "money", "analytics", "reports", "admin", "help"],
+  PRINCIPAL: ["home", "orders", "stock", "analytics", "reports", "help"],
+  FINANCE: ["home", "orders", "money", "stock", "analytics", "reports", "help"],
 };
 
 /**

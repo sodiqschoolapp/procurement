@@ -4,13 +4,17 @@
 // (decisions 0.5 item 8). Since 8.4 the three must also agree, value by value (plan of 8.4,
 // decided items 2 and 3): the same arguments, tags and select options; no `#` outside a plural;
 // a plural complete for its language; each language in its own script; one Uzbek apostrophe.
-// `npm run i18n:check`; CI runs it in the job `checks`.
+// Since 9.7 the three help files of src/i18n/help/ are checked the same way (11-screens-and-ux.md,
+// Help page rule 4; plan of 9.7, decided item 3). `npm run i18n:check`; CI runs it in the job
+// `checks`.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 export const MESSAGES_FOLDER = fileURLToPath(new URL("../src/i18n/messages", import.meta.url));
 export const LANGUAGES = ["uz", "ru", "en"];
+/** The words of the Help page, loaded by /help only (build-plan 9.7). */
+export const HELP_FOLDER = fileURLToPath(new URL("../src/i18n/help", import.meta.url));
 
 /**
  * Keys whose value is the same name in every language, or the spec's literal, so the script
@@ -23,6 +27,7 @@ export const SCRIPT_EXEMPT = new Set([
   "languages.ru",
   "languages.en",
   "login.logo",
+  "help.logo",
   "format.currency",
   "search.shortcut",
   "orders.list.filters.numberPlaceholder",
@@ -280,8 +285,9 @@ export function readMessageFiles(folder = MESSAGES_FOLDER, languages = LANGUAGES
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  // A folder may be named for a test; the repository's own files otherwise.
-  const problems = translationProblems(readMessageFiles(process.argv[2] ?? MESSAGES_FOLDER));
+  // A folder may be named for a test; the repository's message files and help files otherwise.
+  const folders = process.argv[2] ? [process.argv[2]] : [MESSAGES_FOLDER, HELP_FOLDER];
+  const problems = folders.flatMap((folder) => translationProblems(readMessageFiles(folder)));
   if (problems.length > 0) {
     for (const problem of problems) console.error(problem);
     console.error(`The translation check failed: ${problems.length} problem(s).`);
