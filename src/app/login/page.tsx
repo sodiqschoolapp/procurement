@@ -78,7 +78,7 @@ export default async function LoginPage({
             {/* "The sign-in page links to it" (11, Interface per role; build-plan 9.7). */}
             <Link
               href="/help"
-              className="self-start text-sm font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+              className="inline-flex min-h-11 items-center self-start text-sm font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
             >
               {t("help")}
             </Link>

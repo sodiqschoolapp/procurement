@@ -3,7 +3,10 @@ import type { ReactNode } from "react";
 import { type Inline, parseHelpText } from "./text";
 
 // One help text as the page shows it (plan of 9.7, decided item 5): the blocks of text.ts as
-// elements, styled with the design system's tokens. Words are always text, never HTML.
+// elements, styled with the design system's tokens. Words are always text, never HTML. The words of
+// a list item or a table cell stand in a paragraph, so a link among them is a link in running text
+// (WCAG 2.5.5's inline exception, as tests/e2e/accessibility.spec.ts reads it); a table that scrolls
+// sideways takes the keyboard's focus (11 rule 13; axe "scrollable-region-focusable").
 
 function inline(parts: Inline[]): ReactNode[] {
   return parts.map((part, at) => {
@@ -52,13 +55,19 @@ export function HelpText({ text }: { text: string }) {
               className={`flex max-w-[68ch] flex-col gap-1 pl-5 ${block.ordered ? "list-decimal" : "list-disc"}`}
             >
               {block.items.map((item, index) => (
-                <li key={index}>{inline(item)}</li>
+                <li key={index}>
+                  <p>{inline(item)}</p>
+                </li>
               ))}
             </List>
           );
         }
         return (
-          <div key={at} className="overflow-x-auto rounded-panel border border-border bg-card">
+          <div
+            key={at}
+            tabIndex={0}
+            className="overflow-x-auto rounded-panel border border-border bg-card focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          >
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr>
@@ -67,7 +76,7 @@ export function HelpText({ text }: { text: string }) {
                       key={index}
                       className="border-b border-border bg-muted px-3 py-2 text-left align-top font-semibold text-muted-foreground"
                     >
-                      {inline(cell)}
+                      <p>{inline(cell)}</p>
                     </th>
                   ))}
                 </tr>
@@ -77,7 +86,7 @@ export function HelpText({ text }: { text: string }) {
                   <tr key={index} className="border-b border-border last:border-b-0">
                     {row.map((cell, column) => (
                       <td key={column} className="px-3 py-2 align-top">
-                        {inline(cell)}
+                        <p>{inline(cell)}</p>
                       </td>
                     ))}
                   </tr>

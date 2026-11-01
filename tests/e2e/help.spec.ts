@@ -28,8 +28,13 @@ test("S26: a visitor reads and searches the help in Russian; a Manager opens it 
   ).toBeVisible();
 
   // The visitor chooses Russian on the page, as on the sign-in page (rule 4).
-  await page.locator("#language").selectOption("ru");
-  await expect(page.getByRole("heading", { level: 1, name: ru.help.title })).toBeVisible();
+  // A choice made before the page has hydrated changes nothing: choose again until it shows.
+  await expect(async () => {
+    await page.locator("#language").selectOption("ru");
+    await expect(page.getByRole("heading", { level: 1, name: ru.help.title })).toBeVisible({
+      timeout: 2000,
+    });
+  }).toPass();
 
   // The search leaves only the topics that hold the word, in Russian (rule 3).
   const topics = page.locator("[data-help-topic]");

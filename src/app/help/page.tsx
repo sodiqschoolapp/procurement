@@ -38,7 +38,7 @@ export default async function HelpPage() {
     <div className="min-h-dvh bg-background text-foreground">
       <header className="sticky top-0 z-10 border-b border-border bg-card">
         <div className="page-width flex flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
-          <Link href={user ? "/" : "/login"} className="flex items-center">
+          <Link href={user ? "/" : "/login"} className="flex min-h-11 items-center">
             <Image
               src="/brand/sodiq-logo-horizontal.svg"
               alt={t("logo")}
