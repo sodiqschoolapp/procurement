@@ -22,6 +22,7 @@ Four roles exist, and what each user sees is limited to their branches on the se
 6. When the Head creates an order, the Head step is approved automatically and logged as "Created by Head".
 7. An order has one owner: the Manager who created it. The Head can move ticked orders to another Manager of the same branch, but only orders whose cash count is zero.
 8. Every action can cover many ticked orders, but only orders the user may act on: one order outside the user's branches or role refuses the whole action.
+9. The Help page (`/help`, section 11) is the one page that opens without signing in. It reads no data.
 
 ## Manager rights the Head can switch
 
