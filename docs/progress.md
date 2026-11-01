@@ -2358,4 +2358,22 @@ Keep an entry under 25 lines. Facts only: no story of the session, no praise, no
 - The reset puts every setting back to its first value; the Head sets them again (deploy.md, "The real data" step 2).
 - A page action that runs a query outside `runAction()` catches what it does not expect and answers `unexpected` through `describeForLog()`: Next.js logs a thrown error's whole message.
 
+## 9.7 The Help page (01.11.2026, pull request #182)
+
+**Built**
+- `/help`, open without signing in (proxy open path), outside the app shell; reads no data for a visitor; language select and theme button for a visitor, "Back to Ombor" for a signed-in user.
+- The words in `src/i18n/help/{uz,ru,en}.json`, loaded by `/help` only, in a small text format (`src/features/help/text.ts`); 16 chapters, about 115 topics; search in the browser (`help-search.tsx`, `search.ts`), found words tinted with `::highlight(help-search)`.
+- `src/features/help/outline.ts`: chapters, topics and the code items each covers; `coverage.test.ts` reads statuses, every row of `ORDER_MOVES`, `ORDER_EVENT_TYPES`, permissions, rights, settings, order fields, notifications, document types and statuses, movements, money rows, payment types, progress, reasons, roles, every `page.tsx` and every situation row of four edge-case files, and checks each covering topic's English words hold the item's on-screen label.
+- Help ends every role's menu (icon `help`); a Help link under the sign-in form; `npm run i18n:check` also checks the help files.
+
+**Left out, and the task that brings it**
+- Nothing of the Build line.
+
+**Open for the owner**
+- Decided items 1, 2 and 13 (Look first) of the plan; the Uzbek and Russian help texts are machine-written: to be read.
+
+**What the next sessions must know**
+- A feature a user meets brings its help text in the same task (`.claude/rules/ui.md`): words in the three help files, its code items in `covers`; `coverage.test.ts` fails otherwise.
+- The help files hold no `{`, `}` or `#` (the translation check reads them as ICU); links are `[words](topic-id)`.
+
 The next task is none: every task of the build plan is ticked.
