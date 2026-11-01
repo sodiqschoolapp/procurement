@@ -22,7 +22,10 @@ test("S26: a visitor reads and searches the help in Russian; a Manager opens it 
   await page.goto("/help");
   expect(new URL(page.url()).pathname).toBe("/help");
   await expect(page.getByRole("heading", { level: 1, name: uz.help.title })).toBeVisible();
-  await expect(page.getByRole("link", { name: uz.help.signIn })).toBeVisible();
+  // The top bar's own link (the help text holds links to the sign-in page too).
+  await expect(
+    page.getByRole("banner").getByRole("link", { name: uz.help.signIn, exact: true }),
+  ).toBeVisible();
 
   // The visitor chooses Russian on the page, as on the sign-in page (rule 4).
   await page.locator("#language").selectOption("ru");
@@ -64,13 +67,15 @@ test("S26: a visitor reads and searches the help in Russian; a Manager opens it 
   await expect(page).toHaveURL(/\/help$/);
   await expect(page.getByRole("heading", { level: 1, name: uz.help.title })).toBeVisible();
   await expect(page.locator("#language")).toHaveCount(0);
-  await expect(page.getByRole("link", { name: uz.help.backToApp })).toBeVisible();
+  await expect(
+    page.getByRole("banner").getByRole("link", { name: uz.help.backToApp, exact: true }),
+  ).toBeVisible();
   expect(await scrollsSideways(page)).toBe(false);
 });
 
 test("the sign-in page links to the help (11, Interface per role)", async ({ page }) => {
   await page.goto("/login");
-  await page.getByRole("link", { name: uz.login.help }).click();
+  await page.getByRole("link", { name: uz.login.help, exact: true }).click();
   await expect(page).toHaveURL(/\/help$/);
   await expect(page.getByRole("heading", { level: 1, name: uz.help.title })).toBeVisible();
 });
